@@ -1,3 +1,4 @@
+import { ArrowUpRight, Code2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export function SiteFooter() {
@@ -17,6 +18,7 @@ export function SiteFooter() {
           <div>
             <strong>만들기</strong>
             <Link to="/submit">앱 등록하기</Link>
+            <a href="https://github.com/sangjun121/dropit" target="_blank" rel="noreferrer"><Code2 size={14} /> GitHub <ArrowUpRight size={12} /></a>
           </div>
         </div>
       </div>

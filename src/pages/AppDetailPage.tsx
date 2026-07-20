@@ -5,6 +5,7 @@ import { AppCard } from '../components/AppCard'
 import { AppThumbnail } from '../components/AppThumbnail'
 import { Avatar } from '../components/Avatar'
 import { EmptyState } from '../components/EmptyState'
+import { MarkdownContent } from '../components/MarkdownContent'
 import { formatNumber } from '../utils/format'
 
 interface AppDetailPageProps {
@@ -71,7 +72,7 @@ export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggle
           <div className="detail-info__main">
             <span className="section-kicker">서비스 소개</span>
             <h2>서비스 설명</h2>
-            <p>{app.description}</p>
+            <MarkdownContent content={app.description} />
             <div className="tech-tags">{app.techTags.map((tag) => <span key={tag}>{tag}</span>)}</div>
           </div>
           <aside className="maker-panel">

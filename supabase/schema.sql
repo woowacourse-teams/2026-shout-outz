@@ -1,6 +1,8 @@
 -- Dropit 데이터베이스 스키마
 -- Supabase 대시보드의 SQL Editor에서 한 번 실행하세요.
 
+create extension if not exists pgcrypto;
+
 create table if not exists public.makers (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null check (char_length(trim(name)) between 1 and 20),
@@ -13,6 +15,18 @@ create table if not exists public.makers (
 );
 
 alter table public.makers add column if not exists avatar_url text;
+
+create table if not exists public.crew_access_codes (
+  id bigint generated always as identity primary key,
+  code_hash text not null unique,
+  active boolean not null default true,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.crew_members (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  verified_at timestamptz not null default timezone('utc', now())
+);
 
 create table if not exists public.apps (
   id text primary key,
@@ -54,6 +68,8 @@ alter table public.makers enable row level security;
 alter table public.apps enable row level security;
 alter table public.app_bookmarks enable row level security;
 alter table public.app_likes enable row level security;
+alter table public.crew_access_codes enable row level security;
+alter table public.crew_members enable row level security;
 
 grant usage on schema public to anon, authenticated;
 grant select on public.makers, public.apps to anon, authenticated;
@@ -61,6 +77,8 @@ grant insert, update on public.makers to authenticated;
 grant insert, update, delete on public.apps to authenticated;
 grant select, insert, delete on public.app_bookmarks to authenticated;
 grant select, insert, delete on public.app_likes to authenticated;
+grant select on public.crew_members to authenticated;
+revoke all on public.crew_access_codes from anon, authenticated;
 
 drop policy if exists "makers are publicly readable" on public.makers;
 create policy "makers are publicly readable"
@@ -86,7 +104,14 @@ create policy "apps are publicly readable"
 drop policy if exists "users can create their own apps" on public.apps;
 create policy "users can create their own apps"
   on public.apps for insert to authenticated
-  with check (auth.uid() = owner_id);
+  with check (
+    auth.uid() = owner_id
+    and exists (
+      select 1
+      from public.crew_members
+      where user_id = auth.uid()
+    )
+  );
 
 drop policy if exists "users can update their own apps" on public.apps;
 create policy "users can update their own apps"
@@ -118,6 +143,41 @@ drop policy if exists "users can read their own likes" on public.app_likes;
 create policy "users can read their own likes"
   on public.app_likes for select to authenticated
   using (auth.uid() = user_id);
+
+drop policy if exists "users can read their own crew membership" on public.crew_members;
+create policy "users can read their own crew membership"
+  on public.crew_members for select to authenticated
+  using (auth.uid() = user_id);
+
+create or replace function public.verify_crew_access_code(p_code text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  is_valid boolean;
+begin
+  if auth.uid() is null then
+    raise exception '로그인이 필요합니다.';
+  end if;
+
+  select exists (
+    select 1
+    from public.crew_access_codes
+    where active = true
+      and crypt(trim(coalesce(p_code, '')), code_hash) = code_hash
+  ) into is_valid;
+
+  if is_valid then
+    insert into public.crew_members (user_id)
+    values (auth.uid())
+    on conflict (user_id) do nothing;
+  end if;
+
+  return is_valid;
+end;
+$$;
 
 create or replace function public.increment_app_plays(p_app_id text)
 returns void
@@ -178,3 +238,6 @@ grant execute on function public.increment_app_plays(text) to anon, authenticate
 
 revoke all on function public.toggle_app_like(text) from public;
 grant execute on function public.toggle_app_like(text) to authenticated;
+
+revoke all on function public.verify_crew_access_code(text) from public;
+grant execute on function public.verify_crew_access_code(text) to authenticated;

@@ -11,6 +11,7 @@ import { clearAppDraft, readAppDraft, writeAppDraft } from '../utils/draftStorag
 interface SubmitPageProps {
   onAddApp?: (app: AppItem) => void
   onUpdateApp?: (app: AppItem) => void
+  onVerifyCrewCode?: (code: string) => Promise<boolean>
   maker: Maker
   editingApp?: AppItem
 }
@@ -34,11 +35,14 @@ function formValuesFromApp(app: AppItem): AppFormValues {
   }
 }
 
-export function SubmitPage({ onAddApp, onUpdateApp, maker, editingApp }: SubmitPageProps) {
+export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, editingApp }: SubmitPageProps) {
   const navigate = useNavigate()
   const isEditMode = Boolean(editingApp)
   const [values, setValues] = useState<AppFormValues>(() => editingApp ? formValuesFromApp(editingApp) : readAppDraft(maker.id)?.values ?? initialValues)
   const [errors, setErrors] = useState<Partial<Record<keyof AppFormValues, string>>>({})
+  const [crewCode, setCrewCode] = useState('')
+  const [crewCodeError, setCrewCodeError] = useState('')
+  const [isVerifyingCrewCode, setIsVerifyingCrewCode] = useState(false)
   const [thumbnailFileName, setThumbnailFileName] = useState(() => editingApp ? '' : readAppDraft(maker.id)?.thumbnailFileName ?? '')
   const [thumbnailUploadError, setThumbnailUploadError] = useState('')
   const [submittedApp, setSubmittedApp] = useState<AppItem | null>(null)
@@ -50,7 +54,7 @@ export function SubmitPage({ onAddApp, onUpdateApp, maker, editingApp }: SubmitP
   }, [isEditMode, maker.id, thumbnailFileName, values])
 
   const previewApp = useMemo<AppItem>(() => ({
-    id: editingApp?.id ?? 'preview', name: values.name || '서비스 이름', tagline: values.tagline || '서비스를 한 줄로 소개하세요.', description: values.description || '무엇을 해결하는 앱인지 적어주세요.',
+    id: editingApp?.id ?? 'preview', name: values.name || '서비스 이름', tagline: values.tagline || '서비스를 한 줄로 소개하세요.', description: values.description,
     category: (values.category || '실험') as Exclude<Category, '전체'>, thumbnailVariant: editingApp?.thumbnailVariant ?? 'new', thumbnailUrl: values.thumbnailUrl || undefined, appUrl: values.appUrl || 'https://example.com', githubUrl: values.githubUrl || undefined, maker, techTags: values.techTags.split(',').map((tag) => tag.trim()).filter(Boolean).slice(0, 5), plays: editingApp?.plays ?? 0, likes: editingApp?.likes ?? 0, createdAt: editingApp?.createdAt ?? new Date().toISOString(), source: 'submitted',
   }), [editingApp, maker, values])
 
@@ -116,9 +120,36 @@ export function SubmitPage({ onAddApp, onUpdateApp, maker, editingApp }: SubmitP
     return Object.keys(nextErrors).length === 0
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (isVerifyingCrewCode) return
     if (!validate()) return
+
+    if (!isEditMode) {
+      if (!crewCode.trim()) {
+        setCrewCodeError('크루 인증 코드를 입력해주세요.')
+        return
+      }
+      if (!onVerifyCrewCode) {
+        setCrewCodeError('인증 기능을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')
+        return
+      }
+
+      setIsVerifyingCrewCode(true)
+      try {
+        const isVerified = await onVerifyCrewCode(crewCode.trim())
+        if (!isVerified) {
+          setCrewCodeError('인증 코드가 맞지 않습니다.')
+          return
+        }
+      } catch {
+        setCrewCodeError('인증 코드를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.')
+        return
+      } finally {
+        setIsVerifyingCrewCode(false)
+      }
+    }
+
     const app: AppItem = editingApp
       ? { ...previewApp, id: editingApp.id, createdAt: editingApp.createdAt, plays: editingApp.plays, likes: editingApp.likes, ownerId: editingApp.ownerId ?? editingApp.maker.id, source: 'submitted' }
       : { ...previewApp, id: `${slugify(values.name)}-${Date.now()}`, createdAt: new Date().toISOString(), ownerId: maker.id, source: 'submitted' }
@@ -157,7 +188,8 @@ export function SubmitPage({ onAddApp, onUpdateApp, maker, editingApp }: SubmitP
                 <input id="app-tagline" value={values.tagline} maxLength={80} onChange={(event) => update('tagline', event.target.value)} placeholder="예: 매일 쓰는 메모장" />
               </Field>
               <Field label="상세 설명" htmlFor="app-description" error={errors.description} hint={`${values.description.length}/500`}>
-                <textarea id="app-description" value={values.description} maxLength={500} onChange={(event) => update('description', event.target.value)} placeholder="해결하는 문제와 사용 방법을 입력하세요." rows={5} />
+                <textarea id="app-description" aria-describedby="app-description-guide" value={values.description} maxLength={500} onChange={(event) => update('description', event.target.value)} placeholder="## 서비스 소개\n해결하는 문제와 사용 방법을 입력하세요.\n\n- 주요 기능\n- 사용 대상" rows={8} />
+                <p id="app-description-guide" className="markdown-guide">마크다운을 지원해요. `## 제목`, `- 목록`, `**강조**`처럼 작성하면 서비스 페이지에서 보기 좋게 정리됩니다.</p>
               </Field>
             </FormSection>
             <FormSection title="서비스 주소">
@@ -188,8 +220,14 @@ export function SubmitPage({ onAddApp, onUpdateApp, maker, editingApp }: SubmitP
                 <p className="thumbnail-guide">권장 크기: 가로 1200px × 세로 750px (16:10)<br />AI로 다듬을 때는 “1200 × 750px, 16:10 비율로 맞춰줘”라고 요청하세요.</p>
               </Field>
             </FormSection>
+            {!isEditMode ? <FormSection title="크루 인증">
+              <Field label="인증 코드" htmlFor="crew-code" error={crewCodeError} required hint="등록 권한 확인">
+                <input id="crew-code" type="password" autoComplete="off" maxLength={80} value={crewCode} onChange={(event) => { setCrewCode(event.target.value); setCrewCodeError('') }} placeholder="크루에게 받은 인증 코드를 입력하세요" />
+                <p className="crew-code-guide">로그인한 크루만 인증 코드 확인 후 서비스를 등록할 수 있습니다.</p>
+              </Field>
+            </FormSection> : null}
             <div className="form-note"><CircleHelp size={16} /><span>입력한 내용은 자동으로 임시 저장됩니다. 나중에 다시 이어서 작성할 수 있습니다.</span></div>
-            <button type="submit" className="button button--primary button--submit">{isEditMode ? '수정 내용 저장' : '앱 등록하기'} <ArrowRight size={16} /></button>
+            <button type="submit" className="button button--primary button--submit" disabled={isVerifyingCrewCode}>{isVerifyingCrewCode ? '인증 확인 중' : isEditMode ? '수정 내용 저장' : '앱 등록하기'} <ArrowRight size={16} /></button>
           </form>
           <aside className="preview-panel">
             <div className="preview-panel__header"><span className="section-kicker">미리보기</span><span>카드 미리보기</span></div>

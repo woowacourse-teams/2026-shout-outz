@@ -199,7 +199,7 @@ export async function upsertRemoteProfile(maker: Maker) {
 export async function setRemoteBookmark(userId: string, appId: string, isBookmarked: boolean) {
   if (!supabase) return
   if (isBookmarked) {
-    const { error } = await supabase.from('app_bookmarks').upsert({ user_id: userId, app_id: appId }, { onConflict: 'user_id,app_id' })
+    const { error } = await supabase.from('app_bookmarks').insert({ user_id: userId, app_id: appId })
     throwIfError(error)
     return
   }
@@ -218,4 +218,11 @@ export async function recordRemotePlay(appId: string) {
   if (!supabase) return
   const { error } = await supabase.rpc('increment_app_plays', { p_app_id: appId })
   throwIfError(error)
+}
+
+export async function verifyRemoteCrewAccessCode(code: string) {
+  if (!supabase) return false
+  const { data, error } = await supabase.rpc('verify_crew_access_code', { p_code: code })
+  throwIfError(error)
+  return data === true
 }

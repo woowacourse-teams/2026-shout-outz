@@ -22,7 +22,7 @@ export function DropZone({ apps }: { apps: AppItem[] }) {
               <AppThumbnail variant={app.thumbnailVariant} label={app.name} size="small" customImage={app.thumbnailUrl} />
               <div>
                 <strong>{app.name}</strong>
-                <span>{app.category} · {app.maker.name}</span>
+                <span>{app.category} - {app.maker.name}</span>
               </div>
               <span className="drop-card__plus"><Plus size={14} /></span>
             </Link>

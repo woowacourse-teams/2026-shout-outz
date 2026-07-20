@@ -40,10 +40,21 @@ GitHub Client Secret은 GitHub와 Supabase 대시보드에만 입력합니다. `
 
 ### Supabase 데이터 설정
 
-1. Supabase SQL Editor에서 [`supabase/schema.sql`](supabase/schema.sql)을 한 번 실행합니다.
+1. Supabase SQL Editor에서 최신 [`supabase/schema.sql`](supabase/schema.sql)을 실행합니다. 기존 스키마를 다시 실행해도 `if not exists`와 정책 교체 구문으로 안전하게 반영됩니다.
 2. `.env.example`을 `.env.local`로 복사하고 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`를 입력합니다.
 3. Authentication에서 GitHub Provider를 켜고 Client ID와 Client Secret은 Supabase 대시보드에만 입력합니다.
 4. 앱의 Redirect URL과 GitHub OAuth callback URL을 각각 정확히 등록합니다.
+
+### 크루 인증 코드 설정
+
+앱 등록은 GitHub 로그인뿐 아니라 크루 인증까지 완료한 계정만 가능합니다. 인증 코드는 프론트 코드나 `.env.local`에 넣지 않고 Supabase에 해시로 저장합니다. SQL Editor에서 원하는 코드를 넣어 한 번 실행하세요.
+
+```sql
+insert into public.crew_access_codes (code_hash)
+values (crypt('여기에_사용할_인증코드', gen_salt('bf')));
+```
+
+인증 코드를 확인하면 해당 계정이 `crew_members`에 등록되고, 이후 앱 등록 요청은 Supabase RLS에서도 한 번 더 검증됩니다.
 
 환경변수가 없으면 로그인 버튼이 비활성화되고, 앱 데이터는 표시하거나 로컬에 저장하지 않습니다. `.env.local`에 Supabase URL과 브라우저용 공개 키를 입력한 뒤 개발 서버를 다시 시작해야 합니다. 작성 중인 앱 등록 폼은 예외적으로 브라우저에 임시 저장됩니다.
 

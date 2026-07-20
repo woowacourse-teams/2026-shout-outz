@@ -40,27 +40,15 @@ export function HomePage({ apps, bookmarkedIds, onToggleBookmark }: HomePageProp
   return (
     <div className="home-page">
       <DropZone apps={apps} />
-      <section className="category-strip" aria-label="카테고리 필터">
-        <div className="content-container category-strip__inner">
-          <div className="category-list">
-            {CATEGORIES.map((item) => (
-              <button type="button" key={item} className={`category-chip ${category === item ? 'is-selected' : ''}`} onClick={() => setCategory(item)} aria-pressed={category === item}>
-                {item}
-              </button>
-            ))}
-          </div>
-          <span className="category-count">{formatNumber(filteredApps.length)}개의 앱</span>
-        </div>
-      </section>
 
       <section className="home-section home-section--featured">
         <div className="content-container">
           <div className="section-heading">
             <div>
               <span className="section-kicker">추천 서비스</span>
-              <h2>많이 실행된 앱</h2>
+              <h2>실시간 순위</h2>
             </div>
-            <span className="section-heading__note">가장 많이 조회된 앱입니다.</span>
+            <span className="section-heading__note">가장 많이 조회된 순서입니다.</span>
           </div>
           {popularApps.length > 0 ? <div className="featured-grid">
             {popularApps.map((app, index) => (
@@ -81,6 +69,18 @@ export function HomePage({ apps, bookmarkedIds, onToggleBookmark }: HomePageProp
               <button type="button" className={sort === 'popular' ? 'is-selected' : ''} onClick={() => setSort('popular')}>인기순</button>
               <span>/</span>
               <button type="button" className={sort === 'latest' ? 'is-selected' : ''} onClick={() => setSort('latest')}>최신순</button>
+            </div>
+          </div>
+          <div className="category-strip" aria-label="카테고리 필터">
+            <div className="category-strip__inner">
+              <div className="category-list">
+                {CATEGORIES.map((item) => (
+                  <button type="button" key={item} className={`category-chip ${category === item ? 'is-selected' : ''}`} onClick={() => setCategory(item)} aria-pressed={category === item}>
+                    {item}
+                  </button>
+                ))}
+              </div>
+              <span className="category-count">{formatNumber(filteredApps.length)}개의 앱</span>
             </div>
           </div>
           {filteredApps.length > 0 ? (
