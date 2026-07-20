@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import type { AppFormValues, AppItem, Category, Maker } from '../types'
 import { CATEGORIES } from '../types'
 import { AppCard } from '../components/AppCard'
+import { MarkdownContent } from '../components/MarkdownContent'
 import { isValidUrl, slugify } from '../utils/format'
 import { clearAppDraft, readAppDraft, writeAppDraft } from '../utils/draftStorage'
 
@@ -43,6 +44,7 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
   const [crewCode, setCrewCode] = useState('')
   const [crewCodeError, setCrewCodeError] = useState('')
   const [isVerifyingCrewCode, setIsVerifyingCrewCode] = useState(false)
+  const [isDescriptionPreview, setIsDescriptionPreview] = useState(false)
   const [thumbnailFileName, setThumbnailFileName] = useState(() => editingApp ? '' : readAppDraft(maker.id)?.thumbnailFileName ?? '')
   const [thumbnailUploadError, setThumbnailUploadError] = useState('')
   const [submittedApp, setSubmittedApp] = useState<AppItem | null>(null)
@@ -112,7 +114,7 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
     if (values.tagline.length > 80) nextErrors.tagline = '한 줄 소개는 80자 이내로 입력해주세요.'
     if (!values.appUrl.trim()) nextErrors.appUrl = '서비스 주소를 입력해주세요.'
     else if (!isValidUrl(values.appUrl)) nextErrors.appUrl = 'https://로 시작하는 주소를 입력해주세요.'
-    if (values.githubUrl && !isValidUrl(values.githubUrl)) nextErrors.githubUrl = '코드 저장소 주소를 확인해주세요.'
+    if (values.githubUrl && !isValidUrl(values.githubUrl)) nextErrors.githubUrl = 'GitHub 주소를 확인해주세요.'
     if (!values.category) nextErrors.category = '카테고리를 선택해주세요.'
     if (values.description.length > 500) nextErrors.description = '상세 설명은 500자 이내로 입력해주세요.'
     if (values.thumbnailUrl && !isValidUrl(values.thumbnailUrl) && !EMBEDDED_IMAGE_PATTERN.test(values.thumbnailUrl)) nextErrors.thumbnailUrl = '이미지 주소를 확인해주세요.'
@@ -188,7 +190,19 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
                 <input id="app-tagline" value={values.tagline} maxLength={80} onChange={(event) => update('tagline', event.target.value)} placeholder="예: 매일 쓰는 메모장" />
               </Field>
               <Field label="상세 설명" htmlFor="app-description" error={errors.description} hint={`${values.description.length}/500`}>
-                <textarea id="app-description" aria-describedby="app-description-guide" value={values.description} maxLength={500} onChange={(event) => update('description', event.target.value)} placeholder="## 서비스 소개\n해결하는 문제와 사용 방법을 입력하세요.\n\n- 주요 기능\n- 사용 대상" rows={8} />
+                <div className="markdown-editor__toolbar">
+                  <span>마크다운</span>
+                  <button type="button" className="markdown-editor__toggle" onClick={() => setIsDescriptionPreview((current) => !current)} aria-pressed={isDescriptionPreview}>
+                    {isDescriptionPreview ? '편집하기' : '미리보기'}
+                  </button>
+                </div>
+                {isDescriptionPreview ? (
+                  <div className="markdown-preview" aria-live="polite">
+                    {values.description.trim() ? <MarkdownContent content={values.description} /> : <p className="markdown-preview__empty">입력한 내용이 여기에 표시됩니다.</p>}
+                  </div>
+                ) : (
+                  <textarea id="app-description" aria-describedby="app-description-guide" value={values.description} maxLength={500} onChange={(event) => update('description', event.target.value)} placeholder="## 서비스 소개\n해결하는 문제와 사용 방법을 입력하세요.\n\n- 주요 기능\n- 사용 대상" rows={8} />
+                )}
                 <p id="app-description-guide" className="markdown-guide">마크다운을 지원해요. `## 제목`, `- 목록`, `**강조**`처럼 작성하면 서비스 페이지에서 보기 좋게 정리됩니다.</p>
               </Field>
             </FormSection>
@@ -196,7 +210,7 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
               <Field label="서비스 주소" htmlFor="app-url" error={errors.appUrl} required hint="필수">
                 <input id="app-url" type="url" value={values.appUrl} onChange={(event) => update('appUrl', event.target.value)} placeholder="https://your-app.com" />
               </Field>
-              <Field label="코드 저장소 주소" htmlFor="github-url" error={errors.githubUrl} hint="선택">
+              <Field label="GitHub 주소" htmlFor="github-url" error={errors.githubUrl} hint="선택">
                 <input id="github-url" type="url" value={values.githubUrl} onChange={(event) => update('githubUrl', event.target.value)} placeholder="https://github.com/you/project" />
               </Field>
             </FormSection>
@@ -204,7 +218,7 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
               <Field label="카테고리" htmlFor="app-category" error={errors.category} required>
                 <select id="app-category" value={values.category} onChange={(event) => update('category', event.target.value)}><option value="">카테고리 선택</option>{CATEGORIES.filter((item): item is Exclude<Category, '전체'> => item !== '전체').map((item) => <option value={item} key={item}>{item}</option>)}</select>
               </Field>
-              <Field label="기술 태그" htmlFor="app-tags" hint="쉼표로 구분 · 최대 5개">
+                <Field label="기술 태그" htmlFor="app-tags" hint="쉼표로 구분, 최대 5개">
                 <input id="app-tags" value={values.techTags} onChange={(event) => update('techTags', event.target.value)} placeholder="React, TypeScript, Vite" />
               </Field>
               <Field label="썸네일" htmlFor="app-thumbnail" error={errors.thumbnailUrl || thumbnailUploadError} hint="선택">

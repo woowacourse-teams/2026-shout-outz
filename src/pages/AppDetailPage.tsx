@@ -1,4 +1,5 @@
-import { ArrowLeft, ArrowUpRight, Bookmark, ExternalLink, Heart, Pencil, Play, Share2 } from 'lucide-react'
+import { useState } from 'react'
+import { ArrowLeft, ArrowUpRight, Bookmark, ExternalLink, Heart, Pencil, Play, Share2, Trash2 } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { AppItem, Maker } from '../types'
 import { AppCard } from '../components/AppCard'
@@ -16,11 +17,14 @@ interface AppDetailPageProps {
   onToggleBookmark: (id: string) => void
   onToggleLike: (id: string) => void
   onLaunch: (id: string) => void
+  onDeleteApp: (id: string) => Promise<boolean>
 }
 
-export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggleBookmark, onToggleLike, onLaunch }: AppDetailPageProps) {
+export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggleBookmark, onToggleLike, onLaunch, onDeleteApp }: AppDetailPageProps) {
   const { appId } = useParams()
   const navigate = useNavigate()
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const app = apps.find((item) => item.id === appId)
 
   if (!app) {
@@ -39,6 +43,20 @@ export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggle
     if (popup) popup.opener = null
   }
 
+  const removeApp = async () => {
+    if (isDeleting || !window.confirm('이 앱을 삭제할까요?\n삭제하면 되돌릴 수 없습니다.')) return
+    setIsDeleting(true)
+    setDeleteError('')
+    try {
+      const didDelete = await onDeleteApp(app.id)
+      if (!didDelete) setDeleteError('앱을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.')
+    } catch {
+      setDeleteError('앱을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <div className="detail-page">
       <section className="detail-hero">
@@ -50,7 +68,11 @@ export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggle
               <div className="detail-hero__eyebrow"><span>{app.category}</span><span>앱 #{String(apps.findIndex((item) => item.id === app.id) + 1).padStart(2, '0')}</span></div>
               <h1>{app.name}</h1>
               <p className="detail-hero__tagline">{app.tagline}</p>
-              {isOwner ? <Link to={`/apps/${app.id}/edit`} className="button button--secondary button--small detail-edit-link"><Pencil size={14} /> 내 앱 수정</Link> : null}
+              {isOwner ? <div className="detail-owner-actions">
+                <Link to={`/apps/${app.id}/edit`} className="button button--secondary button--small"><Pencil size={14} /> 내 앱 수정</Link>
+                <button type="button" className="button button--danger button--small" onClick={removeApp} disabled={isDeleting}><Trash2 size={14} /> {isDeleting ? '삭제 중...' : '앱 삭제하기'}</button>
+              </div> : null}
+              {isOwner && deleteError ? <p className="detail-delete-error" role="alert">{deleteError}</p> : null}
               <div className="detail-actions">
                 <button type="button" className="button button--primary button--large" onClick={launch}>앱 실행하기 <ArrowUpRight size={17} /></button>
                 <div className="detail-actions__secondary">

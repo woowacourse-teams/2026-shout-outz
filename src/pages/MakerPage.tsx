@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowUpRight, Check, Play } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Check, Play, RotateCcw } from 'lucide-react'
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -10,23 +10,44 @@ import { formatNumber } from '../utils/format'
 
 interface MakerPageProps {
   apps: AppItem[]
+  deletedApps: AppItem[]
   profile: Maker | null
   currentMaker: Maker | null
   isOwnProfile?: boolean
   bookmarkedIds: string[]
   onSaveProfile: (maker: Maker) => void
   onToggleBookmark: (id: string) => void
+  onRestoreApp: (id: string) => Promise<boolean>
 }
 
-export function MakerPage({ apps, profile, currentMaker, isOwnProfile = false, bookmarkedIds, onSaveProfile, onToggleBookmark }: MakerPageProps) {
+export function MakerPage({ apps, deletedApps, profile, currentMaker, isOwnProfile = false, bookmarkedIds, onSaveProfile, onToggleBookmark, onRestoreApp }: MakerPageProps) {
   const { makerId } = useParams()
   const navigate = useNavigate()
   const [isEditing, setIsEditing] = useState(false)
+  const [restoringAppId, setRestoringAppId] = useState<string | null>(null)
+  const [restoreError, setRestoreError] = useState('')
   const isCurrentMakerPage = isOwnProfile || makerId === 'me' || currentMaker?.id === makerId
   const makerApps = isCurrentMakerPage && currentMaker
     ? apps.filter((app) => app.ownerId === currentMaker.id || app.maker.id === currentMaker.id)
     : apps.filter((app) => app.maker.id === makerId)
+  const makerDeletedApps = isCurrentMakerPage && currentMaker
+    ? deletedApps.filter((app) => app.ownerId === currentMaker.id || app.maker.id === currentMaker.id)
+    : []
   const maker: Maker | undefined = isCurrentMakerPage ? currentMaker ?? makerApps[0]?.maker : makerApps[0]?.maker
+
+  const handleRestore = async (appId: string) => {
+    if (restoringAppId) return
+    setRestoringAppId(appId)
+    setRestoreError('')
+    try {
+      const didRestore = await onRestoreApp(appId)
+      if (!didRestore) setRestoreError('서비스를 복구하지 못했습니다. 잠시 후 다시 시도해주세요.')
+    } catch {
+      setRestoreError('서비스를 복구하지 못했습니다. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setRestoringAppId(null)
+    }
+  }
 
   if (isCurrentMakerPage && currentMaker && (isEditing || !profile)) {
     return <ProfileSetup profile={profile} avatarUrl={currentMaker.avatarUrl} onCancel={profile ? () => setIsEditing(false) : undefined} onSave={(nextProfile) => { onSaveProfile(nextProfile); setIsEditing(false) }} />
@@ -45,7 +66,14 @@ export function MakerPage({ apps, profile, currentMaker, isOwnProfile = false, b
           <div className="maker-stats"><span><strong>{makerApps.length}</strong><small>등록 앱</small></span><span><strong>{formatNumber(totalPlays)}</strong><small>누적 실행</small></span><span><strong>{makerApps.reduce((total, app) => total + app.likes, 0)}</strong><small>받은 좋아요</small></span></div>
         </div>
       </section>
-      <section className="maker-apps"><div className="content-container"><div className="section-heading"><div><span className="section-kicker">만든 앱</span><h2>{maker.name}의 앱</h2></div><span className="section-heading__note"><Play size={14} fill="currentColor" /> {formatNumber(totalPlays)}회 실행</span></div>{makerApps.length > 0 ? <div className="app-grid">{makerApps.map((app) => <AppCard key={app.id} app={app} isBookmarked={bookmarkedIds.includes(app.id)} onToggleBookmark={onToggleBookmark} />)}</div> : <div className="empty-state empty-state--compact"><p>등록한 앱이 없습니다.</p><Link to="/submit" className="text-link">앱 등록하기 <ArrowUpRight size={14} /></Link></div>}</div></section>
+      <section className="maker-apps"><div className="content-container"><div className="section-heading"><div><span className="section-kicker">만든 앱</span><h2>{maker.name}의 앱</h2></div><span className="section-heading__note"><Play size={14} fill="currentColor" /> {formatNumber(totalPlays)}회 실행</span></div>{makerApps.length > 0 ? <div className="app-grid">{makerApps.map((app) => <AppCard key={app.id} app={app} isBookmarked={bookmarkedIds.includes(app.id)} onToggleBookmark={onToggleBookmark} />)}</div> : <div className="empty-state empty-state--compact"><p>등록한 앱이 없습니다.</p><Link to="/submit" className="text-link">앱 등록하기 <ArrowUpRight size={14} /></Link></div>}
+        {isCurrentMakerPage && makerDeletedApps.length > 0 ? <div className="maker-deleted-apps">
+          <div className="section-heading maker-deleted-apps__heading"><div><span className="section-kicker">삭제한 앱</span><h2>복구할 수 있는 앱</h2></div><span className="section-heading__note">{makerDeletedApps.length}개</span></div>
+          <p className="maker-deleted-apps__description">삭제한 서비스는 목록에서 숨겨져 있으며, 여기서 다시 복구할 수 있습니다.</p>
+          <div className="deleted-app-list">{makerDeletedApps.map((app) => <div className="deleted-app-row" key={app.id}><div className="deleted-app-row__copy"><strong>{app.name}</strong><span>{app.tagline}</span></div><button type="button" className="button button--secondary button--small" onClick={() => void handleRestore(app.id)} disabled={Boolean(restoringAppId)}><RotateCcw size={14} /> {restoringAppId === app.id ? '복구 중...' : '복구하기'}</button></div>)}</div>
+          {restoreError ? <p className="form-error" role="alert">{restoreError}</p> : null}
+        </div> : null}
+      </div></section>
     </div>
   )
 }

@@ -1,7 +1,8 @@
 import { ArrowUpRight, Code2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import type { AuthUser } from '../utils/auth'
 
-export function SiteFooter() {
+export function SiteFooter({ authUser }: { authUser: AuthUser | null }) {
   return (
     <footer className="site-footer">
       <div className="site-footer__top">
@@ -13,7 +14,7 @@ export function SiteFooter() {
           <div>
             <strong>둘러보기</strong>
             <Link to="/">전체 서비스</Link>
-            <Link to="/bookmarks">저장한 앱</Link>
+            {authUser ? <Link to="/bookmarks">저장한 앱</Link> : null}
           </div>
           <div>
             <strong>만들기</strong>

@@ -50,7 +50,7 @@ export function ProfileGuideModal({ open, onClose, onHideToday, onGoToProfile }:
         <div className="profile-guide-modal__copy">
           <span className="section-kicker">프로필 안내</span>
           <h2 id="profile-guide-title">앱을 올리기 전에<br /><em>프로필을 완성해보세요.</em></h2>
-          <p>프로필을 설정하면 서비스에 이름과 소개가 함께 표시됩니다.</p>
+          <p>프로필을 설정하면 서비스에 제작자 이름과 소개가 함께 표시됩니다.</p>
         </div>
         <label className="profile-guide-modal__check"><input type="checkbox" checked={hideToday} onChange={(event) => setHideToday(event.target.checked)} /> <span>오늘 하루 동안 보지 않기</span></label>
         <div className="profile-guide-modal__actions">

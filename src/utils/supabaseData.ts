@@ -4,6 +4,7 @@ import { supabase } from './auth'
 
 export interface RemoteState {
   apps: AppItem[]
+  deletedApps: AppItem[]
   profile: Maker | null
   bookmarkedIds: string[]
   likedIds: string[]
@@ -25,6 +26,7 @@ interface RemoteAppRow {
   likes: number | null
   created_at: string
   owner_id: string
+  deleted_at: string | null
   source: string | null
 }
 
@@ -38,7 +40,7 @@ interface RemoteMakerRow {
   tone: string
 }
 
-const APP_COLUMNS = 'id,name,tagline,description,category,thumbnail_variant,thumbnail_url,app_url,github_url,maker,tech_tags,plays,likes,created_at,owner_id,source'
+const APP_COLUMNS = 'id,name,tagline,description,category,thumbnail_variant,thumbnail_url,app_url,github_url,maker,tech_tags,plays,likes,created_at,owner_id,deleted_at,source'
 const THUMBNAIL_VARIANTS: ThumbnailVariant[] = ['retro', 'food', 'code', 'roulette', 'css', 'temperature', 'garden', 'dungeon', 'naming', 'http', 'timer', 'museum', 'new']
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -87,6 +89,7 @@ function toRemoteApp(row: RemoteAppRow): AppItem | null {
     likes: typeof row.likes === 'number' ? row.likes : 0,
     createdAt: row.created_at,
     ownerId: row.owner_id,
+    deletedAt: row.deleted_at,
     source: row.source === 'seed' ? 'seed' : 'submitted',
   }
 }
@@ -137,7 +140,7 @@ function throwIfError(error: { message: string } | null) {
 }
 
 export async function fetchRemoteState(userId: string | null): Promise<RemoteState> {
-  if (!supabase) return { apps: [], profile: null, bookmarkedIds: [], likedIds: [] }
+  if (!supabase) return { apps: [], deletedApps: [], profile: null, bookmarkedIds: [], likedIds: [] }
 
   const appsRequest = supabase.from('apps').select(APP_COLUMNS).order('created_at', { ascending: false })
   const profileRequest = userId
@@ -156,8 +159,11 @@ export async function fetchRemoteState(userId: string | null): Promise<RemoteSta
   throwIfError(bookmarksError)
   throwIfError(likesError)
 
+  const parsedApps = (Array.isArray(appRows) ? appRows : []).map((row) => toRemoteApp(row as RemoteAppRow)).filter((app): app is AppItem => Boolean(app))
+
   return {
-    apps: (Array.isArray(appRows) ? appRows : []).map((row) => toRemoteApp(row as RemoteAppRow)).filter((app): app is AppItem => Boolean(app)),
+    apps: parsedApps.filter((app) => !app.deletedAt),
+    deletedApps: userId ? parsedApps.filter((app) => app.deletedAt && app.ownerId === userId) : [],
     profile: toRemoteMaker(profileRow as RemoteMakerRow | null),
     bookmarkedIds: Array.isArray(bookmarkRows) ? bookmarkRows.map((row) => row.app_id).filter((id): id is string => typeof id === 'string') : [],
     likedIds: Array.isArray(likeRows) ? likeRows.map((row) => row.app_id).filter((id): id is string => typeof id === 'string') : [],
@@ -173,6 +179,18 @@ export async function createRemoteApp(app: AppItem) {
 export async function updateRemoteApp(app: AppItem) {
   if (!supabase) return
   const { error } = await supabase.from('apps').update(appToRow(app)).eq('id', app.id).eq('owner_id', app.ownerId ?? app.maker.id)
+  throwIfError(error)
+}
+
+export async function deleteRemoteApp(appId: string, userId: string) {
+  if (!supabase) return
+  const { error } = await supabase.from('apps').update({ deleted_at: new Date().toISOString() }).eq('id', appId).eq('owner_id', userId).is('deleted_at', null)
+  throwIfError(error)
+}
+
+export async function restoreRemoteApp(appId: string, userId: string) {
+  if (!supabase) return
+  const { error } = await supabase.from('apps').update({ deleted_at: null }).eq('id', appId).eq('owner_id', userId).not('deleted_at', 'is', null)
   throwIfError(error)
 }
 

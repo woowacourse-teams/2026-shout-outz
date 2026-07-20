@@ -41,6 +41,7 @@ GitHub Client Secret은 GitHub와 Supabase 대시보드에만 입력합니다. `
 ### Supabase 데이터 설정
 
 1. Supabase SQL Editor에서 최신 [`supabase/schema.sql`](supabase/schema.sql)을 실행합니다. 기존 스키마를 다시 실행해도 `if not exists`와 정책 교체 구문으로 안전하게 반영됩니다.
+   - 앱 삭제는 실제 삭제가 아닌 소프트 삭제로 처리되며, 내 프로필에서 삭제한 앱을 복구할 수 있습니다.
 2. `.env.example`을 `.env.local`로 복사하고 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`를 입력합니다.
 3. Authentication에서 GitHub Provider를 켜고 Client ID와 Client Secret은 Supabase 대시보드에만 입력합니다.
 4. 앱의 Redirect URL과 GitHub OAuth callback URL을 각각 정확히 등록합니다.

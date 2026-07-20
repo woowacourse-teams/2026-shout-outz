@@ -51,7 +51,7 @@ function thumbnailWord(variant: ThumbnailVariant) {
     http: '404',
     timer: '25:00',
     museum: '버그',
-    new: '새 앱',
+    new: '서비스',
   }
   return words[variant]
 }

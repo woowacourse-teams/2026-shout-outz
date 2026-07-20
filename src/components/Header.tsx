@@ -23,7 +23,7 @@ export function Header({ authUser, onLogout }: HeaderProps) {
           <Link to="/" className="brand" aria-label="Dropit 홈"><img src="/dropit-icon.svg" alt="" className="brand__icon" /><span className="brand__word">dropit<span>.</span></span></Link>
           <nav className={`global-nav__links ${menuOpen ? 'is-open' : ''}`} aria-label="주요 메뉴">
             <NavLink to="/" end>탐색</NavLink>
-            <NavLink to="/bookmarks"><Bookmark size={14} /> 저장한 앱</NavLink>
+            {authUser ? <NavLink to="/bookmarks"><Bookmark size={14} /> 저장한 앱</NavLink> : null}
             {authUser ? <NavLink to="/makers/me">내 프로필</NavLink> : null}
             <NavLink to="/submit">앱 등록하기</NavLink>
           </nav>

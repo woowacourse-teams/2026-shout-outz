@@ -41,6 +41,7 @@ export interface AppItem {
   likes: number
   createdAt: string
   ownerId?: string
+  deletedAt?: string | null
   source?: 'seed' | 'submitted'
 }
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { Layout } from './components/Layout'
+import { MarkdownGuideModal } from './components/MarkdownGuideModal'
 import { ProfileGuideModal } from './components/ProfileGuideModal'
 import { AppDetailPage } from './pages/AppDetailPage'
 import { EditAppPage } from './pages/EditAppPage'
@@ -12,10 +13,12 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { SubmitPage } from './pages/SubmitPage'
 import type { AppItem, Maker } from './types'
 import { isAuthConfigured, supabase, toAuthUser, type AuthUser } from './utils/auth'
-import { createRemoteApp, fetchRemoteState, recordRemotePlay, setRemoteBookmark, toggleRemoteLike, updateRemoteApp, upsertRemoteProfile, verifyRemoteCrewAccessCode } from './utils/supabaseData'
+import { createRemoteApp, deleteRemoteApp, fetchRemoteState, recordRemotePlay, restoreRemoteApp, setRemoteBookmark, toggleRemoteLike, updateRemoteApp, upsertRemoteProfile, verifyRemoteCrewAccessCode } from './utils/supabaseData'
 
 const SUPABASE_REQUIRED_MESSAGE = 'Supabase 연결이 필요합니다. .env.local의 설정을 확인한 뒤 개발 서버를 다시 시작해주세요.'
 const PROFILE_GUIDE_HIDE_KEY = 'dropit:profile-guide-hide-date'
+const MARKDOWN_GUIDE_HIDE_KEY = 'dropit:markdown-guide-hide-date'
+const PROFILE_GUIDE_TEST_MODE = true
 
 function localDateKey() {
   const today = new Date()
@@ -25,6 +28,14 @@ function localDateKey() {
 function isProfileGuideHiddenToday() {
   try {
     return window.localStorage.getItem(PROFILE_GUIDE_HIDE_KEY) === localDateKey()
+  } catch {
+    return false
+  }
+}
+
+function isMarkdownGuideHiddenToday() {
+  try {
+    return window.localStorage.getItem(MARKDOWN_GUIDE_HIDE_KEY) === localDateKey()
   } catch {
     return false
   }
@@ -73,6 +84,7 @@ function App() {
   const location = useLocation()
   const navigate = useNavigate()
   const [apps, setApps] = useState<AppItem[]>([])
+  const [deletedApps, setDeletedApps] = useState<AppItem[]>([])
   const [profile, setProfile] = useState<Maker | null>(null)
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [authLoading, setAuthLoading] = useState(isAuthConfigured)
@@ -83,7 +95,10 @@ function App() {
   const [likedIds, setLikedIds] = useState<string[]>([])
   const [playCounts, setPlayCounts] = useState<Record<string, number>>({})
   const [profileGuideOpen, setProfileGuideOpen] = useState(false)
+  const [markdownGuideOpen, setMarkdownGuideOpen] = useState(false)
   const profileGuideShownFor = useRef<string | null>(null)
+  const profileGuideCompletedFor = useRef<string | null>(null)
+  const markdownGuideShownFor = useRef<string | null>(null)
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
@@ -133,6 +148,7 @@ function App() {
           ? state.apps.map((app) => app.ownerId === authUser.id && !app.maker.avatarUrl ? { ...app, maker: { ...app.maker, avatarUrl: authUser.avatarUrl } } : app)
           : state.apps
         setApps(appsWithAvatar)
+        setDeletedApps(state.deletedApps)
         setProfile(profileWithAvatar)
         setBookmarkedIds(state.bookmarkedIds)
         setLikedIds(state.likedIds)
@@ -155,16 +171,38 @@ function App() {
   useEffect(() => {
     if (!authUser) {
       profileGuideShownFor.current = null
+      profileGuideCompletedFor.current = null
+      markdownGuideShownFor.current = null
+      setProfileGuideOpen(false)
+      setMarkdownGuideOpen(false)
+      return
+    }
+    if (authLoading || dataLoading || dataError) return
+    if (location.pathname === '/makers/me') {
+      profileGuideCompletedFor.current = authUser.id
       setProfileGuideOpen(false)
       return
     }
-    if (authLoading || dataLoading || dataError || isProfileGuideHiddenToday() || profileGuideShownFor.current === authUser.id) {
+    if (isProfileGuideHiddenToday()) {
+      profileGuideCompletedFor.current = authUser.id
       return
     }
-    if (profile) return
+    if (profileGuideShownFor.current === authUser.id) return
+    if (!PROFILE_GUIDE_TEST_MODE && profile) {
+      profileGuideCompletedFor.current = authUser.id
+      return
+    }
     profileGuideShownFor.current = authUser.id
     setProfileGuideOpen(true)
-  }, [authLoading, authUser, dataError, dataLoading, profile])
+  }, [authLoading, authUser, dataError, dataLoading, location.pathname, profile])
+
+  useEffect(() => {
+    if (!authUser) return
+    if (authLoading || dataLoading || dataError || location.pathname === '/makers/me' || profileGuideOpen || isMarkdownGuideHiddenToday() || markdownGuideShownFor.current === authUser.id) return
+    if (profileGuideShownFor.current === authUser.id && profileGuideCompletedFor.current !== authUser.id) return
+    markdownGuideShownFor.current = authUser.id
+    setMarkdownGuideOpen(true)
+  }, [authLoading, authUser, dataError, dataLoading, location.pathname, profileGuideOpen])
 
   const currentMaker = useMemo(() => authUser ? profile ?? makerFromAuthUser(authUser) : null, [authUser, profile])
   const displayApps = useMemo(() => apps.map((app) => ({ ...app, likes: app.likes + (likedIds.includes(app.id) ? 1 : 0), plays: app.plays + (playCounts[app.id] ?? 0) })), [apps, likedIds, playCounts])
@@ -225,6 +263,44 @@ function App() {
     void updateRemoteApp(updatedApp).catch(() => setDataError('앱 수정 내용을 Supabase에 저장하지 못했습니다.'))
   }, [authUser])
 
+  const deleteApp = useCallback(async (appId: string) => {
+    if (!supabase || !authUser) return false
+    const appToDelete = apps.find((app) => app.id === appId)
+
+    try {
+      await deleteRemoteApp(appId, authUser.id)
+      setApps((current) => current.filter((app) => app.id !== appId))
+      if (appToDelete) {
+        setDeletedApps((current) => [{ ...appToDelete, deletedAt: new Date().toISOString() }, ...current.filter((app) => app.id !== appId)])
+      }
+      setPlayCounts((current) => {
+        const next = { ...current }
+        delete next[appId]
+        return next
+      })
+      navigate('/')
+      return true
+    } catch {
+      return false
+    }
+  }, [apps, authUser, navigate])
+
+  const restoreApp = useCallback(async (appId: string) => {
+    if (!supabase || !authUser) return false
+    const appToRestore = deletedApps.find((app) => app.id === appId)
+    if (!appToRestore) return false
+
+    try {
+      await restoreRemoteApp(appId, authUser.id)
+      const restoredApp = { ...appToRestore, deletedAt: null }
+      setDeletedApps((current) => current.filter((app) => app.id !== appId))
+      setApps((current) => [...current, restoredApp].sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
+      return true
+    } catch {
+      return false
+    }
+  }, [authUser, deletedApps])
+
   const saveProfile = useCallback((maker: Maker) => {
     if (!authUser) return
     const nextProfile = { ...maker, id: authUser.id }
@@ -234,10 +310,16 @@ function App() {
     })
     setProfile(nextProfile)
     setApps(nextApps)
+    const nextDeletedApps = deletedApps.map((app) => {
+      const ownsApp = app.ownerId === authUser.id || (!app.ownerId && app.maker.id === authUser.id)
+      return ownsApp ? { ...app, ownerId: authUser.id, maker: nextProfile } : app
+    })
+    setDeletedApps(nextDeletedApps)
     if (!supabase) return
     const ownedApps = nextApps.filter((app) => app.ownerId === authUser.id)
-    void Promise.all([upsertRemoteProfile(nextProfile), ...ownedApps.map((app) => updateRemoteApp(app))]).catch(() => setDataError('프로필 정보를 Supabase에 저장하지 못했습니다.'))
-  }, [apps, authUser])
+    const ownedDeletedApps = nextDeletedApps.filter((app) => app.ownerId === authUser.id)
+    void Promise.all([upsertRemoteProfile(nextProfile), ...ownedApps.map((app) => updateRemoteApp(app)), ...ownedDeletedApps.map((app) => updateRemoteApp(app))]).catch(() => setDataError('프로필 정보를 Supabase에 저장하지 못했습니다.'))
+  }, [apps, authUser, deletedApps])
 
   const loginWithGithub = useCallback((redirectTo: string) => {
     if (!supabase) {
@@ -266,32 +348,47 @@ function App() {
     })
   }, [])
 
-  const closeProfileGuide = useCallback(() => setProfileGuideOpen(false), [])
+  const closeProfileGuide = useCallback(() => {
+    if (authUser) profileGuideCompletedFor.current = authUser.id
+    setProfileGuideOpen(false)
+  }, [authUser])
   const hideProfileGuideToday = useCallback(() => {
     try {
       window.localStorage.setItem(PROFILE_GUIDE_HIDE_KEY, localDateKey())
     } catch {
       // Storage가 차단된 경우에도 팝업은 닫습니다.
     }
+    if (authUser) profileGuideCompletedFor.current = authUser.id
     setProfileGuideOpen(false)
-  }, [])
+  }, [authUser])
   const goToProfile = useCallback(() => {
+    if (authUser) profileGuideCompletedFor.current = authUser.id
     setProfileGuideOpen(false)
     navigate('/makers/me')
-  }, [navigate])
+  }, [authUser, navigate])
+  const closeMarkdownGuide = useCallback(() => setMarkdownGuideOpen(false), [])
+  const hideMarkdownGuideToday = useCallback(() => {
+    try {
+      window.localStorage.setItem(MARKDOWN_GUIDE_HIDE_KEY, localDateKey())
+    } catch {
+      // Storage가 차단된 경우에도 팝업은 닫습니다.
+    }
+    setMarkdownGuideOpen(false)
+  }, [])
 
   const loginParams = new URLSearchParams(location.search)
   const loginReturnTo = loginParams.get('returnTo') ?? '/submit'
   const loginNotice = loginParams.get('notice') === 'bookmark' ? '저장한 앱을 이용하려면 로그인해주세요. 로그인 후 다시 저장할 수 있습니다.' : undefined
   const loginPage = <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} notice={loginNotice} returnTo={loginReturnTo} onLogin={loginWithGithub} />
-  const dataStatusPage = dataError ? <DataStatusPage message={dataError} /> : dataLoading ? <DataStatusPage message="Supabase 데이터를 불러오고 있습니다." /> : null
+  const bookmarksLoginPage = <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} notice="저장한 앱은 로그인 후 이용할 수 있습니다." returnTo="/bookmarks" onLogin={loginWithGithub} />
+  const dataStatusPage = dataError ? <DataStatusPage message={dataError} /> : dataLoading ? <DataStatusPage message="데이터를 불러오고 있습니다." /> : null
   const homePage = dataStatusPage ?? <HomePage apps={displayApps} bookmarkedIds={bookmarkedIds} onToggleBookmark={toggleBookmark} />
-  const detailPage = dataStatusPage ?? <AppDetailPage apps={displayApps} profile={currentMaker} bookmarkedIds={bookmarkedIds} likedIds={likedIds} onToggleBookmark={toggleBookmark} onToggleLike={toggleLike} onLaunch={launchApp} />
-  const makerPage = dataStatusPage ?? <MakerPage apps={displayApps} profile={profile} currentMaker={currentMaker} bookmarkedIds={bookmarkedIds} onSaveProfile={saveProfile} onToggleBookmark={toggleBookmark} />
-  const bookmarksPage = dataStatusPage ?? <BookmarksPage apps={displayApps} bookmarkedIds={bookmarkedIds} onToggleBookmark={toggleBookmark} />
+  const detailPage = dataStatusPage ?? <AppDetailPage apps={displayApps} profile={currentMaker} bookmarkedIds={bookmarkedIds} likedIds={likedIds} onToggleBookmark={toggleBookmark} onToggleLike={toggleLike} onLaunch={launchApp} onDeleteApp={deleteApp} />
+  const makerPage = dataStatusPage ?? <MakerPage apps={displayApps} deletedApps={deletedApps} profile={profile} currentMaker={currentMaker} bookmarkedIds={bookmarkedIds} onSaveProfile={saveProfile} onToggleBookmark={toggleBookmark} onRestoreApp={restoreApp} />
+  const bookmarksPage = authLoading ? <AuthLoadingPage /> : authUser ? dataStatusPage ?? <BookmarksPage apps={displayApps} bookmarkedIds={bookmarkedIds} onToggleBookmark={toggleBookmark} /> : bookmarksLoginPage
   const submitPage = authLoading ? <AuthLoadingPage /> : authUser && currentMaker ? dataStatusPage ?? <SubmitPage maker={currentMaker} onAddApp={addApp} onVerifyCrewCode={verifyCrewCode} /> : loginPage
   const editPage = authLoading ? <AuthLoadingPage /> : authUser && currentMaker ? dataStatusPage ?? <EditAppPage apps={apps} currentUserId={authUser.id} maker={currentMaker} onUpdateApp={updateApp} /> : <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo={window.location.pathname} onLogin={loginWithGithub} />
-  const profilePage = authLoading ? <AuthLoadingPage /> : authUser && currentMaker ? dataStatusPage ?? <MakerPage apps={displayApps} profile={profile} currentMaker={currentMaker} isOwnProfile bookmarkedIds={bookmarkedIds} onSaveProfile={saveProfile} onToggleBookmark={toggleBookmark} /> : <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo="/makers/me" onLogin={loginWithGithub} />
+  const profilePage = authLoading ? <AuthLoadingPage /> : authUser && currentMaker ? dataStatusPage ?? <MakerPage apps={displayApps} deletedApps={deletedApps} profile={profile} currentMaker={currentMaker} isOwnProfile bookmarkedIds={bookmarkedIds} onSaveProfile={saveProfile} onToggleBookmark={toggleBookmark} onRestoreApp={restoreApp} /> : <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo="/makers/me" onLogin={loginWithGithub} />
 
   return (
     <>
@@ -309,6 +406,7 @@ function App() {
       </Route>
       </Routes>
       <ProfileGuideModal open={profileGuideOpen && location.pathname !== '/makers/me'} onClose={closeProfileGuide} onHideToday={hideProfileGuideToday} onGoToProfile={goToProfile} />
+      <MarkdownGuideModal open={markdownGuideOpen && location.pathname !== '/makers/me'} onClose={closeMarkdownGuide} onHideToday={hideMarkdownGuideToday} />
     </>
   )
 }

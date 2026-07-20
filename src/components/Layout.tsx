@@ -15,7 +15,7 @@ export function Layout({ authUser, onLogout }: LayoutProps) {
       <main>
         <Outlet />
       </main>
-      <SiteFooter />
+      <SiteFooter authUser={authUser} />
     </div>
   )
 }

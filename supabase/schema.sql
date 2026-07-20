@@ -44,8 +44,11 @@ create table if not exists public.apps (
   plays integer not null default 0 check (plays >= 0),
   likes integer not null default 0 check (likes >= 0),
   created_at timestamptz not null default timezone('utc', now()),
+  deleted_at timestamptz,
   source text not null default 'submitted' check (source in ('seed', 'submitted'))
 );
+
+alter table public.apps add column if not exists deleted_at timestamptz;
 
 create table if not exists public.app_bookmarks (
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -63,6 +66,7 @@ create table if not exists public.app_likes (
 
 create index if not exists apps_created_at_idx on public.apps (created_at desc);
 create index if not exists apps_owner_id_idx on public.apps (owner_id);
+create index if not exists apps_deleted_at_idx on public.apps (deleted_at);
 
 alter table public.makers enable row level security;
 alter table public.apps enable row level security;
@@ -74,7 +78,8 @@ alter table public.crew_members enable row level security;
 grant usage on schema public to anon, authenticated;
 grant select on public.makers, public.apps to anon, authenticated;
 grant insert, update on public.makers to authenticated;
-grant insert, update, delete on public.apps to authenticated;
+grant insert, update on public.apps to authenticated;
+revoke delete on public.apps from authenticated;
 grant select, insert, delete on public.app_bookmarks to authenticated;
 grant select, insert, delete on public.app_likes to authenticated;
 grant select on public.crew_members to authenticated;
@@ -99,7 +104,7 @@ create policy "users can update their own maker profile"
 drop policy if exists "apps are publicly readable" on public.apps;
 create policy "apps are publicly readable"
   on public.apps for select
-  using (true);
+  using (deleted_at is null or auth.uid() = owner_id);
 
 drop policy if exists "users can create their own apps" on public.apps;
 create policy "users can create their own apps"
@@ -120,9 +125,6 @@ create policy "users can update their own apps"
   with check (auth.uid() = owner_id);
 
 drop policy if exists "users can delete their own apps" on public.apps;
-create policy "users can delete their own apps"
-  on public.apps for delete to authenticated
-  using (auth.uid() = owner_id);
 
 drop policy if exists "users can read their own bookmarks" on public.app_bookmarks;
 create policy "users can read their own bookmarks"
