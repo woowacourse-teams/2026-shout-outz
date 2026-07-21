@@ -244,7 +244,6 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
             <button type="submit" className="button button--primary button--submit" disabled={isVerifyingCrewCode}>{isVerifyingCrewCode ? '인증 확인 중' : isEditMode ? '수정 내용 저장' : '앱 등록하기'} <ArrowRight size={16} /></button>
           </form>
           <aside className="preview-panel">
-            <div className="preview-panel__header"><span className="section-kicker">미리보기</span><span>카드 미리보기</span></div>
             <AppCard app={previewApp} isBookmarked={false} onToggleBookmark={() => undefined} />
             <p className="preview-panel__hint"><Info size={14} /> 입력한 내용이 카드에 바로 표시됩니다.</p>
           </aside>

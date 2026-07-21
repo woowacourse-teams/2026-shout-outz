@@ -201,9 +201,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .app-thumbnail--museum { background: #b9a78e; color: #2f2921; }
 .app-thumbnail--museum::before { width: 40%; height: 70%; right: 12%; bottom: 0; border: 1px solid #2f2921; border-bottom: 0; }
 .app-thumbnail--museum::after { width: 24%; height: 1px; right: 20%; bottom: 37%; background: #2f2921; transform: rotate(-19deg); }
-.app-thumbnail--new { background: #232f48; }
-.app-thumbnail--new::before { width: 50%; aspect-ratio: 1; right: 9%; top: 17%; border: 1px solid #70a8de; border-radius: 50%; }
-.app-thumbnail--new::after { width: 12%; aspect-ratio: 1; right: 28%; top: 36%; background: #70a8de; border-radius: 50%; }
+.app-thumbnail--new { color: #47627b; background: #dfeaf4; }
+.app-thumbnail--new::before { width: 100%; height: 63%; left: 0; bottom: 0; background: #aec8dc; clip-path: polygon(0 71%, 22% 31%, 40% 60%, 60% 8%, 100% 76%, 100% 100%, 0 100%); }
+.app-thumbnail--new::after { width: 15%; aspect-ratio: 1; right: 17%; top: 18%; background: #f2c878; border-radius: 50%; }
+.app-thumbnail--new .thumbnail-word, .app-thumbnail--new .thumbnail-mark, .app-thumbnail--new .thumbnail-line { display: none; }
 .app-thumbnail--custom { background: var(--parchment); }
 .app-thumbnail--custom img { width: 100%; height: 100%; display: block; object-fit: cover; }
 
@@ -343,8 +344,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .form-note svg { flex: 0 0 auto; color: var(--blue); }
 .button--submit { width: 100%; }
 .preview-panel { position: sticky; top: 120px; }
-.preview-panel__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.preview-panel__header > span:last-child { color: var(--muted); font-size: 12px; }
 .preview-panel .app-card { border: 1px solid #e2e2e5; }
 .preview-panel__hint { display: flex; align-items: center; gap: 6px; margin: 15px 0 0; color: var(--muted); font-size: 12px; }
 .submit-success { min-height: 640px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: var(--parchment); }
