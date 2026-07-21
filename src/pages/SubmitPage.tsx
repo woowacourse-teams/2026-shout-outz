@@ -237,7 +237,7 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
             {!isEditMode ? <FormSection title="크루 인증">
               <Field label="인증 코드" htmlFor="crew-code" error={crewCodeError} required hint="등록 권한 확인">
                 <input id="crew-code" type="password" autoComplete="off" maxLength={80} value={crewCode} onChange={(event) => { setCrewCode(event.target.value); setCrewCodeError('') }} placeholder="크루에게 받은 인증 코드를 입력하세요" />
-                <p className="crew-code-guide">로그인한 크루만 인증 코드 확인 후 서비스를 등록할 수 있습니다.</p>
+                <p className="crew-code-guide">외부인의 서비스 무단 등록을 방지하기 위해 필요한 크루 인증 코드입니다. 인증코드는 8기 샤를에게 DM 문의주세요! (update 07.21 - WOOWA8 입력하시면 됩니다.)</p>
               </Field>
             </FormSection> : null}
             <div className="form-note"><CircleHelp size={16} /><span>입력한 내용은 자동으로 임시 저장됩니다. 나중에 다시 이어서 작성할 수 있습니다.</span></div>

@@ -294,7 +294,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .profile-guide-modal__actions .button { min-height: 42px; padding: 10px 16px; font-size: 13px; }
 .auth-loading { min-height: 680px; display: flex; align-items: center; justify-content: center; color: var(--muted); background: var(--parchment); }
 .submit-page__heading { margin: 44px 0 52px; }
-.submit-page__heading h1 { margin: 20px 0 16px; font-size: clamp(42px, 5vw, 62px); line-height: 1.1; letter-spacing: -.045em; }
+.submit-page__heading h1 { margin: 20px 0 16px; font-size: clamp(42px, 5vw, 62px); line-height: 1.2; letter-spacing: -.045em; }
+.submit-page__heading h1 em { display: inline-block; margin-top: .04em; }
 .submit-page__heading p { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.65; }
 .submit-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(310px, .7fr); gap: 64px; align-items: start; }
 .submit-form { min-width: 0; }
