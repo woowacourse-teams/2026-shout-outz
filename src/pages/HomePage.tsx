@@ -20,7 +20,7 @@ export function HomePage({ apps, bookmarkedIds, onToggleBookmark }: HomePageProp
   const [sort, setSort] = useState<'popular' | 'latest'>('popular')
   const query = searchParams.get('q') ?? ''
 
-  const popularApps = useMemo(() => [...apps].sort((a, b) => b.plays - a.plays).slice(0, 4), [apps])
+  const popularApps = useMemo(() => [...apps].sort((a, b) => b.likes - a.likes || b.createdAt.localeCompare(a.createdAt)).slice(0, 4), [apps])
   const filteredApps = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
     return [...apps]
@@ -48,7 +48,7 @@ export function HomePage({ apps, bookmarkedIds, onToggleBookmark }: HomePageProp
               <span className="section-kicker">추천 서비스</span>
               <h2>실시간 순위</h2>
             </div>
-            <span className="section-heading__note">가장 많이 조회된 순서입니다.</span>
+            <span className="section-heading__note">좋아요가 많은 순서입니다.</span>
           </div>
           {popularApps.length > 0 ? <div className="featured-grid">
             {popularApps.map((app, index) => (

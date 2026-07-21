@@ -10,7 +10,7 @@ export function DropZone({ apps }: { apps: AppItem[] }) {
   return (
     <section className="drop-zone" aria-labelledby="drop-zone-title">
       <div className="drop-zone__copy">
-        <h1 id="drop-zone-title">직접 만든 서비스를<br /><em>함께 공유해보세요.</em></h1>
+        <h1 id="drop-zone-title">직접 만든 서비스를<br /><em>크루들에게 공유해보세요.</em></h1>
         <p>우테코 크루들의 서비스를 구경해보세요.</p>
         <Link to="/submit" className="button button--primary">앱 등록하기 <ArrowRight size={16} /></Link>
       </div>

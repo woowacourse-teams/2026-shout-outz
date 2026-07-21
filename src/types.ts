@@ -1,4 +1,4 @@
-export type Category = '전체' | '게임' | '생산성' | '학습' | '생성기' | '소셜' | '실험'
+export type Category = '전체' | '게임' | '생산성' | '학습' | '여행' | 'AI' | '하네스' | '자기개발' | '개발' | '디자인' | '생활' | '건강' | '생성기' | '소셜' | '실험'
 
 export type ThumbnailVariant =
   | 'retro'
@@ -61,4 +61,4 @@ export interface AppDraft {
   thumbnailFileName: string
 }
 
-export const CATEGORIES: Category[] = ['전체', '게임', '생산성', '학습', '생성기', '소셜', '실험']
+export const CATEGORIES: Category[] = ['전체', '게임', '생산성', '학습', '여행', 'AI', '하네스', '자기개발', '개발', '디자인', '생활', '건강', '생성기', '소셜', '실험']

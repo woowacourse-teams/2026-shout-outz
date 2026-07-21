@@ -50,9 +50,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .brand__icon, .footer-brand__icon { width: 24px; height: 24px; display: block; border-radius: 7px; }
 .brand__word, .footer-brand__word { color: inherit; }
 .brand__word > span, .footer-brand__word > span { color: var(--blue-dark); }
-.global-nav__links { display: flex; align-items: center; gap: 22px; height: 100%; }
+.global-nav__links { flex: 1 1 auto; display: flex; align-items: center; gap: 22px; height: 100%; }
 .global-nav__links a { height: 100%; display: inline-flex; align-items: center; gap: 6px; color: #a1a1a6; font-size: 13px; letter-spacing: 0; transition: color .2s ease; }
 .global-nav__links a:hover, .global-nav__links a.active { color: #fff; }
+.header-feedback-links { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+.header-feedback-links a { font-size: 12px; }
 .global-nav__actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .header-login { display: inline-flex; align-items: center; gap: 5px; color: #fff; font-size: 12px; transition: color .2s ease; }
 .header-login:hover { color: var(--blue-dark); }
@@ -445,6 +447,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .global-nav__links { position: absolute; top: 44px; left: 0; right: 0; height: auto; padding: 10px 20px 18px; display: none; flex-direction: column; align-items: stretch; gap: 0; background: #000; border-top: 1px solid #2a2a2c; }
   .global-nav__links.is-open { display: flex; }
   .global-nav__links a { height: 44px; padding: 0 3px; border-bottom: 1px solid #1d1d1f; font-size: 14px; }
+  .header-feedback-links { margin-left: 0; flex-direction: column; align-items: stretch; gap: 0; border-top: 1px solid #2a2a2c; }
+  .header-feedback-links a { font-size: 14px; }
   .mobile-menu-button { display: inline-flex; }
   .drop-zone { min-height: 0; padding: 60px max(20px, calc((100vw - 680px) / 2)); grid-template-columns: 1fr; gap: 56px; }
   .drop-zone h1 { max-width: 100%; font-size: clamp(42px, 7vw, 54px); line-height: 1.18; white-space: normal; }

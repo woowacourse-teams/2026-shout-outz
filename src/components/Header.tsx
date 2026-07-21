@@ -26,6 +26,10 @@ export function Header({ authUser, onLogout }: HeaderProps) {
             {authUser ? <NavLink to="/bookmarks"><Bookmark size={14} /> 저장한 앱</NavLink> : null}
             {authUser ? <NavLink to="/makers/me">내 프로필</NavLink> : null}
             <NavLink to="/submit">앱 등록하기</NavLink>
+            <div className="header-feedback-links" aria-label="GitHub 의견 보내기">
+              <a href="https://github.com/sangjun121/dropit/issues/new?title=%5B%EB%B2%84%EA%B7%B8%20%EC%A0%9C%EB%B3%B4%5D%20" target="_blank" rel="noreferrer">버그 제보하기</a>
+              <a href="https://github.com/sangjun121/dropit/issues/new?title=%5B%EA%B8%B0%EB%8A%A5%20%EC%A0%9C%EC%95%88%5D%20" target="_blank" rel="noreferrer">기능 제안하기</a>
+            </div>
           </nav>
           <div className="global-nav__actions">
             {authUser ? <div className="auth-actions"><Link to="/makers/me" className="auth-user" title="내 프로필"><span>{authUser.name}</span></Link><button type="button" className="auth-logout" onClick={onLogout}><LogOut size={14} /> 로그아웃</button></div> : <Link to="/login" className="header-login"><LogIn size={14} /> 로그인</Link>}
