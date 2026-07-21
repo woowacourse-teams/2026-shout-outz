@@ -33,7 +33,7 @@ create table if not exists public.apps (
   owner_id uuid not null references auth.users(id) on delete cascade,
   name text not null check (char_length(trim(name)) between 1 and 40),
   tagline text not null check (char_length(trim(tagline)) between 1 and 80),
-  description text not null default '' check (char_length(description) <= 500),
+  description text not null default '' check (char_length(description) <= 5000),
   category text not null check (category in ('게임', '생산성', '학습', '생성기', '소셜', '실험')),
   thumbnail_variant text not null default 'new',
   thumbnail_url text,
@@ -49,6 +49,8 @@ create table if not exists public.apps (
 );
 
 alter table public.apps add column if not exists deleted_at timestamptz;
+alter table public.apps drop constraint if exists apps_description_check;
+alter table public.apps add constraint apps_description_check check (char_length(description) <= 5000);
 
 create table if not exists public.app_bookmarks (
   user_id uuid not null references auth.users(id) on delete cascade,

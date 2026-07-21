@@ -116,7 +116,7 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
     else if (!isValidUrl(values.appUrl)) nextErrors.appUrl = 'https://로 시작하는 주소를 입력해주세요.'
     if (values.githubUrl && !isValidUrl(values.githubUrl)) nextErrors.githubUrl = 'GitHub 주소를 확인해주세요.'
     if (!values.category) nextErrors.category = '카테고리를 선택해주세요.'
-    if (values.description.length > 500) nextErrors.description = '상세 설명은 500자 이내로 입력해주세요.'
+    if (values.description.length > 5000) nextErrors.description = '상세 설명은 5000자 이내로 입력해주세요.'
     if (values.thumbnailUrl && !isValidUrl(values.thumbnailUrl) && !EMBEDDED_IMAGE_PATTERN.test(values.thumbnailUrl)) nextErrors.thumbnailUrl = '이미지 주소를 확인해주세요.'
     setErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
@@ -189,7 +189,7 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
               <Field label="한 줄 소개" htmlFor="app-tagline" error={errors.tagline} required hint={`${values.tagline.length}/80`}>
                 <input id="app-tagline" value={values.tagline} maxLength={80} onChange={(event) => update('tagline', event.target.value)} placeholder="예: 매일 쓰는 메모장" />
               </Field>
-              <Field label="상세 설명" htmlFor="app-description" error={errors.description} hint={`${values.description.length}/500`}>
+              <Field label="상세 설명" htmlFor="app-description" error={errors.description} hint={`${values.description.length}/5000`}>
                 <div className="markdown-editor__toolbar">
                   <span>마크다운</span>
                   <button type="button" className="markdown-editor__toggle" onClick={() => setIsDescriptionPreview((current) => !current)} aria-pressed={isDescriptionPreview}>
@@ -201,7 +201,7 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
                     {values.description.trim() ? <MarkdownContent content={values.description} /> : <p className="markdown-preview__empty">입력한 내용이 여기에 표시됩니다.</p>}
                   </div>
                 ) : (
-                  <textarea id="app-description" aria-describedby="app-description-guide" value={values.description} maxLength={500} onChange={(event) => update('description', event.target.value)} placeholder="## 서비스 소개\n해결하는 문제와 사용 방법을 입력하세요.\n\n- 주요 기능\n- 사용 대상" rows={8} />
+                  <textarea id="app-description" aria-describedby="app-description-guide" value={values.description} maxLength={5000} onChange={(event) => update('description', event.target.value)} placeholder="## 서비스 소개\n해결하는 문제와 사용 방법을 입력하세요.\n\n- 주요 기능\n- 사용 대상" rows={8} />
                 )}
                 <p id="app-description-guide" className="markdown-guide">마크다운을 지원해요. `## 제목`, `- 목록`, `**강조**`처럼 작성하면 서비스 페이지에서 보기 좋게 정리됩니다.</p>
               </Field>
