@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowUpRight, Bookmark, ExternalLink, Heart, Pencil, Play, Share2, Trash2 } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { AppItem, Maker } from '../types'
@@ -26,6 +26,59 @@ export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggle
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
   const app = apps.find((item) => item.id === appId)
+
+  useEffect(() => {
+    if (!app) return
+
+    const defaultTitle = 'Dropit - 우테코 크루 서비스 아카이빙'
+    const defaultDescription = '작은 웹앱을 발견하고 바로 실행하는 공간, Dropit'
+    const title = `${app.name} | Dropit`
+    const description = app.tagline || defaultDescription
+    const image = app.thumbnailUrl && /^https?:\/\//i.test(app.thumbnailUrl)
+      ? app.thumbnailUrl
+      : 'https://drop-it-project.vercel.app/dropit-og.png'
+
+    document.title = title
+    const metadata = [
+      ['description', description],
+      ['og:title', title],
+      ['og:description', description],
+      ['og:url', window.location.href],
+      ['og:image', image],
+      ['og:image:alt', `${app.name} 서비스 썸네일`],
+      ['twitter:title', title],
+      ['twitter:description', description],
+      ['twitter:image', image],
+      ['twitter:image:alt', `${app.name} 서비스 썸네일`],
+    ]
+
+    metadata.forEach(([key, content]) => {
+      const selector = key === 'description' ? 'meta[name="description"]' : `meta[property="${key}"], meta[name="${key}"]`
+      const element = document.head.querySelector<HTMLMetaElement>(selector)
+      if (element) element.content = content
+    })
+
+    return () => {
+      document.title = defaultTitle
+      const defaults: Record<string, string> = {
+        description: defaultDescription,
+        'og:title': defaultTitle,
+        'og:description': defaultDescription,
+        'og:url': 'https://drop-it-project.vercel.app/',
+        'og:image': 'https://drop-it-project.vercel.app/dropit-og.png',
+        'og:image:alt': 'Dropit 서비스 화면',
+        'twitter:title': defaultTitle,
+        'twitter:description': defaultDescription,
+        'twitter:image': 'https://drop-it-project.vercel.app/dropit-og.png',
+        'twitter:image:alt': 'Dropit 서비스 화면',
+      }
+      Object.entries(defaults).forEach(([key, content]) => {
+        const selector = key === 'description' ? 'meta[name="description"]' : `meta[property="${key}"], meta[name="${key}"]`
+        const element = document.head.querySelector<HTMLMetaElement>(selector)
+        if (element) element.content = content
+      })
+    }
+  }, [app])
 
   if (!app) {
     return <div className="page-pad"><EmptyState type="app" onReset={() => navigate('/')} /></div>
@@ -78,7 +131,14 @@ export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggle
                 <div className="detail-actions__secondary">
                   <button type="button" className={`reaction-button ${isLiked ? 'is-active' : ''}`} onClick={() => onToggleLike(app.id)} aria-pressed={isLiked}><Heart size={17} fill={isLiked ? 'currentColor' : 'none'} /><span>{formatNumber(app.likes)}</span></button>
                   <button type="button" className={`reaction-button ${isBookmarked ? 'is-active' : ''}`} onClick={() => onToggleBookmark(app.id)} aria-pressed={isBookmarked}><Bookmark size={17} fill={isBookmarked ? 'currentColor' : 'none'} /><span>{isBookmarked ? '저장됨' : '저장'}</span></button>
-                  <button type="button" className="reaction-button" onClick={() => navigator.clipboard?.writeText(window.location.href)}><Share2 size={16} /><span>공유</span></button>
+                  <button type="button" className="reaction-button" onClick={() => {
+                    const shareData = { title: `${app.name} | Dropit`, text: app.tagline, url: window.location.href }
+                    if (navigator.share) {
+                      void navigator.share(shareData).catch(() => undefined)
+                      return
+                    }
+                    void navigator.clipboard?.writeText(window.location.href)
+                  }}><Share2 size={16} /><span>공유</span></button>
                 </div>
               </div>
               <div className="detail-hero__meta">
