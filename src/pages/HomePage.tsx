@@ -29,7 +29,7 @@ export function HomePage({ apps, bookmarkedIds, onToggleBookmark }: HomePageProp
         if (!normalizedQuery) return true
         return [app.name, app.tagline, app.maker.name].some((value) => value.toLowerCase().includes(normalizedQuery))
       })
-      .sort((a, b) => sort === 'popular' ? b.plays - a.plays : b.createdAt.localeCompare(a.createdAt))
+      .sort((a, b) => sort === 'popular' ? b.likes - a.likes || b.createdAt.localeCompare(a.createdAt) : b.createdAt.localeCompare(a.createdAt))
   }, [apps, category, query, sort])
 
   const clearFilters = () => {

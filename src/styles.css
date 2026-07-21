@@ -87,7 +87,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 
 .drop-zone { min-height: 520px; padding: 76px max(24px, calc((100vw - var(--content-width)) / 2)); display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: clamp(32px, 6vw, 80px); align-items: center; color: #fff; background: var(--tile); overflow: hidden; }
 .drop-zone__copy { min-width: 0; max-width: 620px; }
-.drop-zone h1 { margin: 28px 0 24px; font-size: clamp(44px, 4.6vw, 62px); line-height: 1.18; letter-spacing: -.022em; font-weight: 600; white-space: nowrap; }
+.drop-zone h1 { margin: 28px 0 24px; font-size: clamp(42px, 4.1vw, 54px); line-height: 1.18; letter-spacing: -.022em; font-weight: 600; white-space: nowrap; }
 .drop-zone h1 em, .submit-page__heading h1 em { color: var(--blue-dark); font-style: normal; }
 .drop-zone h1 em { display: inline-block; margin-top: .04em; }
 .drop-zone p { max-width: 500px; margin: 0 0 30px; color: #c7c7cc; font-size: 16px; line-height: 1.8; letter-spacing: .005em; }
@@ -275,7 +275,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .login-card h1 { margin: 0 0 16px; font-size: clamp(34px, 4vw, 48px); line-height: 1.22; letter-spacing: -.02em; font-weight: 600; }
 .login-card h1 em { display: inline-block; margin-top: .04em; color: var(--blue); font-style: normal; }
 .login-card p { max-width: 400px; margin: 0 auto; color: var(--muted); font-size: 14px; line-height: 1.7; }
-.login-card__notice { margin-top: 14px !important; color: var(--blue) !important; font-size: 13px !important; font-weight: 500; line-height: 1.6 !important; }
 .login-card__scope-note { display: block; max-width: 400px; margin: 12px auto 0; color: var(--muted-light); font-size: 11px; line-height: 1.5; }
 .login-card__button { min-height: 48px; margin-top: 24px; padding: 12px 22px; font-size: 15px; }
 .login-card__note { margin-top: 18px !important; color: #9a5b00 !important; font-size: 12px !important; }
@@ -294,6 +293,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .profile-guide-modal__check input { width: 15px; height: 15px; margin: 0; accent-color: var(--blue); }
 .profile-guide-modal__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
 .profile-guide-modal__actions .button { min-height: 42px; padding: 10px 16px; font-size: 13px; }
+.category-guide-modal__dialog { width: min(560px, 100%); }
+.category-guide-modal__added { margin-top: 20px; padding: 14px 16px; border-radius: 12px; background: var(--parchment); }
+.category-guide-modal__added strong { color: var(--ink); font-size: 12px; font-weight: 600; }
+.category-guide-modal__chips { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 7px; }
+.category-guide-modal__chips span { padding: 6px 10px; color: var(--blue); border: 1px solid #c8ddf5; border-radius: var(--radius-pill); background: #fff; font-size: 12px; line-height: 1.2; }
+.profile-guide-modal__copy .category-guide-modal__edit-note { margin-top: 16px; color: var(--ink); font-weight: 500; }
 .auth-loading { min-height: 680px; display: flex; align-items: center; justify-content: center; color: var(--muted); background: var(--parchment); }
 .submit-page__heading { margin: 44px 0 52px; }
 .submit-page__heading h1 { margin: 20px 0 16px; font-size: clamp(42px, 5vw, 62px); line-height: 1.2; letter-spacing: -.045em; }
@@ -451,7 +456,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .header-feedback-links a { font-size: 14px; }
   .mobile-menu-button { display: inline-flex; }
   .drop-zone { min-height: 0; padding: 60px max(20px, calc((100vw - 680px) / 2)); grid-template-columns: 1fr; gap: 56px; }
-  .drop-zone h1 { max-width: 100%; font-size: clamp(42px, 7vw, 54px); line-height: 1.18; white-space: normal; }
+  .drop-zone h1 { max-width: 100%; font-size: clamp(40px, 7vw, 50px); line-height: 1.18; white-space: normal; }
   .drop-zone__rail { margin: 0 -20px; padding: 16px 20px; }
   .home-section, .detail-info, .detail-similar, .maker-apps { padding: 68px 0; }
   .home-section--featured { padding-top: 44px; }

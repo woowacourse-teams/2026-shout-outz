@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { CategoryGuideModal } from './components/CategoryGuideModal'
 import { Layout } from './components/Layout'
 import { MarkdownGuideModal } from './components/MarkdownGuideModal'
 import { ProfileGuideModal } from './components/ProfileGuideModal'
@@ -16,6 +17,7 @@ import { isAuthConfigured, supabase, toAuthUser, type AuthUser } from './utils/a
 import { createRemoteApp, deleteRemoteApp, fetchRemoteState, recordRemotePlay, restoreRemoteApp, setRemoteBookmark, toggleRemoteLike, updateRemoteApp, upsertRemoteProfile, verifyRemoteCrewAccessCode } from './utils/supabaseData'
 
 const SUPABASE_REQUIRED_MESSAGE = 'Supabase 연결이 필요합니다. .env.local의 설정을 확인한 뒤 개발 서버를 다시 시작해주세요.'
+const CATEGORY_GUIDE_HIDE_KEY = 'dropit:category-guide-hide-date'
 const PROFILE_GUIDE_HIDE_KEY = 'dropit:profile-guide-hide-date'
 const MARKDOWN_GUIDE_HIDE_KEY = 'dropit:markdown-guide-hide-date'
 const PROFILE_GUIDE_TEST_MODE = true
@@ -28,6 +30,14 @@ function localDateKey() {
 function isProfileGuideHiddenToday() {
   try {
     return window.localStorage.getItem(PROFILE_GUIDE_HIDE_KEY) === localDateKey()
+  } catch {
+    return false
+  }
+}
+
+function isCategoryGuideHiddenToday() {
+  try {
+    return window.localStorage.getItem(CATEGORY_GUIDE_HIDE_KEY) === localDateKey()
   } catch {
     return false
   }
@@ -94,8 +104,10 @@ function App() {
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([])
   const [likedIds, setLikedIds] = useState<string[]>([])
   const [playCounts, setPlayCounts] = useState<Record<string, number>>({})
+  const [categoryGuideOpen, setCategoryGuideOpen] = useState(false)
   const [profileGuideOpen, setProfileGuideOpen] = useState(false)
   const [markdownGuideOpen, setMarkdownGuideOpen] = useState(false)
+  const categoryGuideShownFor = useRef<string | null>(null)
   const profileGuideShownFor = useRef<string | null>(null)
   const profileGuideCompletedFor = useRef<string | null>(null)
   const markdownGuideShownFor = useRef<string | null>(null)
@@ -170,17 +182,29 @@ function App() {
 
   useEffect(() => {
     if (!authUser) {
+      categoryGuideShownFor.current = null
       profileGuideShownFor.current = null
       profileGuideCompletedFor.current = null
       markdownGuideShownFor.current = null
+      setCategoryGuideOpen(false)
       setProfileGuideOpen(false)
       setMarkdownGuideOpen(false)
       return
     }
     if (authLoading || dataLoading || dataError) return
     if (location.pathname === '/makers/me') {
+      setCategoryGuideOpen(false)
       profileGuideCompletedFor.current = authUser.id
       setProfileGuideOpen(false)
+      return
+    }
+    if (categoryGuideOpen) {
+      setProfileGuideOpen(false)
+      return
+    }
+    if (!isCategoryGuideHiddenToday() && categoryGuideShownFor.current !== authUser.id) {
+      categoryGuideShownFor.current = authUser.id
+      setCategoryGuideOpen(true)
       return
     }
     if (isProfileGuideHiddenToday()) {
@@ -194,15 +218,15 @@ function App() {
     }
     profileGuideShownFor.current = authUser.id
     setProfileGuideOpen(true)
-  }, [authLoading, authUser, dataError, dataLoading, location.pathname, profile])
+  }, [authLoading, authUser, categoryGuideOpen, dataError, dataLoading, location.pathname, profile])
 
   useEffect(() => {
     if (!authUser) return
-    if (authLoading || dataLoading || dataError || location.pathname === '/makers/me' || profileGuideOpen || isMarkdownGuideHiddenToday() || markdownGuideShownFor.current === authUser.id) return
+    if (authLoading || dataLoading || dataError || location.pathname === '/makers/me' || categoryGuideOpen || profileGuideOpen || isMarkdownGuideHiddenToday() || markdownGuideShownFor.current === authUser.id) return
     if (profileGuideShownFor.current === authUser.id && profileGuideCompletedFor.current !== authUser.id) return
     markdownGuideShownFor.current = authUser.id
     setMarkdownGuideOpen(true)
-  }, [authLoading, authUser, dataError, dataLoading, location.pathname, profileGuideOpen])
+  }, [authLoading, authUser, categoryGuideOpen, dataError, dataLoading, location.pathname, profileGuideOpen])
 
   const currentMaker = useMemo(() => authUser ? profile ?? makerFromAuthUser(authUser) : null, [authUser, profile])
   const displayApps = useMemo(() => apps.map((app) => ({ ...app, likes: app.likes + (likedIds.includes(app.id) ? 1 : 0), plays: app.plays + (playCounts[app.id] ?? 0) })), [apps, likedIds, playCounts])
@@ -210,7 +234,7 @@ function App() {
   const toggleBookmark = useCallback((id: string) => {
     if (!authUser) {
       const returnTo = `${window.location.pathname}${window.location.search}`
-      navigate(`/login?returnTo=${encodeURIComponent(returnTo)}&notice=bookmark`)
+      navigate(`/login?returnTo=${encodeURIComponent(returnTo)}`)
       return
     }
     if (!supabase) {
@@ -348,6 +372,34 @@ function App() {
     })
   }, [])
 
+  const closeCategoryGuide = useCallback(() => {
+    if (authUser) categoryGuideShownFor.current = authUser.id
+    setCategoryGuideOpen(false)
+  }, [authUser])
+  const hideCategoryGuideToday = useCallback(() => {
+    try {
+      window.localStorage.setItem(CATEGORY_GUIDE_HIDE_KEY, localDateKey())
+    } catch {
+      // Storage가 차단된 경우에도 팝업은 닫습니다.
+    }
+    if (authUser) categoryGuideShownFor.current = authUser.id
+    setCategoryGuideOpen(false)
+  }, [authUser])
+  const goToMyServices = useCallback(() => {
+    if (authUser) {
+      categoryGuideShownFor.current = authUser.id
+      profileGuideShownFor.current = authUser.id
+      profileGuideCompletedFor.current = authUser.id
+      markdownGuideShownFor.current = authUser.id
+    }
+    setCategoryGuideOpen(false)
+    const ownedApps = apps.filter((app) => app.ownerId === authUser?.id || (!app.ownerId && app.maker.id === authUser?.id))
+    if (ownedApps.length === 1) {
+      navigate(`/apps/${ownedApps[0].id}/edit`)
+      return
+    }
+    navigate('/makers/me')
+  }, [apps, authUser, navigate])
   const closeProfileGuide = useCallback(() => {
     if (authUser) profileGuideCompletedFor.current = authUser.id
     setProfileGuideOpen(false)
@@ -378,9 +430,8 @@ function App() {
 
   const loginParams = new URLSearchParams(location.search)
   const loginReturnTo = loginParams.get('returnTo') ?? '/submit'
-  const loginNotice = loginParams.get('notice') === 'bookmark' ? '저장한 앱을 이용하려면 로그인해주세요. 로그인 후 다시 저장할 수 있습니다.' : undefined
-  const loginPage = <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} notice={loginNotice} returnTo={loginReturnTo} onLogin={loginWithGithub} />
-  const bookmarksLoginPage = <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} notice="저장한 앱은 로그인 후 이용할 수 있습니다." returnTo="/bookmarks" onLogin={loginWithGithub} />
+  const loginPage = <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo={loginReturnTo} onLogin={loginWithGithub} />
+  const bookmarksLoginPage = <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo="/bookmarks" onLogin={loginWithGithub} />
   const dataStatusPage = dataError ? <DataStatusPage message={dataError} /> : dataLoading ? <DataStatusPage message="데이터를 불러오고 있습니다." /> : null
   const homePage = dataStatusPage ?? <HomePage apps={displayApps} bookmarkedIds={bookmarkedIds} onToggleBookmark={toggleBookmark} />
   const detailPage = dataStatusPage ?? <AppDetailPage apps={displayApps} profile={currentMaker} bookmarkedIds={bookmarkedIds} likedIds={likedIds} onToggleBookmark={toggleBookmark} onToggleLike={toggleLike} onLaunch={launchApp} onDeleteApp={deleteApp} />
@@ -405,6 +456,7 @@ function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
       </Routes>
+      <CategoryGuideModal open={categoryGuideOpen && location.pathname !== '/makers/me'} onClose={closeCategoryGuide} onHideToday={hideCategoryGuideToday} onGoToMyServices={goToMyServices} />
       <ProfileGuideModal open={profileGuideOpen && location.pathname !== '/makers/me'} onClose={closeProfileGuide} onHideToday={hideProfileGuideToday} onGoToProfile={goToProfile} />
       <MarkdownGuideModal open={markdownGuideOpen && location.pathname !== '/makers/me'} onClose={closeMarkdownGuide} onHideToday={hideMarkdownGuideToday} />
     </>
