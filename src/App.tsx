@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { CategoryGuideModal } from './components/CategoryGuideModal'
 import { Layout } from './components/Layout'
 import { MarkdownGuideModal } from './components/MarkdownGuideModal'
-import { ProfileGuideModal } from './components/ProfileGuideModal'
 import { AppDetailPage } from './pages/AppDetailPage'
 import { EditAppPage } from './pages/EditAppPage'
 import { BookmarksPage } from './pages/BookmarksPage'
@@ -18,21 +17,11 @@ import { createRemoteApp, deleteRemoteApp, fetchRemoteState, recordRemotePlay, r
 
 const SERVICE_UNAVAILABLE_MESSAGE = '서비스를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
 const CATEGORY_GUIDE_HIDE_KEY = 'dropit:category-guide-hide-date'
-const PROFILE_GUIDE_HIDE_KEY = 'dropit:profile-guide-hide-date'
 const MARKDOWN_GUIDE_HIDE_KEY = 'dropit:markdown-guide-hide-date'
-const PROFILE_GUIDE_TEST_MODE = true
 
 function localDateKey() {
   const today = new Date()
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-}
-
-function isProfileGuideHiddenToday() {
-  try {
-    return window.localStorage.getItem(PROFILE_GUIDE_HIDE_KEY) === localDateKey()
-  } catch {
-    return false
-  }
 }
 
 function isCategoryGuideHiddenToday() {
@@ -96,6 +85,7 @@ function App() {
   const [apps, setApps] = useState<AppItem[]>([])
   const [deletedApps, setDeletedApps] = useState<AppItem[]>([])
   const [profile, setProfile] = useState<Maker | null>(null)
+  const [profileLoadedFor, setProfileLoadedFor] = useState<string | null>(null)
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [authLoading, setAuthLoading] = useState(isAuthConfigured)
   const [authError, setAuthError] = useState('')
@@ -105,11 +95,8 @@ function App() {
   const [likedIds, setLikedIds] = useState<string[]>([])
   const [playCounts, setPlayCounts] = useState<Record<string, number>>({})
   const [categoryGuideOpen, setCategoryGuideOpen] = useState(false)
-  const [profileGuideOpen, setProfileGuideOpen] = useState(false)
   const [markdownGuideOpen, setMarkdownGuideOpen] = useState(false)
   const categoryGuideShownFor = useRef<string | null>(null)
-  const profileGuideShownFor = useRef<string | null>(null)
-  const profileGuideCompletedFor = useRef<string | null>(null)
   const markdownGuideShownFor = useRef<string | null>(null)
 
   useEffect(() => {
@@ -147,6 +134,7 @@ function App() {
   useEffect(() => {
     if (authLoading) return
 
+    setProfileLoadedFor(null)
     if (supabase) {
       let active = true
       setDataLoading(true)
@@ -162,6 +150,7 @@ function App() {
         setApps(appsWithAvatar)
         setDeletedApps(state.deletedApps)
         setProfile(profileWithAvatar)
+        setProfileLoadedFor(authUser?.id ?? null)
         setBookmarkedIds(state.bookmarkedIds)
         setLikedIds(state.likedIds)
         setPlayCounts({})
@@ -183,50 +172,33 @@ function App() {
   useEffect(() => {
     if (!authUser) {
       categoryGuideShownFor.current = null
-      profileGuideShownFor.current = null
-      profileGuideCompletedFor.current = null
       markdownGuideShownFor.current = null
       setCategoryGuideOpen(false)
-      setProfileGuideOpen(false)
       setMarkdownGuideOpen(false)
       return
     }
     if (authLoading || dataLoading || dataError) return
+    if (profileLoadedFor !== authUser.id) return
     if (location.pathname === '/makers/me') {
       setCategoryGuideOpen(false)
-      profileGuideCompletedFor.current = authUser.id
-      setProfileGuideOpen(false)
       return
     }
+    if (!profile) return
     if (categoryGuideOpen) {
-      setProfileGuideOpen(false)
       return
     }
     if (!isCategoryGuideHiddenToday() && categoryGuideShownFor.current !== authUser.id) {
       categoryGuideShownFor.current = authUser.id
       setCategoryGuideOpen(true)
-      return
     }
-    if (isProfileGuideHiddenToday()) {
-      profileGuideCompletedFor.current = authUser.id
-      return
-    }
-    if (profileGuideShownFor.current === authUser.id) return
-    if (!PROFILE_GUIDE_TEST_MODE && profile) {
-      profileGuideCompletedFor.current = authUser.id
-      return
-    }
-    profileGuideShownFor.current = authUser.id
-    setProfileGuideOpen(true)
-  }, [authLoading, authUser, categoryGuideOpen, dataError, dataLoading, location.pathname, profile])
+  }, [authLoading, authUser, categoryGuideOpen, dataError, dataLoading, location.pathname, profile, profileLoadedFor])
 
   useEffect(() => {
     if (!authUser) return
-    if (authLoading || dataLoading || dataError || location.pathname === '/makers/me' || categoryGuideOpen || profileGuideOpen || isMarkdownGuideHiddenToday() || markdownGuideShownFor.current === authUser.id) return
-    if (profileGuideShownFor.current === authUser.id && profileGuideCompletedFor.current !== authUser.id) return
+    if (authLoading || dataLoading || dataError || location.pathname === '/makers/me' || categoryGuideOpen || isMarkdownGuideHiddenToday() || markdownGuideShownFor.current === authUser.id) return
     markdownGuideShownFor.current = authUser.id
     setMarkdownGuideOpen(true)
-  }, [authLoading, authUser, categoryGuideOpen, dataError, dataLoading, location.pathname, profileGuideOpen])
+  }, [authLoading, authUser, categoryGuideOpen, dataError, dataLoading, location.pathname])
 
   const currentMaker = useMemo(() => authUser ? profile ?? makerFromAuthUser(authUser) : null, [authUser, profile])
   const displayApps = useMemo(() => apps.map((app) => ({ ...app, likes: app.likes + (likedIds.includes(app.id) ? 1 : 0), plays: app.plays + (playCounts[app.id] ?? 0) })), [apps, likedIds, playCounts])
@@ -388,8 +360,6 @@ function App() {
   const goToMyServices = useCallback(() => {
     if (authUser) {
       categoryGuideShownFor.current = authUser.id
-      profileGuideShownFor.current = authUser.id
-      profileGuideCompletedFor.current = authUser.id
       markdownGuideShownFor.current = authUser.id
     }
     setCategoryGuideOpen(false)
@@ -400,24 +370,6 @@ function App() {
     }
     navigate('/makers/me')
   }, [apps, authUser, navigate])
-  const closeProfileGuide = useCallback(() => {
-    if (authUser) profileGuideCompletedFor.current = authUser.id
-    setProfileGuideOpen(false)
-  }, [authUser])
-  const hideProfileGuideToday = useCallback(() => {
-    try {
-      window.localStorage.setItem(PROFILE_GUIDE_HIDE_KEY, localDateKey())
-    } catch {
-      // Storage가 차단된 경우에도 팝업은 닫습니다.
-    }
-    if (authUser) profileGuideCompletedFor.current = authUser.id
-    setProfileGuideOpen(false)
-  }, [authUser])
-  const goToProfile = useCallback(() => {
-    if (authUser) profileGuideCompletedFor.current = authUser.id
-    setProfileGuideOpen(false)
-    navigate('/makers/me')
-  }, [authUser, navigate])
   const closeMarkdownGuide = useCallback(() => setMarkdownGuideOpen(false), [])
   const hideMarkdownGuideToday = useCallback(() => {
     try {
@@ -429,17 +381,21 @@ function App() {
   }, [])
 
   const loginParams = new URLSearchParams(location.search)
-  const loginReturnTo = loginParams.get('returnTo') ?? '/submit'
+  const loginReturnTo = loginParams.get('returnTo') ?? '/'
   const loginPage = <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo={loginReturnTo} onLogin={loginWithGithub} />
+  const submitLoginPage = <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo="/submit" onLogin={loginWithGithub} />
   const bookmarksLoginPage = <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo="/bookmarks" onLogin={loginWithGithub} />
   const dataStatusPage = dataError ? <DataStatusPage message={dataError} /> : dataLoading ? <DataStatusPage message="데이터를 불러오고 있습니다." /> : null
   const homePage = dataStatusPage ?? <HomePage apps={displayApps} bookmarkedIds={bookmarkedIds} onToggleBookmark={toggleBookmark} />
   const detailPage = dataStatusPage ?? <AppDetailPage apps={displayApps} profile={currentMaker} bookmarkedIds={bookmarkedIds} likedIds={likedIds} onToggleBookmark={toggleBookmark} onToggleLike={toggleLike} onLaunch={launchApp} onDeleteApp={deleteApp} />
   const makerPage = dataStatusPage ?? <MakerPage apps={displayApps} deletedApps={deletedApps} profile={profile} currentMaker={currentMaker} bookmarkedIds={bookmarkedIds} onSaveProfile={saveProfile} onToggleBookmark={toggleBookmark} onRestoreApp={restoreApp} />
   const bookmarksPage = authLoading ? <AuthLoadingPage /> : authUser ? dataStatusPage ?? <BookmarksPage apps={displayApps} bookmarkedIds={bookmarkedIds} onToggleBookmark={toggleBookmark} /> : bookmarksLoginPage
-  const submitPage = authLoading ? <AuthLoadingPage /> : authUser && currentMaker ? dataStatusPage ?? <SubmitPage maker={currentMaker} onAddApp={addApp} onVerifyCrewCode={verifyCrewCode} /> : loginPage
+  const submitPage = authLoading ? <AuthLoadingPage /> : authUser && currentMaker ? dataStatusPage ?? <SubmitPage maker={currentMaker} onAddApp={addApp} onVerifyCrewCode={verifyCrewCode} /> : submitLoginPage
   const editPage = authLoading ? <AuthLoadingPage /> : authUser && currentMaker ? dataStatusPage ?? <EditAppPage apps={apps} currentUserId={authUser.id} maker={currentMaker} onUpdateApp={updateApp} /> : <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo={window.location.pathname} onLogin={loginWithGithub} />
   const profilePage = authLoading ? <AuthLoadingPage /> : authUser && currentMaker ? dataStatusPage ?? <MakerPage apps={displayApps} deletedApps={deletedApps} profile={profile} currentMaker={currentMaker} isOwnProfile bookmarkedIds={bookmarkedIds} onSaveProfile={saveProfile} onToggleBookmark={toggleBookmark} onRestoreApp={restoreApp} /> : <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo="/makers/me" onLogin={loginWithGithub} />
+  const shouldRedirectToProfile = Boolean(authUser && profileLoadedFor === authUser.id && !authLoading && !dataLoading && !dataError && location.pathname !== '/makers/me' && !profile)
+
+  if (shouldRedirectToProfile) return <Navigate to="/makers/me" replace />
 
   return (
     <>
@@ -457,7 +413,6 @@ function App() {
       </Route>
       </Routes>
       <CategoryGuideModal open={categoryGuideOpen && location.pathname !== '/makers/me'} onClose={closeCategoryGuide} onHideToday={hideCategoryGuideToday} onGoToMyServices={goToMyServices} />
-      <ProfileGuideModal open={profileGuideOpen && location.pathname !== '/makers/me'} onClose={closeProfileGuide} onHideToday={hideProfileGuideToday} onGoToProfile={goToProfile} />
       <MarkdownGuideModal open={markdownGuideOpen && location.pathname !== '/makers/me'} onClose={closeMarkdownGuide} onHideToday={hideMarkdownGuideToday} />
     </>
   )
