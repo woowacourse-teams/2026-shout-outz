@@ -16,7 +16,7 @@ import type { AppItem, Maker } from './types'
 import { isAuthConfigured, supabase, toAuthUser, type AuthUser } from './utils/auth'
 import { createRemoteApp, deleteRemoteApp, fetchRemoteState, recordRemotePlay, restoreRemoteApp, setRemoteBookmark, toggleRemoteLike, updateRemoteApp, upsertRemoteProfile, verifyRemoteCrewAccessCode } from './utils/supabaseData'
 
-const SUPABASE_REQUIRED_MESSAGE = 'Supabase 연결이 필요합니다. .env.local의 설정을 확인한 뒤 개발 서버를 다시 시작해주세요.'
+const SERVICE_UNAVAILABLE_MESSAGE = '서비스를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
 const CATEGORY_GUIDE_HIDE_KEY = 'dropit:category-guide-hide-date'
 const PROFILE_GUIDE_HIDE_KEY = 'dropit:profile-guide-hide-date'
 const MARKDOWN_GUIDE_HIDE_KEY = 'dropit:markdown-guide-hide-date'
@@ -100,7 +100,7 @@ function App() {
   const [authLoading, setAuthLoading] = useState(isAuthConfigured)
   const [authError, setAuthError] = useState('')
   const [dataLoading, setDataLoading] = useState(Boolean(supabase))
-  const [dataError, setDataError] = useState(supabase ? '' : SUPABASE_REQUIRED_MESSAGE)
+  const [dataError, setDataError] = useState(supabase ? '' : SERVICE_UNAVAILABLE_MESSAGE)
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([])
   const [likedIds, setLikedIds] = useState<string[]>([])
   const [playCounts, setPlayCounts] = useState<Record<string, number>>({})
@@ -168,7 +168,7 @@ function App() {
         setDataLoading(false)
       }).catch(() => {
         if (!active) return
-        setDataError('Supabase 데이터를 불러오지 못했습니다. 최신 supabase/schema.sql을 실행했는지 확인해주세요.')
+        setDataError(SERVICE_UNAVAILABLE_MESSAGE)
         setDataLoading(false)
       })
 
@@ -177,7 +177,7 @@ function App() {
       }
     }
     setDataLoading(false)
-    setDataError(SUPABASE_REQUIRED_MESSAGE)
+    setDataError(SERVICE_UNAVAILABLE_MESSAGE)
   }, [authLoading, authUser?.id])
 
   useEffect(() => {
@@ -238,7 +238,7 @@ function App() {
       return
     }
     if (!supabase) {
-      setDataError(SUPABASE_REQUIRED_MESSAGE)
+      setDataError(SERVICE_UNAVAILABLE_MESSAGE)
       return
     }
     const wasBookmarked = bookmarkedIds.includes(id)
@@ -246,7 +246,7 @@ function App() {
     setBookmarkedIds(nextIds)
     void setRemoteBookmark(authUser.id, id, !wasBookmarked).catch(() => {
       setBookmarkedIds((current) => wasBookmarked ? (current.includes(id) ? current : [...current, id]) : current.filter((item) => item !== id))
-      setDataError('앱 저장에 실패했습니다. Supabase의 app_bookmarks 테이블과 권한 설정을 확인해주세요.')
+      setDataError('저장하지 못했습니다. 잠시 후 다시 시도해주세요.')
     })
   }, [authUser, bookmarkedIds, navigate])
 
@@ -273,7 +273,7 @@ function App() {
     if (!supabase || !authUser) return
     const ownedApp = currentMaker && authUser ? { ...app, ownerId: authUser.id, maker: currentMaker } : app
     setApps((current) => [ownedApp, ...current])
-    void createRemoteApp(ownedApp).catch(() => setDataError('앱을 Supabase에 저장하지 못했습니다.'))
+    void createRemoteApp(ownedApp).catch(() => setDataError('서비스를 등록하지 못했습니다. 잠시 후 다시 시도해주세요.'))
   }, [authUser, currentMaker])
 
   const verifyCrewCode = useCallback(async (code: string) => {
@@ -284,7 +284,7 @@ function App() {
   const updateApp = useCallback((updatedApp: AppItem) => {
     if (!supabase || !authUser) return
     setApps((current) => current.map((app) => app.id === updatedApp.id ? updatedApp : app))
-    void updateRemoteApp(updatedApp).catch(() => setDataError('앱 수정 내용을 Supabase에 저장하지 못했습니다.'))
+    void updateRemoteApp(updatedApp).catch(() => setDataError('서비스 수정 내용을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.'))
   }, [authUser])
 
   const deleteApp = useCallback(async (appId: string) => {
@@ -342,12 +342,12 @@ function App() {
     if (!supabase) return
     const ownedApps = nextApps.filter((app) => app.ownerId === authUser.id)
     const ownedDeletedApps = nextDeletedApps.filter((app) => app.ownerId === authUser.id)
-    void Promise.all([upsertRemoteProfile(nextProfile), ...ownedApps.map((app) => updateRemoteApp(app)), ...ownedDeletedApps.map((app) => updateRemoteApp(app))]).catch(() => setDataError('프로필 정보를 Supabase에 저장하지 못했습니다.'))
+    void Promise.all([upsertRemoteProfile(nextProfile), ...ownedApps.map((app) => updateRemoteApp(app)), ...ownedDeletedApps.map((app) => updateRemoteApp(app))]).catch(() => setDataError('프로필 정보를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.'))
   }, [apps, authUser, deletedApps])
 
   const loginWithGithub = useCallback((redirectTo: string) => {
     if (!supabase) {
-      setAuthError('Supabase 로그인 설정이 필요합니다.')
+      setAuthError('로그인을 시작하지 못했습니다. 잠시 후 다시 시도해주세요.')
       return
     }
     setAuthError('')

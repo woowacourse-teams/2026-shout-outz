@@ -29,7 +29,7 @@ export function LoginPage({ isConfigured, isLoading, error, returnTo = '/submit'
           <button type="button" className="button button--primary button--large login-card__button" onClick={() => onLogin(returnTo)} disabled={!isConfigured || isLoading}>
             <GitHubIcon /> {isLoading ? '로그인 확인 중' : 'GitHub로 로그인'} <LogIn size={16} />
           </button>
-          {!isConfigured ? <p className="login-card__note">Supabase 로그인 설정이 아직 연결되지 않았습니다. 환경변수를 설정한 뒤 다시 시작해주세요.</p> : null}
+          {!isConfigured ? <p className="login-card__note">로그인 기능을 사용할 수 없습니다. 잠시 후 다시 시도해주세요.</p> : null}
           {error ? <p className="login-card__error" role="alert">{error}</p> : null}
         </section>
       </div>
