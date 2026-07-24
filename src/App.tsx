@@ -15,7 +15,7 @@ import type { AppItem, Maker } from './types'
 import { isAuthConfigured, supabase, toAuthUser, type AuthUser } from './utils/auth'
 import { createRemoteApp, deleteRemoteApp, fetchRemoteState, recordRemotePlay, restoreRemoteApp, setRemoteBookmark, toggleRemoteLike, updateRemoteApp, upsertRemoteProfile, verifyRemoteCrewAccessCode } from './utils/supabaseData'
 
-const SERVICE_UNAVAILABLE_MESSAGE = '서비스를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'
+const SERVICE_UNAVAILABLE_MESSAGE = '현재 버전은 프로토타입이라 데이터를 불러오는 과정이 불안정할 수 있습니다.\n페이지를 새로고침해주세요.'
 const CATEGORY_GUIDE_HIDE_KEY = 'dropit:category-guide-hide-date'
 const MARKDOWN_GUIDE_HIDE_KEY = 'dropit:markdown-guide-hide-date'
 
@@ -64,8 +64,8 @@ function AuthLoadingPage() {
   return <div className="auth-loading page-pad">로그인 상태를 확인하고 있습니다.</div>
 }
 
-function DataStatusPage({ message }: { message: string }) {
-  return <div className="auth-loading page-pad">{message}</div>
+function DataStatusPage({ message, isError = false }: { message: string; isError?: boolean }) {
+  return <div className="auth-loading data-status page-pad"><p>{message}</p>{isError ? <button type="button" className="button button--secondary" onClick={() => window.location.reload()}>새로고침</button> : null}</div>
 }
 
 function safeRedirectPath(value: string) {
@@ -385,7 +385,7 @@ function App() {
   const loginPage = <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo={loginReturnTo} onLogin={loginWithGithub} />
   const submitLoginPage = <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo="/submit" onLogin={loginWithGithub} />
   const bookmarksLoginPage = <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo="/bookmarks" onLogin={loginWithGithub} />
-  const dataStatusPage = dataError ? <DataStatusPage message={dataError} /> : dataLoading ? <DataStatusPage message="데이터를 불러오고 있습니다." /> : null
+  const dataStatusPage = dataError ? <DataStatusPage message={dataError} isError /> : dataLoading ? <DataStatusPage message="데이터를 불러오고 있습니다." /> : null
   const homePage = dataStatusPage ?? <HomePage apps={displayApps} bookmarkedIds={bookmarkedIds} onToggleBookmark={toggleBookmark} />
   const detailPage = dataStatusPage ?? <AppDetailPage apps={displayApps} profile={currentMaker} bookmarkedIds={bookmarkedIds} likedIds={likedIds} onToggleBookmark={toggleBookmark} onToggleLike={toggleLike} onLaunch={launchApp} onDeleteApp={deleteApp} />
   const makerPage = dataStatusPage ?? <MakerPage apps={displayApps} deletedApps={deletedApps} profile={profile} currentMaker={currentMaker} bookmarkedIds={bookmarkedIds} onSaveProfile={saveProfile} onToggleBookmark={toggleBookmark} onRestoreApp={restoreApp} />

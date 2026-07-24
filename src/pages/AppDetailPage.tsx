@@ -25,6 +25,7 @@ export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggle
   const navigate = useNavigate()
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [shareFeedback, setShareFeedback] = useState<'success' | 'error' | ''>('')
   const app = apps.find((item) => item.id === appId)
 
   useEffect(() => {
@@ -80,6 +81,12 @@ export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggle
     }
   }, [app])
 
+  useEffect(() => {
+    if (!shareFeedback) return
+    const timer = window.setTimeout(() => setShareFeedback(''), 2500)
+    return () => window.clearTimeout(timer)
+  }, [shareFeedback])
+
   if (!app) {
     return <div className="page-pad"><EmptyState type="app" onReset={() => navigate('/')} /></div>
   }
@@ -94,6 +101,16 @@ export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggle
     if (!app.appUrl) return
     const popup = window.open(app.appUrl, '_blank', 'noopener,noreferrer')
     if (popup) popup.opener = null
+  }
+
+  const copyPageUrl = async () => {
+    try {
+      if (!navigator.clipboard) throw new Error('Clipboard API is unavailable')
+      await navigator.clipboard.writeText(window.location.href)
+      setShareFeedback('success')
+    } catch {
+      setShareFeedback('error')
+    }
   }
 
   const removeApp = async () => {
@@ -131,15 +148,9 @@ export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggle
                 <div className="detail-actions__secondary">
                   <button type="button" className={`reaction-button ${isLiked ? 'is-active' : ''}`} onClick={() => onToggleLike(app.id)} aria-pressed={isLiked}><Heart size={17} fill={isLiked ? 'currentColor' : 'none'} /><span>{formatNumber(app.likes)}</span></button>
                   <button type="button" className={`reaction-button ${isBookmarked ? 'is-active' : ''}`} onClick={() => onToggleBookmark(app.id)} aria-pressed={isBookmarked}><Bookmark size={17} fill={isBookmarked ? 'currentColor' : 'none'} /><span>{isBookmarked ? '저장됨' : '저장'}</span></button>
-                  <button type="button" className="reaction-button" onClick={() => {
-                    const shareData = { title: `${app.name} | Dropit`, text: app.tagline, url: window.location.href }
-                    if (navigator.share) {
-                      void navigator.share(shareData).catch(() => undefined)
-                      return
-                    }
-                    void navigator.clipboard?.writeText(window.location.href)
-                  }}><Share2 size={16} /><span>공유</span></button>
+                  <button type="button" className="reaction-button" onClick={() => void copyPageUrl()}><Share2 size={16} /><span>링크 복사</span></button>
                 </div>
+                {shareFeedback ? <p className={`detail-share-message ${shareFeedback === 'error' ? 'is-error' : ''}`} role="status" aria-live="polite">{shareFeedback === 'success' ? '링크가 복사되었습니다' : '페이지 링크를 복사하지 못했습니다.'}</p> : null}
               </div>
               <div className="detail-hero__meta">
                 <span><Play size={14} fill="currentColor" /> {formatNumber(app.plays)}회 실행</span>
