@@ -20,6 +20,7 @@ interface SubmitPageProps {
 const initialValues: AppFormValues = {
   name: '', tagline: '', description: '', appUrl: '', githubUrl: '', categories: [], techTags: '', thumbnailUrl: '',
 }
+const MAX_APP_CATEGORIES = 2
 const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024
 const EMBEDDED_IMAGE_PATTERN = /^data:image\/(?:png|jpeg|webp|gif);base64,/
 
@@ -30,7 +31,7 @@ function formValuesFromApp(app: AppItem): AppFormValues {
     description: app.description,
     appUrl: app.appUrl,
     githubUrl: app.githubUrl ?? '',
-    categories: app.categories,
+    categories: app.categories.slice(0, MAX_APP_CATEGORIES),
     techTags: app.techTags.join(', '),
     thumbnailUrl: app.thumbnailUrl ?? '',
   }
@@ -70,12 +71,13 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
   }
 
   const toggleCategory = (category: AppCategory) => {
-    setValues((current) => ({
-      ...current,
-      categories: current.categories.includes(category)
-        ? current.categories.filter((item) => item !== category)
-        : [...current.categories, category],
-    }))
+    setValues((current) => {
+      if (current.categories.includes(category)) {
+        return { ...current, categories: current.categories.filter((item) => item !== category) }
+      }
+      if (current.categories.length >= MAX_APP_CATEGORIES) return current
+      return { ...current, categories: [...current.categories, category] }
+    })
     if (errors.categories) setErrors((current) => ({ ...current, categories: undefined }))
   }
 
@@ -225,12 +227,13 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
               </Field>
             </FormSection>
             <FormSection title="분류">
-              <Field label="카테고리" htmlFor="app-category" error={errors.categories} required hint="여러 개 선택 가능">
+              <Field label="카테고리" htmlFor="app-category" error={errors.categories} required hint={`최대 ${MAX_APP_CATEGORIES}개 선택`}>
                 <div className="category-options" id="app-category" role="group" aria-label="카테고리 선택">
                   {CATEGORIES.filter((item): item is AppCategory => item !== '전체').map((item) => {
                     const isSelected = values.categories.includes(item)
-                    return <label className={`category-option ${isSelected ? 'is-selected' : ''}`} key={item}>
-                      <input type="checkbox" checked={isSelected} onChange={() => toggleCategory(item)} />
+                    const isDisabled = !isSelected && values.categories.length >= MAX_APP_CATEGORIES
+                    return <label className={`category-option ${isSelected ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}`} key={item}>
+                      <input type="checkbox" checked={isSelected} disabled={isDisabled} onChange={() => toggleCategory(item)} />
                       <span>{item}</span>
                     </label>
                   })}

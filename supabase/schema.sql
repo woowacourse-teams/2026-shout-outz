@@ -57,7 +57,7 @@ alter table public.apps alter column categories set not null;
 alter table public.apps drop constraint if exists apps_category_check;
 alter table public.apps add constraint apps_category_check check (category in ('게임', '생산성', '학습', '여행', 'AI', '하네스', '자기개발', '개발', '디자인', '생활', '건강', '생성기', '소셜', '실험'));
 alter table public.apps drop constraint if exists apps_categories_check;
-alter table public.apps add constraint apps_categories_check check (cardinality(categories) >= 1 and categories <@ array['게임', '생산성', '학습', '여행', 'AI', '하네스', '자기개발', '개발', '디자인', '생활', '건강', '생성기', '소셜', '실험']::text[]);
+alter table public.apps add constraint apps_categories_check check (cardinality(categories) between 1 and 2 and categories <@ array['게임', '생산성', '학습', '여행', 'AI', '하네스', '자기개발', '개발', '디자인', '생활', '건강', '생성기', '소셜', '실험']::text[]);
 alter table public.apps drop constraint if exists apps_description_check;
 alter table public.apps add constraint apps_description_check check (char_length(description) <= 5000);
 
