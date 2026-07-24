@@ -1,9 +1,13 @@
-import type { AppDraft } from '../types'
+import { CATEGORIES, type AppCategory, type AppDraft } from '../types'
 
 const APP_DRAFT_KEY = 'dropit:app-draft'
 
 function storageKey(userId: string) {
   return `${APP_DRAFT_KEY}:${userId}`
+}
+
+function isAppCategory(value: unknown): value is AppCategory {
+  return typeof value === 'string' && value !== '전체' && CATEGORIES.includes(value as AppCategory)
 }
 
 export function readAppDraft(userId: string): AppDraft | null {
@@ -12,16 +16,22 @@ export function readAppDraft(userId: string): AppDraft | null {
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<AppDraft>
     if (!parsed.values || typeof parsed.values !== 'object' || Array.isArray(parsed.values)) return null
+    const savedValues = parsed.values as Partial<AppDraft['values']> & { category?: unknown }
+    const savedCategories = Array.isArray(savedValues.categories)
+      ? savedValues.categories.filter(isAppCategory)
+      : typeof savedValues.category === 'string' && isAppCategory(savedValues.category)
+        ? [savedValues.category]
+        : []
     return {
       values: {
-        name: typeof parsed.values.name === 'string' ? parsed.values.name : '',
-        tagline: typeof parsed.values.tagline === 'string' ? parsed.values.tagline : '',
-        description: typeof parsed.values.description === 'string' ? parsed.values.description : '',
-        appUrl: typeof parsed.values.appUrl === 'string' ? parsed.values.appUrl : '',
-        githubUrl: typeof parsed.values.githubUrl === 'string' ? parsed.values.githubUrl : '',
-        category: typeof parsed.values.category === 'string' ? parsed.values.category as AppDraft['values']['category'] : '',
-        techTags: typeof parsed.values.techTags === 'string' ? parsed.values.techTags : '',
-        thumbnailUrl: typeof parsed.values.thumbnailUrl === 'string' ? parsed.values.thumbnailUrl : '',
+        name: typeof savedValues.name === 'string' ? savedValues.name : '',
+        tagline: typeof savedValues.tagline === 'string' ? savedValues.tagline : '',
+        description: typeof savedValues.description === 'string' ? savedValues.description : '',
+        appUrl: typeof savedValues.appUrl === 'string' ? savedValues.appUrl : '',
+        githubUrl: typeof savedValues.githubUrl === 'string' ? savedValues.githubUrl : '',
+        categories: savedCategories,
+        techTags: typeof savedValues.techTags === 'string' ? savedValues.techTags : '',
+        thumbnailUrl: typeof savedValues.thumbnailUrl === 'string' ? savedValues.thumbnailUrl : '',
       },
       thumbnailFileName: typeof parsed.thumbnailFileName === 'string' ? parsed.thumbnailFileName : '',
     }

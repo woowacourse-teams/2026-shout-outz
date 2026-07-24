@@ -35,6 +35,7 @@ create table if not exists public.apps (
   tagline text not null check (char_length(trim(tagline)) between 1 and 80),
   description text not null default '' check (char_length(description) <= 5000),
   category text not null check (category in ('게임', '생산성', '학습', '여행', 'AI', '하네스', '자기개발', '개발', '디자인', '생활', '건강', '생성기', '소셜', '실험')),
+  categories text[] not null default '{}',
   thumbnail_variant text not null default 'new',
   thumbnail_url text,
   app_url text not null,
@@ -49,8 +50,14 @@ create table if not exists public.apps (
 );
 
 alter table public.apps add column if not exists deleted_at timestamptz;
+alter table public.apps add column if not exists categories text[];
+update public.apps set categories = array[category]::text[] where categories is null or cardinality(categories) = 0;
+alter table public.apps alter column categories set default '{}';
+alter table public.apps alter column categories set not null;
 alter table public.apps drop constraint if exists apps_category_check;
 alter table public.apps add constraint apps_category_check check (category in ('게임', '생산성', '학습', '여행', 'AI', '하네스', '자기개발', '개발', '디자인', '생활', '건강', '생성기', '소셜', '실험'));
+alter table public.apps drop constraint if exists apps_categories_check;
+alter table public.apps add constraint apps_categories_check check (cardinality(categories) >= 1 and categories <@ array['게임', '생산성', '학습', '여행', 'AI', '하네스', '자기개발', '개발', '디자인', '생활', '건강', '생성기', '소셜', '실험']::text[]);
 alter table public.apps drop constraint if exists apps_description_check;
 alter table public.apps add constraint apps_description_check check (char_length(description) <= 5000);
 

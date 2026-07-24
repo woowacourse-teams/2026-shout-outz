@@ -84,7 +84,7 @@ export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggle
     return <div className="page-pad"><EmptyState type="app" onReset={() => navigate('/')} /></div>
   }
 
-  const similarApps = apps.filter((item) => item.category === app.category && item.id !== app.id).slice(0, 3)
+  const similarApps = apps.filter((item) => item.id !== app.id && item.categories.some((category) => app.categories.includes(category))).slice(0, 3)
   const isBookmarked = bookmarkedIds.includes(app.id)
   const isLiked = likedIds.includes(app.id)
   const isOwner = app.source === 'submitted' && profile != null && (app.ownerId ?? app.maker.id) === profile.id
@@ -118,7 +118,7 @@ export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggle
           <div className="detail-hero__grid">
             <div className="detail-hero__visual"><AppThumbnail variant={app.thumbnailVariant} label={app.name} size="large" customImage={app.thumbnailUrl} /></div>
             <div className="detail-hero__copy">
-              <div className="detail-hero__eyebrow"><span>{app.category}</span><span>앱 #{String(apps.findIndex((item) => item.id === app.id) + 1).padStart(2, '0')}</span></div>
+              <div className="detail-hero__eyebrow"><span>{app.categories.join(' · ')}</span><span>앱 #{String(apps.findIndex((item) => item.id === app.id) + 1).padStart(2, '0')}</span></div>
               <h1>{app.name}</h1>
               <p className="detail-hero__tagline">{app.tagline}</p>
               {isOwner ? <div className="detail-owner-actions">

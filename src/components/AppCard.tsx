@@ -54,7 +54,7 @@ export function AppCard({ app, isBookmarked, onToggleBookmark, featured = false 
       </div>
       <div className="app-card__body">
         <div className="app-card__eyebrow">
-          <span>{app.category}</span>
+          <span>{app.categories.join(' · ')}</span>
           <span className="app-card__date">{new Date(app.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</span>
         </div>
         <h3>{app.name}</h3>

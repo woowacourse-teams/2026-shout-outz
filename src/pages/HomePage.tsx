@@ -24,7 +24,7 @@ export function HomePage({ apps, bookmarkedIds, onToggleBookmark }: HomePageProp
   const filteredApps = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
     return [...apps]
-      .filter((app) => category === '전체' || app.category === category)
+      .filter((app) => category === '전체' || app.categories.includes(category))
       .filter((app) => {
         if (!normalizedQuery) return true
         return [app.name, app.tagline, app.maker.name].some((value) => value.toLowerCase().includes(normalizedQuery))

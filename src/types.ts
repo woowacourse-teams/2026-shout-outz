@@ -1,4 +1,5 @@
 export type Category = '전체' | '게임' | '생산성' | '학습' | '여행' | 'AI' | '하네스' | '자기개발' | '개발' | '디자인' | '생활' | '건강' | '생성기' | '소셜' | '실험'
+export type AppCategory = Exclude<Category, '전체'>
 
 export type ThumbnailVariant =
   | 'retro'
@@ -30,7 +31,7 @@ export interface AppItem {
   name: string
   tagline: string
   description: string
-  category: Exclude<Category, '전체'>
+  categories: AppCategory[]
   thumbnailVariant: ThumbnailVariant
   thumbnailUrl?: string
   appUrl: string
@@ -51,7 +52,7 @@ export interface AppFormValues {
   description: string
   appUrl: string
   githubUrl: string
-  category: Exclude<Category, '전체'> | ''
+  categories: AppCategory[]
   techTags: string
   thumbnailUrl: string
 }

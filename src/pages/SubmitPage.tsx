@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowRight, Check, CircleHelp, Info, Upload } from 'lucide-r
 import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import type { AppFormValues, AppItem, Category, Maker } from '../types'
+import type { AppCategory, AppFormValues, AppItem, Maker } from '../types'
 import { CATEGORIES } from '../types'
 import { AppCard } from '../components/AppCard'
 import { MarkdownContent } from '../components/MarkdownContent'
@@ -18,7 +18,7 @@ interface SubmitPageProps {
 }
 
 const initialValues: AppFormValues = {
-  name: '', tagline: '', description: '', appUrl: '', githubUrl: '', category: '', techTags: '', thumbnailUrl: '',
+  name: '', tagline: '', description: '', appUrl: '', githubUrl: '', categories: [], techTags: '', thumbnailUrl: '',
 }
 const MAX_THUMBNAIL_SIZE = 2 * 1024 * 1024
 const EMBEDDED_IMAGE_PATTERN = /^data:image\/(?:png|jpeg|webp|gif);base64,/
@@ -30,7 +30,7 @@ function formValuesFromApp(app: AppItem): AppFormValues {
     description: app.description,
     appUrl: app.appUrl,
     githubUrl: app.githubUrl ?? '',
-    category: app.category,
+    categories: app.categories,
     techTags: app.techTags.join(', '),
     thumbnailUrl: app.thumbnailUrl ?? '',
   }
@@ -57,7 +57,7 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
 
   const previewApp = useMemo<AppItem>(() => ({
     id: editingApp?.id ?? 'preview', name: values.name || '서비스 이름', tagline: values.tagline || '서비스를 한 줄로 소개하세요.', description: values.description,
-    category: (values.category || '실험') as Exclude<Category, '전체'>, thumbnailVariant: editingApp?.thumbnailVariant ?? 'new', thumbnailUrl: values.thumbnailUrl || undefined, appUrl: values.appUrl || 'https://example.com', githubUrl: values.githubUrl || undefined, maker, techTags: values.techTags.split(',').map((tag) => tag.trim()).filter(Boolean).slice(0, 5), plays: editingApp?.plays ?? 0, likes: editingApp?.likes ?? 0, createdAt: editingApp?.createdAt ?? new Date().toISOString(), source: 'submitted',
+    categories: values.categories.length > 0 ? values.categories : ['실험'] as AppCategory[], thumbnailVariant: editingApp?.thumbnailVariant ?? 'new', thumbnailUrl: values.thumbnailUrl || undefined, appUrl: values.appUrl || 'https://example.com', githubUrl: values.githubUrl || undefined, maker, techTags: values.techTags.split(',').map((tag) => tag.trim()).filter(Boolean).slice(0, 5), plays: editingApp?.plays ?? 0, likes: editingApp?.likes ?? 0, createdAt: editingApp?.createdAt ?? new Date().toISOString(), source: 'submitted',
   }), [editingApp, maker, values])
 
   const update = (field: keyof AppFormValues, value: string) => {
@@ -67,6 +67,16 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
       setThumbnailUploadError('')
     }
     if (errors[field]) setErrors((current) => ({ ...current, [field]: undefined }))
+  }
+
+  const toggleCategory = (category: AppCategory) => {
+    setValues((current) => ({
+      ...current,
+      categories: current.categories.includes(category)
+        ? current.categories.filter((item) => item !== category)
+        : [...current.categories, category],
+    }))
+    if (errors.categories) setErrors((current) => ({ ...current, categories: undefined }))
   }
 
   const handleThumbnailUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -115,7 +125,7 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
     if (!values.appUrl.trim()) nextErrors.appUrl = '서비스 주소를 입력해주세요.'
     else if (!isValidUrl(values.appUrl)) nextErrors.appUrl = 'https://로 시작하는 주소를 입력해주세요.'
     if (values.githubUrl && !isValidUrl(values.githubUrl)) nextErrors.githubUrl = 'GitHub 주소를 확인해주세요.'
-    if (!values.category) nextErrors.category = '카테고리를 선택해주세요.'
+    if (values.categories.length === 0) nextErrors.categories = '카테고리를 하나 이상 선택해주세요.'
     if (values.description.length > 5000) nextErrors.description = '상세 설명은 5000자 이내로 입력해주세요.'
     if (values.thumbnailUrl && !isValidUrl(values.thumbnailUrl) && !EMBEDDED_IMAGE_PATTERN.test(values.thumbnailUrl)) nextErrors.thumbnailUrl = '이미지 주소를 확인해주세요.'
     setErrors(nextErrors)
@@ -215,8 +225,16 @@ export function SubmitPage({ onAddApp, onUpdateApp, onVerifyCrewCode, maker, edi
               </Field>
             </FormSection>
             <FormSection title="분류">
-              <Field label="카테고리" htmlFor="app-category" error={errors.category} required>
-                <select id="app-category" value={values.category} onChange={(event) => update('category', event.target.value)}><option value="">카테고리 선택</option>{CATEGORIES.filter((item): item is Exclude<Category, '전체'> => item !== '전체').map((item) => <option value={item} key={item}>{item}</option>)}</select>
+              <Field label="카테고리" htmlFor="app-category" error={errors.categories} required hint="여러 개 선택 가능">
+                <div className="category-options" id="app-category" role="group" aria-label="카테고리 선택">
+                  {CATEGORIES.filter((item): item is AppCategory => item !== '전체').map((item) => {
+                    const isSelected = values.categories.includes(item)
+                    return <label className={`category-option ${isSelected ? 'is-selected' : ''}`} key={item}>
+                      <input type="checkbox" checked={isSelected} onChange={() => toggleCategory(item)} />
+                      <span>{item}</span>
+                    </label>
+                  })}
+                </div>
               </Field>
                 <Field label="기술 태그" htmlFor="app-tags" hint="쉼표로 구분, 최대 5개">
                 <input id="app-tags" value={values.techTags} onChange={(event) => update('techTags', event.target.value)} placeholder="React, TypeScript, Vite" />

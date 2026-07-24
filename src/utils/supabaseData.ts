@@ -1,4 +1,4 @@
-import type { AppItem, Category, Maker, ThumbnailVariant } from '../types'
+import type { AppCategory, AppItem, Category, Maker, ThumbnailVariant } from '../types'
 import { CATEGORIES } from '../types'
 import { supabase } from './auth'
 
@@ -16,6 +16,7 @@ interface RemoteAppRow {
   tagline: string
   description: string
   category: string
+  categories?: string[] | null
   thumbnail_variant: string
   thumbnail_url: string | null
   app_url: string
@@ -40,15 +41,22 @@ interface RemoteMakerRow {
   tone: string
 }
 
-const APP_COLUMNS = 'id,name,tagline,description,category,thumbnail_variant,thumbnail_url,app_url,github_url,maker,tech_tags,plays,likes,created_at,owner_id,deleted_at,source'
+const APP_COLUMNS = 'id,name,tagline,description,category,categories,thumbnail_variant,thumbnail_url,app_url,github_url,maker,tech_tags,plays,likes,created_at,owner_id,deleted_at,source'
 const THUMBNAIL_VARIANTS: ThumbnailVariant[] = ['retro', 'food', 'code', 'roulette', 'css', 'temperature', 'garden', 'dungeon', 'naming', 'http', 'timer', 'museum', 'new']
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value))
 }
 
-function isCategory(value: unknown): value is AppItem['category'] {
+function isCategory(value: unknown): value is AppCategory {
   return typeof value === 'string' && value !== '전체' && CATEGORIES.includes(value as Category)
+}
+
+function toCategories(value: unknown, fallback: unknown): AppCategory[] | null {
+  const categories = Array.isArray(value) ? value.filter(isCategory) : []
+  const uniqueCategories = [...new Set(categories)]
+  if (uniqueCategories.length > 0) return uniqueCategories
+  return isCategory(fallback) ? [fallback] : null
 }
 
 function isThumbnailVariant(value: unknown): value is ThumbnailVariant {
@@ -72,13 +80,14 @@ function toMaker(value: unknown): Maker | null {
 
 function toRemoteApp(row: RemoteAppRow): AppItem | null {
   const maker = toMaker(row.maker)
-  if (!maker || !isCategory(row.category) || !isThumbnailVariant(row.thumbnail_variant)) return null
+  const categories = toCategories(row.categories, row.category)
+  if (!maker || !categories || !isThumbnailVariant(row.thumbnail_variant)) return null
   return {
     id: row.id,
     name: row.name,
     tagline: row.tagline,
     description: row.description,
-    category: row.category,
+    categories,
     thumbnailVariant: row.thumbnail_variant,
     thumbnailUrl: row.thumbnail_url ?? undefined,
     appUrl: row.app_url,
@@ -121,7 +130,8 @@ function appToRow(app: AppItem) {
     name: app.name,
     tagline: app.tagline,
     description: app.description,
-    category: app.category,
+    category: app.categories[0],
+    categories: app.categories,
     thumbnail_variant: app.thumbnailVariant,
     thumbnail_url: app.thumbnailUrl ?? null,
     app_url: app.appUrl,
