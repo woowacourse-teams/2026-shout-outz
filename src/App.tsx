@@ -235,7 +235,14 @@ function App() {
   }, [authUser, bookmarkedIds, navigate])
 
   const toggleLike = useCallback((id: string) => {
-    if (!supabase || !authUser) return
+    if (!authUser) {
+      const returnTo = `${window.location.pathname}${window.location.search}`
+      if (window.confirm('좋아요를 누르려면 로그인이 필요합니다.\n로그인하시겠습니까?')) {
+        navigate(`/login?returnTo=${encodeURIComponent(returnTo)}`)
+      }
+      return
+    }
+    if (!supabase) return
     const wasLiked = likedIds.includes(id)
     setLikedIds(wasLiked ? likedIds.filter((item) => item !== id) : [...likedIds, id])
     void toggleRemoteLike(id).then((isLiked) => {
@@ -244,7 +251,7 @@ function App() {
       setLikedIds((current) => wasLiked ? (current.includes(id) ? current : [...current, id]) : current.filter((item) => item !== id))
       setDataError('좋아요 상태를 반영하지 못했습니다. 잠시 후 다시 시도해주세요.')
     })
-  }, [authUser, likedIds])
+  }, [authUser, likedIds, navigate])
 
   const launchApp = useCallback((id: string) => {
     setPlayCounts((current) => ({ ...current, [id]: (current[id] ?? 0) + 1 }))

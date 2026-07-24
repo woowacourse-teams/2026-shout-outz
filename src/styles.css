@@ -378,10 +378,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .footer-brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); font-size: 21px; }
 .footer-brand__icon { width: 30px; height: 30px; border-radius: 9px; }
 .site-footer__top p { margin: 18px 0 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
-.site-footer__stats { display: flex; align-items: flex-start; gap: 28px; margin-left: auto; }
+.site-footer__stats-block { display: flex; flex-direction: column; gap: 10px; margin-left: auto; }
+.site-footer__stats { display: flex; align-items: flex-start; gap: 28px; }
 .site-footer__stats span { display: flex; flex-direction: column; gap: 5px; min-width: 76px; }
 .site-footer__stats strong { color: var(--ink); font-size: 22px; font-weight: 600; letter-spacing: -.03em; }
 .site-footer__stats small { color: var(--muted); font-size: 11px; }
+.site-footer__stats-note { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.4; white-space: nowrap; }
 .site-footer__links { display: flex; gap: 72px; }
 .site-footer__links > div { min-width: 116px; display: flex; flex-direction: column; gap: 3px; }
 .site-footer__links strong { color: var(--ink); font-size: 12px; line-height: 1.6; letter-spacing: .025em; }

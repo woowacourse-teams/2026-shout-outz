@@ -12,9 +12,12 @@ export function SiteFooter({ authUser, visitorStats }: { authUser: AuthUser | nu
           <Link to="/" className="footer-brand"><img src="/dropit-icon.svg" alt="" className="footer-brand__icon" /><span className="footer-brand__word">dropit<span>.</span></span></Link>
           <p>내가 만든 서비스를 손쉽게 공유하세요.</p>
         </div>
-        <div className="site-footer__stats" aria-label="방문자 통계">
-          <span><strong>{visitorStats ? formatNumber(visitorStats.dailyVisitors) : '-'}</strong><small>일일 방문자</small></span>
-          <span><strong>{visitorStats ? formatNumber(visitorStats.totalVisitors) : '-'}</strong><small>전체 방문자</small></span>
+        <div className="site-footer__stats-block">
+          <div className="site-footer__stats" aria-label="방문자 통계">
+            <span><strong>{visitorStats ? formatNumber(visitorStats.dailyVisitors) : '-'}</strong><small>일일 방문자</small></span>
+            <span><strong>{visitorStats ? formatNumber(visitorStats.totalVisitors) : '-'}</strong><small>전체 방문자</small></span>
+          </div>
+          <p className="site-footer__stats-note">7월 24일 (금) 18:00부터 합산</p>
         </div>
         <div className="site-footer__links">
           <div>
