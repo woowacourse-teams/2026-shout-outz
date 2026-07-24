@@ -1,4 +1,4 @@
-import type { AppCategory, AppItem, Category, Maker, ThumbnailVariant } from '../types'
+import type { AppCategory, AppItem, Category, Maker, ThumbnailVariant, VisitorStats } from '../types'
 import { CATEGORIES } from '../types'
 import { supabase } from './auth'
 
@@ -43,9 +43,22 @@ interface RemoteMakerRow {
 
 const APP_COLUMNS = 'id,name,tagline,description,category,categories,thumbnail_variant,thumbnail_url,app_url,github_url,maker,tech_tags,plays,likes,created_at,owner_id,deleted_at,source'
 const THUMBNAIL_VARIANTS: ThumbnailVariant[] = ['retro', 'food', 'code', 'roulette', 'css', 'temperature', 'garden', 'dungeon', 'naming', 'http', 'timer', 'museum', 'new']
+const VISITOR_ID_KEY = 'dropit:visitor-id'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value))
+}
+
+function getVisitorId() {
+  try {
+    const savedVisitorId = window.localStorage.getItem(VISITOR_ID_KEY)
+    if (savedVisitorId) return savedVisitorId
+    const visitorId = window.crypto?.randomUUID?.() ?? `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    window.localStorage.setItem(VISITOR_ID_KEY, visitorId)
+    return visitorId
+  } catch {
+    return `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  }
 }
 
 function isCategory(value: unknown): value is AppCategory {
@@ -149,6 +162,11 @@ function throwIfError(error: { message: string } | null) {
   if (error) throw error
 }
 
+function toCount(value: unknown) {
+  const count = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN
+  return Number.isFinite(count) ? count : null
+}
+
 export async function fetchRemoteState(userId: string | null): Promise<RemoteState> {
   if (!supabase) return { apps: [], deletedApps: [], profile: null, bookmarkedIds: [], likedIds: [] }
 
@@ -246,6 +264,18 @@ export async function recordRemotePlay(appId: string) {
   if (!supabase) return
   const { error } = await supabase.rpc('increment_app_plays', { p_app_id: appId })
   throwIfError(error)
+}
+
+export async function recordRemoteSiteVisit(): Promise<VisitorStats | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase.rpc('record_site_visit', { p_visitor_id: getVisitorId() })
+  throwIfError(error)
+  const row = Array.isArray(data) ? data[0] : data
+  if (!isRecord(row)) return null
+  const dailyVisitors = toCount(row.daily_visitors)
+  const totalVisitors = toCount(row.total_visitors)
+  if (dailyVisitors === null || totalVisitors === null) return null
+  return { dailyVisitors, totalVisitors }
 }
 
 export async function verifyRemoteCrewAccessCode(code: string) {

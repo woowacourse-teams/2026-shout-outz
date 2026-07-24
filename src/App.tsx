@@ -11,9 +11,9 @@ import { LoginPage } from './pages/LoginPage'
 import { MakerPage } from './pages/MakerPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { SubmitPage } from './pages/SubmitPage'
-import type { AppItem, Maker } from './types'
+import type { AppItem, Maker, VisitorStats } from './types'
 import { isAuthConfigured, supabase, toAuthUser, type AuthUser } from './utils/auth'
-import { createRemoteApp, deleteRemoteApp, fetchRemoteState, recordRemotePlay, restoreRemoteApp, setRemoteBookmark, toggleRemoteLike, updateRemoteApp, upsertRemoteProfile, verifyRemoteCrewAccessCode } from './utils/supabaseData'
+import { createRemoteApp, deleteRemoteApp, fetchRemoteState, recordRemotePlay, recordRemoteSiteVisit, restoreRemoteApp, setRemoteBookmark, toggleRemoteLike, updateRemoteApp, upsertRemoteProfile, verifyRemoteCrewAccessCode } from './utils/supabaseData'
 
 const SERVICE_UNAVAILABLE_MESSAGE = '현재 버전은 프로토타입이라 데이터를 불러오는 과정이 불안정할 수 있습니다.\n페이지를 새로고침해주세요.'
 const CATEGORY_GUIDE_HIDE_KEY = 'dropit:category-guide-hide-date'
@@ -94,6 +94,7 @@ function App() {
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([])
   const [likedIds, setLikedIds] = useState<string[]>([])
   const [playCounts, setPlayCounts] = useState<Record<string, number>>({})
+  const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null)
   const [categoryGuideOpen, setCategoryGuideOpen] = useState(false)
   const [markdownGuideOpen, setMarkdownGuideOpen] = useState(false)
   const categoryGuideShownFor = useRef<string | null>(null)
@@ -102,6 +103,17 @@ function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [location.pathname, location.search])
+
+  useEffect(() => {
+    if (!supabase) return
+    let active = true
+    void recordRemoteSiteVisit().then((stats) => {
+      if (active) setVisitorStats(stats)
+    }).catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!supabase) {
@@ -400,7 +412,7 @@ function App() {
   return (
     <>
       <Routes>
-      <Route element={<Layout authUser={authUser} onLogout={logout} />}>
+      <Route element={<Layout authUser={authUser} onLogout={logout} visitorStats={visitorStats} />}>
         <Route path="/" element={homePage} />
         <Route path="/login" element={authLoading ? <AuthLoadingPage /> : authUser ? homePage : loginPage} />
         <Route path="/apps/:appId" element={detailPage} />

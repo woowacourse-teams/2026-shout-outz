@@ -26,6 +26,11 @@ export interface Maker {
   tone: string
 }
 
+export interface VisitorStats {
+  dailyVisitors: number
+  totalVisitors: number
+}
+
 export interface AppItem {
   id: string
   name: string

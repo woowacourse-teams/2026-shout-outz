@@ -61,6 +61,15 @@ alter table public.apps add constraint apps_categories_check check (cardinality(
 alter table public.apps drop constraint if exists apps_description_check;
 alter table public.apps add constraint apps_description_check check (char_length(description) <= 5000);
 
+create table if not exists public.site_visitors (
+  visitor_id text not null check (char_length(trim(visitor_id)) between 1 and 128),
+  visited_on date not null,
+  created_at timestamptz not null default timezone('utc', now()),
+  primary key (visitor_id, visited_on)
+);
+
+create index if not exists site_visitors_visited_on_idx on public.site_visitors (visited_on);
+
 create table if not exists public.app_bookmarks (
   user_id uuid not null references auth.users(id) on delete cascade,
   app_id text not null references public.apps(id) on delete cascade,
@@ -85,6 +94,7 @@ alter table public.app_bookmarks enable row level security;
 alter table public.app_likes enable row level security;
 alter table public.crew_access_codes enable row level security;
 alter table public.crew_members enable row level security;
+alter table public.site_visitors enable row level security;
 
 grant usage on schema public to anon, authenticated;
 grant select on public.makers, public.apps to anon, authenticated;
@@ -95,6 +105,7 @@ grant select, insert, delete on public.app_bookmarks to authenticated;
 grant select, insert, delete on public.app_likes to authenticated;
 grant select on public.crew_members to authenticated;
 revoke all on public.crew_access_codes from anon, authenticated;
+revoke all on public.site_visitors from anon, authenticated;
 
 drop policy if exists "makers are publicly readable" on public.makers;
 create policy "makers are publicly readable"
@@ -246,11 +257,38 @@ begin
 end;
 $$;
 
+create or replace function public.record_site_visit(p_visitor_id text)
+returns table (daily_visitors bigint, total_visitors bigint)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  current_day date := (timezone('Asia/Seoul', now()))::date;
+begin
+  if p_visitor_id is null or char_length(trim(p_visitor_id)) not between 1 and 128 then
+    raise exception '유효하지 않은 방문자 식별자입니다.';
+  end if;
+
+  insert into public.site_visitors (visitor_id, visited_on)
+  values (trim(p_visitor_id), current_day)
+  on conflict (visitor_id, visited_on) do nothing;
+
+  return query
+  select
+    (select count(*) from public.site_visitors where visited_on = current_day),
+    (select count(distinct visitor_id) from public.site_visitors);
+end;
+$$;
+
 revoke all on function public.increment_app_plays(text) from public;
 grant execute on function public.increment_app_plays(text) to anon, authenticated;
 
 revoke all on function public.toggle_app_like(text) from public;
 grant execute on function public.toggle_app_like(text) to authenticated;
+
+revoke all on function public.record_site_visit(text) from public;
+grant execute on function public.record_site_visit(text) to anon, authenticated;
 
 revoke all on function public.verify_crew_access_code(text) from public;
 grant execute on function public.verify_crew_access_code(text) to authenticated;
