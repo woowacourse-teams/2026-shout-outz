@@ -254,7 +254,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .profile-guide-modal__copy .category-guide-modal__edit-note { margin-top: 16px; color: var(--ink); font-weight: 500; }
 .auth-loading { min-height: 680px; display: flex; align-items: center; justify-content: center; color: var(--muted); background: var(--parchment); }
 .data-status { flex-direction: column; gap: 18px; padding-right: 24px; padding-left: 24px; text-align: center; }
-.data-status p { max-width: 420px; margin: 0; line-height: 1.8; white-space: pre-line; }
+.data-status p { width: min(100%, 760px); margin: 0; line-height: 1.8; white-space: pre-line; }
 .submit-page__heading { margin: 44px 0 52px; }
 .submit-page__heading h1 { margin: 20px 0 16px; font-size: clamp(42px, 5vw, 62px); line-height: 1.2; letter-spacing: -.045em; }
 .submit-page__heading h1 em { display: inline-block; margin-top: .04em; }
