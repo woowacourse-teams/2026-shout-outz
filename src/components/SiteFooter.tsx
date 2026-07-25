@@ -17,13 +17,14 @@ export function SiteFooter({ authUser, visitorStats }: { authUser: AuthUser | nu
             <span><strong>{visitorStats ? formatNumber(visitorStats.dailyVisitors) : '-'}</strong><small>일일 방문자</small></span>
             <span><strong>{visitorStats ? formatNumber(visitorStats.totalVisitors) : '-'}</strong><small>전체 방문자</small></span>
           </div>
-          <p className="site-footer__stats-note">7월 24일 (금) 18:00부터 합산</p>
+          <p className="site-footer__stats-note">7월 24일(금) 18:00부터 합산</p>
         </div>
         <div className="site-footer__links">
           <div>
             <strong>둘러보기</strong>
             <Link to="/">전체 서비스</Link>
             {authUser ? <Link to="/bookmarks">저장한 앱</Link> : null}
+            <Link to="/privacy">개인정보 처리방침</Link>
           </div>
           <div>
             <strong>만들기</strong>

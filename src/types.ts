@@ -31,6 +31,16 @@ export interface VisitorStats {
   totalVisitors: number
 }
 
+export interface AppComment {
+  id: string
+  appId: string
+  userId: string
+  parentId: string | null
+  content: string
+  createdAt: string
+  author: Maker
+}
+
 export interface AppItem {
   id: string
   name: string

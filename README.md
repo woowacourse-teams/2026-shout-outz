@@ -75,3 +75,15 @@
 - React Router
 - Supabase Auth, PostgreSQL, Row Level Security, RPC
 - Vercel
+
+## Google Analytics 4 설정
+
+GA4 속성에서 웹 데이터 스트림을 만든 뒤 Measurement ID를 환경변수로 추가합니다.
+
+```env
+VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+
+로컬에서는 `.env.local`, 운영 배포에서는 Vercel의 Production 환경변수에 등록한 뒤 다시 빌드합니다. Preview에는 운영용 Measurement ID를 넣지 않아 테스트 데이터가 운영 통계에 섞이지 않도록 합니다. Preview에서 GA4를 별도로 테스트하려면 별도 속성의 Measurement ID를 사용하세요. Measurement ID가 없거나 사용자가 분석을 거부하면 GA4 요청을 보내지 않습니다.
+
+서비스에서는 최초 방문 시 분석 동의 배너를 보여주며, 동의한 경우에만 GA4를 초기화합니다. 개인정보 처리방침은 `/privacy`에서 확인할 수 있습니다.

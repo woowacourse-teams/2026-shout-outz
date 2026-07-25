@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { CategoryGuideModal } from './components/CategoryGuideModal'
+import { AnalyticsConsentBanner } from './components/AnalyticsConsentBanner'
 import { Layout } from './components/Layout'
 import { MarkdownGuideModal } from './components/MarkdownGuideModal'
 import { AppDetailPage } from './pages/AppDetailPage'
@@ -10,9 +11,11 @@ import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { MakerPage } from './pages/MakerPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
 import { SubmitPage } from './pages/SubmitPage'
 import type { AppItem, Maker, VisitorStats } from './types'
 import { isAuthConfigured, supabase, toAuthUser, type AuthUser } from './utils/auth'
+import { getAnalyticsConsent, initializeAnalytics, isAnalyticsConfigured, type AnalyticsConsent, setAnalyticsUserId, trackEvent, trackPageView, updateAnalyticsConsent } from './utils/analytics'
 import { createRemoteApp, deleteRemoteApp, fetchRemoteState, recordRemotePlay, recordRemoteSiteVisit, restoreRemoteApp, setRemoteBookmark, toggleRemoteLike, updateRemoteApp, upsertRemoteProfile, verifyRemoteCrewAccessCode } from './utils/supabaseData'
 
 const SERVICE_UNAVAILABLE_MESSAGE = '현재 버전은 프로토타입이라 데이터를 불러오는 과정이 불안정할 수 있습니다.\n페이지를 새로고침해주세요.'
@@ -97,12 +100,17 @@ function App() {
   const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null)
   const [categoryGuideOpen, setCategoryGuideOpen] = useState(false)
   const [markdownGuideOpen, setMarkdownGuideOpen] = useState(false)
+  const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent | null>(() => getAnalyticsConsent())
   const categoryGuideShownFor = useRef<string | null>(null)
   const markdownGuideShownFor = useRef<string | null>(null)
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-  }, [location.pathname, location.search])
+    if (authLoading) return
+    initializeAnalytics()
+    setAnalyticsUserId(authUser?.id ?? null)
+    trackPageView(`${location.pathname}${location.search}`)
+  }, [analyticsConsent, authLoading, authUser?.id, location.pathname, location.search])
 
   useEffect(() => {
     if (!supabase) return
@@ -133,7 +141,8 @@ function App() {
       applySession(data.session?.user ?? null)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') trackEvent('login', { method: 'github' })
       applySession(session?.user ?? null)
     })
 
@@ -191,7 +200,7 @@ function App() {
     }
     if (authLoading || dataLoading || dataError) return
     if (profileLoadedFor !== authUser.id) return
-    if (location.pathname === '/makers/me') {
+    if (location.pathname === '/makers/me' || location.pathname === '/privacy') {
       setCategoryGuideOpen(false)
       return
     }
@@ -207,7 +216,7 @@ function App() {
 
   useEffect(() => {
     if (!authUser) return
-    if (authLoading || dataLoading || dataError || location.pathname === '/makers/me' || categoryGuideOpen || isMarkdownGuideHiddenToday() || markdownGuideShownFor.current === authUser.id) return
+    if (authLoading || dataLoading || dataError || location.pathname === '/makers/me' || location.pathname === '/privacy' || categoryGuideOpen || isMarkdownGuideHiddenToday() || markdownGuideShownFor.current === authUser.id) return
     markdownGuideShownFor.current = authUser.id
     setMarkdownGuideOpen(true)
   }, [authLoading, authUser, categoryGuideOpen, dataError, dataLoading, location.pathname])
@@ -228,7 +237,9 @@ function App() {
     const wasBookmarked = bookmarkedIds.includes(id)
     const nextIds = wasBookmarked ? bookmarkedIds.filter((item) => item !== id) : [...bookmarkedIds, id]
     setBookmarkedIds(nextIds)
-    void setRemoteBookmark(authUser.id, id, !wasBookmarked).catch(() => {
+    void setRemoteBookmark(authUser.id, id, !wasBookmarked).then(() => {
+      trackEvent(wasBookmarked ? 'bookmark_remove' : 'bookmark_add', { app_id: id })
+    }).catch(() => {
       setBookmarkedIds((current) => wasBookmarked ? (current.includes(id) ? current : [...current, id]) : current.filter((item) => item !== id))
       setDataError('저장하지 못했습니다. 잠시 후 다시 시도해주세요.')
     })
@@ -247,6 +258,7 @@ function App() {
     setLikedIds(wasLiked ? likedIds.filter((item) => item !== id) : [...likedIds, id])
     void toggleRemoteLike(id).then((isLiked) => {
       setLikedIds((current) => isLiked ? (current.includes(id) ? current : [...current, id]) : current.filter((item) => item !== id))
+      trackEvent(isLiked ? 'like_add' : 'like_remove', { app_id: id })
     }).catch(() => {
       setLikedIds((current) => wasLiked ? (current.includes(id) ? current : [...current, id]) : current.filter((item) => item !== id))
       setDataError('좋아요 상태를 반영하지 못했습니다. 잠시 후 다시 시도해주세요.')
@@ -255,6 +267,7 @@ function App() {
 
   const launchApp = useCallback((id: string) => {
     setPlayCounts((current) => ({ ...current, [id]: (current[id] ?? 0) + 1 }))
+    trackEvent('app_launch', { app_id: id })
     if (supabase) {
       void recordRemotePlay(id).catch(() => setDataError('실행 수를 반영하지 못했습니다.'))
     }
@@ -399,6 +412,16 @@ function App() {
     setMarkdownGuideOpen(false)
   }, [])
 
+  const handleAnalyticsConsent = useCallback((consent: AnalyticsConsent) => {
+    updateAnalyticsConsent(consent)
+    setAnalyticsConsent(consent)
+  }, [])
+
+  const resetAnalyticsConsent = useCallback(() => {
+    updateAnalyticsConsent(null)
+    setAnalyticsConsent(null)
+  }, [])
+
   const loginParams = new URLSearchParams(location.search)
   const loginReturnTo = loginParams.get('returnTo') ?? '/'
   const loginPage = <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo={loginReturnTo} onLogin={loginWithGithub} />
@@ -412,7 +435,8 @@ function App() {
   const submitPage = authLoading ? <AuthLoadingPage /> : authUser && currentMaker ? dataStatusPage ?? <SubmitPage maker={currentMaker} onAddApp={addApp} onVerifyCrewCode={verifyCrewCode} /> : submitLoginPage
   const editPage = authLoading ? <AuthLoadingPage /> : authUser && currentMaker ? dataStatusPage ?? <EditAppPage apps={apps} currentUserId={authUser.id} maker={currentMaker} onUpdateApp={updateApp} /> : <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo={window.location.pathname} onLogin={loginWithGithub} />
   const profilePage = authLoading ? <AuthLoadingPage /> : authUser && currentMaker ? dataStatusPage ?? <MakerPage apps={displayApps} deletedApps={deletedApps} profile={profile} currentMaker={currentMaker} isOwnProfile bookmarkedIds={bookmarkedIds} onSaveProfile={saveProfile} onToggleBookmark={toggleBookmark} onRestoreApp={restoreApp} /> : <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo="/makers/me" onLogin={loginWithGithub} />
-  const shouldRedirectToProfile = Boolean(authUser && profileLoadedFor === authUser.id && !authLoading && !dataLoading && !dataError && location.pathname !== '/makers/me' && !profile)
+  const privacyPolicyPage = <PrivacyPolicyPage consent={analyticsConsent} onChangeAnalyticsSettings={resetAnalyticsConsent} onSetAnalyticsConsent={handleAnalyticsConsent} />
+  const shouldRedirectToProfile = Boolean(authUser && profileLoadedFor === authUser.id && !authLoading && !dataLoading && !dataError && location.pathname !== '/makers/me' && location.pathname !== '/privacy' && !profile)
 
   if (shouldRedirectToProfile) return <Navigate to="/makers/me" replace />
 
@@ -428,11 +452,13 @@ function App() {
         <Route path="/makers/me" element={profilePage} />
         <Route path="/makers/:makerId" element={makerPage} />
         <Route path="/bookmarks" element={bookmarksPage} />
+        <Route path="/privacy" element={privacyPolicyPage} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
       </Routes>
       <CategoryGuideModal open={categoryGuideOpen && location.pathname !== '/makers/me'} onClose={closeCategoryGuide} onHideToday={hideCategoryGuideToday} onGoToMyServices={goToMyServices} />
       <MarkdownGuideModal open={markdownGuideOpen && location.pathname !== '/makers/me'} onClose={closeMarkdownGuide} onHideToday={hideMarkdownGuideToday} />
+      {isAnalyticsConfigured() && analyticsConsent === null && !categoryGuideOpen && !markdownGuideOpen ? <AnalyticsConsentBanner onAccept={() => handleAnalyticsConsent('granted')} onReject={() => handleAnalyticsConsent('denied')} /> : null}
     </>
   )
 }

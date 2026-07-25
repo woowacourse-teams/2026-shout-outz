@@ -5,6 +5,7 @@ import type { AppItem, Maker } from '../types'
 import { AppCard } from '../components/AppCard'
 import { AppThumbnail } from '../components/AppThumbnail'
 import { Avatar } from '../components/Avatar'
+import { CommentSection } from '../components/CommentSection'
 import { EmptyState } from '../components/EmptyState'
 import { MarkdownContent } from '../components/MarkdownContent'
 import { formatNumber } from '../utils/format'
@@ -179,6 +180,7 @@ export function AppDetailPage({ apps, profile, bookmarkedIds, likedIds, onToggle
           </aside>
         </div>
       </section>
+      <CommentSection appId={app.id} currentUser={profile} />
       <section className="detail-similar">
         <div className="content-container">
           <div className="section-heading"><div><span className="section-kicker">더 둘러보기</span><h2>비슷한 앱</h2></div><Link to="/" className="text-link">전체 앱 보기 <ArrowUpRight size={15} /></Link></div>

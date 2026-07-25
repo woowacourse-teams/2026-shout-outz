@@ -84,9 +84,67 @@ create table if not exists public.app_likes (
   primary key (user_id, app_id)
 );
 
+create table if not exists public.app_comments (
+  id uuid primary key default gen_random_uuid(),
+  app_id text not null references public.apps(id) on delete cascade,
+  user_id uuid not null references public.makers(id) on delete cascade,
+  parent_id uuid references public.app_comments(id) on delete cascade,
+  title text not null default '' check (char_length(title) <= 60),
+  content text not null check (char_length(trim(content)) between 1 and 500),
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+alter table public.app_comments add column if not exists parent_id uuid references public.app_comments(id) on delete cascade;
+alter table public.app_comments add column if not exists title text not null default '';
+alter table public.app_comments drop column if exists rating;
+alter table public.app_comments drop constraint if exists app_comments_title_check;
+alter table public.app_comments add constraint app_comments_title_check check (char_length(title) <= 60);
+
 create index if not exists apps_created_at_idx on public.apps (created_at desc);
 create index if not exists apps_owner_id_idx on public.apps (owner_id);
 create index if not exists apps_deleted_at_idx on public.apps (deleted_at);
+create index if not exists app_comments_app_id_created_at_idx on public.app_comments (app_id, created_at desc);
+create index if not exists app_comments_parent_id_idx on public.app_comments (parent_id);
+
+create or replace function public.validate_app_comment_parent()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  parent_app_id text;
+  parent_parent_id uuid;
+begin
+  if new.parent_id is null then
+    return new;
+  end if;
+
+  select app_id, parent_id
+  into parent_app_id, parent_parent_id
+  from public.app_comments
+  where id = new.parent_id;
+
+  if parent_app_id is null or parent_app_id <> new.app_id then
+    raise exception '답글을 남길 댓글을 확인하지 못했습니다.';
+  end if;
+
+  if parent_parent_id is not null then
+    raise exception '답글은 한 단계까지만 작성할 수 있습니다.';
+  end if;
+
+  if new.title <> '' then
+    raise exception '답글에는 제목을 남길 수 없습니다.';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists app_comments_parent_validation on public.app_comments;
+create trigger app_comments_parent_validation
+  before insert or update of app_id, parent_id on public.app_comments
+  for each row execute function public.validate_app_comment_parent();
 
 alter table public.makers enable row level security;
 alter table public.apps enable row level security;
@@ -95,6 +153,7 @@ alter table public.app_likes enable row level security;
 alter table public.crew_access_codes enable row level security;
 alter table public.crew_members enable row level security;
 alter table public.site_visitors enable row level security;
+alter table public.app_comments enable row level security;
 
 grant usage on schema public to anon, authenticated;
 grant select on public.makers, public.apps to anon, authenticated;
@@ -103,6 +162,8 @@ grant insert, update on public.apps to authenticated;
 revoke delete on public.apps from authenticated;
 grant select, insert, delete on public.app_bookmarks to authenticated;
 grant select, insert, delete on public.app_likes to authenticated;
+grant select on public.app_comments to anon, authenticated;
+grant insert, delete on public.app_comments to authenticated;
 grant select on public.crew_members to authenticated;
 revoke all on public.crew_access_codes from anon, authenticated;
 revoke all on public.site_visitors from anon, authenticated;
@@ -166,6 +227,34 @@ create policy "users can delete their own bookmarks"
 drop policy if exists "users can read their own likes" on public.app_likes;
 create policy "users can read their own likes"
   on public.app_likes for select to authenticated
+  using (auth.uid() = user_id);
+
+drop policy if exists "comments on visible apps are publicly readable" on public.app_comments;
+create policy "comments on visible apps are publicly readable"
+  on public.app_comments for select to anon, authenticated
+  using (
+    exists (
+      select 1
+      from public.apps
+      where apps.id = app_id and apps.deleted_at is null
+    )
+  );
+
+drop policy if exists "users can create comments on visible apps" on public.app_comments;
+create policy "users can create comments on visible apps"
+  on public.app_comments for insert to authenticated
+  with check (
+    auth.uid() = user_id
+    and exists (
+      select 1
+      from public.apps
+      where apps.id = app_id and apps.deleted_at is null
+    )
+  );
+
+drop policy if exists "users can delete their own comments" on public.app_comments;
+create policy "users can delete their own comments"
+  on public.app_comments for delete to authenticated
   using (auth.uid() = user_id);
 
 drop policy if exists "users can read their own crew membership" on public.crew_members;
@@ -292,3 +381,5 @@ grant execute on function public.record_site_visit(text) to anon, authenticated;
 
 revoke all on function public.verify_crew_access_code(text) from public;
 grant execute on function public.verify_crew_access_code(text) to authenticated;
+
+revoke all on function public.validate_app_comment_parent() from public;

@@ -1,4 +1,4 @@
-import type { AppCategory, AppItem, Category, Maker, ThumbnailVariant, VisitorStats } from '../types'
+import type { AppCategory, AppComment, AppItem, Category, Maker, ThumbnailVariant, VisitorStats } from '../types'
 import { CATEGORIES } from '../types'
 import { supabase } from './auth'
 
@@ -39,6 +39,15 @@ interface RemoteMakerRow {
   role: string
   bio: string
   tone: string
+}
+
+interface RemoteCommentRow {
+  id: string
+  app_id: string
+  user_id: string
+  parent_id: string | null
+  content: string
+  created_at: string
 }
 
 const APP_COLUMNS = 'id,name,tagline,description,category,categories,thumbnail_variant,thumbnail_url,app_url,github_url,maker,tech_tags,plays,likes,created_at,owner_id,deleted_at,source'
@@ -134,6 +143,13 @@ async function fetchRemoteMaker(userId: string) {
   const currentRequest = await supabase.from('makers').select('id,name,initials,avatar_url,role,bio,tone').eq('id', userId).maybeSingle()
   if (!currentRequest.error || !currentRequest.error.message.includes('avatar_url')) return currentRequest
   return supabase.from('makers').select('id,name,initials,role,bio,tone').eq('id', userId).maybeSingle()
+}
+
+async function fetchRemoteMakers(userIds: string[]) {
+  if (!supabase || userIds.length === 0) return { data: [], error: null }
+  const currentRequest = await supabase.from('makers').select('id,name,initials,avatar_url,role,bio,tone').in('id', userIds)
+  if (!currentRequest.error || !currentRequest.error.message.includes('avatar_url')) return currentRequest
+  return supabase.from('makers').select('id,name,initials,role,bio,tone').in('id', userIds)
 }
 
 function appToRow(app: AppItem) {
@@ -258,6 +274,62 @@ export async function toggleRemoteLike(appId: string) {
   const { data, error } = await supabase.rpc('toggle_app_like', { p_app_id: appId })
   throwIfError(error)
   return data === true
+}
+
+function toRemoteComment(row: RemoteCommentRow, author: Maker): AppComment {
+  return {
+    id: row.id,
+    appId: row.app_id,
+    userId: row.user_id,
+    parentId: row.parent_id,
+    content: row.content,
+    createdAt: row.created_at,
+    author,
+  }
+}
+
+export async function fetchRemoteComments(appId: string): Promise<AppComment[]> {
+  if (!supabase) return []
+  const { data: commentRows, error: commentsError } = await supabase
+    .from('app_comments')
+    .select('id,app_id,user_id,parent_id,content,created_at')
+    .eq('app_id', appId)
+    .order('created_at', { ascending: false })
+  throwIfError(commentsError)
+
+  const rows = (Array.isArray(commentRows) ? commentRows : []) as RemoteCommentRow[]
+  const userIds = [...new Set(rows.map((row) => row.user_id).filter((id): id is string => typeof id === 'string'))]
+  const { data: makerRows, error: makersError } = await fetchRemoteMakers(userIds)
+  throwIfError(makersError)
+  const makers = (Array.isArray(makerRows) ? makerRows : [])
+    .map((row) => toRemoteMaker(row as RemoteMakerRow))
+    .filter((maker): maker is Maker => Boolean(maker))
+  const makersById = new Map(makers.map((maker) => [maker.id, maker]))
+
+  return rows
+    .map((row) => {
+      const author = makersById.get(row.user_id)
+      return author ? toRemoteComment(row, author) : null
+    })
+    .filter((comment): comment is AppComment => Boolean(comment))
+}
+
+export async function createRemoteComment(appId: string, userId: string, content: string, author: Maker, parentId: string | null = null): Promise<AppComment> {
+  if (!supabase) throw new Error('Supabase is not configured')
+  const { data, error } = await supabase
+    .from('app_comments')
+    .insert({ app_id: appId, user_id: userId, parent_id: parentId, content })
+    .select('id,app_id,user_id,parent_id,content,created_at')
+    .single()
+  throwIfError(error)
+  if (!data) throw new Error('댓글을 확인하지 못했습니다.')
+  return toRemoteComment(data as RemoteCommentRow, author)
+}
+
+export async function deleteRemoteComment(commentId: string, userId: string) {
+  if (!supabase) return
+  const { error } = await supabase.from('app_comments').delete().eq('id', commentId).eq('user_id', userId)
+  throwIfError(error)
 }
 
 export async function recordRemotePlay(appId: string) {
