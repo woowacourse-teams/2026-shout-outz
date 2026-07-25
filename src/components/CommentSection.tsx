@@ -199,11 +199,13 @@ export function CommentSection({ appId, currentUser }: { appId: string; currentU
                     <button type="button" className="comment-card__toggle" onClick={() => toggleThread(comment.id)} aria-expanded={isExpanded}>
                       <div className="comment-card__header">
                         <div className="comment-card__author"><Avatar maker={comment.author} size="small" /><span><strong>{comment.author.name}</strong><small>{formatCommentDate(comment.createdAt)}</small></span></div>
-                        <span className="comment-card__expand-label">{isExpanded ? '접기' : replies.length > 0 ? `답글 ${replies.length}개` : '답글 달기'} <ChevronDown size={15} /></span>
                       </div>
                       <p>{comment.content}</p>
                     </button>
-                    {currentUser?.id === comment.userId ? <button type="button" className="comment-card__delete" onClick={() => void removeComment(comment)} disabled={deletingCommentId === comment.id} aria-label="댓글 삭제"><Trash2 size={14} /> 삭제</button> : null}
+                    <div className={`comment-card__actions ${currentUser?.id === comment.userId ? 'has-delete' : ''}`}>
+                      {currentUser?.id === comment.userId ? <button type="button" className="comment-card__delete" onClick={() => void removeComment(comment)} disabled={deletingCommentId === comment.id} aria-label="댓글 삭제"><Trash2 size={14} /> 삭제</button> : null}
+                      <button type="button" className="comment-card__reply" onClick={() => toggleThread(comment.id)} aria-expanded={isExpanded}>{isExpanded ? '접기' : replies.length > 0 ? `답글 ${replies.length}개` : '답글 달기'} <ChevronDown size={15} /></button>
+                    </div>
                     {isExpanded ? <div className="comment-thread">
                       {replies.length > 0 ? <div className="comment-thread__replies">{replies.map((reply) => <article className="comment-reply" key={reply.id}><div className="comment-reply__header"><div className="comment-card__author"><Avatar maker={reply.author} size="small" /><span><strong>{reply.author.name}</strong><small>{formatCommentDate(reply.createdAt)}</small></span></div>{currentUser?.id === reply.userId ? <button type="button" className="comment-card__delete" onClick={() => void removeComment(reply)} disabled={deletingCommentId === reply.id} aria-label="답글 삭제"><Trash2 size={14} /> 삭제</button> : null}</div><p>{reply.content}</p></article>)}</div> : <p className="comment-thread__empty">아직 답글이 없습니다.</p>}
                       {replyingTo === comment.id && currentUser ? <CommentComposer author={currentUser} value={replyContent} onChange={setReplyContent} onSubmit={() => submitComment(comment.id)} isSubmitting={isSubmitting} isReply placeholder="이 댓글에 답글을 남겨보세요." submitLabel="답글 남기기" /> : <button type="button" className="comment-thread__reply" onClick={() => currentUser ? toggleReplyForm(comment.id) : goToLogin()}>{currentUser ? '답글 달기' : '로그인하고 답글 달기'}</button>}
