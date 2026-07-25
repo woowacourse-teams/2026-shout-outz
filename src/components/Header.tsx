@@ -1,4 +1,4 @@
-import { Bookmark, LogIn, LogOut, Menu, X } from 'lucide-react'
+import { Bookmark, LogIn, LogOut, Menu, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import type { AuthUser } from '../utils/auth'
@@ -23,6 +23,7 @@ export function Header({ authUser, onLogout }: HeaderProps) {
           <Link to="/" className="brand" aria-label="Dropit 홈"><img src="/dropit-icon.svg" alt="" className="brand__icon" /><span className="brand__word">dropit<span>.</span></span></Link>
           <nav className={`global-nav__links ${menuOpen ? 'is-open' : ''}`} aria-label="주요 메뉴">
             <NavLink to="/" end>탐색</NavLink>
+            <NavLink to="/makers"><Users size={14} /> 크루</NavLink>
             {authUser ? <NavLink to="/bookmarks"><Bookmark size={14} /> 저장한 앱</NavLink> : null}
             {authUser ? <NavLink to="/makers/me">내 프로필</NavLink> : null}
             <NavLink to="/submit">앱 등록하기</NavLink>

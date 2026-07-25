@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AnalyticsConsentBanner } from './components/AnalyticsConsentBanner'
 import { CommentFeatureModal } from './components/CommentFeatureModal'
+import { CrewFeatureModal } from './components/CrewFeatureModal'
 import { Layout } from './components/Layout'
 import { AppDetailPage } from './pages/AppDetailPage'
 import { EditAppPage } from './pages/EditAppPage'
@@ -9,6 +10,7 @@ import { BookmarksPage } from './pages/BookmarksPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { MakerPage } from './pages/MakerPage'
+import { MakersPage } from './pages/MakersPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
 import { SubmitPage } from './pages/SubmitPage'
@@ -19,6 +21,7 @@ import { createRemoteApp, deleteRemoteApp, fetchRemoteState, recordRemotePlay, r
 
 const SERVICE_UNAVAILABLE_MESSAGE = '현재 버전은 프로토타입이라 데이터를 불러오는 과정이 불안정할 수 있습니다.\n페이지를 새로고침해주세요.'
 const COMMENT_FEATURE_HIDE_KEY = 'dropit:comment-feature-hide-date'
+const CREW_FEATURE_HIDE_KEY = 'dropit:crew-feature-hide-date'
 
 function localDateKey() {
   const today = new Date()
@@ -28,6 +31,14 @@ function localDateKey() {
 function isCommentFeatureHiddenToday() {
   try {
     return window.localStorage.getItem(COMMENT_FEATURE_HIDE_KEY) === localDateKey()
+  } catch {
+    return false
+  }
+}
+
+function isCrewFeatureHiddenToday() {
+  try {
+    return window.localStorage.getItem(CREW_FEATURE_HIDE_KEY) === localDateKey()
   } catch {
     return false
   }
@@ -65,7 +76,7 @@ function safeRedirectPath(value: string) {
   try {
     const requested = new URL(value, window.location.origin)
     if (requested.origin !== window.location.origin) return '/submit'
-    if (requested.pathname === '/' || requested.pathname === '/bookmarks' || requested.pathname === '/submit' || requested.pathname === '/makers/me' || /^\/apps\/[^/]+$/.test(requested.pathname) || /^\/apps\/[^/]+\/edit$/.test(requested.pathname)) return requested.pathname
+    if (requested.pathname === '/' || requested.pathname === '/bookmarks' || requested.pathname === '/submit' || requested.pathname === '/makers' || requested.pathname === '/makers/me' || /^\/apps\/[^/]+$/.test(requested.pathname) || /^\/apps\/[^/]+\/edit$/.test(requested.pathname)) return requested.pathname
   } catch {
     // Fall back to the app registration page for malformed redirect values.
   }
@@ -90,6 +101,8 @@ function App() {
   const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null)
   const [commentFeatureOpen, setCommentFeatureOpen] = useState(false)
   const [commentFeatureDismissed, setCommentFeatureDismissed] = useState(false)
+  const [crewFeatureOpen, setCrewFeatureOpen] = useState(false)
+  const [crewFeatureDismissed, setCrewFeatureDismissed] = useState(false)
   const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent | null>(() => getAnalyticsConsent())
 
   useEffect(() => {
@@ -182,6 +195,12 @@ function App() {
     if (authLoading || dataLoading || dataError || location.pathname !== '/' || commentFeatureOpen || commentFeatureDismissed || isCommentFeatureHiddenToday()) return
     setCommentFeatureOpen(true)
   }, [authLoading, commentFeatureDismissed, commentFeatureOpen, dataError, dataLoading, location.pathname])
+
+  useEffect(() => {
+    const commentFeatureWasClosed = commentFeatureDismissed || isCommentFeatureHiddenToday()
+    if (authLoading || dataLoading || dataError || location.pathname !== '/' || commentFeatureOpen || !commentFeatureWasClosed || crewFeatureOpen || crewFeatureDismissed || isCrewFeatureHiddenToday()) return
+    setCrewFeatureOpen(true)
+  }, [authLoading, commentFeatureDismissed, commentFeatureOpen, crewFeatureDismissed, crewFeatureOpen, dataError, dataLoading, location.pathname])
 
   const currentMaker = useMemo(() => authUser ? profile ?? makerFromAuthUser(authUser) : null, [authUser, profile])
   const displayApps = useMemo(() => apps.map((app) => ({ ...app, likes: app.likes + (likedIds.includes(app.id) ? 1 : 0), plays: app.plays + (playCounts[app.id] ?? 0) })), [apps, likedIds, playCounts])
@@ -350,6 +369,18 @@ function App() {
     setCommentFeatureDismissed(true)
   }, [])
 
+  const closeCrewFeature = useCallback((hideForToday: boolean) => {
+    if (hideForToday) {
+      try {
+        window.localStorage.setItem(CREW_FEATURE_HIDE_KEY, localDateKey())
+      } catch {
+        // 저장소가 차단되어도 팝업은 닫습니다.
+      }
+    }
+    setCrewFeatureOpen(false)
+    setCrewFeatureDismissed(true)
+  }, [])
+
   const handleAnalyticsConsent = useCallback((consent: AnalyticsConsent) => {
     updateAnalyticsConsent(consent)
     setAnalyticsConsent(consent)
@@ -369,6 +400,7 @@ function App() {
   const homePage = dataStatusPage ?? <HomePage apps={displayApps} bookmarkedIds={bookmarkedIds} onToggleBookmark={toggleBookmark} />
   const detailPage = dataStatusPage ?? <AppDetailPage apps={displayApps} profile={currentMaker} bookmarkedIds={bookmarkedIds} likedIds={likedIds} onToggleBookmark={toggleBookmark} onToggleLike={toggleLike} onLaunch={launchApp} onDeleteApp={deleteApp} />
   const makerPage = dataStatusPage ?? <MakerPage apps={displayApps} deletedApps={deletedApps} profile={profile} currentMaker={currentMaker} bookmarkedIds={bookmarkedIds} onSaveProfile={saveProfile} onToggleBookmark={toggleBookmark} onRestoreApp={restoreApp} />
+  const makersPage = dataStatusPage ?? <MakersPage apps={displayApps} bookmarkedIds={bookmarkedIds} onToggleBookmark={toggleBookmark} />
   const bookmarksPage = authLoading ? <AuthLoadingPage /> : authUser ? dataStatusPage ?? <BookmarksPage apps={displayApps} bookmarkedIds={bookmarkedIds} onToggleBookmark={toggleBookmark} /> : bookmarksLoginPage
   const submitPage = authLoading ? <AuthLoadingPage /> : authUser && currentMaker ? dataStatusPage ?? <SubmitPage maker={currentMaker} onAddApp={addApp} onVerifyCrewCode={verifyCrewCode} /> : submitLoginPage
   const editPage = authLoading ? <AuthLoadingPage /> : authUser && currentMaker ? dataStatusPage ?? <EditAppPage apps={apps} currentUserId={authUser.id} maker={currentMaker} onUpdateApp={updateApp} /> : <LoginPage isConfigured={isAuthConfigured} isLoading={authLoading} error={authError} returnTo={window.location.pathname} onLogin={loginWithGithub} />
@@ -387,6 +419,7 @@ function App() {
         <Route path="/apps/:appId" element={detailPage} />
         <Route path="/apps/:appId/edit" element={editPage} />
         <Route path="/submit" element={submitPage} />
+        <Route path="/makers" element={makersPage} />
         <Route path="/makers/me" element={profilePage} />
         <Route path="/makers/:makerId" element={makerPage} />
         <Route path="/bookmarks" element={bookmarksPage} />
@@ -395,7 +428,8 @@ function App() {
       </Route>
       </Routes>
       <CommentFeatureModal open={commentFeatureOpen} onClose={closeCommentFeature} />
-      {isAnalyticsConfigured() && analyticsConsent === null && !commentFeatureOpen ? <AnalyticsConsentBanner onAccept={() => handleAnalyticsConsent('granted')} onReject={() => handleAnalyticsConsent('denied')} /> : null}
+      <CrewFeatureModal open={crewFeatureOpen} onClose={closeCrewFeature} />
+      {isAnalyticsConfigured() && analyticsConsent === null && !commentFeatureOpen && !crewFeatureOpen ? <AnalyticsConsentBanner onAccept={() => handleAnalyticsConsent('granted')} onReject={() => handleAnalyticsConsent('denied')} /> : null}
     </>
   )
 }

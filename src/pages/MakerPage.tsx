@@ -117,7 +117,7 @@ export function ProfileSetup({ profile, avatarUrl, onCancel, onSave }: { profile
   const [error, setError] = useState('')
 
   const isEditingProfile = Boolean(profile)
-  const previewMaker: Maker = { id: profile?.id ?? 'me', name: name.trim() || '내 이름', initials: initialsFromName(name.trim() || profile?.name || ''), avatarUrl: profile?.avatarUrl ?? avatarUrl ?? null, role: role.trim() || '우테코 크루', bio: bio.trim() || '앱 소개가 여기에 표시됩니다.', tone: profile?.tone ?? '#d9e6ff' }
+  const previewMaker: Maker = { id: profile?.id ?? 'me', name: name.trim() || '내 이름', initials: initialsFromName(name.trim() || profile?.name || ''), avatarUrl: profile?.avatarUrl ?? avatarUrl ?? null, role: role.trim() || '우테코 크루', bio: bio.trim() || '간단한 자기소개를 작성해주세요.', tone: profile?.tone ?? '#d9e6ff' }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
