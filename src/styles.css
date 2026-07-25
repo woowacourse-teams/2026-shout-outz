@@ -232,6 +232,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .comment-form textarea::placeholder { color: var(--muted-light); }
 .comment-form textarea:focus { border-color: var(--blue-focus); box-shadow: 0 0 0 3px #0071e31c; }
 .comment-form textarea:disabled { opacity: .65; }
+.comment-form__notice { margin: 9px 0 0; display: flex; align-items: flex-start; gap: 5px; color: #9a5b00; font-size: 11px; line-height: 1.5; }
+.comment-form__notice svg { flex: 0 0 auto; margin-top: 1px; }
+.comment-form__notice strong, .feature-notice-modal__copy strong { font-weight: 700; }
 .comment-form__footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 10px; color: var(--muted-light); font-size: 11px; }
 .comments-login-prompt { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 24px; border-bottom: 1px solid var(--soft-line); }
 .comments-login-prompt strong { color: var(--ink); font-size: 14px; font-weight: 500; }
@@ -351,26 +354,26 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .login-card__button { min-height: 48px; margin-top: 24px; padding: 12px 22px; font-size: 15px; }
 .login-card__note { margin-top: 18px !important; color: #9a5b00 !important; font-size: 12px !important; }
 .login-card__error { margin-top: 12px !important; color: #ba3326 !important; font-size: 12px !important; }
-.profile-guide-modal { position: fixed; inset: 0; z-index: 100; padding: 24px; display: flex; align-items: center; justify-content: center; background: rgba(15,15,17,.5); backdrop-filter: blur(7px); }
-.profile-guide-modal__dialog { position: relative; width: min(520px, 100%); max-height: calc(100vh - 48px); overflow: auto; padding: 22px; color: var(--ink); border: 1px solid rgba(29,29,31,.08); border-radius: 20px; background: #fff; box-shadow: 0 24px 70px rgba(0,0,0,.2); }
-.profile-guide-modal__close { position: absolute; top: 16px; right: 16px; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); border-radius: 50%; background: rgba(255,255,255,.8); }
-.profile-guide-modal__close:hover { color: var(--ink); background: var(--parchment); }
-.profile-guide-modal__art { margin-bottom: 24px; overflow: hidden; border-radius: 14px; background: var(--tile); }
-.profile-guide-modal__art svg { width: 100%; height: auto; display: block; }
-.profile-guide-modal__copy { padding: 0 4px; }
-.profile-guide-modal__copy h2 { margin: 13px 0 12px; font-size: 28px; line-height: 1.28; letter-spacing: -.035em; font-weight: 600; }
-.profile-guide-modal__copy h2 em { color: var(--blue); font-style: normal; }
-.profile-guide-modal__copy p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
-.profile-guide-modal__check { margin: 22px 4px 0; display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; cursor: pointer; }
-.profile-guide-modal__check input { width: 15px; height: 15px; margin: 0; accent-color: var(--blue); }
-.profile-guide-modal__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
-.profile-guide-modal__actions .button { min-height: 42px; padding: 10px 16px; font-size: 13px; }
-.category-guide-modal__dialog { width: min(560px, 100%); }
-.category-guide-modal__added { margin-top: 20px; padding: 14px 16px; border-radius: 12px; background: var(--parchment); }
-.category-guide-modal__added strong { color: var(--ink); font-size: 12px; font-weight: 600; }
-.category-guide-modal__chips { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 7px; }
-.category-guide-modal__chips span { padding: 6px 10px; color: var(--blue); border: 1px solid #c8ddf5; border-radius: var(--radius-pill); background: #fff; font-size: 12px; line-height: 1.2; }
-.profile-guide-modal__copy .category-guide-modal__edit-note { margin-top: 16px; color: var(--ink); font-weight: 500; }
+.feature-notice-modal { position: fixed; inset: 0; z-index: 100; padding: 24px; display: flex; align-items: center; justify-content: center; background: rgba(15,15,17,.5); backdrop-filter: blur(7px); }
+.feature-notice-modal__dialog { position: relative; width: min(520px, 100%); max-height: calc(100vh - 48px); overflow: auto; padding: 22px; color: var(--ink); border: 1px solid rgba(29,29,31,.08); border-radius: 20px; background: #fff; box-shadow: 0 24px 70px rgba(0,0,0,.2); }
+.feature-notice-modal__close { position: absolute; top: 16px; right: 16px; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); border-radius: 50%; background: rgba(255,255,255,.8); }
+.feature-notice-modal__close:hover { color: var(--ink); background: var(--parchment); }
+.feature-notice-modal__art { min-height: 176px; margin-bottom: 24px; padding: 28px; position: relative; overflow: hidden; border-radius: 14px; background: var(--tile); }
+.feature-notice-modal__art::after { content: ''; position: absolute; width: 190px; height: 190px; right: -62px; bottom: -92px; border: 1px solid rgba(41,151,255,.32); border-radius: 50%; box-shadow: 0 0 0 20px rgba(41,151,255,.06), 0 0 0 42px rgba(41,151,255,.035); }
+.feature-notice-modal__bubble { position: absolute; display: inline-flex; align-items: center; justify-content: center; border-radius: 13px; }
+.feature-notice-modal__bubble--primary { top: 38px; left: 42px; width: 72px; height: 58px; color: #fff; background: var(--blue); box-shadow: 0 12px 26px rgba(0,102,204,.26); }
+.feature-notice-modal__bubble--secondary { top: 90px; left: 118px; width: 52px; height: 42px; color: #c7e2ff; border: 1px solid #526070; background: #323234; }
+.feature-notice-modal__line { position: absolute; left: 205px; height: 7px; border-radius: 4px; background: #626267; }
+.feature-notice-modal__line--short { top: 55px; width: 120px; }
+.feature-notice-modal__line--long { top: 78px; width: 178px; background: #4a4a4d; }
+.feature-notice-modal__copy { padding: 0 4px; }
+.feature-notice-modal__copy h2 { margin: 13px 0 12px; font-size: 28px; line-height: 1.28; letter-spacing: -.035em; font-weight: 600; }
+.feature-notice-modal__copy h2 em { color: var(--blue); font-style: normal; }
+.feature-notice-modal__copy p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
+.feature-notice-modal__check { margin: 22px 4px 0; display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; cursor: pointer; }
+.feature-notice-modal__check input { width: 15px; height: 15px; margin: 0; accent-color: var(--blue); }
+.feature-notice-modal__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+.feature-notice-modal__actions .button { min-height: 42px; padding: 10px 16px; font-size: 13px; }
 .auth-loading { min-height: 680px; display: flex; align-items: center; justify-content: center; color: var(--muted); background: var(--parchment); }
 .data-status { flex-direction: column; gap: 18px; padding-right: 24px; padding-left: 24px; text-align: center; }
 .data-status p { width: min(100%, 760px); margin: 0; line-height: 1.8; white-space: pre-line; }
@@ -684,12 +687,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .submit-page__heading p { font-size: 15px; line-height: 1.7; }
   .login-card { margin-top: 28px; padding: 32px 20px; }
   .login-card h1 { font-size: 34px; line-height: 1.2; }
-  .profile-guide-modal { padding: 16px; }
-  .profile-guide-modal__dialog { padding: 16px; border-radius: 16px; }
-  .profile-guide-modal__art { margin-bottom: 20px; }
-  .profile-guide-modal__copy h2 { font-size: 24px; }
-  .profile-guide-modal__actions { flex-direction: column-reverse; }
-  .profile-guide-modal__actions .button { width: 100%; }
+  .feature-notice-modal { padding: 16px; }
+  .feature-notice-modal__dialog { padding: 16px; border-radius: 16px; }
+  .feature-notice-modal__art { min-height: 150px; margin-bottom: 20px; padding: 20px; }
+  .feature-notice-modal__bubble--primary { top: 30px; left: 28px; }
+  .feature-notice-modal__bubble--secondary { top: 82px; left: 104px; }
+  .feature-notice-modal__line { left: 176px; }
+  .feature-notice-modal__line--short { top: 47px; width: 80px; }
+  .feature-notice-modal__line--long { top: 69px; width: 118px; }
+  .feature-notice-modal__copy h2 { font-size: 24px; }
+  .feature-notice-modal__actions .button { width: 100%; }
   .form-section { margin-bottom: 36px; padding-bottom: 36px; }
   .submit-success { min-height: 590px; }
   .submit-success__actions { flex-direction: column; width: min(100%, 300px); }

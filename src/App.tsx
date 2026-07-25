@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { CategoryGuideModal } from './components/CategoryGuideModal'
 import { AnalyticsConsentBanner } from './components/AnalyticsConsentBanner'
+import { CommentFeatureModal } from './components/CommentFeatureModal'
 import { Layout } from './components/Layout'
-import { MarkdownGuideModal } from './components/MarkdownGuideModal'
 import { AppDetailPage } from './pages/AppDetailPage'
 import { EditAppPage } from './pages/EditAppPage'
 import { BookmarksPage } from './pages/BookmarksPage'
@@ -19,25 +18,16 @@ import { getAnalyticsConsent, initializeAnalytics, isAnalyticsConfigured, type A
 import { createRemoteApp, deleteRemoteApp, fetchRemoteState, recordRemotePlay, recordRemoteSiteVisit, restoreRemoteApp, setRemoteBookmark, toggleRemoteLike, updateRemoteApp, upsertRemoteProfile, verifyRemoteCrewAccessCode } from './utils/supabaseData'
 
 const SERVICE_UNAVAILABLE_MESSAGE = '현재 버전은 프로토타입이라 데이터를 불러오는 과정이 불안정할 수 있습니다.\n페이지를 새로고침해주세요.'
-const CATEGORY_GUIDE_HIDE_KEY = 'dropit:category-guide-hide-date'
-const MARKDOWN_GUIDE_HIDE_KEY = 'dropit:markdown-guide-hide-date'
+const COMMENT_FEATURE_HIDE_KEY = 'dropit:comment-feature-hide-date'
 
 function localDateKey() {
   const today = new Date()
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 }
 
-function isCategoryGuideHiddenToday() {
+function isCommentFeatureHiddenToday() {
   try {
-    return window.localStorage.getItem(CATEGORY_GUIDE_HIDE_KEY) === localDateKey()
-  } catch {
-    return false
-  }
-}
-
-function isMarkdownGuideHiddenToday() {
-  try {
-    return window.localStorage.getItem(MARKDOWN_GUIDE_HIDE_KEY) === localDateKey()
+    return window.localStorage.getItem(COMMENT_FEATURE_HIDE_KEY) === localDateKey()
   } catch {
     return false
   }
@@ -98,11 +88,9 @@ function App() {
   const [likedIds, setLikedIds] = useState<string[]>([])
   const [playCounts, setPlayCounts] = useState<Record<string, number>>({})
   const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null)
-  const [categoryGuideOpen, setCategoryGuideOpen] = useState(false)
-  const [markdownGuideOpen, setMarkdownGuideOpen] = useState(false)
+  const [commentFeatureOpen, setCommentFeatureOpen] = useState(false)
+  const [commentFeatureDismissed, setCommentFeatureDismissed] = useState(false)
   const [analyticsConsent, setAnalyticsConsent] = useState<AnalyticsConsent | null>(() => getAnalyticsConsent())
-  const categoryGuideShownFor = useRef<string | null>(null)
-  const markdownGuideShownFor = useRef<string | null>(null)
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
@@ -191,35 +179,9 @@ function App() {
   }, [authLoading, authUser?.id])
 
   useEffect(() => {
-    if (!authUser) {
-      categoryGuideShownFor.current = null
-      markdownGuideShownFor.current = null
-      setCategoryGuideOpen(false)
-      setMarkdownGuideOpen(false)
-      return
-    }
-    if (authLoading || dataLoading || dataError) return
-    if (profileLoadedFor !== authUser.id) return
-    if (location.pathname === '/makers/me' || location.pathname === '/privacy') {
-      setCategoryGuideOpen(false)
-      return
-    }
-    if (!profile) return
-    if (categoryGuideOpen) {
-      return
-    }
-    if (!isCategoryGuideHiddenToday() && categoryGuideShownFor.current !== authUser.id) {
-      categoryGuideShownFor.current = authUser.id
-      setCategoryGuideOpen(true)
-    }
-  }, [authLoading, authUser, categoryGuideOpen, dataError, dataLoading, location.pathname, profile, profileLoadedFor])
-
-  useEffect(() => {
-    if (!authUser) return
-    if (authLoading || dataLoading || dataError || location.pathname === '/makers/me' || location.pathname === '/privacy' || categoryGuideOpen || isMarkdownGuideHiddenToday() || markdownGuideShownFor.current === authUser.id) return
-    markdownGuideShownFor.current = authUser.id
-    setMarkdownGuideOpen(true)
-  }, [authLoading, authUser, categoryGuideOpen, dataError, dataLoading, location.pathname])
+    if (authLoading || dataLoading || dataError || location.pathname !== '/' || commentFeatureOpen || commentFeatureDismissed || isCommentFeatureHiddenToday()) return
+    setCommentFeatureOpen(true)
+  }, [authLoading, commentFeatureDismissed, commentFeatureOpen, dataError, dataLoading, location.pathname])
 
   const currentMaker = useMemo(() => authUser ? profile ?? makerFromAuthUser(authUser) : null, [authUser, profile])
   const displayApps = useMemo(() => apps.map((app) => ({ ...app, likes: app.likes + (likedIds.includes(app.id) ? 1 : 0), plays: app.plays + (playCounts[app.id] ?? 0) })), [apps, likedIds, playCounts])
@@ -376,40 +338,16 @@ function App() {
     })
   }, [])
 
-  const closeCategoryGuide = useCallback(() => {
-    if (authUser) categoryGuideShownFor.current = authUser.id
-    setCategoryGuideOpen(false)
-  }, [authUser])
-  const hideCategoryGuideToday = useCallback(() => {
-    try {
-      window.localStorage.setItem(CATEGORY_GUIDE_HIDE_KEY, localDateKey())
-    } catch {
-      // Storage가 차단된 경우에도 팝업은 닫습니다.
+  const closeCommentFeature = useCallback((hideForToday: boolean) => {
+    if (hideForToday) {
+      try {
+        window.localStorage.setItem(COMMENT_FEATURE_HIDE_KEY, localDateKey())
+      } catch {
+        // 저장소가 차단되어도 팝업은 닫습니다.
+      }
     }
-    if (authUser) categoryGuideShownFor.current = authUser.id
-    setCategoryGuideOpen(false)
-  }, [authUser])
-  const goToMyServices = useCallback(() => {
-    if (authUser) {
-      categoryGuideShownFor.current = authUser.id
-      markdownGuideShownFor.current = authUser.id
-    }
-    setCategoryGuideOpen(false)
-    const ownedApps = apps.filter((app) => app.ownerId === authUser?.id || (!app.ownerId && app.maker.id === authUser?.id))
-    if (ownedApps.length === 1) {
-      navigate(`/apps/${ownedApps[0].id}/edit`)
-      return
-    }
-    navigate('/makers/me')
-  }, [apps, authUser, navigate])
-  const closeMarkdownGuide = useCallback(() => setMarkdownGuideOpen(false), [])
-  const hideMarkdownGuideToday = useCallback(() => {
-    try {
-      window.localStorage.setItem(MARKDOWN_GUIDE_HIDE_KEY, localDateKey())
-    } catch {
-      // Storage가 차단된 경우에도 팝업은 닫습니다.
-    }
-    setMarkdownGuideOpen(false)
+    setCommentFeatureOpen(false)
+    setCommentFeatureDismissed(true)
   }, [])
 
   const handleAnalyticsConsent = useCallback((consent: AnalyticsConsent) => {
@@ -456,9 +394,8 @@ function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
       </Routes>
-      <CategoryGuideModal open={categoryGuideOpen && location.pathname !== '/makers/me'} onClose={closeCategoryGuide} onHideToday={hideCategoryGuideToday} onGoToMyServices={goToMyServices} />
-      <MarkdownGuideModal open={markdownGuideOpen && location.pathname !== '/makers/me'} onClose={closeMarkdownGuide} onHideToday={hideMarkdownGuideToday} />
-      {isAnalyticsConfigured() && analyticsConsent === null && !categoryGuideOpen && !markdownGuideOpen ? <AnalyticsConsentBanner onAccept={() => handleAnalyticsConsent('granted')} onReject={() => handleAnalyticsConsent('denied')} /> : null}
+      <CommentFeatureModal open={commentFeatureOpen} onClose={closeCommentFeature} />
+      {isAnalyticsConfigured() && analyticsConsent === null && !commentFeatureOpen ? <AnalyticsConsentBanner onAccept={() => handleAnalyticsConsent('granted')} onReject={() => handleAnalyticsConsent('denied')} /> : null}
     </>
   )
 }

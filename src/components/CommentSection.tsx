@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, MessageCircle, Send, Trash2 } from 'lucide-react'
+import { ChevronDown, MessageCircle, Send, ShieldAlert, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { AppComment, Maker } from '../types'
 import { trackEvent } from '../utils/analytics'
@@ -38,6 +38,7 @@ function CommentComposer({ author, value, onChange, onSubmit, isSubmitting, isRe
     <form className="comment-form" onSubmit={(event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void onSubmit() }}>
       <div className="comment-form__author"><Avatar maker={author} size="small" /><strong>{author.name}</strong></div>
       <textarea value={value} onChange={(event) => handleChange(event.target.value)} maxLength={COMMENT_MAX_LENGTH} placeholder={placeholder} aria-label={isReply ? '답글 내용' : '댓글 내용'} rows={4} disabled={isSubmitting} />
+      <p className="comment-form__notice"><ShieldAlert size={13} /> <strong>욕설, 비방, 명예훼손, 차별적 표현과 개인정보 등 민감한 정보는 남기지 마세요. 문제되는 댓글은 삭제될 수 있습니다.</strong></p>
       <div className="comment-form__footer">
         <span>{value.length}/{COMMENT_MAX_LENGTH}자 · {countCommentLines(value)}/{COMMENT_MAX_LINES}줄</span>
         <button type="submit" className="button button--primary button--small" disabled={isSubmitting || !value.trim()}>
