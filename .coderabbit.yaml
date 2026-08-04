@@ -1,0 +1,137 @@
+# IDE에서 CodeRabbit 설정의 자동완성과 유효성 검사를 지원합니다.
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+# CodeRabbit이 작성하는 리뷰와 메시지의 언어를 한국어로 설정합니다.
+language: "ko-KR"
+
+# 리뷰와 채팅의 말투 및 피드백 방향을 지정합니다.
+# 최대 250자이므로 지나치게 길게 작성하지 않는 것이 좋습니다.
+tone_instructions: >
+  정확성, 보안, 유지보수성에 영향을 주는 문제를 우선 리뷰하세요.
+  문제의 영향과 수정 방법을 구체적으로 설명하고,
+  단순 취향이나 사소한 스타일 차이는 지적하지 마세요.
+
+# 정식 출시 전 기능을 사용하지 않습니다.
+early_access: false
+
+# 코드 리뷰와 관련된 설정입니다.
+reviews:
+
+  # 중요한 문제와 실질적인 개선 사항을 균형 있게 리뷰합니다.
+  # 초기 도입 단계에서는 피드백이 과도한 assertive보다 chill을 권장합니다.
+  profile: "chill"
+
+  # CodeRabbit이 GitHub의 Request Changes 및 자동 승인 흐름에 관여하지 않게 합니다.
+  # 초기에는 사람 리뷰어가 최종 승인 여부를 판단하도록 둡니다.
+  request_changes_workflow: false
+
+  # PR 변경 사항에 대한 전체 요약을 생성합니다.
+  high_level_summary: true
+
+  # 리뷰가 실행되거나 건너뛰어진 상태를 Walkthrough 댓글에 표시합니다.
+  review_status: true
+
+  # 긴 Walkthrough 내용을 접을 수 있는 영역으로 표시합니다.
+  collapse_walkthrough: true
+
+  # 변경된 파일별 역할과 변경 내용을 요약합니다.
+  changed_files_summary: true
+
+  # 호출 흐름을 분석한 시퀀스 다이어그램을 생성하지 않습니다.
+  # 초기에는 댓글이 지나치게 길어지는 것을 방지하기 위해 끕니다.
+  sequence_diagrams: false
+
+  # CodeRabbit이 예상 리뷰 소요 시간을 표시하지 않습니다.
+  estimate_code_review_effort: false
+
+  # PR 리뷰에 자동으로 시를 생성하지 않습니다.
+  poem: false
+
+  # PR 자동 리뷰 실행 조건을 설정합니다.
+  auto_review:
+
+    # PR이 생성되거나 변경되면 자동으로 리뷰합니다.
+    enabled: true
+
+    # Draft 상태의 PR은 자동 리뷰하지 않습니다.
+    # 개발 중인 미완성 코드에 불필요한 리뷰가 달리는 것을 방지합니다.
+    drafts: false
+
+    # PR에 새 커밋이 추가되면 변경된 부분을 다시 리뷰합니다.
+    auto_incremental_review: true
+
+    # 기본 브랜치 외에 develop 브랜치를 대상으로 하는 PR도 리뷰합니다.
+    # 저장소의 기본 브랜치(main 등)는 별도로 작성하지 않아도 항상 포함됩니다.
+    base_branches:
+      - "develop"
+
+  # PR 병합 전에 수행할 추가 검사 설정입니다.
+  # 초기에는 팀 규칙이 확정되지 않았으므로 모두 비활성화합니다.
+  pre_merge_checks:
+
+    # 코드의 Docstring 작성 비율을 검사하지 않습니다.
+    docstrings:
+      # off는 검사를 완전히 비활성화합니다.
+      mode: "off"
+
+    # PR 제목의 형식과 내용을 검사하지 않습니다.
+    title:
+      # 팀의 PR 제목 규칙을 정한 후 warning부터 적용할 수 있습니다.
+      mode: "off"
+
+    # PR 설명이 충분히 작성됐는지 검사하지 않습니다.
+    description:
+      # PR 템플릿이 정착된 후 warning으로 활성화할 수 있습니다.
+      mode: "off"
+
+    # 연결된 Issue의 요구사항을 PR이 충족했는지 검사하지 않습니다.
+    issue_assessment:
+      # Issue 기반 개발 프로세스가 정착된 후 활성화하는 것이 좋습니다.
+      mode: "off"
+
+  # 리뷰 이후 CodeRabbit이 코드를 생성하거나 수정하는 기능입니다.
+  # 초기에는 리뷰 품질을 먼저 검증하기 위해 모두 비활성화합니다.
+  finishing_touches:
+
+    # 변경된 코드의 Docstring을 자동으로 생성하지 않습니다.
+    docstrings:
+      enabled: false
+
+    # 변경 사항을 기반으로 단위 테스트를 자동 생성하지 않습니다.
+    unit_tests:
+      enabled: false
+
+    # 코드를 단순화하거나 리팩터링하는 변경 사항을 자동 생성하지 않습니다.
+    simplify:
+      enabled: false
+
+    # 리뷰 지적 사항에 대한 수정 코드를 자동으로 적용하지 않습니다.
+    autofix:
+      enabled: false
+
+    # 실패한 CI를 분석하고 수정 PR을 생성하는 기능을 사용하지 않습니다.
+    fix_ci:
+      enabled: false
+
+    # Merge Conflict를 분석하고 자동으로 해결하는 기능을 사용하지 않습니다.
+    resolve_merge_conflict:
+      enabled: false
+
+# PR 댓글에서 CodeRabbit과 대화하는 기능을 설정합니다.
+chat:
+
+  # CodeRabbit을 태그하지 않아도 관련 댓글에 자동으로 답변하게 합니다.
+  auto_reply: true
+
+# 저장소의 리뷰 기록과 Issue 정보를 활용하는 범위를 설정합니다.
+knowledge_base:
+
+  # 과거 리뷰 피드백에서 학습한 내용을 현재 저장소 안에서만 사용합니다.
+  learnings:
+    # 조직 전체 저장소의 학습 내용이 섞이지 않도록 local로 제한합니다.
+    scope: "local"
+
+  # 리뷰 시 참고할 GitHub Issue를 현재 저장소의 Issue로 제한합니다.
+  issues:
+    # 다른 조직 저장소의 Issue가 리뷰 문맥에 포함되지 않도록 합니다.
+    scope: "local"
