@@ -8,6 +8,15 @@
 실제 코드(스키마·쿼리·RLS 정책)를 기준으로 도출했고, 현재 앱에는 없지만 API로 전환하면
 자연스럽게 필요해지는 항목은 "🆕 제안"으로 표시했다.
 
+## 1차 Spring API 구현 기준
+
+- GitHub OAuth 로그인·토큰 갱신·로그아웃은 1차에서도 Supabase Auth가 담당한다.
+- 프론트엔드는 Supabase access token을 `Authorization: Bearer`로 Spring API에 전달한다.
+- Spring은 JWT 서명과 `sub` 사용자 ID를 검증하고, 소유자·크루 권한을 서비스 계층에서 확인한다.
+- Spring API는 `/v1` prefix를 사용한다.
+- DB 마이그레이션과 S3 파일 업로드는 실제 데이터 안전성 때문에 후속 작업으로 분리한다.
+- 실행 중 생성되는 기계용 문서는 `GET /v1/openapi.json`, 브라우저 문서는 `/v1/swagger-ui.html`에서 제공한다.
+
 ## 목차
 
 | 파일 | 내용 |

@@ -76,6 +76,10 @@
 - Supabase Auth, PostgreSQL, Row Level Security, RPC
 - Vercel
 
+## 백엔드
+
+Spring Boot REST API는 [`backend/`](./backend/)에서 관리합니다. 기술 선택과 선택 근거는 [`docs/backend-decision-log.md`](./docs/backend-decision-log.md)에 기록했습니다.
+
 ## Google Analytics 4 설정
 
 GA4 속성에서 웹 데이터 스트림을 만든 뒤 Measurement ID를 환경변수로 추가합니다.
