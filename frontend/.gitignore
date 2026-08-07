@@ -1,0 +1,23 @@
+node_modules/
+dist/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+.env.local
+.DS_Store
+.idea/
+.vscode/
+
+# Local credentials and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.secret
+credentials*.json
+*-credentials.json
+service-account*.json
+.npmrc
