@@ -44,8 +44,8 @@ reviews:
   # CodeRabbit이 예상 리뷰 소요 시간을 표시하지 않습니다.
   estimate_code_review_effort: false
 
-  # PR 리뷰에 자동으로 시를 생성하지 않습니다.
-  poem: false
+  # PR 리뷰에 자동으로 시를 생성합니다.
+  poem: true
 
   # PR 자동 리뷰 실행 조건을 설정합니다.
   auto_review:
