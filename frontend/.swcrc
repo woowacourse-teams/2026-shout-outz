@@ -11,7 +11,7 @@
     },
     "env": {
         "mode": "usage",
-        "coreJs": "3"
+        "coreJs": "3.50"
     },
     "minify": true
 }
