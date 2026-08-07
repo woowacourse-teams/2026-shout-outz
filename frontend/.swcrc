@@ -7,7 +7,11 @@
             "syntax": "typescript",
             "tsx": true
         },
-        "target": "es2022"
+        "externalHelpers": true
+    },
+    "env": {
+        "mode": "usage",
+        "coreJs": "3"
     },
     "minify": true
 }
