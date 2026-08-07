@@ -1,0 +1,13 @@
+{
+    "jsc": {
+        "transform": {
+            "react": { "runtime": "automatic" }
+        },
+        "parser": {
+            "syntax": "typescript",
+            "tsx": true
+        },
+        "target": "es2022"
+    },
+    "minify": true
+}
