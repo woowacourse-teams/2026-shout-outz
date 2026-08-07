@@ -28,7 +28,7 @@ const config = {
             {
                 test: /\.(ts|tsx|js|jsx)$/i,
                 loader: 'swc-loader',
-                exclude: ['/node_modules/'],
+                exclude: /[\\/]node_modules[\\/]/,
             },
             {
                 test: /\.css$/i,
