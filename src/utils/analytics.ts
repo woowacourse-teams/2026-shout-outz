@@ -1,6 +1,35 @@
 type AnalyticsParams = Record<string, string | number | boolean | null | undefined>
 export type AnalyticsConsent = 'granted' | 'denied'
 
+export type AnalyticsServiceId = 'google-analytics' | 'microsoft-clarity'
+
+export interface AnalyticsService {
+  id: AnalyticsServiceId
+  name: string
+  provider: string
+  purpose: string
+  collectedData: readonly string[]
+  privacyPolicyUrl: string
+}
+
+const GOOGLE_ANALYTICS_SERVICE: AnalyticsService = {
+  id: 'google-analytics',
+  name: 'Google Analytics 4(GA4)',
+  provider: 'Google LLC',
+  purpose: '방문 규모와 기능 이용 흐름을 파악하고 서비스의 안정성과 사용성을 개선',
+  collectedData: ['방문한 페이지와 서비스 이용 이벤트', '로그인한 사용자의 서비스 이용 흐름을 연결하기 위한 내부 식별자(User-ID)'],
+  privacyPolicyUrl: 'https://policies.google.com/privacy?hl=ko',
+}
+
+const MICROSOFT_CLARITY_SERVICE: AnalyticsService = {
+  id: 'microsoft-clarity',
+  name: 'Microsoft Clarity',
+  provider: 'Microsoft Corporation',
+  purpose: '화면 조작 흐름을 이해하고 UI 개선점을 찾기 위해 세션 리플레이와 히트맵을 분석',
+  collectedData: ['마우스 이동·클릭·스크롤 등 화면 조작 기록(세션 리플레이) 및 클릭 히트맵'],
+  privacyPolicyUrl: 'https://privacy.microsoft.com/ko-kr/privacystatement',
+}
+
 const ANALYTICS_CONSENT_KEY = 'dropit:analytics-consent'
 
 declare global {
@@ -12,18 +41,36 @@ declare global {
 }
 
 const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID?.trim()
-const isGaConfigured = Boolean(measurementId && /^G-[A-Z0-9]+$/i.test(measurementId))
-
 const clarityProjectId = import.meta.env.VITE_CLARITY_PROJECT_ID?.trim()
-const isClarityConfigured = Boolean(clarityProjectId && /^[a-z0-9]+$/i.test(clarityProjectId))
 
-const isConfigured = isGaConfigured || isClarityConfigured
+export function resolveConfiguredAnalyticsServices(
+  gaMeasurementId: string | undefined,
+  clarityId: string | undefined,
+): readonly AnalyticsService[] {
+  const services: AnalyticsService[] = []
+  const normalizedGaId = gaMeasurementId?.trim()
+  const normalizedClarityId = clarityId?.trim()
+
+  if (normalizedGaId && /^G-[A-Z0-9]+$/i.test(normalizedGaId)) services.push(GOOGLE_ANALYTICS_SERVICE)
+  if (normalizedClarityId && /^[a-z0-9]+$/i.test(normalizedClarityId)) services.push(MICROSOFT_CLARITY_SERVICE)
+
+  return services
+}
+
+const configuredServices = resolveConfiguredAnalyticsServices(measurementId, clarityProjectId)
+const isGaConfigured = configuredServices.some(({ id }) => id === 'google-analytics')
+const isClarityConfigured = configuredServices.some(({ id }) => id === 'microsoft-clarity')
+const isConfigured = configuredServices.length > 0
 let isInitialized = false
 let lastPageView = ''
 let runtimeConsent: AnalyticsConsent | null = null
 
 export function isAnalyticsConfigured() {
   return isConfigured
+}
+
+export function getConfiguredAnalyticsServices(): readonly AnalyticsService[] {
+  return configuredServices
 }
 
 export function getAnalyticsConsent(): AnalyticsConsent | null {
