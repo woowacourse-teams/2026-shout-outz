@@ -574,6 +574,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .privacy-document__consent span { color: var(--muted); font-size: 12px; }
 .privacy-document__actions { display: flex; gap: 8px; }
 .privacy-document__consent .button { flex: 0 0 auto; }
+.privacy-document__transfer { margin-top: 16px; }
+.privacy-document__transfer:first-of-type { margin-top: 0; }
+.privacy-document__transfer ul { margin-top: 6px; }
 .privacy-document__external-link { margin-top: 18px; display: inline-flex; align-items: center; gap: 6px; color: var(--blue); font-size: 13px; }
 .privacy-document__external-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .privacy-document__note { margin: 38px 0 0; padding-top: 24px; color: var(--muted-light); border-top: 1px solid var(--soft-line); font-size: 12px; line-height: 1.7; }
