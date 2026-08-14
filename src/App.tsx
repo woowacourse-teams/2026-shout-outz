@@ -16,7 +16,7 @@ import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
 import { SubmitPage } from './pages/SubmitPage'
 import type { AppItem, Maker, VisitorStats } from './types'
 import { isAuthConfigured, supabase, toAuthUser, type AuthUser } from './utils/auth'
-import { getAnalyticsConsent, initializeAnalytics, isAnalyticsConfigured, type AnalyticsConsent, setAnalyticsUserId, trackEvent, trackPageView, updateAnalyticsConsent } from './utils/analytics'
+import { getAnalyticsConsent, initializeAnalytics, isAnalyticsConsentRequired, type AnalyticsConsent, trackEvent, trackPageView, updateAnalyticsConsent } from './utils/analytics'
 import { createRemoteApp, deleteRemoteApp, fetchRemoteState, recordRemotePlay, recordRemoteSiteVisit, restoreRemoteApp, setRemoteBookmark, toggleRemoteLike, updateRemoteApp, upsertRemoteProfile, verifyRemoteCrewAccessCode } from './utils/supabaseData'
 
 const SERVICE_UNAVAILABLE_MESSAGE = '현재 버전은 프로토타입이라 데이터를 불러오는 과정이 불안정할 수 있습니다.\n페이지를 새로고침해주세요.'
@@ -109,9 +109,8 @@ function App() {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     if (authLoading) return
     initializeAnalytics()
-    setAnalyticsUserId(authUser?.id ?? null)
     trackPageView(`${location.pathname}${location.search}`)
-  }, [analyticsConsent, authLoading, authUser?.id, location.pathname, location.search])
+  }, [analyticsConsent, authLoading, location.pathname, location.search])
 
   useEffect(() => {
     if (!supabase) return
@@ -429,7 +428,7 @@ function App() {
       </Routes>
       <CommentFeatureModal open={commentFeatureOpen} onClose={closeCommentFeature} />
       <CrewFeatureModal open={crewFeatureOpen} onClose={closeCrewFeature} />
-      {isAnalyticsConfigured() && analyticsConsent === null && !commentFeatureOpen && !crewFeatureOpen ? <AnalyticsConsentBanner onAccept={() => handleAnalyticsConsent('granted')} onReject={() => handleAnalyticsConsent('denied')} /> : null}
+      {isAnalyticsConsentRequired() && analyticsConsent === null && !commentFeatureOpen && !crewFeatureOpen ? <AnalyticsConsentBanner onAccept={() => handleAnalyticsConsent('granted')} onReject={() => handleAnalyticsConsent('denied')} /> : null}
     </>
   )
 }
