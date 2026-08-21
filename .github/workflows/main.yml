@@ -1,30 +1,53 @@
-- name: Build
-  run: |
-    npm ci
-    npm run build
+name: Build and Push to Private Repo
 
-- name: Push build to private repo
-  env:
-    DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
-  run: |
-    mkdir -p ~/.ssh
-    echo "$DEPLOY_KEY" > ~/.ssh/id_ed25519
-    chmod 600 ~/.ssh/id_ed25519
-    ssh-keyscan github.com >> ~/.ssh/known_hosts
+on:
+  push:
+    branches:
+      - main
+      - fe-infra-10-cd
 
-    git clone \
-      git@github.com:YOUR_ORG/shout-outz-deploy.git \
-      deploy-repo
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
 
-    rm -rf deploy-repo/*
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    cp -R dist/. deploy-repo/
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
 
-    cd deploy-repo
+      - name: Build
+        run: |
+          npm ci
+          npm run build
 
-    git config user.name "github-actions"
-    git config user.email "github-actions@github.com"
+      - name: Push build to private repo
+        env:
+          DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
 
-    git add -A
-    git commit -m "Deploy ${GITHUB_SHA}" || exit 0
-    git push
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+          git clone \
+            git@github.com:YOUR_ORG/shout-outz-deploy.git \
+            deploy-repo
+
+          rm -rf deploy-repo/*
+
+          cp -R dist/. deploy-repo/
+
+          cd deploy-repo
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add -A
+          git commit -m "Deploy ${GITHUB_SHA}" || exit 0
+          git push
