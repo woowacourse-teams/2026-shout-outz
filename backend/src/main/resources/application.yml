@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: shout-outz
+  profiles:
+    # 명시적인 프로필이 없을 때 local을 사용함.
+    # 운영에서는 SPRING_PROFILES_ACTIVE=prod를 지정함.
+    default: local
+  jpa:
+    hibernate:
+      ddl-auto: none
+    # 서비스 트랜잭션 범위에서만 JPA 영속성 컨텍스트를 유지하기 위함.
+    open-in-view: false
