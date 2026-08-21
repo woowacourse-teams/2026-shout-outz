@@ -25,24 +25,6 @@ jobs:
           npm ci
           npm run build
 
-      - name: Debug SSH key
-        env:
-          DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-
-          echo "바이트 수: $(wc -c < ~/.ssh/id_ed25519)"
-          echo "줄 수: $(wc -l < ~/.ssh/id_ed25519)"
-          head -c 40 ~/.ssh/id_ed25519
-          echo
-
-          ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null \
-            && echo "키 정상" \
-            || echo "키 손상"
-
       - name: Push build to private repo
         env:
           DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
@@ -57,9 +39,10 @@ jobs:
             git@github.com:shout-outz/drop-it-deploy-workflow.git \
             deploy-repo
 
-          rm -rf deploy-repo/*
+          rm -rf deploy-repo/artifact
+          mkdir -p deploy-repo/artifact
 
-          cp -R dist/. deploy-repo/
+          cp -R dist/. deploy-repo/artifact/
 
           cd deploy-repo
 
