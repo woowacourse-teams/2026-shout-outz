@@ -4,15 +4,68 @@ on:
   push:
     branches:
       - main
-      - fe-infra-10-cd
+      - fe-infra-10-cd    # TODO: 검증 완료 후 제거 — 작업 브랜치 push가 실서비스 배포로 이어짐
+  workflow_dispatch:
+
+# pull_request / pull_request_target 트리거는 절대 추가하지 않는다.
+# pull_request_target은 포크 PR에도 시크릿을 노출하므로 이 구조를 무력화한다.
+
+concurrency:
+  group: build-push-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read          # 이 job은 checkout만 하므로 쓰기 권한 불필요
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # 값 누락은 빌드 성공 후 런타임에야 드러나므로 미리 끊는다.
+      - name: Verify variables
+        run: |
+          set -euo pipefail
+          fail=0
+          check() {
+            if [ -z "$2" ]; then
+              echo "::error::vars.$1 미설정"
+              fail=1
+            fi
+          }
+          check VITE_SUPABASE_URL        "${{ vars.VITE_SUPABASE_URL }}"
+          check VITE_SUPABASE_ANON_KEY   "${{ vars.VITE_SUPABASE_ANON_KEY }}"
+          check VITE_GA_MEASUREMENT_ID   "${{ vars.VITE_GA_MEASUREMENT_ID }}"
+          check VITE_CLARITY_PROJECT_ID  "${{ vars.VITE_CLARITY_PROJECT_ID }}"
+          check MIRROR_TARGET_REPO       "${{ vars.MIRROR_TARGET_REPO }}"
+          [ "$fail" -eq 0 ] || exit 1
+          echo "변수 확인 완료"
+
+      # 비용이 큰 빌드 전에 키부터 검증한다.
+      # 키가 잘못돼 있으면 npm ci + build 시간이 통째로 낭비되기 때문.
+      - name: Setup and verify SSH key
+        env:
+          DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          echo "바이트 수: $(wc -c < ~/.ssh/id_ed25519)"
+          echo "줄 수: $(wc -l < ~/.ssh/id_ed25519)"
+
+          if ! ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null 2>&1; then
+            echo "::error::개인키를 읽을 수 없습니다. gh secret set PRIVATE_REPO_DEPLOY_KEY < ~/.ssh/mirror_key 로 재등록하세요"
+            exit 1
+          fi
+          echo "키 정상"
+
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -20,35 +73,63 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Install dependencies
+        run: npm ci
+
+      # Vite는 VITE_ 접두어 변수를 import.meta.env 에 자동 주입한다.
+      # webpack의 EnvironmentPlugin 같은 별도 설정이 필요 없다.
       - name: Build
-        run: |
-          npm ci
-          npm run build
-
-      - name: Push build to private repo
         env:
-          DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
+          NODE_ENV: production
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_GA_MEASUREMENT_ID: ${{ vars.VITE_GA_MEASUREMENT_ID }}
+          VITE_CLARITY_PROJECT_ID: ${{ vars.VITE_CLARITY_PROJECT_ID }}
+        run: npm run build
+
+      - name: Verify build output
         run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+          set -euo pipefail
+          test -f dist/index.html || { echo "::error::dist/index.html 없음"; exit 1; }
 
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          # 환경 변수가 실제로 번들에 주입됐는지 확인한다.
+          if ! grep -rq "${{ vars.VITE_SUPABASE_URL }}" dist/assets/ 2>/dev/null; then
+            echo "::warning::번들에서 Supabase URL을 찾지 못했습니다 — env 주입을 확인하세요"
+          fi
 
-          git clone \
-            git@github.com:shout-outz/drop-it-deploy-workflow.git \
-            deploy-repo
+          echo "파일 수: $(find dist -type f | wc -l)"
+          du -sh dist
 
+      - name: Push build output to private repo
+        env:
+          TARGET_REPO: ${{ vars.MIRROR_TARGET_REPO }}
+          GIT_SSH_COMMAND: "ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
+        run: |
+          set -euo pipefail
+
+          git clone --depth 1 "$TARGET_REPO" deploy-repo
+
+          # artifact/ 하위에 배치한다. 루트에 풀면 .github/ 와 산출물이 섞여
+          # 정리 명령에 워크플로우 파일이 지워질 수 있다.
           rm -rf deploy-repo/artifact
           mkdir -p deploy-repo/artifact
-
           cp -R dist/. deploy-repo/artifact/
 
           cd deploy-repo
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A artifact
 
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          # '변경 없음'(정상)과 'commit 실패'(비정상)를 구분한다.
+          if git diff --cached --quiet; then
+            echo "변경 사항 없음 — push 생략"
+            exit 0
+          fi
 
-          git add -A
-          git commit -m "Deploy ${GITHUB_SHA}" || exit 0
-          git push
+          git commit -m "Deploy ${GITHUB_SHA}"
+          git push origin HEAD:main
+          echo "push 완료"
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519
