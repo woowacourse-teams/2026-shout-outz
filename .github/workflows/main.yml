@@ -51,3 +51,16 @@ jobs:
           git add -A
           git commit -m "Deploy ${GITHUB_SHA}" || exit 0
           git push
+          
+      - name: Debug SSH key
+        env:
+          DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "바이트 수: $(wc -c < ~/.ssh/id_ed25519)"
+          echo "줄 수: $(wc -l < ~/.ssh/id_ed25519)"
+          head -c 40 ~/.ssh/id_ed25519
+          echo
+          ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null && echo "키 정상" || echo "키 손상"
