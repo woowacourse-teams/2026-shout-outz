@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - fe-infra-10-cd    # TODO: 검증 완료 후 제거 — 작업 브랜치 push가 실서비스 배포로 이어짐
   workflow_dispatch:
 
 # pull_request / pull_request_target 트리거는 절대 추가하지 않는다.
