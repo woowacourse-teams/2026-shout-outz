@@ -2,7 +2,7 @@ name: Deploy to S3 via EC2
 
 on:
   push:
-    branches: [main]
+    branches: [main, fe-infra-10-cd]
   workflow_dispatch:
 
 # 같은 브랜치의 이전 배포가 진행 중이면 취소한다.
