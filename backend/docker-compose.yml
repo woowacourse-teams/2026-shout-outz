@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:17
+    container_name: shoutoutz-db
+    environment:
+      POSTGRES_DB: shoutoutz
+      POSTGRES_USER: shoutoutz
+      POSTGRES_PASSWORD: localdev
+    ports:
+      - "5432:5432"
+    volumes:
+      - shoutoutz-db-data:/var/lib/postgresql/data
+
+volumes:
+  shoutoutz-db-data:
