@@ -1,8 +1,10 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import 'webpack-dev-server';
-import HtmlWebpackPlugin from 'html-webpack-plugin';
 import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
+import { tanstackRouter } from '@tanstack/router-plugin/webpack';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,18 +12,51 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 /** @type {import("webpack").Configuration} */
 const config = {
-    entry: './src/main.tsx',
+    entry: './src/entry-client.tsx',
     output: {
         path: path.resolve(__dirname, 'dist'),
+        publicPath: '/',
+        // 프로덕션에서는 캐시 무효화를 위해 contenthash를 붙입니다. 실제 파일명은 아래
+        // WebpackManifestPlugin이 dist/build-assets.json으로 남기므로, entry-ssg.tsx/
+        // generateStaticSite.ts 어디에도 "main.js"를 하드코딩하지 않습니다.
+        filename: isProduction ? '[name].[contenthash:8].js' : '[name].js',
+        chunkFilename: isProduction ? '[name].[contenthash:8].chunk.js' : '[name].chunk.js',
     },
     devServer: {
         open: true,
+        historyApiFallback: true,
+        // Document는 프레임워크가 아니라 그냥 React 컴포넌트라서, 요청마다 렌더링해 줄 서버가
+        // 없는 dev server에서는 미리 만들어둔 dist/index.html(predev가 채워둔 CSR 셸)을 정적으로
+        // 서빙합니다. 번들(main.js)만 dev server가 갈아끼웁니다.
+        static: {
+            directory: path.resolve(__dirname, 'dist'),
+        },
     },
     plugins: [
-        new HtmlWebpackPlugin({
-            template: './src/index.html',
-        }),
         new ForkTsCheckerWebpackPlugin(),
+        tanstackRouter({
+            target: 'react',
+            autoCodeSplitting: true,
+        }),
+        // 개발 환경은 style-loader로 CSS를 JS에서 <style>로 주입해 HMR을 살리고,
+        // 프로덕션은 별도 .css 파일로 뽑아 브라우저가 병렬로 캐시/로드하게 합니다.
+        new MiniCssExtractPlugin({
+            filename: isProduction ? '[name].[contenthash:8].css' : '[name].css',
+        }),
+        new WebpackManifestPlugin({
+            fileName: 'build-assets.json',
+            generate: (_seed, _files, entrypoints) => {
+                const mainFiles = entrypoints.main ?? [];
+                const script = mainFiles.find((file) => file.endsWith('.js'));
+                const style = mainFiles.find((file) => file.endsWith('.css'));
+
+                if (!script) {
+                    throw new Error('WebpackManifestPlugin: main entry script를 찾지 못했습니다.');
+                }
+
+                return { script: `/${script}`, ...(style ? { style: `/${style}` } : {}) };
+            },
+        }),
     ],
     module: {
         rules: [
@@ -32,7 +67,7 @@ const config = {
             },
             {
                 test: /\.css$/i,
-                use: ['style-loader', 'css-loader', 'postcss-loader'],
+                use: [isProduction ? MiniCssExtractPlugin.loader : 'style-loader', 'css-loader', 'postcss-loader'],
             },
         ],
     },

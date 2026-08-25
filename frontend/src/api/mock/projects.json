@@ -1,0 +1,35 @@
+[
+    {
+        "id": "dropit",
+        "name": "Dropit",
+        "tagline": "작은 웹앱을 발견하고 바로 실행하는 공간",
+        "description": "우테코 크루들이 만든 작은 서비스를 모아보고 바로 실행해볼 수 있는 아카이빙 서비스입니다.",
+        "techTags": ["React", "TypeScript", "TanStack Router"],
+        "maker": {
+            "name": "우아한테크코스",
+            "bio": "작은 프로젝트를 빠르게 만들고 공유하는 크루입니다."
+        }
+    },
+    {
+        "id": "shout-outz",
+        "name": "Shout-outz",
+        "tagline": "팀원에게 감사와 응원을 남기는 서비스",
+        "description": "동료의 작은 기여를 놓치지 않고 칭찬과 감사를 기록하고 공유할 수 있는 서비스입니다.",
+        "techTags": ["React", "TanStack Router", "Tailwind CSS"],
+        "maker": {
+            "name": "고제성",
+            "bio": "프론트엔드 개발자로 SSG 파이프라인을 구축하고 있습니다."
+        }
+    },
+    {
+        "id": "code-review-bot",
+        "name": "Code Review Bot",
+        "tagline": "PR을 자동으로 리뷰해주는 도우미",
+        "description": "코드 변경 사항을 분석해 리뷰 코멘트를 자동으로 남겨주는 봇 서비스입니다.",
+        "techTags": ["Node.js", "GitHub Actions", "LLM"],
+        "maker": {
+            "name": "김리뷰",
+            "bio": "자동화와 개발자 경험 개선에 관심이 많습니다."
+        }
+    }
+]

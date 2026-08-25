@@ -8,6 +8,7 @@
         "declaration": false,
         "declarationMap": false,
         "noUncheckedIndexedAccess": true,
+        "resolveJsonModule": true, // mock 파일 사용을 위한 임시 설정
         "exactOptionalPropertyTypes": false,
         "strict": true,
         "jsx": "react-jsx",
