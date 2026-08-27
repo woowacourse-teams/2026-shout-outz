@@ -1,31 +1,31 @@
-import type { AnyRoute, AnyRouter } from '@tanstack/react-router';
+import { createMemoryHistory, createRouter, type AnyRoute } from '@tanstack/react-router';
+import { routeTree } from '../src/routeTree.gen';
 
-declare module '@tanstack/react-router' {
-    interface StaticDataRouteOption {
-        /** true인 라우트만 SSG 프리렌더 대상에 포함됩니다. */
-        prerender?: boolean;
-        /** 동적 라우트($param 포함)에서 프리렌더할 파라미터 조합을 반환합니다. */
-        generateStaticParams?: () => Promise<Array<Record<string, string>>>;
-    }
+function normalizePrerenderPath(pathname: string): string {
+    return pathname === '/' ? pathname : pathname.replace(/\/+$/, '');
 }
 
 // routeTree.gen.ts는 건드리지 않고, 라우터 인스턴스의 routesById를 순회해 각 라우트의
 // staticData.prerender를 읽어 SSG 대상 경로 목록을 만듭니다. 동적 라우트는
 // generateStaticParams가 돌려준 파라미터마다 경로를 펼칩니다.
-export async function collectPrerenderRoutes(router: AnyRouter): Promise<string[]> {
-    const routes: string[] = [];
+export async function collectPrerenderRoutes(): Promise<string[]> {
+    const router = createRouter({
+        routeTree,
+        history: createMemoryHistory({ initialEntries: ['/'] }),
+    });
+    const routes = new Set<string>();
 
     for (const route of Object.values(router.routesById) as AnyRoute[]) {
         const staticData = route.options.staticData;
         if (!staticData?.prerender) continue;
 
         if (!route.fullPath.includes('$')) {
-            // fullPath('/project-detail/' 같은)를 그대로 쓰지 않고 buildLocation을 거칩니다.
-            // trailingSlash 정규화 등 라우터가 매칭에 기대하는 경로 형태로 맞춰줍니다.
+            // buildLocation으로 라우터의 경로 조립 규칙을 적용한 뒤, index route의 fullPath에
+            // 남는 trailing slash를 기본 라우터 정책(never)에 맞게 제거합니다.
             const location = router.buildLocation({
                 to: route.fullPath,
-            } as unknown as Parameters<AnyRouter['buildLocation']>[0]);
-            routes.push(location.pathname);
+            } as unknown as Parameters<typeof router.buildLocation>[0]);
+            routes.add(normalizePrerenderPath(location.pathname));
             continue;
         }
 
@@ -41,10 +41,10 @@ export async function collectPrerenderRoutes(router: AnyRouter): Promise<string[
             const location = router.buildLocation({
                 to: route.fullPath,
                 params,
-            } as unknown as Parameters<AnyRouter['buildLocation']>[0]);
-            routes.push(location.pathname);
+            } as unknown as Parameters<typeof router.buildLocation>[0]);
+            routes.add(normalizePrerenderPath(location.pathname));
         }
     }
 
-    return routes;
+    return [...routes].sort();
 }

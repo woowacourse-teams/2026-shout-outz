@@ -12,13 +12,15 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 /** @type {import("webpack").Configuration} */
 const config = {
-    entry: './src/entry-client.tsx',
+    entry: './ssg/client.tsx',
     output: {
         path: path.resolve(__dirname, 'dist'),
+        // 삭제된 라우트의 HTML이나 이전 contenthash 자산이 배포물에 남지 않게 합니다.
+        clean: true,
         publicPath: '/',
         // 프로덕션에서는 캐시 무효화를 위해 contenthash를 붙입니다. 실제 파일명은 아래
-        // WebpackManifestPlugin이 dist/build-assets.json으로 남기므로, entry-ssg.tsx/
-        // generateStaticSite.ts 어디에도 "main.js"를 하드코딩하지 않습니다.
+        // WebpackManifestPlugin이 dist/build-assets.json으로 남기므로, ssg/render.tsx/
+        // ssg/generate.ts 어디에도 "main.js"를 하드코딩하지 않습니다.
         filename: isProduction ? '[name].[contenthash:8].js' : '[name].js',
         chunkFilename: isProduction ? '[name].[contenthash:8].chunk.js' : '[name].chunk.js',
     },

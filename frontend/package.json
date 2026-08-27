@@ -4,14 +4,14 @@
     "name": "shout-outz-frontend",
     "type": "module",
     "scripts": {
-        "build": "webpack --mode=production --config-node-env=production",
-        "build:dev": "webpack --mode=development",
-        "predev": "test -f dist/index.html || npm run prerender:test",
+        "build": "npm run build:client && npm run build:static",
+        "build:client": "webpack --mode=production --config-node-env=production",
+        "build:static": "webpack --mode=production --config ssg/webpack.config.js && node ssg/.build/generate-static-site.cjs",
+        "build:dev": "webpack --mode=development --config ssg/webpack.config.js && node ssg/.build/generate-static-site.cjs --csr-shell",
+        "predev": "npm run build:dev",
         "dev": "webpack serve",
-        "watch": "webpack --watch",
-        "prerender:test": "webpack --mode=development && webpack --config webpack.server.config.js && node dist-server/generate-static-site.cjs",
-        "prerender:view": "serve -s dist",
-        "render:page": "node dist-server/generate-static-site.cjs"
+        "start": "serve -s dist",
+        "typecheck": "tsc --noEmit"
     },
     "devDependencies": {
         "@swc/core": "^1.15.47",
@@ -40,7 +40,6 @@
         "@swc/helpers": "^0.5.23",
         "@tanstack/react-query": "^5.101.4",
         "@tanstack/react-router": "^1.170.29",
-        "@tanstack/router-core": "^1.171.24",
         "core-js": "^3.50.0",
         "react": "^19.2.8",
         "react-dom": "^19.2.8"
