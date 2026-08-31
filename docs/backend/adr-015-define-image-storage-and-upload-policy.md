@@ -110,6 +110,15 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 - 백엔드는 제공받은 버킷 이름과 리전, 실행 역할 또는 자격 증명 체인을 환경별 설정으로 주입받는다.
 - 장기 보관용 AWS 액세스 키나 S3 자격 증명을 저장소·프론트엔드에 저장하지 않는다.
 
+### 9. 백엔드 AWS SDK 및 환경 설정
+
+- AWS SDK for Java 2.x의 BOM과 S3 모듈을 사용한다.
+- 백엔드는 `S3Client`와 `S3Presigner`를 Spring Bean으로 생성해 애플리케이션 생명주기 동안 재사용한다.
+- `AWS_S3_BUCKET`으로 제공받은 버킷을 지정하고, `AWS_REGION`으로 S3 클라이언트가 사용할 리전을 지정한다.
+- Presigned PUT·GET URL의 만료 시간은 `AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS`로 받으며 기본값은 300초(5분)로 한다. 1초 미만 또는 604,800초를 초과하는 값은 허용하지 않는다.
+- 로컬과 운영은 동일한 `DefaultCredentialsProvider`를 사용한다. 로컬은 AWS CLI Profile 또는 환경변수, 운영은 실행 환경에 연결된 IAM Role과 같은 AWS SDK 기본 자격 증명 체인이 선택한 출처를 사용한다.
+- AWS 액세스 키와 시크릿 키를 애플리케이션 설정 파일, 저장소, 프론트엔드에 기록하지 않는다.
+
 ## 결과 (Consequences)
 
 ### 긍정적 영향
@@ -130,11 +139,12 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 ### 중립적 영향
 
 - AWS 버킷·IAM·CORS의 기본 설정은 우테코 제공 인프라에 의존한다. 버킷 이름, 리전, 운영 origin, 백엔드 런타임 역할 연결은 제공받은 환경에서 확인한다.
+- 백엔드는 AWS SDK와 환경 변수, 기본 자격 증명 체인으로 제공 S3에 연결한다. 실제 업로드, 조회 API는 후속 구현 단계에서 추가한다.
 - DB 테이블 구조는 별도 구현 단계에서 확정한다.
 - 미디어 메타데이터 테이블과 프로젝트·게시글 연결 테이블은 별도 설계가 필요하다.
 - 문서·동영상·SVG 등의 지원이 필요해지면 허용 포맷과 처리 방식을 다시 검토한다.
 
-## 검토한 대안 (Options Considered)
+## 검토한 대안 (Options Considered)[build.gradle](../../backend/build.gradle)
 
 **대안 1: 백엔드가 파일을 직접 받아 S3에 저장**
 
