@@ -71,7 +71,7 @@ CREATE TABLE projects (
     cohort                 SMALLINT     NOT NULL,
     registered_by          BIGINT       REFERENCES users(id),
     team_name              VARCHAR(50)  NOT NULL,
-    slug                   VARCHAR(100) NOT NULL,
+    slug                   VARCHAR(100) NOT NULL UNIQUE,
     title                  VARCHAR(100) NOT NULL,
     tagline                VARCHAR(200),
     star_count             INTEGER,
@@ -246,7 +246,6 @@ CREATE INDEX idx_oauth_accounts_user_id ON oauth_accounts (user_id);
 
 -- 대소문자 구분 없는 유일성
 CREATE UNIQUE INDEX uq_users_handle_lower ON users (lower(handle));
-CREATE UNIQUE INDEX uq_projects_slug_lower ON projects (lower(slug));
 
 -- 복구 대상 이력 조회용 (프로젝트당 미복구 삭제 이력은 최대 1건)
 CREATE UNIQUE INDEX uq_project_deletions_pending_restore
