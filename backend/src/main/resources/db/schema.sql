@@ -23,7 +23,7 @@ CREATE TABLE oauth_accounts (
     id                   BIGSERIAL    PRIMARY KEY,
     user_id              BIGINT       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     provider             VARCHAR(20)  NOT NULL,
-    provider_account_id  VARCHAR(64)  NOT NULL,
+    provider_account_id  VARCHAR(255) NOT NULL,
     provider_avatar_url  TEXT,
     last_synced_at       TIMESTAMPTZ,
     last_login_at        TIMESTAMPTZ,
