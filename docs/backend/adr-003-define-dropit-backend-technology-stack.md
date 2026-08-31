@@ -23,24 +23,24 @@ Drop-it 백엔드는 다음 기술 스택을 기준으로 개발하고 운영한
 
 ### 현재 사용 기술
 
-| 구분 | 기술 | 적용 내용 |
-| --- | --- | --- |
-| 언어 | Java 21 LTS | 백엔드 애플리케이션 개발 |
-| 프레임워크 | Spring Boot 4.1.1 | 백엔드 애플리케이션 구성 및 실행 |
-| 웹 서버 | Spring MVC + Tomcat | 동기식 REST API 제공 |
-| 빌드 도구 | Gradle Wrapper 9.6.0 | 의존성 관리 및 빌드 환경 고정 |
-| 데이터 접근 | Spring Data JPA, Hibernate | 관계형 데이터의 객체 매핑 및 CRUD 처리 |
-| 데이터베이스 | PostgreSQL | 서비스, 사용자, 댓글, 좋아요, 북마크 등의 데이터 저장 (ADR-002) |
-| 데이터베이스 환경 | Amazon RDS for PostgreSQL | 애플리케이션 서버는 개발 초기부터 이 환경에 접속 (ADR-002) |
+| 구분 | 기술 | 적용 내용                                               |
+| --- | --- |-----------------------------------------------------|
+| 언어 | Java 21 LTS | 백엔드 애플리케이션 개발                                       |
+| 프레임워크 | Spring Boot 4.1.1 | 백엔드 애플리케이션 구성 및 실행                                  |
+| 웹 서버 | Spring MVC + Tomcat | 동기식 REST API 제공                                     |
+| 빌드 도구 | Gradle Wrapper 9.6.0 | 의존성 관리 및 빌드 환경 고정                                   |
+| 데이터 접근 | Spring Data JPA, Hibernate | 관계형 데이터의 객체 매핑 및 CRUD 처리                            |
+| 데이터베이스 | PostgreSQL | 서비스, 사용자, 댓글, 좋아요, 북마크 등의 데이터 저장 (ADR-002)          |
+| 데이터베이스 환경 | Amazon RDS for PostgreSQL | 애플리케이션 서버는 개발 초기부터 이 환경에 접속 (ADR-002)               |
 | 스키마 관리 | Flyway | 새 스키마를 V1으로 정의하고 이후 모든 변경을 버전 마이그레이션으로 관리 (ADR-002) |
-| 커넥션 풀 | HikariCP | 데이터베이스 연결 관리 |
-| 인가 | Spring Security | 인증 필터 구성 및 API 접근 제어 |
-| 요청 검증 | Spring Boot Validation | API 요청 값의 필수값 및 길이 검증 |
-| 애플리케이션 메트릭 | Spring Boot Actuator | 애플리케이션 상태, 헬스 체크 및 메트릭 수집 |
-| 객체 스토리지 | Amazon S3 | 우테코 제공 private 버킷에 미디어 원본·변형본 저장 (ADR-015) |
-| AWS SDK | AWS SDK for Java 2.x | `S3Client`와 `S3Presigner`를 통한 S3 연동 (ADR-015) |
-| 단위·애플리케이션 테스트 | JUnit, Mockito, AssertJ, Spring Boot Test | 서비스 정책 및 애플리케이션 테스트 |
-| 통합 테스트 | Docker Compose, PostgreSQL 컨테이너 | 운영과 동일한 엔진으로 통합 테스트 실행 (개발자가 직접 기동) |
+| 커넥션 풀 | HikariCP | 데이터베이스 연결 관리                                        |
+| 인가 | Spring Security | 인증 필터 구성 및 API 접근 제어                                |
+| 요청 검증 | Spring Boot Validation | API 요청 값의 필수값 및 길이 검증                               |
+| 애플리케이션 메트릭 | Spring Boot Actuator | 애플리케이션 상태, 헬스 체크 및 메트릭 수집                           |
+| 객체 스토리지 | Amazon S3 | private 버킷에 미디어 원본, 변형본 저장 (ADR-015)                |
+| AWS SDK | AWS SDK for Java 2.x | `S3Client`와 `S3Presigner`를 통한 S3 연동 (ADR-015)       |
+| 단위·애플리케이션 테스트 | JUnit, Mockito, AssertJ, Spring Boot Test | 서비스 정책 및 애플리케이션 테스트                                 |
+| 통합 테스트 | Docker Compose, PostgreSQL 컨테이너 | 운영과 동일한 엔진으로 통합 테스트 실행 (개발자가 직접 기동)                 |
 
 풀 크기는 RDS 인스턴스의 최대 커넥션 수에 맞춰 산정
 

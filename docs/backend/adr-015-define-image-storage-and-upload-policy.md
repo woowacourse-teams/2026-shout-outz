@@ -115,7 +115,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 - AWS SDK for Java 2.x의 BOM과 S3 모듈을 사용한다.
 - 백엔드는 `S3Client`와 `S3Presigner`를 Spring Bean으로 생성해 애플리케이션 생명주기 동안 재사용한다.
 - `AWS_S3_BUCKET`으로 제공받은 버킷을 지정하고, `AWS_REGION`으로 S3 클라이언트가 사용할 리전을 지정한다.
-- Presigned PUT·GET URL의 만료 시간은 `AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS`로 받으며 기본값은 300초(5분)로 한다. 1초 미만 또는 604,800초를 초과하는 값은 허용하지 않는다.
+- Presigned PUT, GET URL의 만료 시간은 `AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS`로 받는다. 기본 값은 별도 인수인계한다.
 - 로컬과 운영은 동일한 `DefaultCredentialsProvider`를 사용한다. 로컬은 AWS CLI Profile 또는 환경변수, 운영은 실행 환경에 연결된 IAM Role과 같은 AWS SDK 기본 자격 증명 체인이 선택한 출처를 사용한다.
 - AWS 액세스 키와 시크릿 키를 애플리케이션 설정 파일, 저장소, 프론트엔드에 기록하지 않는다.
 
