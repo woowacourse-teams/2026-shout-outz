@@ -13,7 +13,8 @@ CREATE TABLE users (
     updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
     deleted_at     TIMESTAMPTZ,
     purged_at      TIMESTAMPTZ,
-    CHECK (status IN ('ACTIVE', 'BANNED')),
+    CHECK (status IN ('ACTIVE', 'BANNED', 'DELETED')),
+    CHECK ((status = 'DELETED') = (deleted_at IS NOT NULL)),
     CHECK (role IN ('USER', 'ADMIN')),
     -- URL 경로(/@handle)로 쓰이므로 영숫자/하이픈/언더스코어만 허용한다.
     CHECK (handle ~ '^[A-Za-z0-9_-]{2,30}$')
