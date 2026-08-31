@@ -5,122 +5,82 @@ body:
     attributes:
       value: |
         RFC를 작성하기 전에 문제와 제안 내용을 충분히 정리해주세요.
-        의견 수렴 후 본문 하단의 Decision과 Action Items를 업데이트합니다.
+        리뷰어 모두와 의견 수렴이 끝나면 본문 하단의 최종 결정과 후속 작업을 업데이트 해주세요.
 
   - type: input
     id: owner
     attributes:
-      label: Owner
-      description: RFC를 작성하고 논의를 진행할 담당자
+      label: 담당자
+      description: RFC를 작성하고 논의를 진행할 담당자 (디스커션 생성 이후 업데이트 바랍니다.)
       placeholder: "@username"
     validations:
-      required: true
+      required: false
 
   - type: input
     id: approver
     attributes:
-      label: Approver
-      description: 최종 의사결정권자
+      label: 리뷰어
+      description: 최종 의사결정권자 (디스커션 생성 이후 업데이트 바랍니다.)
       placeholder: "@username"
     validations:
-      required: true
+      required: false
 
   - type: input
     id: deadline
     attributes:
-      label: Review Deadline
+      label: 마감일
       description: 의견 수렴 마감일
       placeholder: "2026-09-01"
     validations:
-      required: true
+      required: false
 
   - type: dropdown
     id: status
     attributes:
-      label: Status
+      label: 문서 상태
       options:
-        - Draft
-        - In Review
-        - Decision Pending
-        - Accepted
-        - Rejected
-        - Implemented
-      default: 0
+        - 초안 작성 중
+        - 제안 중
+        - 보류
+        - 승인
+        - 거절
     validations:
       required: true
 
   - type: textarea
     id: problem
     attributes:
-      label: Problem
+      label: 문제 상황
       description: 현재 어떤 문제가 있는지 작성해주세요.
       placeholder: 문제 상황, 배경, 영향 범위를 작성해주세요.
     validations:
-      required: true
-
-  - type: textarea
-    id: goals
-    attributes:
-      label: Goals and Non-goals
-      description: 달성하려는 것과 이번 RFC에서 다루지 않는 것을 작성해주세요.
-      value: |
-        ### Goals
-
-        -
-
-        ### Non-goals
-
-        -
-    validations:
-      required: true
+      required: false
 
   - type: textarea
     id: proposal
     attributes:
-      label: Proposal
+      label: 제안 사항
       description: 제안하는 해결책을 구체적으로 작성해주세요.
     validations:
-      required: true
-
-  - type: textarea
-    id: alternatives
-    attributes:
-      label: Alternatives
-      description: 검토한 다른 방법과 선택하지 않은 이유를 작성해주세요.
-    validations:
-      required: true
-
-  - type: textarea
-    id: tradeoffs
-    attributes:
-      label: Trade-offs and Risks
-      description: 비용, 단점, 운영 리스크, 예상되는 부작용을 작성해주세요.
-    validations:
-      required: true
-
-  - type: textarea
-    id: rollout
-    attributes:
-      label: Rollout and Migration
-      description: 적용 순서, 마이그레이션, 롤백 방법을 작성해주세요.
+      required: false
 
   - type: textarea
     id: open_questions
     attributes:
-      label: Open Questions
-      description: 아직 결정되지 않은 질문을 작성해주세요.
+      label: 추가 사항
+      description: 추가 질문이나 상세사항을 작성해주세요. 없다면 넘어가셔도 좋습니다!
+    validations:
+      required: false
 
   - type: markdown
     attributes:
       value: |
-        ## Decision
+        ## 최종 결정 사항
 
-        - Decision: Pending
-        - Date:
-        - Rationale:
+        - 결과: Pending
+        - 확정 일자:
+        - 관련 디스커션/이슈/PR/기타 문서:
 
-        ## Action Items
+        ## 후속 작업
 
-        - [ ] 구현 Issue 생성
-        - [ ] 담당자 지정
-        - [ ] 관련 PR 링크
+        - [ ] 예: 구현 Issue 생성
