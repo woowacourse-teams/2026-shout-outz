@@ -26,6 +26,8 @@
 | 커넥션 풀 | HikariCP | 데이터베이스 연결 관리 |
 | 요청 검증 | Spring Boot Validation | 요청 값 검증 |
 | 운영 상태 확인 | Spring Boot Actuator | 헬스 체크 및 메트릭 제공 |
+| 객체 스토리지 | Amazon S3 | 미디어 버킷 저장 및 조회 |
+| AWS SDK | AWS SDK for Java 2.x | S3 객체 접근 및 Presigned URL 생성 |
 | 테스트 | JUnit, Spring Boot Test | 애플리케이션 테스트 |
 | 로컬 인프라 | Docker Compose | PostgreSQL 컨테이너 실행 |
 | 보조 도구 | Lombok | 반복적인 Java 코드 축소 |
@@ -131,6 +133,31 @@ SPRING_PROFILES_ACTIVE=prod
 SPRING_DATASOURCE_URL=jdbc:postgresql://<host>:<port>/<database>
 SPRING_DATASOURCE_USERNAME=<username>
 SPRING_DATASOURCE_PASSWORD=<password>
+AWS_S3_BUCKET=<bucket-name>
+AWS_REGION=<region>
+AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS=<seconds>
 ```
 
 IntelliJ IDEA에서 환경 변수를 설정하려면 `Run/Debug Configurations`의 `Environment variables`에 입력한다. 운영용 비밀 값은 저장소에 커밋하지 않는다.
+
+## AWS S3 연결 설정
+
+S3 버킷과 기본 보안 설정은 기본 우테코 제공 인프라의 설정을 따라간다. 백엔드는 `AWS_S3_BUCKET`, `AWS_REGION`, `AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS`만 환경별로 주입받는다.
+
+
+### 로컬
+로컬에서는 AWS CLI Profile 또는 환경변수에서 자격 증명을 조회한다. (자격 증명 값은 `application-*.yml`, 소스 코드에 기록하면 안된다.)
+
+아래는 로컬에 AWS_PROFILE 생성하는 명령어 
+```bash
+aws configure --profile shoutoutz-dev
+export AWS_PROFILE=shoutoutz-dev
+export AWS_S3_BUCKET=<우테코에서 제공받은 개발용 버킷 이름>
+export AWS_REGION=<region>
+export AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS=<seconds>
+```
+
+### 운영
+운영에서는 애플리케이션이 실행되는 AWS 런타임에 S3 접근 IAM Role을 연결한다. 장기 액세스 키를 환경변수로 등록하지 않고 AWS SDK의 기본 자격 증명 체인이 제공하는 임시 자격 증명을 사용한다.
+
+현재 구성은 `S3Client`와 `S3Presigner`를 Spring Bean으로 한 번 생성하며, 둘 다 `AWS_REGION`으로 지정한 리전을 사용한다. 로컬 Profile, 운영 IAM Role 등 자격 증명 출처가 달라도 애플리케이션 코드는 같은 기본 자격 증명 체인을 사용한다.
