@@ -164,6 +164,16 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 - 기존 프로젝트·프로필 URL 필드와 Markdown 본문은 하위 호환을 위해 당장 삭제하지 않는다. 새 미디어 업로드 경로로 전환한 뒤 사용 중단과 삭제를 별도 결정한다.
 - Flyway의 `V3__create_media_mappings.sql`로 `post_media`와 조회용 인덱스를 생성한다.
 
+### 12. S3 연동 모듈
+
+- `AwsS3Configuration`에서 `S3Client`와 `S3Presigner`를 각각 하나의 Spring Bean으로 생성하고, AWS SDK의 기본 자격 증명 체인을 사용한다.
+- `MediaObjectKeyGenerator`는 `media/{purpose-kebab-case}/{UUID}` 형식의 키를 생성한다. 원본 파일명과 DB ID를 키에 포함하지 않으며, 확장자는 키가 아니라 MIME 타입과 메타데이터로 관리한다.
+- `S3MediaStorage.createPresignedUpload`는 `S3Presigner`로 Presigned PUT URL을 발급한다. `PutObjectRequest`에 MIME 타입을 서명하므로 프론트엔드는 응답으로 받은 `Content-Type`을 동일한 요청 헤더에 넣어야 한다. 파일 바이트는 백엔드가 직접 받지 않는다.
+- `S3MediaStorage.createPresignedDownload`는 비공개 객체 조회용 Presigned GET URL을 발급한다. 객체 접근 권한과 `READY` 상태 검증은 호출하는 애플리케이션 서비스의 책임이다.
+- `S3MediaStorage.headObject`는 `S3Client`로 객체 존재 여부와 크기·MIME 타입·ETag·수정 시각을 확인한다. `verifyUploadedObject`는 `media_metadata`의 예상 크기와 MIME 타입이 S3 HeadObject 결과와 일치하는지 검증한 뒤 처리 단계로 넘긴다.
+- `S3MediaStorage.deleteObject`는 `S3Client`의 DeleteObject를 사용하고, `media/` prefix 밖의 키는 거부한다. 이미 없는 객체를 삭제하는 경우는 S3의 멱등적 삭제 동작에 따라 성공으로 처리한다.
+- S3 객체가 없으면 `S3ObjectNotFoundException`, 객체 메타데이터가 업로드 요청과 다르면 `S3ObjectValidationException`, SDK 호출 자체가 실패하면 `S3StorageException`으로 구분한다. 파일 시그니처 검증과 이미지 변형본 생성은 다음 이미지 처리 단계에서 수행한다.
+
 ## 결과 (Consequences)
 
 ### 긍정적 영향
@@ -184,7 +194,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 ### 중립적 영향
 
 - AWS 버킷·IAM·CORS의 기본 설정은 우테코 제공 인프라에 의존한다. 버킷 이름, 리전, 운영 origin, 백엔드 런타임 역할 연결은 제공받은 환경에서 확인한다.
-- 백엔드는 AWS SDK와 환경 변수, 기본 자격 증명 체인으로 제공 S3에 연결한다. 실제 업로드, 조회 API는 후속 구현 단계에서 추가한다.
+- 백엔드는 AWS SDK와 환경 변수, 기본 자격 증명 체인으로 제공 S3에 연결한다. S3 객체 저장소 어댑터는 구현했지만, 업로드 권한 확인·미디어 DB 저장·상태 전이·HTTP API는 후속 유스케이스 구현 단계에서 추가한다.
 - `media_metadata`와 `post_media`의 구조는 확정했지만, 기존 URL 컬럼과 Markdown 본문을 새 미디어 참조 방식으로 전환하는 데이터 마이그레이션은 별도 단계로 진행한다.
 - 문서·동영상·SVG 등의 지원이 필요해지면 허용 포맷과 처리 방식을 다시 검토한다.
 

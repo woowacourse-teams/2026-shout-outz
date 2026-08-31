@@ -161,3 +161,18 @@ export AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS=<seconds>
 운영에서는 애플리케이션이 실행되는 AWS 런타임에 S3 접근 IAM Role을 연결한다. 장기 액세스 키를 환경변수로 등록하지 않고 AWS SDK의 기본 자격 증명 체인이 제공하는 임시 자격 증명을 사용한다.
 
 현재 구성은 `S3Client`와 `S3Presigner`를 Spring Bean으로 한 번 생성하며, 둘 다 `AWS_REGION`으로 지정한 리전을 사용한다. 로컬 Profile, 운영 IAM Role 등 자격 증명 출처가 달라도 애플리케이션 코드는 같은 기본 자격 증명 체인을 사용한다.
+
+### 미디어 객체 연동 모듈
+
+S3 객체 연동은 `com.shoutoutz.api.media.infrastructure.s3`에서 담당한다.
+
+| 기능 | 구현 | 설명                                                     |
+| --- | --- |--------------------------------------------------------|
+| 업로드 | `S3Presigner` | 백엔드가 Presigned PUT URL을 발급하고, 프론트엔드가 파일을 S3에 직접 업로드한다. |
+| 조회 | `S3Presigner` | 비공개 객체용 Presigned GET URL을 발급한다.                       |
+| 업로드 검증 | `S3Client.headObject` | 객체 존재 여부와 요청 당시의 파일 크기, MIME 타입을 비교한다.                 |
+| 삭제 | `S3Client.deleteObject` | `media/` prefix의 객체를 삭제한다.                             |
+
+객체 키는 `media/{purpose}/{UUID}` 형식이며 원본 파일명이나 DB ID를 포함하지 않는다. 
+Presigned PUT URL로 업로드할 때는 URL 발급 응답의 `Content-Type`을 업로드 요청 헤더에 동일하게 지정해야 한다. 
+S3 객체의 파일 시그니처 검증과 이미지 변형본 생성은 별도의 이미지 처리 단계에서 수행한다.
