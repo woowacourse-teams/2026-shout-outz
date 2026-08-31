@@ -7,6 +7,5 @@ public enum MediaPurpose {
     USER_AVATAR,
     PROJECT_THUMBNAIL,
     PROJECT_DESCRIPTION,
-    POST_CONTENT,
-    PROJECT_MEDIA
+    POST_CONTENT
 }
