@@ -13,7 +13,7 @@
 
 shout-outz에는 프로젝트, 포스트, 사용자 도메인에서 이미지 파일이 발생한다.
 
-현재 데이터 모델은 이미지 파일 자체가 아니라 URL 또는 Markdown 본문을 저장하며, 이미지 전용 영역인 `project_media (S3)`는 상세 필드가 정의되지 않은 상태다.
+현재 데이터 모델은 이미지 파일 자체가 아니라 URL 또는 Markdown 본문을 저장하며, 미디어 메타데이터를 저장할 테이블과 프로젝트·게시글·사용자와의 연결 방식은 정의되지 않은 상태다.
 
 이미지 파일을 애플리케이션 서버가 직접 전달하면 서버의 네트워크·메모리 부담이 커지고, S3를 공개하면 업로드 권한과 파일 접근 권한을 분리하기 어렵다. 또한 본문에 S3 Presigned URL을 직접 저장하면 URL이 만료된 뒤 이미지가 깨진다.
 
@@ -119,6 +119,40 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 - 로컬과 운영은 동일한 `DefaultCredentialsProvider`를 사용한다. 로컬은 AWS CLI Profile 또는 환경변수, 운영은 실행 환경에 연결된 IAM Role과 같은 AWS SDK 기본 자격 증명 체인이 선택한 출처를 사용한다.
 - AWS 액세스 키와 시크릿 키를 애플리케이션 설정 파일, 저장소, 프론트엔드에 기록하지 않는다.
 
+### 10. 미디어 메타데이터 테이블
+
+- 서비스 전체 미디어의 저장·처리 메타데이터를 저장하는 `media_metadata` 신규 테이블을 사용한다.
+- `project_media`는 서비스의 `projects`와 미디어를 연결하는 매핑 테이블을 의미하며, 우테코 원본 프로젝트 테이블이나 전체 미디어 저장 테이블로 사용하지 않는다.
+- 현재는 프로젝트·게시글·사용자 스키마가 새로 설계되는 단계이므로 `media_metadata`만 먼저 생성한다. 각 도메인과의 매핑 테이블은 해당 도메인 스키마가 확정될 때 추가한다.
+- `media_metadata`의 주요 컬럼은 다음과 같이 정의한다.
+
+| 컬럼 | 타입 | 의미 | 제약 및 사용 기준 |
+| --- | --- | --- | --- |
+| `id` | `BIGINT` | 미디어 자산 식별자 | PK, PostgreSQL identity가 생성하며 Java에서는 `Long`으로 매핑 |
+| `purpose` | `VARCHAR(32)` | 업로드 용도 | `MediaPurpose` 값만 허용 |
+| `s3_key` | `VARCHAR(1024)` | S3 객체 키 | 필수, unique, 클라이언트가 임의로 결정하지 않음, DB ID와 별도로 랜덤하게 생성 |
+| `original_filename` | `VARCHAR(255)` | 사용자가 업로드한 원본 파일명 | 선택값, 표시·운영 목적에만 사용 |
+| `mime_type` | `VARCHAR(100)` | 업로드를 요청한 MIME 타입 | 필수, 업로드 완료 후 S3 메타데이터와 실제 파일 시그니처를 검증 |
+| `size_bytes` | `BIGINT` | 파일 크기(바이트) | 0보다 커야 함, 최대 크기는 `MediaUploadPolicy`가 검증 |
+| `status` | `VARCHAR(20)` | 업로드·처리 상태 | `PENDING_UPLOAD`, `PROCESSING`, `READY`, `FAILED`, `EXPIRED` |
+| `expires_at` | `TIMESTAMPTZ` | 업로드 완료 확인 기한 | `PENDING_UPLOAD` 정리 기준 |
+| `failure_reason` | `TEXT` | 실패 사유 | `FAILED`일 때만 비어 있지 않은 값 허용 |
+| `uploaded_at` | `TIMESTAMPTZ` | S3 객체 존재를 확인한 시각 | 완료 API의 `HeadObject` 확인 시 기록 |
+| `created_at` | `TIMESTAMPTZ` | 레코드 생성 시각 | UTC 기준 |
+| `updated_at` | `TIMESTAMPTZ` | 마지막 변경 시각 | 상태 변경 시 갱신 |
+
+- S3 객체 키의 중복을 방지하기 위해 `s3_key`에 unique 제약을 두고, 객체가 `media/` prefix 밖에 생성되지 않도록 제한한다.
+- 미디어 DB 식별자는 기존 도메인과 일관되게 `BIGINT identity`와 Java `Long`을 사용한다. ID가 API에 노출되더라도 접근 권한 검증을 우회할 수 없으며, S3 key는 별도의 랜덤 값으로 생성해 DB ID와 저장 객체의 추측 가능성을 분리한다.
+- 만료 파일 정리를 위해 `PENDING_UPLOAD` 상태의 `expires_at` 부분 인덱스를 둔다.
+- MIME 타입별 허용 목록과 최대 파일 크기는 정책 변경 시 구현체를 교체할 수 있도록 DB CHECK 제약으로 고정하지 않는다. DB에는 양수 크기와 상태·용도 값의 유효성만 둔다.
+- `failure_reason`에는 원본 예외나 자격 증명 등 민감한 정보를 그대로 저장하지 않고, 운영에 필요한 안전한 메시지만 저장한다.
+- Java 도메인 모델은 `MediaMetadata`로 정의하며, 시간 표현은 서버·DB의 타임존 혼동을 줄이기 위해 `Instant`를 사용한다.
+- private S3 접근은 백엔드가 발급하는 Presigned GET URL로 제어하므로 `access_token`을 별도로 저장하지 않는다.
+- `associated_id` 같은 다형성 외래키와 `display_order`는 참조 무결성을 보장할 수 없거나 사용처마다 값이 달라질 수 있으므로 미디어 메타데이터에 두지 않는다. 도메인별 매핑 테이블에서 실제 외래키와 정렬 순서를 관리한다.
+- 삭제 정책은 업로드·처리 상태와 별개의 정책이므로 이번 마이그레이션에서는 `is_deleted`를 추가하지 않는다. 사용자 삭제 요구가 확정되면 이력 보존이 가능한 `deleted_at` 방식으로 별도 결정한다.
+- 업로더 식별자는 사용자 스키마의 식별자 타입과 외래키 정책이 확정된 뒤 추가한다. 아직 존재하지 않는 사용자 테이블을 가리키는 참조를 먼저 만들지 않는다.
+- Flyway의 `V1__create_media_metadata.sql`로 테이블을 생성한다.
+
 ## 결과 (Consequences)
 
 ### 긍정적 영향
@@ -140,8 +174,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 
 - AWS 버킷·IAM·CORS의 기본 설정은 우테코 제공 인프라에 의존한다. 버킷 이름, 리전, 운영 origin, 백엔드 런타임 역할 연결은 제공받은 환경에서 확인한다.
 - 백엔드는 AWS SDK와 환경 변수, 기본 자격 증명 체인으로 제공 S3에 연결한다. 실제 업로드, 조회 API는 후속 구현 단계에서 추가한다.
-- DB 테이블 구조는 별도 구현 단계에서 확정한다.
-- 미디어 메타데이터 테이블과 프로젝트·게시글 연결 테이블은 별도 설계가 필요하다.
+- `media_metadata`의 핵심 메타데이터 구조는 확정했지만, 프로젝트·게시글·사용자 연결 테이블은 각 도메인 스키마가 확정될 때 추가한다.
 - 문서·동영상·SVG 등의 지원이 필요해지면 허용 포맷과 처리 방식을 다시 검토한다.
 
 ## 검토한 대안 (Options Considered)[build.gradle](../../backend/build.gradle)
