@@ -33,30 +33,30 @@ Page와 그 하위 컴포넌트에서는 가능한 한 TanStack Router를 직접
 
 ```tsx
 export const Route = createFileRoute('/posts/$postId')({
-    staticData: {
-        prerender: true,
-        generateStaticParams: async () => {
-            const posts = await getPosts();
+  staticData: {
+    prerender: true,
+    generateStaticParams: async () => {
+      const posts = await getPosts();
 
-            return posts.map((post) => ({
-                postId: post.id,
-            }));
-        },
+      return posts.map((post) => ({
+        postId: post.id,
+      }));
     },
-    component: PostRoute,
+  },
+  component: PostRoute,
 });
 
 function PostRoute() {
-    const { postId } = Route.useParams();
-    const search = Route.useSearch();
+  const { postId } = Route.useParams();
+  const search = Route.useSearch();
 
-    return (
-        <ErrorBoundary>
-            <Suspense fallback={<PostPageSkeleton />}>
-                <PostPage postId={postId} page={search.page} />
-            </Suspense>
-        </ErrorBoundary>
-    );
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<PostPageSkeleton />}>
+        <PostPage postId={postId} page={search.page} />
+      </Suspense>
+    </ErrorBoundary>
+  );
 }
 ```
 
@@ -84,19 +84,19 @@ Route에서 전달받은 params, search params 등의 값을 사용하고 필요
 
 ```tsx
 interface PostPageProps {
-    postId: string;
-    page: number;
+  postId: string;
+  page: number;
 }
 
 export function PostPage({ postId, page }: PostPageProps) {
-    const { data: post } = useSuspenseQuery(getPostQuery(postId));
+  const { data: post } = useSuspenseQuery(getPostQuery(postId));
 
-    return (
-        <main>
-            <Post post={post} />
-            <Comments postId={postId} page={page} />
-        </main>
-    );
+  return (
+    <main>
+      <Post post={post} />
+      <Comments postId={postId} page={page} />
+    </main>
+  );
 }
 ```
 
@@ -128,27 +128,27 @@ API 파일은 다음 요소로 구성한다.
 
 ```tsx
 export const getCrew = async (crewId: string) => {
-    return api.get(`crews/${crewId}`).json<Crew>();
+  return api.get(`crews/${crewId}`).json<Crew>();
 };
 
 export const getCrewQuery = (crewId: string) =>
-    queryOptions({
-        queryKey: ['crews', crewId],
-        queryFn: () => getCrew(crewId),
-    });
+  queryOptions({
+    queryKey: ['crews', crewId],
+    queryFn: () => getCrew(crewId),
+  });
 ```
 
 ```tsx
 export const updateCrew = async (input: UpdateCrewInput) => {
-    return api
-        .patch(`crews/${input.crewId}`, {
-            json: input.body,
-        })
-        .json<Crew>();
+  return api
+    .patch(`crews/${input.crewId}`, {
+      json: input.body,
+    })
+    .json<Crew>();
 };
 
 export const updateCrewMutation = mutationOptions({
-    mutationFn: updateCrew,
+  mutationFn: updateCrew,
 });
 ```
 
@@ -202,15 +202,15 @@ shadcn/ui와 Radix UI의 구현을 참고하되 프로젝트에 필요한 기능
 
 ```tsx
 function PostRoute() {
-    const { postId } = Route.useParams();
+  const { postId } = Route.useParams();
 
-    return (
-        <ErrorBoundary>
-            <Suspense fallback={<PostPageSkeleton />}>
-                <PostPage postId={postId} />
-            </Suspense>
-        </ErrorBoundary>
-    );
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<PostPageSkeleton />}>
+        <PostPage postId={postId} />
+      </Suspense>
+    </ErrorBoundary>
+  );
 }
 ```
 
@@ -218,9 +218,9 @@ function PostRoute() {
 
 ```tsx
 function PostPage({ postId }: PostPageProps) {
-    const { data: post } = useSuspenseQuery(getPostQuery(postId));
+  const { data: post } = useSuspenseQuery(getPostQuery(postId));
 
-    return <Post post={post} />;
+  return <Post post={post} />;
 }
 ```
 
@@ -228,19 +228,19 @@ function PostPage({ postId }: PostPageProps) {
 
 ```tsx
 function PostPage({ postId }: PostPageProps) {
-    const { data: post } = useSuspenseQuery(getPostQuery(postId));
+  const { data: post } = useSuspenseQuery(getPostQuery(postId));
 
-    return (
-        <main>
-            <Post post={post} />
+  return (
+    <main>
+      <Post post={post} />
 
-            <ErrorBoundary>
-                <Suspense fallback={<CommentsSkeleton />}>
-                    <Comments postId={postId} />
-                </Suspense>
-            </ErrorBoundary>
-        </main>
-    );
+      <ErrorBoundary>
+        <Suspense fallback={<CommentsSkeleton />}>
+          <Comments postId={postId} />
+        </Suspense>
+      </ErrorBoundary>
+    </main>
+  );
 }
 ```
 
