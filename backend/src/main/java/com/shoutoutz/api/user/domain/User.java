@@ -18,16 +18,16 @@ public class User {
     @Builder
     private User(
             Long id,
-            Handle handle,
+            String handle,
             UserStatus status,
             UserRole role,
             Instant lastLoginAt,
             Instant deletedAt,
             Instant purgedAt
     ) {
-        validate(handle, status, role, deletedAt);
+        validate(status, role, deletedAt);
         this.id = id;
-        this.handle = handle;
+        this.handle = new Handle(handle);
         this.status = status;
         this.role = role;
         this.lastLoginAt = lastLoginAt;
@@ -35,7 +35,7 @@ public class User {
         this.purgedAt = purgedAt;
     }
 
-    public static User initialize(Handle handle) {
+    public static User initialize(String handle) {
         return new User(
                 null,
                 handle,
@@ -48,14 +48,10 @@ public class User {
     }
 
     private void validate(
-            Handle handle,
             UserStatus status,
             UserRole role,
             Instant deletedAt
     ) {
-        if (handle == null) {
-            throw new IllegalArgumentException("사용자 핸들은 필수입니다.");
-        }
         if (status == null) {
             throw new IllegalArgumentException("사용자 상태는 필수입니다.");
         }

@@ -1,6 +1,5 @@
 package com.shoutoutz.api.user.infrastructure.mapper;
 
-import com.shoutoutz.api.user.domain.ProfileDisplayName;
 import com.shoutoutz.api.user.domain.UserProfile;
 import com.shoutoutz.api.user.infrastructure.UserProfileEntity;
 
@@ -26,7 +25,7 @@ public final class UserProfileMapper {
     public static UserProfile toDomain(UserProfileEntity entity) {
         return UserProfile.builder()
                 .userId(entity.getUserId())
-                .displayName(new ProfileDisplayName(entity.getDisplayName()))
+                .displayName(entity.getDisplayName())
                 .userType(entity.getUserType())
                 .track(entity.getTrack())
                 .cohort(entity.getCohort())

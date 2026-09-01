@@ -11,7 +11,7 @@ class UserProfileTest {
     @Test
     @DisplayName("일반 사용자 프로필을 기본값으로 초기화한다")
     void initializesGeneralUserProfile() {
-        UserProfile profile = UserProfile.initialize(1L, new ProfileDisplayName("재끼"));
+        UserProfile profile = UserProfile.initialize(1L, "재끼");
 
         assertThat(profile.getUserId()).isEqualTo(1L);
         assertThat(profile.getDisplayName()).isEqualTo(new ProfileDisplayName("재끼"));
@@ -25,10 +25,17 @@ class UserProfileTest {
     }
 
     @Test
+    @DisplayName("프로필 생성 시 문자열 표시 이름을 값 객체로 변환한다")
+    void convertsRawDisplayNameWhenInitializingUserProfile() {
+        assertThatThrownBy(() -> UserProfile.initialize(1L, " "))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     @DisplayName("사용자 ID와 표시 이름, 사용자 유형은 필수다")
     void requiresUserIdDisplayNameAndUserType() {
         assertThatThrownBy(() -> UserProfile.builder()
-                .displayName(new ProfileDisplayName("재끼"))
+                .displayName("재끼")
                 .userType(UserType.GENERAL)
                 .build())
                 .isInstanceOf(IllegalArgumentException.class);
@@ -41,7 +48,7 @@ class UserProfileTest {
 
         assertThatThrownBy(() -> UserProfile.builder()
                 .userId(1L)
-                .displayName(new ProfileDisplayName("재끼"))
+                .displayName("재끼")
                 .build())
                 .isInstanceOf(IllegalArgumentException.class);
     }
@@ -51,7 +58,7 @@ class UserProfileTest {
     void rejectsTrackAndCohortForGeneralUser() {
         assertThatThrownBy(() -> UserProfile.builder()
                 .userId(1L)
-                .displayName(new ProfileDisplayName("재끼"))
+                .displayName("재끼")
                 .userType(UserType.GENERAL)
                 .track("BACKEND")
                 .cohort((short) 8)
@@ -64,7 +71,7 @@ class UserProfileTest {
     void requiresTrackAndCohortForWoowacourseCrew() {
         assertThatThrownBy(() -> UserProfile.builder()
                 .userId(1L)
-                .displayName(new ProfileDisplayName("재끼"))
+                .displayName("재끼")
                 .userType(UserType.WOOWACOURSE_CREW)
                 .track("BACKEND")
                 .build())
@@ -72,7 +79,7 @@ class UserProfileTest {
 
         assertThatThrownBy(() -> UserProfile.builder()
                 .userId(1L)
-                .displayName(new ProfileDisplayName("재끼"))
+                .displayName("재끼")
                 .userType(UserType.WOOWACOURSE_CREW)
                 .cohort((short) 8)
                 .build())
@@ -84,7 +91,7 @@ class UserProfileTest {
     void createsWoowacourseCrewProfile() {
         UserProfile profile = UserProfile.builder()
                 .userId(1L)
-                .displayName(new ProfileDisplayName("재끼"))
+                .displayName("재끼")
                 .userType(UserType.WOOWACOURSE_CREW)
                 .track("BACKEND")
                 .cohort((short) 8)

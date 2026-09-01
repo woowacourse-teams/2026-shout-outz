@@ -19,7 +19,7 @@ public class UserProfile {
     @Builder
     private UserProfile(
             Long userId,
-            ProfileDisplayName displayName,
+            String displayName,
             UserType userType,
             String track,
             Short cohort,
@@ -28,9 +28,9 @@ public class UserProfile {
             String githubProfileUrl,
             String blogUrl
     ) {
-        validate(userId, displayName, userType, track, cohort);
+        validate(userId, userType, track, cohort);
         this.userId = userId;
-        this.displayName = displayName;
+        this.displayName = new ProfileDisplayName(displayName);
         this.userType = userType;
         this.track = track;
         this.cohort = cohort;
@@ -40,7 +40,7 @@ public class UserProfile {
         this.blogUrl = blogUrl;
     }
 
-    public static UserProfile initialize(Long userId, ProfileDisplayName displayName) {
+    public static UserProfile initialize(Long userId, String displayName) {
         return new UserProfile(
                 userId,
                 displayName,
@@ -56,16 +56,12 @@ public class UserProfile {
 
     private void validate(
             Long userId,
-            ProfileDisplayName displayName,
             UserType userType,
             String track,
             Short cohort
     ) {
         if (userId == null) {
             throw new IllegalArgumentException("사용자 ID는 필수입니다.");
-        }
-        if (displayName == null) {
-            throw new IllegalArgumentException("사용자 표시 이름은 필수입니다.");
         }
         if (userType == null) {
             throw new IllegalArgumentException("사용자 유형은 필수입니다.");

@@ -60,7 +60,7 @@ class UserProfileMapperTest {
     private UserProfile createUserProfile() {
         return UserProfile.builder()
                 .userId(1L)
-                .displayName(new ProfileDisplayName("재끼"))
+                .displayName("재끼")
                 .userType(UserType.WOOWACOURSE_CREW)
                 .track("BACKEND")
                 .cohort((short) 8)

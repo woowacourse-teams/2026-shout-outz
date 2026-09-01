@@ -16,7 +16,7 @@ class UserMapperTest {
     @Test
     @DisplayName("사용자 도메인을 엔티티로 변환한다")
     void mapsDomainToEntity() {
-        User user = User.initialize(new Handle("zzaekkii"));
+        User user = User.initialize("zzaekkii");
 
         UserEntity entity = UserMapper.toEntity(user);
 

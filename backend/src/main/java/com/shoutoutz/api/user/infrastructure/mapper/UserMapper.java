@@ -1,6 +1,5 @@
 package com.shoutoutz.api.user.infrastructure.mapper;
 
-import com.shoutoutz.api.user.domain.Handle;
 import com.shoutoutz.api.user.domain.User;
 import com.shoutoutz.api.user.infrastructure.UserEntity;
 
@@ -24,7 +23,7 @@ public final class UserMapper {
     public static User toDomain(UserEntity entity) {
         return User.builder()
                 .id(entity.getId())
-                .handle(new Handle(entity.getHandle()))
+                .handle(entity.getHandle())
                 .status(entity.getStatus())
                 .role(entity.getRole())
                 .lastLoginAt(entity.getLastLoginAt())

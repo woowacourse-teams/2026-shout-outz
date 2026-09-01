@@ -27,7 +27,7 @@ class UserRepositoryIntegrationTest {
     @Test
     @DisplayName("사용자를 저장하고 ID로 조회한다")
     void savesAndFindsUserById() {
-        User savedUser = userRepository.save(User.initialize(new Handle("zzaekkii")));
+        User savedUser = userRepository.save(User.initialize("zzaekkii"));
 
         User foundUser = userRepository.findById(savedUser.getId()).orElseThrow();
         UserEntity savedEntity = userJpaRepository.findById(savedUser.getId()).orElseThrow();
