@@ -11,6 +11,7 @@ public final class MediaMetadataMapper {
     public static MediaMetadataEntity toEntity(MediaMetadata metadata) {
         return MediaMetadataEntity.builder()
                 .id(metadata.getId())
+                .uploadedBy(metadata.getUploadedBy())
                 .purpose(metadata.getPurpose())
                 .s3Key(metadata.getS3Key())
                 .originalFileName(metadata.getOriginalFileName())
@@ -28,6 +29,7 @@ public final class MediaMetadataMapper {
     public static MediaMetadata toDomain(MediaMetadataEntity entity) {
         return MediaMetadata.reconstitute(
                 entity.getId(),
+                entity.getUploadedBy(),
                 entity.getPurpose(),
                 entity.getS3Key(),
                 entity.getOriginalFileName(),

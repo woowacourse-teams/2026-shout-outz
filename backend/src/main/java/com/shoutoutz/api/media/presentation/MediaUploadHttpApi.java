@@ -1,7 +1,9 @@
 package com.shoutoutz.api.media.presentation;
 
 import com.shoutoutz.api.media.application.MediaUploadService;
+import com.shoutoutz.api.media.application.MediaUploadCompletionService;
 import com.shoutoutz.api.media.presentation.dto.request.MediaUploadStartRequest;
+import com.shoutoutz.api.media.presentation.dto.response.MediaUploadCompleteResponse;
 import com.shoutoutz.api.media.presentation.dto.response.MediaUploadStartResponse;
 import jakarta.validation.Valid;
 import java.security.Principal;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -23,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class MediaUploadHttpApi {
 
     private final MediaUploadService mediaUploadService;
+    private final MediaUploadCompletionService mediaUploadCompletionService;
 
     /**
      * 1. 이미지 업로드 요청
@@ -36,6 +40,16 @@ public class MediaUploadHttpApi {
         long requesterId = requireRequesterId(principal);
         MediaUploadStartResponse response = mediaUploadService.startUpload(requesterId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/{mediaId}/complete")
+    public ResponseEntity<MediaUploadCompleteResponse> completeUpload(
+            @PathVariable long mediaId,
+            Principal principal
+    ) {
+        long requesterId = requireRequesterId(principal);
+        MediaUploadCompleteResponse response = mediaUploadCompletionService.completeUpload(requesterId, mediaId);
+        return ResponseEntity.ok(response);
     }
 
     private static long requireRequesterId(Principal principal) {

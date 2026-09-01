@@ -137,6 +137,7 @@ class MediaUploadServiceTest {
     private MediaMetadata savedMetadata(String s3Key) {
         return MediaMetadata.reconstitute(
                 10L,
+                7L,
                 MediaPurpose.POST_CONTENT,
                 s3Key,
                 "post-image.webp",

@@ -29,6 +29,9 @@ public class MediaMetadataEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "uploaded_by")
+    private Long uploadedBy;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private MediaPurpose purpose;

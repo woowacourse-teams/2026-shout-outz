@@ -4,6 +4,7 @@ import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.infrastructure.jpa.MediaMetadataJpaRepository;
 import com.shoutoutz.api.media.infrastructure.mappper.MediaMetadataMapper;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -20,5 +21,10 @@ public class MediaMetadataRepositoryImpl implements MediaMetadataRepository {
     public MediaMetadata save(MediaMetadata metadata) {
         MediaMetadataEntity entity = MediaMetadataMapper.toEntity(metadata);
         return MediaMetadataMapper.toDomain(mediaMetadataJpaRepository.save(entity));
+    }
+
+    @Override
+    public Optional<MediaMetadata> findById(long id) {
+        return mediaMetadataJpaRepository.findById(id).map(MediaMetadataMapper::toDomain);
     }
 }

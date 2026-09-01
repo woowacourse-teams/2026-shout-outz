@@ -129,6 +129,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 | 컬럼 | 타입 | 의미 | 제약 및 사용 기준 |
 | --- | --- | --- | --- |
 | `id` | `BIGINT` | 미디어 자산 식별자 | PK, PostgreSQL identity가 생성하며 Java에서는 `Long`으로 매핑 |
+| `uploaded_by` | `BIGINT` | 업로드를 시작한 사용자 | `users.id` 참조, 새 업로드에서는 필수이며 완료 요청자의 소유권 확인에 사용 |
 | `purpose` | `VARCHAR(32)` | 업로드 용도 | `MediaPurpose` 값만 허용 |
 | `s3_key` | `VARCHAR(1024)` | S3 객체 키 | 필수, unique, 클라이언트가 임의로 결정하지 않음, DB ID와 별도로 랜덤하게 생성 |
 | `original_filename` | `VARCHAR(255)` | 사용자가 업로드한 원본 파일명 | 선택값, 표시·운영 목적에만 사용 |
@@ -150,8 +151,8 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 - private S3 접근은 백엔드가 발급하는 Presigned GET URL로 제어하므로 `access_token`을 별도로 저장하지 않는다.
 - `associated_id` 같은 다형성 외래키와 `display_order`는 참조 무결성을 보장할 수 없거나 사용처마다 값이 달라질 수 있으므로 미디어 메타데이터에 두지 않는다. 여러 미디어를 연결해야 하는 포스트에서는 `post_media`가 실제 외래키와 정렬 순서를 관리한다.
 - 삭제 정책은 업로드·처리 상태와 별개의 정책이므로 이번 마이그레이션에서는 `is_deleted`를 추가하지 않는다. 사용자 삭제 요구가 확정되면 이력 보존이 가능한 `deleted_at` 방식으로 별도 결정한다.
-- 업로더 식별자는 사용자 스키마의 식별자 타입과 외래키 정책이 확정된 뒤 추가한다. 아직 존재하지 않는 사용자 테이블을 가리키는 참조를 먼저 만들지 않는다.
-- Flyway의 `V2__create_media_metadata.sql`로 테이블을 생성하고, 사용하지 않는 `PROJECT_MEDIA` 용도는 `V4__remove_unused_project_media_purpose.sql`에서 제거한다.
+- 업로더 식별자는 `uploaded_by`로 저장하고 `users.id`를 참조한다. 기존 `media_metadata` 데이터와의 호환을 위해 마이그레이션에서는 nullable로 추가하지만, 새 업로드 생성 시 애플리케이션과 도메인에서 필수로 검증한다.
+- Flyway의 `V2__create_media_metadata.sql`로 테이블을 생성하고, 사용하지 않는 `PROJECT_MEDIA` 용도는 `V4__remove_unused_project_media_purpose.sql`에서 제거하며, 업로더 소유권은 `V5__add_media_uploader.sql`에서 추가한다.
 
 ### 11. 포스트 미디어 매핑
 
@@ -183,7 +184,16 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 - 권한 확인 후 `MediaUploadPolicy`로 Content-Type과 파일 크기를 검증한다. 현재 `DefaultMediaUploadPolicy`는 JPEG·PNG·WebP와 10MiB 이하만 허용한다.
 - 검증을 통과하면 서버가 객체 키와 만료 시각을 생성하고 `media_metadata`에 `PENDING_UPLOAD` 레코드를 저장한다. 이후 `S3MediaStorage`가 Presigned PUT URL을 발급하고, 응답에 `mediaId`, 상태, URL, 만료 시각, 업로드에 사용할 Content-Type을 포함한다.
 - 메타데이터 저장과 Presigned URL 발급은 하나의 트랜잭션 흐름으로 실행한다. URL 발급이 실패하면 예외를 전파해 미디어 레코드도 커밋하지 않는다. Presigned URL은 파일 업로드 자체가 아니므로, 프론트엔드는 URL 발급 성공 후 S3에 파일을 PUT해야 한다.
-- 이 API는 파일 바이트를 받지 않으며 업로드 완료 API도 아직 포함하지 않는다. 프론트엔드가 S3 PUT 성공 후 별도 완료 API를 호출하면 후속 단계에서 `HeadObject` 검증과 `PROCESSING` 전이를 수행한다.
+- 이 API는 파일 바이트를 받지 않으며, 프론트엔드는 S3 PUT 성공 후 별도 완료 API를 호출한다.
+
+### 14. 업로드 완료 API
+
+- 업로드 완료 엔드포인트는 `POST /api/v1/media/{mediaId}/complete`이며 요청 본문은 없다. 인증된 `Principal`의 사용자 ID와 `media_metadata.uploaded_by`가 일치해야 한다.
+- 미디어가 존재하지 않으면 `404 Not Found`, 업로더가 다르면 `403 Forbidden`을 반환한다.
+- 현재는 `PENDING_UPLOAD` 상태만 완료할 수 있다. `PROCESSING`, `READY`, `FAILED`, `EXPIRED` 상태에 대한 재요청은 상태를 다시 처리하지 않고 `409 Conflict`로 반환한다. 중복 요청 멱등 처리와 동시 요청 직렬화는 이번 범위에서 제외하며 후속 트러블슈팅 항목으로 남긴다.
+- 완료 요청이 들어오면 `S3MediaStorage.verifyUploadedObject`가 `HeadObject`로 객체 존재 여부, 실제 크기, Content-Type을 확인한다. 객체가 아직 없으면 `409 Conflict`를 반환하고 `PENDING_UPLOAD`를 유지한다.
+- 객체 크기 또는 Content-Type이 요청 메타데이터와 다르면 미디어를 `FAILED`로 저장하고 `422 Unprocessable Entity`를 반환한다. 실패 사유는 외부에 노출하지 않는 안전한 고정 메시지를 저장한다.
+- 검증에 성공하면 `uploaded_at`을 기록하고 `MediaMetadata.confirmUpload`를 통해 `PROCESSING`으로 전환한 뒤 `mediaId`, 상태, 실제 크기, Content-Type, 확인 시각을 응답한다. 이미지 시그니처 검증과 변형본 생성은 처리 워커 단계에서 이어서 수행한다.
 
 ## 결과 (Consequences)
 
@@ -205,7 +215,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 ### 중립적 영향
 
 - AWS 버킷·IAM·CORS의 기본 설정은 우테코 제공 인프라에 의존한다. 버킷 이름, 리전, 운영 origin, 백엔드 런타임 역할 연결은 제공받은 환경에서 확인한다.
-- 백엔드는 AWS SDK와 환경 변수, 기본 자격 증명 체인으로 제공 S3에 연결한다. S3 객체 저장소 어댑터와 업로드 시작 유스케이스는 구현했지만, 업로드 완료·상태 전이·이미지 처리 HTTP API는 후속 단계에서 추가한다.
+- 백엔드는 AWS SDK와 환경 변수, 기본 자격 증명 체인으로 제공 S3에 연결한다. S3 객체 저장소 어댑터, 업로드 시작 API, 업로드 완료 API의 기본 검증 흐름은 구현했지만 이미지 처리 HTTP API와 중복 요청 멱등 처리는 후속 단계에서 추가한다.
 - `media_metadata`와 `post_media`의 구조는 확정했지만, 기존 URL 컬럼과 Markdown 본문을 새 미디어 참조 방식으로 전환하는 데이터 마이그레이션은 별도 단계로 진행한다.
 - 문서·동영상·SVG 등의 지원이 필요해지면 허용 포맷과 처리 방식을 다시 검토한다.
 

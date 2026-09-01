@@ -16,6 +16,7 @@ public final class MediaMetadata {
     private static final int MAX_ORIGINAL_FILE_NAME_LENGTH = 255;
 
     private final Long id;
+    private final Long uploadedBy;
     private final MediaPurpose purpose;
     private final String s3Key; //버킷 안에서 객체를 찾기 위한 경로
     private final String originalFileName;
@@ -31,6 +32,7 @@ public final class MediaMetadata {
     @Builder
     private MediaMetadata(
             Long id,
+            Long uploadedBy,
             MediaPurpose purpose,
             String s3Key,
             String originalFileName,
@@ -44,6 +46,7 @@ public final class MediaMetadata {
             Instant updatedAt
     ) {
         this.id = id;
+        this.uploadedBy = uploadedBy;
         this.purpose = Objects.requireNonNull(purpose, "미디어 용도는 필수입니다.");
         this.s3Key = validateS3Key(s3Key);
         this.originalFileName = validateOriginalFileName(originalFileName);
@@ -62,6 +65,7 @@ public final class MediaMetadata {
      */
     public static MediaMetadata initialize(
             MediaPurpose purpose,
+            long uploadedBy,
             String s3Key,
             String originalFileName,
             String mimeType,
@@ -69,6 +73,9 @@ public final class MediaMetadata {
             Instant expiresAt,
             Instant now
     ) {
+        if (uploadedBy <= 0) {
+            throw new IllegalArgumentException("업로더 ID는 0보다 커야 합니다.");
+        }
         Objects.requireNonNull(now, "생성 시각은 필수입니다.");
         Objects.requireNonNull(expiresAt, "업로드 만료 시각은 필수입니다.");
         if (!expiresAt.isAfter(now)) {
@@ -76,6 +83,7 @@ public final class MediaMetadata {
         }
         return new MediaMetadata(
                 null,
+                uploadedBy,
                 purpose,
                 s3Key,
                 originalFileName,
@@ -95,6 +103,7 @@ public final class MediaMetadata {
      */
     public static MediaMetadata reconstitute(
             Long id,
+            Long uploadedBy,
             MediaPurpose purpose,
             String s3Key,
             String originalFileName,
@@ -109,6 +118,7 @@ public final class MediaMetadata {
     ) {
         return new MediaMetadata(
                 id,
+                uploadedBy,
                 purpose,
                 s3Key,
                 originalFileName,
@@ -159,6 +169,7 @@ public final class MediaMetadata {
     ) {
         return new MediaMetadata(
                 this.id,
+                this.uploadedBy,
                 this.purpose,
                 this.s3Key,
                 this.originalFileName,

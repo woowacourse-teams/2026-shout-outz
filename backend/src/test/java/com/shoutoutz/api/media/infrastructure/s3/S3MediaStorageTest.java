@@ -163,6 +163,7 @@ class S3MediaStorageTest {
     private MediaMetadata metadata() {
         return MediaMetadata.initialize(
                 MediaPurpose.POST_CONTENT,
+                1L,
                 "media/post-content/object-id",
                 "image.webp",
                 "image/webp",

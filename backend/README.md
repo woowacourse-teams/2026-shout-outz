@@ -191,4 +191,15 @@ S3 객체 연동은 `com.shoutoutz.api.media.infrastructure.s3`에서 담당한�
 }
 ```
 
-서버는 대상 수정 권한과 이미지 업로드 정책을 확인한 뒤 `media_metadata`에 `PENDING_UPLOAD` 레코드를 만들고 Presigned PUT URL을 반환한다. 프론트엔드는 응답의 `uploadUrl`로 S3에 직접 PUT하고, `contentType`을 요청 헤더에 동일하게 지정해야 한다. S3 업로드가 끝난 뒤의 완료 확인과 `PROCESSING` 전이는 후속 API에서 처리한다.
+서버는 대상 수정 권한과 이미지 업로드 정책을 확인한 뒤 `media_metadata`에 `PENDING_UPLOAD` 레코드를 만들고 Presigned PUT URL을 반환한다. 프론트엔드는 응답의 `uploadUrl`로 S3에 직접 PUT하고, `contentType`을 요청 헤더에 동일하게 지정해야 한다. S3 업로드가 끝나면 완료 API를 호출한다.
+
+### 업로드 완료 API
+
+`POST /api/v1/media/{mediaId}/complete`는 S3 업로드가 끝난 뒤 호출한다. 요청 본문은 없으며, 서버는 인증된 업로더인지 확인한 뒤 S3 `HeadObject`로 객체 존재 여부·크기·Content-Type을 검증한다.
+
+- 검증 성공: `PROCESSING` 상태로 변경하고 미디어 정보를 반환한다.
+- S3 객체 없음: `409 Conflict`, `PENDING_UPLOAD` 유지
+- 크기·Content-Type 불일치: `FAILED` 저장 후 `422 Unprocessable Entity`
+- 이미 `PENDING_UPLOAD`가 아닌 상태: `409 Conflict`
+
+현재 완료 요청의 중복 멱등 처리와 동시 요청 직렬화는 구현하지 않았다.

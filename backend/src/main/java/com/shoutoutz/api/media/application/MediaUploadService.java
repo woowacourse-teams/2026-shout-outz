@@ -41,6 +41,7 @@ public class MediaUploadService {
         String s3Key = mediaObjectKeyGenerator.generate(request.purpose());
         MediaMetadata pendingUpload = MediaMetadata.initialize(
                 request.purpose(),
+                requesterId,
                 s3Key,
                 request.originalFileName(),
                 request.contentType(),

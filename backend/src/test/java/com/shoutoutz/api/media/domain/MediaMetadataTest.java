@@ -15,6 +15,7 @@ class MediaMetadataTest {
     void 업로드_대기_메타데이터를_생성한다() {
         MediaMetadata metadata = MediaMetadata.initialize(
                 MediaPurpose.PROJECT_DESCRIPTION,
+                1L,
                 "media/user-profile/1/original.webp",
                 "사용자_이미지.webp ",
                 "IMAGE/WEBP",
@@ -25,6 +26,7 @@ class MediaMetadataTest {
 
         assertThat(metadata.getStatus()).isEqualTo(MediaStatus.PENDING_UPLOAD);
         assertThat(metadata.getId()).isNull();
+        assertThat(metadata.getUploadedBy()).isEqualTo(1L);
         assertThat(metadata.getOriginalFileName()).isEqualTo("사용자_이미지.webp");
         assertThat(metadata.getMimeType()).isEqualTo("image/webp");
         assertThat(metadata.getFailureReason()).isNull();
@@ -63,6 +65,7 @@ class MediaMetadataTest {
     private MediaMetadata initialize() {
         return MediaMetadata.initialize(
                 MediaPurpose.PROJECT_THUMBNAIL,
+                1L,
                 "media/project/1/thumbnail.webp",
                 "thumbnail.webp",
                 "image/webp",
