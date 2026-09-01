@@ -10,42 +10,45 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 /** @type {import("webpack").Configuration} */
 const config = {
-    entry: './src/main.tsx',
-    output: {
-        path: path.resolve(__dirname, 'dist'),
-    },
-    devServer: {
-        open: true,
-    },
-    plugins: [
-        new HtmlWebpackPlugin({
-            template: './src/index.html',
-        }),
-        new ForkTsCheckerWebpackPlugin(),
-    ],
-    module: {
-        rules: [
-            {
-                test: /\.(ts|tsx|js|jsx)$/i,
-                loader: 'swc-loader',
-                exclude: /[\\/]node_modules[\\/]/,
-            },
-            {
-                test: /\.css$/i,
-                use: ['style-loader', 'css-loader', 'postcss-loader'],
-            },
-        ],
-    },
-    resolve: {
-        extensions: ['.tsx', '.ts', '.jsx', '.js'],
-    },
+	entry: './src/main.tsx',
+	output: {
+		path: path.resolve(__dirname, 'dist'),
+	},
+	devServer: {
+		open: true,
+	},
+	plugins: [
+		new HtmlWebpackPlugin({
+			template: './src/index.html',
+		}),
+		new ForkTsCheckerWebpackPlugin(),
+	],
+	module: {
+		rules: [
+			{
+				test: /\.(ts|tsx|js|jsx)$/i,
+				loader: 'swc-loader',
+				exclude: /[\\/]node_modules[\\/]/,
+			},
+			{
+				test: /\.css$/i,
+				use: ['style-loader', 'css-loader', 'postcss-loader'],
+			},
+		],
+	},
+	resolve: {
+		extensions: ['.tsx', '.ts', '.jsx', '.js'],
+		alias: {
+			'@': path.resolve(__dirname, 'src'),
+		},
+	},
 };
 
 export default () => {
-    if (isProduction) {
-        config.mode = 'production';
-    } else {
-        config.mode = 'development';
-    }
-    return config;
+	if (isProduction) {
+		config.mode = 'production';
+	} else {
+		config.mode = 'development';
+	}
+	return config;
 };
