@@ -1,6 +1,7 @@
 package com.shoutoutz.api.user.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.user.domain.ProfileDisplayName;
 import com.shoutoutz.api.user.domain.User;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
@@ -49,5 +51,21 @@ class UserProfileRepositoryIntegrationTest {
     @DisplayName("존재하지 않는 사용자의 프로필을 조회하면 빈 결과를 반환한다")
     void returnsEmptyWhenUserProfileDoesNotExist() {
         assertThat(userProfileRepository.findByUserId(Long.MAX_VALUE)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("데이터베이스는 우아한테크코스 코치의 기수를 허용하지 않는다")
+    void rejectsCohortForWoowacourseCoachAtDatabase() {
+        User savedUser = userRepository.save(User.initialize("sangjun-coach"));
+        UserProfileEntity profileEntity = UserProfileEntity.builder()
+                .userId(savedUser.getId())
+                .displayName("상준")
+                .userType(UserType.WOOWACOURSE_COACH)
+                .track("BACKEND")
+                .cohort((short) 8)
+                .build();
+
+        assertThatThrownBy(() -> userProfileJpaRepository.saveAndFlush(profileEntity))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 }
