@@ -15,4 +15,16 @@ class MediaObjectKeyGeneratorTest {
 
         assertThat(key).matches("media/post-content/[0-9a-f-]{36}");
     }
+
+    @Test
+    void 원본_키에서_표시용과_썸네일_키를_결정적으로_생성한다() {
+        String sourceKey = "media/post-content/object-id";
+
+        assertThat(keyGenerator.generateVariant(sourceKey, MediaVariant.ORIGINAL))
+                .isEqualTo(sourceKey);
+        assertThat(keyGenerator.generateVariant(sourceKey, MediaVariant.DISPLAY))
+                .isEqualTo(sourceKey + "/display");
+        assertThat(keyGenerator.generateVariant(sourceKey, MediaVariant.THUMBNAIL))
+                .isEqualTo(sourceKey + "/thumbnail");
+    }
 }

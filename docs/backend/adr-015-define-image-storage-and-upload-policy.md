@@ -55,7 +55,7 @@ shout-outz에는 프로젝트, 포스트, 사용자 도메인에서 이미지 �
 | 상태 | 의미 | 허용되는 다음 상태 |
 | --- | --- | --- |
 | `PENDING_UPLOAD` | Presigned URL을 발급했지만 완료 확인 전 | `PROCESSING`, `FAILED`, `EXPIRED` |
-| `PROCESSING` | S3 객체 확인 후 이미지 처리 중 | `READY`, `FAILED` |
+| `PROCESSING` | S3 객체 확인 후 파일 시그니처 검증·EXIF 제거·변형본 생성 중 | `READY`, `FAILED` |
 | `READY` | 원본 검증과 필요한 변형본 처리가 완료됨 | 없음 |
 | `FAILED` | 업로드 검증 또는 이미지 처리에 실패함 | 없음 |
 | `EXPIRED` | 업로드 완료 요청 없이 유효 시간이 지남 | 없음 |
@@ -98,8 +98,12 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 ### 7. 초기 이미지 처리 실행 경계
 
 - 초기에는 이미지 처리 전용 서버를 별도 서비스로 운영하지 않는다.
-- 백엔드가 S3 객체 확인 후 비동기 작업으로 파일 시그니처 검증, EXIF 제거, 변형본 생성을 수행한다.
-- 원본과 변형본은 S3에 저장하고, 이미지 처리 작업의 동시성은 제한한다.
+- 완료 API가 `PROCESSING`으로 저장한 뒤 트랜잭션 커밋 이벤트를 발행하고, 백엔드의 비동기 작업이 파일 시그니처 검증, EXIF 제거, 변형본 생성을 수행한다.
+- 이미지 처리 워커는 S3에서 바이트를 읽어 `Content-Type`이 아니라 파일 시그니처를 기준으로 JPEG·PNG·WebP 여부를 검증한다. 업로드 완료 API의 `HeadObject` 검증은 객체 존재·크기·S3 메타데이터 확인만 담당하므로, 실제 파일 내용 검증을 대체하지 않는다.
+- 처리 성공 시 업로드 원본 키에는 EXIF가 제거된 원본을 다시 저장하고, 같은 자산의 `{s3_key}/display`, `{s3_key}/thumbnail` 키에 표시용·썸네일을 저장한다. 두 변형본의 키는 `s3_key`로부터 결정적으로 계산하며 별도 변형본 테이블은 만들지 않는다.
+- 표시용 이미지는 긴 변을 최대 1,920px, 썸네일은 긴 변을 최대 320px로 제한하고 원본보다 확대하지 않는다. 출력 포맷은 검증된 원본의 MIME 타입을 유지한다.
+- 처리 실패 시 생성된 객체를 best-effort로 삭제하고 안전한 실패 사유를 `failure_reason`에 기록한 뒤 `FAILED`로 전환한다.
+- 이미지 처리 작업의 동시성은 전용 `mediaProcessingExecutor`의 작업 스레드 2개와 대기열 100개로 제한한다. 대기열이 가득 차면 호출 스레드가 작업을 수행해 작업을 버리지 않고 백프레셔를 적용한다.
 - 처리 대기열, CPU·메모리 사용량, 처리 시간과 실패율을 운영 지표로 수집한다.
 - 처리 대기열이 지속적으로 쌓이거나 백엔드의 응답 시간·자원 사용량이 정한 기준을 넘으면, 이미지 처리 워커 또는 전용 서버 분리를 재검토한다.
 
@@ -131,10 +135,10 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 | `id` | `BIGINT` | 미디어 자산 식별자 | PK, PostgreSQL identity가 생성하며 Java에서는 `Long`으로 매핑 |
 | `uploaded_by` | `BIGINT` | 업로드를 시작한 사용자 | `users.id` 참조, 새 업로드에서는 필수이며 완료 요청자의 소유권 확인에 사용 |
 | `purpose` | `VARCHAR(32)` | 업로드 용도 | `MediaPurpose` 값만 허용 |
-| `s3_key` | `VARCHAR(1024)` | S3 객체 키 | 필수, unique, 클라이언트가 임의로 결정하지 않음, DB ID와 별도로 랜덤하게 생성 |
+| `s3_key` | `VARCHAR(1024)` | S3 원본 객체 키 | 필수, unique, 클라이언트가 임의로 결정하지 않음, DB ID와 별도로 랜덤하게 생성하며 처리 성공 후에도 정제된 원본이 같은 키를 사용 |
 | `original_filename` | `VARCHAR(255)` | 사용자가 업로드한 원본 파일명 | 선택값, 표시·운영 목적에만 사용 |
 | `mime_type` | `VARCHAR(100)` | 업로드를 요청한 MIME 타입 | 필수, 업로드 완료 후 S3 메타데이터와 실제 파일 시그니처를 검증 |
-| `size_bytes` | `BIGINT` | 파일 크기(바이트) | 0보다 커야 함, 최대 크기는 `MediaUploadPolicy`가 검증 |
+| `size_bytes` | `BIGINT` | 현재 S3 원본 객체 크기(바이트) | 0보다 커야 함, 완료 API에서는 업로드 객체 크기를 기록하고 `READY` 전환 시 EXIF 제거 후 원본 크기로 갱신, 최대 업로드 크기는 `MediaUploadPolicy`가 검증 |
 | `status` | `VARCHAR(20)` | 업로드·처리 상태 | `PENDING_UPLOAD`, `PROCESSING`, `READY`, `FAILED`, `EXPIRED` |
 | `expires_at` | `TIMESTAMPTZ` | 업로드 완료 확인 기한 | `PENDING_UPLOAD` 정리 기준 |
 | `failure_reason` | `TEXT` | 실패 사유 | `FAILED`일 때만 비어 있지 않은 값 허용 |
@@ -143,6 +147,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 | `updated_at` | `TIMESTAMPTZ` | 마지막 변경 시각 | 상태 변경 시 갱신 |
 
 - S3 객체 키의 중복을 방지하기 위해 `s3_key`에 unique 제약을 두고, 객체가 `media/` prefix 밖에 생성되지 않도록 제한한다.
+- 업로드 직후에는 `s3_key`에 클라이언트가 올린 객체가 있고, 처리 성공 후에는 같은 키에 EXIF가 제거된 정제 원본이 있다. 재인코딩에 따라 파일 크기가 달라질 수 있으므로 `size_bytes`는 `READY` 시점의 정제 원본 크기로 갱신한다.
 - 미디어 DB 식별자는 기존 도메인과 일관되게 `BIGINT identity`와 Java `Long`을 사용한다. ID가 API에 노출되더라도 접근 권한 검증을 우회할 수 없으며, S3 key는 별도의 랜덤 값으로 생성해 DB ID와 저장 객체의 추측 가능성을 분리한다.
 - 만료 파일 정리를 위해 `PENDING_UPLOAD` 상태의 `expires_at` 부분 인덱스를 둔다.
 - MIME 타입별 허용 목록과 최대 파일 크기는 정책 변경 시 구현체를 교체할 수 있도록 DB CHECK 제약으로 고정하지 않는다. DB에는 양수 크기와 상태·용도 값의 유효성만 둔다.
@@ -168,12 +173,13 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 ### 12. S3 연동 모듈
 
 - `AwsS3Configuration`에서 `S3Client`와 `S3Presigner`를 각각 하나의 Spring Bean으로 생성하고, AWS SDK의 기본 자격 증명 체인을 사용한다.
-- `MediaObjectKeyGenerator`는 `media/{purpose-kebab-case}/{UUID}` 형식의 키를 생성한다. 원본 파일명과 DB ID를 키에 포함하지 않으며, 확장자는 키가 아니라 MIME 타입과 메타데이터로 관리한다.
+- `MediaObjectKeyGenerator`는 `media/{purpose-kebab-case}/{UUID}` 형식의 업로드 원본 키를 생성한다. 원본 파일명과 DB ID를 키에 포함하지 않으며, 확장자는 키가 아니라 MIME 타입과 메타데이터로 관리한다. `generateVariant`는 이 키에 `/display`, `/thumbnail`을 붙여 파생 키를 결정적으로 생성한다.
 - `S3MediaStorage.createPresignedUpload`는 `S3Presigner`로 Presigned PUT URL을 발급한다. `PutObjectRequest`에 MIME 타입을 서명하므로 프론트엔드는 응답으로 받은 `Content-Type`을 동일한 요청 헤더에 넣어야 한다. 파일 바이트는 백엔드가 직접 받지 않는다.
 - `S3MediaStorage.createPresignedDownload`는 비공개 객체 조회용 Presigned GET URL을 발급한다. 객체 접근 권한과 `READY` 상태 검증은 호출하는 애플리케이션 서비스의 책임이다.
 - `S3MediaStorage.headObject`는 `S3Client`로 객체 존재 여부와 크기·MIME 타입·ETag·수정 시각을 확인한다. `verifyUploadedObject`는 `media_metadata`의 예상 크기와 MIME 타입이 S3 HeadObject 결과와 일치하는지 검증한 뒤 처리 단계로 넘긴다.
+- `S3MediaStorage.downloadObject`와 `putObject`는 백엔드 이미지 처리 워커가 S3 객체를 읽고 정제 원본·변형본을 저장할 때 사용한다. 클라이언트 업로드는 계속 Presigned PUT으로 수행하며, 처리 결과 저장만 백엔드가 직접 수행한다.
 - `S3MediaStorage.deleteObject`는 `S3Client`의 DeleteObject를 사용하고, `media/` prefix 밖의 키는 거부한다. 이미 없는 객체를 삭제하는 경우는 S3의 멱등적 삭제 동작에 따라 성공으로 처리한다.
-- S3 객체가 없으면 `S3ObjectNotFoundException`, 객체 메타데이터가 업로드 요청과 다르면 `S3ObjectValidationException`, SDK 호출 자체가 실패하면 `S3StorageException`으로 구분한다. 파일 시그니처 검증과 이미지 변형본 생성은 다음 이미지 처리 단계에서 수행한다.
+- S3 객체가 없으면 `S3ObjectNotFoundException`, 객체 메타데이터가 업로드 요청과 다르면 `S3ObjectValidationException`, SDK 호출 자체가 실패하면 `S3StorageException`으로 구분한다. `ImageSignatureValidator`와 `S3MediaImageProcessor`는 S3에서 바이트를 읽어 파일 시그니처 검증, EXIF 제거, 원본·표시용·썸네일 생성을 수행한다.
 
 ### 13. 업로드 시작 API
 
@@ -193,7 +199,26 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 - 현재는 `PENDING_UPLOAD` 상태만 완료할 수 있다. `PROCESSING`, `READY`, `FAILED`, `EXPIRED` 상태에 대한 재요청은 상태를 다시 처리하지 않고 `409 Conflict`로 반환한다. 중복 요청 멱등 처리와 동시 요청 직렬화는 이번 범위에서 제외하며 후속 트러블슈팅 항목으로 남긴다.
 - 완료 요청이 들어오면 `S3MediaStorage.verifyUploadedObject`가 `HeadObject`로 객체 존재 여부, 실제 크기, Content-Type을 확인한다. 객체가 아직 없으면 `409 Conflict`를 반환하고 `PENDING_UPLOAD`를 유지한다.
 - 객체 크기 또는 Content-Type이 요청 메타데이터와 다르면 미디어를 `FAILED`로 저장하고 `422 Unprocessable Entity`를 반환한다. 실패 사유는 외부에 노출하지 않는 안전한 고정 메시지를 저장한다.
-- 검증에 성공하면 `uploaded_at`을 기록하고 `MediaMetadata.confirmUpload`를 통해 `PROCESSING`으로 전환한 뒤 `mediaId`, 상태, 실제 크기, Content-Type, 확인 시각을 응답한다. 이미지 시그니처 검증과 변형본 생성은 처리 워커 단계에서 이어서 수행한다.
+- 검증에 성공하면 `uploaded_at`을 기록하고 `MediaMetadata.confirmUpload`를 통해 `PROCESSING`으로 전환한 뒤 `MediaProcessingRequested` 이벤트를 발행한다. 응답에는 `mediaId`, `PROCESSING` 상태, 실제 업로드 크기, Content-Type, 확인 시각을 포함한다. 이벤트 리스너는 완료 트랜잭션 커밋 후 비동기로 처리하며, 처리 결과에 따라 `READY` 또는 `FAILED`를 저장한다.
+
+### 15. 이미지 처리 파이프라인
+
+처리 워커는 다음 순서로 동작한다.
+
+```text
+S3 원본 바이트 다운로드
+→ 파일 시그니처와 선언 MIME 타입 일치 여부 확인
+→ 이미지 디코딩 및 해상도 한도 확인
+→ EXIF가 제거된 원본 재인코딩
+→ 표시용(최대 1,920px)·썸네일(최대 320px) 리사이즈 및 재인코딩
+→ 원본·표시용·썸네일을 S3에 저장
+→ READY 및 정제 원본 크기 저장
+```
+
+- JPEG·PNG·WebP의 매직 넘버를 확인한 뒤 선언 MIME 타입과 다르면 처리하지 않는다. 따라서 완료 API에서 `Content-Type`이 일치했더라도 실제 바이트가 위조된 경우 `FAILED`로 전환할 수 있다.
+- 이미지를 ImageIO로 디코딩한 뒤 기본 메타데이터 없이 다시 인코딩해 EXIF를 제거한다. WebP 읽기·쓰기를 위해 Apple Silicon과 x86 환경을 지원하는 `com.github.usefulness:webp-imageio` ImageIO 플러그인을 사용한다.
+- 이미지의 한 변은 10,000px, 전체 픽셀 수는 4,000만 픽셀 이하만 처리한다. 파일 용량이 작아도 과도한 해상도로 디코딩 메모리를 소진하는 입력을 제한하기 위한 기준이다.
+- 처리 중 어느 단계에서든 실패하면 원본·파생 객체 정리를 시도하고 `MediaMetadata.markFailed`로 `FAILED`를 저장한다. 처리 예외의 상세 내용이나 S3 자격 증명 정보는 `failure_reason`에 저장하지 않는다.
 
 ## 결과 (Consequences)
 
@@ -215,7 +240,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 ### 중립적 영향
 
 - AWS 버킷·IAM·CORS의 기본 설정은 우테코 제공 인프라에 의존한다. 버킷 이름, 리전, 운영 origin, 백엔드 런타임 역할 연결은 제공받은 환경에서 확인한다.
-- 백엔드는 AWS SDK와 환경 변수, 기본 자격 증명 체인으로 제공 S3에 연결한다. S3 객체 저장소 어댑터, 업로드 시작 API, 업로드 완료 API의 기본 검증 흐름은 구현했지만 이미지 처리 HTTP API와 중복 요청 멱등 처리는 후속 단계에서 추가한다.
+- 백엔드는 AWS SDK와 환경 변수, 기본 자격 증명 체인으로 제공 S3에 연결한다. S3 객체 저장소 어댑터, 업로드 시작·완료 API, 이미지 처리 워커의 기본 흐름을 구현했으며, 이미지 조회 HTTP API와 중복 요청 멱등 처리는 후속 단계에서 추가한다.
 - `media_metadata`와 `post_media`의 구조는 확정했지만, 기존 URL 컬럼과 Markdown 본문을 새 미디어 참조 방식으로 전환하는 데이터 마이그레이션은 별도 단계로 진행한다.
 - 문서·동영상·SVG 등의 지원이 필요해지면 허용 포맷과 처리 방식을 다시 검토한다.
 

@@ -10,6 +10,7 @@ import com.shoutoutz.api.media.infrastructure.s3.exception.S3ObjectValidationExc
 import com.shoutoutz.api.media.presentation.dto.response.MediaUploadCompleteResponse;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,9 +25,11 @@ public class MediaUploadCompletionService {
 
     private final MediaMetadataRepository mediaMetadataRepository;
     private final S3MediaStorage s3MediaStorage;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     /**
-     * S3 객체를 확인한 뒤 PENDING_UPLOAD 미디어를 PROCESSING으로 전환한다.
+     * S3 객체를 확인한 뒤 PENDING_UPLOAD 미디어를 PROCESSING으로 전환하고,
+     * 트랜잭션 커밋 후 이미지 처리 이벤트를 발행한다.
      *
      * <p>중복 요청 멱등 처리는 아직 적용하지 않는다. PENDING_UPLOAD가 아닌 미디어는
      * 현재 단계에서 충돌로 처리한다.</p>
@@ -50,7 +53,9 @@ public class MediaUploadCompletionService {
         try {
             StoredMediaObject actualObject = s3MediaStorage.verifyUploadedObject(metadata);
             MediaMetadata processing = metadata.confirmUpload(actualObject.sizeBytes(), now);
-            return toResponse(mediaMetadataRepository.save(processing));
+            MediaMetadata savedProcessing = mediaMetadataRepository.save(processing);
+            applicationEventPublisher.publishEvent(new MediaProcessingRequested(savedProcessing.getId()));
+            return toResponse(savedProcessing);
         } catch (S3ObjectNotFoundException exception) {
             throw new MediaUploadCompletionConflictException("S3 객체가 아직 업로드되지 않았습니다.");
         } catch (S3ObjectValidationException exception) {

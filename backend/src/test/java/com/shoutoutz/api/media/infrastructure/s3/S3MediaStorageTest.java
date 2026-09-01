@@ -15,14 +15,19 @@ import com.shoutoutz.api.media.infrastructure.s3.exception.S3ObjectValidationExc
 import java.net.URL;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -152,6 +157,39 @@ class S3MediaStorageTest {
         verify(s3Client).deleteObject(captor.capture());
         assertThat(captor.getValue().bucket()).isEqualTo("test-bucket");
         assertThat(captor.getValue().key()).isEqualTo("media/post-content/object-id");
+    }
+
+    @Test
+    void S3_객체의_바이트를_다운로드한다() {
+        byte[] expected = "image-bytes".getBytes(StandardCharsets.UTF_8);
+        when(s3Client.getObjectAsBytes(any(GetObjectRequest.class))).thenReturn(
+                ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), expected)
+        );
+
+        byte[] actual = storage.downloadObject("media/post-content/object-id");
+
+        assertThat(actual).containsExactly(expected);
+        ArgumentCaptor<GetObjectRequest> captor = ArgumentCaptor.forClass(GetObjectRequest.class);
+        verify(s3Client).getObjectAsBytes(captor.capture());
+        assertThat(captor.getValue().bucket()).isEqualTo("test-bucket");
+        assertThat(captor.getValue().key()).isEqualTo("media/post-content/object-id");
+    }
+
+    @Test
+    void 처리된_객체를_S3에_저장한다() {
+        byte[] content = "processed-image".getBytes(StandardCharsets.UTF_8);
+
+        storage.putObject("media/post-content/object-id/display", content, "IMAGE/PNG");
+
+        ArgumentCaptor<PutObjectRequest> captor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        verify(s3Client).putObject(
+                captor.capture(),
+                any(software.amazon.awssdk.core.sync.RequestBody.class)
+        );
+        assertThat(captor.getValue().bucket()).isEqualTo("test-bucket");
+        assertThat(captor.getValue().key()).isEqualTo("media/post-content/object-id/display");
+        assertThat(captor.getValue().contentType()).isEqualTo("image/png");
+        assertThat(captor.getValue().contentLength()).isEqualTo((long) content.length);
     }
 
     @Test

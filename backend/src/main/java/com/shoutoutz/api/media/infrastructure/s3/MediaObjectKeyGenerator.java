@@ -21,4 +21,36 @@ public class MediaObjectKeyGenerator {
         String purposePath = purpose.name().toLowerCase(Locale.ROOT).replace('_', '-');
         return MEDIA_PREFIX + purposePath + "/" + UUID.randomUUID();
     }
+
+    /**
+     * 하나의 원본 키에서 파생 이미지 키를 결정적으로 만든다.
+     */
+    public String generateVariant(String sourceKey, MediaVariant variant) {
+        Objects.requireNonNull(variant, "미디어 변형 종류는 필수입니다.");
+        if (sourceKey == null
+                || sourceKey.isBlank()
+                || !sourceKey.equals(sourceKey.strip())
+                || !sourceKey.startsWith(MEDIA_PREFIX)
+                || sourceKey.endsWith("/")
+                || sourceKey.contains("//")
+                || sourceKey.contains("\\")
+                || sourceKey.contains("\u0000")
+                || hasRelativePathSegment(sourceKey)) {
+            throw new IllegalArgumentException("원본 S3 key는 media/ prefix를 사용하는 유효한 키여야 합니다.");
+        }
+        if (variant == MediaVariant.ORIGINAL) {
+            return sourceKey;
+        }
+        return sourceKey + "/" + variant.path();
+    }
+
+    private static boolean hasRelativePathSegment(String key) {
+        String[] segments = key.split("/");
+        for (String segment : segments) {
+            if (segment.equals(".") || segment.equals("..")) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

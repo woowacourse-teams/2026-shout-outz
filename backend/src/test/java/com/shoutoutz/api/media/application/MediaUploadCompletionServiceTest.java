@@ -19,6 +19,7 @@ import com.shoutoutz.api.media.presentation.dto.response.MediaUploadCompleteResp
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,13 +38,17 @@ class MediaUploadCompletionServiceTest {
     @Mock
     private S3MediaStorage s3MediaStorage;
 
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
+
     private MediaUploadCompletionService mediaUploadCompletionService;
 
     @BeforeEach
     void setUp() {
         mediaUploadCompletionService = new MediaUploadCompletionService(
                 mediaMetadataRepository,
-                s3MediaStorage
+                s3MediaStorage,
+                applicationEventPublisher
         );
     }
 
@@ -69,6 +74,7 @@ class MediaUploadCompletionServiceTest {
         verify(mediaMetadataRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(MediaStatus.PROCESSING);
         verify(s3MediaStorage).verifyUploadedObject(pending);
+        verify(applicationEventPublisher).publishEvent(new MediaProcessingRequested(10L));
     }
 
     @Test

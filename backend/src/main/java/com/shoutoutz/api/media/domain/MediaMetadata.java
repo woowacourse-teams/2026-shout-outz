@@ -142,10 +142,10 @@ public final class MediaMetadata {
         return copy(nextStatus, actualSizeBytes, null, verifiedAt, verifiedAt);
     }
 
-    public MediaMetadata markReady(Instant processedAt) {
+    public MediaMetadata markReady(long processedSizeBytes, Instant processedAt) {
         MediaStatus nextStatus = status.transitionTo(MediaStatus.READY);
         Objects.requireNonNull(processedAt, "처리 완료 시각은 필수입니다.");
-        return copy(nextStatus, sizeBytes, null, uploadedAt, processedAt);
+        return copy(nextStatus, validateSize(processedSizeBytes), null, uploadedAt, processedAt);
     }
 
     public MediaMetadata markFailed(String reason, Instant failedAt) {

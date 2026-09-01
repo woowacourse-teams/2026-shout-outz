@@ -10,10 +10,13 @@ import java.time.Duration;
 import java.util.Locale;
 import java.util.Objects;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -165,6 +168,60 @@ public class S3MediaStorage {
             );
         }
         return actual;
+    }
+
+    /**
+     * 이미지 처리 워커가 S3 객체의 바이트를 읽는다.
+     */
+    public byte[] downloadObject(String key) {
+        String validatedKey = validateKey(key);
+        GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(properties.bucket())
+                .key(validatedKey)
+                .build();
+
+        try {
+            ResponseBytes<GetObjectResponse> response = s3Client.getObjectAsBytes(request);
+            byte[] content = response.asByteArray();
+            if (content.length == 0) {
+                throw new S3StorageException(
+                        "S3 객체가 비어 있습니다: " + validatedKey,
+                        new IllegalStateException("empty object")
+                );
+            }
+            return content;
+        } catch (S3Exception exception) {
+            if (isNotFound(exception)) {
+                throw new S3ObjectNotFoundException("S3 객체를 찾을 수 없습니다: " + validatedKey, exception);
+            }
+            throw new S3StorageException("S3 객체 다운로드에 실패했습니다: " + validatedKey, exception);
+        } catch (SdkException exception) {
+            throw new S3StorageException("S3 객체 다운로드에 실패했습니다: " + validatedKey, exception);
+        }
+    }
+
+    /**
+     * 이미지 처리 결과를 S3에 저장한다. 이 메서드는 클라이언트 업로드가 아니라
+     * 백엔드 처리 워커의 변형본 저장에 사용한다.
+     */
+    public void putObject(String key, byte[] content, String contentType) {
+        String validatedKey = validateKey(key);
+        if (content == null || content.length == 0) {
+            throw new IllegalArgumentException("S3에 저장할 파일은 비어 있을 수 없습니다.");
+        }
+        String normalizedContentType = normalizeContentType(contentType);
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(properties.bucket())
+                .key(validatedKey)
+                .contentType(normalizedContentType)
+                .contentLength((long) content.length)
+                .build();
+
+        try {
+            s3Client.putObject(request, RequestBody.fromBytes(content));
+        } catch (SdkException exception) {
+            throw new S3StorageException("S3 객체 저장에 실패했습니다: " + validatedKey, exception);
+        }
     }
 
     /**
