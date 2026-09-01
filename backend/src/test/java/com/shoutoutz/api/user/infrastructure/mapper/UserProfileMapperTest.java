@@ -2,6 +2,7 @@ package com.shoutoutz.api.user.infrastructure.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.shoutoutz.api.user.domain.ProfileDisplayName;
 import com.shoutoutz.api.user.domain.UserProfile;
 import com.shoutoutz.api.user.domain.UserType;
 import com.shoutoutz.api.user.infrastructure.UserProfileEntity;
@@ -46,7 +47,7 @@ class UserProfileMapperTest {
         UserProfile profile = UserProfileMapper.toDomain(entity);
 
         assertThat(profile.getUserId()).isEqualTo(1L);
-        assertThat(profile.getDisplayName()).isEqualTo("재끼");
+        assertThat(profile.getDisplayName()).isEqualTo(new ProfileDisplayName("재끼"));
         assertThat(profile.getUserType()).isEqualTo(UserType.WOOWACOURSE_CREW);
         assertThat(profile.getTrack()).isEqualTo("BACKEND");
         assertThat(profile.getCohort()).isEqualTo((short) 8);
@@ -59,7 +60,7 @@ class UserProfileMapperTest {
     private UserProfile createUserProfile() {
         return UserProfile.builder()
                 .userId(1L)
-                .displayName("재끼")
+                .displayName(new ProfileDisplayName("재끼"))
                 .userType(UserType.WOOWACOURSE_CREW)
                 .track("BACKEND")
                 .cohort((short) 8)

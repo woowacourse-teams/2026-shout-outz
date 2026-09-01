@@ -7,7 +7,7 @@ import lombok.Getter;
 public class UserProfile {
 
     private final Long userId;
-    private final String displayName;
+    private final ProfileDisplayName displayName;
     private final UserType userType;
     private final String track;
     private final Short cohort;
@@ -19,7 +19,7 @@ public class UserProfile {
     @Builder
     private UserProfile(
             Long userId,
-            String displayName,
+            ProfileDisplayName displayName,
             UserType userType,
             String track,
             Short cohort,
@@ -40,7 +40,7 @@ public class UserProfile {
         this.blogUrl = blogUrl;
     }
 
-    public static UserProfile initialize(Long userId, String displayName) {
+    public static UserProfile initialize(Long userId, ProfileDisplayName displayName) {
         return new UserProfile(
                 userId,
                 displayName,
@@ -56,7 +56,7 @@ public class UserProfile {
 
     private void validate(
             Long userId,
-            String displayName,
+            ProfileDisplayName displayName,
             UserType userType,
             String track,
             Short cohort
