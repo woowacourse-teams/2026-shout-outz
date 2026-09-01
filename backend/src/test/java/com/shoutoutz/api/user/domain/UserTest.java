@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
@@ -12,7 +13,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 class UserTest {
 
     @Test
-    void 사용자를_초기화하면_기본_상태와_권한을_가진다() {
+    @DisplayName("사용자를 초기화하면 기본 상태와 권한을 가진다")
+    void initializesUserWithDefaultStatusAndRole() {
         User user = User.initialize("zzaekkii");
 
         assertThat(user.getId()).isNull();
@@ -25,6 +27,7 @@ class UserTest {
     }
 
     @ParameterizedTest
+    @DisplayName("유효하지 않은 핸들로 사용자를 생성할 수 없다")
     @NullSource
     @ValueSource(strings = {
             "",
@@ -33,13 +36,14 @@ class UserTest {
             "user@handle",
             "abcdefghijklmnopqrstuvwxyz12345"
     })
-    void 유효하지_않은_핸들로_사용자를_생성할_수_없다(String handle) {
+    void rejectsInvalidHandle(String handle) {
         assertThatThrownBy(() -> User.initialize(handle))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    void 탈퇴_상태와_탈퇴_시각은_함께_존재해야_한다() {
+    @DisplayName("탈퇴 상태와 탈퇴 시각은 함께 존재해야 한다")
+    void requiresDeletedStatusAndDeletedAtTogether() {
         assertThatThrownBy(() -> User.builder()
                 .id(1L)
                 .handle("zzaekkii")

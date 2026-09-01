@@ -7,12 +7,14 @@ import com.shoutoutz.api.user.domain.UserRole;
 import com.shoutoutz.api.user.domain.UserStatus;
 import com.shoutoutz.api.user.infrastructure.UserEntity;
 import java.time.Instant;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class UserMapperTest {
 
     @Test
-    void 사용자_도메인을_엔티티로_변환한다() {
+    @DisplayName("사용자 도메인을 엔티티로 변환한다")
+    void mapsDomainToEntity() {
         User user = User.initialize("zzaekkii");
 
         UserEntity entity = UserMapper.toEntity(user);
@@ -27,7 +29,8 @@ class UserMapperTest {
     }
 
     @Test
-    void 사용자_엔티티를_도메인으로_변환한다() {
+    @DisplayName("사용자 엔티티를 도메인으로 변환한다")
+    void mapsEntityToDomain() {
         Instant deletedAt = Instant.parse("2026-08-31T00:00:00Z");
         Instant purgedAt = Instant.parse("2026-09-30T00:00:00Z");
         UserEntity entity = UserEntity.builder()
