@@ -100,4 +100,31 @@ class UserProfileTest {
         assertThat(profile.getTrack()).isEqualTo("BACKEND");
         assertThat(profile.getCohort()).isEqualTo((short) 8);
     }
+
+    @Test
+    @DisplayName("우아한테크코스 코치는 기수를 가질 수 없다")
+    void rejectsCohortForWoowacourseCoach() {
+        assertThatThrownBy(() -> UserProfile.builder()
+                .userId(2L)
+                .displayName("상준")
+                .userType(UserType.WOOWACOURSE_COACH)
+                .track("BACKEND")
+                .cohort((short) 8)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("우아한테크코스 코치는 트랙만 가질 수 있다")
+    void createsWoowacourseCoachWithTrackOnly() {
+        UserProfile profile = UserProfile.builder()
+                .userId(2L)
+                .displayName("상준")
+                .userType(UserType.WOOWACOURSE_COACH)
+                .track("BACKEND")
+                .build();
+
+        assertThat(profile.getTrack()).isEqualTo("BACKEND");
+        assertThat(profile.getCohort()).isNull();
+    }
 }

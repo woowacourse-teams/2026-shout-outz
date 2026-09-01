@@ -72,5 +72,8 @@ public class UserProfile {
         if (userType == UserType.WOOWACOURSE_CREW && (track == null || cohort == null)) {
             throw new IllegalArgumentException("우아한테크코스 크루는 트랙과 기수가 필요합니다.");
         }
+        if (userType == UserType.WOOWACOURSE_COACH && cohort != null) {
+            throw new IllegalArgumentException("우아한테크코스 코치는 기수를 가질 수 없습니다.");
+        }
     }
 }
