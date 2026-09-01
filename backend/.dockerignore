@@ -1,0 +1,27 @@
+# Gradle
+.gradle/
+build/
+
+# IDE and editor files
+.idea/
+*.iml
+out/
+bin/
+
+# VCS
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Local runtime and environment files
+*.log
+.env
+.env.*
+!.env.example
+
+# Docs
+README.md
