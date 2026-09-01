@@ -203,3 +203,31 @@ S3 객체 연동은 `com.shoutoutz.api.media.infrastructure.s3`에서 담당한�
 - 이미 `PENDING_UPLOAD`가 아닌 상태: `409 Conflict`
 
 현재 완료 요청의 중복 멱등 처리와 동시 요청 직렬화는 구현하지 않았다.
+
+### 이미지 조회 API
+
+`GET /api/v1/media/{mediaId}`는 접근 권한과 `READY` 상태를 확인한 뒤 비공개 S3 객체의 Presigned GET URL을 발급한다. `variant`를 생략하면 표시용 이미지(`DISPLAY`)를 반환하며, `ORIGINAL`, `THUMBNAIL`을 선택할 수 있다.
+
+```http
+GET /api/v1/media/123?variant=THUMBNAIL
+```
+
+```json
+{
+  "mediaId": 123,
+  "variant": "THUMBNAIL",
+  "downloadUrl": "https://s3.example.com/...",
+  "expiresAt": "2026-09-01T10:05:00Z",
+  "contentType": "image/webp"
+}
+```
+
+삭제되지 않은 게시글에 `post_media`로 연결된 `POST_CONTENT` 미디어는 비로그인 조회가 가능하다. 그 외 미디어는 업로더 본인만 조회할 수 있다. 미디어가 아직 `READY`가 아니면 Presigned URL을 발급하지 않는다.
+
+본문에는 만료되는 S3 URL을 저장하지 않고 `media://{mediaId}`를 저장한다.
+
+```markdown
+![프로젝트 화면](media://123)
+```
+
+본문을 응답하거나 렌더링할 때 이 참조를 미디어 조회 API로 해석해 `downloadUrl`을 임시로 사용한다. 현재 게시글·프로젝트 본문 API가 구현되지 않았으므로 실제 본문 변환 통합은 해당 도메인 구현 단계에서 적용한다.

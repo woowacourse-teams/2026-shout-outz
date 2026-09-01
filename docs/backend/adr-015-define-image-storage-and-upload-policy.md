@@ -30,7 +30,7 @@ shout-outz에는 프로젝트, 포스트, 사용자 도메인에서 이미지 �
 - 클라이언트는 백엔드가 발급한 Presigned PUT URL로 업로드한다.
 - 비공개 이미지 조회 시 백엔드가 권한을 확인한 뒤 Presigned GET URL을 발급한다.
 - 공개 화면에서 사용하는 이미지도 S3 버킷을 직접 공개하지 않는다. 필요하면 이후 CDN을 private origin과 함께 도입한다.
-- Presigned URL 자체를 `description_md`나 `posts.content`에 저장하지 않는다. 본문에는 미디어 ID 또는 만료되지 않는 내부 참조를 저장하고, 응답 시점에 접근 URL을 생성한다.
+- Presigned URL 자체를 `description_md`나 `posts.content`에 저장하지 않는다. 본문에는 `media://{mediaId}` 형식의 안정적인 내부 참조를 저장하고, 응답 시점에 접근 URL을 생성한다.
 - 버킷 공개 차단, 객체 소유권, 기본 암호화, HTTPS 강제, CORS와 멀티파트 업로드 정리 설정은 우테코 제공 인프라의 설정을 따른다.
 - 백엔드는 제공된 런타임 IAM 권한으로 필요한 미디어 객체 작업만 수행하며, 프론트엔드에는 AWS 자격 증명을 전달하지 않는다.
 - 실제 연동 전에 제공 인프라의 버킷 리전, CORS 허용 origin, `media/*` 객체에 대한 백엔드 권한을 확인한다.
@@ -126,7 +126,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 ### 10. 미디어 메타데이터 테이블
 
 - 서비스 전체 미디어의 저장·처리 메타데이터를 저장하는 `media_metadata` 신규 테이블을 사용한다.
-- 프로젝트 썸네일과 사용자 프로필 이미지는 각 도메인 테이블의 기존 필드로 관리하고, 프로젝트 본문 인라인 이미지는 Markdown 본문에 안정적인 URL 또는 내부 미디어 참조로 저장한다. 따라서 프로젝트·사용자 프로필용 별도 미디어 매핑 테이블은 만들지 않는다.
+- 프로젝트 썸네일과 사용자 프로필 이미지는 각 도메인 테이블의 기존 필드로 관리하고, 프로젝트 본문 인라인 이미지는 Markdown 본문에 `media://{mediaId}` 형식의 내부 미디어 참조로 저장한다. 따라서 프로젝트·사용자 프로필용 별도 미디어 매핑 테이블은 만들지 않는다.
 - `V1__init_schema.sql`에 프로젝트·포스트·사용자 프로필 스키마가 정의되어 있으므로, `media_metadata`는 `V2`, 포스트 미디어 매핑은 `V3` 마이그레이션으로 생성한다.
 - `media_metadata`의 주요 컬럼은 다음과 같이 정의한다.
 
@@ -161,7 +161,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 
 ### 11. 포스트 미디어 매핑
 
-- 프로젝트 썸네일은 `projects.thumbnail_url`, 사용자 프로필 이미지는 `user_profiles.avatar_url`처럼 각 도메인 테이블의 필드로 관리한다. 프로젝트 본문 인라인 이미지는 `projects.description_md`에 안정적인 URL 또는 내부 미디어 참조를 포함한 Markdown으로 저장한다.
+- 프로젝트 썸네일은 `projects.thumbnail_url`, 사용자 프로필 이미지는 `user_profiles.avatar_url`처럼 각 도메인 테이블의 필드로 관리한다. 프로젝트 본문 인라인 이미지는 `projects.description_md`에 `media://{mediaId}` 내부 참조를 포함한 Markdown으로 저장한다.
 - 포스트 본문은 여러 이미지를 포함할 수 있고 이미지별 연결 대상과 표시 순서를 관리해야 하므로 `post_media` 매핑 테이블만 추가한다.
 - `post_media`는 `post_id`, `media_metadata_id`, `display_order`를 저장한다. 포스트 본문 이미지 여부는 `media_metadata.purpose = 'POST_CONTENT'`로 구분하며, 이 값은 `post_media`에 중복 저장하지 않는다.
 - `post_media`에는 `posts.id`와 `media_metadata.id`에 대한 외래키를 두고, 포스트 삭제 시 매핑 행은 `ON DELETE CASCADE`로 삭제한다. 미디어 메타데이터와 S3 객체는 즉시 삭제하지 않고 별도 고아 미디어 정리 정책으로 처리한다.
@@ -175,7 +175,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 - `AwsS3Configuration`에서 `S3Client`와 `S3Presigner`를 각각 하나의 Spring Bean으로 생성하고, AWS SDK의 기본 자격 증명 체인을 사용한다.
 - `MediaObjectKeyGenerator`는 `media/{purpose-kebab-case}/{UUID}` 형식의 업로드 원본 키를 생성한다. 원본 파일명과 DB ID를 키에 포함하지 않으며, 확장자는 키가 아니라 MIME 타입과 메타데이터로 관리한다. `generateVariant`는 이 키에 `/display`, `/thumbnail`을 붙여 파생 키를 결정적으로 생성한다.
 - `S3MediaStorage.createPresignedUpload`는 `S3Presigner`로 Presigned PUT URL을 발급한다. `PutObjectRequest`에 MIME 타입을 서명하므로 프론트엔드는 응답으로 받은 `Content-Type`을 동일한 요청 헤더에 넣어야 한다. 파일 바이트는 백엔드가 직접 받지 않는다.
-- `S3MediaStorage.createPresignedDownload`는 비공개 객체 조회용 Presigned GET URL을 발급한다. 객체 접근 권한과 `READY` 상태 검증은 호출하는 애플리케이션 서비스의 책임이다.
+- `S3MediaStorage.createPresignedDownload`는 비공개 객체 조회용 Presigned GET URL을 발급한다. 객체 접근 권한과 `READY` 상태 검증은 호출하는 애플리케이션 서비스의 책임이며, S3 URL을 본문에 저장하지 않는다.
 - `S3MediaStorage.headObject`는 `S3Client`로 객체 존재 여부와 크기·MIME 타입·ETag·수정 시각을 확인한다. `verifyUploadedObject`는 `media_metadata`의 예상 크기와 MIME 타입이 S3 HeadObject 결과와 일치하는지 검증한 뒤 처리 단계로 넘긴다.
 - `S3MediaStorage.downloadObject`와 `putObject`는 백엔드 이미지 처리 워커가 S3 객체를 읽고 정제 원본·변형본을 저장할 때 사용한다. 클라이언트 업로드는 계속 Presigned PUT으로 수행하며, 처리 결과 저장만 백엔드가 직접 수행한다.
 - `S3MediaStorage.deleteObject`는 `S3Client`의 DeleteObject를 사용하고, `media/` prefix 밖의 키는 거부한다. 이미 없는 객체를 삭제하는 경우는 S3의 멱등적 삭제 동작에 따라 성공으로 처리한다.
@@ -220,6 +220,37 @@ S3 원본 바이트 다운로드
 - 이미지의 한 변은 10,000px, 전체 픽셀 수는 4,000만 픽셀 이하만 처리한다. 파일 용량이 작아도 과도한 해상도로 디코딩 메모리를 소진하는 입력을 제한하기 위한 기준이다.
 - 처리 중 어느 단계에서든 실패하면 원본·파생 객체 정리를 시도하고 `MediaMetadata.markFailed`로 `FAILED`를 저장한다. 처리 예외의 상세 내용이나 S3 자격 증명 정보는 `failure_reason`에 저장하지 않는다.
 
+### 16. 이미지 조회 API
+
+- 이미지 조회 엔드포인트는 `GET /api/v1/media/{mediaId}`다. `variant` 쿼리 파라미터로 `ORIGINAL`, `DISPLAY`, `THUMBNAIL` 중 하나를 선택할 수 있으며, 생략하면 `DISPLAY`를 사용한다.
+- 조회 서비스는 미디어 메타데이터를 조회한 뒤 접근 권한을 먼저 확인하고, `READY` 상태인 경우에만 변형본의 S3 key를 계산해 Presigned GET URL을 발급한다. 권한이 없는 사용자가 미디어의 처리 상태를 확인하지 못하도록 권한 검증을 상태 검증보다 먼저 수행한다.
+- 삭제되지 않은 포스트에 `post_media`로 연결된 `POST_CONTENT` 미디어는 게시글 렌더링을 위해 비로그인 조회를 허용한다. 이 외의 미디어는 `uploaded_by`와 인증 principal이 일치하는 경우에만 조회를 허용한다. 현재 프로젝트·프로필 테이블에는 미디어 ID를 검증할 명시적 매핑이 없으므로, 해당 미디어를 목적만으로 공개하지 않는다.
+- 응답에는 `mediaId`, `variant`, `downloadUrl`, `expiresAt`, `contentType`을 포함한다. `downloadUrl`은 만료되는 임시 URL이므로 DB나 본문에 저장하지 않는다.
+
+예시:
+
+```http
+GET /api/v1/media/123?variant=THUMBNAIL
+```
+
+```json
+{
+  "mediaId": 123,
+  "variant": "THUMBNAIL",
+  "downloadUrl": "https://s3.example.com/...",
+  "expiresAt": "2026-09-01T10:05:00Z",
+  "contentType": "image/webp"
+}
+```
+
+본문에는 다음처럼 미디어 ID만 저장한다. 본문을 응답할 때 클라이언트 또는 본문 변환 계층이 `media://123`을 미디어 조회 API로 해석해 임시 URL을 사용한다.
+
+```markdown
+![프로젝트 화면](media://123)
+```
+
+- 현재 코드베이스에는 게시글·프로젝트 본문 저장 서비스가 아직 없으므로, 본문에 `media://{mediaId}`를 기록하고 렌더링하는 통합은 해당 도메인 API 구현 시 적용한다. 기존 URL 컬럼과 기존 Markdown URL 데이터는 별도 마이그레이션 전까지 유지한다.
+
 ## 결과 (Consequences)
 
 ### 긍정적 영향
@@ -240,7 +271,7 @@ S3 원본 바이트 다운로드
 ### 중립적 영향
 
 - AWS 버킷·IAM·CORS의 기본 설정은 우테코 제공 인프라에 의존한다. 버킷 이름, 리전, 운영 origin, 백엔드 런타임 역할 연결은 제공받은 환경에서 확인한다.
-- 백엔드는 AWS SDK와 환경 변수, 기본 자격 증명 체인으로 제공 S3에 연결한다. S3 객체 저장소 어댑터, 업로드 시작·완료 API, 이미지 처리 워커의 기본 흐름을 구현했으며, 이미지 조회 HTTP API와 중복 요청 멱등 처리는 후속 단계에서 추가한다.
+- 백엔드는 AWS SDK와 환경 변수, 기본 자격 증명 체인으로 제공 S3에 연결한다. S3 객체 저장소 어댑터, 업로드 시작·완료 API, 이미지 처리 워커와 이미지 조회 HTTP API의 기본 흐름을 구현했으며, 완료 요청의 중복 멱등 처리와 본문 저장·렌더링 통합은 후속 단계에서 추가한다.
 - `media_metadata`와 `post_media`의 구조는 확정했지만, 기존 URL 컬럼과 Markdown 본문을 새 미디어 참조 방식으로 전환하는 데이터 마이그레이션은 별도 단계로 진행한다.
 - 문서·동영상·SVG 등의 지원이 필요해지면 허용 포맷과 처리 방식을 다시 검토한다.
 
