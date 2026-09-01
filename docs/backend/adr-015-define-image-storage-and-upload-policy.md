@@ -127,7 +127,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 
 - 서비스 전체 미디어의 저장·처리 메타데이터를 저장하는 `media_metadata` 신규 테이블을 사용한다.
 - 프로젝트 썸네일과 사용자 프로필 이미지는 각 도메인 테이블의 기존 필드로 관리하고, 프로젝트 본문 인라인 이미지는 Markdown 본문에 `media://{mediaId}` 형식의 내부 미디어 참조로 저장한다. 따라서 프로젝트·사용자 프로필용 별도 미디어 매핑 테이블은 만들지 않는다.
-- `V1__init_schema.sql`에 프로젝트·포스트·사용자 프로필 스키마가 정의되어 있으므로, `media_metadata`는 `V2`, 포스트 미디어 매핑은 `V3` 마이그레이션으로 생성한다.
+- `V20260831162619__init_schema.sql`에 프로젝트·포스트·사용자 프로필 스키마가 정의되어 있으므로, 미디어 관련 테이블은 그 다음 버전인 `V20260901000000__create_media_schema.sql` 하나에서 생성한다.
 - `media_metadata`의 주요 컬럼은 다음과 같이 정의한다.
 
 | 컬럼 | 타입 | 의미 | 제약 및 사용 기준 |
@@ -157,7 +157,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 - `associated_id` 같은 다형성 외래키와 `display_order`는 참조 무결성을 보장할 수 없거나 사용처마다 값이 달라질 수 있으므로 미디어 메타데이터에 두지 않는다. 여러 미디어를 연결해야 하는 포스트에서는 `post_media`가 실제 외래키와 정렬 순서를 관리한다.
 - 삭제 정책은 업로드·처리 상태와 별개의 정책이므로 이번 마이그레이션에서는 `is_deleted`를 추가하지 않는다. 사용자 삭제 요구가 확정되면 이력 보존이 가능한 `deleted_at` 방식으로 별도 결정한다.
 - 업로더 식별자는 `uploaded_by`로 저장하고 `users.id`를 참조한다. 기존 `media_metadata` 데이터와의 호환을 위해 마이그레이션에서는 nullable로 추가하지만, 새 업로드 생성 시 애플리케이션과 도메인에서 필수로 검증한다.
-- Flyway의 `V2__create_media_metadata.sql`로 테이블을 생성하고, 사용하지 않는 `PROJECT_MEDIA` 용도는 `V4__remove_unused_project_media_purpose.sql`에서 제거하며, 업로더 소유권은 `V5__add_media_uploader.sql`에서 추가한다.
+- 미디어 메타데이터, 업로더 정보, 포스트 매핑과 관련 인덱스·제약은 `V20260901000000__create_media_schema.sql` 하나에서 최종 형태로 생성한다. 사용하지 않는 `PROJECT_MEDIA` 용도는 처음부터 포함하지 않는다.
 
 ### 11. 포스트 미디어 매핑
 
@@ -168,7 +168,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 - `post_media`에 연결하는 미디어는 `READY` 상태인지와 `POST_CONTENT` 용도인지 애플리케이션 서비스에서 검증한다. 이 조건은 두 테이블의 값을 함께 확인해야 하므로 DB CHECK만으로 처리하지 않는다.
 - `associated_id`와 `associated_type`을 하나의 테이블에 저장하는 다형성 매핑은 사용하지 않는다. 포스트 연결은 명시적인 외래키로 보장한다.
 - 기존 프로젝트·프로필 URL 필드와 Markdown 본문은 하위 호환을 위해 당장 삭제하지 않는다. 새 미디어 업로드 경로로 전환한 뒤 사용 중단과 삭제를 별도 결정한다.
-- Flyway의 `V3__create_media_mappings.sql`로 `post_media`와 조회용 인덱스를 생성한다.
+- `post_media`와 조회용 인덱스는 `V20260901000000__create_media_schema.sql`에서 `media_metadata`와 함께 생성한다.
 
 ### 12. S3 연동 모듈
 
