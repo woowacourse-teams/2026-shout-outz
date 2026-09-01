@@ -32,14 +32,14 @@ class UserProfileRepositoryIntegrationTest {
     @DisplayName("사용자 프로필을 저장하고 사용자 ID로 조회한다")
     void savesAndFindsUserProfileByUserId() {
         User savedUser = userRepository.save(User.initialize("zzaekkii-profile"));
-        UserProfile profile = UserProfile.initialize(savedUser.getId(), "재끼");
+        UserProfile profile = UserProfile.initialize(savedUser.getId(), "재키");
 
         UserProfile savedProfile = userProfileRepository.save(profile);
         UserProfile foundProfile = userProfileRepository.findByUserId(savedUser.getId()).orElseThrow();
         UserProfileEntity savedEntity = userProfileJpaRepository.findById(savedUser.getId()).orElseThrow();
 
         assertThat(savedProfile.getUserId()).isEqualTo(savedUser.getId());
-        assertThat(foundProfile.getDisplayName()).isEqualTo(new ProfileDisplayName("재끼"));
+        assertThat(foundProfile.getDisplayName()).isEqualTo(new ProfileDisplayName("재키"));
         assertThat(foundProfile.getUserType()).isEqualTo(UserType.GENERAL);
         assertThat(savedEntity.getCreatedAt()).isNotNull();
         assertThat(savedEntity.getUpdatedAt()).isNotNull();

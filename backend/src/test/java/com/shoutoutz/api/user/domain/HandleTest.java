@@ -31,7 +31,7 @@ class HandleTest {
     @ValueSource(strings = {
             "",
             "a",
-            "재끼",
+            "재키",
             "user handle",
             "user@handle",
             "abcdefghijklmnopqrstuvwxyz12345"

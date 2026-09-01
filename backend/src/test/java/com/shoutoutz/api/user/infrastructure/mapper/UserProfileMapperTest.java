@@ -19,7 +19,7 @@ class UserProfileMapperTest {
         UserProfileEntity entity = UserProfileMapper.toEntity(profile);
 
         assertThat(entity.getUserId()).isEqualTo(1L);
-        assertThat(entity.getDisplayName()).isEqualTo("재끼");
+        assertThat(entity.getDisplayName()).isEqualTo("재키");
         assertThat(entity.getUserType()).isEqualTo(UserType.WOOWACOURSE_CREW);
         assertThat(entity.getTrack()).isEqualTo("BACKEND");
         assertThat(entity.getCohort()).isEqualTo((short) 8);
@@ -34,7 +34,7 @@ class UserProfileMapperTest {
     void mapsEntityToDomain() {
         UserProfileEntity entity = UserProfileEntity.builder()
                 .userId(1L)
-                .displayName("재끼")
+                .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
                 .track("BACKEND")
                 .cohort((short) 8)
@@ -47,7 +47,7 @@ class UserProfileMapperTest {
         UserProfile profile = UserProfileMapper.toDomain(entity);
 
         assertThat(profile.getUserId()).isEqualTo(1L);
-        assertThat(profile.getDisplayName()).isEqualTo(new ProfileDisplayName("재끼"));
+        assertThat(profile.getDisplayName()).isEqualTo(new ProfileDisplayName("재키"));
         assertThat(profile.getUserType()).isEqualTo(UserType.WOOWACOURSE_CREW);
         assertThat(profile.getTrack()).isEqualTo("BACKEND");
         assertThat(profile.getCohort()).isEqualTo((short) 8);
@@ -60,7 +60,7 @@ class UserProfileMapperTest {
     private UserProfile createUserProfile() {
         return UserProfile.builder()
                 .userId(1L)
-                .displayName("재끼")
+                .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
                 .track("BACKEND")
                 .cohort((short) 8)

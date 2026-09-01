@@ -26,7 +26,7 @@ class UserTest {
     @Test
     @DisplayName("사용자 생성 시 문자열 핸들을 값 객체로 변환한다")
     void convertsRawHandleWhenInitializingUser() {
-        assertThatThrownBy(() -> User.initialize("재끼"))
+        assertThatThrownBy(() -> User.initialize("재키"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
