@@ -9,24 +9,53 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 /**
- * 현재 스키마의 게시글 연결과 업로더 소유권을 이용한 미디어 조회 권한 확인.
+ * 미디어 조회 권한 확인.
  *
- * <p>삭제되지 않은 게시글에 명시적으로 연결된 본문 미디어는 게시글 렌더링을 위해
- * 공개 조회를 허용한다. 그 외 미디어는 업로더 본인만 조회할 수 있다.</p>
+ * <p>삭제되지 않은 게시글에 연결된 본문 미디어, 승인되고 삭제되지 않은 프로젝트의
+ * 썸네일, 삭제되지 않은 사용자의 프로필 이미지는 공개 조회를 허용한다. 그 외 미디어는
+ * 업로더 본인만 조회할 수 있다.</p>
  */
 @Repository
 @RequiredArgsConstructor
 public class DatabaseMediaAccessAuthorizer implements MediaAccessAuthorizer {
 
-    private static final String PUBLIC_POST_MEDIA_EXISTS_SQL = """
+    private static final String PUBLIC_MEDIA_EXISTS_SQL = """
             SELECT EXISTS (
                 SELECT 1
-                FROM post_media pm
-                JOIN posts p ON p.id = pm.post_id
-                JOIN media_metadata m ON m.id = pm.media_metadata_id
-                WHERE pm.media_metadata_id = ?
-                  AND m.purpose = 'POST_CONTENT'
-                  AND p.deleted_at IS NULL
+                FROM media_metadata m
+                WHERE m.id = ?
+                  AND (
+                      (
+                          m.purpose = 'POST_CONTENT'
+                          AND EXISTS (
+                              SELECT 1
+                              FROM post_media pm
+                              JOIN posts p ON p.id = pm.post_id
+                              WHERE pm.media_metadata_id = m.id
+                                AND p.deleted_at IS NULL
+                          )
+                      )
+                      OR (
+                          m.purpose = 'PROJECT_THUMBNAIL'
+                          AND EXISTS (
+                              SELECT 1
+                              FROM projects p
+                              WHERE p.thumbnail_media_id = m.id
+                                AND p.approval_status = 'APPROVED'
+                                AND p.deleted_at IS NULL
+                          )
+                      )
+                      OR (
+                          m.purpose = 'USER_AVATAR'
+                          AND EXISTS (
+                              SELECT 1
+                              FROM user_profiles up
+                              JOIN users u ON u.id = up.user_id
+                              WHERE up.avatar_media_id = m.id
+                                AND u.deleted_at IS NULL
+                          )
+                      )
+                  )
             )
             """;
 
@@ -40,7 +69,7 @@ public class DatabaseMediaAccessAuthorizer implements MediaAccessAuthorizer {
         if (requesterId != null && requesterId <= 0) {
             throw unauthorized();
         }
-        if (isPublicPostMedia(metadata.getId())) {
+        if (isPublicMedia(metadata.getId())) {
             return;
         }
         if (requesterId == null) {
@@ -51,9 +80,9 @@ public class DatabaseMediaAccessAuthorizer implements MediaAccessAuthorizer {
         }
     }
 
-    private boolean isPublicPostMedia(long mediaId) {
+    private boolean isPublicMedia(long mediaId) {
         Boolean result = jdbcTemplate.queryForObject(
-                PUBLIC_POST_MEDIA_EXISTS_SQL,
+                PUBLIC_MEDIA_EXISTS_SQL,
                 Boolean.class,
                 mediaId
         );

@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * 미디어 업로드 시작 HTTP API
+ * 미디어(이미지) 등록 API
  */
 @RestController
 @RequestMapping("/api/v1/media")

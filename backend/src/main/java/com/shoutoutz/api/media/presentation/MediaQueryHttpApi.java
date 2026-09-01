@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * 미디어 조회용 HTTP API.
+ * 미디어(이미지) 조회(Query) API
  */
 @RestController
 @RequestMapping("/api/v1/media")

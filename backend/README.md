@@ -204,6 +204,17 @@ S3 객체 연동은 `com.shoutoutz.api.media.infrastructure.s3`에서 담당한�
 
 현재 완료 요청의 중복 멱등 처리와 동시 요청 직렬화는 구현하지 않았다.
 
+### 도메인 미디어 참조
+
+단일 이미지만 필요한 프로젝트 썸네일과 사용자 프로필 이미지는 별도 매핑 테이블을 만들지 않고 각 도메인 테이블이 미디어를 직접 참조한다.
+
+```text
+projects.thumbnail_media_id  -> media_metadata.id
+user_profiles.avatar_media_id -> media_metadata.id
+```
+
+프로젝트 썸네일과 사용자 프로필 이미지는 S3 URL을 저장하지 않고 각각 `thumbnail_media_id`, `avatar_media_id`로 `media_metadata.id`를 참조한다. 조회 시 `media_metadata.s3_key`를 기준으로 Presigned GET URL을 발급한다.
+
 ### 이미지 조회 API
 
 `GET /api/v1/media/{mediaId}`는 접근 권한과 `READY` 상태를 확인한 뒤 비공개 S3 객체의 Presigned GET URL을 발급한다. `variant`를 생략하면 표시용 이미지(`DISPLAY`)를 반환하며, `ORIGINAL`, `THUMBNAIL`을 선택할 수 있다.
