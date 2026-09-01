@@ -1,7 +1,7 @@
 package com.shoutoutz.api.media.infrastructure.authorization;
 
 import com.shoutoutz.api.media.application.MediaUploadAuthorizer;
-import com.shoutoutz.api.media.application.MediaUploadForbiddenException;
+import com.shoutoutz.api.media.application.exception.MediaUploadForbiddenException;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;

@@ -7,7 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.shoutoutz.api.media.application.ImageProcessingException;
+import com.shoutoutz.api.media.application.exception.ImageProcessingException;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.infrastructure.s3.MediaObjectKeyGenerator;

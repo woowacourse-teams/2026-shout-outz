@@ -1,4 +1,4 @@
-package com.shoutoutz.api.media.application;
+package com.shoutoutz.api.media.application.exception;
 
 /**
  * 이미지 처리 실패를 외부 노출용 메시지와 분리해 전달한다.

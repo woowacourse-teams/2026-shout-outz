@@ -1,4 +1,4 @@
-package com.shoutoutz.api.media.application;
+package com.shoutoutz.api.media.application.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

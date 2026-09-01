@@ -1,6 +1,6 @@
 package com.shoutoutz.api.media.infrastructure.image;
 
-import com.shoutoutz.api.media.application.ImageProcessingException;
+import com.shoutoutz.api.media.application.exception.ImageProcessingException;
 import java.util.Arrays;
 import org.springframework.stereotype.Component;
 

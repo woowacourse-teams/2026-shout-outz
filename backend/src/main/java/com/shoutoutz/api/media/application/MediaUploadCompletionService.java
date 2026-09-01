@@ -1,5 +1,9 @@
 package com.shoutoutz.api.media.application;
 
+import com.shoutoutz.api.media.application.exception.MediaUploadCompletionConflictException;
+import com.shoutoutz.api.media.application.exception.MediaUploadCompletionValidationException;
+import com.shoutoutz.api.media.application.exception.MediaUploadForbiddenException;
+import com.shoutoutz.api.media.application.exception.MediaUploadNotFoundException;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaStatus;

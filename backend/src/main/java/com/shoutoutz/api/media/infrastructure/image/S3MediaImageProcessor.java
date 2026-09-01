@@ -1,6 +1,6 @@
 package com.shoutoutz.api.media.infrastructure.image;
 
-import com.shoutoutz.api.media.application.ImageProcessingException;
+import com.shoutoutz.api.media.application.exception.ImageProcessingException;
 import com.shoutoutz.api.media.application.MediaImageProcessor;
 import com.shoutoutz.api.media.application.MediaImageProcessingResult;
 import com.shoutoutz.api.media.domain.MediaMetadata;

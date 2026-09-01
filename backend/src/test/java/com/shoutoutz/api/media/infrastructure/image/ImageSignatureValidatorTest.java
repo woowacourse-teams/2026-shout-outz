@@ -3,7 +3,7 @@ package com.shoutoutz.api.media.infrastructure.image;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.shoutoutz.api.media.application.ImageProcessingException;
+import com.shoutoutz.api.media.application.exception.ImageProcessingException;
 import org.junit.jupiter.api.Test;
 
 class ImageSignatureValidatorTest {

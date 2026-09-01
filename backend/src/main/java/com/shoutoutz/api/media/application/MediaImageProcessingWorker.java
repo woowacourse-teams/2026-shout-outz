@@ -1,5 +1,6 @@
 package com.shoutoutz.api.media.application;
 
+import com.shoutoutz.api.media.application.exception.ImageProcessingException;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaStatus;
