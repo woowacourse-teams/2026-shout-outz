@@ -2,6 +2,7 @@ package com.shoutoutz.api.user.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.shoutoutz.api.user.domain.Handle;
 import com.shoutoutz.api.user.domain.User;
 import com.shoutoutz.api.user.domain.UserProfile;
 import com.shoutoutz.api.user.domain.UserProfileRepository;
@@ -30,7 +31,7 @@ class UserProfileRepositoryIntegrationTest {
     @Test
     @DisplayName("사용자 프로필을 저장하고 사용자 ID로 조회한다")
     void savesAndFindsUserProfileByUserId() {
-        User savedUser = userRepository.save(User.initialize("zzaekkii-profile"));
+        User savedUser = userRepository.save(User.initialize(new Handle("zzaekkii-profile")));
         UserProfile profile = UserProfile.initialize(savedUser.getId(), "재끼");
 
         UserProfile savedProfile = userProfileRepository.save(profile);

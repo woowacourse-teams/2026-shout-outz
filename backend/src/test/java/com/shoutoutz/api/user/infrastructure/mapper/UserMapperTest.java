@@ -2,6 +2,7 @@ package com.shoutoutz.api.user.infrastructure.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.shoutoutz.api.user.domain.Handle;
 import com.shoutoutz.api.user.domain.User;
 import com.shoutoutz.api.user.domain.UserRole;
 import com.shoutoutz.api.user.domain.UserStatus;
@@ -15,7 +16,7 @@ class UserMapperTest {
     @Test
     @DisplayName("사용자 도메인을 엔티티로 변환한다")
     void mapsDomainToEntity() {
-        User user = User.initialize("zzaekkii");
+        User user = User.initialize(new Handle("zzaekkii"));
 
         UserEntity entity = UserMapper.toEntity(user);
 
@@ -46,7 +47,7 @@ class UserMapperTest {
         User user = UserMapper.toDomain(entity);
 
         assertThat(user.getId()).isEqualTo(1L);
-        assertThat(user.getHandle()).isEqualTo("zzaekkii");
+        assertThat(user.getHandle()).isEqualTo(new Handle("zzaekkii"));
         assertThat(user.getStatus()).isEqualTo(UserStatus.DELETED);
         assertThat(user.getRole()).isEqualTo(UserRole.USER);
         assertThat(user.getLastLoginAt()).isEqualTo(Instant.parse("2026-08-30T00:00:00Z"));

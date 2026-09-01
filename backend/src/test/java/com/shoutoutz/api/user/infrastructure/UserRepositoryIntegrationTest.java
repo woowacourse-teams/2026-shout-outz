@@ -2,6 +2,7 @@ package com.shoutoutz.api.user.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.shoutoutz.api.user.domain.Handle;
 import com.shoutoutz.api.user.domain.User;
 import com.shoutoutz.api.user.domain.UserRepository;
 import com.shoutoutz.api.user.domain.UserRole;
@@ -26,14 +27,14 @@ class UserRepositoryIntegrationTest {
     @Test
     @DisplayName("사용자를 저장하고 ID로 조회한다")
     void savesAndFindsUserById() {
-        User savedUser = userRepository.save(User.initialize("zzaekkii"));
+        User savedUser = userRepository.save(User.initialize(new Handle("zzaekkii")));
 
         User foundUser = userRepository.findById(savedUser.getId()).orElseThrow();
         UserEntity savedEntity = userJpaRepository.findById(savedUser.getId()).orElseThrow();
 
         assertThat(savedUser.getId()).isNotNull();
         assertThat(foundUser.getId()).isEqualTo(savedUser.getId());
-        assertThat(foundUser.getHandle()).isEqualTo("zzaekkii");
+        assertThat(foundUser.getHandle()).isEqualTo(new Handle("zzaekkii"));
         assertThat(foundUser.getStatus()).isEqualTo(UserStatus.ACTIVE);
         assertThat(foundUser.getRole()).isEqualTo(UserRole.USER);
         assertThat(savedEntity.getCreatedAt()).isNotNull();
