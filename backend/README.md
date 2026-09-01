@@ -173,6 +173,22 @@ S3 객체 연동은 `com.shoutoutz.api.media.infrastructure.s3`에서 담당한�
 | 업로드 검증 | `S3Client.headObject` | 객체 존재 여부와 요청 당시의 파일 크기, MIME 타입을 비교한다.                 |
 | 삭제 | `S3Client.deleteObject` | `media/` prefix의 객체를 삭제한다.                             |
 
-객체 키는 `media/{purpose}/{UUID}` 형식이며 원본 파일명이나 DB ID를 포함하지 않는다. 
-Presigned PUT URL로 업로드할 때는 URL 발급 응답의 `Content-Type`을 업로드 요청 헤더에 동일하게 지정해야 한다. 
-S3 객체의 파일 시그니처 검증과 이미지 변형본 생성은 별도의 이미지 처리 단계에서 수행한다.
+객체 키는 `media/{purpose-kebab-case}/{UUID}` 형식이며 원본 파일명이나 DB ID를 포함하지 않는다. Presigned PUT URL로 업로드할 때는 URL 발급 응답의 `Content-Type`을 업로드 요청 헤더에 동일하게 지정해야 한다. S3 객체의 파일 시그니처 검증과 이미지 변형본 생성은 별도의 이미지 처리 단계에서 수행한다.
+
+### 업로드 시작 API
+
+`POST /api/v1/media/uploads`는 인증된 사용자가 미디어 업로드를 시작할 때 호출한다. 현재 인증 어댑터 계약은 `Principal.getName()`에 `users.id`를 문자열로 제공하는 것이며, 인증 주체가 없으면 요청을 거부한다.
+
+요청 예시:
+
+```json
+{
+  "purpose": "POST_CONTENT",
+  "targetId": 42,
+  "originalFileName": "post-image.webp",
+  "contentType": "image/webp",
+  "sizeBytes": 1048576
+}
+```
+
+서버는 대상 수정 권한과 이미지 업로드 정책을 확인한 뒤 `media_metadata`에 `PENDING_UPLOAD` 레코드를 만들고 Presigned PUT URL을 반환한다. 프론트엔드는 응답의 `uploadUrl`로 S3에 직접 PUT하고, `contentType`을 요청 헤더에 동일하게 지정해야 한다. S3 업로드가 끝난 뒤의 완료 확인과 `PROCESSING` 전이는 후속 API에서 처리한다.

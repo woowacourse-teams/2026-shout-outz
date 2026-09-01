@@ -91,6 +91,39 @@ public final class MediaMetadata {
     }
 
     /**
+     * DB에서 읽은 미디어 메타데이터를 도메인 객체로 복원한다.
+     */
+    public static MediaMetadata reconstitute(
+            Long id,
+            MediaPurpose purpose,
+            String s3Key,
+            String originalFileName,
+            String mimeType,
+            long sizeBytes,
+            MediaStatus status,
+            Instant expiresAt,
+            String failureReason,
+            Instant uploadedAt,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        return new MediaMetadata(
+                id,
+                purpose,
+                s3Key,
+                originalFileName,
+                mimeType,
+                sizeBytes,
+                status,
+                expiresAt,
+                failureReason,
+                uploadedAt,
+                createdAt,
+                updatedAt
+        );
+    }
+
+    /**
      * 완료 API에서 S3 HeadObject 확인이 끝난 뒤 처리 중 상태로 전환한다.
      */
     public MediaMetadata confirmUpload(long actualSizeBytes, Instant verifiedAt) {

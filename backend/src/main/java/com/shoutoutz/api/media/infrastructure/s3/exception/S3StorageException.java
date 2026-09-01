@@ -1,4 +1,4 @@
-package com.shoutoutz.api.media.infrastructure.s3;
+package com.shoutoutz.api.media.infrastructure.s3.exception;
 
 /**
  * S3 SDK 호출이 실패했을 때 인프라 예외를 추상화한다.

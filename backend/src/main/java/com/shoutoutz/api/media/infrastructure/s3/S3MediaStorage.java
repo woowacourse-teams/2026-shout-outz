@@ -2,7 +2,11 @@ package com.shoutoutz.api.media.infrastructure.s3;
 
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.infrastructure.config.S3Properties;
+import com.shoutoutz.api.media.infrastructure.s3.exception.S3ObjectNotFoundException;
+import com.shoutoutz.api.media.infrastructure.s3.exception.S3ObjectValidationException;
+import com.shoutoutz.api.media.infrastructure.s3.exception.S3StorageException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Objects;
 import org.springframework.stereotype.Component;
@@ -43,6 +47,10 @@ public class S3MediaStorage {
         this.s3Client = s3Client;
         this.s3Presigner = s3Presigner;
         this.properties = properties;
+    }
+
+    public Duration presignedUrlExpiration() {
+        return properties.presignedUrlExpiration();
     }
 
     /**

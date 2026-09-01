@@ -174,6 +174,17 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 - `S3MediaStorage.deleteObject`는 `S3Client`의 DeleteObject를 사용하고, `media/` prefix 밖의 키는 거부한다. 이미 없는 객체를 삭제하는 경우는 S3의 멱등적 삭제 동작에 따라 성공으로 처리한다.
 - S3 객체가 없으면 `S3ObjectNotFoundException`, 객체 메타데이터가 업로드 요청과 다르면 `S3ObjectValidationException`, SDK 호출 자체가 실패하면 `S3StorageException`으로 구분한다. 파일 시그니처 검증과 이미지 변형본 생성은 다음 이미지 처리 단계에서 수행한다.
 
+### 13. 업로드 시작 API
+
+- 업로드 시작 엔드포인트는 `POST /api/v1/media/uploads`다.
+- 요청은 `purpose`, `targetId`, `originalFileName`, `contentType`, `sizeBytes`를 받는다. `targetId`는 사용자 아바타에서는 `user_id`, 프로젝트 용도에서는 `project_id`, 포스트 본문에서는 `post_id`를 의미한다.
+- 컨트롤러는 `Principal`이 없거나 principal 이름을 사용자 ID로 해석할 수 없으면 `401 Unauthorized`를 반환한다. 현재 인증 모듈이 아직 구현되지 않았으므로, 인증 어댑터는 `Principal.getName()`에 활성 `users.id`의 문자열을 제공해야 한다. 임시 사용자 ID 헤더나 요청 본문의 사용자 ID는 인증 수단으로 사용하지 않는다.
+- `DatabaseMediaUploadAuthorizer`는 DB 관계를 기준으로 권한을 확인한다. 사용자 아바타는 본인 활성 계정만 허용하고, 프로젝트 썸네일·설명은 활성 프로젝트의 등록자 또는 프로젝트 멤버만 허용하며, 포스트 본문은 삭제되지 않은 포스트의 작성자만 허용한다.
+- 권한 확인 후 `MediaUploadPolicy`로 Content-Type과 파일 크기를 검증한다. 현재 `DefaultMediaUploadPolicy`는 JPEG·PNG·WebP와 10MiB 이하만 허용한다.
+- 검증을 통과하면 서버가 객체 키와 만료 시각을 생성하고 `media_metadata`에 `PENDING_UPLOAD` 레코드를 저장한다. 이후 `S3MediaStorage`가 Presigned PUT URL을 발급하고, 응답에 `mediaId`, 상태, URL, 만료 시각, 업로드에 사용할 Content-Type을 포함한다.
+- 메타데이터 저장과 Presigned URL 발급은 하나의 트랜잭션 흐름으로 실행한다. URL 발급이 실패하면 예외를 전파해 미디어 레코드도 커밋하지 않는다. Presigned URL은 파일 업로드 자체가 아니므로, 프론트엔드는 URL 발급 성공 후 S3에 파일을 PUT해야 한다.
+- 이 API는 파일 바이트를 받지 않으며 업로드 완료 API도 아직 포함하지 않는다. 프론트엔드가 S3 PUT 성공 후 별도 완료 API를 호출하면 후속 단계에서 `HeadObject` 검증과 `PROCESSING` 전이를 수행한다.
+
 ## 결과 (Consequences)
 
 ### 긍정적 영향
@@ -194,7 +205,7 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 ### 중립적 영향
 
 - AWS 버킷·IAM·CORS의 기본 설정은 우테코 제공 인프라에 의존한다. 버킷 이름, 리전, 운영 origin, 백엔드 런타임 역할 연결은 제공받은 환경에서 확인한다.
-- 백엔드는 AWS SDK와 환경 변수, 기본 자격 증명 체인으로 제공 S3에 연결한다. S3 객체 저장소 어댑터는 구현했지만, 업로드 권한 확인·미디어 DB 저장·상태 전이·HTTP API는 후속 유스케이스 구현 단계에서 추가한다.
+- 백엔드는 AWS SDK와 환경 변수, 기본 자격 증명 체인으로 제공 S3에 연결한다. S3 객체 저장소 어댑터와 업로드 시작 유스케이스는 구현했지만, 업로드 완료·상태 전이·이미지 처리 HTTP API는 후속 단계에서 추가한다.
 - `media_metadata`와 `post_media`의 구조는 확정했지만, 기존 URL 컬럼과 Markdown 본문을 새 미디어 참조 방식으로 전환하는 데이터 마이그레이션은 별도 단계로 진행한다.
 - 문서·동영상·SVG 등의 지원이 필요해지면 허용 포맷과 처리 방식을 다시 검토한다.
 

@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.infrastructure.config.S3Properties;
+import com.shoutoutz.api.media.infrastructure.s3.exception.S3ObjectNotFoundException;
+import com.shoutoutz.api.media.infrastructure.s3.exception.S3ObjectValidationException;
 import java.net.URL;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;

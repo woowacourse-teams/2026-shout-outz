@@ -1,4 +1,4 @@
-package com.shoutoutz.api.media.infrastructure.s3;
+package com.shoutoutz.api.media.infrastructure.s3.exception;
 
 /**
  * S3에 요청한 미디어 객체가 존재하지 않을 때 발생한다.

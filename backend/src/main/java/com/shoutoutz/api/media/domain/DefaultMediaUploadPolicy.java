@@ -2,10 +2,12 @@ package com.shoutoutz.api.media.domain;
 
 import java.util.Locale;
 import java.util.Set;
+import org.springframework.stereotype.Component;
 
 /**
  * 초기 이미지 업로드 정책 구현체
  */
+@Component
 public final class DefaultMediaUploadPolicy implements MediaUploadPolicy {
 
     static final long MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
