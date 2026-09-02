@@ -76,16 +76,16 @@ alter table user_profiles
     drop column avatar_url;
 
 alter table user_profiles
-    add column avatar_media_id bigint;
+    add column avatar_image_id bigint;
 
 alter table user_profiles
-    add constraint user_profiles_avatar_media_fk
-        foreign key (avatar_media_id)
+    add constraint user_profiles_avatar_image_fk
+        foreign key (avatar_image_id)
         references media_metadata(id)
         on delete set null;
 
-create index user_profiles_avatar_media_id_idx
-    on user_profiles (avatar_media_id);
+create index user_profiles_avatar_image_id_idx
+    on user_profiles (avatar_image_id);
 
 -- 포스트 본문에서 여러 미디어를 연결하기 위한 매핑 테이블이다.
 create table post_media (
