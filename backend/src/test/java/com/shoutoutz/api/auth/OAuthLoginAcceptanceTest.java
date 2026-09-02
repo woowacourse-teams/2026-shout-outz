@@ -169,6 +169,37 @@ class OAuthLoginAcceptanceTest {
     }
 
     @Test
+    @DisplayName("허용된 프론트엔드 Origin의 세션 API 요청을 허용한다")
+    void allowsConfiguredFrontendOrigin() {
+        Response response = RestAssured.given()
+                .port(port)
+                .header("Origin", "http://localhost:5173")
+                .header("Access-Control-Request-Method", "GET")
+                .when()
+                .options(AUTH_SESSION_PATH);
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.header("Access-Control-Allow-Origin"))
+                .isEqualTo("http://localhost:5173");
+        assertThat(response.header("Access-Control-Allow-Credentials"))
+                .isEqualTo("true");
+    }
+
+    @Test
+    @DisplayName("허용되지 않은 Origin의 세션 API 요청을 거부한다")
+    void rejectsUnknownOrigin() {
+        Response response = RestAssured.given()
+                .port(port)
+                .header("Origin", "https://attacker.example")
+                .header("Access-Control-Request-Method", "GET")
+                .when()
+                .options(AUTH_SESSION_PATH);
+
+        assertThat(response.statusCode()).isEqualTo(403);
+        assertThat(response.header("Access-Control-Allow-Origin")).isNull();
+    }
+
+    @Test
     @DisplayName("가입 대기 세션의 상태 변경 요청은 도메인과 무관하게 CSRF 토큰이 필요하다")
     void requiresCsrfTokenForStateChangingRequest() {
         Response authorizationResponse = requestAuthorization();
