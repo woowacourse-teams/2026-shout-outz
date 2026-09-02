@@ -12,6 +12,7 @@ import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.infrastructure.config.S3Properties;
 import com.shoutoutz.api.media.infrastructure.s3.exception.S3ObjectNotFoundException;
 import com.shoutoutz.api.media.infrastructure.s3.exception.S3ObjectValidationException;
+import com.shoutoutz.api.media.infrastructure.s3.exception.S3StorageException;
 import java.net.URL;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -147,6 +148,42 @@ class S3MediaStorageTest {
         assertThatThrownBy(() -> storage.verifyUploadedObject(metadata()))
                 .isInstanceOf(S3ObjectValidationException.class)
                 .hasMessageContaining("S3 객체 크기가 업로드 요청과 다릅니다.");
+    }
+
+    @Test
+    void 업로드_객체의_MIME_타입이_다르면_검증에_실패한다() {
+        when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(
+                HeadObjectResponse.builder()
+                        .contentLength(1024L)
+                        .contentType("image/png")
+                        .build()
+        );
+
+        assertThatThrownBy(() -> storage.verifyUploadedObject(metadata()))
+                .isInstanceOf(S3ObjectValidationException.class)
+                .hasMessageContaining("S3 객체 Content-Type이 업로드 요청과 다릅니다.");
+    }
+
+    @Test
+    void HeadObject에_파일_크기가_없으면_저장소_예외를_던진다() {
+        when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(
+                HeadObjectResponse.builder().contentType("image/webp").build()
+        );
+
+        assertThatThrownBy(() -> storage.headObject("media/post-content/object-id"))
+                .isInstanceOf(S3StorageException.class)
+                .hasMessage("S3 HeadObject 응답에 파일 크기가 없습니다.");
+    }
+
+    @Test
+    void 빈_S3_객체는_다운로드할_수_없다() {
+        when(s3Client.getObjectAsBytes(any(GetObjectRequest.class))).thenReturn(
+                ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), new byte[0])
+        );
+
+        assertThatThrownBy(() -> storage.downloadObject("media/post-content/object-id"))
+                .isInstanceOf(S3StorageException.class)
+                .hasMessage("S3 객체가 비어 있습니다: media/post-content/object-id");
     }
 
     @Test

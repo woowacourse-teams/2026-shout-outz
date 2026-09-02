@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.media.application.exception.MediaUploadCompletionConflictException;
@@ -114,6 +115,43 @@ class MediaUploadCompletionServiceTest {
         verify(mediaMetadataRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(MediaStatus.FAILED);
         assertThat(captor.getValue().getFailureReason()).isEqualTo("S3 객체 메타데이터 검증 실패");
+        verify(applicationEventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void 업로드_유효시간이_지나면_S3를_검증하지_않고_충돌한다() {
+        MediaMetadata expired = MediaMetadata.reconstitute(
+                10L,
+                7L,
+                MediaPurpose.POST_CONTENT,
+                "media/post-content/object-id",
+                "post-image.webp",
+                "image/webp",
+                1024L,
+                MediaStatus.PENDING_UPLOAD,
+                Instant.parse("2000-01-01T00:00:00Z"),
+                null,
+                null,
+                NOW,
+                NOW
+        );
+        when(mediaMetadataRepository.findById(10L)).thenReturn(Optional.of(expired));
+
+        assertThatThrownBy(() -> mediaUploadCompletionService.completeUpload(7L, 10L))
+                .isInstanceOf(MediaUploadCompletionConflictException.class)
+                .hasMessage("미디어 업로드 유효 시간이 만료되었습니다.");
+
+        verify(s3MediaStorage, never()).verifyUploadedObject(any(MediaMetadata.class));
+        verify(mediaMetadataRepository, never()).save(any(MediaMetadata.class));
+        verifyNoInteractions(applicationEventPublisher);
+    }
+
+    @Test
+    void 유효하지_않은_식별자는_저장소를_조회하지_않는다() {
+        assertThatThrownBy(() -> mediaUploadCompletionService.completeUpload(0L, 10L))
+                .isInstanceOf(MediaUploadNotFoundException.class);
+
+        verifyNoInteractions(mediaMetadataRepository, s3MediaStorage, applicationEventPublisher);
     }
 
     @Test

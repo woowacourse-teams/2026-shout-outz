@@ -79,6 +79,38 @@ class MediaImageProcessingWorkerTest {
     }
 
     @Test
+    void 이미지_처리결과가_null이면_안전한_실패사유를_저장한다() {
+        MediaMetadata processing = processingMetadata();
+        when(mediaImageProcessor.process(processing)).thenReturn(null);
+        when(mediaMetadataRepository.save(any(MediaMetadata.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        worker.process(processing);
+
+        ArgumentCaptor<MediaMetadata> captor = ArgumentCaptor.forClass(MediaMetadata.class);
+        verify(mediaMetadataRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(MediaStatus.FAILED);
+        assertThat(captor.getValue().getFailureReason())
+                .isEqualTo("이미지 처리 결과가 올바르지 않습니다.");
+    }
+
+    @Test
+    void 예상하지_못한_실행_예외는_일반화된_실패사유로_저장한다() {
+        MediaMetadata processing = processingMetadata();
+        when(mediaImageProcessor.process(processing)).thenThrow(new IllegalStateException("internal details"));
+        when(mediaMetadataRepository.save(any(MediaMetadata.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        worker.process(processing);
+
+        ArgumentCaptor<MediaMetadata> captor = ArgumentCaptor.forClass(MediaMetadata.class);
+        verify(mediaMetadataRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(MediaStatus.FAILED);
+        assertThat(captor.getValue().getFailureReason())
+                .isEqualTo("이미지 처리 중 오류가 발생했습니다.");
+    }
+
+    @Test
     void PROCESSING이_아닌_미디어는_다시_처리하지_않는다() {
         MediaMetadata ready = MediaMetadata.reconstitute(
                 10L,

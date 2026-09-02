@@ -62,6 +62,17 @@ class MediaMetadataTest {
                 .hasMessage("실패 사유는 1자 이상 1,000자 이하여야 합니다.");
     }
 
+    @Test
+    void READY_상태의_미디어는_다시_실패_상태로_전환할_수_없다() {
+        MediaMetadata ready = initialize()
+                .confirmUpload(1024, NOW.plus(1, ChronoUnit.MINUTES))
+                .markReady(900, NOW.plus(2, ChronoUnit.MINUTES));
+
+        assertThatThrownBy(() -> ready.markFailed("재처리 실패", NOW.plus(3, ChronoUnit.MINUTES)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("READY -> FAILED");
+    }
+
     private MediaMetadata initialize() {
         return MediaMetadata.initialize(
                 MediaPurpose.PROJECT_THUMBNAIL,

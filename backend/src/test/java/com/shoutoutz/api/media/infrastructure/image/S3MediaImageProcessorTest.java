@@ -119,6 +119,28 @@ class S3MediaImageProcessorTest {
                 .isFalse();
     }
 
+    @Test
+    void 이미지_디코딩에_실패하면_원본과_파생본을_정리한다() {
+        S3MediaImageProcessor processor = new S3MediaImageProcessor(
+                s3MediaStorage,
+                mediaObjectKeyGenerator,
+                imageSignatureValidator
+        );
+        byte[] invalidPng = new byte[]{
+                (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
+        };
+        MediaMetadata metadata = metadata("image/png", invalidPng.length);
+        when(s3MediaStorage.downloadObject(metadata.getS3Key())).thenReturn(invalidPng);
+
+        assertThatThrownBy(() -> processor.process(metadata))
+                .isInstanceOf(ImageProcessingException.class);
+
+        verify(s3MediaStorage).deleteObject(metadata.getS3Key());
+        verify(s3MediaStorage).deleteObject(metadata.getS3Key() + "/display");
+        verify(s3MediaStorage).deleteObject(metadata.getS3Key() + "/thumbnail");
+        verify(s3MediaStorage, never()).putObject(any(String.class), any(byte[].class), any(String.class));
+    }
+
     private static byte[] png(int width, int height) throws Exception {
         return encodedImage(width, height, "png");
     }

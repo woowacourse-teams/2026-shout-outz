@@ -210,10 +210,10 @@ S3 객체 연동은 `com.shoutoutz.api.media.infrastructure.s3`에서 담당한�
 
 ```text
 projects.thumbnail_media_id  -> media_metadata.id
-user_profiles.avatar_media_id -> media_metadata.id
+user_profiles.avatar_image_id -> media_metadata.id
 ```
 
-프로젝트 썸네일과 사용자 프로필 이미지는 S3 URL을 저장하지 않고 각각 `thumbnail_media_id`, `avatar_media_id`로 `media_metadata.id`를 참조한다. 조회 시 `media_metadata.s3_key`를 기준으로 Presigned GET URL을 발급한다.
+프로젝트 썸네일과 사용자 프로필 이미지는 S3 URL을 저장하지 않고 각각 `thumbnail_media_id`, `avatar_image_id`로 `media_metadata.id`를 참조한다. 조회 시 `media_metadata.s3_key`를 기준으로 Presigned GET URL을 발급한다.
 
 ### 이미지 조회 API
 
