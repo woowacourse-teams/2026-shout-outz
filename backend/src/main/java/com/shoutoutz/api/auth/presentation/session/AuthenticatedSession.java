@@ -1,4 +1,4 @@
-package com.shoutoutz.api.auth.presentation;
+package com.shoutoutz.api.auth.presentation.session;
 
 import com.shoutoutz.api.user.domain.UserRole;
 

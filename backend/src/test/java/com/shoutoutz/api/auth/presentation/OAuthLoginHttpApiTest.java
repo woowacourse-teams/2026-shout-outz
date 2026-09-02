@@ -1,6 +1,7 @@
 package com.shoutoutz.api.auth.presentation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -9,6 +10,8 @@ import com.shoutoutz.api.auth.application.OAuthLoginCallbackResult;
 import com.shoutoutz.api.auth.application.OAuthLoginService;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
+import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
+import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.user.domain.UserRole;
 import java.net.URI;
 import java.time.Instant;
@@ -21,9 +24,11 @@ import org.springframework.http.ResponseEntity;
 class OAuthLoginHttpApiTest {
 
     private final OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
+    private final AuthSessionAccessor authSessionAccessor = new AuthSessionAccessor();
     private final OAuthLoginHttpApi oauthLoginHttpApi = new OAuthLoginHttpApi(
             oauthLoginService,
-            new OAuthLoginProperties(URI.create("http://localhost:3000/oauth/callback"))
+            new OAuthLoginProperties(URI.create("http://localhost:3000/oauth/callback")),
+            authSessionAccessor
     );
 
     @Test
@@ -44,12 +49,13 @@ class OAuthLoginHttpApiTest {
                 request
         );
 
-        AuthenticatedSession authenticatedSession =
-                (AuthenticatedSession) session.getAttribute("authenticatedSession");
+        AuthenticatedSession authenticatedSession = authSessionAccessor.findAuthentication(session)
+                .orElseThrow();
         assertThat(session.getId()).isNotEqualTo(previousSessionId);
         assertThat(authenticatedSession.userId()).isEqualTo(1L);
         assertThat(authenticatedSession.role()).isEqualTo(UserRole.USER);
-        assertThat(session.getAttribute("oauthLoginAttempt")).isNull();
+        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session))
+                .isInstanceOf(IllegalArgumentException.class);
         assertThat(response.getHeaders().getLocation())
                 .isEqualTo(URI.create("http://localhost:3000/oauth/callback"));
     }
@@ -72,14 +78,15 @@ class OAuthLoginHttpApiTest {
 
         oauthLoginHttpApi.callbackGitHub("authorization-code", "state", request);
 
-        assertThat(session.getAttribute("pendingOAuthIdentity")).isEqualTo(identity);
-        assertThat(session.getAttribute("authenticatedSession")).isNull();
-        assertThat(session.getAttribute("oauthLoginAttempt")).isNull();
+        assertThat(authSessionAccessor.findPendingIdentity(session)).contains(identity);
+        assertThat(authSessionAccessor.findAuthentication(session)).isEmpty();
+        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     private MockHttpServletRequest callbackRequest() {
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.getSession().setAttribute("oauthLoginAttempt", loginAttempt());
+        authSessionAccessor.saveLoginAttempt(request.getSession(), loginAttempt());
         return request;
     }
 

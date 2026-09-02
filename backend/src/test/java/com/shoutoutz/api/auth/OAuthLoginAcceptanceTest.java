@@ -17,17 +17,24 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @ActiveProfiles("test")
+@Import(OAuthLoginAcceptanceTest.TestAuthHttpApi.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class OAuthLoginAcceptanceTest {
 
     private static final String GITHUB_AUTHORIZATION_PATH =
             "/oauth2/authorization/github";
+    private static final String AUTH_SESSION_PATH = "/api/v1/auth/session";
+    private static final String CSRF_TEST_PATH = "/api/v1/projects/csrf-test";
 
     @LocalServerPort
     private int port;
@@ -105,6 +112,80 @@ class OAuthLoginAcceptanceTest {
         assertThat(callbackResponse.header("Location"))
                 .isEqualTo("http://localhost:3000/oauth/callback");
         verify(gitHubOAuthIdentityPort).fetchIdentity(eq("authorization-code"), anyString());
+
+        Response sessionResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", sessionId)
+                .when()
+                .get(AUTH_SESSION_PATH);
+
+        assertThat(sessionResponse.statusCode()).isEqualTo(200);
+        assertThat(sessionResponse.jsonPath().getString("status"))
+                .isEqualTo("SIGNUP_REQUIRED");
+        assertThat(sessionResponse.jsonPath().getString("csrfToken")).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("인증되지 않은 세션 상태와 CSRF 토큰을 조회한다")
+    void getsUnauthenticatedSessionWithCsrfToken() {
+        Response response = RestAssured.given()
+                .port(port)
+                .when()
+                .get(AUTH_SESSION_PATH);
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.cookie("JSESSIONID")).isNotBlank();
+        assertThat(response.jsonPath().getString("status"))
+                .isEqualTo("UNAUTHENTICATED");
+        assertThat(response.jsonPath().getString("csrfToken")).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("가입 대기 세션의 상태 변경 요청은 도메인과 무관하게 CSRF 토큰이 필요하다")
+    void requiresCsrfTokenForStateChangingRequest() {
+        Response authorizationResponse = requestAuthorization();
+        String sessionId = authorizationResponse.cookie("JSESSIONID");
+        String state = authorizationQueryParams(authorizationResponse).getFirst("state");
+        String providerAccountId = Long.toUnsignedString(
+                UUID.randomUUID().getMostSignificantBits()
+        );
+        given(gitHubOAuthIdentityPort.fetchIdentity(eq("authorization-code"), anyString()))
+                .willReturn(new OAuthIdentity(
+                        OAuthProvider.GITHUB,
+                        providerAccountId,
+                        "https://avatars.githubusercontent.com/u/12345678"
+                ));
+        RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", sessionId)
+                .queryParam("code", "authorization-code")
+                .queryParam("state", state)
+                .redirects()
+                .follow(false)
+                .when()
+                .get("/login/oauth2/code/github");
+
+        Response sessionResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", sessionId)
+                .when()
+                .get(AUTH_SESSION_PATH);
+        String csrfToken = sessionResponse.jsonPath().getString("csrfToken");
+
+        Response rejectedResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", sessionId)
+                .when()
+                .post(CSRF_TEST_PATH);
+        Response acceptedResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", sessionId)
+                .header("X-CSRF-Token", csrfToken)
+                .when()
+                .post(CSRF_TEST_PATH);
+
+        assertThat(rejectedResponse.statusCode()).isEqualTo(403);
+        assertThat(acceptedResponse.statusCode()).isEqualTo(204);
     }
 
     private Response requestAuthorization() {
@@ -121,5 +202,14 @@ class OAuthLoginAcceptanceTest {
         return UriComponentsBuilder.fromUriString(response.header("Location"))
                 .build()
                 .getQueryParams();
+    }
+
+    @RestController
+    static class TestAuthHttpApi {
+
+        @PostMapping(CSRF_TEST_PATH)
+        ResponseEntity<Void> changeState() {
+            return ResponseEntity.noContent().build();
+        }
     }
 }
