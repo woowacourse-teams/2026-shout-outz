@@ -161,15 +161,16 @@ Presigned URL 발급 API는 인증된 백엔드 사용자만 호출할 수 있�
 
 ### 11. 포스트 미디어 매핑
 
-- 프로젝트 썸네일은 `projects.thumbnail_media_id`, 사용자 프로필 이미지는 `user_profiles.avatar_media_id`가 `media_metadata.id`를 직접 참조하도록 관리한다. 프로젝트 본문 인라인 이미지는 `projects.description_md`에 `media://{mediaId}` 내부 참조를 포함한 Markdown으로 저장한다.
-- `projects.thumbnail_media_id`와 `user_profiles.avatar_media_id`는 미디어 메타데이터 삭제 시 참조를 `NULL`로 정리하도록 `ON DELETE SET NULL`을 적용한다.
+- 프로젝트 썸네일은 `projects.thumbnail_media_id`, 사용자 프로필 이미지는 `user_profiles.avatar_image_id`가 `media_metadata.id`를 직접 참조하도록 관리한다. 프로젝트 본문 인라인 이미지는 `projects.description_md`에 `media://{mediaId}` 내부 참조를 포함한 Markdown으로 저장한다.
+- `projects.thumbnail_media_id`와 `user_profiles.avatar_image_id`는 미디어 메타데이터 삭제 시 참조를 `NULL`로 정리하도록 `ON DELETE SET NULL`을 적용한다.
 - 포스트 본문은 여러 이미지를 포함할 수 있고 이미지별 연결 대상과 표시 순서를 관리해야 하므로 `post_media` 매핑 테이블만 추가한다.
 - `post_media`는 `post_id`, `media_metadata_id`, `display_order`를 저장한다. 포스트 본문 이미지 여부는 `media_metadata.purpose = 'POST_CONTENT'`로 구분하며, 이 값은 `post_media`에 중복 저장하지 않는다.
 - `post_media`에는 `posts.id`와 `media_metadata.id`에 대한 외래키를 두고, 포스트 삭제 시 매핑 행은 `ON DELETE CASCADE`로 삭제한다. 미디어 메타데이터와 S3 객체는 즉시 삭제하지 않고 별도 고아 미디어 정리 정책으로 처리한다.
 - `post_media`에 연결하는 미디어는 `READY` 상태인지와 `POST_CONTENT` 용도인지 애플리케이션 서비스에서 검증한다. 이 조건은 두 테이블의 값을 함께 확인해야 하므로 DB CHECK만으로 처리하지 않는다.
 - `associated_id`와 `associated_type`을 하나의 테이블에 저장하는 다형성 매핑은 사용하지 않는다. 포스트 연결은 명시적인 외래키로 보장한다.
-- 초기 모델에서 기존 프로젝트 썸네일·사용자 프로필 URL 컬럼은 `V20260831162619__init_schema.sql`에 남겨 두되, `V20260901000000__create_media_schema.sql`에서 제거한다. 최종 스키마에서는 `thumbnail_media_id`, `avatar_media_id`로 `media_metadata.id`를 참조한다. Markdown 본문은 `media://{mediaId}` 참조를 사용하며, 본문 저장·렌더링 통합은 별도 단계로 진행한다.
+- 초기 모델에서 기존 프로젝트 썸네일·사용자 프로필 URL 컬럼은 `V20260831162619__init_schema.sql`에 남겨 두되, `V20260901000000__create_media_schema.sql`에서 제거한다. 최종 스키마에서는 `thumbnail_media_id`, `avatar_image_id`로 `media_metadata.id`를 참조한다. Markdown 본문은 `media://{mediaId}` 참조를 사용하며, 본문 저장·렌더링 통합은 별도 단계로 진행한다.
 - `post_media`와 조회용 인덱스는 `V20260901000000__create_media_schema.sql`에서 `media_metadata`와 함께 생성한다.
+- 사용자 프로필 이미지 참조 컬럼·외래키·인덱스는 `V20260901000000__create_media_schema.sql`에서 `avatar_image_id` 기준으로 생성한다.
 
 ### 12. S3 연동 모듈
 
@@ -225,7 +226,7 @@ S3 원본 바이트 다운로드
 
 - 이미지 조회 엔드포인트는 `GET /api/v1/media/{mediaId}`다. `variant` 쿼리 파라미터로 `ORIGINAL`, `DISPLAY`, `THUMBNAIL` 중 하나를 선택할 수 있으며, 생략하면 `DISPLAY`를 사용한다.
 - 조회 서비스는 미디어 메타데이터를 조회한 뒤 접근 권한을 먼저 확인하고, `READY` 상태인 경우에만 변형본의 S3 key를 계산해 Presigned GET URL을 발급한다. 권한이 없는 사용자가 미디어의 처리 상태를 확인하지 못하도록 권한 검증을 상태 검증보다 먼저 수행한다.
-- 삭제되지 않은 포스트에 `post_media`로 연결된 `POST_CONTENT` 미디어, 승인되고 삭제되지 않은 프로젝트의 `thumbnail_media_id`로 연결된 썸네일, 삭제되지 않은 사용자의 `avatar_media_id`로 연결된 프로필 이미지는 비로그인 조회를 허용한다. 프로젝트 본문 인라인 이미지는 본문 안의 `media://{mediaId}`만으로 리소스 연결을 DB에서 검증할 수 없으므로, 별도 본문 조회 통합 전까지 업로더 본인만 조회할 수 있다.
+- 삭제되지 않은 포스트에 `post_media`로 연결된 `POST_CONTENT` 미디어, 승인되고 삭제되지 않은 프로젝트의 `thumbnail_media_id`로 연결된 썸네일, 삭제되지 않은 사용자의 `avatar_image_id`로 연결된 프로필 이미지는 비로그인 조회를 허용한다. 프로젝트 본문 인라인 이미지는 본문 안의 `media://{mediaId}`만으로 리소스 연결을 DB에서 검증할 수 없으므로, 별도 본문 조회 통합 전까지 업로더 본인만 조회할 수 있다.
 - 응답에는 `mediaId`, `variant`, `downloadUrl`, `expiresAt`, `contentType`을 포함한다. `downloadUrl`은 만료되는 임시 URL이므로 DB나 본문에 저장하지 않는다.
 
 예시:
