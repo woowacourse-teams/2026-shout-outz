@@ -28,15 +28,14 @@ npm run build
 
 ## Scripts
 
-| Script | Description |
-| --- | --- |
-| `npm run dev` | Start the webpack dev server |
-| `npm run build` | Production bundle |
-| `npm run build:dev` | Development bundle |
-| `npm run watch` | Rebuild on file changes |
-| `npm run typecheck` | Type check with `tsc --noEmit` |
-| `npm run lint` / `lint:fix` | Run ESLint |
-| `npm run format` / `format:check` | Run Prettier |
+| Script                            | Description                  |
+| --------------------------------- | ---------------------------- |
+| `npm run dev`                     | Start the webpack dev server |
+| `npm run build`                   | Production bundle            |
+| `npm run build:dev`               | Development bundle           |
+| `npm run watch`                   | Rebuild on file changes      |
+| `npm run lint` / `lint:fix`       | Run ESLint                   |
+| `npm run format` / `format:check` | Run Prettier                 |
 
 > `engine-strict=true` is set, so `npm ci` fails outright on the wrong Node version.
 > Run `nvm install` once if you do not have the pinned version yet.
