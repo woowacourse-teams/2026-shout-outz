@@ -5,12 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
-import com.shoutoutz.api.auth.application.OAuthLoginCallbackResult;
 import com.shoutoutz.api.auth.application.OAuthLoginService;
+import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
+import com.shoutoutz.api.auth.application.dto.result.OAuthLoginCallbackResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
+import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.user.domain.UserRole;
 import java.net.URI;
@@ -25,10 +26,13 @@ class OAuthLoginHttpApiTest {
 
     private final OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
     private final AuthSessionAccessor authSessionAccessor = new AuthSessionAccessor();
+    private final AuthSessionManager authSessionManager =
+            new AuthSessionManager(authSessionAccessor);
     private final OAuthLoginHttpApi oauthLoginHttpApi = new OAuthLoginHttpApi(
             oauthLoginService,
             new OAuthLoginProperties(URI.create("http://localhost:3000/oauth/callback")),
-            authSessionAccessor
+            authSessionAccessor,
+            authSessionManager
     );
 
     @Test

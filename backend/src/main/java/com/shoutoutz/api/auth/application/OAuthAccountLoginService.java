@@ -1,5 +1,6 @@
 package com.shoutoutz.api.auth.application;
 
+import com.shoutoutz.api.auth.application.dto.result.OAuthLoginCallbackResult;
 import com.shoutoutz.api.auth.domain.OAuthAccount;
 import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;

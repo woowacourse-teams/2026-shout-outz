@@ -1,10 +1,11 @@
 package com.shoutoutz.api.auth.presentation;
 
-import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
-import com.shoutoutz.api.auth.application.OAuthLoginCallbackResult;
 import com.shoutoutz.api.auth.application.OAuthLoginService;
-import com.shoutoutz.api.auth.application.OAuthLoginStartResult;
+import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
+import com.shoutoutz.api.auth.application.dto.result.OAuthLoginCallbackResult;
+import com.shoutoutz.api.auth.application.dto.result.OAuthLoginStartResult;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
+import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class OAuthLoginHttpApi {
     private final OAuthLoginService oauthLoginService;
     private final OAuthLoginProperties properties;
     private final AuthSessionAccessor authSessionAccessor;
+    private final AuthSessionManager authSessionManager;
 
     @GetMapping("/oauth2/authorization/github")
     public ResponseEntity<Void> authorizeGitHub(HttpSession session) {
@@ -47,8 +49,11 @@ public class OAuthLoginHttpApi {
         );
 
         if (result.status() == OAuthLoginCallbackResult.Status.AUTHENTICATED) {
-            request.changeSessionId();
-            authSessionAccessor.saveAuthentication(session, result.userId(), result.role());
+            authSessionManager.establishAuthenticatedSession(
+                    request,
+                    result.userId(),
+                    result.role()
+            );
         } else {
             authSessionAccessor.savePendingIdentity(session, result.identity());
         }
