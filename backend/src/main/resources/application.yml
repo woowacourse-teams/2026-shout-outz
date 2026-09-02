@@ -17,4 +17,9 @@ logging:
 github:
   oauth:
     client-id: ${GITHUB_OAUTH_CLIENT_ID}
+    client-secret: ${GITHUB_OAUTH_CLIENT_SECRET}
     redirect-uri: ${GITHUB_OAUTH_REDIRECT_URI}
+
+auth:
+  oauth:
+    completion-uri: ${FRONTEND_OAUTH_COMPLETION_URI:http://localhost:5173}

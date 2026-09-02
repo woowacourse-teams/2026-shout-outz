@@ -1,7 +1,10 @@
 package com.shoutoutz.api.auth.application;
 
 import com.shoutoutz.api.auth.application.port.GitHubOAuthAuthorizationPort;
+import com.shoutoutz.api.auth.application.port.GitHubOAuthIdentityPort;
+import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import java.net.URI;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +13,8 @@ import org.springframework.stereotype.Service;
 public class OAuthLoginService {
 
     private final GitHubOAuthAuthorizationPort githubOAuthAuthorizationPort;
+    private final GitHubOAuthIdentityPort githubOAuthIdentityPort;
+    private final OAuthAccountLoginService oauthAccountLoginService;
 
     public OAuthLoginStartResult startGitHubLogin() {
         OAuthLoginAttempt attempt = OAuthLoginAttempt.create();
@@ -19,5 +24,20 @@ public class OAuthLoginService {
         );
 
         return new OAuthLoginStartResult(authorizationUri, attempt);
+    }
+
+    public OAuthLoginCallbackResult completeGitHubLogin(
+            String authorizationCode,
+            String state,
+            OAuthLoginAttempt attempt
+    ) {
+        Instant authenticatedAt = Instant.now();
+        attempt.validateCallback(state, authenticatedAt);
+        OAuthIdentity identity = githubOAuthIdentityPort.fetchIdentity(
+                authorizationCode,
+                attempt.codeVerifier()
+        );
+
+        return oauthAccountLoginService.completeLogin(identity, authenticatedAt);
     }
 }

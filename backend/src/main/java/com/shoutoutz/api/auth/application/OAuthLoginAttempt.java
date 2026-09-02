@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 
@@ -15,6 +16,7 @@ public record OAuthLoginAttempt(
 
     private static final int STATE_BYTES = 32;
     private static final int CODE_VERIFIER_BYTES = 64;
+    private static final Duration VALIDITY = Duration.ofMinutes(5);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     public static OAuthLoginAttempt create() {
@@ -32,6 +34,15 @@ public record OAuthLoginAttempt(
             return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 알고리즘을 사용할 수 없습니다.", exception);
+        }
+    }
+
+    public void validateCallback(String callbackState, Instant validatedAt) {
+        if (!state.equals(callbackState)) {
+            throw new IllegalArgumentException("OAuth state가 일치하지 않습니다.");
+        }
+        if (validatedAt.isAfter(createdAt.plus(VALIDITY))) {
+            throw new IllegalArgumentException("OAuth 로그인 시도가 만료되었습니다.");
         }
     }
 

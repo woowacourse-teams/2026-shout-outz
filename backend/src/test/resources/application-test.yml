@@ -8,4 +8,9 @@ spring:
 github:
   oauth:
     client-id: test-client-id
+    client-secret: test-client-secret
     redirect-uri: http://localhost:8080/login/oauth2/code/github
+
+auth:
+  oauth:
+    completion-uri: http://localhost:3000/oauth/callback

@@ -47,6 +47,27 @@ public class User {
         );
     }
 
+    public User recordLogin(Instant loginAt) {
+        if (status == UserStatus.BANNED) {
+            throw new IllegalStateException("정지된 사용자는 로그인할 수 없습니다.");
+        }
+        if (purgedAt != null) {
+            throw new IllegalStateException("개인정보가 파기된 사용자는 복구할 수 없습니다.");
+        }
+        if (loginAt == null) {
+            throw new IllegalArgumentException("로그인 시각은 필수입니다.");
+        }
+        return new User(
+                id,
+                handle.value(),
+                UserStatus.ACTIVE,
+                role,
+                loginAt,
+                null,
+                purgedAt
+        );
+    }
+
     private void validate(
             UserStatus status,
             UserRole role,
