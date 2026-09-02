@@ -45,6 +45,7 @@ class OAuthLoginAcceptanceTest {
             "/oauth2/authorization/github";
     private static final String AUTH_SESSION_PATH = "/api/v1/auth/session";
     private static final String OAUTH_SIGNUP_PATH = "/api/v1/auth/signup";
+    private static final String LOGOUT_PATH = "/api/v1/auth/logout";
     private static final String CSRF_TEST_PATH = "/api/v1/projects/csrf-test";
 
     @LocalServerPort
@@ -211,6 +212,63 @@ class OAuthLoginAcceptanceTest {
     @Test
     @DisplayName("신규 OAuth 사용자가 프로필을 입력하면 가입과 로그인을 완료한다")
     void signsUpNewOAuthUser() {
+        OAuthSignupAcceptanceResult result = completeOAuthSignup();
+
+        User user = userRepository.findById(result.userId()).orElseThrow();
+        UserProfile profile = userProfileRepository.findByUserId(result.userId()).orElseThrow();
+        OAuthAccount account = oauthAccountRepository.findByProviderAndProviderAccountId(
+                OAuthProvider.GITHUB,
+                result.providerAccountId()
+        ).orElseThrow();
+        assertThat(user.getHandle()).isEqualTo(new Handle(result.handle()));
+        assertThat(user.getLastLoginAt()).isNotNull();
+        assertThat(profile.getDisplayName()).isEqualTo(new ProfileDisplayName("상준"));
+        assertThat(profile.getAvatarUrl())
+                .isEqualTo("https://avatars.githubusercontent.com/u/12345678");
+        assertThat(account.getUserId()).isEqualTo(result.userId());
+        assertThat(account.getLastLoginAt()).isEqualTo(user.getLastLoginAt());
+
+        Response authenticatedSessionResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", result.sessionId())
+                .when()
+                .get(AUTH_SESSION_PATH);
+
+        assertThat(authenticatedSessionResponse.jsonPath().getString("status"))
+                .isEqualTo("AUTHENTICATED");
+        assertThat(authenticatedSessionResponse.jsonPath().getLong("userId"))
+                .isEqualTo(result.userId());
+    }
+
+    @Test
+    @DisplayName("인증 사용자는 CSRF 토큰으로 로그아웃하고 기존 세션을 폐기한다")
+    void logsOutAuthenticatedUser() {
+        OAuthSignupAcceptanceResult signupResult = completeOAuthSignup();
+
+        Response rejectedResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", signupResult.sessionId())
+                .when()
+                .post(LOGOUT_PATH);
+        Response logoutResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", signupResult.sessionId())
+                .header("X-CSRF-Token", signupResult.csrfToken())
+                .when()
+                .post(LOGOUT_PATH);
+        Response sessionResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", signupResult.sessionId())
+                .when()
+                .get(AUTH_SESSION_PATH);
+
+        assertThat(rejectedResponse.statusCode()).isEqualTo(403);
+        assertThat(logoutResponse.statusCode()).isEqualTo(204);
+        assertThat(sessionResponse.jsonPath().getString("status"))
+                .isEqualTo("UNAUTHENTICATED");
+    }
+
+    private OAuthSignupAcceptanceResult completeOAuthSignup() {
         Response authorizationResponse = requestAuthorization();
         String sessionId = authorizationResponse.cookie("JSESSIONID");
         String state = authorizationQueryParams(authorizationResponse).getFirst("state");
@@ -258,31 +316,13 @@ class OAuthLoginAcceptanceTest {
         long userId = signupResponse.jsonPath().getLong("userId");
         String authenticatedSessionId = signupResponse.cookie("JSESSIONID");
         assertThat(authenticatedSessionId).isNotBlank().isNotEqualTo(sessionId);
-
-        User user = userRepository.findById(userId).orElseThrow();
-        UserProfile profile = userProfileRepository.findByUserId(userId).orElseThrow();
-        OAuthAccount account = oauthAccountRepository.findByProviderAndProviderAccountId(
-                OAuthProvider.GITHUB,
-                providerAccountId
-        ).orElseThrow();
-        assertThat(user.getHandle()).isEqualTo(new Handle(handle));
-        assertThat(user.getLastLoginAt()).isNotNull();
-        assertThat(profile.getDisplayName()).isEqualTo(new ProfileDisplayName("상준"));
-        assertThat(profile.getAvatarUrl())
-                .isEqualTo("https://avatars.githubusercontent.com/u/12345678");
-        assertThat(account.getUserId()).isEqualTo(userId);
-        assertThat(account.getLastLoginAt()).isEqualTo(user.getLastLoginAt());
-
-        Response authenticatedSessionResponse = RestAssured.given()
-                .port(port)
-                .cookie("JSESSIONID", authenticatedSessionId)
-                .when()
-                .get(AUTH_SESSION_PATH);
-
-        assertThat(authenticatedSessionResponse.jsonPath().getString("status"))
-                .isEqualTo("AUTHENTICATED");
-        assertThat(authenticatedSessionResponse.jsonPath().getLong("userId"))
-                .isEqualTo(userId);
+        return new OAuthSignupAcceptanceResult(
+                authenticatedSessionId,
+                csrfToken,
+                userId,
+                providerAccountId,
+                handle
+        );
     }
 
     private Response requestAuthorization() {
@@ -299,6 +339,15 @@ class OAuthLoginAcceptanceTest {
         return UriComponentsBuilder.fromUriString(response.header("Location"))
                 .build()
                 .getQueryParams();
+    }
+
+    private record OAuthSignupAcceptanceResult(
+            String sessionId,
+            String csrfToken,
+            long userId,
+            String providerAccountId,
+            String handle
+    ) {
     }
 
     @RestController

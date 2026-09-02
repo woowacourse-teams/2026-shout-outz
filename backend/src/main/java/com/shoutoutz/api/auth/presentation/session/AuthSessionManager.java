@@ -25,4 +25,11 @@ public class AuthSessionManager {
         request.changeSessionId();
         authSessionAccessor.saveAuthentication(session, userId, role);
     }
+
+    public void invalidateSession(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+    }
 }

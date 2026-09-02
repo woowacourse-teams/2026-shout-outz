@@ -27,4 +27,26 @@ class AuthSessionManagerTest {
         assertThat(authSessionAccessor.findAuthentication(session))
                 .contains(new AuthenticatedSession(1L, UserRole.USER));
     }
+
+    @Test
+    @DisplayName("로그아웃하면 현재 세션을 무효화한다")
+    void invalidatesCurrentSession() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpSession session = (MockHttpSession) request.getSession();
+        authSessionAccessor.saveAuthentication(session, 1L, UserRole.USER);
+
+        authSessionManager.invalidateSession(request);
+
+        assertThat(session.isInvalid()).isTrue();
+    }
+
+    @Test
+    @DisplayName("현재 세션이 없어도 로그아웃할 수 있다")
+    void ignoresMissingSession() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+
+        authSessionManager.invalidateSession(request);
+
+        assertThat(request.getSession(false)).isNull();
+    }
 }
