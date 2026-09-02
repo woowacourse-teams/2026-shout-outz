@@ -13,3 +13,8 @@ spring:
 logging:
   pattern:
     level: "%5p [traceId:%X{traceId}]"
+
+github:
+  oauth:
+    client-id: ${GITHUB_OAUTH_CLIENT_ID}
+    redirect-uri: ${GITHUB_OAUTH_REDIRECT_URI}
