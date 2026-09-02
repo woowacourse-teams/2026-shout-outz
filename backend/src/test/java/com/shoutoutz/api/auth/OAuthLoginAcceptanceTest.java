@@ -160,6 +160,9 @@ class OAuthLoginAcceptanceTest {
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.cookie("JSESSIONID")).isNotBlank();
+        assertThat(response.header("Set-Cookie"))
+                .contains("HttpOnly")
+                .contains("SameSite=Lax");
         assertThat(response.jsonPath().getString("status"))
                 .isEqualTo("UNAUTHENTICATED");
         assertThat(response.jsonPath().getString("csrfToken")).isNotBlank();

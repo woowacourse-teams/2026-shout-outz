@@ -23,3 +23,12 @@ github:
 auth:
   oauth:
     completion-uri: ${FRONTEND_OAUTH_COMPLETION_URI:http://localhost:5173}
+
+server:
+  servlet:
+    session:
+      timeout: ${SESSION_TIMEOUT:30m}
+      cookie:
+        http-only: true
+        secure: ${SESSION_COOKIE_SECURE:false}
+        same-site: lax

@@ -16,3 +16,9 @@ aws:
     bucket: ${AWS_S3_BUCKET}
     region: ${AWS_REGION}
     presigned-url-expiration-seconds: ${AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS}
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: ${SESSION_COOKIE_SECURE:true}
