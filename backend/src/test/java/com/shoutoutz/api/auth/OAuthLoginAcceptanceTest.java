@@ -11,6 +11,7 @@ import com.shoutoutz.api.auth.domain.OAuthAccount;
 import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
+import com.shoutoutz.api.auth.presentation.authentication.AuthenticatedUserId;
 import com.shoutoutz.api.user.domain.Handle;
 import com.shoutoutz.api.user.domain.ProfileDisplayName;
 import com.shoutoutz.api.user.domain.User;
@@ -32,6 +33,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -47,6 +49,8 @@ class OAuthLoginAcceptanceTest {
     private static final String OAUTH_SIGNUP_PATH = "/api/v1/auth/signup";
     private static final String LOGOUT_PATH = "/api/v1/auth/logout";
     private static final String CSRF_TEST_PATH = "/api/v1/projects/csrf-test";
+    private static final String AUTHENTICATED_USER_TEST_PATH =
+            "/api/v1/projects/authenticated-user-test";
 
     @LocalServerPort
     private int port;
@@ -268,6 +272,26 @@ class OAuthLoginAcceptanceTest {
                 .isEqualTo("UNAUTHENTICATED");
     }
 
+    @Test
+    @DisplayName("로그인이 필요한 API에 인증 사용자 ID를 주입한다")
+    void injectsAuthenticatedUserId() {
+        Response unauthenticatedResponse = RestAssured.given()
+                .port(port)
+                .when()
+                .get(AUTHENTICATED_USER_TEST_PATH);
+        OAuthSignupAcceptanceResult signupResult = completeOAuthSignup();
+
+        Response authenticatedResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", signupResult.sessionId())
+                .when()
+                .get(AUTHENTICATED_USER_TEST_PATH);
+
+        assertThat(unauthenticatedResponse.statusCode()).isEqualTo(401);
+        assertThat(authenticatedResponse.statusCode()).isEqualTo(200);
+        assertThat(authenticatedResponse.as(Long.class)).isEqualTo(signupResult.userId());
+    }
+
     private OAuthSignupAcceptanceResult completeOAuthSignup() {
         Response authorizationResponse = requestAuthorization();
         String sessionId = authorizationResponse.cookie("JSESSIONID");
@@ -356,6 +380,13 @@ class OAuthLoginAcceptanceTest {
         @PostMapping(CSRF_TEST_PATH)
         ResponseEntity<Void> changeState() {
             return ResponseEntity.noContent().build();
+        }
+
+        @GetMapping(AUTHENTICATED_USER_TEST_PATH)
+        ResponseEntity<Long> getAuthenticatedUserId(
+                @AuthenticatedUserId Long userId
+        ) {
+            return ResponseEntity.ok(userId);
         }
     }
 }
