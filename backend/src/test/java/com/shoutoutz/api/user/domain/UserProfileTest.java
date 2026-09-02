@@ -127,4 +127,25 @@ class UserProfileTest {
         assertThat(profile.getTrack()).isEqualTo("BACKEND");
         assertThat(profile.getCohort()).isNull();
     }
+
+    @Test
+    @DisplayName("가입 정보와 OAuth 아바타로 사용자 프로필을 초기화한다")
+    void initializesUserProfileWithSignupInformation() {
+        UserProfile profile = UserProfile.initialize(
+                3L,
+                "다혜",
+                UserType.WOOWACOURSE_CREW,
+                "BACKEND",
+                (short) 8,
+                "https://avatars.githubusercontent.com/u/87654321"
+        );
+
+        assertThat(profile.getUserId()).isEqualTo(3L);
+        assertThat(profile.getDisplayName()).isEqualTo(new ProfileDisplayName("다혜"));
+        assertThat(profile.getUserType()).isEqualTo(UserType.WOOWACOURSE_CREW);
+        assertThat(profile.getTrack()).isEqualTo("BACKEND");
+        assertThat(profile.getCohort()).isEqualTo((short) 8);
+        assertThat(profile.getAvatarUrl())
+                .isEqualTo("https://avatars.githubusercontent.com/u/87654321");
+    }
 }

@@ -7,14 +7,24 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.shoutoutz.api.auth.application.port.GitHubOAuthIdentityPort;
+import com.shoutoutz.api.auth.domain.OAuthAccount;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
+import com.shoutoutz.api.user.domain.Handle;
+import com.shoutoutz.api.user.domain.ProfileDisplayName;
+import com.shoutoutz.api.user.domain.User;
+import com.shoutoutz.api.user.domain.UserProfile;
+import com.shoutoutz.api.user.domain.UserProfileRepository;
+import com.shoutoutz.api.user.domain.UserRepository;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import java.net.URI;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
@@ -34,6 +44,7 @@ class OAuthLoginAcceptanceTest {
     private static final String GITHUB_AUTHORIZATION_PATH =
             "/oauth2/authorization/github";
     private static final String AUTH_SESSION_PATH = "/api/v1/auth/session";
+    private static final String OAUTH_SIGNUP_PATH = "/api/v1/auth/signup";
     private static final String CSRF_TEST_PATH = "/api/v1/projects/csrf-test";
 
     @LocalServerPort
@@ -41,6 +52,15 @@ class OAuthLoginAcceptanceTest {
 
     @MockitoBean
     private GitHubOAuthIdentityPort gitHubOAuthIdentityPort;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private UserProfileRepository userProfileRepository;
+
+    @Autowired
+    private OAuthAccountRepository oauthAccountRepository;
 
     @Test
     @DisplayName("GitHub OAuth 로그인에 필요한 값과 세션을 생성하고 GitHub로 이동한다")
@@ -186,6 +206,83 @@ class OAuthLoginAcceptanceTest {
 
         assertThat(rejectedResponse.statusCode()).isEqualTo(403);
         assertThat(acceptedResponse.statusCode()).isEqualTo(204);
+    }
+
+    @Test
+    @DisplayName("신규 OAuth 사용자가 프로필을 입력하면 가입과 로그인을 완료한다")
+    void signsUpNewOAuthUser() {
+        Response authorizationResponse = requestAuthorization();
+        String sessionId = authorizationResponse.cookie("JSESSIONID");
+        String state = authorizationQueryParams(authorizationResponse).getFirst("state");
+        String providerAccountId = Long.toUnsignedString(
+                UUID.randomUUID().getMostSignificantBits()
+        );
+        given(gitHubOAuthIdentityPort.fetchIdentity(eq("authorization-code"), anyString()))
+                .willReturn(new OAuthIdentity(
+                        OAuthProvider.GITHUB,
+                        providerAccountId,
+                        "https://avatars.githubusercontent.com/u/12345678"
+                ));
+        RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", sessionId)
+                .queryParam("code", "authorization-code")
+                .queryParam("state", state)
+                .redirects()
+                .follow(false)
+                .when()
+                .get("/login/oauth2/code/github");
+        Response pendingSessionResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", sessionId)
+                .when()
+                .get(AUTH_SESSION_PATH);
+        String csrfToken = pendingSessionResponse.jsonPath().getString("csrfToken");
+        String handle = "sangjun-" + UUID.randomUUID().toString().substring(0, 8);
+
+        Response signupResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", sessionId)
+                .header("X-CSRF-Token", csrfToken)
+                .contentType("application/json")
+                .body(Map.of(
+                        "handle", handle,
+                        "displayName", "상준",
+                        "userType", "GENERAL"
+                ))
+                .when()
+                .post(OAUTH_SIGNUP_PATH);
+
+        assertThat(signupResponse.statusCode()).isEqualTo(201);
+        assertThat(signupResponse.jsonPath().getLong("userId")).isPositive();
+        long userId = signupResponse.jsonPath().getLong("userId");
+        String authenticatedSessionId = signupResponse.cookie("JSESSIONID");
+        assertThat(authenticatedSessionId).isNotBlank().isNotEqualTo(sessionId);
+
+        User user = userRepository.findById(userId).orElseThrow();
+        UserProfile profile = userProfileRepository.findByUserId(userId).orElseThrow();
+        OAuthAccount account = oauthAccountRepository.findByProviderAndProviderAccountId(
+                OAuthProvider.GITHUB,
+                providerAccountId
+        ).orElseThrow();
+        assertThat(user.getHandle()).isEqualTo(new Handle(handle));
+        assertThat(user.getLastLoginAt()).isNotNull();
+        assertThat(profile.getDisplayName()).isEqualTo(new ProfileDisplayName("상준"));
+        assertThat(profile.getAvatarUrl())
+                .isEqualTo("https://avatars.githubusercontent.com/u/12345678");
+        assertThat(account.getUserId()).isEqualTo(userId);
+        assertThat(account.getLastLoginAt()).isEqualTo(user.getLastLoginAt());
+
+        Response authenticatedSessionResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", authenticatedSessionId)
+                .when()
+                .get(AUTH_SESSION_PATH);
+
+        assertThat(authenticatedSessionResponse.jsonPath().getString("status"))
+                .isEqualTo("AUTHENTICATED");
+        assertThat(authenticatedSessionResponse.jsonPath().getLong("userId"))
+                .isEqualTo(userId);
     }
 
     private Response requestAuthorization() {

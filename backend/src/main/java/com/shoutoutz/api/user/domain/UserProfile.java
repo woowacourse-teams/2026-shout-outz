@@ -41,14 +41,32 @@ public class UserProfile {
     }
 
     public static UserProfile initialize(Long userId, String displayName) {
-        return new UserProfile(
+        return initialize(
                 userId,
                 displayName,
                 UserType.GENERAL,
                 null,
                 null,
+                null
+        );
+    }
+
+    public static UserProfile initialize(
+            Long userId,
+            String displayName,
+            UserType userType,
+            String track,
+            Short cohort,
+            String avatarUrl
+    ) {
+        return new UserProfile(
+                userId,
+                displayName,
+                userType,
+                track,
+                cohort,
                 null,
-                null,
+                avatarUrl,
                 null,
                 null
         );
