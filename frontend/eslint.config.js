@@ -17,8 +17,8 @@ export default defineConfig(
         {
           patterns: [
             {
-              regex: '^\\.\\./',
-              message: "상위 폴더로의 상대 경로 import는 금지합니다. '@/' 절대 경로를 사용하세요.",
+              regex: '^\\.\\.?/',
+              message: "상대 경로 import는 금지합니다. '@/' 절대 경로를 사용하세요.",
             },
           ],
         },
