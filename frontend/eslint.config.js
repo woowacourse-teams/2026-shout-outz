@@ -2,8 +2,6 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
-import importX from 'eslint-plugin-import-x';
-import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript';
 import prettierConfig from 'eslint-config-prettier';
 import globals from 'globals';
 
@@ -12,15 +10,8 @@ export default defineConfig(
   js.configs.recommended,
   tseslint.configs.recommended,
   reactHooks.configs.flat['recommended-latest'],
-  importX.flatConfigs.recommended,
-  importX.flatConfigs.typescript,
   {
-    settings: {
-      'import-x/resolver-next': [createTypeScriptImportResolver()],
-    },
     rules: {
-      'import-x/no-named-as-default': 'off',
-      'import-x/no-named-as-default-member': 'off',
       'no-restricted-imports': [
         'error',
         {
