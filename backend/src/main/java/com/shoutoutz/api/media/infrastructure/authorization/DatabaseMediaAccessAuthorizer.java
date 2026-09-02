@@ -51,7 +51,7 @@ public class DatabaseMediaAccessAuthorizer implements MediaAccessAuthorizer {
                               SELECT 1
                               FROM user_profiles up
                               JOIN users u ON u.id = up.user_id
-                              WHERE up.avatar_media_id = m.id
+                              WHERE up.avatar_image_id = m.id
                                 AND u.deleted_at IS NULL
                           )
                       )
