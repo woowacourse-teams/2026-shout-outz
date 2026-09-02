@@ -35,7 +35,7 @@ Router, QueryClient, Context 등 반복적으로 필요한 테스트 환경은 *
 
 ```tsx
 renderWithProviders(<ProjectPage />, {
-    route: '/projects/1',
+  route: '/projects/1',
 });
 ```
 
@@ -60,9 +60,9 @@ QueryClient는 테스트마다 새 인스턴스를 생성하여 이전 테스트
 render(<Counter />);
 
 await user.click(
-    screen.getByRole('button', {
-        name: '증가',
-    })
+  screen.getByRole('button', {
+    name: '증가',
+  }),
 );
 
 expect(screen.getByText('1')).toBeInTheDocument();
