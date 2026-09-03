@@ -1,13 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-import {
-  getResolvedTheme,
-  getTheme,
-  setTheme,
-  subscribeTheme,
-  type ResolvedTheme,
-  type Theme,
-} from './../utils/theme';
+import { getResolvedTheme, getTheme, setTheme, subscribeTheme, type ResolvedTheme, type Theme } from '../utils/theme';
 
 const getThemeServerSnapshot = (): Theme | undefined => {
   if (typeof document === 'undefined') {
