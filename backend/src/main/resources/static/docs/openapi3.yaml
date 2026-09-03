@@ -25,6 +25,11 @@ paths:
                   {
                     "example": "example"
                   }
+              visitor-create-invalid:
+                value: |
+                  {
+                    "example": ""
+                  }
       responses:
         "201":
           description: "201"
@@ -35,6 +40,8 @@ paths:
               examples:
                 visitor-create:
                   value: "{\"id\":1,\"example\":\"example\"}"
+        "400":
+          description: "400"
 components:
   schemas:
     VisitorSaveResponse:

@@ -95,4 +95,28 @@ class VisitorHttpApiTest {
                                 .build())
                 ));
     }
+
+    @Test
+    @DisplayName("방문자 생성 요청의 example이 비어 있으면 400 Bad Request를 반환한다")
+    void createVisitorWithBlankExample() throws Exception {
+        mockMvc.perform(post("/api/v1/visitors")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "example": ""
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                /**
+                 * 실패 응답 문서화 코드
+                 */
+                .andDo(document(
+                        "visitor-create-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Visitor")
+                                .summary("방문자 생성 실패")
+                                .description("example이 비어 있으면 400 Bad Request를 반환한다.")
+                                .build())
+                ));
+    }
 }
