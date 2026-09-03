@@ -104,6 +104,44 @@ docker compose exec db psql -U shoutoutz -d shoutoutz -c "\\conninfo"
 - `local` 프로필로 실행됨
 - 데이터베이스 연결 성공
 
+## API 문서 생성 및 확인
+
+API 문서는 MockMvc 기반 테스트 코드와 `restdocs-api-spec`을 이용해 생성한다.
+API를 추가하거나 문서 내용을 수정할 때는 해당 컨트롤러 테스트에 문서화 코드를 작성한 뒤 다음 명령을 실행한다.
+
+```bash
+./gradlew copyOasToSwagger
+```
+
+`copyOasToSwagger`는 다음 작업을 순서대로 수행한다.
+
+1. 테스트 실행
+2. 테스트 결과로 OpenAPI YAML 생성
+3. `src/main/resources/static/docs/openapi3.yaml`에 YAML 복사
+
+따라서 문서 갱신을 위해 `./gradlew test`나 `./gradlew openapi3`를 별도로 실행할 필요가 없다.
+문서 생성에 필요한 테스트가 실패하면 YAML 복사도 완료되지 않는다.
+
+생성된 문서를 확인하려면 애플리케이션을 재시작한 뒤 다음 주소로 접속한다.
+
+```text
+http://localhost:8080/docs
+```
+
+OpenAPI 원본 YAML은 다음 주소에서 확인할 수 있다.
+
+```text
+http://localhost:8080/docs/openapi3.yaml
+```
+
+### API 문서 작성 규칙
+
+- 문서 테스트는 각 컨트롤러 테스트 클래스에 작성한다.
+- 테스트 코드의 `document(...)` 내용을 OpenAPI 문서에 반영할 API 계약으로 취급한다.
+- `openapi3.yaml`은 직접 수정하지 않고 테스트 코드 수정 후 명령어로 재생성한다.
+- API 테스트 코드와 생성된 `openapi3.yaml` 변경 사항은 함께 커밋한다.
+- API의 요청, 응답 필드가 변경되면 문서 테스트와 YAML 변경 여부를 함께 확인한다.
+
 ### 5. 애플리케이션 종료
 
 애플리케이션을 종료한 뒤 PostgreSQL 컨테이너를 중지한다.
