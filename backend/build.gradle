@@ -50,6 +50,9 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+/**
+ * ePages Gradle 플러그인의 openapi3 task 설정 블록
+ */
 openapi3 {
     server = 'http://localhost:8080'
     title = 'Shout-outz API'
