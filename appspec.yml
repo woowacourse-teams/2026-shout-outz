@@ -1,0 +1,36 @@
+version: 0.0
+os: linux
+
+files:
+  - source: /app.jar
+    destination: /opt/shout-outz/app
+  - source: /deploy/shout-outz-backend.service
+    destination: /etc/systemd/system
+
+file_exists_behavior: OVERWRITE
+
+hooks:
+  ApplicationStop:
+    - location: deploy/scripts/stop.sh
+      timeout: 60
+      runas: root
+
+  BeforeInstall:
+    - location: deploy/scripts/before_install.sh
+      timeout: 60
+      runas: root
+
+  AfterInstall:
+    - location: deploy/scripts/after_install.sh
+      timeout: 60
+      runas: root
+
+  ApplicationStart:
+    - location: deploy/scripts/start.sh
+      timeout: 60
+      runas: root
+
+  ValidateService:
+    - location: deploy/scripts/validate.sh
+      timeout: 210
+      runas: root
