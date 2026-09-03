@@ -20,4 +20,11 @@ coverage/
 credentials*.json
 *-credentials.json
 service-account*.json
-.npmrc
+
+# 추후 프로토타입 프로젝트 제거 시 함께 삭제할 옵션
+!.npmrc
+
+# 패키지 매니저를 npm으로 통일하기 위한 다른 매니저의 락파일 유입 차단
+yarn.lock
+pnpm-lock.yaml
+bun.lockb

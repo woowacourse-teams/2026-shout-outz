@@ -9,7 +9,6 @@ coverage/
 .env.local
 .DS_Store
 .idea/
-.vscode/
 
 # Local credentials and certificates
 *.pem
