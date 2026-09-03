@@ -263,6 +263,7 @@ class OAuthLoginAcceptanceTest {
         assertThat(profile.getDisplayName()).isEqualTo(new ProfileDisplayName("상준"));
         assertThat(profile.getAvatarUrl())
                 .isEqualTo("https://avatars.githubusercontent.com/u/12345678");
+        assertThat(profile.getGithubProfileUrl()).isEqualTo("https://github.com/sangjun");
         assertThat(account.getUserId()).isEqualTo(result.userId());
         assertThat(account.getLastLoginAt()).isEqualTo(user.getLastLoginAt());
 
@@ -337,7 +338,8 @@ class OAuthLoginAcceptanceTest {
                 .willReturn(new OAuthIdentity(
                         OAuthProvider.GITHUB,
                         providerAccountId,
-                        "https://avatars.githubusercontent.com/u/12345678"
+                        "https://avatars.githubusercontent.com/u/12345678",
+                        "https://github.com/sangjun"
                 ));
         RestAssured.given()
                 .port(port)

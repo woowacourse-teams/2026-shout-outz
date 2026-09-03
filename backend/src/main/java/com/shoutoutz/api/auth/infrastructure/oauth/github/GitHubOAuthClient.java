@@ -36,7 +36,8 @@ public class GitHubOAuthClient implements GitHubOAuthIdentityPort {
         return new OAuthIdentity(
                 OAuthProvider.GITHUB,
                 String.valueOf(Objects.requireNonNull(user.id(), "GitHub 사용자 ID가 없습니다.")),
-                user.avatarUrl()
+                user.avatarUrl(),
+                user.htmlUrl()
         );
     }
 
@@ -80,7 +81,8 @@ public class GitHubOAuthClient implements GitHubOAuthIdentityPort {
 
     private record GitHubUserResponse(
             Long id,
-            @JsonProperty("avatar_url") String avatarUrl
+            @JsonProperty("avatar_url") String avatarUrl,
+            @JsonProperty("html_url") String htmlUrl
     ) {
     }
 }

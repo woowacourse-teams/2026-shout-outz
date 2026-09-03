@@ -41,7 +41,8 @@ public class OAuthSignupService {
                 command.userType(),
                 command.track(),
                 command.cohort(),
-                identity.avatarUrl()
+                identity.avatarUrl(),
+                identity.providerProfileUrl()
         );
         OAuthAccount oauthAccount = OAuthAccount.initialize(
                 savedUser.getId(),

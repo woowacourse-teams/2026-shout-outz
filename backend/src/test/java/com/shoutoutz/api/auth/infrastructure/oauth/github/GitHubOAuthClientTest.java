@@ -60,7 +60,8 @@ class GitHubOAuthClientTest {
                                 {
                                   "id": 12345678,
                                   "login": "sangjun",
-                                  "avatar_url": "https://avatars.githubusercontent.com/u/12345678"
+                                  "avatar_url": "https://avatars.githubusercontent.com/u/12345678",
+                                  "html_url": "https://github.com/sangjun"
                                 }
                                 """,
                         MediaType.APPLICATION_JSON
@@ -75,6 +76,7 @@ class GitHubOAuthClientTest {
         assertThat(identity.providerAccountId()).isEqualTo("12345678");
         assertThat(identity.avatarUrl())
                 .isEqualTo("https://avatars.githubusercontent.com/u/12345678");
+        assertThat(identity.providerProfileUrl()).isEqualTo("https://github.com/sangjun");
         server.verify();
     }
 }

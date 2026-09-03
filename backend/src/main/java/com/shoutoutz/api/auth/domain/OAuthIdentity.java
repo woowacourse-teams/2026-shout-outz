@@ -3,10 +3,19 @@ package com.shoutoutz.api.auth.domain;
 public record OAuthIdentity(
         OAuthProvider provider,
         String providerAccountId,
-        String avatarUrl
+        String avatarUrl,
+        String providerProfileUrl
 ) {
 
     private static final int MAX_PROVIDER_ACCOUNT_ID_LENGTH = 255;
+
+    public OAuthIdentity(
+            OAuthProvider provider,
+            String providerAccountId,
+            String avatarUrl
+    ) {
+        this(provider, providerAccountId, avatarUrl, null);
+    }
 
     public OAuthIdentity {
         if (provider == null) {
