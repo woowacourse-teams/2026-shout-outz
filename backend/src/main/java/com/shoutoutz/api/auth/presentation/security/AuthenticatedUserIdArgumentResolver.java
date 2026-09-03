@@ -1,4 +1,4 @@
-package com.shoutoutz.api.auth.presentation.authentication;
+package com.shoutoutz.api.auth.presentation.security;
 
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,9 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
+import org.springframework.web.server.ResponseStatusException;
 
 @Component
 class AuthenticatedUserIdArgumentResolver implements HandlerMethodArgumentResolver {

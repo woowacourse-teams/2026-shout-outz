@@ -1,4 +1,4 @@
-package com.shoutoutz.api.auth.presentation.authentication;
+package com.shoutoutz.api.auth.presentation.security;
 
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;

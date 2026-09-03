@@ -1,4 +1,4 @@
-package com.shoutoutz.api.auth.presentation.authentication;
+package com.shoutoutz.api.auth.presentation.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -1,4 +1,4 @@
-package com.shoutoutz.api.auth.presentation.authentication;
+package com.shoutoutz.api.auth.presentation.security;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

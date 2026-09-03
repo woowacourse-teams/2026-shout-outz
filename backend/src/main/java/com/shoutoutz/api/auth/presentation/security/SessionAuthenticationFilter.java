@@ -1,4 +1,4 @@
-package com.shoutoutz.api.auth.presentation.authentication;
+package com.shoutoutz.api.auth.presentation.security;
 
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;

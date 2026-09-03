@@ -11,7 +11,7 @@ import com.shoutoutz.api.auth.domain.OAuthAccount;
 import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
-import com.shoutoutz.api.auth.presentation.authentication.AuthenticatedUserId;
+import com.shoutoutz.api.auth.presentation.security.AuthenticatedUserId;
 import com.shoutoutz.api.user.domain.Handle;
 import com.shoutoutz.api.user.domain.ProfileDisplayName;
 import com.shoutoutz.api.user.domain.User;
