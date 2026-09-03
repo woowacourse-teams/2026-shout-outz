@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
+import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.visitor.application.VisitorService;
 import com.shoutoutz.api.visitor.presentation.dto.request.VisitorSaveRequest;
 import com.shoutoutz.api.visitor.presentation.dto.response.VisitorSaveResponse;
@@ -67,7 +68,7 @@ class VisitorHttpApiTest {
                  *  - resource.json 생성 및 OpenAPI(OAS)로 변환해주는 ePages의 restdocs-api-spec
                  *
                  * 따라서, API 명세에 포함할 컨트롤러 테스터에만 작성하면 된다.
-                 * 주의. document, resource, ResourceSnippetParameters는 springframework.restdocs이 아닌, epages.restdocs.apispec를 사용
+                 * 주의. document, resource, ResourceSnippetParameters, req/resSchema는 springframework.restdocs이 아닌, epages.restdocs.apispec를 사용
                  * 이외는 REST DOCS의 테스트코드 작성법과 동일하다.
                  */
                 .andDo(document(
@@ -76,6 +77,8 @@ class VisitorHttpApiTest {
                                 .tag("Visitor")
                                 .summary("방문자 생성")
                                 .description("방문자를 생성한다.")
+                                .requestSchema(Schema.schema("VisitorSaveRequest"))
+                                .responseSchema(Schema.schema("VisitorSaveResponse"))
                                 .requestFields(
                                         fieldWithPath("example")
                                                 .type(STRING)

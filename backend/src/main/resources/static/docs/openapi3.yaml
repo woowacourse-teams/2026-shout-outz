@@ -18,7 +18,7 @@ paths:
         content:
           application/json;charset=UTF-8:
             schema:
-              $ref: "#/components/schemas/api-v1-visitors-457108154"
+              $ref: "#/components/schemas/VisitorSaveRequest"
             examples:
               visitor-create:
                 value: |
@@ -31,21 +31,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/api-v1-visitors-1222189186"
+                $ref: "#/components/schemas/VisitorSaveResponse"
               examples:
                 visitor-create:
                   value: "{\"id\":1,\"example\":\"example\"}"
 components:
   schemas:
-    api-v1-visitors-457108154:
-      required:
-      - example
-      type: object
-      properties:
-        example:
-          type: string
-          description: 방문자 예시 값
-    api-v1-visitors-1222189186:
+    VisitorSaveResponse:
+      title: VisitorSaveResponse
       required:
       - example
       - id
@@ -54,6 +47,15 @@ components:
         id:
           type: number
           description: 방문자 ID
+        example:
+          type: string
+          description: 방문자 예시 값
+    VisitorSaveRequest:
+      title: VisitorSaveRequest
+      required:
+      - example
+      type: object
+      properties:
         example:
           type: string
           description: 방문자 예시 값
