@@ -1,14 +1,19 @@
 package com.shoutoutz.api.common.exception;
 
+import com.shoutoutz.api.common.exception.code.CommonErrorCode;
+import com.shoutoutz.api.common.exception.code.ErrorCode;
+import com.shoutoutz.api.common.exception.custom.CustomException;
+import com.shoutoutz.api.common.exception.event.DiscordGeneralErrorEvent;
+import com.shoutoutz.api.common.exception.event.DiscordInternalServerErrorEvent;
+import com.shoutoutz.api.common.response.JSendResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -27,22 +32,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    // DataIntegrityViolationException은 JPA에서 데이터 무결성 제약 조건을 위반했을 때 발생하는 에러
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<Object> handleDataIntegrityViolationException(
-            DataIntegrityViolationException e, HttpServletRequest request) {
-        ErrorCode errorCode = CommonErrorCode.DUPLICATE_RESOURCE;
-        return handleExceptionInternal(errorCode, request);
-    }
-
-    // EmptyResultDataAccessException은 JPA에서 존재하지 않는 데이터를 삭제하려고 할 때 발생하는 예외
-    @ExceptionHandler(EmptyResultDataAccessException.class)
-    public ResponseEntity<Object> handleEmptyResult(
-            EmptyResultDataAccessException e, HttpServletRequest request) {
-        ErrorCode errorCode = CommonErrorCode.RESOURCE_NOT_FOUND;
-        return handleExceptionInternal(errorCode, e.getMessage(), request);
-    }
-
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Object> handleIllegalArgumentException(
             IllegalArgumentException e, HttpServletRequest request) {
@@ -50,17 +39,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(errorCode, e.getMessage(), request);
     }
 
-    @ExceptionHandler(InvalidFormatException.class)
-    public ResponseEntity<Object> handleInvalidFormatException(
-            InvalidFormatException e, HttpServletRequest request) {
-        ErrorCode errorCode = e.getErrorCode();
-        return handleExceptionInternal(errorCode, request);
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<Object> handleNoSuchElementException(
+            NoSuchElementException e, HttpServletRequest request) {
+        ErrorCode errorCode = CommonErrorCode.RESOURCE_NOT_FOUND;
+        return handleExceptionInternal(errorCode, e.getMessage(), request);
     }
 
     /**
-     * Spring Validation 어노테이션 @Validated 사용 시, MethodValidationInterceptor 에서 발생하는 검증 예외 주의. 우리
-     * 서버는 @RequestBody의 직렬화 과정에서는 JSP 표준 @Valid 어노테이션을 사용한다. 따라서 ConstraintViolationException 예외의
-     * 진입점인 해당 핸들러는, @PathVariable , @RequestParam 검증 실패시만 작동한다.
+     * @Validated 기반, 메서드 파라미터나 반환값 검증에 실패했을 때 발생하는 예외인,
+     * ConstraintViolationException 처리 핸들러
      */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Object> handleConstraintViolationException(
@@ -69,7 +57,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(e, errorCode, request);
     }
 
-    /** JSP @Valid 어노테이션 이용시 발생 예외처리 */
+    /**
+     * @RequestBody DTO에 Jakarta Bean Validation의 @Valid는
+     * 검증 실패 시 MethodArgumentNotValidException이 발생한다.
+     *
+     * 해당 예외를 처리하는 핸들러는 이미 ResponseEntityExceptionHandler에 구현되어 있다.
+     * 따라서, handleMethodArgumentNotValid 메서드를 재정의하여,
+     * JSend 형식의 응답으로 커스텀 한다.
+     */
     @Override
     public ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException e,
@@ -78,6 +73,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             WebRequest request) {
         ErrorCode errorCode = CommonErrorCode.INVALID_PARAMETER;
         return handleExceptionInternal(e, errorCode, request);
+    }
+
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<Object> handleCustomException(
+            CustomException e, HttpServletRequest request) {
+        ErrorCode errorCode = e.getErrorCode();
+        /**
+         * 500 서버 에러인 경우 ErrorResponse로 반환
+         */
+        if (errorCode.getHttpStatus().is5xxServerError()) {
+            log.error(errorCode.name(), e);
+            return ResponseEntity.status(errorCode.getHttpStatus())
+                    .body(makeErrorResponse(errorCode, request));
+        }
+        /**
+         * 500 이외인 경우, FailErrorResponse를 생성하는 하위 메서드로 이동
+         */
+        return handleExceptionInternal(errorCode, request);
     }
 
     @ExceptionHandler({Exception.class})
@@ -89,134 +102,122 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         // TODO: 삭제 예정
         log.error(errorCode.name(), e);
-        return handleExceptionInternal(errorCode, request);
+        return ResponseEntity.status(errorCode.getHttpStatus())
+                .body(makeErrorResponse(errorCode, request));
     }
 
     // handleExceptionInternal Method
     private ResponseEntity<Object> handleExceptionInternal(
             ErrorCode errorCode, HttpServletRequest request) {
         return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(makeErrorResponse(errorCode, request));
+                .body(makeFailResponse(errorCode, request));
     }
 
     private ResponseEntity<Object> handleExceptionInternal(
             ErrorCode errorCode, String message, HttpServletRequest request) {
         publishDiscordErrorEvent(errorCode, message, request);
         return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(makeErrorResponse(errorCode, message, request));
+                .body(makeFailResponse(errorCode, message, request));
     }
 
+    /**
+     * ConstraintViolationException 이 발생한 경우의 예외 응답 생성 메서드
+     */
     private ResponseEntity<Object> handleExceptionInternal(
             ConstraintViolationException e, ErrorCode errorCode, HttpServletRequest request) {
         return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(makeErrorResponse(e, errorCode, request));
+                .body(makeFailResponse(e, errorCode, request));
     }
 
+    /**
+     * MethodArgumentNotValidException이 발생한 경우의 예외 응답 생성 메서드
+     */
     private ResponseEntity<Object> handleExceptionInternal(
             BindException e, ErrorCode errorCode, WebRequest request) {
         return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(makeErrorResponse(e, errorCode, request));
+                .body(makeFailResponse(e, errorCode, request));
     }
 
-    // makeErrorResponse Method
-    private ErrorResponse makeErrorResponse(ErrorCode errorCode, HttpServletRequest request) {
+    /**
+     * 예외 응답을 만드는 메서드
+     * JSend 형식을 따르기 때문에, 요청이 예외의 원인인 경우는 Fail 응답, 요청은 올바른데 발생한 예외인 경우는 Error Response를 반환한다.
+     */
+    private JSendResponse<Object> makeErrorResponse(ErrorCode errorCode, HttpServletRequest request) {
         publishDiscordErrorEvent(errorCode, request);
-        return ErrorResponse.builder().code(errorCode.name()).message(errorCode.getMessage()).build();
+        return JSendResponse.error(errorCode.name(), errorCode.getMessage(), null);
     }
 
-    private ErrorResponse makeErrorResponse(
+    private JSendResponse<Object> makeFailResponse(ErrorCode errorCode, HttpServletRequest request) {
+        publishDiscordErrorEvent(errorCode, request);
+        return JSendResponse.fail(errorCode.name(), errorCode.getMessage(), null);
+    }
+
+    private JSendResponse<Object> makeFailResponse(
             ErrorCode errorCode, String message, HttpServletRequest request) {
         publishDiscordErrorEvent(errorCode, message, request);
-        return ErrorResponse.builder().code(errorCode.name()).message(message).build();
+        return JSendResponse.fail(errorCode.name(), message, null);
     }
 
-    private ErrorResponse makeErrorResponse(
+    private JSendResponse<Object> makeFailResponse(
             ConstraintViolationException e, ErrorCode errorCode, HttpServletRequest request) {
-        List<ErrorResponse.ValidationError> validationErrorList =
+        List<JSendResponse.ValidationField> validationFields =
                 e.getConstraintViolations().stream()
-                        .map(violation -> ErrorResponse.ValidationError.of(violation, errorCode))
+                        .map(violation -> new JSendResponse.ValidationField(
+                                violation.getPropertyPath().toString(), violation.getMessage()))
                         .collect(Collectors.toList());
 
-        ErrorResponse response = ErrorResponse.builder().errors(validationErrorList).build();
-        publishDiscordErrorEvent(errorCode, response, request);
-        return response;
+        JSendResponse.ValidationData data = new JSendResponse.ValidationData(validationFields);
+        publishDiscordErrorEvent(errorCode, data, request);
+        return JSendResponse.fail(errorCode.name(), errorCode.getMessage(), data);
     }
 
-    private ErrorResponse makeErrorResponse(
+    private JSendResponse<Object> makeFailResponse(
             BindException e, ErrorCode errorCode, WebRequest request) {
-        List<ErrorResponse.ValidationError> validationErrorList =
+        List<JSendResponse.ValidationField> validationFields =
                 e.getBindingResult().getFieldErrors().stream()
-                        .map(fieldError -> ErrorResponse.ValidationError.of(fieldError, errorCode))
+                        .map(fieldError -> new JSendResponse.ValidationField(
+                                fieldError.getField(), fieldError.getDefaultMessage()))
                         .collect(Collectors.toList());
 
-        ErrorResponse response = ErrorResponse.builder().errors(validationErrorList).build();
-        publishDiscordErrorEvent(errorCode, response, request);
-        return response;
+        JSendResponse.ValidationData data = new JSendResponse.ValidationData(validationFields);
+        publishDiscordErrorEvent(errorCode, data, request);
+        return JSendResponse.fail(errorCode.name(), errorCode.getMessage(), data);
     }
 
+    /**
+     * 예외 발생시 Discord 전송 이벤트
+     */
     private void publishDiscordErrorEvent(ErrorCode errorCode, HttpServletRequest request) {
-        if (errorCode.getHttpStatus() == HttpStatus.INTERNAL_SERVER_ERROR) {
-            eventPublisher.publishEvent(
-                    new DiscordInternalServerErrorEvent(
-                            request.getRequestURI(), errorCode, errorCode.getMessage()));
-            return;
-        }
-        eventPublisher.publishEvent(
-                new DiscordGeneralErrorEvent(request.getRequestURI(), errorCode, errorCode.getMessage()));
+        publishDiscordErrorEvent(errorCode, errorCode.getMessage(), request.getRequestURI());
     }
 
     private void publishDiscordErrorEvent(
             ErrorCode errorCode, String message, HttpServletRequest request) {
-        if (errorCode.getHttpStatus() == HttpStatus.INTERNAL_SERVER_ERROR) {
-            eventPublisher.publishEvent(
-                    new DiscordInternalServerErrorEvent(request.getRequestURI(), errorCode, message));
-            return;
-        }
-        eventPublisher.publishEvent(
-                new DiscordGeneralErrorEvent(request.getRequestURI(), errorCode, message));
+        publishDiscordErrorEvent(errorCode, message, request.getRequestURI());
     }
 
     private void publishDiscordErrorEvent(
-            ErrorCode errorCode, ErrorResponse response, HttpServletRequest request) {
-        if (errorCode.getHttpStatus() == HttpStatus.INTERNAL_SERVER_ERROR) {
-            eventPublisher.publishEvent(
-                    new DiscordInternalServerErrorEvent(
-                            request.getRequestURI(),
-                            errorCode,
-                            response.getErrors().stream()
-                                    .map(ErrorResponse.ValidationError::message)
-                                    .collect(Collectors.joining(", "))));
-            return;
-        }
-        eventPublisher.publishEvent(
-                new DiscordGeneralErrorEvent(
-                        request.getRequestURI(),
-                        errorCode,
-                        response.getErrors().stream()
-                                .map(ErrorResponse.ValidationError::message)
-                                .collect(Collectors.joining(", "))));
+            ErrorCode errorCode, JSendResponse.ValidationData response, HttpServletRequest request) {
+        String message = response.fields().stream()
+                .map(JSendResponse.ValidationField::reason)
+                .collect(Collectors.joining(", "));
+        publishDiscordErrorEvent(errorCode, message, request);
     }
 
     private void publishDiscordErrorEvent(
-            ErrorCode errorCode, ErrorResponse response, WebRequest request) {
-
+            ErrorCode errorCode, JSendResponse.ValidationData response, WebRequest request) {
         String requestUri = request.getDescription(false).replace("uri=", "");
+        String message = response.fields().stream()
+                .map(JSendResponse.ValidationField::reason)
+                .collect(Collectors.joining(", "));
+        publishDiscordErrorEvent(errorCode, message, requestUri);
+    }
+
+    private void publishDiscordErrorEvent(ErrorCode errorCode, String message, String requestUri) {
         if (errorCode.getHttpStatus() == HttpStatus.INTERNAL_SERVER_ERROR) {
-            eventPublisher.publishEvent(
-                    new DiscordInternalServerErrorEvent(
-                            requestUri,
-                            errorCode,
-                            response.getErrors().stream()
-                                    .map(ErrorResponse.ValidationError::message)
-                                    .collect(Collectors.joining(", "))));
+            eventPublisher.publishEvent(new DiscordInternalServerErrorEvent(requestUri, errorCode, message));
             return;
         }
-        eventPublisher.publishEvent(
-                new DiscordGeneralErrorEvent(
-                        requestUri,
-                        errorCode,
-                        response.getErrors().stream()
-                                .map(ErrorResponse.ValidationError::message)
-                                .collect(Collectors.joining(", "))));
+        eventPublisher.publishEvent(new DiscordGeneralErrorEvent(requestUri, errorCode, message));
     }
 }
