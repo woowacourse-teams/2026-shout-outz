@@ -8,6 +8,7 @@ import com.shoutoutz.api.common.exception.event.DiscordInternalServerErrorEvent;
 import com.shoutoutz.api.common.response.JSendResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -19,10 +20,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
+import org.springframework.validation.method.ParameterErrors;
+import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 @Slf4j
@@ -68,6 +74,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     public ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException e,
+            HttpHeaders headers,
+            HttpStatusCode statusCode,
+            WebRequest request) {
+        ErrorCode errorCode = CommonErrorCode.INVALID_PARAMETER;
+        return handleExceptionInternal(e, errorCode, request);
+    }
+
+    /**
+     * Spring MVC 내장 메서드 검증에서 발생하는 검증 예외 처리 핸들러
+     * 예: 컨트롤러 파라미터에 @Min, @NotBlank 등을 직접 선언하는 방식에서 검증 얘외가 발생하면,
+     * HandlerMethodValidationException가 발생한다.
+     *
+     * 해당 예외를 처리하는 핸들러는 이미 ResponseEntityExceptionHandler에 구현되어 있다.
+     * 따라서 handleHandlerMethodValidationException만 재정의 한다.
+     */
+    @Override
+    public ResponseEntity<Object> handleHandlerMethodValidationException(
+            HandlerMethodValidationException e,
             HttpHeaders headers,
             HttpStatusCode statusCode,
             WebRequest request) {
@@ -138,6 +162,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(makeFailResponse(e, errorCode, request));
     }
 
+    private ResponseEntity<Object> handleExceptionInternal(
+            HandlerMethodValidationException e, ErrorCode errorCode, WebRequest request) {
+        return ResponseEntity.status(errorCode.getHttpStatus())
+                .body(makeFailResponse(e, errorCode, request));
+    }
+
     /**
      * 예외 응답을 만드는 메서드
      * JSend 형식을 따르기 때문에, 요청이 예외의 원인인 경우는 Fail 응답, 요청은 올바른데 발생한 예외인 경우는 Error Response를 반환한다.
@@ -178,6 +208,42 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         .map(fieldError -> new JSendResponse.ValidationField(
                                 fieldError.getField(), fieldError.getDefaultMessage()))
                         .collect(Collectors.toList());
+
+        JSendResponse.ValidationData data = new JSendResponse.ValidationData(validationFields);
+        publishDiscordErrorEvent(errorCode, data, request);
+        return JSendResponse.fail(errorCode.name(), errorCode.getMessage(), data);
+    }
+
+    private JSendResponse<Object> makeFailResponse(
+            HandlerMethodValidationException e, ErrorCode errorCode, WebRequest request) {
+        List<JSendResponse.ValidationField> validationFields = new ArrayList<>();
+
+        for (ParameterValidationResult result : e.getParameterValidationResults()) {
+            String parameterName = result.getMethodParameter().getParameterName();
+            if (parameterName == null) {
+                parameterName = "parameter" + result.getMethodParameter().getParameterIndex();
+            }
+            String resolvedParameterName = parameterName;
+
+            if (result instanceof ParameterErrors errors) {
+                for (ObjectError validationError : errors.getAllErrors()) {
+                    String field = validationError instanceof FieldError fieldError
+                            ? fieldError.getField()
+                            : resolvedParameterName;
+                    validationFields.add(new JSendResponse.ValidationField(
+                            field, validationError.getDefaultMessage()));
+                }
+                continue;
+            }
+
+            result.getResolvableErrors().forEach(validationError -> validationFields.add(
+                    new JSendResponse.ValidationField(
+                            resolvedParameterName, validationError.getDefaultMessage())));
+        }
+
+        e.getCrossParameterValidationResults().forEach(validationError -> validationFields.add(
+                new JSendResponse.ValidationField(
+                        "parameters", validationError.getDefaultMessage())));
 
         JSendResponse.ValidationData data = new JSendResponse.ValidationData(validationFields);
         publishDiscordErrorEvent(errorCode, data, request);
