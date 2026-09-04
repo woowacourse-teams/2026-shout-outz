@@ -38,6 +38,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private final ApplicationEventPublisher eventPublisher;
 
+    /**
+     * IllegalArgumentException나 NoSuchElementException 같은 예외의
+     * message를 응답에 담지 않도록, 최대한 예외는 원인을 표시한 커스텀 예외를 사용한다.
+     */
+    @Deprecated
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Object> handleIllegalArgumentException(
             IllegalArgumentException e, HttpServletRequest request) {
@@ -45,6 +50,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(errorCode, e.getMessage(), request);
     }
 
+    @Deprecated
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Object> handleNoSuchElementException(
             NoSuchElementException e, HttpServletRequest request) {
