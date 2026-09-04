@@ -1,0 +1,68 @@
+openapi: 3.0.1
+info:
+  title: Shout-outz API
+  description: Shout-outz Backend API
+  version: 0.0.1-SNAPSHOT
+servers:
+- url: http://localhost:8080
+tags: []
+paths:
+  /api/v1/visitors:
+    post:
+      tags:
+      - Visitor
+      summary: 방문자 생성
+      description: 방문자를 생성한다.
+      operationId: visitor-create
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/VisitorSaveRequest"
+            examples:
+              visitor-create:
+                value: |
+                  {
+                    "example": "example"
+                  }
+              visitor-create-invalid:
+                value: |
+                  {
+                    "example": ""
+                  }
+      responses:
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisitorSaveResponse"
+              examples:
+                visitor-create:
+                  value: "{\"id\":1,\"example\":\"example\"}"
+        "400":
+          description: "400"
+components:
+  schemas:
+    VisitorSaveResponse:
+      title: VisitorSaveResponse
+      required:
+      - example
+      - id
+      type: object
+      properties:
+        id:
+          type: number
+          description: 방문자 ID
+        example:
+          type: string
+          description: 방문자 예시 값
+    VisitorSaveRequest:
+      title: VisitorSaveRequest
+      required:
+      - example
+      type: object
+      properties:
+        example:
+          type: string
+          description: 방문자 예시 값
