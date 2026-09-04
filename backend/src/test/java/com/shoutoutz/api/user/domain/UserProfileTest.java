@@ -19,7 +19,7 @@ class UserProfileTest {
         assertThat(profile.getTrack()).isNull();
         assertThat(profile.getCohort()).isNull();
         assertThat(profile.getBio()).isNull();
-        assertThat(profile.getAvatarUrl()).isNull();
+        assertThat(profile.getAvatarImageId()).isNull();
         assertThat(profile.getGithubProfileUrl()).isNull();
         assertThat(profile.getBlogUrl()).isNull();
     }

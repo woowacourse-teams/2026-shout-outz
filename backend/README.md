@@ -26,6 +26,8 @@
 | 커넥션 풀 | HikariCP | 데이터베이스 연결 관리 |
 | 요청 검증 | Spring Boot Validation | 요청 값 검증 |
 | 운영 상태 확인 | Spring Boot Actuator | 헬스 체크 및 메트릭 제공 |
+| 객체 스토리지 | Amazon S3 | 미디어 버킷 저장 및 조회 |
+| AWS SDK | AWS SDK for Java 2.x | S3 객체 접근 및 Presigned URL 생성 |
 | 테스트 | JUnit, Spring Boot Test | 애플리케이션 테스트 |
 | 로컬 인프라 | Docker Compose | PostgreSQL 컨테이너 실행 |
 | 보조 도구 | Lombok | 반복적인 Java 코드 축소 |
@@ -169,6 +171,112 @@ SPRING_PROFILES_ACTIVE=prod
 SPRING_DATASOURCE_URL=jdbc:postgresql://<host>:<port>/<database>
 SPRING_DATASOURCE_USERNAME=<username>
 SPRING_DATASOURCE_PASSWORD=<password>
+AWS_S3_BUCKET=<bucket-name>
+AWS_REGION=<region>
+AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS=<seconds>
 ```
 
 IntelliJ IDEA에서 환경 변수를 설정하려면 `Run/Debug Configurations`의 `Environment variables`에 입력한다. 운영용 비밀 값은 저장소에 커밋하지 않는다.
+
+## AWS S3 연결 설정
+
+S3 버킷과 기본 보안 설정은 기본 우테코 제공 인프라의 설정을 따라간다. 백엔드는 `AWS_S3_BUCKET`, `AWS_REGION`, `AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS`만 환경별로 주입받는다.
+
+
+### 로컬
+로컬에서는 AWS CLI Profile 또는 환경변수에서 자격 증명을 조회한다. (자격 증명 값은 `application-*.yml`, 소스 코드에 기록하면 안된다.)
+
+아래는 로컬에 AWS_PROFILE 생성하는 명령어 
+```bash
+aws configure --profile shoutoutz-dev
+export AWS_PROFILE=shoutoutz-dev
+export AWS_S3_BUCKET=<우테코에서 제공받은 개발용 버킷 이름>
+export AWS_REGION=<region>
+export AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS=<seconds>
+```
+
+### 운영
+운영에서는 애플리케이션이 실행되는 AWS 런타임에 S3 접근 IAM Role을 연결한다. 장기 액세스 키를 환경변수로 등록하지 않고 AWS SDK의 기본 자격 증명 체인이 제공하는 임시 자격 증명을 사용한다.
+
+현재 구성은 `S3Client`와 `S3Presigner`를 Spring Bean으로 한 번 생성하며, 둘 다 `AWS_REGION`으로 지정한 리전을 사용한다. 로컬 Profile, 운영 IAM Role 등 자격 증명 출처가 달라도 애플리케이션 코드는 같은 기본 자격 증명 체인을 사용한다.
+
+### 미디어 객체 연동 모듈
+
+S3 객체 연동은 `com.shoutoutz.api.media.infrastructure.s3`에서 담당한다.
+
+| 기능 | 구현 | 설명                                                     |
+| --- | --- |--------------------------------------------------------|
+| 업로드 | `S3Presigner` | 백엔드가 Presigned PUT URL을 발급하고, 프론트엔드가 파일을 S3에 직접 업로드한다. |
+| 조회 | `S3Presigner` | 비공개 객체용 Presigned GET URL을 발급한다.                       |
+| 업로드 검증 | `S3Client.headObject` | 객체 존재 여부와 요청 당시의 파일 크기, MIME 타입을 비교한다.                 |
+| 삭제 | `S3Client.deleteObject` | `media/` prefix의 객체를 삭제한다.                             |
+
+객체 키는 `media/{purpose-kebab-case}/{UUID}` 형식이며 원본 파일명이나 DB ID를 포함하지 않는다. Presigned PUT URL로 업로드할 때는 URL 발급 응답의 `Content-Type`을 업로드 요청 헤더에 동일하게 지정해야 한다. S3 객체의 파일 시그니처 검증과 이미지 변형본 생성은 별도의 이미지 처리 단계에서 수행한다.
+
+### 업로드 시작 API
+
+`POST /api/v1/media/uploads`는 인증된 사용자가 미디어 업로드를 시작할 때 호출한다. 현재 인증 어댑터 계약은 `Principal.getName()`에 `users.id`를 문자열로 제공하는 것이며, 인증 주체가 없으면 요청을 거부한다.
+
+요청 예시:
+
+```json
+{
+  "purpose": "POST_CONTENT",
+  "targetId": 42,
+  "originalFileName": "post-image.webp",
+  "contentType": "image/webp",
+  "sizeBytes": 1048576
+}
+```
+
+서버는 대상 수정 권한과 이미지 업로드 정책을 확인한 뒤 `media_metadata`에 `PENDING_UPLOAD` 레코드를 만들고 Presigned PUT URL을 반환한다. 프론트엔드는 응답의 `uploadUrl`로 S3에 직접 PUT하고, `contentType`을 요청 헤더에 동일하게 지정해야 한다. S3 업로드가 끝나면 완료 API를 호출한다.
+
+### 업로드 완료 API
+
+`POST /api/v1/media/{mediaId}/complete`는 S3 업로드가 끝난 뒤 호출한다. 요청 본문은 없으며, 서버는 인증된 업로더인지 확인한 뒤 S3 `HeadObject`로 객체 존재 여부·크기·Content-Type을 검증한다.
+
+- 검증 성공: `PROCESSING` 상태로 변경하고 미디어 정보를 반환한다.
+- S3 객체 없음: `409 Conflict`, `PENDING_UPLOAD` 유지
+- 크기·Content-Type 불일치: `FAILED` 저장 후 `422 Unprocessable Entity`
+- 이미 `PENDING_UPLOAD`가 아닌 상태: `409 Conflict`
+
+현재 완료 요청의 중복 멱등 처리와 동시 요청 직렬화는 구현하지 않았다.
+
+### 도메인 미디어 참조
+
+단일 이미지만 필요한 프로젝트 썸네일과 사용자 프로필 이미지는 별도 매핑 테이블을 만들지 않고 각 도메인 테이블이 미디어를 직접 참조한다.
+
+```text
+projects.thumbnail_media_id  -> media_metadata.id
+user_profiles.avatar_image_id -> media_metadata.id
+```
+
+프로젝트 썸네일과 사용자 프로필 이미지는 S3 URL을 저장하지 않고 각각 `thumbnail_media_id`, `avatar_image_id`로 `media_metadata.id`를 참조한다. 조회 시 `media_metadata.s3_key`를 기준으로 Presigned GET URL을 발급한다.
+
+### 이미지 조회 API
+
+`GET /api/v1/media/{mediaId}`는 접근 권한과 `READY` 상태를 확인한 뒤 비공개 S3 객체의 Presigned GET URL을 발급한다. `variant`를 생략하면 표시용 이미지(`DISPLAY`)를 반환하며, `ORIGINAL`, `THUMBNAIL`을 선택할 수 있다.
+
+```http
+GET /api/v1/media/123?variant=THUMBNAIL
+```
+
+```json
+{
+  "mediaId": 123,
+  "variant": "THUMBNAIL",
+  "downloadUrl": "https://s3.example.com/...",
+  "expiresAt": "2026-09-01T10:05:00Z",
+  "contentType": "image/webp"
+}
+```
+
+삭제되지 않은 게시글에 `post_media`로 연결된 `POST_CONTENT` 미디어는 비로그인 조회가 가능하다. 그 외 미디어는 업로더 본인만 조회할 수 있다. 미디어가 아직 `READY`가 아니면 Presigned URL을 발급하지 않는다.
+
+본문에는 만료되는 S3 URL을 저장하지 않고 `media://{mediaId}`를 저장한다.
+
+```markdown
+![프로젝트 화면](media://123)
+```
+
+본문을 응답하거나 렌더링할 때 이 참조를 미디어 조회 API로 해석해 `downloadUrl`을 임시로 사용한다. 현재 게시글·프로젝트 본문 API가 구현되지 않았으므로 실제 본문 변환 통합은 해당 도메인 구현 단계에서 적용한다.

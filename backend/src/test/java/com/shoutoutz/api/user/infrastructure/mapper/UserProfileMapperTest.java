@@ -24,7 +24,7 @@ class UserProfileMapperTest {
         assertThat(entity.getTrack()).isEqualTo("BACKEND");
         assertThat(entity.getCohort()).isEqualTo((short) 8);
         assertThat(entity.getBio()).isEqualTo("소개");
-        assertThat(entity.getAvatarUrl()).isEqualTo("https://example.com/avatar.png");
+        assertThat(entity.getAvatarImageId()).isEqualTo(123L);
         assertThat(entity.getGithubProfileUrl()).isEqualTo("https://github.com/zzaekkii");
         assertThat(entity.getBlogUrl()).isEqualTo("https://example.com");
     }
@@ -39,7 +39,7 @@ class UserProfileMapperTest {
                 .track("BACKEND")
                 .cohort((short) 8)
                 .bio("소개")
-                .avatarUrl("https://example.com/avatar.png")
+                .avatarImageId(123L)
                 .githubProfileUrl("https://github.com/zzaekkii")
                 .blogUrl("https://example.com")
                 .build();
@@ -52,7 +52,7 @@ class UserProfileMapperTest {
         assertThat(profile.getTrack()).isEqualTo("BACKEND");
         assertThat(profile.getCohort()).isEqualTo((short) 8);
         assertThat(profile.getBio()).isEqualTo("소개");
-        assertThat(profile.getAvatarUrl()).isEqualTo("https://example.com/avatar.png");
+        assertThat(profile.getAvatarImageId()).isEqualTo(123L);
         assertThat(profile.getGithubProfileUrl()).isEqualTo("https://github.com/zzaekkii");
         assertThat(profile.getBlogUrl()).isEqualTo("https://example.com");
     }
@@ -65,7 +65,7 @@ class UserProfileMapperTest {
                 .track("BACKEND")
                 .cohort((short) 8)
                 .bio("소개")
-                .avatarUrl("https://example.com/avatar.png")
+                .avatarImageId(123L)
                 .githubProfileUrl("https://github.com/zzaekkii")
                 .blogUrl("https://example.com")
                 .build();
