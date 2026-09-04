@@ -139,7 +139,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private ResponseEntity<Object> handleExceptionInternal(
             ErrorCode errorCode, String message, HttpServletRequest request) {
-        publishDiscordErrorEvent(errorCode, message, request);
         return ResponseEntity.status(errorCode.getHttpStatus())
                 .body(makeFailResponse(errorCode, message, request));
     }
@@ -162,10 +161,48 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(makeFailResponse(e, errorCode, request));
     }
 
+    /**
+     * HandlerMethodValidationException이 발생한 경우의 예외 응답 생성 메서드
+     */
     private ResponseEntity<Object> handleExceptionInternal(
             HandlerMethodValidationException e, ErrorCode errorCode, WebRequest request) {
         return ResponseEntity.status(errorCode.getHttpStatus())
                 .body(makeFailResponse(e, errorCode, request));
+    }
+
+    /**
+     * ResponseEntityExceptionHandler가 기본으로 생성한 ProblemDetail을 사용하지 않고,
+     * 모든 Spring MVC 예외를 JSend 형식으로 변환하도록 통일
+     */
+    @Override
+    protected ResponseEntity<Object> handleExceptionInternal(
+            Exception e,
+            Object body,
+            HttpHeaders headers,
+            HttpStatusCode statusCode,
+            WebRequest request) {
+        ErrorCode errorCode = resolveErrorCode(statusCode);
+        JSendResponse<Object> response = statusCode.is5xxServerError()
+                ? JSendResponse.error(errorCode.name(), errorCode.getMessage(), null)
+                : JSendResponse.fail(errorCode.name(), errorCode.getMessage(), null);
+
+        if (statusCode.is5xxServerError()) {
+            log.error(errorCode.name(), e);
+        }
+
+        return ResponseEntity.status(statusCode)
+                .headers(headers)
+                .body(response);
+    }
+
+    private ErrorCode resolveErrorCode(HttpStatusCode statusCode) {
+        if (statusCode.value() == CommonErrorCode.RESOURCE_NOT_FOUND.getHttpStatus().value()) {
+            return CommonErrorCode.RESOURCE_NOT_FOUND;
+        }
+        if (statusCode.is5xxServerError()) {
+            return CommonErrorCode.INTERNAL_SERVER_ERROR;
+        }
+        return CommonErrorCode.INVALID_PARAMETER;
     }
 
     /**
