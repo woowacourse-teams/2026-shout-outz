@@ -3,8 +3,6 @@ package com.shoutoutz.api.common.exception;
 import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.code.ErrorCode;
 import com.shoutoutz.api.common.exception.custom.CustomException;
-import com.shoutoutz.api.common.exception.event.DiscordGeneralErrorEvent;
-import com.shoutoutz.api.common.exception.event.DiscordInternalServerErrorEvent;
 import com.shoutoutz.api.common.response.JSendResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -12,11 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
@@ -33,10 +28,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 @Slf4j
 @RestControllerAdvice
-@RequiredArgsConstructor
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
-
-    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * IllegalArgumentException나 NoSuchElementException 같은 예외의
@@ -216,18 +208,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * JSend 형식을 따르기 때문에, 요청이 예외의 원인인 경우는 Fail 응답, 요청은 올바른데 발생한 예외인 경우는 Error Response를 반환한다.
      */
     private JSendResponse<Object> makeErrorResponse(ErrorCode errorCode, HttpServletRequest request) {
-        publishDiscordErrorEvent(errorCode, request);
         return JSendResponse.error(errorCode.name(), errorCode.getMessage(), null);
     }
 
     private JSendResponse<Object> makeFailResponse(ErrorCode errorCode, HttpServletRequest request) {
-        publishDiscordErrorEvent(errorCode, request);
         return JSendResponse.fail(errorCode.name(), errorCode.getMessage(), null);
     }
 
     private JSendResponse<Object> makeFailResponse(
             ErrorCode errorCode, String message, HttpServletRequest request) {
-        publishDiscordErrorEvent(errorCode, message, request);
         return JSendResponse.fail(errorCode.name(), message, null);
     }
 
@@ -240,7 +229,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         .collect(Collectors.toList());
 
         JSendResponse.ValidationData data = new JSendResponse.ValidationData(validationFields);
-        publishDiscordErrorEvent(errorCode, data, request);
         return JSendResponse.fail(errorCode.name(), errorCode.getMessage(), data);
     }
 
@@ -253,7 +241,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         .collect(Collectors.toList());
 
         JSendResponse.ValidationData data = new JSendResponse.ValidationData(validationFields);
-        publishDiscordErrorEvent(errorCode, data, request);
         return JSendResponse.fail(errorCode.name(), errorCode.getMessage(), data);
     }
 
@@ -289,44 +276,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         "parameters", validationError.getDefaultMessage())));
 
         JSendResponse.ValidationData data = new JSendResponse.ValidationData(validationFields);
-        publishDiscordErrorEvent(errorCode, data, request);
         return JSendResponse.fail(errorCode.name(), errorCode.getMessage(), data);
-    }
-
-    /**
-     * 예외 발생시 Discord 전송 이벤트
-     */
-    private void publishDiscordErrorEvent(ErrorCode errorCode, HttpServletRequest request) {
-        publishDiscordErrorEvent(errorCode, errorCode.getMessage(), request.getRequestURI());
-    }
-
-    private void publishDiscordErrorEvent(
-            ErrorCode errorCode, String message, HttpServletRequest request) {
-        publishDiscordErrorEvent(errorCode, message, request.getRequestURI());
-    }
-
-    private void publishDiscordErrorEvent(
-            ErrorCode errorCode, JSendResponse.ValidationData response, HttpServletRequest request) {
-        String message = response.fields().stream()
-                .map(JSendResponse.ValidationField::reason)
-                .collect(Collectors.joining(", "));
-        publishDiscordErrorEvent(errorCode, message, request);
-    }
-
-    private void publishDiscordErrorEvent(
-            ErrorCode errorCode, JSendResponse.ValidationData response, WebRequest request) {
-        String requestUri = request.getDescription(false).replace("uri=", "");
-        String message = response.fields().stream()
-                .map(JSendResponse.ValidationField::reason)
-                .collect(Collectors.joining(", "));
-        publishDiscordErrorEvent(errorCode, message, requestUri);
-    }
-
-    private void publishDiscordErrorEvent(ErrorCode errorCode, String message, String requestUri) {
-        if (errorCode.getHttpStatus() == HttpStatus.INTERNAL_SERVER_ERROR) {
-            eventPublisher.publishEvent(new DiscordInternalServerErrorEvent(requestUri, errorCode, message));
-            return;
-        }
-        eventPublisher.publishEvent(new DiscordGeneralErrorEvent(requestUri, errorCode, message));
     }
 }
