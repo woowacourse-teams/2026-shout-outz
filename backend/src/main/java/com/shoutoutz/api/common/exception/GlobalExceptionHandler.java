@@ -3,7 +3,7 @@ package com.shoutoutz.api.common.exception;
 import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.code.ErrorCode;
 import com.shoutoutz.api.common.exception.custom.CustomException;
-import com.shoutoutz.api.common.response.JSendResponse;
+import com.shoutoutz.api.common.response.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -115,8 +115,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private ResponseEntity<Object> createErrorResponse(
             BindException e, ErrorCode errorCode) {
         // request body 필드에 매핑할 수 있는 오류만 details에 포함한다.
-        List<JSendResponse.ErrorDetail> details = e.getBindingResult().getFieldErrors().stream()
-                .map(fieldError -> new JSendResponse.ErrorDetail(
+        List<ErrorResponse.ErrorDetail> details = e.getBindingResult().getFieldErrors().stream()
+                .map(fieldError -> new ErrorResponse.ErrorDetail(
                         toRequestBodyFieldName(fieldError.getField()), fieldError.getDefaultMessage()))
                 .collect(Collectors.toList());
         return createErrorResponse(errorCode, details);
@@ -134,7 +134,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode statusCode,
             WebRequest request) {
         ErrorCode errorCode = resolveErrorCode(statusCode);
-        JSendResponse<Object> response = JSendResponse.error(errorCode.name(), errorCode.getMessage());
+        ErrorResponse response = ErrorResponse.error(errorCode.name(), errorCode.getMessage());
 
         if (statusCode.is5xxServerError()) {
             log.error(errorCode.name(), e);
@@ -160,10 +160,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private ResponseEntity<Object> createErrorResponse(
-            ErrorCode errorCode, List<JSendResponse.ErrorDetail> details) {
-        JSendResponse<Object> response = details == null || details.isEmpty()
-                ? JSendResponse.error(errorCode.name(), errorCode.getMessage())
-                : JSendResponse.error(errorCode.name(), errorCode.getMessage(), details);
+            ErrorCode errorCode, List<ErrorResponse.ErrorDetail> details) {
+        ErrorResponse response = details == null || details.isEmpty()
+                ? ErrorResponse.error(errorCode.name(), errorCode.getMessage())
+                : ErrorResponse.error(errorCode.name(), errorCode.getMessage(), details);
         return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
     }
 
