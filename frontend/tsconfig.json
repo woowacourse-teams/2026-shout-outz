@@ -3,7 +3,7 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "target": "esnext",
-    "types": [],
+    "types": ["jest", "@testing-library/jest-dom"],
     "sourceMap": true,
     "declaration": false,
     "declarationMap": false,
