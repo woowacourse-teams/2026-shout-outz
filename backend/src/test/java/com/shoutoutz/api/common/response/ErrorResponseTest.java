@@ -3,6 +3,7 @@ package com.shoutoutz.api.common.response;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -12,6 +13,7 @@ class ErrorResponseTest {
     private final JsonMapper objectMapper = JsonMapper.builder().build();
 
     @Test
+    @DisplayName("필드 상세 정보가 있는 오류 응답을 생성한다")
     void createsErrorResponseWithDetails() throws Exception {
         List<ErrorResponse.ErrorDetail> details = List.of(
                 new ErrorResponse.ErrorDetail("email", "올바른 이메일 형식이 아닙니다."));
@@ -30,6 +32,7 @@ class ErrorResponseTest {
     }
 
     @Test
+    @DisplayName("필드 오류가 없으면 details를 생략한다")
     void omitsDetailsWhenThereIsNoBodyFieldError() throws Exception {
         ErrorResponse response = ErrorResponse.error(
                 "RESOURCE_NOT_FOUND", "자원을 찾을 수 없습니다.");
