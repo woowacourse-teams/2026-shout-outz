@@ -10,3 +10,6 @@ spring:
       ddl-auto: none
     # 서비스 트랜잭션 범위에서만 JPA 영속성 컨텍스트를 유지하기 위함.
     open-in-view: false
+logging:
+  pattern:
+    level: "%5p [traceId:%X{traceId}]"
