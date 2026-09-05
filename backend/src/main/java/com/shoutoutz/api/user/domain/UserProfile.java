@@ -12,7 +12,7 @@ public class UserProfile {
     private final String track;
     private final Short cohort;
     private final String bio;
-    private final String avatarUrl;
+    private final Long avatarImageId;
     private final String githubProfileUrl;
     private final String blogUrl;
 
@@ -24,7 +24,7 @@ public class UserProfile {
             String track,
             Short cohort,
             String bio,
-            String avatarUrl,
+            Long avatarImageId,
             String githubProfileUrl,
             String blogUrl
     ) {
@@ -35,7 +35,7 @@ public class UserProfile {
         this.track = track;
         this.cohort = cohort;
         this.bio = bio;
-        this.avatarUrl = avatarUrl;
+        this.avatarImageId = avatarImageId;
         this.githubProfileUrl = githubProfileUrl;
         this.blogUrl = blogUrl;
     }

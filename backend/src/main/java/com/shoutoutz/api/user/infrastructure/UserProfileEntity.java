@@ -40,8 +40,8 @@ public class UserProfileEntity extends BaseEntity {
 
     private String bio;
 
-    @Column(name = "avatar_url")
-    private String avatarUrl;
+    @Column(name = "avatar_image_id")
+    private Long avatarImageId;
 
     @Column(name = "github_profile_url")
     private String githubProfileUrl;

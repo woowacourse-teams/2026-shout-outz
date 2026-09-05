@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '4.1.1'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.epages.restdocs-api-spec' version '0.20.1'
 }
 
 group = 'com.shoutoutz'
@@ -23,6 +24,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+
+    implementation platform('software.amazon.awssdk:bom:2.54.7')
+    implementation 'software.amazon.awssdk:s3'
+
+    // Java ImageIO에서 WebP를 읽고 쓰기 위한 ARM/x86 지원 SPI 플러그인
+    implementation 'com.github.usefulness:webp-imageio:0.11.0'
 
     implementation 'org.springframework.boot:spring-boot-starter-flyway'
     implementation 'org.flywaydb:flyway-database-postgresql'
@@ -34,7 +43,10 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-restdocs'
+    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+    testImplementation 'com.epages:restdocs-api-spec-mockmvc:0.20.1' //OAS로 변경 해주는 라이브러리. restassured가 아닌 mockmvc를 기반으로 한다.
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -44,4 +56,25 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+/**
+ * ePages Gradle 플러그인의 openapi3 task 설정 블록
+ */
+openapi3 {
+    server = 'http://localhost:8080'
+    title = 'Shout-outz API'
+    description = 'Shout-outz Backend API'
+    version = project.version
+    format = 'yaml'
+}
+
+/**
+ * OpenAPI yaml 파일(OAS 스펙)을 Swagger UI가 읽을 수 있도록 정적 리소스 위치로 복사
+ */
+tasks.register('copyOasToSwagger', Copy) {
+    dependsOn tasks.named('openapi3')
+
+    from(layout.buildDirectory.file('api-spec/openapi3.yaml'))
+    into(layout.projectDirectory.dir('src/main/resources/static/docs'))
 }

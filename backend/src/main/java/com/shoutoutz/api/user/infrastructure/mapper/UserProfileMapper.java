@@ -16,7 +16,7 @@ public final class UserProfileMapper {
                 .track(profile.getTrack())
                 .cohort(profile.getCohort())
                 .bio(profile.getBio())
-                .avatarUrl(profile.getAvatarUrl())
+                .avatarImageId(profile.getAvatarImageId())
                 .githubProfileUrl(profile.getGithubProfileUrl())
                 .blogUrl(profile.getBlogUrl())
                 .build();
@@ -30,7 +30,7 @@ public final class UserProfileMapper {
                 .track(entity.getTrack())
                 .cohort(entity.getCohort())
                 .bio(entity.getBio())
-                .avatarUrl(entity.getAvatarUrl())
+                .avatarImageId(entity.getAvatarImageId())
                 .githubProfileUrl(entity.getGithubProfileUrl())
                 .blogUrl(entity.getBlogUrl())
                 .build();

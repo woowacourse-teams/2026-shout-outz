@@ -10,3 +10,9 @@ spring:
       include-message: never
       include-stacktrace: never
       include-binding-errors: never
+
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    region: ${AWS_REGION}
+    presigned-url-expiration-seconds: ${AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS}
