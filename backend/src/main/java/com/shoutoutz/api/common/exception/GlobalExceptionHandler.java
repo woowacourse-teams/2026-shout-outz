@@ -5,6 +5,7 @@ import com.shoutoutz.api.common.exception.code.ErrorCode;
 import com.shoutoutz.api.common.exception.custom.CustomException;
 import com.shoutoutz.api.common.response.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -32,6 +33,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Object> handleIllegalArgumentException(IllegalArgumentException e) {
         ErrorCode errorCode = CommonErrorCode.VALIDATION_FAILED;
+        logException(errorCode, e);
         return createErrorResponse(errorCode);
     }
 
@@ -39,6 +41,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Object> handleNoSuchElementException(NoSuchElementException e) {
         ErrorCode errorCode = CommonErrorCode.RESOURCE_NOT_FOUND;
+        logException(errorCode, e);
         return createErrorResponse(errorCode);
     }
 
@@ -50,6 +53,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleConstraintViolationException(
             ConstraintViolationException e) {
         ErrorCode errorCode = CommonErrorCode.VALIDATION_FAILED;
+        logException(errorCode, e);
         return createErrorResponse(errorCode);
     }
 
@@ -68,6 +72,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode statusCode,
             WebRequest request) {
         ErrorCode errorCode = CommonErrorCode.VALIDATION_FAILED;
+        logException(errorCode, e);
         return createErrorResponse(e, errorCode);
     }
 
@@ -86,26 +91,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode statusCode,
             WebRequest request) {
         ErrorCode errorCode = CommonErrorCode.VALIDATION_FAILED;
+        logException(errorCode, e);
         return createErrorResponse(errorCode);
     }
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<Object> handleCustomException(CustomException e) {
         ErrorCode errorCode = e.getErrorCode();
-        /**
-         * 500 서버 에러인 경우에도 동일한 오류 응답 형식으로 반환
-         */
-        if (errorCode.getHttpStatus().is5xxServerError()) {
-            log.error(errorCode.name(), e);
-        }
+        logException(errorCode, e);
         return createErrorResponse(errorCode);
     }
 
     @ExceptionHandler({Exception.class})
     public ResponseEntity<Object> handleAllExceptions(Exception e) {
         ErrorCode errorCode = CommonErrorCode.INTERNAL_SERVER_ERROR;
-        // 예외의 상세 메시지는 응답에 노출하지 않고 서버 로그에만 기록한다.
-        log.error(errorCode.name(), e);
+        logException(errorCode, e);
         return createErrorResponse(errorCode);
     }
 
@@ -136,9 +136,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ErrorCode errorCode = resolveErrorCode(statusCode);
         ErrorResponse response = ErrorResponse.error(errorCode.name(), errorCode.getMessage());
 
-        if (statusCode.is5xxServerError()) {
-            log.error(errorCode.name(), e);
-        }
+        logException(errorCode, e);
 
         return ResponseEntity.status(statusCode)
                 .headers(headers)
@@ -165,6 +163,26 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 ? ErrorResponse.error(errorCode.name(), errorCode.getMessage())
                 : ErrorResponse.error(errorCode.name(), errorCode.getMessage(), details);
         return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
+    }
+
+    /**
+     * 예외 메시지는 사용자 입력값이나 외부 시스템 응답을 포함할 수 있으므로 기록하지 않는다.
+     * 5xx 예외는 메시지를 제외한 stack trace를 함께 남겨 장애 원인을 추적한다.
+     */
+    private void logException(ErrorCode errorCode, Exception exception) {
+        String exceptionType = exception.getClass().getName();
+        if (errorCode.getHttpStatus().is5xxServerError()) {
+            log.error(
+                    "api_exception error_code={} exception_type={} stack_trace={}",
+                    errorCode.name(),
+                    exceptionType,
+                    Arrays.toString(exception.getStackTrace()));
+            return;
+        }
+        log.warn(
+                "api_exception error_code={} exception_type={}",
+                errorCode.name(),
+                exceptionType);
     }
 
     /**
