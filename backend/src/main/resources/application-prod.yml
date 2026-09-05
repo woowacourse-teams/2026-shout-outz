@@ -4,6 +4,7 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
+#   Spring Boot의 기본 에러 응답에 민감한 정보를 포함하지 않도록 설정
   web:
     error:
       include-message: never
