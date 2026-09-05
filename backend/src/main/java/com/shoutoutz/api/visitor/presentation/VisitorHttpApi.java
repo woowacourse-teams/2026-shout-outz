@@ -1,5 +1,6 @@
 package com.shoutoutz.api.visitor.presentation;
 
+import com.shoutoutz.api.common.response.JSendResponse;
 import com.shoutoutz.api.visitor.application.VisitorService;
 import com.shoutoutz.api.visitor.presentation.dto.request.VisitorSaveRequest;
 import com.shoutoutz.api.visitor.presentation.dto.response.VisitorSaveResponse;
@@ -19,11 +20,11 @@ public class VisitorHttpApi {
     private final VisitorService visitorService;
 
     @PostMapping
-    public ResponseEntity<VisitorSaveResponse> createVisitor(
+    public ResponseEntity<JSendResponse<VisitorSaveResponse>> createVisitor(
             @Valid @RequestBody VisitorSaveRequest body) {
 
         VisitorSaveResponse response = visitorService.createVisitor(body);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(JSendResponse.success(response));
     }
 }

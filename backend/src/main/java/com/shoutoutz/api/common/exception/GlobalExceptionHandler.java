@@ -4,9 +4,7 @@ import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.code.ErrorCode;
 import com.shoutoutz.api.common.exception.custom.CustomException;
 import com.shoutoutz.api.common.response.JSendResponse;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -15,10 +13,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
-import org.springframework.validation.method.ParameterErrors;
-import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -36,18 +30,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      */
     @Deprecated
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Object> handleIllegalArgumentException(
-            IllegalArgumentException e, HttpServletRequest request) {
-        ErrorCode errorCode = CommonErrorCode.INVALID_PARAMETER;
-        return handleExceptionInternal(errorCode, e.getMessage(), request);
+    public ResponseEntity<Object> handleIllegalArgumentException(IllegalArgumentException e) {
+        ErrorCode errorCode = CommonErrorCode.VALIDATION_FAILED;
+        return createErrorResponse(errorCode);
     }
 
     @Deprecated
     @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<Object> handleNoSuchElementException(
-            NoSuchElementException e, HttpServletRequest request) {
+    public ResponseEntity<Object> handleNoSuchElementException(NoSuchElementException e) {
         ErrorCode errorCode = CommonErrorCode.RESOURCE_NOT_FOUND;
-        return handleExceptionInternal(errorCode, e.getMessage(), request);
+        return createErrorResponse(errorCode);
     }
 
     /**
@@ -56,9 +48,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Object> handleConstraintViolationException(
-            ConstraintViolationException e, HttpServletRequest request) {
-        ErrorCode errorCode = CommonErrorCode.INVALID_PARAMETER;
-        return handleExceptionInternal(e, errorCode, request);
+            ConstraintViolationException e) {
+        ErrorCode errorCode = CommonErrorCode.VALIDATION_FAILED;
+        return createErrorResponse(errorCode);
     }
 
     /**
@@ -67,7 +59,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      *
      * 해당 예외를 처리하는 핸들러는 이미 ResponseEntityExceptionHandler에 구현되어 있다.
      * 따라서, handleMethodArgumentNotValid 메서드를 재정의하여,
-     * JSend 형식의 응답으로 커스텀 한다.
+     * 공통 오류 응답 형식으로 커스텀 한다.
      */
     @Override
     public ResponseEntity<Object> handleMethodArgumentNotValid(
@@ -75,8 +67,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpHeaders headers,
             HttpStatusCode statusCode,
             WebRequest request) {
-        ErrorCode errorCode = CommonErrorCode.INVALID_PARAMETER;
-        return handleExceptionInternal(e, errorCode, request);
+        ErrorCode errorCode = CommonErrorCode.VALIDATION_FAILED;
+        return createErrorResponse(e, errorCode);
     }
 
     /**
@@ -93,84 +85,46 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpHeaders headers,
             HttpStatusCode statusCode,
             WebRequest request) {
-        ErrorCode errorCode = CommonErrorCode.INVALID_PARAMETER;
-        return handleExceptionInternal(e, errorCode, request);
+        ErrorCode errorCode = CommonErrorCode.VALIDATION_FAILED;
+        return createErrorResponse(errorCode);
     }
 
     @ExceptionHandler(CustomException.class)
-    public ResponseEntity<Object> handleCustomException(
-            CustomException e, HttpServletRequest request) {
+    public ResponseEntity<Object> handleCustomException(CustomException e) {
         ErrorCode errorCode = e.getErrorCode();
         /**
-         * 500 서버 에러인 경우 ErrorResponse로 반환
+         * 500 서버 에러인 경우에도 동일한 오류 응답 형식으로 반환
          */
         if (errorCode.getHttpStatus().is5xxServerError()) {
             log.error(errorCode.name(), e);
-            return ResponseEntity.status(errorCode.getHttpStatus())
-                    .body(makeErrorResponse(errorCode, request));
         }
-        /**
-         * 500 이외인 경우, FailErrorResponse를 생성하는 하위 메서드로 이동
-         */
-        return handleExceptionInternal(errorCode, request);
+        return createErrorResponse(errorCode);
     }
 
     @ExceptionHandler({Exception.class})
-    public ResponseEntity<Object> handleAllExceptions(Exception e, HttpServletRequest request) {
+    public ResponseEntity<Object> handleAllExceptions(Exception e) {
         ErrorCode errorCode = CommonErrorCode.INTERNAL_SERVER_ERROR;
-        // TODO: 예기치 못한 모든 예외는 해당 진입점으로 들어옴.
-        //  현재 e.message는 errorCode의 메시지로 응답하는 형태. 예외 자체 메시지를 로그에 추가
-        // DB에러와 같이 노출되면 안되는 값이 노출될 가능성. 절대 예외자체의 메시지를 응답값으로 넘기면 안됨. (errorCode의 메시지를 응답하기로 함.)
-
-        // TODO: 삭제 예정
+        // 예외의 상세 메시지는 응답에 노출하지 않고 서버 로그에만 기록한다.
         log.error(errorCode.name(), e);
-        return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(makeErrorResponse(errorCode, request));
-    }
-
-    // handleExceptionInternal Method
-    private ResponseEntity<Object> handleExceptionInternal(
-            ErrorCode errorCode, HttpServletRequest request) {
-        return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(makeFailResponse(errorCode, request));
-    }
-
-    private ResponseEntity<Object> handleExceptionInternal(
-            ErrorCode errorCode, String message, HttpServletRequest request) {
-        return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(makeFailResponse(errorCode, message, request));
-    }
-
-    /**
-     * ConstraintViolationException 이 발생한 경우의 예외 응답 생성 메서드
-     */
-    private ResponseEntity<Object> handleExceptionInternal(
-            ConstraintViolationException e, ErrorCode errorCode, HttpServletRequest request) {
-        return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(makeFailResponse(e, errorCode, request));
+        return createErrorResponse(errorCode);
     }
 
     /**
      * MethodArgumentNotValidException이 발생한 경우의 예외 응답 생성 메서드
      */
-    private ResponseEntity<Object> handleExceptionInternal(
-            BindException e, ErrorCode errorCode, WebRequest request) {
-        return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(makeFailResponse(e, errorCode, request));
-    }
-
-    /**
-     * HandlerMethodValidationException이 발생한 경우의 예외 응답 생성 메서드
-     */
-    private ResponseEntity<Object> handleExceptionInternal(
-            HandlerMethodValidationException e, ErrorCode errorCode, WebRequest request) {
-        return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(makeFailResponse(e, errorCode, request));
+    private ResponseEntity<Object> createErrorResponse(
+            BindException e, ErrorCode errorCode) {
+        // request body 필드에 매핑할 수 있는 오류만 details에 포함한다.
+        List<JSendResponse.ErrorDetail> details = e.getBindingResult().getFieldErrors().stream()
+                .map(fieldError -> new JSendResponse.ErrorDetail(
+                        toRequestBodyFieldName(fieldError.getField()), fieldError.getDefaultMessage()))
+                .collect(Collectors.toList());
+        return createErrorResponse(errorCode, details);
     }
 
     /**
      * ResponseEntityExceptionHandler가 기본으로 생성한 ProblemDetail을 사용하지 않고,
-     * 모든 Spring MVC 예외를 JSend 형식으로 변환하도록 통일
+     * 모든 Spring MVC 예외를 공통 오류 응답 형식으로 변환하도록 통일
      */
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(
@@ -180,9 +134,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode statusCode,
             WebRequest request) {
         ErrorCode errorCode = resolveErrorCode(statusCode);
-        JSendResponse<Object> response = statusCode.is5xxServerError()
-                ? JSendResponse.error(errorCode.name(), errorCode.getMessage(), null)
-                : JSendResponse.fail(errorCode.name(), errorCode.getMessage(), null);
+        JSendResponse<Object> response = JSendResponse.error(errorCode.name(), errorCode.getMessage());
 
         if (statusCode.is5xxServerError()) {
             log.error(errorCode.name(), e);
@@ -200,82 +152,35 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         if (statusCode.is5xxServerError()) {
             return CommonErrorCode.INTERNAL_SERVER_ERROR;
         }
-        return CommonErrorCode.INVALID_PARAMETER;
+        return CommonErrorCode.VALIDATION_FAILED;
+    }
+
+    private ResponseEntity<Object> createErrorResponse(ErrorCode errorCode) {
+        return createErrorResponse(errorCode, null);
+    }
+
+    private ResponseEntity<Object> createErrorResponse(
+            ErrorCode errorCode, List<JSendResponse.ErrorDetail> details) {
+        JSendResponse<Object> response = details == null || details.isEmpty()
+                ? JSendResponse.error(errorCode.name(), errorCode.getMessage())
+                : JSendResponse.error(errorCode.name(), errorCode.getMessage(), details);
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
     }
 
     /**
-     * 예외 응답을 만드는 메서드
-     * JSend 형식을 따르기 때문에, 요청이 예외의 원인인 경우는 Fail 응답, 요청은 올바른데 발생한 예외인 경우는 Error Response를 반환한다.
+     * request body의 중첩 필드는 최상위 필드명만 오류 응답에 포함한다.
      */
-    private JSendResponse<Object> makeErrorResponse(ErrorCode errorCode, HttpServletRequest request) {
-        return JSendResponse.error(errorCode.name(), errorCode.getMessage(), null);
-    }
+    private String toRequestBodyFieldName(String fieldName) {
+        int dotIndex = fieldName.indexOf('.');
+        int bracketIndex = fieldName.indexOf('[');
+        int endIndex = fieldName.length();
 
-    private JSendResponse<Object> makeFailResponse(ErrorCode errorCode, HttpServletRequest request) {
-        return JSendResponse.fail(errorCode.name(), errorCode.getMessage(), null);
-    }
-
-    private JSendResponse<Object> makeFailResponse(
-            ErrorCode errorCode, String message, HttpServletRequest request) {
-        return JSendResponse.fail(errorCode.name(), message, null);
-    }
-
-    private JSendResponse<Object> makeFailResponse(
-            ConstraintViolationException e, ErrorCode errorCode, HttpServletRequest request) {
-        List<JSendResponse.ValidationField> validationFields =
-                e.getConstraintViolations().stream()
-                        .map(violation -> new JSendResponse.ValidationField(
-                                violation.getPropertyPath().toString(), violation.getMessage()))
-                        .collect(Collectors.toList());
-
-        JSendResponse.ValidationData data = new JSendResponse.ValidationData(validationFields);
-        return JSendResponse.fail(errorCode.name(), errorCode.getMessage(), data);
-    }
-
-    private JSendResponse<Object> makeFailResponse(
-            BindException e, ErrorCode errorCode, WebRequest request) {
-        List<JSendResponse.ValidationField> validationFields =
-                e.getBindingResult().getFieldErrors().stream()
-                        .map(fieldError -> new JSendResponse.ValidationField(
-                                fieldError.getField(), fieldError.getDefaultMessage()))
-                        .collect(Collectors.toList());
-
-        JSendResponse.ValidationData data = new JSendResponse.ValidationData(validationFields);
-        return JSendResponse.fail(errorCode.name(), errorCode.getMessage(), data);
-    }
-
-    private JSendResponse<Object> makeFailResponse(
-            HandlerMethodValidationException e, ErrorCode errorCode, WebRequest request) {
-        List<JSendResponse.ValidationField> validationFields = new ArrayList<>();
-
-        for (ParameterValidationResult result : e.getParameterValidationResults()) {
-            String parameterName = result.getMethodParameter().getParameterName();
-            if (parameterName == null) {
-                parameterName = "parameter" + result.getMethodParameter().getParameterIndex();
-            }
-            String resolvedParameterName = parameterName;
-
-            if (result instanceof ParameterErrors errors) {
-                for (ObjectError validationError : errors.getAllErrors()) {
-                    String field = validationError instanceof FieldError fieldError
-                            ? fieldError.getField()
-                            : resolvedParameterName;
-                    validationFields.add(new JSendResponse.ValidationField(
-                            field, validationError.getDefaultMessage()));
-                }
-                continue;
-            }
-
-            result.getResolvableErrors().forEach(validationError -> validationFields.add(
-                    new JSendResponse.ValidationField(
-                            resolvedParameterName, validationError.getDefaultMessage())));
+        if (dotIndex >= 0) {
+            endIndex = Math.min(endIndex, dotIndex);
         }
-
-        e.getCrossParameterValidationResults().forEach(validationError -> validationFields.add(
-                new JSendResponse.ValidationField(
-                        "parameters", validationError.getDefaultMessage())));
-
-        JSendResponse.ValidationData data = new JSendResponse.ValidationData(validationFields);
-        return JSendResponse.fail(errorCode.name(), errorCode.getMessage(), data);
+        if (bracketIndex >= 0) {
+            endIndex = Math.min(endIndex, bracketIndex);
+        }
+        return fieldName.substring(0, endIndex);
     }
 }
