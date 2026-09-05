@@ -37,3 +37,9 @@ export interface InputProps extends Omit<ComponentProps<'input'>, 'size'> {
   /** @default 'md' */
   size?: InputSize;
 }
+
+const Input = ({ variant, size }: InputProps) => {
+  return <input />;
+};
+
+export default Input;
