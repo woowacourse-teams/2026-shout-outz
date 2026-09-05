@@ -1,5 +1,7 @@
 import type { ComponentProps } from 'react';
 
+import { cn } from '@/utils/cn';
+
 /**
  * 시각적 형태.
  *
@@ -26,8 +28,8 @@ export type InputSize = 'sm' | 'md' | 'lg';
  * 네이티브 `<input>`의 `size`는 문자 수 기준 너비를 뜻하므로 가린다.
  *
  * 값 상태는 네이티브 `<input>`에 위임하므로 제어·비제어 모두 그대로 동작한다.
- * error, readonly, disabled 상태는 별도 prop 없이 `aria-invalid`, `readOnly`,
- * `disabled` 네이티브 속성으로 표현한다.
+ * error, readonly 상태는 별도 prop 없이 `aria-invalid`, `readOnly` 네이티브
+ * 속성으로 표현한다.
  *
  * 너비는 prop으로 두지 않는다. 기본 `w-full`로 부모 폭을 따른다.
  */
@@ -38,8 +40,31 @@ export interface InputProps extends Omit<ComponentProps<'input'>, 'size'> {
   size?: InputSize;
 }
 
-const Input = ({ variant, size }: InputProps) => {
-  return <input />;
+const VARIANT_CLASSES: Record<InputVariant, string> = {
+  filled: 'bg-gray-100',
+  outlined: 'border border-gray-200',
 };
 
-export default Input;
+const SIZE_CLASSES: Record<InputSize, string> = {
+  sm: 'h-10',
+  md: 'h-11',
+  lg: 'h-12',
+};
+
+export function Input({ variant = 'filled', size = 'md', className, ...props }: InputProps) {
+  return (
+    <input
+      className={cn(
+        'w-full rounded-lg px-4 text-sm text-gray-900 outline-none',
+        'placeholder:text-gray-500',
+        'read-only:text-gray-600',
+        'focus-visible:ring-primary-600 focus-visible:ring-2',
+        'aria-invalid:ring-1 aria-invalid:ring-red-600',
+        VARIANT_CLASSES[variant],
+        SIZE_CLASSES[size],
+        className,
+      )}
+      {...props}
+    />
+  );
+}
