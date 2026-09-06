@@ -11,7 +11,8 @@ import com.shoutoutz.api.auth.domain.OAuthAccount;
 import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
-import com.shoutoutz.api.auth.presentation.security.AuthenticatedUserId;
+import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
+import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.user.domain.Handle;
 import com.shoutoutz.api.user.domain.ProfileDisplayName;
 import com.shoutoutz.api.user.domain.User;
@@ -308,8 +309,8 @@ class OAuthLoginAcceptanceTest {
     }
 
     @Test
-    @DisplayName("로그인이 필요한 API에 인증 사용자 ID를 주입한다")
-    void injectsAuthenticatedUserId() {
+    @DisplayName("로그인이 필요한 API에 인증 사용자 정보를 주입한다")
+    void injectsAuthenticatedUser() {
         Response unauthenticatedResponse = RestAssured.given()
                 .port(port)
                 .when()
@@ -324,7 +325,10 @@ class OAuthLoginAcceptanceTest {
 
         assertThat(unauthenticatedResponse.statusCode()).isEqualTo(401);
         assertThat(authenticatedResponse.statusCode()).isEqualTo(200);
-        assertThat(authenticatedResponse.as(Long.class)).isEqualTo(signupResult.userId());
+        assertThat(authenticatedResponse.jsonPath().getLong("userId"))
+                .isEqualTo(signupResult.userId());
+        assertThat(authenticatedResponse.jsonPath().getString("role"))
+                .isEqualTo("USER");
     }
 
     private OAuthSignupAcceptanceResult completeOAuthSignup() {
@@ -419,10 +423,10 @@ class OAuthLoginAcceptanceTest {
         }
 
         @GetMapping(AUTHENTICATED_USER_TEST_PATH)
-        ResponseEntity<Long> getAuthenticatedUserId(
-                @AuthenticatedUserId Long userId
+        ResponseEntity<AuthenticatedUser> getAuthenticatedUser(
+                @LoginUser AuthenticatedUser authenticatedUser
         ) {
-            return ResponseEntity.ok(userId);
+            return ResponseEntity.ok(authenticatedUser);
         }
     }
 }

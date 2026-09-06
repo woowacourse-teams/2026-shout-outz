@@ -13,12 +13,12 @@ class AuthWebConfig implements WebMvcConfigurer {
 
     private static final String API_PATH = "/api/**";
 
-    private final AuthenticatedUserIdArgumentResolver authenticatedUserIdArgumentResolver;
+    private final LoginUserArgumentResolver loginUserArgumentResolver;
     private final AuthCorsProperties authCorsProperties;
 
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
-        resolvers.add(authenticatedUserIdArgumentResolver);
+        resolvers.add(loginUserArgumentResolver);
     }
 
     @Override

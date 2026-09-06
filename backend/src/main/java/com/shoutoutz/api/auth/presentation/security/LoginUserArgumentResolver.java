@@ -12,12 +12,12 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import org.springframework.web.server.ResponseStatusException;
 
 @Component
-class AuthenticatedUserIdArgumentResolver implements HandlerMethodArgumentResolver {
+class LoginUserArgumentResolver implements HandlerMethodArgumentResolver {
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
-        return parameter.hasParameterAnnotation(AuthenticatedUserId.class)
-                && parameter.getParameterType().equals(Long.class);
+        return parameter.hasParameterAnnotation(LoginUser.class)
+                && parameter.getParameterType().equals(AuthenticatedUser.class);
     }
 
     @Override
@@ -36,7 +36,7 @@ class AuthenticatedUserIdArgumentResolver implements HandlerMethodArgumentResolv
                 SessionAuthenticationFilter.AUTHENTICATED_SESSION_ATTRIBUTE
         );
         if (value instanceof AuthenticatedSession authentication) {
-            return authentication.userId();
+            return new AuthenticatedUser(authentication.userId(), authentication.role());
         }
 
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
