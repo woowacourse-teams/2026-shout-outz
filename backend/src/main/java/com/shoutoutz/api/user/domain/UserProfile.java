@@ -47,7 +47,6 @@ public class UserProfile {
                 UserType.GENERAL,
                 null,
                 null,
-                null,
                 null
         );
     }
@@ -58,26 +57,6 @@ public class UserProfile {
             UserType userType,
             String track,
             Short cohort,
-            String avatarUrl
-    ) {
-        return initialize(
-                userId,
-                displayName,
-                userType,
-                track,
-                cohort,
-                avatarUrl,
-                null
-        );
-    }
-
-    public static UserProfile initialize(
-            Long userId,
-            String displayName,
-            UserType userType,
-            String track,
-            Short cohort,
-            String avatarUrl,
             String githubProfileUrl
     ) {
         return new UserProfile(
@@ -87,7 +66,7 @@ public class UserProfile {
                 track,
                 cohort,
                 null,
-                avatarUrl,
+                null,
                 githubProfileUrl,
                 null
         );

@@ -262,10 +262,11 @@ class OAuthLoginAcceptanceTest {
         assertThat(user.getHandle()).isEqualTo(new Handle(result.handle()));
         assertThat(user.getLastLoginAt()).isNotNull();
         assertThat(profile.getDisplayName()).isEqualTo(new ProfileDisplayName("상준"));
-        assertThat(profile.getAvatarUrl())
-                .isEqualTo("https://avatars.githubusercontent.com/u/12345678");
+        assertThat(profile.getAvatarImageId()).isNull();
         assertThat(profile.getGithubProfileUrl()).isEqualTo("https://github.com/sangjun");
         assertThat(account.getUserId()).isEqualTo(result.userId());
+        assertThat(account.getProviderAvatarUrl())
+                .isEqualTo("https://avatars.githubusercontent.com/u/12345678");
         assertThat(account.getLastLoginAt()).isEqualTo(user.getLastLoginAt());
 
         Response authenticatedSessionResponse = RestAssured.given()

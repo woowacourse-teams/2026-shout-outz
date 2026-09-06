@@ -9,10 +9,8 @@ import java.io.IOException;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-@Component
 @RequiredArgsConstructor
 class CsrfProtectionFilter extends OncePerRequestFilter {
 

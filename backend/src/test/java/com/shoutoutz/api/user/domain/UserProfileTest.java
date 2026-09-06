@@ -129,7 +129,7 @@ class UserProfileTest {
     }
 
     @Test
-    @DisplayName("가입 정보와 OAuth 아바타로 사용자 프로필을 초기화한다")
+    @DisplayName("가입 정보와 GitHub 프로필 주소로 사용자 프로필을 초기화한다")
     void initializesUserProfileWithSignupInformation() {
         UserProfile profile = UserProfile.initialize(
                 3L,
@@ -137,7 +137,7 @@ class UserProfileTest {
                 UserType.WOOWACOURSE_CREW,
                 "BACKEND",
                 (short) 8,
-                "https://avatars.githubusercontent.com/u/87654321"
+                "https://github.com/dahye"
         );
 
         assertThat(profile.getUserId()).isEqualTo(3L);
@@ -145,7 +145,7 @@ class UserProfileTest {
         assertThat(profile.getUserType()).isEqualTo(UserType.WOOWACOURSE_CREW);
         assertThat(profile.getTrack()).isEqualTo("BACKEND");
         assertThat(profile.getCohort()).isEqualTo((short) 8);
-        assertThat(profile.getAvatarUrl())
-                .isEqualTo("https://avatars.githubusercontent.com/u/87654321");
+        assertThat(profile.getAvatarImageId()).isNull();
+        assertThat(profile.getGithubProfileUrl()).isEqualTo("https://github.com/dahye");
     }
 }
