@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.shoutoutz.api.auth.application.OAuthLoginService;
 import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
@@ -88,6 +89,26 @@ class OAuthLoginHttpApiTest {
         assertThat(authSessionAccessor.findAuthentication(session)).isEmpty();
         assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("GitHub OAuth 동의 거절 시 state를 검증하고 로그인 시도를 소비한다")
+    void validatesStateAndConsumesAttemptWhenGitHubAuthorizationIsDenied() {
+        MockHttpServletRequest request = callbackRequest();
+        MockHttpSession session = (MockHttpSession) request.getSession();
+
+        ResponseEntity<Void> response = oauthLoginHttpApi.handleDeniedGitHubAuthorization(
+                "state",
+                request
+        );
+
+        verify(oauthLoginService).validateGitHubCallback("state", loginAttempt());
+        assertThat(authSessionAccessor.findAuthentication(session)).isEmpty();
+        assertThat(authSessionAccessor.findPendingIdentity(session)).isEmpty();
+        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(response.getHeaders().getLocation())
+                .isEqualTo(URI.create("http://localhost:3000/oauth/callback"));
     }
 
     private MockHttpServletRequest callbackRequest() {

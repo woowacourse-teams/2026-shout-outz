@@ -34,12 +34,24 @@ public class OAuthLoginService {
             OAuthLoginAttempt attempt
     ) {
         Instant authenticatedAt = Instant.now();
-        attempt.validateCallback(state, authenticatedAt);
+        validateGitHubCallback(state, attempt, authenticatedAt);
         OAuthIdentity identity = githubOAuthIdentityPort.fetchIdentity(
                 authorizationCode,
                 attempt.codeVerifier()
         );
 
         return oauthAccountLoginService.completeLogin(identity, authenticatedAt);
+    }
+
+    public void validateGitHubCallback(String state, OAuthLoginAttempt attempt) {
+        validateGitHubCallback(state, attempt, Instant.now());
+    }
+
+    private void validateGitHubCallback(
+            String state,
+            OAuthLoginAttempt attempt,
+            Instant validatedAt
+    ) {
+        attempt.validateCallback(state, validatedAt);
     }
 }

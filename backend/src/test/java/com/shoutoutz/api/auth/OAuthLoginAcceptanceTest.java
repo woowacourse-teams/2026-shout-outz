@@ -154,6 +154,38 @@ class OAuthLoginAcceptanceTest {
     }
 
     @Test
+    @DisplayName("GitHub OAuth 동의를 거절하면 로그인 시도를 종료하고 비로그인 상태로 돌아간다")
+    void handlesDeniedGitHubAuthorization() {
+        Response authorizationResponse = requestAuthorization();
+        String sessionId = authorizationResponse.cookie("JSESSIONID");
+        String state = authorizationQueryParams(authorizationResponse).getFirst("state");
+
+        Response callbackResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", sessionId)
+                .queryParam("error", "access_denied")
+                .queryParam("state", state)
+                .redirects()
+                .follow(false)
+                .when()
+                .get("/login/oauth2/code/github");
+
+        assertThat(callbackResponse.statusCode()).isEqualTo(302);
+        assertThat(callbackResponse.header("Location"))
+                .isEqualTo("http://localhost:3000/oauth/callback");
+
+        Response sessionResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", sessionId)
+                .when()
+                .get(AUTH_SESSION_PATH);
+
+        assertThat(sessionResponse.statusCode()).isEqualTo(200);
+        assertThat(sessionResponse.jsonPath().getString("status"))
+                .isEqualTo("UNAUTHENTICATED");
+    }
+
+    @Test
     @DisplayName("인증되지 않은 세션 상태와 CSRF 토큰을 조회한다")
     void getsUnauthenticatedSessionWithCsrfToken() {
         Response response = RestAssured.given()

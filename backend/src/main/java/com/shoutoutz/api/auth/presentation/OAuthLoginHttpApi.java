@@ -34,7 +34,10 @@ public class OAuthLoginHttpApi {
                 .build();
     }
 
-    @GetMapping("/login/oauth2/code/github")
+    @GetMapping(
+            value = "/login/oauth2/code/github",
+            params = {"code", "!error"}
+    )
     public ResponseEntity<Void> callbackGitHub(
             @RequestParam String code,
             @RequestParam String state,
@@ -59,6 +62,25 @@ public class OAuthLoginHttpApi {
             authSessionAccessor.savePendingIdentity(signupPendingSession, result.identity());
         }
 
+        return redirectToCompletion();
+    }
+
+    @GetMapping(
+            value = "/login/oauth2/code/github",
+            params = {"error=access_denied", "!code"}
+    )
+    public ResponseEntity<Void> handleDeniedGitHubAuthorization(
+            @RequestParam String state,
+            HttpServletRequest request
+    ) {
+        HttpSession session = request.getSession(false);
+        OAuthLoginAttempt attempt = authSessionAccessor.consumeLoginAttempt(session);
+        oauthLoginService.validateGitHubCallback(state, attempt);
+
+        return redirectToCompletion();
+    }
+
+    private ResponseEntity<Void> redirectToCompletion() {
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(properties.completionUri())
                 .build();
