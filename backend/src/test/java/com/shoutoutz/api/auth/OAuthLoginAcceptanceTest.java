@@ -285,6 +285,57 @@ class OAuthLoginAcceptanceTest {
     }
 
     @Test
+    @DisplayName("기존 GitHub OAuth 계정은 가입 절차 없이 연결된 사용자로 다시 로그인한다")
+    void logsInExistingGitHubOAuthUser() {
+        OAuthSignupAcceptanceResult signupResult = completeOAuthSignup();
+        Response authorizationResponse = requestAuthorization();
+        String anonymousSessionId = authorizationResponse.cookie("JSESSIONID");
+        String state = authorizationQueryParams(authorizationResponse).getFirst("state");
+        given(gitHubOAuthIdentityPort.fetchIdentity(eq("authorization-code"), anyString()))
+                .willReturn(new OAuthIdentity(
+                        OAuthProvider.GITHUB,
+                        signupResult.providerAccountId(),
+                        "https://avatars.githubusercontent.com/u/87654321",
+                        "https://github.com/sangjun"
+                ));
+
+        Response callbackResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", anonymousSessionId)
+                .queryParam("code", "authorization-code")
+                .queryParam("state", state)
+                .redirects()
+                .follow(false)
+                .when()
+                .get("/login/oauth2/code/github");
+
+        String authenticatedSessionId = callbackResponse.cookie("JSESSIONID");
+        assertThat(callbackResponse.statusCode()).isEqualTo(302);
+        assertThat(authenticatedSessionId)
+                .isNotBlank()
+                .isNotEqualTo(anonymousSessionId);
+
+        Response sessionResponse = RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", authenticatedSessionId)
+                .when()
+                .get(AUTH_SESSION_PATH);
+
+        assertThat(sessionResponse.statusCode()).isEqualTo(200);
+        assertThat(sessionResponse.jsonPath().getString("status"))
+                .isEqualTo("AUTHENTICATED");
+        assertThat(sessionResponse.jsonPath().getLong("userId"))
+                .isEqualTo(signupResult.userId());
+        assertThat(sessionResponse.jsonPath().getString("role"))
+                .isEqualTo("USER");
+        assertThat(oauthAccountRepository.findByProviderAndProviderAccountId(
+                OAuthProvider.GITHUB,
+                signupResult.providerAccountId()
+        ).orElseThrow().getProviderAvatarUrl())
+                .isEqualTo("https://avatars.githubusercontent.com/u/87654321");
+    }
+
+    @Test
     @DisplayName("인증 사용자는 CSRF 토큰으로 로그아웃하고 기존 세션을 폐기한다")
     void logsOutAuthenticatedUser() {
         OAuthSignupAcceptanceResult signupResult = completeOAuthSignup();
