@@ -138,10 +138,12 @@ class OAuthLoginAcceptanceTest {
         assertThat(callbackResponse.header("Location"))
                 .isEqualTo("http://localhost:3000/oauth/callback");
         verify(gitHubOAuthIdentityPort).fetchIdentity(eq("authorization-code"), anyString());
+        String signupPendingSessionId = callbackResponse.cookie("JSESSIONID");
+        assertThat(signupPendingSessionId).isNotBlank().isNotEqualTo(sessionId);
 
         Response sessionResponse = RestAssured.given()
                 .port(port)
-                .cookie("JSESSIONID", sessionId)
+                .cookie("JSESSIONID", signupPendingSessionId)
                 .when()
                 .get(AUTH_SESSION_PATH);
 
@@ -215,7 +217,7 @@ class OAuthLoginAcceptanceTest {
                         providerAccountId,
                         "https://avatars.githubusercontent.com/u/12345678"
                 ));
-        RestAssured.given()
+        Response callbackResponse = RestAssured.given()
                 .port(port)
                 .cookie("JSESSIONID", sessionId)
                 .queryParam("code", "authorization-code")
@@ -224,22 +226,23 @@ class OAuthLoginAcceptanceTest {
                 .follow(false)
                 .when()
                 .get("/login/oauth2/code/github");
+        String signupPendingSessionId = callbackResponse.cookie("JSESSIONID");
 
         Response sessionResponse = RestAssured.given()
                 .port(port)
-                .cookie("JSESSIONID", sessionId)
+                .cookie("JSESSIONID", signupPendingSessionId)
                 .when()
                 .get(AUTH_SESSION_PATH);
         String csrfToken = sessionResponse.jsonPath().getString("csrfToken");
 
         Response rejectedResponse = RestAssured.given()
                 .port(port)
-                .cookie("JSESSIONID", sessionId)
+                .cookie("JSESSIONID", signupPendingSessionId)
                 .when()
                 .post(CSRF_TEST_PATH);
         Response acceptedResponse = RestAssured.given()
                 .port(port)
-                .cookie("JSESSIONID", sessionId)
+                .cookie("JSESSIONID", signupPendingSessionId)
                 .header("X-CSRF-Token", csrfToken)
                 .when()
                 .post(CSRF_TEST_PATH);
@@ -346,7 +349,7 @@ class OAuthLoginAcceptanceTest {
                         "https://avatars.githubusercontent.com/u/12345678",
                         "https://github.com/sangjun"
                 ));
-        RestAssured.given()
+        Response callbackResponse = RestAssured.given()
                 .port(port)
                 .cookie("JSESSIONID", sessionId)
                 .queryParam("code", "authorization-code")
@@ -355,9 +358,10 @@ class OAuthLoginAcceptanceTest {
                 .follow(false)
                 .when()
                 .get("/login/oauth2/code/github");
+        String signupPendingSessionId = callbackResponse.cookie("JSESSIONID");
         Response pendingSessionResponse = RestAssured.given()
                 .port(port)
-                .cookie("JSESSIONID", sessionId)
+                .cookie("JSESSIONID", signupPendingSessionId)
                 .when()
                 .get(AUTH_SESSION_PATH);
         String csrfToken = pendingSessionResponse.jsonPath().getString("csrfToken");
@@ -365,7 +369,7 @@ class OAuthLoginAcceptanceTest {
 
         Response signupResponse = RestAssured.given()
                 .port(port)
-                .cookie("JSESSIONID", sessionId)
+                .cookie("JSESSIONID", signupPendingSessionId)
                 .header("X-CSRF-Token", csrfToken)
                 .contentType("application/json")
                 .body(Map.of(
@@ -380,7 +384,9 @@ class OAuthLoginAcceptanceTest {
         assertThat(signupResponse.jsonPath().getLong("userId")).isPositive();
         long userId = signupResponse.jsonPath().getLong("userId");
         String authenticatedSessionId = signupResponse.cookie("JSESSIONID");
-        assertThat(authenticatedSessionId).isNotBlank().isNotEqualTo(sessionId);
+        assertThat(authenticatedSessionId)
+                .isNotBlank()
+                .isNotEqualTo(signupPendingSessionId);
         return new OAuthSignupAcceptanceResult(
                 authenticatedSessionId,
                 csrfToken,

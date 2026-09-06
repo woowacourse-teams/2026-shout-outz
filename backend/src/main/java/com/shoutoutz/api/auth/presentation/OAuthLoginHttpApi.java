@@ -55,7 +55,8 @@ public class OAuthLoginHttpApi {
                     result.role()
             );
         } else {
-            authSessionAccessor.savePendingIdentity(session, result.identity());
+            HttpSession signupPendingSession = authSessionManager.rotateSessionId(request);
+            authSessionAccessor.savePendingIdentity(signupPendingSession, result.identity());
         }
 
         return ResponseEntity.status(HttpStatus.FOUND)

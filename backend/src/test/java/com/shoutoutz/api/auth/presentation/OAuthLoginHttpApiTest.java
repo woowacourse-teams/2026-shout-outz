@@ -69,6 +69,7 @@ class OAuthLoginHttpApiTest {
     void storesPendingOAuthIdentityForNewUser() {
         MockHttpServletRequest request = callbackRequest();
         MockHttpSession session = (MockHttpSession) request.getSession();
+        String previousSessionId = session.getId();
         OAuthIdentity identity = new OAuthIdentity(
                 OAuthProvider.GITHUB,
                 "12345678",
@@ -82,6 +83,7 @@ class OAuthLoginHttpApiTest {
 
         oauthLoginHttpApi.callbackGitHub("authorization-code", "state", request);
 
+        assertThat(session.getId()).isNotEqualTo(previousSessionId);
         assertThat(authSessionAccessor.findPendingIdentity(session)).contains(identity);
         assertThat(authSessionAccessor.findAuthentication(session)).isEmpty();
         assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session))

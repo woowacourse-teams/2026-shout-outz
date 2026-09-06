@@ -17,13 +17,18 @@ public class AuthSessionManager {
             Long userId,
             UserRole role
     ) {
+        HttpSession session = rotateSessionId(request);
+        authSessionAccessor.saveAuthentication(session, userId, role);
+    }
+
+    public HttpSession rotateSessionId(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session == null) {
             throw new IllegalStateException("인증 세션이 없습니다.");
         }
 
         request.changeSessionId();
-        authSessionAccessor.saveAuthentication(session, userId, role);
+        return session;
     }
 
     public void invalidateSession(HttpServletRequest request) {
