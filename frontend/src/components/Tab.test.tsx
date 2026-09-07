@@ -28,6 +28,38 @@ function expectSelection(value?: string) {
 }
 
 describe('Tab', () => {
+  it('variant를 생략하면 underline을 적용한다', () => {
+    render(renderTab());
+
+    expect(screen.getByRole('tablist')).toHaveAttribute('data-variant', 'underline');
+  });
+
+  it.each(['weak', 'chip'] as const)('%s variant를 적용한다', (variant) => {
+    render(
+      <Tab variant={variant}>
+        <Tab.Item value="first">first</Tab.Item>
+      </Tab>,
+    );
+
+    expect(screen.getByRole('tablist')).toHaveAttribute('data-variant', variant);
+  });
+
+  it('size를 생략하면 md를 적용한다', () => {
+    render(renderTab());
+
+    expect(screen.getByRole('tablist')).toHaveAttribute('data-size', 'md');
+  });
+
+  it.each(['sm', 'lg'] as const)('%s size를 적용한다', (size) => {
+    render(
+      <Tab size={size}>
+        <Tab.Item value="first">first</Tab.Item>
+      </Tab>,
+    );
+
+    expect(screen.getByRole('tablist')).toHaveAttribute('data-size', size);
+  });
+
   it('초기 value에 해당하는 항목만 선택 상태로 표시한다', () => {
     render(renderTab('second'));
     expectSelection('second');
