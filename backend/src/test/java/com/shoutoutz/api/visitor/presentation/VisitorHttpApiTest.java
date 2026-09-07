@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
+import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -59,8 +60,9 @@ class VisitorHttpApiTest {
                                 }
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.example").value("example"))
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.example").value("example"))
                 /**
                  * @author josangjun
                  * 여기서부터 API 문서화 도구 코드이다.
@@ -78,17 +80,23 @@ class VisitorHttpApiTest {
                                 .summary("방문자 생성")
                                 .description("방문자를 생성한다.")
                                 .requestSchema(Schema.schema("VisitorSaveRequest"))
-                                .responseSchema(Schema.schema("VisitorSaveResponse"))
+                                .responseSchema(Schema.schema("SuccessResponseVisitorSaveResponse"))
                                 .requestFields(
                                         fieldWithPath("example")
                                                 .type(STRING)
                                                 .description("방문자 예시 값")
                                 )
                                 .responseFields(
-                                        fieldWithPath("id")
+                                        fieldWithPath("status")
+                                                .type(STRING)
+                                                .description("응답 상태"),
+                                        fieldWithPath("data")
+                                                .type(OBJECT)
+                                                .description("생성된 방문자 정보"),
+                                        fieldWithPath("data.id")
                                                 .type(NUMBER)
                                                 .description("방문자 ID"),
-                                        fieldWithPath("example")
+                                        fieldWithPath("data.example")
                                                 .type(STRING)
                                                 .description("방문자 예시 값")
                                 )
