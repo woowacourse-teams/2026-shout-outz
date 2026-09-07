@@ -1,14 +1,23 @@
 package com.shoutoutz.api.news.presentation;
 
+import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
+import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
+import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
+import static org.springframework.restdocs.payload.JsonFieldType.STRING;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.ResourceSnippetParameters;
+import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.news.application.NewsService;
 import com.shoutoutz.api.news.domain.NewsType;
 import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
@@ -17,6 +26,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -26,6 +36,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * 컨트롤러 슬라이스 테스트
  */
 @WebMvcTest(controllers = NewsHttpApi.class)
+@AutoConfigureRestDocs
 class NewsHttpApiTest {
 
     @Autowired
@@ -63,7 +74,90 @@ class NewsHttpApiTest {
                 .andExpect(jsonPath("$.data.isPinned").value(false))
                 .andExpect(jsonPath("$.data.pinOrder").value(nullValue()))
                 .andExpect(jsonPath("$.data.cta.label").value("일정 확인"))
-                .andExpect(jsonPath("$.data.cta.url").value("example.com"));
+                .andExpect(jsonPath("$.data.cta.url").value("example.com"))
+                .andDo(document(
+                        "news-notice-create",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("공지 생성")
+                                .description("공지와 선택적인 CTA를 생성한다.")
+                                .requestSchema(Schema.schema("NoticeCreateRequest"))
+                                .responseSchema(Schema.schema("SuccessResponseNoticeCreateResponse"))
+                                .requestFields(
+                                        fieldWithPath("title")
+                                                .type(STRING)
+                                                .description("공지 제목"),
+                                        fieldWithPath("summary")
+                                                .type(STRING)
+                                                .description("공지 요약"),
+                                        fieldWithPath("body")
+                                                .type(STRING)
+                                                .description("공지 본문"),
+                                        fieldWithPath("authorName")
+                                                .type(STRING)
+                                                .description("공지 작성자 이름"),
+                                        fieldWithPath("cta")
+                                                .type(OBJECT)
+                                                .description("공지 CTA")
+                                                .optional(),
+                                        fieldWithPath("cta.label")
+                                                .type(STRING)
+                                                .description("CTA 라벨"),
+                                        fieldWithPath("cta.url")
+                                                .type(STRING)
+                                                .description("CTA URL")
+                                )
+                                .responseFields(
+                                        fieldWithPath("status")
+                                                .type(STRING)
+                                                .description("응답 상태"),
+                                        fieldWithPath("data.id")
+                                                .type(NUMBER)
+                                                .description("공지 ID"),
+                                        fieldWithPath("data.type")
+                                                .type(STRING)
+                                                .description("공지 유형"),
+                                        fieldWithPath("data.title")
+                                                .type(STRING)
+                                                .description("공지 제목"),
+                                        fieldWithPath("data.summary")
+                                                .type(STRING)
+                                                .description("공지 요약"),
+                                        fieldWithPath("data.body")
+                                                .type(STRING)
+                                                .description("공지 본문"),
+                                        fieldWithPath("data.author")
+                                                .type(OBJECT)
+                                                .description("공지 작성자"),
+                                        fieldWithPath("data.author.userId")
+                                                .type(NUMBER)
+                                                .description("작성자 ID"),
+                                        fieldWithPath("data.author.name")
+                                                .type(STRING)
+                                                .description("작성자 이름"),
+                                        fieldWithPath("data.publishedAt")
+                                                .type(STRING)
+                                                .description("게시 시각"),
+                                        fieldWithPath("data.isPinned")
+                                                .type(BOOLEAN)
+                                                .description("고정 여부"),
+                                        fieldWithPath("data.pinOrder")
+                                                .type(NUMBER)
+                                                .description("고정 순서")
+                                                .optional(),
+                                        fieldWithPath("data.cta")
+                                                .type(OBJECT)
+                                                .description("공지 CTA")
+                                                .optional(),
+                                        fieldWithPath("data.cta.label")
+                                                .type(STRING)
+                                                .description("CTA 라벨"),
+                                        fieldWithPath("data.cta.url")
+                                                .type(STRING)
+                                                .description("CTA URL")
+                                )
+                                .build())
+                ));
 
         verify(newsService).createNotice(any(NoticeCreateRequest.class));
     }
@@ -105,7 +199,15 @@ class NewsHttpApiTest {
                                   "authorName": "샤라웃 운영팀"
                                 }
                                 """))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andDo(document(
+                        "news-notice-create-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("공지 생성 실패")
+                                .description("필수 요청값이 없으면 400 Bad Request를 반환한다.")
+                                .build())
+                ));
 
         verifyNoInteractions(newsService);
     }

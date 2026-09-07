@@ -42,8 +42,129 @@ paths:
                   value: "{\"id\":1,\"example\":\"example\"}"
         "400":
           description: "400"
+  /api/v1/news/notices:
+    post:
+      tags:
+      - News
+      summary: 공지 생성
+      description: 공지와 선택적인 CTA를 생성한다.
+      operationId: news-notice-create
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/NoticeCreateRequest"
+            examples:
+              news-notice-create:
+                value: |
+                  {
+                    "title": "우아한테크코스 6기 최종 프로젝트 데모데이 안내",
+                    "summary": "최종 프로젝트 데모데이 일정을 안내합니다.",
+                    "body": "우아한테크코스 6기 최종 프로젝트 데모데이는 2026년 9월 12일에 진행됩니다.",
+                    "authorName": "샤라웃 운영팀",
+                    "cta": {
+                      "label": "데모데이 일정 확인",
+                      "url": "example.com"
+                    }
+                  }
+              news-notice-create-invalid:
+                value: |
+                  {
+                    "summary": "요약",
+                    "body": "본문",
+                    "authorName": "샤라웃 운영팀"
+                  }
+      responses:
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponseNoticeCreateResponse"
+              examples:
+                news-notice-create:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":106,\"type\":\"\
+                    NOTICE\",\"title\":\"데모데이 안내\",\"summary\":\"데모데이 일정을 안내합니다.\"\
+                    ,\"body\":\"2026년 9월 12일에 데모데이를 진행합니다.\",\"author\":{\"userId\"\
+                    :1,\"name\":\"샤라웃 운영팀\"},\"publishedAt\":\"2026-09-05T00:00:00Z\"\
+                    ,\"isPinned\":false,\"pinOrder\":null,\"cta\":{\"label\":\"일정\
+                    \ 확인\",\"url\":\"example.com\"}}}"
+        "400":
+          description: "400"
 components:
   schemas:
+    SuccessResponseNoticeCreateResponse:
+      title: SuccessResponseNoticeCreateResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - id
+          - isPinned
+          - publishedAt
+          - summary
+          - title
+          - type
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 공지 요약
+            cta:
+              required:
+              - label
+              - url
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                url:
+                  type: string
+                  description: CTA URL
+              description: 공지 CTA
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - name
+              - userId
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 작성자 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 공지 작성자
+            id:
+              type: number
+              description: 공지 ID
+            pinOrder:
+              type: number
+              description: 고정 순서
+              nullable: true
+            body:
+              type: string
+              description: 공지 본문
+            title:
+              type: string
+              description: 공지 제목
+            type:
+              type: string
+              description: 공지 유형
+        status:
+          type: string
+          description: 응답 상태
     VisitorSaveResponse:
       title: VisitorSaveResponse
       required:
@@ -66,3 +187,37 @@ components:
         example:
           type: string
           description: 방문자 예시 값
+    NoticeCreateRequest:
+      title: NoticeCreateRequest
+      required:
+      - authorName
+      - body
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 공지 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 공지 CTA
+        authorName:
+          type: string
+          description: 공지 작성자 이름
+        body:
+          type: string
+          description: 공지 본문
+        title:
+          type: string
+          description: 공지 제목
