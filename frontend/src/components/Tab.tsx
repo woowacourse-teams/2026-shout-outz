@@ -1,9 +1,15 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  type ComponentPropsWithoutRef,
+  type MouseEvent,
+  type ReactNode,
+} from 'react';
 
 export type TabVariant = 'underline' | 'weak' | 'chip';
 export type TabSize = 'sm' | 'md' | 'lg';
 
-export type TabProps = {
+export type TabProps = Omit<ComponentPropsWithoutRef<'div'>, 'children' | 'onChange'> & {
   variant?: TabVariant;
   size?: TabSize;
   value?: string;
@@ -11,7 +17,10 @@ export type TabProps = {
   children: ReactNode;
 };
 
-export type TabItemProps = {
+export type TabItemProps = Omit<
+  ComponentPropsWithoutRef<'button'>,
+  'children' | 'value' | 'type' | 'role' | 'aria-selected'
+> & {
   value: string;
   children: ReactNode;
 };
@@ -47,14 +56,23 @@ const tabItemStyles: Record<TabVariant, string> = {
 
 const TabContext = createContext<TabContextValue | null>(null);
 
-function TabRoot({ variant = 'underline', size = 'md', value, onChange, children }: TabProps) {
+function TabRoot({
+  variant = 'underline',
+  size = 'md',
+  value,
+  onChange,
+  className,
+  children,
+  ...props
+}: TabProps) {
   return (
     <TabContext.Provider value={{ variant, size, value, onChange }}>
       <div
+        {...props}
         role="tablist"
         data-variant={variant}
         data-size={size}
-        className={`${tabListBaseStyle} ${tabListStyles[variant]}`}
+        className={[tabListBaseStyle, tabListStyles[variant], className].filter(Boolean).join(' ')}
       >
         {children}
       </div>
@@ -62,7 +80,7 @@ function TabRoot({ variant = 'underline', size = 'md', value, onChange, children
   );
 }
 
-function TabItem({ value, children }: TabItemProps) {
+function TabItem({ value, className, onClick, children, ...props }: TabItemProps) {
   const context = useContext(TabContext);
 
   if (context === null) {
@@ -71,18 +89,28 @@ function TabItem({ value, children }: TabItemProps) {
 
   const isSelected = context.value === value;
 
-  const handleClick = () => {
-    if (!isSelected) {
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    onClick?.(event);
+
+    if (!event.defaultPrevented && !isSelected) {
       context.onChange?.(value);
     }
   };
 
   return (
     <button
+      {...props}
       type="button"
       role="tab"
       aria-selected={isSelected}
-      className={`${tabItemBaseStyle} ${tabItemSizeStyles[context.size]} ${tabItemStyles[context.variant]}`}
+      className={[
+        tabItemBaseStyle,
+        tabItemSizeStyles[context.size],
+        tabItemStyles[context.variant],
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
       onClick={handleClick}
     >
       {children}

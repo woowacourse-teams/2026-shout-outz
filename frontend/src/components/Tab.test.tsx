@@ -60,6 +60,67 @@ describe('Tab', () => {
     expect(screen.getByRole('tablist')).toHaveAttribute('data-size', size);
   });
 
+  it('Tab과 Tab.Item에 className을 적용한다', () => {
+    render(
+      <Tab className="custom-list">
+        <Tab.Item value="first" className="custom-item">
+          first
+        </Tab.Item>
+      </Tab>,
+    );
+
+    expect(screen.getByRole('tablist')).toHaveClass('custom-list');
+    expect(screen.getByRole('tab', { name: 'first' })).toHaveClass('custom-item');
+  });
+
+  it('Tab과 Tab.Item에 네이티브 속성을 전달한다', () => {
+    render(
+      <Tab aria-label="목록 이름" id="custom-list">
+        <Tab.Item value="first" disabled name="first-tab">
+          first
+        </Tab.Item>
+      </Tab>,
+    );
+
+    expect(screen.getByRole('tablist', { name: '목록 이름' })).toHaveAttribute('id', 'custom-list');
+    expect(screen.getByRole('tab', { name: 'first' })).toBeDisabled();
+    expect(screen.getByRole('tab', { name: 'first' })).toHaveAttribute('name', 'first-tab');
+  });
+
+  it('Tab.Item의 onClick을 실행한 뒤 선택 변경을 요청한다', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <Tab value="first" onChange={onChange}>
+        <Tab.Item value="second" onClick={onClick}>
+          second
+        </Tab.Item>
+      </Tab>,
+    );
+
+    await user.click(screen.getByRole('tab', { name: 'second' }));
+
+    expect(onClick).toHaveBeenCalledOnce();
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('second');
+  });
+
+  it('Tab.Item의 onClick이 취소되면 선택 변경을 요청하지 않는다', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Tab value="first" onChange={onChange}>
+        <Tab.Item value="second" onClick={(event) => event.preventDefault()}>
+          second
+        </Tab.Item>
+      </Tab>,
+    );
+
+    await user.click(screen.getByRole('tab', { name: 'second' }));
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('초기 value에 해당하는 항목만 선택 상태로 표시한다', () => {
     render(renderTab('second'));
     expectSelection('second');
