@@ -1,5 +1,7 @@
 import type { ComponentProps } from 'react';
 
+import { cn } from '@/utils/cn';
+
 /**
  * 시각적 형태.
  *
@@ -54,3 +56,33 @@ export interface ButtonProps extends ComponentProps<'button'>, ButtonVariants {}
  * ```
  */
 export type ButtonStylesOptions = ButtonVariants & { className?: string };
+
+const BASE =
+  'inline-flex cursor-pointer items-center justify-center rounded-lg whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:outline-none';
+
+const VARIANT_CLASSES: Record<ButtonVariant, string> = {
+  primary: 'bg-primary-600 font-bold text-white hover:bg-primary-700',
+  secondary: 'border border-gray-200 bg-gray-100 font-medium text-gray-600 hover:bg-gray-200',
+  outline: 'border border-gray-200 font-bold text-gray-600 hover:bg-gray-50',
+  ghost: 'font-medium text-gray-600 hover:bg-gray-100',
+};
+
+const SIZE_CLASSES: Record<ButtonSize, string> = {
+  sm: 'h-8 px-3 text-xs',
+  md: 'h-10 px-5 text-sm',
+  lg: 'h-12 px-6 text-base',
+};
+
+export function getButtonStyles({
+  variant = 'primary',
+  size = 'md',
+  className,
+}: ButtonStylesOptions = {}) {
+  return cn(BASE, VARIANT_CLASSES[variant], SIZE_CLASSES[size], className);
+}
+
+export function Button({ variant, size, className, type = 'button', ...props }: ButtonProps) {
+  return (
+    <button type={type} className={getButtonStyles({ variant, size, className })} {...props} />
+  );
+}
