@@ -48,7 +48,7 @@ export interface ButtonProps extends ComponentProps<'button'>, ButtonVariants {}
  * `<a>`나 라우터의 `Link`로 렌더해야 하므로 스타일만 따로 가져간다.
  *
  * ```tsx
- * <a href="https://github.com/login/oauth" className={buttonStyles({ size: 'lg' })}>
+ * <a href="https://github.com/login/oauth" className={getButtonStyles({ size: 'lg' })}>
  *   GitHub 계정으로 시작하기
  * </a>
  * ```
