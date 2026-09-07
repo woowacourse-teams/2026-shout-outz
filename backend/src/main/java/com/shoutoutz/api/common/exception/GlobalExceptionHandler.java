@@ -27,10 +27,11 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     /**
-     * IllegalArgumentException나 NoSuchElementException 같은 예외의
-     * message를 응답에 담지 않도록, 최대한 예외는 원인을 표시한 커스텀 예외를 사용한다.
+     * IllegalArgumentException나 NoSuchElementException와 같은 예외는
+     * ErrorCode를 담지 못하기에, 최대한 사용을 지양한다.
+     *
+     * 예외 발생 원인을 표시한 커스텀 예외를 사용한다.
      */
-    @Deprecated
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Object> handleIllegalArgumentException(IllegalArgumentException e) {
         ErrorCode errorCode = CommonErrorCode.VALIDATION_FAILED;
@@ -38,7 +39,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return createErrorResponse(HttpStatus.BAD_REQUEST, errorCode);
     }
 
-    @Deprecated
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Object> handleNoSuchElementException(NoSuchElementException e) {
         ErrorCode errorCode = CommonErrorCode.RESOURCE_NOT_FOUND;
