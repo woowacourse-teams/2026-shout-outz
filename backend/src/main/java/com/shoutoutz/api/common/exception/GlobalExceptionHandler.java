@@ -11,6 +11,7 @@ import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
@@ -33,16 +34,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Object> handleIllegalArgumentException(IllegalArgumentException e) {
         ErrorCode errorCode = CommonErrorCode.VALIDATION_FAILED;
-        logException(errorCode, e);
-        return createErrorResponse(errorCode);
+        logException(HttpStatus.BAD_REQUEST, errorCode, e);
+        return createErrorResponse(HttpStatus.BAD_REQUEST, errorCode);
     }
 
     @Deprecated
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Object> handleNoSuchElementException(NoSuchElementException e) {
         ErrorCode errorCode = CommonErrorCode.RESOURCE_NOT_FOUND;
-        logException(errorCode, e);
-        return createErrorResponse(errorCode);
+        logException(HttpStatus.NOT_FOUND, errorCode, e);
+        return createErrorResponse(HttpStatus.NOT_FOUND, errorCode);
     }
 
     /**
@@ -53,8 +54,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleConstraintViolationException(
             ConstraintViolationException e) {
         ErrorCode errorCode = CommonErrorCode.VALIDATION_FAILED;
-        logException(errorCode, e);
-        return createErrorResponse(errorCode);
+        logException(HttpStatus.BAD_REQUEST, errorCode, e);
+        return createErrorResponse(HttpStatus.BAD_REQUEST, errorCode);
     }
 
     /**
@@ -72,14 +73,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode statusCode,
             WebRequest request) {
         ErrorCode errorCode = CommonErrorCode.VALIDATION_FAILED;
-        logException(errorCode, e);
+        logException(HttpStatus.BAD_REQUEST, errorCode, e);
         return createErrorResponse(e, errorCode);
     }
 
     /**
      * Spring MVC 내장 메서드 검증에서 발생하는 검증 예외 처리 핸들러
-     * 예: 컨트롤러 파라미터에 @Min, @NotBlank 등을 직접 선언하는 방식에서 검증 얘외가 발생하면,
-     * HandlerMethodValidationException가 발생한다.
+     * 예: 컨트롤러 파라미터에 @Min, @NotBlank 등을 직접 선언하는 방식에서 검증 예외가 발생하면,
+     * HandlerMethodValidationException이 발생한다.
+     * 요청값 검증은 400, 반환값 검증은 500으로 Spring이 결정한 상태를 보존한다.
      *
      * 해당 예외를 처리하는 핸들러는 이미 ResponseEntityExceptionHandler에 구현되어 있다.
      * 따라서 handleHandlerMethodValidationException만 재정의 한다.
@@ -90,23 +92,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpHeaders headers,
             HttpStatusCode statusCode,
             WebRequest request) {
-        ErrorCode errorCode = CommonErrorCode.VALIDATION_FAILED;
-        logException(errorCode, e);
-        return createErrorResponse(errorCode);
+        return handleExceptionInternal(e, null, headers, statusCode, request);
     }
 
+    /**
+     * 모든 커스텀 예외의 최상위 클래스
+     */
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<Object> handleCustomException(CustomException e) {
         ErrorCode errorCode = e.getErrorCode();
-        logException(errorCode, e);
-        return createErrorResponse(errorCode);
+        logException(e.getHttpStatus(), errorCode, e);
+        return createErrorResponse(e.getHttpStatus(), errorCode);
     }
 
     @ExceptionHandler({Exception.class})
     public ResponseEntity<Object> handleAllExceptions(Exception e) {
         ErrorCode errorCode = CommonErrorCode.INTERNAL_SERVER_ERROR;
-        logException(errorCode, e);
-        return createErrorResponse(errorCode);
+        logException(HttpStatus.INTERNAL_SERVER_ERROR, errorCode, e);
+        return createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, errorCode);
     }
 
     /**
@@ -119,7 +122,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .map(fieldError -> new ErrorResponse.ErrorDetail(
                         toRequestBodyFieldName(fieldError.getField()), fieldError.getDefaultMessage()))
                 .collect(Collectors.toList());
-        return createErrorResponse(errorCode, details);
+        return createErrorResponse(HttpStatus.BAD_REQUEST, errorCode, details);
     }
 
     /**
@@ -136,7 +139,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ErrorCode errorCode = resolveErrorCode(statusCode);
         ErrorResponse response = ErrorResponse.error(errorCode.name(), errorCode.getMessage());
 
-        logException(errorCode, e);
+        logException(statusCode, errorCode, e);
 
         return ResponseEntity.status(statusCode)
                 .headers(headers)
@@ -144,7 +147,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private ErrorCode resolveErrorCode(HttpStatusCode statusCode) {
-        if (statusCode.value() == CommonErrorCode.RESOURCE_NOT_FOUND.getHttpStatus().value()) {
+        if (statusCode.value() == HttpStatus.NOT_FOUND.value()) {
             return CommonErrorCode.RESOURCE_NOT_FOUND;
         }
         if (statusCode.is5xxServerError()) {
@@ -153,25 +156,25 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return CommonErrorCode.VALIDATION_FAILED;
     }
 
-    private ResponseEntity<Object> createErrorResponse(ErrorCode errorCode) {
-        return createErrorResponse(errorCode, null);
+    private ResponseEntity<Object> createErrorResponse(HttpStatusCode statusCode, ErrorCode errorCode) {
+        return createErrorResponse(statusCode, errorCode, null);
     }
 
     private ResponseEntity<Object> createErrorResponse(
-            ErrorCode errorCode, List<ErrorResponse.ErrorDetail> details) {
+            HttpStatusCode statusCode, ErrorCode errorCode, List<ErrorResponse.ErrorDetail> details) {
         ErrorResponse response = details == null || details.isEmpty()
                 ? ErrorResponse.error(errorCode.name(), errorCode.getMessage())
                 : ErrorResponse.error(errorCode.name(), errorCode.getMessage(), details);
-        return ResponseEntity.status(errorCode.getHttpStatus()).body(response);
+        return ResponseEntity.status(statusCode).body(response);
     }
 
     /**
      * 예외 메시지는 사용자 입력값이나 외부 시스템 응답을 포함할 수 있으므로 기록하지 않는다.
      * 5xx 예외는 메시지를 제외한 stack trace를 함께 남겨 장애 원인을 추적한다.
      */
-    private void logException(ErrorCode errorCode, Exception exception) {
+    private void logException(HttpStatusCode statusCode, ErrorCode errorCode, Exception exception) {
         String exceptionType = exception.getClass().getName();
-        if (errorCode.getHttpStatus().is5xxServerError()) {
+        if (statusCode.is5xxServerError()) {
             log.error(
                     "api_exception error_code={} exception_type={} stack_trace={}",
                     errorCode.name(),

@@ -5,11 +5,17 @@ import static org.mockito.Mockito.mock;
 
 import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.code.ErrorCode;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.CustomException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.common.exception.custom.InternalServerErrorException;
+import com.shoutoutz.api.common.exception.custom.NotFoundException;
 import com.shoutoutz.api.common.exception.custom.PersistenceException;
+import com.shoutoutz.api.common.exception.custom.UnauthorizedException;
 import com.shoutoutz.api.common.response.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
@@ -114,29 +120,62 @@ class GlobalExceptionHandlerTest {
         assertThat(error.details()).isNull();
     }
 
-    @Test
-    @DisplayName("컨트롤러 메서드 파라미터 검증 오류를 검증 실패 응답으로 변환한다")
-    void handlesHandlerMethodValidationWithoutBodyDetails() {
+    @ParameterizedTest
+    @MethodSource("methodValidationCases")
+    @DisplayName("컨트롤러 메서드 검증 오류의 요청값 400과 반환값 500 상태를 보존한다")
+    void handlesHandlerMethodValidationUsingItsStatus(HttpStatus status, ErrorCode expectedErrorCode) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-Test", "preserved");
+
         ResponseEntity<Object> response = handler.handleHandlerMethodValidationException(
                 mock(HandlerMethodValidationException.class),
-                new HttpHeaders(), HttpStatus.BAD_REQUEST, mock(WebRequest.class));
+                headers, status, mock(WebRequest.class));
 
-        ErrorResponse error = assertError(response, HttpStatus.BAD_REQUEST, CommonErrorCode.VALIDATION_FAILED);
+        ErrorResponse error = assertError(response, status, expectedErrorCode);
 
+        assertThat(response.getHeaders().getFirst("X-Test")).isEqualTo("preserved");
         assertThat(error.details()).isNull();
     }
 
     @ParameterizedTest
     @MethodSource("customExceptionCases")
-    @DisplayName("커스텀 예외의 에러 코드에 맞는 응답을 생성한다")
-    void handlesCustomExceptionsUsingTheirErrorCode(
-            CustomException exception, ErrorCode expectedErrorCode) {
+    @DisplayName("상태별 공통 예외와 하위 예외의 HTTP 상태 및 에러 코드로 응답을 생성한다")
+    void handlesCustomExceptionsUsingTheirStatusAndErrorCode(
+            CustomException exception, HttpStatus expectedStatus, ErrorCode expectedErrorCode) {
         ResponseEntity<Object> response = handler.handleCustomException(exception);
 
-        ErrorResponse error = assertError(response, expectedErrorCode.getHttpStatus(), expectedErrorCode);
+        ErrorResponse error = assertError(response, expectedStatus, expectedErrorCode);
 
         assertThat(error.message()).isEqualTo(expectedErrorCode.getMessage());
         assertThat(error.details()).isNull();
+    }
+
+    @Test
+    @DisplayName("중복 예외로 변환해도 원인 예외를 보존하고 DB 상세 정보를 응답에 노출하지 않는다")
+    void preservesConflictCauseWithoutExposingItsMessage() {
+        RuntimeException cause = new RuntimeException("database constraint detail");
+        DuplicateEntityException exception = new DuplicateEntityException(
+                CommonErrorCode.DUPLICATE_RESOURCE, cause);
+
+        ResponseEntity<Object> response = handler.handleCustomException(exception);
+
+        ErrorResponse error = assertError(response, HttpStatus.CONFLICT, CommonErrorCode.DUPLICATE_RESOURCE);
+        assertThat(exception.getCause()).isSameAs(cause);
+        assertThat(error.message()).doesNotContain(cause.getMessage());
+    }
+
+    @Test
+    @DisplayName("저장소 예외로 변환해도 원인 예외를 보존하고 DB 상세 정보를 응답에 노출하지 않는다")
+    void preservesPersistenceCauseWithoutExposingItsMessage() {
+        RuntimeException cause = new RuntimeException("database password");
+        PersistenceException exception = new PersistenceException(CommonErrorCode.INTERNAL_SERVER_ERROR, cause);
+
+        ResponseEntity<Object> response = handler.handleCustomException(exception);
+
+        ErrorResponse error = assertError(
+                response, HttpStatus.INTERNAL_SERVER_ERROR, CommonErrorCode.INTERNAL_SERVER_ERROR);
+        assertThat(exception.getCause()).isSameAs(cause);
+        assertThat(error.message()).doesNotContain(cause.getMessage());
     }
 
     @Test
@@ -177,25 +216,52 @@ class GlobalExceptionHandlerTest {
     private static Stream<Arguments> customExceptionCases() {
         return Stream.of(
                 Arguments.of(
+                        new BadRequestException(CommonErrorCode.VALIDATION_FAILED),
+                        HttpStatus.BAD_REQUEST, CommonErrorCode.VALIDATION_FAILED),
+                Arguments.of(
+                        new UnauthorizedException(CommonErrorCode.UNAUTHORIZED),
+                        HttpStatus.UNAUTHORIZED, CommonErrorCode.UNAUTHORIZED),
+                Arguments.of(
+                        new ForbiddenException(CommonErrorCode.FORBIDDEN),
+                        HttpStatus.FORBIDDEN, CommonErrorCode.FORBIDDEN),
+                Arguments.of(
+                        new NotFoundException(CommonErrorCode.RESOURCE_NOT_FOUND),
+                        HttpStatus.NOT_FOUND, CommonErrorCode.RESOURCE_NOT_FOUND),
+                Arguments.of(
+                        new ConflictException(CommonErrorCode.DUPLICATE_RESOURCE),
+                        HttpStatus.CONFLICT, CommonErrorCode.DUPLICATE_RESOURCE),
+                Arguments.of(
+                        new InternalServerErrorException(CommonErrorCode.INTERNAL_SERVER_ERROR),
+                        HttpStatus.INTERNAL_SERVER_ERROR, CommonErrorCode.INTERNAL_SERVER_ERROR),
+                Arguments.of(
                         new DomainValidationException(CommonErrorCode.VALIDATION_FAILED),
-                        CommonErrorCode.VALIDATION_FAILED),
+                        HttpStatus.BAD_REQUEST, CommonErrorCode.VALIDATION_FAILED),
                 Arguments.of(
                         new EntityNotFoundException(CommonErrorCode.RESOURCE_NOT_FOUND),
-                        CommonErrorCode.RESOURCE_NOT_FOUND),
+                        HttpStatus.NOT_FOUND, CommonErrorCode.RESOURCE_NOT_FOUND),
                 Arguments.of(
                         new DuplicateEntityException(CommonErrorCode.DUPLICATE_RESOURCE),
-                        CommonErrorCode.DUPLICATE_RESOURCE),
+                        HttpStatus.CONFLICT, CommonErrorCode.DUPLICATE_RESOURCE),
                 Arguments.of(
                         new PersistenceException(
                                 CommonErrorCode.INTERNAL_SERVER_ERROR, new RuntimeException("database detail")),
-                        CommonErrorCode.INTERNAL_SERVER_ERROR));
+                        HttpStatus.INTERNAL_SERVER_ERROR, CommonErrorCode.INTERNAL_SERVER_ERROR));
+    }
+
+    private static Stream<Arguments> methodValidationCases() {
+        return Stream.of(
+                Arguments.of(HttpStatus.BAD_REQUEST, CommonErrorCode.VALIDATION_FAILED),
+                Arguments.of(HttpStatus.INTERNAL_SERVER_ERROR, CommonErrorCode.INTERNAL_SERVER_ERROR));
     }
 
     private static Stream<Arguments> springMvcExceptionCases() {
         return Stream.of(
                 Arguments.of(HttpStatus.BAD_REQUEST, CommonErrorCode.VALIDATION_FAILED),
                 Arguments.of(HttpStatus.NOT_FOUND, CommonErrorCode.RESOURCE_NOT_FOUND),
-                Arguments.of(HttpStatus.INTERNAL_SERVER_ERROR, CommonErrorCode.INTERNAL_SERVER_ERROR));
+                Arguments.of(HttpStatus.METHOD_NOT_ALLOWED, CommonErrorCode.VALIDATION_FAILED),
+                Arguments.of(HttpStatus.UNSUPPORTED_MEDIA_TYPE, CommonErrorCode.VALIDATION_FAILED),
+                Arguments.of(HttpStatus.INTERNAL_SERVER_ERROR, CommonErrorCode.INTERNAL_SERVER_ERROR),
+                Arguments.of(HttpStatus.SERVICE_UNAVAILABLE, CommonErrorCode.INTERNAL_SERVER_ERROR));
     }
 
     private static MethodParameter requestBodyMethodParameter() throws Exception {
