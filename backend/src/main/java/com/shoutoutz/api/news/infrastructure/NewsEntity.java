@@ -51,6 +51,12 @@ public class NewsEntity extends BaseEntity {
     @Column(name = "published_at", nullable = false)
     private Instant publishedAt;
 
+    @Column(name = "event_start_at")
+    private Instant eventStartAt;
+
+    @Column(name = "event_end_at")
+    private Instant eventEndAt;
+
     @Column(name = "is_pinned", nullable = false)
     private boolean pinned;
 

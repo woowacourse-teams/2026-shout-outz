@@ -7,15 +7,20 @@ import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_CTA_INVALID_LABEL
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_CTA_INVALID_URL_LENGTH;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_CTA_LABEL_NULL_OR_BLANK;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_CTA_URL_NULL_OR_BLANK;
+import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_END_AT_NOT_ALLOWED;
+import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_END_AT_NULL;
+import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_PERIOD_INVALID;
+import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_START_AT_NOT_ALLOWED;
+import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_START_AT_NULL;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_INVALID_AUTHOR_NAME_LENGTH;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_INVALID_BODY_LENGTH;
-import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_INVALID_PIN_ORDER;
-import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_PIN_ORDER_NOT_NULL;
-import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_PUBLISHED_AT_NULL;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_INVALID_ID_SIZE;
+import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_INVALID_PIN_ORDER;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_INVALID_SUMMARY_LENGTH;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_INVALID_TITLE_LENGTH;
+import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_PIN_ORDER_NOT_NULL;
+import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_PUBLISHED_AT_NULL;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_SUMMARY_NULL_OR_BLANK;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_TITLE_NULL_OR_BLANK;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_TYPE_NULL;
@@ -54,6 +59,8 @@ final class NewsValidator extends DomainValidator {
             Long authorId,
             String authorName,
             Instant publishedAt,
+            Instant eventStartAt,
+            Instant eventEndAt,
             boolean pinned,
             Integer pinOrder
     ) {
@@ -65,6 +72,7 @@ final class NewsValidator extends DomainValidator {
         validateAuthorId(authorId);
         validateAuthorName(authorName);
         validatePublishedAt(publishedAt);
+        validateEventPeriod(type, eventStartAt, eventEndAt);
         validatePin(pinned, pinOrder);
     }
 
@@ -112,6 +120,25 @@ final class NewsValidator extends DomainValidator {
     private static void validatePublishedAt(Instant publishedAt) {
         validateNotNull(publishedAt, NEWS_PUBLISHED_AT_NULL);
         //TODO: PublishedAt 포멧 검증 필요
+    }
+
+    private static void validateEventPeriod(
+            NewsType type, Instant eventStartAt, Instant eventEndAt) {
+        if (type == NewsType.EVENT) {
+            validateNotNull(eventStartAt, NEWS_EVENT_START_AT_NULL);
+            validateNotNull(eventEndAt, NEWS_EVENT_END_AT_NULL);
+            if (eventStartAt.isAfter(eventEndAt)) {
+                throw new DomainValidationException(NEWS_EVENT_PERIOD_INVALID);
+            }
+            return;
+        }
+
+        if (eventStartAt != null) {
+            throw new DomainValidationException(NEWS_EVENT_START_AT_NOT_ALLOWED);
+        }
+        if (eventEndAt != null) {
+            throw new DomainValidationException(NEWS_EVENT_END_AT_NOT_ALLOWED);
+        }
     }
 
     private static void validatePin(boolean pinned, Integer pinOrder) {

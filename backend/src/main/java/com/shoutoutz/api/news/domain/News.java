@@ -1,6 +1,7 @@
 package com.shoutoutz.api.news.domain;
 
 import com.shoutoutz.api.common.util.DataResolveUtil;
+import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
 import java.time.Instant;
 import lombok.Builder;
@@ -20,6 +21,8 @@ public class News {
     private final Long authorId;
     private final String authorName;
     private final Instant publishedAt;
+    private final Instant eventStartAt;
+    private final Instant eventEndAt;
     private final boolean pinned;
     private final Integer pinOrder;
     private final NewsCta cta;
@@ -34,6 +37,8 @@ public class News {
             Long authorId,
             String authorName,
             Instant publishedAt,
+            Instant eventStartAt,
+            Instant eventEndAt,
             boolean pinned,
             Integer pinOrder,
             NewsCta cta
@@ -55,6 +60,8 @@ public class News {
                 authorId,
                 sanitizedAuthorName,
                 publishedAt,
+                eventStartAt,
+                eventEndAt,
                 pinned,
                 pinOrder
         );
@@ -68,6 +75,8 @@ public class News {
         this.authorId = authorId;
         this.authorName = sanitizedAuthorName;
         this.publishedAt = publishedAt;
+        this.eventStartAt = eventStartAt;
+        this.eventEndAt = eventEndAt;
         this.pinned = pinned;
         this.pinOrder = pinOrder;
         this.cta = cta;
@@ -92,6 +101,8 @@ public class News {
                 .authorId(authorId)
                 .authorName(authorName)
                 .publishedAt(publishedAt)
+                .eventStartAt(null)
+                .eventEndAt(null)
                 .pinned(false)
                 .pinOrder(null)
                 .cta(cta)
@@ -108,9 +119,53 @@ public class News {
                 .authorId(authorId)
                 .authorName(body.authorName())
                 .publishedAt(publishedAt)
+                .eventStartAt(null)
+                .eventEndAt(null)
                 .pinned(false)
                 .pinOrder(null)
                 .cta(cta)
                 .build();
+    }
+
+    public static News createEvent(
+            String title,
+            String summary,
+            String body,
+            long authorId,
+            String authorName,
+            Instant eventStartAt,
+            Instant eventEndAt,
+            NewsCta cta,
+            Instant publishedAt
+    ) {
+        return News.builder()
+                .id(null)
+                .type(NewsType.EVENT)
+                .title(title)
+                .summary(summary)
+                .body(body)
+                .authorId(authorId)
+                .authorName(authorName)
+                .publishedAt(publishedAt)
+                .eventStartAt(eventStartAt)
+                .eventEndAt(eventEndAt)
+                .pinned(false)
+                .pinOrder(null)
+                .cta(cta)
+                .build();
+    }
+
+    public static News createEvent(EventCreateRequest body, Long authorId, NewsCta cta, Instant publishedAt) {
+        return createEvent(
+                body.title(),
+                body.summary(),
+                body.body(),
+                authorId,
+                body.authorName(),
+                body.eventStartAt(),
+                body.eventEndAt(),
+                cta,
+                publishedAt
+        );
     }
 }

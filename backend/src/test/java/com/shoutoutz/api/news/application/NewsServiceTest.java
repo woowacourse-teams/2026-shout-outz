@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
 import com.shoutoutz.api.news.domain.NewsRepository;
+import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
 import java.time.Clock;
 import java.time.Instant;
@@ -78,6 +79,20 @@ class NewsServiceTest {
         verifyNoInteractions(clock, newsRepository);
     }
 
+    @Test
+    @DisplayName("인증 구현 전 임시 작성자 ID가 유효하지 않아 이벤트를 저장하지 않는다")
+    void rejectsEventWhileAuthenticationIsPending() {
+        when(clock.instant()).thenReturn(PUBLISHED_AT);
+
+        assertThatThrownBy(() -> newsService.createEvent(eventRequestWithCta()))
+                .isInstanceOfSatisfying(DomainValidationException.class,
+                        error -> Assertions.assertThat(error.getErrorCode())
+                                .isEqualTo(NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE));
+
+        verify(clock).instant();
+        verifyNoInteractions(newsRepository);
+    }
+
     private void assertInvalidAuthorId(NoticeCreateRequest request) {
         assertThatThrownBy(() -> newsService.createNotice(request))
                 .isInstanceOfSatisfying(DomainValidationException.class,
@@ -102,6 +117,18 @@ class NewsServiceTest {
                 "2026년 9월 10일에 점검을 진행합니다.",
                 "샤라웃 운영팀",
                 null
+        );
+    }
+
+    private EventCreateRequest eventRequestWithCta() {
+        return new EventCreateRequest(
+                "프로젝트 아카이빙 챌린지",
+                "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                "프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.",
+                "샤라웃 운영팀",
+                Instant.parse("2026-09-01T00:00:00Z"),
+                Instant.parse("2026-09-30T23:59:59Z"),
+                new EventCreateRequest.Cta("프로젝트 등록하기", "/projects/3001")
         );
     }
 

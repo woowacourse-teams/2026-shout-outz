@@ -18,6 +18,8 @@ import org.junit.jupiter.api.Test;
 class NewsTest {
 
     private static final Instant PUBLISHED_AT = Instant.parse("2026-09-05T00:00:00Z");
+    private static final Instant EVENT_START_AT = Instant.parse("2026-09-01T00:00:00Z");
+    private static final Instant EVENT_END_AT = Instant.parse("2026-09-30T23:59:59Z");
 
     @Test
     @DisplayName("공지 생성 시 공지 유형과 핀 기본값을 설정한다")
@@ -64,6 +66,54 @@ class NewsTest {
     }
 
     @Test
+    @DisplayName("이벤트 생성 시 이벤트 유형과 기간을 저장하고 고정하지 않는다")
+    void createsEventWithPeriodAndDefaultPinState() {
+        News event = News.createEvent(
+                "프로젝트 아카이빙 챌린지",
+                "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                "프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.",
+                1L,
+                "샤라웃 운영팀",
+                EVENT_START_AT,
+                EVENT_END_AT,
+                null,
+                PUBLISHED_AT
+        );
+
+        assertThat(event.getType()).isEqualTo(NewsType.EVENT);
+        assertThat(event.getEventStartAt()).isEqualTo(EVENT_START_AT);
+        assertThat(event.getEventEndAt()).isEqualTo(EVENT_END_AT);
+        assertThat(event.isPinned()).isFalse();
+        assertThat(event.getPinOrder()).isNull();
+    }
+
+    @ParameterizedTest
+    @MethodSource("eventPeriodErrors")
+    @DisplayName("이벤트 기간이 없거나 순서가 잘못되면 생성할 수 없다")
+    void rejectsInvalidEventPeriod(Instant startAt, Instant endAt, NewsErrorCode expected) {
+        assertThatThrownBy(() -> News.createEvent(
+                "이벤트",
+                "요약",
+                "본문",
+                1L,
+                "작성자",
+                startAt,
+                endAt,
+                null,
+                PUBLISHED_AT
+        )).isInstanceOfSatisfying(DomainValidationException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(expected));
+    }
+
+    static Stream<Arguments> eventPeriodErrors() {
+        return Stream.of(
+                Arguments.of(null, EVENT_END_AT, NewsErrorCode.NEWS_EVENT_START_AT_NULL),
+                Arguments.of(EVENT_START_AT, null, NewsErrorCode.NEWS_EVENT_END_AT_NULL),
+                Arguments.of(EVENT_END_AT, EVENT_START_AT, NewsErrorCode.NEWS_EVENT_PERIOD_INVALID)
+        );
+    }
+
+    @Test
     @DisplayName("작성자 ID가 0이면 공지를 생성할 수 없다")
     void rejectsInvalidAuthorId() {
         assertThatThrownBy(() -> News.createNotice(
@@ -103,7 +153,11 @@ class NewsTest {
     @EnumSource(NewsType.class)
     @DisplayName("소식 생성 시 지정한 유형을 저장한다")
     void preservesType(NewsType type) {
-        assertThat(validBuilder().type(type).build().getType()).isEqualTo(type);
+        News.NewsBuilder builder = validBuilder().type(type);
+        if (type == NewsType.EVENT) {
+            builder.eventStartAt(EVENT_START_AT).eventEndAt(EVENT_END_AT);
+        }
+        assertThat(builder.build().getType()).isEqualTo(type);
     }
 
     @Test
