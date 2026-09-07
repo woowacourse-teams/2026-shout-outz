@@ -37,5 +37,11 @@ export default defineConfig(
       globals: globals.node,
     },
   },
+  {
+    files: ['**/*.test.{ts,tsx}', 'jest.setup.ts'],
+    languageOptions: {
+      globals: globals.jest,
+    },
+  },
   prettierConfig,
 );
