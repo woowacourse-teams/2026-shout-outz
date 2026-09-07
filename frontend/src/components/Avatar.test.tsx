@@ -15,10 +15,13 @@ describe('Avatar', () => {
     expect(screen.getByRole('img', { name: '정우진' })).toHaveAttribute('src', AVATAR_URL);
   });
 
-  it('src가 없으면 src 속성 없이 렌더해 깨진 이미지 아이콘을 만들지 않는다', () => {
+  it('src가 없으면 img 대신 div로 렌더해 깨진 이미지와 alt 텍스트를 노출하지 않는다', () => {
     render(<Avatar alt="정우진" />);
 
-    expect(screen.getByRole('img', { name: '정우진' })).not.toHaveAttribute('src');
+    const avatar = screen.getByRole('img', { name: '정우진' });
+
+    expect(avatar.tagName).toBe('DIV');
+    expect(avatar).toBeEmptyDOMElement();
   });
 
   it('alt를 빈 문자열로 넘기면 접근성 트리에서 무시된다', () => {
@@ -46,8 +49,8 @@ describe('Avatar', () => {
   });
 
   it('size를 지정하지 않으면 md가 적용된다', () => {
-    const { container: 기본 } = render(<Avatar alt="정우진" />);
-    const { container: 명시 } = render(<Avatar size="md" alt="정우진" />);
+    const { container: 기본 } = render(<Avatar src={AVATAR_URL} alt="정우진" />);
+    const { container: 명시 } = render(<Avatar src={AVATAR_URL} size="md" alt="정우진" />);
 
     expect(기본.querySelector('img')!.className).toBe(명시.querySelector('img')!.className);
   });
@@ -64,10 +67,17 @@ describe('Avatar', () => {
     expect(sizeClassesOf(screen.getByRole('img', { name: '정우진' }))).toEqual(['size-18']);
   });
 
-  it('wrapper 없이 img 엘리먼트 하나만 렌더한다', () => {
+  it('wrapper 없이 엘리먼트 하나만 렌더한다', () => {
     const { container } = render(<Avatar src={AVATAR_URL} alt="정우진" />);
 
     expect(container.childElementCount).toBe(1);
     expect(container.firstElementChild?.tagName).toBe('IMG');
+  });
+
+  it('src와 alt가 모두 없으면 접근성 트리에 노출되지 않는다', () => {
+    const { container } = render(<Avatar alt="" />);
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(container.firstElementChild).not.toHaveAttribute('aria-label');
   });
 });
