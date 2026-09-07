@@ -1,6 +1,7 @@
 package com.shoutoutz.api.news.domain;
 
 import com.shoutoutz.api.common.util.DataResolveUtil;
+import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Getter;
@@ -72,7 +73,7 @@ public class News {
         this.cta = cta;
     }
 
-    //TODO: 해당 메서드는 공지 생성 사용자 요청에 의해서만 실행된다. 이에 따라 Req를 파라미터로 담는 방향 고민
+    //TODO: 해당 메서드는 공지 생성 사용자 요청에 의해서만 실행된다. 이에 따라 Req를 파라미터로 받는 메서드만 유지할지 논의(밑에 오버로드한 메서드만 유지할지)
     public static News createNotice(
             String title,
             String summary,
@@ -90,6 +91,22 @@ public class News {
                 .body(body)
                 .authorId(authorId)
                 .authorName(authorName)
+                .publishedAt(publishedAt)
+                .pinned(false)
+                .pinOrder(null)
+                .cta(cta)
+                .build();
+    }
+
+    public static News createNotice(NoticeCreateRequest body, Long authorId, NewsCta cta, Instant publishedAt) {
+        return News.builder()
+                .id(null)
+                .type(NewsType.NOTICE)
+                .title(body.title())
+                .summary(body.summary())
+                .body(body.body())
+                .authorId(authorId)
+                .authorName(body.authorName())
                 .publishedAt(publishedAt)
                 .pinned(false)
                 .pinOrder(null)
