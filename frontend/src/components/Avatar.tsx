@@ -29,3 +29,16 @@ export interface AvatarProps extends Omit<ComponentProps<'img'>, 'width' | 'heig
    */
   alt: string;
 }
+
+const BASE = 'shrink-0 rounded-full bg-primary-50 object-cover';
+
+const SIZE_CLASSES: Record<AvatarSize, string> = {
+  xs: 'size-5',
+  sm: 'size-7',
+  md: 'size-8',
+  lg: 'size-13',
+};
+
+export function Avatar({ size = 'md', className, ...props }: AvatarProps) {
+  return <img className={cn(BASE, SIZE_CLASSES[size], className)} {...props} />;
+}
