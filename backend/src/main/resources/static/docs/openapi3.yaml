@@ -185,9 +185,9 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"}]}"
         "201":
           description: "201"
           headers:
@@ -202,62 +202,6 @@ paths:
               examples:
                 auth-signup:
                   value: "{\"status\":\"success\",\"data\":{\"userId\":1}}"
-  /login/oauth2/code/github:
-    get:
-      tags:
-      - Auth
-      summary: GitHub 로그인 Callback
-      description: "GitHub 승인 시 code와 state, 거절 시 error=access_denied와 state를 검증한다\
-        . 처리 후 로그인 또는 가입 대기 상태를 만들고 프론트엔드로 이동한다."
-      operationId: auth-github-callback
-      parameters:
-      - name: code
-        in: query
-        description: GitHub 승인 시 발급되는 Authorization Code
-        required: false
-        schema:
-          type: string
-      - name: state
-        in: query
-        description: 로그인 시작 요청과 Callback을 연결하는 검증값
-        required: true
-        schema:
-          type: string
-      - name: error
-        in: query
-        description: GitHub 거절 시 전달되는 access_denied
-        required: false
-        schema:
-          type: string
-      - name: Cookie
-        in: header
-        description: 로그인 시작 시 발급된 JSESSIONID
-        required: true
-        schema:
-          type: string
-        example: JSESSIONID=session-id
-      responses:
-        "302":
-          description: "302"
-          headers:
-            Location:
-              description: OAuth 처리 후 이동할 프론트엔드 URI
-              schema:
-                type: string
-            Set-Cookie:
-              description: 인증 또는 가입 대기 상태로 회전된 JSESSIONID
-              schema:
-                type: string
-        "400":
-          description: "400"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                auth-github-callback-session-missing:
-                  value: "{\"status\":\"error\",\"code\":\"OAUTH_LOGIN_SESSION_NOT_FOUND\"\
-                    ,\"message\":\"OAuth 로그인 세션을 찾을 수 없습니다.\"}"
   /oauth2/authorization/github:
     get:
       tags:
@@ -294,16 +238,17 @@ components:
           type: array
           description: 요청 필드별 오류
           items:
+            required:
+            - field
+            - message
             type: object
             properties:
               field:
                 type: string
                 description: 오류가 발생한 요청 필드
-                nullable: true
               message:
                 type: string
                 description: 필드 오류 설명
-                nullable: true
         message:
           type: string
           description: 오류 설명

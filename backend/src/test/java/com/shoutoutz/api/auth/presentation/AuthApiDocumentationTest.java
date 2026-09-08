@@ -138,6 +138,7 @@ class AuthApiDocumentationTest {
                                 .tag("Auth")
                                 .summary("GitHub 로그인 Callback")
                                 .description(CALLBACK_DESCRIPTION)
+                                .privateResource(true)
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
                                                 .description("로그인 시작 시 발급된 JSESSIONID")
@@ -184,6 +185,7 @@ class AuthApiDocumentationTest {
                                 .tag("Auth")
                                 .summary("GitHub 로그인 Callback")
                                 .description(CALLBACK_DESCRIPTION)
+                                .privateResource(true)
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
                                                 .description("로그인 시작 시 발급된 JSESSIONID")

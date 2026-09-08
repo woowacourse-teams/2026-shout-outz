@@ -69,6 +69,7 @@ openapi3 {
     description = 'Shout-outz Backend API'
     version = project.version
     format = 'yaml'
+    separatePublicApi = true
 }
 
 /**
@@ -77,6 +78,8 @@ openapi3 {
 tasks.register('copyOasToSwagger', Copy) {
     dependsOn tasks.named('openapi3')
 
-    from(layout.buildDirectory.file('api-spec/openapi3.yaml'))
+    from(layout.buildDirectory.file('api-spec/openapi3-public.yaml')) {
+        rename { 'openapi3.yaml' }
+    }
     into(layout.projectDirectory.dir('src/main/resources/static/docs'))
 }
