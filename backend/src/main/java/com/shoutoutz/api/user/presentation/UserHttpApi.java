@@ -11,6 +11,7 @@ import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryRespon
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -38,6 +39,16 @@ public class UserHttpApi {
             @LoginUser AuthenticatedUser authenticatedUser
     ) {
         UserProfileResult result = userQueryService.getMyProfile(authenticatedUser.userId());
+        UserProfileResponse response = UserProfileResponse.from(result);
+
+        return ResponseEntity.ok(SuccessResponse.success(response));
+    }
+
+    @GetMapping("/{handle}")
+    public ResponseEntity<SuccessResponse<UserProfileResponse>> getPublicProfile(
+            @PathVariable String handle
+    ) {
+        UserProfileResult result = userQueryService.getPublicProfile(handle);
         UserProfileResponse response = UserProfileResponse.from(result);
 
         return ResponseEntity.ok(SuccessResponse.success(response));

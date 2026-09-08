@@ -27,4 +27,10 @@ public class UserRepositoryImpl implements UserRepository {
         return userJpaRepository.findById(id)
                 .map(UserMapper::toDomain);
     }
+
+    @Override
+    public Optional<User> findByHandle(String handle) {
+        return userJpaRepository.findByHandleIgnoreCase(handle)
+                .map(UserMapper::toDomain);
+    }
 }

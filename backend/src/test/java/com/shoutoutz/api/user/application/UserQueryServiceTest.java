@@ -3,6 +3,8 @@ package com.shoutoutz.api.user.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.user.application.dto.result.UserProfileResult;
@@ -16,6 +18,7 @@ import com.shoutoutz.api.user.domain.UserRepository;
 import com.shoutoutz.api.user.domain.UserRole;
 import com.shoutoutz.api.user.domain.UserStatus;
 import com.shoutoutz.api.user.domain.UserType;
+import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -138,5 +141,59 @@ class UserQueryServiceTest {
         assertThat(result.githubProfileUrl()).isEqualTo("https://github.com/zzaekkii");
         assertThat(result.blogUrl()).isEqualTo("https://zzaekkii.dev");
         assertThat(result.counts()).isEqualTo(counts);
+    }
+
+    @Test
+    @DisplayName("handle로 공개 프로필을 조회한다")
+    void getPublicProfile() {
+        User user = User.builder()
+                .id(1L)
+                .handle("zzaekkii")
+                .status(UserStatus.BANNED)
+                .role(UserRole.USER)
+                .build();
+        UserProfile profile = UserProfile.builder()
+                .userId(1L)
+                .displayName("재키")
+                .userType(UserType.GENERAL)
+                .build();
+        UserProfileCounts counts = new UserProfileCounts(2L, 18L);
+        given(userRepository.findByHandle("zzaekkii")).willReturn(Optional.of(user));
+        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
+        given(userProfileCountsRepository.countByUserId(1L)).willReturn(counts);
+
+        UserProfileResult result = userQueryService.getPublicProfile("zzaekkii");
+
+        assertThat(result.userId()).isEqualTo(1L);
+        assertThat(result.handle()).isEqualTo("zzaekkii");
+        assertThat(result.displayName()).isEqualTo("재키");
+        assertThat(result.counts()).isEqualTo(counts);
+    }
+
+    @Test
+    @DisplayName("탈퇴한 사용자의 공개 프로필은 개인정보를 숨긴다")
+    void getDeletedUserPublicProfile() {
+        User user = User.builder()
+                .id(1L)
+                .handle("zzaekkii")
+                .status(UserStatus.DELETED)
+                .role(UserRole.USER)
+                .deletedAt(Instant.now())
+                .build();
+        given(userRepository.findByHandle("zzaekkii")).willReturn(Optional.of(user));
+
+        UserProfileResult result = userQueryService.getPublicProfile("zzaekkii");
+
+        assertThat(result.displayName()).isEqualTo("탈퇴한 사용자");
+        assertThat(result.userType()).isNull();
+        assertThat(result.track()).isNull();
+        assertThat(result.cohort()).isNull();
+        assertThat(result.bio()).isNull();
+        assertThat(result.avatarImageId()).isNull();
+        assertThat(result.githubProfileUrl()).isNull();
+        assertThat(result.blogUrl()).isNull();
+        assertThat(result.counts()).isEqualTo(new UserProfileCounts(0L, 0L));
+        then(userProfileRepository).should(never()).findByUserId(1L);
+        then(userProfileCountsRepository).should(never()).countByUserId(1L);
     }
 }

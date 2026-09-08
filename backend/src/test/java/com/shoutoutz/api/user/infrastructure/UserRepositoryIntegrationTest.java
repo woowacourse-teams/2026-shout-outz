@@ -61,4 +61,15 @@ class UserRepositoryIntegrationTest {
             userJpaRepository.flush();
         }).isInstanceOf(DataIntegrityViolationException.class);
     }
+
+    @Test
+    @DisplayName("핸들은 대소문자를 구분하지 않고 조회한다")
+    void findsUserByHandleIgnoringCase() {
+        User savedUser = userRepository.save(User.initialize("zzaekkii-handle"));
+
+        User foundUser = userRepository.findByHandle("Zzaekkii-Handle").orElseThrow();
+
+        assertThat(foundUser.getId()).isEqualTo(savedUser.getId());
+        assertThat(foundUser.getHandle()).isEqualTo(new Handle("zzaekkii-handle"));
+    }
 }
