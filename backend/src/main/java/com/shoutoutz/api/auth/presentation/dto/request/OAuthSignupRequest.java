@@ -7,9 +7,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record OAuthSignupRequest(
-        @NotBlank String handle,
-        @NotBlank String displayName,
-        @NotNull UserType userType,
+        @NotBlank(message = "handle은 필수입니다.") String handle,
+        @NotBlank(message = "displayName은 필수입니다.") String displayName,
+        @NotNull(message = "userType은 필수입니다.") UserType userType,
         String track,
         Short cohort
 ) {
