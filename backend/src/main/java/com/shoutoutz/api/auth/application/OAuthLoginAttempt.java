@@ -38,11 +38,15 @@ public record OAuthLoginAttempt(
     }
 
     public void validateCallback(String callbackState, Instant validatedAt) {
-        if (!state.equals(callbackState)) {
-            throw new IllegalArgumentException("OAuth state가 일치하지 않습니다.");
-        }
+        validateState(callbackState);
         if (validatedAt.isAfter(createdAt.plus(VALIDITY))) {
             throw new IllegalArgumentException("OAuth 로그인 시도가 만료되었습니다.");
+        }
+    }
+
+    public void validateState(String callbackState) {
+        if (!state.equals(callbackState)) {
+            throw new IllegalArgumentException("OAuth state가 일치하지 않습니다.");
         }
     }
 

@@ -28,11 +28,31 @@ class AuthSessionAccessorTest {
         );
         authSessionAccessor.saveLoginAttempt(session, attempt);
 
-        OAuthLoginAttempt consumed = authSessionAccessor.consumeLoginAttempt(session);
+        OAuthLoginAttempt consumed = authSessionAccessor.consumeLoginAttempt(session, "state");
 
         assertThat(consumed).isEqualTo(attempt);
-        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session))
+        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session, "state"))
                 .isInstanceOf(BadRequestException.class);
+    }
+
+    @Test
+    @DisplayName("Callback state가 일치하지 않으면 OAuth 로그인 시도를 유지한다")
+    void preservesLoginAttemptWhenStateDoesNotMatch() {
+        MockHttpSession session = new MockHttpSession();
+        OAuthLoginAttempt attempt = new OAuthLoginAttempt(
+                "expected-state",
+                "code-verifier",
+                Instant.parse("2026-09-03T00:00:00Z")
+        );
+        authSessionAccessor.saveLoginAttempt(session, attempt);
+
+        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(
+                session,
+                "other-state"
+        )).isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(authSessionAccessor.consumeLoginAttempt(session, "expected-state"))
+                .isEqualTo(attempt);
     }
 
     @Test

@@ -20,16 +20,21 @@ public class AuthSessionAccessor {
         session.setAttribute(LOGIN_ATTEMPT, attempt);
     }
 
-    public OAuthLoginAttempt consumeLoginAttempt(HttpSession session) {
+    public OAuthLoginAttempt consumeLoginAttempt(HttpSession session, String callbackState) {
         if (session == null) {
             throw new BadRequestException(AuthErrorCode.OAUTH_LOGIN_SESSION_NOT_FOUND);
         }
-        Object value = session.getAttribute(LOGIN_ATTEMPT);
-        session.removeAttribute(LOGIN_ATTEMPT);
-        if (!(value instanceof OAuthLoginAttempt attempt)) {
-            throw new BadRequestException(AuthErrorCode.OAUTH_LOGIN_ATTEMPT_NOT_FOUND);
+
+        synchronized (session) {
+            Object value = session.getAttribute(LOGIN_ATTEMPT);
+            if (!(value instanceof OAuthLoginAttempt attempt)) {
+                throw new BadRequestException(AuthErrorCode.OAUTH_LOGIN_ATTEMPT_NOT_FOUND);
+            }
+
+            attempt.validateState(callbackState);
+            session.removeAttribute(LOGIN_ATTEMPT);
+            return attempt;
         }
-        return attempt;
     }
 
     public void saveAuthentication(HttpSession session, Long userId, UserRole role) {

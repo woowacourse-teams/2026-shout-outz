@@ -60,7 +60,7 @@ class OAuthLoginHttpApiTest {
         assertThat(session.getId()).isNotEqualTo(previousSessionId);
         assertThat(authenticatedSession.userId()).isEqualTo(1L);
         assertThat(authenticatedSession.role()).isEqualTo(UserRole.USER);
-        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session))
+        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session, "state"))
                 .isInstanceOf(BadRequestException.class);
         assertThat(response.getHeaders().getLocation())
                 .isEqualTo(URI.create("http://localhost:3000/oauth/callback"));
@@ -88,7 +88,7 @@ class OAuthLoginHttpApiTest {
         assertThat(session.getId()).isNotEqualTo(previousSessionId);
         assertThat(authSessionAccessor.findPendingIdentity(session)).contains(identity);
         assertThat(authSessionAccessor.findAuthentication(session)).isEmpty();
-        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session))
+        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session, "state"))
                 .isInstanceOf(BadRequestException.class);
     }
 
@@ -106,10 +106,41 @@ class OAuthLoginHttpApiTest {
         verify(oauthLoginService).validateGitHubCallback("state", loginAttempt());
         assertThat(authSessionAccessor.findAuthentication(session)).isEmpty();
         assertThat(authSessionAccessor.findPendingIdentity(session)).isEmpty();
-        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session))
+        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session, "state"))
                 .isInstanceOf(BadRequestException.class);
         assertThat(response.getHeaders().getLocation())
                 .isEqualTo(URI.create("http://localhost:3000/oauth/callback"));
+    }
+
+    @Test
+    @DisplayName("로그인 성공 Callback의 state가 다르면 로그인 시도를 유지한다")
+    void preservesAttemptWhenSuccessfulCallbackStateDoesNotMatch() {
+        MockHttpServletRequest request = callbackRequest();
+        MockHttpSession session = (MockHttpSession) request.getSession();
+
+        assertThatThrownBy(() -> oauthLoginHttpApi.callbackGitHub(
+                "authorization-code",
+                "other-state",
+                request
+        )).isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(authSessionAccessor.consumeLoginAttempt(session, "state"))
+                .isEqualTo(loginAttempt());
+    }
+
+    @Test
+    @DisplayName("로그인 거절 Callback의 state가 다르면 로그인 시도를 유지한다")
+    void preservesAttemptWhenDeniedCallbackStateDoesNotMatch() {
+        MockHttpServletRequest request = callbackRequest();
+        MockHttpSession session = (MockHttpSession) request.getSession();
+
+        assertThatThrownBy(() -> oauthLoginHttpApi.handleDeniedGitHubAuthorization(
+                "other-state",
+                request
+        )).isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(authSessionAccessor.consumeLoginAttempt(session, "state"))
+                .isEqualTo(loginAttempt());
     }
 
     private MockHttpServletRequest callbackRequest() {
