@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
+import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.visitor.application.VisitorService;
 import com.shoutoutz.api.visitor.presentation.dto.request.VisitorSaveRequest;
 import com.shoutoutz.api.visitor.presentation.dto.response.VisitorSaveResponse;
@@ -80,7 +81,7 @@ class VisitorHttpApiTest {
                                 .summary("방문자 생성")
                                 .description("방문자를 생성한다.")
                                 .requestSchema(Schema.schema("VisitorSaveRequest"))
-                                .responseSchema(Schema.schema("SuccessResponseVisitorSaveResponse"))
+                                .responseSchema(Schema.schema("VisitorCreateSuccessResponse"))
                                 .requestFields(
                                         fieldWithPath("example")
                                                 .type(STRING)
@@ -122,8 +123,10 @@ class VisitorHttpApiTest {
                         "visitor-create-invalid",
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Visitor")
-                                .summary("방문자 생성 실패")
-                                .description("example이 비어 있으면 400 Bad Request를 반환한다.")
+                                .summary("방문자 생성")
+                                .description("방문자를 생성한다.")
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
                                 .build())
                 ));
     }

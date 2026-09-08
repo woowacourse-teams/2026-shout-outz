@@ -18,8 +18,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
+import com.shoutoutz.api.common.exception.custom.DomainValidationException;
+import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.news.application.NewsService;
 import com.shoutoutz.api.news.domain.EventStatus;
+import com.shoutoutz.api.news.domain.NewsErrorCode;
 import com.shoutoutz.api.news.domain.NewsType;
 import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
@@ -48,8 +51,11 @@ class NewsHttpApiTest {
     @MockitoBean
     private NewsService newsService;
 
+    /**
+     * DOCS: /api/v1/news/notices
+     */
     @Test
-    @DisplayName("공지 등록 성공 테스트. 공통 성공 응답과 201을 반환한다")
+    @DisplayName("공지 등록 성공 테스트. 201과 생성된 공지 정보를 반환한다.")
     void returnsSuccessResponseAndCreatedStatusWhenNoticeIsCreated() throws Exception {
         NoticeCreateResponse response = new NoticeCreateResponse(
                 106L,
@@ -85,7 +91,7 @@ class NewsHttpApiTest {
                                 .summary("공지 생성")
                                 .description("공지와 선택적인 CTA를 생성한다.")
                                 .requestSchema(Schema.schema("NoticeCreateRequest"))
-                                .responseSchema(Schema.schema("SuccessResponseNoticeCreateResponse"))
+                                .responseSchema(Schema.schema("NoticeCreateSuccessResponse"))
                                 .requestFields(
                                         fieldWithPath("title")
                                                 .type(STRING)
@@ -166,7 +172,7 @@ class NewsHttpApiTest {
     }
 
     @Test
-    @DisplayName("CTA가 없으면 null로 응답한다")
+    @DisplayName("공지 등록 성공 테스트. CTA가 없는 경우 cta 항목을 null로 반환한다.")
     void returnsNullCtaWhenCtaIsAbsent() throws Exception {
         NoticeCreateResponse response = new NoticeCreateResponse(
                 107L,
@@ -190,8 +196,11 @@ class NewsHttpApiTest {
                 .andExpect(jsonPath("$.data.pinOrder").value(nullValue()));
     }
 
+    /**
+     * DOCS: /api/v1/news/events
+     */
     @Test
-    @DisplayName("이벤트 등록 성공 시 이벤트 정보와 진행 상태를 포함한 201 응답을 반환한다")
+    @DisplayName("이벤트 등록 성공 테스트. 201과 생성된 이벤트 정보를 반환한다.")
     void returnsEventResponseAndCreatedStatusWhenEventIsCreated() throws Exception {
         EventCreateResponse response = new EventCreateResponse(
                 107L,
@@ -231,7 +240,7 @@ class NewsHttpApiTest {
                                 .summary("이벤트 생성")
                                 .description("이벤트와 선택적인 CTA를 생성한다.")
                                 .requestSchema(Schema.schema("EventCreateRequest"))
-                                .responseSchema(Schema.schema("SuccessResponseEventCreateResponse"))
+                                .responseSchema(Schema.schema("EventCreateSuccessResponse"))
                                 .requestFields(
                                         fieldWithPath("title").type(STRING).description("이벤트 제목"),
                                         fieldWithPath("summary").type(STRING).description("이벤트 요약"),
@@ -270,7 +279,7 @@ class NewsHttpApiTest {
     }
 
     @Test
-    @DisplayName("CTA가 없는 이벤트도 등록 요청을 전달한다")
+    @DisplayName("이벤트 등록 성공 테스트. CTA가 없는 경우 cta 항목을 null로 반환한다.")
     void createsEventWithoutCta() throws Exception {
         EventCreateResponse response = new EventCreateResponse(
                 108L,
@@ -299,6 +308,68 @@ class NewsHttpApiTest {
                 .andExpect(jsonPath("$.data.pinOrder").value(nullValue()));
     }
 
+    /**
+     * 공지 실패 테스트
+     * DOCS: /api/v1/news/notices
+     */
+    @Test
+    @DisplayName("공지 생성 실패 테스트. 필수 요청값이 없으면 400을 반환하고 서비스를 호출하지 않는다.")
+    void returnsBadRequestWithoutCallingServiceWhenNoticeRequiredFieldIsMissing() throws Exception {
+        mockMvc.perform(post("/api/v1/news/notices")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "summary": "요약",
+                                  "body": "본문",
+                                  "authorName": "샤라웃 운영팀"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andDo(document(
+                        "news-notice-create-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("공지 생성")
+                                .description("공지와 선택적인 CTA를 생성한다.")
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verifyNoInteractions(newsService);
+    }
+
+    /**
+     * 이벤트 생성 실패 테스트
+     * DOCS: /api/v1/news/events
+     */
+    @Test
+    @DisplayName("이벤트 생성 실패 테스트. 필수 요청값이 없으면 400을 반환하고 서비스를 호출하지 않는다.")
+    void returnsBadRequestWithoutCallingServiceWhenEventRequiredFieldIsMissing() throws Exception {
+        mockMvc.perform(post("/api/v1/news/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "summary": "요약",
+                                  "body": "본문",
+                                  "authorName": "샤라웃 운영팀"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andDo(document(
+                        "news-event-create-required-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("이벤트 생성")
+                                .description("이벤트와 선택적인 CTA를 생성한다.")
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verifyNoInteractions(newsService);
+    }
+
     @Test
     @DisplayName("이벤트 시작 시각이 없으면 400을 반환하고 서비스를 호출하지 않는다")
     void returnsBadRequestWithoutCallingServiceWhenEventStartAtIsMissing() throws Exception {
@@ -315,11 +386,13 @@ class NewsHttpApiTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andDo(document(
-                        "news-event-create-invalid",
+                        "news-event-create-period-invalid",
                         resource(ResourceSnippetParameters.builder()
                                 .tag("News")
-                                .summary("이벤트 생성 실패")
-                                .description("필수 이벤트 기간이 없으면 400 Bad Request를 반환한다.")
+                                .summary("이벤트 생성")
+                                .description("이벤트와 선택적인 CTA를 생성한다.")
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
                                 .build())
                 ));
 
@@ -345,34 +418,109 @@ class NewsHttpApiTest {
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.details[0].field").value("eventStartAt"))
                 .andExpect(jsonPath("$.details[0].message")
-                        .value("eventStartAt은 eventEndAt보다 늦을 수 없습니다."));
+                        .value("eventStartAt은 eventEndAt보다 늦을 수 없습니다."))
+                .andDo(document(
+                        "news-event-create-period-order-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("이벤트 생성 실패")
+                                .description("이벤트 시작 시각이 종료 시각보다 늦으면 400 Bad Request를 반환한다.")
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
 
         verifyNoInteractions(newsService);
     }
 
     @Test
-    @DisplayName("필수 요청값이 없으면 400을 반환하고 서비스를 호출하지 않는다")
-    void returnsBadRequestWithoutCallingServiceWhenRequiredFieldIsMissing() throws Exception {
+    @DisplayName("공지 CTA 검증에 실패하면 400을 반환하고 서비스를 호출하지 않는다")
+    void returnsBadRequestWhenNoticeCtaIsInvalid() throws Exception {
         mockMvc.perform(post("/api/v1/news/notices")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
+                                  "title": "공지",
                                   "summary": "요약",
                                   "body": "본문",
-                                  "authorName": "샤라웃 운영팀"
+                                  "authorName": "샤라웃 운영팀",
+                                  "cta": {
+                                    "label": "",
+                                    "url": "example.com"
+                                  }
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details[0].field").value("cta"))
                 .andDo(document(
-                        "news-notice-create-invalid",
-                        resource(ResourceSnippetParameters.builder()
-                                .tag("News")
-                                .summary("공지 생성 실패")
-                                .description("필수 요청값이 없으면 400 Bad Request를 반환한다.")
-                                .build())
+                        "news-notice-create-cta-invalid",
+                        resource(errorResponseResource(
+                                "공지 생성",
+                                "공지와 선택적인 CTA를 생성한다."))
                 ));
 
         verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("잘못된 JSON 요청 본문은 400 오류 응답으로 반환한다")
+    void returnsBadRequestWhenNoticeRequestBodyIsMalformed() throws Exception {
+        mockMvc.perform(post("/api/v1/news/notices")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andDo(document(
+                        "news-notice-create-malformed-json",
+                        resource(errorResponseResource(
+                                "공지 생성",
+                                "공지와 선택적인 CTA를 생성한다."))
+                ));
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("공지 생성 중 도메인 예외가 발생하면 500 오류 응답을 반환한다")
+    void returnsInternalServerErrorWhenNoticeDomainValidationFails() throws Exception {
+        given(newsService.createNotice(any(NoticeCreateRequest.class)))
+                .willThrow(new DomainValidationException(NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE));
+
+        mockMvc.perform(post("/api/v1/news/notices")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJsonWithCta()))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value(NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE.name()))
+                .andDo(document(
+                        "news-notice-create-domain-invalid",
+                        resource(errorResponseResource(
+                                "공지 생성",
+                                "공지와 선택적인 CTA를 생성한다."))
+                ));
+
+        verify(newsService).createNotice(any(NoticeCreateRequest.class));
+    }
+
+    @Test
+    @DisplayName("이벤트 생성 중 도메인 예외가 발생하면 500 오류 응답을 반환한다")
+    void returnsInternalServerErrorWhenEventDomainValidationFails() throws Exception {
+        given(newsService.createEvent(any(EventCreateRequest.class)))
+                .willThrow(new DomainValidationException(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID));
+
+        mockMvc.perform(post("/api/v1/news/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(eventRequestJsonWithCta()))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID.name()))
+                .andDo(document(
+                        "news-event-create-domain-invalid",
+                        resource(errorResponseResource(
+                                "이벤트 생성",
+                                "이벤트와 선택적인 CTA를 생성한다."))
+                ));
+
+        verify(newsService).createEvent(any(EventCreateRequest.class));
     }
 
     // TODO: 인증 방식 확정 후 미인증 요청의 401 응답과 서비스 미호출을 검증한다.
@@ -436,5 +584,15 @@ class NewsHttpApiTest {
                   "eventEndAt": "2026-10-31T23:59:59Z"
                 }
                 """;
+    }
+
+    private ResourceSnippetParameters errorResponseResource(String summary, String description) {
+        return ResourceSnippetParameters.builder()
+                .tag("News")
+                .summary(summary)
+                .description(description)
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse())
+                .build();
     }
 }
