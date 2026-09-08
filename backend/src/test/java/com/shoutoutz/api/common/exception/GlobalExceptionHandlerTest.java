@@ -235,7 +235,7 @@ class GlobalExceptionHandlerTest {
                         HttpStatus.INTERNAL_SERVER_ERROR, CommonErrorCode.INTERNAL_SERVER_ERROR),
                 Arguments.of(
                         new DomainValidationException(CommonErrorCode.VALIDATION_FAILED),
-                        HttpStatus.BAD_REQUEST, CommonErrorCode.VALIDATION_FAILED),
+                        HttpStatus.INTERNAL_SERVER_ERROR, CommonErrorCode.VALIDATION_FAILED),
                 Arguments.of(
                         new EntityNotFoundException(CommonErrorCode.RESOURCE_NOT_FOUND),
                         HttpStatus.NOT_FOUND, CommonErrorCode.RESOURCE_NOT_FOUND),

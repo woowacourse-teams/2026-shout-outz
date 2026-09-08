@@ -1,11 +1,13 @@
 package com.shoutoutz.api.news.presentation.dto.request;
 
+import com.shoutoutz.api.news.presentation.validation.ValidEventPeriod;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 
+@ValidEventPeriod
 public record EventCreateRequest(
         @NotBlank(message = "title은 필수입니다.")
         @Size(max = 100, message = "title은 100자를 초과할 수 없습니다.")

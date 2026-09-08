@@ -31,7 +31,7 @@ public record EventCreateResponse(
                 event.getBody(),
                 new Author(event.getAuthorId(), event.getAuthorName()),
                 event.getPublishedAt(),
-                EventStatus.from(now, event.getEventStartAt(), event.getEventEndAt()),
+                event.eventStatusAt(now),
                 event.getEventStartAt(),
                 event.getEventEndAt(),
                 event.isPinned(),

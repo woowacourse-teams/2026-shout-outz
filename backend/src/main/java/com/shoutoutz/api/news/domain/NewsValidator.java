@@ -7,9 +7,6 @@ import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_CTA_INVALID_LABEL
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_CTA_INVALID_URL_LENGTH;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_CTA_LABEL_NULL_OR_BLANK;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_CTA_URL_NULL_OR_BLANK;
-import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_END_AT_NOT_ALLOWED;
-import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_END_AT_NULL;
-import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_PERIOD_INVALID;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_START_AT_NOT_ALLOWED;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_START_AT_NULL;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE;
@@ -59,8 +56,7 @@ final class NewsValidator extends DomainValidator {
             Long authorId,
             String authorName,
             Instant publishedAt,
-            Instant eventStartAt,
-            Instant eventEndAt,
+            NewsEventPeriod eventPeriod,
             boolean pinned,
             Integer pinOrder
     ) {
@@ -72,7 +68,7 @@ final class NewsValidator extends DomainValidator {
         validateAuthorId(authorId);
         validateAuthorName(authorName);
         validatePublishedAt(publishedAt);
-        validateEventPeriod(type, eventStartAt, eventEndAt);
+        validateEventPeriod(type, eventPeriod);
         validatePin(pinned, pinOrder);
     }
 
@@ -122,22 +118,14 @@ final class NewsValidator extends DomainValidator {
         //TODO: PublishedAt 포멧 검증 필요
     }
 
-    private static void validateEventPeriod(
-            NewsType type, Instant eventStartAt, Instant eventEndAt) {
+    private static void validateEventPeriod(NewsType type, NewsEventPeriod eventPeriod) {
         if (type == NewsType.EVENT) {
-            validateNotNull(eventStartAt, NEWS_EVENT_START_AT_NULL);
-            validateNotNull(eventEndAt, NEWS_EVENT_END_AT_NULL);
-            if (eventStartAt.isAfter(eventEndAt)) {
-                throw new DomainValidationException(NEWS_EVENT_PERIOD_INVALID);
-            }
+            validateNotNull(eventPeriod, NEWS_EVENT_START_AT_NULL);
             return;
         }
 
-        if (eventStartAt != null) {
+        if (eventPeriod != null) {
             throw new DomainValidationException(NEWS_EVENT_START_AT_NOT_ALLOWED);
-        }
-        if (eventEndAt != null) {
-            throw new DomainValidationException(NEWS_EVENT_END_AT_NOT_ALLOWED);
         }
     }
 

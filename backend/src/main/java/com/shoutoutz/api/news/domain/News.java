@@ -1,14 +1,15 @@
 package com.shoutoutz.api.news.domain;
 
 import com.shoutoutz.api.common.util.DataResolveUtil;
-import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
-import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Getter;
 
 /**
- * @author josangjun
+ * 공지와 이벤트의 공통 aggregate root.
+ *
+ * 공지와 이벤트가 같은 소식으로 저장되는 구조는 유지하되, 이벤트에만 존재하는
+ * 기간은 {@link NewsEventPeriod} 값 객체로 감싸서 공통 필드와 분리한다.</p>
  */
 @Getter
 public class News {
@@ -21,8 +22,7 @@ public class News {
     private final Long authorId;
     private final String authorName;
     private final Instant publishedAt;
-    private final Instant eventStartAt;
-    private final Instant eventEndAt;
+    private final NewsEventPeriod eventPeriod;
     private final boolean pinned;
     private final Integer pinOrder;
     private final NewsCta cta;
@@ -37,20 +37,16 @@ public class News {
             Long authorId,
             String authorName,
             Instant publishedAt,
-            Instant eventStartAt,
-            Instant eventEndAt,
+            NewsEventPeriod eventPeriod,
             boolean pinned,
             Integer pinOrder,
             NewsCta cta
     ) {
-
-        // 1. 데이터 정제
         String sanitizedTitle = DataResolveUtil.sanitizeString(title);
         String sanitizedSummary = DataResolveUtil.sanitizeString(summary);
         String sanitizedBody = DataResolveUtil.sanitizeString(body);
         String sanitizedAuthorName = DataResolveUtil.sanitizeString(authorName);
 
-        //2. 검증 (cta null 허용으로 검증 제외
         NewsValidator.validateNews(
                 id,
                 type,
@@ -60,13 +56,11 @@ public class News {
                 authorId,
                 sanitizedAuthorName,
                 publishedAt,
-                eventStartAt,
-                eventEndAt,
+                eventPeriod,
                 pinned,
                 pinOrder
         );
 
-        //3. 할당 및 객체 생성
         this.id = id;
         this.type = type;
         this.title = sanitizedTitle;
@@ -75,14 +69,24 @@ public class News {
         this.authorId = authorId;
         this.authorName = sanitizedAuthorName;
         this.publishedAt = publishedAt;
-        this.eventStartAt = eventStartAt;
-        this.eventEndAt = eventEndAt;
+        this.eventPeriod = eventPeriod;
         this.pinned = pinned;
         this.pinOrder = pinOrder;
         this.cta = cta;
     }
 
-    //TODO: 해당 메서드는 공지 생성 사용자 요청에 의해서만 실행된다. 이에 따라 Req를 파라미터로 받는 메서드만 유지할지 논의(밑에 오버로드한 메서드만 유지할지)
+    public Instant getEventStartAt() {
+        return eventPeriod == null ? null : eventPeriod.startAt();
+    }
+
+    public Instant getEventEndAt() {
+        return eventPeriod == null ? null : eventPeriod.endAt();
+    }
+
+    public EventStatus eventStatusAt(Instant now) {
+        return eventPeriod.statusAt(now);
+    }
+
     public static News createNotice(
             String title,
             String summary,
@@ -92,39 +96,17 @@ public class News {
             NewsCta cta,
             Instant publishedAt
     ) {
-        return News.builder()
-                .id(null)
-                .type(NewsType.NOTICE)
-                .title(title)
-                .summary(summary)
-                .body(body)
-                .authorId(authorId)
-                .authorName(authorName)
-                .publishedAt(publishedAt)
-                .eventStartAt(null)
-                .eventEndAt(null)
-                .pinned(false)
-                .pinOrder(null)
-                .cta(cta)
-                .build();
-    }
-
-    public static News createNotice(NoticeCreateRequest body, Long authorId, NewsCta cta, Instant publishedAt) {
-        return News.builder()
-                .id(null)
-                .type(NewsType.NOTICE)
-                .title(body.title())
-                .summary(body.summary())
-                .body(body.body())
-                .authorId(authorId)
-                .authorName(body.authorName())
-                .publishedAt(publishedAt)
-                .eventStartAt(null)
-                .eventEndAt(null)
-                .pinned(false)
-                .pinOrder(null)
-                .cta(cta)
-                .build();
+        return create(
+                NewsType.NOTICE,
+                title,
+                summary,
+                body,
+                authorId,
+                authorName,
+                publishedAt,
+                null,
+                cta
+        );
     }
 
     public static News createEvent(
@@ -138,34 +120,43 @@ public class News {
             NewsCta cta,
             Instant publishedAt
     ) {
+        return create(
+                NewsType.EVENT,
+                title,
+                summary,
+                body,
+                authorId,
+                authorName,
+                publishedAt,
+                new NewsEventPeriod(eventStartAt, eventEndAt),
+                cta
+        );
+    }
+
+    private static News create(
+            NewsType type,
+            String title,
+            String summary,
+            String body,
+            long authorId,
+            String authorName,
+            Instant publishedAt,
+            NewsEventPeriod eventPeriod,
+            NewsCta cta
+    ) {
         return News.builder()
                 .id(null)
-                .type(NewsType.EVENT)
+                .type(type)
                 .title(title)
                 .summary(summary)
                 .body(body)
                 .authorId(authorId)
                 .authorName(authorName)
                 .publishedAt(publishedAt)
-                .eventStartAt(eventStartAt)
-                .eventEndAt(eventEndAt)
+                .eventPeriod(eventPeriod)
                 .pinned(false)
                 .pinOrder(null)
                 .cta(cta)
                 .build();
-    }
-
-    public static News createEvent(EventCreateRequest body, Long authorId, NewsCta cta, Instant publishedAt) {
-        return createEvent(
-                body.title(),
-                body.summary(),
-                body.body(),
-                authorId,
-                body.authorName(),
-                body.eventStartAt(),
-                body.eventEndAt(),
-                cta,
-                publishedAt
-        );
     }
 }

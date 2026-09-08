@@ -8,12 +8,6 @@ public enum EventStatus {
     ENDED;
 
     public static EventStatus from(Instant now, Instant startAt, Instant endAt) {
-        if (now.isBefore(startAt)) {
-            return UPCOMING;
-        }
-        if (now.isAfter(endAt)) {
-            return ENDED;
-        }
-        return ONGOING;
+        return new NewsEventPeriod(startAt, endAt).statusAt(now);
     }
 }

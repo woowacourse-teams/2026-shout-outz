@@ -22,28 +22,52 @@ public class NewsService {
 
     @Transactional
     public NoticeCreateResponse createNotice(NoticeCreateRequest body) {
-        //TODO: 관리자 인증 권한 검증 후, authorId 꺼내기
-        Long authorId = 0L;
-        NewsCta cta = body.cta() == null ? null : new NewsCta(body.cta());
-        News notice = News.createNotice(body, authorId, cta, clock.instant());
-
-        News savedNotice = newsRepository.save(notice);
-
-        return NoticeCreateResponse.from(savedNotice);
+        NewsCta cta = toCta(body.cta());
+        Instant now = clock.instant();
+        News notice = News.createNotice(
+                body.title(),
+                body.summary(),
+                body.body(),
+                resolveAuthorId(),
+                body.authorName(),
+                cta,
+                now
+        );
+        return NoticeCreateResponse.from(newsRepository.save(notice));
     }
 
     @Transactional
     public EventCreateResponse createEvent(EventCreateRequest body) {
-        //TODO: 관리자 인증 권한 검증 후, authorId 꺼내기
-        Long authorId = 0L;
-        NewsCta cta = body.cta() == null
-                ? null
-                : new NewsCta(body.cta().label(), body.cta().url());
+        NewsCta cta = toCta(body.cta());
         Instant now = clock.instant();
-        News event = News.createEvent(body, authorId, cta, now);
+        News event = News.createEvent(
+                body.title(),
+                body.summary(),
+                body.body(),
+                resolveAuthorId(),
+                body.authorName(),
+                body.eventStartAt(),
+                body.eventEndAt(),
+                cta,
+                now
+        );
+        return EventCreateResponse.from(newsRepository.save(event), now);
+    }
 
-        News savedEvent = newsRepository.save(event);
+    private Long resolveAuthorId() {
+        // TODO: 관리자 인증 권한 검증 후, 인증 주체의 authorId를 주입한다.
+        return 0L;
+    }
 
-        return EventCreateResponse.from(savedEvent, now);
+    private NewsCta toCta(NoticeCreateRequest.Cta cta) {
+        return cta == null ? null : toCta(cta.label(), cta.url());
+    }
+
+    private NewsCta toCta(EventCreateRequest.Cta cta) {
+        return cta == null ? null : toCta(cta.label(), cta.url());
+    }
+
+    private NewsCta toCta(String label, String url) {
+        return new NewsCta(label, url);
     }
 }

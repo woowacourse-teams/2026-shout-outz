@@ -327,6 +327,30 @@ class NewsHttpApiTest {
     }
 
     @Test
+    @DisplayName("이벤트 시작 시각이 종료 시각보다 늦으면 400을 반환하고 서비스를 호출하지 않는다")
+    void returnsBadRequestWhenEventStartAtIsAfterEndAt() throws Exception {
+        mockMvc.perform(post("/api/v1/news/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "이벤트",
+                                  "summary": "요약",
+                                  "body": "본문",
+                                  "authorName": "샤라웃 운영팀",
+                                  "eventStartAt": "2026-10-01T00:00:00Z",
+                                  "eventEndAt": "2026-09-30T23:59:59Z"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details[0].field").value("eventStartAt"))
+                .andExpect(jsonPath("$.details[0].message")
+                        .value("eventStartAt은 eventEndAt보다 늦을 수 없습니다."));
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
     @DisplayName("필수 요청값이 없으면 400을 반환하고 서비스를 호출하지 않는다")
     void returnsBadRequestWithoutCallingServiceWhenRequiredFieldIsMissing() throws Exception {
         mockMvc.perform(post("/api/v1/news/notices")

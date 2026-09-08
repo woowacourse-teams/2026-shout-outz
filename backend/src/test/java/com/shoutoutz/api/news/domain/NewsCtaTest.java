@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
-import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,9 +15,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 class NewsCtaTest {
 
     @Test
-    @DisplayName("요청 DTO를 CTA 도메인 객체로 변환한다")
-    void createsCtaFromRequestDto() {
-        NewsCta cta = new NewsCta(new NoticeCreateRequest.Cta(" 일정 확인 ", " example.com "));
+    @DisplayName("라벨과 URL을 정규화해 CTA 도메인 객체로 생성한다")
+    void createsCtaFromValues() {
+        NewsCta cta = new NewsCta(" 일정 확인 ", " example.com ");
 
         assertThat(cta.label()).isEqualTo("일정 확인");
         assertThat(cta.url()).isEqualTo("example.com");

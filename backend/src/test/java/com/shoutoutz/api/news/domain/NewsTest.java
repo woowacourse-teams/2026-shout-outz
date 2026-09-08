@@ -155,7 +155,7 @@ class NewsTest {
     void preservesType(NewsType type) {
         News.NewsBuilder builder = validBuilder().type(type);
         if (type == NewsType.EVENT) {
-            builder.eventStartAt(EVENT_START_AT).eventEndAt(EVENT_END_AT);
+            builder.eventPeriod(new NewsEventPeriod(EVENT_START_AT, EVENT_END_AT));
         }
         assertThat(builder.build().getType()).isEqualTo(type);
     }
