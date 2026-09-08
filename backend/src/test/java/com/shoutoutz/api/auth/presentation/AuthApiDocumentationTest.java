@@ -362,6 +362,23 @@ class AuthApiDocumentationTest {
     }
 
     @Test
+    @DisplayName("우테코 크루 가입 정보가 불완전하면 400으로 응답한다")
+    void rejectIncompleteCrewSignupProfile() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "handle": "zzaekkii",
+                                  "displayName": "재키",
+                                  "userType": "WOOWACOURSE_CREW"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details[0].field").value("track"));
+    }
+
+    @Test
     @DisplayName("가입 대기 OAuth 신원이 없으면 가입 요청을 거부한다")
     void rejectSignupWithoutPendingOAuthIdentity() throws Exception {
         given(authSessionAccessor.findPendingIdentity(any())).willReturn(Optional.empty());
