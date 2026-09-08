@@ -7,69 +7,63 @@ import java.time.LocalDateTime;
 import java.util.regex.Pattern;
 
 /**
- * 도메인 Validator 추상 클래스
- * 모든 도메인 Validator가 상속받아 원자적 검증 단위를 조합하여 사용해야 한다.
+ * 도메인 검증에서 공통으로 사용하는 원자적 검증 유틸리티.
  *
- * 도메인 검증 구현 컨벤션
- * 1. 각 도메인 Validator는 이 클래스를 상속받아야 함
- * 2. validate() 메소드를 static으로 구현
- * 3. 원자적 검증 메소드들을 조합하여 도메인별 검증 구성
- * 4. 구체적 검증 로직은 각 도메인에서 조합하여 구현
+ * 상태를 갖지 않는 정적 메서드만 제공하며, 구체적인 도메인 검증기는 필요한 메서드를 static import하여 도메인별 검증 규칙을 구성한다.
  */
-public abstract class DomainValidator {
-    // 생성자 protected 제한: 자식 클래스에서만 컴파일시 super() 호출 가능. 외부 인스턴스화 방지
-    protected DomainValidator() {}
+public final class DomainValidator {
+    private DomainValidator() {}
 
     /** null/empty/blank 검증 */
-    protected static void validateNotNullOrBlank(String value, ErrorCode errorCode) {
+    public static void validateNotNullOrBlank(String value, ErrorCode errorCode) {
         if (value == null || value.isBlank()) {
             throw new DomainValidationException(errorCode);
         }
     }
 
     /** null이 가능한데, 값이 있는 경우에는 Blank인지 Check */
-    protected static void validateNotBlank(String value, ErrorCode errorCode) {
+    public static void validateNotBlank(String value, ErrorCode errorCode) {
         if (value != null && value.isBlank()) {
             throw new DomainValidationException(errorCode);
         }
     }
 
     /** null 검증 */
-    protected static void validateNotNull(Object value, ErrorCode errorCode) {
+    public static void validateNotNull(Object value, ErrorCode errorCode) {
         if (value == null) {
             throw new DomainValidationException(errorCode);
         }
     }
 
     /** 최소 길이 검증 */
-    protected static void validateMinLength(String value, int minLength, ErrorCode errorCode) {
+    public static void validateMinLength(String value, int minLength, ErrorCode errorCode) {
         if (value.codePointCount(0, value.length()) < minLength) {
             throw new DomainValidationException(errorCode);
         }
     }
 
     /** 최대 길이 검증 */
-    protected static void validateMaxLength(String value, int maxLength, ErrorCode errorCode) {
+    public static void validateMaxLength(String value, int maxLength, ErrorCode errorCode) {
         if (value.codePointCount(0, value.length()) > maxLength) {
             throw new DomainValidationException(errorCode);
         }
     }
 
     /** 정확한 길이 검증 */
-    protected static void validateExactLength(String value, int exactLength, ErrorCode errorCode) {
+    public static void validateExactLength(String value, int exactLength, ErrorCode errorCode) {
         if (value.length() != exactLength) {
             throw new DomainValidationException(errorCode);
         }
     }
 
-    protected static void validateExactLength(int count, int exactLength, ErrorCode errorCode) {
+    public static void validateExactLength(int count, int exactLength, ErrorCode errorCode) {
         if (count != exactLength) {
             throw new DomainValidationException(errorCode);
         }
     }
 
     /** 길이 범위 검증 */
-    protected static void validateLengthRange(
+    public static void validateLengthRange(
             String value, int minLength, int maxLength, ErrorCode errorCode) {
         if (value.length() < minLength || value.length() > maxLength) {
             throw new DomainValidationException(errorCode);
@@ -77,21 +71,21 @@ public abstract class DomainValidator {
     }
 
     /** 패턴 검증 */
-    protected static void validatePattern(String value, Pattern pattern, ErrorCode errorCode) {
+    public static void validatePattern(String value, Pattern pattern, ErrorCode errorCode) {
         if (!pattern.matcher(value).matches()) {
             throw new DomainValidationException(errorCode);
         }
     }
 
     /** URL 프로토콜 검증 */
-    protected static void validateUrlProtocol(String url, String protocol, ErrorCode errorCode) {
+    public static void validateUrlProtocol(String url, String protocol, ErrorCode errorCode) {
         if (!url.startsWith(protocol)) {
             throw new DomainValidationException(errorCode);
         }
     }
 
     /** 특정 문자 포함 여부 검증 */
-    protected static void validateContains(
+    public static void validateContains(
             String value, String requiredSubstring, ErrorCode errorCode) {
         if (!value.contains(requiredSubstring)) {
             throw new DomainValidationException(errorCode);
@@ -99,7 +93,7 @@ public abstract class DomainValidator {
     }
 
     /** 유효한 시간 범위 검증 */
-    protected static void validateDateRange(
+    public static void validateDateRange(
             LocalDateTime startDate, LocalDateTime endDate, ErrorCode errorCode) {
         // null 값에 대해 범위체크 생략
         if (startDate == null || endDate == null) return;
@@ -109,7 +103,7 @@ public abstract class DomainValidator {
     }
 
     /** BigDecimal 범위 검증 */
-    protected static void validateBigDecimalRange(
+    public static void validateBigDecimalRange(
             BigDecimal value, BigDecimal minValue, BigDecimal maxValue, ErrorCode errorCode) {
         if (value.compareTo(minValue) < 0 || value.compareTo(maxValue) > 0) {
             throw new DomainValidationException(errorCode);
@@ -117,14 +111,14 @@ public abstract class DomainValidator {
     }
 
     /** int 범위 검증 */
-    protected static void validateIntRange(
+    public static void validateIntRange(
             int value, int minValue, int maxValue, ErrorCode errorCode) {
         if (value < minValue || value > maxValue) {
             throw new DomainValidationException(errorCode);
         }
     }
 
-    protected static void validateLongRange(
+    public static void validateLongRange(
             long value, long minValue, long maxValue, ErrorCode errorCode) {
         if (value < minValue || value > maxValue) {
             throw new DomainValidationException(errorCode);
@@ -132,7 +126,7 @@ public abstract class DomainValidator {
     }
 
     /** long 최소 사이즈 검증 */
-    protected static void validateLongMinSize(
+    public static void validateLongMinSize(
             long value, long minValue, ErrorCode errorCode) {
         if (value < minValue) {
             throw new DomainValidationException(errorCode);
@@ -140,7 +134,7 @@ public abstract class DomainValidator {
     }
 
     /** BigDecimal 소수점 자리수 검증 */
-    protected static void validateBigDecimalScale(
+    public static void validateBigDecimalScale(
             BigDecimal value, int maxScale, ErrorCode errorCode) {
         if (value.scale() > maxScale) {
             throw new DomainValidationException(errorCode);

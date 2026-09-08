@@ -1,5 +1,9 @@
 package com.shoutoutz.api.news.domain;
 
+import static com.shoutoutz.api.common.validator.DomainValidator.validateLongMinSize;
+import static com.shoutoutz.api.common.validator.DomainValidator.validateMaxLength;
+import static com.shoutoutz.api.common.validator.DomainValidator.validateNotNull;
+import static com.shoutoutz.api.common.validator.DomainValidator.validateNotNullOrBlank;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_AUTHOR_ID_NULL;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_AUTHOR_NAME_NULL_OR_BLANK;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_BODY_NULL_OR_BLANK;
@@ -23,13 +27,12 @@ import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_TITLE_NULL_OR_BLA
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_TYPE_NULL;
 
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
-import com.shoutoutz.api.common.validator.DomainValidator;
 import java.time.Instant;
 
 /**
  * 소식 도메인 전용 Validator.
  */
-final class NewsValidator extends DomainValidator {
+final class NewsValidator {
 
     private static final int MIN_ID_SIZE = 0;
     private static final int MIN_AUTHOR_ID_SIZE = 1;
