@@ -61,12 +61,6 @@ paths:
       operationId: news-event-create
       requestBody:
         content:
-          text/plain;charset=UTF-8:
-            schema:
-              $ref: "#/components/schemas/UnsupportedMediaTypeRequest"
-            examples:
-              news-event-create-unsupported-media-type:
-                value: plain text
           application/json;charset=UTF-8:
             schema:
               $ref: "#/components/schemas/EventCreateRequest"
@@ -241,12 +235,6 @@ paths:
                   }
               news-notice-create-malformed-json:
                 value: "{\"title\":"
-          text/plain;charset=UTF-8:
-            schema:
-              $ref: "#/components/schemas/UnsupportedMediaTypeRequest"
-            examples:
-              news-notice-create-unsupported-media-type:
-                value: plain text
       responses:
         "201":
           description: "201"
@@ -302,9 +290,6 @@ paths:
                     message\":\"입력값을 확인해주세요.\"}"
 components:
   schemas:
-    UnsupportedMediaTypeRequest:
-      title: UnsupportedMediaTypeRequest
-      type: object
     EventCreateRequest:
       title: EventCreateRequest
       required:
