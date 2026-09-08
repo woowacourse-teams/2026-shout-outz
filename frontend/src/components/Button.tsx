@@ -61,7 +61,7 @@ const BASE =
   'inline-flex cursor-pointer items-center justify-center rounded-lg whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:outline-none';
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'bg-primary-600 font-bold text-white hover:bg-primary-700',
+  primary: 'bg-primary-500 font-bold text-white hover:bg-primary-600',
   secondary: 'border border-gray-200 bg-gray-100 font-medium text-gray-600 hover:bg-gray-200',
   outline: 'border border-gray-200 font-bold text-gray-600 hover:bg-gray-50',
   ghost: 'font-medium text-gray-600 hover:bg-gray-100',
