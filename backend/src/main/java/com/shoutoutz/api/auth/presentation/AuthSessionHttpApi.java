@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,21 +25,24 @@ public class AuthSessionHttpApi {
     private final AuthSessionManager authSessionManager;
 
     @GetMapping("/api/v1/auth/session")
-    public SuccessResponse<AuthSessionResponse> getAuthSession(HttpSession session) {
+    public ResponseEntity<SuccessResponse<AuthSessionResponse>> getAuthSession(
+            HttpSession session
+    ) {
         String csrfToken = csrfTokenManager.getOrCreate(session);
         Optional<AuthenticatedSession> authentication =
                 authSessionAccessor.findAuthentication(session);
+        AuthSessionResponse response;
         if (authentication.isPresent()) {
-            return SuccessResponse.success(
-                    AuthSessionResponse.authenticated(authentication.get(), csrfToken)
-            );
+            response = AuthSessionResponse.authenticated(authentication.get(), csrfToken);
+        } else if (authSessionAccessor.findPendingIdentity(session).isPresent()) {
+            response = AuthSessionResponse.signupRequired(csrfToken);
+        } else {
+            response = AuthSessionResponse.unauthenticated(csrfToken);
         }
 
-        if (authSessionAccessor.findPendingIdentity(session).isPresent()) {
-            return SuccessResponse.success(AuthSessionResponse.signupRequired(csrfToken));
-        }
-
-        return SuccessResponse.success(AuthSessionResponse.unauthenticated(csrfToken));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(SuccessResponse.success(response));
     }
 
     @PostMapping("/api/v1/auth/logout")

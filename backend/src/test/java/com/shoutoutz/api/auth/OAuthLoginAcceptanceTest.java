@@ -217,6 +217,7 @@ class OAuthLoginAcceptanceTest {
         assertThat(response.header("Set-Cookie"))
                 .contains("HttpOnly")
                 .contains("SameSite=Lax");
+        assertThat(response.header("Cache-Control")).isEqualTo("no-store");
         assertThat(response.jsonPath().getString("status")).isEqualTo("success");
         assertThat(response.jsonPath().getString("data.status"))
                 .isEqualTo("UNAUTHENTICATED");

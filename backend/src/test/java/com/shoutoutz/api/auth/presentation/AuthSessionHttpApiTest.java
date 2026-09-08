@@ -8,6 +8,7 @@ import com.shoutoutz.api.auth.presentation.dto.response.AuthSessionResponse;
 import com.shoutoutz.api.auth.presentation.security.CsrfTokenManager;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
+import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.user.domain.UserRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,12 +35,15 @@ class AuthSessionHttpApiTest {
     void returnsUnauthenticatedSession() {
         MockHttpSession session = new MockHttpSession();
 
-        AuthSessionResponse response = authSessionHttpApi.getAuthSession(session).data();
+        ResponseEntity<SuccessResponse<AuthSessionResponse>> response =
+                authSessionHttpApi.getAuthSession(session);
+        AuthSessionResponse data = response.getBody().data();
 
-        assertThat(response.status()).isEqualTo(AuthSessionResponse.Status.UNAUTHENTICATED);
-        assertThat(response.userId()).isNull();
-        assertThat(response.role()).isNull();
-        assertThat(response.csrfToken()).isNotBlank();
+        assertThat(data.status()).isEqualTo(AuthSessionResponse.Status.UNAUTHENTICATED);
+        assertThat(data.userId()).isNull();
+        assertThat(data.role()).isNull();
+        assertThat(data.csrfToken()).isNotBlank();
+        assertThat(response.getHeaders().getCacheControl()).isEqualTo("no-store");
     }
 
     @Test
@@ -51,7 +55,7 @@ class AuthSessionHttpApiTest {
                 new OAuthIdentity(OAuthProvider.GITHUB, "12345678", null)
         );
 
-        AuthSessionResponse response = authSessionHttpApi.getAuthSession(session).data();
+        AuthSessionResponse response = authSessionHttpApi.getAuthSession(session).getBody().data();
 
         assertThat(response.status()).isEqualTo(AuthSessionResponse.Status.SIGNUP_REQUIRED);
         assertThat(response.userId()).isNull();
@@ -65,7 +69,7 @@ class AuthSessionHttpApiTest {
         MockHttpSession session = new MockHttpSession();
         authSessionAccessor.saveAuthentication(session, 1L, UserRole.USER);
 
-        AuthSessionResponse response = authSessionHttpApi.getAuthSession(session).data();
+        AuthSessionResponse response = authSessionHttpApi.getAuthSession(session).getBody().data();
 
         assertThat(response.status()).isEqualTo(AuthSessionResponse.Status.AUTHENTICATED);
         assertThat(response.userId()).isEqualTo(1L);
