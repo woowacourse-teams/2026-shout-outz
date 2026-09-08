@@ -4,15 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
+import com.shoutoutz.api.common.exception.custom.UnauthorizedException;
 import com.shoutoutz.api.user.domain.UserRole;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
-import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.ServletWebRequest;
-import org.springframework.web.server.ResponseStatusException;
 
 class LoginUserArgumentResolverTest {
 
@@ -56,9 +55,7 @@ class LoginUserArgumentResolverTest {
                 webRequest,
                 null
         ))
-                .isInstanceOf(ResponseStatusException.class)
-                .extracting(exception -> ((ResponseStatusException) exception).getStatusCode())
-                .isEqualTo(HttpStatus.UNAUTHORIZED);
+                .isInstanceOf(UnauthorizedException.class);
     }
 
     private MethodParameter loginUserParameter() throws NoSuchMethodException {

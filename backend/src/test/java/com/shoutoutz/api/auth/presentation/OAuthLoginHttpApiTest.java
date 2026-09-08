@@ -14,6 +14,7 @@ import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.user.domain.UserRole;
 import java.net.URI;
 import java.time.Instant;
@@ -60,7 +61,7 @@ class OAuthLoginHttpApiTest {
         assertThat(authenticatedSession.userId()).isEqualTo(1L);
         assertThat(authenticatedSession.role()).isEqualTo(UserRole.USER);
         assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
         assertThat(response.getHeaders().getLocation())
                 .isEqualTo(URI.create("http://localhost:3000/oauth/callback"));
     }
@@ -88,7 +89,7 @@ class OAuthLoginHttpApiTest {
         assertThat(authSessionAccessor.findPendingIdentity(session)).contains(identity);
         assertThat(authSessionAccessor.findAuthentication(session)).isEmpty();
         assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
@@ -106,7 +107,7 @@ class OAuthLoginHttpApiTest {
         assertThat(authSessionAccessor.findAuthentication(session)).isEmpty();
         assertThat(authSessionAccessor.findPendingIdentity(session)).isEmpty();
         assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
         assertThat(response.getHeaders().getLocation())
                 .isEqualTo(URI.create("http://localhost:3000/oauth/callback"));
     }

@@ -1,6 +1,8 @@
 package com.shoutoutz.api.auth.presentation.security;
 
+import com.shoutoutz.api.auth.exception.AuthErrorCode;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
+import com.shoutoutz.api.common.response.ErrorResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,7 +11,9 @@ import java.io.IOException;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tools.jackson.databind.ObjectMapper;
 
 @RequiredArgsConstructor
 class CsrfProtectionFilter extends OncePerRequestFilter {
@@ -26,6 +30,7 @@ class CsrfProtectionFilter extends OncePerRequestFilter {
 
     private final CsrfTokenManager csrfTokenManager;
     private final AuthSessionAccessor authSessionAccessor;
+    private final ObjectMapper objectMapper;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -47,6 +52,14 @@ class CsrfProtectionFilter extends OncePerRequestFilter {
         String requestedToken = request.getHeader(CSRF_HEADER);
         if (!csrfTokenManager.matches(request.getSession(false), requestedToken)) {
             response.setStatus(HttpStatus.FORBIDDEN.value());
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            objectMapper.writeValue(
+                    response.getWriter(),
+                    ErrorResponse.error(
+                            AuthErrorCode.CSRF_TOKEN_INVALID.name(),
+                            AuthErrorCode.CSRF_TOKEN_INVALID.getMessage()
+                    )
+            );
             return;
         }
 

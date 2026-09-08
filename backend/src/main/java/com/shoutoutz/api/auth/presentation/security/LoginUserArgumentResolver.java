@@ -1,15 +1,15 @@
 package com.shoutoutz.api.auth.presentation.security;
 
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
+import com.shoutoutz.api.common.exception.code.CommonErrorCode;
+import com.shoutoutz.api.common.exception.custom.UnauthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.MethodParameter;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
-import org.springframework.web.server.ResponseStatusException;
 
 @Component
 class LoginUserArgumentResolver implements HandlerMethodArgumentResolver {
@@ -39,6 +39,6 @@ class LoginUserArgumentResolver implements HandlerMethodArgumentResolver {
             return new AuthenticatedUser(authentication.userId(), authentication.role());
         }
 
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        throw new UnauthorizedException(CommonErrorCode.UNAUTHORIZED);
     }
 }

@@ -148,9 +148,28 @@ class OAuthLoginAcceptanceTest {
                 .get(AUTH_SESSION_PATH);
 
         assertThat(sessionResponse.statusCode()).isEqualTo(200);
-        assertThat(sessionResponse.jsonPath().getString("status"))
+        assertThat(sessionResponse.jsonPath().getString("status")).isEqualTo("success");
+        assertThat(sessionResponse.jsonPath().getString("data.status"))
                 .isEqualTo("SIGNUP_REQUIRED");
-        assertThat(sessionResponse.jsonPath().getString("csrfToken")).isNotBlank();
+        assertThat(sessionResponse.jsonPath().getString("data.csrfToken")).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("OAuth 로그인 세션 없이 Callback을 요청하면 공통 오류 형식으로 거부한다")
+    void rejectsGitHubCallbackWithoutOAuthLoginSession() {
+        Response response = RestAssured.given()
+                .port(port)
+                .queryParam("code", "authorization-code")
+                .queryParam("state", "state")
+                .redirects()
+                .follow(false)
+                .when()
+                .get("/login/oauth2/code/github");
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.jsonPath().getString("status")).isEqualTo("error");
+        assertThat(response.jsonPath().getString("code"))
+                .isEqualTo("OAUTH_LOGIN_SESSION_NOT_FOUND");
     }
 
     @Test
@@ -181,7 +200,7 @@ class OAuthLoginAcceptanceTest {
                 .get(AUTH_SESSION_PATH);
 
         assertThat(sessionResponse.statusCode()).isEqualTo(200);
-        assertThat(sessionResponse.jsonPath().getString("status"))
+        assertThat(sessionResponse.jsonPath().getString("data.status"))
                 .isEqualTo("UNAUTHENTICATED");
     }
 
@@ -198,9 +217,10 @@ class OAuthLoginAcceptanceTest {
         assertThat(response.header("Set-Cookie"))
                 .contains("HttpOnly")
                 .contains("SameSite=Lax");
-        assertThat(response.jsonPath().getString("status"))
+        assertThat(response.jsonPath().getString("status")).isEqualTo("success");
+        assertThat(response.jsonPath().getString("data.status"))
                 .isEqualTo("UNAUTHENTICATED");
-        assertThat(response.jsonPath().getString("csrfToken")).isNotBlank();
+        assertThat(response.jsonPath().getString("data.csrfToken")).isNotBlank();
     }
 
     @Test
@@ -265,7 +285,7 @@ class OAuthLoginAcceptanceTest {
                 .cookie("JSESSIONID", signupPendingSessionId)
                 .when()
                 .get(AUTH_SESSION_PATH);
-        String csrfToken = sessionResponse.jsonPath().getString("csrfToken");
+        String csrfToken = sessionResponse.jsonPath().getString("data.csrfToken");
 
         Response rejectedResponse = RestAssured.given()
                 .port(port)
@@ -280,6 +300,9 @@ class OAuthLoginAcceptanceTest {
                 .post(CSRF_TEST_PATH);
 
         assertThat(rejectedResponse.statusCode()).isEqualTo(403);
+        assertThat(rejectedResponse.jsonPath().getString("status")).isEqualTo("error");
+        assertThat(rejectedResponse.jsonPath().getString("code"))
+                .isEqualTo("CSRF_TOKEN_INVALID");
         assertThat(acceptedResponse.statusCode()).isEqualTo(204);
     }
 
@@ -310,10 +333,30 @@ class OAuthLoginAcceptanceTest {
                 .when()
                 .get(AUTH_SESSION_PATH);
 
-        assertThat(authenticatedSessionResponse.jsonPath().getString("status"))
+        assertThat(authenticatedSessionResponse.jsonPath().getString("data.status"))
                 .isEqualTo("AUTHENTICATED");
-        assertThat(authenticatedSessionResponse.jsonPath().getLong("userId"))
+        assertThat(authenticatedSessionResponse.jsonPath().getLong("data.userId"))
                 .isEqualTo(result.userId());
+    }
+
+    @Test
+    @DisplayName("가입 대기 OAuth 신원 없이 가입을 요청하면 공통 오류 형식으로 거부한다")
+    void rejectsSignupWithoutPendingOAuthIdentity() {
+        Response response = RestAssured.given()
+                .port(port)
+                .contentType("application/json")
+                .body(Map.of(
+                        "handle", "sangjun",
+                        "displayName", "상준",
+                        "userType", "GENERAL"
+                ))
+                .when()
+                .post(OAUTH_SIGNUP_PATH);
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.jsonPath().getString("status")).isEqualTo("error");
+        assertThat(response.jsonPath().getString("code"))
+                .isEqualTo("OAUTH_SIGNUP_SESSION_NOT_FOUND");
     }
 
     @Test
@@ -354,11 +397,11 @@ class OAuthLoginAcceptanceTest {
                 .get(AUTH_SESSION_PATH);
 
         assertThat(sessionResponse.statusCode()).isEqualTo(200);
-        assertThat(sessionResponse.jsonPath().getString("status"))
+        assertThat(sessionResponse.jsonPath().getString("data.status"))
                 .isEqualTo("AUTHENTICATED");
-        assertThat(sessionResponse.jsonPath().getLong("userId"))
+        assertThat(sessionResponse.jsonPath().getLong("data.userId"))
                 .isEqualTo(signupResult.userId());
-        assertThat(sessionResponse.jsonPath().getString("role"))
+        assertThat(sessionResponse.jsonPath().getString("data.role"))
                 .isEqualTo("USER");
         assertThat(oauthAccountRepository.findByProviderAndProviderAccountId(
                 OAuthProvider.GITHUB,
@@ -390,8 +433,10 @@ class OAuthLoginAcceptanceTest {
                 .get(AUTH_SESSION_PATH);
 
         assertThat(rejectedResponse.statusCode()).isEqualTo(403);
+        assertThat(rejectedResponse.jsonPath().getString("code"))
+                .isEqualTo("CSRF_TOKEN_INVALID");
         assertThat(logoutResponse.statusCode()).isEqualTo(204);
-        assertThat(sessionResponse.jsonPath().getString("status"))
+        assertThat(sessionResponse.jsonPath().getString("data.status"))
                 .isEqualTo("UNAUTHENTICATED");
     }
 
@@ -411,6 +456,9 @@ class OAuthLoginAcceptanceTest {
                 .get(AUTHENTICATED_USER_TEST_PATH);
 
         assertThat(unauthenticatedResponse.statusCode()).isEqualTo(401);
+        assertThat(unauthenticatedResponse.jsonPath().getString("status")).isEqualTo("error");
+        assertThat(unauthenticatedResponse.jsonPath().getString("code"))
+                .isEqualTo("UNAUTHORIZED");
         assertThat(authenticatedResponse.statusCode()).isEqualTo(200);
         assertThat(authenticatedResponse.jsonPath().getLong("userId"))
                 .isEqualTo(signupResult.userId());
@@ -447,7 +495,7 @@ class OAuthLoginAcceptanceTest {
                 .cookie("JSESSIONID", signupPendingSessionId)
                 .when()
                 .get(AUTH_SESSION_PATH);
-        String csrfToken = pendingSessionResponse.jsonPath().getString("csrfToken");
+        String csrfToken = pendingSessionResponse.jsonPath().getString("data.csrfToken");
         String handle = "sangjun-" + UUID.randomUUID().toString().substring(0, 8);
 
         Response signupResponse = RestAssured.given()
@@ -464,8 +512,9 @@ class OAuthLoginAcceptanceTest {
                 .post(OAUTH_SIGNUP_PATH);
 
         assertThat(signupResponse.statusCode()).isEqualTo(201);
-        assertThat(signupResponse.jsonPath().getLong("userId")).isPositive();
-        long userId = signupResponse.jsonPath().getLong("userId");
+        assertThat(signupResponse.jsonPath().getString("status")).isEqualTo("success");
+        assertThat(signupResponse.jsonPath().getLong("data.userId")).isPositive();
+        long userId = signupResponse.jsonPath().getLong("data.userId");
         String authenticatedSessionId = signupResponse.cookie("JSESSIONID");
         assertThat(authenticatedSessionId)
                 .isNotBlank()

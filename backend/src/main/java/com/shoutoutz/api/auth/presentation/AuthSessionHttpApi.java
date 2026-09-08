@@ -5,6 +5,7 @@ import com.shoutoutz.api.auth.presentation.security.CsrfTokenManager;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
+import com.shoutoutz.api.common.response.SuccessResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
@@ -23,19 +24,21 @@ public class AuthSessionHttpApi {
     private final AuthSessionManager authSessionManager;
 
     @GetMapping("/api/v1/auth/session")
-    public AuthSessionResponse getAuthSession(HttpSession session) {
+    public SuccessResponse<AuthSessionResponse> getAuthSession(HttpSession session) {
         String csrfToken = csrfTokenManager.getOrCreate(session);
         Optional<AuthenticatedSession> authentication =
                 authSessionAccessor.findAuthentication(session);
         if (authentication.isPresent()) {
-            return AuthSessionResponse.authenticated(authentication.get(), csrfToken);
+            return SuccessResponse.success(
+                    AuthSessionResponse.authenticated(authentication.get(), csrfToken)
+            );
         }
 
         if (authSessionAccessor.findPendingIdentity(session).isPresent()) {
-            return AuthSessionResponse.signupRequired(csrfToken);
+            return SuccessResponse.success(AuthSessionResponse.signupRequired(csrfToken));
         }
 
-        return AuthSessionResponse.unauthenticated(csrfToken);
+        return SuccessResponse.success(AuthSessionResponse.unauthenticated(csrfToken));
     }
 
     @PostMapping("/api/v1/auth/logout")

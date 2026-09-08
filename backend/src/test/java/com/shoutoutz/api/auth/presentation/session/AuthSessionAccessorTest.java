@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.user.domain.UserRole;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
@@ -31,7 +32,7 @@ class AuthSessionAccessorTest {
 
         assertThat(consumed).isEqualTo(attempt);
         assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test

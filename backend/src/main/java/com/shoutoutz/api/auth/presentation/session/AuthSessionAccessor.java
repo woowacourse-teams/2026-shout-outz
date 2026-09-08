@@ -2,6 +2,8 @@ package com.shoutoutz.api.auth.presentation.session;
 
 import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
+import com.shoutoutz.api.auth.exception.AuthErrorCode;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.user.domain.UserRole;
 import jakarta.servlet.http.HttpSession;
 import java.util.Optional;
@@ -20,12 +22,12 @@ public class AuthSessionAccessor {
 
     public OAuthLoginAttempt consumeLoginAttempt(HttpSession session) {
         if (session == null) {
-            throw new IllegalArgumentException("OAuth 로그인 세션이 없습니다.");
+            throw new BadRequestException(AuthErrorCode.OAUTH_LOGIN_SESSION_NOT_FOUND);
         }
         Object value = session.getAttribute(LOGIN_ATTEMPT);
         session.removeAttribute(LOGIN_ATTEMPT);
         if (!(value instanceof OAuthLoginAttempt attempt)) {
-            throw new IllegalArgumentException("OAuth 로그인 시도가 없습니다.");
+            throw new BadRequestException(AuthErrorCode.OAUTH_LOGIN_ATTEMPT_NOT_FOUND);
         }
         return attempt;
     }

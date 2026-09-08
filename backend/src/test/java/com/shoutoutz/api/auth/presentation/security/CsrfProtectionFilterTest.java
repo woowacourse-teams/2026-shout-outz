@@ -14,13 +14,18 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
+import tools.jackson.databind.json.JsonMapper;
 
 class CsrfProtectionFilterTest {
 
     private final CsrfTokenManager csrfTokenManager = new CsrfTokenManager();
     private final AuthSessionAccessor authSessionAccessor = new AuthSessionAccessor();
     private final CsrfProtectionFilter csrfProtectionFilter =
-            new CsrfProtectionFilter(csrfTokenManager, authSessionAccessor);
+            new CsrfProtectionFilter(
+                    csrfTokenManager,
+                    authSessionAccessor,
+                    JsonMapper.builder().build()
+            );
 
     @Test
     @DisplayName("로그인 사용자의 상태 변경 요청에 CSRF 토큰이 없으면 거부한다")
@@ -32,6 +37,11 @@ class CsrfProtectionFilterTest {
         csrfProtectionFilter.doFilter(request, response, filterChain);
 
         assertThat(response.getStatus()).isEqualTo(403);
+        assertThat(response.getContentType()).isEqualTo("application/json");
+        assertThat(response.getContentAsString()).contains(
+                "\"status\":\"error\"",
+                "\"code\":\"CSRF_TOKEN_INVALID\""
+        );
         assertThat(filterChain.getRequest()).isNull();
     }
 

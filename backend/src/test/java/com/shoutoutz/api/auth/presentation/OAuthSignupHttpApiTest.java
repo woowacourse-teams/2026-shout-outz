@@ -15,6 +15,8 @@ import com.shoutoutz.api.auth.presentation.dto.request.OAuthSignupRequest;
 import com.shoutoutz.api.auth.presentation.dto.response.OAuthSignupResponse;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.user.domain.UserRole;
 import com.shoutoutz.api.user.domain.UserType;
 import org.junit.jupiter.api.DisplayName;
@@ -48,13 +50,13 @@ class OAuthSignupHttpApiTest {
         given(oauthSignupService.signup(command))
                 .willReturn(new OAuthSignupResult(1L, UserRole.USER));
 
-        ResponseEntity<OAuthSignupResponse> response = oauthSignupHttpApi.signup(
+        ResponseEntity<SuccessResponse<OAuthSignupResponse>> response = oauthSignupHttpApi.signup(
                 signupRequest,
                 request
         );
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody().userId()).isEqualTo(1L);
+        assertThat(response.getBody().data().userId()).isEqualTo(1L);
         assertThat(session.getId()).isNotEqualTo(previousSessionId);
         assertThat(authSessionAccessor.findAuthentication(session)).isPresent();
         assertThat(authSessionAccessor.findPendingIdentity(session)).isEmpty();
@@ -66,7 +68,7 @@ class OAuthSignupHttpApiTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
 
         assertThatThrownBy(() -> oauthSignupHttpApi.signup(signupRequest(), request))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(BadRequestException.class);
 
         verifyNoInteractions(oauthSignupService);
     }

@@ -3,6 +3,7 @@ package com.shoutoutz.api.auth.presentation.security;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 class AuthFilterConfig {
@@ -17,8 +18,9 @@ class AuthFilterConfig {
     @Bean
     CsrfProtectionFilter csrfProtectionFilter(
             CsrfTokenManager csrfTokenManager,
-            AuthSessionAccessor authSessionAccessor
+            AuthSessionAccessor authSessionAccessor,
+            ObjectMapper objectMapper
     ) {
-        return new CsrfProtectionFilter(csrfTokenManager, authSessionAccessor);
+        return new CsrfProtectionFilter(csrfTokenManager, authSessionAccessor, objectMapper);
     }
 }

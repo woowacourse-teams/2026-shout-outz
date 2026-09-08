@@ -34,7 +34,7 @@ class AuthSessionHttpApiTest {
     void returnsUnauthenticatedSession() {
         MockHttpSession session = new MockHttpSession();
 
-        AuthSessionResponse response = authSessionHttpApi.getAuthSession(session);
+        AuthSessionResponse response = authSessionHttpApi.getAuthSession(session).data();
 
         assertThat(response.status()).isEqualTo(AuthSessionResponse.Status.UNAUTHENTICATED);
         assertThat(response.userId()).isNull();
@@ -51,7 +51,7 @@ class AuthSessionHttpApiTest {
                 new OAuthIdentity(OAuthProvider.GITHUB, "12345678", null)
         );
 
-        AuthSessionResponse response = authSessionHttpApi.getAuthSession(session);
+        AuthSessionResponse response = authSessionHttpApi.getAuthSession(session).data();
 
         assertThat(response.status()).isEqualTo(AuthSessionResponse.Status.SIGNUP_REQUIRED);
         assertThat(response.userId()).isNull();
@@ -65,7 +65,7 @@ class AuthSessionHttpApiTest {
         MockHttpSession session = new MockHttpSession();
         authSessionAccessor.saveAuthentication(session, 1L, UserRole.USER);
 
-        AuthSessionResponse response = authSessionHttpApi.getAuthSession(session);
+        AuthSessionResponse response = authSessionHttpApi.getAuthSession(session).data();
 
         assertThat(response.status()).isEqualTo(AuthSessionResponse.Status.AUTHENTICATED);
         assertThat(response.userId()).isEqualTo(1L);
