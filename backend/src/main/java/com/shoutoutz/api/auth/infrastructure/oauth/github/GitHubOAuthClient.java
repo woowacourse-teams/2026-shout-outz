@@ -5,6 +5,7 @@ import com.shoutoutz.api.auth.application.port.GitHubOAuthIdentityPort;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import java.util.Objects;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -21,10 +22,10 @@ public class GitHubOAuthClient implements GitHubOAuthIdentityPort {
     private final GitHubOAuthProperties properties;
 
     public GitHubOAuthClient(
-            RestClient.Builder restClientBuilder,
+            @Qualifier("githubOAuthRestClient") RestClient restClient,
             GitHubOAuthProperties properties
     ) {
-        this.restClient = restClientBuilder.build();
+        this.restClient = restClient;
         this.properties = properties;
     }
 

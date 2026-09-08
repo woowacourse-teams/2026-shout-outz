@@ -12,6 +12,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import java.net.URI;
+import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -33,9 +34,11 @@ class GitHubOAuthClientTest {
         GitHubOAuthProperties properties = new GitHubOAuthProperties(
                 "test-client-id",
                 "test-client-secret",
-                URI.create("http://localhost:8080/login/oauth2/code/github")
+                URI.create("http://localhost:8080/login/oauth2/code/github"),
+                Duration.ofSeconds(3),
+                Duration.ofSeconds(5)
         );
-        GitHubOAuthClient client = new GitHubOAuthClient(restClientBuilder, properties);
+        GitHubOAuthClient client = new GitHubOAuthClient(restClientBuilder.build(), properties);
 
         MultiValueMap<String, String> tokenRequest = new LinkedMultiValueMap<>();
         tokenRequest.add("client_id", "test-client-id");
