@@ -2,10 +2,10 @@ package com.shoutoutz.api.user.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.shoutoutz.api.user.domain.User;
-import com.shoutoutz.api.user.domain.UserProfileCounts;
-import com.shoutoutz.api.user.domain.UserProfileCountsRepository;
-import com.shoutoutz.api.user.domain.UserRepository;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.application.query.UserProfileCounts;
+import com.shoutoutz.api.user.application.query.UserProfileCountsRepository;
+import com.shoutoutz.api.user.domain.account.UserRepository;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;

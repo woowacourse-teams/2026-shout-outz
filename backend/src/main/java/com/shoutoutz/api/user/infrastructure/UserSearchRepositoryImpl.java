@@ -1,9 +1,9 @@
 package com.shoutoutz.api.user.infrastructure;
 
-import com.shoutoutz.api.user.domain.UserSearchCursor;
-import com.shoutoutz.api.user.domain.UserSearchItem;
-import com.shoutoutz.api.user.domain.UserSearchRepository;
-import com.shoutoutz.api.user.domain.UserType;
+import com.shoutoutz.api.user.application.query.UserSearchCursor;
+import com.shoutoutz.api.user.application.query.UserSearchItem;
+import com.shoutoutz.api.user.application.query.UserSearchRepository;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

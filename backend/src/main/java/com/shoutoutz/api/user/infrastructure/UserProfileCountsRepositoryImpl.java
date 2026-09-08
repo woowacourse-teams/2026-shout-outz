@@ -1,7 +1,7 @@
 package com.shoutoutz.api.user.infrastructure;
 
-import com.shoutoutz.api.user.domain.UserProfileCounts;
-import com.shoutoutz.api.user.domain.UserProfileCountsRepository;
+import com.shoutoutz.api.user.application.query.UserProfileCounts;
+import com.shoutoutz.api.user.application.query.UserProfileCountsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;

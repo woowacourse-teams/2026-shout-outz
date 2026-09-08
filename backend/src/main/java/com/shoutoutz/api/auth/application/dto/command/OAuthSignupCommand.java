@@ -1,7 +1,7 @@
 package com.shoutoutz.api.auth.application.dto.command;
 
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
-import com.shoutoutz.api.user.domain.UserType;
+import com.shoutoutz.api.user.domain.profile.UserType;
 
 public record OAuthSignupCommand(
         String handle,

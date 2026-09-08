@@ -1,4 +1,4 @@
-package com.shoutoutz.api.user.domain;
+package com.shoutoutz.api.user.domain.profile;
 
 public record ProfileDisplayName(String value) {
 

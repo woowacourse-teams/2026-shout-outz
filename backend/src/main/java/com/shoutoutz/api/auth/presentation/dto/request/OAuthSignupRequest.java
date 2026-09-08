@@ -2,7 +2,7 @@ package com.shoutoutz.api.auth.presentation.dto.request;
 
 import com.shoutoutz.api.auth.application.dto.command.OAuthSignupCommand;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
-import com.shoutoutz.api.user.domain.UserType;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 

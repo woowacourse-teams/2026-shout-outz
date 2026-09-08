@@ -1,7 +1,7 @@
 package com.shoutoutz.api.user.application.dto.result;
 
-import com.shoutoutz.api.user.domain.UserProfileCounts;
-import com.shoutoutz.api.user.domain.UserType;
+import com.shoutoutz.api.user.application.query.UserProfileCounts;
+import com.shoutoutz.api.user.domain.profile.UserType;
 
 public record UserProfileResult(
         Long userId,

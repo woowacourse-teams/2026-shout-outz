@@ -15,7 +15,7 @@ import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
-import com.shoutoutz.api.user.domain.UserRole;
+import com.shoutoutz.api.user.domain.account.UserRole;
 import java.net.URI;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;

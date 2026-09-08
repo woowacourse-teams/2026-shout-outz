@@ -1,4 +1,4 @@
-package com.shoutoutz.api.user.domain;
+package com.shoutoutz.api.user.domain.profile;
 
 import lombok.Builder;
 import lombok.Getter;

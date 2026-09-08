@@ -1,8 +1,8 @@
 package com.shoutoutz.api.user.application;
 
-import com.shoutoutz.api.user.domain.Handle;
-import com.shoutoutz.api.user.domain.ProfileDisplayName;
-import com.shoutoutz.api.user.domain.UserSearchCursor;
+import com.shoutoutz.api.user.domain.account.Handle;
+import com.shoutoutz.api.user.domain.profile.ProfileDisplayName;
+import com.shoutoutz.api.user.application.query.UserSearchCursor;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

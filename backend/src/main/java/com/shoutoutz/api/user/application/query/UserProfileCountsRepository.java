@@ -1,4 +1,4 @@
-package com.shoutoutz.api.user.domain;
+package com.shoutoutz.api.user.application.query;
 
 public interface UserProfileCountsRepository {
 

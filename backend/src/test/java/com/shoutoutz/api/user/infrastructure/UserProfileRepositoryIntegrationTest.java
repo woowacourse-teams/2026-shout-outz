@@ -3,12 +3,12 @@ package com.shoutoutz.api.user.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.shoutoutz.api.user.domain.ProfileDisplayName;
-import com.shoutoutz.api.user.domain.User;
-import com.shoutoutz.api.user.domain.UserProfile;
-import com.shoutoutz.api.user.domain.UserProfileRepository;
-import com.shoutoutz.api.user.domain.UserRepository;
-import com.shoutoutz.api.user.domain.UserType;
+import com.shoutoutz.api.user.domain.profile.ProfileDisplayName;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.profile.UserProfile;
+import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.infrastructure.jpa.UserProfileJpaRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

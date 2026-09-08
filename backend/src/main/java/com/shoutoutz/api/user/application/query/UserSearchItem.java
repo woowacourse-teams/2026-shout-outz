@@ -1,4 +1,6 @@
-package com.shoutoutz.api.user.domain;
+package com.shoutoutz.api.user.application.query;
+
+import com.shoutoutz.api.user.domain.profile.UserType;
 
 public record UserSearchItem(
         String handle,

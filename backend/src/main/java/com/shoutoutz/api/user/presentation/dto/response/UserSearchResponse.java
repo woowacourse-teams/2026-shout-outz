@@ -1,8 +1,8 @@
 package com.shoutoutz.api.user.presentation.dto.response;
 
 import com.shoutoutz.api.user.application.dto.result.UserSearchResult;
-import com.shoutoutz.api.user.domain.UserSearchItem;
-import com.shoutoutz.api.user.domain.UserType;
+import com.shoutoutz.api.user.application.query.UserSearchItem;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.util.List;
 
 public record UserSearchResponse(

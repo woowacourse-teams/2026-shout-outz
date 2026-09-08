@@ -1,4 +1,4 @@
-package com.shoutoutz.api.user.domain;
+package com.shoutoutz.api.user.domain.profile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

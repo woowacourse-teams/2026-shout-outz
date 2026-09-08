@@ -1,4 +1,4 @@
-package com.shoutoutz.api.user.domain;
+package com.shoutoutz.api.user.domain.account;
 
 import java.util.Locale;
 import java.util.regex.Pattern;

@@ -1,7 +1,7 @@
 package com.shoutoutz.api.auth.application.dto.result;
 
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
-import com.shoutoutz.api.user.domain.UserRole;
+import com.shoutoutz.api.user.domain.account.UserRole;
 
 public record OAuthLoginCallbackResult(
         Status status,

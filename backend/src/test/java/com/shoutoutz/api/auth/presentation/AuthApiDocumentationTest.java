@@ -33,7 +33,7 @@ import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
-import com.shoutoutz.api.user.domain.UserRole;
+import com.shoutoutz.api.user.domain.account.UserRole;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Optional;

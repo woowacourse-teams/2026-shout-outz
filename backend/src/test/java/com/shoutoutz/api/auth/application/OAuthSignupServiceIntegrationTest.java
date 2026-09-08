@@ -7,7 +7,7 @@ import com.shoutoutz.api.auth.application.dto.command.OAuthSignupCommand;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.auth.infrastructure.jpa.OAuthAccountJpaRepository;
-import com.shoutoutz.api.user.domain.UserType;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.infrastructure.jpa.UserJpaRepository;
 import com.shoutoutz.api.user.infrastructure.jpa.UserProfileJpaRepository;
 import java.util.UUID;

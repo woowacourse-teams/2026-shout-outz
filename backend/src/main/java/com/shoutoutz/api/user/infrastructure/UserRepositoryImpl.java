@@ -1,7 +1,7 @@
 package com.shoutoutz.api.user.infrastructure;
 
-import com.shoutoutz.api.user.domain.User;
-import com.shoutoutz.api.user.domain.UserRepository;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.infrastructure.jpa.UserJpaRepository;
 import com.shoutoutz.api.user.infrastructure.mapper.UserMapper;
 import java.util.Optional;
