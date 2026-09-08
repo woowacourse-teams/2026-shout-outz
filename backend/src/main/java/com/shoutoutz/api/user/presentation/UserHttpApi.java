@@ -4,7 +4,9 @@ import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.user.application.UserQueryService;
+import com.shoutoutz.api.user.application.dto.result.UserProfileResult;
 import com.shoutoutz.api.user.application.dto.result.UserProfileSummaryResult;
+import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,16 @@ public class UserHttpApi {
                 authenticatedUser.userId()
         );
         UserProfileSummaryResponse response = UserProfileSummaryResponse.from(result);
+
+        return ResponseEntity.ok(SuccessResponse.success(response));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<SuccessResponse<UserProfileResponse>> getMyProfile(
+            @LoginUser AuthenticatedUser authenticatedUser
+    ) {
+        UserProfileResult result = userQueryService.getMyProfile(authenticatedUser.userId());
+        UserProfileResponse response = UserProfileResponse.from(result);
 
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
