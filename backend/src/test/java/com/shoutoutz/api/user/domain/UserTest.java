@@ -50,4 +50,70 @@ class UserTest {
                 .build())
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    @DisplayName("활성 사용자가 로그인하면 마지막 로그인 시각을 기록한다")
+    void recordsActiveUserLogin() {
+        Instant loginAt = Instant.parse("2026-09-03T00:00:00Z");
+        User user = User.builder()
+                .id(1L)
+                .handle("sangjun")
+                .status(UserStatus.ACTIVE)
+                .role(UserRole.USER)
+                .build();
+
+        User loggedInUser = user.recordLogin(loginAt);
+
+        assertThat(loggedInUser.getStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(loggedInUser.getLastLoginAt()).isEqualTo(loginAt);
+    }
+
+    @Test
+    @DisplayName("탈퇴 유예 사용자가 로그인하면 계정을 복구한다")
+    void restoresDeletedUserWhenLoggingIn() {
+        Instant loginAt = Instant.parse("2026-09-03T00:00:00Z");
+        User deletedUser = User.builder()
+                .id(1L)
+                .handle("sangjun")
+                .status(UserStatus.DELETED)
+                .role(UserRole.USER)
+                .deletedAt(Instant.parse("2026-09-02T00:00:00Z"))
+                .build();
+
+        User restoredUser = deletedUser.recordLogin(loginAt);
+
+        assertThat(restoredUser.getStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(restoredUser.getDeletedAt()).isNull();
+        assertThat(restoredUser.getLastLoginAt()).isEqualTo(loginAt);
+    }
+
+    @Test
+    @DisplayName("정지된 사용자는 로그인할 수 없다")
+    void rejectsBannedUserLogin() {
+        User bannedUser = User.builder()
+                .id(1L)
+                .handle("sangjun")
+                .status(UserStatus.BANNED)
+                .role(UserRole.USER)
+                .build();
+
+        assertThatThrownBy(() -> bannedUser.recordLogin(Instant.now()))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("개인정보가 파기된 사용자는 로그인으로 복구할 수 없다")
+    void rejectsPurgedUserLogin() {
+        User purgedUser = User.builder()
+                .id(1L)
+                .handle("sangjun")
+                .status(UserStatus.DELETED)
+                .role(UserRole.USER)
+                .deletedAt(Instant.parse("2026-08-01T00:00:00Z"))
+                .purgedAt(Instant.parse("2026-09-01T00:00:00Z"))
+                .build();
+
+        assertThatThrownBy(() -> purgedUser.recordLogin(Instant.now()))
+                .isInstanceOf(IllegalStateException.class);
+    }
 }

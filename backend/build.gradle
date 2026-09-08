@@ -21,6 +21,7 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-restclient'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -47,6 +48,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-restdocs'
     testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
     testImplementation 'com.epages:restdocs-api-spec-mockmvc:0.20.1' //OAS로 변경 해주는 라이브러리. restassured가 아닌 mockmvc를 기반으로 한다.
+    testImplementation 'io.rest-assured:rest-assured:6.0.1'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -67,6 +69,7 @@ openapi3 {
     description = 'Shout-outz Backend API'
     version = project.version
     format = 'yaml'
+    separatePublicApi = true
 }
 
 /**
@@ -75,6 +78,8 @@ openapi3 {
 tasks.register('copyOasToSwagger', Copy) {
     dependsOn tasks.named('openapi3')
 
-    from(layout.buildDirectory.file('api-spec/openapi3.yaml'))
+    from(layout.buildDirectory.file('api-spec/openapi3-public.yaml')) {
+        rename { 'openapi3.yaml' }
+    }
     into(layout.projectDirectory.dir('src/main/resources/static/docs'))
 }
