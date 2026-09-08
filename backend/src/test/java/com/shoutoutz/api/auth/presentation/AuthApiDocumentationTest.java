@@ -250,7 +250,7 @@ class AuthApiDocumentationTest {
                                                 .description("새 세션을 생성한 경우 발급되는 JSESSIONID")
                                                 .optional()
                                 )
-                                .responseSchema(Schema.schema("SuccessResponseAuthSessionResponse"))
+                                .responseSchema(Schema.schema("AuthSessionSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("인증 세션 정보"),
@@ -318,7 +318,7 @@ class AuthApiDocumentationTest {
                                         fieldWithPath("cohort").type(NUMBER)
                                                 .description("우테코 크루의 기수").optional()
                                 )
-                                .responseSchema(Schema.schema("SuccessResponseOAuthSignupResponse"))
+                                .responseSchema(Schema.schema("OAuthSignupSuccessResponse"))
                                 .responseHeaders(
                                         headerWithName(HttpHeaders.SET_COOKIE)
                                                 .description("가입 완료 후 인증 상태로 회전된 JSESSIONID")

@@ -107,7 +107,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponseAuthSessionResponse"
+                $ref: "#/components/schemas/AuthSessionSuccessResponse"
               examples:
                 auth-session-get:
                   value: "{\"status\":\"success\",\"data\":{\"status\":\"AUTHENTICATED\"\
@@ -198,7 +198,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponseOAuthSignupResponse"
+                $ref: "#/components/schemas/OAuthSignupSuccessResponse"
               examples:
                 auth-signup:
                   value: "{\"status\":\"success\",\"data\":{\"userId\":1}}"
@@ -264,8 +264,39 @@ components:
         example:
           type: string
           description: 방문자 예시 값
-    SuccessResponseOAuthSignupResponse:
-      title: SuccessResponseOAuthSignupResponse
+    AuthSessionSuccessResponse:
+      title: AuthSessionSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - csrfToken
+          - status
+          type: object
+          properties:
+            csrfToken:
+              type: string
+              description: 상태 변경 요청에 사용할 CSRF Token
+            role:
+              type: string
+              description: 인증된 사용자 권한
+              nullable: true
+            userId:
+              type: number
+              description: 인증된 사용자 ID
+              nullable: true
+            status:
+              type: string
+              description: "UNAUTHENTICATED, SIGNUP_REQUIRED, AUTHENTICATED"
+          description: 인증 세션 정보
+        status:
+          type: string
+          description: 응답 상태
+    OAuthSignupSuccessResponse:
+      title: OAuthSignupSuccessResponse
       required:
       - data
       - status
@@ -310,37 +341,6 @@ components:
           nullable: true
     api-v1-visitors-33084672:
       type: object
-    SuccessResponseAuthSessionResponse:
-      title: SuccessResponseAuthSessionResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - csrfToken
-          - status
-          type: object
-          properties:
-            csrfToken:
-              type: string
-              description: 상태 변경 요청에 사용할 CSRF Token
-            role:
-              type: string
-              description: 인증된 사용자 권한
-              nullable: true
-            userId:
-              type: number
-              description: 인증된 사용자 ID
-              nullable: true
-            status:
-              type: string
-              description: "UNAUTHENTICATED, SIGNUP_REQUIRED, AUTHENTICATED"
-          description: 인증 세션 정보
-        status:
-          type: string
-          description: 응답 상태
     SuccessResponseVisitorSaveResponse:
       title: SuccessResponseVisitorSaveResponse
       required:
