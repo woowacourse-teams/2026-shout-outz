@@ -1,8 +1,11 @@
 package com.shoutoutz.api.user.application;
 
+import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.user.application.dto.result.UserProfileSummaryResult;
 import com.shoutoutz.api.user.application.dto.result.UserProfileResult;
+import com.shoutoutz.api.user.application.dto.result.UserSearchResult;
 import com.shoutoutz.api.user.domain.Handle;
 import com.shoutoutz.api.user.domain.User;
 import com.shoutoutz.api.user.domain.UserProfile;
@@ -10,8 +13,13 @@ import com.shoutoutz.api.user.domain.UserProfileCounts;
 import com.shoutoutz.api.user.domain.UserProfileCountsRepository;
 import com.shoutoutz.api.user.domain.UserProfileRepository;
 import com.shoutoutz.api.user.domain.UserRepository;
+import com.shoutoutz.api.user.domain.UserSearchCursor;
+import com.shoutoutz.api.user.domain.UserSearchItem;
+import com.shoutoutz.api.user.domain.UserSearchRepository;
 import com.shoutoutz.api.user.domain.UserStatus;
+import com.shoutoutz.api.user.domain.UserType;
 import com.shoutoutz.api.user.exception.UserErrorCode;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,10 +29,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserQueryService {
 
     private static final String DELETED_USER_DISPLAY_NAME = "탈퇴한 사용자";
+    private static final int MAX_SEARCH_KEYWORD_LENGTH = 50;
+    private static final int MAX_SEARCH_SIZE = 100;
 
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserProfileCountsRepository userProfileCountsRepository;
+    private final UserSearchRepository userSearchRepository;
+    private final UserSearchCursorCodec userSearchCursorCodec;
 
     @Transactional(readOnly = true)
     public UserProfileSummaryResult getMyProfileSummary(long userId) {
@@ -61,6 +73,65 @@ public class UserQueryService {
         UserProfile profile = findProfile(user.getId());
         UserProfileCounts counts = userProfileCountsRepository.countByUserId(user.getId());
         return profileResult(user, profile, counts);
+    }
+
+    @Transactional(readOnly = true)
+    public UserSearchResult searchCrew(
+            long requesterId,
+            String keyword,
+            String cursor,
+            int size
+    ) {
+        validateCrewRequester(requesterId);
+        String validatedKeyword = validateSearchKeyword(keyword);
+        validateSearchSize(size);
+        UserSearchCursor decodedCursor = userSearchCursorCodec.decode(cursor);
+
+        List<UserSearchItem> searchedItems = userSearchRepository.searchCrew(
+                validatedKeyword,
+                decodedCursor,
+                size + 1
+        );
+        boolean hasNext = searchedItems.size() > size;
+        List<UserSearchItem> items = hasNext
+                ? List.copyOf(searchedItems.subList(0, size))
+                : List.copyOf(searchedItems);
+        String nextCursor = hasNext ? encodeCursor(items.getLast()) : null;
+
+        return new UserSearchResult(items, nextCursor, hasNext);
+    }
+
+    private void validateCrewRequester(long requesterId) {
+        UserProfile requesterProfile = findProfile(requesterId);
+        if (requesterProfile.getUserType() != UserType.WOOWACOURSE_CREW) {
+            throw new ForbiddenException(CommonErrorCode.FORBIDDEN);
+        }
+    }
+
+    private String validateSearchKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            throw new IllegalArgumentException("검색어는 필수입니다.");
+        }
+
+        String trimmedKeyword = keyword.trim();
+        if (trimmedKeyword.codePointCount(0, trimmedKeyword.length()) > MAX_SEARCH_KEYWORD_LENGTH) {
+            throw new IllegalArgumentException("검색어는 50자를 초과할 수 없습니다.");
+        }
+        return trimmedKeyword;
+    }
+
+    private void validateSearchSize(int size) {
+        if (size < 1 || size > MAX_SEARCH_SIZE) {
+            throw new IllegalArgumentException("검색 결과 개수는 1개 이상 100개 이하여야 합니다.");
+        }
+    }
+
+    private String encodeCursor(UserSearchItem item) {
+        return userSearchCursorCodec.encode(new UserSearchCursor(
+                item.relevanceRank(),
+                item.displayName(),
+                item.handle()
+        ));
     }
 
     private User findUser(long userId) {

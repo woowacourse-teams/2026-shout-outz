@@ -4,6 +4,8 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
+import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
@@ -19,9 +21,12 @@ import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.user.application.UserQueryService;
 import com.shoutoutz.api.user.application.dto.result.UserProfileResult;
 import com.shoutoutz.api.user.application.dto.result.UserProfileSummaryResult;
+import com.shoutoutz.api.user.application.dto.result.UserSearchResult;
 import com.shoutoutz.api.user.domain.UserProfileCounts;
 import com.shoutoutz.api.user.domain.UserRole;
+import com.shoutoutz.api.user.domain.UserSearchItem;
 import com.shoutoutz.api.user.domain.UserType;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -243,6 +248,81 @@ class UserHttpApiTest {
                                                 .description("삭제되지 않은 참여 프로젝트 개수"),
                                         fieldWithPath("data.counts.posts").type(NUMBER)
                                                 .description("삭제되지 않은 작성 피드 개수")
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    @DisplayName("프로젝트에 참여시킬 우테코 크루를 검색한다")
+    void searchCrew() throws Exception {
+        given(userQueryService.searchCrew(1L, "재키", null, 20))
+                .willReturn(new UserSearchResult(
+                        List.of(new UserSearchItem(
+                                "zzaekkii",
+                                "재키",
+                                UserType.WOOWACOURSE_CREW,
+                                "BACKEND",
+                                (short) 8,
+                                21L,
+                                0
+                        )),
+                        "eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0",
+                        true
+                ));
+
+        mockMvc.perform(get("/api/v1/users/search")
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=session-id")
+                        .requestAttr(
+                                AuthenticatedSession.class.getName(),
+                                new AuthenticatedSession(1L, UserRole.USER)
+                        )
+                        .queryParam("keyword", "재키"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.items[0].handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data.items[0].displayName").value("재키"))
+                .andExpect(jsonPath("$.data.items[0].userType").value("WOOWACOURSE_CREW"))
+                .andExpect(jsonPath("$.data.items[0].track").value("BACKEND"))
+                .andExpect(jsonPath("$.data.items[0].cohort").value(8))
+                .andExpect(jsonPath("$.data.items[0].avatarImageId").value(21))
+                .andExpect(jsonPath("$.meta.nextCursor").value(
+                        "eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0"
+                ))
+                .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andDo(document(
+                        "user-search-get",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("참여 팀원 검색")
+                                .description("프로젝트 참여 팀원으로 추가할 ACTIVE 우테코 크루를 이름 또는 handle로 검색한다.")
+                                .privateResource(true)
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("인증된 우테코 크루의 JSESSIONID")
+                                )
+                                .queryParameters(
+                                        parameterWithName("keyword").description("이름 또는 handle 검색어"),
+                                        parameterWithName("cursor").description("다음 페이지 커서").optional(),
+                                        parameterWithName("size").description("조회 개수, 기본값 20").optional()
+                                )
+                                .responseSchema(Schema.schema("UserSearchSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("검색 결과"),
+                                        fieldWithPath("data.items").type(ARRAY).description("검색된 우테코 크루"),
+                                        fieldWithPath("data.items[].handle").type(STRING).description("사용자 handle"),
+                                        fieldWithPath("data.items[].displayName").type(STRING).description("표시 이름"),
+                                        fieldWithPath("data.items[].userType").type(STRING).description("사용자 유형"),
+                                        fieldWithPath("data.items[].track").type(STRING).description("우테코 트랙"),
+                                        fieldWithPath("data.items[].cohort").type(NUMBER).description("우테코 기수"),
+                                        fieldWithPath("data.items[].avatarImageId").type(NUMBER)
+                                                .description("프로필 이미지 미디어 ID").optional(),
+                                        fieldWithPath("meta").type(OBJECT).description("페이지 정보"),
+                                        fieldWithPath("meta.nextCursor").type(STRING)
+                                                .description("다음 페이지 커서").optional(),
+                                        fieldWithPath("meta.hasNext").type(BOOLEAN)
+                                                .description("다음 페이지 존재 여부")
                                 )
                                 .build())
                 ));

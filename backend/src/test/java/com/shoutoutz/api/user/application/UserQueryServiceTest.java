@@ -7,8 +7,10 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.user.application.dto.result.UserProfileResult;
 import com.shoutoutz.api.user.application.dto.result.UserProfileSummaryResult;
+import com.shoutoutz.api.user.application.dto.result.UserSearchResult;
 import com.shoutoutz.api.user.domain.User;
 import com.shoutoutz.api.user.domain.UserProfile;
 import com.shoutoutz.api.user.domain.UserProfileCounts;
@@ -16,9 +18,13 @@ import com.shoutoutz.api.user.domain.UserProfileCountsRepository;
 import com.shoutoutz.api.user.domain.UserProfileRepository;
 import com.shoutoutz.api.user.domain.UserRepository;
 import com.shoutoutz.api.user.domain.UserRole;
+import com.shoutoutz.api.user.domain.UserSearchCursor;
+import com.shoutoutz.api.user.domain.UserSearchItem;
+import com.shoutoutz.api.user.domain.UserSearchRepository;
 import com.shoutoutz.api.user.domain.UserStatus;
 import com.shoutoutz.api.user.domain.UserType;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
 class UserQueryServiceTest {
@@ -39,14 +46,22 @@ class UserQueryServiceTest {
     @Mock
     private UserProfileCountsRepository userProfileCountsRepository;
 
+    @Mock
+    private UserSearchRepository userSearchRepository;
+
+    private UserSearchCursorCodec userSearchCursorCodec;
+
     private UserQueryService userQueryService;
 
     @BeforeEach
     void setUp() {
+        userSearchCursorCodec = new UserSearchCursorCodec(JsonMapper.builder().build());
         userQueryService = new UserQueryService(
                 userRepository,
                 userProfileRepository,
-                userProfileCountsRepository
+                userProfileCountsRepository,
+                userSearchRepository,
+                userSearchCursorCodec
         );
     }
 
@@ -195,5 +210,137 @@ class UserQueryServiceTest {
         assertThat(result.counts()).isEqualTo(new UserProfileCounts(0L, 0L));
         then(userProfileRepository).should(never()).findByUserId(1L);
         then(userProfileCountsRepository).should(never()).countByUserId(1L);
+    }
+
+    @Test
+    @DisplayName("우테코 크루를 검색하고 다음 커서를 생성한다")
+    void searchCrew() {
+        UserProfile requesterProfile = UserProfile.builder()
+                .userId(1L)
+                .displayName("재키")
+                .userType(UserType.WOOWACOURSE_CREW)
+                .track("BACKEND")
+                .cohort((short) 8)
+                .build();
+        List<UserSearchItem> searchedItems = List.of(
+                searchItem("dahye", "다혜", 2),
+                searchItem("hoi", "호이", 2),
+                searchItem("charles", "샤를", 2)
+        );
+        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(requesterProfile));
+        given(userSearchRepository.searchCrew("재", null, 3))
+                .willReturn(searchedItems);
+
+        UserSearchResult result = userQueryService.searchCrew(1L, " 재 ", null, 2);
+
+        assertThat(result.items()).containsExactly(searchedItems.get(0), searchedItems.get(1));
+        assertThat(userSearchCursorCodec.decode(result.nextCursor()))
+                .isEqualTo(new UserSearchCursor(2, "호이", "hoi"));
+        assertThat(result.hasNext()).isTrue();
+    }
+
+    @Test
+    @DisplayName("커서를 해석해 다음 우테코 크루를 검색한다")
+    void searchCrewWithCursor() {
+        UserProfile requesterProfile = UserProfile.builder()
+                .userId(1L)
+                .displayName("재키")
+                .userType(UserType.WOOWACOURSE_CREW)
+                .track("BACKEND")
+                .cohort((short) 8)
+                .build();
+        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(requesterProfile));
+        UserSearchCursor cursor = new UserSearchCursor(1, "재키", "zzaekkii");
+        given(userSearchRepository.searchCrew("재키", cursor, 21))
+                .willReturn(List.of());
+
+        UserSearchResult result = userQueryService.searchCrew(
+                1L,
+                "재키",
+                userSearchCursorCodec.encode(cursor),
+                20
+        );
+
+        assertThat(result.items()).isEmpty();
+        assertThat(result.nextCursor()).isNull();
+        assertThat(result.hasNext()).isFalse();
+    }
+
+    @Test
+    @DisplayName("우테코 크루가 아니면 참여 팀원을 검색할 수 없다")
+    void rejectSearchFromNonCrew() {
+        UserProfile requesterProfile = UserProfile.builder()
+                .userId(1L)
+                .displayName("일반 사용자")
+                .userType(UserType.GENERAL)
+                .build();
+        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(requesterProfile));
+
+        assertThatThrownBy(() -> userQueryService.searchCrew(1L, "재키", null, 20))
+                .isInstanceOf(ForbiddenException.class);
+
+        then(userSearchRepository).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("빈 검색어로 전체 크루를 조회할 수 없다")
+    void rejectBlankSearchKeyword() {
+        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(crewProfile()));
+
+        assertThatThrownBy(() -> userQueryService.searchCrew(1L, "   ", null, 20))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("검색어는 필수입니다.");
+
+        then(userSearchRepository).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("검색 결과 개수의 허용 범위를 검증한다")
+    void rejectInvalidSearchSize() {
+        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(crewProfile()));
+
+        assertThatThrownBy(() -> userQueryService.searchCrew(1L, "재키", null, 101))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("검색 결과 개수는 1개 이상 100개 이하여야 합니다.");
+
+        then(userSearchRepository).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("형식이 잘못된 검색 커서를 거절한다")
+    void rejectInvalidSearchCursor() {
+        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(crewProfile()));
+
+        assertThatThrownBy(() -> userQueryService.searchCrew(1L, "재키", "invalid", 20))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("유효하지 않은 커서입니다.");
+
+        then(userSearchRepository).shouldHaveNoInteractions();
+    }
+
+    private UserProfile crewProfile() {
+        return UserProfile.builder()
+                .userId(1L)
+                .displayName("재키")
+                .userType(UserType.WOOWACOURSE_CREW)
+                .track("BACKEND")
+                .cohort((short) 8)
+                .build();
+    }
+
+    private UserSearchItem searchItem(
+            String handle,
+            String displayName,
+            int relevanceRank
+    ) {
+        return new UserSearchItem(
+                handle,
+                displayName,
+                UserType.WOOWACOURSE_CREW,
+                "BACKEND",
+                (short) 8,
+                null,
+                relevanceRank
+        );
     }
 }
