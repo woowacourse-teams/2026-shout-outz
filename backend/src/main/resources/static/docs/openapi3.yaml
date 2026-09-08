@@ -36,27 +36,333 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/VisitorSaveResponse"
+                $ref: "#/components/schemas/VisitorCreateSuccessResponse"
               examples:
                 visitor-create:
-                  value: "{\"id\":1,\"example\":\"example\"}"
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1,\"example\":\"\
+                    example\"}}"
         "400":
           description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                visitor-create-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"example\"\
+                    ,\"message\":\"example은 필수입니다.\"}]}"
+  /api/v1/news/events:
+    post:
+      tags:
+      - News
+      summary: 이벤트 생성
+      description: 이벤트와 선택적인 CTA를 생성한다.
+      operationId: news-event-create
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/EventCreateRequest"
+            examples:
+              news-event-create:
+                value: |
+                  {
+                    "title": "프로젝트 아카이빙 챌린지",
+                    "summary": "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                    "body": "프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.",
+                    "authorName": "샤라웃 운영팀",
+                    "eventStartAt": "2026-09-01T00:00:00Z",
+                    "eventEndAt": "2026-09-30T23:59:59Z",
+                    "cta": {
+                      "label": "프로젝트 등록하기",
+                      "url": "/projects/3001"
+                    }
+                  }
+              news-event-create-required-invalid:
+                value: |
+                  {
+                    "summary": "요약",
+                    "body": "본문",
+                    "authorName": "샤라웃 운영팀"
+                  }
+              news-event-create-domain-invalid:
+                value: |
+                  {
+                    "title": "프로젝트 아카이빙 챌린지",
+                    "summary": "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                    "body": "프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.",
+                    "authorName": "샤라웃 운영팀",
+                    "eventStartAt": "2026-09-01T00:00:00Z",
+                    "eventEndAt": "2026-09-30T23:59:59Z",
+                    "cta": {
+                      "label": "프로젝트 등록하기",
+                      "url": "/projects/3001"
+                    }
+                  }
+              news-event-create-period-order-invalid:
+                value: |
+                  {
+                    "title": "이벤트",
+                    "summary": "요약",
+                    "body": "본문",
+                    "authorName": "샤라웃 운영팀",
+                    "eventStartAt": "2026-10-01T00:00:00Z",
+                    "eventEndAt": "2026-09-30T23:59:59Z"
+                  }
+              news-event-create-period-invalid:
+                value: |
+                  {
+                    "title": "이벤트",
+                    "summary": "요약",
+                    "body": "본문",
+                    "authorName": "샤라웃 운영팀",
+                    "eventEndAt": "2026-09-30T23:59:59Z"
+                  }
+      responses:
+        "415":
+          description: "415"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-event-create-unsupported-media-type:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\"}"
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventCreateSuccessResponse"
+              examples:
+                news-event-create:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":107,\"type\":\"\
+                    EVENT\",\"title\":\"프로젝트 아카이빙 챌린지\",\"summary\":\"팀 프로젝트를 등록하고\
+                    \ 피드백을 받아보세요.\",\"body\":\"프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.\"\
+                    ,\"author\":{\"userId\":1,\"name\":\"샤라웃 운영팀\"},\"publishedAt\"\
+                    :\"2026-09-05T00:00:00Z\",\"eventStatus\":\"ONGOING\",\"eventStartAt\"\
+                    :\"2026-09-01T00:00:00Z\",\"eventEndAt\":\"2026-09-30T23:59:59Z\"\
+                    ,\"isPinned\":false,\"pinOrder\":null,\"cta\":{\"label\":\"프로젝\
+                    트 등록하기\",\"url\":\"/projects/3001\"}}}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-event-create-required-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"}]}"
+                news-event-create-period-order-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 eventEndAt보다 늦을 수 없습니다.\"}]}"
+                news-event-create-period-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"}]}"
+        "500":
+          description: "500"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-event-create-domain-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
+                    ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
+  /api/v1/news/notices:
+    post:
+      tags:
+      - News
+      summary: 공지 생성
+      description: 공지와 선택적인 CTA를 생성한다.
+      operationId: news-notice-create
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/NoticeCreateRequest"
+            examples:
+              news-notice-create:
+                value: |
+                  {
+                    "title": "우아한테크코스 6기 최종 프로젝트 데모데이 안내",
+                    "summary": "최종 프로젝트 데모데이 일정을 안내합니다.",
+                    "body": "우아한테크코스 6기 최종 프로젝트 데모데이는 2026년 9월 12일에 진행됩니다.",
+                    "authorName": "샤라웃 운영팀",
+                    "cta": {
+                      "label": "데모데이 일정 확인",
+                      "url": "example.com"
+                    }
+                  }
+              news-notice-create-invalid:
+                value: |
+                  {
+                    "summary": "요약",
+                    "body": "본문",
+                    "authorName": "샤라웃 운영팀"
+                  }
+              news-notice-create-domain-invalid:
+                value: |
+                  {
+                    "title": "우아한테크코스 6기 최종 프로젝트 데모데이 안내",
+                    "summary": "최종 프로젝트 데모데이 일정을 안내합니다.",
+                    "body": "우아한테크코스 6기 최종 프로젝트 데모데이는 2026년 9월 12일에 진행됩니다.",
+                    "authorName": "샤라웃 운영팀",
+                    "cta": {
+                      "label": "데모데이 일정 확인",
+                      "url": "example.com"
+                    }
+                  }
+              news-notice-create-cta-invalid:
+                value: |
+                  {
+                    "title": "공지",
+                    "summary": "요약",
+                    "body": "본문",
+                    "authorName": "샤라웃 운영팀",
+                    "cta": {
+                      "label": "",
+                      "url": "example.com"
+                    }
+                  }
+              news-notice-create-malformed-json:
+                value: "{\"title\":"
+      responses:
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoticeCreateSuccessResponse"
+              examples:
+                news-notice-create:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":106,\"type\":\"\
+                    NOTICE\",\"title\":\"데모데이 안내\",\"summary\":\"데모데이 일정을 안내합니다.\"\
+                    ,\"body\":\"2026년 9월 12일에 데모데이를 진행합니다.\",\"author\":{\"userId\"\
+                    :1,\"name\":\"샤라웃 운영팀\"},\"publishedAt\":\"2026-09-05T00:00:00Z\"\
+                    ,\"isPinned\":false,\"pinOrder\":null,\"cta\":{\"label\":\"일정\
+                    \ 확인\",\"url\":\"example.com\"}}}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-notice-create-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"}]}"
+                news-notice-create-cta-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cta\",\"\
+                    message\":\"cta.label은 필수입니다.\"}]}"
+                news-notice-create-malformed-json:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\"}"
+        "500":
+          description: "500"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-notice-create-domain-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_INVALID_AUTHOR_ID_SIZE\"\
+                    ,\"message\":\"소식 작성자 ID는 0보다 커야 합니다.\"}"
+        "415":
+          description: "415"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-notice-create-unsupported-media-type:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\"}"
 components:
   schemas:
-    VisitorSaveResponse:
-      title: VisitorSaveResponse
+    EventCreateRequest:
+      title: EventCreateRequest
       required:
-      - example
-      - id
+      - authorName
+      - body
+      - eventEndAt
+      - eventStartAt
+      - summary
+      - title
       type: object
       properties:
-        id:
-          type: number
-          description: 방문자 ID
-        example:
+        summary:
           type: string
-          description: 방문자 예시 값
+          description: 이벤트 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 이벤트 CTA
+        eventStartAt:
+          type: string
+          description: 이벤트 시작 시각
+        authorName:
+          type: string
+          description: 이벤트 작성자 이름
+        body:
+          type: string
+          description: 이벤트 본문
+        title:
+          type: string
+          description: 이벤트 제목
+        eventEndAt:
+          type: string
+          description: 이벤트 종료 시각
+    ErrorResponse:
+      title: ErrorResponse
+      required:
+      - code
+      - message
+      - status
+      type: object
+      properties:
+        code:
+          type: string
+          description: 오류 코드
+        details:
+          type: array
+          description: 필드별 오류 상세
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: 오류 필드명
+                nullable: true
+              message:
+                type: string
+                description: 필드 오류 메시지
+                nullable: true
+        message:
+          type: string
+          description: 오류 메시지
+        status:
+          type: string
+          description: 응답 상태
     VisitorSaveRequest:
       title: VisitorSaveRequest
       required:
@@ -66,3 +372,216 @@ components:
         example:
           type: string
           description: 방문자 예시 값
+    EventCreateSuccessResponse:
+      title: EventCreateSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - eventEndAt
+          - eventStartAt
+          - eventStatus
+          - id
+          - isPinned
+          - publishedAt
+          - summary
+          - title
+          - type
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 이벤트 요약
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - name
+              - userId
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 작성자 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 이벤트 작성자
+            pinOrder:
+              type: number
+              description: 고정 순서
+              nullable: true
+            body:
+              type: string
+              description: 이벤트 본문
+            title:
+              type: string
+              description: 이벤트 제목
+            type:
+              type: string
+              description: 소식 유형
+            eventEndAt:
+              type: string
+              description: 이벤트 종료 시각
+            cta:
+              required:
+              - label
+              - url
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                url:
+                  type: string
+                  description: CTA URL
+              description: 이벤트 CTA
+            eventStartAt:
+              type: string
+              description: 이벤트 시작 시각
+            eventStatus:
+              type: string
+              description: 이벤트 상태
+            id:
+              type: number
+              description: 이벤트 ID
+        status:
+          type: string
+          description: 응답 상태
+    NoticeCreateSuccessResponse:
+      title: NoticeCreateSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - id
+          - isPinned
+          - publishedAt
+          - summary
+          - title
+          - type
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 공지 요약
+            cta:
+              required:
+              - label
+              - url
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                url:
+                  type: string
+                  description: CTA URL
+              description: 공지 CTA
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - name
+              - userId
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 작성자 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 공지 작성자
+            id:
+              type: number
+              description: 공지 ID
+            pinOrder:
+              type: number
+              description: 고정 순서
+              nullable: true
+            body:
+              type: string
+              description: 공지 본문
+            title:
+              type: string
+              description: 공지 제목
+            type:
+              type: string
+              description: 공지 유형
+        status:
+          type: string
+          description: 응답 상태
+    NoticeCreateRequest:
+      title: NoticeCreateRequest
+      required:
+      - authorName
+      - body
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 공지 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 공지 CTA
+        authorName:
+          type: string
+          description: 공지 작성자 이름
+        body:
+          type: string
+          description: 공지 본문
+        title:
+          type: string
+          description: 공지 제목
+    VisitorCreateSuccessResponse:
+      title: VisitorCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - example
+          - id
+          type: object
+          properties:
+            id:
+              type: number
+              description: 방문자 ID
+            example:
+              type: string
+              description: 방문자 예시 값
+          description: 생성된 방문자 정보
+        status:
+          type: string
+          description: 응답 상태
