@@ -1,4 +1,4 @@
-import type { ComponentProps } from 'react';
+import { useState, type ComponentProps } from 'react';
 
 import { cn } from '@/utils/cn';
 
@@ -12,37 +12,26 @@ import { cn } from '@/utils/cn';
  */
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg';
 
-interface AvatarBaseProps {
-  /** @default 'md' */
-  size?: AvatarSize;
-  /**
-   * 옆에 이름이 함께 노출되면 빈 문자열을 넘겨 중복 낭독을 막는다.
-   * 아바타만 단독으로 쓰이면 사람 이름을 넣는다.
-   */
-  alt: string;
-}
-
-/** `src`가 있을 때. `<img>`로 렌더하므로 `loading` 같은 이미지 전용 속성을 받는다. */
-export type AvatarImageProps = AvatarBaseProps &
-  Omit<ComponentProps<'img'>, 'width' | 'height' | 'alt'> & { src: string };
-
-/** `src`가 없을 때. `<div>`로 렌더하므로 이미지 전용 속성은 받지 않는다. */
-export type AvatarFallbackProps = AvatarBaseProps &
-  Omit<ComponentProps<'div'>, 'children'> & { src?: never };
-
 /**
  * 원형 이미지 박스만 담당한다. 표시할 이미지는 호출부가 `src`로 넘긴다.
  *
- * `src`가 비어 있으면 `<img>` 대신 `<div>`로 렌더해 `primary-50` 배경의 빈 원만
- * 남긴다. `src`가 없거나 빈 문자열인 `<img>`는 브라우저가 깨진 이미지로 취급해
- * 아이콘과 `alt` 텍스트를 그려버리기 때문이다. 두 경우의 화면 결과가 같으므로
- * `undefined`와 `''`을 함께 처리한다.
- *
- * `width`와 `height`는 `size`와 충돌하므로 가린다.
+ * 항상 `<div>`를 렌더하고, 보여줄 이미지가 있을 때만 그 안에 `<img>`를 둔다.
+ * `src`가 비어 있거나 로드에 실패하면 `<img>`를 렌더하지 않아 `primary-50` 배경의 빈 원만 남는다.
  */
-export type AvatarProps = AvatarImageProps | AvatarFallbackProps;
+export interface AvatarProps extends Omit<ComponentProps<'div'>, 'children'> {
+  /** @default 'md' */
+  size?: AvatarSize;
+  src?: string;
+  /**
+   * 옆에 이름이 함께 노출되면 빈 문자열을 넘겨 중복 낭독을 막는다.
+   * 아바타만 단독으로 쓰이면 이름을 넣는다.
+   */
+  alt: string;
+  /** 내부 `<img>`에 전달되는 값 */
+  loading?: ComponentProps<'img'>['loading'];
+}
 
-const BASE = 'shrink-0 rounded-full bg-primary-50 object-cover';
+const BASE = 'shrink-0 overflow-hidden rounded-full bg-primary-50';
 
 const SIZE_CLASSES: Record<AvatarSize, string> = {
   xs: 'size-5',
@@ -51,23 +40,26 @@ const SIZE_CLASSES: Record<AvatarSize, string> = {
   lg: 'size-13',
 };
 
-export function Avatar({ size = 'md', className, ...props }: AvatarProps) {
-  const classes = cn(BASE, SIZE_CLASSES[size], className);
+export function Avatar({ size = 'md', src, alt, loading, className, ...props }: AvatarProps) {
+  const [failedSrc, setFailedSrc] = useState<string>();
+  const showImage = Boolean(src) && src !== failedSrc;
 
-  if (!props.src) {
-    // src는 `<div>`에 넘기지 않기 위해 분해만 하고 쓰지 않는다.
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { alt, src: _src, ...rest } = props;
-
-    return (
-      <div
-        className={classes}
-        role={alt ? 'img' : undefined}
-        aria-label={alt || undefined}
-        {...rest}
-      />
-    );
-  }
-
-  return <img className={classes} {...props} />;
+  return (
+    <div
+      className={cn(BASE, SIZE_CLASSES[size], className)}
+      role={!showImage && alt ? 'img' : undefined}
+      aria-label={showImage ? undefined : alt || undefined}
+      {...props}
+    >
+      {showImage && (
+        <img
+          src={src}
+          alt={alt}
+          loading={loading}
+          onError={() => setFailedSrc(src)}
+          className="size-full object-cover"
+        />
+      )}
+    </div>
+  );
 }
