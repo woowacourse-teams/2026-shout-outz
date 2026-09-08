@@ -5,7 +5,6 @@ import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
-import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
@@ -33,6 +32,7 @@ import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.user.domain.UserRole;
 import java.net.URI;
 import java.time.Instant;
@@ -201,17 +201,7 @@ class AuthApiDocumentationTest {
                                                 .optional()
                                 )
                                 .responseSchema(Schema.schema("ErrorResponse"))
-                                .responseFields(
-                                        fieldWithPath("status").type(STRING).description("오류 상태"),
-                                        fieldWithPath("code").type(STRING).description("오류 식별자"),
-                                        fieldWithPath("message").type(STRING).description("오류 설명"),
-                                        fieldWithPath("details").type(ARRAY)
-                                                .description("요청 필드별 오류").optional(),
-                                        fieldWithPath("details[].field").type(STRING)
-                                                .description("오류가 발생한 요청 필드").optional(),
-                                        fieldWithPath("details[].message").type(STRING)
-                                                .description("필드 오류 설명").optional()
-                                )
+                                .responseFields(RestDocsFields.errorResponse())
                                 .build())
                 ));
     }
@@ -366,17 +356,7 @@ class AuthApiDocumentationTest {
                                                 .description("사용자 유형")
                                 )
                                 .responseSchema(Schema.schema("ErrorResponse"))
-                                .responseFields(
-                                        fieldWithPath("status").type(STRING).description("오류 상태"),
-                                        fieldWithPath("code").type(STRING).description("오류 식별자"),
-                                        fieldWithPath("message").type(STRING).description("오류 설명"),
-                                        fieldWithPath("details").type(ARRAY)
-                                                .description("요청 필드별 오류").optional(),
-                                        fieldWithPath("details[].field").type(STRING)
-                                                .description("오류가 발생한 요청 필드"),
-                                        fieldWithPath("details[].message").type(STRING)
-                                                .description("필드 오류 설명")
-                                )
+                                .responseFields(RestDocsFields.errorResponse())
                                 .build())
                 ));
     }
@@ -428,17 +408,7 @@ class AuthApiDocumentationTest {
                                                 .description("우테코 크루의 기수").optional()
                                 )
                                 .responseSchema(Schema.schema("ErrorResponse"))
-                                .responseFields(
-                                        fieldWithPath("status").type(STRING).description("오류 상태"),
-                                        fieldWithPath("code").type(STRING).description("오류 식별자"),
-                                        fieldWithPath("message").type(STRING).description("오류 설명"),
-                                        fieldWithPath("details").type(ARRAY)
-                                                .description("요청 필드별 오류").optional(),
-                                        fieldWithPath("details[].field").type(STRING)
-                                                .description("오류가 발생한 요청 필드").optional(),
-                                        fieldWithPath("details[].message").type(STRING)
-                                                .description("필드 오류 설명").optional()
-                                )
+                                .responseFields(RestDocsFields.errorResponse())
                                 .build())
                 ));
     }

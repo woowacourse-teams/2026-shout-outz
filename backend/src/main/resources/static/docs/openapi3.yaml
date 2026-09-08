@@ -75,6 +75,16 @@ paths:
           type: string
         example: csrf-token
       responses:
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                auth-logout-csrf-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
+                    message\":\"CSRF Token이 유효하지 않습니다.\"}"
         "204":
           description: "204"
   /api/v1/auth/session:
@@ -185,9 +195,9 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"}]}"
         "201":
           description: "201"
           headers:
@@ -296,9 +306,9 @@ paths:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"}]}"
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
+                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -439,37 +449,6 @@ paths:
                 type: string
 components:
   schemas:
-    ErrorResponse:
-      title: ErrorResponse
-      required:
-      - code
-      - message
-      - status
-      type: object
-      properties:
-        code:
-          type: string
-          description: 오류 코드
-        details:
-          type: array
-          description: 필드별 오류 상세
-          items:
-            type: object
-            properties:
-              field:
-                type: string
-                description: 오류 필드명
-                nullable: true
-              message:
-                type: string
-                description: 필드 오류 메시지
-                nullable: true
-        message:
-          type: string
-          description: 오류 메시지
-        status:
-          type: string
-          description: 응답 상태
     EventCreateRequest:
       title: EventCreateRequest
       required:
@@ -512,6 +491,37 @@ components:
         eventEndAt:
           type: string
           description: 이벤트 종료 시각
+    ErrorResponse:
+      title: ErrorResponse
+      required:
+      - code
+      - message
+      - status
+      type: object
+      properties:
+        code:
+          type: string
+          description: 오류 코드
+        details:
+          type: array
+          description: 필드별 오류 상세
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: 오류 필드명
+                nullable: true
+              message:
+                type: string
+                description: 필드 오류 메시지
+                nullable: true
+        message:
+          type: string
+          description: 오류 메시지
+        status:
+          type: string
+          description: 응답 상태
     VisitorSaveRequest:
       title: VisitorSaveRequest
       required:
@@ -549,25 +559,6 @@ components:
               type: string
               description: "UNAUTHENTICATED, SIGNUP_REQUIRED, AUTHENTICATED"
           description: 인증 세션 정보
-        status:
-          type: string
-          description: 응답 상태
-    OAuthSignupSuccessResponse:
-      title: OAuthSignupSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - userId
-          type: object
-          properties:
-            userId:
-              type: number
-              description: 생성된 사용자 ID
-          description: 가입 결과
         status:
           type: string
           description: 응답 상태
@@ -652,6 +643,25 @@ components:
             id:
               type: number
               description: 이벤트 ID
+        status:
+          type: string
+          description: 응답 상태
+    OAuthSignupSuccessResponse:
+      title: OAuthSignupSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - userId
+          type: object
+          properties:
+            userId:
+              type: number
+              description: 생성된 사용자 ID
+          description: 가입 결과
         status:
           type: string
           description: 응답 상태
