@@ -24,6 +24,15 @@ describe('Avatar', () => {
     expect(avatar).toBeEmptyDOMElement();
   });
 
+  it('src가 빈 문자열이어도 div로 렌더한다', () => {
+    render(<Avatar src="" alt="정우진" />);
+
+    const avatar = screen.getByRole('img', { name: '정우진' });
+
+    expect(avatar.tagName).toBe('DIV');
+    expect(avatar).not.toHaveAttribute('src');
+  });
+
   it('alt를 빈 문자열로 넘기면 접근성 트리에서 무시된다', () => {
     render(
       <>

@@ -33,9 +33,10 @@ export type AvatarFallbackProps = AvatarBaseProps &
 /**
  * 원형 이미지 박스만 담당한다. 표시할 이미지는 호출부가 `src`로 넘긴다.
  *
- * `src`가 없으면 `<img>` 대신 `<div>`로 렌더해 `primary-50` 배경의 빈 원만 남긴다.
- * `src` 없는 `<img>`는 브라우저가 깨진 이미지로 취급해 아이콘과 `alt` 텍스트를
- * 그려버리기 때문이다.
+ * `src`가 비어 있으면 `<img>` 대신 `<div>`로 렌더해 `primary-50` 배경의 빈 원만
+ * 남긴다. `src`가 없거나 빈 문자열인 `<img>`는 브라우저가 깨진 이미지로 취급해
+ * 아이콘과 `alt` 텍스트를 그려버리기 때문이다. 두 경우의 화면 결과가 같으므로
+ * `undefined`와 `''`을 함께 처리한다.
  *
  * `width`와 `height`는 `size`와 충돌하므로 가린다.
  */
@@ -53,8 +54,10 @@ const SIZE_CLASSES: Record<AvatarSize, string> = {
 export function Avatar({ size = 'md', className, ...props }: AvatarProps) {
   const classes = cn(BASE, SIZE_CLASSES[size], className);
 
-  if (props.src === undefined) {
-    const { alt, ...rest } = props;
+  if (!props.src) {
+    // src는 `<div>`에 넘기지 않기 위해 분해만 하고 쓰지 않는다.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { alt, src: _src, ...rest } = props;
 
     return (
       <div
