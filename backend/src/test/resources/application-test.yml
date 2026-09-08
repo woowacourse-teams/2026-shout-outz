@@ -14,3 +14,9 @@ github:
 auth:
   oauth:
     completion-uri: http://localhost:3000/oauth/callback
+
+aws:
+  s3:
+    bucket: test-bucket
+    region: ap-northeast-2
+    presigned-url-expiration-seconds: 300
