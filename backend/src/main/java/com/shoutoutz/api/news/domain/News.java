@@ -9,7 +9,7 @@ import lombok.Getter;
  * 공지와 이벤트의 공통 aggregate root.
  *
  * 공지와 이벤트가 같은 소식으로 저장되는 구조는 유지하되, 이벤트에만 존재하는
- * 기간은 {@link NewsEventPeriod} 값 객체로 감싸서 공통 필드와 분리한다.</p>
+ * 기간은 {@link NewsEventPeriod} 값 객체로 감싸서 공통 필드와 분리한다.
  */
 @Getter
 public class News {
