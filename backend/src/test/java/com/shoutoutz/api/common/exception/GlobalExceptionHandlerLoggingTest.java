@@ -65,7 +65,7 @@ class GlobalExceptionHandlerLoggingTest {
     private static Stream<Arguments> customExceptionCases() {
         return Stream.of(
                 Arguments.of(new DomainValidationException(
-                        CommonErrorCode.VALIDATION_FAILED, new RuntimeException("private input")), Level.WARN),
+                        CommonErrorCode.VALIDATION_FAILED, new RuntimeException("private input")), Level.ERROR),
                 Arguments.of(new PersistenceException(
                         CommonErrorCode.INTERNAL_SERVER_ERROR, new RuntimeException("database password")), Level.ERROR));
     }

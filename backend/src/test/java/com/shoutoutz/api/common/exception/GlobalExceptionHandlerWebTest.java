@@ -145,7 +145,7 @@ class GlobalExceptionHandlerWebTest {
                 Arguments.of(new InternalServerErrorException(CommonErrorCode.INTERNAL_SERVER_ERROR),
                         500, CommonErrorCode.INTERNAL_SERVER_ERROR),
                 Arguments.of(new DomainValidationException(CommonErrorCode.VALIDATION_FAILED),
-                        400, CommonErrorCode.VALIDATION_FAILED),
+                        500, CommonErrorCode.VALIDATION_FAILED),
                 Arguments.of(new EntityNotFoundException(CommonErrorCode.RESOURCE_NOT_FOUND),
                         404, CommonErrorCode.RESOURCE_NOT_FOUND),
                 Arguments.of(new DuplicateEntityException(CommonErrorCode.DUPLICATE_RESOURCE),
