@@ -3,6 +3,7 @@ package com.shoutoutz.api.user.domain.profile;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +29,7 @@ class UserProfileTest {
     @DisplayName("프로필 생성 시 문자열 표시 이름을 값 객체로 변환한다")
     void convertsRawDisplayNameWhenInitializingUserProfile() {
         assertThatThrownBy(() -> UserProfile.initialize(1L, " "))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(DomainValidationException.class);
     }
 
     @Test
@@ -38,19 +39,19 @@ class UserProfileTest {
                 .displayName("재키")
                 .userType(UserType.GENERAL)
                 .build())
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(DomainValidationException.class);
 
         assertThatThrownBy(() -> UserProfile.builder()
                 .userId(1L)
                 .userType(UserType.GENERAL)
                 .build())
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(DomainValidationException.class);
 
         assertThatThrownBy(() -> UserProfile.builder()
                 .userId(1L)
                 .displayName("재키")
                 .build())
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(DomainValidationException.class);
     }
 
     @Test
@@ -63,7 +64,7 @@ class UserProfileTest {
                 .track("BACKEND")
                 .cohort((short) 8)
                 .build())
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(DomainValidationException.class);
     }
 
     @Test
@@ -75,7 +76,7 @@ class UserProfileTest {
                 .userType(UserType.WOOWACOURSE_CREW)
                 .track("BACKEND")
                 .build())
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(DomainValidationException.class);
 
         assertThatThrownBy(() -> UserProfile.builder()
                 .userId(1L)
@@ -83,7 +84,7 @@ class UserProfileTest {
                 .userType(UserType.WOOWACOURSE_CREW)
                 .cohort((short) 8)
                 .build())
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(DomainValidationException.class);
     }
 
     @Test
@@ -111,7 +112,7 @@ class UserProfileTest {
                 .track("BACKEND")
                 .cohort((short) 8)
                 .build())
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(DomainValidationException.class);
     }
 
     @Test
@@ -147,5 +148,71 @@ class UserProfileTest {
         assertThat(profile.getCohort()).isEqualTo((short) 8);
         assertThat(profile.getAvatarImageId()).isNull();
         assertThat(profile.getGithubProfileUrl()).isEqualTo("https://github.com/dahye");
+    }
+
+    @Test
+    @DisplayName("일반 사용자는 표시 이름과 프로필 정보를 수정한다")
+    void updatesGeneralUserProfile() {
+        UserProfile profile = UserProfile.initialize(1L, "재키");
+
+        UserProfile updated = profile.update(
+                "새 이름",
+                "소개",
+                21L,
+                "https://github.com/zzaekkii",
+                "https://zzaekkii.dev"
+        );
+
+        assertThat(updated.getDisplayName()).isEqualTo(new ProfileDisplayName("새 이름"));
+        assertThat(updated.getBio()).isEqualTo("소개");
+        assertThat(updated.getAvatarImageId()).isEqualTo(21L);
+    }
+
+    @Test
+    @DisplayName("우테코 사용자는 표시 이름을 변경할 수 없다")
+    void rejectsDisplayNameChangeFromWoowacourseUser() {
+        UserProfile profile = UserProfile.initialize(
+                1L,
+                "재키",
+                UserType.WOOWACOURSE_CREW,
+                "BACKEND",
+                (short) 8,
+                null
+        );
+
+        assertThatThrownBy(() -> profile.update("새 이름", null, null, null, null))
+                .isInstanceOf(DomainValidationException.class);
+    }
+
+    @Test
+    @DisplayName("한 줄 소개 길이는 유니코드 코드 포인트 기준으로 검증한다")
+    void validatesBioLengthByUnicodeCodePoint() {
+        UserProfile profile = UserProfile.initialize(1L, "재키");
+        String twoHundredEmojis = "😀".repeat(200);
+        String twoHundredOneEmojis = "😀".repeat(201);
+
+        assertThat(profile.update("재키", twoHundredEmojis, null, null, null).getBio())
+                .isEqualTo(twoHundredEmojis);
+        assertThatThrownBy(() -> profile.update("재키", twoHundredOneEmojis, null, null, null))
+                .isInstanceOf(DomainValidationException.class);
+    }
+
+    @Test
+    @DisplayName("프로필 문자열을 정제하고 공백뿐인 선택 값은 null로 변환한다")
+    void sanitizesProfileStrings() {
+        UserProfile profile = UserProfile.initialize(1L, "재키");
+
+        UserProfile updated = profile.update(
+                "  새 이름  ",
+                "  소개  ",
+                null,
+                "   ",
+                " https://zzaekkii.dev "
+        );
+
+        assertThat(updated.getDisplayName().value()).isEqualTo("새 이름");
+        assertThat(updated.getBio()).isEqualTo("소개");
+        assertThat(updated.getGithubProfileUrl()).isNull();
+        assertThat(updated.getBlogUrl()).isEqualTo("https://zzaekkii.dev");
     }
 }

@@ -7,6 +7,7 @@ import com.shoutoutz.api.auth.application.dto.command.OAuthSignupCommand;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.auth.infrastructure.jpa.OAuthAccountJpaRepository;
+import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.infrastructure.jpa.UserJpaRepository;
 import com.shoutoutz.api.user.infrastructure.jpa.UserProfileJpaRepository;
@@ -50,7 +51,7 @@ class OAuthSignupServiceIntegrationTest {
         );
 
         assertThatThrownBy(() -> oauthSignupService.signup(invalidCommand))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(DomainValidationException.class);
 
         assertThat(userJpaRepository.count()).isEqualTo(userCount);
         assertThat(userProfileJpaRepository.count()).isEqualTo(profileCount);

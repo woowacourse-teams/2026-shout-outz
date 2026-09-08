@@ -1,5 +1,6 @@
 package com.shoutoutz.api.user.domain.profile;
 
+import com.shoutoutz.api.common.util.DataResolveUtil;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -28,16 +29,62 @@ public class UserProfile {
             String githubProfileUrl,
             String blogUrl
     ) {
-        validate(userId, userType, track, cohort);
+        String sanitizedTrack = DataResolveUtil.sanitizeString(track);
+        String sanitizedBio = DataResolveUtil.sanitizeString(bio);
+        String sanitizedGithubProfileUrl = DataResolveUtil.sanitizeString(githubProfileUrl);
+        String sanitizedBlogUrl = DataResolveUtil.sanitizeString(blogUrl);
+
+        UserProfileValidator.validateProfile(
+                userId,
+                userType,
+                sanitizedTrack,
+                cohort,
+                sanitizedBio,
+                avatarImageId,
+                sanitizedGithubProfileUrl,
+                sanitizedBlogUrl
+        );
         this.userId = userId;
         this.displayName = new ProfileDisplayName(displayName);
         this.userType = userType;
-        this.track = track;
+        this.track = sanitizedTrack;
         this.cohort = cohort;
-        this.bio = bio;
+        this.bio = sanitizedBio;
         this.avatarImageId = avatarImageId;
-        this.githubProfileUrl = githubProfileUrl;
-        this.blogUrl = blogUrl;
+        this.githubProfileUrl = sanitizedGithubProfileUrl;
+        this.blogUrl = sanitizedBlogUrl;
+    }
+
+    public UserProfile update(
+            String displayName,
+            String bio,
+            Long avatarImageId,
+            String githubProfileUrl,
+            String blogUrl
+    ) {
+        String sanitizedDisplayName = DataResolveUtil.sanitizeString(displayName);
+        UserProfileValidator.validateDisplayNameChange(
+                userType,
+                this.displayName.value(),
+                sanitizedDisplayName
+        );
+
+        return new UserProfile(
+                userId,
+                sanitizedDisplayName,
+                userType,
+                track,
+                cohort,
+                bio,
+                avatarImageId,
+                githubProfileUrl,
+                blogUrl
+        );
+    }
+
+    public boolean canChangeDisplayNameTo(String displayName) {
+        String sanitizedDisplayName = DataResolveUtil.sanitizeString(displayName);
+        return userType == UserType.GENERAL || this.displayName.value().equals(sanitizedDisplayName);
     }
 
     public static UserProfile initialize(Long userId, String displayName) {
@@ -72,26 +119,4 @@ public class UserProfile {
         );
     }
 
-    private void validate(
-            Long userId,
-            UserType userType,
-            String track,
-            Short cohort
-    ) {
-        if (userId == null) {
-            throw new IllegalArgumentException("사용자 ID는 필수입니다.");
-        }
-        if (userType == null) {
-            throw new IllegalArgumentException("사용자 유형은 필수입니다.");
-        }
-        if (userType == UserType.GENERAL && (track != null || cohort != null)) {
-            throw new IllegalArgumentException("일반 사용자는 트랙과 기수를 가질 수 없습니다.");
-        }
-        if (userType == UserType.WOOWACOURSE_CREW && (track == null || cohort == null)) {
-            throw new IllegalArgumentException("우아한테크코스 크루는 트랙과 기수가 필요합니다.");
-        }
-        if (userType == UserType.WOOWACOURSE_COACH && cohort != null) {
-            throw new IllegalArgumentException("우아한테크코스 코치는 기수를 가질 수 없습니다.");
-        }
-    }
 }

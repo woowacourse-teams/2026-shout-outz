@@ -12,15 +12,18 @@ import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
+import com.shoutoutz.api.user.application.UserCommandService;
 import com.shoutoutz.api.user.application.UserQueryService;
 import com.shoutoutz.api.user.application.dto.result.UserProfileResult;
 import com.shoutoutz.api.user.application.dto.result.UserProfileSummaryResult;
+import com.shoutoutz.api.user.application.dto.result.UserProfileUpdateResult;
 import com.shoutoutz.api.user.application.dto.result.UserSearchResult;
 import com.shoutoutz.api.user.application.query.UserProfileCounts;
 import com.shoutoutz.api.user.domain.account.UserRole;
@@ -34,6 +37,7 @@ import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDoc
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -48,6 +52,9 @@ class UserHttpApiTest {
 
     @MockitoBean
     private UserQueryService userQueryService;
+
+    @MockitoBean
+    private UserCommandService userCommandService;
 
     @Test
     @DisplayName("내 프로필 요약을 조회한다")
@@ -181,6 +188,119 @@ class UserHttpApiTest {
                                 )
                                 .build())
                 ));
+    }
+
+    @Test
+    @DisplayName("내 프로필을 수정한다")
+    void updateMyProfile() throws Exception {
+        given(userCommandService.updateMyProfile(org.mockito.ArgumentMatchers.any()))
+                .willReturn(new UserProfileUpdateResult(
+                        1L,
+                        "zzaekkii",
+                        "재키",
+                        UserType.WOOWACOURSE_CREW,
+                        "BACKEND",
+                        (short) 8,
+                        "백엔드 개발자입니다.",
+                        21L,
+                        "https://github.com/zzaekkii",
+                        "https://zzaekkii.dev"
+                ));
+
+        mockMvc.perform(patch("/api/v1/users/me")
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=session-id")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .requestAttr(
+                                AuthenticatedSession.class.getName(),
+                                new AuthenticatedSession(1L, UserRole.USER)
+                        )
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "displayName": "재키",
+                                  "bio": "백엔드 개발자입니다.",
+                                  "avatarImageId": 21,
+                                  "githubProfileUrl": "https://github.com/zzaekkii",
+                                  "blogUrl": "https://zzaekkii.dev"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.userId").value(1))
+                .andExpect(jsonPath("$.data.handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data.displayName").value("재키"))
+                .andExpect(jsonPath("$.data.userType").value("WOOWACOURSE_CREW"))
+                .andExpect(jsonPath("$.data.track").value("BACKEND"))
+                .andExpect(jsonPath("$.data.cohort").value(8))
+                .andExpect(jsonPath("$.data.bio").value("백엔드 개발자입니다."))
+                .andExpect(jsonPath("$.data.avatarImageId").value(21))
+                .andExpect(jsonPath("$.data.githubProfileUrl").value("https://github.com/zzaekkii"))
+                .andExpect(jsonPath("$.data.blogUrl").value("https://zzaekkii.dev"))
+                .andDo(document(
+                        "user-profile-update",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("내 프로필 수정")
+                                .description("로그인한 사용자의 수정 가능한 프로필 정보를 저장한다.")
+                                .privateResource(true)
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("인증된 사용자의 JSESSIONID"),
+                                        headerWithName("X-CSRF-Token")
+                                                .description("CSRF 토큰")
+                                )
+                                .requestSchema(Schema.schema("UserProfileUpdateRequest"))
+                                .requestFields(
+                                        fieldWithPath("displayName").type(STRING)
+                                                .description("표시 이름. 인증된 우테코 사용자는 변경 불가"),
+                                        fieldWithPath("bio").type(STRING).description("한 줄 소개").optional(),
+                                        fieldWithPath("avatarImageId").type(NUMBER)
+                                                .description("READY 상태의 USER_AVATAR 미디어 ID").optional(),
+                                        fieldWithPath("githubProfileUrl").type(STRING)
+                                                .description("GitHub 프로필 URL").optional(),
+                                        fieldWithPath("blogUrl").type(STRING).description("블로그 URL").optional()
+                                )
+                                .responseSchema(Schema.schema("UserProfileUpdateSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("수정된 사용자 프로필"),
+                                        fieldWithPath("data.userId").type(NUMBER).description("사용자 ID"),
+                                        fieldWithPath("data.handle").type(STRING).description("사용자 handle"),
+                                        fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
+                                        fieldWithPath("data.userType").type(STRING).description("사용자 유형"),
+                                        fieldWithPath("data.track").type(STRING).description("우테코 트랙").optional(),
+                                        fieldWithPath("data.cohort").type(NUMBER).description("우테코 기수").optional(),
+                                        fieldWithPath("data.bio").type(STRING).description("한 줄 소개").optional(),
+                                        fieldWithPath("data.avatarImageId").type(NUMBER)
+                                                .description("프로필 이미지 미디어 ID").optional(),
+                                        fieldWithPath("data.githubProfileUrl").type(STRING)
+                                                .description("GitHub 프로필 URL").optional(),
+                                        fieldWithPath("data.blogUrl").type(STRING)
+                                                .description("블로그 URL").optional()
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    @DisplayName("프로필 URL 형식이 잘못되면 수정 요청을 거절한다")
+    void rejectInvalidProfileUrl() throws Exception {
+        mockMvc.perform(patch("/api/v1/users/me")
+                        .requestAttr(
+                                AuthenticatedSession.class.getName(),
+                                new AuthenticatedSession(1L, UserRole.USER)
+                        )
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "displayName": "재키",
+                                  "githubProfileUrl": "http://github.com/zzaekkii",
+                                  "blogUrl": "not-a-url"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details.length()").value(2));
     }
 
     @Test

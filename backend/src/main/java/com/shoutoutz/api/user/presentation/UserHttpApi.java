@@ -3,19 +3,26 @@ package com.shoutoutz.api.user.presentation;
 import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
+import com.shoutoutz.api.user.application.UserCommandService;
 import com.shoutoutz.api.user.application.UserQueryService;
+import com.shoutoutz.api.user.application.dto.result.UserProfileUpdateResult;
 import com.shoutoutz.api.user.application.dto.result.UserProfileResult;
 import com.shoutoutz.api.user.application.dto.result.UserProfileSummaryResult;
 import com.shoutoutz.api.user.application.dto.result.UserSearchResult;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
+import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
+import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserSearchMetaResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserSearchResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserHttpApi {
 
     private final UserQueryService userQueryService;
+    private final UserCommandService userCommandService;
 
     @GetMapping("/me/summary")
     public ResponseEntity<SuccessResponse<UserProfileSummaryResponse>> getMyProfileSummary(
@@ -44,6 +52,19 @@ public class UserHttpApi {
     ) {
         UserProfileResult result = userQueryService.getMyProfile(authenticatedUser.userId());
         UserProfileResponse response = UserProfileResponse.from(result);
+
+        return ResponseEntity.ok(SuccessResponse.success(response));
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<SuccessResponse<UserProfileUpdateResponse>> updateMyProfile(
+            @LoginUser AuthenticatedUser authenticatedUser,
+            @Valid @RequestBody UserProfileUpdateRequest request
+    ) {
+        UserProfileUpdateResult result = userCommandService.updateMyProfile(
+                request.toCommand(authenticatedUser.userId())
+        );
+        UserProfileUpdateResponse response = UserProfileUpdateResponse.from(result);
 
         return ResponseEntity.ok(SuccessResponse.success(response));
     }

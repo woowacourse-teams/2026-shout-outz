@@ -50,6 +50,29 @@ class UserProfileRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("기존 사용자 프로필의 수정 정보를 저장한다")
+    void updatesUserProfile() {
+        User savedUser = userRepository.save(User.initialize("zzaekkii-profile-update"));
+        UserProfile profile = userProfileRepository.save(
+                UserProfile.initialize(savedUser.getId(), "재키")
+        );
+
+        userProfileRepository.save(profile.update(
+                "새 이름",
+                "새 소개",
+                null,
+                "https://github.com/zzaekkii",
+                "https://zzaekkii.dev"
+        ));
+
+        UserProfile foundProfile = userProfileRepository.findByUserId(savedUser.getId()).orElseThrow();
+        assertThat(foundProfile.getDisplayName()).isEqualTo(new ProfileDisplayName("새 이름"));
+        assertThat(foundProfile.getBio()).isEqualTo("새 소개");
+        assertThat(foundProfile.getGithubProfileUrl()).isEqualTo("https://github.com/zzaekkii");
+        assertThat(foundProfile.getBlogUrl()).isEqualTo("https://zzaekkii.dev");
+    }
+
+    @Test
     @DisplayName("존재하지 않는 사용자의 프로필을 조회하면 빈 결과를 반환한다")
     void returnsEmptyWhenUserProfileDoesNotExist() {
         assertThat(userProfileRepository.findByUserId(Long.MAX_VALUE)).isEmpty();
