@@ -1,5 +1,7 @@
 import type { ComponentProps } from 'react';
 
+import { cn } from '@/utils/cn';
+
 /**
  * 채움 강도.
  *
@@ -31,4 +33,34 @@ export interface BadgeProps extends ComponentProps<'span'> {
   variant?: BadgeVariant;
   /** @default 'gray' */
   tone?: BadgeTone;
+}
+
+const BASE = 'inline-flex items-center rounded-sm px-1.5 py-0.5 text-xs whitespace-nowrap';
+
+const FILL_CLASSES: Record<BadgeVariant, Record<BadgeTone, string>> = {
+  soft: {
+    gray: 'bg-gray-100 text-gray-600',
+    primary: 'bg-primary-50 text-primary-600',
+    green: 'bg-green-50 text-green-600',
+  },
+  solid: {
+    gray: 'bg-gray-600 text-white',
+    primary: 'bg-primary-600 text-white',
+    green: 'bg-green-600 text-white',
+  },
+};
+
+const WEIGHT_CLASSES: Record<BadgeTone, string> = {
+  gray: 'font-normal',
+  primary: 'font-bold',
+  green: 'font-bold',
+};
+
+export function Badge({ variant = 'soft', tone = 'gray', className, ...props }: BadgeProps) {
+  return (
+    <span
+      className={cn(BASE, FILL_CLASSES[variant][tone], WEIGHT_CLASSES[tone], className)}
+      {...props}
+    />
+  );
 }
