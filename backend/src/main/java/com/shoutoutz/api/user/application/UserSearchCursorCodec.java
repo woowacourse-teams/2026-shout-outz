@@ -1,5 +1,6 @@
 package com.shoutoutz.api.user.application;
 
+import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.user.domain.account.Handle;
 import com.shoutoutz.api.user.domain.profile.ProfileDisplayName;
 import com.shoutoutz.api.user.application.query.UserSearchCursor;
@@ -37,7 +38,7 @@ public class UserSearchCursorCodec {
             UserSearchCursor cursor = objectMapper.readValue(decodedCursor, UserSearchCursor.class);
             validate(cursor);
             return cursor;
-        } catch (JacksonException | IllegalArgumentException exception) {
+        } catch (JacksonException | IllegalArgumentException | DomainValidationException exception) {
             throw new IllegalArgumentException("유효하지 않은 커서입니다.");
         }
     }
