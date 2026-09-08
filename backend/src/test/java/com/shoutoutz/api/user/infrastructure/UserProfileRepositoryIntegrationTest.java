@@ -93,4 +93,19 @@ class UserProfileRepositoryIntegrationTest {
         assertThatThrownBy(() -> userProfileJpaRepository.saveAndFlush(profileEntity))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
+
+    @Test
+    @DisplayName("데이터베이스는 200자를 초과하는 한 줄 소개를 허용하지 않는다")
+    void rejectsBioLongerThanTwoHundredCharactersAtDatabase() {
+        User savedUser = userRepository.save(User.initialize("long-bio-user"));
+        UserProfileEntity profileEntity = UserProfileEntity.builder()
+                .userId(savedUser.getId())
+                .displayName("재키")
+                .userType(UserType.GENERAL)
+                .bio("가".repeat(201))
+                .build();
+
+        assertThatThrownBy(() -> userProfileJpaRepository.saveAndFlush(profileEntity))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
 }
