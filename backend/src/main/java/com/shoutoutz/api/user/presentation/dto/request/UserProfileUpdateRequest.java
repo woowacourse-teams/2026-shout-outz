@@ -17,14 +17,12 @@ public record UserProfileUpdateRequest(
         @Positive(message = "avatarImageId는 0보다 커야 합니다.")
         Long avatarImageId,
 
-        @CodePointSize(max = 2_048, message = "githubProfileUrl은 2,048자를 초과할 수 없습니다.")
         @Pattern(
                 regexp = "^https://github\\.com/[^/\\s?#]+/?$",
                 message = "githubProfileUrl 형식이 올바르지 않습니다."
         )
         String githubProfileUrl,
 
-        @CodePointSize(max = 2_048, message = "blogUrl은 2,048자를 초과할 수 없습니다.")
         @Pattern(regexp = "^https?://[^\\s]+$", message = "blogUrl 형식이 올바르지 않습니다.")
         String blogUrl
 ) {
