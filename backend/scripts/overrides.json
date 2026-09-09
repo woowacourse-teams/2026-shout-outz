@@ -1,0 +1,116 @@
+{
+  "baton": {
+    "thumbnail_url": "https://github.com/woowacourse-teams/2023-baton/assets/39729721/278a63a1-28ce-4270-b67a-5446ae8ce598"
+  },
+  "bom-bom": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://www.bombom.news"
+  },
+  "bottari": {
+    "thumbnail_url": null
+  },
+  "celuveat": {
+    "thumbnail_url": "https://github.com/woowacourse-teams/2023-celuveat/assets/102432453/9eaaf87a-5d9e-4f79-9d3e-b7c5183813df"
+  },
+  "chongdae-market": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://play.google.com/store/apps/details?id=com.zzang.chongdae"
+  },
+  "code-zap": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://www.code-zap.com/"
+  },
+  "course-pick": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://play.google.com/store/apps/details?id=io.coursepick.coursepick",
+    "thumbnail_url": "https://play-lh.googleusercontent.com/Qi7RkC4OWnmuDQ_4lwXA6LSmXBM40RtsS3dwSdDWc6xXnUUnp2-oLZnqzHBTI-DD-mpFD6jsOPrFUbZEa22OMw=w480-h960-rw"
+  },
+  "cruru": {
+    "thumbnail_url": null
+  },
+  "ddangkong": {
+    "thumbnail_url": "https://github.com/user-attachments/assets/f47b6023-fc55-4072-92b4-0551135a95d0"
+  },
+  "estime": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://estime.today/",
+    "thumbnail_url": "https://github.com/user-attachments/assets/238f2d64-bf78-4d36-9617-810a86d9d445"
+  },
+  "festa-go": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://play.google.com/store/apps/details?id=com.festago.festago"
+  },
+  "festabook": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://play.google.com/store/apps/details?id=com.daedan.festabook"
+  },
+  "friendogly": {
+    "thumbnail_url": "https://github.com/user-attachments/assets/9613338d-7a5d-4306-9fed-656574fbe929"
+  },
+  "haeng-dong": {
+    "thumbnail_url": "https://github.com/user-attachments/assets/9e51f7a3-0326-4c06-8b03-65aca574c10c"
+  },
+  "hang-log": {
+    "thumbnail_url": "https://github.com/woowacourse-teams/2023-hang-log/assets/49433615/184d3569-b1c6-4f4d-bef0-fb532cc554f3"
+  },
+  "hearit": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://play.google.com/store/apps/details?id=com.onair.hearit"
+  },
+  "moaon": {
+    "thumbnail_url": "https://brick-william-6f5.notion.site/image/attachment%3Ad07ea022-fe48-4104-9972-e452799b5086%3A%E1%84%89%E1%85%B3%E1%84%8F%E1%85%B3%E1%84%85%E1%85%B5%E1%86%AB%E1%84%89%E1%85%A3%E1%86%BA_2025-11-25_%E1%84%8B%E1%85%A9%E1%84%92%E1%85%AE_6.38.26.png?table=block&id=2b64e173-3f21-80d8-a783-dbf5bf8cdbb5&spaceId=e321b4cb-8569-4a87-9b86-2845eb22f8d7&width=2000&userId=&cache=v2"
+  },
+  "moitz": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://moitz.kr/"
+  },
+  "mul-kkam": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://play.google.com/store/apps/details?id=com.mulkkam",
+    "thumbnail_url": "https://play-lh.googleusercontent.com/axd4NZAH91GouuoT5pFlFUZs-YXpdUpctdVu5SAlsjd18FppWar3QdqAhuqNgLYvyiJJkqMB7Bd6Fkx5dsSy=w480-h960-rw"
+  },
+  "naaga": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://play.google.com/store/apps/details?id=com.now.naaga"
+  },
+  "pick-eat": {
+    "thumbnail_url": null
+  },
+  "routie": {
+    "thumbnail_url": "https://raw.githubusercontent.com/woowacourse-teams/2025-routie/develop/frontend/src/assets/images/thumbnail.jpeg"
+  },
+  "seller-lee-company": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://play.google.com/store/apps/details?id=com.sellerleecompany.jikgorae"
+  },
+  "shook": {
+    "thumbnail_url": null
+  },
+  "staccato": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://play.google.com/store/apps/details?id=com.on.staccato"
+  },
+  "ternoko": {
+    "thumbnail_url": "https://user-images.githubusercontent.com/83059234/195292032-346867ea-256a-4db8-82c4-0efb5b569ef3.jpeg"
+  },
+  "turip": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://play.google.com/store/apps/details?id=com.on.turip"
+  },
+  "yagu-bogu": {
+    "thumbnail_url": "https://web.yagubogu.com/img/app-icon.webp",
+    "service_status": "OPERATING",
+    "deployment_url": "https://web.yagubogu.com/"
+  },
+  "yozm-cafe": {
+    "thumbnail_url": null
+  },
+  "zeze": {
+    "thumbnail_url": null
+  },
+  "zzol": {
+    "service_status": "OPERATING",
+    "deployment_url": "https://zzol.site",
+    "thumbnail_url": "https://github.com/user-attachments/assets/bd6bc509-16bf-4c2d-aab1-21fd346398f1"
+  }
+}
