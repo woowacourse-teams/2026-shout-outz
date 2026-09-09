@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-router';
 
 import { Gnb, GNB_ITEMS, type GnbProps } from '@/components/Gnb';
+import { tabItemStyles } from '@/components/Tab';
 
 const ROUTE_PATHS = ['/', '/feeds', '/projects', '/projects/$projectId', '/news'];
 
@@ -28,8 +29,13 @@ const renderGnb = async (path: string, props: GnbProps = {}) => {
 };
 
 const itemNamed = (label: string) => screen.getByRole('link', { name: label });
+
+/**
+ * 로고도 `/`로 가는 링크라 홈에서는 활성으로 잡힌다. 여기서 확인하려는 것은
+ * 네비게이션 항목 중 어느 것이 활성인지이므로 `<nav>` 안으로 범위를 좁힌다.
+ */
 const activeLabels = () =>
-  screen
+  within(screen.getByRole('navigation'))
     .getAllByRole('link')
     .filter((link) => link.getAttribute('aria-current') === 'page')
     .map((link) => link.textContent);
@@ -71,6 +77,16 @@ describe('Gnb', () => {
       const nav = screen.getByRole('navigation');
 
       expect(within(nav).getAllByRole('link')).toHaveLength(GNB_ITEMS.length);
+    });
+
+    it('md 오버라이드가 Tab의 weak variant와 같은 값을 쓴다', async () => {
+      await renderGnb('/');
+
+      const { className } = itemNamed('피드');
+
+      tabItemStyles.weak.split(' ').forEach((tabClassName) => {
+        expect(className).toContain(`md:${tabClassName}`);
+      });
     });
 
     it('trailing에 넘긴 내용을 렌더한다', async () => {
