@@ -35,7 +35,8 @@ export interface BadgeProps extends ComponentProps<'span'> {
   tone?: BadgeTone;
 }
 
-const BASE = 'inline-flex items-center rounded-sm px-1.5 py-0.5 text-xs whitespace-nowrap';
+const BASE =
+  'inline-flex items-center rounded-sm px-1.5 py-0.5 text-xs whitespace-nowrap font-bold';
 
 const FILL_CLASSES: Record<BadgeVariant, Record<BadgeTone, string>> = {
   soft: {
@@ -50,17 +51,6 @@ const FILL_CLASSES: Record<BadgeVariant, Record<BadgeTone, string>> = {
   },
 };
 
-const WEIGHT_CLASSES: Record<BadgeTone, string> = {
-  gray: 'font-normal',
-  primary: 'font-bold',
-  green: 'font-bold',
-};
-
 export function Badge({ variant = 'soft', tone = 'gray', className, ...props }: BadgeProps) {
-  return (
-    <span
-      className={cn(BASE, FILL_CLASSES[variant][tone], WEIGHT_CLASSES[tone], className)}
-      {...props}
-    />
-  );
+  return <span className={cn(BASE, FILL_CLASSES[variant][tone], className)} {...props} />;
 }
