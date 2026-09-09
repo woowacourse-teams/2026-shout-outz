@@ -7,11 +7,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -20,6 +23,7 @@ import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
+import com.shoutoutz.api.news.application.NewsFindAllQuery;
 import com.shoutoutz.api.news.application.NewsService;
 import com.shoutoutz.api.news.domain.EventStatus;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
@@ -27,8 +31,10 @@ import com.shoutoutz.api.news.domain.NewsType;
 import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.response.EventCreateResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsFindAllResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NoticeCreateResponse;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -306,6 +312,189 @@ class NewsHttpApiTest {
                 .andExpect(jsonPath("$.data.cta").value(nullValue()))
                 .andExpect(jsonPath("$.data.isPinned").value(false))
                 .andExpect(jsonPath("$.data.pinOrder").value(nullValue()));
+    }
+
+    /**
+     * DOCS: /api/v1/news
+     */
+    @Test
+    @DisplayName("소식 목록 조회 요청이 성공하면 최신순 목록과 페이지네이션 정보를 반환한다")
+    void returnsNewsListWithPaginationMetadata() throws Exception {
+        NewsFindAllResponse response = new NewsFindAllResponse(
+                List.of(new NewsFindAllResponse.Item(
+                        102L,
+                        NewsType.EVENT,
+                        "프로젝트 아카이빙 챌린지",
+                        "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                        Instant.parse("2026-08-25T00:00:00Z"),
+                        EventStatus.ONGOING,
+                        Instant.parse("2026-08-20T00:00:00Z"),
+                        Instant.parse("2026-09-20T14:59:59Z"),
+                        false,
+                        null
+                )),
+                new NewsFindAllResponse.Meta(null, false)
+        );
+        given(newsService.findAll(
+                new NewsFindAllQuery(NewsType.EVENT, EventStatus.ONGOING, 20, null)
+        )).willReturn(response);
+
+        mockMvc.perform(get("/api/v1/news")
+                        .queryParam("type", "EVENT")
+                        .queryParam("eventStatus", "ONGOING")
+                        .queryParam("sort", "LATEST"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data[0].id").value(102))
+                .andExpect(jsonPath("$.data[0].type").value("EVENT"))
+                .andExpect(jsonPath("$.data[0].eventStatus").value("ONGOING"))
+                .andExpect(jsonPath("$.data[0].isPinned").value(false))
+                .andExpect(jsonPath("$.meta.nextCursor").value(nullValue()))
+                .andExpect(jsonPath("$.meta.hasNext").value(false))
+                .andDo(document(
+                        "news-find-all",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("소식 목록 조회")
+                                .description("소식 목록을 유형과 이벤트 상태로 필터링하고 최신순으로 조회한다.")
+                                .queryParameters(
+                                        parameterWithName("type")
+                                                .description("소식 유형(ALL, NOTICE, EVENT). 기본값은 ALL")
+                                                .optional(),
+                                        parameterWithName("eventStatus")
+                                                .description("이벤트 상태(UPCOMING, ONGOING, ENDED)")
+                                                .optional(),
+                                        parameterWithName("sort")
+                                                .description("정렬 기준. 현재 LATEST만 지원하며 기본값은 LATEST")
+                                                .optional(),
+                                        parameterWithName("size")
+                                                .description("조회 개수. 기본값 20, 최댓값 50")
+                                                .optional(),
+                                        parameterWithName("cursor")
+                                                .description("다음 페이지 조회에 사용하는 opaque cursor")
+                                                .optional()
+                                )
+                                .responseSchema(Schema.schema("NewsFindAllSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status")
+                                                .type(STRING)
+                                                .description("응답 상태"),
+                                        fieldWithPath("data")
+                                                .type(ARRAY)
+                                                .description("소식 목록"),
+                                        fieldWithPath("data[].id")
+                                                .type(NUMBER)
+                                                .description("소식 ID"),
+                                        fieldWithPath("data[].type")
+                                                .type(STRING)
+                                                .description("소식 유형"),
+                                        fieldWithPath("data[].title")
+                                                .type(STRING)
+                                                .description("소식 제목"),
+                                        fieldWithPath("data[].summary")
+                                                .type(STRING)
+                                                .description("소식 요약"),
+                                        fieldWithPath("data[].publishedAt")
+                                                .type(STRING)
+                                                .description("게시 시각"),
+                                        fieldWithPath("data[].eventStatus")
+                                                .type(STRING)
+                                                .description("이벤트 상태. 공지인 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data[].eventStartAt")
+                                                .type(STRING)
+                                                .description("이벤트 시작 시각. 공지인 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data[].eventEndAt")
+                                                .type(STRING)
+                                                .description("이벤트 종료 시각. 공지인 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data[].isPinned")
+                                                .type(BOOLEAN)
+                                                .description("고정 여부"),
+                                        fieldWithPath("data[].pinOrder")
+                                                .type(NUMBER)
+                                                .description("고정 순서. 고정되지 않은 경우 null")
+                                                .optional(),
+                                        fieldWithPath("meta")
+                                                .type(OBJECT)
+                                                .description("페이지네이션 정보"),
+                                        fieldWithPath("meta.nextCursor")
+                                                .type(STRING)
+                                                .description("다음 페이지 커서. 다음 페이지가 없으면 null")
+                                                .optional(),
+                                        fieldWithPath("meta.hasNext")
+                                                .type(BOOLEAN)
+                                                .description("다음 페이지 존재 여부")
+                                )
+                                .build())
+                ));
+
+        verify(newsService).findAll(
+                new NewsFindAllQuery(NewsType.EVENT, EventStatus.ONGOING, 20, null)
+        );
+    }
+
+    @Test
+    @DisplayName("소식 목록 조회 기본값을 서비스에 전달한다")
+    void usesDefaultNewsListQueryValues() throws Exception {
+        NewsFindAllResponse response = new NewsFindAllResponse(
+                List.of(),
+                new NewsFindAllResponse.Meta(null, false)
+        );
+        given(newsService.findAll(
+                new NewsFindAllQuery(null, null, 20, null)
+        )).willReturn(response);
+
+        mockMvc.perform(get("/api/v1/news"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.meta.hasNext").value(false));
+
+        verify(newsService).findAll(
+                new NewsFindAllQuery(null, null, 20, null)
+        );
+    }
+
+    @Test
+    @DisplayName("소식 목록 조회 개수가 50을 초과하면 400을 반환하고 서비스를 호출하지 않는다")
+    void returnsBadRequestWhenNewsListSizeExceedsMaximum() throws Exception {
+        mockMvc.perform(get("/api/v1/news")
+                        .queryParam("size", "51"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("소식 목록 조회 유형이 올바르지 않으면 400을 반환하고 서비스를 호출하지 않는다")
+    void returnsBadRequestWhenNewsTypeIsInvalid() throws Exception {
+        mockMvc.perform(get("/api/v1/news")
+                        .queryParam("type", "INVALID"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("소식 목록 조회 이벤트 상태가 올바르지 않으면 400을 반환하고 서비스를 호출하지 않는다")
+    void returnsBadRequestWhenEventStatusIsInvalid() throws Exception {
+        mockMvc.perform(get("/api/v1/news")
+                        .queryParam("eventStatus", "INVALID"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("소식 목록 조회 정렬 기준이 올바르지 않으면 400을 반환하고 서비스를 호출하지 않는다")
+    void returnsBadRequestWhenNewsSortIsInvalid() throws Exception {
+        mockMvc.perform(get("/api/v1/news")
+                        .queryParam("sort", "INVALID"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(newsService);
     }
 
     /**

@@ -7,6 +7,59 @@ servers:
 - url: http://localhost:8080
 tags: []
 paths:
+  /api/v1/news:
+    get:
+      tags:
+      - News
+      summary: 소식 목록 조회
+      description: 소식 목록을 유형과 이벤트 상태로 필터링하고 최신순으로 조회한다.
+      operationId: news-find-all
+      parameters:
+      - name: type
+        in: query
+        description: "소식 유형(ALL, NOTICE, EVENT). 기본값은 ALL"
+        required: false
+        schema:
+          type: string
+      - name: eventStatus
+        in: query
+        description: "이벤트 상태(UPCOMING, ONGOING, ENDED)"
+        required: false
+        schema:
+          type: string
+      - name: sort
+        in: query
+        description: 정렬 기준. 현재 LATEST만 지원하며 기본값은 LATEST
+        required: false
+        schema:
+          type: string
+      - name: size
+        in: query
+        description: "조회 개수. 기본값 20, 최댓값 50"
+        required: false
+        schema:
+          type: string
+      - name: cursor
+        in: query
+        description: 다음 페이지 조회에 사용하는 opaque cursor
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsFindAllSuccessResponse"
+              examples:
+                news-find-all:
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":102,\"type\":\"\
+                    EVENT\",\"title\":\"프로젝트 아카이빙 챌린지\",\"summary\":\"팀 프로젝트를 등록하고\
+                    \ 피드백을 받아보세요.\",\"publishedAt\":\"2026-08-25T00:00:00Z\",\"eventStatus\"\
+                    :\"ONGOING\",\"eventStartAt\":\"2026-08-20T00:00:00Z\",\"eventEndAt\"\
+                    :\"2026-09-20T14:59:59Z\",\"isPinned\":false,\"pinOrder\":null}],\"\
+                    meta\":{\"nextCursor\":null,\"hasNext\":false}}"
   /api/v1/visitors:
     post:
       tags:
@@ -195,9 +248,9 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"}]}"
         "201":
           description: "201"
           headers:
@@ -221,6 +274,12 @@ paths:
       operationId: news-event-create
       requestBody:
         content:
+          text/plain;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/UnsupportedMediaTypeRequest"
+            examples:
+              news-event-create-unsupported-media-type:
+                value: plain text
           application/json;charset=UTF-8:
             schema:
               $ref: "#/components/schemas/EventCreateRequest"
@@ -280,6 +339,16 @@ paths:
                     "eventEndAt": "2026-09-30T23:59:59Z"
                   }
       responses:
+        "415":
+          description: "415"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-event-create-unsupported-media-type:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\"}"
         "201":
           description: "201"
           content:
@@ -306,9 +375,9 @@ paths:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"}]}"
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
+                    :\"eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -385,6 +454,12 @@ paths:
                   }
               news-notice-create-malformed-json:
                 value: "{\"title\":"
+          text/plain;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/UnsupportedMediaTypeRequest"
+            examples:
+              news-notice-create-unsupported-media-type:
+                value: plain text
       responses:
         "201":
           description: "201"
@@ -428,6 +503,16 @@ paths:
                 news-notice-create-domain-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_INVALID_AUTHOR_ID_SIZE\"\
                     ,\"message\":\"소식 작성자 ID는 0보다 커야 합니다.\"}"
+        "415":
+          description: "415"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-notice-create-unsupported-media-type:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\"}"
   /oauth2/authorization/github:
     get:
       tags:
@@ -449,6 +534,9 @@ paths:
                 type: string
 components:
   schemas:
+    UnsupportedMediaTypeRequest:
+      title: UnsupportedMediaTypeRequest
+      type: object
     EventCreateRequest:
       title: EventCreateRequest
       required:
@@ -519,6 +607,77 @@ components:
         message:
           type: string
           description: 오류 메시지
+        status:
+          type: string
+          description: 응답 상태
+    NewsFindAllSuccessResponse:
+      title: NewsFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 소식 목록
+          items:
+            required:
+            - id
+            - isPinned
+            - publishedAt
+            - summary
+            - title
+            - type
+            type: object
+            properties:
+              summary:
+                type: string
+                description: 소식 요약
+              isPinned:
+                type: boolean
+                description: 고정 여부
+              eventStartAt:
+                type: string
+                description: 이벤트 시작 시각. 공지인 경우 null
+                nullable: true
+              publishedAt:
+                type: string
+                description: 게시 시각
+              eventStatus:
+                type: string
+                description: 이벤트 상태. 공지인 경우 null
+                nullable: true
+              id:
+                type: number
+                description: 소식 ID
+              pinOrder:
+                type: number
+                description: 고정 순서. 고정되지 않은 경우 null
+                nullable: true
+              title:
+                type: string
+                description: 소식 제목
+              type:
+                type: string
+                description: 소식 유형
+              eventEndAt:
+                type: string
+                description: 이벤트 종료 시각. 공지인 경우 null
+                nullable: true
+        meta:
+          required:
+          - hasNext
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서. 다음 페이지가 없으면 null
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+          description: 페이지네이션 정보
         status:
           type: string
           description: 응답 상태
