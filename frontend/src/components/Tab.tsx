@@ -38,20 +38,20 @@ const tabListStyles: Record<TabVariant, string> = {
   chip: 'gap-2',
 };
 
-const tabItemBaseStyle =
+export const tabItemBaseStyle =
   'inline-flex cursor-pointer appearance-none items-center justify-center whitespace-nowrap font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500';
 
-const tabItemSizeStyles: Record<TabSize, string> = {
+export const tabItemSizeStyles: Record<TabSize, string> = {
   sm: 'px-3 py-1.5 text-sm',
   md: 'px-4 py-2 text-base',
   lg: 'px-5 py-2.5 text-lg',
 };
 
-const tabItemStyles: Record<TabVariant, string> = {
+export const tabItemStyles: Record<TabVariant, string> = {
   underline:
-    'border-b-3 border-transparent bg-transparent text-gray-500 aria-selected:border-gray-900 aria-selected:text-gray-900',
-  weak: 'rounded-lg border-0 bg-transparent text-gray-600 aria-selected:bg-primary-50 aria-selected:text-primary-600',
-  chip: 'rounded-full border-0 bg-gray-100 text-gray-600 aria-selected:bg-gray-900 aria-selected:text-white',
+    'border-b-3 border-transparent bg-transparent text-gray-500 data-[status=active]:border-gray-900 data-[status=active]:text-gray-900',
+  weak: 'rounded-lg border-0 bg-transparent text-gray-600 data-[status=active]:bg-primary-50 data-[status=active]:text-primary-600',
+  chip: 'rounded-full border-0 bg-gray-100 text-gray-600 data-[status=active]:bg-gray-900 data-[status=active]:text-white',
 };
 
 const TabContext = createContext<TabContextValue | null>(null);
@@ -103,6 +103,7 @@ function TabItem({ value, className, onClick, children, ...props }: TabItemProps
       type="button"
       role="tab"
       aria-selected={isSelected}
+      data-status={isSelected ? 'active' : 'inactive'}
       className={[
         tabItemBaseStyle,
         tabItemSizeStyles[context.size],
