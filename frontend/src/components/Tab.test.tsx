@@ -1,11 +1,7 @@
 import { useState } from 'react';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom/vitest';
-import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Tab } from '@/components/Tab';
-
-afterEach(cleanup);
 
 const items = ['first', 'second'];
 
@@ -89,8 +85,8 @@ describe('Tab', () => {
 
   it('Tab.Item의 onClick을 실행한 뒤 선택 변경을 요청한다', async () => {
     const user = userEvent.setup();
-    const onClick = vi.fn();
-    const onChange = vi.fn();
+    const onClick = jest.fn();
+    const onChange = jest.fn();
     render(
       <Tab value="first" onChange={onChange}>
         <Tab.Item value="second" onClick={onClick}>
@@ -101,13 +97,14 @@ describe('Tab', () => {
 
     await user.click(screen.getByRole('tab', { name: 'second' }));
 
-    expect(onClick).toHaveBeenCalledOnce();
-    expect(onChange).toHaveBeenCalledExactlyOnceWith('second');
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('second');
   });
 
   it('Tab.Item의 onClick이 취소되면 선택 변경을 요청하지 않는다', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
+    const onChange = jest.fn();
     render(
       <Tab value="first" onChange={onChange}>
         <Tab.Item value="second" onClick={(event) => event.preventDefault()}>
@@ -128,24 +125,26 @@ describe('Tab', () => {
 
   it('value 없이 클릭하면 값을 알리되 선택 상태는 생기지 않는다', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
+    const onChange = jest.fn();
     render(renderTab(undefined, onChange));
     expectSelection();
 
     await user.click(screen.getByRole('tab', { name: 'first' }));
 
-    expect(onChange).toHaveBeenCalledExactlyOnceWith('first');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('first');
     expectSelection();
   });
 
   it('다른 항목 클릭 시 해당 value로 onChange를 호출한다', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
+    const onChange = jest.fn();
     render(renderTab('first', onChange));
 
     await user.click(screen.getByRole('tab', { name: 'second' }));
 
-    expect(onChange).toHaveBeenCalledExactlyOnceWith('second');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('second');
   });
 
   it('onChange 없이 클릭해도 오류 없이 기존 선택을 유지한다', async () => {
@@ -159,7 +158,7 @@ describe('Tab', () => {
 
   it('부모가 value를 바꾸지 않으면 기존 선택 상태를 유지한다', async () => {
     const user = userEvent.setup();
-    render(renderTab('first', vi.fn()));
+    render(renderTab('first', jest.fn()));
 
     await user.click(screen.getByRole('tab', { name: 'second' }));
 
@@ -176,7 +175,7 @@ describe('Tab', () => {
 
   it('이미 선택된 항목 재클릭 시 onChange를 호출하지 않는다', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
+    const onChange = jest.fn();
     render(renderTab('first', onChange));
 
     await user.click(screen.getByRole('tab', { name: 'first' }));
@@ -200,7 +199,7 @@ describe('Tab', () => {
 
   it('여러 Tab 인스턴스가 서로 영향을 주지 않는다', async () => {
     const user = userEvent.setup();
-    const onSecondChange = vi.fn();
+    const onSecondChange = jest.fn();
     function Example() {
       const [value, setValue] = useState('first');
       return (
@@ -227,13 +226,14 @@ describe('Tab', () => {
 
   it('폼 안에서 클릭해도 제출하지 않는다', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
-    const onSubmit = vi.fn((event) => event.preventDefault());
+    const onChange = jest.fn();
+    const onSubmit = jest.fn((event) => event.preventDefault());
     render(<form onSubmit={onSubmit}>{renderTab('first', onChange)}</form>);
 
     await user.click(screen.getByRole('tab', { name: 'second' }));
 
-    expect(onChange).toHaveBeenCalledExactlyOnceWith('second');
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('second');
     expect(onSubmit).not.toHaveBeenCalled();
   });
 });
