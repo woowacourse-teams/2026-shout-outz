@@ -1,6 +1,7 @@
 package com.shoutoutz.api.techtag.infrastructure.jpa;
 
 import com.shoutoutz.api.techtag.infrastructure.TechTagEntity;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -23,4 +24,6 @@ public interface TechTagJpaRepository extends JpaRepository<TechTagEntity, Long>
             ORDER BY LOWER(t.displayName)
             """)
     List<TechTagEntity> findAllActiveByKeyword(@Param("keyword") String keyword);
+
+    List<TechTagEntity> findAllByActiveTrueAndIdIn(Collection<Long> ids);
 }
