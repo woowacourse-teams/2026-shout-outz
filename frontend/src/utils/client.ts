@@ -1,0 +1,59 @@
+import { HttpError, isApiErrorBody, type ApiErrorBody } from '@/utils/error';
+import { kyInstance } from '@/utils/http';
+import { isHTTPError, type Options } from 'ky';
+
+export type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
+
+interface ApiSuccessBody<T, K = unknown> {
+  status: 'success';
+  data: T;
+  meta?: K;
+}
+
+const isApiSuccessBody = (value: unknown): value is ApiSuccessBody<unknown> =>
+  typeof value === 'object' &&
+  value !== null &&
+  (value as ApiSuccessBody<unknown, unknown>).status === 'success' &&
+  'data' in value;
+
+const readErrorBody = async (response: Response): Promise<ApiErrorBody | null> => {
+  try {
+    const parsed: unknown = await response.clone().json();
+    return isApiErrorBody(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const normalizeError = async (error: unknown): Promise<unknown> => {
+  if (isHTTPError(error)) {
+    const body = await readErrorBody(error.response);
+    return new HttpError(error.response.status, body, error.response);
+  }
+  // 서버에서 만든 에러가 아닌 경우 에러 그대로 반환
+  return error;
+};
+
+export const httpClient = async <T>(
+  method: HttpMethod,
+  url: string,
+  options: Options = {},
+): Promise<T> => {
+  try {
+    const response = await kyInstance(url, { ...options, method });
+
+    // TODO DELETE가 204인 것도 있고 200인 것도 있어서 논의 필요
+    if (response.status === 204 || response.headers.get('content-length') === '0') {
+      return undefined as T;
+    }
+    const body: unknown = await response.json();
+
+    if (!isApiSuccessBody(body)) {
+      throw new Error(`응답이 공통 규격을 따르지 않습니다: ${method.toUpperCase()} ${url}`);
+    }
+
+    return body.data as T;
+  } catch (error) {
+    throw await normalizeError(error);
+  }
+};
