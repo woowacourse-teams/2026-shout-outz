@@ -163,19 +163,6 @@ class UserProfileTest {
     }
 
     @Test
-    @DisplayName("한 줄 소개 길이는 유니코드 코드 포인트 기준으로 검증한다")
-    void validatesBioLengthByUnicodeCodePoint() {
-        UserProfile profile = UserProfile.initialize(1L, "재키");
-        String twoHundredEmojis = "😀".repeat(200);
-        String twoHundredOneEmojis = "😀".repeat(201);
-
-        assertThat(profile.update("재키", twoHundredEmojis, null, null, null).getBio())
-                .isEqualTo(twoHundredEmojis);
-        assertThatThrownBy(() -> profile.update("재키", twoHundredOneEmojis, null, null, null))
-                .isInstanceOf(DomainValidationException.class);
-    }
-
-    @Test
     @DisplayName("프로필 문자열을 정제하고 공백뿐인 선택 값은 null로 변환한다")
     void sanitizesProfileStrings() {
         UserProfile profile = UserProfile.initialize(1L, "재키");

@@ -12,7 +12,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class HandleTest {
 
     @ParameterizedTest
-    @DisplayName("영숫자와 하이픈, 언더스코어로 구성된 2자 이상 30자 이하 핸들을 생성한다")
+    @DisplayName("핸들을 생성한다")
     @ValueSource(strings = {
             "ab",
             "DaHye",
@@ -26,16 +26,9 @@ class HandleTest {
     }
 
     @ParameterizedTest
-    @DisplayName("핸들 명세에 맞지 않는 값은 생성할 수 없다")
+    @DisplayName("비어 있거나 공백뿐인 핸들은 생성할 수 없다")
     @NullSource
-    @ValueSource(strings = {
-            "",
-            "a",
-            "재키",
-            "user handle",
-            "user@handle",
-            "abcdefghijklmnopqrstuvwxyz12345"
-    })
+    @ValueSource(strings = {"", " ", "\t", "\n"})
     void rejectsInvalidHandle(String value) {
         assertThatThrownBy(() -> new Handle(value))
                 .isInstanceOf(IllegalArgumentException.class);

@@ -226,7 +226,7 @@ class UserQueryServiceTest {
         given(userQueryRepository.searchProjectMember("재", null, 3))
                 .willReturn(searchedItems);
 
-        UserSearchResult result = userQueryService.searchProjectMember(1L, " 재 ", null, 2);
+        UserSearchResult result = userQueryService.searchProjectMember(1L, "재", null, 2);
 
         assertThat(result.items()).containsExactly(searchedItems.get(0), searchedItems.get(1));
         assertThat(userSearchCursorCodec.decode(result.nextCursor()))
@@ -273,30 +273,6 @@ class UserQueryServiceTest {
 
         assertThatThrownBy(() -> userQueryService.searchProjectMember(1L, "재키", null, 20))
                 .isInstanceOf(ForbiddenException.class);
-
-        then(userQueryRepository).shouldHaveNoInteractions();
-    }
-
-    @Test
-    @DisplayName("빈 검색어로 전체 크루를 조회할 수 없다")
-    void rejectBlankSearchKeyword() {
-        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(crewProfile()));
-
-        assertThatThrownBy(() -> userQueryService.searchProjectMember(1L, "   ", null, 20))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("검색어는 필수입니다.");
-
-        then(userQueryRepository).shouldHaveNoInteractions();
-    }
-
-    @Test
-    @DisplayName("검색 결과 개수의 허용 범위를 검증한다")
-    void rejectInvalidSearchSize() {
-        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(crewProfile()));
-
-        assertThatThrownBy(() -> userQueryService.searchProjectMember(1L, "재키", null, 101))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("검색 결과 개수는 1개 이상 100개 이하여야 합니다.");
 
         then(userQueryRepository).shouldHaveNoInteractions();
     }

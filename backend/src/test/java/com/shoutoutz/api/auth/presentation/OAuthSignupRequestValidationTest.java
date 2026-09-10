@@ -7,6 +7,8 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class OAuthSignupRequestValidationTest {
 
@@ -25,11 +27,18 @@ class OAuthSignupRequestValidationTest {
                 .contains("displayName");
     }
 
-    @Test
+    @ParameterizedTest
     @DisplayName("가입 핸들의 형식을 검증한다")
-    void validateHandleFormat() {
+    @ValueSource(strings = {
+            "a",
+            "잘못된핸들",
+            "user handle",
+            "user@handle",
+            "abcdefghijklmnopqrstuvwxyz12345"
+    })
+    void validateHandleFormat(String handle) {
         OAuthSignupRequest request = new OAuthSignupRequest(
-                "잘못된 핸들",
+                handle,
                 "재키"
         );
 

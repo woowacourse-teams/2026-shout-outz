@@ -23,7 +23,10 @@ public record UserProfileUpdateRequest(
         )
         String githubProfileUrl,
 
-        @Pattern(regexp = "^https?://[^\\s]+$", message = "blogUrl 형식이 올바르지 않습니다.")
+        @Pattern(
+                regexp = "^https?://[^\\s/?#:]+(?::\\d{1,5})?(?:[/?#][^\\s]*)?$",
+                message = "blogUrl 형식이 올바르지 않습니다."
+        )
         String blogUrl
 ) {
 

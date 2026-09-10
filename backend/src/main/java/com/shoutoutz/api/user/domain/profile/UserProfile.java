@@ -38,11 +38,7 @@ public class UserProfile {
                 userId,
                 userType,
                 sanitizedTrack,
-                cohort,
-                sanitizedBio,
-                avatarImageId,
-                sanitizedGithubProfileUrl,
-                sanitizedBlogUrl
+                cohort
         );
         this.userId = userId;
         this.displayName = new ProfileDisplayName(displayName);

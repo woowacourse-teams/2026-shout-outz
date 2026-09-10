@@ -6,7 +6,6 @@ import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.user.application.dto.result.UserProfileSummaryResult;
 import com.shoutoutz.api.user.application.dto.result.UserProfileResult;
 import com.shoutoutz.api.user.application.dto.result.UserSearchResult;
-import com.shoutoutz.api.user.domain.account.Handle;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.application.query.UserProfileCounts;
@@ -28,9 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserQueryService {
 
     private static final String DELETED_USER_DISPLAY_NAME = "탈퇴한 사용자";
-    private static final int MAX_SEARCH_KEYWORD_LENGTH = 50;
-    private static final int MAX_SEARCH_SIZE = 100;
-
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserQueryRepository userQueryRepository;
@@ -60,8 +56,7 @@ public class UserQueryService {
 
     @Transactional(readOnly = true)
     public UserProfileResult getPublicProfile(String handle) {
-        String validatedHandle = new Handle(handle).value();
-        User user = userRepository.findByHandle(validatedHandle)
+        User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
 
         if (user.getStatus() == UserStatus.DELETED) {
@@ -81,12 +76,10 @@ public class UserQueryService {
             int size
     ) {
         validateCrewRequester(requesterId);
-        String validatedKeyword = validateSearchKeyword(keyword);
-        validateSearchSize(size);
         UserSearchCursor decodedCursor = userSearchCursorCodec.decode(cursor);
 
         List<UserSearchItem> searchedItems = userQueryRepository.searchProjectMember(
-                validatedKeyword,
+                keyword,
                 decodedCursor,
                 size + 1
         );
@@ -103,24 +96,6 @@ public class UserQueryService {
         UserProfile requesterProfile = findProfile(requesterId);
         if (requesterProfile.getUserType() != UserType.WOOWACOURSE_CREW) {
             throw new ForbiddenException(CommonErrorCode.FORBIDDEN);
-        }
-    }
-
-    private String validateSearchKeyword(String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            throw new IllegalArgumentException("검색어는 필수입니다.");
-        }
-
-        String trimmedKeyword = keyword.trim();
-        if (trimmedKeyword.codePointCount(0, trimmedKeyword.length()) > MAX_SEARCH_KEYWORD_LENGTH) {
-            throw new IllegalArgumentException("검색어는 50자를 초과할 수 없습니다.");
-        }
-        return trimmedKeyword;
-    }
-
-    private void validateSearchSize(int size) {
-        if (size < 1 || size > MAX_SEARCH_SIZE) {
-            throw new IllegalArgumentException("검색 결과 개수는 1개 이상 100개 이하여야 합니다.");
         }
     }
 

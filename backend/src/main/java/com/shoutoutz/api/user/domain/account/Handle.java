@@ -1,15 +1,12 @@
 package com.shoutoutz.api.user.domain.account;
 
 import java.util.Locale;
-import java.util.regex.Pattern;
 
 public record Handle(String value) {
 
-    private static final Pattern PATTERN = Pattern.compile("^[A-Za-z0-9_-]{2,30}$");
-
     public Handle {
-        if (value == null || !PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException("유효하지 않은 사용자 핸들입니다.");
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("사용자 핸들은 필수입니다.");
         }
     }
 

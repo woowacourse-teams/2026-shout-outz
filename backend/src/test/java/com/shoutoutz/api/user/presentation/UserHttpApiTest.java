@@ -3,6 +3,7 @@ package com.shoutoutz.api.user.presentation;
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
@@ -19,6 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
+import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.user.application.UserCommandService;
 import com.shoutoutz.api.user.application.UserQueryService;
 import com.shoutoutz.api.user.application.dto.result.UserProfileResult;
@@ -26,8 +28,8 @@ import com.shoutoutz.api.user.application.dto.result.UserProfileSummaryResult;
 import com.shoutoutz.api.user.application.dto.result.UserProfileUpdateResult;
 import com.shoutoutz.api.user.application.dto.result.UserSearchResult;
 import com.shoutoutz.api.user.application.query.UserProfileCounts;
-import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.application.query.UserSearchItem;
+import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -446,5 +448,93 @@ class UserHttpApiTest {
                                 )
                                 .build())
                 ));
+    }
+
+    @Test
+    @DisplayName("빈 검색어로 프로젝트 참여자를 검색할 수 없다")
+    void rejectBlankSearchKeyword() throws Exception {
+        mockMvc.perform(get("/api/v1/users/search")
+                        .requestAttr(
+                                AuthenticatedSession.class.getName(),
+                                new AuthenticatedSession(1L, UserRole.USER)
+                        )
+                        .queryParam("keyword", " "))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andDo(document(
+                        "user-search-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("참여 팀원 검색 실패")
+                                .description("검색어가 비어 있거나 50자를 초과하고, size가 1~100 범위를 벗어나면 400을 반환한다.")
+                                .privateResource(true)
+                                .queryParameters(
+                                        parameterWithName("keyword").description("이름 또는 handle 검색어")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verifyNoInteractions(userQueryService);
+    }
+
+    @Test
+    @DisplayName("검색어가 50자를 초과하면 프로젝트 참여자를 검색할 수 없다")
+    void rejectLongSearchKeyword() throws Exception {
+        mockMvc.perform(get("/api/v1/users/search")
+                        .requestAttr(
+                                AuthenticatedSession.class.getName(),
+                                new AuthenticatedSession(1L, UserRole.USER)
+                        )
+                        .queryParam("keyword", "😀".repeat(51)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        verifyNoInteractions(userQueryService);
+    }
+
+    @Test
+    @DisplayName("검색 결과 개수가 허용 범위를 벗어나면 프로젝트 참여자를 검색할 수 없다")
+    void rejectInvalidSearchSize() throws Exception {
+        mockMvc.perform(get("/api/v1/users/search")
+                        .requestAttr(
+                                AuthenticatedSession.class.getName(),
+                                new AuthenticatedSession(1L, UserRole.USER)
+                        )
+                        .queryParam("keyword", "재키")
+                        .queryParam("size", "101"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        verifyNoInteractions(userQueryService);
+    }
+
+    @Test
+    @DisplayName("잘못된 커서로 프로젝트 참여자를 검색할 수 없다")
+    void rejectInvalidSearchCursor() throws Exception {
+        given(userQueryService.searchProjectMember(1L, "재키", "invalid", 20))
+                .willThrow(new IllegalArgumentException("유효하지 않은 커서입니다."));
+
+        mockMvc.perform(get("/api/v1/users/search")
+                        .requestAttr(
+                                AuthenticatedSession.class.getName(),
+                                new AuthenticatedSession(1L, UserRole.USER)
+                        )
+                        .queryParam("keyword", "재키")
+                        .queryParam("cursor", "invalid"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
+    @DisplayName("형식이 잘못된 handle로 공개 프로필을 조회할 수 없다")
+    void rejectInvalidPublicProfileHandle() throws Exception {
+        mockMvc.perform(get("/api/v1/users/{handle}", "잘못된-핸들"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        verifyNoInteractions(userQueryService);
     }
 }
