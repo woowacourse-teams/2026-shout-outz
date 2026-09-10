@@ -15,6 +15,7 @@ export interface ApiErrorBody {
 export const isApiErrorBody = (value: unknown): value is ApiErrorBody =>
   typeof value === 'object' &&
   value !== null &&
+  (value as ApiErrorBody).status === 'error' &&
   typeof (value as ApiErrorBody).code === 'string' &&
   typeof (value as ApiErrorBody).message === 'string';
 
