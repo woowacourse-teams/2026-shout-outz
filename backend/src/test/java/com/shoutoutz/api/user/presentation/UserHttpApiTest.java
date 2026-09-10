@@ -77,7 +77,7 @@ class UserHttpApiTest {
                         ))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.userId").value(1))
+                .andExpect(jsonPath("$.data.userId").doesNotExist())
                 .andExpect(jsonPath("$.data.handle").value("zzaekkii"))
                 .andExpect(jsonPath("$.data.displayName").value("재키"))
                 .andExpect(jsonPath("$.data.avatarImageId").value(21))
@@ -96,7 +96,6 @@ class UserHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("프로필 요약 정보"),
-                                        fieldWithPath("data.userId").type(NUMBER).description("사용자 ID"),
                                         fieldWithPath("data.handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
                                         fieldWithPath("data.avatarImageId").type(NUMBER)
@@ -141,7 +140,7 @@ class UserHttpApiTest {
                         ))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.userId").value(1))
+                .andExpect(jsonPath("$.data.userId").doesNotExist())
                 .andExpect(jsonPath("$.data.handle").value("zzaekkii"))
                 .andExpect(jsonPath("$.data.displayName").value("재키"))
                 .andExpect(jsonPath("$.data.userType").value("WOOWACOURSE_CREW"))
@@ -169,7 +168,6 @@ class UserHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("사용자 프로필"),
-                                        fieldWithPath("data.userId").type(NUMBER).description("사용자 ID"),
                                         fieldWithPath("data.handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
                                         fieldWithPath("data.userType").type(STRING).description("사용자 유형"),
@@ -228,7 +226,7 @@ class UserHttpApiTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.userId").value(1))
+                .andExpect(jsonPath("$.data.userId").doesNotExist())
                 .andExpect(jsonPath("$.data.handle").value("zzaekkii"))
                 .andExpect(jsonPath("$.data.displayName").value("재키"))
                 .andExpect(jsonPath("$.data.userType").value("WOOWACOURSE_CREW"))
@@ -266,7 +264,6 @@ class UserHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("수정된 사용자 프로필"),
-                                        fieldWithPath("data.userId").type(NUMBER).description("사용자 ID"),
                                         fieldWithPath("data.handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
                                         fieldWithPath("data.userType").type(STRING).description("사용자 유형"),
@@ -326,7 +323,7 @@ class UserHttpApiTest {
         mockMvc.perform(get("/api/v1/users/{handle}", "zzaekkii"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.userId").value(1))
+                .andExpect(jsonPath("$.data.userId").doesNotExist())
                 .andExpect(jsonPath("$.data.handle").value("zzaekkii"))
                 .andExpect(jsonPath("$.data.displayName").value("재키"))
                 .andExpect(jsonPath("$.data.userType").value("WOOWACOURSE_CREW"))
@@ -352,7 +349,6 @@ class UserHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("사용자 공개 프로필"),
-                                        fieldWithPath("data.userId").type(NUMBER).description("사용자 ID"),
                                         fieldWithPath("data.handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
                                         fieldWithPath("data.userType").type(STRING).description("사용자 유형").optional(),

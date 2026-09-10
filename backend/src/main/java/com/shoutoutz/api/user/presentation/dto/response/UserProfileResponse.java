@@ -4,7 +4,6 @@ import com.shoutoutz.api.user.application.dto.result.UserProfileResult;
 import com.shoutoutz.api.user.domain.profile.UserType;
 
 public record UserProfileResponse(
-        Long userId,
         String handle,
         String displayName,
         UserType userType,
@@ -19,7 +18,6 @@ public record UserProfileResponse(
 
     public static UserProfileResponse from(UserProfileResult result) {
         return new UserProfileResponse(
-                result.userId(),
                 result.handle(),
                 result.displayName(),
                 result.userType(),
