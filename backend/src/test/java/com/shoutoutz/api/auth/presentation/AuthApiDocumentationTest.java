@@ -272,10 +272,7 @@ class AuthApiDocumentationTest {
                         .content("""
                                 {
                                   "handle": "zzaekkii",
-                                  "displayName": "재키",
-                                  "userType": "WOOWACOURSE_CREW",
-                                  "track": "BACKEND",
-                                  "cohort": 8
+                                  "displayName": "재키"
                                 }
                                 """))
                 .andExpect(status().isCreated())
@@ -300,13 +297,7 @@ class AuthApiDocumentationTest {
                                         fieldWithPath("handle").type(STRING)
                                                 .description("영구 공개 핸들"),
                                         fieldWithPath("displayName").type(STRING)
-                                                .description("프로필 표시 이름"),
-                                        fieldWithPath("userType").type(STRING)
-                                                .description("GENERAL, WOOWACOURSE_CREW, WOOWACOURSE_COACH"),
-                                        fieldWithPath("track").type(STRING)
-                                                .description("우테코 크루의 트랙").optional(),
-                                        fieldWithPath("cohort").type(NUMBER)
-                                                .description("우테코 크루의 기수").optional()
+                                                .description("프로필 표시 이름")
                                 )
                                 .responseSchema(Schema.schema("OAuthSignupSuccessResponse"))
                                 .responseHeaders(
@@ -332,8 +323,7 @@ class AuthApiDocumentationTest {
                         .content("""
                                 {
                                   "handle": "",
-                                  "displayName": "",
-                                  "userType": "GENERAL"
+                                  "displayName": ""
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
@@ -351,31 +341,12 @@ class AuthApiDocumentationTest {
                                         fieldWithPath("handle").type(STRING)
                                                 .description("영구 공개 핸들"),
                                         fieldWithPath("displayName").type(STRING)
-                                                .description("프로필 표시 이름"),
-                                        fieldWithPath("userType").type(STRING)
-                                                .description("사용자 유형")
+                                                .description("프로필 표시 이름")
                                 )
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
                 ));
-    }
-
-    @Test
-    @DisplayName("우테코 크루 가입 정보가 불완전하면 400으로 응답한다")
-    void rejectIncompleteCrewSignupProfile() throws Exception {
-        mockMvc.perform(post("/api/v1/auth/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "handle": "zzaekkii",
-                                  "displayName": "재키",
-                                  "userType": "WOOWACOURSE_CREW"
-                                }
-                                """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.details[0].field").value("track"));
     }
 
     @Test
@@ -390,8 +361,7 @@ class AuthApiDocumentationTest {
                         .content("""
                                 {
                                   "handle": "zzaekkii",
-                                  "displayName": "재키",
-                                  "userType": "GENERAL"
+                                  "displayName": "재키"
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
@@ -416,13 +386,7 @@ class AuthApiDocumentationTest {
                                         fieldWithPath("handle").type(STRING)
                                                 .description("영구 공개 핸들"),
                                         fieldWithPath("displayName").type(STRING)
-                                                .description("프로필 표시 이름"),
-                                        fieldWithPath("userType").type(STRING)
-                                                .description("GENERAL, WOOWACOURSE_CREW, WOOWACOURSE_COACH"),
-                                        fieldWithPath("track").type(STRING)
-                                                .description("우테코 크루의 트랙").optional(),
-                                        fieldWithPath("cohort").type(NUMBER)
-                                                .description("우테코 크루의 기수").optional()
+                                                .description("프로필 표시 이름")
                                 )
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())

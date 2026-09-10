@@ -35,14 +35,7 @@ public class OAuthSignupService {
         Instant authenticatedAt = Instant.now();
         User user = User.initialize(command.handle()).recordLogin(authenticatedAt);
         User savedUser = userRepository.save(user);
-        UserProfile userProfile = UserProfile.initialize(
-                savedUser.getId(),
-                command.displayName(),
-                command.userType(),
-                command.track(),
-                command.cohort(),
-                identity.providerProfileUrl()
-        );
+        UserProfile userProfile = UserProfile.initialize(savedUser.getId(), command.displayName());
         OAuthAccount oauthAccount = OAuthAccount.initialize(
                 savedUser.getId(),
                 identity.provider(),

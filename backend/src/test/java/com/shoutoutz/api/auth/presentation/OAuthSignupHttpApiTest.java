@@ -18,7 +18,6 @@ import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
-import com.shoutoutz.api.user.domain.profile.UserType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -101,10 +100,7 @@ class OAuthSignupHttpApiTest {
     private OAuthSignupRequest signupRequest() {
         return new OAuthSignupRequest(
                 "sangjun",
-                "상준",
-                UserType.GENERAL,
-                null,
-                null
+                "상준"
         );
     }
 

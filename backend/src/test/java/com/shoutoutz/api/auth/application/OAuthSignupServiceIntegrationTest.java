@@ -8,7 +8,6 @@ import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.auth.infrastructure.jpa.OAuthAccountJpaRepository;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
-import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.infrastructure.jpa.UserJpaRepository;
 import com.shoutoutz.api.user.infrastructure.jpa.UserProfileJpaRepository;
 import java.util.UUID;
@@ -43,10 +42,7 @@ class OAuthSignupServiceIntegrationTest {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         OAuthSignupCommand invalidCommand = new OAuthSignupCommand(
                 "dahye-" + suffix,
-                "다혜",
-                UserType.WOOWACOURSE_CREW,
-                null,
-                null,
+                " ",
                 new OAuthIdentity(OAuthProvider.GITHUB, suffix, null)
         );
 

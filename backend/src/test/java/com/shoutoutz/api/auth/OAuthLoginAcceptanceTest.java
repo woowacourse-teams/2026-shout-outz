@@ -322,7 +322,7 @@ class OAuthLoginAcceptanceTest {
         assertThat(user.getLastLoginAt()).isNotNull();
         assertThat(profile.getDisplayName()).isEqualTo(new ProfileDisplayName("상준"));
         assertThat(profile.getAvatarImageId()).isNull();
-        assertThat(profile.getGithubProfileUrl()).isEqualTo("https://github.com/sangjun");
+        assertThat(profile.getGithubProfileUrl()).isNull();
         assertThat(account.getUserId()).isEqualTo(result.userId());
         assertThat(account.getProviderAvatarUrl())
                 .isEqualTo("https://avatars.githubusercontent.com/u/12345678");
@@ -348,8 +348,7 @@ class OAuthLoginAcceptanceTest {
                 .contentType("application/json")
                 .body(Map.of(
                         "handle", "sangjun",
-                        "displayName", "상준",
-                        "userType", "GENERAL"
+                        "displayName", "상준"
                 ))
                 .when()
                 .post(OAUTH_SIGNUP_PATH);
@@ -506,8 +505,7 @@ class OAuthLoginAcceptanceTest {
                 .contentType("application/json")
                 .body(Map.of(
                         "handle", handle,
-                        "displayName", "상준",
-                        "userType", "GENERAL"
+                        "displayName", "상준"
                 ))
                 .when()
                 .post(OAUTH_SIGNUP_PATH);

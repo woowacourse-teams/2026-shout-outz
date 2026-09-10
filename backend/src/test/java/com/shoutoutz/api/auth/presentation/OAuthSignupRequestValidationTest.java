@@ -3,7 +3,6 @@ package com.shoutoutz.api.auth.presentation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.auth.presentation.dto.request.OAuthSignupRequest;
-import com.shoutoutz.api.user.domain.profile.UserType;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.DisplayName;
@@ -18,10 +17,7 @@ class OAuthSignupRequestValidationTest {
     void validateDisplayNameLength() {
         OAuthSignupRequest request = new OAuthSignupRequest(
                 "zzaekkii",
-                "😀".repeat(51),
-                UserType.GENERAL,
-                null,
-                null
+                "😀".repeat(51)
         );
 
         assertThat(validator.validate(request))
@@ -30,18 +26,15 @@ class OAuthSignupRequestValidationTest {
     }
 
     @Test
-    @DisplayName("우테코 크루 가입에는 트랙과 기수가 필요하다")
-    void requireCrewCourseInformation() {
+    @DisplayName("가입 핸들의 형식을 검증한다")
+    void validateHandleFormat() {
         OAuthSignupRequest request = new OAuthSignupRequest(
-                "zzaekkii",
-                "재키",
-                UserType.WOOWACOURSE_CREW,
-                null,
-                null
+                "잘못된 핸들",
+                "재키"
         );
 
         assertThat(validator.validate(request))
                 .extracting(violation -> violation.getPropertyPath().toString())
-                .contains("track");
+                .contains("handle");
     }
 }
