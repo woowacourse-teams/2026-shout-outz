@@ -2,7 +2,9 @@ package com.shoutoutz.api.user.application.query;
 
 import java.util.List;
 
-public interface UserSearchRepository {
+public interface UserQueryRepository {
+
+    UserProfileCounts countByUserId(long userId);
 
     List<UserSearchItem> searchCrew(
             String keyword,

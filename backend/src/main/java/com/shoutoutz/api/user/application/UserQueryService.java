@@ -10,12 +10,11 @@ import com.shoutoutz.api.user.domain.account.Handle;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.application.query.UserProfileCounts;
-import com.shoutoutz.api.user.application.query.UserProfileCountsRepository;
+import com.shoutoutz.api.user.application.query.UserQueryRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.application.query.UserSearchCursor;
 import com.shoutoutz.api.user.application.query.UserSearchItem;
-import com.shoutoutz.api.user.application.query.UserSearchRepository;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.exception.UserErrorCode;
@@ -34,8 +33,7 @@ public class UserQueryService {
 
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
-    private final UserProfileCountsRepository userProfileCountsRepository;
-    private final UserSearchRepository userSearchRepository;
+    private final UserQueryRepository userQueryRepository;
     private final UserSearchCursorCodec userSearchCursorCodec;
 
     @Transactional(readOnly = true)
@@ -55,7 +53,7 @@ public class UserQueryService {
     public UserProfileResult getMyProfile(long userId) {
         User user = findUser(userId);
         UserProfile profile = findProfile(userId);
-        UserProfileCounts counts = userProfileCountsRepository.countByUserId(userId);
+        UserProfileCounts counts = userQueryRepository.countByUserId(userId);
 
         return profileResult(user, profile, counts);
     }
@@ -71,7 +69,7 @@ public class UserQueryService {
         }
 
         UserProfile profile = findProfile(user.getId());
-        UserProfileCounts counts = userProfileCountsRepository.countByUserId(user.getId());
+        UserProfileCounts counts = userQueryRepository.countByUserId(user.getId());
         return profileResult(user, profile, counts);
     }
 
@@ -87,7 +85,7 @@ public class UserQueryService {
         validateSearchSize(size);
         UserSearchCursor decodedCursor = userSearchCursorCodec.decode(cursor);
 
-        List<UserSearchItem> searchedItems = userSearchRepository.searchCrew(
+        List<UserSearchItem> searchedItems = userQueryRepository.searchCrew(
                 validatedKeyword,
                 decodedCursor,
                 size + 1

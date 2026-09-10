@@ -9,7 +9,7 @@ import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.application.query.UserSearchCursor;
 import com.shoutoutz.api.user.application.query.UserSearchItem;
-import com.shoutoutz.api.user.application.query.UserSearchRepository;
+import com.shoutoutz.api.user.application.query.UserQueryRepository;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.infrastructure.jpa.UserProfileJpaRepository;
@@ -33,7 +33,7 @@ class UserSearchRepositoryIntegrationTest {
     private UserProfileRepository userProfileRepository;
 
     @Autowired
-    private UserSearchRepository userSearchRepository;
+    private UserQueryRepository userQueryRepository;
 
     @Autowired
     private UserProfileJpaRepository userProfileJpaRepository;
@@ -55,7 +55,7 @@ class UserSearchRepositoryIntegrationTest {
         saveProfile(banned.getId(), "Jack Banned", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
-        List<UserSearchItem> result = userSearchRepository.searchCrew(
+        List<UserSearchItem> result = userQueryRepository.searchCrew(
                 "jack",
                 null,
                 10
@@ -83,7 +83,7 @@ class UserSearchRepositoryIntegrationTest {
         saveProfile(second.getId(), "나 크루", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
-        List<UserSearchItem> firstSlice = userSearchRepository.searchCrew(
+        List<UserSearchItem> firstSlice = userQueryRepository.searchCrew(
                 "jack",
                 null,
                 10
@@ -95,7 +95,7 @@ class UserSearchRepositoryIntegrationTest {
                 cursorItem.handle()
         );
 
-        List<UserSearchItem> result = userSearchRepository.searchCrew(
+        List<UserSearchItem> result = userQueryRepository.searchCrew(
                 "jack",
                 cursor,
                 10
@@ -116,7 +116,7 @@ class UserSearchRepositoryIntegrationTest {
         saveProfile(unmatched.getId(), "일반 크루", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
-        List<UserSearchItem> result = userSearchRepository.searchCrew(
+        List<UserSearchItem> result = userQueryRepository.searchCrew(
                 "%",
                 null,
                 10

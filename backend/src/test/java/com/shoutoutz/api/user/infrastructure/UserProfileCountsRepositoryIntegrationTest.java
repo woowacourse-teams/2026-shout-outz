@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.application.query.UserProfileCounts;
-import com.shoutoutz.api.user.application.query.UserProfileCountsRepository;
+import com.shoutoutz.api.user.application.query.UserQueryRepository;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -26,7 +26,7 @@ class UserProfileCountsRepositoryIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
-    private UserProfileCountsRepository userProfileCountsRepository;
+    private UserQueryRepository userQueryRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -42,7 +42,7 @@ class UserProfileCountsRepositoryIntegrationTest {
         savePost(user.getId(), null);
         savePost(user.getId(), Instant.now());
 
-        UserProfileCounts counts = userProfileCountsRepository.countByUserId(user.getId());
+        UserProfileCounts counts = userQueryRepository.countByUserId(user.getId());
 
         assertThat(counts).isEqualTo(new UserProfileCounts(1L, 1L));
     }

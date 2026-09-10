@@ -14,13 +14,12 @@ import com.shoutoutz.api.user.application.dto.result.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.application.query.UserProfileCounts;
-import com.shoutoutz.api.user.application.query.UserProfileCountsRepository;
+import com.shoutoutz.api.user.application.query.UserQueryRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.application.query.UserSearchCursor;
 import com.shoutoutz.api.user.application.query.UserSearchItem;
-import com.shoutoutz.api.user.application.query.UserSearchRepository;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
@@ -44,10 +43,7 @@ class UserQueryServiceTest {
     private UserProfileRepository userProfileRepository;
 
     @Mock
-    private UserProfileCountsRepository userProfileCountsRepository;
-
-    @Mock
-    private UserSearchRepository userSearchRepository;
+    private UserQueryRepository userQueryRepository;
 
     private UserSearchCursorCodec userSearchCursorCodec;
 
@@ -59,8 +55,7 @@ class UserQueryServiceTest {
         userQueryService = new UserQueryService(
                 userRepository,
                 userProfileRepository,
-                userProfileCountsRepository,
-                userSearchRepository,
+                userQueryRepository,
                 userSearchCursorCodec
         );
     }
@@ -141,7 +136,7 @@ class UserQueryServiceTest {
         UserProfileCounts counts = new UserProfileCounts(2L, 18L);
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
-        given(userProfileCountsRepository.countByUserId(1L)).willReturn(counts);
+        given(userQueryRepository.countByUserId(1L)).willReturn(counts);
 
         UserProfileResult result = userQueryService.getMyProfile(1L);
 
@@ -175,7 +170,7 @@ class UserQueryServiceTest {
         UserProfileCounts counts = new UserProfileCounts(2L, 18L);
         given(userRepository.findByHandle("zzaekkii")).willReturn(Optional.of(user));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
-        given(userProfileCountsRepository.countByUserId(1L)).willReturn(counts);
+        given(userQueryRepository.countByUserId(1L)).willReturn(counts);
 
         UserProfileResult result = userQueryService.getPublicProfile("zzaekkii");
 
@@ -209,7 +204,7 @@ class UserQueryServiceTest {
         assertThat(result.blogUrl()).isNull();
         assertThat(result.counts()).isEqualTo(new UserProfileCounts(0L, 0L));
         then(userProfileRepository).should(never()).findByUserId(1L);
-        then(userProfileCountsRepository).should(never()).countByUserId(1L);
+        then(userQueryRepository).should(never()).countByUserId(1L);
     }
 
     @Test
@@ -228,7 +223,7 @@ class UserQueryServiceTest {
                 searchItem("charles", "샤를", 2)
         );
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(requesterProfile));
-        given(userSearchRepository.searchCrew("재", null, 3))
+        given(userQueryRepository.searchCrew("재", null, 3))
                 .willReturn(searchedItems);
 
         UserSearchResult result = userQueryService.searchCrew(1L, " 재 ", null, 2);
@@ -251,7 +246,7 @@ class UserQueryServiceTest {
                 .build();
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(requesterProfile));
         UserSearchCursor cursor = new UserSearchCursor(1, "재키", "zzaekkii");
-        given(userSearchRepository.searchCrew("재키", cursor, 21))
+        given(userQueryRepository.searchCrew("재키", cursor, 21))
                 .willReturn(List.of());
 
         UserSearchResult result = userQueryService.searchCrew(
@@ -279,7 +274,7 @@ class UserQueryServiceTest {
         assertThatThrownBy(() -> userQueryService.searchCrew(1L, "재키", null, 20))
                 .isInstanceOf(ForbiddenException.class);
 
-        then(userSearchRepository).shouldHaveNoInteractions();
+        then(userQueryRepository).shouldHaveNoInteractions();
     }
 
     @Test
@@ -291,7 +286,7 @@ class UserQueryServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("검색어는 필수입니다.");
 
-        then(userSearchRepository).shouldHaveNoInteractions();
+        then(userQueryRepository).shouldHaveNoInteractions();
     }
 
     @Test
@@ -303,7 +298,7 @@ class UserQueryServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("검색 결과 개수는 1개 이상 100개 이하여야 합니다.");
 
-        then(userSearchRepository).shouldHaveNoInteractions();
+        then(userQueryRepository).shouldHaveNoInteractions();
     }
 
     @Test
@@ -315,7 +310,7 @@ class UserQueryServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("유효하지 않은 커서입니다.");
 
-        then(userSearchRepository).shouldHaveNoInteractions();
+        then(userQueryRepository).shouldHaveNoInteractions();
     }
 
     private UserProfile crewProfile() {
