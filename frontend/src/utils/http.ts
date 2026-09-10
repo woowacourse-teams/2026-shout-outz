@@ -16,7 +16,7 @@ export const kyInstance = ky.create({
   credentials: 'include',
   retry: {
     limit: 2,
-    methods: ['get', 'head', 'options'],
+    methods: ['get'],
   },
 
   hooks: {
