@@ -1,3 +1,5 @@
+import { isNetworkError, NetworkError } from 'ky';
+
 export interface ApiErrorDetail {
   field: string;
   message: string;
@@ -43,14 +45,7 @@ export class HttpError extends Error {
   }
 }
 
-export class NetworkError extends Error {
-  constructor(cause: unknown) {
-    super('네트워크에 연결할 수 없습니다', { cause });
-    this.name = 'NetworkError';
-  }
-}
-
 export type ApiError = HttpError | NetworkError;
 
 export const isApiError = (error: unknown): error is ApiError =>
-  error instanceof HttpError || error instanceof NetworkError;
+  error instanceof HttpError || isNetworkError(error);
