@@ -45,7 +45,7 @@ public class ProjectEntity extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String title;
 
-    @Column(length = 200)
+    @Column(nullable = false, length = 200)
     private String tagline;
 
     @Column(name = "star_count")
@@ -68,7 +68,7 @@ public class ProjectEntity extends BaseEntity {
     @Column(name = "description_md", columnDefinition = "TEXT")
     private String descriptionMd;
 
-    @Column(name = "github_repository_url", columnDefinition = "TEXT")
+    @Column(name = "github_repository_url", nullable = false, columnDefinition = "TEXT")
     private String githubRepositoryUrl;
 
     @Column(name = "deployment_url", columnDefinition = "TEXT")
