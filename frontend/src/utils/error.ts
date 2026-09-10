@@ -1,4 +1,4 @@
-import { isNetworkError, NetworkError } from 'ky';
+import { isNetworkError, isTimeoutError, NetworkError, TimeoutError } from 'ky';
 
 export interface ApiErrorDetail {
   field: string;
@@ -45,7 +45,7 @@ export class HttpError extends Error {
   }
 }
 
-export type ApiError = HttpError | NetworkError;
+export type ApiError = HttpError | NetworkError | TimeoutError;
 
 export const isApiError = (error: unknown): error is ApiError =>
-  error instanceof HttpError || isNetworkError(error);
+  error instanceof HttpError || isNetworkError(error) || isTimeoutError(error);
