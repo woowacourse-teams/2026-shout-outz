@@ -5,10 +5,12 @@ import com.shoutoutz.api.auth.application.dto.result.OAuthSignupResult;
 import com.shoutoutz.api.auth.domain.OAuthAccount;
 import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
+import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
-import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.exception.UserErrorCode;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,9 @@ public class OAuthSignupService {
                 identity.providerAccountId()
         ).isPresent()) {
             throw new IllegalStateException("이미 가입된 OAuth 계정입니다.");
+        }
+        if (userRepository.findByHandle(command.handle()).isPresent()) {
+            throw new DuplicateEntityException(UserErrorCode.HANDLE_ALREADY_EXISTS);
         }
 
         Instant authenticatedAt = Instant.now();

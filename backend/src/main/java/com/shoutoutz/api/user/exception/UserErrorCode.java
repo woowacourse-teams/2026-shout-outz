@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 public enum UserErrorCode implements ErrorCode {
 
     USER_NOT_FOUND("사용자를 찾을 수 없습니다."),
+    HANDLE_ALREADY_EXISTS("이미 사용 중인 handle입니다."),
     USER_PROFILE_NOT_FOUND("사용자 프로필을 찾을 수 없습니다."),
     PROFILE_DISPLAY_NAME_IMMUTABLE("인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다."),
     AVATAR_IMAGE_NOT_FOUND("프로필 이미지를 찾을 수 없습니다."),
