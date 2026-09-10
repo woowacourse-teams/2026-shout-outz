@@ -87,7 +87,6 @@ class UserHttpApiTest {
                                 .tag("User")
                                 .summary("내 프로필 요약 조회")
                                 .description("로그인 후 공통 헤더에 표시할 최소 사용자 정보를 조회한다.")
-                                .privateResource(true)
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
                                                 .description("인증된 사용자의 JSESSIONID")
@@ -159,7 +158,6 @@ class UserHttpApiTest {
                                 .tag("User")
                                 .summary("마이페이지 조회")
                                 .description("로그인한 사용자의 프로필과 프로젝트·피드 개수를 조회한다.")
-                                .privateResource(true)
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
                                                 .description("인증된 사용자의 JSESSIONID")
@@ -242,7 +240,6 @@ class UserHttpApiTest {
                                 .tag("User")
                                 .summary("내 프로필 수정")
                                 .description("로그인한 사용자의 수정 가능한 프로필 정보를 저장한다.")
-                                .privateResource(true)
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
                                                 .description("인증된 사용자의 JSESSIONID"),
@@ -414,7 +411,6 @@ class UserHttpApiTest {
                                 .tag("User")
                                 .summary("참여 팀원 검색")
                                 .description("프로젝트 참여 팀원으로 추가할 ACTIVE 크루와 코치를 이름 또는 handle로 검색한다.")
-                                .privateResource(true)
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
                                                 .description("인증된 우테코 크루의 JSESSIONID")
@@ -459,12 +455,11 @@ class UserHttpApiTest {
                 .andExpect(jsonPath("$.status").value("error"))
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andDo(document(
-                        "user-search-invalid",
+                        "user-search-get-invalid",
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("참여 팀원 검색 실패")
                                 .description("검색어가 비어 있거나 50자를 초과하고, size가 1~100 범위를 벗어나면 400을 반환한다.")
-                                .privateResource(true)
                                 .queryParameters(
                                         parameterWithName("keyword").description("이름 또는 handle 검색어")
                                 )
