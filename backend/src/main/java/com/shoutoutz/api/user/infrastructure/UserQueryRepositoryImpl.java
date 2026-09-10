@@ -31,8 +31,8 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                       AND p.deleted_at IS NULL
                 ) AS posts
             """;
-    private static final String RANKED_CREW_SQL = """
-            WITH ranked_crew AS (
+    private static final String RANKED_PROJECT_MEMBER_SQL = """
+            WITH ranked_project_member AS (
                 SELECT
                     u.handle,
                     up.display_name,
@@ -50,22 +50,22 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                 FROM users u
                 JOIN user_profiles up ON up.user_id = u.id
                 WHERE u.status = 'ACTIVE'
-                  AND up.user_type = 'WOOWACOURSE_CREW'
+                  AND up.user_type IN ('WOOWACOURSE_CREW', 'WOOWACOURSE_COACH')
                   AND (
                       lower(u.handle) LIKE lower(?) ESCAPE '\\'
                       OR lower(up.display_name) LIKE lower(?) ESCAPE '\\'
                   )
             )
             """;
-    private static final String FIRST_SLICE_SQL = RANKED_CREW_SQL + """
+    private static final String FIRST_SLICE_SQL = RANKED_PROJECT_MEMBER_SQL + """
             SELECT *
-            FROM ranked_crew
+            FROM ranked_project_member
             ORDER BY relevance_rank, lower(display_name), lower(handle)
             LIMIT ?
             """;
-    private static final String NEXT_SLICE_SQL = RANKED_CREW_SQL + """
+    private static final String NEXT_SLICE_SQL = RANKED_PROJECT_MEMBER_SQL + """
             SELECT *
-            FROM ranked_crew
+            FROM ranked_project_member
             WHERE relevance_rank > ?
                OR (relevance_rank = ? AND lower(display_name) > lower(?))
                OR (
@@ -93,7 +93,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
     }
 
     @Override
-    public List<UserSearchItem> searchCrew(
+    public List<UserSearchItem> searchProjectMember(
             String keyword,
             UserSearchCursor cursor,
             int limit

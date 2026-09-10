@@ -74,7 +74,7 @@ public class UserQueryService {
     }
 
     @Transactional(readOnly = true)
-    public UserSearchResult searchCrew(
+    public UserSearchResult searchProjectMember(
             long requesterId,
             String keyword,
             String cursor,
@@ -85,7 +85,7 @@ public class UserQueryService {
         validateSearchSize(size);
         UserSearchCursor decodedCursor = userSearchCursorCodec.decode(cursor);
 
-        List<UserSearchItem> searchedItems = userQueryRepository.searchCrew(
+        List<UserSearchItem> searchedItems = userQueryRepository.searchProjectMember(
                 validatedKeyword,
                 decodedCursor,
                 size + 1

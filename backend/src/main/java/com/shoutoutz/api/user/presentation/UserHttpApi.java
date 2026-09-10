@@ -70,13 +70,13 @@ public class UserHttpApi {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<SuccessResponse<UserSearchResponse>> searchCrew(
+    public ResponseEntity<SuccessResponse<UserSearchResponse>> searchProjectMember(
             @LoginUser AuthenticatedUser authenticatedUser,
             @RequestParam String keyword,
             @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "20") int size
     ) {
-        UserSearchResult result = userQueryService.searchCrew(
+        UserSearchResult result = userQueryService.searchProjectMember(
                 authenticatedUser.userId(),
                 keyword,
                 cursor,

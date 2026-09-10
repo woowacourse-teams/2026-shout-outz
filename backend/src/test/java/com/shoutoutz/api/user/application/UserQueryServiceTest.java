@@ -208,8 +208,8 @@ class UserQueryServiceTest {
     }
 
     @Test
-    @DisplayName("우테코 크루를 검색하고 다음 커서를 생성한다")
-    void searchCrew() {
+    @DisplayName("프로젝트 참여자를 검색하고 다음 커서를 생성한다")
+    void searchProjectMember() {
         UserProfile requesterProfile = UserProfile.builder()
                 .userId(1L)
                 .displayName("재키")
@@ -223,10 +223,10 @@ class UserQueryServiceTest {
                 searchItem("charles", "샤를", 2)
         );
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(requesterProfile));
-        given(userQueryRepository.searchCrew("재", null, 3))
+        given(userQueryRepository.searchProjectMember("재", null, 3))
                 .willReturn(searchedItems);
 
-        UserSearchResult result = userQueryService.searchCrew(1L, " 재 ", null, 2);
+        UserSearchResult result = userQueryService.searchProjectMember(1L, " 재 ", null, 2);
 
         assertThat(result.items()).containsExactly(searchedItems.get(0), searchedItems.get(1));
         assertThat(userSearchCursorCodec.decode(result.nextCursor()))
@@ -235,8 +235,8 @@ class UserQueryServiceTest {
     }
 
     @Test
-    @DisplayName("커서를 해석해 다음 우테코 크루를 검색한다")
-    void searchCrewWithCursor() {
+    @DisplayName("커서를 해석해 다음 프로젝트 참여자를 검색한다")
+    void searchProjectMemberWithCursor() {
         UserProfile requesterProfile = UserProfile.builder()
                 .userId(1L)
                 .displayName("재키")
@@ -246,10 +246,10 @@ class UserQueryServiceTest {
                 .build();
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(requesterProfile));
         UserSearchCursor cursor = new UserSearchCursor(1, "재키", "zzaekkii");
-        given(userQueryRepository.searchCrew("재키", cursor, 21))
+        given(userQueryRepository.searchProjectMember("재키", cursor, 21))
                 .willReturn(List.of());
 
-        UserSearchResult result = userQueryService.searchCrew(
+        UserSearchResult result = userQueryService.searchProjectMember(
                 1L,
                 "재키",
                 userSearchCursorCodec.encode(cursor),
@@ -271,7 +271,7 @@ class UserQueryServiceTest {
                 .build();
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(requesterProfile));
 
-        assertThatThrownBy(() -> userQueryService.searchCrew(1L, "재키", null, 20))
+        assertThatThrownBy(() -> userQueryService.searchProjectMember(1L, "재키", null, 20))
                 .isInstanceOf(ForbiddenException.class);
 
         then(userQueryRepository).shouldHaveNoInteractions();
@@ -282,7 +282,7 @@ class UserQueryServiceTest {
     void rejectBlankSearchKeyword() {
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(crewProfile()));
 
-        assertThatThrownBy(() -> userQueryService.searchCrew(1L, "   ", null, 20))
+        assertThatThrownBy(() -> userQueryService.searchProjectMember(1L, "   ", null, 20))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("검색어는 필수입니다.");
 
@@ -294,7 +294,7 @@ class UserQueryServiceTest {
     void rejectInvalidSearchSize() {
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(crewProfile()));
 
-        assertThatThrownBy(() -> userQueryService.searchCrew(1L, "재키", null, 101))
+        assertThatThrownBy(() -> userQueryService.searchProjectMember(1L, "재키", null, 101))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("검색 결과 개수는 1개 이상 100개 이하여야 합니다.");
 
@@ -306,7 +306,7 @@ class UserQueryServiceTest {
     void rejectInvalidSearchCursor() {
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(crewProfile()));
 
-        assertThatThrownBy(() -> userQueryService.searchCrew(1L, "재키", "invalid", 20))
+        assertThatThrownBy(() -> userQueryService.searchProjectMember(1L, "재키", "invalid", 20))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("유효하지 않은 커서입니다.");
 

@@ -374,9 +374,9 @@ class UserHttpApiTest {
     }
 
     @Test
-    @DisplayName("프로젝트에 참여시킬 우테코 크루를 검색한다")
-    void searchCrew() throws Exception {
-        given(userQueryService.searchCrew(1L, "재키", null, 20))
+    @DisplayName("프로젝트에 참여시킬 크루와 코치를 검색한다")
+    void searchProjectMember() throws Exception {
+        given(userQueryService.searchProjectMember(1L, "재키", null, 20))
                 .willReturn(new UserSearchResult(
                         List.of(new UserSearchItem(
                                 "zzaekkii",
@@ -415,7 +415,7 @@ class UserHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("참여 팀원 검색")
-                                .description("프로젝트 참여 팀원으로 추가할 ACTIVE 우테코 크루를 이름 또는 handle로 검색한다.")
+                                .description("프로젝트 참여 팀원으로 추가할 ACTIVE 크루와 코치를 이름 또는 handle로 검색한다.")
                                 .privateResource(true)
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
@@ -430,7 +430,7 @@ class UserHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("검색 결과"),
-                                        fieldWithPath("data.items").type(ARRAY).description("검색된 우테코 크루"),
+                                        fieldWithPath("data.items").type(ARRAY).description("검색된 크루와 코치"),
                                         fieldWithPath("data.items[].handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.items[].displayName").type(STRING).description("표시 이름"),
                                         fieldWithPath("data.items[].userType").type(STRING).description("사용자 유형"),

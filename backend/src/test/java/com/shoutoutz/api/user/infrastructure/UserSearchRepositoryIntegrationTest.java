@@ -39,14 +39,16 @@ class UserSearchRepositoryIntegrationTest {
     private UserProfileJpaRepository userProfileJpaRepository;
 
     @Test
-    @DisplayName("본인을 포함해 이름이나 handle이 일치하는 ACTIVE 크루를 관련도순으로 검색한다")
-    void searchCrew() {
+    @DisplayName("본인을 포함해 이름이나 handle이 일치하는 ACTIVE 크루와 코치를 관련도순으로 검색한다")
+    void searchProjectMember() {
         User requester = saveUser("jack-requester", UserStatus.ACTIVE);
         saveProfile(requester.getId(), "Jack Owner", UserType.WOOWACOURSE_CREW);
         User exactlyMatched = saveUser("dahye", UserStatus.ACTIVE);
         saveProfile(exactlyMatched.getId(), "Jack", UserType.WOOWACOURSE_CREW);
         User prefixMatched = saveUser("jack-dev", UserStatus.ACTIVE);
         saveProfile(prefixMatched.getId(), "Jack Zebra", UserType.WOOWACOURSE_CREW);
+        User coach = saveUser("coach-jack", UserStatus.ACTIVE);
+        saveProfile(coach.getId(), "Jack Coach", UserType.WOOWACOURSE_COACH);
         User containsMatched = saveUser("my-jack-dev", UserStatus.ACTIVE);
         saveProfile(containsMatched.getId(), "다른 크루", UserType.WOOWACOURSE_CREW);
         User general = saveUser("jack-general", UserStatus.ACTIVE);
@@ -55,7 +57,7 @@ class UserSearchRepositoryIntegrationTest {
         saveProfile(banned.getId(), "Jack Banned", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
-        List<UserSearchItem> result = userQueryRepository.searchCrew(
+        List<UserSearchItem> result = userQueryRepository.searchProjectMember(
                 "jack",
                 null,
                 10
@@ -64,17 +66,18 @@ class UserSearchRepositoryIntegrationTest {
         assertThat(result).extracting(UserSearchItem::handle)
                 .containsExactly(
                         exactlyMatched.getHandle().value(),
+                        coach.getHandle().value(),
                         requester.getHandle().value(),
                         prefixMatched.getHandle().value(),
                         containsMatched.getHandle().value()
                 );
         assertThat(result).extracting(UserSearchItem::relevanceRank)
-                .containsExactly(0, 1, 1, 2);
+                .containsExactly(0, 1, 1, 1, 2);
     }
 
     @Test
-    @DisplayName("커서의 정렬 키 다음에 위치한 크루만 검색한다")
-    void searchCrewAfterCursor() {
+    @DisplayName("커서의 정렬 키 다음에 위치한 프로젝트 참여자만 검색한다")
+    void searchProjectMemberAfterCursor() {
         User requester = saveUser("cursor-requester", UserStatus.ACTIVE);
         saveProfile(requester.getId(), "요청자", UserType.WOOWACOURSE_CREW);
         User first = saveUser("cursor-jack-one", UserStatus.ACTIVE);
@@ -83,7 +86,7 @@ class UserSearchRepositoryIntegrationTest {
         saveProfile(second.getId(), "나 크루", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
-        List<UserSearchItem> firstSlice = userQueryRepository.searchCrew(
+        List<UserSearchItem> firstSlice = userQueryRepository.searchProjectMember(
                 "jack",
                 null,
                 10
@@ -95,7 +98,7 @@ class UserSearchRepositoryIntegrationTest {
                 cursorItem.handle()
         );
 
-        List<UserSearchItem> result = userQueryRepository.searchCrew(
+        List<UserSearchItem> result = userQueryRepository.searchProjectMember(
                 "jack",
                 cursor,
                 10
@@ -116,7 +119,7 @@ class UserSearchRepositoryIntegrationTest {
         saveProfile(unmatched.getId(), "일반 크루", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
-        List<UserSearchItem> result = userQueryRepository.searchCrew(
+        List<UserSearchItem> result = userQueryRepository.searchProjectMember(
                 "%",
                 null,
                 10
@@ -141,6 +144,8 @@ class UserSearchRepositoryIntegrationTest {
                 .userType(userType);
         if (userType == UserType.WOOWACOURSE_CREW) {
             profileBuilder.track("BACKEND").cohort((short) 8);
+        } else if (userType == UserType.WOOWACOURSE_COACH) {
+            profileBuilder.track("BACKEND");
         }
         userProfileRepository.save(profileBuilder.build());
     }
