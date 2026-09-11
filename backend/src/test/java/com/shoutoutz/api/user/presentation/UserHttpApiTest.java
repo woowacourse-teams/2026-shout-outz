@@ -13,7 +13,7 @@ import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -205,7 +205,7 @@ class UserHttpApiTest {
                         "https://zzaekkii.dev"
                 ));
 
-        mockMvc.perform(patch("/api/v1/users/me")
+        mockMvc.perform(put("/api/v1/users/me")
                         .header(HttpHeaders.COOKIE, "JSESSIONID=session-id")
                         .header("X-CSRF-Token", "csrf-token")
                         .requestAttr(
@@ -281,7 +281,7 @@ class UserHttpApiTest {
     @Test
     @DisplayName("프로필 URL 형식이 잘못되면 수정 요청을 거절한다")
     void rejectInvalidProfileUrl() throws Exception {
-        mockMvc.perform(patch("/api/v1/users/me")
+        mockMvc.perform(put("/api/v1/users/me")
                         .requestAttr(
                                 AuthenticatedSession.class.getName(),
                                 new AuthenticatedSession(1L, UserRole.USER)

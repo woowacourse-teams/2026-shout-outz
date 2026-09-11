@@ -454,7 +454,7 @@ paths:
                     :21,\"githubProfileUrl\":\"https://github.com/zzaekkii\",\"blogUrl\"\
                     :\"https://zzaekkii.dev\",\"counts\":{\"projects\":2,\"posts\"\
                     :18}}}"
-    patch:
+    put:
       tags:
       - User
       summary: 내 프로필 수정
