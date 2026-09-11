@@ -371,7 +371,7 @@ class UserHttpApiTest {
     @Test
     @DisplayName("프로젝트에 참여시킬 크루와 코치를 검색한다")
     void searchProjectMember() throws Exception {
-        given(userQueryService.searchProjectMember(1L, "재키", null, 20))
+        given(userQueryService.searchProjectMember("재키", null, 20))
                 .willReturn(new UserSearchResult(
                         List.of(new UserSearchItem(
                                 "zzaekkii",
@@ -413,7 +413,7 @@ class UserHttpApiTest {
                                 .description("프로젝트 참여 팀원으로 추가할 ACTIVE 크루와 코치를 이름 또는 handle로 검색한다.")
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
-                                                .description("인증된 우테코 크루의 JSESSIONID")
+                                                .description("인증된 사용자의 JSESSIONID")
                                 )
                                 .queryParameters(
                                         parameterWithName("keyword").description("이름 또는 handle 검색어"),
@@ -440,6 +440,31 @@ class UserHttpApiTest {
                                 )
                                 .build())
                 ));
+    }
+
+    @Test
+    @DisplayName("인증되지 않은 사용자는 프로젝트 참여자를 검색할 수 없다")
+    void rejectUnauthenticatedProjectMemberSearch() throws Exception {
+        mockMvc.perform(get("/api/v1/users/search")
+                        .queryParam("keyword", "재키"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(document(
+                        "user-search-get-unauthorized",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("참여 팀원 검색 인증 실패")
+                                .description("인증되지 않은 사용자가 참여 팀원을 검색하면 401을 반환한다.")
+                                .queryParameters(
+                                        parameterWithName("keyword").description("이름 또는 handle 검색어")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verifyNoInteractions(userQueryService);
     }
 
     @Test
@@ -505,7 +530,7 @@ class UserHttpApiTest {
     @Test
     @DisplayName("잘못된 커서로 프로젝트 참여자를 검색할 수 없다")
     void rejectInvalidSearchCursor() throws Exception {
-        given(userQueryService.searchProjectMember(1L, "재키", "invalid", 20))
+        given(userQueryService.searchProjectMember("재키", "invalid", 20))
                 .willThrow(new IllegalArgumentException("유효하지 않은 커서입니다."));
 
         mockMvc.perform(get("/api/v1/users/search")

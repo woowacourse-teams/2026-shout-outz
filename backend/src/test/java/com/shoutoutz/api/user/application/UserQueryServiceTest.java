@@ -7,7 +7,6 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
-import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.user.application.dto.result.UserProfileResult;
 import com.shoutoutz.api.user.application.dto.result.UserProfileSummaryResult;
 import com.shoutoutz.api.user.application.dto.result.UserSearchResult;
@@ -210,23 +209,15 @@ class UserQueryServiceTest {
     @Test
     @DisplayName("프로젝트 참여자를 검색하고 다음 커서를 생성한다")
     void searchProjectMember() {
-        UserProfile requesterProfile = UserProfile.builder()
-                .userId(1L)
-                .displayName("재키")
-                .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
-                .cohort((short) 8)
-                .build();
         List<UserSearchItem> searchedItems = List.of(
                 searchItem("dahye", "다혜", 2),
                 searchItem("hoi", "호이", 2),
                 searchItem("charles", "샤를", 2)
         );
-        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(requesterProfile));
         given(userQueryRepository.searchProjectMember("재", null, 3))
                 .willReturn(searchedItems);
 
-        UserSearchResult result = userQueryService.searchProjectMember(1L, "재", null, 2);
+        UserSearchResult result = userQueryService.searchProjectMember("재", null, 2);
 
         assertThat(result.items()).containsExactly(searchedItems.get(0), searchedItems.get(1));
         assertThat(userSearchCursorCodec.decode(result.nextCursor()))
@@ -237,20 +228,11 @@ class UserQueryServiceTest {
     @Test
     @DisplayName("커서를 해석해 다음 프로젝트 참여자를 검색한다")
     void searchProjectMemberWithCursor() {
-        UserProfile requesterProfile = UserProfile.builder()
-                .userId(1L)
-                .displayName("재키")
-                .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
-                .cohort((short) 8)
-                .build();
-        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(requesterProfile));
         UserSearchCursor cursor = new UserSearchCursor(1, "재키", "zzaekkii");
         given(userQueryRepository.searchProjectMember("재키", cursor, 21))
                 .willReturn(List.of());
 
         UserSearchResult result = userQueryService.searchProjectMember(
-                1L,
                 "재키",
                 userSearchCursorCodec.encode(cursor),
                 20
@@ -262,41 +244,13 @@ class UserQueryServiceTest {
     }
 
     @Test
-    @DisplayName("우테코 크루가 아니면 참여 팀원을 검색할 수 없다")
-    void rejectSearchFromNonCrew() {
-        UserProfile requesterProfile = UserProfile.builder()
-                .userId(1L)
-                .displayName("일반 사용자")
-                .userType(UserType.GENERAL)
-                .build();
-        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(requesterProfile));
-
-        assertThatThrownBy(() -> userQueryService.searchProjectMember(1L, "재키", null, 20))
-                .isInstanceOf(ForbiddenException.class);
-
-        then(userQueryRepository).shouldHaveNoInteractions();
-    }
-
-    @Test
     @DisplayName("형식이 잘못된 검색 커서를 거절한다")
     void rejectInvalidSearchCursor() {
-        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(crewProfile()));
-
-        assertThatThrownBy(() -> userQueryService.searchProjectMember(1L, "재키", "invalid", 20))
+        assertThatThrownBy(() -> userQueryService.searchProjectMember("재키", "invalid", 20))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("유효하지 않은 커서입니다.");
 
         then(userQueryRepository).shouldHaveNoInteractions();
-    }
-
-    private UserProfile crewProfile() {
-        return UserProfile.builder()
-                .userId(1L)
-                .displayName("재키")
-                .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
-                .cohort((short) 8)
-                .build();
     }
 
     private UserSearchItem searchItem(

@@ -75,11 +75,10 @@ public class UserHttpApi {
 
     @GetMapping("/search")
     public ResponseEntity<SuccessResponse<UserSearchResponse>> searchProjectMember(
-            @LoginUser AuthenticatedUser authenticatedUser,
+            @LoginUser AuthenticatedUser ignored,
             @Valid @ModelAttribute UserSearchRequest request
     ) {
         UserSearchResult result = userQueryService.searchProjectMember(
-                authenticatedUser.userId(),
                 request.keyword(),
                 request.cursor(),
                 request.resolvedSize()

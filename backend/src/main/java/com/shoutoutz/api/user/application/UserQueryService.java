@@ -1,8 +1,6 @@
 package com.shoutoutz.api.user.application;
 
-import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
-import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.user.application.dto.result.UserProfileSummaryResult;
 import com.shoutoutz.api.user.application.dto.result.UserProfileResult;
 import com.shoutoutz.api.user.application.dto.result.UserSearchResult;
@@ -15,7 +13,6 @@ import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.application.query.UserSearchCursor;
 import com.shoutoutz.api.user.application.query.UserSearchItem;
 import com.shoutoutz.api.user.domain.account.UserStatus;
-import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.exception.UserErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -70,12 +67,10 @@ public class UserQueryService {
 
     @Transactional(readOnly = true)
     public UserSearchResult searchProjectMember(
-            long requesterId,
             String keyword,
             String cursor,
             int size
     ) {
-        validateCrewRequester(requesterId);
         UserSearchCursor decodedCursor = userSearchCursorCodec.decode(cursor);
 
         List<UserSearchItem> searchedItems = userQueryRepository.searchProjectMember(
@@ -90,13 +85,6 @@ public class UserQueryService {
         String nextCursor = hasNext ? encodeCursor(items.getLast()) : null;
 
         return new UserSearchResult(items, nextCursor, hasNext);
-    }
-
-    private void validateCrewRequester(long requesterId) {
-        UserProfile requesterProfile = findProfile(requesterId);
-        if (requesterProfile.getUserType() != UserType.WOOWACOURSE_CREW) {
-            throw new ForbiddenException(CommonErrorCode.FORBIDDEN);
-        }
     }
 
     private String encodeCursor(UserSearchItem item) {
