@@ -14,7 +14,6 @@ import com.shoutoutz.api.user.presentation.dto.request.UserSearchRequest;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateResponse;
-import com.shoutoutz.api.user.presentation.dto.response.UserSearchMetaResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserSearchResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
@@ -84,7 +83,7 @@ public class UserHttpApi {
                 request.resolvedSize()
         );
         UserSearchResponse response = UserSearchResponse.from(result);
-        UserSearchMetaResponse meta = UserSearchMetaResponse.from(result);
+        UserSearchResponse.Meta meta = UserSearchResponse.Meta.from(result);
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));
     }

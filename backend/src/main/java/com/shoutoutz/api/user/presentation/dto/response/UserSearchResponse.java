@@ -36,4 +36,14 @@ public record UserSearchResponse(
             );
         }
     }
+
+    public record Meta(
+            String nextCursor,
+            boolean hasNext
+    ) {
+
+        public static Meta from(UserSearchResult result) {
+            return new Meta(result.nextCursor(), result.hasNext());
+        }
+    }
 }
