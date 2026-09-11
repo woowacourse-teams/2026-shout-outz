@@ -562,10 +562,12 @@ paths:
           type: string
       - name: size
         in: query
-        description: "조회 개수, 기본값 20"
+        description: "조회 개수(1~100), 기본값 20"
         required: false
         schema:
-          type: string
+          type: integer
+          format: int32
+          default: 20
       - name: Cookie
         in: header
         description: 인증된 사용자의 JSESSIONID
@@ -639,6 +641,16 @@ paths:
                     :21,\"githubProfileUrl\":\"https://github.com/zzaekkii\",\"blogUrl\"\
                     :\"https://zzaekkii.dev\",\"counts\":{\"projects\":2,\"posts\"\
                     :18}}}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-public-profile-get-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"USER_NOT_FOUND\",\"message\"\
+                    :\"사용자를 찾을 수 없습니다.\"}"
         "400":
           description: "400"
           content:

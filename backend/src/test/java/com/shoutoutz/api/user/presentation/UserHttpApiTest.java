@@ -1,7 +1,9 @@
 package com.shoutoutz.api.user.presentation;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
+import static com.epages.restdocs.apispec.SimpleType.INTEGER;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
@@ -11,7 +13,6 @@ import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -20,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.user.application.UserCommandService;
 import com.shoutoutz.api.user.application.UserQueryService;
@@ -31,6 +33,7 @@ import com.shoutoutz.api.user.application.query.UserProfileCounts;
 import com.shoutoutz.api.user.application.query.UserSearchItem;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.user.exception.UserErrorCode;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -453,7 +456,11 @@ class UserHttpApiTest {
                                 .queryParameters(
                                         parameterWithName("keyword").description("이름 또는 handle 검색어"),
                                         parameterWithName("cursor").description("다음 페이지 커서").optional(),
-                                        parameterWithName("size").description("조회 개수, 기본값 20").optional()
+                                        parameterWithName("size")
+                                                .type(INTEGER)
+                                                .defaultValue(20)
+                                                .description("조회 개수(1~100), 기본값 20")
+                                                .optional()
                                 )
                                 .responseSchema(Schema.schema("UserSearchSuccessResponse"))
                                 .responseFields(
@@ -602,5 +609,30 @@ class UserHttpApiTest {
                 ));
 
         verifyNoInteractions(userQueryService);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 handle로 공개 프로필을 조회할 수 없다")
+    void rejectNotFoundPublicProfileHandle() throws Exception {
+        given(userQueryService.getPublicProfile("missing-user"))
+                .willThrow(new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
+
+        mockMvc.perform(get("/api/v1/users/{handle}", "missing-user"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value("USER_NOT_FOUND"))
+                .andDo(document(
+                        "user-public-profile-get-not-found",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("사용자 공개 프로필 조회")
+                                .description("handle로 사용자의 공개 프로필과 프로젝트·피드 개수를 조회한다.")
+                                .pathParameters(
+                                        parameterWithName("handle").description("조회할 사용자의 handle")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
     }
 }
