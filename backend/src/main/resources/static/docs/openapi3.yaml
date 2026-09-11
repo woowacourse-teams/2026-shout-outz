@@ -532,7 +532,7 @@ paths:
           type: string
       - name: Cookie
         in: header
-        description: 인증된 우테코 크루의 JSESSIONID
+        description: 인증된 사용자의 JSESSIONID
         required: true
         schema:
           type: string
@@ -562,6 +562,16 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"keyword\"\
                     ,\"message\":\"keyword는 필수입니다.\"}]}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-search-get-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
   /api/v1/users/{handle}:
     get:
       tags:
