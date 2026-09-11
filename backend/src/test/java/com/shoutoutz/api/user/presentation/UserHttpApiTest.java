@@ -110,7 +110,17 @@ class UserHttpApiTest {
         mockMvc.perform(get("/api/v1/users/me/summary"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value("error"))
-                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(document(
+                        "user-profile-summary-get-unauthorized",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("내 프로필 요약 조회 인증 실패")
+                                .description("인증되지 않은 사용자가 내 프로필 요약을 조회하면 401을 반환한다.")
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
     }
 
     @Test
@@ -296,7 +306,17 @@ class UserHttpApiTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.details.length()").value(2));
+                .andExpect(jsonPath("$.details.length()").value(2))
+                .andDo(document(
+                        "user-profile-update-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("내 프로필 수정 실패")
+                                .description("프로필 수정 요청값이 유효하지 않으면 400을 반환한다.")
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
     }
 
     @Test
@@ -566,7 +586,20 @@ class UserHttpApiTest {
     void rejectInvalidPublicProfileHandle() throws Exception {
         mockMvc.perform(get("/api/v1/users/{handle}", "잘못된-핸들"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andDo(document(
+                        "user-public-profile-get-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("사용자 공개 프로필 조회 실패")
+                                .description("handle 형식이 유효하지 않으면 400을 반환한다.")
+                                .pathParameters(
+                                        parameterWithName("handle").description("조회할 사용자의 handle")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
 
         verifyNoInteractions(userQueryService);
     }
