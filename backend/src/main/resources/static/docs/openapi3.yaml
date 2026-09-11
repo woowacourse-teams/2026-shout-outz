@@ -129,7 +129,8 @@ paths:
       summary: OAuth 사용자 가입
       description: "가입 대기 OAuth 신원에 서비스 사용자와 프로필을 생성하고 인증 세션을 설정한다. 가입 정보가 유효하지 않으\
         면 400 VALIDATION_FAILED, 가입 대기 신원이 없으면 400 OAUTH_SIGNUP_SESSION_NOT_FOUND,\
-        \ CSRF Token이 유효하지 않으면 403 CSRF_TOKEN_INVALID를 반환한다."
+        \ CSRF Token이 유효하지 않으면 403 CSRF_TOKEN_INVALID, handle이 중복되면 409 HANDLE_ALREADY_EXISTS를\
+        \ 반환한다."
       operationId: auth-signup
       parameters:
       - name: Cookie
@@ -171,6 +172,12 @@ paths:
                     "handle": "",
                     "displayName": ""
                   }
+              auth-signup-handle-conflict:
+                value: |
+                  {
+                    "handle": "zzaekkii",
+                    "displayName": "재키"
+                  }
               auth-signup:
                 value: |
                   {
@@ -194,6 +201,16 @@ paths:
                     ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
                     ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
                     message\":\"displayName은 필수입니다.\"}]}"
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                auth-signup-handle-conflict:
+                  value: "{\"status\":\"error\",\"code\":\"HANDLE_ALREADY_EXISTS\"\
+                    ,\"message\":\"이미 사용 중인 handle입니다.\"}"
         "201":
           description: "201"
           headers:
@@ -490,6 +507,13 @@ paths:
                     "githubProfileUrl": "https://github.com/zzaekkii",
                     "blogUrl": "https://zzaekkii.dev"
                   }
+              user-profile-update-invalid:
+                value: |
+                  {
+                    "displayName": "재키",
+                    "githubProfileUrl": "http://github.com/zzaekkii",
+                    "blogUrl": "not-a-url"
+                  }
       responses:
         "200":
           description: "200"
@@ -504,6 +528,18 @@ paths:
                     :\"BACKEND\",\"cohort\":8,\"bio\":\"백엔드 개발자입니다.\",\"avatarImageId\"\
                     :21,\"githubProfileUrl\":\"https://github.com/zzaekkii\",\"blogUrl\"\
                     :\"https://zzaekkii.dev\"}}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-profile-update-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
   /api/v1/users/search:
     get:
       tags:
@@ -548,8 +584,10 @@ paths:
                 user-search-get:
                   value: "{\"status\":\"success\",\"data\":{\"items\":[{\"handle\"\
                     :\"zzaekkii\",\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\"\
-                    ,\"track\":\"BACKEND\",\"cohort\":8,\"avatarImageId\":21}]},\"\
-                    meta\":{\"nextCursor\":\"eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0\"\
+                    ,\"track\":\"BACKEND\",\"cohort\":8,\"avatarImageId\":21},{\"\
+                    handle\":\"coach-jack\",\"displayName\":\"재키 코치\",\"userType\"\
+                    :\"WOOWACOURSE_COACH\",\"track\":null,\"cohort\":null,\"avatarImageId\"\
+                    :null}]},\"meta\":{\"nextCursor\":\"eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0\"\
                     ,\"hasNext\":true}}"
         "400":
           description: "400"
@@ -601,6 +639,16 @@ paths:
                     :21,\"githubProfileUrl\":\"https://github.com/zzaekkii\",\"blogUrl\"\
                     :\"https://zzaekkii.dev\",\"counts\":{\"projects\":2,\"posts\"\
                     :18}}}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-public-profile-get-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\"}"
   /api/v1/users/me/summary:
     get:
       tags:
@@ -617,6 +665,16 @@ paths:
           type: string
         example: JSESSIONID=session-id
       responses:
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-profile-summary-get-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
         "200":
           description: "200"
           content:
@@ -764,10 +822,8 @@ components:
               description: 검색된 크루와 코치
               items:
                 required:
-                - cohort
                 - displayName
                 - handle
-                - track
                 - userType
                 type: object
                 properties:
@@ -781,6 +837,7 @@ components:
                   cohort:
                     type: number
                     description: 우테코 기수
+                    nullable: true
                   handle:
                     type: string
                     description: 사용자 handle
@@ -790,6 +847,7 @@ components:
                   track:
                     type: string
                     description: 우테코 트랙
+                    nullable: true
           description: 검색 결과
         meta:
           required:
