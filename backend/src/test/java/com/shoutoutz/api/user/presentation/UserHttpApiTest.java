@@ -373,15 +373,26 @@ class UserHttpApiTest {
     void searchProjectMember() throws Exception {
         given(userQueryService.searchProjectMember("재키", null, 20))
                 .willReturn(new UserSearchResult(
-                        List.of(new UserSearchItem(
-                                "zzaekkii",
-                                "재키",
-                                UserType.WOOWACOURSE_CREW,
-                                "BACKEND",
-                                (short) 8,
-                                21L,
-                                0
-                        )),
+                        List.of(
+                                new UserSearchItem(
+                                        "zzaekkii",
+                                        "재키",
+                                        UserType.WOOWACOURSE_CREW,
+                                        "BACKEND",
+                                        (short) 8,
+                                        21L,
+                                        0
+                                ),
+                                new UserSearchItem(
+                                        "coach-jack",
+                                        "재키 코치",
+                                        UserType.WOOWACOURSE_COACH,
+                                        null,
+                                        null,
+                                        null,
+                                        1
+                                )
+                        ),
                         "eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0",
                         true
                 ));
@@ -401,6 +412,10 @@ class UserHttpApiTest {
                 .andExpect(jsonPath("$.data.items[0].track").value("BACKEND"))
                 .andExpect(jsonPath("$.data.items[0].cohort").value(8))
                 .andExpect(jsonPath("$.data.items[0].avatarImageId").value(21))
+                .andExpect(jsonPath("$.data.items[1].handle").value("coach-jack"))
+                .andExpect(jsonPath("$.data.items[1].userType").value("WOOWACOURSE_COACH"))
+                .andExpect(jsonPath("$.data.items[1].track").isEmpty())
+                .andExpect(jsonPath("$.data.items[1].cohort").isEmpty())
                 .andExpect(jsonPath("$.meta.nextCursor").value(
                         "eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0"
                 ))
@@ -428,8 +443,10 @@ class UserHttpApiTest {
                                         fieldWithPath("data.items[].handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.items[].displayName").type(STRING).description("표시 이름"),
                                         fieldWithPath("data.items[].userType").type(STRING).description("사용자 유형"),
-                                        fieldWithPath("data.items[].track").type(STRING).description("우테코 트랙"),
-                                        fieldWithPath("data.items[].cohort").type(NUMBER).description("우테코 기수"),
+                                        fieldWithPath("data.items[].track").type(STRING)
+                                                .description("우테코 트랙").optional(),
+                                        fieldWithPath("data.items[].cohort").type(NUMBER)
+                                                .description("우테코 기수").optional(),
                                         fieldWithPath("data.items[].avatarImageId").type(NUMBER)
                                                 .description("프로필 이미지 미디어 ID").optional(),
                                         fieldWithPath("meta").type(OBJECT).description("페이지 정보"),
