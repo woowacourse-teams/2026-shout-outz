@@ -19,4 +19,4 @@ aws:
   s3:
     bucket: test-bucket
     region: ap-northeast-2
-    presigned-url-expiration-seconds: 300
+    presigned-url-expiration-seconds: 100
