@@ -1,4 +1,4 @@
-package com.shoutoutz.api.auth.application.dto.result;
+package com.shoutoutz.api.auth.application.command;
 
 import com.shoutoutz.api.user.domain.account.UserRole;
 

@@ -1,6 +1,6 @@
 package com.shoutoutz.api.auth.presentation.dto.request;
 
-import com.shoutoutz.api.auth.application.dto.command.OAuthSignupCommand;
+import com.shoutoutz.api.auth.application.command.OAuthSignupCommand;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.common.validator.CodePointSize;
 import jakarta.validation.constraints.NotBlank;

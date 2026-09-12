@@ -1,4 +1,4 @@
-package com.shoutoutz.api.user.application.dto.command;
+package com.shoutoutz.api.user.application.command;
 
 public record UserProfileUpdateCommand(
         long userId,

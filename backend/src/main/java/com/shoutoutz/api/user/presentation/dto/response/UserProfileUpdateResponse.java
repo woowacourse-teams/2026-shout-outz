@@ -1,6 +1,6 @@
 package com.shoutoutz.api.user.presentation.dto.response;
 
-import com.shoutoutz.api.user.application.dto.result.UserProfileUpdateResult;
+import com.shoutoutz.api.user.application.command.UserProfileUpdateResult;
 import com.shoutoutz.api.user.domain.profile.UserType;
 
 public record UserProfileUpdateResponse(

@@ -7,9 +7,9 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
-import com.shoutoutz.api.user.application.dto.result.UserProfileResult;
-import com.shoutoutz.api.user.application.dto.result.UserProfileSummaryResult;
-import com.shoutoutz.api.user.application.dto.result.UserSearchResult;
+import com.shoutoutz.api.user.application.query.UserProfileResult;
+import com.shoutoutz.api.user.application.query.UserProfileSummaryResult;
+import com.shoutoutz.api.user.application.query.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.application.query.UserProfileCounts;

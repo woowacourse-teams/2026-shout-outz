@@ -1,4 +1,4 @@
-package com.shoutoutz.api.auth.application.dto.command;
+package com.shoutoutz.api.auth.application.command;
 
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 

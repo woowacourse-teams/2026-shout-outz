@@ -8,8 +8,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.shoutoutz.api.auth.application.dto.command.OAuthSignupCommand;
-import com.shoutoutz.api.auth.application.dto.result.OAuthSignupResult;
+import com.shoutoutz.api.auth.application.command.OAuthSignupCommand;
+import com.shoutoutz.api.auth.application.command.OAuthSignupResult;
 import com.shoutoutz.api.auth.domain.OAuthAccount;
 import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;

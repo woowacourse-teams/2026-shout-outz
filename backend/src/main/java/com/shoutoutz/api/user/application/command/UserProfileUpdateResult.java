@@ -1,4 +1,4 @@
-package com.shoutoutz.api.user.application.dto.result;
+package com.shoutoutz.api.user.application.command;
 
 import com.shoutoutz.api.user.domain.profile.UserType;
 

@@ -1,6 +1,5 @@
-package com.shoutoutz.api.user.application.dto.result;
+package com.shoutoutz.api.user.application.query;
 
-import com.shoutoutz.api.user.application.query.UserSearchItem;
 import java.util.List;
 
 public record UserSearchResult(

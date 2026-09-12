@@ -1,7 +1,7 @@
 package com.shoutoutz.api.user.presentation.dto.request;
 
 import com.shoutoutz.api.common.validator.CodePointSize;
-import com.shoutoutz.api.user.application.dto.command.UserProfileUpdateCommand;
+import com.shoutoutz.api.user.application.command.UserProfileUpdateCommand;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
