@@ -64,25 +64,32 @@ public class UserQueryService {
     }
 
     @Transactional(readOnly = true)
-    public UserSearchResult searchWoowaMember(
+    public UserSearchResult searchWoowaUsers(
             String keyword,
             String cursor,
             int size
     ) {
         UserSearchCursor decodedCursor = userSearchCursorCodec.decode(cursor);
 
-        List<UserSearchItem> searchedItems = userQueryRepository.searchWoowaMember(
+        List<UserSearchItem> searchedItems = userQueryRepository.searchWoowaUsers(
                 keyword,
                 decodedCursor,
                 size + 1
         );
-        boolean hasNext = searchedItems.size() > size;
-        List<UserSearchItem> items = hasNext
-                ? List.copyOf(searchedItems.subList(0, size))
-                : List.copyOf(searchedItems);
-        String nextCursor = hasNext ? encodeCursor(items.getLast()) : null;
 
-        return new UserSearchResult(items, nextCursor, hasNext);
+        return createSearchResult(searchedItems, size);
+    }
+
+    private UserSearchResult createSearchResult(
+            List<UserSearchItem> searchedItems,
+            int size
+    ) {
+        if (searchedItems.size() <= size) {
+            return new UserSearchResult(List.copyOf(searchedItems), null, false);
+        }
+
+        List<UserSearchItem> items = List.copyOf(searchedItems.subList(0, size));
+        return new UserSearchResult(items, encodeCursor(items.getLast()), true);
     }
 
     private String encodeCursor(UserSearchItem item) {

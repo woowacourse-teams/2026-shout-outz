@@ -9,7 +9,7 @@ public interface UserQueryRepository {
 
     UserProfileCounts countByUserId(long userId);
 
-    List<UserSearchItem> searchWoowaMember(
+    List<UserSearchItem> searchWoowaUsers(
             String keyword,
             UserSearchCursor cursor,
             int limit
