@@ -1,6 +1,6 @@
 package com.shoutoutz.api.news.presentation.dto.response;
 
-import com.shoutoutz.api.news.application.NewsSummary;
+import com.shoutoutz.api.news.application.dto.result.NewsFindAllResult;
 import com.shoutoutz.api.news.domain.EventStatus;
 import com.shoutoutz.api.news.domain.NewsType;
 import java.time.Instant;
@@ -18,6 +18,16 @@ public record NewsFindAllResponse(List<Item> items, Meta meta) {
         items = List.copyOf(items);
     }
 
+    public static NewsFindAllResponse from(NewsFindAllResult result) {
+        List<Item> items = result.items().stream()
+                .map(Item::from)
+                .toList();
+        return new NewsFindAllResponse(
+                items,
+                new Meta(result.meta().nextCursor(), result.meta().hasNext())
+        );
+    }
+
     public record Item(
             long id,
             NewsType type,
@@ -31,21 +41,18 @@ public record NewsFindAllResponse(List<Item> items, Meta meta) {
             Integer pinOrder
     ) {
 
-        public static Item from(NewsSummary summary, Instant now) {
-            EventStatus eventStatus = summary.type() == NewsType.EVENT
-                    ? EventStatus.from(now, summary.eventStartAt(), summary.eventEndAt())
-                    : null;
+        private static Item from(NewsFindAllResult.Item result) {
             return new Item(
-                    summary.id(),
-                    summary.type(),
-                    summary.title(),
-                    summary.summary(),
-                    summary.publishedAt(),
-                    eventStatus,
-                    summary.eventStartAt(),
-                    summary.eventEndAt(),
-                    summary.pinned(),
-                    summary.pinOrder()
+                    result.id(),
+                    result.type(),
+                    result.title(),
+                    result.summary(),
+                    result.publishedAt(),
+                    result.eventStatus(),
+                    result.eventStartAt(),
+                    result.eventEndAt(),
+                    result.isPinned(),
+                    result.pinOrder()
             );
         }
     }

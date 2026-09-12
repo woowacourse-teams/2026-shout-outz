@@ -1,5 +1,6 @@
 package com.shoutoutz.api.news.presentation.dto.request;
 
+import com.shoutoutz.api.news.application.command.CreateEventCommand;
 import com.shoutoutz.api.news.presentation.validation.ValidEventPeriod;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -34,6 +35,18 @@ public record EventCreateRequest(
         @Valid
         Cta cta
 ) {
+
+    public CreateEventCommand toCommand() {
+        return new CreateEventCommand(
+                title,
+                summary,
+                body,
+                authorName,
+                eventStartAt,
+                eventEndAt,
+                cta == null ? null : new CreateEventCommand.Cta(cta.label(), cta.url())
+        );
+    }
 
     public record Cta(
             @NotBlank(message = "cta.label은 필수입니다.")

@@ -1,8 +1,7 @@
 package com.shoutoutz.api.news.presentation.dto.response;
 
+import com.shoutoutz.api.news.application.dto.result.CreateEventResult;
 import com.shoutoutz.api.news.domain.EventStatus;
-import com.shoutoutz.api.news.domain.News;
-import com.shoutoutz.api.news.domain.NewsCta;
 import com.shoutoutz.api.news.domain.NewsType;
 import java.time.Instant;
 
@@ -22,21 +21,21 @@ public record EventCreateResponse(
         Cta cta
 ) {
 
-    public static EventCreateResponse from(News event, Instant now) {
+    public static EventCreateResponse from(CreateEventResult result) {
         return new EventCreateResponse(
-                event.getId(),
-                event.getType(),
-                event.getTitle(),
-                event.getSummary(),
-                event.getBody(),
-                new Author(event.getAuthorId(), event.getAuthorName()),
-                event.getPublishedAt(),
-                event.eventStatusAt(now),
-                event.getEventStartAt(),
-                event.getEventEndAt(),
-                event.isPinned(),
-                event.getPinOrder(),
-                Cta.from(event.getCta())
+                result.id(),
+                result.type(),
+                result.title(),
+                result.summary(),
+                result.body(),
+                new Author(result.author().userId(), result.author().name()),
+                result.publishedAt(),
+                result.eventStatus(),
+                result.eventStartAt(),
+                result.eventEndAt(),
+                result.isPinned(),
+                result.pinOrder(),
+                Cta.from(result.cta())
         );
     }
 
@@ -45,7 +44,7 @@ public record EventCreateResponse(
 
     public record Cta(String label, String url) {
 
-        private static Cta from(NewsCta cta) {
+        private static Cta from(CreateEventResult.Cta cta) {
             if (cta == null) {
                 return null;
             }

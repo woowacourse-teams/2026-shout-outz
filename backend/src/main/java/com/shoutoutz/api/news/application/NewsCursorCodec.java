@@ -1,6 +1,7 @@
 package com.shoutoutz.api.news.application;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.news.application.query.NewsCursor;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
@@ -8,25 +9,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 소식 목록 전체 조회시 사용하는 Cursor를 인코딩/디코딩하는 객체
+ * 소식 목록 전체 조회 시 사용하는 커서를 인코딩·디코딩하는 객체.
  *
- * 커서는 기본적으로 PUBLISHED_AT과 NEWS_ID를 조합하여 사용한다.
- *
- * 클라이언트에게 반환되는 커서 응답값은 Base64로 인코딩한 JSON 형태를 사용한다.
- * 클라이언트가 내부 구조에 의존하지 않도록 opaque 값으로 취급한다.
+ * <p>커서는 게시 시각과 소식 ID를 조합하여 사용한다. 클라이언트에게 반환되는
+ * 커서는 내부 구조에 의존하지 않도록 opaque 값으로 취급한다.</p>
  */
 public final class NewsCursorCodec {
 
     private static final Pattern PUBLISHED_AT_PATTERN = Pattern.compile(
-            "\\\"publishedAt\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"");
+            "\\\"publishedAt\\\"\\s*:\\s*\\\"([^\\\"]+)\\\""
+    );
     private static final Pattern ID_PATTERN = Pattern.compile(
-            "\\\"id\\\"\\s*:\\s*(\\d+)");
+            "\\\"id\\\"\\s*:\\s*(\\d+)"
+    );
 
     private NewsCursorCodec() {
     }
 
     /**
-     * 클라이언트 요청 값 해독
+     * 클라이언트 요청 값을 해독한다.
      */
     public static NewsCursor decode(String encodedCursor) {
         if (encodedCursor == null) {
@@ -61,7 +62,7 @@ public final class NewsCursorCodec {
     }
 
     /**
-     * 클라이언트에게 제공해줄 다음 커서 정보를, 인코딩하여 응답 값에 전송
+     * 다음 페이지 조회에 사용할 커서 정보를 인코딩한다.
      */
     public static String encode(NewsCursor cursor) {
         String payload = "{\"publishedAt\":\"" + cursor.publishedAt() + "\",\"id\":"
@@ -69,9 +70,6 @@ public final class NewsCursorCodec {
         return Base64.getEncoder().encodeToString(payload.getBytes(StandardCharsets.UTF_8));
     }
 
-    /**
-     * 헬퍼 메서드
-     */
     private static Long extractId(String payload) {
         Matcher matcher = ID_PATTERN.matcher(payload);
         if (!matcher.find()) {

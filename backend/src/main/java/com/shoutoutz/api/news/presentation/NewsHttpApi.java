@@ -2,6 +2,11 @@ package com.shoutoutz.api.news.presentation;
 
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.news.application.NewsService;
+import com.shoutoutz.api.news.application.command.CreateEventCommand;
+import com.shoutoutz.api.news.application.command.CreateNoticeCommand;
+import com.shoutoutz.api.news.application.dto.result.CreateEventResult;
+import com.shoutoutz.api.news.application.dto.result.CreateNoticeResult;
+import com.shoutoutz.api.news.application.dto.result.NewsFindAllResult;
 import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NewsFindAllRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
@@ -36,7 +41,8 @@ public class NewsHttpApi {
     public ResponseEntity<SuccessResponse<NoticeCreateResponse>> createNotice(
             @Valid @RequestBody NoticeCreateRequest body
     ) {
-        NoticeCreateResponse response = newsService.createNotice(body);
+        CreateNoticeResult result = newsService.createNotice(body.toCommand());
+        NoticeCreateResponse response = NoticeCreateResponse.from(result);
         return ResponseEntity.status(HttpStatus.CREATED).body(SuccessResponse.success(response));
     }
 
@@ -45,7 +51,8 @@ public class NewsHttpApi {
     public ResponseEntity<SuccessResponse<EventCreateResponse>> createEvent(
             @Valid @RequestBody EventCreateRequest body
     ) {
-        EventCreateResponse response = newsService.createEvent(body);
+        CreateEventResult result = newsService.createEvent(body.toCommand());
+        EventCreateResponse response = EventCreateResponse.from(result);
         return ResponseEntity.status(HttpStatus.CREATED).body(SuccessResponse.success(response));
     }
 
@@ -57,8 +64,9 @@ public class NewsHttpApi {
             @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size,
             @RequestParam(required = false) String cursor
     ) {
-        NewsFindAllRequest request = new NewsFindAllRequest(type, eventStatus, sort, size, cursor);
-        NewsFindAllResponse response = newsService.findAll(request.toQuery());
+        NewsFindAllResult result = newsService.findAll(
+                new NewsFindAllRequest(type, eventStatus, sort, size, cursor).toQuery());
+        NewsFindAllResponse response = NewsFindAllResponse.from(result);
         return ResponseEntity.ok(SuccessResponse.success(response.items(), response.meta()));
     }
 }

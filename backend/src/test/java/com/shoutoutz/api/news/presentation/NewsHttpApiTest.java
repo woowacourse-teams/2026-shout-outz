@@ -23,17 +23,17 @@ import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
-import com.shoutoutz.api.news.application.NewsFindAllQuery;
-import com.shoutoutz.api.news.application.NewsQueryErrorCode;
 import com.shoutoutz.api.news.application.NewsService;
+import com.shoutoutz.api.news.application.command.CreateEventCommand;
+import com.shoutoutz.api.news.application.command.CreateNoticeCommand;
+import com.shoutoutz.api.news.application.dto.result.CreateEventResult;
+import com.shoutoutz.api.news.application.dto.result.CreateNoticeResult;
+import com.shoutoutz.api.news.application.dto.result.NewsFindAllResult;
+import com.shoutoutz.api.news.application.query.NewsFindAllQuery;
+import com.shoutoutz.api.news.application.NewsQueryErrorCode;
 import com.shoutoutz.api.news.domain.EventStatus;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
 import com.shoutoutz.api.news.domain.NewsType;
-import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
-import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
-import com.shoutoutz.api.news.presentation.dto.response.EventCreateResponse;
-import com.shoutoutz.api.news.presentation.dto.response.NewsFindAllResponse;
-import com.shoutoutz.api.news.presentation.dto.response.NoticeCreateResponse;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
@@ -69,19 +69,19 @@ class NewsHttpApiTest {
     @Test
     @DisplayName("공지 등록 성공 테스트. 201과 생성된 공지 정보를 반환한다.")
     void returnsSuccessResponseAndCreatedStatusWhenNoticeIsCreated() throws Exception {
-        NoticeCreateResponse response = new NoticeCreateResponse(
+        CreateNoticeResult result = new CreateNoticeResult(
                 106L,
                 NewsType.NOTICE,
                 "데모데이 안내",
                 "데모데이 일정을 안내합니다.",
                 "2026년 9월 12일에 데모데이를 진행합니다.",
-                new NoticeCreateResponse.Author(1L, "샤라웃 운영팀"),
+                new CreateNoticeResult.Author(1L, "샤라웃 운영팀"),
                 Instant.parse("2026-09-05T00:00:00Z"),
                 false,
                 null,
-                new NoticeCreateResponse.Cta("일정 확인", "example.com")
+                new CreateNoticeResult.Cta("일정 확인", "example.com")
         );
-        given(newsService.createNotice(any(NoticeCreateRequest.class))).willReturn(response);
+        given(newsService.createNotice(any(CreateNoticeCommand.class))).willReturn(result);
 
         mockMvc.perform(post("/api/v1/news/notices")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -180,25 +180,25 @@ class NewsHttpApiTest {
                                 .build())
                 ));
 
-        verify(newsService).createNotice(any(NoticeCreateRequest.class));
+        verify(newsService).createNotice(any(CreateNoticeCommand.class));
     }
 
     @Test
     @DisplayName("공지 등록 성공 테스트. CTA가 없는 경우 cta 항목을 null로 반환한다.")
     void returnsNullCtaWhenCtaIsAbsent() throws Exception {
-        NoticeCreateResponse response = new NoticeCreateResponse(
+        CreateNoticeResult result = new CreateNoticeResult(
                 107L,
                 NewsType.NOTICE,
                 "서비스 점검 안내",
                 "점검 일정을 안내합니다.",
                 "2026년 9월 10일에 점검을 진행합니다.",
-                new NoticeCreateResponse.Author(1L, "샤라웃 운영팀"),
+                new CreateNoticeResult.Author(1L, "샤라웃 운영팀"),
                 Instant.parse("2026-09-05T00:00:00Z"),
                 false,
                 null,
                 null
         );
-        given(newsService.createNotice(any(NoticeCreateRequest.class))).willReturn(response);
+        given(newsService.createNotice(any(CreateNoticeCommand.class))).willReturn(result);
 
         mockMvc.perform(post("/api/v1/news/notices")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -214,22 +214,22 @@ class NewsHttpApiTest {
     @Test
     @DisplayName("이벤트 등록 성공 테스트. 201과 생성된 이벤트 정보를 반환한다.")
     void returnsEventResponseAndCreatedStatusWhenEventIsCreated() throws Exception {
-        EventCreateResponse response = new EventCreateResponse(
+        CreateEventResult result = new CreateEventResult(
                 107L,
                 NewsType.EVENT,
                 "프로젝트 아카이빙 챌린지",
                 "팀 프로젝트를 등록하고 피드백을 받아보세요.",
                 "프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.",
-                new EventCreateResponse.Author(1L, "샤라웃 운영팀"),
+                new CreateEventResult.Author(1L, "샤라웃 운영팀"),
                 Instant.parse("2026-09-05T00:00:00Z"),
                 EventStatus.ONGOING,
                 Instant.parse("2026-09-01T00:00:00Z"),
                 Instant.parse("2026-09-30T23:59:59Z"),
                 false,
                 null,
-                new EventCreateResponse.Cta("프로젝트 등록하기", "/projects/3001")
+                new CreateEventResult.Cta("프로젝트 등록하기", "/projects/3001")
         );
-        given(newsService.createEvent(any(EventCreateRequest.class))).willReturn(response);
+        given(newsService.createEvent(any(CreateEventCommand.class))).willReturn(result);
 
         mockMvc.perform(post("/api/v1/news/events")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -287,19 +287,19 @@ class NewsHttpApiTest {
                                 .build())
                 ));
 
-        verify(newsService).createEvent(any(EventCreateRequest.class));
+        verify(newsService).createEvent(any(CreateEventCommand.class));
     }
 
     @Test
     @DisplayName("이벤트 등록 성공 테스트. CTA가 없는 경우 cta 항목을 null로 반환한다.")
     void createsEventWithoutCta() throws Exception {
-        EventCreateResponse response = new EventCreateResponse(
+        CreateEventResult result = new CreateEventResult(
                 108L,
                 NewsType.EVENT,
                 "서비스 이벤트",
                 "이벤트 요약",
                 "이벤트 본문",
-                new EventCreateResponse.Author(1L, "샤라웃 운영팀"),
+                new CreateEventResult.Author(1L, "샤라웃 운영팀"),
                 Instant.parse("2026-09-05T00:00:00Z"),
                 EventStatus.UPCOMING,
                 Instant.parse("2026-10-01T00:00:00Z"),
@@ -308,7 +308,7 @@ class NewsHttpApiTest {
                 null,
                 null
         );
-        given(newsService.createEvent(any(EventCreateRequest.class))).willReturn(response);
+        given(newsService.createEvent(any(CreateEventCommand.class))).willReturn(result);
 
         mockMvc.perform(post("/api/v1/news/events")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -326,8 +326,8 @@ class NewsHttpApiTest {
     @Test
     @DisplayName("소식 목록 조회 요청이 성공하면 최신순 목록과 페이지네이션 정보를 반환한다")
     void returnsNewsListWithPaginationMetadata() throws Exception {
-        NewsFindAllResponse response = new NewsFindAllResponse(
-                List.of(new NewsFindAllResponse.Item(
+        NewsFindAllResult result = new NewsFindAllResult(
+                List.of(new NewsFindAllResult.Item(
                         102L,
                         NewsType.EVENT,
                         "프로젝트 아카이빙 챌린지",
@@ -339,11 +339,11 @@ class NewsHttpApiTest {
                         false,
                         null
                 )),
-                new NewsFindAllResponse.Meta(null, false)
+                new NewsFindAllResult.Meta(null, false)
         );
         given(newsService.findAll(
                 new NewsFindAllQuery(NewsType.EVENT, EventStatus.ONGOING, 20, null)
-        )).willReturn(response);
+        )).willReturn(result);
 
         mockMvc.perform(get("/api/v1/news")
                         .queryParam("type", "EVENT")
@@ -444,13 +444,13 @@ class NewsHttpApiTest {
     @Test
     @DisplayName("소식 목록 조회 기본값을 서비스에 전달한다")
     void usesDefaultNewsListQueryValues() throws Exception {
-        NewsFindAllResponse response = new NewsFindAllResponse(
+        NewsFindAllResult result = new NewsFindAllResult(
                 List.of(),
-                new NewsFindAllResponse.Meta(null, false)
+                new NewsFindAllResult.Meta(null, false)
         );
         given(newsService.findAll(
                 new NewsFindAllQuery(null, null, 20, null)
-        )).willReturn(response);
+        )).willReturn(result);
 
         mockMvc.perform(get("/api/v1/news"))
                 .andExpect(status().isOk())
@@ -742,7 +742,7 @@ class NewsHttpApiTest {
     @Test
     @DisplayName("공지 생성 중 도메인 예외가 발생하면 500 오류 응답을 반환한다")
     void returnsInternalServerErrorWhenNoticeDomainValidationFails() throws Exception {
-        given(newsService.createNotice(any(NoticeCreateRequest.class)))
+        given(newsService.createNotice(any(CreateNoticeCommand.class)))
                 .willThrow(new DomainValidationException(NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE));
 
         mockMvc.perform(post("/api/v1/news/notices")
@@ -757,13 +757,13 @@ class NewsHttpApiTest {
                                 "공지와 선택적인 CTA를 생성한다."))
                 ));
 
-        verify(newsService).createNotice(any(NoticeCreateRequest.class));
+        verify(newsService).createNotice(any(CreateNoticeCommand.class));
     }
 
     @Test
     @DisplayName("이벤트 생성 중 도메인 예외가 발생하면 500 오류 응답을 반환한다")
     void returnsInternalServerErrorWhenEventDomainValidationFails() throws Exception {
-        given(newsService.createEvent(any(EventCreateRequest.class)))
+        given(newsService.createEvent(any(CreateEventCommand.class)))
                 .willThrow(new DomainValidationException(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID));
 
         mockMvc.perform(post("/api/v1/news/events")
@@ -778,7 +778,7 @@ class NewsHttpApiTest {
                                 "이벤트와 선택적인 CTA를 생성한다."))
                 ));
 
-        verify(newsService).createEvent(any(EventCreateRequest.class));
+        verify(newsService).createEvent(any(CreateEventCommand.class));
     }
 
     // TODO: 인증 방식 확정 후 미인증 요청의 401 응답과 서비스 미호출을 검증한다.

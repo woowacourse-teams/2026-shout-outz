@@ -1,9 +1,9 @@
 package com.shoutoutz.api.news.infrastructure;
 
-import com.shoutoutz.api.news.application.NewsQueryRepository;
-import com.shoutoutz.api.news.application.NewsCursor;
-import com.shoutoutz.api.news.application.NewsPage;
-import com.shoutoutz.api.news.application.NewsSummary;
+import com.shoutoutz.api.news.application.query.NewsCursor;
+import com.shoutoutz.api.news.application.query.NewsPage;
+import com.shoutoutz.api.news.application.query.NewsQueryRepository;
+import com.shoutoutz.api.news.application.query.NewsSummary;
 import com.shoutoutz.api.news.domain.EventStatus;
 import com.shoutoutz.api.news.domain.News;
 import com.shoutoutz.api.news.domain.NewsRepository;

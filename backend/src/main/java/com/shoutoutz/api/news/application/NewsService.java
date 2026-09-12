@@ -1,15 +1,19 @@
 package com.shoutoutz.api.news.application;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
-import com.shoutoutz.api.news.domain.EventStatus;
+import com.shoutoutz.api.news.application.command.CreateEventCommand;
+import com.shoutoutz.api.news.application.command.CreateNoticeCommand;
+import com.shoutoutz.api.news.application.dto.result.CreateEventResult;
+import com.shoutoutz.api.news.application.dto.result.CreateNoticeResult;
+import com.shoutoutz.api.news.application.dto.result.NewsFindAllResult;
+import com.shoutoutz.api.news.application.query.NewsCursor;
+import com.shoutoutz.api.news.application.query.NewsFindAllQuery;
+import com.shoutoutz.api.news.application.query.NewsPage;
+import com.shoutoutz.api.news.application.query.NewsQueryRepository;
+import com.shoutoutz.api.news.application.query.NewsSummary;
 import com.shoutoutz.api.news.domain.News;
 import com.shoutoutz.api.news.domain.NewsCta;
 import com.shoutoutz.api.news.domain.NewsRepository;
-import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
-import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
-import com.shoutoutz.api.news.presentation.dto.response.EventCreateResponse;
-import com.shoutoutz.api.news.presentation.dto.response.NewsFindAllResponse;
-import com.shoutoutz.api.news.presentation.dto.response.NoticeCreateResponse;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -26,41 +30,41 @@ public class NewsService {
     private final Clock clock;
 
     @Transactional
-    public NoticeCreateResponse createNotice(NoticeCreateRequest body) {
-        NewsCta cta = toCta(body.cta());
+    public CreateNoticeResult createNotice(CreateNoticeCommand command) {
+        NewsCta cta = toCta(command.cta());
         Instant now = clock.instant();
         News notice = News.createNotice(
-                body.title(),
-                body.summary(),
-                body.body(),
+                command.title(),
+                command.summary(),
+                command.body(),
                 resolveAuthorId(),
-                body.authorName(),
+                command.authorName(),
                 cta,
                 now
         );
-        return NoticeCreateResponse.from(newsRepository.save(notice));
+        return CreateNoticeResult.from(newsRepository.save(notice));
     }
 
     @Transactional
-    public EventCreateResponse createEvent(EventCreateRequest body) {
-        NewsCta cta = toCta(body.cta());
+    public CreateEventResult createEvent(CreateEventCommand command) {
+        NewsCta cta = toCta(command.cta());
         Instant now = clock.instant();
         News event = News.createEvent(
-                body.title(),
-                body.summary(),
-                body.body(),
+                command.title(),
+                command.summary(),
+                command.body(),
                 resolveAuthorId(),
-                body.authorName(),
-                body.eventStartAt(),
-                body.eventEndAt(),
+                command.authorName(),
+                command.eventStartAt(),
+                command.eventEndAt(),
                 cta,
                 now
         );
-        return EventCreateResponse.from(newsRepository.save(event), now);
+        return CreateEventResult.from(newsRepository.save(event), now);
     }
 
     @Transactional(readOnly = true)
-    public NewsFindAllResponse findAll(NewsFindAllQuery query) {
+    public NewsFindAllResult findAll(NewsFindAllQuery query) {
         validateSize(query.size());
 
         NewsCursor cursor = NewsCursorCodec.decode(query.encodedCursor());
@@ -73,16 +77,16 @@ public class NewsService {
                 query.size()
         );
 
-        List<NewsFindAllResponse.Item> items = page.items().stream()
-                .map(summary -> NewsFindAllResponse.Item.from(summary, now))
+        List<NewsFindAllResult.Item> items = page.items().stream()
+                .map(summary -> NewsFindAllResult.Item.from(summary, now))
                 .toList();
         boolean hasNext = page.hasNext() && !items.isEmpty();
         String nextCursor = hasNext
                 ? NewsCursorCodec.encode(lastCursor(page.items()))
                 : null;
-        return new NewsFindAllResponse(
+        return new NewsFindAllResult(
                 items,
-                new NewsFindAllResponse.Meta(nextCursor, hasNext)
+                new NewsFindAllResult.Meta(nextCursor, hasNext)
         );
     }
 
@@ -91,11 +95,11 @@ public class NewsService {
         return 0L;
     }
 
-    private NewsCta toCta(NoticeCreateRequest.Cta cta) {
+    private NewsCta toCta(CreateNoticeCommand.Cta cta) {
         return cta == null ? null : toCta(cta.label(), cta.url());
     }
 
-    private NewsCta toCta(EventCreateRequest.Cta cta) {
+    private NewsCta toCta(CreateEventCommand.Cta cta) {
         return cta == null ? null : toCta(cta.label(), cta.url());
     }
 

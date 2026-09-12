@@ -1,7 +1,7 @@
 package com.shoutoutz.api.news.presentation.dto.request;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
-import com.shoutoutz.api.news.application.NewsFindAllQuery;
+import com.shoutoutz.api.news.application.query.NewsFindAllQuery;
 import com.shoutoutz.api.news.application.NewsQueryErrorCode;
 import com.shoutoutz.api.news.domain.EventStatus;
 import com.shoutoutz.api.news.domain.NewsType;
