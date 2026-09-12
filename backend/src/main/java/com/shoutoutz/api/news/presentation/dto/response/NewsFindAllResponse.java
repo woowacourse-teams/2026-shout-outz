@@ -1,7 +1,7 @@
 package com.shoutoutz.api.news.presentation.dto.response;
 
+import com.shoutoutz.api.news.application.NewsSummary;
 import com.shoutoutz.api.news.domain.EventStatus;
-import com.shoutoutz.api.news.domain.News;
 import com.shoutoutz.api.news.domain.NewsType;
 import java.time.Instant;
 import java.util.List;
@@ -31,21 +31,21 @@ public record NewsFindAllResponse(List<Item> items, Meta meta) {
             Integer pinOrder
     ) {
 
-        public static Item from(News news, Instant now) {
-            EventStatus eventStatus = news.getType() == NewsType.EVENT
-                    ? news.eventStatusAt(now)
+        public static Item from(NewsSummary summary, Instant now) {
+            EventStatus eventStatus = summary.type() == NewsType.EVENT
+                    ? EventStatus.from(now, summary.eventStartAt(), summary.eventEndAt())
                     : null;
             return new Item(
-                    news.getId(),
-                    news.getType(),
-                    news.getTitle(),
-                    news.getSummary(),
-                    news.getPublishedAt(),
+                    summary.id(),
+                    summary.type(),
+                    summary.title(),
+                    summary.summary(),
+                    summary.publishedAt(),
                     eventStatus,
-                    news.getEventStartAt(),
-                    news.getEventEndAt(),
-                    news.isPinned(),
-                    news.getPinOrder()
+                    summary.eventStartAt(),
+                    summary.eventEndAt(),
+                    summary.pinned(),
+                    summary.pinOrder()
             );
         }
     }

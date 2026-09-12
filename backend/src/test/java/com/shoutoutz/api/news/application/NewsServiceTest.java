@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.news.domain.EventStatus;
-import com.shoutoutz.api.news.domain.News;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
 import com.shoutoutz.api.news.domain.NewsRepository;
 import com.shoutoutz.api.news.domain.NewsType;
@@ -108,21 +107,17 @@ class NewsServiceTest {
     @Test
     @DisplayName("소식 목록을 조회하고 이벤트 상태와 다음 커서를 응답한다")
     void findsAllNewsWithNextCursor() {
-        News event = News.builder()
-                .id(102L)
-                .type(NewsType.EVENT)
-                .title("프로젝트 아카이빙 챌린지")
-                .summary("팀 프로젝트를 등록하고 피드백을 받아보세요.")
-                .body("이벤트 본문")
-                .authorId(1L)
-                .authorName("샤라웃 운영팀")
-                .publishedAt(PUBLISHED_AT)
-                .eventPeriod(new com.shoutoutz.api.news.domain.NewsEventPeriod(
-                        PUBLISHED_AT.minusSeconds(60),
-                        PUBLISHED_AT.plusSeconds(60)))
-                .pinned(false)
-                .pinOrder(null)
-                .build();
+        NewsSummary event = new NewsSummary(
+                102L,
+                NewsType.EVENT,
+                "프로젝트 아카이빙 챌린지",
+                "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                PUBLISHED_AT,
+                PUBLISHED_AT.minusSeconds(60),
+                PUBLISHED_AT.plusSeconds(60),
+                false,
+                null
+        );
         when(clock.instant()).thenReturn(PUBLISHED_AT);
         when(newsQueryRepository.findAll(null, null, PUBLISHED_AT, null, 1))
                 .thenReturn(new NewsPage(List.of(event), true));
@@ -145,18 +140,17 @@ class NewsServiceTest {
     @Test
     @DisplayName("공지 목록 조회 시 이벤트 상태를 null로 반환한다")
     void returnsNullEventFieldsForNotice() {
-        News notice = News.builder()
-                .id(101L)
-                .type(NewsType.NOTICE)
-                .title("데모데이 안내")
-                .summary("데모데이 일정을 안내합니다.")
-                .body("공지 본문")
-                .authorId(1L)
-                .authorName("샤라웃 운영팀")
-                .publishedAt(PUBLISHED_AT)
-                .pinned(false)
-                .pinOrder(null)
-                .build();
+        NewsSummary notice = new NewsSummary(
+                101L,
+                NewsType.NOTICE,
+                "데모데이 안내",
+                "데모데이 일정을 안내합니다.",
+                PUBLISHED_AT,
+                null,
+                null,
+                false,
+                null
+        );
         when(clock.instant()).thenReturn(PUBLISHED_AT);
         when(newsQueryRepository.findAll(NewsType.NOTICE, null, PUBLISHED_AT, null, 20))
                 .thenReturn(new NewsPage(List.of(notice), false));

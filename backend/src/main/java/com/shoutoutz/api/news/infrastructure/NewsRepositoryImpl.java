@@ -3,6 +3,7 @@ package com.shoutoutz.api.news.infrastructure;
 import com.shoutoutz.api.news.application.NewsQueryRepository;
 import com.shoutoutz.api.news.application.NewsCursor;
 import com.shoutoutz.api.news.application.NewsPage;
+import com.shoutoutz.api.news.application.NewsSummary;
 import com.shoutoutz.api.news.domain.EventStatus;
 import com.shoutoutz.api.news.domain.News;
 import com.shoutoutz.api.news.domain.NewsRepository;
@@ -35,7 +36,7 @@ public class NewsRepositoryImpl implements NewsRepository, NewsQueryRepository {
             NewsCursor cursor,
             int size
     ) {
-        List<NewsEntity> entities = newsJpaRepository.findAllForList(
+        List<NewsSummary> summaries = newsJpaRepository.findAllForList(
                 type,
                 eventStatus,
                 now,
@@ -44,13 +45,10 @@ public class NewsRepositoryImpl implements NewsRepository, NewsQueryRepository {
                 PageRequest.of(0, size + 1)
         );
 
-        boolean hasNext = entities.size() > size;
-        List<NewsEntity> pageEntities = hasNext
-                ? entities.subList(0, size)
-                : entities;
-        List<News> news = pageEntities.stream()
-                .map(NewsMapper::toDomain)
-                .toList();
-        return new NewsPage(news, hasNext);
+        boolean hasNext = summaries.size() > size;
+        List<NewsSummary> pageSummaries = hasNext
+                ? summaries.subList(0, size)
+                : summaries;
+        return new NewsPage(pageSummaries, hasNext);
     }
 }

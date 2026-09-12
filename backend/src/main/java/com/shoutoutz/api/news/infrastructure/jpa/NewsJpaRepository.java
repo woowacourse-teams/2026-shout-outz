@@ -1,5 +1,6 @@
 package com.shoutoutz.api.news.infrastructure.jpa;
 
+import com.shoutoutz.api.news.application.NewsSummary;
 import com.shoutoutz.api.news.domain.EventStatus;
 import com.shoutoutz.api.news.domain.NewsType;
 import com.shoutoutz.api.news.infrastructure.NewsEntity;
@@ -13,7 +14,17 @@ import org.springframework.data.repository.query.Param;
 public interface NewsJpaRepository extends JpaRepository<NewsEntity, Long> {
 
     @Query("""
-            SELECT news
+            SELECT new com.shoutoutz.api.news.application.NewsSummary(
+                news.id,
+                news.type,
+                news.title,
+                news.summary,
+                news.publishedAt,
+                news.eventStartAt,
+                news.eventEndAt,
+                news.pinned,
+                news.pinOrder
+            )
             FROM NewsEntity news
             WHERE (:type IS NULL OR news.type = :type)
               AND (
@@ -41,7 +52,7 @@ public interface NewsJpaRepository extends JpaRepository<NewsEntity, Long> {
               )
             ORDER BY news.publishedAt DESC, news.id DESC
             """)
-    List<NewsEntity> findAllForList(
+    List<NewsSummary> findAllForList(
             @Param("type") NewsType type,
             @Param("eventStatus") EventStatus eventStatus,
             @Param("now") Instant now,

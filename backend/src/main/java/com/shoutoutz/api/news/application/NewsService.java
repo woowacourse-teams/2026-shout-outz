@@ -74,7 +74,7 @@ public class NewsService {
         );
 
         List<NewsFindAllResponse.Item> items = page.items().stream()
-                .map(news -> NewsFindAllResponse.Item.from(news, now))
+                .map(summary -> NewsFindAllResponse.Item.from(summary, now))
                 .toList();
         boolean hasNext = page.hasNext() && !items.isEmpty();
         String nextCursor = hasNext
@@ -109,8 +109,8 @@ public class NewsService {
         }
     }
 
-    private NewsCursor lastCursor(List<News> items) {
-        News lastNews = items.get(items.size() - 1);
-        return new NewsCursor(lastNews.getPublishedAt(), lastNews.getId());
+    private NewsCursor lastCursor(List<NewsSummary> items) {
+        NewsSummary lastSummary = items.get(items.size() - 1);
+        return new NewsCursor(lastSummary.publishedAt(), lastSummary.id());
     }
 }
