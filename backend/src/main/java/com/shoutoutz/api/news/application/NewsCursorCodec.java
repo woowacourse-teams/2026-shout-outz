@@ -55,8 +55,6 @@ public final class NewsCursorCodec {
                 throw invalidCursor();
             }
             return new NewsCursor(Instant.parse(publishedAt), id);
-        } catch (BadRequestException exception) {
-            throw exception;
         } catch (RuntimeException exception) {
             throw invalidCursor();
         }
