@@ -21,9 +21,9 @@ import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
 import com.shoutoutz.api.auth.application.OAuthLoginService;
 import com.shoutoutz.api.auth.application.OAuthSignupService;
-import com.shoutoutz.api.auth.application.dto.result.OAuthLoginCallbackResult;
-import com.shoutoutz.api.auth.application.dto.result.OAuthLoginStartResult;
-import com.shoutoutz.api.auth.application.dto.result.OAuthSignupResult;
+import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
+import com.shoutoutz.api.auth.application.command.OAuthLoginStartResult;
+import com.shoutoutz.api.auth.application.command.OAuthSignupResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.auth.exception.AuthErrorCode;
@@ -32,8 +32,10 @@ import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
-import com.shoutoutz.api.user.domain.UserRole;
+import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.exception.UserErrorCode;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Optional;
@@ -68,7 +70,7 @@ class AuthApiDocumentationTest {
             "가입 대기 OAuth 신원에 서비스 사용자와 프로필을 생성하고 인증 세션을 설정한다. "
                     + "가입 정보가 유효하지 않으면 400 VALIDATION_FAILED, 가입 대기 신원이 없으면 "
                     + "400 OAUTH_SIGNUP_SESSION_NOT_FOUND, CSRF Token이 유효하지 않으면 "
-                    + "403 CSRF_TOKEN_INVALID를 반환한다.";
+                    + "403 CSRF_TOKEN_INVALID, handle이 중복되면 409 HANDLE_ALREADY_EXISTS를 반환한다.";
 
     @Autowired
     private MockMvc mockMvc;
@@ -272,10 +274,7 @@ class AuthApiDocumentationTest {
                         .content("""
                                 {
                                   "handle": "zzaekkii",
-                                  "displayName": "재키",
-                                  "userType": "WOOWACOURSE_CREW",
-                                  "track": "BACKEND",
-                                  "cohort": 8
+                                  "displayName": "재키"
                                 }
                                 """))
                 .andExpect(status().isCreated())
@@ -300,13 +299,7 @@ class AuthApiDocumentationTest {
                                         fieldWithPath("handle").type(STRING)
                                                 .description("영구 공개 핸들"),
                                         fieldWithPath("displayName").type(STRING)
-                                                .description("프로필 표시 이름"),
-                                        fieldWithPath("userType").type(STRING)
-                                                .description("GENERAL, WOOWACOURSE_CREW, WOOWACOURSE_COACH"),
-                                        fieldWithPath("track").type(STRING)
-                                                .description("우테코 크루의 트랙").optional(),
-                                        fieldWithPath("cohort").type(NUMBER)
-                                                .description("우테코 크루의 기수").optional()
+                                                .description("프로필 표시 이름")
                                 )
                                 .responseSchema(Schema.schema("OAuthSignupSuccessResponse"))
                                 .responseHeaders(
@@ -332,8 +325,7 @@ class AuthApiDocumentationTest {
                         .content("""
                                 {
                                   "handle": "",
-                                  "displayName": "",
-                                  "userType": "GENERAL"
+                                  "displayName": ""
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
@@ -351,9 +343,55 @@ class AuthApiDocumentationTest {
                                         fieldWithPath("handle").type(STRING)
                                                 .description("영구 공개 핸들"),
                                         fieldWithPath("displayName").type(STRING)
-                                                .description("프로필 표시 이름"),
-                                        fieldWithPath("userType").type(STRING)
-                                                .description("사용자 유형")
+                                                .description("프로필 표시 이름")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+    }
+
+    @Test
+    @DisplayName("이미 사용 중인 handle이면 가입 요청을 거부한다")
+    void rejectDuplicateHandle() throws Exception {
+        given(authSessionAccessor.findPendingIdentity(any()))
+                .willReturn(Optional.of(githubIdentity()));
+        given(oauthSignupService.signup(any()))
+                .willThrow(new DuplicateEntityException(UserErrorCode.HANDLE_ALREADY_EXISTS));
+
+        mockMvc.perform(post("/api/v1/auth/signup")
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=session-id")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "handle": "zzaekkii",
+                                  "displayName": "재키"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value("HANDLE_ALREADY_EXISTS"))
+                .andDo(document(
+                        "auth-signup-handle-conflict",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("OAuth 사용자 가입")
+                                .description(SIGNUP_DESCRIPTION)
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("가입 대기 신원이 저장된 JSESSIONID"),
+                                        headerWithName("X-CSRF-Token")
+                                                .description("세션 조회 API에서 발급받은 CSRF Token"),
+                                        headerWithName(HttpHeaders.CONTENT_TYPE)
+                                                .description("application/json")
+                                )
+                                .requestSchema(Schema.schema("OAuthSignupRequest"))
+                                .requestFields(
+                                        fieldWithPath("handle").type(STRING)
+                                                .description("영구 공개 핸들"),
+                                        fieldWithPath("displayName").type(STRING)
+                                                .description("프로필 표시 이름")
                                 )
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
@@ -373,8 +411,7 @@ class AuthApiDocumentationTest {
                         .content("""
                                 {
                                   "handle": "zzaekkii",
-                                  "displayName": "재키",
-                                  "userType": "GENERAL"
+                                  "displayName": "재키"
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
@@ -399,13 +436,7 @@ class AuthApiDocumentationTest {
                                         fieldWithPath("handle").type(STRING)
                                                 .description("영구 공개 핸들"),
                                         fieldWithPath("displayName").type(STRING)
-                                                .description("프로필 표시 이름"),
-                                        fieldWithPath("userType").type(STRING)
-                                                .description("GENERAL, WOOWACOURSE_CREW, WOOWACOURSE_COACH"),
-                                        fieldWithPath("track").type(STRING)
-                                                .description("우테코 크루의 트랙").optional(),
-                                        fieldWithPath("cohort").type(NUMBER)
-                                                .description("우테코 크루의 기수").optional()
+                                                .description("프로필 표시 이름")
                                 )
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())

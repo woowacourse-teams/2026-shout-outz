@@ -3,17 +3,18 @@ package com.shoutoutz.api.user.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.shoutoutz.api.user.domain.Handle;
-import com.shoutoutz.api.user.domain.User;
-import com.shoutoutz.api.user.domain.UserRepository;
-import com.shoutoutz.api.user.domain.UserRole;
-import com.shoutoutz.api.user.domain.UserStatus;
+import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
+import com.shoutoutz.api.user.domain.account.Handle;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.account.UserStatus;
+import com.shoutoutz.api.user.exception.UserErrorCode;
 import com.shoutoutz.api.user.infrastructure.jpa.UserJpaRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,9 +57,20 @@ class UserRepositoryIntegrationTest {
     void rejectsDuplicateHandleIgnoringCase() {
         userRepository.save(User.initialize("dahye"));
 
-        assertThatThrownBy(() -> {
-            userRepository.save(User.initialize("DaHye"));
-            userJpaRepository.flush();
-        }).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> userRepository.save(User.initialize("DaHye")))
+                .isInstanceOf(DuplicateEntityException.class)
+                .extracting(exception -> ((DuplicateEntityException) exception).getErrorCode())
+                .isEqualTo(UserErrorCode.HANDLE_ALREADY_EXISTS);
+    }
+
+    @Test
+    @DisplayName("핸들은 대소문자를 구분하지 않고 조회한다")
+    void findsUserByHandleIgnoringCase() {
+        User savedUser = userRepository.save(User.initialize("zzaekkii-handle"));
+
+        User foundUser = userRepository.findByHandle("Zzaekkii-Handle").orElseThrow();
+
+        assertThat(foundUser.getId()).isEqualTo(savedUser.getId());
+        assertThat(foundUser.getHandle()).isEqualTo(new Handle("zzaekkii-handle"));
     }
 }

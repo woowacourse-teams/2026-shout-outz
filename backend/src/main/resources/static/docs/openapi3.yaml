@@ -129,7 +129,8 @@ paths:
       summary: OAuth 사용자 가입
       description: "가입 대기 OAuth 신원에 서비스 사용자와 프로필을 생성하고 인증 세션을 설정한다. 가입 정보가 유효하지 않으\
         면 400 VALIDATION_FAILED, 가입 대기 신원이 없으면 400 OAUTH_SIGNUP_SESSION_NOT_FOUND,\
-        \ CSRF Token이 유효하지 않으면 403 CSRF_TOKEN_INVALID를 반환한다."
+        \ CSRF Token이 유효하지 않으면 403 CSRF_TOKEN_INVALID, handle이 중복되면 409 HANDLE_ALREADY_EXISTS를\
+        \ 반환한다."
       operationId: auth-signup
       parameters:
       - name: Cookie
@@ -163,24 +164,25 @@ paths:
                 value: |
                   {
                     "handle": "zzaekkii",
-                    "displayName": "재키",
-                    "userType": "GENERAL"
+                    "displayName": "재키"
                   }
               auth-signup-invalid:
                 value: |
                   {
                     "handle": "",
-                    "displayName": "",
-                    "userType": "GENERAL"
+                    "displayName": ""
+                  }
+              auth-signup-handle-conflict:
+                value: |
+                  {
+                    "handle": "zzaekkii",
+                    "displayName": "재키"
                   }
               auth-signup:
                 value: |
                   {
                     "handle": "zzaekkii",
-                    "displayName": "재키",
-                    "userType": "WOOWACOURSE_CREW",
-                    "track": "BACKEND",
-                    "cohort": 8
+                    "displayName": "재키"
                   }
       responses:
         "400":
@@ -195,9 +197,20 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"}]}"
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                auth-signup-handle-conflict:
+                  value: "{\"status\":\"error\",\"code\":\"HANDLE_ALREADY_EXISTS\"\
+                    ,\"message\":\"이미 사용 중인 handle입니다.\"}"
         "201":
           description: "201"
           headers:
@@ -305,10 +318,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
+                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
+                    eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -428,6 +441,262 @@ paths:
                 news-notice-create-domain-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_INVALID_AUTHOR_ID_SIZE\"\
                     ,\"message\":\"소식 작성자 ID는 0보다 커야 합니다.\"}"
+  /api/v1/users/me:
+    get:
+      tags:
+      - User
+      summary: 마이페이지 조회
+      description: 로그인한 사용자의 프로필과 프로젝트·피드 개수를 조회한다.
+      operationId: user-profile-get
+      parameters:
+      - name: Cookie
+        in: header
+        description: 인증된 사용자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=session-id
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileSuccessResponse"
+              examples:
+                user-profile-get:
+                  value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
+                    ,\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\"\
+                    :\"BACKEND\",\"cohort\":8,\"bio\":\"백엔드 개발자입니다.\",\"avatarImageId\"\
+                    :21,\"githubProfileUrl\":\"https://github.com/zzaekkii\",\"blogUrl\"\
+                    :\"https://zzaekkii.dev\",\"counts\":{\"projects\":2,\"posts\"\
+                    :18}}}"
+    put:
+      tags:
+      - User
+      summary: 내 프로필 수정
+      description: 로그인한 사용자의 수정 가능한 프로필 정보를 저장한다.
+      operationId: user-profile-update
+      parameters:
+      - name: Cookie
+        in: header
+        description: 인증된 사용자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=session-id
+      - name: X-CSRF-Token
+        in: header
+        description: CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileUpdateRequest"
+            examples:
+              user-profile-update:
+                value: |
+                  {
+                    "displayName": "재키",
+                    "bio": "백엔드 개발자입니다.",
+                    "avatarImageId": 21,
+                    "githubProfileUrl": "https://github.com/zzaekkii",
+                    "blogUrl": "https://zzaekkii.dev"
+                  }
+              user-profile-update-invalid:
+                value: |
+                  {
+                    "displayName": "재키",
+                    "githubProfileUrl": "http://github.com/zzaekkii",
+                    "blogUrl": "not-a-url"
+                  }
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileUpdateSuccessResponse"
+              examples:
+                user-profile-update:
+                  value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
+                    ,\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\"\
+                    :\"BACKEND\",\"cohort\":8,\"bio\":\"백엔드 개발자입니다.\",\"avatarImageId\"\
+                    :21,\"githubProfileUrl\":\"https://github.com/zzaekkii\",\"blogUrl\"\
+                    :\"https://zzaekkii.dev\"}}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-profile-update-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+  /api/v1/users/search:
+    get:
+      tags:
+      - User
+      summary: 참여 팀원 검색
+      description: 프로젝트 참여 팀원으로 추가할 ACTIVE 크루와 코치를 이름 또는 handle로 검색한다.
+      operationId: user-search-get
+      parameters:
+      - name: keyword
+        in: query
+        description: 이름 또는 handle 검색어
+        required: true
+        schema:
+          type: string
+      - name: cursor
+        in: query
+        description: 다음 페이지 커서
+        required: false
+        schema:
+          type: string
+      - name: size
+        in: query
+        description: "조회 개수(1~100), 기본값 20"
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      - name: Cookie
+        in: header
+        description: 인증된 사용자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=session-id
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSearchSuccessResponse"
+              examples:
+                user-search-get:
+                  value: "{\"status\":\"success\",\"data\":{\"items\":[{\"handle\"\
+                    :\"zzaekkii\",\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\"\
+                    ,\"track\":\"BACKEND\",\"cohort\":8,\"avatarImageId\":21},{\"\
+                    handle\":\"coach-jack\",\"displayName\":\"재키 코치\",\"userType\"\
+                    :\"WOOWACOURSE_COACH\",\"track\":null,\"cohort\":null,\"avatarImageId\"\
+                    :null}]},\"meta\":{\"nextCursor\":\"eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0\"\
+                    ,\"hasNext\":true}}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-search-get-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"keyword\"\
+                    ,\"message\":\"keyword는 필수입니다.\"}]}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-search-get-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+  /api/v1/users/{handle}:
+    get:
+      tags:
+      - User
+      summary: 사용자 공개 프로필 조회
+      description: handle로 사용자의 공개 프로필과 프로젝트·피드 개수를 조회한다.
+      operationId: user-public-profile-get
+      parameters:
+      - name: handle
+        in: path
+        description: 조회할 사용자의 handle
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileSuccessResponse"
+              examples:
+                user-public-profile-get:
+                  value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
+                    ,\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\"\
+                    :\"BACKEND\",\"cohort\":8,\"bio\":\"백엔드 개발자입니다.\",\"avatarImageId\"\
+                    :21,\"githubProfileUrl\":\"https://github.com/zzaekkii\",\"blogUrl\"\
+                    :\"https://zzaekkii.dev\",\"counts\":{\"projects\":2,\"posts\"\
+                    :18}}}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-public-profile-get-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"USER_NOT_FOUND\",\"message\"\
+                    :\"사용자를 찾을 수 없습니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-public-profile-get-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\"}"
+  /api/v1/users/me/summary:
+    get:
+      tags:
+      - User
+      summary: 내 프로필 요약 조회
+      description: 로그인 후 공통 헤더에 표시할 최소 사용자 정보를 조회한다.
+      operationId: user-profile-summary-get
+      parameters:
+      - name: Cookie
+        in: header
+        description: 인증된 사용자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=session-id
+      responses:
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-profile-summary-get-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileSummarySuccessResponse"
+              examples:
+                user-profile-summary-get:
+                  value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
+                    ,\"displayName\":\"재키\",\"avatarImageId\":21}}"
   /oauth2/authorization/github:
     get:
       tags:
@@ -449,48 +718,6 @@ paths:
                 type: string
 components:
   schemas:
-    EventCreateRequest:
-      title: EventCreateRequest
-      required:
-      - authorName
-      - body
-      - eventEndAt
-      - eventStartAt
-      - summary
-      - title
-      type: object
-      properties:
-        summary:
-          type: string
-          description: 이벤트 요약
-        cta:
-          required:
-          - label
-          - url
-          type: object
-          properties:
-            label:
-              type: string
-              description: CTA 라벨
-            url:
-              type: string
-              description: CTA URL
-          description: 이벤트 CTA
-        eventStartAt:
-          type: string
-          description: 이벤트 시작 시각
-        authorName:
-          type: string
-          description: 이벤트 작성자 이름
-        body:
-          type: string
-          description: 이벤트 본문
-        title:
-          type: string
-          description: 이벤트 제목
-        eventEndAt:
-          type: string
-          description: 이벤트 종료 시각
     ErrorResponse:
       title: ErrorResponse
       required:
@@ -559,6 +786,258 @@ components:
               type: string
               description: "UNAUTHENTICATED, SIGNUP_REQUIRED, AUTHENTICATED"
           description: 인증 세션 정보
+        status:
+          type: string
+          description: 응답 상태
+    UserProfileSummarySuccessResponse:
+      title: UserProfileSummarySuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - displayName
+          - handle
+          type: object
+          properties:
+            avatarImageId:
+              type: number
+              description: 프로필 이미지 미디어 ID
+              nullable: true
+            displayName:
+              type: string
+              description: 표시 이름
+            handle:
+              type: string
+              description: 사용자 handle
+          description: 프로필 요약 정보
+        status:
+          type: string
+          description: 응답 상태
+    UserSearchSuccessResponse:
+      title: UserSearchSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - items
+          type: object
+          properties:
+            items:
+              type: array
+              description: 검색된 크루와 코치
+              items:
+                required:
+                - displayName
+                - handle
+                - userType
+                type: object
+                properties:
+                  avatarImageId:
+                    type: number
+                    description: 프로필 이미지 미디어 ID
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 표시 이름
+                  cohort:
+                    type: number
+                    description: 우테코 기수
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 사용자 handle
+                  userType:
+                    type: string
+                    description: 사용자 유형
+                  track:
+                    type: string
+                    description: 우테코 트랙
+                    nullable: true
+          description: 검색 결과
+        meta:
+          required:
+          - hasNext
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+          description: 페이지 정보
+        status:
+          type: string
+          description: 응답 상태
+    OAuthSignupRequest:
+      title: OAuthSignupRequest
+      required:
+      - displayName
+      - handle
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 프로필 표시 이름
+        handle:
+          type: string
+          description: 영구 공개 핸들
+    UserProfileSuccessResponse:
+      title: UserProfileSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - counts
+          - displayName
+          - handle
+          type: object
+          properties:
+            avatarImageId:
+              type: number
+              description: 프로필 이미지 미디어 ID
+              nullable: true
+            counts:
+              required:
+              - posts
+              - projects
+              type: object
+              properties:
+                projects:
+                  type: number
+                  description: 삭제되지 않은 참여 프로젝트 개수
+                posts:
+                  type: number
+                  description: 삭제되지 않은 작성 피드 개수
+              description: 프로필 항목 개수
+            displayName:
+              type: string
+              description: 표시 이름
+            blogUrl:
+              type: string
+              description: 블로그 URL
+              nullable: true
+            githubProfileUrl:
+              type: string
+              description: GitHub 프로필 URL
+              nullable: true
+            bio:
+              type: string
+              description: 한 줄 소개
+              nullable: true
+            cohort:
+              type: number
+              description: 우테코 기수
+              nullable: true
+            handle:
+              type: string
+              description: 사용자 handle
+            userType:
+              type: string
+              description: 사용자 유형
+              nullable: true
+            track:
+              type: string
+              description: 우테코 트랙
+              nullable: true
+          description: 사용자 공개 프로필
+        status:
+          type: string
+          description: 응답 상태
+    EventCreateRequest:
+      title: EventCreateRequest
+      required:
+      - authorName
+      - body
+      - eventEndAt
+      - eventStartAt
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 이벤트 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 이벤트 CTA
+        eventStartAt:
+          type: string
+          description: 이벤트 시작 시각
+        authorName:
+          type: string
+          description: 이벤트 작성자 이름
+        body:
+          type: string
+          description: 이벤트 본문
+        title:
+          type: string
+          description: 이벤트 제목
+        eventEndAt:
+          type: string
+          description: 이벤트 종료 시각
+    UserProfileUpdateRequest:
+      title: UserProfileUpdateRequest
+      required:
+      - displayName
+      type: object
+      properties:
+        avatarImageId:
+          type: number
+          description: READY 상태의 USER_AVATAR 미디어 ID
+          nullable: true
+        displayName:
+          type: string
+          description: 표시 이름. 인증된 우테코 사용자는 변경 불가
+        blogUrl:
+          type: string
+          description: 블로그 URL
+          nullable: true
+        githubProfileUrl:
+          type: string
+          description: GitHub 프로필 URL
+          nullable: true
+        bio:
+          type: string
+          description: 한 줄 소개
+          nullable: true
+    OAuthSignupSuccessResponse:
+      title: OAuthSignupSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - userId
+          type: object
+          properties:
+            userId:
+              type: number
+              description: 생성된 사용자 ID
+          description: 가입 결과
         status:
           type: string
           description: 응답 상태
@@ -646,8 +1125,8 @@ components:
         status:
           type: string
           description: 응답 상태
-    OAuthSignupSuccessResponse:
-      title: OAuthSignupSuccessResponse
+    UserProfileUpdateSuccessResponse:
+      title: UserProfileUpdateSuccessResponse
       required:
       - data
       - status
@@ -655,41 +1134,48 @@ components:
       properties:
         data:
           required:
-          - userId
+          - displayName
+          - handle
+          - userType
           type: object
           properties:
-            userId:
+            avatarImageId:
               type: number
-              description: 생성된 사용자 ID
-          description: 가입 결과
+              description: 프로필 이미지 미디어 ID
+              nullable: true
+            displayName:
+              type: string
+              description: 표시 이름
+            blogUrl:
+              type: string
+              description: 블로그 URL
+              nullable: true
+            githubProfileUrl:
+              type: string
+              description: GitHub 프로필 URL
+              nullable: true
+            bio:
+              type: string
+              description: 한 줄 소개
+              nullable: true
+            cohort:
+              type: number
+              description: 우테코 기수
+              nullable: true
+            handle:
+              type: string
+              description: 사용자 handle
+            userType:
+              type: string
+              description: 사용자 유형
+            track:
+              type: string
+              description: 우테코 트랙
+              nullable: true
+          description: 수정된 사용자 프로필
         status:
           type: string
           description: 응답 상태
-    OAuthSignupRequest:
-      title: OAuthSignupRequest
-      required:
-      - displayName
-      - handle
-      - userType
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 프로필 표시 이름
-        cohort:
-          type: number
-          description: 우테코 크루의 기수
-          nullable: true
-        handle:
-          type: string
-          description: 영구 공개 핸들
-        userType:
-          type: string
-          description: "GENERAL, WOOWACOURSE_CREW, WOOWACOURSE_COACH"
-        track:
-          type: string
-          description: 우테코 크루의 트랙
-          nullable: true
     NoticeCreateSuccessResponse:
       title: NoticeCreateSuccessResponse
       required:

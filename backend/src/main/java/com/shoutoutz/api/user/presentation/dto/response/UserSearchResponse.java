@@ -1,0 +1,49 @@
+package com.shoutoutz.api.user.presentation.dto.response;
+
+import com.shoutoutz.api.user.application.query.UserSearchResult;
+import com.shoutoutz.api.user.application.query.UserSearchItem;
+import com.shoutoutz.api.user.domain.profile.UserType;
+import java.util.List;
+
+public record UserSearchResponse(
+        List<Item> items
+) {
+
+    public static UserSearchResponse from(UserSearchResult result) {
+        List<Item> items = result.items().stream()
+                .map(Item::from)
+                .toList();
+        return new UserSearchResponse(items);
+    }
+
+    public record Item(
+            String handle,
+            String displayName,
+            UserType userType,
+            String track,
+            Short cohort,
+            Long avatarImageId
+    ) {
+
+        private static Item from(UserSearchItem item) {
+            return new Item(
+                    item.handle(),
+                    item.displayName(),
+                    item.userType(),
+                    item.track(),
+                    item.cohort(),
+                    item.avatarImageId()
+            );
+        }
+    }
+
+    public record Meta(
+            String nextCursor,
+            boolean hasNext
+    ) {
+
+        public static Meta from(UserSearchResult result) {
+            return new Meta(result.nextCursor(), result.hasNext());
+        }
+    }
+}

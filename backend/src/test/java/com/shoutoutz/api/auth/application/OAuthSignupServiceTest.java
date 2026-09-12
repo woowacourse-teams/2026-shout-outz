@@ -8,19 +8,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.shoutoutz.api.auth.application.dto.command.OAuthSignupCommand;
-import com.shoutoutz.api.auth.application.dto.result.OAuthSignupResult;
+import com.shoutoutz.api.auth.application.command.OAuthSignupCommand;
+import com.shoutoutz.api.auth.application.command.OAuthSignupResult;
 import com.shoutoutz.api.auth.domain.OAuthAccount;
 import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
-import com.shoutoutz.api.user.domain.User;
-import com.shoutoutz.api.user.domain.UserProfile;
-import com.shoutoutz.api.user.domain.UserProfileRepository;
-import com.shoutoutz.api.user.domain.UserRepository;
-import com.shoutoutz.api.user.domain.UserRole;
-import com.shoutoutz.api.user.domain.UserStatus;
-import com.shoutoutz.api.user.domain.UserType;
+import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.profile.UserProfile;
+import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.account.UserStatus;
+import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.user.exception.UserErrorCode;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -54,6 +56,7 @@ class OAuthSignupServiceTest {
                 OAuthProvider.GITHUB,
                 "12345678"
         )).willReturn(Optional.empty());
+        given(userRepository.findByHandle("sangjun")).willReturn(Optional.empty());
         given(userRepository.save(any(User.class))).willReturn(savedUser());
 
         OAuthSignupResult result = oauthSignupService.signup(command);
@@ -73,9 +76,12 @@ class OAuthSignupServiceTest {
         OAuthAccount account = accountCaptor.getValue();
         assertThat(user.getLastLoginAt()).isNotNull();
         assertThat(profile.getUserId()).isEqualTo(1L);
+        assertThat(profile.getDisplayName().value()).isEqualTo("상준");
+        assertThat(profile.getUserType()).isEqualTo(UserType.GENERAL);
+        assertThat(profile.getTrack()).isNull();
+        assertThat(profile.getCohort()).isNull();
         assertThat(profile.getAvatarImageId()).isNull();
-        assertThat(profile.getGithubProfileUrl())
-                .isEqualTo(command.identity().providerProfileUrl());
+        assertThat(profile.getGithubProfileUrl()).isNull();
         assertThat(account.getUserId()).isEqualTo(1L);
         assertThat(account.getProvider()).isEqualTo(OAuthProvider.GITHUB);
         assertThat(account.getProviderAccountId()).isEqualTo("12345678");
@@ -104,13 +110,30 @@ class OAuthSignupServiceTest {
         verify(userProfileRepository, never()).save(any(UserProfile.class));
     }
 
+    @Test
+    @DisplayName("이미 사용 중인 handle로 가입할 수 없다")
+    void rejectsDuplicateHandle() {
+        OAuthSignupCommand command = signupCommand();
+        given(oauthAccountRepository.findByProviderAndProviderAccountId(
+                OAuthProvider.GITHUB,
+                "12345678"
+        )).willReturn(Optional.empty());
+        given(userRepository.findByHandle("sangjun")).willReturn(Optional.of(savedUser()));
+
+        assertThatThrownBy(() -> oauthSignupService.signup(command))
+                .isInstanceOf(DuplicateEntityException.class)
+                .extracting(exception -> ((DuplicateEntityException) exception).getErrorCode())
+                .isEqualTo(UserErrorCode.HANDLE_ALREADY_EXISTS);
+
+        verify(userRepository, never()).save(any(User.class));
+        verify(userProfileRepository, never()).save(any(UserProfile.class));
+        verify(oauthAccountRepository, never()).save(any(OAuthAccount.class));
+    }
+
     private OAuthSignupCommand signupCommand() {
         return new OAuthSignupCommand(
                 "sangjun",
                 "상준",
-                UserType.GENERAL,
-                null,
-                null,
                 new OAuthIdentity(
                         OAuthProvider.GITHUB,
                         "12345678",

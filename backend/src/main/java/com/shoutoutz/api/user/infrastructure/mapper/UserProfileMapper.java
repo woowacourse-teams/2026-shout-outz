@@ -1,6 +1,6 @@
 package com.shoutoutz.api.user.infrastructure.mapper;
 
-import com.shoutoutz.api.user.domain.UserProfile;
+import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.infrastructure.UserProfileEntity;
 
 public final class UserProfileMapper {

@@ -2,8 +2,8 @@ package com.shoutoutz.api.auth.presentation;
 
 import com.shoutoutz.api.auth.application.OAuthLoginService;
 import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
-import com.shoutoutz.api.auth.application.dto.result.OAuthLoginCallbackResult;
-import com.shoutoutz.api.auth.application.dto.result.OAuthLoginStartResult;
+import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
+import com.shoutoutz.api.auth.application.command.OAuthLoginStartResult;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import jakarta.servlet.http.HttpServletRequest;

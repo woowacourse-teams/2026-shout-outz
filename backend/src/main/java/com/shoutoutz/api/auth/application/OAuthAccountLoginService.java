@@ -1,11 +1,11 @@
 package com.shoutoutz.api.auth.application;
 
-import com.shoutoutz.api.auth.application.dto.result.OAuthLoginCallbackResult;
+import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
 import com.shoutoutz.api.auth.domain.OAuthAccount;
 import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
-import com.shoutoutz.api.user.domain.User;
-import com.shoutoutz.api.user.domain.UserRepository;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserRepository;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
