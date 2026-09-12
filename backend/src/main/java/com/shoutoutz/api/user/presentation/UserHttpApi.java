@@ -5,7 +5,7 @@ import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.user.application.UserCommandService;
 import com.shoutoutz.api.user.application.UserQueryService;
-import com.shoutoutz.api.user.application.query.UserSearchResult;
+import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.request.UserSearchRequest;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;

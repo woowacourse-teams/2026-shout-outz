@@ -3,7 +3,7 @@ package com.shoutoutz.api.user.application;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.user.domain.account.Handle;
 import com.shoutoutz.api.user.domain.profile.ProfileDisplayName;
-import com.shoutoutz.api.user.application.query.UserSearchCursor;
+import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

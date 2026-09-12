@@ -1,9 +1,9 @@
 package com.shoutoutz.api.user.infrastructure;
 
-import com.shoutoutz.api.user.application.query.UserProfileCounts;
-import com.shoutoutz.api.user.application.query.UserQueryRepository;
-import com.shoutoutz.api.user.application.query.UserSearchCursor;
-import com.shoutoutz.api.user.application.query.UserSearchItem;
+import com.shoutoutz.api.user.application.UserQueryRepository;
+import com.shoutoutz.api.user.application.dto.UserProfileCounts;
+import com.shoutoutz.api.user.application.dto.UserSearchCursor;
+import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.util.ArrayList;
 import java.util.List;

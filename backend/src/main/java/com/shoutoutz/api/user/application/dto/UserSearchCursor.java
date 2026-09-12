@@ -1,4 +1,4 @@
-package com.shoutoutz.api.user.application.query;
+package com.shoutoutz.api.user.application.dto;
 
 public record UserSearchCursor(
         int relevanceRank,

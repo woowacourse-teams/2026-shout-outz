@@ -1,5 +1,8 @@
-package com.shoutoutz.api.user.application.query;
+package com.shoutoutz.api.user.application;
 
+import com.shoutoutz.api.user.application.dto.UserProfileCounts;
+import com.shoutoutz.api.user.application.dto.UserSearchCursor;
+import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import java.util.List;
 
 public interface UserQueryRepository {

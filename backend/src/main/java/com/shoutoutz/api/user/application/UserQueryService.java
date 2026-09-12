@@ -1,15 +1,14 @@
 package com.shoutoutz.api.user.application;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
-import com.shoutoutz.api.user.application.query.UserSearchResult;
+import com.shoutoutz.api.user.application.dto.UserProfileCounts;
+import com.shoutoutz.api.user.application.dto.UserSearchCursor;
+import com.shoutoutz.api.user.application.dto.UserSearchItem;
+import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
-import com.shoutoutz.api.user.application.query.UserProfileCounts;
-import com.shoutoutz.api.user.application.query.UserQueryRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.account.UserRepository;
-import com.shoutoutz.api.user.application.query.UserSearchCursor;
-import com.shoutoutz.api.user.application.query.UserSearchItem;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.exception.UserErrorCode;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;

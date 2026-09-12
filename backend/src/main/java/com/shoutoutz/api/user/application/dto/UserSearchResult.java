@@ -1,4 +1,4 @@
-package com.shoutoutz.api.user.application.query;
+package com.shoutoutz.api.user.application.dto;
 
 import java.util.List;
 
