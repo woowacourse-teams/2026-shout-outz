@@ -5,9 +5,6 @@ import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.user.application.UserCommandService;
 import com.shoutoutz.api.user.application.UserQueryService;
-import com.shoutoutz.api.user.application.command.UserProfileUpdateResult;
-import com.shoutoutz.api.user.application.query.UserProfileResult;
-import com.shoutoutz.api.user.application.query.UserProfileSummaryResult;
 import com.shoutoutz.api.user.application.query.UserSearchResult;
 import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.request.UserSearchRequest;
@@ -41,10 +38,9 @@ public class UserHttpApi {
     public ResponseEntity<SuccessResponse<UserProfileSummaryResponse>> getMyProfileSummary(
             @LoginUser AuthenticatedUser authenticatedUser
     ) {
-        UserProfileSummaryResult result = userQueryService.getMyProfileSummary(
+        UserProfileSummaryResponse response = userQueryService.getMyProfileSummary(
                 authenticatedUser.userId()
         );
-        UserProfileSummaryResponse response = UserProfileSummaryResponse.from(result);
 
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
@@ -53,8 +49,7 @@ public class UserHttpApi {
     public ResponseEntity<SuccessResponse<UserProfileResponse>> getMyProfile(
             @LoginUser AuthenticatedUser authenticatedUser
     ) {
-        UserProfileResult result = userQueryService.getMyProfile(authenticatedUser.userId());
-        UserProfileResponse response = UserProfileResponse.from(result);
+        UserProfileResponse response = userQueryService.getMyProfile(authenticatedUser.userId());
 
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
@@ -64,10 +59,10 @@ public class UserHttpApi {
             @LoginUser AuthenticatedUser authenticatedUser,
             @Valid @RequestBody UserProfileUpdateRequest request
     ) {
-        UserProfileUpdateResult result = userCommandService.updateMyProfile(
-                request.toCommand(authenticatedUser.userId())
+        UserProfileUpdateResponse response = userCommandService.updateMyProfile(
+                authenticatedUser.userId(),
+                request
         );
-        UserProfileUpdateResponse response = UserProfileUpdateResponse.from(result);
 
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
@@ -95,8 +90,7 @@ public class UserHttpApi {
             )
             @PathVariable String handle
     ) {
-        UserProfileResult result = userQueryService.getPublicProfile(handle);
-        UserProfileResponse response = UserProfileResponse.from(result);
+        UserProfileResponse response = userQueryService.getPublicProfile(handle);
 
         return ResponseEntity.ok(SuccessResponse.success(response));
     }

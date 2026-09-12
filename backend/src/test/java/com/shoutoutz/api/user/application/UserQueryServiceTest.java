@@ -7,8 +7,6 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
-import com.shoutoutz.api.user.application.query.UserProfileResult;
-import com.shoutoutz.api.user.application.query.UserProfileSummaryResult;
 import com.shoutoutz.api.user.application.query.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
@@ -21,6 +19,8 @@ import com.shoutoutz.api.user.application.query.UserSearchCursor;
 import com.shoutoutz.api.user.application.query.UserSearchItem;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
+import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -77,10 +77,9 @@ class UserQueryServiceTest {
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
 
-        UserProfileSummaryResult result = userQueryService.getMyProfileSummary(1L);
+        UserProfileSummaryResponse result = userQueryService.getMyProfileSummary(1L);
 
-        assertThat(result).isEqualTo(new UserProfileSummaryResult(
-                1L,
+        assertThat(result).isEqualTo(new UserProfileSummaryResponse(
                 "zzaekkii",
                 "재키",
                 21L
@@ -137,9 +136,8 @@ class UserQueryServiceTest {
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
         given(userQueryRepository.countByUserId(1L)).willReturn(counts);
 
-        UserProfileResult result = userQueryService.getMyProfile(1L);
+        UserProfileResponse result = userQueryService.getMyProfile(1L);
 
-        assertThat(result.userId()).isEqualTo(1L);
         assertThat(result.handle()).isEqualTo("zzaekkii");
         assertThat(result.displayName()).isEqualTo("재키");
         assertThat(result.userType()).isEqualTo(UserType.WOOWACOURSE_CREW);
@@ -149,7 +147,7 @@ class UserQueryServiceTest {
         assertThat(result.avatarImageId()).isEqualTo(21L);
         assertThat(result.githubProfileUrl()).isEqualTo("https://github.com/zzaekkii");
         assertThat(result.blogUrl()).isEqualTo("https://zzaekkii.dev");
-        assertThat(result.counts()).isEqualTo(counts);
+        assertThat(result.counts()).isEqualTo(new UserProfileResponse.Counts(2L, 18L));
     }
 
     @Test
@@ -171,12 +169,11 @@ class UserQueryServiceTest {
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
         given(userQueryRepository.countByUserId(1L)).willReturn(counts);
 
-        UserProfileResult result = userQueryService.getPublicProfile("zzaekkii");
+        UserProfileResponse result = userQueryService.getPublicProfile("zzaekkii");
 
-        assertThat(result.userId()).isEqualTo(1L);
         assertThat(result.handle()).isEqualTo("zzaekkii");
         assertThat(result.displayName()).isEqualTo("재키");
-        assertThat(result.counts()).isEqualTo(counts);
+        assertThat(result.counts()).isEqualTo(new UserProfileResponse.Counts(2L, 18L));
     }
 
     @Test
@@ -191,7 +188,7 @@ class UserQueryServiceTest {
                 .build();
         given(userRepository.findByHandle("zzaekkii")).willReturn(Optional.of(user));
 
-        UserProfileResult result = userQueryService.getPublicProfile("zzaekkii");
+        UserProfileResponse result = userQueryService.getPublicProfile("zzaekkii");
 
         assertThat(result.displayName()).isEqualTo("탈퇴한 사용자");
         assertThat(result.userType()).isNull();
@@ -201,7 +198,7 @@ class UserQueryServiceTest {
         assertThat(result.avatarImageId()).isNull();
         assertThat(result.githubProfileUrl()).isNull();
         assertThat(result.blogUrl()).isNull();
-        assertThat(result.counts()).isEqualTo(new UserProfileCounts(0L, 0L));
+        assertThat(result.counts()).isEqualTo(new UserProfileResponse.Counts(0L, 0L));
         then(userProfileRepository).should(never()).findByUserId(1L);
         then(userQueryRepository).should(never()).countByUserId(1L);
     }

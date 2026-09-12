@@ -1,7 +1,6 @@
 package com.shoutoutz.api.user.presentation.dto.request;
 
 import com.shoutoutz.api.common.validator.CodePointSize;
-import com.shoutoutz.api.user.application.command.UserProfileUpdateCommand;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
@@ -29,15 +28,4 @@ public record UserProfileUpdateRequest(
         )
         String blogUrl
 ) {
-
-    public UserProfileUpdateCommand toCommand(long userId) {
-        return new UserProfileUpdateCommand(
-                userId,
-                displayName,
-                bio,
-                avatarImageId,
-                githubProfileUrl,
-                blogUrl
-        );
-    }
 }

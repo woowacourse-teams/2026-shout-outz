@@ -13,8 +13,6 @@ import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
-import com.shoutoutz.api.user.application.command.UserProfileUpdateCommand;
-import com.shoutoutz.api.user.application.command.UserProfileUpdateResult;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
@@ -22,6 +20,8 @@ import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
+import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateResponse;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,7 +59,7 @@ class UserCommandServiceTest {
     void updateGeneralUserProfile() {
         User user = user();
         UserProfile profile = generalProfile();
-        UserProfileUpdateCommand command = command("새 이름", 21L);
+        UserProfileUpdateRequest request = request("새 이름", 21L);
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
         given(mediaMetadataRepository.findById(21L))
@@ -67,9 +67,8 @@ class UserCommandServiceTest {
         given(userProfileRepository.save(org.mockito.ArgumentMatchers.any(UserProfile.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
-        UserProfileUpdateResult result = userCommandService.updateMyProfile(command);
+        UserProfileUpdateResponse result = userCommandService.updateMyProfile(1L, request);
 
-        assertThat(result.userId()).isEqualTo(1L);
         assertThat(result.handle()).isEqualTo("zzaekkii");
         assertThat(result.displayName()).isEqualTo("새 이름");
         assertThat(result.avatarImageId()).isEqualTo(21L);
@@ -84,7 +83,10 @@ class UserCommandServiceTest {
         given(userProfileRepository.save(org.mockito.ArgumentMatchers.any(UserProfile.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
-        UserProfileUpdateResult result = userCommandService.updateMyProfile(command("재키", null));
+        UserProfileUpdateResponse result = userCommandService.updateMyProfile(
+                1L,
+                request("재키", null)
+        );
 
         assertThat(result.avatarImageId()).isNull();
         then(mediaMetadataRepository).shouldHaveNoInteractions();
@@ -103,7 +105,7 @@ class UserCommandServiceTest {
         given(userRepository.findById(1L)).willReturn(Optional.of(user()));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
 
-        assertThatThrownBy(() -> userCommandService.updateMyProfile(command("새 이름", null)))
+        assertThatThrownBy(() -> userCommandService.updateMyProfile(1L, request("새 이름", null)))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.");
 
@@ -117,7 +119,7 @@ class UserCommandServiceTest {
         given(mediaMetadataRepository.findById(21L))
                 .willReturn(Optional.of(media(MediaPurpose.USER_AVATAR, MediaStatus.READY, 2L)));
 
-        assertThatThrownBy(() -> userCommandService.updateMyProfile(command("재키", 21L)))
+        assertThatThrownBy(() -> userCommandService.updateMyProfile(1L, request("재키", 21L)))
                 .isInstanceOf(ForbiddenException.class);
     }
 
@@ -128,7 +130,7 @@ class UserCommandServiceTest {
         given(mediaMetadataRepository.findById(21L))
                 .willReturn(Optional.of(media(MediaPurpose.POST_CONTENT, MediaStatus.READY, 1L)));
 
-        assertThatThrownBy(() -> userCommandService.updateMyProfile(command("재키", 21L)))
+        assertThatThrownBy(() -> userCommandService.updateMyProfile(1L, request("재키", 21L)))
                 .isInstanceOf(BadRequestException.class);
     }
 
@@ -139,7 +141,7 @@ class UserCommandServiceTest {
         given(mediaMetadataRepository.findById(21L))
                 .willReturn(Optional.of(media(MediaPurpose.USER_AVATAR, MediaStatus.PROCESSING, 1L)));
 
-        assertThatThrownBy(() -> userCommandService.updateMyProfile(command("재키", 21L)))
+        assertThatThrownBy(() -> userCommandService.updateMyProfile(1L, request("재키", 21L)))
                 .isInstanceOf(ConflictException.class);
     }
 
@@ -166,9 +168,8 @@ class UserCommandServiceTest {
                 .build();
     }
 
-    private UserProfileUpdateCommand command(String displayName, Long avatarImageId) {
-        return new UserProfileUpdateCommand(
-                1L,
+    private UserProfileUpdateRequest request(String displayName, Long avatarImageId) {
+        return new UserProfileUpdateRequest(
                 displayName,
                 "백엔드 개발자입니다.",
                 avatarImageId,

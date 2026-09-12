@@ -8,13 +8,13 @@ import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
-import com.shoutoutz.api.user.application.command.UserProfileUpdateCommand;
-import com.shoutoutz.api.user.application.command.UserProfileUpdateResult;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.exception.UserErrorCode;
+import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
+import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,28 +28,30 @@ public class UserCommandService {
     private final MediaMetadataRepository mediaMetadataRepository;
 
     @Transactional
-    public UserProfileUpdateResult updateMyProfile(UserProfileUpdateCommand command) {
-        User user = userRepository.findById(command.userId())
+    public UserProfileUpdateResponse updateMyProfile(
+            long userId,
+            UserProfileUpdateRequest request
+    ) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
-        UserProfile profile = userProfileRepository.findByUserId(command.userId())
+        UserProfile profile = userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_PROFILE_NOT_FOUND));
 
-        if (!profile.canChangeDisplayNameTo(command.displayName())) {
+        if (!profile.canChangeDisplayNameTo(request.displayName())) {
             throw new BadRequestException(UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE);
         }
-        validateAvatarImage(command.userId(), command.avatarImageId());
+        validateAvatarImage(userId, request.avatarImageId());
 
         UserProfile updatedProfile = profile.update(
-                command.displayName(),
-                command.bio(),
-                command.avatarImageId(),
-                command.githubProfileUrl(),
-                command.blogUrl()
+                request.displayName(),
+                request.bio(),
+                request.avatarImageId(),
+                request.githubProfileUrl(),
+                request.blogUrl()
         );
         UserProfile savedProfile = userProfileRepository.save(updatedProfile);
 
-        return new UserProfileUpdateResult(
-                user.getId(),
+        return new UserProfileUpdateResponse(
                 user.getHandle().value(),
                 savedProfile.getDisplayName().value(),
                 savedProfile.getUserType(),

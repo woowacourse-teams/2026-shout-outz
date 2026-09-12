@@ -25,15 +25,15 @@ import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.user.application.UserCommandService;
 import com.shoutoutz.api.user.application.UserQueryService;
-import com.shoutoutz.api.user.application.command.UserProfileUpdateResult;
-import com.shoutoutz.api.user.application.query.UserProfileResult;
-import com.shoutoutz.api.user.application.query.UserProfileSummaryResult;
 import com.shoutoutz.api.user.application.query.UserSearchResult;
-import com.shoutoutz.api.user.application.query.UserProfileCounts;
 import com.shoutoutz.api.user.application.query.UserSearchItem;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.exception.UserErrorCode;
+import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
+import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
+import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
+import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateResponse;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -65,8 +65,7 @@ class UserHttpApiTest {
     @DisplayName("내 프로필 요약을 조회한다")
     void getMyProfileSummary() throws Exception {
         given(userQueryService.getMyProfileSummary(1L))
-                .willReturn(new UserProfileSummaryResult(
-                        1L,
+                .willReturn(new UserProfileSummaryResponse(
                         "zzaekkii",
                         "재키",
                         21L
@@ -130,8 +129,7 @@ class UserHttpApiTest {
     @DisplayName("마이페이지 프로필을 조회한다")
     void getMyProfile() throws Exception {
         given(userQueryService.getMyProfile(1L))
-                .willReturn(new UserProfileResult(
-                        1L,
+                .willReturn(new UserProfileResponse(
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
@@ -141,7 +139,7 @@ class UserHttpApiTest {
                         21L,
                         "https://github.com/zzaekkii",
                         "https://zzaekkii.dev",
-                        new UserProfileCounts(2L, 18L)
+                        new UserProfileResponse.Counts(2L, 18L)
                 ));
 
         mockMvc.perform(get("/api/v1/users/me")
@@ -204,9 +202,10 @@ class UserHttpApiTest {
     @Test
     @DisplayName("내 프로필을 수정한다")
     void updateMyProfile() throws Exception {
-        given(userCommandService.updateMyProfile(org.mockito.ArgumentMatchers.any()))
-                .willReturn(new UserProfileUpdateResult(
-                        1L,
+        given(userCommandService.updateMyProfile(
+                org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.any(UserProfileUpdateRequest.class)
+        )).willReturn(new UserProfileUpdateResponse(
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
@@ -326,8 +325,7 @@ class UserHttpApiTest {
     @DisplayName("handle로 사용자 공개 프로필을 조회한다")
     void getPublicProfile() throws Exception {
         given(userQueryService.getPublicProfile("zzaekkii"))
-                .willReturn(new UserProfileResult(
-                        1L,
+                .willReturn(new UserProfileResponse(
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
@@ -337,7 +335,7 @@ class UserHttpApiTest {
                         21L,
                         "https://github.com/zzaekkii",
                         "https://zzaekkii.dev",
-                        new UserProfileCounts(2L, 18L)
+                        new UserProfileResponse.Counts(2L, 18L)
                 ));
 
         mockMvc.perform(get("/api/v1/users/{handle}", "zzaekkii"))

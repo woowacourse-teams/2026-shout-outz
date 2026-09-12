@@ -1,8 +1,6 @@
 package com.shoutoutz.api.user.application;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
-import com.shoutoutz.api.user.application.query.UserProfileResult;
-import com.shoutoutz.api.user.application.query.UserProfileSummaryResult;
 import com.shoutoutz.api.user.application.query.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
@@ -14,6 +12,8 @@ import com.shoutoutz.api.user.application.query.UserSearchCursor;
 import com.shoutoutz.api.user.application.query.UserSearchItem;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.exception.UserErrorCode;
+import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
+import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,12 +30,11 @@ public class UserQueryService {
     private final UserSearchCursorCodec userSearchCursorCodec;
 
     @Transactional(readOnly = true)
-    public UserProfileSummaryResult getMyProfileSummary(long userId) {
+    public UserProfileSummaryResponse getMyProfileSummary(long userId) {
         User user = findUser(userId);
         UserProfile profile = findProfile(userId);
 
-        return new UserProfileSummaryResult(
-                user.getId(),
+        return new UserProfileSummaryResponse(
                 user.getHandle().value(),
                 profile.getDisplayName().value(),
                 profile.getAvatarImageId()
@@ -43,16 +42,16 @@ public class UserQueryService {
     }
 
     @Transactional(readOnly = true)
-    public UserProfileResult getMyProfile(long userId) {
+    public UserProfileResponse getMyProfile(long userId) {
         User user = findUser(userId);
         UserProfile profile = findProfile(userId);
         UserProfileCounts counts = userQueryRepository.countByUserId(userId);
 
-        return profileResult(user, profile, counts);
+        return profileResponse(user, profile, counts);
     }
 
     @Transactional(readOnly = true)
-    public UserProfileResult getPublicProfile(String handle) {
+    public UserProfileResponse getPublicProfile(String handle) {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
 
@@ -62,7 +61,7 @@ public class UserQueryService {
 
         UserProfile profile = findProfile(user.getId());
         UserProfileCounts counts = userQueryRepository.countByUserId(user.getId());
-        return profileResult(user, profile, counts);
+        return profileResponse(user, profile, counts);
     }
 
     @Transactional(readOnly = true)
@@ -105,13 +104,12 @@ public class UserQueryService {
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_PROFILE_NOT_FOUND));
     }
 
-    private UserProfileResult profileResult(
+    private UserProfileResponse profileResponse(
             User user,
             UserProfile profile,
             UserProfileCounts counts
     ) {
-        return new UserProfileResult(
-                user.getId(),
+        return new UserProfileResponse(
                 user.getHandle().value(),
                 profile.getDisplayName().value(),
                 profile.getUserType(),
@@ -121,13 +119,12 @@ public class UserQueryService {
                 profile.getAvatarImageId(),
                 profile.getGithubProfileUrl(),
                 profile.getBlogUrl(),
-                counts
+                new UserProfileResponse.Counts(counts.projects(), counts.posts())
         );
     }
 
-    private UserProfileResult deletedProfile(User user) {
-        return new UserProfileResult(
-                user.getId(),
+    private UserProfileResponse deletedProfile(User user) {
+        return new UserProfileResponse(
                 user.getHandle().value(),
                 DELETED_USER_DISPLAY_NAME,
                 null,
@@ -137,7 +134,7 @@ public class UserQueryService {
                 null,
                 null,
                 null,
-                new UserProfileCounts(0L, 0L)
+                new UserProfileResponse.Counts(0L, 0L)
         );
     }
 }
