@@ -1,6 +1,6 @@
+import { routeTree } from '@/routeTree.gen';
 import { dehydrate, hydrate as hydrateQueryClient, type QueryClient } from '@tanstack/react-query';
 import { createRouter } from '@tanstack/react-router';
-import { routeTree } from '../src/routeTree.gen';
 
 // 전달받은 QueryClient를 Router의 SSG 직렬화 생명주기에 연결합니다. 호출자는 브라우저에서는 한 번,
 // 프리렌더에서는 페이지마다 QueryClient와 Router를 새로 만들어 상태가 섞이지 않게 합니다.

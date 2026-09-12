@@ -8,9 +8,9 @@ import {
   attachRouterServerSsrUtils,
   transformPipeableStreamWithRouter,
 } from '@tanstack/react-router/ssr/server';
-import { Document } from '../src/Document';
-import { App } from '../src/App';
 import { createAppRouter } from './router';
+import { App } from '@/App';
+import { Document } from '@/Document';
 
 async function streamToString(stream: AsyncIterable<unknown>): Promise<string> {
   const chunks: Buffer[] = [];

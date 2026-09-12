@@ -1,5 +1,5 @@
+import { routeTree } from '@/routeTree.gen';
 import { createMemoryHistory, createRouter, type AnyRoute } from '@tanstack/react-router';
-import { routeTree } from '../src/routeTree.gen';
 
 function normalizePrerenderPath(pathname: string): string {
   return pathname === '/' ? pathname : pathname.replace(/\/+$/, '');

@@ -11,6 +11,7 @@ export default defineConfig(
   tseslint.configs.recommended,
   reactHooks.configs.flat['recommended-latest'],
   {
+    files: ['src/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',

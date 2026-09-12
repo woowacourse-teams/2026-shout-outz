@@ -1,10 +1,10 @@
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { QueryClient } from '@tanstack/react-query';
 import { hydrate } from '@tanstack/react-router/ssr/client';
-import { Document } from '../src/Document';
-import { App } from '../src/App';
+import '@/src/styles/index.css';
+import { Document } from '@/Document';
+import { App } from '@/App';
 import { createAppRouter } from './router';
-import '../src/index.css';
 
 const queryClient = new QueryClient();
 const router = createAppRouter(queryClient);

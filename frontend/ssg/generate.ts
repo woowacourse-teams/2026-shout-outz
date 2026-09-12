@@ -3,8 +3,8 @@
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { injectBuildAssets, loadBuildAssets, type BuildAssets } from './assets';
 import { renderCsrShell, renderStaticPage } from './render';
+import { injectBuildAssets, loadBuildAssets, type BuildAssets } from './assets';
 import { collectPrerenderRoutes } from './routes';
 
 const PRERENDER_ORIGIN = 'http://prerender.local';

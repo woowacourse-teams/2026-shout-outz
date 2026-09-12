@@ -37,5 +37,8 @@ export default (_env, argv) => ({
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.jsx', '.js'],
+    alias: {
+      '@': path.resolve(__dirname, '..', 'src'),
+    },
   },
 });
