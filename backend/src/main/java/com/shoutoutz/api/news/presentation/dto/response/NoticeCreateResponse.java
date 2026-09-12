@@ -1,6 +1,6 @@
 package com.shoutoutz.api.news.presentation.dto.response;
 
-import com.shoutoutz.api.news.application.dto.result.CreateNoticeResult;
+import com.shoutoutz.api.news.application.command.CreateNoticeResult;
 import com.shoutoutz.api.news.domain.NewsType;
 import java.time.Instant;
 

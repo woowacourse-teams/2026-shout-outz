@@ -1,4 +1,4 @@
-package com.shoutoutz.api.news.application.dto.result;
+package com.shoutoutz.api.news.application.command;
 
 import com.shoutoutz.api.news.domain.EventStatus;
 import com.shoutoutz.api.news.domain.News;

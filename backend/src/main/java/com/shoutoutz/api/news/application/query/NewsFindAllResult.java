@@ -1,6 +1,5 @@
-package com.shoutoutz.api.news.application.dto.result;
+package com.shoutoutz.api.news.application.query;
 
-import com.shoutoutz.api.news.application.query.NewsSummary;
 import com.shoutoutz.api.news.domain.EventStatus;
 import com.shoutoutz.api.news.domain.NewsType;
 import java.time.Instant;

@@ -1,4 +1,4 @@
-package com.shoutoutz.api.news.application;
+package com.shoutoutz.api.news.application.query;
 
 import com.shoutoutz.api.common.exception.code.ErrorCode;
 import lombok.Getter;
