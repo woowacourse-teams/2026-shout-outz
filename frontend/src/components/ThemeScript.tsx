@@ -1,4 +1,4 @@
-import { DARK_MODE_QUERY, THEME_CHANGE_EVENT, THEME_STORAGE_KEY } from '../utils/theme';
+import { DARK_MODE_QUERY, THEME_CHANGE_EVENT, THEME_STORAGE_KEY } from '@/utils/theme';
 
 function initializeTheme(storageKey: string, darkModeQuery: string, themeChangeEvent: string) {
   const getStoredTheme = () => {
