@@ -31,8 +31,8 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                       AND p.deleted_at IS NULL
                 ) AS posts
             """;
-    private static final String RANKED_PROJECT_MEMBER_SQL = """
-            WITH ranked_project_member AS (
+    private static final String RANKED_WOOWA_MEMBER_SQL = """
+            WITH ranked_woowa_member AS (
                 SELECT
                     u.handle,
                     up.display_name,
@@ -57,15 +57,15 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                   )
             )
             """;
-    private static final String FIRST_SLICE_SQL = RANKED_PROJECT_MEMBER_SQL + """
+    private static final String FIRST_SLICE_SQL = RANKED_WOOWA_MEMBER_SQL + """
             SELECT *
-            FROM ranked_project_member
+            FROM ranked_woowa_member
             ORDER BY relevance_rank, lower(display_name), lower(handle)
             LIMIT ?
             """;
-    private static final String NEXT_SLICE_SQL = RANKED_PROJECT_MEMBER_SQL + """
+    private static final String NEXT_SLICE_SQL = RANKED_WOOWA_MEMBER_SQL + """
             SELECT *
-            FROM ranked_project_member
+            FROM ranked_woowa_member
             WHERE relevance_rank > ?
                OR (relevance_rank = ? AND lower(display_name) > lower(?))
                OR (
@@ -93,7 +93,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
     }
 
     @Override
-    public List<UserSearchItem> searchProjectMember(
+    public List<UserSearchItem> searchWoowaMember(
             String keyword,
             UserSearchCursor cursor,
             int limit

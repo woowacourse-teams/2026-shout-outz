@@ -207,17 +207,17 @@ class UserQueryServiceTest {
     }
 
     @Test
-    @DisplayName("프로젝트 참여자를 검색하고 다음 커서를 생성한다")
-    void searchProjectMember() {
+    @DisplayName("우테코 사용자를 검색하고 다음 커서를 생성한다")
+    void searchWoowaMember() {
         List<UserSearchItem> searchedItems = List.of(
                 searchItem("dahye", "다혜", 2),
                 searchItem("hoi", "호이", 2),
                 searchItem("charles", "샤를", 2)
         );
-        given(userQueryRepository.searchProjectMember("재", null, 3))
+        given(userQueryRepository.searchWoowaMember("재", null, 3))
                 .willReturn(searchedItems);
 
-        UserSearchResult result = userQueryService.searchProjectMember("재", null, 2);
+        UserSearchResult result = userQueryService.searchWoowaMember("재", null, 2);
 
         assertThat(result.items()).containsExactly(searchedItems.get(0), searchedItems.get(1));
         assertThat(userSearchCursorCodec.decode(result.nextCursor()))
@@ -226,13 +226,13 @@ class UserQueryServiceTest {
     }
 
     @Test
-    @DisplayName("커서를 해석해 다음 프로젝트 참여자를 검색한다")
-    void searchProjectMemberWithCursor() {
+    @DisplayName("커서를 해석해 다음 우테코 사용자를 검색한다")
+    void searchWoowaMemberWithCursor() {
         UserSearchCursor cursor = new UserSearchCursor(1, "재키", "zzaekkii");
-        given(userQueryRepository.searchProjectMember("재키", cursor, 21))
+        given(userQueryRepository.searchWoowaMember("재키", cursor, 21))
                 .willReturn(List.of());
 
-        UserSearchResult result = userQueryService.searchProjectMember(
+        UserSearchResult result = userQueryService.searchWoowaMember(
                 "재키",
                 userSearchCursorCodec.encode(cursor),
                 20
@@ -246,7 +246,7 @@ class UserQueryServiceTest {
     @Test
     @DisplayName("형식이 잘못된 검색 커서를 거절한다")
     void rejectInvalidSearchCursor() {
-        assertThatThrownBy(() -> userQueryService.searchProjectMember("재키", "invalid", 20))
+        assertThatThrownBy(() -> userQueryService.searchWoowaMember("재키", "invalid", 20))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("유효하지 않은 커서입니다.");
 

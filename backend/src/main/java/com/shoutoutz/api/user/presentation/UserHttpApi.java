@@ -73,11 +73,10 @@ public class UserHttpApi {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<SuccessResponse<UserSearchResponse>> searchProjectMember(
-            @LoginUser AuthenticatedUser ignored,
+    public ResponseEntity<SuccessResponse<UserSearchResponse>> searchWoowaMember(
             @Valid @ModelAttribute UserSearchRequest request
     ) {
-        UserSearchResult result = userQueryService.searchProjectMember(
+        UserSearchResult result = userQueryService.searchWoowaMember(
                 request.keyword(),
                 request.cursor(),
                 request.resolvedSize()

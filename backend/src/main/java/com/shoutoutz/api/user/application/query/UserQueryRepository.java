@@ -6,7 +6,7 @@ public interface UserQueryRepository {
 
     UserProfileCounts countByUserId(long userId);
 
-    List<UserSearchItem> searchProjectMember(
+    List<UserSearchItem> searchWoowaMember(
             String keyword,
             UserSearchCursor cursor,
             int limit
