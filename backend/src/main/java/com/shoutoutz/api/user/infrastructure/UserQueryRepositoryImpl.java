@@ -5,10 +5,10 @@ import com.shoutoutz.api.user.application.dto.UserProfileCounts;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import com.shoutoutz.api.user.domain.profile.UserType;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -21,18 +21,18 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                     SELECT COUNT(*)
                     FROM project_members pm
                     JOIN projects p ON p.id = pm.project_id
-                    WHERE pm.user_id = ?
+                    WHERE pm.user_id = :userId
                       AND p.deleted_at IS NULL
                 ) AS projects,
                 (
                     SELECT COUNT(*)
                     FROM posts p
-                    WHERE p.author_id = ?
+                    WHERE p.author_id = :userId
                       AND p.deleted_at IS NULL
                 ) AS posts
             """;
-    private static final String RANKED_WOOWA_MEMBER_SQL = """
-            WITH ranked_woowa_member AS (
+    private static final String RANKED_WOOWA_USERS_SQL = """
+            WITH ranked_woowa_users AS (
                 SELECT
                     u.handle,
                     up.display_name,
@@ -41,10 +41,10 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                     up.cohort,
                     up.avatar_image_id,
                     CASE
-                        WHEN lower(u.handle) = lower(?)
-                          OR lower(up.display_name) = lower(?) THEN 0
-                        WHEN lower(u.handle) LIKE lower(?) ESCAPE '\\'
-                          OR lower(up.display_name) LIKE lower(?) ESCAPE '\\' THEN 1
+                        WHEN lower(u.handle) = lower(:keyword)
+                          OR lower(up.display_name) = lower(:keyword) THEN 0
+                        WHEN lower(u.handle) LIKE lower(:prefixPattern) ESCAPE '\\'
+                          OR lower(up.display_name) LIKE lower(:prefixPattern) ESCAPE '\\' THEN 1
                         ELSE 2
                     END AS relevance_rank
                 FROM users u
@@ -52,43 +52,45 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                 WHERE u.status = 'ACTIVE'
                   AND up.user_type IN ('WOOWACOURSE_CREW', 'WOOWACOURSE_COACH')
                   AND (
-                      lower(u.handle) LIKE lower(?) ESCAPE '\\'
-                      OR lower(up.display_name) LIKE lower(?) ESCAPE '\\'
+                      lower(u.handle) LIKE lower(:containsPattern) ESCAPE '\\'
+                      OR lower(up.display_name) LIKE lower(:containsPattern) ESCAPE '\\'
                   )
             )
             """;
-    private static final String FIRST_SLICE_SQL = RANKED_WOOWA_MEMBER_SQL + """
+    private static final String FIRST_SEARCH_SQL = RANKED_WOOWA_USERS_SQL + """
             SELECT *
-            FROM ranked_woowa_member
+            FROM ranked_woowa_users
             ORDER BY relevance_rank, lower(display_name), lower(handle)
-            LIMIT ?
+            LIMIT :limit
             """;
-    private static final String NEXT_SLICE_SQL = RANKED_WOOWA_MEMBER_SQL + """
+    private static final String NEXT_SEARCH_SQL = RANKED_WOOWA_USERS_SQL + """
             SELECT *
-            FROM ranked_woowa_member
-            WHERE relevance_rank > ?
-               OR (relevance_rank = ? AND lower(display_name) > lower(?))
+            FROM ranked_woowa_users
+            WHERE relevance_rank > :cursorRelevanceRank
                OR (
-                    relevance_rank = ?
-                    AND lower(display_name) = lower(?)
-                    AND lower(handle) > lower(?)
+                    relevance_rank = :cursorRelevanceRank
+                    AND lower(display_name) > lower(:cursorDisplayName)
+               )
+               OR (
+                    relevance_rank = :cursorRelevanceRank
+                    AND lower(display_name) = lower(:cursorDisplayName)
+                    AND lower(handle) > lower(:cursorHandle)
                )
             ORDER BY relevance_rank, lower(display_name), lower(handle)
-            LIMIT ?
+            LIMIT :limit
             """;
 
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Override
     public UserProfileCounts countByUserId(long userId) {
         return jdbcTemplate.queryForObject(
                 COUNT_SQL,
+                new MapSqlParameterSource("userId", userId),
                 (resultSet, rowNumber) -> new UserProfileCounts(
                         resultSet.getLong("projects"),
                         resultSet.getLong("posts")
-                ),
-                userId,
-                userId
+                )
         );
     }
 
@@ -99,30 +101,23 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
             int limit
     ) {
         String escapedKeyword = escapeLikePattern(keyword);
-        String prefixPattern = escapedKeyword + "%";
-        String containsPattern = "%" + escapedKeyword + "%";
-        List<Object> parameters = new ArrayList<>(List.of(
-                keyword,
-                keyword,
-                prefixPattern,
-                prefixPattern,
-                containsPattern,
-                containsPattern
-        ));
-        String sql = FIRST_SLICE_SQL;
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("keyword", keyword)
+                .addValue("prefixPattern", escapedKeyword + "%")
+                .addValue("containsPattern", "%" + escapedKeyword + "%")
+                .addValue("limit", limit);
+        String sql = FIRST_SEARCH_SQL;
         if (cursor != null) {
-            sql = NEXT_SLICE_SQL;
-            parameters.add(cursor.relevanceRank());
-            parameters.add(cursor.relevanceRank());
-            parameters.add(cursor.displayName());
-            parameters.add(cursor.relevanceRank());
-            parameters.add(cursor.displayName());
-            parameters.add(cursor.handle());
+            sql = NEXT_SEARCH_SQL;
+            parameters
+                    .addValue("cursorRelevanceRank", cursor.relevanceRank())
+                    .addValue("cursorDisplayName", cursor.displayName())
+                    .addValue("cursorHandle", cursor.handle());
         }
-        parameters.add(limit);
 
         return jdbcTemplate.query(
                 sql,
+                parameters,
                 (resultSet, rowNumber) -> new UserSearchItem(
                         resultSet.getString("handle"),
                         resultSet.getString("display_name"),
@@ -131,8 +126,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                         resultSet.getObject("cohort", Short.class),
                         resultSet.getObject("avatar_image_id", Long.class),
                         resultSet.getInt("relevance_rank")
-                ),
-                parameters.toArray()
+                )
         );
     }
 
