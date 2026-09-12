@@ -24,6 +24,7 @@ import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.news.application.NewsFindAllQuery;
+import com.shoutoutz.api.news.application.NewsQueryErrorCode;
 import com.shoutoutz.api.news.application.NewsService;
 import com.shoutoutz.api.news.domain.EventStatus;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
@@ -35,14 +36,19 @@ import com.shoutoutz.api.news.presentation.dto.response.NewsFindAllResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NoticeCreateResponse;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 /**
  * 컨트롤러 슬라이스 테스트
@@ -485,6 +491,69 @@ class NewsHttpApiTest {
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(newsService);
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidNewsFilterCombinations")
+    @DisplayName("소식 유형과 이벤트 상태 조합이 올바르지 않으면 400을 반환하고 서비스를 호출하지 않는다")
+    void returnsBadRequestWhenNewsFilterCombinationIsInvalid(
+            String type,
+            String eventStatus
+    ) throws Exception {
+        MockHttpServletRequestBuilder request = get("/api/v1/news")
+                .queryParam("eventStatus", eventStatus);
+        if (type != null) {
+            request.queryParam("type", type);
+        }
+
+        String typeName = type == null ? "all" : type.toLowerCase();
+        String documentName = "news-find-all-filter-combination-invalid-"
+                + typeName + "-" + eventStatus.toLowerCase();
+        mockMvc.perform(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code")
+                        .value(NewsQueryErrorCode.NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE.name()))
+                .andDo(document(
+                        documentName,
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("소식 목록 조회")
+                                .description("소식 목록을 유형과 이벤트 상태로 필터링하고 최신순으로 조회한다.")
+                                .queryParameters(
+                                        parameterWithName("type")
+                                                .description("소식 유형(ALL, NOTICE, EVENT). 기본값은 ALL")
+                                                .optional(),
+                                        parameterWithName("eventStatus")
+                                                .description("이벤트 상태(UPCOMING, ONGOING, ENDED)")
+                                                .optional(),
+                                        parameterWithName("sort")
+                                                .description("정렬 기준. 현재 LATEST만 지원하며 기본값은 LATEST")
+                                                .optional(),
+                                        parameterWithName("size")
+                                                .description("조회 개수. 기본값 20, 최댓값 50")
+                                                .optional(),
+                                        parameterWithName("cursor")
+                                                .description("다음 페이지 조회에 사용하는 opaque cursor")
+                                                .optional()
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verifyNoInteractions(newsService);
+    }
+
+    private static Stream<Arguments> invalidNewsFilterCombinations() {
+        return Stream.of(
+                Arguments.of("NOTICE", "UPCOMING"),
+                Arguments.of("NOTICE", "ONGOING"),
+                Arguments.of("NOTICE", "ENDED"),
+                Arguments.of("ALL", "UPCOMING"),
+                Arguments.of("ALL", "ONGOING"),
+                Arguments.of("ALL", "ENDED"),
+                Arguments.of(null, "ONGOING")
+        );
     }
 
     @Test

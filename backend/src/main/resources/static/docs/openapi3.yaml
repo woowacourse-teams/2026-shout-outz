@@ -46,6 +46,31 @@ paths:
         schema:
           type: string
       responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-find-all-filter-combination-invalid-notice-ended:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE\"\
+                    ,\"message\":\"이벤트 상태 필터는 EVENT 유형에서만 사용할 수 있습니다.\"}"
+                news-find-all-filter-combination-invalid-all-upcoming:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE\"\
+                    ,\"message\":\"이벤트 상태 필터는 EVENT 유형에서만 사용할 수 있습니다.\"}"
+                news-find-all-filter-combination-invalid-notice-ongoing:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE\"\
+                    ,\"message\":\"이벤트 상태 필터는 EVENT 유형에서만 사용할 수 있습니다.\"}"
+                news-find-all-filter-combination-invalid-all-ongoing:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE\"\
+                    ,\"message\":\"이벤트 상태 필터는 EVENT 유형에서만 사용할 수 있습니다.\"}"
+                news-find-all-filter-combination-invalid-all-ended:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE\"\
+                    ,\"message\":\"이벤트 상태 필터는 EVENT 유형에서만 사용할 수 있습니다.\"}"
+                news-find-all-filter-combination-invalid-notice-upcoming:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE\"\
+                    ,\"message\":\"이벤트 상태 필터는 EVENT 유형에서만 사용할 수 있습니다.\"}"
         "200":
           description: "200"
           content:
@@ -274,12 +299,6 @@ paths:
       operationId: news-event-create
       requestBody:
         content:
-          text/plain;charset=UTF-8:
-            schema:
-              $ref: "#/components/schemas/UnsupportedMediaTypeRequest"
-            examples:
-              news-event-create-unsupported-media-type:
-                value: plain text
           application/json;charset=UTF-8:
             schema:
               $ref: "#/components/schemas/EventCreateRequest"
@@ -339,16 +358,6 @@ paths:
                     "eventEndAt": "2026-09-30T23:59:59Z"
                   }
       responses:
-        "415":
-          description: "415"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                news-event-create-unsupported-media-type:
-                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\"}"
         "201":
           description: "201"
           content:
@@ -374,10 +383,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -454,12 +463,6 @@ paths:
                   }
               news-notice-create-malformed-json:
                 value: "{\"title\":"
-          text/plain;charset=UTF-8:
-            schema:
-              $ref: "#/components/schemas/UnsupportedMediaTypeRequest"
-            examples:
-              news-notice-create-unsupported-media-type:
-                value: plain text
       responses:
         "201":
           description: "201"
@@ -503,16 +506,6 @@ paths:
                 news-notice-create-domain-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_INVALID_AUTHOR_ID_SIZE\"\
                     ,\"message\":\"소식 작성자 ID는 0보다 커야 합니다.\"}"
-        "415":
-          description: "415"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                news-notice-create-unsupported-media-type:
-                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\"}"
   /oauth2/authorization/github:
     get:
       tags:
@@ -534,9 +527,6 @@ paths:
                 type: string
 components:
   schemas:
-    UnsupportedMediaTypeRequest:
-      title: UnsupportedMediaTypeRequest
-      type: object
     EventCreateRequest:
       title: EventCreateRequest
       required:

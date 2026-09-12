@@ -19,9 +19,12 @@ public record NewsFindAllRequest(
 
     public NewsFindAllQuery toQuery() {
         validateSort();
+        NewsType parsedType = parseType();
+        EventStatus parsedEventStatus = parseEventStatus();
+        validateFilterCombination(parsedType, parsedEventStatus);
         return new NewsFindAllQuery(
-                parseType(),
-                parseEventStatus(),
+                parsedType,
+                parsedEventStatus,
                 size,
                 cursor
         );
@@ -57,5 +60,13 @@ public record NewsFindAllRequest(
             return;
         }
         throw new BadRequestException(NewsQueryErrorCode.NEWS_INVALID_SORT);
+    }
+
+    private void validateFilterCombination(NewsType type, EventStatus eventStatus) {
+        if (eventStatus != null && type != NewsType.EVENT) {
+            throw new BadRequestException(
+                    NewsQueryErrorCode.NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE
+            );
+        }
     }
 }
