@@ -1,7 +1,7 @@
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { QueryClient } from '@tanstack/react-query';
 import { hydrate } from '@tanstack/react-router/ssr/client';
-import '@/src/styles/index.css';
+import '@/styles/index.css';
 import { Document } from '@/Document';
 import { App } from '@/App';
 import { createAppRouter } from './router';
