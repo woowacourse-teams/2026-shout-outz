@@ -1,4 +1,11 @@
-import { isNetworkError, isTimeoutError, NetworkError, TimeoutError, isHTTPError } from 'ky';
+import {
+  isNetworkError,
+  isTimeoutError,
+  NetworkError,
+  TimeoutError,
+  isHTTPError,
+  HTTPError,
+} from 'ky';
 
 export interface ApiErrorDetail {
   field: string;
@@ -19,37 +26,14 @@ export const isApiErrorBody = (value: unknown): value is ApiErrorBody =>
   typeof (value as ApiErrorBody).code === 'string' &&
   typeof (value as ApiErrorBody).message === 'string';
 
-export class HttpError extends Error {
-  constructor(
-    readonly status: number,
-    readonly body: ApiErrorBody | null,
-    readonly response: Response,
-  ) {
-    super(body?.message ?? `요청이 실패했습니다 (HTTP ${status})`);
-    this.name = 'HttpError';
-  }
-
-  get code(): string | null {
-    return this.body?.code ?? null;
-  }
-
-  get details(): ApiErrorDetail[] {
-    return this.body?.details ?? [];
-  }
-
-  get isClientError(): boolean {
-    return this.status >= 400 && this.status < 500;
-  }
-
-  get isServerError(): boolean {
-    return this.status >= 500;
-  }
-}
-
-export type ApiError = HttpError | NetworkError | TimeoutError;
+// 사용자에게 안내할 수 있는 에러. false면 우리 코드의 버그
+export type ApiError = HTTPError | NetworkError | TimeoutError;
 
 export const isApiError = (error: unknown): error is ApiError =>
-  error instanceof HttpError || isNetworkError(error) || isTimeoutError(error);
+  isHTTPError(error) || isNetworkError(error) || isTimeoutError(error);
 
-export const isApiResponseError = (error: unknown) =>
+// 우리 서비스의 서버가 내려준 에러 검사
+export const isApiResponseError = (
+  error: unknown,
+): error is HTTPError<ApiErrorBody> & { data: ApiErrorBody } =>
   isHTTPError(error) && isApiErrorBody(error.data);
