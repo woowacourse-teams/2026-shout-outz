@@ -1,6 +1,5 @@
-import { HttpError, isApiErrorBody, type ApiErrorBody } from '@/utils/error';
 import { kyInstance } from '@/utils/http';
-import { isHTTPError, type Options } from 'ky';
+import { type Options } from 'ky';
 
 export type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
 
@@ -16,27 +15,9 @@ const isApiSuccessBody = (value: unknown): value is ApiSuccessBody<unknown> =>
   (value as ApiSuccessBody<unknown, unknown>).status === 'success' &&
   'data' in value;
 
-const readErrorBody = async (response: Response): Promise<ApiErrorBody | null> => {
-  try {
-    const parsed: unknown = await response.clone().json();
-    return isApiErrorBody(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-};
-
-const normalizeError = async (error: unknown): Promise<unknown> => {
-  if (isHTTPError(error)) {
-    const body = await readErrorBody(error.response);
-    return new HttpError(error.response.status, body, error.response);
-  }
-  // 서버에서 만든 에러가 아닌 경우 에러 그대로 반환
-  return error;
-};
-
 export const httpClient = async <T>(
-  method: HttpMethod,
   url: string,
+  method: HttpMethod = 'get',
   options: Omit<Options, 'method'> = {},
 ): Promise<T | null> => {
   const response = await kyInstance(url, { ...options, method });
