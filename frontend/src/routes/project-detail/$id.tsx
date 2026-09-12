@@ -1,9 +1,9 @@
 import { Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { fetchProjects, projectQueryOptions } from '../../api/project';
-import { ProjectDetailPage } from '../../components/project-detail/ProjectDetailPage';
-import { ProjectDetailError } from '../../components/project-detail/ProjectDetailError';
+import { fetchProjects, projectQueryOptions } from '@/api/project';
+import { ProjectDetailPage } from '@/components/project-detail/ProjectDetailPage';
+import { ProjectDetailError } from '@/components/project-detail/ProjectDetailError';
 
 // 페이지 단위 Suspense 적용은 createFileRoute의 component에서 처리합니다.
 export const Route = createFileRoute('/project-detail/$id')({

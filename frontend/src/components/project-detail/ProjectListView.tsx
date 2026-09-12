@@ -1,5 +1,5 @@
+import type { Project } from '@/api/project';
 import { Link } from '@tanstack/react-router';
-import type { Project } from '../../api/project';
 
 export function ProjectListView({ projects }: { projects: Project[] }) {
   return (

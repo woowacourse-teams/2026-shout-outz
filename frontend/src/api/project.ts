@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import mockProjects from './mock/projects.json';
+import mockProjects from '@/api/mock/projects.json';
 
 export interface Project {
   id: string;

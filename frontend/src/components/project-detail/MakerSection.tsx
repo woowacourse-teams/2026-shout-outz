@@ -1,6 +1,6 @@
+import { MakerErrorBoundary } from '@/components/project-detail/MakerErrorBoundary';
+import { MakerInfo } from '@/components/project-detail/MakerInfo';
 import { Suspense } from 'react';
-import { MakerInfo } from './MakerInfo';
-import { MakerErrorBoundary } from './MakerErrorBoundary';
 
 export function MakerSection({ projectId }: { projectId: string }) {
   return (

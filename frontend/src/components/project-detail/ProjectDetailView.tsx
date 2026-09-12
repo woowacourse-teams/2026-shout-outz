@@ -1,4 +1,4 @@
-import type { Project } from '../../api/project';
+import type { Project } from '@/api/project';
 
 export function ProjectDetailView({ project }: { project: Project }) {
   return (

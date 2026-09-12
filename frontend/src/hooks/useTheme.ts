@@ -1,5 +1,3 @@
-import { useSyncExternalStore } from 'react';
-
 import {
   getResolvedTheme,
   getTheme,
@@ -7,7 +5,8 @@ import {
   subscribeTheme,
   type ResolvedTheme,
   type Theme,
-} from '../utils/theme';
+} from '@/utils/theme';
+import { useSyncExternalStore } from 'react';
 
 const getThemeServerSnapshot = (): Theme | undefined => {
   if (typeof document === 'undefined') {
