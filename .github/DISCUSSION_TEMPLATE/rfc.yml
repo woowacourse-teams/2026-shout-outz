@@ -1,0 +1,86 @@
+title: "[RFC] "
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        RFC를 작성하기 전에 문제와 제안 내용을 충분히 정리해주세요.
+        리뷰어 모두와 의견 수렴이 끝나면 본문 하단의 최종 결정과 후속 작업을 업데이트 해주세요.
+
+  - type: input
+    id: owner
+    attributes:
+      label: 담당자
+      description: RFC를 작성하고 논의를 진행할 담당자 (디스커션 생성 이후 업데이트 바랍니다.)
+      placeholder: "@username"
+    validations:
+      required: false
+
+  - type: input
+    id: approver
+    attributes:
+      label: 리뷰어
+      description: 최종 의사결정권자 (디스커션 생성 이후 업데이트 바랍니다.)
+      placeholder: "@username"
+    validations:
+      required: false
+
+  - type: input
+    id: deadline
+    attributes:
+      label: 마감일
+      description: 의견 수렴 마감일
+      placeholder: "2026-09-01"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: 문서 상태
+      options:
+        - 초안 작성 중
+        - 제안 중
+        - 보류
+        - 승인
+        - 거절
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 문제 상황
+      description: 현재 어떤 문제가 있는지 작성해주세요.
+      placeholder: 문제 상황, 배경, 영향 범위를 작성해주세요.
+    validations:
+      required: false
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 제안 사항
+      description: 제안하는 해결책을 구체적으로 작성해주세요.
+    validations:
+      required: false
+
+  - type: textarea
+    id: open_questions
+    attributes:
+      label: 추가 사항
+      description: 추가 질문이나 상세사항을 작성해주세요. 없다면 넘어가셔도 좋습니다!
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ## 최종 결정 사항
+
+        - 결과: Pending
+        - 확정 일자:
+        - 관련 디스커션/이슈/PR/기타 문서:
+
+        ## 후속 작업
+
+        - [ ] 예: 구현 Issue 생성

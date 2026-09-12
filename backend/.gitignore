@@ -1,0 +1,30 @@
+# Gradle
+.gradle/
+build/
+
+# Java compiler and JVM diagnostics
+*.class
+hs_err_pid*
+replay_pid*
+*.hprof
+
+# IDE and editor files
+.idea/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+out/
+bin/
+
+# Local runtime and environment files
+*.log
+.env
+.env.*
+!.env.example
+
+# 이전 기수 이관 스크립트 산출물
+scripts/prev-crew.json
+scripts/archived-*.sql

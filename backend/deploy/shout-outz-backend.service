@@ -1,0 +1,27 @@
+[Unit]
+Description=Shout-outz Backend API
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=shoutoutz
+Group=shoutoutz
+WorkingDirectory=/opt/shout-outz/app
+Environment=SPRING_PROFILES_ACTIVE=prod
+EnvironmentFile=/opt/shout-outz/shout-outz.env
+ExecStart=/usr/bin/java -XX:MaxRAMPercentage=60.0 -XX:+ExitOnOutOfMemoryError -jar /opt/shout-outz/app/app.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=shout-outz-backend
+
+[Install]
+WantedBy=multi-user.target

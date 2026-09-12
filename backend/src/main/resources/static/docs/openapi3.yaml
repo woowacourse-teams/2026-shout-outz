@@ -1,0 +1,821 @@
+openapi: 3.0.1
+info:
+  title: Shout-outz API
+  description: Shout-outz Backend API
+  version: 0.0.1-SNAPSHOT
+servers:
+- url: http://localhost:8080
+tags: []
+paths:
+  /api/v1/visitors:
+    post:
+      tags:
+      - Visitor
+      summary: 방문자 생성
+      description: 방문자를 생성한다.
+      operationId: visitor-create
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/VisitorSaveRequest"
+            examples:
+              visitor-create:
+                value: |
+                  {
+                    "example": "example"
+                  }
+              visitor-create-invalid:
+                value: |
+                  {
+                    "example": ""
+                  }
+      responses:
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisitorCreateSuccessResponse"
+              examples:
+                visitor-create:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1,\"example\":\"\
+                    example\"}}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                visitor-create-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"example\"\
+                    ,\"message\":\"example은 필수입니다.\"}]}"
+  /api/v1/auth/logout:
+    post:
+      tags:
+      - Auth
+      summary: 로그아웃
+      description: 현재 인증 세션을 무효화한다. CSRF Token이 유효하지 않으면 403 CSRF_TOKEN_INVALID를 반환한다.
+      operationId: auth-logout
+      parameters:
+      - name: Cookie
+        in: header
+        description: 인증된 사용자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=session-id
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회 API에서 발급받은 CSRF Token
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      responses:
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                auth-logout-csrf-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
+                    message\":\"CSRF Token이 유효하지 않습니다.\"}"
+        "204":
+          description: "204"
+  /api/v1/auth/session:
+    get:
+      tags:
+      - Auth
+      summary: 인증 세션 조회
+      description: 현재 로그인 상태와 상태 변경 요청에 사용할 CSRF Token을 조회한다.
+      operationId: auth-session-get
+      parameters:
+      - name: Cookie
+        in: header
+        description: 기존 세션이 있을 때 브라우저가 전송하는 JSESSIONID
+        required: false
+        schema:
+          type: string
+        example: JSESSIONID=session-id
+      responses:
+        "200":
+          description: "200"
+          headers:
+            Cache-Control:
+              description: 인증 정보와 CSRF Token의 캐시 저장 방지
+              schema:
+                type: string
+            Set-Cookie:
+              description: 새 세션을 생성한 경우 발급되는 JSESSIONID
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionSuccessResponse"
+              examples:
+                auth-session-get:
+                  value: "{\"status\":\"success\",\"data\":{\"status\":\"AUTHENTICATED\"\
+                    ,\"userId\":1,\"role\":\"USER\",\"csrfToken\":\"csrf-token\"}}"
+  /api/v1/auth/signup:
+    post:
+      tags:
+      - Auth
+      summary: OAuth 사용자 가입
+      description: "가입 대기 OAuth 신원에 서비스 사용자와 프로필을 생성하고 인증 세션을 설정한다. 가입 정보가 유효하지 않으\
+        면 400 VALIDATION_FAILED, 가입 대기 신원이 없으면 400 OAUTH_SIGNUP_SESSION_NOT_FOUND,\
+        \ CSRF Token이 유효하지 않으면 403 CSRF_TOKEN_INVALID를 반환한다."
+      operationId: auth-signup
+      parameters:
+      - name: Cookie
+        in: header
+        description: 가입 대기 신원이 저장된 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=expired-session-id
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회 API에서 발급받은 CSRF Token
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      - name: Content-Type
+        in: header
+        description: application/json
+        required: true
+        schema:
+          type: string
+        example: application/json
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OAuthSignupRequest"
+            examples:
+              auth-signup-session-missing:
+                value: |
+                  {
+                    "handle": "zzaekkii",
+                    "displayName": "재키",
+                    "userType": "GENERAL"
+                  }
+              auth-signup-invalid:
+                value: |
+                  {
+                    "handle": "",
+                    "displayName": "",
+                    "userType": "GENERAL"
+                  }
+              auth-signup:
+                value: |
+                  {
+                    "handle": "zzaekkii",
+                    "displayName": "재키",
+                    "userType": "WOOWACOURSE_CREW",
+                    "track": "BACKEND",
+                    "cohort": 8
+                  }
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                auth-signup-session-missing:
+                  value: "{\"status\":\"error\",\"code\":\"OAUTH_SIGNUP_SESSION_NOT_FOUND\"\
+                    ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
+                auth-signup-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"}]}"
+        "201":
+          description: "201"
+          headers:
+            Set-Cookie:
+              description: 가입 완료 후 인증 상태로 회전된 JSESSIONID
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthSignupSuccessResponse"
+              examples:
+                auth-signup:
+                  value: "{\"status\":\"success\",\"data\":{\"userId\":1}}"
+  /api/v1/news/events:
+    post:
+      tags:
+      - News
+      summary: 이벤트 생성
+      description: 이벤트와 선택적인 CTA를 생성한다.
+      operationId: news-event-create
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/EventCreateRequest"
+            examples:
+              news-event-create:
+                value: |
+                  {
+                    "title": "프로젝트 아카이빙 챌린지",
+                    "summary": "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                    "body": "프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.",
+                    "authorName": "샤라웃 운영팀",
+                    "eventStartAt": "2026-09-01T00:00:00Z",
+                    "eventEndAt": "2026-09-30T23:59:59Z",
+                    "cta": {
+                      "label": "프로젝트 등록하기",
+                      "url": "/projects/3001"
+                    }
+                  }
+              news-event-create-required-invalid:
+                value: |
+                  {
+                    "summary": "요약",
+                    "body": "본문",
+                    "authorName": "샤라웃 운영팀"
+                  }
+              news-event-create-domain-invalid:
+                value: |
+                  {
+                    "title": "프로젝트 아카이빙 챌린지",
+                    "summary": "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                    "body": "프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.",
+                    "authorName": "샤라웃 운영팀",
+                    "eventStartAt": "2026-09-01T00:00:00Z",
+                    "eventEndAt": "2026-09-30T23:59:59Z",
+                    "cta": {
+                      "label": "프로젝트 등록하기",
+                      "url": "/projects/3001"
+                    }
+                  }
+              news-event-create-period-order-invalid:
+                value: |
+                  {
+                    "title": "이벤트",
+                    "summary": "요약",
+                    "body": "본문",
+                    "authorName": "샤라웃 운영팀",
+                    "eventStartAt": "2026-10-01T00:00:00Z",
+                    "eventEndAt": "2026-09-30T23:59:59Z"
+                  }
+              news-event-create-period-invalid:
+                value: |
+                  {
+                    "title": "이벤트",
+                    "summary": "요약",
+                    "body": "본문",
+                    "authorName": "샤라웃 운영팀",
+                    "eventEndAt": "2026-09-30T23:59:59Z"
+                  }
+      responses:
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventCreateSuccessResponse"
+              examples:
+                news-event-create:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":107,\"type\":\"\
+                    EVENT\",\"title\":\"프로젝트 아카이빙 챌린지\",\"summary\":\"팀 프로젝트를 등록하고\
+                    \ 피드백을 받아보세요.\",\"body\":\"프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.\"\
+                    ,\"author\":{\"userId\":1,\"name\":\"샤라웃 운영팀\"},\"publishedAt\"\
+                    :\"2026-09-05T00:00:00Z\",\"eventStatus\":\"ONGOING\",\"eventStartAt\"\
+                    :\"2026-09-01T00:00:00Z\",\"eventEndAt\":\"2026-09-30T23:59:59Z\"\
+                    ,\"isPinned\":false,\"pinOrder\":null,\"cta\":{\"label\":\"프로젝\
+                    트 등록하기\",\"url\":\"/projects/3001\"}}}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-event-create-required-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
+                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
+                news-event-create-period-order-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 eventEndAt보다 늦을 수 없습니다.\"}]}"
+                news-event-create-period-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"}]}"
+        "500":
+          description: "500"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-event-create-domain-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
+                    ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
+  /api/v1/news/notices:
+    post:
+      tags:
+      - News
+      summary: 공지 생성
+      description: 공지와 선택적인 CTA를 생성한다.
+      operationId: news-notice-create
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/NoticeCreateRequest"
+            examples:
+              news-notice-create:
+                value: |
+                  {
+                    "title": "우아한테크코스 6기 최종 프로젝트 데모데이 안내",
+                    "summary": "최종 프로젝트 데모데이 일정을 안내합니다.",
+                    "body": "우아한테크코스 6기 최종 프로젝트 데모데이는 2026년 9월 12일에 진행됩니다.",
+                    "authorName": "샤라웃 운영팀",
+                    "cta": {
+                      "label": "데모데이 일정 확인",
+                      "url": "example.com"
+                    }
+                  }
+              news-notice-create-invalid:
+                value: |
+                  {
+                    "summary": "요약",
+                    "body": "본문",
+                    "authorName": "샤라웃 운영팀"
+                  }
+              news-notice-create-domain-invalid:
+                value: |
+                  {
+                    "title": "우아한테크코스 6기 최종 프로젝트 데모데이 안내",
+                    "summary": "최종 프로젝트 데모데이 일정을 안내합니다.",
+                    "body": "우아한테크코스 6기 최종 프로젝트 데모데이는 2026년 9월 12일에 진행됩니다.",
+                    "authorName": "샤라웃 운영팀",
+                    "cta": {
+                      "label": "데모데이 일정 확인",
+                      "url": "example.com"
+                    }
+                  }
+              news-notice-create-cta-invalid:
+                value: |
+                  {
+                    "title": "공지",
+                    "summary": "요약",
+                    "body": "본문",
+                    "authorName": "샤라웃 운영팀",
+                    "cta": {
+                      "label": "",
+                      "url": "example.com"
+                    }
+                  }
+              news-notice-create-malformed-json:
+                value: "{\"title\":"
+      responses:
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoticeCreateSuccessResponse"
+              examples:
+                news-notice-create:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":106,\"type\":\"\
+                    NOTICE\",\"title\":\"데모데이 안내\",\"summary\":\"데모데이 일정을 안내합니다.\"\
+                    ,\"body\":\"2026년 9월 12일에 데모데이를 진행합니다.\",\"author\":{\"userId\"\
+                    :1,\"name\":\"샤라웃 운영팀\"},\"publishedAt\":\"2026-09-05T00:00:00Z\"\
+                    ,\"isPinned\":false,\"pinOrder\":null,\"cta\":{\"label\":\"일정\
+                    \ 확인\",\"url\":\"example.com\"}}}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-notice-create-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"}]}"
+                news-notice-create-cta-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cta\",\"\
+                    message\":\"cta.label은 필수입니다.\"}]}"
+                news-notice-create-malformed-json:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\"}"
+        "500":
+          description: "500"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-notice-create-domain-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_INVALID_AUTHOR_ID_SIZE\"\
+                    ,\"message\":\"소식 작성자 ID는 0보다 커야 합니다.\"}"
+  /oauth2/authorization/github:
+    get:
+      tags:
+      - Auth
+      summary: GitHub 로그인 시작
+      description: state와 PKCE 값을 생성해 세션에 저장하고 GitHub 인가 화면으로 이동한다.
+      operationId: auth-github-authorization
+      responses:
+        "302":
+          description: "302"
+          headers:
+            Location:
+              description: GitHub OAuth 인가 화면 URI
+              schema:
+                type: string
+            Set-Cookie:
+              description: OAuth 로그인 시도를 저장한 JSESSIONID
+              schema:
+                type: string
+components:
+  schemas:
+    EventCreateRequest:
+      title: EventCreateRequest
+      required:
+      - authorName
+      - body
+      - eventEndAt
+      - eventStartAt
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 이벤트 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 이벤트 CTA
+        eventStartAt:
+          type: string
+          description: 이벤트 시작 시각
+        authorName:
+          type: string
+          description: 이벤트 작성자 이름
+        body:
+          type: string
+          description: 이벤트 본문
+        title:
+          type: string
+          description: 이벤트 제목
+        eventEndAt:
+          type: string
+          description: 이벤트 종료 시각
+    ErrorResponse:
+      title: ErrorResponse
+      required:
+      - code
+      - message
+      - status
+      type: object
+      properties:
+        code:
+          type: string
+          description: 오류 코드
+        details:
+          type: array
+          description: 필드별 오류 상세
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: 오류 필드명
+                nullable: true
+              message:
+                type: string
+                description: 필드 오류 메시지
+                nullable: true
+        message:
+          type: string
+          description: 오류 메시지
+        status:
+          type: string
+          description: 응답 상태
+    VisitorSaveRequest:
+      title: VisitorSaveRequest
+      required:
+      - example
+      type: object
+      properties:
+        example:
+          type: string
+          description: 방문자 예시 값
+    AuthSessionSuccessResponse:
+      title: AuthSessionSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - csrfToken
+          - status
+          type: object
+          properties:
+            csrfToken:
+              type: string
+              description: 상태 변경 요청에 사용할 CSRF Token
+            role:
+              type: string
+              description: 인증된 사용자 권한
+              nullable: true
+            userId:
+              type: number
+              description: 인증된 사용자 ID
+              nullable: true
+            status:
+              type: string
+              description: "UNAUTHENTICATED, SIGNUP_REQUIRED, AUTHENTICATED"
+          description: 인증 세션 정보
+        status:
+          type: string
+          description: 응답 상태
+    EventCreateSuccessResponse:
+      title: EventCreateSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - eventEndAt
+          - eventStartAt
+          - eventStatus
+          - id
+          - isPinned
+          - publishedAt
+          - summary
+          - title
+          - type
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 이벤트 요약
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - name
+              - userId
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 작성자 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 이벤트 작성자
+            pinOrder:
+              type: number
+              description: 고정 순서
+              nullable: true
+            body:
+              type: string
+              description: 이벤트 본문
+            title:
+              type: string
+              description: 이벤트 제목
+            type:
+              type: string
+              description: 소식 유형
+            eventEndAt:
+              type: string
+              description: 이벤트 종료 시각
+            cta:
+              required:
+              - label
+              - url
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                url:
+                  type: string
+                  description: CTA URL
+              description: 이벤트 CTA
+            eventStartAt:
+              type: string
+              description: 이벤트 시작 시각
+            eventStatus:
+              type: string
+              description: 이벤트 상태
+            id:
+              type: number
+              description: 이벤트 ID
+        status:
+          type: string
+          description: 응답 상태
+    OAuthSignupSuccessResponse:
+      title: OAuthSignupSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - userId
+          type: object
+          properties:
+            userId:
+              type: number
+              description: 생성된 사용자 ID
+          description: 가입 결과
+        status:
+          type: string
+          description: 응답 상태
+    OAuthSignupRequest:
+      title: OAuthSignupRequest
+      required:
+      - displayName
+      - handle
+      - userType
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 프로필 표시 이름
+        cohort:
+          type: number
+          description: 우테코 크루의 기수
+          nullable: true
+        handle:
+          type: string
+          description: 영구 공개 핸들
+        userType:
+          type: string
+          description: "GENERAL, WOOWACOURSE_CREW, WOOWACOURSE_COACH"
+        track:
+          type: string
+          description: 우테코 크루의 트랙
+          nullable: true
+    NoticeCreateSuccessResponse:
+      title: NoticeCreateSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - id
+          - isPinned
+          - publishedAt
+          - summary
+          - title
+          - type
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 공지 요약
+            cta:
+              required:
+              - label
+              - url
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                url:
+                  type: string
+                  description: CTA URL
+              description: 공지 CTA
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - name
+              - userId
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 작성자 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 공지 작성자
+            id:
+              type: number
+              description: 공지 ID
+            pinOrder:
+              type: number
+              description: 고정 순서
+              nullable: true
+            body:
+              type: string
+              description: 공지 본문
+            title:
+              type: string
+              description: 공지 제목
+            type:
+              type: string
+              description: 공지 유형
+        status:
+          type: string
+          description: 응답 상태
+    NoticeCreateRequest:
+      title: NoticeCreateRequest
+      required:
+      - authorName
+      - body
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 공지 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 공지 CTA
+        authorName:
+          type: string
+          description: 공지 작성자 이름
+        body:
+          type: string
+          description: 공지 본문
+        title:
+          type: string
+          description: 공지 제목
+    VisitorCreateSuccessResponse:
+      title: VisitorCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - example
+          - id
+          type: object
+          properties:
+            id:
+              type: number
+              description: 방문자 ID
+            example:
+              type: string
+              description: 방문자 예시 값
+          description: 생성된 방문자 정보
+        status:
+          type: string
+          description: 응답 상태

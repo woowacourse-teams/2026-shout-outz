@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: shout-outz
+  profiles:
+    # 명시적인 프로필이 없을 때 local을 사용함.
+    # 운영에서는 SPRING_PROFILES_ACTIVE=prod를 지정함.
+    default: local
+  jpa:
+    hibernate:
+      ddl-auto: none
+    # 서비스 트랜잭션 범위에서만 JPA 영속성 컨텍스트를 유지하기 위함.
+    open-in-view: false
+logging:
+  pattern:
+    level: "%5p [traceId:%X{traceId}]"
+
+github:
+  oauth:
+    client-id: ${GITHUB_OAUTH_CLIENT_ID}
+    client-secret: ${GITHUB_OAUTH_CLIENT_SECRET}
+    redirect-uri: ${GITHUB_OAUTH_REDIRECT_URI:http://localhost:8080/login/oauth2/code/github}
+    connect-timeout: ${GITHUB_OAUTH_CONNECT_TIMEOUT:3s}
+    read-timeout: ${GITHUB_OAUTH_READ_TIMEOUT:5s}
+
+auth:
+  oauth:
+    completion-uri: ${FRONTEND_OAUTH_COMPLETION_URI:http://localhost:5173}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+server:
+  servlet:
+    session:
+      timeout: ${SESSION_TIMEOUT:30m}
+      cookie:
+        http-only: true
+        secure: ${SESSION_COOKIE_SECURE:false}
+        same-site: lax

@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+#   Spring Boot의 기본 에러 응답에 민감한 정보를 포함하지 않도록 설정
+  web:
+    error:
+      include-message: never
+      include-stacktrace: never
+      include-binding-errors: never
+
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    region: ${AWS_REGION}
+    presigned-url-expiration-seconds: ${AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS}
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: ${SESSION_COOKIE_SECURE:true}
