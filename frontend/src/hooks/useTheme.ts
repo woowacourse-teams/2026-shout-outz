@@ -1,6 +1,13 @@
 import { useSyncExternalStore } from 'react';
 
-import { getResolvedTheme, getTheme, setTheme, subscribeTheme, type ResolvedTheme, type Theme } from '../utils/theme';
+import {
+  getResolvedTheme,
+  getTheme,
+  setTheme,
+  subscribeTheme,
+  type ResolvedTheme,
+  type Theme,
+} from '../utils/theme';
 
 const getThemeServerSnapshot = (): Theme | undefined => {
   if (typeof document === 'undefined') {
@@ -20,7 +27,11 @@ const getResolvedServerSnapshot = (): ResolvedTheme | undefined => {
 
 export function useTheme() {
   const theme = useSyncExternalStore(subscribeTheme, getTheme, getThemeServerSnapshot);
-  const resolvedTheme = useSyncExternalStore(subscribeTheme, getResolvedTheme, getResolvedServerSnapshot);
+  const resolvedTheme = useSyncExternalStore(
+    subscribeTheme,
+    getResolvedTheme,
+    getResolvedServerSnapshot,
+  );
 
   return {
     theme,
