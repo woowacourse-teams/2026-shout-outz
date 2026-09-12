@@ -4,7 +4,6 @@ import static com.shoutoutz.api.common.validator.DomainValidator.validateNotNull
 import static com.shoutoutz.api.common.validator.DomainValidator.validateNotNullOrBlank;
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.COACH_COHORT_NOT_ALLOWED;
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.CREW_COURSE_INFO_REQUIRED;
-import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.DISPLAY_NAME_CHANGE_NOT_ALLOWED;
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.DISPLAY_NAME_REQUIRED;
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.GENERAL_USER_COURSE_INFO_NOT_ALLOWED;
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.USER_ID_REQUIRED;
@@ -38,7 +37,7 @@ final class UserProfileValidator {
             String requestedDisplayName
     ) {
         if (userType != UserType.GENERAL && !currentDisplayName.equals(requestedDisplayName)) {
-            throw new DomainValidationException(DISPLAY_NAME_CHANGE_NOT_ALLOWED);
+            throw new DisplayNameChangeNotAllowedException();
         }
     }
 

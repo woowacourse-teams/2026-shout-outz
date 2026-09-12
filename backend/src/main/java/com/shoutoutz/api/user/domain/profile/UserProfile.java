@@ -78,11 +78,6 @@ public class UserProfile {
         );
     }
 
-    public boolean canChangeDisplayNameTo(String displayName) {
-        String sanitizedDisplayName = DataResolveUtil.sanitizeString(displayName);
-        return userType == UserType.GENERAL || this.displayName.value().equals(sanitizedDisplayName);
-    }
-
     public static UserProfile initialize(Long userId, String displayName) {
         return new UserProfile(
                 userId,

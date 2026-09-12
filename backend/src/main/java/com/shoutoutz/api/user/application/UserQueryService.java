@@ -9,7 +9,6 @@ import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.account.UserRepository;
-import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.exception.UserErrorCode;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
@@ -54,7 +53,7 @@ public class UserQueryService {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
 
-        if (user.getStatus() == UserStatus.DELETED) {
+        if (user.isDeleted()) {
             return deletedProfile(user);
         }
 

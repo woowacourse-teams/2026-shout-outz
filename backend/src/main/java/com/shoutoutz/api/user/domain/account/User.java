@@ -68,6 +68,10 @@ public class User {
         );
     }
 
+    public boolean isDeleted() {
+        return status == UserStatus.DELETED;
+    }
+
     private void validate(
             UserStatus status,
             UserRole role,

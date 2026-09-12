@@ -10,11 +10,13 @@ import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.profile.DisplayNameChangeNotAllowedException;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.exception.UserErrorCode;
 import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateResponse;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,18 +39,8 @@ public class UserCommandService {
         UserProfile profile = userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_PROFILE_NOT_FOUND));
 
-        if (!profile.canChangeDisplayNameTo(request.displayName())) {
-            throw new BadRequestException(UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE);
-        }
+        UserProfile updatedProfile = updateProfile(profile, request);
         validateAvatarImage(userId, request.avatarImageId());
-
-        UserProfile updatedProfile = profile.update(
-                request.displayName(),
-                request.bio(),
-                request.avatarImageId(),
-                request.githubProfileUrl(),
-                request.blogUrl()
-        );
         UserProfile savedProfile = userProfileRepository.save(updatedProfile);
 
         return new UserProfileUpdateResponse(
@@ -64,6 +56,26 @@ public class UserCommandService {
         );
     }
 
+    private UserProfile updateProfile(
+            UserProfile profile,
+            UserProfileUpdateRequest request
+    ) {
+        try {
+            return profile.update(
+                    request.displayName(),
+                    request.bio(),
+                    request.avatarImageId(),
+                    request.githubProfileUrl(),
+                    request.blogUrl()
+            );
+        } catch (DisplayNameChangeNotAllowedException exception) {
+            throw new BadRequestException(
+                    UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE,
+                    exception
+            );
+        }
+    }
+
     private void validateAvatarImage(long userId, Long avatarImageId) {
         if (avatarImageId == null) {
             return;
@@ -71,7 +83,7 @@ public class UserCommandService {
 
         MediaMetadata metadata = mediaMetadataRepository.findById(avatarImageId)
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.AVATAR_IMAGE_NOT_FOUND));
-        if (metadata.getUploadedBy() == null || metadata.getUploadedBy() != userId) {
+        if (!Objects.equals(metadata.getUploadedBy(), userId)) {
             throw new ForbiddenException(UserErrorCode.AVATAR_IMAGE_FORBIDDEN);
         }
         if (metadata.getPurpose() != MediaPurpose.USER_AVATAR) {

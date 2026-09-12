@@ -159,7 +159,7 @@ class UserProfileTest {
                 .build();
 
         assertThatThrownBy(() -> profile.update("새 이름", null, null, null, null))
-                .isInstanceOf(DomainValidationException.class);
+                .isInstanceOf(DisplayNameChangeNotAllowedException.class);
     }
 
     @Test

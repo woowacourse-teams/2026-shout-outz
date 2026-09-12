@@ -52,6 +52,21 @@ class UserTest {
     }
 
     @Test
+    @DisplayName("탈퇴한 사용자인지 확인한다")
+    void checksWhetherUserIsDeleted() {
+        User deletedUser = User.builder()
+                .id(1L)
+                .handle("zzaekkii")
+                .status(UserStatus.DELETED)
+                .role(UserRole.USER)
+                .deletedAt(Instant.now())
+                .build();
+
+        assertThat(deletedUser.isDeleted()).isTrue();
+        assertThat(User.initialize("active-user").isDeleted()).isFalse();
+    }
+
+    @Test
     @DisplayName("활성 사용자가 로그인하면 마지막 로그인 시각을 기록한다")
     void recordsActiveUserLogin() {
         Instant loginAt = Instant.parse("2026-09-03T00:00:00Z");
