@@ -6,7 +6,7 @@ import prettierConfig from 'eslint-config-prettier';
 import globals from 'globals';
 
 export default defineConfig(
-  globalIgnores(['dist', 'node_modules']),
+  globalIgnores(['dist', 'node_modules', 'ssg/.build', 'src/routeTree.gen.ts']),
   js.configs.recommended,
   tseslint.configs.recommended,
   reactHooks.configs.flat['recommended-latest'],
