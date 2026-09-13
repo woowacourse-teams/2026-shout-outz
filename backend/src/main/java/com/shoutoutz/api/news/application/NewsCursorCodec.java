@@ -1,9 +1,7 @@
 package com.shoutoutz.api.news.application;
 
-import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.news.application.dto.NewsCursor;
-import com.shoutoutz.api.news.application.query.NewsQueryErrorCode;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
