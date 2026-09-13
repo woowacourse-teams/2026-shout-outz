@@ -1,4 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { projectListQueryOptions } from '@/api/project-list';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 
@@ -16,7 +17,13 @@ export function ProjectList() {
     >
       {projects.map((project) => (
         <li key={project.id} className="min-w-0">
-          <ProjectCard project={project} />
+          <Link
+            to="/projects/$id"
+            params={{ id: String(project.id) }}
+            className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
+          >
+            <ProjectCard project={project} />
+          </Link>
         </li>
       ))}
     </ul>
