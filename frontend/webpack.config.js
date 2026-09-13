@@ -13,6 +13,10 @@ const isProduction = process.env.NODE_ENV === 'production';
 /** @type {import("webpack").Configuration} */
 const config = {
   entry: './ssg/client.tsx',
+  watchOptions: {
+    // 타입 검사기의 재귀 감시에서 의존성과 빌드 산출물을 제외합니다.
+    ignored: /[\\/](node_modules|dist|\.build|\.git)[\\/]/,
+  },
   output: {
     path: path.resolve(__dirname, 'dist'),
     // 삭제된 라우트의 HTML이나 이전 contenthash 자산이 배포물에 남지 않게 합니다.
