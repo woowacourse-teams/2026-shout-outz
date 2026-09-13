@@ -65,6 +65,9 @@ public class UserHttpApi {
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
 
+    /**
+     * 로그인 없이 사용할 수 있는 우테코 사용자 공개 검색.
+     */
     @GetMapping("/search")
     public ResponseEntity<SuccessResponse<UserSearchResponse>> searchWoowaMember(
             @Valid @ModelAttribute UserSearchRequest request

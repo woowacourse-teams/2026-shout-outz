@@ -556,7 +556,7 @@ class UserHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("우테코 사용자 검색")
-                                .description("ACTIVE 상태의 우테코 크루와 코치를 이름 또는 handle로 검색한다.")
+                                .description("로그인 여부와 관계없이 ACTIVE 상태의 우테코 크루와 코치를 이름 또는 handle로 검색한다.")
                                 .queryParameters(
                                         parameterWithName("keyword").description("이름 또는 handle 검색어"),
                                         parameterWithName("cursor").description("다음 페이지 커서").optional(),
@@ -603,7 +603,7 @@ class UserHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("우테코 사용자 검색")
-                                .description("ACTIVE 상태의 우테코 크루와 코치를 이름 또는 handle로 검색한다.")
+                                .description("로그인 여부와 관계없이 ACTIVE 상태의 우테코 크루와 코치를 이름 또는 handle로 검색한다.")
                                 .queryParameters(
                                         parameterWithName("keyword").description("이름 또는 handle 검색어")
                                 )
@@ -654,7 +654,7 @@ class UserHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("우테코 사용자 검색")
-                                .description("ACTIVE 상태의 우테코 크루와 코치를 이름 또는 handle로 검색한다.")
+                                .description("로그인 여부와 관계없이 ACTIVE 상태의 우테코 크루와 코치를 이름 또는 handle로 검색한다.")
                                 .queryParameters(
                                         parameterWithName("keyword").description("이름 또는 handle 검색어"),
                                         parameterWithName("cursor").description("다음 페이지 커서")
