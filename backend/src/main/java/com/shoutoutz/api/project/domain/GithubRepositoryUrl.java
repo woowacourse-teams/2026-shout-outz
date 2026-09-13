@@ -19,7 +19,7 @@ public record GithubRepositoryUrl(String value) {
      * 요청 DTO 의 @Pattern 에서도 같은 규칙을 쓰도록 공개한다.
      */
     public static final String REGEX =
-            "^https?://(?:www\\.)?github\\.com/[A-Za-z0-9._-]+/([A-Za-z0-9._-]+?)(?:\\.git)?/?$";
+            "^https://(?:www\\.)?github\\.com/[A-Za-z0-9._-]+/([A-Za-z0-9._-]+?)(?:\\.git)?/?$";
     private static final Pattern PATTERN = Pattern.compile(REGEX);
     private static final int MAX_LENGTH = 2_048;
 

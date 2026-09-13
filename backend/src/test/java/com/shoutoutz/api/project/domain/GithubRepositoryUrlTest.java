@@ -16,7 +16,6 @@ class GithubRepositoryUrlTest {
             "https://github.com/woowacourse-teams/2026-loop",
             "https://github.com/woowacourse-teams/2026-loop.git",
             "https://github.com/woowacourse-teams/2026-loop/",
-            "http://github.com/woowacourse-teams/2026-loop",
             "https://www.github.com/woowacourse-teams/2026-loop"
     })
     @DisplayName("GitHub 리포지토리 URL에서 .git과 끝 슬래시를 뺀 리포지토리 이름을 추출한다.")
@@ -31,6 +30,7 @@ class GithubRepositoryUrlTest {
             "https://naver.com",
             "https://github.com/woowacourse-teams",
             "https://github.com/woowacourse-teams/2026-loop/issues",
+            "http://github.com/woowacourse-teams/2026-loop",
             "ftp://github.com/woowacourse-teams/2026-loop"
     })
     @DisplayName("리포지토리 이름을 뽑을 수 없는 URL은 도메인 예외를 던진다.")
