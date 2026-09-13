@@ -12,6 +12,8 @@ import com.shoutoutz.api.auth.domain.OAuthAccount;
 import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
+import com.shoutoutz.api.common.exception.custom.DomainValidationException;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
@@ -105,7 +107,9 @@ class OAuthAccountLoginServiceTest {
         assertThatThrownBy(() -> oauthAccountLoginService.completeLogin(
                 identity,
                 AUTHENTICATED_AT
-        )).isInstanceOf(IllegalStateException.class);
+        )).isInstanceOfSatisfying(DomainValidationException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(UserErrorCode.USER_LOGIN_BANNED)
+        );
 
         verify(oauthAccountRepository, never()).save(org.mockito.ArgumentMatchers.any());
         verify(userRepository, never()).save(org.mockito.ArgumentMatchers.any());

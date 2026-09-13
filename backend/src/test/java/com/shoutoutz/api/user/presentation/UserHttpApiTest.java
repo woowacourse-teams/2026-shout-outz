@@ -31,8 +31,8 @@ import com.shoutoutz.api.user.application.UserService;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserType;
-import com.shoutoutz.api.user.exception.UserErrorCode;
 import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
@@ -414,23 +414,23 @@ class UserHttpApiTest {
         return Stream.of(
                 Arguments.of(
                         "user-profile-update-display-name-immutable",
-                        new BadRequestException(UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE)
+                        new BadRequestException(UserProfileErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE)
                 ),
                 Arguments.of(
                         "user-profile-update-avatar-not-found",
-                        new EntityNotFoundException(UserErrorCode.AVATAR_IMAGE_NOT_FOUND)
+                        new EntityNotFoundException(UserProfileErrorCode.AVATAR_IMAGE_NOT_FOUND)
                 ),
                 Arguments.of(
                         "user-profile-update-avatar-forbidden",
-                        new ForbiddenException(UserErrorCode.AVATAR_IMAGE_FORBIDDEN)
+                        new ForbiddenException(UserProfileErrorCode.AVATAR_IMAGE_FORBIDDEN)
                 ),
                 Arguments.of(
                         "user-profile-update-avatar-invalid-purpose",
-                        new BadRequestException(UserErrorCode.AVATAR_IMAGE_INVALID_PURPOSE)
+                        new BadRequestException(UserProfileErrorCode.AVATAR_IMAGE_INVALID_PURPOSE)
                 ),
                 Arguments.of(
                         "user-profile-update-avatar-not-ready",
-                        new ConflictException(UserErrorCode.AVATAR_IMAGE_NOT_READY)
+                        new ConflictException(UserProfileErrorCode.AVATAR_IMAGE_NOT_READY)
                 )
         );
     }

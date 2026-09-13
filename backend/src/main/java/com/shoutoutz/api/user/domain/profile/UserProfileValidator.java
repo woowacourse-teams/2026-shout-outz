@@ -6,9 +6,9 @@ import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.COACH_C
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.CREW_COURSE_INFO_REQUIRED;
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.DISPLAY_NAME_REQUIRED;
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.GENERAL_USER_COURSE_INFO_NOT_ALLOWED;
+import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE;
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.USER_ID_REQUIRED;
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.USER_TYPE_REQUIRED;
-import static com.shoutoutz.api.user.exception.UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;

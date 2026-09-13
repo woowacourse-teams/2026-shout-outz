@@ -3,6 +3,7 @@ package com.shoutoutz.api.user.domain.account;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -31,7 +32,9 @@ class HandleTest {
     @ValueSource(strings = {"", " ", "\t", "\n"})
     void rejectsInvalidHandle(String value) {
         assertThatThrownBy(() -> new Handle(value))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOfSatisfying(DomainValidationException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(UserErrorCode.USER_HANDLE_REQUIRED)
+                );
     }
 
     @Test

@@ -4,12 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.Handle;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
-import com.shoutoutz.api.user.exception.UserErrorCode;
 import com.shoutoutz.api.user.infrastructure.jpa.UserJpaRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

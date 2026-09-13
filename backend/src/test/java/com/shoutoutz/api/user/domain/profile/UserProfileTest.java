@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
-import com.shoutoutz.api.user.exception.UserErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -170,7 +169,7 @@ class UserProfileTest {
                 .isInstanceOfSatisfying(
                         BadRequestException.class,
                         exception -> assertThat(exception.getErrorCode())
-                                .isEqualTo(UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE)
+                                .isEqualTo(UserProfileErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE)
                 );
     }
 

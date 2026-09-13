@@ -3,6 +3,7 @@ package com.shoutoutz.api.user.domain.account;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,9 @@ class UserTest {
     @DisplayName("공백 핸들로 사용자를 생성할 수 없다")
     void rejectsBlankHandleWhenInitializingUser() {
         assertThatThrownBy(() -> User.initialize(" "))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOfSatisfying(DomainValidationException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(UserErrorCode.USER_HANDLE_REQUIRED)
+                );
     }
 
     @Test
@@ -39,7 +42,9 @@ class UserTest {
                 .status(UserStatus.DELETED)
                 .role(UserRole.USER)
                 .build())
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOfSatisfying(DomainValidationException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(UserErrorCode.USER_DELETION_STATE_INVALID)
+                );
 
         assertThatThrownBy(() -> User.builder()
                 .id(1L)
@@ -48,7 +53,9 @@ class UserTest {
                 .role(UserRole.USER)
                 .deletedAt(Instant.now())
                 .build())
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOfSatisfying(DomainValidationException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(UserErrorCode.USER_DELETION_STATE_INVALID)
+                );
     }
 
     @Test
@@ -113,7 +120,9 @@ class UserTest {
                 .build();
 
         assertThatThrownBy(() -> bannedUser.recordLogin(Instant.now()))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOfSatisfying(DomainValidationException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(UserErrorCode.USER_LOGIN_BANNED)
+                );
     }
 
     @Test
@@ -129,6 +138,8 @@ class UserTest {
                 .build();
 
         assertThatThrownBy(() -> purgedUser.recordLogin(Instant.now()))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOfSatisfying(DomainValidationException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(UserErrorCode.USER_LOGIN_PURGED)
+                );
     }
 }

@@ -2,8 +2,8 @@ package com.shoutoutz.api.user.infrastructure;
 
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
-import com.shoutoutz.api.user.exception.UserErrorCode;
 import com.shoutoutz.api.user.infrastructure.jpa.UserJpaRepository;
 import com.shoutoutz.api.user.infrastructure.mapper.UserMapper;
 import java.util.Optional;

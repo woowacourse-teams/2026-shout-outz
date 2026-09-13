@@ -25,7 +25,7 @@ public class User {
             Instant deletedAt,
             Instant purgedAt
     ) {
-        validate(status, role, deletedAt);
+        UserValidator.validateUser(status, role, deletedAt);
         this.id = id;
         this.handle = new Handle(handle);
         this.status = status;
@@ -48,15 +48,8 @@ public class User {
     }
 
     public User recordLogin(Instant loginAt) {
-        if (status == UserStatus.BANNED) {
-            throw new IllegalStateException("정지된 사용자는 로그인할 수 없습니다.");
-        }
-        if (purgedAt != null) {
-            throw new IllegalStateException("개인정보가 파기된 사용자는 복구할 수 없습니다.");
-        }
-        if (loginAt == null) {
-            throw new IllegalArgumentException("로그인 시각은 필수입니다.");
-        }
+        UserValidator.validateLogin(status, purgedAt, loginAt);
+
         return new User(
                 id,
                 handle.value(),
@@ -70,21 +63,5 @@ public class User {
 
     public boolean isDeleted() {
         return status == UserStatus.DELETED;
-    }
-
-    private void validate(
-            UserStatus status,
-            UserRole role,
-            Instant deletedAt
-    ) {
-        if (status == null) {
-            throw new IllegalArgumentException("사용자 상태는 필수입니다.");
-        }
-        if (role == null) {
-            throw new IllegalArgumentException("사용자 권한은 필수입니다.");
-        }
-        if ((status == UserStatus.DELETED) != (deletedAt != null)) {
-            throw new IllegalArgumentException("탈퇴 상태와 탈퇴 시각은 함께 존재해야 합니다.");
-        }
     }
 }

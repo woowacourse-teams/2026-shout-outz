@@ -13,10 +13,11 @@ import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
+import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
-import com.shoutoutz.api.user.exception.UserErrorCode;
 import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
@@ -156,15 +157,15 @@ public class UserService {
         }
 
         MediaMetadata metadata = mediaMetadataRepository.findById(avatarImageId)
-                .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.AVATAR_IMAGE_NOT_FOUND));
+                .orElseThrow(() -> new EntityNotFoundException(UserProfileErrorCode.AVATAR_IMAGE_NOT_FOUND));
         if (!Objects.equals(metadata.getUploadedBy(), userId)) {
-            throw new ForbiddenException(UserErrorCode.AVATAR_IMAGE_FORBIDDEN);
+            throw new ForbiddenException(UserProfileErrorCode.AVATAR_IMAGE_FORBIDDEN);
         }
         if (metadata.getPurpose() != MediaPurpose.USER_AVATAR) {
-            throw new BadRequestException(UserErrorCode.AVATAR_IMAGE_INVALID_PURPOSE);
+            throw new BadRequestException(UserProfileErrorCode.AVATAR_IMAGE_INVALID_PURPOSE);
         }
         if (metadata.getStatus() != MediaStatus.READY) {
-            throw new ConflictException(UserErrorCode.AVATAR_IMAGE_NOT_READY);
+            throw new ConflictException(UserProfileErrorCode.AVATAR_IMAGE_NOT_READY);
         }
     }
 
@@ -175,7 +176,7 @@ public class UserService {
 
     private UserProfile findProfile(long userId) {
         return userProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_PROFILE_NOT_FOUND));
+                .orElseThrow(() -> new EntityNotFoundException(UserProfileErrorCode.USER_PROFILE_NOT_FOUND));
     }
 
     private UserProfileResponse createProfileResponse(
