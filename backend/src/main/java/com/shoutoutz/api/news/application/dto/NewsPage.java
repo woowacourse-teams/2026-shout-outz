@@ -1,4 +1,4 @@
-package com.shoutoutz.api.news.application.query;
+package com.shoutoutz.api.news.application.dto;
 
 import java.util.List;
 

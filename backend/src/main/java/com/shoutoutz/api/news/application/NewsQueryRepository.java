@@ -1,10 +1,10 @@
-package com.shoutoutz.api.news.application.query;
+package com.shoutoutz.api.news.application;
 
 import com.shoutoutz.api.news.application.dto.NewsCursor;
 import com.shoutoutz.api.news.application.dto.NewsDetail;
 import com.shoutoutz.api.news.application.dto.NewsPage;
-import com.shoutoutz.api.news.domain.EventStatus;
-import com.shoutoutz.api.news.domain.NewsType;
+import com.shoutoutz.api.news.domain.enums.EventStatus;
+import com.shoutoutz.api.news.domain.enums.NewsType;
 import java.time.Instant;
 import java.util.Optional;
 

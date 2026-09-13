@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
+import com.shoutoutz.api.news.domain.enums.NewsType;
 import java.time.Instant;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;

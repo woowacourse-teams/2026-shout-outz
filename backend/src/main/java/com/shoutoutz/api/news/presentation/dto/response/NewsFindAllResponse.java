@@ -1,8 +1,7 @@
 package com.shoutoutz.api.news.presentation.dto.response;
 
-import com.shoutoutz.api.news.application.query.NewsFindAllResult;
-import com.shoutoutz.api.news.domain.EventStatus;
-import com.shoutoutz.api.news.domain.NewsType;
+import com.shoutoutz.api.news.domain.enums.EventStatus;
+import com.shoutoutz.api.news.domain.enums.NewsType;
 import java.time.Instant;
 import java.util.List;
 
@@ -18,16 +17,6 @@ public record NewsFindAllResponse(List<Item> items, Meta meta) {
         items = List.copyOf(items);
     }
 
-    public static NewsFindAllResponse from(NewsFindAllResult result) {
-        List<Item> items = result.items().stream()
-                .map(Item::from)
-                .toList();
-        return new NewsFindAllResponse(
-                items,
-                new Meta(result.meta().nextCursor(), result.meta().hasNext())
-        );
-    }
-
     public record Item(
             long id,
             NewsType type,
@@ -40,21 +29,6 @@ public record NewsFindAllResponse(List<Item> items, Meta meta) {
             boolean isPinned,
             Integer pinOrder
     ) {
-
-        private static Item from(NewsFindAllResult.Item result) {
-            return new Item(
-                    result.id(),
-                    result.type(),
-                    result.title(),
-                    result.summary(),
-                    result.publishedAt(),
-                    result.eventStatus(),
-                    result.eventStartAt(),
-                    result.eventEndAt(),
-                    result.isPinned(),
-                    result.pinOrder()
-            );
-        }
     }
 
     public record Meta(String nextCursor, boolean hasNext) {

@@ -1,7 +1,7 @@
 package com.shoutoutz.api.news.infrastructure;
 
 import com.shoutoutz.api.common.entity.BaseEntity;
-import com.shoutoutz.api.news.domain.NewsType;
+import com.shoutoutz.api.news.domain.enums.NewsType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

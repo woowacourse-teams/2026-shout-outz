@@ -3,10 +3,10 @@ package com.shoutoutz.api.news.presentation.dto.request;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.news.application.NewsCursorCodec;
 import com.shoutoutz.api.news.application.dto.NewsCursor;
-import com.shoutoutz.api.news.domain.EventStatus;
+import com.shoutoutz.api.news.domain.enums.EventStatus;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
-import com.shoutoutz.api.news.domain.NewsSort;
-import com.shoutoutz.api.news.domain.NewsType;
+import com.shoutoutz.api.news.domain.enums.NewsSort;
+import com.shoutoutz.api.news.domain.enums.NewsType;
 import lombok.Getter;
 
 /**

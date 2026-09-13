@@ -1,8 +1,9 @@
 package com.shoutoutz.api.news.infrastructure.jpa;
 
-import com.shoutoutz.api.news.application.query.NewsSummary;
-import com.shoutoutz.api.news.domain.EventStatus;
-import com.shoutoutz.api.news.domain.NewsType;
+import com.shoutoutz.api.news.application.dto.NewsDetail;
+import com.shoutoutz.api.news.application.dto.NewsSummary;
+import com.shoutoutz.api.news.domain.enums.EventStatus;
+import com.shoutoutz.api.news.domain.enums.NewsType;
 import com.shoutoutz.api.news.infrastructure.NewsEntity;
 import java.time.Instant;
 import java.util.List;
@@ -14,7 +15,7 @@ import org.springframework.data.repository.query.Param;
 public interface NewsJpaRepository extends JpaRepository<NewsEntity, Long> {
 
     @Query("""
-            SELECT new com.shoutoutz.api.news.application.query.NewsSummary(
+            SELECT new com.shoutoutz.api.news.application.dto.NewsSummary(
                 news.id,
                 news.type,
                 news.title,
@@ -30,14 +31,14 @@ public interface NewsJpaRepository extends JpaRepository<NewsEntity, Long> {
               AND (
                     :eventStatus IS NULL
                     OR (
-                        news.type = com.shoutoutz.api.news.domain.NewsType.EVENT
+                        news.type = com.shoutoutz.api.news.domain.enums.NewsType.EVENT
                         AND (
-                            (:eventStatus = com.shoutoutz.api.news.domain.EventStatus.UPCOMING
+                            (:eventStatus = com.shoutoutz.api.news.domain.enums.EventStatus.UPCOMING
                                 AND news.eventStartAt > :now)
-                            OR (:eventStatus = com.shoutoutz.api.news.domain.EventStatus.ONGOING
+                            OR (:eventStatus = com.shoutoutz.api.news.domain.enums.EventStatus.ONGOING
                                 AND news.eventStartAt <= :now
                                 AND news.eventEndAt >= :now)
-                            OR (:eventStatus = com.shoutoutz.api.news.domain.EventStatus.ENDED
+                            OR (:eventStatus = com.shoutoutz.api.news.domain.enums.EventStatus.ENDED
                                 AND news.eventEndAt < :now)
                         )
                     )
@@ -58,6 +59,46 @@ public interface NewsJpaRepository extends JpaRepository<NewsEntity, Long> {
             @Param("now") Instant now,
             @Param("cursorPublishedAt") Instant cursorPublishedAt,
             @Param("cursorId") Long cursorId,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new com.shoutoutz.api.news.application.dto.NewsDetail$Navigation(
+                news.id,
+                news.title,
+                news.publishedAt
+            )
+            FROM NewsEntity news
+            WHERE news.publishedAt < :publishedAt
+               OR (
+                    news.publishedAt = :publishedAt
+                    AND news.id < :id
+               )
+            ORDER BY news.publishedAt DESC, news.id DESC
+            """)
+    List<NewsDetail.Navigation> findPrevious(
+            @Param("publishedAt") Instant publishedAt,
+            @Param("id") Long id,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new com.shoutoutz.api.news.application.dto.NewsDetail$Navigation(
+                news.id,
+                news.title,
+                news.publishedAt
+            )
+            FROM NewsEntity news
+            WHERE news.publishedAt > :publishedAt
+               OR (
+                    news.publishedAt = :publishedAt
+                    AND news.id > :id
+               )
+            ORDER BY news.publishedAt ASC, news.id ASC
+            """)
+    List<NewsDetail.Navigation> findNext(
+            @Param("publishedAt") Instant publishedAt,
+            @Param("id") Long id,
             Pageable pageable
     );
 }

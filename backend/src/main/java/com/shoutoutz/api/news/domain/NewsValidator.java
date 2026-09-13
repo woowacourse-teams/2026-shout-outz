@@ -27,6 +27,7 @@ import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_TITLE_NULL_OR_BLA
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_TYPE_NULL;
 
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
+import com.shoutoutz.api.news.domain.enums.NewsType;
 import java.time.Instant;
 
 /**

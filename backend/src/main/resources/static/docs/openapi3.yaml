@@ -506,6 +506,55 @@ paths:
                 news-notice-create-domain-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_INVALID_AUTHOR_ID_SIZE\"\
                     ,\"message\":\"소식 작성자 ID는 0보다 커야 합니다.\"}"
+  /api/v1/news/{newsId}:
+    get:
+      tags:
+      - News
+      summary: 소식 상세 조회
+      description: 소식의 상세 정보와 전체 소식 기준 이전/다음 글을 조회한다.
+      operationId: news-find-detail
+      parameters:
+      - name: newsId
+        in: path
+        description: 조회할 소식 ID
+        required: true
+        schema:
+          type: string
+      - name: navigation
+        in: query
+        description: 이전/다음 소식 포함 여부. 기본값은 true
+        required: false
+        schema:
+          type: boolean
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsFindDetailSuccessResponse"
+              examples:
+                news-find-detail:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":102,\"type\":\"\
+                    EVENT\",\"title\":\"프로젝트 아카이빙 챌린지\",\"body\":\"팀 프로젝트를 등록하고 동료\
+                    \ 크루들의 피드백을 받아보세요.\",\"author\":{\"userId\":1,\"name\":\"샤라웃 운\
+                    영팀\"},\"publishedAt\":\"2026-08-25T00:00:00Z\",\"eventStatus\"\
+                    :\"ONGOING\",\"eventStartAt\":\"2026-08-20T00:00:00Z\",\"eventEndAt\"\
+                    :\"2026-09-20T14:59:59Z\",\"isPinned\":false,\"pinOrder\":null,\"\
+                    cta\":{\"label\":\"프로젝트 등록하기\",\"url\":\"/projects/3001\"},\"\
+                    previous\":{\"id\":101,\"title\":\"우아한테크코스 6기 최종 프로젝트 데모데이 안내\"\
+                    ,\"publishedAt\":\"2026-08-24T00:00:00Z\"},\"next\":{\"id\":103,\"\
+                    title\":\"다음 소식\",\"publishedAt\":\"2026-08-26T00:00:00Z\"}}}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-find-detail-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_NOT_FOUND\",\"\
+                    message\":\"자원을 찾을 수 없습니다.\"}"
   /oauth2/authorization/github:
     get:
       tags:
@@ -680,6 +729,120 @@ components:
         example:
           type: string
           description: 방문자 예시 값
+    NewsFindDetailSuccessResponse:
+      title: NewsFindDetailSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - id
+          - isPinned
+          - publishedAt
+          - title
+          - type
+          type: object
+          properties:
+            next:
+              required:
+              - id
+              - publishedAt
+              - title
+              type: object
+              properties:
+                publishedAt:
+                  type: string
+                  description: 다음 소식 게시 시각
+                id:
+                  type: number
+                  description: 다음 소식 ID
+                title:
+                  type: string
+                  description: 다음 소식 제목
+              description: 다음 소식. 없으면 null
+            previous:
+              required:
+              - id
+              - publishedAt
+              - title
+              type: object
+              properties:
+                publishedAt:
+                  type: string
+                  description: 이전 소식 게시 시각
+                id:
+                  type: number
+                  description: 이전 소식 ID
+                title:
+                  type: string
+                  description: 이전 소식 제목
+              description: 이전 소식. 없으면 null
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - name
+              - userId
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 작성자 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 소식 작성자
+            pinOrder:
+              type: number
+              description: 고정 순서. 고정되지 않은 경우 null
+              nullable: true
+            body:
+              type: string
+              description: 소식 본문
+            title:
+              type: string
+              description: 소식 제목
+            type:
+              type: string
+              description: 소식 유형
+            eventEndAt:
+              type: string
+              description: 이벤트 종료 시각. 공지인 경우 null
+              nullable: true
+            cta:
+              required:
+              - label
+              - url
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                url:
+                  type: string
+                  description: CTA URL
+              description: 소식 CTA
+            eventStartAt:
+              type: string
+              description: 이벤트 시작 시각. 공지인 경우 null
+              nullable: true
+            eventStatus:
+              type: string
+              description: 이벤트 상태. 공지인 경우 null
+              nullable: true
+            id:
+              type: number
+              description: 소식 ID
+        status:
+          type: string
+          description: 응답 상태
     AuthSessionSuccessResponse:
       title: AuthSessionSuccessResponse
       required:

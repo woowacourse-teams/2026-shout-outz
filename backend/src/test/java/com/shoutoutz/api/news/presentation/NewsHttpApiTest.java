@@ -21,19 +21,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
+import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.news.application.NewsService;
-import com.shoutoutz.api.news.application.command.CreateEventCommand;
-import com.shoutoutz.api.news.application.command.CreateEventResult;
-import com.shoutoutz.api.news.application.command.CreateNoticeCommand;
-import com.shoutoutz.api.news.application.command.CreateNoticeResult;
-import com.shoutoutz.api.news.application.query.NewsFindAllQuery;
-import com.shoutoutz.api.news.application.query.NewsFindAllResult;
-import com.shoutoutz.api.news.application.query.NewsQueryErrorCode;
-import com.shoutoutz.api.news.domain.EventStatus;
+import com.shoutoutz.api.news.domain.enums.EventStatus;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
-import com.shoutoutz.api.news.domain.NewsType;
+import com.shoutoutz.api.news.domain.enums.NewsType;
+import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NewsFindAllRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NewsFindRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
+import com.shoutoutz.api.news.presentation.dto.response.EventCreateResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsFindAllResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsFindResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NoticeCreateResponse;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
@@ -64,24 +67,25 @@ class NewsHttpApiTest {
     private NewsService newsService;
 
     /**
-     * DOCS: /api/v1/news/notices
+     * DOCS: POST /api/v1/news/notices
      */
     @Test
     @DisplayName("공지 등록 성공 테스트. 201과 생성된 공지 정보를 반환한다.")
     void returnsSuccessResponseAndCreatedStatusWhenNoticeIsCreated() throws Exception {
-        CreateNoticeResult result = new CreateNoticeResult(
+        NoticeCreateResponse result = new NoticeCreateResponse(
                 106L,
                 NewsType.NOTICE,
                 "데모데이 안내",
                 "데모데이 일정을 안내합니다.",
                 "2026년 9월 12일에 데모데이를 진행합니다.",
-                new CreateNoticeResult.Author(1L, "샤라웃 운영팀"),
+                new NoticeCreateResponse.Author(1L, "샤라웃 운영팀"),
                 Instant.parse("2026-09-05T00:00:00Z"),
                 false,
                 null,
-                new CreateNoticeResult.Cta("일정 확인", "example.com")
+                new NoticeCreateResponse.Cta("일정 확인", "example.com")
         );
-        given(newsService.createNotice(any(CreateNoticeCommand.class))).willReturn(result);
+        given(newsService.createNotice(any(NoticeCreateRequest.class)))
+                .willReturn(result);
 
         mockMvc.perform(post("/api/v1/news/notices")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -180,25 +184,26 @@ class NewsHttpApiTest {
                                 .build())
                 ));
 
-        verify(newsService).createNotice(any(CreateNoticeCommand.class));
+        verify(newsService).createNotice(any(NoticeCreateRequest.class));
     }
 
     @Test
     @DisplayName("공지 등록 성공 테스트. CTA가 없는 경우 cta 항목을 null로 반환한다.")
     void returnsNullCtaWhenCtaIsAbsent() throws Exception {
-        CreateNoticeResult result = new CreateNoticeResult(
+        NoticeCreateResponse result = new NoticeCreateResponse(
                 107L,
                 NewsType.NOTICE,
                 "서비스 점검 안내",
                 "점검 일정을 안내합니다.",
                 "2026년 9월 10일에 점검을 진행합니다.",
-                new CreateNoticeResult.Author(1L, "샤라웃 운영팀"),
+                new NoticeCreateResponse.Author(1L, "샤라웃 운영팀"),
                 Instant.parse("2026-09-05T00:00:00Z"),
                 false,
                 null,
                 null
         );
-        given(newsService.createNotice(any(CreateNoticeCommand.class))).willReturn(result);
+        given(newsService.createNotice(any(NoticeCreateRequest.class)))
+                .willReturn(result);
 
         mockMvc.perform(post("/api/v1/news/notices")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -209,27 +214,28 @@ class NewsHttpApiTest {
     }
 
     /**
-     * DOCS: /api/v1/news/events
+     * DOCS: POST /api/v1/news/events
      */
     @Test
     @DisplayName("이벤트 등록 성공 테스트. 201과 생성된 이벤트 정보를 반환한다.")
     void returnsEventResponseAndCreatedStatusWhenEventIsCreated() throws Exception {
-        CreateEventResult result = new CreateEventResult(
+        EventCreateResponse result = new EventCreateResponse(
                 107L,
                 NewsType.EVENT,
                 "프로젝트 아카이빙 챌린지",
                 "팀 프로젝트를 등록하고 피드백을 받아보세요.",
                 "프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.",
-                new CreateEventResult.Author(1L, "샤라웃 운영팀"),
+                new EventCreateResponse.Author(1L, "샤라웃 운영팀"),
                 Instant.parse("2026-09-05T00:00:00Z"),
                 EventStatus.ONGOING,
                 Instant.parse("2026-09-01T00:00:00Z"),
                 Instant.parse("2026-09-30T23:59:59Z"),
                 false,
                 null,
-                new CreateEventResult.Cta("프로젝트 등록하기", "/projects/3001")
+                new EventCreateResponse.Cta("프로젝트 등록하기", "/projects/3001")
         );
-        given(newsService.createEvent(any(CreateEventCommand.class))).willReturn(result);
+        given(newsService.createEvent(any(EventCreateRequest.class)))
+                .willReturn(result);
 
         mockMvc.perform(post("/api/v1/news/events")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -287,19 +293,19 @@ class NewsHttpApiTest {
                                 .build())
                 ));
 
-        verify(newsService).createEvent(any(CreateEventCommand.class));
+        verify(newsService).createEvent(any(EventCreateRequest.class));
     }
 
     @Test
     @DisplayName("이벤트 등록 성공 테스트. CTA가 없는 경우 cta 항목을 null로 반환한다.")
     void createsEventWithoutCta() throws Exception {
-        CreateEventResult result = new CreateEventResult(
+        EventCreateResponse result = new EventCreateResponse(
                 108L,
                 NewsType.EVENT,
                 "서비스 이벤트",
                 "이벤트 요약",
                 "이벤트 본문",
-                new CreateEventResult.Author(1L, "샤라웃 운영팀"),
+                new EventCreateResponse.Author(1L, "샤라웃 운영팀"),
                 Instant.parse("2026-09-05T00:00:00Z"),
                 EventStatus.UPCOMING,
                 Instant.parse("2026-10-01T00:00:00Z"),
@@ -308,7 +314,8 @@ class NewsHttpApiTest {
                 null,
                 null
         );
-        given(newsService.createEvent(any(CreateEventCommand.class))).willReturn(result);
+        given(newsService.createEvent(any(EventCreateRequest.class)))
+                .willReturn(result);
 
         mockMvc.perform(post("/api/v1/news/events")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -321,13 +328,13 @@ class NewsHttpApiTest {
     }
 
     /**
-     * DOCS: /api/v1/news
+     * DOCS: GET /api/v1/news
      */
     @Test
-    @DisplayName("소식 목록 조회 요청이 성공하면 최신순 목록과 페이지네이션 정보를 반환한다")
+    @DisplayName("소식 전체 목록 조회 성공 테스트.")
     void returnsNewsListWithPaginationMetadata() throws Exception {
-        NewsFindAllResult result = new NewsFindAllResult(
-                List.of(new NewsFindAllResult.Item(
+        NewsFindAllResponse result = new NewsFindAllResponse(
+                List.of(new NewsFindAllResponse.Item(
                         102L,
                         NewsType.EVENT,
                         "프로젝트 아카이빙 챌린지",
@@ -339,10 +346,10 @@ class NewsHttpApiTest {
                         false,
                         null
                 )),
-                new NewsFindAllResult.Meta(null, false)
+                new NewsFindAllResponse.Meta(null, false)
         );
         given(newsService.findAll(
-                new NewsFindAllQuery(NewsType.EVENT, EventStatus.ONGOING, 20, null)
+                new NewsFindAllRequest("EVENT", "ONGOING", "LATEST", 20, null)
         )).willReturn(result);
 
         mockMvc.perform(get("/api/v1/news")
@@ -437,19 +444,252 @@ class NewsHttpApiTest {
                 ));
 
         verify(newsService).findAll(
-                new NewsFindAllQuery(NewsType.EVENT, EventStatus.ONGOING, 20, null)
+                new NewsFindAllRequest("EVENT", "ONGOING", "LATEST", 20, null)
         );
+    }
+
+    /**
+     * DOCS: GET /api/v1/news/{newsId}
+     */
+    @Test
+    @DisplayName("소식 상세 조회 성공 테스트. 상세 정보와 이전, 다음 글을 반환한다")
+    void returnsNewsDetailWithNavigation() throws Exception {
+        NewsFindResponse result = new NewsFindResponse(
+                102L,
+                NewsType.EVENT,
+                "프로젝트 아카이빙 챌린지",
+                "팀 프로젝트를 등록하고 동료 크루들의 피드백을 받아보세요.",
+                new NewsFindResponse.Author(1L, "샤라웃 운영팀"),
+                Instant.parse("2026-08-25T00:00:00Z"),
+                EventStatus.ONGOING,
+                Instant.parse("2026-08-20T00:00:00Z"),
+                Instant.parse("2026-09-20T14:59:59Z"),
+                false,
+                null,
+                new NewsFindResponse.Cta("프로젝트 등록하기", "/projects/3001"),
+                new NewsFindResponse.Navigation(
+                        101L,
+                        "우아한테크코스 6기 최종 프로젝트 데모데이 안내",
+                        Instant.parse("2026-08-24T00:00:00Z")
+                ),
+                new NewsFindResponse.Navigation(
+                        103L,
+                        "다음 소식",
+                        Instant.parse("2026-08-26T00:00:00Z")
+                )
+        );
+        given(newsService.findDetail(new NewsFindRequest(102L, true)))
+                .willReturn(result);
+
+        mockMvc.perform(get("/api/v1/news/{newsId}", 102L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(102))
+                .andExpect(jsonPath("$.data.type").value("EVENT"))
+                .andExpect(jsonPath("$.data.title").value("프로젝트 아카이빙 챌린지"))
+                .andExpect(jsonPath("$.data.body")
+                        .value("팀 프로젝트를 등록하고 동료 크루들의 피드백을 받아보세요."))
+                .andExpect(jsonPath("$.data.author.userId").value(1))
+                .andExpect(jsonPath("$.data.author.name").value("샤라웃 운영팀"))
+                .andExpect(jsonPath("$.data.eventStatus").value("ONGOING"))
+                .andExpect(jsonPath("$.data.isPinned").value(false))
+                .andExpect(jsonPath("$.data.pinOrder").value(nullValue()))
+                .andExpect(jsonPath("$.data.cta.label").value("프로젝트 등록하기"))
+                .andExpect(jsonPath("$.data.cta.url").value("/projects/3001"))
+                .andExpect(jsonPath("$.data.previous.id").value(101))
+                .andExpect(jsonPath("$.data.previous.title")
+                        .value("우아한테크코스 6기 최종 프로젝트 데모데이 안내"))
+                .andExpect(jsonPath("$.data.next.id").value(103))
+                .andDo(document(
+                        "news-find-detail",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("소식 상세 조회")
+                                .description("소식의 상세 정보와 전체 소식 기준 이전/다음 글을 조회한다.")
+                                .pathParameters(
+                                        parameterWithName("newsId").description("조회할 소식 ID")
+                                )
+                                .queryParameters(
+                                        com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("navigation")
+                                                .description("이전/다음 소식 포함 여부. 기본값은 true")
+                                                .type(com.epages.restdocs.apispec.SimpleType.BOOLEAN)
+                                                .optional()
+                                )
+                                .responseSchema(Schema.schema("NewsFindDetailSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status")
+                                                .type(STRING)
+                                                .description("응답 상태"),
+                                        fieldWithPath("data.id")
+                                                .type(NUMBER)
+                                                .description("소식 ID"),
+                                        fieldWithPath("data.type")
+                                                .type(STRING)
+                                                .description("소식 유형"),
+                                        fieldWithPath("data.title")
+                                                .type(STRING)
+                                                .description("소식 제목"),
+                                        fieldWithPath("data.body")
+                                                .type(STRING)
+                                                .description("소식 본문"),
+                                        fieldWithPath("data.author")
+                                                .type(OBJECT)
+                                                .description("소식 작성자"),
+                                        fieldWithPath("data.author.userId")
+                                                .type(NUMBER)
+                                                .description("작성자 ID"),
+                                        fieldWithPath("data.author.name")
+                                                .type(STRING)
+                                                .description("작성자 이름"),
+                                        fieldWithPath("data.publishedAt")
+                                                .type(STRING)
+                                                .description("게시 시각"),
+                                        fieldWithPath("data.eventStatus")
+                                                .type(STRING)
+                                                .description("이벤트 상태. 공지인 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data.eventStartAt")
+                                                .type(STRING)
+                                                .description("이벤트 시작 시각. 공지인 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data.eventEndAt")
+                                                .type(STRING)
+                                                .description("이벤트 종료 시각. 공지인 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data.isPinned")
+                                                .type(BOOLEAN)
+                                                .description("고정 여부"),
+                                        fieldWithPath("data.pinOrder")
+                                                .type(NUMBER)
+                                                .description("고정 순서. 고정되지 않은 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data.cta")
+                                                .type(OBJECT)
+                                                .description("소식 CTA")
+                                                .optional(),
+                                        fieldWithPath("data.cta.label")
+                                                .type(STRING)
+                                                .description("CTA 라벨"),
+                                        fieldWithPath("data.cta.url")
+                                                .type(STRING)
+                                                .description("CTA URL"),
+                                        fieldWithPath("data.previous")
+                                                .type(OBJECT)
+                                                .description("이전 소식. 없으면 null")
+                                                .optional(),
+                                        fieldWithPath("data.previous.id")
+                                                .type(NUMBER)
+                                                .description("이전 소식 ID"),
+                                        fieldWithPath("data.previous.title")
+                                                .type(STRING)
+                                                .description("이전 소식 제목"),
+                                        fieldWithPath("data.previous.publishedAt")
+                                                .type(STRING)
+                                                .description("이전 소식 게시 시각"),
+                                        fieldWithPath("data.next")
+                                                .type(OBJECT)
+                                                .description("다음 소식. 없으면 null")
+                                                .optional(),
+                                        fieldWithPath("data.next.id")
+                                                .type(NUMBER)
+                                                .description("다음 소식 ID"),
+                                        fieldWithPath("data.next.title")
+                                                .type(STRING)
+                                                .description("다음 소식 제목"),
+                                        fieldWithPath("data.next.publishedAt")
+                                                .type(STRING)
+                                                .description("다음 소식 게시 시각")
+                                )
+                                .build())
+                ));
+
+        verify(newsService).findDetail(new NewsFindRequest(102L, true));
+    }
+
+    @Test
+    @DisplayName("소식 상세 조회 성공 테스트. navigation=false이면 이전/다음 글 없이 상세 정보를 조회한다")
+    void excludesNavigationWhenNavigationIsFalse() throws Exception {
+        NewsFindResponse result = new NewsFindResponse(
+                102L,
+                NewsType.NOTICE,
+                "공지",
+                "공지 본문",
+                new NewsFindResponse.Author(1L, "샤라웃 운영팀"),
+                Instant.parse("2026-08-25T00:00:00Z"),
+                null,
+                null,
+                null,
+                false,
+                null,
+                null,
+                null,
+                null
+        );
+        given(newsService.findDetail(new NewsFindRequest(102L, false)))
+                .willReturn(result);
+
+        mockMvc.perform(get("/api/v1/news/{newsId}", 102L)
+                        .queryParam("navigation", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.previous").value(nullValue()))
+                .andExpect(jsonPath("$.data.next").value(nullValue()));
+
+        verify(newsService).findDetail(new NewsFindRequest(102L, false));
+    }
+
+    @Test
+    @DisplayName("navigation 값이 올바르지 않으면 400을 반환하고 서비스를 호출하지 않는다")
+    void returnsBadRequestWhenNewsNavigationIsInvalid() throws Exception {
+        mockMvc.perform(get("/api/v1/news/{newsId}", 102L)
+                        .queryParam("navigation", "tre"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.VALIDATION_FAILED.name()));
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("소식 상세 조회 실패 테스트. 존재하지 않는 소식을 상세 조회한 경우는 404를 반환한다")
+    void returnsNotFoundWhenNewsDetailDoesNotExist() throws Exception {
+        given(newsService.findDetail(new NewsFindRequest(999L, true)))
+                .willThrow(new EntityNotFoundException(CommonErrorCode.RESOURCE_NOT_FOUND));
+
+        mockMvc.perform(get("/api/v1/news/{newsId}", 999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.RESOURCE_NOT_FOUND.name()))
+                .andDo(document(
+                        "news-find-detail-not-found",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("소식 상세 조회 실패")
+                                .description("존재하지 않는 소식을 조회하면 404를 반환한다.")
+                                .pathParameters(
+                                        parameterWithName("newsId").description("조회할 소식 ID")
+                                )
+                                .queryParameters(
+                                        com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("navigation")
+                                                .description("이전·다음 소식 포함 여부. 기본값은 true")
+                                                .type(com.epages.restdocs.apispec.SimpleType.BOOLEAN)
+                                                .optional()
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verify(newsService).findDetail(new NewsFindRequest(999L, true));
     }
 
     @Test
     @DisplayName("소식 목록 조회 기본값을 서비스에 전달한다")
     void usesDefaultNewsListQueryValues() throws Exception {
-        NewsFindAllResult result = new NewsFindAllResult(
+        NewsFindAllResponse result = new NewsFindAllResponse(
                 List.of(),
-                new NewsFindAllResult.Meta(null, false)
+                new NewsFindAllResponse.Meta(null, false)
         );
         given(newsService.findAll(
-                new NewsFindAllQuery(null, null, 20, null)
+                new NewsFindAllRequest("ALL", null, "LATEST", 20, null)
         )).willReturn(result);
 
         mockMvc.perform(get("/api/v1/news"))
@@ -459,7 +699,7 @@ class NewsHttpApiTest {
                 .andExpect(jsonPath("$.meta.hasNext").value(false));
 
         verify(newsService).findAll(
-                new NewsFindAllQuery(null, null, 20, null)
+                new NewsFindAllRequest("ALL", null, "LATEST", 20, null)
         );
     }
 
@@ -474,7 +714,7 @@ class NewsHttpApiTest {
     }
 
     @Test
-    @DisplayName("소식 목록 조회 유형이 올바르지 않으면 400을 반환하고 서비스를 호출하지 않는다")
+    @DisplayName("소식 목록 조회 유형이 올바르지 않으면 400을 반환한다")
     void returnsBadRequestWhenNewsTypeIsInvalid() throws Exception {
         mockMvc.perform(get("/api/v1/news")
                         .queryParam("type", "INVALID"))
@@ -484,7 +724,7 @@ class NewsHttpApiTest {
     }
 
     @Test
-    @DisplayName("소식 목록 조회 이벤트 상태가 올바르지 않으면 400을 반환하고 서비스를 호출하지 않는다")
+    @DisplayName("소식 목록 조회 이벤트 상태가 올바르지 않으면 400을 반환한다")
     void returnsBadRequestWhenEventStatusIsInvalid() throws Exception {
         mockMvc.perform(get("/api/v1/news")
                         .queryParam("eventStatus", "INVALID"))
@@ -495,7 +735,7 @@ class NewsHttpApiTest {
 
     @ParameterizedTest
     @MethodSource("invalidNewsFilterCombinations")
-    @DisplayName("소식 유형과 이벤트 상태 조합이 올바르지 않으면 400을 반환하고 서비스를 호출하지 않는다")
+    @DisplayName("소식 유형과 이벤트 상태 조합이 올바르지 않으면 400을 반환한다")
     void returnsBadRequestWhenNewsFilterCombinationIsInvalid(
             String type,
             String eventStatus
@@ -512,7 +752,7 @@ class NewsHttpApiTest {
         mockMvc.perform(request)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code")
-                        .value(NewsQueryErrorCode.NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE.name()))
+                        .value(NewsErrorCode.NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE.name()))
                 .andDo(document(
                         documentName,
                         resource(ResourceSnippetParameters.builder()
@@ -557,7 +797,7 @@ class NewsHttpApiTest {
     }
 
     @Test
-    @DisplayName("소식 목록 조회 정렬 기준이 올바르지 않으면 400을 반환하고 서비스를 호출하지 않는다")
+    @DisplayName("소식 목록 조회 정렬 기준이 올바르지 않으면 400을 반환한다")
     void returnsBadRequestWhenNewsSortIsInvalid() throws Exception {
         mockMvc.perform(get("/api/v1/news")
                         .queryParam("sort", "INVALID"))
@@ -742,7 +982,7 @@ class NewsHttpApiTest {
     @Test
     @DisplayName("공지 생성 중 도메인 예외가 발생하면 500 오류 응답을 반환한다")
     void returnsInternalServerErrorWhenNoticeDomainValidationFails() throws Exception {
-        given(newsService.createNotice(any(CreateNoticeCommand.class)))
+        given(newsService.createNotice(any(NoticeCreateRequest.class)))
                 .willThrow(new DomainValidationException(NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE));
 
         mockMvc.perform(post("/api/v1/news/notices")
@@ -757,13 +997,13 @@ class NewsHttpApiTest {
                                 "공지와 선택적인 CTA를 생성한다."))
                 ));
 
-        verify(newsService).createNotice(any(CreateNoticeCommand.class));
+        verify(newsService).createNotice(any(NoticeCreateRequest.class));
     }
 
     @Test
     @DisplayName("이벤트 생성 중 도메인 예외가 발생하면 500 오류 응답을 반환한다")
     void returnsInternalServerErrorWhenEventDomainValidationFails() throws Exception {
-        given(newsService.createEvent(any(CreateEventCommand.class)))
+        given(newsService.createEvent(any(EventCreateRequest.class)))
                 .willThrow(new DomainValidationException(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID));
 
         mockMvc.perform(post("/api/v1/news/events")
@@ -778,7 +1018,7 @@ class NewsHttpApiTest {
                                 "이벤트와 선택적인 CTA를 생성한다."))
                 ));
 
-        verify(newsService).createEvent(any(CreateEventCommand.class));
+        verify(newsService).createEvent(any(EventCreateRequest.class));
     }
 
     // TODO: 인증 방식 확정 후 미인증 요청의 401 응답과 서비스 미호출을 검증한다.

@@ -1,21 +1,24 @@
 package com.shoutoutz.api.news.application;
 
-import com.shoutoutz.api.common.exception.custom.BadRequestException;
-import com.shoutoutz.api.news.application.command.CreateEventCommand;
-import com.shoutoutz.api.news.application.command.CreateNoticeCommand;
-import com.shoutoutz.api.news.application.command.CreateEventResult;
-import com.shoutoutz.api.news.application.command.CreateNoticeResult;
-import com.shoutoutz.api.news.application.query.NewsCursor;
-import com.shoutoutz.api.news.application.query.NewsCursorCodec;
-import com.shoutoutz.api.news.application.query.NewsFindAllQuery;
-import com.shoutoutz.api.news.application.query.NewsFindAllResult;
-import com.shoutoutz.api.news.application.query.NewsPage;
-import com.shoutoutz.api.news.application.query.NewsQueryErrorCode;
-import com.shoutoutz.api.news.application.query.NewsQueryRepository;
-import com.shoutoutz.api.news.application.query.NewsSummary;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.news.application.dto.NewsCursor;
+import com.shoutoutz.api.news.application.dto.NewsDetail;
+import com.shoutoutz.api.news.application.dto.NewsPage;
+import com.shoutoutz.api.news.application.dto.NewsSummary;
 import com.shoutoutz.api.news.domain.News;
 import com.shoutoutz.api.news.domain.NewsCta;
+import com.shoutoutz.api.news.domain.NewsErrorCode;
 import com.shoutoutz.api.news.domain.NewsRepository;
+import com.shoutoutz.api.news.domain.enums.EventStatus;
+import com.shoutoutz.api.news.domain.enums.NewsType;
+import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NewsFindAllRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NewsFindRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
+import com.shoutoutz.api.news.presentation.dto.response.EventCreateResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsFindAllResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsFindResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NoticeCreateResponse;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -32,63 +35,119 @@ public class NewsService {
     private final Clock clock;
 
     @Transactional
-    public CreateNoticeResult createNotice(CreateNoticeCommand command) {
-        NewsCta cta = toCta(command.cta());
+    public NoticeCreateResponse createNotice(NoticeCreateRequest request) {
+        NewsCta cta = toCta(request.cta());
         Instant now = clock.instant();
         News notice = News.createNotice(
-                command.title(),
-                command.summary(),
-                command.body(),
+                request.title(),
+                request.summary(),
+                request.body(),
                 resolveAuthorId(),
-                command.authorName(),
+                request.authorName(),
                 cta,
                 now
         );
-        return CreateNoticeResult.from(newsRepository.save(notice));
+        News savedNotice = newsRepository.save(notice);
+        return new NoticeCreateResponse(
+                savedNotice.getId(),
+                savedNotice.getType(),
+                savedNotice.getTitle(),
+                savedNotice.getSummary(),
+                savedNotice.getBody(),
+                new NoticeCreateResponse.Author(savedNotice.getAuthorId(), savedNotice.getAuthorName()),
+                savedNotice.getPublishedAt(),
+                savedNotice.isPinned(),
+                savedNotice.getPinOrder(),
+                toNoticeCta(savedNotice.getCta())
+        );
     }
 
     @Transactional
-    public CreateEventResult createEvent(CreateEventCommand command) {
-        NewsCta cta = toCta(command.cta());
+    public EventCreateResponse createEvent(EventCreateRequest request) {
+        NewsCta cta = toCta(request.cta());
         Instant now = clock.instant();
         News event = News.createEvent(
-                command.title(),
-                command.summary(),
-                command.body(),
+                request.title(),
+                request.summary(),
+                request.body(),
                 resolveAuthorId(),
-                command.authorName(),
-                command.eventStartAt(),
-                command.eventEndAt(),
+                request.authorName(),
+                request.eventStartAt(),
+                request.eventEndAt(),
                 cta,
                 now
         );
-        return CreateEventResult.from(newsRepository.save(event), now);
+        News savedEvent = newsRepository.save(event);
+        return new EventCreateResponse(
+                savedEvent.getId(),
+                savedEvent.getType(),
+                savedEvent.getTitle(),
+                savedEvent.getSummary(),
+                savedEvent.getBody(),
+                new EventCreateResponse.Author(savedEvent.getAuthorId(), savedEvent.getAuthorName()),
+                savedEvent.getPublishedAt(),
+                savedEvent.eventStatusAt(now),
+                savedEvent.getEventStartAt(),
+                savedEvent.getEventEndAt(),
+                savedEvent.isPinned(),
+                savedEvent.getPinOrder(),
+                toEventCta(savedEvent.getCta())
+        );
+    }
+
+    /**
+     * 전체 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public NewsFindAllResponse findAll(NewsFindAllRequest request) {
+        Instant now = clock.instant();
+        NewsPage page = newsQueryRepository.findAll(
+                request.getNewsType(),
+                request.getEventStatus(),
+                now,
+                request.getCursor(),
+                request.getSize()
+        );
+
+        // data 응답부
+        List<NewsFindAllResponse.Item> items =
+                page.items().stream()
+                        .map(summary -> toResponses(summary, now))
+                        .toList();
+
+        // meta 응답부
+        boolean hasNext = page.hasNext() && !items.isEmpty();
+        String nextCursor = hasNext ? NewsCursorCodec.encode(lastCursor(page.items())) : null;
+
+        //반환
+        return new NewsFindAllResponse(items, new NewsFindAllResponse.Meta(nextCursor, hasNext));
     }
 
     @Transactional(readOnly = true)
-    public NewsFindAllResult findAll(NewsFindAllQuery query) {
-        validateSize(query.size());
+    public NewsFindResponse findDetail(NewsFindRequest request) {
+        // 조회
+        NewsDetail newsDetail = newsQueryRepository.findDetailById(request.newsId(), request.navigation())
+                .orElseThrow(() -> new EntityNotFoundException(NewsErrorCode.NEWS_NOT_FOUND));
 
-        NewsCursor cursor = NewsCursorCodec.decode(query.encodedCursor());
-        Instant now = clock.instant();
-        NewsPage page = newsQueryRepository.findAll(
-                query.type(),
-                query.eventStatus(),
-                now,
-                cursor,
-                query.size()
-        );
+        // 이벤트인 경우, 상태 생성
+        EventStatus eventStatus = newsDetail.type() == NewsType.EVENT ? getEventStatus(newsDetail) : null;
 
-        List<NewsFindAllResult.Item> items = page.items().stream()
-                .map(summary -> NewsFindAllResult.Item.from(summary, now))
-                .toList();
-        boolean hasNext = page.hasNext() && !items.isEmpty();
-        String nextCursor = hasNext
-                ? NewsCursorCodec.encode(lastCursor(page.items()))
-                : null;
-        return new NewsFindAllResult(
-                items,
-                new NewsFindAllResult.Meta(nextCursor, hasNext)
+        // 응답
+        return new NewsFindResponse(
+                newsDetail.id(),
+                newsDetail.type(),
+                newsDetail.title(),
+                newsDetail.body(),
+                new NewsFindResponse.Author(newsDetail.authorId(), newsDetail.authorName()),
+                newsDetail.publishedAt(),
+                eventStatus,
+                newsDetail.eventStartAt(),
+                newsDetail.eventEndAt(),
+                newsDetail.pinned(),
+                newsDetail.pinOrder(),
+                toDetailCta(newsDetail.cta()),
+                toNavigation(newsDetail.previous()),
+                toNavigation(newsDetail.next())
         );
     }
 
@@ -97,11 +156,11 @@ public class NewsService {
         return 0L;
     }
 
-    private NewsCta toCta(CreateNoticeCommand.Cta cta) {
+    private NewsCta toCta(NoticeCreateRequest.Cta cta) {
         return cta == null ? null : toCta(cta.label(), cta.url());
     }
 
-    private NewsCta toCta(CreateEventCommand.Cta cta) {
+    private NewsCta toCta(EventCreateRequest.Cta cta) {
         return cta == null ? null : toCta(cta.label(), cta.url());
     }
 
@@ -109,14 +168,54 @@ public class NewsService {
         return new NewsCta(label, url);
     }
 
-    private void validateSize(int size) {
-        if (size < 1 || size > 50) {
-            throw new BadRequestException(NewsQueryErrorCode.NEWS_INVALID_SIZE);
-        }
+    private NoticeCreateResponse.Cta toNoticeCta(NewsCta cta) {
+        return cta == null ? null : new NoticeCreateResponse.Cta(cta.label(), cta.url());
+    }
+
+    private EventCreateResponse.Cta toEventCta(NewsCta cta) {
+        return cta == null ? null : new EventCreateResponse.Cta(cta.label(), cta.url());
+    }
+
+    /**
+     * 전체 목록 조회 유스케이스 헬퍼메서드
+     */
+    private NewsFindAllResponse.Item toResponses
+            (NewsSummary summary, Instant now) {
+        EventStatus eventStatus = summary.type() == NewsType.EVENT
+                ? EventStatus.from(now, summary.eventStartAt(), summary.eventEndAt())
+                : null;
+        return new NewsFindAllResponse.Item(
+                summary.id(),
+                summary.type(),
+                summary.title(),
+                summary.summary(),
+                summary.publishedAt(),
+                eventStatus,
+                summary.eventStartAt(),
+                summary.eventEndAt(),
+                summary.pinned(),
+                summary.pinOrder()
+        );
     }
 
     private NewsCursor lastCursor(List<NewsSummary> items) {
         NewsSummary lastSummary = items.get(items.size() - 1);
         return new NewsCursor(lastSummary.publishedAt(), lastSummary.id());
+    }
+
+    /**
+     * 상세 조회 유스케이스 헬퍼메서드
+     */
+    private NewsFindResponse.Cta toDetailCta(NewsDetail.Cta cta) {
+        return cta == null ? null : new NewsFindResponse.Cta(cta.label(), cta.url());
+    }
+
+    private NewsFindResponse.Navigation toNavigation(NewsDetail.Navigation item) {
+        return item == null ? null : new NewsFindResponse.Navigation(item.id(), item.title(), item.publishedAt());
+    }
+
+    private EventStatus getEventStatus(NewsDetail newsDetail) {
+        Instant now = clock.instant();
+        return EventStatus.from(now, newsDetail.eventStartAt(), newsDetail.eventEndAt());
     }
 }

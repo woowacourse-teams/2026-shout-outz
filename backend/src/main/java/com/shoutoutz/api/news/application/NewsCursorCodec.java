@@ -36,21 +36,21 @@ public final class NewsCursorCodec {
                     StandardCharsets.UTF_8
             );
             if (!payload.startsWith("{") || !payload.endsWith("}")) {
-                throw new InvalidInputException(NewsErrorCode.NEWS_INVALID_CURSOR);
+                throw new InvalidInputException(NewsErrorCode.NEWS_INVALID_CURSOR_FILTER_INPUT);
             }
 
             Long id = extractId(payload);
             if (id == null || id <= 0) {
-                throw new InvalidInputException(NewsErrorCode.NEWS_INVALID_CURSOR);
+                throw new InvalidInputException(NewsErrorCode.NEWS_INVALID_CURSOR_FILTER_INPUT);
             }
 
             String publishedAt = extractPublishedAt(payload);
             if (publishedAt == null) {
-                throw new InvalidInputException(NewsErrorCode.NEWS_INVALID_CURSOR);
+                throw new InvalidInputException(NewsErrorCode.NEWS_INVALID_CURSOR_FILTER_INPUT);
             }
             return new NewsCursor(Instant.parse(publishedAt), id);
         } catch (RuntimeException exception) {
-            throw new InvalidInputException(NewsErrorCode.NEWS_INVALID_CURSOR);
+            throw new InvalidInputException(NewsErrorCode.NEWS_INVALID_CURSOR_FILTER_INPUT);
         }
     }
 

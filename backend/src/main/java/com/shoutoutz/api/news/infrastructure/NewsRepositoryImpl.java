@@ -1,19 +1,22 @@
 package com.shoutoutz.api.news.infrastructure;
 
-import com.shoutoutz.api.news.application.query.NewsCursor;
-import com.shoutoutz.api.news.application.query.NewsPage;
-import com.shoutoutz.api.news.application.query.NewsQueryRepository;
-import com.shoutoutz.api.news.application.query.NewsSummary;
-import com.shoutoutz.api.news.domain.EventStatus;
+import com.shoutoutz.api.news.application.dto.NewsCursor;
+import com.shoutoutz.api.news.application.dto.NewsDetail;
+import com.shoutoutz.api.news.application.dto.NewsPage;
+import com.shoutoutz.api.news.application.NewsQueryRepository;
+import com.shoutoutz.api.news.application.dto.NewsSummary;
+import com.shoutoutz.api.news.domain.enums.EventStatus;
 import com.shoutoutz.api.news.domain.News;
 import com.shoutoutz.api.news.domain.NewsRepository;
-import com.shoutoutz.api.news.domain.NewsType;
+import com.shoutoutz.api.news.domain.enums.NewsType;
 import com.shoutoutz.api.news.infrastructure.jpa.NewsJpaRepository;
 import com.shoutoutz.api.news.infrastructure.mapper.NewsMapper;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -50,5 +53,29 @@ public class NewsRepositoryImpl implements NewsRepository, NewsQueryRepository {
                 ? summaries.subList(0, size)
                 : summaries;
         return new NewsPage(pageSummaries, hasNext);
+    }
+
+    @Override
+    public Optional<NewsDetail> findDetailById(long newsId, boolean navigation) {
+        return newsJpaRepository.findById(newsId)
+                .map(entity -> {
+                    News news = NewsMapper.toDomain(entity);
+                    if (!navigation) {
+                        return NewsDetail.from(news, null, null);
+                    }
+
+                    Pageable pageable = PageRequest.of(0, 1); //단건 조회
+                    NewsDetail.Navigation previous = firstOrNull(
+                            newsJpaRepository.findPrevious(news.getPublishedAt(), news.getId(), pageable)
+                    );
+                    NewsDetail.Navigation next = firstOrNull(
+                            newsJpaRepository.findNext(news.getPublishedAt(), news.getId(), pageable)
+                    );
+                    return NewsDetail.from(news, previous, next);
+                });
+    }
+
+    private NewsDetail.Navigation firstOrNull(List<NewsDetail.Navigation> items) {
+        return items.isEmpty() ? null : items.getFirst();
     }
 }

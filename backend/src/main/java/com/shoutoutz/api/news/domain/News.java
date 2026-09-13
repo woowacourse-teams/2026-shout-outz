@@ -1,6 +1,8 @@
 package com.shoutoutz.api.news.domain;
 
 import com.shoutoutz.api.common.util.DataResolveUtil;
+import com.shoutoutz.api.news.domain.enums.EventStatus;
+import com.shoutoutz.api.news.domain.enums.NewsType;
 import java.time.Instant;
 import lombok.Builder;
 import lombok.Getter;
