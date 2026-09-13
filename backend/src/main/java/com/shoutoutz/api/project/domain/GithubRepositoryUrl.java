@@ -35,7 +35,7 @@ public record GithubRepositoryUrl(String value) {
     public String getRepositoryName() {
         Matcher matcher = PATTERN.matcher(value);
         if (!matcher.matches()) {
-            throw new DomainValidationException(ProjectErrorCode.PROJECT_INVALID_GITHUB_REPOSITORY_URL);
+            throw new DomainValidationException(ProjectErrorCode.PROJECT_REPOSITORY_NAME_EXTRACTION_FAILED);
         }
         return matcher.group(1);
     }

@@ -17,6 +17,7 @@ public enum ProjectErrorCode implements ErrorCode {
      * 프로젝트 링크 에러 코드
      */
     PROJECT_INVALID_GITHUB_REPOSITORY_URL("GitHub 리포지토리 URL 형식이 올바르지 않습니다."),
+    PROJECT_REPOSITORY_NAME_EXTRACTION_FAILED("GitHub 리포지토리 URL에서 리포지토리 이름을 추출할 수 없습니다."),
     PROJECT_INVALID_DEPLOYMENT_URL("서비스 배포 URL 형식이 올바르지 않습니다."),
 
     /**
