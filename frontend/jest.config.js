@@ -6,7 +6,7 @@ export default {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
-    '^.+\\.(t|j)sx?$': [
+    '^.+\\.(?:[tj]sx?|mjs)$': [
       '@swc/jest',
       {
         swcrc: false,
@@ -18,4 +18,7 @@ export default {
       },
     ],
   },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(ky|until-async|rettime|@open-draft/deferred-promise)/)',
+  ],
 };
