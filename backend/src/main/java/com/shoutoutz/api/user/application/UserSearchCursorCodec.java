@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
+/** 검색 정렬 기준을 외부에 노출하지 않는 URL-safe 커서로 변환한다. */
 @Component
 @RequiredArgsConstructor
 public class UserSearchCursorCodec {
