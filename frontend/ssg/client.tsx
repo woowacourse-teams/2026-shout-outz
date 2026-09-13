@@ -13,6 +13,11 @@ const router = createAppRouter(queryClient);
 // <Document><App/></Document>를 그리고, 이 문서가 실제로 프리렌더됐는지에 따라 마운트 방식만
 // 갈립니다(App은 이 분기를 모릅니다 - src/App.tsx 참고).
 async function bootstrap() {
+  if (process.env.NODE_ENV === 'development') {
+    const { worker } = await import('@/api/mock/browser');
+    await worker.start({ onUnhandledRequest: 'bypass' });
+  }
+
   const routerHydrationState = window.$_TSR;
   const tree = (
     <Document>
