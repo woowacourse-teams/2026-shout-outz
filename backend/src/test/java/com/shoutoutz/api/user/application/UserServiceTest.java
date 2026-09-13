@@ -6,12 +6,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.user.application.dto.UserProfileCounts;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
@@ -248,8 +250,9 @@ class UserServiceTest {
     @DisplayName("형식이 잘못된 검색 커서를 거절한다")
     void rejectInvalidSearchCursor() {
         assertThatThrownBy(() -> userService.searchWoowaUsers("재키", "invalid", 20))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("유효하지 않은 커서입니다.");
+                .isInstanceOfSatisfying(BadRequestException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(UserErrorCode.USER_SEARCH_CURSOR_INVALID)
+                );
 
         then(userQueryRepository).shouldHaveNoInteractions();
     }

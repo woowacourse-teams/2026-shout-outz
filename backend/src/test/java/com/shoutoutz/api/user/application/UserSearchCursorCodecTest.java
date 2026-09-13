@@ -1,7 +1,10 @@
 package com.shoutoutz.api.user.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +32,8 @@ class UserSearchCursorCodecTest {
                 .encodeToString(json.getBytes(StandardCharsets.UTF_8));
 
         assertThatThrownBy(() -> codec.decode(encodedCursor))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("유효하지 않은 커서입니다.");
+                .isInstanceOfSatisfying(BadRequestException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(UserErrorCode.USER_SEARCH_CURSOR_INVALID)
+                );
     }
 }

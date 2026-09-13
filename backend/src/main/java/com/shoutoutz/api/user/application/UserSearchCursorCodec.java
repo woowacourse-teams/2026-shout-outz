@@ -1,9 +1,12 @@
 package com.shoutoutz.api.user.application;
 
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
-import com.shoutoutz.api.user.domain.account.Handle;
-import com.shoutoutz.api.user.domain.profile.ProfileDisplayName;
+import com.shoutoutz.api.common.exception.custom.InternalServerErrorException;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
+import com.shoutoutz.api.user.domain.account.Handle;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
+import com.shoutoutz.api.user.domain.profile.ProfileDisplayName;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -27,7 +30,10 @@ public class UserSearchCursorCodec {
             byte[] serializedCursor = objectMapper.writeValueAsBytes(cursor);
             return Base64.getUrlEncoder().withoutPadding().encodeToString(serializedCursor);
         } catch (JacksonException exception) {
-            throw new IllegalStateException("검색 커서를 생성할 수 없습니다.", exception);
+            throw new InternalServerErrorException(
+                    UserErrorCode.USER_SEARCH_CURSOR_ENCODING_FAILED,
+                    exception
+            );
         }
     }
 
@@ -42,7 +48,7 @@ public class UserSearchCursorCodec {
             validate(cursor);
             return cursor;
         } catch (JacksonException | IllegalArgumentException | DomainValidationException exception) {
-            throw new IllegalArgumentException("유효하지 않은 커서입니다.");
+            throw new BadRequestException(UserErrorCode.USER_SEARCH_CURSOR_INVALID, exception);
         }
     }
 
@@ -50,7 +56,7 @@ public class UserSearchCursorCodec {
         if (cursor == null
                 || cursor.relevanceRank() < MIN_RELEVANCE_RANK
                 || cursor.relevanceRank() > MAX_RELEVANCE_RANK) {
-            throw new IllegalArgumentException("유효하지 않은 관련도 순위입니다.");
+            throw new BadRequestException(UserErrorCode.USER_SEARCH_CURSOR_INVALID);
         }
         new ProfileDisplayName(cursor.displayName());
         new Handle(cursor.handle());

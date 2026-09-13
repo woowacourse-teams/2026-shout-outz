@@ -30,6 +30,7 @@ import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.user.application.UserService;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -641,13 +642,27 @@ class UserHttpApiTest {
     @DisplayName("잘못된 커서로 우테코 사용자를 검색할 수 없다")
     void rejectInvalidSearchCursor() throws Exception {
         given(userService.searchWoowaUsers("재키", "invalid", 20))
-                .willThrow(new IllegalArgumentException("유효하지 않은 커서입니다."));
+                .willThrow(new BadRequestException(UserErrorCode.USER_SEARCH_CURSOR_INVALID));
 
         mockMvc.perform(get("/api/v1/users/search")
-                        .queryParam("keyword", "재키")
-                        .queryParam("cursor", "invalid"))
+                .queryParam("keyword", "재키")
+                .queryParam("cursor", "invalid"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+                .andExpect(jsonPath("$.code").value("USER_SEARCH_CURSOR_INVALID"))
+                .andDo(document(
+                        "user-search-get-cursor-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("우테코 사용자 검색")
+                                .description("ACTIVE 상태의 우테코 크루와 코치를 이름 또는 handle로 검색한다.")
+                                .queryParameters(
+                                        parameterWithName("keyword").description("이름 또는 handle 검색어"),
+                                        parameterWithName("cursor").description("다음 페이지 커서")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
     }
 
     @Test
