@@ -8,6 +8,10 @@ final class EventPeriodRequestValidator implements ConstraintValidator<ValidEven
 
     @Override
     public boolean isValid(EventCreateRequest request, ConstraintValidatorContext context) {
+        /**
+         *  null 체크 검증은 수행하지 않는다. null이 들어오는 경우 true로 검증된다.
+         *  null 검증은 외부에서 별도로 @NotNull이 처리하도록 한다.
+         */
         if (request == null || request.eventStartAt() == null || request.eventEndAt() == null) {
             return true;
         }
