@@ -20,7 +20,7 @@ class GithubRepositoryUrlTest {
     })
     @DisplayName("GitHub 리포지토리 URL에서 .git과 끝 슬래시를 뺀 리포지토리 이름을 추출한다.")
     void extractsRepositoryName(String url) {
-        assertThat(new GithubRepositoryUrl(url).repositoryName()).isEqualTo("2026-loop");
+        assertThat(new GithubRepositoryUrl(url).getRepositoryName()).isEqualTo("2026-loop");
     }
 
     @ParameterizedTest

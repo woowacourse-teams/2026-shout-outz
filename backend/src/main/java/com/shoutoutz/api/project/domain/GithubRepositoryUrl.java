@@ -32,7 +32,7 @@ public record GithubRepositoryUrl(String value) {
     /**
      * 'https://github.com/woowacourse-teams/2026-loop' -> '2026-loop'
      */
-    public String repositoryName() {
+    public String getRepositoryName() {
         Matcher matcher = PATTERN.matcher(value);
         if (!matcher.matches()) {
             throw new DomainValidationException(ProjectErrorCode.PROJECT_INVALID_GITHUB_REPOSITORY_URL);

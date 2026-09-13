@@ -69,7 +69,7 @@ public class Project {
                 .cohort(cohort)
                 .registeredBy(registeredBy)
                 .teamName(teamName)
-                .slug(Slug.from(githubRepositoryUrl.repositoryName()))
+                .slug(Slug.from(githubRepositoryUrl.getRepositoryName()))
                 .title(title)
                 .tagline(tagline)
                 .serviceStatus(initialServiceStatus(deploymentUrl))
