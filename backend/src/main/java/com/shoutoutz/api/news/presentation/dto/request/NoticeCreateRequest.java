@@ -1,5 +1,6 @@
 package com.shoutoutz.api.news.presentation.dto.request;
 
+import com.shoutoutz.api.news.application.command.CreateNoticeCommand;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -24,6 +25,16 @@ public record NoticeCreateRequest(
         @Valid
         Cta cta
 ) {
+
+    public CreateNoticeCommand toCommand() {
+        return new CreateNoticeCommand(
+                title,
+                summary,
+                body,
+                authorName,
+                cta == null ? null : new CreateNoticeCommand.Cta(cta.label(), cta.url())
+        );
+    }
 
     public record Cta(
             @NotBlank(message = "cta.label은 필수입니다.")

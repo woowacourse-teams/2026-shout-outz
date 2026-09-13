@@ -1,14 +1,24 @@
 package com.shoutoutz.api.news.application;
 
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.news.application.command.CreateEventCommand;
+import com.shoutoutz.api.news.application.command.CreateNoticeCommand;
+import com.shoutoutz.api.news.application.command.CreateEventResult;
+import com.shoutoutz.api.news.application.command.CreateNoticeResult;
+import com.shoutoutz.api.news.application.query.NewsCursor;
+import com.shoutoutz.api.news.application.query.NewsCursorCodec;
+import com.shoutoutz.api.news.application.query.NewsFindAllQuery;
+import com.shoutoutz.api.news.application.query.NewsFindAllResult;
+import com.shoutoutz.api.news.application.query.NewsPage;
+import com.shoutoutz.api.news.application.query.NewsQueryErrorCode;
+import com.shoutoutz.api.news.application.query.NewsQueryRepository;
+import com.shoutoutz.api.news.application.query.NewsSummary;
 import com.shoutoutz.api.news.domain.News;
 import com.shoutoutz.api.news.domain.NewsCta;
 import com.shoutoutz.api.news.domain.NewsRepository;
-import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
-import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
-import com.shoutoutz.api.news.presentation.dto.response.EventCreateResponse;
-import com.shoutoutz.api.news.presentation.dto.response.NoticeCreateResponse;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,40 +28,68 @@ import org.springframework.transaction.annotation.Transactional;
 public class NewsService {
 
     private final NewsRepository newsRepository;
+    private final NewsQueryRepository newsQueryRepository;
     private final Clock clock;
 
     @Transactional
-    public NoticeCreateResponse createNotice(NoticeCreateRequest body) {
-        NewsCta cta = toCta(body.cta());
+    public CreateNoticeResult createNotice(CreateNoticeCommand command) {
+        NewsCta cta = toCta(command.cta());
         Instant now = clock.instant();
         News notice = News.createNotice(
-                body.title(),
-                body.summary(),
-                body.body(),
+                command.title(),
+                command.summary(),
+                command.body(),
                 resolveAuthorId(),
-                body.authorName(),
+                command.authorName(),
                 cta,
                 now
         );
-        return NoticeCreateResponse.from(newsRepository.save(notice));
+        return CreateNoticeResult.from(newsRepository.save(notice));
     }
 
     @Transactional
-    public EventCreateResponse createEvent(EventCreateRequest body) {
-        NewsCta cta = toCta(body.cta());
+    public CreateEventResult createEvent(CreateEventCommand command) {
+        NewsCta cta = toCta(command.cta());
         Instant now = clock.instant();
         News event = News.createEvent(
-                body.title(),
-                body.summary(),
-                body.body(),
+                command.title(),
+                command.summary(),
+                command.body(),
                 resolveAuthorId(),
-                body.authorName(),
-                body.eventStartAt(),
-                body.eventEndAt(),
+                command.authorName(),
+                command.eventStartAt(),
+                command.eventEndAt(),
                 cta,
                 now
         );
-        return EventCreateResponse.from(newsRepository.save(event), now);
+        return CreateEventResult.from(newsRepository.save(event), now);
+    }
+
+    @Transactional(readOnly = true)
+    public NewsFindAllResult findAll(NewsFindAllQuery query) {
+        validateSize(query.size());
+
+        NewsCursor cursor = NewsCursorCodec.decode(query.encodedCursor());
+        Instant now = clock.instant();
+        NewsPage page = newsQueryRepository.findAll(
+                query.type(),
+                query.eventStatus(),
+                now,
+                cursor,
+                query.size()
+        );
+
+        List<NewsFindAllResult.Item> items = page.items().stream()
+                .map(summary -> NewsFindAllResult.Item.from(summary, now))
+                .toList();
+        boolean hasNext = page.hasNext() && !items.isEmpty();
+        String nextCursor = hasNext
+                ? NewsCursorCodec.encode(lastCursor(page.items()))
+                : null;
+        return new NewsFindAllResult(
+                items,
+                new NewsFindAllResult.Meta(nextCursor, hasNext)
+        );
     }
 
     private Long resolveAuthorId() {
@@ -59,15 +97,26 @@ public class NewsService {
         return 0L;
     }
 
-    private NewsCta toCta(NoticeCreateRequest.Cta cta) {
+    private NewsCta toCta(CreateNoticeCommand.Cta cta) {
         return cta == null ? null : toCta(cta.label(), cta.url());
     }
 
-    private NewsCta toCta(EventCreateRequest.Cta cta) {
+    private NewsCta toCta(CreateEventCommand.Cta cta) {
         return cta == null ? null : toCta(cta.label(), cta.url());
     }
 
     private NewsCta toCta(String label, String url) {
         return new NewsCta(label, url);
+    }
+
+    private void validateSize(int size) {
+        if (size < 1 || size > 50) {
+            throw new BadRequestException(NewsQueryErrorCode.NEWS_INVALID_SIZE);
+        }
+    }
+
+    private NewsCursor lastCursor(List<NewsSummary> items) {
+        NewsSummary lastSummary = items.get(items.size() - 1);
+        return new NewsCursor(lastSummary.publishedAt(), lastSummary.id());
     }
 }

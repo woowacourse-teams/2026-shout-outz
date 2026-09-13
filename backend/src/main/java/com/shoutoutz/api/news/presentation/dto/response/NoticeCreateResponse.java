@@ -1,7 +1,6 @@
 package com.shoutoutz.api.news.presentation.dto.response;
 
-import com.shoutoutz.api.news.domain.News;
-import com.shoutoutz.api.news.domain.NewsCta;
+import com.shoutoutz.api.news.application.command.CreateNoticeResult;
 import com.shoutoutz.api.news.domain.NewsType;
 import java.time.Instant;
 
@@ -18,18 +17,18 @@ public record NoticeCreateResponse(
         Cta cta
 ) {
 
-    public static NoticeCreateResponse from(News news) {
+    public static NoticeCreateResponse from(CreateNoticeResult result) {
         return new NoticeCreateResponse(
-                news.getId(),
-                news.getType(),
-                news.getTitle(),
-                news.getSummary(),
-                news.getBody(),
-                new Author(news.getAuthorId(), news.getAuthorName()),
-                news.getPublishedAt(),
-                news.isPinned(),
-                news.getPinOrder(),
-                Cta.from(news.getCta())
+                result.id(),
+                result.type(),
+                result.title(),
+                result.summary(),
+                result.body(),
+                new Author(result.author().userId(), result.author().name()),
+                result.publishedAt(),
+                result.isPinned(),
+                result.pinOrder(),
+                Cta.from(result.cta())
         );
     }
 
@@ -38,7 +37,7 @@ public record NoticeCreateResponse(
 
     public record Cta(String label, String url) {
 
-        private static Cta from(NewsCta cta) {
+        private static Cta from(CreateNoticeResult.Cta cta) {
             if (cta == null) {
                 return null;
             }
