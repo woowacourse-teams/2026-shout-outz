@@ -1,13 +1,13 @@
 package com.shoutoutz.api.user.presentation.dto.request;
 
-import com.shoutoutz.api.common.validator.CodePointSize;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import org.hibernate.validator.constraints.CodePointLength;
 
 public record UserSearchRequest(
         @NotBlank(message = "keyword는 필수입니다.")
-        @CodePointSize(max = 50, message = "keyword는 50자를 초과할 수 없습니다.")
+        @CodePointLength(max = 50, message = "keyword는 50자를 초과할 수 없습니다.")
         String keyword,
 
         String cursor,

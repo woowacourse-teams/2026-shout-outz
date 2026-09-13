@@ -2,9 +2,9 @@ package com.shoutoutz.api.auth.presentation.dto.request;
 
 import com.shoutoutz.api.auth.application.command.OAuthSignupCommand;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
-import com.shoutoutz.api.common.validator.CodePointSize;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import org.hibernate.validator.constraints.CodePointLength;
 
 public record OAuthSignupRequest(
         @NotBlank(message = "handle은 필수입니다.")
@@ -14,7 +14,7 @@ public record OAuthSignupRequest(
         )
         String handle,
         @NotBlank(message = "displayName은 필수입니다.")
-        @CodePointSize(max = 50, message = "displayName은 50자를 초과할 수 없습니다.")
+        @CodePointLength(max = 50, message = "displayName은 50자를 초과할 수 없습니다.")
         String displayName
 ) {
 
