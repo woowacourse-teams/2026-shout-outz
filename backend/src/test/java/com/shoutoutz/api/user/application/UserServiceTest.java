@@ -211,16 +211,16 @@ class UserServiceTest {
 
     @Test
     @DisplayName("우테코 사용자를 검색하고 다음 커서를 생성한다")
-    void searchWoowaUsers() {
+    void searchWoowaMember() {
         List<UserSearchItem> searchedItems = List.of(
                 searchItem("dahye", "다혜", 2),
                 searchItem("hoi", "호이", 2),
                 searchItem("charles", "샤를", 2)
         );
-        given(userQueryRepository.searchWoowaUsers("재", null, 3))
+        given(userQueryRepository.searchWoowaMember("재", null, 3))
                 .willReturn(searchedItems);
 
-        UserSearchResult result = userService.searchWoowaUsers("재", null, 2);
+        UserSearchResult result = userService.searchWoowaMember("재", null, 2);
 
         assertThat(result.items()).containsExactly(searchedItems.get(0), searchedItems.get(1));
         assertThat(userSearchCursorCodec.decode(result.nextCursor()))
@@ -230,12 +230,12 @@ class UserServiceTest {
 
     @Test
     @DisplayName("커서를 해석해 다음 우테코 사용자를 검색한다")
-    void searchWoowaUsersWithCursor() {
+    void searchWoowaMemberWithCursor() {
         UserSearchCursor cursor = new UserSearchCursor(1, "재키", "zzaekkii");
-        given(userQueryRepository.searchWoowaUsers("재키", cursor, 21))
+        given(userQueryRepository.searchWoowaMember("재키", cursor, 21))
                 .willReturn(List.of());
 
-        UserSearchResult result = userService.searchWoowaUsers(
+        UserSearchResult result = userService.searchWoowaMember(
                 "재키",
                 userSearchCursorCodec.encode(cursor),
                 20
@@ -249,7 +249,7 @@ class UserServiceTest {
     @Test
     @DisplayName("형식이 잘못된 검색 커서를 거절한다")
     void rejectInvalidSearchCursor() {
-        assertThatThrownBy(() -> userService.searchWoowaUsers("재키", "invalid", 20))
+        assertThatThrownBy(() -> userService.searchWoowaMember("재키", "invalid", 20))
                 .isInstanceOfSatisfying(BadRequestException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(UserErrorCode.USER_SEARCH_CURSOR_INVALID)
                 );

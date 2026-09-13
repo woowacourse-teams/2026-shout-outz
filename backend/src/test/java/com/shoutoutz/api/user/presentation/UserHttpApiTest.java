@@ -506,8 +506,8 @@ class UserHttpApiTest {
 
     @Test
     @DisplayName("인증 없이 ACTIVE 우테코 크루와 코치를 검색한다")
-    void searchWoowaUsers() throws Exception {
-        given(userService.searchWoowaUsers("재키", null, 20))
+    void searchWoowaMember() throws Exception {
+        given(userService.searchWoowaMember("재키", null, 20))
                 .willReturn(new UserSearchResult(
                         List.of(
                                 new UserSearchItem(
@@ -641,7 +641,7 @@ class UserHttpApiTest {
     @Test
     @DisplayName("잘못된 커서로 우테코 사용자를 검색할 수 없다")
     void rejectInvalidSearchCursor() throws Exception {
-        given(userService.searchWoowaUsers("재키", "invalid", 20))
+        given(userService.searchWoowaMember("재키", "invalid", 20))
                 .willThrow(new BadRequestException(UserErrorCode.USER_SEARCH_CURSOR_INVALID));
 
         mockMvc.perform(get("/api/v1/users/search")

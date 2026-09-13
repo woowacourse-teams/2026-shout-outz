@@ -66,10 +66,10 @@ public class UserHttpApi {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<SuccessResponse<UserSearchResponse>> searchWoowaUsers(
+    public ResponseEntity<SuccessResponse<UserSearchResponse>> searchWoowaMember(
             @Valid @ModelAttribute UserSearchRequest request
     ) {
-        UserSearchResult result = userService.searchWoowaUsers(
+        UserSearchResult result = userService.searchWoowaMember(
                 request.keyword(),
                 request.cursor(),
                 request.resolvedSize()

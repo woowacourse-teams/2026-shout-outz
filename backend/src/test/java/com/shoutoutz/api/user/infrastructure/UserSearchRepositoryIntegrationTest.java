@@ -40,7 +40,7 @@ class UserSearchRepositoryIntegrationTest {
 
     @Test
     @DisplayName("본인을 포함해 이름이나 handle이 일치하는 ACTIVE 크루와 코치를 관련도순으로 검색한다")
-    void searchWoowaUsers() {
+    void searchWoowaMember() {
         User requester = saveUser("jack-requester", UserStatus.ACTIVE);
         saveProfile(requester.getId(), "Jack Owner", UserType.WOOWACOURSE_CREW);
         User exactlyMatched = saveUser("dahye", UserStatus.ACTIVE);
@@ -57,7 +57,7 @@ class UserSearchRepositoryIntegrationTest {
         saveProfile(banned.getId(), "Jack Banned", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
-        List<UserSearchItem> result = userQueryRepository.searchWoowaUsers(
+        List<UserSearchItem> result = userQueryRepository.searchWoowaMember(
                 "jack",
                 null,
                 10
@@ -77,7 +77,7 @@ class UserSearchRepositoryIntegrationTest {
 
     @Test
     @DisplayName("커서의 정렬 키 다음에 위치한 우테코 사용자만 검색한다")
-    void searchWoowaUsersAfterCursor() {
+    void searchWoowaMemberAfterCursor() {
         User requester = saveUser("cursor-requester", UserStatus.ACTIVE);
         saveProfile(requester.getId(), "요청자", UserType.WOOWACOURSE_CREW);
         User first = saveUser("cursor-jack-one", UserStatus.ACTIVE);
@@ -86,7 +86,7 @@ class UserSearchRepositoryIntegrationTest {
         saveProfile(second.getId(), "나 크루", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
-        List<UserSearchItem> firstSlice = userQueryRepository.searchWoowaUsers(
+        List<UserSearchItem> firstSlice = userQueryRepository.searchWoowaMember(
                 "jack",
                 null,
                 10
@@ -98,7 +98,7 @@ class UserSearchRepositoryIntegrationTest {
                 cursorItem.handle()
         );
 
-        List<UserSearchItem> result = userQueryRepository.searchWoowaUsers(
+        List<UserSearchItem> result = userQueryRepository.searchWoowaMember(
                 "jack",
                 cursor,
                 10
@@ -119,7 +119,7 @@ class UserSearchRepositoryIntegrationTest {
         saveProfile(unmatched.getId(), "일반 크루", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
-        List<UserSearchItem> result = userQueryRepository.searchWoowaUsers(
+        List<UserSearchItem> result = userQueryRepository.searchWoowaMember(
                 "%",
                 null,
                 10

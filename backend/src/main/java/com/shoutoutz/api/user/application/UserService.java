@@ -109,14 +109,14 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserSearchResult searchWoowaUsers(
+    public UserSearchResult searchWoowaMember(
             String keyword,
             String cursor,
             int size
     ) {
         UserSearchCursor decodedCursor = userSearchCursorCodec.decode(cursor);
 
-        List<UserSearchItem> searchedItems = userQueryRepository.searchWoowaUsers(
+        List<UserSearchItem> searchedItems = userQueryRepository.searchWoowaMember(
                 keyword,
                 decodedCursor,
                 size + 1

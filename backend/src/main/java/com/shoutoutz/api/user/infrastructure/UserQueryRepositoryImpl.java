@@ -50,7 +50,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
     }
 
     @Override
-    public List<UserSearchItem> searchWoowaUsers(
+    public List<UserSearchItem> searchWoowaMember(
             String keyword,
             UserSearchCursor cursor,
             int limit
