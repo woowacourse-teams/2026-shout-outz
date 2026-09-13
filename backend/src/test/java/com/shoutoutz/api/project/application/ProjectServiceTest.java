@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.cohort.domain.CohortErrorCode;
+import com.shoutoutz.api.cohort.domain.InvalidCohortException;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.media.domain.MediaMetadata;
@@ -89,7 +90,7 @@ class ProjectServiceTest {
     @DisplayName("정의되지 않은 기수면 조회 없이 400을 던진다.")
     void rejectsUndefinedCohort() {
         assertThatThrownBy(() -> projectService.create(command(99, null, TECH_TAG_IDS)))
-                .isInstanceOfSatisfying(BadRequestException.class,
+                .isInstanceOfSatisfying(InvalidCohortException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(CohortErrorCode.INVALID_COHORT));
 
         verifyNoInteractions(projectRepository, techTagRepository, mediaMetadataRepository);

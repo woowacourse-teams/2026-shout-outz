@@ -1,6 +1,5 @@
 package com.shoutoutz.api.cohort.domain;
 
-import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -36,7 +35,7 @@ public enum Cohort {
         return Arrays.stream(values())
                 .filter(cohort -> cohort.value == value)
                 .findFirst()
-                .orElseThrow(() -> new BadRequestException(CohortErrorCode.INVALID_COHORT));
+                .orElseThrow(InvalidCohortException::new);
     }
 
     /**

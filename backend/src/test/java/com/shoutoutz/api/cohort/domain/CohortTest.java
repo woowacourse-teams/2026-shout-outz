@@ -3,7 +3,6 @@ package com.shoutoutz.api.cohort.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,7 +26,7 @@ class CohortTest {
     @DisplayName("정의되지 않은 기수 번호는 400 예외를 던진다.")
     void rejectsUndefinedCohort(int value) {
         assertThatThrownBy(() -> Cohort.from(value))
-                .isInstanceOfSatisfying(BadRequestException.class,
+                .isInstanceOfSatisfying(InvalidCohortException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(CohortErrorCode.INVALID_COHORT));
     }
 
