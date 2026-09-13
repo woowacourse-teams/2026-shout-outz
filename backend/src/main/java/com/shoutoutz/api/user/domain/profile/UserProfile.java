@@ -1,8 +1,6 @@
 package com.shoutoutz.api.user.domain.profile;
 
-import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.util.DataResolveUtil;
-import com.shoutoutz.api.user.exception.UserErrorCode;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -68,7 +66,11 @@ public class UserProfile {
             String blogUrl
     ) {
         String sanitizedDisplayName = DataResolveUtil.sanitizeString(displayName);
-        validateDisplayNameChange(sanitizedDisplayName);
+        UserProfileValidator.validateDisplayNameChange(
+                userType,
+                this.displayName.value(),
+                sanitizedDisplayName
+        );
 
         return new UserProfile(
                 userId,
@@ -95,12 +97,6 @@ public class UserProfile {
                 null,
                 null
         );
-    }
-
-    private void validateDisplayNameChange(String requestedDisplayName) {
-        if (userType != UserType.GENERAL && !displayName.value().equals(requestedDisplayName)) {
-            throw new BadRequestException(UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE);
-        }
     }
 
 }

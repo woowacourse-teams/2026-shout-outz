@@ -8,11 +8,13 @@ import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.DISPLAY
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.GENERAL_USER_COURSE_INFO_NOT_ALLOWED;
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.USER_ID_REQUIRED;
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.USER_TYPE_REQUIRED;
+import static com.shoutoutz.api.user.exception.UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE;
 
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 
 /**
- * UserProfile 생성 시 지켜야 하는 필수값과 상태 조합 검증.
+ * UserProfile이 지켜야 하는 필수값, 상태 조합 및 변경 규칙 검증.
  */
 final class UserProfileValidator {
 
@@ -21,6 +23,16 @@ final class UserProfileValidator {
 
     static void validateDisplayName(String displayName) {
         validateNotNullOrBlank(displayName, DISPLAY_NAME_REQUIRED);
+    }
+
+    static void validateDisplayNameChange(
+            UserType userType,
+            String currentDisplayName,
+            String requestedDisplayName
+    ) {
+        if (userType != UserType.GENERAL && !currentDisplayName.equals(requestedDisplayName)) {
+            throw new BadRequestException(PROFILE_DISPLAY_NAME_IMMUTABLE);
+        }
     }
 
     static void validateProfile(
