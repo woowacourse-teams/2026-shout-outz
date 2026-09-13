@@ -3,33 +3,24 @@ import { getRouteApi } from '@tanstack/react-router';
 import { NewsItem, type NewsType } from '@/components/NewsItem';
 import { Select } from '@/components/Select';
 import { Tab } from '@/components/Tab';
+import {
+  DEFAULT_NEWS_FILTER,
+  DEFAULT_NEWS_SORT,
+  NEWS_FILTERS,
+  NEWS_SORTS,
+  type NewsFilter,
+  type NewsSort,
+} from '@/types/news';
 
-const FILTERS = [
-  { value: 'ALL', label: '전체' },
-  { value: 'NOTICE', label: '공지사항' },
-  { value: 'EVENT', label: '이벤트' },
-] as const;
+const FILTER_LABELS: Record<NewsFilter, string> = {
+  ALL: '전체',
+  NOTICE: '공지사항',
+  EVENT: '이벤트',
+};
 
-export type NewsFilter = (typeof FILTERS)[number]['value'];
-
-export const DEFAULT_NEWS_FILTER: NewsFilter = 'ALL';
-
-// TODO 서버가 받는 sort 값이 아직 LATEST 하나다. 허용 값이 확정되면 인기순을 추가
-const SORTS = [{ value: 'LATEST', label: '최신순' }] as const;
-
-export type NewsSort = (typeof SORTS)[number]['value'];
-
-export const DEFAULT_NEWS_SORT: NewsSort = 'LATEST';
-
-/**
- * URL은 사용자가 직접 편집할 수 있어서 값을 신뢰할 수 없다. 라우트의 `validateSearch`가
- * 이 가드로 걸러 모르는 값을 `undefined`로 덮는다.
- */
-export const isNewsFilter = (value: unknown): value is NewsFilter =>
-  FILTERS.some((filter) => filter.value === value);
-
-export const isNewsSort = (value: unknown): value is NewsSort =>
-  SORTS.some((sort) => sort.value === value);
+const SORT_LABELS: Record<NewsSort, string> = {
+  LATEST: '최신순',
+};
 
 // TODO `NewsListItem` 중 목록 화면이 쓰는 필드. API를 붙이면 생성된 응답 타입으로 대체
 interface NewsSummary {
@@ -40,8 +31,7 @@ interface NewsSummary {
   publishedAt: string;
 }
 
-// TODO `httpClient`가 머지되면 `useSuspenseQuery(getNewsQuery(filter))`로 교체
-// 그때 필터는 클라이언트 필터링이 아니라 `GET /api/v1/news?type=` 쿼리로 넘어간다.
+// TODO `httpClient`가 머지되면 `useSuspenseQuery(getNewsQuery(filter))`로 교체 -> 필터도 쿼리로
 const NEWS: NewsSummary[] = [
   {
     id: 1,
@@ -82,15 +72,8 @@ export function NewsPage() {
 
   const filter = type ?? DEFAULT_NEWS_FILTER;
 
-  // 기본값은 생략해 /news?type=ALL 같은 군더더기를 URL에 남기지 않는다.
-  const updateSearch = (next: Partial<{ type: NewsFilter; sort: NewsSort }>) => {
-    navigate({
-      search: (previous) => ({
-        ...previous,
-        ...('type' in next && { type: next.type === DEFAULT_NEWS_FILTER ? undefined : next.type }),
-        ...('sort' in next && { sort: next.sort === DEFAULT_NEWS_SORT ? undefined : next.sort }),
-      }),
-    });
+  const setSearch = (next: { type?: NewsFilter; sort?: NewsSort }) => {
+    navigate({ search: (previous) => ({ ...previous, ...next }) });
   };
 
   // TODO api 연동 시에 쿼리로 변경
@@ -108,12 +91,12 @@ export function NewsPage() {
           variant="chip"
           size="sm"
           value={filter}
-          onChange={(value) => isNewsFilter(value) && updateSearch({ type: value })}
+          onChange={(value) => setSearch({ type: value as NewsFilter })}
           aria-label="소식 분류"
         >
-          {FILTERS.map(({ value, label }) => (
+          {NEWS_FILTERS.map((value) => (
             <Tab.Item key={value} value={value}>
-              {label}
+              {FILTER_LABELS[value]}
             </Tab.Item>
           ))}
         </Tab>
@@ -121,13 +104,13 @@ export function NewsPage() {
         <div className="w-24 shrink-0">
           <Select
             value={sort ?? DEFAULT_NEWS_SORT}
-            onValueChange={(value) => isNewsSort(value) && updateSearch({ sort: value })}
+            onValueChange={(value) => setSearch({ sort: value as NewsSort })}
             aria-label="소식 정렬"
             className="h-auto px-3 py-1.5 text-xs"
           >
-            {SORTS.map(({ value, label }) => (
+            {NEWS_SORTS.map((value) => (
               <Select.Item key={value} value={value}>
-                {label}
+                {SORT_LABELS[value]}
               </Select.Item>
             ))}
           </Select>

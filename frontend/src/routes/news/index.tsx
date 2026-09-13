@@ -1,12 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import {
-  isNewsFilter,
-  isNewsSort,
-  NewsPage,
-  type NewsFilter,
-  type NewsSort,
-} from '@/pages/NewsPage';
+import { NewsPage } from '@/pages/NewsPage';
+import { isNewsFilter, isNewsSort, type NewsFilter, type NewsSort } from '@/types/news';
 
 // `<Link to="/news">`마다 search를 넘기는 것을 강제하는 걸 방지하기 위해 optional로
 interface NewsSearch {
