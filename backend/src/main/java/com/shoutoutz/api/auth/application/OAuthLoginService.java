@@ -2,8 +2,8 @@ package com.shoutoutz.api.auth.application;
 
 import com.shoutoutz.api.auth.application.port.GitHubOAuthAuthorizationPort;
 import com.shoutoutz.api.auth.application.port.GitHubOAuthIdentityPort;
-import com.shoutoutz.api.auth.application.dto.result.OAuthLoginCallbackResult;
-import com.shoutoutz.api.auth.application.dto.result.OAuthLoginStartResult;
+import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
+import com.shoutoutz.api.auth.application.command.OAuthLoginStartResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import java.net.URI;
 import java.time.Instant;

@@ -3,11 +3,11 @@ package com.shoutoutz.api.auth.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.shoutoutz.api.auth.application.dto.command.OAuthSignupCommand;
+import com.shoutoutz.api.auth.application.command.OAuthSignupCommand;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.auth.infrastructure.jpa.OAuthAccountJpaRepository;
-import com.shoutoutz.api.user.domain.UserType;
+import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.user.infrastructure.jpa.UserJpaRepository;
 import com.shoutoutz.api.user.infrastructure.jpa.UserProfileJpaRepository;
 import java.util.UUID;
@@ -42,15 +42,12 @@ class OAuthSignupServiceIntegrationTest {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         OAuthSignupCommand invalidCommand = new OAuthSignupCommand(
                 "dahye-" + suffix,
-                "다혜",
-                UserType.WOOWACOURSE_CREW,
-                null,
-                null,
+                " ",
                 new OAuthIdentity(OAuthProvider.GITHUB, suffix, null)
         );
 
         assertThatThrownBy(() -> oauthSignupService.signup(invalidCommand))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(DomainValidationException.class);
 
         assertThat(userJpaRepository.count()).isEqualTo(userCount);
         assertThat(userProfileJpaRepository.count()).isEqualTo(profileCount);

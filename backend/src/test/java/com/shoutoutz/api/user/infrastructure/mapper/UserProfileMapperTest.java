@@ -2,9 +2,9 @@ package com.shoutoutz.api.user.infrastructure.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.shoutoutz.api.user.domain.ProfileDisplayName;
-import com.shoutoutz.api.user.domain.UserProfile;
-import com.shoutoutz.api.user.domain.UserType;
+import com.shoutoutz.api.user.domain.profile.ProfileDisplayName;
+import com.shoutoutz.api.user.domain.profile.UserProfile;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.infrastructure.UserProfileEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

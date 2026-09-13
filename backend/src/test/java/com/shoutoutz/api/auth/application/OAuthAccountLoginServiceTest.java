@@ -7,15 +7,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.shoutoutz.api.auth.application.dto.result.OAuthLoginCallbackResult;
+import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
 import com.shoutoutz.api.auth.domain.OAuthAccount;
 import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
-import com.shoutoutz.api.user.domain.User;
-import com.shoutoutz.api.user.domain.UserRepository;
-import com.shoutoutz.api.user.domain.UserRole;
-import com.shoutoutz.api.user.domain.UserStatus;
+import com.shoutoutz.api.common.exception.custom.DomainValidationException;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.account.UserStatus;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -105,7 +107,9 @@ class OAuthAccountLoginServiceTest {
         assertThatThrownBy(() -> oauthAccountLoginService.completeLogin(
                 identity,
                 AUTHENTICATED_AT
-        )).isInstanceOf(IllegalStateException.class);
+        )).isInstanceOfSatisfying(DomainValidationException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(UserErrorCode.USER_LOGIN_BANNED)
+        );
 
         verify(oauthAccountRepository, never()).save(org.mockito.ArgumentMatchers.any());
         verify(userRepository, never()).save(org.mockito.ArgumentMatchers.any());
