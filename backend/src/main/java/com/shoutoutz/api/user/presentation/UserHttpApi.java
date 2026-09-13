@@ -3,8 +3,7 @@ package com.shoutoutz.api.user.presentation;
 import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
-import com.shoutoutz.api.user.application.UserCommandService;
-import com.shoutoutz.api.user.application.UserQueryService;
+import com.shoutoutz.api.user.application.UserService;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.request.UserSearchRequest;
@@ -31,14 +30,13 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 public class UserHttpApi {
 
-    private final UserQueryService userQueryService;
-    private final UserCommandService userCommandService;
+    private final UserService userService;
 
     @GetMapping("/me/summary")
     public ResponseEntity<SuccessResponse<UserProfileSummaryResponse>> getMyProfileSummary(
             @LoginUser AuthenticatedUser authenticatedUser
     ) {
-        UserProfileSummaryResponse response = userQueryService.getMyProfileSummary(
+        UserProfileSummaryResponse response = userService.getMyProfileSummary(
                 authenticatedUser.userId()
         );
 
@@ -49,7 +47,7 @@ public class UserHttpApi {
     public ResponseEntity<SuccessResponse<UserProfileResponse>> getMyProfile(
             @LoginUser AuthenticatedUser authenticatedUser
     ) {
-        UserProfileResponse response = userQueryService.getMyProfile(authenticatedUser.userId());
+        UserProfileResponse response = userService.getMyProfile(authenticatedUser.userId());
 
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
@@ -59,7 +57,7 @@ public class UserHttpApi {
             @LoginUser AuthenticatedUser authenticatedUser,
             @Valid @RequestBody UserProfileUpdateRequest request
     ) {
-        UserProfileUpdateResponse response = userCommandService.updateMyProfile(
+        UserProfileUpdateResponse response = userService.updateMyProfile(
                 authenticatedUser.userId(),
                 request
         );
@@ -71,7 +69,7 @@ public class UserHttpApi {
     public ResponseEntity<SuccessResponse<UserSearchResponse>> searchWoowaUsers(
             @Valid @ModelAttribute UserSearchRequest request
     ) {
-        UserSearchResult result = userQueryService.searchWoowaUsers(
+        UserSearchResult result = userService.searchWoowaUsers(
                 request.keyword(),
                 request.cursor(),
                 request.resolvedSize()
@@ -90,7 +88,7 @@ public class UserHttpApi {
             )
             @PathVariable String handle
     ) {
-        UserProfileResponse response = userQueryService.getPublicProfile(handle);
+        UserProfileResponse response = userService.getPublicProfile(handle);
 
         return ResponseEntity.ok(SuccessResponse.success(response));
     }

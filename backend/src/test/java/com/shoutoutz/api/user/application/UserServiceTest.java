@@ -7,16 +7,17 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.user.application.dto.UserProfileCounts;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.User;
-import com.shoutoutz.api.user.domain.profile.UserProfile;
-import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
+import com.shoutoutz.api.user.domain.profile.UserProfile;
+import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
@@ -32,7 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
-class UserQueryServiceTest {
+class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
@@ -43,18 +44,22 @@ class UserQueryServiceTest {
     @Mock
     private UserQueryRepository userQueryRepository;
 
+    @Mock
+    private MediaMetadataRepository mediaMetadataRepository;
+
     private UserSearchCursorCodec userSearchCursorCodec;
 
-    private UserQueryService userQueryService;
+    private UserService userService;
 
     @BeforeEach
     void setUp() {
         userSearchCursorCodec = new UserSearchCursorCodec(JsonMapper.builder().build());
-        userQueryService = new UserQueryService(
+        userService = new UserService(
                 userRepository,
                 userProfileRepository,
                 userQueryRepository,
-                userSearchCursorCodec
+                userSearchCursorCodec,
+                mediaMetadataRepository
         );
     }
 
@@ -76,7 +81,7 @@ class UserQueryServiceTest {
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
 
-        UserProfileSummaryResponse result = userQueryService.getMyProfileSummary(1L);
+        UserProfileSummaryResponse result = userService.getMyProfileSummary(1L);
 
         assertThat(result).isEqualTo(new UserProfileSummaryResponse(
                 "zzaekkii",
@@ -90,7 +95,7 @@ class UserQueryServiceTest {
     void failWhenUserDoesNotExist() {
         given(userRepository.findById(1L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userQueryService.getMyProfileSummary(1L))
+        assertThatThrownBy(() -> userService.getMyProfileSummary(1L))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
@@ -106,7 +111,7 @@ class UserQueryServiceTest {
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userQueryService.getMyProfileSummary(1L))
+        assertThatThrownBy(() -> userService.getMyProfileSummary(1L))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
@@ -135,7 +140,7 @@ class UserQueryServiceTest {
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
         given(userQueryRepository.countByUserId(1L)).willReturn(counts);
 
-        UserProfileResponse result = userQueryService.getMyProfile(1L);
+        UserProfileResponse result = userService.getMyProfile(1L);
 
         assertThat(result.handle()).isEqualTo("zzaekkii");
         assertThat(result.displayName()).isEqualTo("재키");
@@ -168,7 +173,7 @@ class UserQueryServiceTest {
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
         given(userQueryRepository.countByUserId(1L)).willReturn(counts);
 
-        UserProfileResponse result = userQueryService.getPublicProfile("zzaekkii");
+        UserProfileResponse result = userService.getPublicProfile("zzaekkii");
 
         assertThat(result.handle()).isEqualTo("zzaekkii");
         assertThat(result.displayName()).isEqualTo("재키");
@@ -187,7 +192,7 @@ class UserQueryServiceTest {
                 .build();
         given(userRepository.findByHandle("zzaekkii")).willReturn(Optional.of(user));
 
-        UserProfileResponse result = userQueryService.getPublicProfile("zzaekkii");
+        UserProfileResponse result = userService.getPublicProfile("zzaekkii");
 
         assertThat(result.displayName()).isEqualTo("탈퇴한 사용자");
         assertThat(result.userType()).isNull();
@@ -213,7 +218,7 @@ class UserQueryServiceTest {
         given(userQueryRepository.searchWoowaUsers("재", null, 3))
                 .willReturn(searchedItems);
 
-        UserSearchResult result = userQueryService.searchWoowaUsers("재", null, 2);
+        UserSearchResult result = userService.searchWoowaUsers("재", null, 2);
 
         assertThat(result.items()).containsExactly(searchedItems.get(0), searchedItems.get(1));
         assertThat(userSearchCursorCodec.decode(result.nextCursor()))
@@ -228,7 +233,7 @@ class UserQueryServiceTest {
         given(userQueryRepository.searchWoowaUsers("재키", cursor, 21))
                 .willReturn(List.of());
 
-        UserSearchResult result = userQueryService.searchWoowaUsers(
+        UserSearchResult result = userService.searchWoowaUsers(
                 "재키",
                 userSearchCursorCodec.encode(cursor),
                 20
@@ -242,7 +247,7 @@ class UserQueryServiceTest {
     @Test
     @DisplayName("형식이 잘못된 검색 커서를 거절한다")
     void rejectInvalidSearchCursor() {
-        assertThatThrownBy(() -> userQueryService.searchWoowaUsers("재키", "invalid", 20))
+        assertThatThrownBy(() -> userService.searchWoowaUsers("재키", "invalid", 20))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("유효하지 않은 커서입니다.");
 

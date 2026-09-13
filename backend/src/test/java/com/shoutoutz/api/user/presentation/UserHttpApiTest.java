@@ -23,8 +23,7 @@ import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
-import com.shoutoutz.api.user.application.UserCommandService;
-import com.shoutoutz.api.user.application.UserQueryService;
+import com.shoutoutz.api.user.application.UserService;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.UserRole;
@@ -56,15 +55,12 @@ class UserHttpApiTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private UserQueryService userQueryService;
-
-    @MockitoBean
-    private UserCommandService userCommandService;
+    private UserService userService;
 
     @Test
     @DisplayName("내 프로필 요약을 조회한다")
     void getMyProfileSummary() throws Exception {
-        given(userQueryService.getMyProfileSummary(1L))
+        given(userService.getMyProfileSummary(1L))
                 .willReturn(new UserProfileSummaryResponse(
                         "zzaekkii",
                         "재키",
@@ -128,7 +124,7 @@ class UserHttpApiTest {
     @Test
     @DisplayName("마이페이지 프로필을 조회한다")
     void getMyProfile() throws Exception {
-        given(userQueryService.getMyProfile(1L))
+        given(userService.getMyProfile(1L))
                 .willReturn(new UserProfileResponse(
                         "zzaekkii",
                         "재키",
@@ -202,7 +198,7 @@ class UserHttpApiTest {
     @Test
     @DisplayName("내 프로필을 수정한다")
     void updateMyProfile() throws Exception {
-        given(userCommandService.updateMyProfile(
+        given(userService.updateMyProfile(
                 org.mockito.ArgumentMatchers.eq(1L),
                 org.mockito.ArgumentMatchers.any(UserProfileUpdateRequest.class)
         )).willReturn(new UserProfileUpdateResponse(
@@ -324,7 +320,7 @@ class UserHttpApiTest {
     @Test
     @DisplayName("handle로 사용자 공개 프로필을 조회한다")
     void getPublicProfile() throws Exception {
-        given(userQueryService.getPublicProfile("zzaekkii"))
+        given(userService.getPublicProfile("zzaekkii"))
                 .willReturn(new UserProfileResponse(
                         "zzaekkii",
                         "재키",
@@ -392,7 +388,7 @@ class UserHttpApiTest {
     @Test
     @DisplayName("인증 없이 ACTIVE 우테코 크루와 코치를 검색한다")
     void searchWoowaUsers() throws Exception {
-        given(userQueryService.searchWoowaUsers("재키", null, 20))
+        given(userService.searchWoowaUsers("재키", null, 20))
                 .willReturn(new UserSearchResult(
                         List.of(
                                 new UserSearchItem(
@@ -497,7 +493,7 @@ class UserHttpApiTest {
                                 .build())
                 ));
 
-        verifyNoInteractions(userQueryService);
+        verifyNoInteractions(userService);
     }
 
     @Test
@@ -508,7 +504,7 @@ class UserHttpApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 
-        verifyNoInteractions(userQueryService);
+        verifyNoInteractions(userService);
     }
 
     @Test
@@ -520,13 +516,13 @@ class UserHttpApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 
-        verifyNoInteractions(userQueryService);
+        verifyNoInteractions(userService);
     }
 
     @Test
     @DisplayName("잘못된 커서로 우테코 사용자를 검색할 수 없다")
     void rejectInvalidSearchCursor() throws Exception {
-        given(userQueryService.searchWoowaUsers("재키", "invalid", 20))
+        given(userService.searchWoowaUsers("재키", "invalid", 20))
                 .willThrow(new IllegalArgumentException("유효하지 않은 커서입니다."));
 
         mockMvc.perform(get("/api/v1/users/search")
@@ -556,13 +552,13 @@ class UserHttpApiTest {
                                 .build())
                 ));
 
-        verifyNoInteractions(userQueryService);
+        verifyNoInteractions(userService);
     }
 
     @Test
     @DisplayName("존재하지 않는 handle로 공개 프로필을 조회할 수 없다")
     void rejectNotFoundPublicProfileHandle() throws Exception {
-        given(userQueryService.getPublicProfile("missing-user"))
+        given(userService.getPublicProfile("missing-user"))
                 .willThrow(new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
 
         mockMvc.perform(get("/api/v1/users/{handle}", "missing-user"))

@@ -1,31 +1,68 @@
 package com.shoutoutz.api.user.application;
 
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.media.domain.MediaMetadata;
+import com.shoutoutz.api.media.domain.MediaMetadataRepository;
+import com.shoutoutz.api.media.domain.MediaPurpose;
+import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.user.application.dto.UserProfileCounts;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.profile.DisplayNameChangeNotAllowedException;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
-import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.exception.UserErrorCode;
+import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
+import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateResponse;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class UserQueryService {
+public class UserService {
 
     private static final String DELETED_USER_DISPLAY_NAME = "탈퇴한 사용자";
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserQueryRepository userQueryRepository;
     private final UserSearchCursorCodec userSearchCursorCodec;
+    private final MediaMetadataRepository mediaMetadataRepository;
+
+    @Transactional
+    public UserProfileUpdateResponse updateMyProfile(
+            long userId,
+            UserProfileUpdateRequest request
+    ) {
+        User user = findUser(userId);
+        UserProfile profile = findProfile(userId);
+
+        UserProfile updatedProfile = updateProfile(profile, request);
+        validateAvatarImage(userId, request.avatarImageId());
+        UserProfile savedProfile = userProfileRepository.save(updatedProfile);
+
+        return new UserProfileUpdateResponse(
+                user.getHandle().value(),
+                savedProfile.getDisplayName().value(),
+                savedProfile.getUserType(),
+                savedProfile.getTrack(),
+                savedProfile.getCohort(),
+                savedProfile.getBio(),
+                savedProfile.getAvatarImageId(),
+                savedProfile.getGithubProfileUrl(),
+                savedProfile.getBlogUrl()
+        );
+    }
 
     @Transactional(readOnly = true)
     public UserProfileSummaryResponse getMyProfileSummary(long userId) {
@@ -97,6 +134,44 @@ public class UserQueryService {
                 item.displayName(),
                 item.handle()
         ));
+    }
+
+    private UserProfile updateProfile(
+            UserProfile profile,
+            UserProfileUpdateRequest request
+    ) {
+        try {
+            return profile.update(
+                    request.displayName(),
+                    request.bio(),
+                    request.avatarImageId(),
+                    request.githubProfileUrl(),
+                    request.blogUrl()
+            );
+        } catch (DisplayNameChangeNotAllowedException exception) {
+            throw new BadRequestException(
+                    UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE,
+                    exception
+            );
+        }
+    }
+
+    private void validateAvatarImage(long userId, Long avatarImageId) {
+        if (avatarImageId == null) {
+            return;
+        }
+
+        MediaMetadata metadata = mediaMetadataRepository.findById(avatarImageId)
+                .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.AVATAR_IMAGE_NOT_FOUND));
+        if (!Objects.equals(metadata.getUploadedBy(), userId)) {
+            throw new ForbiddenException(UserErrorCode.AVATAR_IMAGE_FORBIDDEN);
+        }
+        if (metadata.getPurpose() != MediaPurpose.USER_AVATAR) {
+            throw new BadRequestException(UserErrorCode.AVATAR_IMAGE_INVALID_PURPOSE);
+        }
+        if (metadata.getStatus() != MediaStatus.READY) {
+            throw new ConflictException(UserErrorCode.AVATAR_IMAGE_NOT_READY);
+        }
     }
 
     private User findUser(long userId) {
