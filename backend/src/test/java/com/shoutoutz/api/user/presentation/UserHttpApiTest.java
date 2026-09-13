@@ -21,7 +21,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.exception.custom.ConflictException;
+import com.shoutoutz.api.common.exception.custom.CustomException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.user.application.UserService;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
@@ -34,8 +38,12 @@ import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateResponse;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -196,6 +204,27 @@ class UserHttpApiTest {
     }
 
     @Test
+    @DisplayName("인증 정보가 없으면 마이페이지 조회에 실패한다")
+    void rejectUnauthenticatedMyProfileRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/users/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(document(
+                        "user-profile-get-unauthorized",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("마이페이지 조회")
+                                .description("로그인한 사용자의 프로필과 프로젝트 및 피드 개수를 조회한다.")
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verifyNoInteractions(userService);
+    }
+
+    @Test
     @DisplayName("내 프로필을 수정한다")
     void updateMyProfile() throws Exception {
         given(userService.updateMyProfile(
@@ -311,10 +340,99 @@ class UserHttpApiTest {
                                 .tag("User")
                                 .summary("내 프로필 수정")
                                 .description("로그인한 사용자의 수정 가능한 프로필 정보를 저장한다.")
+                                .requestSchema(Schema.schema("UserProfileUpdateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
                 ));
+    }
+
+    @Test
+    @DisplayName("인증 정보가 없으면 내 프로필 수정에 실패한다")
+    void rejectUnauthenticatedProfileUpdateRequest() throws Exception {
+        mockMvc.perform(put("/api/v1/users/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(document(
+                        "user-profile-update-unauthorized",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("내 프로필 수정")
+                                .description("로그인한 사용자의 수정 가능한 프로필 정보를 저장한다.")
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verifyNoInteractions(userService);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("profileUpdateFailureCases")
+    @DisplayName("프로필 수정 정책을 위반하면 해당 오류로 응답한다")
+    void rejectInvalidProfileUpdate(
+            String documentIdentifier,
+            CustomException exception
+    ) throws Exception {
+        given(userService.updateMyProfile(
+                org.mockito.ArgumentMatchers.eq(1L),
+                org.mockito.ArgumentMatchers.any(UserProfileUpdateRequest.class)
+        )).willThrow(exception);
+
+        mockMvc.perform(put("/api/v1/users/me")
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=session-id")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .requestAttr(
+                                AuthenticatedSession.class.getName(),
+                                new AuthenticatedSession(1L, UserRole.USER)
+                        )
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "displayName": "재키",
+                                  "avatarImageId": 21
+                                }
+                                """))
+                .andExpect(status().is(exception.getHttpStatus().value()))
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value(exception.getErrorCode().name()))
+                .andDo(document(
+                        documentIdentifier,
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("User")
+                                .summary("내 프로필 수정")
+                                .description("로그인한 사용자의 수정 가능한 프로필 정보를 저장한다.")
+                                .requestSchema(Schema.schema("UserProfileUpdateRequest"))
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+    }
+
+    static Stream<Arguments> profileUpdateFailureCases() {
+        return Stream.of(
+                Arguments.of(
+                        "user-profile-update-display-name-immutable",
+                        new BadRequestException(UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE)
+                ),
+                Arguments.of(
+                        "user-profile-update-avatar-not-found",
+                        new EntityNotFoundException(UserErrorCode.AVATAR_IMAGE_NOT_FOUND)
+                ),
+                Arguments.of(
+                        "user-profile-update-avatar-forbidden",
+                        new ForbiddenException(UserErrorCode.AVATAR_IMAGE_FORBIDDEN)
+                ),
+                Arguments.of(
+                        "user-profile-update-avatar-invalid-purpose",
+                        new BadRequestException(UserErrorCode.AVATAR_IMAGE_INVALID_PURPOSE)
+                ),
+                Arguments.of(
+                        "user-profile-update-avatar-not-ready",
+                        new ConflictException(UserErrorCode.AVATAR_IMAGE_NOT_READY)
+                )
+        );
     }
 
     @Test

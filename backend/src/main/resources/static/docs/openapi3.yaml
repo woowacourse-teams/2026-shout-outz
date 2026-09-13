@@ -471,6 +471,16 @@ paths:
                     :21,\"githubProfileUrl\":\"https://github.com/zzaekkii\",\"blogUrl\"\
                     :\"https://zzaekkii.dev\",\"counts\":{\"projects\":2,\"posts\"\
                     :18}}}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-profile-get-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
     put:
       tags:
       - User
@@ -498,6 +508,12 @@ paths:
             schema:
               $ref: "#/components/schemas/UserProfileUpdateRequest"
             examples:
+              user-profile-update-avatar-forbidden:
+                value: |
+                  {
+                    "displayName": "재키",
+                    "avatarImageId": 21
+                  }
               user-profile-update:
                 value: |
                   {
@@ -514,7 +530,44 @@ paths:
                     "githubProfileUrl": "http://github.com/zzaekkii",
                     "blogUrl": "not-a-url"
                   }
+              user-profile-update-avatar-not-ready:
+                value: |
+                  {
+                    "displayName": "재키",
+                    "avatarImageId": 21
+                  }
+              user-profile-update-display-name-immutable:
+                value: |
+                  {
+                    "displayName": "재키",
+                    "avatarImageId": 21
+                  }
+              user-profile-update-avatar-not-found:
+                value: |
+                  {
+                    "displayName": "재키",
+                    "avatarImageId": 21
+                  }
+              user-profile-update-avatar-invalid-purpose:
+                value: |
+                  {
+                    "displayName": "재키",
+                    "avatarImageId": 21
+                  }
       responses:
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-profile-update-avatar-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"AVATAR_IMAGE_FORBIDDEN\"\
+                    ,\"message\":\"본인이 업로드한 이미지만 프로필 이미지로 사용할 수 있습니다.\"}"
+                user-profile-update-csrf-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
+                    message\":\"CSRF Token이 유효하지 않습니다.\"}"
         "200":
           description: "200"
           content:
@@ -540,6 +593,42 @@ paths:
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
                     ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
                     blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                user-profile-update-display-name-immutable:
+                  value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
+                    ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
+                user-profile-update-avatar-invalid-purpose:
+                  value: "{\"status\":\"error\",\"code\":\"AVATAR_IMAGE_INVALID_PURPOSE\"\
+                    ,\"message\":\"프로필 이미지 용도로 업로드한 이미지만 사용할 수 있습니다.\"}"
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-profile-update-avatar-not-ready:
+                  value: "{\"status\":\"error\",\"code\":\"AVATAR_IMAGE_NOT_READY\"\
+                    ,\"message\":\"프로필 이미지 처리가 완료되지 않았습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-profile-update-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-profile-update-avatar-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"AVATAR_IMAGE_NOT_FOUND\"\
+                    ,\"message\":\"프로필 이미지를 찾을 수 없습니다.\"}"
   /api/v1/users/search:
     get:
       tags:
