@@ -47,7 +47,7 @@ public class ProjectService {
                 command.tagline(),
                 command.descriptionMd(),
                 new GithubRepositoryUrl(command.githubRepositoryUrl()),
-                DeploymentUrl.fromNullable(command.deploymentUrl()),
+                command.deploymentUrl() == null ? null : new DeploymentUrl(command.deploymentUrl()),
                 command.thumbnailMediaId()
         );
         validateSlugNotDuplicated(project.getSlug());

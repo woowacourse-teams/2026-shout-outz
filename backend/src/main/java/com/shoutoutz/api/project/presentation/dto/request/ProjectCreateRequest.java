@@ -57,7 +57,7 @@ public record ProjectCreateRequest(
                 cohort,
                 thumbnailMediaId,
                 githubRepositoryUrl,
-                deploymentUrl,
+                deploymentUrl == null || deploymentUrl.isBlank() ? null : deploymentUrl,
                 descriptionMd,
                 techTagIds,
                 memberHandles,

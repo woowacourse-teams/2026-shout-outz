@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 /**
  * 서비스 배포 URL
- * 선택 입력이므로, 값이 없으면 null 로 둔다.
+ * 선택 입력이므로, 값이 없으면 생성하는 쪽에서 객체를 만들지 않고 null 로 둔다.
  * http 또는 https 스킴과 호스트를 갖춘 형식만 허용한다.
  */
 public record DeploymentUrl(String value) {
@@ -24,12 +24,5 @@ public record DeploymentUrl(String value) {
         validateNotNullOrBlank(value, ProjectErrorCode.PROJECT_INVALID_DEPLOYMENT_URL);
         validateMaxLength(value, MAX_LENGTH, ProjectErrorCode.PROJECT_INVALID_DEPLOYMENT_URL);
         validatePattern(value, PATTERN, ProjectErrorCode.PROJECT_INVALID_DEPLOYMENT_URL);
-    }
-
-    public static DeploymentUrl fromNullable(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return new DeploymentUrl(value);
     }
 }

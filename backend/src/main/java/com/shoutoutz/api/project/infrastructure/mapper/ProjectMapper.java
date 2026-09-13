@@ -51,7 +51,7 @@ public final class ProjectMapper {
                 .approvalStatus(entity.getApprovalStatus())
                 .descriptionMd(entity.getDescriptionMd())
                 .githubRepositoryUrl(new GithubRepositoryUrl(entity.getGithubRepositoryUrl()))
-                .deploymentUrl(DeploymentUrl.fromNullable(entity.getDeploymentUrl()))
+                .deploymentUrl(entity.getDeploymentUrl() == null ? null : new DeploymentUrl(entity.getDeploymentUrl()))
                 .thumbnailMediaId(entity.getThumbnailMediaId())
                 .build();
     }

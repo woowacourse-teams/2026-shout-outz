@@ -31,8 +31,11 @@ class DeploymentUrlTest {
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {"   "})
-    @DisplayName("선택 입력이 비어 있으면 null로 둔다.")
-    void returnsNullWhenBlank(String value) {
-        assertThat(DeploymentUrl.fromNullable(value)).isNull();
+    @DisplayName("값이 비어 있으면 도메인 예외를 던진다. 빈 값은 생성하는 쪽에서 null로 걸러야 한다.")
+    void rejectsBlank(String value) {
+        assertThatThrownBy(() -> new DeploymentUrl(value))
+                .isInstanceOfSatisfying(DomainValidationException.class,
+                        error -> assertThat(error.getErrorCode())
+                                .isEqualTo(ProjectErrorCode.PROJECT_INVALID_DEPLOYMENT_URL));
     }
 }
