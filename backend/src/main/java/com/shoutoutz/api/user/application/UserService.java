@@ -14,7 +14,6 @@ import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
-import com.shoutoutz.api.user.domain.profile.DisplayNameChangeNotAllowedException;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.exception.UserErrorCode;
@@ -28,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** 사용자 프로필 조회·수정과 우테코 사용자 검색 유스케이스를 처리한다. */
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -47,8 +47,18 @@ public class UserService {
         User user = findUser(userId);
         UserProfile profile = findProfile(userId);
 
-        UserProfile updatedProfile = updateProfile(profile, request);
+        if (!profile.canChangeDisplayNameTo(request.displayName())) {
+            throw new BadRequestException(UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE);
+        }
         validateAvatarImage(userId, request.avatarImageId());
+
+        UserProfile updatedProfile = profile.update(
+                request.displayName(),
+                request.bio(),
+                request.avatarImageId(),
+                request.githubProfileUrl(),
+                request.blogUrl()
+        );
         UserProfile savedProfile = userProfileRepository.save(updatedProfile);
 
         return new UserProfileUpdateResponse(
@@ -82,7 +92,7 @@ public class UserService {
         UserProfile profile = findProfile(userId);
         UserProfileCounts counts = userQueryRepository.countByUserId(userId);
 
-        return profileResponse(user, profile, counts);
+        return createProfileResponse(user, profile, counts);
     }
 
     @Transactional(readOnly = true)
@@ -91,12 +101,12 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
 
         if (user.isDeleted()) {
-            return deletedProfile(user);
+            return createDeletedProfileResponse(user);
         }
 
         UserProfile profile = findProfile(user.getId());
         UserProfileCounts counts = userQueryRepository.countByUserId(user.getId());
-        return profileResponse(user, profile, counts);
+        return createProfileResponse(user, profile, counts);
     }
 
     @Transactional(readOnly = true)
@@ -116,6 +126,7 @@ public class UserService {
         return createSearchResult(searchedItems, size);
     }
 
+    /** 한 건을 더 조회한 결과로 다음 검색 여부와 커서를 결정한다. */
     private UserSearchResult createSearchResult(
             List<UserSearchItem> searchedItems,
             int size
@@ -136,26 +147,7 @@ public class UserService {
         ));
     }
 
-    private UserProfile updateProfile(
-            UserProfile profile,
-            UserProfileUpdateRequest request
-    ) {
-        try {
-            return profile.update(
-                    request.displayName(),
-                    request.bio(),
-                    request.avatarImageId(),
-                    request.githubProfileUrl(),
-                    request.blogUrl()
-            );
-        } catch (DisplayNameChangeNotAllowedException exception) {
-            throw new BadRequestException(
-                    UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE,
-                    exception
-            );
-        }
-    }
-
+    /** 프로필 이미지의 소유자, 용도, 처리 완료 상태를 확인한다. */
     private void validateAvatarImage(long userId, Long avatarImageId) {
         if (avatarImageId == null) {
             return;
@@ -184,7 +176,7 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_PROFILE_NOT_FOUND));
     }
 
-    private UserProfileResponse profileResponse(
+    private UserProfileResponse createProfileResponse(
             User user,
             UserProfile profile,
             UserProfileCounts counts
@@ -203,7 +195,8 @@ public class UserService {
         );
     }
 
-    private UserProfileResponse deletedProfile(User user) {
+    /** 탈퇴 사용자의 개인정보와 활동 개수를 숨긴 공개 응답을 만든다. */
+    private UserProfileResponse createDeletedProfileResponse(User user) {
         return new UserProfileResponse(
                 user.getHandle().value(),
                 DELETED_USER_DISPLAY_NAME,

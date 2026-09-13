@@ -148,8 +148,8 @@ class UserProfileTest {
     }
 
     @Test
-    @DisplayName("우테코 사용자는 표시 이름을 변경할 수 없다")
-    void rejectsDisplayNameChangeFromWoowacourseUser() {
+    @DisplayName("우테코 사용자의 표시 이름 변경 가능 여부를 확인한다")
+    void checksDisplayNameChangeFromWoowacourseUser() {
         UserProfile profile = UserProfile.builder()
                 .userId(1L)
                 .displayName("재키")
@@ -158,8 +158,8 @@ class UserProfileTest {
                 .cohort((short) 8)
                 .build();
 
-        assertThatThrownBy(() -> profile.update("새 이름", null, null, null, null))
-                .isInstanceOf(DisplayNameChangeNotAllowedException.class);
+        assertThat(profile.canChangeDisplayNameTo("재키")).isTrue();
+        assertThat(profile.canChangeDisplayNameTo("새 이름")).isFalse();
     }
 
     @Test

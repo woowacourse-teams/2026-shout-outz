@@ -31,16 +31,6 @@ final class UserProfileValidator {
         validateCourseInformation(userType, track, cohort);
     }
 
-    static void validateDisplayNameChange(
-            UserType userType,
-            String currentDisplayName,
-            String requestedDisplayName
-    ) {
-        if (userType != UserType.GENERAL && !currentDisplayName.equals(requestedDisplayName)) {
-            throw new DisplayNameChangeNotAllowedException();
-        }
-    }
-
     private static void validateCourseInformation(UserType userType, String track, Short cohort) {
         if (userType == UserType.GENERAL && (track != null || cohort != null)) {
             throw new DomainValidationException(GENERAL_USER_COURSE_INFO_NOT_ALLOWED);

@@ -59,11 +59,6 @@ public class UserProfile {
             String blogUrl
     ) {
         String sanitizedDisplayName = DataResolveUtil.sanitizeString(displayName);
-        UserProfileValidator.validateDisplayNameChange(
-                userType,
-                this.displayName.value(),
-                sanitizedDisplayName
-        );
 
         return new UserProfile(
                 userId,
@@ -76,6 +71,11 @@ public class UserProfile {
                 githubProfileUrl,
                 blogUrl
         );
+    }
+
+    public boolean canChangeDisplayNameTo(String displayName) {
+        String sanitizedDisplayName = DataResolveUtil.sanitizeString(displayName);
+        return userType == UserType.GENERAL || this.displayName.value().equals(sanitizedDisplayName);
     }
 
     public static UserProfile initialize(Long userId, String displayName) {
