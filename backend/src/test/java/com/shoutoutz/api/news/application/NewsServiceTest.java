@@ -6,7 +6,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
@@ -271,12 +270,12 @@ class NewsServiceTest {
     }
 
     @Test
-    @DisplayName("소식 ID가 0 이하이면 조회하지 않고 400 예외를 반환한다")
-    void throwsNotFoundWhenNewsIdIsInvalid() {
+    @DisplayName("소식 ID가 0 이하이면 요청 객체 생성 시 400 예외를 반환한다")
+    void rejectsInvalidNewsIdAtRequestCreation() {
         assertThatThrownBy(() -> newsService.findDetail(
                 new NewsFindRequest(0L, true)
         )).isInstanceOfSatisfying(InvalidInputException.class, error ->
-                assertThat(error.getErrorCode()).isEqualTo(CommonErrorCode.RESOURCE_NOT_FOUND));
+                assertThat(error.getErrorCode()).isEqualTo(NewsErrorCode.NEWS_INVALID_ID_SIZE));
 
         verifyNoInteractions(clock, newsRepository, newsQueryRepository);
     }

@@ -39,7 +39,7 @@ public final class NewsFindAllRequest {
     }
 
     private NewsType validateType(String type) {
-        if (type == null || type.isBlank()) {
+        if (type == null || type.isBlank() || "ALL".equalsIgnoreCase(type)) {
             return null;
         }
         try {

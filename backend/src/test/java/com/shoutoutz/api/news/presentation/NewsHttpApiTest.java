@@ -2,6 +2,7 @@ package com.shoutoutz.api.news.presentation;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -40,6 +41,7 @@ import com.shoutoutz.api.news.presentation.dto.response.NoticeCreateResponse;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -348,9 +350,7 @@ class NewsHttpApiTest {
                 )),
                 new NewsFindAllResponse.Meta(null, false)
         );
-        given(newsService.findAll(
-                new NewsFindAllRequest("EVENT", "ONGOING", "LATEST", 20, null)
-        )).willReturn(result);
+        given(newsService.findAll(any(NewsFindAllRequest.class))).willReturn(result);
 
         mockMvc.perform(get("/api/v1/news")
                         .queryParam("type", "EVENT")
@@ -443,9 +443,15 @@ class NewsHttpApiTest {
                                 .build())
                 ));
 
-        verify(newsService).findAll(
-                new NewsFindAllRequest("EVENT", "ONGOING", "LATEST", 20, null)
-        );
+        ArgumentCaptor<NewsFindAllRequest> requestCaptor =
+                ArgumentCaptor.forClass(NewsFindAllRequest.class);
+        verify(newsService).findAll(requestCaptor.capture());
+        NewsFindAllRequest request = requestCaptor.getValue();
+        assertThat(request.getNewsType()).isEqualTo(NewsType.EVENT);
+        assertThat(request.getEventStatus()).isEqualTo(EventStatus.ONGOING);
+        assertThat(request.getSort().name()).isEqualTo("LATEST");
+        assertThat(request.getSize()).isEqualTo(20);
+        assertThat(request.getCursor()).isNull();
     }
 
     /**
@@ -688,9 +694,7 @@ class NewsHttpApiTest {
                 List.of(),
                 new NewsFindAllResponse.Meta(null, false)
         );
-        given(newsService.findAll(
-                new NewsFindAllRequest("ALL", null, "LATEST", 20, null)
-        )).willReturn(result);
+        given(newsService.findAll(any(NewsFindAllRequest.class))).willReturn(result);
 
         mockMvc.perform(get("/api/v1/news"))
                 .andExpect(status().isOk())
@@ -698,9 +702,15 @@ class NewsHttpApiTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andExpect(jsonPath("$.meta.hasNext").value(false));
 
-        verify(newsService).findAll(
-                new NewsFindAllRequest("ALL", null, "LATEST", 20, null)
-        );
+        ArgumentCaptor<NewsFindAllRequest> requestCaptor =
+                ArgumentCaptor.forClass(NewsFindAllRequest.class);
+        verify(newsService).findAll(requestCaptor.capture());
+        NewsFindAllRequest request = requestCaptor.getValue();
+        assertThat(request.getNewsType()).isNull();
+        assertThat(request.getEventStatus()).isNull();
+        assertThat(request.getSort().name()).isEqualTo("LATEST");
+        assertThat(request.getSize()).isEqualTo(20);
+        assertThat(request.getCursor()).isNull();
     }
 
     @Test
