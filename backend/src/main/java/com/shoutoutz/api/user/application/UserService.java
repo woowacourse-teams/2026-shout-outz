@@ -47,11 +47,6 @@ public class UserService {
         User user = findUser(userId);
         UserProfile profile = findProfile(userId);
 
-        if (!profile.canChangeDisplayNameTo(request.displayName())) {
-            throw new BadRequestException(UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE);
-        }
-        validateAvatarImage(userId, request.avatarImageId());
-
         UserProfile updatedProfile = profile.update(
                 request.displayName(),
                 request.bio(),
@@ -59,6 +54,7 @@ public class UserService {
                 request.githubProfileUrl(),
                 request.blogUrl()
         );
+        validateAvatarImage(userId, request.avatarImageId());
         UserProfile savedProfile = userProfileRepository.save(updatedProfile);
 
         return new UserProfileUpdateResponse(

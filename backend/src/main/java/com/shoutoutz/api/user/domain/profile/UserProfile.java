@@ -1,9 +1,14 @@
 package com.shoutoutz.api.user.domain.profile;
 
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.util.DataResolveUtil;
+import com.shoutoutz.api.user.exception.UserErrorCode;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * 사용자 공개 정보와 우아한테크코스 인증 정보.
+ */
 @Getter
 public class UserProfile {
 
@@ -51,6 +56,10 @@ public class UserProfile {
         this.blogUrl = sanitizedBlogUrl;
     }
 
+    /**
+     * 수정 가능한 프로필 정보 갱신.
+     * 인증된 우테코 사용자의 표시 이름 변경은 허용하지 않음.
+     */
     public UserProfile update(
             String displayName,
             String bio,
@@ -59,6 +68,7 @@ public class UserProfile {
             String blogUrl
     ) {
         String sanitizedDisplayName = DataResolveUtil.sanitizeString(displayName);
+        validateDisplayNameChange(sanitizedDisplayName);
 
         return new UserProfile(
                 userId,
@@ -73,11 +83,6 @@ public class UserProfile {
         );
     }
 
-    public boolean canChangeDisplayNameTo(String displayName) {
-        String sanitizedDisplayName = DataResolveUtil.sanitizeString(displayName);
-        return userType == UserType.GENERAL || this.displayName.value().equals(sanitizedDisplayName);
-    }
-
     public static UserProfile initialize(Long userId, String displayName) {
         return new UserProfile(
                 userId,
@@ -90,6 +95,12 @@ public class UserProfile {
                 null,
                 null
         );
+    }
+
+    private void validateDisplayNameChange(String requestedDisplayName) {
+        if (userType != UserType.GENERAL && !displayName.value().equals(requestedDisplayName)) {
+            throw new BadRequestException(UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE);
+        }
     }
 
 }

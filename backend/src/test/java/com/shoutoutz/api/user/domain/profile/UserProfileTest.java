@@ -3,7 +3,9 @@ package com.shoutoutz.api.user.domain.profile;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
+import com.shoutoutz.api.user.exception.UserErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -148,8 +150,8 @@ class UserProfileTest {
     }
 
     @Test
-    @DisplayName("우테코 사용자의 표시 이름 변경 가능 여부를 확인한다")
-    void checksDisplayNameChangeFromWoowacourseUser() {
+    @DisplayName("우테코 사용자는 표시 이름을 변경할 수 없다")
+    void rejectsDisplayNameChangeFromWoowacourseUser() {
         UserProfile profile = UserProfile.builder()
                 .userId(1L)
                 .displayName("재키")
@@ -158,8 +160,41 @@ class UserProfileTest {
                 .cohort((short) 8)
                 .build();
 
-        assertThat(profile.canChangeDisplayNameTo("재키")).isTrue();
-        assertThat(profile.canChangeDisplayNameTo("새 이름")).isFalse();
+        assertThatThrownBy(() -> profile.update(
+                "새 이름",
+                null,
+                null,
+                null,
+                null
+        ))
+                .isInstanceOfSatisfying(
+                        BadRequestException.class,
+                        exception -> assertThat(exception.getErrorCode())
+                                .isEqualTo(UserErrorCode.PROFILE_DISPLAY_NAME_IMMUTABLE)
+                );
+    }
+
+    @Test
+    @DisplayName("우테코 사용자는 표시 이름을 유지한 채 프로필을 수정할 수 있다")
+    void updatesWoowacourseProfileWithoutChangingDisplayName() {
+        UserProfile profile = UserProfile.builder()
+                .userId(1L)
+                .displayName("재키")
+                .userType(UserType.WOOWACOURSE_CREW)
+                .track("BACKEND")
+                .cohort((short) 8)
+                .build();
+
+        UserProfile updated = profile.update(
+                "재키",
+                "소개",
+                null,
+                null,
+                null
+        );
+
+        assertThat(updated.getDisplayName()).isEqualTo(new ProfileDisplayName("재키"));
+        assertThat(updated.getBio()).isEqualTo("소개");
     }
 
     @Test
