@@ -11,8 +11,6 @@ export default class NetworkEnvironment extends TestEnvironment {
       'Response',
       'FormData',
       'Blob',
-      'TextEncoder',
-      'TextDecoder',
       'ReadableStream',
       'WritableStream',
       'TransformStream',
