@@ -11,7 +11,9 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-/** 여러 User 관련 테이블을 조합하는 조회를 JDBC로 수행한다. */
+/**
+ * 여러 User 관련 테이블을 조합하는 JDBC 조회 구현체.
+ */
 @Repository
 @RequiredArgsConstructor
 public class UserQueryRepositoryImpl implements UserQueryRepository {
@@ -126,7 +128,9 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
         );
     }
 
-    /** 입력값의 LIKE 와일드카드를 일반 문자로 검색하도록 이스케이프한다. */
+    /**
+     * LIKE 와일드카드를 일반 문자로 검색하기 위한 입력값 이스케이프.
+     */
     private String escapeLikePattern(String keyword) {
         return keyword
                 .replace("\\", "\\\\")

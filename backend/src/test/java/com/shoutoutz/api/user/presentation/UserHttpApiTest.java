@@ -164,7 +164,7 @@ class UserHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("마이페이지 조회")
-                                .description("로그인한 사용자의 프로필과 프로젝트·피드 개수를 조회한다.")
+                                .description("로그인한 사용자의 프로필과 프로젝트 및 피드 개수를 조회한다.")
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
                                                 .description("인증된 사용자의 JSESSIONID")
@@ -355,7 +355,7 @@ class UserHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("사용자 공개 프로필 조회")
-                                .description("handle로 사용자의 공개 프로필과 프로젝트·피드 개수를 조회한다.")
+                                .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다.")
                                 .pathParameters(
                                         parameterWithName("handle").description("조회할 사용자의 handle")
                                 )
@@ -543,7 +543,7 @@ class UserHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("사용자 공개 프로필 조회")
-                                .description("handle로 사용자의 공개 프로필과 프로젝트·피드 개수를 조회한다.")
+                                .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다.")
                                 .pathParameters(
                                         parameterWithName("handle").description("조회할 사용자의 handle")
                                 )
@@ -570,7 +570,7 @@ class UserHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("사용자 공개 프로필 조회")
-                                .description("handle로 사용자의 공개 프로필과 프로젝트·피드 개수를 조회한다.")
+                                .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다.")
                                 .pathParameters(
                                         parameterWithName("handle").description("조회할 사용자의 handle")
                                 )

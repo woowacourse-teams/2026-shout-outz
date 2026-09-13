@@ -11,6 +11,9 @@ import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.USER_TY
 
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 
+/**
+ * UserProfile 생성 시 지켜야 하는 필수값과 상태 조합 검증.
+ */
 final class UserProfileValidator {
 
     private UserProfileValidator() {

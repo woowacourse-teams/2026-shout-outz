@@ -27,7 +27,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 사용자 프로필 조회·수정과 우테코 사용자 검색 유스케이스를 처리한다. */
+/**
+ * 사용자 프로필 조회, 수정 및 우테코 사용자 검색 서비스.
+ */
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -122,7 +124,9 @@ public class UserService {
         return createSearchResult(searchedItems, size);
     }
 
-    /** 한 건을 더 조회한 결과로 다음 검색 여부와 커서를 결정한다. */
+    /**
+     * 요청한 크기보다 한 건 더 조회한 결과를 이용한 다음 페이지 정보 생성.
+     */
     private UserSearchResult createSearchResult(
             List<UserSearchItem> searchedItems,
             int size
@@ -143,7 +147,9 @@ public class UserService {
         ));
     }
 
-    /** 프로필 이미지의 소유자, 용도, 처리 완료 상태를 확인한다. */
+    /**
+     * 프로필 이미지 소유자, 용도 및 처리 상태 검증.
+     */
     private void validateAvatarImage(long userId, Long avatarImageId) {
         if (avatarImageId == null) {
             return;
@@ -191,7 +197,9 @@ public class UserService {
         );
     }
 
-    /** 탈퇴 사용자의 개인정보와 활동 개수를 숨긴 공개 응답을 만든다. */
+    /**
+     * 탈퇴 사용자의 개인정보와 활동 개수를 숨긴 공개 프로필 응답 생성.
+     */
     private UserProfileResponse createDeletedProfileResponse(User user) {
         return new UserProfileResponse(
                 user.getHandle().value(),
