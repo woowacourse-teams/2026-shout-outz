@@ -2,7 +2,7 @@ package com.shoutoutz.api.auth.presentation.session;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.shoutoutz.api.user.domain.UserRole;
+import com.shoutoutz.api.user.domain.account.UserRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;

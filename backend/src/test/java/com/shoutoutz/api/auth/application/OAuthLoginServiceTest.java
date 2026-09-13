@@ -6,7 +6,7 @@ import static org.mockito.Mockito.verify;
 
 import com.shoutoutz.api.auth.application.port.GitHubOAuthAuthorizationPort;
 import com.shoutoutz.api.auth.application.port.GitHubOAuthIdentityPort;
-import com.shoutoutz.api.auth.application.dto.result.OAuthLoginCallbackResult;
+import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import java.time.Instant;

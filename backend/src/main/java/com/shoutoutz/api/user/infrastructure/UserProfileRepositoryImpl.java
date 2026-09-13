@@ -1,7 +1,7 @@
 package com.shoutoutz.api.user.infrastructure;
 
-import com.shoutoutz.api.user.domain.UserProfile;
-import com.shoutoutz.api.user.domain.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.UserProfile;
+import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.infrastructure.jpa.UserProfileJpaRepository;
 import com.shoutoutz.api.user.infrastructure.mapper.UserProfileMapper;
 import java.util.Optional;

@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
-import com.shoutoutz.api.user.domain.UserRole;
+import com.shoutoutz.api.user.domain.account.UserRole;
 import jakarta.servlet.ServletException;
 import java.io.IOException;
 import org.junit.jupiter.api.DisplayName;

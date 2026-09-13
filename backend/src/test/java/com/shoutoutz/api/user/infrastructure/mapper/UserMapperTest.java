@@ -2,10 +2,10 @@ package com.shoutoutz.api.user.infrastructure.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.shoutoutz.api.user.domain.Handle;
-import com.shoutoutz.api.user.domain.User;
-import com.shoutoutz.api.user.domain.UserRole;
-import com.shoutoutz.api.user.domain.UserStatus;
+import com.shoutoutz.api.user.domain.account.Handle;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.infrastructure.UserEntity;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
