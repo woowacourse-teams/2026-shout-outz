@@ -21,19 +21,19 @@
 
 ## 팔레트
 
-| 토큰 |
-|---|
-| `blue-*` |
-| `static-blue-*` |
-| `red-*` |
-| `static-red-*` |
-| `yellow-*` |
-| `static-yellow-*` |
-| `green-*` |
-| `static-green-*` |
-| `gray-*` |
-| `gray-opacity-*` |
-| `primary-*` — `blue-*` 컬러 토큰의 별칭 |
+| 토큰                                                  |
+| ----------------------------------------------------- |
+| `blue-*`                                              |
+| `static-blue-*`                                       |
+| `red-*`                                               |
+| `static-red-*`                                        |
+| `yellow-*`                                            |
+| `static-yellow-*`                                     |
+| `green-*`                                             |
+| `static-green-*`                                      |
+| `gray-*`                                              |
+| `gray-opacity-*`                                      |
+| `primary-*` — `blue-*` 컬러 토큰의 별칭               |
 | `static-primary-*` — `static-blue-*` 컬러 토큰의 별칭 |
 
 단일 색상으로 `background`, `white`, `black`을 제공한다. `background`는 테마에 맞춰 변경되며 `white`와 `black`은 고정된다.
@@ -51,13 +51,9 @@
 
 ```tsx
 <main className="bg-background text-gray-900">
-    <button className="bg-primary-500 text-white hover:bg-primary-600">
-        저장
-    </button>
+  <button className="bg-primary-500 hover:bg-primary-600 text-white">저장</button>
 
-    <button className="text-red-600 hover:bg-red-50">
-        삭제
-    </button>
+  <button className="text-red-600 hover:bg-red-50">삭제</button>
 </main>
 ```
 

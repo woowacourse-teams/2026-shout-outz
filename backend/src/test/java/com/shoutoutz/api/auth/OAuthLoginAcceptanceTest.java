@@ -13,12 +13,12 @@ import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
-import com.shoutoutz.api.user.domain.Handle;
-import com.shoutoutz.api.user.domain.ProfileDisplayName;
-import com.shoutoutz.api.user.domain.User;
-import com.shoutoutz.api.user.domain.UserProfile;
-import com.shoutoutz.api.user.domain.UserProfileRepository;
-import com.shoutoutz.api.user.domain.UserRepository;
+import com.shoutoutz.api.user.domain.account.Handle;
+import com.shoutoutz.api.user.domain.profile.ProfileDisplayName;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.profile.UserProfile;
+import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.account.UserRepository;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import java.net.URI;
@@ -322,7 +322,7 @@ class OAuthLoginAcceptanceTest {
         assertThat(user.getLastLoginAt()).isNotNull();
         assertThat(profile.getDisplayName()).isEqualTo(new ProfileDisplayName("상준"));
         assertThat(profile.getAvatarImageId()).isNull();
-        assertThat(profile.getGithubProfileUrl()).isEqualTo("https://github.com/sangjun");
+        assertThat(profile.getGithubProfileUrl()).isNull();
         assertThat(account.getUserId()).isEqualTo(result.userId());
         assertThat(account.getProviderAvatarUrl())
                 .isEqualTo("https://avatars.githubusercontent.com/u/12345678");
@@ -348,8 +348,7 @@ class OAuthLoginAcceptanceTest {
                 .contentType("application/json")
                 .body(Map.of(
                         "handle", "sangjun",
-                        "displayName", "상준",
-                        "userType", "GENERAL"
+                        "displayName", "상준"
                 ))
                 .when()
                 .post(OAUTH_SIGNUP_PATH);
@@ -506,8 +505,7 @@ class OAuthLoginAcceptanceTest {
                 .contentType("application/json")
                 .body(Map.of(
                         "handle", handle,
-                        "displayName", "상준",
-                        "userType", "GENERAL"
+                        "displayName", "상준"
                 ))
                 .when()
                 .post(OAUTH_SIGNUP_PATH);

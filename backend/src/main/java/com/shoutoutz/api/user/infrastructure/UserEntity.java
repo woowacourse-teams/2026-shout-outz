@@ -1,8 +1,8 @@
 package com.shoutoutz.api.user.infrastructure;
 
 import com.shoutoutz.api.common.entity.BaseEntity;
-import com.shoutoutz.api.user.domain.UserRole;
-import com.shoutoutz.api.user.domain.UserStatus;
+import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.account.UserStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

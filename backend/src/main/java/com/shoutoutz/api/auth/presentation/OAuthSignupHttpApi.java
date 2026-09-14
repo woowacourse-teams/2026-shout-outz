@@ -1,7 +1,7 @@
 package com.shoutoutz.api.auth.presentation;
 
 import com.shoutoutz.api.auth.application.OAuthSignupService;
-import com.shoutoutz.api.auth.application.dto.result.OAuthSignupResult;
+import com.shoutoutz.api.auth.application.command.OAuthSignupResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.exception.AuthErrorCode;
 import com.shoutoutz.api.auth.presentation.dto.request.OAuthSignupRequest;

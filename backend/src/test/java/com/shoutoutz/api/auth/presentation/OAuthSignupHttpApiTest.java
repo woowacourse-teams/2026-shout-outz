@@ -7,8 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.shoutoutz.api.auth.application.OAuthSignupService;
-import com.shoutoutz.api.auth.application.dto.command.OAuthSignupCommand;
-import com.shoutoutz.api.auth.application.dto.result.OAuthSignupResult;
+import com.shoutoutz.api.auth.application.command.OAuthSignupCommand;
+import com.shoutoutz.api.auth.application.command.OAuthSignupResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.auth.presentation.dto.request.OAuthSignupRequest;
@@ -17,8 +17,7 @@ import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.response.SuccessResponse;
-import com.shoutoutz.api.user.domain.UserRole;
-import com.shoutoutz.api.user.domain.UserType;
+import com.shoutoutz.api.user.domain.account.UserRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -101,10 +100,7 @@ class OAuthSignupHttpApiTest {
     private OAuthSignupRequest signupRequest() {
         return new OAuthSignupRequest(
                 "sangjun",
-                "상준",
-                UserType.GENERAL,
-                null,
-                null
+                "상준"
         );
     }
 
