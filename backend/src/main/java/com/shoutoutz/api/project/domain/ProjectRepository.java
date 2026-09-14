@@ -7,4 +7,6 @@ public interface ProjectRepository {
     Project save(Project project, List<Long> techTagIds, List<Long> memberIds);
 
     boolean existsBySlug(Slug slug);
+
+    boolean existsPublicById(long projectId);
 }
