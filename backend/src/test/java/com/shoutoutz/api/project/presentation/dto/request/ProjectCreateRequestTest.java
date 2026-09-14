@@ -14,15 +14,15 @@ class ProjectCreateRequestTest {
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {"   "})
-    @DisplayName("배포 URL이 비어 있으면 입력하지 않은 것으로 보고 null 로 넘긴다.")
+    @DisplayName("배포 URL이 비어 있으면 입력하지 않은 것으로 보고 null 로 둔다.")
     void convertsBlankDeploymentUrlToNull(String deploymentUrl) {
-        assertThat(request(deploymentUrl).toCommand(1L).deploymentUrl()).isNull();
+        assertThat(request(deploymentUrl).deploymentUrl()).isNull();
     }
 
     @Test
-    @DisplayName("배포 URL이 있으면 그대로 넘긴다.")
+    @DisplayName("배포 URL이 있으면 그대로 둔다.")
     void keepsDeploymentUrl() {
-        assertThat(request("https://loop.team").toCommand(1L).deploymentUrl()).isEqualTo("https://loop.team");
+        assertThat(request("https://loop.team").deploymentUrl()).isEqualTo("https://loop.team");
     }
 
     private static ProjectCreateRequest request(String deploymentUrl) {

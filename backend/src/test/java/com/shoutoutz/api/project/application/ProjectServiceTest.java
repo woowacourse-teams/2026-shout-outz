@@ -18,8 +18,6 @@ import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
-import com.shoutoutz.api.project.application.dto.command.ProjectCreateCommand;
-import com.shoutoutz.api.project.application.dto.result.ProjectCreateResult;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectRepository;
@@ -30,6 +28,8 @@ import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
 import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.techtag.domain.TechTag;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
@@ -101,7 +101,7 @@ class ProjectServiceTest {
         when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
                 .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
 
-        ProjectCreateResult result = projectService.create(command(6, THUMBNAIL_ID, TECH_TAG_IDS));
+        ProjectCreateResponse result = projectService.create(REGISTERED_BY, request(6, THUMBNAIL_ID, TECH_TAG_IDS));
 
         assertThat(result.projectId()).isEqualTo(100L);
         assertThat(result.slug()).isEqualTo("loop");
@@ -120,7 +120,7 @@ class ProjectServiceTest {
     void rejectsUndefinedCohort() {
         givenRegistrant(UserType.WOOWACOURSE_CREW);
 
-        assertThatThrownBy(() -> projectService.create(command(99, null, TECH_TAG_IDS)))
+        assertThatThrownBy(() -> projectService.create(REGISTERED_BY, request(99, null, TECH_TAG_IDS)))
                 .isInstanceOfSatisfying(InvalidCohortException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(CohortErrorCode.INVALID_COHORT));
 
@@ -133,7 +133,7 @@ class ProjectServiceTest {
         givenRegistrant(UserType.WOOWACOURSE_CREW);
         when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(true);
 
-        assertThatThrownBy(() -> projectService.create(command(6, null, TECH_TAG_IDS)))
+        assertThatThrownBy(() -> projectService.create(REGISTERED_BY, request(6, null, TECH_TAG_IDS)))
                 .isInstanceOfSatisfying(DuplicateEntityException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_DUPLICATE_SLUG));
 
@@ -146,7 +146,7 @@ class ProjectServiceTest {
         givenRegistrant(UserType.WOOWACOURSE_CREW);
         when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(false);
 
-        assertThatThrownBy(() -> projectService.create(command(6, null, List.of(1L, 1L))))
+        assertThatThrownBy(() -> projectService.create(REGISTERED_BY, request(6, null, List.of(1L, 1L))))
                 .isInstanceOfSatisfying(InvalidTechTagException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_DUPLICATE_TECH_TAG));
 
@@ -160,7 +160,7 @@ class ProjectServiceTest {
         when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(false);
         when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L));
 
-        assertThatThrownBy(() -> projectService.create(command(6, null, TECH_TAG_IDS)))
+        assertThatThrownBy(() -> projectService.create(REGISTERED_BY, request(6, null, TECH_TAG_IDS)))
                 .isInstanceOfSatisfying(InvalidTechTagException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_INVALID_TECH_TAG));
     }
@@ -175,7 +175,7 @@ class ProjectServiceTest {
         when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
                 .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
 
-        projectService.create(command(6, null, TECH_TAG_IDS));
+        projectService.create(REGISTERED_BY, request(6, null, TECH_TAG_IDS));
 
         verifyNoInteractions(mediaMetadataRepository);
     }
@@ -232,7 +232,7 @@ class ProjectServiceTest {
         when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
                 .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
 
-        ProjectCreateResult result = projectService.create(command(6, null, TECH_TAG_IDS));
+        ProjectCreateResponse result = projectService.create(REGISTERED_BY, request(6, null, TECH_TAG_IDS));
 
         assertThat(result.projectId()).isEqualTo(100L);
     }
@@ -262,7 +262,7 @@ class ProjectServiceTest {
         when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
                 .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
 
-        projectService.create(command(List.of("coach-jack", MEMBER_HANDLE)));
+        projectService.create(REGISTERED_BY, request(List.of("coach-jack", MEMBER_HANDLE)));
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Long>> memberIdsCaptor = ArgumentCaptor.forClass(List.class);
@@ -328,7 +328,7 @@ class ProjectServiceTest {
         when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
                 .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
 
-        projectService.create(commandWithDescription(
+        projectService.create(REGISTERED_BY, requestWithDescription(
                 "## 화면\n![목록](media://21)\n![상세](media://22)\n![목록 확대](media://21)"));
 
         verify(mediaMetadataRepository, times(1)).findById(21L);
@@ -375,7 +375,7 @@ class ProjectServiceTest {
     }
 
     private void assertInvalidDescriptionMedia(String descriptionMd, ProjectErrorCode expected) {
-        assertThatThrownBy(() -> projectService.create(commandWithDescription(descriptionMd)))
+        assertThatThrownBy(() -> projectService.create(REGISTERED_BY, requestWithDescription(descriptionMd)))
                 .isInstanceOfSatisfying(InvalidDescriptionMediaException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(expected));
         verify(projectRepository, never()).save(any(), anyList(), anyList());
@@ -409,7 +409,7 @@ class ProjectServiceTest {
     }
 
     private void assertInvalidMember(List<String> memberHandles, ProjectErrorCode expected) {
-        assertThatThrownBy(() -> projectService.create(command(memberHandles)))
+        assertThatThrownBy(() -> projectService.create(REGISTERED_BY, request(memberHandles)))
                 .isInstanceOfSatisfying(InvalidProjectMemberException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(expected));
         verify(projectRepository, never()).save(any(), anyList(), anyList());
@@ -427,7 +427,7 @@ class ProjectServiceTest {
     }
 
     private void assertRegistrationForbidden() {
-        assertThatThrownBy(() -> projectService.create(command(6, null, TECH_TAG_IDS)))
+        assertThatThrownBy(() -> projectService.create(REGISTERED_BY, request(6, null, TECH_TAG_IDS)))
                 .isInstanceOfSatisfying(ProjectRegistrationForbiddenException.class,
                         error -> assertThat(error.getErrorCode())
                                 .isEqualTo(ProjectErrorCode.PROJECT_REGISTRATION_FORBIDDEN));
@@ -440,32 +440,32 @@ class ProjectServiceTest {
     }
 
     private void assertInvalidThumbnail(ProjectErrorCode expected) {
-        assertThatThrownBy(() -> projectService.create(command(6, THUMBNAIL_ID, TECH_TAG_IDS)))
+        assertThatThrownBy(() -> projectService.create(REGISTERED_BY, request(6, THUMBNAIL_ID, TECH_TAG_IDS)))
                 .isInstanceOfSatisfying(InvalidThumbnailException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(expected));
         verify(projectRepository, never()).save(any(), anyList(), anyList());
     }
 
-    private static ProjectCreateCommand command(List<String> memberHandles) {
-        return command(6, null, TECH_TAG_IDS, memberHandles, DESCRIPTION);
+    private static ProjectCreateRequest request(List<String> memberHandles) {
+        return request(6, null, TECH_TAG_IDS, memberHandles, DESCRIPTION);
     }
 
-    private static ProjectCreateCommand commandWithDescription(String descriptionMd) {
-        return command(6, null, TECH_TAG_IDS, List.of(MEMBER_HANDLE), descriptionMd);
+    private static ProjectCreateRequest requestWithDescription(String descriptionMd) {
+        return request(6, null, TECH_TAG_IDS, List.of(MEMBER_HANDLE), descriptionMd);
     }
 
-    private static ProjectCreateCommand command(int cohort, Long thumbnailMediaId, List<Long> techTagIds) {
-        return command(cohort, thumbnailMediaId, techTagIds, List.of(MEMBER_HANDLE), DESCRIPTION);
+    private static ProjectCreateRequest request(int cohort, Long thumbnailMediaId, List<Long> techTagIds) {
+        return request(cohort, thumbnailMediaId, techTagIds, List.of(MEMBER_HANDLE), DESCRIPTION);
     }
 
-    private static ProjectCreateCommand command(
+    private static ProjectCreateRequest request(
             int cohort,
             Long thumbnailMediaId,
             List<Long> techTagIds,
             List<String> memberHandles,
             String descriptionMd
     ) {
-        return new ProjectCreateCommand(
+        return new ProjectCreateRequest(
                 "루프 (Loop)",
                 "루프팀",
                 "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
@@ -475,8 +475,7 @@ class ProjectServiceTest {
                 "https://loop.team",
                 descriptionMd,
                 techTagIds,
-                memberHandles,
-                REGISTERED_BY
+                memberHandles
         );
     }
 

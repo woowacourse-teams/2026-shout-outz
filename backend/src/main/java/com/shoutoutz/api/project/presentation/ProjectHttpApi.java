@@ -4,7 +4,6 @@ import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.project.application.ProjectService;
-import com.shoutoutz.api.project.application.dto.result.ProjectCreateResult;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import jakarta.validation.Valid;
@@ -26,10 +25,9 @@ public class ProjectHttpApi {
     @PostMapping
     public ResponseEntity<SuccessResponse<ProjectCreateResponse>> create(
             @LoginUser AuthenticatedUser loginUser,
-            @Valid @RequestBody ProjectCreateRequest body
+            @Valid @RequestBody ProjectCreateRequest request
     ) {
-        ProjectCreateResult result = projectService.create(body.toCommand(loginUser.userId()));
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(SuccessResponse.success(ProjectCreateResponse.from(result)));
+        ProjectCreateResponse response = projectService.create(loginUser.userId(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(SuccessResponse.success(response));
     }
 }

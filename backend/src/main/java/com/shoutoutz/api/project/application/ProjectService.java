@@ -15,8 +15,6 @@ import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
-import com.shoutoutz.api.project.application.dto.command.ProjectCreateCommand;
-import com.shoutoutz.api.project.application.dto.result.ProjectCreateResult;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.DescriptionMediaReferences;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
@@ -31,6 +29,8 @@ import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
 import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -56,30 +56,30 @@ public class ProjectService {
     private final UserRepository userRepository;
 
     @Transactional
-    public ProjectCreateResult create(ProjectCreateCommand command) {
-        validateRegistrant(command.registeredBy());
+    public ProjectCreateResponse create(long registeredBy, ProjectCreateRequest request) {
+        validateRegistrant(registeredBy);
         Project project = Project.register(
-                Cohort.from(command.cohort()),
-                command.registeredBy(),
-                new TeamName(command.teamName()),
-                new Title(command.title()),
-                command.tagline(),
-                command.descriptionMd(),
-                new GithubRepositoryUrl(command.githubRepositoryUrl()),
-                command.deploymentUrl() == null ? null : new DeploymentUrl(command.deploymentUrl()),
-                command.thumbnailMediaId()
+                Cohort.from(request.cohort()),
+                registeredBy,
+                new TeamName(request.teamName()),
+                new Title(request.title()),
+                request.tagline(),
+                request.descriptionMd(),
+                new GithubRepositoryUrl(request.githubRepositoryUrl()),
+                request.deploymentUrl() == null ? null : new DeploymentUrl(request.deploymentUrl()),
+                request.thumbnailMediaId()
         );
         validateSlugNotDuplicated(project.getSlug());
-        validateTechTags(command.techTagIds());
-        validateThumbnail(command.thumbnailMediaId(), command.registeredBy());
-        validateDescriptionMedia(command.descriptionMd(), command.registeredBy());
-        List<Long> memberIds = command.memberHandles().stream()
+        validateTechTags(request.techTagIds());
+        validateThumbnail(request.thumbnailMediaId(), registeredBy);
+        validateDescriptionMedia(request.descriptionMd(), registeredBy);
+        List<Long> memberIds = request.memberHandles().stream()
                 .map(this::resolveMemberId)
                 .toList();
-        ProjectMembers members = ProjectMembers.of(command.registeredBy(), memberIds);
+        ProjectMembers members = ProjectMembers.of(registeredBy, memberIds);
 
-        Project savedProject = projectRepository.save(project, command.techTagIds(), members.getUserIds());
-        return new ProjectCreateResult(savedProject.getId(), savedProject.getSlug().value());
+        Project savedProject = projectRepository.save(project, request.techTagIds(), members.getUserIds());
+        return new ProjectCreateResponse(savedProject.getId(), savedProject.getSlug().value());
     }
 
     /**

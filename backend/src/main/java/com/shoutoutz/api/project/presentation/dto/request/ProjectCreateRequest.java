@@ -1,6 +1,5 @@
 package com.shoutoutz.api.project.presentation.dto.request;
 
-import com.shoutoutz.api.project.application.dto.command.ProjectCreateCommand;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import jakarta.validation.constraints.NotBlank;
@@ -35,7 +34,7 @@ public record ProjectCreateRequest(
         String githubRepositoryUrl,
 
         @CodePointLength(max = 2_048, message = "deploymentUrl은 2,048자를 초과할 수 없습니다.")
-        @Pattern(regexp = "^$|" + DeploymentUrl.REGEX,
+        @Pattern(regexp = DeploymentUrl.REGEX,
                 message = "deploymentUrl은 http 또는 https URL 형식이어야 합니다.")
         String deploymentUrl,
 
@@ -49,19 +48,12 @@ public record ProjectCreateRequest(
         List<@NotBlank(message = "memberHandles에 빈 값을 넣을 수 없습니다.") String> memberHandles
 ) {
 
-    public ProjectCreateCommand toCommand(Long registeredBy) {
-        return new ProjectCreateCommand(
-                title,
-                teamName,
-                tagline,
-                cohort,
-                thumbnailMediaId,
-                githubRepositoryUrl,
-                deploymentUrl == null || deploymentUrl.isBlank() ? null : deploymentUrl,
-                descriptionMd,
-                techTagIds,
-                memberHandles,
-                registeredBy
-        );
+    /**
+     * 배포 URL 입력칸을 비워 보내면 입력하지 않은 것으로 보고 null 로 둔다.
+     */
+    public ProjectCreateRequest {
+        if (deploymentUrl != null && deploymentUrl.isBlank()) {
+            deploymentUrl = null;
+        }
     }
 }

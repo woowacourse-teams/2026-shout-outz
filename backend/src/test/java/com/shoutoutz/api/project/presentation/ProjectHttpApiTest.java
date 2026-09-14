@@ -2,8 +2,9 @@ package com.shoutoutz.api.project.presentation;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -23,13 +24,12 @@ import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.project.application.ProjectService;
-import com.shoutoutz.api.project.application.dto.command.ProjectCreateCommand;
-import com.shoutoutz.api.project.application.dto.result.ProjectCreateResult;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -61,8 +61,8 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("로그인 사용자를 등록자로 프로젝트를 등록하고 201을 반환한다.")
     void createsProject() throws Exception {
-        given(projectService.create(any(ProjectCreateCommand.class)))
-                .willReturn(new ProjectCreateResult(100L, "loop"));
+        given(projectService.create(anyLong(), any(ProjectCreateRequest.class)))
+                .willReturn(new ProjectCreateResponse(100L, "loop"));
 
         mockMvc.perform(post("/api/v1/projects")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
@@ -113,9 +113,7 @@ class ProjectHttpApiTest {
                                 .build())
                 ));
 
-        ArgumentCaptor<ProjectCreateCommand> captor = ArgumentCaptor.forClass(ProjectCreateCommand.class);
-        verify(projectService).create(captor.capture());
-        assertThat(captor.getValue().registeredBy()).isEqualTo(7L);
+        verify(projectService).create(eq(7L), any(ProjectCreateRequest.class));
     }
 
     @Test
@@ -150,7 +148,7 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("이미 등록된 리포지토리인 경우, 409를 반환한다.")
     void rejectsDuplicateRepository() throws Exception {
-        given(projectService.create(any(ProjectCreateCommand.class)))
+        given(projectService.create(anyLong(), any(ProjectCreateRequest.class)))
                 .willThrow(new DuplicateEntityException(ProjectErrorCode.PROJECT_DUPLICATE_SLUG));
 
         mockMvc.perform(post("/api/v1/projects")
