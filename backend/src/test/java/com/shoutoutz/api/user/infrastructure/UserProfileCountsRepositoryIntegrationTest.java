@@ -52,10 +52,10 @@ class UserProfileCountsRepositoryIntegrationTest {
         return jdbcTemplate.queryForObject(
                 """
                         INSERT INTO projects (
-                            cohort, team_name, slug, title,
+                            cohort, team_name, slug, title, tagline, github_repository_url,
                             service_status, approval_status, deleted_at
                         )
-                        VALUES (?, ?, ?, ?, 'OPERATING', 'APPROVED', ?)
+                        VALUES (?, ?, ?, ?, ?, ?, 'OPERATING', 'APPROVED', ?)
                         RETURNING id
                         """,
                 Long.class,
@@ -63,6 +63,8 @@ class UserProfileCountsRepositoryIntegrationTest {
                 "샤라웃즈",
                 "counts-" + suffix,
                 "개수 테스트 프로젝트",
+                "개수 테스트용 한 줄 소개",
+                "https://github.com/woowacourse-teams/counts-" + suffix,
                 deletedAt == null ? null : Timestamp.from(deletedAt)
         );
     }
