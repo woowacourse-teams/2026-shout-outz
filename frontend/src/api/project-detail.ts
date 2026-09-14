@@ -46,12 +46,12 @@ export class ProjectNotFoundError extends Error {
   }
 }
 
-async function requestProject(id: string, signal?: AbortSignal, personalized = false) {
+async function requestProject(id: string, signal?: AbortSignal) {
   if (!/^[1-9]\d*$/.test(id)) throw new ProjectNotFoundError();
   const response = await ky.get(getApiUrl(`/api/v1/projects/${id}`), {
     signal,
     retry: 0,
-    credentials: personalized ? 'same-origin' : 'omit',
+    credentials: 'omit',
     throwHttpErrors: false,
   });
   if (response.status === 404) throw new ProjectNotFoundError();
@@ -61,7 +61,7 @@ async function requestProject(id: string, signal?: AbortSignal, personalized = f
     throw new Error('프로젝트 상세 응답을 확인할 수 없습니다.');
   }
   // 정적 페이지와 공개 조회에는 승인된 프로젝트만 사용한다.
-  if (!personalized && body.data.approvalStatus !== 'APPROVED') {
+  if (body.data.approvalStatus !== 'APPROVED') {
     throw new ProjectNotFoundError();
   }
   return body.data;
@@ -94,19 +94,4 @@ export const projectDetailQueryOptions = (id: string) =>
     queryKey: ['project-detail', id],
     queryFn: ({ signal }) => fetchProjectDetail(id, signal),
     staleTime: 60_000,
-  });
-
-export const projectReactionsQueryOptions = (id: string) =>
-  queryOptions({
-    queryKey: ['project-reactions', id],
-    queryFn: async ({ signal }) => {
-      const data = await requestProject(id, signal, true);
-      return {
-        likedByMe: data.likedByMe,
-        bookmarkedByMe: data.bookmarkedByMe,
-        likeCount: data.likeCount,
-        bookmarkCount: data.bookmarkCount,
-      };
-    },
-    retry: false,
   });

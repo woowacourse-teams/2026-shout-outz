@@ -2,17 +2,14 @@
  * @jest-environment ./jest.network-environment.js
  * @jest-environment-options {"customExportConditions":["node","node-addons"]}
  */
-import { act, render, screen, within } from '@testing-library/react';
-import { hydrateRoot } from 'react-dom/client';
+import { render, screen, within } from '@testing-library/react';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
 import userEvent from '@testing-library/user-event';
 import { dehydrate, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { renderToString } from 'react-dom/server';
 import { handlers } from '@/api/mock/handlers';
 import { projectDetailQueryOptions } from '@/api/project-detail';
-import { ProjectDetailContent } from '@/components/projects/ProjectDetailContent';
 import { MarkdownContent } from '@/components/MarkdownContent';
 import { routeTree } from '@/routeTree.gen';
 
@@ -52,7 +49,7 @@ test('상세 직접 진입 시 API 정보와 공통 레이아웃을 표시한다
   ).toHaveAttribute('aria-current', 'page');
   expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-  expect(await screen.findByText('좋아요 안 함')).toBeInTheDocument();
+  expect(screen.queryByLabelText('프로젝트 반응')).not.toBeInTheDocument();
 });
 
 test('목록 카드를 누르면 숫자 ID의 상세 페이지로 이동한다', async () => {
@@ -159,56 +156,4 @@ test('Markdown의 HTML·표는 렌더링하고 스크립트·style·위험한 UR
   expect(screen.getByText('소개')).not.toHaveAttribute('onclick');
   expect(container.querySelector('script')).toBeNull();
   expect(screen.getByText('링크').getAttribute('href') ?? '').not.toMatch(/javascript:/);
-});
-
-test('SSG 결과와 공개 Query 캐시에 개인화 값·반려 사유가 포함되지 않는다', async () => {
-  const data = await (await fetch('http://localhost/api/v1/projects/1')).json();
-  server.use(
-    http.get('/api/v1/projects/1', () =>
-      HttpResponse.json({
-        ...data,
-        data: {
-          ...data.data,
-          likedByMe: true,
-          bookmarkedByMe: true,
-          rejectReason: 'private-reason',
-        },
-      }),
-    ),
-  );
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: Infinity } },
-  });
-  await queryClient.ensureQueryData(projectDetailQueryOptions('1'));
-  const html = renderToString(
-    <QueryClientProvider client={queryClient}>
-      <ProjectDetailContent projectId="1" />
-    </QueryClientProvider>,
-  );
-  expect(html).toContain('상태 확인 중');
-  expect(html).not.toContain('좋아요 함');
-  const serialized = JSON.stringify(dehydrate(queryClient));
-  expect(serialized).not.toMatch(/likedByMe|bookmarkedByMe|private-reason/);
-  const container = document.createElement('div');
-  container.innerHTML = html;
-  document.body.append(container);
-  const onRecoverableError = jest.fn();
-  let root: ReturnType<typeof hydrateRoot> | undefined;
-  try {
-    await act(async () => {
-      root = hydrateRoot(
-        container,
-        <QueryClientProvider client={queryClient}>
-          <ProjectDetailContent projectId="1" />
-        </QueryClientProvider>,
-        { onRecoverableError },
-      );
-    });
-    expect(await within(container).findByText('좋아요 함')).toBeInTheDocument();
-    expect(onRecoverableError).not.toHaveBeenCalled();
-  } finally {
-    await act(async () => root?.unmount());
-    container.remove();
-  }
-  queryClient.clear();
 });

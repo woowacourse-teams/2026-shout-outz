@@ -1,55 +1,10 @@
-import { useState, useSyncExternalStore } from 'react';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import {
-  projectDetailQueryOptions,
-  projectReactionsQueryOptions,
-  type ProjectDetail,
-} from '@/api/project-detail';
+import { useState } from 'react';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { projectDetailQueryOptions } from '@/api/project-detail';
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { getButtonStyles } from '@/components/Button';
 import { MarkdownContent } from '@/components/MarkdownContent';
-
-const subscribe = () => () => {};
-const clientSnapshot = () => true;
-const serverSnapshot = () => false;
-
-function ProjectReactions({ project }: { project: ProjectDetail }) {
-  const hydrated = useSyncExternalStore(subscribe, clientSnapshot, serverSnapshot);
-  const { data, isError } = useQuery({
-    ...projectReactionsQueryOptions(String(project.id)),
-    enabled: hydrated,
-  });
-  const ready = hydrated && data && !isError;
-  return (
-    <div className="flex flex-wrap gap-2" aria-label="프로젝트 반응">
-      <span className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-        좋아요 {ready ? data.likeCount : project.likeCount}
-        <span className="ml-2 text-xs text-gray-500">
-          {ready
-            ? data.likedByMe
-              ? '좋아요 함'
-              : '좋아요 안 함'
-            : isError
-              ? '상태 확인 불가'
-              : '상태 확인 중'}
-        </span>
-      </span>
-      <span className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-        저장 {ready ? data.bookmarkCount : project.bookmarkCount}
-        <span className="ml-2 text-xs text-gray-500">
-          {ready
-            ? data.bookmarkedByMe
-              ? '저장함'
-              : '저장 안 함'
-            : isError
-              ? '상태 확인 불가'
-              : '상태 확인 중'}
-        </span>
-      </span>
-    </div>
-  );
-}
 
 export function ProjectDetailContent({ projectId }: { projectId: string }) {
   const { data: project } = useSuspenseQuery(projectDetailQueryOptions(projectId));
@@ -110,7 +65,6 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
                 {link.label}
               </a>
             ))}
-            <ProjectReactions project={project} />
           </div>
         </div>
       </section>
