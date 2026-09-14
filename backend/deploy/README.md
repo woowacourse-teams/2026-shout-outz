@@ -56,7 +56,7 @@ sudo chown root:root /opt/shout-outz/shout-outz.env
 sudo chmod 0600 /opt/shout-outz/shout-outz.env
 ```
 
-환경 변수 형식은 `shout-outz.env.example`을 참고한다. 최초 배포의 `BeforeInstall` 단계가 서비스 사용자를 만든 뒤 파일 소유권을 `root:shoutoutz`, 권한을 `0640`으로 변경한다.
+필수 환경 변수 목록과 형식은 팀 내부 인프라 문서에서 관리한다. 실제 값은 저장소에 기록하지 않는다. 최초 배포의 `BeforeInstall` 단계는 필수 값이 모두 설정되었는지 확인하고, 서비스 사용자를 만든 뒤 파일 소유권을 `root:shoutoutz`, 권한을 `0640`으로 변경한다.
 
 애플리케이션이 기동하려면 접근 가능한 PostgreSQL이 먼저 있어야 한다. DB가 EC2 내부에 있는지 RDS에 있는지와 관계없이 EC2에서 해당 주소와 5432 포트에 접근할 수 있어야 한다.
 
