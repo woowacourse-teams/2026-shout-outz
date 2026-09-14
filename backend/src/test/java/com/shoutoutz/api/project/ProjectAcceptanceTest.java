@@ -44,7 +44,7 @@ class ProjectAcceptanceTest {
     private JdbcTemplate jdbcTemplate;
 
     @Test
-    @DisplayName("로그인한 사용자가 프로젝트를 등록하면 프로젝트, 기술 태그, 등록자 팀원이 함께 저장된다.")
+    @DisplayName("로그인한 사용자가 프로젝트를 등록하면 프로젝트, 기술 태그, 등록자부터 이어지는 팀원이 함께 저장된다.")
     void registersProject() {
         LoginSession author = signup("WOOWACOURSE_CREW");
         LoginSession teammate = signup("WOOWACOURSE_CREW");
@@ -69,23 +69,41 @@ class ProjectAcceptanceTest {
                 "SELECT tech_tag_id FROM project_tags WHERE project_id = ? ORDER BY display_order", Long.class, projectId);
         assertThat(savedTagIds).containsExactlyElementsOf(techTagIds);
 
-        Long firstMemberId = jdbcTemplate.queryForObject(
-                "SELECT user_id FROM project_members WHERE project_id = ? AND display_order = 0", Long.class, projectId);
-        assertThat(firstMemberId).isEqualTo(author.userId());
+        List<Long> memberIds = jdbcTemplate.queryForList(
+                "SELECT user_id FROM project_members WHERE project_id = ? ORDER BY display_order", Long.class, projectId);
+        assertThat(memberIds).containsExactly(author.userId(), teammate.userId());
     }
 
     @Test
     @DisplayName("이미 등록된 리포지토리를 다시 등록하면 409를 반환한다.")
     void rejectsDuplicateRepository() {
         LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
         List<Long> techTagIds = techTagIds("java");
         String repositoryName = uniqueRepositoryName();
-        assertThat(registerProject(author, repositoryName, techTagIds, List.of("teammate")).statusCode()).isEqualTo(201);
+        List<String> memberHandles = List.of(teammate.handle());
+        assertThat(registerProject(author, repositoryName, techTagIds, memberHandles).statusCode()).isEqualTo(201);
 
-        Response duplicated = registerProject(author, repositoryName, techTagIds, List.of("teammate"));
+        Response duplicated = registerProject(author, repositoryName, techTagIds, memberHandles);
 
         assertThat(duplicated.statusCode()).isEqualTo(409);
         assertThat(duplicated.jsonPath().getString("code")).isEqualTo("PROJECT_DUPLICATE_SLUG");
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자를 팀원으로 넣으면 400을 반환하고, 프로젝트를 저장하지 않는다.")
+    void rejectsUnknownMember() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        String repositoryName = uniqueRepositoryName();
+
+        Response response = registerProject(author, repositoryName, techTagIds("java"), List.of("no-such-user"));
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.jsonPath().getString("code")).isEqualTo("PROJECT_INVALID_MEMBER");
+        Integer saved = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM projects WHERE slug = ?", Integer.class,
+                repositoryName.substring("2026-".length()));
+        assertThat(saved).isZero();
     }
 
     @Test

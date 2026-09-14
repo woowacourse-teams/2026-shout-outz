@@ -2,6 +2,7 @@ package com.shoutoutz.api.project.application;
 
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_SLUG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_TECH_TAG;
+import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_MEMBER;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_TECH_TAG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_THUMBNAIL;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_THUMBNAIL_NOT_READY;
@@ -17,13 +18,18 @@ import com.shoutoutz.api.project.application.dto.command.ProjectCreateCommand;
 import com.shoutoutz.api.project.application.dto.result.ProjectCreateResult;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
+import com.shoutoutz.api.project.domain.InvalidProjectMemberException;
 import com.shoutoutz.api.project.domain.Project;
+import com.shoutoutz.api.project.domain.ProjectMembers;
 import com.shoutoutz.api.project.domain.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -41,6 +47,7 @@ public class ProjectService {
     private final TechTagRepository techTagRepository;
     private final MediaMetadataRepository mediaMetadataRepository;
     private final UserProfileRepository userProfileRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public ProjectCreateResult create(ProjectCreateCommand command) {
@@ -59,9 +66,12 @@ public class ProjectService {
         validateSlugNotDuplicated(project.getSlug());
         validateTechTags(command.techTagIds());
         validateThumbnail(command.thumbnailMediaId(), command.registeredBy());
-        List<Long> memberIds = resolveMemberIds(command.registeredBy(), command.memberHandles());
+        List<Long> memberIds = command.memberHandles().stream()
+                .map(this::resolveMemberId)
+                .toList();
+        ProjectMembers members = ProjectMembers.of(command.registeredBy(), memberIds);
 
-        Project savedProject = projectRepository.save(project, command.techTagIds(), memberIds);
+        Project savedProject = projectRepository.save(project, command.techTagIds(), members.getUserIds());
         return new ProjectCreateResult(savedProject.getId(), savedProject.getSlug().value());
     }
 
@@ -71,8 +81,15 @@ public class ProjectService {
     private void validateRegistrant(Long registeredBy) {
         userProfileRepository.findByUserId(registeredBy)
                 .map(UserProfile::getUserType)
-                .filter(userType -> userType == UserType.WOOWACOURSE_CREW || userType == UserType.WOOWACOURSE_COACH)
+                .filter(ProjectService::isWoowacourseMember)
                 .orElseThrow(ProjectRegistrationForbiddenException::new);
+    }
+
+    /**
+     * 프로젝트 등록자와 팀원은 우아한테크코스 크루나 코치여야 한다.
+     */
+    private static boolean isWoowacourseMember(UserType userType) {
+        return userType == UserType.WOOWACOURSE_CREW || userType == UserType.WOOWACOURSE_COACH;
     }
 
     private void validateSlugNotDuplicated(Slug slug) {
@@ -82,8 +99,8 @@ public class ProjectService {
     }
 
     /**
-     * 중복이 없고, 모든 id 가 선택 가능한 태그여야 한다.
-     * 없는 id 나 비활성 태그는 조회 결과에서 빠지므로 개수로 비교한다.
+     * 중복이 없고, 모든 id가 선택 가능한 태그여야 한다.
+     * 없는 id나 비활성 태그는 조회 결과에서 빠지므로 개수로 비교한다.
      */
     private void validateTechTags(List<Long> techTagIds) {
         if (new HashSet<>(techTagIds).size() != techTagIds.size()) {
@@ -112,13 +129,25 @@ public class ProjectService {
     }
 
     /**
-     * TODO: 사용자 프로필 API(PR #91) 머지 후 memberHandles 를 사용자 id 로 변환하고 검증한다.
-     *  - 존재하는 ACTIVE 사용자이고 WOOWACOURSE_CREW 또는 WOOWACOURSE_COACH 여야 한다
-     *  - 대소문자를 무시하고 중복이면 400, 등록자 본인이 포함되면 400
-     *  - 등록자를 0 번에 두고 memberHandles 순서대로 이어 붙인다
-     * 현재는 등록자만 팀원으로 저장한다.
+     * 팀원 handle을 사용자 id로 바꾼다. 팀원은 활동 중인 우아한테크코스 크루나 코치여야 한다.
+     * handle 조회는 대소문자를 구분하지 않으므로, 대소문자만 다른 handle은 같은 사용자로 조회되어 ProjectMembers 에서 중복으로 걸러진다.
      */
-    private List<Long> resolveMemberIds(Long registeredBy, List<String> memberHandles) {
-        return List.of(registeredBy);
+    private Long resolveMemberId(String handle) {
+        User member = findActiveUser(handle);
+        validateWoowacourseMember(member.getId());
+        return member.getId();
+    }
+
+    private User findActiveUser(String handle) {
+        return userRepository.findByHandle(handle)
+                .filter(user -> user.getStatus() == UserStatus.ACTIVE)
+                .orElseThrow(() -> new InvalidProjectMemberException(PROJECT_INVALID_MEMBER));
+    }
+
+    private void validateWoowacourseMember(Long userId) {
+        userProfileRepository.findByUserId(userId)
+                .map(UserProfile::getUserType)
+                .filter(ProjectService::isWoowacourseMember)
+                .orElseThrow(() -> new InvalidProjectMemberException(PROJECT_INVALID_MEMBER));
     }
 }

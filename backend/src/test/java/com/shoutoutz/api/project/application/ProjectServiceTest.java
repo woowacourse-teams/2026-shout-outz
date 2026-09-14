@@ -20,6 +20,7 @@ import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.project.application.dto.command.ProjectCreateCommand;
 import com.shoutoutz.api.project.application.dto.result.ProjectCreateResult;
+import com.shoutoutz.api.project.domain.InvalidProjectMemberException;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectRegistrationForbiddenException;
@@ -28,6 +29,10 @@ import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.techtag.domain.TechTag;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -46,6 +51,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ProjectServiceTest {
 
     private static final long REGISTERED_BY = 7L;
+    private static final long MEMBER_ID = 8L;
+    private static final String MEMBER_HANDLE = "zzaekkii";
     private static final long THUMBNAIL_ID = 12L;
     private static final List<Long> TECH_TAG_IDS = List.of(1L, 2L);
     private static final Instant NOW = Instant.parse("2026-09-10T00:00:00Z");
@@ -62,6 +69,9 @@ class ProjectServiceTest {
     @Mock
     private UserProfileRepository userProfileRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     private ProjectService projectService;
 
     @BeforeEach
@@ -70,14 +80,16 @@ class ProjectServiceTest {
                 projectRepository,
                 techTagRepository,
                 mediaMetadataRepository,
-                userProfileRepository
+                userProfileRepository,
+                userRepository
         );
     }
 
     @Test
-    @DisplayName("검증을 통과하면 등록자를 첫 팀원으로 두고 프로젝트를 저장한다.")
+    @DisplayName("검증을 통과하면 등록자를 첫 팀원으로, 이어서 입력한 팀원을 두고 프로젝트를 저장한다.")
     void createsProject() {
         givenRegistrant(UserType.WOOWACOURSE_CREW);
+        givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
         when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(false);
         when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
         when(mediaMetadataRepository.findById(THUMBNAIL_ID))
@@ -96,7 +108,7 @@ class ProjectServiceTest {
         verify(projectRepository).save(projectCaptor.capture(), eq(TECH_TAG_IDS), memberIdsCaptor.capture());
         assertThat(projectCaptor.getValue().getRegisteredBy()).isEqualTo(REGISTERED_BY);
         assertThat(projectCaptor.getValue().getServiceStatus()).isEqualTo(ServiceStatus.OPERATING);
-        assertThat(memberIdsCaptor.getValue()).first().isEqualTo(REGISTERED_BY);
+        assertThat(memberIdsCaptor.getValue()).containsExactly(REGISTERED_BY, MEMBER_ID);
     }
 
     @Test
@@ -153,6 +165,7 @@ class ProjectServiceTest {
     @DisplayName("썸네일을 입력하지 않으면 미디어를 조회하지 않는다.")
     void skipsThumbnailValidationWhenAbsent() {
         givenRegistrant(UserType.WOOWACOURSE_CREW);
+        givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
         when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(false);
         when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
         when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
@@ -211,6 +224,7 @@ class ProjectServiceTest {
     void createsProjectByCoach() {
         givenRegistrant(UserType.WOOWACOURSE_COACH);
         givenValidSlugAndTags();
+        givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
         when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
                 .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
 
@@ -235,16 +249,112 @@ class ProjectServiceTest {
         assertRegistrationForbidden();
     }
 
+    @Test
+    @DisplayName("팀원은 입력한 순서대로 저장되고, 코치도 팀원이 될 수 있다.")
+    void keepsMemberOrderAndAcceptsCoach() {
+        givenValidProjectExceptMembers();
+        givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
+        givenMember("coach-jack", 9L, UserType.WOOWACOURSE_COACH);
+        when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
+                .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
+
+        projectService.create(command(List.of("coach-jack", MEMBER_HANDLE)));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Long>> memberIdsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(projectRepository).save(any(Project.class), eq(TECH_TAG_IDS), memberIdsCaptor.capture());
+        assertThat(memberIdsCaptor.getValue()).containsExactly(REGISTERED_BY, 9L, MEMBER_ID);
+    }
+
+    @Test
+    @DisplayName("대소문자만 다른 handle 로 같은 사용자를 두 번 넣으면 400을 던진다.")
+    void rejectsDuplicateMemberIgnoringCase() {
+        givenValidProjectExceptMembers();
+        givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
+        givenMemberAccount("ZzaeKKii", MEMBER_ID, UserStatus.ACTIVE);
+
+        assertInvalidMember(List.of(MEMBER_HANDLE, "ZzaeKKii"), ProjectErrorCode.PROJECT_DUPLICATE_MEMBER);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자를 팀원으로 넣으면 400을 던진다.")
+    void rejectsUnknownMember() {
+        givenValidProjectExceptMembers();
+        when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.empty());
+
+        assertInvalidMember(List.of(MEMBER_HANDLE), ProjectErrorCode.PROJECT_INVALID_MEMBER);
+    }
+
+    @Test
+    @DisplayName("활동 중이 아닌 사용자를 팀원으로 넣으면 400을 던진다.")
+    void rejectsInactiveMember() {
+        givenValidProjectExceptMembers();
+        givenMemberAccount(MEMBER_HANDLE, MEMBER_ID, UserStatus.BANNED);
+
+        assertInvalidMember(List.of(MEMBER_HANDLE), ProjectErrorCode.PROJECT_INVALID_MEMBER);
+    }
+
+    @Test
+    @DisplayName("크루나 코치가 아닌 사용자를 팀원으로 넣으면 400을 던진다.")
+    void rejectsGeneralMember() {
+        givenValidProjectExceptMembers();
+        givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.GENERAL);
+
+        assertInvalidMember(List.of(MEMBER_HANDLE), ProjectErrorCode.PROJECT_INVALID_MEMBER);
+    }
+
+    @Test
+    @DisplayName("등록자 본인을 팀원으로 넣으면 400을 던진다.")
+    void rejectsRegistrantAsMember() {
+        givenValidProjectExceptMembers();
+        givenMemberAccount("dhyepark", REGISTERED_BY, UserStatus.ACTIVE);
+
+        assertInvalidMember(List.of("dhyepark"), ProjectErrorCode.PROJECT_MEMBER_INCLUDES_REGISTRANT);
+    }
+
     private void givenRegistrant(UserType userType) {
+        when(userProfileRepository.findByUserId(REGISTERED_BY)).thenReturn(Optional.of(profile(REGISTERED_BY, userType)));
+    }
+
+    private void givenMember(String handle, long userId, UserType userType) {
+        givenMemberAccount(handle, userId, UserStatus.ACTIVE);
+        when(userProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile(userId, userType)));
+    }
+
+    private void givenMemberAccount(String handle, long userId, UserStatus status) {
+        User user = User.builder()
+                .id(userId)
+                .handle(handle)
+                .status(status)
+                .role(UserRole.USER)
+                .build();
+        when(userRepository.findByHandle(handle)).thenReturn(Optional.of(user));
+    }
+
+    /**
+     * 팀원 검증 직전까지의 검증을 모두 통과하는 상황을 만든다.
+     */
+    private void givenValidProjectExceptMembers() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
+        givenValidSlugAndTags();
+    }
+
+    private void assertInvalidMember(List<String> memberHandles, ProjectErrorCode expected) {
+        assertThatThrownBy(() -> projectService.create(command(memberHandles)))
+                .isInstanceOfSatisfying(InvalidProjectMemberException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(expected));
+        verify(projectRepository, never()).save(any(), anyList(), anyList());
+    }
+
+    private static UserProfile profile(long userId, UserType userType) {
         boolean crew = userType == UserType.WOOWACOURSE_CREW;
-        UserProfile profile = UserProfile.builder()
-                .userId(REGISTERED_BY)
-                .displayName("등록자")
+        return UserProfile.builder()
+                .userId(userId)
+                .displayName("사용자" + userId)
                 .userType(userType)
                 .track(crew ? "BACKEND" : null)
                 .cohort(crew ? (short) 6 : null)
                 .build();
-        when(userProfileRepository.findByUserId(REGISTERED_BY)).thenReturn(Optional.of(profile));
     }
 
     private void assertRegistrationForbidden() {
@@ -267,7 +377,20 @@ class ProjectServiceTest {
         verify(projectRepository, never()).save(any(), anyList(), anyList());
     }
 
+    private static ProjectCreateCommand command(List<String> memberHandles) {
+        return command(6, null, TECH_TAG_IDS, memberHandles);
+    }
+
     private static ProjectCreateCommand command(int cohort, Long thumbnailMediaId, List<Long> techTagIds) {
+        return command(cohort, thumbnailMediaId, techTagIds, List.of(MEMBER_HANDLE));
+    }
+
+    private static ProjectCreateCommand command(
+            int cohort,
+            Long thumbnailMediaId,
+            List<Long> techTagIds,
+            List<String> memberHandles
+    ) {
         return new ProjectCreateCommand(
                 "루프 (Loop)",
                 "루프팀",
@@ -278,7 +401,7 @@ class ProjectServiceTest {
                 "https://loop.team",
                 "## 문제",
                 techTagIds,
-                List.of("zzaekkii"),
+                memberHandles,
                 REGISTERED_BY
         );
     }
