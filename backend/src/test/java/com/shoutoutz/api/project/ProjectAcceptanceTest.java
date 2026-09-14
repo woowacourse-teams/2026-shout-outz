@@ -10,6 +10,7 @@ import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -107,6 +108,24 @@ class ProjectAcceptanceTest {
     }
 
     @Test
+    @DisplayName("본문이 존재하지 않는 이미지를 참조하면 400을 반환하고, 프로젝트를 저장하지 않는다.")
+    void rejectsUnknownDescriptionMedia() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        String repositoryName = uniqueRepositoryName();
+        Map<String, Object> body = new HashMap<>(requestBody(repositoryName, techTagIds("java"), List.of("teammate")));
+        body.put("descriptionMd", "## 화면\n![목록](media://999999999)");
+
+        Response response = registerProject(author, body);
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.jsonPath().getString("code")).isEqualTo("PROJECT_INVALID_DESCRIPTION_MEDIA");
+        Integer saved = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM projects WHERE slug = ?", Integer.class,
+                repositoryName.substring("2026-".length()));
+        assertThat(saved).isZero();
+    }
+
+    @Test
     @DisplayName("크루나 코치가 아닌 사용자가 프로젝트를 등록하면 403을 반환하고, 프로젝트를 저장하지 않는다.")
     void rejectsGeneralUserRegistration() {
         LoginSession author = signup("GENERAL");
@@ -164,12 +183,16 @@ class ProjectAcceptanceTest {
             List<Long> techTagIds,
             List<String> memberHandles
     ) {
+        return registerProject(author, requestBody(repositoryName, techTagIds, memberHandles));
+    }
+
+    private Response registerProject(LoginSession author, Map<String, Object> body) {
         return RestAssured.given()
                 .port(port)
                 .cookie("JSESSIONID", author.sessionId())
                 .header("X-CSRF-Token", author.csrfToken())
                 .contentType("application/json")
-                .body(requestBody(repositoryName, techTagIds, memberHandles))
+                .body(body)
                 .when()
                 .post(PROJECTS_PATH);
     }

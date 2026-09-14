@@ -1,7 +1,9 @@
 package com.shoutoutz.api.project.application;
 
+import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DESCRIPTION_MEDIA_NOT_READY;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_SLUG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_TECH_TAG;
+import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_MEMBER;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_TECH_TAG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_THUMBNAIL;
@@ -16,7 +18,9 @@ import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.project.application.dto.command.ProjectCreateCommand;
 import com.shoutoutz.api.project.application.dto.result.ProjectCreateResult;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
+import com.shoutoutz.api.project.domain.DescriptionMediaReferences;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
+import com.shoutoutz.api.project.domain.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.InvalidProjectMemberException;
 import com.shoutoutz.api.project.domain.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.InvalidThumbnailException;
@@ -36,6 +40,7 @@ import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,6 +72,7 @@ public class ProjectService {
         validateSlugNotDuplicated(project.getSlug());
         validateTechTags(command.techTagIds());
         validateThumbnail(command.thumbnailMediaId(), command.registeredBy());
+        validateDescriptionMedia(command.descriptionMd(), command.registeredBy());
         List<Long> memberIds = command.memberHandles().stream()
                 .map(this::resolveMemberId)
                 .toList();
@@ -120,13 +126,36 @@ public class ProjectService {
         if (thumbnailMediaId == null) {
             return;
         }
-        MediaMetadata thumbnail = mediaMetadataRepository.findById(thumbnailMediaId)
-                .filter(media -> registeredBy.equals(media.getUploadedBy()))
-                .filter(media -> media.getPurpose() == MediaPurpose.PROJECT_THUMBNAIL)
+        MediaMetadata thumbnail = findUploadedMedia(thumbnailMediaId, registeredBy, MediaPurpose.PROJECT_THUMBNAIL)
                 .orElseThrow(() -> new InvalidThumbnailException(PROJECT_INVALID_THUMBNAIL));
         if (thumbnail.getStatus() != MediaStatus.READY) {
             throw new InvalidThumbnailException(PROJECT_THUMBNAIL_NOT_READY);
         }
+    }
+
+    /**
+     * 본문 이미지는 Markdown 안에 media://{mediaId} 형식으로 참조한다.
+     * 참조한 이미지는 모두 등록자가 본문 용도로 올린 처리 완료 이미지여야 한다.
+     * 검증하지 않으면 다른 사용자의 비공개 이미지를 본문에 참조해 노출할 수 있다.
+     */
+    private void validateDescriptionMedia(String descriptionMd, Long registeredBy) {
+        for (Long mediaId : DescriptionMediaReferences.extractMediaIds(descriptionMd)) {
+            MediaMetadata media = findUploadedMedia(mediaId, registeredBy, MediaPurpose.PROJECT_DESCRIPTION)
+                    .orElseThrow(() -> new InvalidDescriptionMediaException(PROJECT_INVALID_DESCRIPTION_MEDIA));
+            if (media.getStatus() != MediaStatus.READY) {
+                throw new InvalidDescriptionMediaException(PROJECT_DESCRIPTION_MEDIA_NOT_READY);
+            }
+        }
+    }
+
+    /**
+     * 등록자가 해당 용도로 올린 미디어만 찾는다.
+     * 없는 이미지, 다른 사람의 이미지, 다른 용도의 이미지는 모두 비어 있는 결과로 돌려, 다른 사용자의 미디어 id 존재 여부가 드러나지 않게 한다.
+     */
+    private Optional<MediaMetadata> findUploadedMedia(Long mediaId, Long uploadedBy, MediaPurpose purpose) {
+        return mediaMetadataRepository.findById(mediaId)
+                .filter(media -> uploadedBy.equals(media.getUploadedBy()))
+                .filter(media -> media.getPurpose() == purpose);
     }
 
     /**

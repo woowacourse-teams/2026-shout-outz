@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -19,6 +20,7 @@ import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.project.application.dto.command.ProjectCreateCommand;
 import com.shoutoutz.api.project.application.dto.result.ProjectCreateResult;
+import com.shoutoutz.api.project.domain.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.InvalidProjectMemberException;
 import com.shoutoutz.api.project.domain.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.InvalidThumbnailException;
@@ -54,6 +56,7 @@ class ProjectServiceTest {
     private static final long REGISTERED_BY = 7L;
     private static final long MEMBER_ID = 8L;
     private static final String MEMBER_HANDLE = "zzaekkii";
+    private static final String DESCRIPTION = "## 문제";
     private static final long THUMBNAIL_ID = 12L;
     private static final List<Long> TECH_TAG_IDS = List.of(1L, 2L);
     private static final Instant NOW = Instant.parse("2026-09-10T00:00:00Z");
@@ -313,6 +316,71 @@ class ProjectServiceTest {
         assertInvalidMember(List.of("dhyepark"), ProjectErrorCode.PROJECT_MEMBER_INCLUDES_REGISTRANT);
     }
 
+    @Test
+    @DisplayName("본문이 참조한 이미지가 모두 등록자가 올린 처리 완료 본문 이미지면 등록한다. 같은 이미지는 한 번만 조회한다.")
+    void acceptsOwnReadyDescriptionMedia() {
+        givenValidProjectExceptMembers();
+        givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
+        when(mediaMetadataRepository.findById(21L))
+                .thenReturn(Optional.of(media(21L, REGISTERED_BY, MediaPurpose.PROJECT_DESCRIPTION, MediaStatus.READY)));
+        when(mediaMetadataRepository.findById(22L))
+                .thenReturn(Optional.of(media(22L, REGISTERED_BY, MediaPurpose.PROJECT_DESCRIPTION, MediaStatus.READY)));
+        when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
+                .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
+
+        projectService.create(commandWithDescription(
+                "## 화면\n![목록](media://21)\n![상세](media://22)\n![목록 확대](media://21)"));
+
+        verify(mediaMetadataRepository, times(1)).findById(21L);
+        verify(projectRepository).save(any(Project.class), eq(TECH_TAG_IDS), anyList());
+    }
+
+    @Test
+    @DisplayName("본문이 없는 이미지를 참조하면 400을 던진다.")
+    void rejectsMissingDescriptionMedia() {
+        givenValidProjectExceptMembers();
+        when(mediaMetadataRepository.findById(21L)).thenReturn(Optional.empty());
+
+        assertInvalidDescriptionMedia("![화면](media://21)", ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA);
+    }
+
+    @Test
+    @DisplayName("본문이 다른 사용자의 이미지를 참조하면 없는 이미지와 같은 400을 던진다.")
+    void rejectsOthersDescriptionMedia() {
+        givenValidProjectExceptMembers();
+        when(mediaMetadataRepository.findById(21L))
+                .thenReturn(Optional.of(media(21L, 99L, MediaPurpose.PROJECT_DESCRIPTION, MediaStatus.READY)));
+
+        assertInvalidDescriptionMedia("![화면](media://21)", ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA);
+    }
+
+    @Test
+    @DisplayName("본문이 본문 용도가 아닌 이미지를 참조하면 400을 던진다.")
+    void rejectsNonDescriptionPurposeMedia() {
+        givenValidProjectExceptMembers();
+        when(mediaMetadataRepository.findById(21L))
+                .thenReturn(Optional.of(media(21L, REGISTERED_BY, MediaPurpose.PROJECT_THUMBNAIL, MediaStatus.READY)));
+
+        assertInvalidDescriptionMedia("![화면](media://21)", ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA);
+    }
+
+    @Test
+    @DisplayName("본문이 처리가 끝나지 않은 이미지를 참조하면 처리 중 400을 던진다.")
+    void rejectsDescriptionMediaNotReady() {
+        givenValidProjectExceptMembers();
+        when(mediaMetadataRepository.findById(21L))
+                .thenReturn(Optional.of(media(21L, REGISTERED_BY, MediaPurpose.PROJECT_DESCRIPTION, MediaStatus.PROCESSING)));
+
+        assertInvalidDescriptionMedia("![화면](media://21)", ProjectErrorCode.PROJECT_DESCRIPTION_MEDIA_NOT_READY);
+    }
+
+    private void assertInvalidDescriptionMedia(String descriptionMd, ProjectErrorCode expected) {
+        assertThatThrownBy(() -> projectService.create(commandWithDescription(descriptionMd)))
+                .isInstanceOfSatisfying(InvalidDescriptionMediaException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(expected));
+        verify(projectRepository, never()).save(any(), anyList(), anyList());
+    }
+
     private void givenRegistrant(UserType userType) {
         when(userProfileRepository.findByUserId(REGISTERED_BY)).thenReturn(Optional.of(profile(REGISTERED_BY, userType)));
     }
@@ -379,18 +447,23 @@ class ProjectServiceTest {
     }
 
     private static ProjectCreateCommand command(List<String> memberHandles) {
-        return command(6, null, TECH_TAG_IDS, memberHandles);
+        return command(6, null, TECH_TAG_IDS, memberHandles, DESCRIPTION);
+    }
+
+    private static ProjectCreateCommand commandWithDescription(String descriptionMd) {
+        return command(6, null, TECH_TAG_IDS, List.of(MEMBER_HANDLE), descriptionMd);
     }
 
     private static ProjectCreateCommand command(int cohort, Long thumbnailMediaId, List<Long> techTagIds) {
-        return command(cohort, thumbnailMediaId, techTagIds, List.of(MEMBER_HANDLE));
+        return command(cohort, thumbnailMediaId, techTagIds, List.of(MEMBER_HANDLE), DESCRIPTION);
     }
 
     private static ProjectCreateCommand command(
             int cohort,
             Long thumbnailMediaId,
             List<Long> techTagIds,
-            List<String> memberHandles
+            List<String> memberHandles,
+            String descriptionMd
     ) {
         return new ProjectCreateCommand(
                 "루프 (Loop)",
@@ -400,7 +473,7 @@ class ProjectServiceTest {
                 thumbnailMediaId,
                 "https://github.com/woowacourse-teams/2026-loop",
                 "https://loop.team",
-                "## 문제",
+                descriptionMd,
                 techTagIds,
                 memberHandles,
                 REGISTERED_BY
@@ -414,11 +487,15 @@ class ProjectServiceTest {
     }
 
     private static MediaMetadata thumbnail(Long uploadedBy, MediaPurpose purpose, MediaStatus status) {
+        return media(THUMBNAIL_ID, uploadedBy, purpose, status);
+    }
+
+    private static MediaMetadata media(Long id, Long uploadedBy, MediaPurpose purpose, MediaStatus status) {
         return MediaMetadata.reconstitute(
-                THUMBNAIL_ID,
+                id,
                 uploadedBy,
                 purpose,
-                "media/project-thumbnail/12.webp",
+                "media/test/" + id + ".webp",
                 "thumbnail.webp",
                 "image/webp",
                 1024L,
