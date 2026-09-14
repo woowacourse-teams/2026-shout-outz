@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.cohort.domain.CohortErrorCode;
 import com.shoutoutz.api.cohort.domain.InvalidCohortException;
-import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
@@ -21,6 +20,8 @@ import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.project.application.dto.command.ProjectCreateCommand;
 import com.shoutoutz.api.project.application.dto.result.ProjectCreateResult;
 import com.shoutoutz.api.project.domain.InvalidProjectMemberException;
+import com.shoutoutz.api.project.domain.InvalidTechTagException;
+import com.shoutoutz.api.project.domain.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectRegistrationForbiddenException;
@@ -143,7 +144,7 @@ class ProjectServiceTest {
         when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(false);
 
         assertThatThrownBy(() -> projectService.create(command(6, null, List.of(1L, 1L))))
-                .isInstanceOfSatisfying(BadRequestException.class,
+                .isInstanceOfSatisfying(InvalidTechTagException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_DUPLICATE_TECH_TAG));
 
         verifyNoInteractions(techTagRepository);
@@ -157,7 +158,7 @@ class ProjectServiceTest {
         when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L));
 
         assertThatThrownBy(() -> projectService.create(command(6, null, TECH_TAG_IDS)))
-                .isInstanceOfSatisfying(BadRequestException.class,
+                .isInstanceOfSatisfying(InvalidTechTagException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_INVALID_TECH_TAG));
     }
 
@@ -372,7 +373,7 @@ class ProjectServiceTest {
 
     private void assertInvalidThumbnail(ProjectErrorCode expected) {
         assertThatThrownBy(() -> projectService.create(command(6, THUMBNAIL_ID, TECH_TAG_IDS)))
-                .isInstanceOfSatisfying(BadRequestException.class,
+                .isInstanceOfSatisfying(InvalidThumbnailException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(expected));
         verify(projectRepository, never()).save(any(), anyList(), anyList());
     }

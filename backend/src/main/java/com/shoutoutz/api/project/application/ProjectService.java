@@ -8,7 +8,6 @@ import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_THUMBNAIL_NOT_READY;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
-import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
@@ -19,6 +18,8 @@ import com.shoutoutz.api.project.application.dto.result.ProjectCreateResult;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.InvalidProjectMemberException;
+import com.shoutoutz.api.project.domain.InvalidTechTagException;
+import com.shoutoutz.api.project.domain.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectMembers;
 import com.shoutoutz.api.project.domain.ProjectRegistrationForbiddenException;
@@ -104,10 +105,10 @@ public class ProjectService {
      */
     private void validateTechTags(List<Long> techTagIds) {
         if (new HashSet<>(techTagIds).size() != techTagIds.size()) {
-            throw new BadRequestException(PROJECT_DUPLICATE_TECH_TAG);
+            throw new InvalidTechTagException(PROJECT_DUPLICATE_TECH_TAG);
         }
         if (techTagRepository.findAllActiveByIds(techTagIds).size() != techTagIds.size()) {
-            throw new BadRequestException(PROJECT_INVALID_TECH_TAG);
+            throw new InvalidTechTagException(PROJECT_INVALID_TECH_TAG);
         }
     }
 
@@ -122,9 +123,9 @@ public class ProjectService {
         MediaMetadata thumbnail = mediaMetadataRepository.findById(thumbnailMediaId)
                 .filter(media -> registeredBy.equals(media.getUploadedBy()))
                 .filter(media -> media.getPurpose() == MediaPurpose.PROJECT_THUMBNAIL)
-                .orElseThrow(() -> new BadRequestException(PROJECT_INVALID_THUMBNAIL));
+                .orElseThrow(() -> new InvalidThumbnailException(PROJECT_INVALID_THUMBNAIL));
         if (thumbnail.getStatus() != MediaStatus.READY) {
-            throw new BadRequestException(PROJECT_THUMBNAIL_NOT_READY);
+            throw new InvalidThumbnailException(PROJECT_THUMBNAIL_NOT_READY);
         }
     }
 
