@@ -5,10 +5,16 @@ import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { getButtonStyles } from '@/components/Button';
 import { MarkdownContent } from '@/components/MarkdownContent';
+import { ProjectNotApprovedError } from '@/errors/project';
 
 export function ProjectDetailContent({ projectId }: { projectId: string }) {
   const { data: project } = useSuspenseQuery(projectDetailQueryOptions(projectId));
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
+
+  if (project.approvalStatus !== 'APPROVED') {
+    throw new ProjectNotApprovedError();
+  }
+
   const thumbnail = project.thumbnailUrl?.trim();
   const links = [
     { label: '서비스 바로가기 ↗', url: project.deploymentUrl?.trim(), variant: 'primary' as const },

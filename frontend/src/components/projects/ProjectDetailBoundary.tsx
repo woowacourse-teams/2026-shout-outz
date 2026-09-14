@@ -1,7 +1,8 @@
 import { Component, Suspense, type ReactNode } from 'react';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
-import { ProjectNotFoundError } from '@/api/project-detail';
+import { isHTTPError } from 'ky';
 import { Button } from '@/components/Button';
+import { ProjectNotApprovedError } from '@/errors/project';
 
 class DetailErrorBoundary extends Component<
   { children: ReactNode; onReset: () => void },
@@ -15,14 +16,18 @@ class DetailErrorBoundary extends Component<
 
   render() {
     if (!this.state.error) return this.props.children;
-    const notFound = this.state.error instanceof ProjectNotFoundError;
+    const unavailable =
+      this.state.error instanceof ProjectNotApprovedError ||
+      (isHTTPError(this.state.error) && this.state.error.response.status === 404);
     return (
       <div role="alert" className="space-y-4 py-16 text-center">
         <title>프로젝트 조회 오류 | shout-outz</title>
         <h1 className="text-xl font-bold">
-          {notFound ? '프로젝트가 없거나 접근할 수 없습니다.' : '프로젝트를 불러오지 못했습니다.'}
+          {unavailable
+            ? '프로젝트가 없거나 접근할 수 없습니다.'
+            : '프로젝트를 불러오지 못했습니다.'}
         </h1>
-        {!notFound && (
+        {!unavailable && (
           <Button
             variant="outline"
             onClick={() => {

@@ -19,10 +19,6 @@ export async function fetchProjectList(signal?: AbortSignal): Promise<ProjectLis
       data: ProjectListItem[];
     }>();
 
-  if (response.status !== 'success' || !Array.isArray(response.data)) {
-    throw new Error('프로젝트 목록 응답을 확인할 수 없습니다.');
-  }
-
   return response.data;
 }
 

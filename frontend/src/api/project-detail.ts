@@ -24,11 +24,6 @@ export interface ProjectDetail {
   serviceStatus: string;
   likeCount: number;
   bookmarkCount: number;
-  techTags: { id: number; displayName: string }[];
-  members: ProjectMember[];
-}
-
-interface ProjectDetailResponse extends ProjectDetail {
   approvalStatus: string;
   rejectReason: string | null;
   likedByMe: boolean;
@@ -38,55 +33,24 @@ interface ProjectDetailResponse extends ProjectDetail {
   commentCount: number;
   createdAt: string;
   updatedAt: string;
+  techTags: { id: number; displayName: string }[];
+  members: ProjectMember[];
 }
 
-export class ProjectNotFoundError extends Error {
-  constructor() {
-    super('프로젝트가 없거나 접근할 수 없습니다.');
-  }
+interface ProjectDetailResponse {
+  status: string;
+  data: ProjectDetail;
 }
 
-async function requestProject(id: string, signal?: AbortSignal) {
-  if (!/^[1-9]\d*$/.test(id)) throw new ProjectNotFoundError();
-  const response = await ky.get(getApiUrl(`/api/v1/projects/${id}`), {
-    signal,
-    retry: 0,
-    credentials: 'omit',
-    throwHttpErrors: false,
-  });
-  if (response.status === 404) throw new ProjectNotFoundError();
-  if (!response.ok) throw new Error('프로젝트를 불러오지 못했습니다.');
-  const body = await response.json<{ status: string; data: ProjectDetailResponse }>();
-  if (body.status !== 'success' || !body.data || String(body.data.id) !== id) {
-    throw new Error('프로젝트 상세 응답을 확인할 수 없습니다.');
-  }
-  // 정적 페이지와 공개 조회에는 승인된 프로젝트만 사용한다.
-  if (body.data.approvalStatus !== 'APPROVED') {
-    throw new ProjectNotFoundError();
-  }
-  return body.data;
-}
+export async function fetchProjectDetail(
+  id: string,
+  signal?: AbortSignal,
+): Promise<ProjectDetail> {
+  const response = await ky
+    .get(getApiUrl(`/api/v1/projects/${id}`), { signal, retry: 0, credentials: 'omit' })
+    .json<ProjectDetailResponse>();
 
-export async function fetchProjectDetail(id: string, signal?: AbortSignal): Promise<ProjectDetail> {
-  const data = await requestProject(id, signal);
-  // select는 원본 Query 캐시를 바꾸지 않으므로, 저장 전에 공개 필드만 추출한다.
-  return {
-    id: data.id,
-    slug: data.slug,
-    title: data.title,
-    teamName: data.teamName,
-    tagline: data.tagline,
-    cohort: data.cohort,
-    thumbnailUrl: data.thumbnailUrl,
-    descriptionMd: data.descriptionMd,
-    githubRepositoryUrl: data.githubRepositoryUrl,
-    deploymentUrl: data.deploymentUrl,
-    serviceStatus: data.serviceStatus,
-    likeCount: data.likeCount,
-    bookmarkCount: data.bookmarkCount,
-    techTags: data.techTags,
-    members: data.members,
-  };
+  return response.data;
 }
 
 export const projectDetailQueryOptions = (id: string) =>

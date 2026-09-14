@@ -5,11 +5,10 @@
 import { render, screen, within } from '@testing-library/react';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
 import userEvent from '@testing-library/user-event';
-import { dehydrate, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { handlers } from '@/api/mock/handlers';
-import { projectDetailQueryOptions } from '@/api/project-detail';
 import { MarkdownContent } from '@/components/MarkdownContent';
 import { routeTree } from '@/routeTree.gen';
 
@@ -62,7 +61,7 @@ test('목록 카드를 누르면 숫자 ID의 상세 페이지로 이동한다',
   expect(await screen.findByRole('heading', { level: 1, name: 'Dropit' })).toBeInTheDocument();
 });
 
-test('미승인 응답은 공개 상세 콘텐츠와 캐시에 사용하지 않는다', async () => {
+test('승인되지 않은 프로젝트는 공개하지 않는다', async () => {
   const data = await (await fetch('http://localhost/api/v1/projects/1')).json();
   server.use(
     http.get('/api/v1/projects/1', () =>
@@ -71,17 +70,19 @@ test('미승인 응답은 공개 상세 콘텐츠와 캐시에 사용하지 않�
         data: {
           ...data.data,
           approvalStatus: 'REJECTED',
-          rejectReason: 'private-reason',
         },
       }),
     ),
   );
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  await expect(queryClient.fetchQuery(projectDetailQueryOptions('1'))).rejects.toThrow(
-    '프로젝트가 없거나 접근할 수 없습니다.',
-  );
-  expect(JSON.stringify(dehydrate(queryClient))).not.toContain('private-reason');
-  queryClient.clear();
+  const error = jest.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    renderPage();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '프로젝트가 없거나 접근할 수 없습니다.',
+    );
+  } finally {
+    error.mockRestore();
+  }
 });
 
 test('빈 멤버·태그·본문을 안내하고 누락된 링크를 숨긴다', async () => {
