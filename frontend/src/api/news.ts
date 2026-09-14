@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import type { NewsDetail, NewsFilter, NewsSort, NewsSummary } from '@/types/news';
+import { type NewsDetail, type NewsFilter, type NewsSort, type NewsSummary } from '@/types/news';
 import { httpClient } from '@/utils/client';
 
 const NEWS_PATH = '/api/v1/news';

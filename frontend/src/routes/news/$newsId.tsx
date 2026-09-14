@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 
 import { fetchNewsList } from '@/api/news';
-import { DEFAULT_NEWS_FILTER, DEFAULT_NEWS_SORT } from '@/types/news';
+import { DEFAULT_NEWS_FILTER, DEFAULT_NEWS_SORT } from '@/constants/news';
 import { NewsDetailPage } from '@/pages/NewsDetailPage';
 
 export const Route = createFileRoute('/news/$newsId')({

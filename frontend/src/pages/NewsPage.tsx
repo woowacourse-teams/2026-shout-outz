@@ -4,14 +4,8 @@ import { newsListQueryOptions } from '@/api/news';
 import { NewsItem } from '@/components/NewsItem';
 import { Select } from '@/components/Select';
 import { Tab } from '@/components/Tab';
-import {
-  DEFAULT_NEWS_FILTER,
-  DEFAULT_NEWS_SORT,
-  NEWS_FILTERS,
-  NEWS_SORTS,
-  type NewsFilter,
-  type NewsSort,
-} from '@/types/news';
+import { DEFAULT_NEWS_FILTER, DEFAULT_NEWS_SORT, NEWS_FILTERS, NEWS_SORTS } from '@/constants/news';
+import type { NewsFilter, NewsSort } from '@/types/news';
 
 const FILTER_LABELS: Record<NewsFilter, string> = {
   ALL: '전체',

@@ -1,4 +1,4 @@
-import type { NewsDetail, NewsNavItem, NewsSummary } from '@/types/news';
+import { type NewsDetail, type NewsNavItem, type NewsSummary } from '@/types/news';
 
 /** 실제 서버가 준비되기 전까지 MSW 핸들러가 내려줄 소식 데이터. 백엔드가 뜨면 이 파일은 사라진다. */
 const NEWS: NewsSummary[] = [

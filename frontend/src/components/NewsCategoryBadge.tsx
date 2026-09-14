@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import { Badge, type BadgeTone } from '@/components/Badge';
-import type { NewsType } from '@/types/news';
+import { type NewsType } from '@/types/news';
 
 const TYPE_LABEL: Record<NewsType, string> = {
   NOTICE: '공지사항',

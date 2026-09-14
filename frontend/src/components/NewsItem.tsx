@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 
 import { NewsCategoryBadge } from '@/components/NewsCategoryBadge';
 import { cn } from '@/utils/cn';
-import type { NewsType } from '@/types/news';
+import { type NewsType } from '@/types/news';
 import { formatDotDate } from '@/utils/date';
 
 export interface NewsItemProps extends Omit<ComponentProps<'article'>, 'children'> {
