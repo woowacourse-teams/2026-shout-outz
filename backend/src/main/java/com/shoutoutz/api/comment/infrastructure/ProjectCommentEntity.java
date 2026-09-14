@@ -41,4 +41,8 @@ public class ProjectCommentEntity extends BaseEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
 }

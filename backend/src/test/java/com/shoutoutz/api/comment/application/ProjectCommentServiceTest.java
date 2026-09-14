@@ -2,6 +2,7 @@ package com.shoutoutz.api.comment.application;
 
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_DEPTH_EXCEEDED;
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_NOT_FOUND;
+import static com.shoutoutz.api.common.exception.code.CommonErrorCode.FORBIDDEN;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -14,9 +15,12 @@ import static org.mockito.Mockito.when;
 import com.shoutoutz.api.comment.domain.ProjectComment;
 import com.shoutoutz.api.comment.domain.ProjectCommentRepository;
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentCreateRequest;
+import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentUpdateResponse;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
@@ -37,7 +41,9 @@ class ProjectCommentServiceTest {
     private static final long PROJECT_ID = 100L;
     private static final long AUTHOR_ID = 7L;
     private static final long PARENT_ID = 301L;
+    private static final long COMMENT_ID = 501L;
     private static final Instant NOW = Instant.parse("2026-09-14T00:00:00Z");
+    private static final Instant EDITED_AT = Instant.parse("2026-09-14T00:30:00Z");
 
     @Mock
     private ProjectRepository projectRepository;
@@ -211,6 +217,174 @@ class ProjectCommentServiceTest {
         verifyNoInteractions(userProfileRepository);
     }
 
+    @Test
+    @DisplayName("댓글 작성자 본인이 댓글 내용을 수정하고 수정 이력을 포함한 응답을 반환한다.")
+    void updatesCommentContent() {
+        givenPublicProject();
+        when(projectCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "기존 댓글",
+                NOW,
+                NOW,
+                null
+        )));
+        givenAuthor();
+        when(projectCommentRepository.save(any(ProjectComment.class))).thenReturn(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "수정된 댓글",
+                NOW,
+                EDITED_AT,
+                null
+        ));
+
+        ProjectCommentUpdateResponse result = projectCommentService.update(
+                PROJECT_ID,
+                COMMENT_ID,
+                AUTHOR_ID,
+                new ProjectCommentUpdateRequest("  수정된 댓글  ")
+        );
+
+        assertThat(result.id()).isEqualTo(COMMENT_ID);
+        assertThat(result.content()).isEqualTo("수정된 댓글");
+        assertThat(result.author().userId()).isEqualTo(AUTHOR_ID);
+        assertThat(result.author().displayName()).isEqualTo("샤라웃 운영팀");
+        assertThat(result.author().avatarImageId()).isEqualTo(10L);
+        assertThat(result.parentId()).isNull();
+        assertThat(result.createdAt()).isEqualTo(NOW);
+        assertThat(result.updatedAt()).isEqualTo(EDITED_AT);
+        assertThat(result.editable()).isTrue();
+        assertThat(result.edited()).isTrue();
+
+        ArgumentCaptor<ProjectComment> captor = ArgumentCaptor.forClass(ProjectComment.class);
+        verify(projectCommentRepository).save(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(COMMENT_ID);
+        assertThat(captor.getValue().getContent()).isEqualTo("수정된 댓글");
+        assertThat(captor.getValue().getProjectId()).isEqualTo(PROJECT_ID);
+        assertThat(captor.getValue().getAuthorId()).isEqualTo(AUTHOR_ID);
+    }
+
+    @Test
+    @DisplayName("트림 후 기존 내용과 같으면 저장하지 않고 기존 수정 시각을 반환한다.")
+    void doesNotUpdateWhenContentIsUnchanged() {
+        givenPublicProject();
+        when(projectCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "기존 댓글",
+                NOW,
+                NOW,
+                null
+        )));
+        givenAuthor();
+
+        ProjectCommentUpdateResponse result = projectCommentService.update(
+                PROJECT_ID,
+                COMMENT_ID,
+                AUTHOR_ID,
+                new ProjectCommentUpdateRequest("  기존 댓글  ")
+        );
+
+        assertThat(result.content()).isEqualTo("기존 댓글");
+        assertThat(result.createdAt()).isEqualTo(NOW);
+        assertThat(result.updatedAt()).isEqualTo(NOW);
+        assertThat(result.edited()).isFalse();
+        verify(projectCommentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("승인되지 않았거나 삭제된 프로젝트의 댓글은 수정하지 않고 404를 던진다.")
+    void rejectsUpdateForNonPublicProject() {
+        when(projectRepository.existsPublicById(PROJECT_ID)).thenReturn(false);
+
+        assertThatThrownBy(() -> projectCommentService.update(
+                PROJECT_ID,
+                COMMENT_ID,
+                AUTHOR_ID,
+                new ProjectCommentUpdateRequest("수정된 댓글")
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(PROJECT_NOT_FOUND));
+
+        verifyNoInteractions(projectCommentRepository, userProfileRepository);
+    }
+
+    @Test
+    @DisplayName("존재하지 않거나 다른 프로젝트에 속한 댓글은 수정하지 않고 404를 던진다.")
+    void rejectsMissingOrDifferentProjectComment() {
+        givenPublicProject();
+        when(projectCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "다른 프로젝트 댓글",
+                NOW,
+                NOW,
+                null,
+                PROJECT_ID + 1
+        )));
+
+        assertThatThrownBy(() -> projectCommentService.update(
+                PROJECT_ID,
+                COMMENT_ID,
+                AUTHOR_ID,
+                new ProjectCommentUpdateRequest("수정된 댓글")
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(COMMENT_NOT_FOUND));
+
+        verify(projectCommentRepository, never()).save(any());
+        verifyNoInteractions(userProfileRepository);
+    }
+
+    @Test
+    @DisplayName("삭제된 댓글은 수정하지 않고 404를 던진다.")
+    void rejectsDeletedComment() {
+        givenPublicProject();
+        when(projectCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "삭제된 댓글",
+                NOW,
+                NOW,
+                NOW
+        )));
+
+        assertThatThrownBy(() -> projectCommentService.update(
+                PROJECT_ID,
+                COMMENT_ID,
+                AUTHOR_ID,
+                new ProjectCommentUpdateRequest("수정된 댓글")
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(COMMENT_NOT_FOUND));
+
+        verify(projectCommentRepository, never()).save(any());
+        verifyNoInteractions(userProfileRepository);
+    }
+
+    @Test
+    @DisplayName("댓글 작성자가 아니면 수정하지 않고 403을 던진다.")
+    void rejectsUpdateFromAnotherAuthor() {
+        givenPublicProject();
+        when(projectCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID + 1,
+                "기존 댓글",
+                NOW,
+                NOW,
+                null
+        )));
+
+        assertThatThrownBy(() -> projectCommentService.update(
+                PROJECT_ID,
+                COMMENT_ID,
+                AUTHOR_ID,
+                new ProjectCommentUpdateRequest("수정된 댓글")
+        )).isInstanceOfSatisfying(ForbiddenException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(FORBIDDEN));
+
+        verify(projectCommentRepository, never()).save(any());
+        verifyNoInteractions(userProfileRepository);
+    }
+
     private void givenPublicProject() {
         when(projectRepository.existsPublicById(PROJECT_ID)).thenReturn(true);
     }
@@ -249,6 +423,38 @@ class ProjectCommentServiceTest {
                 NOW,
                 NOW,
                 null
+        );
+    }
+
+    private ProjectComment comment(
+            long commentId,
+            long authorId,
+            String content,
+            Instant createdAt,
+            Instant updatedAt,
+            Instant deletedAt
+    ) {
+        return comment(commentId, authorId, content, createdAt, updatedAt, deletedAt, PROJECT_ID);
+    }
+
+    private ProjectComment comment(
+            long commentId,
+            long authorId,
+            String content,
+            Instant createdAt,
+            Instant updatedAt,
+            Instant deletedAt,
+            long projectId
+    ) {
+        return ProjectComment.reconstitute(
+                commentId,
+                projectId,
+                authorId,
+                null,
+                content,
+                createdAt,
+                updatedAt,
+                deletedAt
         );
     }
 }

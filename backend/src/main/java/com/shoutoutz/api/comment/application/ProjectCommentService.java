@@ -2,18 +2,23 @@ package com.shoutoutz.api.comment.application;
 
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_DEPTH_EXCEEDED;
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_NOT_FOUND;
+import static com.shoutoutz.api.common.exception.code.CommonErrorCode.FORBIDDEN;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_NOT_FOUND;
 
 import com.shoutoutz.api.comment.domain.ProjectComment;
 import com.shoutoutz.api.comment.domain.ProjectCommentRepository;
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentCreateRequest;
+import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentUpdateResponse;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +64,39 @@ public class ProjectCommentService {
         );
     }
 
+    @Transactional
+    public ProjectCommentUpdateResponse update(
+            long projectId,
+            long commentId,
+            long authorId,
+            ProjectCommentUpdateRequest request
+    ) {
+        validatePublicProject(projectId);
+        ProjectComment comment = findComment(projectId, commentId);
+        validateAuthor(comment, authorId);
+        UserProfile author = findAuthor(comment.getAuthorId());
+
+        // 변경사항 없는 경우, 생략
+        if (!Objects.equals(comment.getContent(), request.content())) {
+            comment = projectCommentRepository.save(comment.updateContent(request.content()));
+        }
+
+        return new ProjectCommentUpdateResponse(
+                comment.getId(),
+                comment.getContent(),
+                new ProjectCommentUpdateResponse.Author(
+                        author.getUserId(),
+                        author.getDisplayName().value(),
+                        author.getAvatarImageId()
+                ),
+                comment.getParentId(),
+                comment.getCreatedAt(),
+                comment.getUpdatedAt(),
+                true,
+                comment.isEdited()
+        );
+    }
+
     /**
      * 프로젝트가 현재 정상적으로 공개된 프로젝트인지 검증.
      * 즉, 승인 상태가 Approval이며 삭제되지 않은 프로젝트가 맞는지 확인
@@ -92,5 +130,20 @@ public class ProjectCommentService {
     private UserProfile findAuthor(long authorId) {
         return userProfileRepository.findByUserId(authorId)
                 .orElseThrow(() -> new EntityNotFoundException(UserProfileErrorCode.USER_PROFILE_NOT_FOUND));
+    }
+
+    private ProjectComment findComment(long projectId, long commentId) {
+        ProjectComment comment = projectCommentRepository.findById(commentId)
+                .orElseThrow(() -> new EntityNotFoundException(COMMENT_NOT_FOUND));
+        if (!comment.getProjectId().equals(projectId) || comment.isDeleted()) {
+            throw new EntityNotFoundException(COMMENT_NOT_FOUND);
+        }
+        return comment;
+    }
+
+    private void validateAuthor(ProjectComment comment, long authorId) {
+        if (!comment.getAuthorId().equals(authorId)) {
+            throw new ForbiddenException(FORBIDDEN);
+        }
     }
 }

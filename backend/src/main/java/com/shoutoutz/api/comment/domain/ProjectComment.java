@@ -1,6 +1,7 @@
 package com.shoutoutz.api.comment.domain;
 
 import java.time.Instant;
+import java.util.Objects;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -82,5 +83,22 @@ public class ProjectComment {
 
     public boolean isDeleted() {
         return deletedAt != null;
+    }
+
+    public boolean isEdited() {
+        return !Objects.equals(createdAt, updatedAt);
+    }
+
+    public ProjectComment updateContent(String content) {
+        return ProjectComment.builder()
+                .id(id)
+                .projectId(projectId)
+                .authorId(authorId)
+                .parentId(parentId)
+                .content(content == null ? null : content.strip())
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .deletedAt(deletedAt)
+                .build();
     }
 }

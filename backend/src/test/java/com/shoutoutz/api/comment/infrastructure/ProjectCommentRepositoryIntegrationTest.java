@@ -60,6 +60,29 @@ class ProjectCommentRepositoryIntegrationTest {
         assertThat(found.isDeleted()).isFalse();
     }
 
+    @Test
+    @DisplayName("기존 프로젝트 댓글의 내용을 수정하고 생성 시각은 유지한다")
+    void updatesProjectComment() {
+        User author = userRepository.save(User.initialize("comment-update-" + uniqueSuffix()));
+        Project project = projectRepository.save(
+                project(author.getId()),
+                List.of(),
+                List.of()
+        );
+
+        ProjectComment saved = projectCommentRepository.save(
+                ProjectComment.create(project.getId(), author.getId(), null, "기존 댓글")
+        );
+
+        ProjectComment updated = projectCommentRepository.save(saved.updateContent("수정된 댓글"));
+        ProjectComment found = projectCommentRepository.findById(saved.getId()).orElseThrow();
+
+        assertThat(found.getContent()).isEqualTo("수정된 댓글");
+        assertThat(found.getCreatedAt()).isEqualTo(saved.getCreatedAt());
+        assertThat(found.getUpdatedAt()).isEqualTo(updated.getUpdatedAt());
+        assertThat(found.getUpdatedAt()).isNotEqualTo(found.getCreatedAt());
+    }
+
     private static Project project(Long registeredBy) {
         String repositoryName = "2026-comment-" + uniqueSuffix();
         return Project.register(

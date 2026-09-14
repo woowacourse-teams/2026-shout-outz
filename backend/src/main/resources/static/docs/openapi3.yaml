@@ -532,10 +532,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -654,9 +654,9 @@ paths:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
-                    eventStartAt은 필수입니다.\"}]}"
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -974,9 +974,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -1225,6 +1225,47 @@ paths:
                 user-profile-summary-get:
                   value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
                     ,\"displayName\":\"재키\",\"avatarImageId\":21}}"
+  /api/v1/projects/100/comments/501:
+    patch:
+      tags:
+      - Project Comment
+      summary: 프로젝트 댓글 수정
+      description: 로그인한 프로젝트 댓글 작성자가 공개 프로젝트의 댓글 내용을 수정한다. 트림 후 기존 내용과 같으면 저장하지 않고
+        수정 시각을 유지한다.
+      operationId: project-comment-update
+      parameters:
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/ProjectCommentUpdateRequest"
+            examples:
+              project-comment-update:
+                value: |
+                  {
+                    "content": "  수정된 댓글입니다.  "
+                  }
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectCommentUpdateSuccessResponse"
+              examples:
+                project-comment-update:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":501,\"content\"\
+                    :\"수정된 댓글입니다.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃\
+                    \ 운영팀\",\"avatarImageId\":10},\"parentId\":null,\"createdAt\"\
+                    :\"2026-09-14T00:00:00Z\",\"updatedAt\":\"2026-09-14T00:30:00Z\"\
+                    ,\"editable\":true,\"edited\":true}}"
   /oauth2/authorization/github:
     get:
       tags:
@@ -1246,19 +1287,6 @@ paths:
                 type: string
 components:
   schemas:
-    ProjectCommentCreateRequest:
-      title: ProjectCommentCreateRequest
-      required:
-      - content
-      type: object
-      properties:
-        parentId:
-          type: number
-          description: 같은 프로젝트의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글
-          nullable: true
-        content:
-          type: string
-          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
     UserSearchSuccessResponse:
       title: UserSearchSuccessResponse
       required:
@@ -1320,6 +1348,343 @@ components:
         status:
           type: string
           description: 응답 상태
+    VisitorSaveRequest:
+      title: VisitorSaveRequest
+      required:
+      - example
+      type: object
+      properties:
+        example:
+          type: string
+          description: 방문자 예시 값
+    UserProfileSummarySuccessResponse:
+      title: UserProfileSummarySuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - displayName
+          - handle
+          type: object
+          properties:
+            avatarImageId:
+              type: number
+              description: 프로필 이미지 미디어 ID
+              nullable: true
+            displayName:
+              type: string
+              description: 표시 이름
+            handle:
+              type: string
+              description: 사용자 handle
+          description: 프로필 요약 정보
+        status:
+          type: string
+          description: 응답 상태
+    OAuthSignupRequest:
+      title: OAuthSignupRequest
+      required:
+      - displayName
+      - handle
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 프로필 표시 이름
+        handle:
+          type: string
+          description: 영구 공개 핸들
+    UserProfileSuccessResponse:
+      title: UserProfileSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - counts
+          - displayName
+          - handle
+          type: object
+          properties:
+            avatarImageId:
+              type: number
+              description: 프로필 이미지 미디어 ID
+              nullable: true
+            counts:
+              required:
+              - posts
+              - projects
+              type: object
+              properties:
+                projects:
+                  type: number
+                  description: 삭제되지 않은 참여 프로젝트 개수
+                posts:
+                  type: number
+                  description: 삭제되지 않은 작성 피드 개수
+              description: 프로필 항목 개수
+            displayName:
+              type: string
+              description: 표시 이름
+            blogUrl:
+              type: string
+              description: 블로그 URL
+              nullable: true
+            githubProfileUrl:
+              type: string
+              description: GitHub 프로필 URL
+              nullable: true
+            bio:
+              type: string
+              description: 한 줄 소개
+              nullable: true
+            cohort:
+              type: number
+              description: 우테코 기수
+              nullable: true
+            handle:
+              type: string
+              description: 사용자 handle
+            userType:
+              type: string
+              description: 사용자 유형
+              nullable: true
+            track:
+              type: string
+              description: 우테코 트랙
+              nullable: true
+          description: 사용자 공개 프로필
+        status:
+          type: string
+          description: 응답 상태
+    UserProfileUpdateRequest:
+      title: UserProfileUpdateRequest
+      required:
+      - displayName
+      type: object
+      properties:
+        avatarImageId:
+          type: number
+          description: READY 상태의 USER_AVATAR 미디어 ID
+          nullable: true
+        displayName:
+          type: string
+          description: 표시 이름. 인증된 우테코 사용자는 변경 불가
+        blogUrl:
+          type: string
+          description: 블로그 URL
+          nullable: true
+        githubProfileUrl:
+          type: string
+          description: GitHub 프로필 URL
+          nullable: true
+        bio:
+          type: string
+          description: 한 줄 소개
+          nullable: true
+    TechTagFindAllSuccessResponse:
+      title: TechTagFindAllSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - items
+          type: object
+          properties:
+            items:
+              type: array
+              description: 기술 스택 목록
+              items:
+                required:
+                - displayName
+                - id
+                type: object
+                properties:
+                  displayName:
+                    type: string
+                    description: 화면 표시 이름
+                  id:
+                    type: number
+                    description: 기술 스택 ID
+        status:
+          type: string
+          description: 응답 상태
+    NoticeCreateSuccessResponse:
+      title: NoticeCreateSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - id
+          - isPinned
+          - publishedAt
+          - summary
+          - title
+          - type
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 공지 요약
+            cta:
+              required:
+              - label
+              - url
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                url:
+                  type: string
+                  description: CTA URL
+              description: 공지 CTA
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - name
+              - userId
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 작성자 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 공지 작성자
+            id:
+              type: number
+              description: 공지 ID
+            pinOrder:
+              type: number
+              description: 고정 순서
+              nullable: true
+            body:
+              type: string
+              description: 공지 본문
+            title:
+              type: string
+              description: 공지 제목
+            type:
+              type: string
+              description: 공지 유형
+        status:
+          type: string
+          description: 응답 상태
+    ProjectCreateRequest:
+      title: ProjectCreateRequest
+      required:
+      - cohort
+      - githubRepositoryUrl
+      - memberHandles
+      - tagline
+      - teamName
+      - techTagIds
+      - title
+      type: object
+      properties:
+        teamName:
+          type: string
+          description: 팀 이름 (50자 이하)
+        techTagIds:
+          type: array
+          description: "선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다."
+          items:
+            type: number
+        memberHandles:
+          type: array
+          description: "등록자를 제외한 팀원 handle 목록 (1명 이상). 활동 중인 우아한테크코스 크루 또는 코치여야 하며\
+            , 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다."
+          items:
+            type: string
+        descriptionMd:
+          type: string
+          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
+            \ 형식으로 넣으며, 본인이 업로드한 PROJECT_DESCRIPTION 용도의 처리 완료 이미지만 쓸 수 있다."
+          nullable: true
+        deploymentUrl:
+          type: string
+          description: 서비스 배포 URL (http/https). 빈 문자열은 입력하지 않은 것으로 본다.
+          nullable: true
+        githubRepositoryUrl:
+          type: string
+          description: "https://github.com/{owner}/{repo} 형식. 리포지토리 이름으로 slug를 만든다\
+            ."
+        cohort:
+          type: number
+          description: 우아한테크코스 기수 (1~8)
+        tagline:
+          type: string
+          description: 한 줄 소개 (200자 이하)
+        thumbnailMediaId:
+          type: number
+          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID
+          nullable: true
+        title:
+          type: string
+          description: 프로젝트 이름 (100자 이하)
+    VisitorCreateSuccessResponse:
+      title: VisitorCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - example
+          - id
+          type: object
+          properties:
+            id:
+              type: number
+              description: 방문자 ID
+            example:
+              type: string
+              description: 방문자 예시 값
+          description: 생성된 방문자 정보
+        status:
+          type: string
+          description: 응답 상태
+    ProjectCommentUpdateRequest:
+      title: ProjectCommentUpdateRequest
+      required:
+      - content
+      type: object
+      properties:
+        content:
+          type: string
+          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
+    ProjectCommentCreateRequest:
+      title: ProjectCommentCreateRequest
+      required:
+      - content
+      type: object
+      properties:
+        parentId:
+          type: number
+          description: 같은 프로젝트의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글
+          nullable: true
+        content:
+          type: string
+          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
     ErrorResponse:
       title: ErrorResponse
       required:
@@ -1351,15 +1716,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    VisitorSaveRequest:
-      title: VisitorSaveRequest
-      required:
-      - example
-      type: object
-      properties:
-        example:
-          type: string
-          description: 방문자 예시 값
     NewsFindDetailSuccessResponse:
       title: NewsFindDetailSuccessResponse
       required:
@@ -1560,33 +1916,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    UserProfileSummarySuccessResponse:
-      title: UserProfileSummarySuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - displayName
-          - handle
-          type: object
-          properties:
-            avatarImageId:
-              type: number
-              description: 프로필 이미지 미디어 ID
-              nullable: true
-            displayName:
-              type: string
-              description: 표시 이름
-            handle:
-              type: string
-              description: 사용자 handle
-          description: 프로필 요약 정보
-        status:
-          type: string
-          description: 응답 상태
     CohortFindAllSuccessResponse:
       title: CohortFindAllSuccessResponse
       required:
@@ -1616,81 +1945,62 @@ components:
         status:
           type: string
           description: 응답 상태
-    OAuthSignupRequest:
-      title: OAuthSignupRequest
+    ProjectCommentUpdateSuccessResponse:
+      title: ProjectCommentUpdateSuccessResponse
       required:
-      - displayName
-      - handle
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 프로필 표시 이름
-        handle:
-          type: string
-          description: 영구 공개 핸들
-    UserProfileSuccessResponse:
-      title: UserProfileSuccessResponse
-      required:
-      - data
       - status
       type: object
       properties:
         data:
           required:
-          - counts
-          - displayName
-          - handle
+          - author
+          - content
+          - createdAt
+          - editable
+          - edited
+          - id
+          - updatedAt
           type: object
           properties:
-            avatarImageId:
-              type: number
-              description: 프로필 이미지 미디어 ID
-              nullable: true
-            counts:
+            createdAt:
+              type: string
+              description: 생성 시각 (UTC ISO-8601)
+            edited:
+              type: boolean
+              description: 댓글 내용이 수정된 적이 있는지 여부
+            editable:
+              type: boolean
+              description: 현재 사용자가 수정할 수 있는지 여부
+            author:
               required:
-              - posts
-              - projects
+              - displayName
+              - userId
               type: object
               properties:
-                projects:
+                avatarImageId:
                   type: number
-                  description: 삭제되지 않은 참여 프로젝트 개수
-                posts:
+                  description: 작성자 프로필 이미지 ID
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                userId:
                   type: number
-                  description: 삭제되지 않은 작성 피드 개수
-              description: 프로필 항목 개수
-            displayName:
-              type: string
-              description: 표시 이름
-            blogUrl:
-              type: string
-              description: 블로그 URL
-              nullable: true
-            githubProfileUrl:
-              type: string
-              description: GitHub 프로필 URL
-              nullable: true
-            bio:
-              type: string
-              description: 한 줄 소개
-              nullable: true
-            cohort:
+                  description: 작성자 ID
+              description: 댓글 작성자
+            id:
               type: number
-              description: 우테코 기수
+              description: 댓글 ID
+            parentId:
+              type: number
+              description: 부모 댓글 ID
               nullable: true
-            handle:
+            content:
               type: string
-              description: 사용자 handle
-            userType:
+              description: 저장된 댓글 내용
+            updatedAt:
               type: string
-              description: 사용자 유형
-              nullable: true
-            track:
-              type: string
-              description: 우테코 트랙
-              nullable: true
-          description: 사용자 공개 프로필
+              description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
         status:
           type: string
           description: 응답 상태
@@ -1807,31 +2117,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    UserProfileUpdateRequest:
-      title: UserProfileUpdateRequest
-      required:
-      - displayName
-      type: object
-      properties:
-        avatarImageId:
-          type: number
-          description: READY 상태의 USER_AVATAR 미디어 ID
-          nullable: true
-        displayName:
-          type: string
-          description: 표시 이름. 인증된 우테코 사용자는 변경 불가
-        blogUrl:
-          type: string
-          description: 블로그 URL
-          nullable: true
-        githubProfileUrl:
-          type: string
-          description: GitHub 프로필 URL
-          nullable: true
-        bio:
-          type: string
-          description: 한 줄 소개
-          nullable: true
     OAuthSignupSuccessResponse:
       title: OAuthSignupSuccessResponse
       required:
@@ -1935,35 +2220,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    TechTagFindAllSuccessResponse:
-      title: TechTagFindAllSuccessResponse
-      required:
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - items
-          type: object
-          properties:
-            items:
-              type: array
-              description: 기술 스택 목록
-              items:
-                required:
-                - displayName
-                - id
-                type: object
-                properties:
-                  displayName:
-                    type: string
-                    description: 화면 표시 이름
-                  id:
-                    type: number
-                    description: 기술 스택 ID
-        status:
-          type: string
-          description: 응답 상태
     UserProfileUpdateSuccessResponse:
       title: UserProfileUpdateSuccessResponse
       required:
@@ -2015,130 +2271,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    NoticeCreateSuccessResponse:
-      title: NoticeCreateSuccessResponse
-      required:
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - body
-          - id
-          - isPinned
-          - publishedAt
-          - summary
-          - title
-          - type
-          type: object
-          properties:
-            summary:
-              type: string
-              description: 공지 요약
-            cta:
-              required:
-              - label
-              - url
-              type: object
-              properties:
-                label:
-                  type: string
-                  description: CTA 라벨
-                url:
-                  type: string
-                  description: CTA URL
-              description: 공지 CTA
-            isPinned:
-              type: boolean
-              description: 고정 여부
-            publishedAt:
-              type: string
-              description: 게시 시각
-            author:
-              required:
-              - name
-              - userId
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: 작성자 이름
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 공지 작성자
-            id:
-              type: number
-              description: 공지 ID
-            pinOrder:
-              type: number
-              description: 고정 순서
-              nullable: true
-            body:
-              type: string
-              description: 공지 본문
-            title:
-              type: string
-              description: 공지 제목
-            type:
-              type: string
-              description: 공지 유형
-        status:
-          type: string
-          description: 응답 상태
-    ProjectCreateRequest:
-      title: ProjectCreateRequest
-      required:
-      - cohort
-      - githubRepositoryUrl
-      - memberHandles
-      - tagline
-      - teamName
-      - techTagIds
-      - title
-      type: object
-      properties:
-        teamName:
-          type: string
-          description: 팀 이름 (50자 이하)
-        techTagIds:
-          type: array
-          description: "선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다."
-          items:
-            type: number
-        memberHandles:
-          type: array
-          description: "등록자를 제외한 팀원 handle 목록 (1명 이상). 활동 중인 우아한테크코스 크루 또는 코치여야 하며\
-            , 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다."
-          items:
-            type: string
-        descriptionMd:
-          type: string
-          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
-            \ 형식으로 넣으며, 본인이 업로드한 PROJECT_DESCRIPTION 용도의 처리 완료 이미지만 쓸 수 있다."
-          nullable: true
-        deploymentUrl:
-          type: string
-          description: 서비스 배포 URL (http/https). 빈 문자열은 입력하지 않은 것으로 본다.
-          nullable: true
-        githubRepositoryUrl:
-          type: string
-          description: "https://github.com/{owner}/{repo} 형식. 리포지토리 이름으로 slug를 만든다\
-            ."
-        cohort:
-          type: number
-          description: 우아한테크코스 기수 (1~8)
-        tagline:
-          type: string
-          description: 한 줄 소개 (200자 이하)
-        thumbnailMediaId:
-          type: number
-          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID
-          nullable: true
-        title:
-          type: string
-          description: 프로젝트 이름 (100자 이하)
     NoticeCreateRequest:
       title: NoticeCreateRequest
       required:
@@ -2191,29 +2323,6 @@ components:
             slug:
               type: string
               description: 프로젝트 주소로 쓰이는 slug
-        status:
-          type: string
-          description: 응답 상태
-    VisitorCreateSuccessResponse:
-      title: VisitorCreateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - example
-          - id
-          type: object
-          properties:
-            id:
-              type: number
-              description: 방문자 ID
-            example:
-              type: string
-              description: 방문자 예시 값
-          description: 생성된 방문자 정보
         status:
           type: string
           description: 응답 상태
