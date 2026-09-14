@@ -18,11 +18,15 @@ import com.shoutoutz.api.project.application.dto.result.ProjectCreateResult;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
+import com.shoutoutz.api.project.domain.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
+import com.shoutoutz.api.user.domain.profile.UserProfile;
+import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.util.HashSet;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -36,9 +40,11 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final TechTagRepository techTagRepository;
     private final MediaMetadataRepository mediaMetadataRepository;
+    private final UserProfileRepository userProfileRepository;
 
     @Transactional
     public ProjectCreateResult create(ProjectCreateCommand command) {
+        validateRegistrant(command.registeredBy());
         Project project = Project.register(
                 Cohort.from(command.cohort()),
                 command.registeredBy(),
@@ -57,6 +63,16 @@ public class ProjectService {
 
         Project savedProject = projectRepository.save(project, command.techTagIds(), memberIds);
         return new ProjectCreateResult(savedProject.getId(), savedProject.getSlug().value());
+    }
+
+    /**
+     * 우아한테크코스 크루와 코치만 프로젝트를 등록할 수 있다.
+     */
+    private void validateRegistrant(Long registeredBy) {
+        userProfileRepository.findByUserId(registeredBy)
+                .map(UserProfile::getUserType)
+                .filter(userType -> userType == UserType.WOOWACOURSE_CREW || userType == UserType.WOOWACOURSE_COACH)
+                .orElseThrow(ProjectRegistrationForbiddenException::new);
     }
 
     private void validateSlugNotDuplicated(Slug slug) {
@@ -97,7 +113,7 @@ public class ProjectService {
 
     /**
      * TODO: 사용자 프로필 API(PR #91) 머지 후 memberHandles 를 사용자 id 로 변환하고 검증한다.
-     *  - 존재하는 ACTIVE 사용자이고 WOOWACOURSE_CREW 여야 한다
+     *  - 존재하는 ACTIVE 사용자이고 WOOWACOURSE_CREW 또는 WOOWACOURSE_COACH 여야 한다
      *  - 대소문자를 무시하고 중복이면 400, 등록자 본인이 포함되면 400
      *  - 등록자를 0 번에 두고 memberHandles 순서대로 이어 붙인다
      * 현재는 등록자만 팀원으로 저장한다.

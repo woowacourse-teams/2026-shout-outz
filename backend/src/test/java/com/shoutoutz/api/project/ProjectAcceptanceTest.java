@@ -89,6 +89,22 @@ class ProjectAcceptanceTest {
     }
 
     @Test
+    @DisplayName("크루나 코치가 아닌 사용자가 프로젝트를 등록하면 403을 반환하고, 프로젝트를 저장하지 않는다.")
+    void rejectsGeneralUserRegistration() {
+        LoginSession author = signup("GENERAL");
+        String repositoryName = uniqueRepositoryName();
+
+        Response response = registerProject(author, repositoryName, techTagIds("java"), List.of("teammate"));
+
+        assertThat(response.statusCode()).isEqualTo(403);
+        assertThat(response.jsonPath().getString("code")).isEqualTo("PROJECT_REGISTRATION_FORBIDDEN");
+        Integer saved = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM projects WHERE slug = ?", Integer.class,
+                repositoryName.substring("2026-".length()));
+        assertThat(saved).isZero();
+    }
+
+    @Test
     @DisplayName("로그인한 사용자가 CSRF 토큰 없이 프로젝트 등록을 요청하면 403을 반환하고, 프로젝트를 저장하지 않는다.")
     void rejectsRegistrationWithoutCsrfToken() {
         LoginSession author = signup("WOOWACOURSE_CREW");
@@ -209,21 +225,37 @@ class ProjectAcceptanceTest {
                 .contentType("application/json")
                 .body(Map.of(
                         "handle", handle,
-                        "displayName", "크루",
-                        "userType", userType,
-                        "track", "BACKEND",
-                        "cohort", 6
+                        "displayName", "크루"
                 ))
                 .when()
                 .post("/api/v1/auth/signup");
 
         assertThat(signup.statusCode()).as(signup.asString()).isEqualTo(201);
+        long userId = signup.jsonPath().getLong("data.userId");
+        changeUserType(userId, userType);
         return new LoginSession(
                 signup.cookie("JSESSIONID"),
                 csrfToken,
-                signup.jsonPath().getLong("data.userId"),
+                userId,
                 handle
         );
+    }
+
+    /**
+     * 가입하면 일반 사용자가 되고 크루 인증 기능은 아직 없으므로, DB 에서 사용자 종류를 직접 바꾼다.
+     * 크루는 트랙과 기수가 필요하고, 코치는 기수를 가질 수 없다.
+     */
+    private void changeUserType(long userId, String userType) {
+        if ("WOOWACOURSE_CREW".equals(userType)) {
+            jdbcTemplate.update(
+                    "UPDATE user_profiles SET user_type = 'WOOWACOURSE_CREW', track = 'BACKEND', cohort = 6 WHERE user_id = ?",
+                    userId);
+        }
+        if ("WOOWACOURSE_COACH".equals(userType)) {
+            jdbcTemplate.update(
+                    "UPDATE user_profiles SET user_type = 'WOOWACOURSE_COACH' WHERE user_id = ?",
+                    userId);
+        }
     }
 
     private record LoginSession(String sessionId, String csrfToken, long userId, String handle) {

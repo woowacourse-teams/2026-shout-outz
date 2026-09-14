@@ -22,11 +22,15 @@ import com.shoutoutz.api.project.application.dto.command.ProjectCreateCommand;
 import com.shoutoutz.api.project.application.dto.result.ProjectCreateResult;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
+import com.shoutoutz.api.project.domain.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.techtag.domain.TechTag;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
+import com.shoutoutz.api.user.domain.profile.UserProfile;
+import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -55,16 +59,25 @@ class ProjectServiceTest {
     @Mock
     private MediaMetadataRepository mediaMetadataRepository;
 
+    @Mock
+    private UserProfileRepository userProfileRepository;
+
     private ProjectService projectService;
 
     @BeforeEach
     void setUp() {
-        projectService = new ProjectService(projectRepository, techTagRepository, mediaMetadataRepository);
+        projectService = new ProjectService(
+                projectRepository,
+                techTagRepository,
+                mediaMetadataRepository,
+                userProfileRepository
+        );
     }
 
     @Test
     @DisplayName("검증을 통과하면 등록자를 첫 팀원으로 두고 프로젝트를 저장한다.")
     void createsProject() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
         when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(false);
         when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
         when(mediaMetadataRepository.findById(THUMBNAIL_ID))
@@ -89,6 +102,8 @@ class ProjectServiceTest {
     @Test
     @DisplayName("정의되지 않은 기수면 조회 없이 400을 던진다.")
     void rejectsUndefinedCohort() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
+
         assertThatThrownBy(() -> projectService.create(command(99, null, TECH_TAG_IDS)))
                 .isInstanceOfSatisfying(InvalidCohortException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(CohortErrorCode.INVALID_COHORT));
@@ -99,6 +114,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("이미 등록된 리포지토리면 409를 던지고 저장하지 않는다.")
     void rejectsDuplicateSlug() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
         when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(true);
 
         assertThatThrownBy(() -> projectService.create(command(6, null, TECH_TAG_IDS)))
@@ -111,6 +127,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("기술 태그 id가 중복되면 태그를 조회하지 않고 400을 던진다.")
     void rejectsDuplicateTechTags() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
         when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(false);
 
         assertThatThrownBy(() -> projectService.create(command(6, null, List.of(1L, 1L))))
@@ -123,6 +140,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("없거나 비활성인 기술 태그가 섞여 있으면 400을 던진다.")
     void rejectsUnselectableTechTags() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
         when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(false);
         when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L));
 
@@ -134,6 +152,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("썸네일을 입력하지 않으면 미디어를 조회하지 않는다.")
     void skipsThumbnailValidationWhenAbsent() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
         when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(false);
         when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
         when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
@@ -147,6 +166,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("없는 이미지를 썸네일로 쓰면 400을 던진다.")
     void rejectsMissingThumbnail() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
         givenValidSlugAndTags();
         when(mediaMetadataRepository.findById(THUMBNAIL_ID)).thenReturn(Optional.empty());
 
@@ -156,6 +176,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("다른 사용자의 이미지를 썸네일로 쓰면 없는 이미지와 같은 400을 던진다.")
     void rejectsOthersThumbnail() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
         givenValidSlugAndTags();
         when(mediaMetadataRepository.findById(THUMBNAIL_ID))
                 .thenReturn(Optional.of(thumbnail(99L, MediaPurpose.PROJECT_THUMBNAIL, MediaStatus.READY)));
@@ -166,6 +187,7 @@ class ProjectServiceTest {
     @Test
     @DisplayName("썸네일 용도가 아닌 이미지를 쓰면 400을 던진다.")
     void rejectsNonThumbnailPurpose() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
         givenValidSlugAndTags();
         when(mediaMetadataRepository.findById(THUMBNAIL_ID))
                 .thenReturn(Optional.of(thumbnail(REGISTERED_BY, MediaPurpose.POST_CONTENT, MediaStatus.READY)));
@@ -176,11 +198,61 @@ class ProjectServiceTest {
     @Test
     @DisplayName("처리가 끝나지 않은 썸네일이면 처리 중 400을 던진다.")
     void rejectsThumbnailNotReady() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
         givenValidSlugAndTags();
         when(mediaMetadataRepository.findById(THUMBNAIL_ID))
                 .thenReturn(Optional.of(thumbnail(REGISTERED_BY, MediaPurpose.PROJECT_THUMBNAIL, MediaStatus.PROCESSING)));
 
         assertInvalidThumbnail(ProjectErrorCode.PROJECT_THUMBNAIL_NOT_READY);
+    }
+
+    @Test
+    @DisplayName("코치도 프로젝트를 등록할 수 있다.")
+    void createsProjectByCoach() {
+        givenRegistrant(UserType.WOOWACOURSE_COACH);
+        givenValidSlugAndTags();
+        when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
+                .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
+
+        ProjectCreateResult result = projectService.create(command(6, null, TECH_TAG_IDS));
+
+        assertThat(result.projectId()).isEqualTo(100L);
+    }
+
+    @Test
+    @DisplayName("크루나 코치가 아닌 사용자가 등록하면 다른 검증 없이 403을 던진다.")
+    void rejectsGeneralUser() {
+        givenRegistrant(UserType.GENERAL);
+
+        assertRegistrationForbidden();
+    }
+
+    @Test
+    @DisplayName("등록자의 프로필이 없으면 403을 던진다.")
+    void rejectsRegistrantWithoutProfile() {
+        when(userProfileRepository.findByUserId(REGISTERED_BY)).thenReturn(Optional.empty());
+
+        assertRegistrationForbidden();
+    }
+
+    private void givenRegistrant(UserType userType) {
+        boolean crew = userType == UserType.WOOWACOURSE_CREW;
+        UserProfile profile = UserProfile.builder()
+                .userId(REGISTERED_BY)
+                .displayName("등록자")
+                .userType(userType)
+                .track(crew ? "BACKEND" : null)
+                .cohort(crew ? (short) 6 : null)
+                .build();
+        when(userProfileRepository.findByUserId(REGISTERED_BY)).thenReturn(Optional.of(profile));
+    }
+
+    private void assertRegistrationForbidden() {
+        assertThatThrownBy(() -> projectService.create(command(6, null, TECH_TAG_IDS)))
+                .isInstanceOfSatisfying(ProjectRegistrationForbiddenException.class,
+                        error -> assertThat(error.getErrorCode())
+                                .isEqualTo(ProjectErrorCode.PROJECT_REGISTRATION_FORBIDDEN));
+        verifyNoInteractions(projectRepository, techTagRepository, mediaMetadataRepository);
     }
 
     private void givenValidSlugAndTags() {

@@ -8,6 +8,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ProjectErrorCode implements ErrorCode {
     /**
+     * 프로젝트 등록 권한 에러 코드
+     */
+    PROJECT_REGISTRATION_FORBIDDEN("우아한테크코스 크루와 코치만 프로젝트를 등록할 수 있습니다."),
+
+    /**
      * 프로젝트 식별자 (Slug) 에러 코드
      */
     PROJECT_INVALID_SLUG("리포지토리 이름으로 프로젝트 주소를 만들 수 없습니다. 소문자와 숫자, 하이픈만 사용할 수 있습니다."),
