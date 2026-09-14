@@ -15,17 +15,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 class NewsCtaTest {
 
     @Test
-    @DisplayName("라벨과 URL을 정규화해 CTA 도메인 객체로 생성한다")
+    @DisplayName("라벨과 URL을 전달받은 값으로 CTA 도메인 객체를 생성한다")
     void createsCtaFromValues() {
         NewsCta cta = new NewsCta(" 일정 확인 ", " example.com ");
 
-        assertThat(cta.label()).isEqualTo("일정 확인");
-        assertThat(cta.url()).isEqualTo("example.com");
+        assertThat(cta.label()).isEqualTo(" 일정 확인 ");
+        assertThat(cta.url()).isEqualTo(" example.com ");
     }
 
     @ParameterizedTest
     @MethodSource("missingTexts")
-    @DisplayName("CTA 라벨이나 URL이 null 또는 빈값이거나 공백뿐이면 생성할 수 없다")
+    @DisplayName("CTA 라벨이나 URL이 빈값이거나 공백뿐이면 생성할 수 없다")
     void rejectsMissingText(boolean labelField, String value) {
         assertError(labelField, value, labelField
                 ? NewsErrorCode.NEWS_CTA_LABEL_NULL_OR_BLANK
@@ -34,13 +34,13 @@ class NewsCtaTest {
 
     static Stream<Arguments> missingTexts() {
         return Stream.of(true, false).flatMap(labelField ->
-                Stream.of(null, "", " ", "\t\r\n", "\u2003", " \u2003 ")
+                Stream.of("", " ", "\t\r\n", "\u2003", " \u2003 ")
                         .map(value -> Arguments.of(labelField, value)));
     }
 
     @ParameterizedTest
     @MethodSource("lengthBoundaries")
-    @DisplayName("라벨 100자와 URL 2048자 경계를 공백 제거 후 코드 포인트로 검증한다")
+    @DisplayName("라벨 100자와 URL 2048자 경계를 양끝 공백을 제외한 코드 포인트로 검증한다")
     void validatesLength(boolean labelField, String unit, int length) {
         int maxLength = labelField ? 100 : 2_048;
         String value = unit.repeat(length);
@@ -51,7 +51,7 @@ class NewsCtaTest {
                     : NewsErrorCode.NEWS_CTA_INVALID_URL_LENGTH);
         } else {
             NewsCta cta = create(labelField, padded);
-            assertThat(labelField ? cta.label() : cta.url()).isEqualTo(value);
+            assertThat(labelField ? cta.label() : cta.url()).isEqualTo(padded);
         }
     }
 
@@ -65,11 +65,11 @@ class NewsCtaTest {
     }
 
     @Test
-    @DisplayName("CTA 라벨과 URL의 양끝 유니코드 공백을 제거하고 내부 공백은 유지한다")
-    void stripsBothFieldsAndPreservesInternalWhitespace() {
+    @DisplayName("CTA 라벨과 URL은 정규화하지 않고 전달받은 값을 보존한다")
+    void preservesBothFieldsWithoutNormalization() {
         NewsCta cta = new NewsCta(" \u2003일정  확인\n하기\t", "\n\u2003example.com/a b \u2003");
-        assertThat(cta.label()).isEqualTo("일정  확인\n하기");
-        assertThat(cta.url()).isEqualTo("example.com/a b");
+        assertThat(cta.label()).isEqualTo(" \u2003일정  확인\n하기\t");
+        assertThat(cta.url()).isEqualTo("\n\u2003example.com/a b \u2003");
     }
 
     @ParameterizedTest
@@ -80,14 +80,15 @@ class NewsCtaTest {
     }
 
     @Test
-    @DisplayName("정규화된 라벨과 URL이 같으면 동등하고 해시 코드도 같다")
-    void hasValueEqualityAfterNormalization() {
-        NewsCta cta = new NewsCta(" 열기 ", " example.com ");
+    @DisplayName("같은 라벨과 URL을 가진 CTA는 동등하고 해시 코드도 같다")
+    void hasValueEqualityWithoutNormalization() {
+        NewsCta cta = new NewsCta("열기", "example.com");
         NewsCta same = new NewsCta("열기", "example.com");
         assertThat(cta).isEqualTo(same);
         assertThat(cta.hashCode()).isEqualTo(same.hashCode());
         assertThat(cta).isNotEqualTo(new NewsCta("닫기", "example.com"));
         assertThat(cta).isNotEqualTo(new NewsCta("열기", "other.com"));
+        assertThat(cta).isNotEqualTo(new NewsCta(" 열기 ", " example.com "));
     }
 
     private static NewsCta create(boolean labelField, String value) {

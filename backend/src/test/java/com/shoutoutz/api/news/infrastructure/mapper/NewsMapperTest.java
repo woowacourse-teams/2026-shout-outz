@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.news.domain.News;
 import com.shoutoutz.api.news.domain.NewsCta;
-import com.shoutoutz.api.news.domain.NewsType;
+import com.shoutoutz.api.news.domain.enums.NewsType;
 import com.shoutoutz.api.news.infrastructure.NewsEntity;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
