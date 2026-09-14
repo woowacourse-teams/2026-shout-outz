@@ -1,6 +1,6 @@
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-
-import { getNewsList } from '@/mocks/news';
+import { newsListQueryOptions } from '@/api/news';
 import { NewsItem } from '@/components/NewsItem';
 import { Select } from '@/components/Select';
 import { Tab } from '@/components/Tab';
@@ -30,14 +30,14 @@ export function NewsPage() {
   const navigate = route.useNavigate();
 
   const filter = type ?? DEFAULT_NEWS_FILTER;
+  const sortBy = sort ?? DEFAULT_NEWS_SORT;
 
   const setSearch = (next: { type?: NewsFilter; sort?: NewsSort }) => {
     navigate({ search: (previous) => ({ ...previous, ...next }) });
   };
 
   // TODO api 연동 시에 쿼리로 변경
-  const allNews = getNewsList();
-  const news = filter === 'ALL' ? allNews : allNews.filter((item) => item.type === filter);
+  const { data: news } = useSuspenseQuery(newsListQueryOptions(filter, sortBy));
 
   return (
     <main className="flex flex-col gap-5 px-4 pt-5 pb-7 md:gap-7 md:px-16 md:pt-10 md:pb-20">
@@ -63,7 +63,7 @@ export function NewsPage() {
 
         <div className="w-24 shrink-0">
           <Select
-            value={sort ?? DEFAULT_NEWS_SORT}
+            value={sortBy}
             onValueChange={(value) => setSearch({ sort: value as NewsSort })}
             aria-label="소식 정렬"
             className="h-auto px-3 py-1.5 text-xs"
