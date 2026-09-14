@@ -25,11 +25,20 @@ import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
+import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
+import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
+import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
+import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
+import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -47,10 +56,13 @@ class ProjectHttpApiTest {
      */
     private static final String AUTHENTICATED_SESSION_ATTRIBUTE = AuthenticatedSession.class.getName();
     private static final String SUMMARY = "프로젝트 등록";
-    private static final String DESCRIPTION = "로그인 사용자를 등록자로 프로젝트를 등록한다. "
+    private static final String DESCRIPTION = "로그인한 우아한테크코스 크루 또는 코치를 등록자로 프로젝트를 등록한다. "
             + "slug는 GitHub 리포지토리 이름에서 앞 연도를 떼고 소문자로 만든다. "
             + "운영 상태는 deploymentUrl이 있으면 OPERATING, 없으면 CLOSED로 저장한다. "
-            + "요청값이 유효하지 않으면 400, 로그인하지 않았으면 401, 이미 등록된 리포지토리면 409를 반환한다.";
+            + "팀원은 등록자를 첫 번째로 두고 memberHandles 순서대로 저장한다. "
+            + "본문 이미지는 descriptionMd에 ![설명](media://{mediaId}) 형식으로 넣는다. "
+            + "요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
+            + "크루나 코치가 아니면 403, 이미 등록된 리포지토리면 409를 반환한다.";
 
     @Autowired
     private MockMvc mockMvc;
@@ -95,14 +107,20 @@ class ProjectHttpApiTest {
                                         fieldWithPath("githubRepositoryUrl").type(STRING)
                                                 .description("https://github.com/{owner}/{repo} 형식. 리포지토리 이름으로 slug를 만든다."),
                                         fieldWithPath("deploymentUrl").type(STRING)
-                                                .description("서비스 배포 URL (http/https)").optional(),
+                                                .description("서비스 배포 URL (http/https). 빈 문자열은 입력하지 않은 것으로 본다.")
+                                                .optional(),
                                         fieldWithPath("descriptionMd").type(STRING)
-                                                .description("프로젝트 설명 마크다운 (100,000자 이하)").optional(),
+                                                .description("프로젝트 설명 마크다운 (100,000자 이하). "
+                                                        + "이미지는 ![설명](media://{mediaId}) 형식으로 넣으며, "
+                                                        + "본인이 업로드한 PROJECT_DESCRIPTION 용도의 처리 완료 이미지만 쓸 수 있다.")
+                                                .optional(),
                                         fieldWithPath("techTagIds").type(ARRAY)
                                                 .description("선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다.")
                                                 .attributes(key("itemsType").value("number")),
                                         fieldWithPath("memberHandles").type(ARRAY)
-                                                .description("등록자를 제외한 크루 팀원 handle 목록. 배열 순서가 표시 순서가 된다.")
+                                                .description("등록자를 제외한 팀원 handle 목록 (1명 이상). "
+                                                        + "활동 중인 우아한테크코스 크루 또는 코치여야 하며, "
+                                                        + "대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다.")
                                                 .attributes(key("itemsType").value("string"))
                                 )
                                 .responseFields(
@@ -160,6 +178,60 @@ class ProjectHttpApiTest {
                 .andDo(document("project-create-duplicate", resource(errorResource())));
     }
 
+    @Test
+    @DisplayName("우아한테크코스 크루나 코치가 아닌 경우, 403을 반환한다.")
+    void rejectsForbiddenRegistrant() throws Exception {
+        given(projectService.create(anyLong(), any(ProjectCreateRequest.class)))
+                .willThrow(new ProjectRegistrationForbiddenException());
+
+        mockMvc.perform(post("/api/v1/projects")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRequestJson()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("PROJECT_REGISTRATION_FORBIDDEN"))
+                .andDo(document("project-create-forbidden", resource(errorResource())));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("invalidRegistrationCases")
+    @DisplayName("기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않은 경우, 400과 원인 에러 코드를 반환한다.")
+    void rejectsInvalidRegistration(
+            String documentName,
+            RuntimeException exception,
+            ProjectErrorCode errorCode
+    ) throws Exception {
+        given(projectService.create(anyLong(), any(ProjectCreateRequest.class))).willThrow(exception);
+
+        mockMvc.perform(post("/api/v1/projects")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRequestJson()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(errorCode.name()))
+                .andDo(document(documentName, resource(errorResource())));
+    }
+
+    /**
+     * 원인별로 대표 에러 코드 하나씩 문서화한다. 전체 에러 코드는 ProjectErrorCode 를 따른다.
+     */
+    private static Stream<Arguments> invalidRegistrationCases() {
+        return Stream.of(
+                Arguments.of("project-create-invalid-tech-tag",
+                        new InvalidTechTagException(ProjectErrorCode.PROJECT_INVALID_TECH_TAG),
+                        ProjectErrorCode.PROJECT_INVALID_TECH_TAG),
+                Arguments.of("project-create-invalid-thumbnail",
+                        new InvalidThumbnailException(ProjectErrorCode.PROJECT_INVALID_THUMBNAIL),
+                        ProjectErrorCode.PROJECT_INVALID_THUMBNAIL),
+                Arguments.of("project-create-invalid-description-media",
+                        new InvalidDescriptionMediaException(ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA),
+                        ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA),
+                Arguments.of("project-create-invalid-member",
+                        new InvalidProjectMemberException(ProjectErrorCode.PROJECT_INVALID_MEMBER),
+                        ProjectErrorCode.PROJECT_INVALID_MEMBER)
+        );
+    }
+
     private static ResourceSnippetParameters errorResource() {
         return ResourceSnippetParameters.builder()
                 .tag("Project")
@@ -181,9 +253,9 @@ class ProjectHttpApiTest {
                   "thumbnailMediaId": 12,
                   "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                   "deploymentUrl": "https://loop.team",
-                  "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
+                  "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)",
                   "techTagIds": [1, 2, 3],
-                  "memberHandles": ["dhyepark", "zzaekkii"]
+                  "memberHandles": ["zzaekkii", "sangjun121"]
                 }
                 """;
     }
