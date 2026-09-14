@@ -35,7 +35,6 @@ public class ProjectDetailJdbcRepository {
 
     /**
      * 프로젝트 기본 정보와 반려 사유, 리액션 및 댓글 수를 조회한다.
-     *
      * 반려 사유는 REJECTED 상태일 때만 가장 최근 반려 이력의 사유를 쓴다.
      * 댓글 수는 삭제된 댓글을 제외하고, 대댓글을 포함한다.
      * 비로그인이면 viewerId가 null이라, user_id 비교가 거짓이 되어, likedByMe와 bookmarkedByMe는 false다.
