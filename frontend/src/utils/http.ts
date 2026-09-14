@@ -10,7 +10,6 @@ const CSRF_HEADER = 'X-CSRF-TOKEN';
 const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export const kyInstance = ky.create({
-  prefix: process.env.API_BASE_URL,
   timeout: 10_000,
   totalTimeout: 30_000,
   credentials: 'include',
