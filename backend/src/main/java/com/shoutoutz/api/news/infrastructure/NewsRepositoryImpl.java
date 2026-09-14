@@ -57,21 +57,20 @@ public class NewsRepositoryImpl implements NewsRepository, NewsQueryRepository {
 
     @Override
     public Optional<NewsDetail> findDetailById(long newsId, boolean navigation) {
-        return newsJpaRepository.findById(newsId)
-                .map(entity -> {
-                    News news = NewsMapper.toDomain(entity);
+        return newsJpaRepository.findDetailById(newsId)
+                .map(detail -> {
                     if (!navigation) {
-                        return NewsDetail.from(news, null, null);
+                        return detail;
                     }
 
-                    Pageable pageable = PageRequest.of(0, 1); //단건 조회
+                    Pageable pageable = Pageable.ofSize(1); // 단건 조회
                     NewsDetail.Navigation previous = firstOrNull(
-                            newsJpaRepository.findPrevious(news.getPublishedAt(), news.getId(), pageable)
+                            newsJpaRepository.findPrevious(detail.publishedAt(), detail.id(), pageable)
                     );
                     NewsDetail.Navigation next = firstOrNull(
-                            newsJpaRepository.findNext(news.getPublishedAt(), news.getId(), pageable)
+                            newsJpaRepository.findNext(detail.publishedAt(), detail.id(), pageable)
                     );
-                    return NewsDetail.from(news, previous, next);
+                    return detail.withNavigation(previous, next);
                 });
     }
 
