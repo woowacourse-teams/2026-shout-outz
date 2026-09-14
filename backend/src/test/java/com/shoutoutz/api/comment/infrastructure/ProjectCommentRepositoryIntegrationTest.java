@@ -38,7 +38,7 @@ class ProjectCommentRepositoryIntegrationTest {
     @Test
     @DisplayName("프로젝트 댓글을 저장하고 생성·수정 시각과 함께 조회한다")
     void savesAndFindsProjectComment() {
-        User author = userRepository.save(User.initialize("comment-repository-" + uniqueSuffix()));
+        User author = userRepository.save(User.initialize("comment-repo-" + uniqueSuffix()));
         Project project = projectRepository.save(
                 project(author.getId()),
                 List.of(),
