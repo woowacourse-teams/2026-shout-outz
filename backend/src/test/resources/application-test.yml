@@ -18,5 +18,6 @@ auth:
 aws:
   s3:
     bucket: test-bucket
-    region: ap-northeast-2
+    region: test-region
+    key-prefix: test-prefix/
     presigned-url-expiration-seconds: 100
