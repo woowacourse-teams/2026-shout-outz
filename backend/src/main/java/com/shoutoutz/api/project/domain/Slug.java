@@ -1,5 +1,6 @@
 package com.shoutoutz.api.project.domain;
 
+import com.shoutoutz.api.project.domain.exception.InvalidSlugException;
 import java.util.Locale;
 import java.util.regex.Pattern;
 

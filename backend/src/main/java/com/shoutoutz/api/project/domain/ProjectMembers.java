@@ -4,6 +4,7 @@ import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICAT
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_MEMBER_INCLUDES_REGISTRANT;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_MEMBER_REQUIRED;
 
+import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
