@@ -1,4 +1,5 @@
 import path from 'node:path';
+import webpack from 'webpack';
 import { fileURLToPath } from 'node:url';
 import 'webpack-dev-server';
 import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
@@ -40,6 +41,10 @@ const config = {
     ],
   },
   plugins: [
+    // webpack은 브라우저 번들에 process를 정의하지 않는다. API 오리진을 빌드 시점에
+    // 값으로 박아 넣는다. 값을 주지 않으면 빈 문자열이 되고, 그때는 상대 경로로 나가
+    // 현재 오리진을 쓴다(개발 중에는 MSW 워커가 가로챈다).
+    new webpack.EnvironmentPlugin({ API_ORIGIN: '' }),
     new ForkTsCheckerWebpackPlugin(),
     tanstackRouter({
       target: 'react',

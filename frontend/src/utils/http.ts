@@ -9,7 +9,10 @@ export const setCsrfToken = (token: string | null) => {
 const CSRF_HEADER = 'X-CSRF-TOKEN';
 const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+const apiOrigin = process.env.API_ORIGIN || undefined;
+
 export const kyInstance = ky.create({
+  baseUrl: apiOrigin,
   timeout: 10_000,
   totalTimeout: 30_000,
   credentials: 'include',
