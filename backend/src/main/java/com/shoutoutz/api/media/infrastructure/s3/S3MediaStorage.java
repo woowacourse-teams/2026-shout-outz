@@ -37,6 +37,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 public class S3MediaStorage {
 
     private static final String MEDIA_PREFIX = "media/";
+    private static final int MAX_KEY_LENGTH = 1_024;
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
@@ -62,10 +63,11 @@ public class S3MediaStorage {
      */
     public PresignedUpload createPresignedUpload(String key, String contentType) {
         String validatedKey = validateKey(key);
+        String actualKey = toActualKey(validatedKey);
         String normalizedContentType = normalizeContentType(contentType);
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(properties.bucket())
-                .key(validatedKey)
+                .key(actualKey)
                 .contentType(normalizedContentType)
                 .build();
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
@@ -92,9 +94,10 @@ public class S3MediaStorage {
      */
     public PresignedDownload createPresignedDownload(String key) {
         String validatedKey = validateKey(key);
+        String actualKey = toActualKey(validatedKey);
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(properties.bucket())
-                .key(validatedKey)
+                .key(actualKey)
                 .build();
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
                 .signatureDuration(properties.presignedUrlExpiration())
@@ -118,9 +121,10 @@ public class S3MediaStorage {
      */
     public StoredMediaObject headObject(String key) {
         String validatedKey = validateKey(key);
+        String actualKey = toActualKey(validatedKey);
         HeadObjectRequest request = HeadObjectRequest.builder()
                 .bucket(properties.bucket())
-                .key(validatedKey)
+                .key(actualKey)
                 .build();
 
         try {
@@ -175,9 +179,10 @@ public class S3MediaStorage {
      */
     public byte[] downloadObject(String key) {
         String validatedKey = validateKey(key);
+        String actualKey = toActualKey(validatedKey);
         GetObjectRequest request = GetObjectRequest.builder()
                 .bucket(properties.bucket())
-                .key(validatedKey)
+                .key(actualKey)
                 .build();
 
         try {
@@ -206,13 +211,14 @@ public class S3MediaStorage {
      */
     public void putObject(String key, byte[] content, String contentType) {
         String validatedKey = validateKey(key);
+        String actualKey = toActualKey(validatedKey);
         if (content == null || content.length == 0) {
             throw new IllegalArgumentException("S3에 저장할 파일은 비어 있을 수 없습니다.");
         }
         String normalizedContentType = normalizeContentType(contentType);
         PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(properties.bucket())
-                .key(validatedKey)
+                .key(actualKey)
                 .contentType(normalizedContentType)
                 .contentLength((long) content.length)
                 .build();
@@ -229,9 +235,10 @@ public class S3MediaStorage {
      */
     public void deleteObject(String key) {
         String validatedKey = validateKey(key);
+        String actualKey = toActualKey(validatedKey);
         DeleteObjectRequest request = DeleteObjectRequest.builder()
                 .bucket(properties.bucket())
-                .key(validatedKey)
+                .key(actualKey)
                 .build();
 
         try {
@@ -245,7 +252,7 @@ public class S3MediaStorage {
         String normalized = key == null ? null : key.strip();
         if (normalized == null
                 || !normalized.equals(key)
-                || normalized.length() > 1_024
+                || normalized.length() > MAX_KEY_LENGTH
                 || !normalized.startsWith(MEDIA_PREFIX)
                 || normalized.length() == MEDIA_PREFIX.length()
                 || normalized.contains("//")
@@ -255,6 +262,14 @@ public class S3MediaStorage {
             throw new IllegalArgumentException("S3 객체 키는 media/ prefix를 사용하는 유효한 키여야 합니다.");
         }
         return normalized;
+    }
+
+    private String toActualKey(String validatedKey) {
+        String actualKey = properties.keyPrefix() + validatedKey.substring(MEDIA_PREFIX.length());
+        if (actualKey.length() > MAX_KEY_LENGTH) {
+            throw new IllegalArgumentException("S3 실제 객체 키는 1,024자 이하여야 합니다.");
+        }
+        return actualKey;
     }
 
     private static boolean hasRelativePathSegment(String key) {
