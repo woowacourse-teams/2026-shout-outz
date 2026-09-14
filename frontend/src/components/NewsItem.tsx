@@ -1,10 +1,9 @@
 import type { ComponentProps } from 'react';
 
-import { Badge, type BadgeTone } from '@/components/Badge';
+import { NewsCategoryBadge } from '@/components/NewsCategoryBadge';
 import { cn } from '@/utils/cn';
+import type { NewsType } from '@/types/news';
 import { formatDotDate } from '@/utils/date';
-
-export type NewsType = 'NOTICE' | 'EVENT';
 
 export interface NewsItemProps extends Omit<ComponentProps<'article'>, 'children'> {
   type: NewsType;
@@ -12,16 +11,6 @@ export interface NewsItemProps extends Omit<ComponentProps<'article'>, 'children
   summary: string;
   publishedAt: string;
 }
-
-const TYPE_LABEL: Record<NewsType, string> = {
-  NOTICE: '공지사항',
-  EVENT: '이벤트',
-};
-
-const TYPE_TONE: Record<NewsType, BadgeTone> = {
-  NOTICE: 'primary',
-  EVENT: 'green',
-};
 
 export function NewsItem({
   type,
@@ -34,9 +23,7 @@ export function NewsItem({
   return (
     <article className={cn('flex flex-col gap-1.5 md:gap-2.5', className)} {...props}>
       <div className="flex items-center gap-1.5 md:gap-2">
-        <Badge variant="solid" tone={TYPE_TONE[type]}>
-          {TYPE_LABEL[type]}
-        </Badge>
+        <NewsCategoryBadge type={type} />
         <time dateTime={publishedAt} className="text-xs text-gray-500">
           {formatDotDate(publishedAt)}
         </time>
