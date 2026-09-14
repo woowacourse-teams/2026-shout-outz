@@ -1,10 +1,6 @@
 import type { NewsDetail, NewsNavItem, NewsSummary } from '@/types/news';
 
-/**
- * TODO `httpClient`가 머지되면 이 파일이 실제 요청과 queryOptions를 갖는다.
- * 그때 아래 상수는 사라지고 목록은 `GET /api/v1/news?type=`, 상세는
- * `GET /api/v1/news/{newsId}`로 바뀐다.
- */
+/** 실제 서버가 준비되기 전까지 MSW 핸들러가 내려줄 소식 데이터. 백엔드가 뜨면 이 파일은 사라진다. */
 const NEWS: NewsSummary[] = [
   {
     id: 1,
