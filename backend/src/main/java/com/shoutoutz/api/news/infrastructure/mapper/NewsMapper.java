@@ -3,7 +3,7 @@ package com.shoutoutz.api.news.infrastructure.mapper;
 import com.shoutoutz.api.news.domain.News;
 import com.shoutoutz.api.news.domain.NewsCta;
 import com.shoutoutz.api.news.domain.NewsEventPeriod;
-import com.shoutoutz.api.news.domain.NewsType;
+import com.shoutoutz.api.news.domain.enums.NewsType;
 import com.shoutoutz.api.news.infrastructure.NewsEntity;
 
 public final class NewsMapper {

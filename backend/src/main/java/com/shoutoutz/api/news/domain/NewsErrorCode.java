@@ -47,7 +47,19 @@ public enum NewsErrorCode implements ErrorCode {
     NEWS_CTA_INVALID_LABEL_LENGTH("소식 CTA Label은 100자 이하여야 합니다."),
 
     NEWS_CTA_URL_NULL_OR_BLANK("소식 CTA URL은 null이거나 빈값일 수 없습니다."),
-    NEWS_CTA_INVALID_URL_LENGTH("소식 CTA URL은 2048자 이하여야 합니다.");
+    NEWS_CTA_INVALID_URL_LENGTH("소식 CTA URL은 2048자 이하여야 합니다."),
+
+    /**
+     * 필터 입력 값 에러 코드
+     */
+    NEWS_INVALID_TYPE_FILTER_INPUT("소식 유형 필터가 올바르지 않습니다."),
+    NEWS_INVALID_EVENT_STATUS_FILTER_INPUT("이벤트 상태 필터가 올바르지 않습니다."),
+    NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE("이벤트 상태 필터는 EVENT 유형에서만 사용할 수 있습니다."),
+    NEWS_INVALID_SORT_FILTER_INPUT("소식 정렬 기준이 올바르지 않습니다."),
+    NEWS_INVALID_SIZE_FILTER_INPUT("소식 조회 개수는 1 이상 50 이하여야 합니다."),
+    NEWS_INVALID_CURSOR_FILTER_INPUT("소식 목록 조회 커서가 올바르지 않습니다."),
+
+    NEWS_NOT_FOUND("해당 소식을 찾을 수 없습니다. 소식 ID를 다시 확인해주세요.");
 
     private final String message;
 }
