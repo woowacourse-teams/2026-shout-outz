@@ -26,7 +26,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 /**
  * 세션, CSRF 필터부터 DB 저장까지 실제 흐름으로 프로젝트 등록을 검증한다.
  * 로컬 DB 를 반복 사용해도 slug 가 겹치지 않도록 리포지토리 이름에 무작위 접미사를 붙인다.
- * 기술 태그는 시드 마이그레이션(V20260909104000__seed_tech_tags.sql)의 데이터를 사용한다.
+ * 기술 태그는 시드 마이그레이션(V20260913120000__seed_tech_tags.sql)의 데이터를 사용한다.
  */
 @ActiveProfiles("test")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
