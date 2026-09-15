@@ -1,8 +1,12 @@
 import type { ComponentProps } from 'react';
 
-// TODO 배너 API 명세 확정 후 props 결정 (이미지 URL 직접 수신인지 mediaId인지, 링크 유무)
+/**
+ * 홈 상단 이미지 배너. 이미지 API가 썸네일용과 원본 이미지 URL을 나눠 준다.
+ */
+// TODO 배너 API 명세 확정 후 필드명 대체
 export interface HeroBannerProps extends Omit<ComponentProps<'a'>, 'children' | 'href'> {
-  imageUrl: string;
+  thumbnailUrl: string;
+  originalUrl: string;
   alt: string;
   href: string;
 }

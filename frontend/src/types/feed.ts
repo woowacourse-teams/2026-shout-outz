@@ -1,4 +1,4 @@
-// TODO 대체 GET /api/v1/posts의 sort 쿼리 파라미터 enum
+// TODO 대체 GET /api/v1/feeds의 sort 쿼리 파라미터 enum
 export type FeedSort = 'LATEST' | 'POPULAR';
 
 export interface FeedListParams {
@@ -16,7 +16,7 @@ export interface FeedAuthor {
   avatarImageId: number | null;
 }
 
-// TODO 대체 PostCategory
+// TODO 대체 FeedCategory
 export interface FeedCategory {
   categoryId: number;
   slug: string;
@@ -24,15 +24,15 @@ export interface FeedCategory {
   type: 'GENERAL' | 'EVENT';
 }
 
-// TODO 대체 PostMedia
+// TODO 대체 FeedMedia
 export interface FeedMedia {
   mediaId: number;
   displayOrder: number;
 }
 
-// TODO 대체 Post
+// TODO 대체 Feed
 export interface Feed {
-  postId: number;
+  feedId: number;
   content: string;
   author: FeedAuthor;
   categories: FeedCategory[];
