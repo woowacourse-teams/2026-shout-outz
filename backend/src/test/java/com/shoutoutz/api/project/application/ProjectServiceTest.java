@@ -14,11 +14,14 @@ import static org.mockito.Mockito.when;
 import com.shoutoutz.api.cohort.domain.CohortErrorCode;
 import com.shoutoutz.api.cohort.domain.InvalidCohortException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.Project;
+import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ServiceStatus;
@@ -30,6 +33,7 @@ import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.techtag.domain.TechTag;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
@@ -42,6 +46,7 @@ import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -372,6 +377,86 @@ class ProjectServiceTest {
                 .thenReturn(Optional.of(media(21L, REGISTERED_BY, MediaPurpose.PROJECT_DESCRIPTION, MediaStatus.PROCESSING)));
 
         assertInvalidDescriptionMedia("![화면](media://21)", ProjectErrorCode.PROJECT_DESCRIPTION_MEDIA_NOT_READY);
+    }
+
+    @Test
+    @DisplayName("승인된 프로젝트는 비로그인 사용자도 상세 조회할 수 있고, 기술 스택과 팀원을 응답으로 옮긴다.")
+    void findsApprovedProjectDetailForAnonymous() {
+        when(projectRepository.findDetailById(100L, null))
+                .thenReturn(Optional.of(projectDetail(ApprovalStatus.APPROVED)));
+
+        ProjectDetailResponse response = projectService.findDetail(100L, null);
+
+        assertThat(response.id()).isEqualTo(100L);
+        assertThat(response.registeredBy()).isEqualTo(REGISTERED_BY);
+        assertThat(response.techTags()).containsExactly(new ProjectDetailResponse.TechTag(1L, "React"));
+        assertThat(response.members()).containsExactly(new ProjectDetailResponse.Member(
+                REGISTERED_BY, "dhyepark", "박다혜", 6, "BE", 101L, null, null
+        ));
+    }
+
+    @Test
+    @DisplayName("승인되지 않은 프로젝트도 등록자 본인은 상세 조회할 수 있다.")
+    void findsUnapprovedProjectDetailForRegistrant() {
+        when(projectRepository.findDetailById(100L, REGISTERED_BY))
+                .thenReturn(Optional.of(projectDetail(ApprovalStatus.REJECTED)));
+
+        ProjectDetailResponse response = projectService.findDetail(100L, REGISTERED_BY);
+
+        assertThat(response.approvalStatus()).isEqualTo(ApprovalStatus.REJECTED);
+    }
+
+    @Test
+    @DisplayName("승인되지 않은 프로젝트를 등록자가 아닌 사용자가 조회하면 존재 여부를 숨기고 404를 던진다.")
+    void hidesUnapprovedProjectFromOthers() {
+        when(projectRepository.findDetailById(100L, MEMBER_ID))
+                .thenReturn(Optional.of(projectDetail(ApprovalStatus.PENDING)));
+
+        assertProjectNotFound(() -> projectService.findDetail(100L, MEMBER_ID));
+    }
+
+    @Test
+    @DisplayName("없거나 삭제된 프로젝트를 조회하면 404를 던진다.")
+    void rejectsMissingProject() {
+        when(projectRepository.findDetailById(100L, null)).thenReturn(Optional.empty());
+
+        assertProjectNotFound(() -> projectService.findDetail(100L, null));
+    }
+
+    private static void assertProjectNotFound(ThrowingCallable callable) {
+        assertThatThrownBy(callable)
+                .isInstanceOfSatisfying(EntityNotFoundException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
+    }
+
+    private static ProjectDetail projectDetail(ApprovalStatus approvalStatus) {
+        return new ProjectDetail(
+                100L,
+                "loop",
+                "루프 (Loop)",
+                "루프팀",
+                "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                6,
+                THUMBNAIL_ID,
+                DESCRIPTION,
+                "https://github.com/woowacourse-teams/2026-loop",
+                "https://loop.team",
+                ServiceStatus.OPERATING,
+                approvalStatus,
+                null,
+                REGISTERED_BY,
+                0,
+                null,
+                0,
+                0,
+                false,
+                false,
+                0,
+                List.of(new ProjectDetail.TechTag(1L, "React")),
+                List.of(ProjectDetail.Member.user(REGISTERED_BY, "dhyepark", "박다혜", 6, "BE", 101L)),
+                NOW,
+                NOW
+        );
     }
 
     private void assertInvalidDescriptionMedia(String descriptionMd, ProjectErrorCode expected) {

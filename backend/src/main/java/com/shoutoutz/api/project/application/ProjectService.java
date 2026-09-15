@@ -7,10 +7,12 @@ import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_MEMBER;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_TECH_TAG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_THUMBNAIL;
+import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_NOT_FOUND;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_THUMBNAIL_NOT_READY;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
@@ -19,6 +21,7 @@ import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.DescriptionMediaReferences;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
+import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectMembers;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.Slug;
@@ -31,6 +34,7 @@ import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -80,6 +84,17 @@ public class ProjectService {
 
         Project savedProject = projectRepository.save(project, request.techTagIds(), members.getUserIds());
         return new ProjectCreateResponse(savedProject.getId(), savedProject.getSlug().value());
+    }
+
+    /**
+     * 승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 조회할 수 있다.
+     */
+    @Transactional(readOnly = true)
+    public ProjectDetailResponse findDetail(long projectId, Long loginUserId) {
+        ProjectDetail detail = projectRepository.findDetailById(projectId, loginUserId)
+                .filter(project -> project.isVisibleTo(loginUserId))
+                .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
+        return ProjectDetailResponse.from(detail);
     }
 
     /**
