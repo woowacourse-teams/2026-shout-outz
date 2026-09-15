@@ -101,7 +101,7 @@ class ProjectCommentHttpApiTest {
                 new ProjectCommentFindResponse.Meta("next-cursor", true)
         ));
 
-        mockMvc.perform(get("/api/v1/projects/100/comments")
+        mockMvc.perform(get("/api/v1/projects/{projectId}/comments", 100L)
                         .queryParam("size", "5")
                         .queryParam("sort", "LATEST"))
                 .andExpect(status().isOk())
@@ -122,6 +122,9 @@ class ProjectCommentHttpApiTest {
                                 .summary("프로젝트 댓글 목록 조회")
                                 .description("비로그인 또는 로그인 사용자가 공개 프로젝트의 댓글 목록을 조회한다. "
                                         + "size는 루트 댓글 개수이며 각 루트 댓글 뒤에 대댓글을 반환한다.")
+                                .pathParameters(
+                                        parameterWithName("projectId").description("댓글을 조회할 프로젝트 ID")
+                                )
                                 .queryParameters(
                                         parameterWithName("cursor")
                                                 .description("다음 페이지 조회에 사용하는 opaque cursor")
@@ -198,7 +201,7 @@ class ProjectCommentHttpApiTest {
                 new ProjectCommentFindResponse.Meta(null, false)
         ));
 
-        mockMvc.perform(get("/api/v1/projects/100/comments")
+        mockMvc.perform(get("/api/v1/projects/{projectId}/comments", 100L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(7L, UserRole.USER)))
                 .andExpect(status().isOk())
@@ -233,7 +236,7 @@ class ProjectCommentHttpApiTest {
                 new ProjectCommentFindResponse.Meta(null, false)
         ));
 
-        mockMvc.perform(get("/api/v1/projects/100/comments"))
+        mockMvc.perform(get("/api/v1/projects/{projectId}/comments", 100L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].content").value(Matchers.nullValue()))
                 .andExpect(jsonPath("$.data[0].deleted").value(true));
@@ -242,7 +245,7 @@ class ProjectCommentHttpApiTest {
     @Test
     @DisplayName("댓글 목록 조회 크기가 범위를 벗어나면 서비스를 호출하지 않고 400을 반환한다.")
     void rejectsInvalidFindSize() throws Exception {
-                mockMvc.perform(get("/api/v1/projects/100/comments")
+                mockMvc.perform(get("/api/v1/projects/{projectId}/comments", 100L)
                         .queryParam("size", "0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(CommentErrorCode.INVALID_COMMENT_SIZE.name()));
@@ -264,7 +267,7 @@ class ProjectCommentHttpApiTest {
                         true
                 ));
 
-        mockMvc.perform(post("/api/v1/projects/100/comments")
+        mockMvc.perform(post("/api/v1/projects/{projectId}/comments", 100L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -290,6 +293,9 @@ class ProjectCommentHttpApiTest {
                                 .tag("Project Comment")
                                 .summary("프로젝트 댓글 작성")
                                 .description("로그인 사용자가 공개 프로젝트에 댓글 또는 1단계 대댓글을 작성한다.")
+                                .pathParameters(
+                                        parameterWithName("projectId").description("댓글을 작성할 프로젝트 ID")
+                                )
                                 .requestHeaders(
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
                                 )
@@ -345,7 +351,7 @@ class ProjectCommentHttpApiTest {
                 true
         ));
 
-        mockMvc.perform(patch("/api/v1/projects/100/comments/501")
+        mockMvc.perform(patch("/api/v1/projects/{projectId}/comments/{commentId}", 100L, 501L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -373,6 +379,10 @@ class ProjectCommentHttpApiTest {
                                 .summary("프로젝트 댓글 수정")
                                 .description("로그인한 프로젝트 댓글 작성자가 공개 프로젝트의 댓글 내용을 수정한다. "
                                         + "트림 후 기존 내용과 같으면 저장하지 않고 수정 시각을 유지한다.")
+                                .pathParameters(
+                                        parameterWithName("projectId").description("댓글이 속한 프로젝트 ID"),
+                                        parameterWithName("commentId").description("수정할 댓글 ID")
+                                )
                                 .requestHeaders(
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
                                 )
@@ -418,7 +428,7 @@ class ProjectCommentHttpApiTest {
         given(projectCommentService.delete(100L, 501L, 7L))
                 .willReturn(new ProjectCommentDeleteResponse(501L, true));
 
-        mockMvc.perform(delete("/api/v1/projects/100/comments/501")
+        mockMvc.perform(delete("/api/v1/projects/{projectId}/comments/{commentId}", 100L, 501L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token"))
@@ -432,6 +442,10 @@ class ProjectCommentHttpApiTest {
                                 .tag("Project Comment")
                                 .summary("프로젝트 댓글 삭제")
                                 .description("댓글 작성자 본인이 공개 프로젝트의 댓글을 soft delete한다.")
+                                .pathParameters(
+                                        parameterWithName("projectId").description("댓글이 속한 프로젝트 ID"),
+                                        parameterWithName("commentId").description("삭제할 댓글 ID")
+                                )
                                 .requestHeaders(
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
                                 )
@@ -450,7 +464,7 @@ class ProjectCommentHttpApiTest {
     @Test
     @DisplayName("댓글 내용이 500자를 초과하면 400과 필드 오류를 반환하고 서비스를 호출하지 않는다.")
     void rejectsContentOver500CodePoints() throws Exception {
-        mockMvc.perform(post("/api/v1/projects/100/comments")
+        mockMvc.perform(post("/api/v1/projects/{projectId}/comments", 100L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"" + "😀".repeat(501) + "\"}"))
@@ -463,6 +477,9 @@ class ProjectCommentHttpApiTest {
                                 .tag("Project Comment")
                                 .summary("프로젝트 댓글 작성")
                                 .description("프로젝트 댓글 작성 요청을 검증한다.")
+                                .pathParameters(
+                                        parameterWithName("projectId").description("댓글을 작성할 프로젝트 ID")
+                                )
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -474,7 +491,7 @@ class ProjectCommentHttpApiTest {
     @Test
     @DisplayName("댓글 수정 내용이 500자를 초과하면 400과 필드 오류를 반환하고 서비스를 호출하지 않는다.")
     void rejectsUpdateContentOver500CodePoints() throws Exception {
-        mockMvc.perform(patch("/api/v1/projects/100/comments/501")
+        mockMvc.perform(patch("/api/v1/projects/{projectId}/comments/{commentId}", 100L, 501L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"" + "😀".repeat(501) + "\"}"))
@@ -488,7 +505,7 @@ class ProjectCommentHttpApiTest {
     @Test
     @DisplayName("로그인하지 않고 댓글을 작성하면 401을 반환한다.")
     void rejectsUnauthenticatedUser() throws Exception {
-        mockMvc.perform(post("/api/v1/projects/100/comments")
+        mockMvc.perform(post("/api/v1/projects/{projectId}/comments", 100L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"댓글\"}"))
                 .andExpect(status().isUnauthorized())
@@ -500,7 +517,7 @@ class ProjectCommentHttpApiTest {
     @Test
     @DisplayName("로그인하지 않고 댓글을 수정하면 401을 반환한다.")
     void rejectsUnauthenticatedUpdate() throws Exception {
-        mockMvc.perform(patch("/api/v1/projects/100/comments/501")
+        mockMvc.perform(patch("/api/v1/projects/{projectId}/comments/{commentId}", 100L, 501L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"수정된 댓글\"}"))
                 .andExpect(status().isUnauthorized())
@@ -512,7 +529,7 @@ class ProjectCommentHttpApiTest {
     @Test
     @DisplayName("로그인하지 않고 댓글을 삭제하면 401을 반환한다.")
     void rejectsUnauthenticatedDelete() throws Exception {
-        mockMvc.perform(delete("/api/v1/projects/100/comments/501"))
+        mockMvc.perform(delete("/api/v1/projects/{projectId}/comments/{commentId}", 100L, 501L))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 
@@ -525,7 +542,7 @@ class ProjectCommentHttpApiTest {
         given(projectCommentService.create(eq(100L), eq(7L), any(ProjectCommentCreateRequest.class)))
                 .willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
 
-        mockMvc.perform(post("/api/v1/projects/100/comments")
+        mockMvc.perform(post("/api/v1/projects/{projectId}/comments", 100L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"댓글\"}"))
@@ -543,7 +560,7 @@ class ProjectCommentHttpApiTest {
                 any(ProjectCommentUpdateRequest.class)
         )).willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
 
-        mockMvc.perform(patch("/api/v1/projects/100/comments/501")
+        mockMvc.perform(patch("/api/v1/projects/{projectId}/comments/{commentId}", 100L, 501L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"수정된 댓글\"}"))
@@ -557,7 +574,7 @@ class ProjectCommentHttpApiTest {
         given(projectCommentService.delete(100L, 501L, 7L))
                 .willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
 
-        mockMvc.perform(delete("/api/v1/projects/100/comments/501")
+        mockMvc.perform(delete("/api/v1/projects/{projectId}/comments/{commentId}", 100L, 501L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token"))
@@ -575,7 +592,7 @@ class ProjectCommentHttpApiTest {
                 any(ProjectCommentUpdateRequest.class)
         )).willThrow(new ForbiddenException(CommonErrorCode.FORBIDDEN));
 
-        mockMvc.perform(patch("/api/v1/projects/100/comments/501")
+        mockMvc.perform(patch("/api/v1/projects/{projectId}/comments/{commentId}", 100L, 501L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"수정된 댓글\"}"))
@@ -589,7 +606,7 @@ class ProjectCommentHttpApiTest {
         given(projectCommentService.delete(100L, 501L, 7L))
                 .willThrow(new ForbiddenException(CommonErrorCode.FORBIDDEN));
 
-        mockMvc.perform(delete("/api/v1/projects/100/comments/501")
+        mockMvc.perform(delete("/api/v1/projects/{projectId}/comments/{commentId}", 100L, 501L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token"))
@@ -607,7 +624,7 @@ class ProjectCommentHttpApiTest {
                 any(ProjectCommentUpdateRequest.class)
         )).willThrow(new EntityNotFoundException(CommentErrorCode.COMMENT_NOT_FOUND));
 
-        mockMvc.perform(patch("/api/v1/projects/100/comments/501")
+        mockMvc.perform(patch("/api/v1/projects/{projectId}/comments/{commentId}", 100L, 501L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"수정된 댓글\"}"))
@@ -621,7 +638,7 @@ class ProjectCommentHttpApiTest {
         given(projectCommentService.delete(100L, 501L, 7L))
                 .willThrow(new EntityNotFoundException(CommentErrorCode.COMMENT_NOT_FOUND));
 
-        mockMvc.perform(delete("/api/v1/projects/100/comments/501")
+        mockMvc.perform(delete("/api/v1/projects/{projectId}/comments/{commentId}", 100L, 501L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token"))
@@ -635,7 +652,7 @@ class ProjectCommentHttpApiTest {
         given(projectCommentService.create(eq(100L), eq(7L), any(ProjectCommentCreateRequest.class)))
                 .willThrow(new BadRequestException(CommentErrorCode.COMMENT_DEPTH_EXCEEDED));
 
-        mockMvc.perform(post("/api/v1/projects/100/comments")
+        mockMvc.perform(post("/api/v1/projects/{projectId}/comments", 100L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"댓글\",\"parentId\":301}"))
