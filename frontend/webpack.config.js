@@ -14,9 +14,9 @@ const isProduction = process.env.NODE_ENV === 'production';
 /** @type {import("webpack").Configuration} */
 const config = {
   entry: './ssg/client.tsx',
+  // 타입 검사 플러그인의 디렉터리 감시에도 적용해 의존성과 생성물을 제외합니다.
   watchOptions: {
-    // 타입 검사기의 재귀 감시에서 의존성과 빌드 산출물을 제외합니다.
-    ignored: /[\\/](node_modules|dist|\.build|\.git)[\\/]/,
+    ignored: /[\\/](?:node_modules|dist|\.git|\.tanstack|\.build)(?:[\\/]|$)/,
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -36,7 +36,7 @@ const config = {
     // 없는 dev server에서는 미리 만들어둔 dist/index.html(predev가 채워둔 CSR 셸)을 정적으로
     // 서빙합니다. 번들(main.js)만 dev server가 갈아끼웁니다.
     static: [
-      { directory: path.resolve(__dirname, 'dist') },
+      { directory: path.resolve(__dirname, 'dist'), watch: false },
       { directory: path.resolve(__dirname, 'public'), publicPath: '/' },
     ],
   },
