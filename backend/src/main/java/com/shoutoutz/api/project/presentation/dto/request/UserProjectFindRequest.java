@@ -1,5 +1,6 @@
 package com.shoutoutz.api.project.presentation.dto.request;
 
+import com.shoutoutz.api.common.util.DataResolveUtil;
 import com.shoutoutz.api.project.application.ProjectCursorCodec;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectSort;
@@ -20,14 +21,20 @@ public record UserProjectFindRequest(
     private static final int DEFAULT_SIZE = 20;
 
     public UserProjectFindRequest {
-        cursor = cursor == null || cursor.isBlank() ? null : cursor.trim();
+        cursor = DataResolveUtil.sanitizeString(cursor);
     }
 
     public int resolvedSize() {
-        return size == null ? DEFAULT_SIZE : size;
+        if (size == null) {
+            return DEFAULT_SIZE;
+        }
+        return size;
     }
 
     public ProjectCursor resolvedCursor() {
-        return cursor == null ? null : ProjectCursorCodec.decode(cursor, ProjectSort.LATEST);
+        if (cursor == null) {
+            return null;
+        }
+        return ProjectCursorCodec.decode(cursor, ProjectSort.LATEST);
     }
 }

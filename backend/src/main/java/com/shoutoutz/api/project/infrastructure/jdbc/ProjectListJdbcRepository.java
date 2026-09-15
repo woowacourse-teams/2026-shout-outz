@@ -194,7 +194,10 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 ProjectListJdbcRepository::mapSummary
         );
         boolean hasNext = fetched.size() > size;
-        List<ProjectSummary> projects = hasNext ? fetched.subList(0, size) : fetched;
+        List<ProjectSummary> projects = fetched;
+        if (hasNext) {
+            projects = fetched.subList(0, size);
+        }
         return new UserProjectResult(withTechTagsAndMembers(projects), hasNext);
     }
 

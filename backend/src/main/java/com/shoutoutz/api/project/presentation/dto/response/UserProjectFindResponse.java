@@ -19,15 +19,18 @@ public record UserProjectFindResponse(
     }
 
     public static UserProjectFindResponse from(UserProjectResult result) {
-        ProjectCursor cursor = result.nextCursor();
-        String nextCursor = cursor == null
-                ? null
-                : ProjectCursorCodec.encode(cursor);
         return new UserProjectFindResponse(
                 result.projects().stream()
                         .map(ProjectFindAllResponse.Item::from)
                         .toList(),
-                new SliceMetaResponse(nextCursor, result.hasNext())
+                new SliceMetaResponse(encodeNextCursor(result.nextCursor()), result.hasNext())
         );
+    }
+
+    private static String encodeNextCursor(ProjectCursor cursor) {
+        if (cursor == null) {
+            return null;
+        }
+        return ProjectCursorCodec.encode(cursor);
     }
 }
