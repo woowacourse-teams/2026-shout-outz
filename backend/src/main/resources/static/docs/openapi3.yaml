@@ -1889,6 +1889,52 @@ paths:
                 user-public-profile-get-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\"}"
+  /api/v1/feeds/{feedId}/comments:
+    post:
+      tags:
+      - Feed Comment
+      summary: 피드 댓글 작성
+      description: 로그인 사용자가 활성 피드에 댓글 또는 1단계 대댓글을 작성한다.
+      operationId: feed-comment-create
+      parameters:
+      - name: feedId
+        in: path
+        description: 댓글을 작성할 피드 ID
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/FeedCommentCreateRequest"
+            examples:
+              feed-comment-create:
+                value: |
+                  {
+                    "content": "  좋은 피드네요.  "
+                  }
+      responses:
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedCommentCreateSuccessResponse"
+              examples:
+                feed-comment-create:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":501,\"content\"\
+                    :\"좋은 피드네요.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃 운\
+                    영팀\",\"avatarImageId\":10},\"parentId\":null,\"createdAt\":\"\
+                    2026-09-14T00:00:00Z\",\"updatedAt\":\"2026-09-14T00:00:00Z\"\
+                    ,\"editable\":true}}"
   /api/v1/projects/{projectId}/comments:
     get:
       tags:
@@ -2529,6 +2575,19 @@ components:
         status:
           type: string
           description: 응답 상태
+    FeedCommentCreateRequest:
+      title: FeedCommentCreateRequest
+      required:
+      - content
+      type: object
+      properties:
+        parentId:
+          type: number
+          description: 같은 피드의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글
+          nullable: true
+        content:
+          type: string
+          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
     UserProfileSuccessResponse:
       title: UserProfileSuccessResponse
       required:
@@ -3240,6 +3299,61 @@ components:
               type: string
               description: ISO-8601 수정 시각
           description: 포스트
+        status:
+          type: string
+          description: 응답 상태
+    FeedCommentCreateSuccessResponse:
+      title: FeedCommentCreateSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - content
+          - createdAt
+          - editable
+          - id
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 생성 시각 (UTC ISO-8601)
+            editable:
+              type: boolean
+              description: 현재 사용자가 수정할 수 있는지 여부
+            author:
+              required:
+              - displayName
+              - userId
+              type: object
+              properties:
+                avatarImageId:
+                  type: number
+                  description: 작성자 프로필 이미지 ID
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 댓글 작성자
+            id:
+              type: number
+              description: 댓글 ID
+            parentId:
+              type: number
+              description: 부모 댓글 ID
+              nullable: true
+            content:
+              type: string
+              description: 저장된 댓글 내용
+            updatedAt:
+              type: string
+              description: 수정 시각 (UTC ISO-8601)
         status:
           type: string
           description: 응답 상태
