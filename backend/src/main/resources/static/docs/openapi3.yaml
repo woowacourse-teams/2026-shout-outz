@@ -434,7 +434,14 @@ paths:
                   value: "{\"status\":\"success\",\"data\":[{\"id\":100,\"slug\":\"\
                     loop\",\"title\":\"루프 (Loop)\",\"tagline\":\"스프린트 회고와 액션 아이템을\
                     \ 하나로 엮은 실시간 협업 도구\",\"cohort\":6,\"thumbnailMediaId\":12,\"likeCount\"\
-                    :184,\"commentCount\":14}],\"meta\":{\"nextCursor\":\"UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw\"\
+                    :184,\"commentCount\":14,\"techTags\":[{\"id\":1,\"displayName\"\
+                    :\"React\"},{\"id\":2,\"displayName\":\"Spring\"}],\"members\"\
+                    :[{\"userId\":7,\"handle\":\"dhyepark\",\"displayName\":\"박다혜\"\
+                    ,\"cohort\":6,\"track\":\"BE\",\"avatarImageId\":101,\"githubAvatarUrl\"\
+                    :null,\"githubProfileUrl\":null},{\"userId\":8,\"handle\":\"zzaekkii\"\
+                    ,\"displayName\":\"김도현\",\"cohort\":6,\"track\":\"FE\",\"avatarImageId\"\
+                    :null,\"githubAvatarUrl\":null,\"githubProfileUrl\":null}]}],\"\
+                    meta\":{\"nextCursor\":\"UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw\"\
                     ,\"hasNext\":true,\"totalCount\":48}}"
         "400":
           description: "400"
@@ -3598,11 +3605,68 @@ components:
             - commentCount
             - id
             - likeCount
+            - members
             - slug
             - tagline
+            - techTags
             - title
             type: object
             properties:
+              techTags:
+                type: array
+                description: "기술 스택 전체 목록. 등록 순서대로 정렬하며, 카드에 몇 개까지 보여줄지는 화면에서 정한다."
+                items:
+                  required:
+                  - displayName
+                  - id
+                  type: object
+                  properties:
+                    displayName:
+                      type: string
+                      description: 기술 스택 이름
+                    id:
+                      type: number
+                      description: 기술 스택 ID
+              members:
+                type: array
+                description: "팀원 전체 목록. 상세 조회의 members와 같은 규칙이며, 등록 순서대로 정렬한다."
+                items:
+                  required:
+                  - displayName
+                  type: object
+                  properties:
+                    githubAvatarUrl:
+                      type: string
+                      description: GitHub 프로필 이미지 URL. 가입하지 않은 이관 팀원만 값이 있다.
+                      nullable: true
+                    avatarImageId:
+                      type: number
+                      description: 프로필 이미지 미디어 ID
+                      nullable: true
+                    displayName:
+                      type: string
+                      description: "표시 이름. 탈퇴한 팀원은 '탈퇴한 사용자', 가입하지 않은 이관 팀원은 GitHub\
+                        \ 이름(없으면 GitHub 아이디)이다."
+                    githubProfileUrl:
+                      type: string
+                      description: GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다.
+                      nullable: true
+                    cohort:
+                      type: number
+                      description: 기수. 가입하지 않은 이관 팀원은 프로젝트 기수다.
+                      nullable: true
+                    handle:
+                      type: string
+                      description: 프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.
+                      nullable: true
+                    track:
+                      type: string
+                      description: 트랙
+                      nullable: true
+                    userId:
+                      type: number
+                      description: 사용자 ID. 가입하지 않은 이관 팀원은 null이다.
+                      nullable: true
               cohort:
                 type: number
                 description: 우아한테크코스 기수
