@@ -1,6 +1,8 @@
 package com.shoutoutz.api.project.presentation.dto.request;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.project.application.ProjectCursorCodec;
+import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -67,6 +69,13 @@ public record ProjectFindAllRequest(
 
     public int resolvedSize() {
         return size == null ? DEFAULT_SIZE : size;
+    }
+
+    /**
+     * 첫 페이지면 null이다. 커서가 깨졌거나 요청한 정렬과 다르면 400 에러를 던진다.
+     */
+    public ProjectCursor resolvedCursor() {
+        return cursor == null ? null : ProjectCursorCodec.decode(cursor, resolvedSort());
     }
 
     /**
