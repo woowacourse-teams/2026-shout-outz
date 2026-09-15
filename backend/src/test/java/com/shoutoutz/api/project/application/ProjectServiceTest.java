@@ -19,17 +19,25 @@ import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.project.domain.Project;
+import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
+import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.project.domain.ProjectSearchCondition;
+import com.shoutoutz.api.project.domain.ProjectSort;
+import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
+import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
 import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.techtag.domain.TechTag;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
@@ -372,6 +380,81 @@ class ProjectServiceTest {
                 .thenReturn(Optional.of(media(21L, REGISTERED_BY, MediaPurpose.PROJECT_DESCRIPTION, MediaStatus.PROCESSING)));
 
         assertInvalidDescriptionMedia("![화면](media://21)", ProjectErrorCode.PROJECT_DESCRIPTION_MEDIA_NOT_READY);
+    }
+
+    @Test
+    @DisplayName("목록 요청의 검색어, 필터, 정렬, 조회 개수, 커서를 정리해 조회 조건으로 넘긴다.")
+    void findsProjectsWithResolvedCondition() {
+        ProjectCursor cursor = ProjectCursor.popular(3L, NOW, 50L);
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        projectService.findAll(new ProjectFindAllRequest(
+                " 모아 ", List.of(7, 6, 7), List.of(2L, 1L, 2L), "POPULAR", 20, ProjectCursorCodec.encode(cursor)));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
+                "모아", List.of(7, 6), List.of(2L, 1L), ProjectSort.POPULAR, 20, cursor));
+    }
+
+    @Test
+    @DisplayName("다음 페이지가 있으면 이번 페이지 마지막 프로젝트의 위치를 다음 커서로 내려준다.")
+    void returnsNextCursorOfLastProject() {
+        ProjectSummary first = summary(10L, 5L, NOW);
+        ProjectSummary last = summary(9L, 3L, NOW.minusSeconds(60));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(first, last), true, 48));
+
+        ProjectFindAllResponse response = projectService.findAll(
+                new ProjectFindAllRequest(null, null, null, "POPULAR", 2, null));
+
+        assertThat(response.items()).extracting(ProjectFindAllResponse.Item::id).containsExactly(10L, 9L);
+        assertThat(response.meta().hasNext()).isTrue();
+        assertThat(response.meta().totalCount()).isEqualTo(48);
+        assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.POPULAR))
+                .isEqualTo(ProjectCursor.popular(3L, NOW.minusSeconds(60), 9L));
+    }
+
+    @Test
+    @DisplayName("마지막 페이지면 다음 커서를 내려주지 않는다.")
+    void returnsNullCursorOnLastPage() {
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(summary(10L, 0L, NOW)), false, 1));
+
+        ProjectFindAllResponse response = projectService.findAll(
+                new ProjectFindAllRequest(null, null, null, null, null, null));
+
+        assertThat(response.meta().hasNext()).isFalse();
+        assertThat(response.meta().nextCursor()).isNull();
+        assertThat(response.meta().totalCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("정의되지 않은 기수로 필터링하면 목록을 조회하지 않고 400을 던진다.")
+    void rejectsUndefinedCohortFilter() {
+        assertThatThrownBy(() -> projectService.findAll(
+                new ProjectFindAllRequest(null, List.of(99), null, null, null, null)))
+                .isInstanceOfSatisfying(InvalidCohortException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(CohortErrorCode.INVALID_COHORT));
+
+        verifyNoInteractions(projectRepository);
+    }
+
+    @Test
+    @DisplayName("정렬을 바꾸고 이전 정렬의 커서를 보내면 목록을 조회하지 않고 400을 던진다.")
+    void rejectsCursorOfDifferentSort() {
+        String latestCursor = ProjectCursorCodec.encode(ProjectCursor.latest(NOW, 10L));
+
+        assertThatThrownBy(() -> projectService.findAll(
+                new ProjectFindAllRequest(null, null, null, "POPULAR", null, latestCursor)))
+                .isInstanceOf(InvalidProjectCursorException.class);
+
+        verifyNoInteractions(projectRepository);
+    }
+
+    private static ProjectSummary summary(long id, long likeCount, Instant createdAt) {
+        return new ProjectSummary(id, "loop-" + id, "루프", "한 줄 소개", 6, null, REGISTERED_BY, likeCount, 0L, createdAt);
     }
 
     private void assertInvalidDescriptionMedia(String descriptionMd, ProjectErrorCode expected) {
