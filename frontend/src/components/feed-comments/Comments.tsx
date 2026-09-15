@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import {
   useMutation,
-  useQuery,
+  useSuspenseQuery,
   useQueryClient,
   useSuspenseInfiniteQuery,
 } from '@tanstack/react-query';
-import { HTTPError } from 'ky';
 import {
   commentsQuery,
   commentMutation,
@@ -16,53 +15,29 @@ import { sessionQuery } from '@/apis/session';
 import { Button } from '@/components/Button';
 import { Avatar } from '@/components/Avatar';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
-
-function errorText(error: unknown) {
-  if (error instanceof HTTPError) {
-    return (
-      (
-        {
-          400: '댓글 내용을 확인해 주세요.',
-          401: '로그인이 필요합니다.',
-          403: '요청 권한을 확인하지 못했습니다. 로그인 상태를 다시 확인해 주세요.',
-          404: '피드 또는 댓글을 찾을 수 없습니다.',
-        } as Record<number, string>
-      )[error.response.status] ?? '요청에 실패했습니다. 다시 시도해 주세요.'
-    );
-  }
-  return '요청에 실패했습니다. 다시 시도해 주세요.';
-}
-
-function relativeTime(value: string) {
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60_000));
-  if (minutes < 1) return '방금 전';
-  if (minutes < 60) return `${minutes}분 전`;
-  if (minutes < 1_440) return `${Math.floor(minutes / 60)}시간 전`;
-  return `${Math.floor(minutes / 1_440)}일 전`;
-}
+import { formatRelativeTime } from '@/utils/date';
+import { getApiErrorMessage } from '@/utils/error';
 
 export function Comments({ postId }: { postId: number }) {
-  const session = useQuery(sessionQuery);
-  const viewer =
-    !session.isError && session.data?.status === 'AUTHENTICATED' ? session.data.userId : null;
   return (
-    <div>
-      <AsyncBoundary key={viewer ?? 'guest'}>
-        <CommentList
-          postId={postId}
-          viewer={viewer}
-          sessionReady={!session.isFetching && !session.isError}
-        />
-      </AsyncBoundary>
-      {session.isError && (
-        <div role="alert" className="mt-3 text-sm text-gray-600">
-          로그인 상태를 확인하지 못했습니다.{' '}
-          <Button variant="ghost" size="sm" onClick={() => void session.refetch()}>
-            다시 확인
-          </Button>
-        </div>
-      )}
-    </div>
+    <AsyncBoundary key={postId}>
+      <CommentsWithSession postId={postId} />
+    </AsyncBoundary>
+  );
+}
+
+function CommentsWithSession({ postId }: { postId: number }) {
+  const session = useSuspenseQuery(sessionQuery);
+  const viewer = session.data.status === 'AUTHENTICATED' ? session.data.userId : null;
+
+  return (
+    <AsyncBoundary key={viewer ?? 'guest'}>
+      <CommentList
+        postId={postId}
+        viewer={viewer}
+        sessionReady={!session.isFetching && !session.isError}
+      />
+    </AsyncBoundary>
   );
 }
 function CommentList({
@@ -80,7 +55,7 @@ function CommentList({
   const [content, setContent] = useState('');
   const [message, setMessage] = useState('');
   const [failure, setFailure] = useState('');
-  const [refreshFailed, setRefreshFailed] = useState(false);
+  const [refreshError, setRefreshError] = useState<unknown | null>(null);
   const items = [
     ...new Map(
       query.data.pages.flatMap((page) => page.data.items).map((item) => [item.id, item]),
@@ -92,9 +67,7 @@ function CommentList({
     try {
       await mutation.mutateAsync(input);
     } catch (error) {
-      setFailure(errorText(error));
-      if (error instanceof HTTPError && [401, 403].includes(error.response.status))
-        void client.invalidateQueries({ queryKey: ['auth-session'] });
+      setFailure(getApiErrorMessage(error));
       return;
     }
     onSuccess();
@@ -104,9 +77,9 @@ function CommentList({
         { queryKey: ['feed-comments', postId] },
         { throwOnError: true },
       );
-      setRefreshFailed(false);
-    } catch {
-      setRefreshFailed(true);
+      setRefreshError(null);
+    } catch (error) {
+      setRefreshError(error);
     }
   }
   return (
@@ -162,13 +135,15 @@ function CommentList({
           {failure}
         </p>
       )}
-      {(refreshFailed || (query.isRefetchError && !query.isFetchNextPageError)) && (
+      {(refreshError !== null || (query.isRefetchError && !query.isFetchNextPageError)) && (
         <div role="alert" className="text-sm text-gray-600">
-          목록 갱신에 실패했습니다. 저장된 댓글은 다시 제출하지 않아도 됩니다.{' '}
+          {getApiErrorMessage(refreshError ?? query.error)}{' '}
           <Button
             size="sm"
             variant="outline"
-            onClick={() => void query.refetch().then((result) => setRefreshFailed(result.isError))}
+            onClick={() =>
+              void query.refetch().then((result) => setRefreshError(result.error ?? null))
+            }
           >
             목록 새로고침
           </Button>
@@ -189,7 +164,7 @@ function CommentList({
       </ul>
       {query.isFetchNextPageError && (
         <p role="alert" className="text-sm text-red-600">
-          추가 댓글을 불러오지 못했습니다.
+          {getApiErrorMessage(query.error)}
         </p>
       )}
       {query.hasNextPage && (
@@ -234,7 +209,7 @@ function CommentItem({
           {item.author.name}
         </span>
         <time dateTime={item.createdAt} className="shrink-0 text-sm text-gray-500">
-          {relativeTime(item.createdAt)}
+          {formatRelativeTime(item.createdAt)}
           {item.edited ? ' · 수정됨' : ''}
         </time>
       </div>

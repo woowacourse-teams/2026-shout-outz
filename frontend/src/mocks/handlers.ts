@@ -40,6 +40,15 @@ export function createFeedHandlers() {
     return comments.get(id)!;
   };
   return [
+    http.get('/api/v1/posts/:postId', ({ params }) => {
+      const feed = mockFeeds.find((item) => item.postId === Number(params.postId));
+      return feed
+        ? HttpResponse.json({ status: 'success', data: feed })
+        : HttpResponse.json(
+            { status: 'error', code: 'POST_NOT_FOUND', message: '피드를 찾을 수 없습니다.' },
+            { status: 404 },
+          );
+    }),
     http.get('/api/v1/posts', ({ request }) => {
       const url = new URL(request.url);
       const offset = Number(url.searchParams.get('cursor') ?? 0);
@@ -79,7 +88,10 @@ export function createFeedHandlers() {
     http.post('/api/v1/posts/:postId/comments', async ({ params, request }) => {
       const body = (await request.json()) as { content: string };
       if (!body.content?.trim())
-        return HttpResponse.json({ status: 'error', code: 'VALIDATION_ERROR' }, { status: 400 });
+        return HttpResponse.json(
+          { status: 'error', code: 'VALIDATION_ERROR', message: '댓글 내용을 확인해 주세요.' },
+          { status: 400 },
+        );
       const item: FeedComment = {
         id: sequence++,
         content: body.content,
@@ -96,7 +108,11 @@ export function createFeedHandlers() {
       const item = getComments(Number(params.postId)).find(
         (item) => item.id === Number(params.commentId),
       );
-      if (!item) return HttpResponse.json({ status: 'error' }, { status: 404 });
+      if (!item)
+        return HttpResponse.json(
+          { status: 'error', code: 'COMMENT_NOT_FOUND', message: '댓글을 찾을 수 없습니다.' },
+          { status: 404 },
+        );
       const body = (await request.json()) as { content: string };
       Object.assign(item, {
         content: body.content,
@@ -108,7 +124,11 @@ export function createFeedHandlers() {
     http.delete('/api/v1/posts/:postId/comments/:commentId', ({ params }) => {
       const items = getComments(Number(params.postId));
       const index = items.findIndex((item) => item.id === Number(params.commentId));
-      if (index < 0) return HttpResponse.json({ status: 'error' }, { status: 404 });
+      if (index < 0)
+        return HttpResponse.json(
+          { status: 'error', code: 'COMMENT_NOT_FOUND', message: '댓글을 찾을 수 없습니다.' },
+          { status: 404 },
+        );
       items.splice(index, 1);
       return HttpResponse.json({
         status: 'success',

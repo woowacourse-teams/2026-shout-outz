@@ -1,12 +1,14 @@
 import { cleanup, render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createMemoryHistory, createRouter, RouterContextProvider } from '@tanstack/react-router';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { FeedList } from '@/components/feeds/FeedList';
 import { Comments } from '@/components/feed-comments/Comments';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { createFeedHandlers } from '@/mocks/handlers';
+import { routeTree } from '@/routeTree.gen';
 import type { ReactNode } from 'react';
 
 const server = setupServer();
@@ -21,11 +23,19 @@ afterEach(() => {
 afterAll(() => server.close());
 function show(children: ReactNode) {
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  return render(
+  const router = createRouter({
+    routeTree,
+    history: createMemoryHistory({ initialEntries: ['/feeds'] }),
+  });
+  const wrap = (content: ReactNode) => (
     <QueryClientProvider client={client}>
-      <AsyncBoundary>{children}</AsyncBoundary>
-    </QueryClientProvider>,
+      <RouterContextProvider router={router}>
+        <AsyncBoundary>{content}</AsyncBoundary>
+      </RouterContextProvider>
+    </QueryClientProvider>
   );
+  const view = render(wrap(children));
+  return { ...view, rerenderWith: (content: ReactNode) => view.rerender(wrap(content)) };
 }
 test('피드 다음 페이지를 추가하고 마지막 페이지에서 멈춘다', async () => {
   const user = userEvent.setup();
@@ -54,6 +64,16 @@ test('빈 피드를 안내한다', async () => {
   );
   show(<FeedList sort="LATEST" />);
   expect(await screen.findByText('아직 등록된 피드가 없습니다.')).toBeInTheDocument();
+});
+test('피드 링크와 공유 주소가 상세 페이지를 가리킨다', async () => {
+  const user = userEvent.setup();
+  show(<FeedList sort="LATEST" />);
+  const first = (await screen.findAllByRole('article'))[0]!;
+  expect(within(first).getByRole('link', { name: /정우진/ })).toHaveAttribute('href', '/feeds/1');
+  await user.click(within(first).getByRole('button', { name: '공유' }));
+  expect(await navigator.clipboard.readText()).toBe(
+    new URL('/feeds/1', window.location.origin).href,
+  );
 });
 test('댓글 정렬 선택 없이 최신순으로 조회한다', async () => {
   let requestedSort: string | null = null;
@@ -120,7 +140,10 @@ test('댓글 작성, 수정, 삭제가 조회 결과에 반영된다', async () 
 test('작성 실패 시 입력을 보존한다', async () => {
   server.use(
     http.post('*/api/v1/posts/:postId/comments', () =>
-      HttpResponse.json({ status: 'error' }, { status: 400 }),
+      HttpResponse.json(
+        { status: 'error', code: 'VALIDATION_ERROR', message: '댓글 내용을 확인해 주세요.' },
+        { status: 400 },
+      ),
     ),
   );
   const user = userEvent.setup();
@@ -153,13 +176,7 @@ test('정렬 변경 시 이전 정렬의 페이지를 섞지 않는다', async (
     'datetime',
     '2026-09-14T09:00:00.000Z',
   );
-  view.rerender(
-    <QueryClientProvider client={client}>
-      <AsyncBoundary>
-        <FeedList sort="POPULAR" />
-      </AsyncBoundary>
-    </QueryClientProvider>,
-  );
+  view.rerenderWith(<FeedList sort="POPULAR" />);
   await screen.findByText(
     (_, element) =>
       element?.tagName === 'TIME' &&
@@ -177,10 +194,16 @@ test('추가 조회 실패 시 기존 피드를 보존하고 재시도한다', a
   show(<FeedList sort="LATEST" />);
   await screen.findByRole('button', { name: '피드 더 보기' });
   server.use(
-    http.get('*/api/v1/posts', () => HttpResponse.json({ status: 'error' }, { status: 400 })),
+    http.get('*/api/v1/posts', () =>
+      HttpResponse.json(
+        { status: 'error', code: 'FEED_FETCH_FAILED', message: '피드 조회에 실패했습니다.' },
+        { status: 400 },
+      ),
+    ),
   );
   await user.click(screen.getByRole('button', { name: '피드 더 보기' }));
   await screen.findByRole('button', { name: '추가 피드 다시 시도' });
+  expect(screen.getByRole('alert')).toHaveTextContent('피드 조회에 실패했습니다.');
   expect(screen.getAllByRole('article')).toHaveLength(3);
   server.resetHandlers(...createFeedHandlers());
   await user.click(screen.getByRole('button', { name: '추가 피드 다시 시도' }));
@@ -197,13 +220,17 @@ test('저장 성공 후 갱신 실패를 구분하여 안내한다', async () =>
   show(<Comments postId={1} />);
   const input = await screen.findByRole('textbox', { name: '댓글 남기기' });
   const failureHandler = http.get('*/api/v1/posts/:postId/comments', () =>
-    HttpResponse.json({ status: 'error' }, { status: 400 }),
+    HttpResponse.json(
+      { status: 'error', code: 'COMMENT_FETCH_FAILED', message: '댓글 조회에 실패했습니다.' },
+      { status: 400 },
+    ),
   );
   server.use(failureHandler);
   await user.type(input, '저장은 성공');
   await user.click(screen.getByRole('button', { name: '댓글 작성' }));
   await screen.findByText('댓글을 저장했습니다.');
   expect(await screen.findByRole('button', { name: '목록 새로고침' })).toBeInTheDocument();
+  expect(screen.getByRole('alert')).toHaveTextContent('댓글 조회에 실패했습니다.');
   expect(input).toHaveValue('');
   expect(screen.getByText('경험을 공유해 주셔서 감사합니다!')).toBeInTheDocument();
 });
@@ -212,11 +239,17 @@ test('초기 조회 오류 경계에서 다시 시도할 수 있다', async () =
   const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
   try {
     server.use(
-      http.get('*/api/v1/posts', () => HttpResponse.json({ status: 'error' }, { status: 400 })),
+      http.get('*/api/v1/posts', () =>
+        HttpResponse.json(
+          { status: 'error', code: 'FEED_FETCH_FAILED', message: '피드 조회에 실패했습니다.' },
+          { status: 400 },
+        ),
+      ),
     );
     const user = userEvent.setup();
     show(<FeedList sort="LATEST" />);
     await screen.findByRole('button', { name: '다시 시도' });
+    expect(screen.getByRole('alert')).toHaveTextContent('피드 조회에 실패했습니다.');
     server.resetHandlers(...createFeedHandlers());
     await user.click(screen.getByRole('button', { name: '다시 시도' }));
     await screen.findByRole('button', { name: '피드 더 보기' });

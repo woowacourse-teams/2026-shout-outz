@@ -3,6 +3,7 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { feedsQuery, type FeedSort } from '@/apis/feed';
 import { Button } from '@/components/Button';
 import { FeedCard } from '@/components/feeds/FeedCard';
+import { getApiErrorMessage } from '@/utils/error';
 
 export function FeedList({ sort }: { sort: FeedSort }) {
   const query = useSuspenseInfiniteQuery(feedsQuery(sort));
@@ -32,7 +33,7 @@ export function FeedList({ sort }: { sort: FeedSort }) {
       )}
       {isFetchNextPageError && (
         <p role="alert" className="py-3 text-sm text-red-600">
-          추가 피드를 불러오지 못했습니다. 다시 시도해 주세요.
+          {getApiErrorMessage(query.error)}
         </p>
       )}
       <div ref={sentinel} />

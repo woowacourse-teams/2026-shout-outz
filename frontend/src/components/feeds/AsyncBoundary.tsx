@@ -1,21 +1,28 @@
 import { Component, Suspense, type ReactNode } from 'react';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import { Button } from '@/components/Button';
-class Boundary extends Component<{ children: ReactNode; reset: () => void }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
+import { getApiErrorMessage } from '@/utils/error';
+
+class Boundary extends Component<
+  { children: ReactNode; reset: () => void },
+  { error: unknown | null }
+> {
+  state: { error: unknown | null } = { error: null };
+
+  static getDerivedStateFromError(error: unknown) {
+    return { error };
   }
+
   render() {
-    return this.state.failed ? (
+    return this.state.error !== null ? (
       <div role="alert" className="rounded-xl border border-gray-200 p-6 text-gray-700">
-        <p>불러오지 못했습니다. 다시 시도해 주세요.</p>
+        <p>{getApiErrorMessage(this.state.error)}</p>
         <div className="mt-3">
           <Button
             variant="outline"
             onClick={() => {
               this.props.reset();
-              this.setState({ failed: false });
+              this.setState({ error: null });
             }}
           >
             다시 시도
@@ -27,6 +34,7 @@ class Boundary extends Component<{ children: ReactNode; reset: () => void }, { f
     );
   }
 }
+
 export function AsyncBoundary({ children }: { children: ReactNode }) {
   return (
     <QueryErrorResetBoundary>
