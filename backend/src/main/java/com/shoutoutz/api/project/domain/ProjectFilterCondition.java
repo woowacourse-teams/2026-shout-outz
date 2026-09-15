@@ -21,4 +21,12 @@ public record ProjectFilterCondition(
         cohorts = cohorts == null ? List.of() : List.copyOf(cohorts);
         techTagIds = techTagIds == null ? List.of() : List.copyOf(techTagIds);
     }
+
+    /**
+     * 기수별 프로젝트 수를 셀 때 쓰는 조건
+     * 기수는 여러 개를 고를 수 있어서(OR), 고른 기수로 거르면 다른 기수의 수가 모두 0이 되므로 기수 조건만 뺀다.
+     */
+    public ProjectFilterCondition withoutCohorts() {
+        return new ProjectFilterCondition(keyword, List.of(), techTagIds);
+    }
 }
