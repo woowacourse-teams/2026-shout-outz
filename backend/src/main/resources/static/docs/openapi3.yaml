@@ -7,6 +7,609 @@ servers:
 - url: http://localhost:8080
 tags: []
 paths:
+  /api/v1/categories:
+    get:
+      tags:
+      - Category
+      summary: 카테고리 목록 조회
+      description: 포스트 작성에 사용할 활성 카테고리를 표시 순서대로 조회한다.
+      operationId: category-find-all
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryFindAllSuccessResponse"
+              examples:
+                category-find-all:
+                  value: "{\"status\":\"success\",\"data\":[{\"categoryId\":1,\"slug\"\
+                    :\"backend\",\"displayName\":\"백엔드\",\"type\":\"GENERAL\",\"displayOrder\"\
+                    :1},{\"categoryId\":2,\"slug\":\"tecode-talk\",\"displayName\"\
+                    :\"테코드톡\",\"type\":\"EVENT\",\"displayOrder\":2}]}"
+    post:
+      tags:
+      - Category
+      summary: 카테고리 생성
+      description: 관리자가 일반 또는 이벤트 카테고리를 생성한다.
+      operationId: category-save
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/CategorySaveRequest"
+            examples:
+              category-save-unauthorized:
+                value: |
+                  {
+                    "slug": "backend",
+                    "displayName": "백엔드",
+                    "type": "GENERAL",
+                    "displayOrder": 1
+                  }
+              category-save-invalid:
+                value: |
+                  {
+                    "slug": "Backend!",
+                    "displayName": " ",
+                    "displayOrder": -1
+                  }
+              category-save-conflict:
+                value: |
+                  {
+                    "slug": "backend",
+                    "displayName": "백엔드",
+                    "type": "GENERAL",
+                    "displayOrder": 1
+                  }
+              category-save-forbidden:
+                value: |
+                  {
+                    "slug": "backend",
+                    "displayName": "백엔드",
+                    "type": "GENERAL",
+                    "displayOrder": 1
+                  }
+              category-save:
+                value: |
+                  {
+                    "slug": "backend",
+                    "displayName": "백엔드",
+                    "type": "GENERAL",
+                    "displayOrder": 1
+                  }
+      responses:
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                category-save-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                category-save-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
+                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
+                    ,\"message\":\"type은 필수입니다.\"}]}"
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                category-save-conflict:
+                  value: "{\"status\":\"error\",\"code\":\"CATEGORY_ALREADY_EXISTS\"\
+                    ,\"message\":\"이미 존재하는 slug 또는 표시 이름입니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                category-save-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"CATEGORY_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 카테고리를 변경할 수 있습니다.\"}"
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategorySaveSuccessResponse"
+              examples:
+                category-save:
+                  value: "{\"status\":\"success\",\"data\":{\"categoryId\":1,\"slug\"\
+                    :\"backend\",\"displayName\":\"백엔드\",\"type\":\"GENERAL\",\"displayOrder\"\
+                    :1,\"active\":true}}"
+  /api/v1/cohorts:
+    get:
+      tags:
+      - Cohort
+      summary: 기수 선택지 조회
+      description: 우아한테크코스 기수와 진행 연도를 최신 기수부터 반환한다.
+      operationId: cohort-find-all
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CohortFindAllSuccessResponse"
+              examples:
+                cohort-find-all:
+                  value: "{\"status\":\"success\",\"data\":{\"items\":[{\"cohort\"\
+                    :8,\"year\":2026},{\"cohort\":7,\"year\":2025},{\"cohort\":6,\"\
+                    year\":2024},{\"cohort\":5,\"year\":2023},{\"cohort\":4,\"year\"\
+                    :2022},{\"cohort\":3,\"year\":2021},{\"cohort\":2,\"year\":2020},{\"\
+                    cohort\":1,\"year\":2019}]}}"
+  /api/v1/news:
+    get:
+      tags:
+      - News
+      summary: 소식 목록 조회
+      description: 소식 목록을 유형과 이벤트 상태로 필터링하고 최신순으로 조회한다.
+      operationId: news-find-all
+      parameters:
+      - name: type
+        in: query
+        description: "소식 유형(ALL, NOTICE, EVENT). 기본값은 ALL"
+        required: false
+        schema:
+          type: string
+      - name: eventStatus
+        in: query
+        description: "이벤트 상태(UPCOMING, ONGOING, ENDED)"
+        required: false
+        schema:
+          type: string
+      - name: sort
+        in: query
+        description: 정렬 기준. 현재 LATEST만 지원하며 기본값은 LATEST
+        required: false
+        schema:
+          type: string
+      - name: size
+        in: query
+        description: "조회 개수. 기본값 20, 최댓값 50"
+        required: false
+        schema:
+          type: string
+      - name: cursor
+        in: query
+        description: 다음 페이지 조회에 사용하는 opaque cursor
+        required: false
+        schema:
+          type: string
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-find-all-filter-combination-invalid-notice-ended:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE\"\
+                    ,\"message\":\"이벤트 상태 필터는 EVENT 유형에서만 사용할 수 있습니다.\"}"
+                news-find-all-filter-combination-invalid-all-upcoming:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE\"\
+                    ,\"message\":\"이벤트 상태 필터는 EVENT 유형에서만 사용할 수 있습니다.\"}"
+                news-find-all-filter-combination-invalid-notice-ongoing:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE\"\
+                    ,\"message\":\"이벤트 상태 필터는 EVENT 유형에서만 사용할 수 있습니다.\"}"
+                news-find-all-filter-combination-invalid-all-ongoing:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE\"\
+                    ,\"message\":\"이벤트 상태 필터는 EVENT 유형에서만 사용할 수 있습니다.\"}"
+                news-find-all-filter-combination-invalid-all-ended:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE\"\
+                    ,\"message\":\"이벤트 상태 필터는 EVENT 유형에서만 사용할 수 있습니다.\"}"
+                news-find-all-filter-combination-invalid-notice-upcoming:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE\"\
+                    ,\"message\":\"이벤트 상태 필터는 EVENT 유형에서만 사용할 수 있습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsFindAllSuccessResponse"
+              examples:
+                news-find-all:
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":102,\"type\":\"\
+                    EVENT\",\"title\":\"프로젝트 아카이빙 챌린지\",\"summary\":\"팀 프로젝트를 등록하고\
+                    \ 피드백을 받아보세요.\",\"publishedAt\":\"2026-08-25T00:00:00Z\",\"eventStatus\"\
+                    :\"ONGOING\",\"eventStartAt\":\"2026-08-20T00:00:00Z\",\"eventEndAt\"\
+                    :\"2026-09-20T14:59:59Z\",\"isPinned\":false,\"pinOrder\":null}],\"\
+                    meta\":{\"nextCursor\":null,\"hasNext\":false}}"
+  /api/v1/posts:
+    get:
+      tags:
+      - Post
+      summary: 포스트 목록 조회
+      description: 전체 공개 포스트를 최신순 또는 전체 기간 인기순 Slice로 조회한다.
+      operationId: post-find-all
+      parameters:
+      - name: sort
+        in: query
+        description: "LATEST 또는 POPULAR, 기본 LATEST"
+        required: false
+        schema:
+          type: string
+      - name: categoryId
+        in: query
+        description: 카테고리 ID
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: cursor
+        in: query
+        description: 다음 Slice 커서
+        required: false
+        schema:
+          type: string
+      - name: size
+        in: query
+        description: "조회 크기(기본 20, 최대 100)"
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                post-find-all-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"sort\",\"\
+                    message\":\"Failed to convert value of type 'java.lang.String'\
+                    \ to required type 'com.shoutoutz.api.post.application.dto.PostSort';\
+                    \ Failed to convert from type [java.lang.String] to type [com.shoutoutz.api.post.application.dto.PostSort]\
+                    \ for value [INVALID]\"}]}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostFindAllSuccessResponse"
+              examples:
+                post-find-all:
+                  value: "{\"status\":\"success\",\"data\":[{\"postId\":10,\"content\"\
+                    :\"본문입니다.\",\"author\":{\"handle\":\"zzaekkii\",\"displayName\"\
+                    :\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\":\"BACKEND\"\
+                    ,\"cohort\":8,\"avatarImageId\":21},\"categories\":[{\"categoryId\"\
+                    :3,\"slug\":\"backend\",\"displayName\":\"백엔드\",\"type\":\"GENERAL\"\
+                    }],\"media\":[{\"mediaId\":21,\"displayOrder\":0}],\"createdAt\"\
+                    :\"2026-09-11T00:00:00Z\",\"updatedAt\":\"2026-09-11T00:00:00Z\"\
+                    }],\"meta\":{\"nextCursor\":\"next-cursor\",\"hasNext\":true}}"
+    post:
+      tags:
+      - Post
+      summary: 포스트 작성
+      description: 크루 또는 코치가 카테고리와 업로드 완료된 본문 이미지를 연결해 포스트를 작성한다.
+      operationId: post-save
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/api-v1-posts-1006244776"
+            examples:
+              post-save-unauthorized:
+                value: |
+                  {"content":"본문","categoryIds":[1],"mediaIds":[]}
+              post-save-invalid:
+                value: |
+                  {"content":"   ","categoryIds":[1],"mediaIds":[]}
+              post-save-forbidden:
+                value: |
+                  {"content":"본문","categoryIds":[1],"mediaIds":[]}
+              post-save:
+                value: |
+                  {
+                    "content": "본문입니다.",
+                    "categoryIds": [3],
+                    "mediaIds": [21]
+                  }
+      responses:
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                post-save-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                post-save-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"content\"\
+                    ,\"message\":\"content는 필수입니다.\"}]}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                post-save-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"POST_WRITER_TYPE_FORBIDDEN\"\
+                    ,\"message\":\"크루 또는 코치만 포스트를 작성할 수 있습니다.\"}"
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostSaveSuccessResponse"
+              examples:
+                post-save:
+                  value: "{\"status\":\"success\",\"data\":{\"postId\":10,\"content\"\
+                    :\"본문입니다.\",\"author\":{\"handle\":\"zzaekkii\",\"displayName\"\
+                    :\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\":\"BACKEND\"\
+                    ,\"cohort\":8,\"avatarImageId\":21},\"categories\":[{\"categoryId\"\
+                    :3,\"slug\":\"backend\",\"displayName\":\"백엔드\",\"type\":\"GENERAL\"\
+                    }],\"media\":[{\"mediaId\":21,\"displayOrder\":0}],\"createdAt\"\
+                    :\"2026-09-11T00:00:00Z\",\"updatedAt\":\"2026-09-11T00:00:00Z\"\
+                    }}"
+  /api/v1/projects:
+    post:
+      tags:
+      - Project
+      summary: 프로젝트 등록
+      description: "로그인한 우아한테크코스 크루 또는 코치를 등록자로 프로젝트를 등록한다. slug는 GitHub 리포지토리 이름에\
+        서 앞 연도를 떼고 소문자로 만든다. 운영 상태는 deploymentUrl이 있으면 OPERATING, 없으면 CLOSED로 저장한다\
+        . 팀원은 등록자를 첫 번째로 두고 memberHandles 순서대로 저장한다. 본문 이미지는 descriptionMd에 ![설명](media://{mediaId})\
+        \ 형식으로 넣는다. 요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, 크루나\
+        \ 코치가 아니면 403, 이미 등록된 리포지토리면 409를 반환한다."
+      operationId: project-create
+      parameters:
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/ProjectCreateRequest"
+            examples:
+              project-create-duplicate:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailMediaId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["zzaekkii", "sangjun121"]
+                  }
+              project-create-forbidden:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailMediaId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["zzaekkii", "sangjun121"]
+                  }
+              project-create-invalid-description-media:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailMediaId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["zzaekkii", "sangjun121"]
+                  }
+              project-create:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailMediaId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["zzaekkii", "sangjun121"]
+                  }
+              project-create-invalid:
+                value: "{\n  \n  \"teamName\": \"루프팀\",\n  \"tagline\": \"스프린트 회고와\
+                  \ 액션 아이템을 하나로 엮은 실시간 협업 도구\",\n  \"cohort\": 6,\n  \"thumbnailMediaId\"\
+                  : 12,\n  \"githubRepositoryUrl\": \"https://github.com/woowacourse-teams/2026-loop\"\
+                  ,\n  \"deploymentUrl\": \"https://loop.team\",\n  \"descriptionMd\"\
+                  : \"## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)\"\
+                  ,\n  \"techTagIds\": [1, 2, 3],\n  \"memberHandles\": [\"zzaekkii\"\
+                  , \"sangjun121\"]\n}\n"
+              project-create-invalid-thumbnail:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailMediaId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["zzaekkii", "sangjun121"]
+                  }
+              project-create-invalid-member:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailMediaId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["zzaekkii", "sangjun121"]
+                  }
+              project-create-unauthorized:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailMediaId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["zzaekkii", "sangjun121"]
+                  }
+              project-create-invalid-tech-tag:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailMediaId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["zzaekkii", "sangjun121"]
+                  }
+      responses:
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-create-duplicate:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_DUPLICATE_SLUG\"\
+                    ,\"message\":\"이미 등록된 리포지토리입니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-create-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_REGISTRATION_FORBIDDEN\"\
+                    ,\"message\":\"우아한테크코스 크루와 코치만 프로젝트를 등록할 수 있습니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-create-invalid-description-media:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_INVALID_DESCRIPTION_MEDIA\"\
+                    ,\"message\":\"본문에 사용할 수 없는 이미지가 포함되어 있습니다.\"}"
+                project-create-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"}]}"
+                project-create-invalid-thumbnail:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_INVALID_THUMBNAIL\"\
+                    ,\"message\":\"프로젝트 썸네일로 사용할 수 없는 이미지입니다.\"}"
+                project-create-invalid-member:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_INVALID_MEMBER\"\
+                    ,\"message\":\"팀원으로 추가할 수 없는 사용자가 포함되어 있습니다. 활동 중인 우아한테크코스 크루나\
+                    \ 코치만 팀원이 될 수 있습니다.\"}"
+                project-create-invalid-tech-tag:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_INVALID_TECH_TAG\"\
+                    ,\"message\":\"선택할 수 없는 기술 스택이 포함되어 있습니다.\"}"
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectCreateSuccessResponse"
+              examples:
+                project-create:
+                  value: "{\"status\":\"success\",\"data\":{\"projectId\":100,\"slug\"\
+                    :\"loop\"}}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-create-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+  /api/v1/tech-tags:
+    get:
+      tags:
+      - TechTag
+      summary: 기술 스택 조회
+      description: 선택 가능한 기술 스택을 displayName 오름차순으로 반환한다. keyword가 없거나 비어 있으면 전체를
+        반환한다.
+      operationId: tech-tag-find-all
+      parameters:
+      - name: keyword
+        in: query
+        description: displayName 또는 slug 부분 일치 검색어 (대소문자 무시)
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechTagFindAllSuccessResponse"
+              examples:
+                tech-tag-find-all:
+                  value: "{\"status\":\"success\",\"data\":{\"items\":[{\"id\":8,\"\
+                    displayName\":\"Spring Boot\"}]}}"
   /api/v1/visitors:
     post:
       tags:
@@ -197,10 +800,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -225,6 +828,173 @@ paths:
               examples:
                 auth-signup:
                   value: "{\"status\":\"success\",\"data\":{\"userId\":1}}"
+  /api/v1/categories/{categoryId}:
+    put:
+      tags:
+      - Category
+      summary: 카테고리 수정
+      description: 관리자가 표시 이름 또는 표시 순서를 수정한다.
+      operationId: category-update
+      parameters:
+      - name: categoryId
+        in: path
+        description: 카테고리 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/CategoryUpdateRequest"
+            examples:
+              category-update-invalid:
+                value: "{}"
+              category-update-not-found:
+                value: |
+                  {
+                    "displayName": "서버",
+                    "displayOrder": 2
+                  }
+              category-update-forbidden:
+                value: |
+                  {
+                    "displayName": "서버",
+                    "displayOrder": 2
+                  }
+              category-update:
+                value: |
+                  {
+                    "displayName": "백엔드",
+                    "displayOrder": 2
+                  }
+              category-update-unauthorized:
+                value: |
+                  {
+                    "displayName": "서버",
+                    "displayOrder": 2
+                  }
+              category-update-conflict:
+                value: |
+                  {
+                    "displayName": "프론트엔드",
+                    "displayOrder": 1
+                  }
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                category-update-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                category-update-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"CATEGORY_NOT_FOUND\",\"\
+                    message\":\"카테고리를 찾을 수 없습니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                category-update-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"CATEGORY_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 카테고리를 변경할 수 있습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryUpdateSuccessResponse"
+              examples:
+                category-update:
+                  value: "{\"status\":\"success\",\"data\":{\"categoryId\":1,\"slug\"\
+                    :\"backend\",\"displayName\":\"백엔드\",\"type\":\"GENERAL\",\"displayOrder\"\
+                    :1,\"active\":true}}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                category-update-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                category-update-conflict:
+                  value: "{\"status\":\"error\",\"code\":\"CATEGORY_ALREADY_EXISTS\"\
+                    ,\"message\":\"이미 존재하는 slug 또는 표시 이름입니다.\"}"
+    delete:
+      tags:
+      - Category
+      summary: 카테고리 삭제
+      description: 관리자가 카테고리를 비활성화해 목록과 포스트 선택 대상에서 제외한다.
+      operationId: category-delete
+      parameters:
+      - name: categoryId
+        in: path
+        description: 카테고리 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                category-delete-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"CATEGORY_NOT_FOUND\",\"\
+                    message\":\"카테고리를 찾을 수 없습니다.\"}"
+                category-delete-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"CATEGORY_NOT_FOUND\",\"\
+                    message\":\"카테고리를 찾을 수 없습니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                category-delete-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"CATEGORY_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 카테고리를 변경할 수 있습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                category-delete-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "204":
+          description: "204"
   /api/v1/news/events:
     post:
       tags:
@@ -318,10 +1088,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
                     message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"}]}"
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -441,6 +1211,303 @@ paths:
                 news-notice-create-domain-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_INVALID_AUTHOR_ID_SIZE\"\
                     ,\"message\":\"소식 작성자 ID는 0보다 커야 합니다.\"}"
+  /api/v1/news/{newsId}:
+    get:
+      tags:
+      - News
+      summary: 소식 상세 조회
+      description: 소식의 상세 정보와 전체 소식 기준 이전/다음 글을 조회한다.
+      operationId: news-find-detail
+      parameters:
+      - name: newsId
+        in: path
+        description: 조회할 소식 ID
+        required: true
+        schema:
+          type: string
+      - name: navigation
+        in: query
+        description: 이전/다음 소식 포함 여부. 기본값은 true
+        required: false
+        schema:
+          type: boolean
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsFindDetailSuccessResponse"
+              examples:
+                news-find-detail:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":102,\"type\":\"\
+                    EVENT\",\"title\":\"프로젝트 아카이빙 챌린지\",\"body\":\"팀 프로젝트를 등록하고 동료\
+                    \ 크루들의 피드백을 받아보세요.\",\"author\":{\"userId\":1,\"name\":\"샤라웃 운\
+                    영팀\"},\"publishedAt\":\"2026-08-25T00:00:00Z\",\"eventStatus\"\
+                    :\"ONGOING\",\"eventStartAt\":\"2026-08-20T00:00:00Z\",\"eventEndAt\"\
+                    :\"2026-09-20T14:59:59Z\",\"isPinned\":false,\"pinOrder\":null,\"\
+                    cta\":{\"label\":\"프로젝트 등록하기\",\"url\":\"/projects/3001\"},\"\
+                    previous\":{\"id\":101,\"title\":\"우아한테크코스 6기 최종 프로젝트 데모데이 안내\"\
+                    ,\"publishedAt\":\"2026-08-24T00:00:00Z\"},\"next\":{\"id\":103,\"\
+                    title\":\"다음 소식\",\"publishedAt\":\"2026-08-26T00:00:00Z\"}}}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-find-detail-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_NOT_FOUND\",\"\
+                    message\":\"자원을 찾을 수 없습니다.\"}"
+  /api/v1/posts/{postId}:
+    get:
+      tags:
+      - Post
+      summary: 포스트 상세 조회
+      description: 삭제되지 않은 전체 공개 포스트를 조회한다.
+      operationId: post-find
+      parameters:
+      - name: postId
+        in: path
+        description: 포스트 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                post-find-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"POST_NOT_FOUND\",\"message\"\
+                    :\"포스트를 찾을 수 없습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostFindSuccessResponse"
+              examples:
+                post-find:
+                  value: "{\"status\":\"success\",\"data\":{\"postId\":10,\"content\"\
+                    :\"본문입니다.\",\"author\":{\"handle\":\"zzaekkii\",\"displayName\"\
+                    :\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\":\"BACKEND\"\
+                    ,\"cohort\":8,\"avatarImageId\":21},\"categories\":[{\"categoryId\"\
+                    :3,\"slug\":\"backend\",\"displayName\":\"백엔드\",\"type\":\"GENERAL\"\
+                    }],\"media\":[{\"mediaId\":21,\"displayOrder\":0}],\"createdAt\"\
+                    :\"2026-09-11T00:00:00Z\",\"updatedAt\":\"2026-09-11T00:00:00Z\"\
+                    }}"
+    put:
+      tags:
+      - Post
+      summary: 포스트 수정
+      description: "작성자가 본문, 카테고리, 본문 미디어를 전체 교체한다."
+      operationId: post-update
+      parameters:
+      - name: postId
+        in: path
+        description: 포스트 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/api-v1-posts-postId917004437"
+            examples:
+              post-update-invalid:
+                value: "{\"content\":\"   \",\"categoryIds\":[1],\"mediaIds\":[]}"
+              post-update-not-found:
+                value: |
+                  {"content":"수정 본문","categoryIds":[1],"mediaIds":[]}
+              post-update:
+                value: |
+                  {"content":"수정 본문","categoryIds":[1],"mediaIds":[]}
+              post-update-unauthorized:
+                value: |
+                  {"content":"수정 본문","categoryIds":[1],"mediaIds":[]}
+              post-update-forbidden:
+                value: |
+                  {"content":"수정 본문","categoryIds":[1],"mediaIds":[]}
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                post-update-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"content\"\
+                    ,\"message\":\"content는 필수입니다.\"}]}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                post-update-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"POST_NOT_FOUND\",\"message\"\
+                    :\"포스트를 찾을 수 없습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostUpdateSuccessResponse"
+              examples:
+                post-update:
+                  value: "{\"status\":\"success\",\"data\":{\"postId\":10,\"content\"\
+                    :\"본문입니다.\",\"author\":{\"handle\":\"zzaekkii\",\"displayName\"\
+                    :\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\":\"BACKEND\"\
+                    ,\"cohort\":8,\"avatarImageId\":21},\"categories\":[{\"categoryId\"\
+                    :3,\"slug\":\"backend\",\"displayName\":\"백엔드\",\"type\":\"GENERAL\"\
+                    }],\"media\":[{\"mediaId\":21,\"displayOrder\":0}],\"createdAt\"\
+                    :\"2026-09-11T00:00:00Z\",\"updatedAt\":\"2026-09-11T00:00:00Z\"\
+                    }}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                post-update-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                post-update-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"POST_AUTHOR_FORBIDDEN\"\
+                    ,\"message\":\"포스트 작성자만 요청할 수 있습니다.\"}"
+    delete:
+      tags:
+      - Post
+      summary: 포스트 삭제
+      description: 작성자가 포스트를 soft delete한다.
+      operationId: post-delete
+      parameters:
+      - name: postId
+        in: path
+        description: 포스트 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                post-delete-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"POST_NOT_FOUND\",\"message\"\
+                    :\"포스트를 찾을 수 없습니다.\"}"
+                post-delete-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"POST_NOT_FOUND\",\"message\"\
+                    :\"포스트를 찾을 수 없습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                post-delete-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                post-delete-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"POST_AUTHOR_FORBIDDEN\"\
+                    ,\"message\":\"포스트 작성자만 요청할 수 있습니다.\"}"
+        "204":
+          description: "204"
+  /api/v1/projects/{projectId}:
+    get:
+      tags:
+      - Project
+      summary: 프로젝트 상세 조회
+      description: "프로젝트 상세 화면에 필요한 기본 정보, 상세 설명, 팀원, 기술 스택, 외부 링크, 리액션 및 댓글 수를 조회\
+        한다. 로그인하지 않아도 조회할 수 있다. 승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 조회할 수 있으며, 볼 수 없\
+        는 프로젝트는 존재 여부를 숨기기 위해 없는 프로젝트와 같은 404를 반환한다. registeredBy가 null이면 이전 기수에서\
+        \ 이관된 프로젝트다. 프로젝트 ID가 숫자가 아니면 400을 반환한다."
+      operationId: project-find-detail
+      parameters:
+      - name: projectId
+        in: path
+        description: 조회할 프로젝트 ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-find-detail-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_NOT_FOUND\",\"\
+                    message\":\"프로젝트를 찾을 수 없습니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-find-detail-invalid-id:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectFindDetailSuccessResponse"
+              examples:
+                project-find-detail:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":100,\"slug\":\"\
+                    loop\",\"title\":\"루프 (Loop)\",\"teamName\":\"루프팀\",\"tagline\"\
+                    :\"스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구\",\"cohort\":6,\"thumbnailMediaId\"\
+                    :12,\"descriptionMd\":\"## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\"\
+                    ,\"githubRepositoryUrl\":\"https://github.com/woowacourse-teams/2026-loop\"\
+                    ,\"deploymentUrl\":\"https://loop.team\",\"serviceStatus\":\"\
+                    OPERATING\",\"approvalStatus\":\"APPROVED\",\"rejectReason\":null,\"\
+                    registeredBy\":7,\"viewCount\":831,\"starCount\":128,\"likeCount\"\
+                    :84,\"bookmarkCount\":28,\"likedByMe\":false,\"bookmarkedByMe\"\
+                    :false,\"commentCount\":18,\"techTags\":[{\"id\":1,\"displayName\"\
+                    :\"React\"},{\"id\":2,\"displayName\":\"TypeScript\"}],\"members\"\
+                    :[{\"userId\":7,\"handle\":\"dhyepark\",\"displayName\":\"박다혜\"\
+                    ,\"cohort\":6,\"track\":\"BE\",\"avatarImageId\":101,\"githubAvatarUrl\"\
+                    :null,\"githubProfileUrl\":null},{\"userId\":8,\"handle\":\"zzaekkii\"\
+                    ,\"displayName\":\"김도현\",\"cohort\":6,\"track\":\"FE\",\"avatarImageId\"\
+                    :null,\"githubAvatarUrl\":null,\"githubProfileUrl\":null}],\"\
+                    createdAt\":\"2026-08-09T02:30:00Z\",\"updatedAt\":\"2026-08-09T03:00:00Z\"\
+                    }}"
   /api/v1/users/me:
     get:
       tags:
@@ -590,9 +1657,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -793,101 +1860,120 @@ paths:
                 type: string
 components:
   schemas:
-    ErrorResponse:
-      title: ErrorResponse
+    PostFindAllSuccessResponse:
+      title: PostFindAllSuccessResponse
       required:
-      - code
-      - message
+      - data
+      - meta
       - status
       type: object
       properties:
-        code:
-          type: string
-          description: 오류 코드
-        details:
+        data:
           type: array
-          description: 필드별 오류 상세
+          description: 포스트 목록
           items:
+            required:
+            - author
+            - categories
+            - content
+            - createdAt
+            - media
+            - postId
+            - updatedAt
             type: object
             properties:
-              field:
+              createdAt:
                 type: string
-                description: 오류 필드명
-                nullable: true
-              message:
+                description: ISO-8601 생성 시각
+              author:
+                required:
+                - displayName
+                - handle
+                - userType
+                type: object
+                properties:
+                  avatarImageId:
+                    type: number
+                    description: 현재 프로필 이미지 미디어 ID
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 작성자 이름
+                  cohort:
+                    type: number
+                    description: 작성자 기수
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 작성자 핸들
+                  userType:
+                    type: string
+                    description: 작성자 유형
+                  track:
+                    type: string
+                    description: 작성자 트랙
+                    nullable: true
+                description: 현재 작성자 프로필
+              media:
+                type: array
+                description: 본문 미디어 목록
+                items:
+                  required:
+                  - displayOrder
+                  - mediaId
+                  type: object
+                  properties:
+                    displayOrder:
+                      type: number
+                      description: 미디어 표시 순서
+                    mediaId:
+                      type: number
+                      description: 미디어 ID
+              categories:
+                type: array
+                description: 카테고리 목록
+                items:
+                  required:
+                  - categoryId
+                  - displayName
+                  - slug
+                  - type
+                  type: object
+                  properties:
+                    displayName:
+                      type: string
+                      description: 카테고리 표시 이름
+                    type:
+                      type: string
+                      description: GENERAL 또는 EVENT
+                    slug:
+                      type: string
+                      description: 카테고리 slug
+                    categoryId:
+                      type: number
+                      description: 카테고리 ID
+              postId:
+                type: number
+                description: 포스트 ID
+              content:
                 type: string
-                description: 필드 오류 메시지
-                nullable: true
-        message:
-          type: string
-          description: 오류 메시지
-        status:
-          type: string
-          description: 응답 상태
-    VisitorSaveRequest:
-      title: VisitorSaveRequest
-      required:
-      - example
-      type: object
-      properties:
-        example:
-          type: string
-          description: 방문자 예시 값
-    AuthSessionSuccessResponse:
-      title: AuthSessionSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
+                description: Markdown 본문
+              updatedAt:
+                type: string
+                description: ISO-8601 수정 시각
+        meta:
           required:
-          - csrfToken
-          - status
+          - hasNext
           type: object
           properties:
-            csrfToken:
+            nextCursor:
               type: string
-              description: 상태 변경 요청에 사용할 CSRF Token
-            role:
-              type: string
-              description: 인증된 사용자 권한
+              description: 다음 Slice 커서
               nullable: true
-            userId:
-              type: number
-              description: 인증된 사용자 ID
-              nullable: true
-            status:
-              type: string
-              description: "UNAUTHENTICATED, SIGNUP_REQUIRED, AUTHENTICATED"
-          description: 인증 세션 정보
-        status:
-          type: string
-          description: 응답 상태
-    UserProfileSummarySuccessResponse:
-      title: UserProfileSummarySuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - displayName
-          - handle
-          type: object
-          properties:
-            avatarImageId:
-              type: number
-              description: 프로필 이미지 미디어 ID
-              nullable: true
-            displayName:
-              type: string
-              description: 표시 이름
-            handle:
-              type: string
-              description: 사용자 handle
-          description: 프로필 요약 정보
+            hasNext:
+              type: boolean
+              description: 다음 Slice 존재 여부
+          description: Slice 메타데이터
         status:
           type: string
           description: 응답 상태
@@ -952,6 +2038,143 @@ components:
         status:
           type: string
           description: 응답 상태
+    VisitorSaveRequest:
+      title: VisitorSaveRequest
+      required:
+      - example
+      type: object
+      properties:
+        example:
+          type: string
+          description: 방문자 예시 값
+    PostSaveSuccessResponse:
+      title: PostSaveSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - categories
+          - content
+          - createdAt
+          - media
+          - postId
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: ISO-8601 생성 시각
+            author:
+              required:
+              - displayName
+              - handle
+              - userType
+              type: object
+              properties:
+                avatarImageId:
+                  type: number
+                  description: 현재 프로필 이미지 미디어 ID
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 핸들
+                userType:
+                  type: string
+                  description: 작성자 유형
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+              description: 현재 작성자 프로필
+            media:
+              type: array
+              description: 본문 미디어 목록
+              items:
+                required:
+                - displayOrder
+                - mediaId
+                type: object
+                properties:
+                  displayOrder:
+                    type: number
+                    description: 미디어 표시 순서
+                  mediaId:
+                    type: number
+                    description: 미디어 ID
+            categories:
+              type: array
+              description: 카테고리 목록
+              items:
+                required:
+                - categoryId
+                - displayName
+                - slug
+                - type
+                type: object
+                properties:
+                  displayName:
+                    type: string
+                    description: 카테고리 표시 이름
+                  type:
+                    type: string
+                    description: GENERAL 또는 EVENT
+                  slug:
+                    type: string
+                    description: 카테고리 slug
+                  categoryId:
+                    type: number
+                    description: 카테고리 ID
+            postId:
+              type: number
+              description: 포스트 ID
+            content:
+              type: string
+              description: Markdown 본문
+            updatedAt:
+              type: string
+              description: ISO-8601 수정 시각
+          description: 포스트
+        status:
+          type: string
+          description: 응답 상태
+    UserProfileSummarySuccessResponse:
+      title: UserProfileSummarySuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - displayName
+          - handle
+          type: object
+          properties:
+            avatarImageId:
+              type: number
+              description: 프로필 이미지 미디어 ID
+              nullable: true
+            displayName:
+              type: string
+              description: 표시 이름
+            handle:
+              type: string
+              description: 사용자 handle
+          description: 프로필 요약 정보
+        status:
+          type: string
+          description: 응답 상태
     OAuthSignupRequest:
       title: OAuthSignupRequest
       required:
@@ -965,6 +2188,45 @@ components:
         handle:
           type: string
           description: 영구 공개 핸들
+    CategorySaveSuccessResponse:
+      title: CategorySaveSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - categoryId
+          - displayName
+          - displayOrder
+          - slug
+          - type
+          type: object
+          properties:
+            displayName:
+              type: string
+              description: 표시 이름
+            displayOrder:
+              type: number
+              description: 표시 순서
+            active:
+              type: boolean
+              description: 활성 여부
+            type:
+              type: string
+              description: GENERAL 또는 EVENT
+            slug:
+              type: string
+              description: 카테고리 slug
+            categoryId:
+              type: number
+              description: 카테고리 ID
+          description: 카테고리
+        status:
+          type: string
+          description: 응답 상태
     UserProfileSuccessResponse:
       title: UserProfileSuccessResponse
       required:
@@ -1030,6 +2292,762 @@ components:
         status:
           type: string
           description: 응답 상태
+    UserProfileUpdateRequest:
+      title: UserProfileUpdateRequest
+      required:
+      - displayName
+      type: object
+      properties:
+        avatarImageId:
+          type: number
+          description: READY 상태의 USER_AVATAR 미디어 ID
+          nullable: true
+        displayName:
+          type: string
+          description: 표시 이름. 인증된 우테코 사용자는 변경 불가
+        blogUrl:
+          type: string
+          description: 블로그 URL
+          nullable: true
+        githubProfileUrl:
+          type: string
+          description: GitHub 프로필 URL
+          nullable: true
+        bio:
+          type: string
+          description: 한 줄 소개
+          nullable: true
+    CategoryFindAllSuccessResponse:
+      title: CategoryFindAllSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 활성 카테고리 목록
+          items:
+            required:
+            - categoryId
+            - displayName
+            - displayOrder
+            - slug
+            - type
+            type: object
+            properties:
+              displayName:
+                type: string
+                description: 표시 이름
+              displayOrder:
+                type: number
+                description: 표시 순서
+              type:
+                type: string
+                description: GENERAL 또는 EVENT
+              slug:
+                type: string
+                description: 카테고리 slug
+              categoryId:
+                type: number
+                description: 카테고리 ID
+        status:
+          type: string
+          description: 응답 상태
+    TechTagFindAllSuccessResponse:
+      title: TechTagFindAllSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - items
+          type: object
+          properties:
+            items:
+              type: array
+              description: 기술 스택 목록
+              items:
+                required:
+                - displayName
+                - id
+                type: object
+                properties:
+                  displayName:
+                    type: string
+                    description: 화면 표시 이름
+                  id:
+                    type: number
+                    description: 기술 스택 ID
+        status:
+          type: string
+          description: 응답 상태
+    NoticeCreateSuccessResponse:
+      title: NoticeCreateSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - id
+          - isPinned
+          - publishedAt
+          - summary
+          - title
+          - type
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 공지 요약
+            cta:
+              required:
+              - label
+              - url
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                url:
+                  type: string
+                  description: CTA URL
+              description: 공지 CTA
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - name
+              - userId
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 작성자 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 공지 작성자
+            id:
+              type: number
+              description: 공지 ID
+            pinOrder:
+              type: number
+              description: 고정 순서
+              nullable: true
+            body:
+              type: string
+              description: 공지 본문
+            title:
+              type: string
+              description: 공지 제목
+            type:
+              type: string
+              description: 공지 유형
+        status:
+          type: string
+          description: 응답 상태
+    ProjectCreateRequest:
+      title: ProjectCreateRequest
+      required:
+      - cohort
+      - githubRepositoryUrl
+      - memberHandles
+      - tagline
+      - teamName
+      - techTagIds
+      - title
+      type: object
+      properties:
+        teamName:
+          type: string
+          description: 팀 이름 (50자 이하)
+        techTagIds:
+          type: array
+          description: "선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다."
+          items:
+            type: number
+        memberHandles:
+          type: array
+          description: "등록자를 제외한 팀원 handle 목록 (1명 이상). 활동 중인 우아한테크코스 크루 또는 코치여야 하며\
+            , 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다."
+          items:
+            type: string
+        descriptionMd:
+          type: string
+          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
+            \ 형식으로 넣으며, 본인이 업로드한 PROJECT_DESCRIPTION 용도의 처리 완료 이미지만 쓸 수 있다."
+          nullable: true
+        deploymentUrl:
+          type: string
+          description: 서비스 배포 URL (http/https). 빈 문자열은 입력하지 않은 것으로 본다.
+          nullable: true
+        githubRepositoryUrl:
+          type: string
+          description: "https://github.com/{owner}/{repo} 형식. 리포지토리 이름으로 slug를 만든다\
+            ."
+        cohort:
+          type: number
+          description: 우아한테크코스 기수 (1~8)
+        tagline:
+          type: string
+          description: 한 줄 소개 (200자 이하)
+        thumbnailMediaId:
+          type: number
+          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID
+          nullable: true
+        title:
+          type: string
+          description: 프로젝트 이름 (100자 이하)
+    api-v1-posts-1006244776:
+      required:
+      - categoryIds
+      - content
+      - mediaIds
+      type: object
+      properties:
+        categoryIds:
+          type: array
+          description: "활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        mediaIds:
+          type: array
+          description: 작성자가 업로드한 READY POST_CONTENT 미디어 ID 목록
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        content:
+          type: string
+          description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"
+    VisitorCreateSuccessResponse:
+      title: VisitorCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - example
+          - id
+          type: object
+          properties:
+            id:
+              type: number
+              description: 방문자 ID
+            example:
+              type: string
+              description: 방문자 예시 값
+          description: 생성된 방문자 정보
+        status:
+          type: string
+          description: 응답 상태
+    ErrorResponse:
+      title: ErrorResponse
+      required:
+      - code
+      - message
+      - status
+      type: object
+      properties:
+        code:
+          type: string
+          description: 오류 코드
+        details:
+          type: array
+          description: 필드별 오류 상세
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: 오류 필드명
+                nullable: true
+              message:
+                type: string
+                description: 필드 오류 메시지
+                nullable: true
+        message:
+          type: string
+          description: 오류 메시지
+        status:
+          type: string
+          description: 응답 상태
+    NewsFindDetailSuccessResponse:
+      title: NewsFindDetailSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - id
+          - isPinned
+          - publishedAt
+          - title
+          - type
+          type: object
+          properties:
+            next:
+              required:
+              - id
+              - publishedAt
+              - title
+              type: object
+              properties:
+                publishedAt:
+                  type: string
+                  description: 다음 소식 게시 시각
+                id:
+                  type: number
+                  description: 다음 소식 ID
+                title:
+                  type: string
+                  description: 다음 소식 제목
+              description: 다음 소식. 없으면 null
+            previous:
+              required:
+              - id
+              - publishedAt
+              - title
+              type: object
+              properties:
+                publishedAt:
+                  type: string
+                  description: 이전 소식 게시 시각
+                id:
+                  type: number
+                  description: 이전 소식 ID
+                title:
+                  type: string
+                  description: 이전 소식 제목
+              description: 이전 소식. 없으면 null
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - name
+              - userId
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 작성자 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 소식 작성자
+            pinOrder:
+              type: number
+              description: 고정 순서. 고정되지 않은 경우 null
+              nullable: true
+            body:
+              type: string
+              description: 소식 본문
+            title:
+              type: string
+              description: 소식 제목
+            type:
+              type: string
+              description: 소식 유형
+            eventEndAt:
+              type: string
+              description: 이벤트 종료 시각. 공지인 경우 null
+              nullable: true
+            cta:
+              required:
+              - label
+              - url
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                url:
+                  type: string
+                  description: CTA URL
+              description: 소식 CTA
+            eventStartAt:
+              type: string
+              description: 이벤트 시작 시각. 공지인 경우 null
+              nullable: true
+            eventStatus:
+              type: string
+              description: 이벤트 상태. 공지인 경우 null
+              nullable: true
+            id:
+              type: number
+              description: 소식 ID
+        status:
+          type: string
+          description: 응답 상태
+    AuthSessionSuccessResponse:
+      title: AuthSessionSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - csrfToken
+          - status
+          type: object
+          properties:
+            csrfToken:
+              type: string
+              description: 상태 변경 요청에 사용할 CSRF Token
+            role:
+              type: string
+              description: 인증된 사용자 권한
+              nullable: true
+            userId:
+              type: number
+              description: 인증된 사용자 ID
+              nullable: true
+            status:
+              type: string
+              description: "UNAUTHENTICATED, SIGNUP_REQUIRED, AUTHENTICATED"
+          description: 인증 세션 정보
+        status:
+          type: string
+          description: 응답 상태
+    CohortFindAllSuccessResponse:
+      title: CohortFindAllSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - items
+          type: object
+          properties:
+            items:
+              type: array
+              description: 기수 목록 (최신 기수부터)
+              items:
+                required:
+                - cohort
+                - year
+                type: object
+                properties:
+                  year:
+                    type: number
+                    description: 진행 연도
+                  cohort:
+                    type: number
+                    description: 기수
+        status:
+          type: string
+          description: 응답 상태
+    PostFindSuccessResponse:
+      title: PostFindSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - categories
+          - content
+          - createdAt
+          - media
+          - postId
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: ISO-8601 생성 시각
+            author:
+              required:
+              - displayName
+              - handle
+              - userType
+              type: object
+              properties:
+                avatarImageId:
+                  type: number
+                  description: 현재 프로필 이미지 미디어 ID
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 핸들
+                userType:
+                  type: string
+                  description: 작성자 유형
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+              description: 현재 작성자 프로필
+            media:
+              type: array
+              description: 본문 미디어 목록
+              items:
+                required:
+                - displayOrder
+                - mediaId
+                type: object
+                properties:
+                  displayOrder:
+                    type: number
+                    description: 미디어 표시 순서
+                  mediaId:
+                    type: number
+                    description: 미디어 ID
+            categories:
+              type: array
+              description: 카테고리 목록
+              items:
+                required:
+                - categoryId
+                - displayName
+                - slug
+                - type
+                type: object
+                properties:
+                  displayName:
+                    type: string
+                    description: 카테고리 표시 이름
+                  type:
+                    type: string
+                    description: GENERAL 또는 EVENT
+                  slug:
+                    type: string
+                    description: 카테고리 slug
+                  categoryId:
+                    type: number
+                    description: 카테고리 ID
+            postId:
+              type: number
+              description: 포스트 ID
+            content:
+              type: string
+              description: Markdown 본문
+            updatedAt:
+              type: string
+              description: ISO-8601 수정 시각
+          description: 포스트
+        status:
+          type: string
+          description: 응답 상태
+    ProjectFindDetailSuccessResponse:
+      title: ProjectFindDetailSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - approvalStatus
+          - bookmarkCount
+          - bookmarkedByMe
+          - cohort
+          - commentCount
+          - createdAt
+          - githubRepositoryUrl
+          - id
+          - likeCount
+          - likedByMe
+          - members
+          - serviceStatus
+          - slug
+          - tagline
+          - teamName
+          - techTags
+          - title
+          - updatedAt
+          - viewCount
+          type: object
+          properties:
+            teamName:
+              type: string
+              description: 팀 이름
+            registeredBy:
+              type: number
+              description: 등록자 사용자 ID. null이면 이전 기수에서 이관된 프로젝트다.
+              nullable: true
+            bookmarkedByMe:
+              type: boolean
+              description: 요청자의 북마크 여부. 비로그인이면 false다.
+            cohort:
+              type: number
+              description: 우아한테크코스 기수
+            likeCount:
+              type: number
+              description: 좋아요 수
+            thumbnailMediaId:
+              type: number
+              description: "썸네일 미디어 ID. 이미지 URL은 GET /api/v1/media/{mediaId}로 받는다."
+              nullable: true
+            title:
+              type: string
+              description: 프로젝트 이름
+            createdAt:
+              type: string
+              description: 등록 시각
+            rejectReason:
+              type: string
+              description: 반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다.
+              nullable: true
+            serviceStatus:
+              type: string
+              description: "운영 상태 (OPERATING, CLOSED)"
+            members:
+              type: array
+              description: 팀원 목록. 신규 프로젝트는 등록 순서대로이며 등록자가 첫 번째다. userId가 registeredBy와
+                같은 팀원이 작성자다.
+              items:
+                required:
+                - displayName
+                type: object
+                properties:
+                  githubAvatarUrl:
+                    type: string
+                    description: GitHub 프로필 이미지 URL. 가입하지 않은 이관 팀원만 값이 있다.
+                    nullable: true
+                  avatarImageId:
+                    type: number
+                    description: 프로필 이미지 미디어 ID
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: "표시 이름. 탈퇴한 팀원은 '탈퇴한 사용자', 가입하지 않은 이관 팀원은 GitHub\
+                      \ 이름(없으면 GitHub 아이디)이다."
+                  githubProfileUrl:
+                    type: string
+                    description: GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다.
+                    nullable: true
+                  cohort:
+                    type: number
+                    description: 기수. 가입하지 않은 이관 팀원은 프로젝트 기수다.
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.
+                    nullable: true
+                  track:
+                    type: string
+                    description: 트랙
+                    nullable: true
+                  userId:
+                    type: number
+                    description: 사용자 ID. 가입하지 않은 이관 팀원은 null이다.
+                    nullable: true
+            descriptionMd:
+              type: string
+              description: "프로젝트 설명 마크다운. 본문 이미지는 media://{mediaId} 형식으로 들어 있다."
+              nullable: true
+            viewCount:
+              type: number
+              description: 조회수
+            id:
+              type: number
+              description: 프로젝트 ID
+            slug:
+              type: string
+              description: 프로젝트 주소로 쓰이는 slug
+            updatedAt:
+              type: string
+              description: 수정 시각
+            approvalStatus:
+              type: string
+              description: "승인 상태 (PENDING, APPROVED, REJECTED)"
+            techTags:
+              type: array
+              description: 기술 스택 목록. 등록 순서대로 정렬한다.
+              items:
+                required:
+                - displayName
+                - id
+                type: object
+                properties:
+                  displayName:
+                    type: string
+                    description: 기술 스택 이름
+                  id:
+                    type: number
+                    description: 기술 스택 ID
+            deploymentUrl:
+              type: string
+              description: 서비스 배포 URL
+              nullable: true
+            commentCount:
+              type: number
+              description: 삭제되지 않은 댓글 수 (대댓글 포함)
+            starCount:
+              type: number
+              description: GitHub star 수. 동기화 전이면 null이다.
+              nullable: true
+            likedByMe:
+              type: boolean
+              description: 요청자의 좋아요 여부. 비로그인이면 false다.
+            githubRepositoryUrl:
+              type: string
+              description: GitHub 리포지토리 URL
+            bookmarkCount:
+              type: number
+              description: 북마크 수
+            tagline:
+              type: string
+              description: 한 줄 소개
+        status:
+          type: string
+          description: 응답 상태
+    CategorySaveRequest:
+      title: CategorySaveRequest
+      required:
+      - displayName
+      - displayOrder
+      - slug
+      - type
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 고유 표시 이름
+        displayOrder:
+          type: number
+          description: 0 이상 32767 이하 표시 순서
+        type:
+          type: string
+          description: GENERAL 또는 EVENT
+        slug:
+          type: string
+          description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
     EventCreateRequest:
       title: EventCreateRequest
       required:
@@ -1072,31 +3090,77 @@ components:
         eventEndAt:
           type: string
           description: 이벤트 종료 시각
-    UserProfileUpdateRequest:
-      title: UserProfileUpdateRequest
+    NewsFindAllSuccessResponse:
+      title: NewsFindAllSuccessResponse
       required:
-      - displayName
+      - data
+      - meta
+      - status
       type: object
       properties:
-        avatarImageId:
-          type: number
-          description: READY 상태의 USER_AVATAR 미디어 ID
-          nullable: true
-        displayName:
+        data:
+          type: array
+          description: 소식 목록
+          items:
+            required:
+            - id
+            - isPinned
+            - publishedAt
+            - summary
+            - title
+            - type
+            type: object
+            properties:
+              summary:
+                type: string
+                description: 소식 요약
+              isPinned:
+                type: boolean
+                description: 고정 여부
+              eventStartAt:
+                type: string
+                description: 이벤트 시작 시각. 공지인 경우 null
+                nullable: true
+              publishedAt:
+                type: string
+                description: 게시 시각
+              eventStatus:
+                type: string
+                description: 이벤트 상태. 공지인 경우 null
+                nullable: true
+              id:
+                type: number
+                description: 소식 ID
+              pinOrder:
+                type: number
+                description: 고정 순서. 고정되지 않은 경우 null
+                nullable: true
+              title:
+                type: string
+                description: 소식 제목
+              type:
+                type: string
+                description: 소식 유형
+              eventEndAt:
+                type: string
+                description: 이벤트 종료 시각. 공지인 경우 null
+                nullable: true
+        meta:
+          required:
+          - hasNext
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서. 다음 페이지가 없으면 null
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+          description: 페이지네이션 정보
+        status:
           type: string
-          description: 표시 이름. 인증된 우테코 사용자는 변경 불가
-        blogUrl:
-          type: string
-          description: 블로그 URL
-          nullable: true
-        githubProfileUrl:
-          type: string
-          description: GitHub 프로필 URL
-          nullable: true
-        bio:
-          type: string
-          description: 한 줄 소개
-          nullable: true
+          description: 응답 상태
     OAuthSignupSuccessResponse:
       title: OAuthSignupSuccessResponse
       required:
@@ -1251,75 +3315,156 @@ components:
         status:
           type: string
           description: 응답 상태
-    NoticeCreateSuccessResponse:
-      title: NoticeCreateSuccessResponse
+    PostUpdateSuccessResponse:
+      title: PostUpdateSuccessResponse
       required:
+      - data
       - status
       type: object
       properties:
         data:
           required:
           - author
-          - body
-          - id
-          - isPinned
-          - publishedAt
-          - summary
-          - title
+          - categories
+          - content
+          - createdAt
+          - media
+          - postId
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: ISO-8601 생성 시각
+            author:
+              required:
+              - displayName
+              - handle
+              - userType
+              type: object
+              properties:
+                avatarImageId:
+                  type: number
+                  description: 현재 프로필 이미지 미디어 ID
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 핸들
+                userType:
+                  type: string
+                  description: 작성자 유형
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+              description: 현재 작성자 프로필
+            media:
+              type: array
+              description: 본문 미디어 목록
+              items:
+                required:
+                - displayOrder
+                - mediaId
+                type: object
+                properties:
+                  displayOrder:
+                    type: number
+                    description: 미디어 표시 순서
+                  mediaId:
+                    type: number
+                    description: 미디어 ID
+            categories:
+              type: array
+              description: 카테고리 목록
+              items:
+                required:
+                - categoryId
+                - displayName
+                - slug
+                - type
+                type: object
+                properties:
+                  displayName:
+                    type: string
+                    description: 카테고리 표시 이름
+                  type:
+                    type: string
+                    description: GENERAL 또는 EVENT
+                  slug:
+                    type: string
+                    description: 카테고리 slug
+                  categoryId:
+                    type: number
+                    description: 카테고리 ID
+            postId:
+              type: number
+              description: 포스트 ID
+            content:
+              type: string
+              description: Markdown 본문
+            updatedAt:
+              type: string
+              description: ISO-8601 수정 시각
+          description: 포스트
+        status:
+          type: string
+          description: 응답 상태
+    CategoryUpdateRequest:
+      title: CategoryUpdateRequest
+      required:
+      - displayName
+      - displayOrder
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 변경할 고유 표시 이름
+        displayOrder:
+          type: number
+          description: 변경할 표시 순서
+    CategoryUpdateSuccessResponse:
+      title: CategoryUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - categoryId
+          - displayName
+          - displayOrder
+          - slug
           - type
           type: object
           properties:
-            summary:
+            displayName:
               type: string
-              description: 공지 요약
-            cta:
-              required:
-              - label
-              - url
-              type: object
-              properties:
-                label:
-                  type: string
-                  description: CTA 라벨
-                url:
-                  type: string
-                  description: CTA URL
-              description: 공지 CTA
-            isPinned:
+              description: 표시 이름
+            displayOrder:
+              type: number
+              description: 표시 순서
+            active:
               type: boolean
-              description: 고정 여부
-            publishedAt:
-              type: string
-              description: 게시 시각
-            author:
-              required:
-              - name
-              - userId
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: 작성자 이름
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 공지 작성자
-            id:
-              type: number
-              description: 공지 ID
-            pinOrder:
-              type: number
-              description: 고정 순서
-              nullable: true
-            body:
-              type: string
-              description: 공지 본문
-            title:
-              type: string
-              description: 공지 제목
+              description: 활성 여부
             type:
               type: string
-              description: 공지 유형
+              description: GENERAL 또는 EVENT
+            slug:
+              type: string
+              description: 카테고리 slug
+            categoryId:
+              type: number
+              description: 카테고리 ID
+          description: 카테고리
         status:
           type: string
           description: 응답 상태
@@ -1357,26 +3502,52 @@ components:
         title:
           type: string
           description: 공지 제목
-    VisitorCreateSuccessResponse:
-      title: VisitorCreateSuccessResponse
+    ProjectCreateSuccessResponse:
+      title: ProjectCreateSuccessResponse
       required:
-      - data
       - status
       type: object
       properties:
         data:
           required:
-          - example
-          - id
+          - projectId
+          - slug
           type: object
           properties:
-            id:
+            projectId:
               type: number
-              description: 방문자 ID
-            example:
+              description: 등록된 프로젝트 ID
+            slug:
               type: string
-              description: 방문자 예시 값
-          description: 생성된 방문자 정보
+              description: 프로젝트 주소로 쓰이는 slug
         status:
           type: string
           description: 응답 상태
+    api-v1-posts-postId917004437:
+      required:
+      - categoryIds
+      - content
+      - mediaIds
+      type: object
+      properties:
+        categoryIds:
+          type: array
+          description: "변경할 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음)"
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        mediaIds:
+          type: array
+          description: 변경할 본문 미디어 ID 목록
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        content:
+          type: string
+          description: 변경할 Markdown 본문

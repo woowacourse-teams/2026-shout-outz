@@ -14,6 +14,13 @@ logging:
   pattern:
     level: "%5p [traceId:%X{traceId}]"
 
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    region: ${AWS_REGION}
+    key-prefix: ${AWS_S3_KEY_PREFIX}
+    presigned-url-expiration-seconds: ${AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS}
+
 github:
   oauth:
     client-id: ${GITHUB_OAUTH_CLIENT_ID}

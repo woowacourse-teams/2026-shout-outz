@@ -1,17 +1,34 @@
 package com.shoutoutz.api.news.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.news.application.dto.NewsDetail;
+import com.shoutoutz.api.news.application.dto.NewsPage;
+import com.shoutoutz.api.news.application.dto.NewsSummary;
+import com.shoutoutz.api.news.domain.enums.EventStatus;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
 import com.shoutoutz.api.news.domain.NewsRepository;
+import com.shoutoutz.api.news.domain.enums.NewsType;
 import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NewsFindAllRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NewsFindRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
+import com.shoutoutz.api.news.presentation.dto.response.NewsFindAllResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsFindResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,13 +46,16 @@ class NewsServiceTest {
     private NewsRepository newsRepository;
 
     @Mock
+    private NewsQueryRepository newsQueryRepository;
+
+    @Mock
     private Clock clock;
 
     private NewsService newsService;
 
     @BeforeEach
     void setUp() {
-        newsService = new NewsService(newsRepository, clock);
+        newsService = new NewsService(newsRepository, newsQueryRepository, clock);
     }
 
     @Test
@@ -46,7 +66,7 @@ class NewsServiceTest {
         assertInvalidAuthorId(requestWithCta());
 
         verify(clock).instant();
-        verifyNoInteractions(newsRepository);
+        verifyNoInteractions(newsRepository, newsQueryRepository);
     }
 
     @Test
@@ -57,7 +77,7 @@ class NewsServiceTest {
         assertInvalidAuthorId(requestWithoutCta());
 
         verify(clock).instant();
-        verifyNoInteractions(newsRepository);
+        verifyNoInteractions(newsRepository, newsQueryRepository);
     }
 
     @Test
@@ -76,7 +96,7 @@ class NewsServiceTest {
                         error -> Assertions.assertThat(error.getErrorCode())
                                 .isEqualTo(NewsErrorCode.NEWS_CTA_LABEL_NULL_OR_BLANK));
 
-        verifyNoInteractions(clock, newsRepository);
+        verifyNoInteractions(clock, newsRepository, newsQueryRepository);
     }
 
     @Test
@@ -90,7 +110,211 @@ class NewsServiceTest {
                                 .isEqualTo(NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE));
 
         verify(clock).instant();
-        verifyNoInteractions(newsRepository);
+        verifyNoInteractions(newsRepository, newsQueryRepository);
+    }
+
+    @Test
+    @DisplayName("소식 목록을 조회하고 이벤트 상태와 다음 커서를 응답한다")
+    void findsAllNewsWithNextCursor() {
+        NewsSummary event = new NewsSummary(
+                102L,
+                NewsType.EVENT,
+                "프로젝트 아카이빙 챌린지",
+                "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                PUBLISHED_AT,
+                PUBLISHED_AT.minusSeconds(60),
+                PUBLISHED_AT.plusSeconds(60),
+                false,
+                null
+        );
+        when(clock.instant()).thenReturn(PUBLISHED_AT);
+        when(newsQueryRepository.findAll(null, null, PUBLISHED_AT, null, 1))
+                .thenReturn(new NewsPage(List.of(event), true));
+
+        NewsFindAllResponse response = newsService.findAll(
+                new NewsFindAllRequest(null, null, "LATEST", 1, null)
+        );
+
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().get(0).id()).isEqualTo(102L);
+        assertThat(response.items().get(0).type()).isEqualTo(NewsType.EVENT);
+        assertThat(response.items().get(0).eventStatus()).isEqualTo(EventStatus.ONGOING);
+        assertThat(response.meta().hasNext()).isTrue();
+        assertThat(NewsCursorCodec.decode(response.meta().nextCursor()).id()).isEqualTo(102L);
+        assertThat(NewsCursorCodec.decode(response.meta().nextCursor()).publishedAt())
+                .isEqualTo(PUBLISHED_AT);
+        verify(newsQueryRepository).findAll(null, null, PUBLISHED_AT, null, 1);
+    }
+
+    @Test
+    @DisplayName("공지 목록 조회 시 이벤트 상태를 null로 반환한다")
+    void returnsNullEventFieldsForNotice() {
+        NewsSummary notice = new NewsSummary(
+                101L,
+                NewsType.NOTICE,
+                "데모데이 안내",
+                "데모데이 일정을 안내합니다.",
+                PUBLISHED_AT,
+                null,
+                null,
+                false,
+                null
+        );
+        when(clock.instant()).thenReturn(PUBLISHED_AT);
+        when(newsQueryRepository.findAll(NewsType.NOTICE, null, PUBLISHED_AT, null, 20))
+                .thenReturn(new NewsPage(List.of(notice), false));
+
+        NewsFindAllResponse response = newsService.findAll(
+                new NewsFindAllRequest("NOTICE", null, "LATEST", 20, null)
+        );
+
+        assertThat(response.items().get(0).eventStatus()).isNull();
+        assertThat(response.items().get(0).eventStartAt()).isNull();
+        assertThat(response.items().get(0).eventEndAt()).isNull();
+        assertThat(response.meta().nextCursor()).isNull();
+        assertThat(response.meta().hasNext()).isFalse();
+    }
+
+    @Test
+    @DisplayName("소식 상세 조회 시 본문과 이전·다음 글을 반환한다")
+    void findsNewsDetailWithNavigation() {
+        NewsDetail detail = new NewsDetail(
+                102L,
+                NewsType.EVENT,
+                "프로젝트 아카이빙 챌린지",
+                "팀 프로젝트를 등록하고 동료 크루들의 피드백을 받아보세요.",
+                1L,
+                "샤라웃 운영팀",
+                PUBLISHED_AT,
+                PUBLISHED_AT.minusSeconds(60),
+                PUBLISHED_AT.plusSeconds(60),
+                false,
+                null,
+                new NewsDetail.Cta("프로젝트 등록하기", "/projects/3001"),
+                new NewsDetail.Navigation(
+                        101L,
+                        "우아한테크코스 6기 최종 프로젝트 데모데이 안내",
+                        PUBLISHED_AT.minusSeconds(120)
+                ),
+                new NewsDetail.Navigation(
+                        103L,
+                        "다음 소식",
+                        PUBLISHED_AT.plusSeconds(120)
+                )
+        );
+        when(newsQueryRepository.findDetailById(102L, true)).thenReturn(Optional.of(detail));
+        when(clock.instant()).thenReturn(PUBLISHED_AT);
+
+        NewsFindResponse response = newsService.findDetail(
+                new NewsFindRequest(102L, true)
+        );
+
+        assertThat(response.id()).isEqualTo(102L);
+        assertThat(response.type()).isEqualTo(NewsType.EVENT);
+        assertThat(response.body()).isEqualTo(detail.body());
+        assertThat(response.author().userId()).isEqualTo(1L);
+        assertThat(response.author().name()).isEqualTo("샤라웃 운영팀");
+        assertThat(response.eventStatus()).isEqualTo(EventStatus.ONGOING);
+        assertThat(response.cta().label()).isEqualTo("프로젝트 등록하기");
+        assertThat(response.previous().id()).isEqualTo(101L);
+        assertThat(response.next().id()).isEqualTo(103L);
+        verify(newsQueryRepository).findDetailById(102L, true);
+        verify(clock).instant();
+    }
+
+    @Test
+    @DisplayName("종료된 이벤트도 CTA를 반환한다")
+    void returnsCtaWhenEventHasEnded() {
+        NewsDetail detail = new NewsDetail(
+                102L,
+                NewsType.EVENT,
+                "종료된 이벤트",
+                "이벤트 본문",
+                1L,
+                "샤라웃 운영팀",
+                PUBLISHED_AT,
+                PUBLISHED_AT.minusSeconds(120),
+                PUBLISHED_AT.minusSeconds(60),
+                false,
+                null,
+                new NewsDetail.Cta("이벤트 확인", "/events/102"),
+                null,
+                null
+        );
+        when(newsQueryRepository.findDetailById(102L, false)).thenReturn(Optional.of(detail));
+        when(clock.instant()).thenReturn(PUBLISHED_AT);
+
+        NewsFindResponse response = newsService.findDetail(
+                new NewsFindRequest(102L, false)
+        );
+
+        assertThat(response.eventStatus()).isEqualTo(EventStatus.ENDED);
+        assertThat(response.cta()).isEqualTo(
+                new NewsFindResponse.Cta("이벤트 확인", "/events/102")
+        );
+        assertThat(response.previous()).isNull();
+        assertThat(response.next()).isNull();
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 소식이면 404 예외를 반환한다")
+    void throwsNotFoundWhenNewsDoesNotExist() {
+        when(newsQueryRepository.findDetailById(999L, true)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> newsService.findDetail(
+                new NewsFindRequest(999L, true)
+        )).isInstanceOfSatisfying(EntityNotFoundException.class, error ->
+                assertThat(error.getErrorCode()).isEqualTo(NewsErrorCode.NEWS_NOT_FOUND));
+
+        verifyNoInteractions(clock);
+    }
+
+    @Test
+    @DisplayName("소식 ID가 0 이하이면 요청 객체 생성 시 400 예외를 반환한다")
+    void rejectsInvalidNewsIdAtRequestCreation() {
+        assertThatThrownBy(() -> newsService.findDetail(
+                new NewsFindRequest(0L, true)
+        )).isInstanceOfSatisfying(InvalidInputException.class, error ->
+                assertThat(error.getErrorCode()).isEqualTo(NewsErrorCode.NEWS_INVALID_ID_SIZE));
+
+        verifyNoInteractions(clock, newsRepository, newsQueryRepository);
+    }
+
+    @Test
+    @DisplayName("소식 조회 개수가 범위를 벗어나면 조회하지 않는다")
+    void rejectsInvalidSize() {
+        assertThatThrownBy(() -> newsService.findAll(
+                new NewsFindAllRequest(null, null, "LATEST", 51, null)
+        )).isInstanceOfSatisfying(BadRequestException.class, error ->
+                assertThat(error.getErrorCode()).isEqualTo(NewsErrorCode.NEWS_INVALID_SIZE_FILTER_INPUT));
+
+        verifyNoInteractions(clock, newsRepository, newsQueryRepository);
+    }
+
+    @Test
+    @DisplayName("잘못된 커서는 조회하지 않는다")
+    void rejectsInvalidCursor() {
+        assertThatThrownBy(() -> newsService.findAll(
+                new NewsFindAllRequest(null, null, "LATEST", 20, "invalid-cursor")
+        )).isInstanceOfSatisfying(BadRequestException.class, error ->
+                assertThat(error.getErrorCode()).isEqualTo(NewsErrorCode.NEWS_INVALID_CURSOR_FILTER_INPUT));
+
+        verifyNoInteractions(clock, newsRepository, newsQueryRepository);
+    }
+
+    @Test
+    @DisplayName("게시 시각이 없는 커서는 조회하지 않는다")
+    void rejectsCursorWithoutPublishedAt() {
+        String cursor = Base64.getEncoder().encodeToString(
+                "{\"id\":102}".getBytes(StandardCharsets.UTF_8)
+        );
+
+        assertThatThrownBy(() -> newsService.findAll(
+                new NewsFindAllRequest(null, null, "LATEST", 20, cursor)
+        )).isInstanceOfSatisfying(BadRequestException.class, error ->
+                assertThat(error.getErrorCode()).isEqualTo(NewsErrorCode.NEWS_INVALID_CURSOR_FILTER_INPUT));
+
+        verifyNoInteractions(clock, newsRepository, newsQueryRepository);
     }
 
     private void assertInvalidAuthorId(NoticeCreateRequest request) {

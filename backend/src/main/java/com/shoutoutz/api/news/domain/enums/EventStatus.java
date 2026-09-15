@@ -1,5 +1,6 @@
-package com.shoutoutz.api.news.domain;
+package com.shoutoutz.api.news.domain.enums;
 
+import com.shoutoutz.api.news.domain.NewsEventPeriod;
 import java.time.Instant;
 
 public enum EventStatus {

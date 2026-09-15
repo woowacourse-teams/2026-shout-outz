@@ -1,9 +1,7 @@
 package com.shoutoutz.api.news.presentation.dto.response;
 
-import com.shoutoutz.api.news.domain.EventStatus;
-import com.shoutoutz.api.news.domain.News;
-import com.shoutoutz.api.news.domain.NewsCta;
-import com.shoutoutz.api.news.domain.NewsType;
+import com.shoutoutz.api.news.domain.enums.EventStatus;
+import com.shoutoutz.api.news.domain.enums.NewsType;
 import java.time.Instant;
 
 public record EventCreateResponse(
@@ -22,34 +20,9 @@ public record EventCreateResponse(
         Cta cta
 ) {
 
-    public static EventCreateResponse from(News event, Instant now) {
-        return new EventCreateResponse(
-                event.getId(),
-                event.getType(),
-                event.getTitle(),
-                event.getSummary(),
-                event.getBody(),
-                new Author(event.getAuthorId(), event.getAuthorName()),
-                event.getPublishedAt(),
-                event.eventStatusAt(now),
-                event.getEventStartAt(),
-                event.getEventEndAt(),
-                event.isPinned(),
-                event.getPinOrder(),
-                Cta.from(event.getCta())
-        );
-    }
-
     public record Author(long userId, String name) {
     }
 
     public record Cta(String label, String url) {
-
-        private static Cta from(NewsCta cta) {
-            if (cta == null) {
-                return null;
-            }
-            return new Cta(cta.label(), cta.url());
-        }
     }
 }

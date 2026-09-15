@@ -38,10 +38,17 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 class S3MediaStorageTest {
 
     private static final Instant NOW = Instant.parse("2026-08-31T00:00:00Z");
+    private static final String LOGICAL_KEY = "media/post-content/object-id";
+    private static final String ACTUAL_KEY = "test-prefix/post-content/object-id";
 
     private final S3Client s3Client = mock(S3Client.class);
     private final S3Presigner s3Presigner = mock(S3Presigner.class);
-    private final S3Properties properties = new S3Properties("test-bucket", "ap-northeast-2", 300);
+    private final S3Properties properties = new S3Properties(
+            "test-bucket",
+            "test-region",
+            "test-prefix/",
+            300
+    );
 
     private S3MediaStorage storage;
 
@@ -58,18 +65,18 @@ class S3MediaStorageTest {
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(presigned);
 
         PresignedUpload result = storage.createPresignedUpload(
-                "media/post-content/object-id",
+                LOGICAL_KEY,
                 "IMAGE/WEBP"
         );
 
-        assertThat(result.key()).isEqualTo("media/post-content/object-id");
+        assertThat(result.key()).isEqualTo(LOGICAL_KEY);
         assertThat(result.url()).hasToString("https://s3.example.com/upload");
         assertThat(result.contentType()).isEqualTo("image/webp");
 
         ArgumentCaptor<PutObjectPresignRequest> captor = ArgumentCaptor.forClass(PutObjectPresignRequest.class);
         verify(s3Presigner).presignPutObject(captor.capture());
         assertThat(captor.getValue().putObjectRequest().bucket()).isEqualTo("test-bucket");
-        assertThat(captor.getValue().putObjectRequest().key()).isEqualTo("media/post-content/object-id");
+        assertThat(captor.getValue().putObjectRequest().key()).isEqualTo(ACTUAL_KEY);
         assertThat(captor.getValue().putObjectRequest().contentType()).isEqualTo("image/webp");
     }
 
@@ -80,15 +87,15 @@ class S3MediaStorageTest {
         when(presigned.expiration()).thenReturn(NOW.plus(5, ChronoUnit.MINUTES));
         when(s3Presigner.presignGetObject(any(GetObjectPresignRequest.class))).thenReturn(presigned);
 
-        PresignedDownload result = storage.createPresignedDownload("media/post-content/object-id");
+        PresignedDownload result = storage.createPresignedDownload(LOGICAL_KEY);
 
-        assertThat(result.key()).isEqualTo("media/post-content/object-id");
+        assertThat(result.key()).isEqualTo(LOGICAL_KEY);
         assertThat(result.url()).hasToString("https://s3.example.com/download");
 
         ArgumentCaptor<GetObjectPresignRequest> captor = ArgumentCaptor.forClass(GetObjectPresignRequest.class);
         verify(s3Presigner).presignGetObject(captor.capture());
         assertThat(captor.getValue().getObjectRequest().bucket()).isEqualTo("test-bucket");
-        assertThat(captor.getValue().getObjectRequest().key()).isEqualTo("media/post-content/object-id");
+        assertThat(captor.getValue().getObjectRequest().key()).isEqualTo(ACTUAL_KEY);
     }
 
     @Test
@@ -102,13 +109,17 @@ class S3MediaStorageTest {
                         .build()
         );
 
-        StoredMediaObject result = storage.headObject("media/post-content/object-id");
+        StoredMediaObject result = storage.headObject(LOGICAL_KEY);
 
-        assertThat(result.key()).isEqualTo("media/post-content/object-id");
+        assertThat(result.key()).isEqualTo(LOGICAL_KEY);
         assertThat(result.sizeBytes()).isEqualTo(1024L);
         assertThat(result.contentType()).isEqualTo("image/webp");
         assertThat(result.eTag()).isEqualTo("etag");
-        verify(s3Client).headObject(any(HeadObjectRequest.class));
+
+        ArgumentCaptor<HeadObjectRequest> captor = ArgumentCaptor.forClass(HeadObjectRequest.class);
+        verify(s3Client).headObject(captor.capture());
+        assertThat(captor.getValue().bucket()).isEqualTo("test-bucket");
+        assertThat(captor.getValue().key()).isEqualTo(ACTUAL_KEY);
     }
 
     @Test
@@ -124,6 +135,10 @@ class S3MediaStorageTest {
 
         assertThat(result.sizeBytes()).isEqualTo(1024L);
         assertThat(result.contentType()).isEqualTo("image/webp");
+
+        ArgumentCaptor<HeadObjectRequest> captor = ArgumentCaptor.forClass(HeadObjectRequest.class);
+        verify(s3Client).headObject(captor.capture());
+        assertThat(captor.getValue().key()).isEqualTo(ACTUAL_KEY);
     }
 
     @Test
@@ -170,7 +185,7 @@ class S3MediaStorageTest {
                 HeadObjectResponse.builder().contentType("image/webp").build()
         );
 
-        assertThatThrownBy(() -> storage.headObject("media/post-content/object-id"))
+        assertThatThrownBy(() -> storage.headObject(LOGICAL_KEY))
                 .isInstanceOf(S3StorageException.class)
                 .hasMessage("S3 HeadObject 응답에 파일 크기가 없습니다.");
     }
@@ -181,19 +196,19 @@ class S3MediaStorageTest {
                 ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), new byte[0])
         );
 
-        assertThatThrownBy(() -> storage.downloadObject("media/post-content/object-id"))
+        assertThatThrownBy(() -> storage.downloadObject(LOGICAL_KEY))
                 .isInstanceOf(S3StorageException.class)
                 .hasMessage("S3 객체가 비어 있습니다: media/post-content/object-id");
     }
 
     @Test
     void S3_객체를_삭제한다() {
-        storage.deleteObject("media/post-content/object-id");
+        storage.deleteObject(LOGICAL_KEY);
 
         ArgumentCaptor<DeleteObjectRequest> captor = ArgumentCaptor.forClass(DeleteObjectRequest.class);
         verify(s3Client).deleteObject(captor.capture());
         assertThat(captor.getValue().bucket()).isEqualTo("test-bucket");
-        assertThat(captor.getValue().key()).isEqualTo("media/post-content/object-id");
+        assertThat(captor.getValue().key()).isEqualTo(ACTUAL_KEY);
     }
 
     @Test
@@ -203,13 +218,13 @@ class S3MediaStorageTest {
                 ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), expected)
         );
 
-        byte[] actual = storage.downloadObject("media/post-content/object-id");
+        byte[] actual = storage.downloadObject(LOGICAL_KEY);
 
         assertThat(actual).containsExactly(expected);
         ArgumentCaptor<GetObjectRequest> captor = ArgumentCaptor.forClass(GetObjectRequest.class);
         verify(s3Client).getObjectAsBytes(captor.capture());
         assertThat(captor.getValue().bucket()).isEqualTo("test-bucket");
-        assertThat(captor.getValue().key()).isEqualTo("media/post-content/object-id");
+        assertThat(captor.getValue().key()).isEqualTo(ACTUAL_KEY);
     }
 
     @Test
@@ -224,7 +239,7 @@ class S3MediaStorageTest {
                 any(software.amazon.awssdk.core.sync.RequestBody.class)
         );
         assertThat(captor.getValue().bucket()).isEqualTo("test-bucket");
-        assertThat(captor.getValue().key()).isEqualTo("media/post-content/object-id/display");
+        assertThat(captor.getValue().key()).isEqualTo("test-prefix/post-content/object-id/display");
         assertThat(captor.getValue().contentType()).isEqualTo("image/png");
         assertThat(captor.getValue().contentLength()).isEqualTo((long) content.length);
     }

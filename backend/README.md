@@ -173,6 +173,7 @@ SPRING_DATASOURCE_USERNAME=<username>
 SPRING_DATASOURCE_PASSWORD=<password>
 AWS_S3_BUCKET=<bucket-name>
 AWS_REGION=<region>
+AWS_S3_KEY_PREFIX=<key-prefix>
 AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS=<seconds>
 ```
 
@@ -180,20 +181,33 @@ IntelliJ IDEA에서 환경 변수를 설정하려면 `Run/Debug Configurations`�
 
 ## AWS S3 연결 설정
 
-S3 버킷과 기본 보안 설정은 기본 우테코 제공 인프라의 설정을 따라간다. 백엔드는 `AWS_S3_BUCKET`, `AWS_REGION`, `AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS`만 환경별로 주입받는다.
+S3 버킷과 기본 보안 설정은 기본 우테코 제공 인프라의 설정을 따라간다. 백엔드는 `AWS_S3_BUCKET`, `AWS_REGION`, `AWS_S3_KEY_PREFIX`, `AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS`를 환경별로 주입받는다.
+
+`develop`의 DEV 배포도 현재 `prod` 프로필로 실행되므로 DEV 서버에는 `<dev-key-prefix>`를 주입한다. 운영 환경으로 전환할 때는 애플리케이션 설정 파일을 수정하지 않고 `AWS_S3_KEY_PREFIX`만 `<prod-key-prefix>`로 변경한다.
 
 
 ### 로컬
-로컬에서는 AWS CLI Profile 또는 환경변수에서 자격 증명을 조회한다. (자격 증명 값은 `application-*.yml`, 소스 코드에 기록하면 안된다.)
+로컬에서는 AWS CLI Profile 또는 환경변수에서 자격 증명을 조회한다. (자격 증명 값은 `application-*.yml`이나 소스 코드에 기록하면 안된다.)
 
 아래는 로컬에 AWS_PROFILE 생성하는 명령어 
 ```bash
 aws configure --profile shoutoutz-dev
 export AWS_PROFILE=shoutoutz-dev
-export AWS_S3_BUCKET=<우테코에서 제공받은 개발용 버킷 이름>
+export AWS_S3_BUCKET=<bucket-name>
 export AWS_REGION=<region>
+export AWS_S3_KEY_PREFIX=<dev-key-prefix>
 export AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS=<seconds>
 ```
+
+### 실제 AWS S3 통합 테스트
+
+기본 테스트는 S3 클라이언트를 mock으로 대체한다. 실제 AWS S3 연동을 확인하려면 DEV용 AWS 자격 증명과 위 환경 변수를 설정한 뒤 다음 테스트를 명시적으로 실행한다.
+
+```bash
+RUN_AWS_INTEGRATION_TEST=true ./gradlew test --tests '*S3MediaStorageAwsIntegrationTest'
+```
+
+테스트는 `AWS_S3_KEY_PREFIX` 아래에 UUID가 포함된 임시 객체를 만들고 Presigned PUT/GET, HeadObject, GetObject, PutObject, DeleteObject를 확인한 뒤 생성한 객체를 삭제한다. 운영용 자격 증명이나 운영 prefix로 실행하지 않는다.
 
 ### 운영
 운영에서는 애플리케이션이 실행되는 AWS 런타임에 S3 접근 IAM Role을 연결한다. 장기 액세스 키를 환경변수로 등록하지 않고 AWS SDK의 기본 자격 증명 체인이 제공하는 임시 자격 증명을 사용한다.
@@ -209,9 +223,11 @@ S3 객체 연동은 `com.shoutoutz.api.media.infrastructure.s3`에서 담당한�
 | 업로드 | `S3Presigner` | 백엔드가 Presigned PUT URL을 발급하고, 프론트엔드가 파일을 S3에 직접 업로드한다. |
 | 조회 | `S3Presigner` | 비공개 객체용 Presigned GET URL을 발급한다.                       |
 | 업로드 검증 | `S3Client.headObject` | 객체 존재 여부와 요청 당시의 파일 크기, MIME 타입을 비교한다.                 |
-| 삭제 | `S3Client.deleteObject` | `media/` prefix의 객체를 삭제한다.                             |
+| 삭제 | `S3Client.deleteObject` | 환경별 `AWS_S3_KEY_PREFIX` 아래의 객체를 삭제한다.                             |
 
-객체 키는 `media/{purpose-kebab-case}/{UUID}` 형식이며 원본 파일명이나 DB ID를 포함하지 않는다. Presigned PUT URL로 업로드할 때는 URL 발급 응답의 `Content-Type`을 업로드 요청 헤더에 동일하게 지정해야 한다. S3 객체의 파일 시그니처 검증과 이미지 변형본 생성은 별도의 이미지 처리 단계에서 수행한다.
+DB에 저장하는 논리 객체 키는 `media/{purpose-kebab-case}/{UUID}` 형식이며 원본 파일명이나 DB ID를 포함하지 않는다.
+AWS SDK 요청에는 논리 키의 `media/`를 제거한 뒤 환경별 `AWS_S3_KEY_PREFIX`를 붙인 실제 객체 키를 사용한다.
+Presigned PUT URL로 업로드할 때는 URL 발급 응답의 `Content-Type`을 업로드 요청 헤더에 동일하게 지정해야 한다. S3 객체의 파일 시그니처 검증과 이미지 변형본 생성은 별도의 이미지 처리 단계에서 수행한다.
 
 ### 업로드 시작 API
 

@@ -1,6 +1,7 @@
 package com.shoutoutz.api.news.domain;
 
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
+import com.shoutoutz.api.news.domain.enums.EventStatus;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -11,7 +12,7 @@ import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_START_AT_NU
 /**
  * 이벤트가 진행되는 시간 구간을 표현하는 값 객체.
  *
- * <p>시작·종료 시각의 존재 여부와 순서는 이벤트 기간을 사용하는 모든 경로에서
+ * <p>시작, 종료 시각의 존재 여부와 순서는 이벤트 기간을 사용하는 모든 경로에서
  * 동일하게 검증되어야 하므로, 소식 aggregate의 공통 검증 코드와 분리한다.</p>
  */
 public record NewsEventPeriod(Instant startAt, Instant endAt) {
