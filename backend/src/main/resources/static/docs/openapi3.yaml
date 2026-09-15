@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
-                    ,\"message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"type\",\"\
+                    message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"\
+                    slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\"\
+                    :\"displayOrder는 0 이상이어야 합니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -886,10 +886,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -977,9 +977,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -1359,9 +1359,9 @@ paths:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
-                    eventStartAt은 필수입니다.\"}]}"
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -1743,9 +1743,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -3715,6 +3715,90 @@ components:
         status:
           type: string
           description: 응답 상태
+    EventCreateSuccessResponse:
+      title: EventCreateSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - eventEndAt
+          - eventStartAt
+          - eventStatus
+          - id
+          - isPinned
+          - publishedAt
+          - summary
+          - title
+          - type
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 이벤트 요약
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - name
+              - userId
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 작성자 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 이벤트 작성자
+            pinOrder:
+              type: number
+              description: 고정 순서
+              nullable: true
+            body:
+              type: string
+              description: 이벤트 본문
+            title:
+              type: string
+              description: 이벤트 제목
+            type:
+              type: string
+              description: 소식 유형
+            eventEndAt:
+              type: string
+              description: 이벤트 종료 시각
+            cta:
+              required:
+              - label
+              - url
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                url:
+                  type: string
+                  description: CTA URL
+              description: 이벤트 CTA
+            eventStartAt:
+              type: string
+              description: 이벤트 시작 시각
+            eventStatus:
+              type: string
+              description: 이벤트 상태
+            id:
+              type: number
+              description: 이벤트 ID
+        status:
+          type: string
+          description: 응답 상태
     FeedFindAllSuccessResponse:
       title: FeedFindAllSuccessResponse
       required:
@@ -3832,90 +3916,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    EventCreateSuccessResponse:
-      title: EventCreateSuccessResponse
-      required:
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - body
-          - eventEndAt
-          - eventStartAt
-          - eventStatus
-          - id
-          - isPinned
-          - publishedAt
-          - summary
-          - title
-          - type
-          type: object
-          properties:
-            summary:
-              type: string
-              description: 이벤트 요약
-            isPinned:
-              type: boolean
-              description: 고정 여부
-            publishedAt:
-              type: string
-              description: 게시 시각
-            author:
-              required:
-              - name
-              - userId
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: 작성자 이름
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 이벤트 작성자
-            pinOrder:
-              type: number
-              description: 고정 순서
-              nullable: true
-            body:
-              type: string
-              description: 이벤트 본문
-            title:
-              type: string
-              description: 이벤트 제목
-            type:
-              type: string
-              description: 소식 유형
-            eventEndAt:
-              type: string
-              description: 이벤트 종료 시각
-            cta:
-              required:
-              - label
-              - url
-              type: object
-              properties:
-                label:
-                  type: string
-                  description: CTA 라벨
-                url:
-                  type: string
-                  description: CTA URL
-              description: 이벤트 CTA
-            eventStartAt:
-              type: string
-              description: 이벤트 시작 시각
-            eventStatus:
-              type: string
-              description: 이벤트 상태
-            id:
-              type: number
-              description: 이벤트 ID
-        status:
-          type: string
-          description: 응답 상태
     UserProfileUpdateSuccessResponse:
       title: UserProfileUpdateSuccessResponse
       required:
@@ -3980,40 +3980,6 @@ components:
         displayOrder:
           type: number
           description: 변경할 표시 순서
-    NoticeCreateRequest:
-      title: NoticeCreateRequest
-      required:
-      - authorName
-      - body
-      - summary
-      - title
-      type: object
-      properties:
-        summary:
-          type: string
-          description: 공지 요약
-        cta:
-          required:
-          - label
-          - url
-          type: object
-          properties:
-            label:
-              type: string
-              description: CTA 라벨
-            url:
-              type: string
-              description: CTA URL
-          description: 공지 CTA
-        authorName:
-          type: string
-          description: 공지 작성자 이름
-        body:
-          type: string
-          description: 공지 본문
-        title:
-          type: string
-          description: 공지 제목
     CategoryUpdateSuccessResponse:
       title: CategoryUpdateSuccessResponse
       required:
@@ -4053,6 +4019,40 @@ components:
         status:
           type: string
           description: 응답 상태
+    NoticeCreateRequest:
+      title: NoticeCreateRequest
+      required:
+      - authorName
+      - body
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 공지 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 공지 CTA
+        authorName:
+          type: string
+          description: 공지 작성자 이름
+        body:
+          type: string
+          description: 공지 본문
+        title:
+          type: string
+          description: 공지 제목
     ProjectFindAllSuccessResponse:
       title: ProjectFindAllSuccessResponse
       required:
