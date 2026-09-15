@@ -5,9 +5,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.cohort.domain.CohortErrorCode;
 import com.shoutoutz.api.cohort.domain.InvalidCohortException;
+import com.shoutoutz.api.project.application.ProjectCursorCodec;
+import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectSort;
+import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -132,6 +137,36 @@ class ProjectFindAllRequestTest {
         ProjectFindAllRequest request = new ProjectFindAllRequest(null, null, null, null, null, " ");
 
         assertThat(request.cursor()).isNull();
+    }
+
+    @Test
+    @DisplayName("커서를 입력하지 않으면 첫 페이지를 조회한다.")
+    void resolvesNullCursorForFirstPage() {
+        ProjectFindAllRequest request = new ProjectFindAllRequest(null, null, null, null, null, null);
+
+        assertThat(request.resolvedCursor()).isNull();
+    }
+
+    @Test
+    @DisplayName("요청한 정렬 기준으로 커서를 해독한다.")
+    void resolvesCursorWithRequestedSort() {
+        ProjectCursor cursor = ProjectCursor.popular(84L, Instant.parse("2026-08-09T02:30:00Z"), 100L);
+        ProjectFindAllRequest request = new ProjectFindAllRequest(
+                null, null, null, "POPULAR", null, ProjectCursorCodec.encode(cursor));
+
+        assertThat(request.resolvedCursor()).isEqualTo(cursor);
+    }
+
+    @Test
+    @DisplayName("정렬을 바꾸고 이전 정렬의 커서를 보내면 400을 던진다.")
+    void rejectsCursorOfDifferentSort() {
+        String latestCursor = ProjectCursorCodec.encode(
+                ProjectCursor.latest(Instant.parse("2026-08-09T02:30:00Z"), 100L));
+        ProjectFindAllRequest request = new ProjectFindAllRequest(null, null, null, "POPULAR", null, latestCursor);
+
+        assertThatThrownBy(request::resolvedCursor)
+                .isInstanceOfSatisfying(InvalidProjectCursorException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_INVALID_CURSOR));
     }
 
     private static ProjectFindAllRequest keyword(String keyword) {
