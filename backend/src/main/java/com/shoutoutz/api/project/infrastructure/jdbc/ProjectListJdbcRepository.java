@@ -1,5 +1,7 @@
 package com.shoutoutz.api.project.infrastructure.jdbc;
 
+import com.shoutoutz.api.project.application.UserProjectQueryRepository;
+import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectPage;
@@ -26,7 +28,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 @RequiredArgsConstructor
-public class ProjectListJdbcRepository {
+public class ProjectListJdbcRepository implements UserProjectQueryRepository {
 
     /**
      * 공개된 프로젝트와 카드에 필요한 좋아요 수, 댓글 수
@@ -148,6 +150,52 @@ public class ProjectListJdbcRepository {
         boolean hasNext = fetched.size() > condition.size();
         List<ProjectSummary> items = hasNext ? fetched.subList(0, condition.size()) : fetched;
         return new ProjectPage(withTechTagsAndMembers(items), hasNext, totalCount == null ? 0 : totalCount);
+    }
+
+    /**
+     * 가입 프로젝트와 이전 기수에서 이관된 프로젝트를 사용자 기준으로 함께 조회한다.
+     */
+    @Override
+    public UserProjectResult findAllByUserId(long userId, ProjectCursor cursor, int size) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("userId", userId)
+                .addValue("limit", size + 1);
+        StringBuilder sql = new StringBuilder("WITH filtered AS (")
+                .append(PUBLIC_PROJECTS_SQL)
+                .append("""
+                          AND (
+                              EXISTS (
+                                  SELECT 1
+                                  FROM project_members pm
+                                  WHERE pm.project_id = p.id
+                                    AND pm.user_id = :userId
+                              )
+                              OR EXISTS (
+                                  SELECT 1
+                                  FROM woowa_archived_project_members am
+                                  WHERE am.project_id = p.id
+                                    AND am.matched_user_id = :userId
+                              )
+                          )
+                        )
+                        SELECT *
+                        FROM filtered
+                        """);
+        if (cursor != null) {
+            sql.append("WHERE (created_at, id) < (:cursorCreatedAt, :cursorId)\n");
+            parameters.addValue("cursorCreatedAt", OffsetDateTime.ofInstant(cursor.createdAt(), ZoneOffset.UTC));
+            parameters.addValue("cursorId", cursor.id());
+        }
+        sql.append("ORDER BY created_at DESC, id DESC\nLIMIT :limit");
+
+        List<ProjectSummary> fetched = jdbcTemplate.query(
+                sql.toString(),
+                parameters,
+                ProjectListJdbcRepository::mapSummary
+        );
+        boolean hasNext = fetched.size() > size;
+        List<ProjectSummary> projects = hasNext ? fetched.subList(0, size) : fetched;
+        return new UserProjectResult(withTechTagsAndMembers(projects), hasNext);
     }
 
     /**

@@ -300,6 +300,23 @@ class ProjectAcceptanceTest {
         assertThat(tooLargeSize.jsonPath().getString("details[0].field")).isEqualTo("size");
     }
 
+    @Test
+    @DisplayName("비로그인 사용자도 handle로 사용자가 참여한 승인 프로젝트를 조회할 수 있다.")
+    void findsApprovedProjectsByUserAnonymously() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        long approved = registerProject(author, teammate, "사용자 프로젝트", 6, techTagIds("java"));
+        registerProject(author, teammate, "승인 대기 프로젝트", 6, techTagIds("java"));
+        approve(approved);
+
+        Response response = findUserProjects(teammate.handle());
+
+        assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
+        assertThat(response.jsonPath().getList("data.id", Long.class)).containsExactly(approved);
+        assertThat(response.jsonPath().getBoolean("meta.hasNext")).isFalse();
+        assertThat(response.jsonPath().getString("meta.nextCursor")).isNull();
+    }
+
     /**
      * 제목과 기수를 정해 프로젝트를 등록한다. 등록 직후에는 승인 대기(PENDING) 상태다.
      */
@@ -328,6 +345,13 @@ class ProjectAcceptanceTest {
                 .queryParams(queryParams)
                 .when()
                 .get(PROJECTS_PATH);
+    }
+
+    private Response findUserProjects(String handle) {
+        return RestAssured.given()
+                .port(port)
+                .when()
+                .get("/api/v1/users/{handle}/projects", handle);
     }
 
     private static String joinIds(List<Long> ids) {
