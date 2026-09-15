@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as FeedsIndexRouteImport } from './routes/feeds/index'
+import { Route as FeedsPostIdRouteImport } from './routes/feeds/$postId'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as NewsNewsIdRouteImport } from './routes/news/$newsId'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
@@ -30,6 +31,11 @@ const AboutRoute = AboutRouteImport.update({
 const FeedsIndexRoute = FeedsIndexRouteImport.update({
   id: '/feeds/',
   path: '/feeds/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeedsPostIdRoute = FeedsPostIdRouteImport.update({
+  id: '/feeds/$postId',
+  path: '/feeds/$postId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsIndexRoute = NewsIndexRouteImport.update({
@@ -56,6 +62,7 @@ const ProjectsIdRoute = ProjectsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/feeds/$postId': typeof FeedsPostIdRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/feeds/': typeof FeedsIndexRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/feeds/$postId': typeof FeedsPostIdRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/feeds': typeof FeedsIndexRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/feeds/$postId': typeof FeedsPostIdRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/feeds/': typeof FeedsIndexRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/feeds/$postId'
     | '/news/$newsId'
     | '/projects/$id'
     | '/feeds/'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/feeds/$postId'
     | '/news/$newsId'
     | '/projects/$id'
     | '/feeds'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/feeds/$postId'
     | '/news/$newsId'
     | '/projects/$id'
     | '/feeds/'
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  FeedsPostIdRoute: typeof FeedsPostIdRoute
   NewsNewsIdRoute: typeof NewsNewsIdRoute
   ProjectsIdRoute: typeof ProjectsIdRoute
   FeedsIndexRoute: typeof FeedsIndexRoute
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/feeds'
       fullPath: '/feeds/'
       preLoaderRoute: typeof FeedsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/feeds/$postId': {
+      id: '/feeds/$postId'
+      path: '/feeds/$postId'
+      fullPath: '/feeds/$postId'
+      preLoaderRoute: typeof FeedsPostIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/news/': {
@@ -178,6 +198,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  FeedsPostIdRoute: FeedsPostIdRoute,
   NewsNewsIdRoute: NewsNewsIdRoute,
   ProjectsIdRoute: ProjectsIdRoute,
   FeedsIndexRoute: FeedsIndexRoute,

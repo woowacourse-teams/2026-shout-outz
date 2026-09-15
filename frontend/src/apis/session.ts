@@ -7,19 +7,26 @@ export interface Session {
   csrfToken: string;
   role: string | null;
 }
+
+export async function fetchSession(signal?: AbortSignal) {
+  const response = await httpClient<{ status: 'success'; data: Session }>('/api/v1/auth/session', {
+    method: 'get',
+    signal,
+  });
+
+  if (!response) throw new Error('로그인 정보를 확인하지 못했습니다.');
+  return response.data;
+}
+
 export const sessionQuery = queryOptions({
   queryKey: ['auth-session'],
   staleTime: 0,
   retry: false,
-  queryFn: async () => {
+  queryFn: async ({ signal }) => {
     try {
-      const response = await httpClient<{ status: 'success'; data: Session }>(
-        '/api/v1/auth/session',
-        { method: 'get' },
-      );
-      if (!response) throw new Error('로그인 정보를 확인하지 못했습니다.');
-      setCsrfToken(response.data.csrfToken);
-      return response.data;
+      const session = await fetchSession(signal);
+      setCsrfToken(session.csrfToken);
+      return session;
     } catch (error) {
       setCsrfToken(null);
       throw error;
