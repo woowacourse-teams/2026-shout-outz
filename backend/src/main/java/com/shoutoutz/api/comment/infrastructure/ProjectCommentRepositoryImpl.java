@@ -95,6 +95,7 @@ public class ProjectCommentRepositoryImpl implements ProjectCommentRepository, P
         ProjectCommentEntity entity = projectCommentJpaRepository.findById(comment.getId())
                 .orElseThrow(() -> new EntityNotFoundException(COMMENT_NOT_FOUND));
         entity.updateContent(comment.getContent());
+        entity.updateDeletedAt(comment.getDeletedAt());
         projectCommentJpaRepository.flush();
         return ProjectCommentMapper.toDomain(entity);
     }

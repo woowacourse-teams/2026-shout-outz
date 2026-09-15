@@ -15,6 +15,7 @@ import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentCreateRe
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentFindRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentDeleteResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentFindResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentUpdateResponse;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
@@ -25,6 +26,7 @@ import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -158,6 +160,23 @@ public class ProjectCommentService {
                 comment.getUpdatedAt(),
                 true,
                 comment.isEdited()
+        );
+    }
+
+    @Transactional
+    public ProjectCommentDeleteResponse delete(
+            long projectId,
+            long commentId,
+            long authorId
+    ) {
+        validatePublicProject(projectId);
+        ProjectComment comment = findComment(projectId, commentId);
+        validateAuthor(comment, authorId);
+
+        ProjectComment deletedComment = projectCommentRepository.save(comment.delete(Instant.now()));
+        return new ProjectCommentDeleteResponse(
+                deletedComment.getId(),
+                deletedComment.isDeleted()
         );
     }
 

@@ -45,4 +45,8 @@ public class ProjectCommentEntity extends BaseEntity {
     public void updateContent(String content) {
         this.content = content;
     }
+
+    public void updateDeletedAt(Instant deletedAt) {
+        this.deletedAt = deletedAt;
+    }
 }

@@ -101,4 +101,17 @@ public class ProjectComment {
                 .deletedAt(deletedAt)
                 .build();
     }
+
+    public ProjectComment delete(Instant deletedAt) {
+        return ProjectComment.builder()
+                .id(id)
+                .projectId(projectId)
+                .authorId(authorId)
+                .parentId(parentId)
+                .content(content)
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .deletedAt(deletedAt)
+                .build();
+    }
 }

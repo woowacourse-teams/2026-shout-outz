@@ -15,6 +15,7 @@ import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,6 +31,7 @@ import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentCreateRe
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentFindRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentDeleteResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentFindResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentFindResponse.Comment;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentUpdateResponse;
@@ -411,6 +413,41 @@ class ProjectCommentHttpApiTest {
     }
 
     @Test
+    @DisplayName("댓글 작성자가 댓글을 삭제하면 200과 삭제 상태를 반환한다.")
+    void deletesComment() throws Exception {
+        given(projectCommentService.delete(100L, 501L, 7L))
+                .willReturn(new ProjectCommentDeleteResponse(501L, true));
+
+        mockMvc.perform(delete("/api/v1/projects/100/comments/501")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(501))
+                .andExpect(jsonPath("$.data.deleted").value(true))
+                .andDo(document(
+                        "project-comment-delete",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Project Comment")
+                                .summary("프로젝트 댓글 삭제")
+                                .description("댓글 작성자 본인이 공개 프로젝트의 댓글을 soft delete한다.")
+                                .requestHeaders(
+                                        headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .responseSchema(Schema.schema("ProjectCommentDeleteSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data.id").type(NUMBER).description("삭제된 댓글 ID"),
+                                        fieldWithPath("data.deleted").type(BOOLEAN).description("댓글 삭제 여부")
+                                )
+                                .build())
+                ));
+
+        verify(projectCommentService).delete(100L, 501L, 7L);
+    }
+
+    @Test
     @DisplayName("댓글 내용이 500자를 초과하면 400과 필드 오류를 반환하고 서비스를 호출하지 않는다.")
     void rejectsContentOver500CodePoints() throws Exception {
         mockMvc.perform(post("/api/v1/projects/100/comments")
@@ -473,6 +510,16 @@ class ProjectCommentHttpApiTest {
     }
 
     @Test
+    @DisplayName("로그인하지 않고 댓글을 삭제하면 401을 반환한다.")
+    void rejectsUnauthenticatedDelete() throws Exception {
+        mockMvc.perform(delete("/api/v1/projects/100/comments/501"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+
+        verifyNoInteractions(projectCommentService);
+    }
+
+    @Test
     @DisplayName("공개 프로젝트가 아니면 프로젝트를 찾을 수 없다는 404를 반환한다.")
     void rejectsNonPublicProject() throws Exception {
         given(projectCommentService.create(eq(100L), eq(7L), any(ProjectCommentCreateRequest.class)))
@@ -505,6 +552,20 @@ class ProjectCommentHttpApiTest {
     }
 
     @Test
+    @DisplayName("공개 프로젝트가 아니면 댓글 삭제 요청에 프로젝트를 찾을 수 없다는 404를 반환한다.")
+    void rejectsDeleteForNonPublicProject() throws Exception {
+        given(projectCommentService.delete(100L, 501L, 7L))
+                .willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
+
+        mockMvc.perform(delete("/api/v1/projects/100/comments/501")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PROJECT_NOT_FOUND"));
+    }
+
+    @Test
     @DisplayName("댓글 작성자가 아니면 댓글 수정 요청에 403을 반환한다.")
     void rejectsUpdateFromAnotherAuthor() throws Exception {
         given(projectCommentService.update(
@@ -523,6 +584,20 @@ class ProjectCommentHttpApiTest {
     }
 
     @Test
+    @DisplayName("댓글 작성자가 아니면 댓글 삭제 요청에 403을 반환한다.")
+    void rejectsDeleteFromAnotherAuthor() throws Exception {
+        given(projectCommentService.delete(100L, 501L, 7L))
+                .willThrow(new ForbiddenException(CommonErrorCode.FORBIDDEN));
+
+        mockMvc.perform(delete("/api/v1/projects/100/comments/501")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
     @DisplayName("삭제되었거나 다른 프로젝트의 댓글이면 댓글 수정 요청에 404를 반환한다.")
     void rejectsUnavailableComment() throws Exception {
         given(projectCommentService.update(
@@ -536,6 +611,20 @@ class ProjectCommentHttpApiTest {
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"수정된 댓글\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("삭제되었거나 다른 프로젝트의 댓글이면 댓글 삭제 요청에 404를 반환한다.")
+    void rejectsUnavailableCommentForDelete() throws Exception {
+        given(projectCommentService.delete(100L, 501L, 7L))
+                .willThrow(new EntityNotFoundException(CommentErrorCode.COMMENT_NOT_FOUND));
+
+        mockMvc.perform(delete("/api/v1/projects/100/comments/501")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
     }

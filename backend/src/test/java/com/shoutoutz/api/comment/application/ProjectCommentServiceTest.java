@@ -22,6 +22,7 @@ import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentCreateRe
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentFindRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentDeleteResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentFindResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentFindResponse.Comment;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentUpdateResponse;
@@ -422,6 +423,37 @@ class ProjectCommentServiceTest {
     }
 
     @Test
+    @DisplayName("댓글 작성자 본인이 댓글을 soft delete하고 삭제 상태 응답을 반환한다.")
+    void deletesComment() {
+        givenPublicProject();
+        when(projectCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "삭제할 댓글",
+                NOW,
+                NOW,
+                null
+        )));
+        when(projectCommentRepository.save(any(ProjectComment.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProjectCommentDeleteResponse result = projectCommentService.delete(
+                PROJECT_ID,
+                COMMENT_ID,
+                AUTHOR_ID
+        );
+
+        assertThat(result.id()).isEqualTo(COMMENT_ID);
+        assertThat(result.deleted()).isTrue();
+
+        ArgumentCaptor<ProjectComment> captor = ArgumentCaptor.forClass(ProjectComment.class);
+        verify(projectCommentRepository).save(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(COMMENT_ID);
+        assertThat(captor.getValue().getDeletedAt()).isNotNull();
+        assertThat(captor.getValue().getContent()).isEqualTo("삭제할 댓글");
+    }
+
+    @Test
     @DisplayName("트림 후 기존 내용과 같으면 저장하지 않고 기존 수정 시각을 반환한다.")
     void doesNotUpdateWhenContentIsUnchanged() {
         givenPublicProject();
@@ -539,6 +571,91 @@ class ProjectCommentServiceTest {
 
         verify(projectCommentRepository, never()).save(any());
         verifyNoInteractions(userProfileRepository);
+    }
+
+    @Test
+    @DisplayName("공개 프로젝트가 아니면 댓글을 삭제하지 않고 404를 던진다.")
+    void rejectsDeleteForNonPublicProject() {
+        when(projectRepository.existsPublicById(PROJECT_ID)).thenReturn(false);
+
+        assertThatThrownBy(() -> projectCommentService.delete(
+                PROJECT_ID,
+                COMMENT_ID,
+                AUTHOR_ID
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(PROJECT_NOT_FOUND));
+
+        verifyNoInteractions(projectCommentRepository);
+    }
+
+    @Test
+    @DisplayName("이미 삭제된 댓글은 다시 삭제하지 않고 404를 던진다.")
+    void rejectsAlreadyDeletedComment() {
+        givenPublicProject();
+        when(projectCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "삭제된 댓글",
+                NOW,
+                NOW,
+                NOW
+        )));
+
+        assertThatThrownBy(() -> projectCommentService.delete(
+                PROJECT_ID,
+                COMMENT_ID,
+                AUTHOR_ID
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(COMMENT_NOT_FOUND));
+
+        verify(projectCommentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("다른 프로젝트에 속한 댓글은 삭제하지 않고 404를 던진다.")
+    void rejectsDeleteOfCommentFromDifferentProject() {
+        givenPublicProject();
+        when(projectCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "다른 프로젝트 댓글",
+                NOW,
+                NOW,
+                null,
+                PROJECT_ID + 1
+        )));
+
+        assertThatThrownBy(() -> projectCommentService.delete(
+                PROJECT_ID,
+                COMMENT_ID,
+                AUTHOR_ID
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(COMMENT_NOT_FOUND));
+
+        verify(projectCommentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("댓글 작성자가 아니면 댓글을 삭제하지 않고 403을 던진다.")
+    void rejectsDeleteFromAnotherAuthor() {
+        givenPublicProject();
+        when(projectCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID + 1,
+                "다른 사용자의 댓글",
+                NOW,
+                NOW,
+                null
+        )));
+
+        assertThatThrownBy(() -> projectCommentService.delete(
+                PROJECT_ID,
+                COMMENT_ID,
+                AUTHOR_ID
+        )).isInstanceOfSatisfying(ForbiddenException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(FORBIDDEN));
+
+        verify(projectCommentRepository, never()).save(any());
     }
 
     private void givenPublicProject() {

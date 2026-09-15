@@ -16,6 +16,7 @@ import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -88,6 +89,46 @@ class ProjectCommentRepositoryIntegrationTest {
         assertThat(found.getCreatedAt()).isEqualTo(saved.getCreatedAt());
         assertThat(found.getUpdatedAt()).isEqualTo(updated.getUpdatedAt());
         assertThat(found.getUpdatedAt()).isNotEqualTo(found.getCreatedAt());
+    }
+
+    @Test
+    @DisplayName("프로젝트 댓글을 soft delete하면 삭제·수정 시각을 갱신하고 기존 대댓글을 보존한다")
+    void softDeletesProjectComment() {
+        User author = userRepository.save(User.initialize("comment-delete-" + uniqueSuffix()));
+        Project project = projectRepository.save(
+                project(author.getId()),
+                List.of(),
+                List.of()
+        );
+
+        ProjectComment root = projectCommentRepository.save(
+                ProjectComment.create(project.getId(), author.getId(), null, "삭제할 루트 댓글")
+        );
+        ProjectComment reply = projectCommentRepository.save(
+                ProjectComment.create(project.getId(), author.getId(), root.getId(), "기존 대댓글")
+        );
+
+        ProjectComment deleted = projectCommentRepository.save(root.delete(Instant.now()));
+        ProjectComment found = projectCommentRepository.findById(root.getId()).orElseThrow();
+
+        assertThat(deleted.isDeleted()).isTrue();
+        assertThat(found.isDeleted()).isTrue();
+        assertThat(found.getDeletedAt()).isNotNull();
+        assertThat(found.getContent()).isEqualTo("삭제할 루트 댓글");
+        assertThat(found.getUpdatedAt()).isAfter(root.getUpdatedAt());
+
+        ProjectCommentPage page = projectCommentQueryRepository.findRootCommentsPage(
+                project.getId(),
+                null,
+                ProjectCommentSort.LATEST,
+                10
+        );
+        assertThat(page.comments()).extracting(ProjectComment::getId)
+                .contains(root.getId());
+        assertThat(projectCommentQueryRepository.findReplies(
+                project.getId(),
+                List.of(root.getId())
+        )).extracting(ProjectComment::getId).containsExactly(reply.getId());
     }
 
     @Test
