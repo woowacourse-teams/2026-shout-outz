@@ -37,4 +37,11 @@ describe('FeedCard', () => {
 
     expect(screen.getByText('2시간 전')).toHaveAttribute('datetime', FEED.createdAt);
   });
+
+  it('Markdown 본문은 기호 대신 서식으로 보여준다', () => {
+    render(<FeedCard {...FEED} content="루프 프로젝트에 **Redis Pub/Sub**을 적용했습니다." />);
+
+    expect(screen.getByText('Redis Pub/Sub', { selector: 'strong' })).toBeInTheDocument();
+    expect(screen.queryByText(/\*\*/)).not.toBeInTheDocument();
+  });
 });
