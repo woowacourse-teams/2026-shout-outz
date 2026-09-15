@@ -1,10 +1,37 @@
-/**
- * 홈 페이지. 배너, 통계, 피드, 진행 중 이벤트로 구성한다.
- *
- * 각 섹션은 서로 독립적으로 로딩·실패하도록 섹션마다 Suspense와 ErrorBoundary를 둔다.
- * 한 섹션의 조회가 실패해도 나머지 섹션은 그대로 보여야 한다.
- */
+import { Footer } from '@/components/Footer';
+import { Gnb } from '@/components/Gnb';
+import { HeroBanner, type HeroBannerProps } from '@/components/home/HeroBanner';
+import { HomeEventSection } from '@/components/home/HomeEventSection';
+import { HomeFeedSection } from '@/components/home/HomeFeedSection';
+import { HomeStatistics } from '@/components/home/HomeStatistics';
+
+// TODO 배너 API 명세가 나오면 조회 결과로 대체. 현재는 이미지가 없어 회색 배경과 대체 텍스트만 렌더
+const HERO_BANNER: HeroBannerProps = {
+  thumbnailUrl: '/images/home-banner-thumbnail.webp',
+  originalUrl: '/images/home-banner-original.webp',
+  alt: '금주의 추천 프로젝트',
+  href: '/projects',
+};
+
 export function HomePage() {
-  // TODO 테스트 검토 후 구현
-  return null;
+  return (
+    <div className="bg-background flex min-h-dvh flex-col text-gray-900">
+      <title>shout-outz</title>
+      <Gnb />
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pt-6 pb-12 md:gap-8 md:pt-10 md:pb-20">
+        <HeroBanner {...HERO_BANNER} />
+        <HomeStatistics />
+
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
+          <div className="min-w-0 lg:flex-1">
+            <HomeFeedSection />
+          </div>
+          <div className="lg:w-93 lg:shrink-0">
+            <HomeEventSection />
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
 }
