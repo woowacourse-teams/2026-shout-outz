@@ -1,6 +1,7 @@
 package com.shoutoutz.api.project.domain;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * 프로젝트 목록 카드에 필요한 조회 모델
@@ -16,8 +17,14 @@ public record ProjectSummary(
         Long registeredBy,
         long likeCount,
         long commentCount,
+        List<ProjectTechTag> techTags,
+        List<ProjectMemberProfile> members,
         Instant createdAt
 ) {
+
+    public boolean isArchived() {
+        return registeredBy == null;
+    }
 
     /**
      * 이 프로젝트를 기준으로 다음 페이지를 조회하는 커서
@@ -28,5 +35,22 @@ public record ProjectSummary(
             return ProjectCursor.popular(likeCount, createdAt, id);
         }
         return ProjectCursor.latest(createdAt, id);
+    }
+
+    public ProjectSummary withTechTagsAndMembers(List<ProjectTechTag> techTags, List<ProjectMemberProfile> members) {
+        return new ProjectSummary(
+                id,
+                slug,
+                title,
+                tagline,
+                cohort,
+                thumbnailMediaId,
+                registeredBy,
+                likeCount,
+                commentCount,
+                List.copyOf(techTags),
+                List.copyOf(members),
+                createdAt
+        );
     }
 }

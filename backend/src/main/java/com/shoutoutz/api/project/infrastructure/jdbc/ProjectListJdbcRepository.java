@@ -1,15 +1,20 @@
 package com.shoutoutz.api.project.infrastructure.jdbc;
 
 import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
+import com.shoutoutz.api.project.domain.ProjectTechTag;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -122,6 +127,7 @@ public class ProjectListJdbcRepository {
             """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final ProjectTechTagAndMemberJdbcRepository techTagAndMemberJdbcRepository;
 
     public ProjectPage findAll(ProjectSearchCondition condition) {
         MapSqlParameterSource parameters = new MapSqlParameterSource();
@@ -141,7 +147,34 @@ public class ProjectListJdbcRepository {
         // 다음 페이지가 있는지 알기 위해 한 개를 더 조회하고, 응답에서는 뺀다.
         boolean hasNext = fetched.size() > condition.size();
         List<ProjectSummary> items = hasNext ? fetched.subList(0, condition.size()) : fetched;
-        return new ProjectPage(items, hasNext, totalCount == null ? 0 : totalCount);
+        return new ProjectPage(withTechTagsAndMembers(items), hasNext, totalCount == null ? 0 : totalCount);
+    }
+
+    /**
+     * 한 페이지 카드의 기술 스택과 팀원을 카드 수와 상관없이 한 번에 조회해 붙인다.
+     * 이관 프로젝트는 이관 팀원 테이블에서, 새로 등록된 프로젝트는 팀원 테이블에서 조회한다.
+     */
+    private List<ProjectSummary> withTechTagsAndMembers(List<ProjectSummary> projects) {
+        if (projects.isEmpty()) {
+            return projects;
+        }
+        Map<Long, List<ProjectTechTag>> techTags = techTagAndMemberJdbcRepository.findTechTags(
+                projects.stream().map(ProjectSummary::id).toList());
+        Map<Long, List<ProjectMemberProfile>> members = new HashMap<>();
+        members.putAll(techTagAndMemberJdbcRepository.findMembers(projects.stream()
+                .filter(project -> !project.isArchived())
+                .map(ProjectSummary::id)
+                .toList()));
+        members.putAll(techTagAndMemberJdbcRepository.findArchivedMembers(projects.stream()
+                .filter(ProjectSummary::isArchived)
+                .collect(Collectors.toMap(ProjectSummary::id, ProjectSummary::cohort))));
+
+        return projects.stream()
+                .map(project -> project.withTechTagsAndMembers(
+                        techTags.getOrDefault(project.id(), List.of()),
+                        members.getOrDefault(project.id(), List.of())
+                ))
+                .toList();
     }
 
     /**
@@ -210,6 +243,8 @@ public class ProjectListJdbcRepository {
                 resultSet.getObject("registered_by", Long.class),
                 resultSet.getLong("like_count"),
                 resultSet.getLong("comment_count"),
+                List.of(),
+                List.of(),
                 resultSet.getObject("created_at", OffsetDateTime.class).toInstant()
         );
     }

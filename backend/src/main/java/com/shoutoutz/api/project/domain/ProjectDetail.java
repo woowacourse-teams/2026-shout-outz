@@ -28,8 +28,8 @@ public record ProjectDetail(
         boolean likedByMe,
         boolean bookmarkedByMe,
         long commentCount,
-        List<TechTag> techTags,
-        List<Member> members,
+        List<ProjectTechTag> techTags,
+        List<ProjectMemberProfile> members,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -50,7 +50,7 @@ public record ProjectDetail(
                 || (registeredBy != null && registeredBy.equals(viewerId));
     }
 
-    public ProjectDetail withTechTagsAndMembers(List<TechTag> techTags, List<Member> members) {
+    public ProjectDetail withTechTagsAndMembers(List<ProjectTechTag> techTags, List<ProjectMemberProfile> members) {
         return new ProjectDetail(
                 id,
                 slug,
@@ -78,56 +78,5 @@ public record ProjectDetail(
                 createdAt,
                 updatedAt
         );
-    }
-
-    public record TechTag(long id, String displayName) {
-    }
-
-    /**
-     * 팀원 조회 모델
-     * 가입한 사용자는 avatarImageId, 가입하지 않은 이관 팀원은 githubAvatarUrl과 githubProfileUrl을 가진다.
-     */
-    public record Member(
-            Long userId,
-            String handle,
-            String displayName,
-            Integer cohort,
-            String track,
-            Long avatarImageId,
-            String githubAvatarUrl,
-            String githubProfileUrl
-    ) {
-
-        private static final String WITHDRAWN_DISPLAY_NAME = "탈퇴한 사용자";
-
-        public static Member user(
-                long userId,
-                String handle,
-                String displayName,
-                Integer cohort,
-                String track,
-                Long avatarImageId
-        ) {
-            return new Member(userId, handle, displayName, cohort, track, avatarImageId, null, null);
-        }
-
-        /**
-         * 탈퇴한 사용자는 사용자 프로필 조회와 같이 식별자만 남기고, 개인정보를 숨긴다.
-         */
-        public static Member withdrawn(long userId, String handle) {
-            return new Member(userId, handle, WITHDRAWN_DISPLAY_NAME, null, null, null, null, null);
-        }
-
-        /**
-         * 가입하지 않은 이관 팀원은 GitHub 정보로 보여주고, 기수는 프로젝트 기수로 채운다.
-         */
-        public static Member archived(
-                String displayName,
-                int cohort,
-                String githubAvatarUrl,
-                String githubProfileUrl
-        ) {
-            return new Member(null, null, displayName, cohort, null, null, githubAvatarUrl, githubProfileUrl);
-        }
     }
 }

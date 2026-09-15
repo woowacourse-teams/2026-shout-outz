@@ -17,6 +17,9 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
         );
     }
 
+    /**
+     * 기술 스택과 팀원은 전체 목록을 등록 순서대로 내려준다. 카드에 몇 개까지 보여줄지는 화면에서 정한다.
+     */
     public record Item(
             long id,
             String slug,
@@ -25,7 +28,9 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
             int cohort,
             Long thumbnailMediaId,
             long likeCount,
-            long commentCount
+            long commentCount,
+            List<ProjectTechTagResponse> techTags,
+            List<ProjectMemberProfileResponse> members
     ) {
 
         private static Item from(ProjectSummary summary) {
@@ -37,7 +42,9 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
                     summary.cohort(),
                     summary.thumbnailMediaId(),
                     summary.likeCount(),
-                    summary.commentCount()
+                    summary.commentCount(),
+                    summary.techTags().stream().map(ProjectTechTagResponse::from).toList(),
+                    summary.members().stream().map(ProjectMemberProfileResponse::from).toList()
             );
         }
     }
