@@ -1889,7 +1889,7 @@ paths:
                 user-public-profile-get-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\"}"
-  /api/v1/projects/100/comments:
+  /api/v1/projects/{projectId}/comments:
     get:
       tags:
       - Project Comment
@@ -1898,6 +1898,12 @@ paths:
         뒤에 대댓글을 반환한다.
       operationId: project-comment-find-all
       parameters:
+      - name: projectId
+        in: path
+        description: 댓글을 조회할 프로젝트 ID
+        required: true
+        schema:
+          type: string
       - name: cursor
         in: query
         description: 다음 페이지 조회에 사용하는 opaque cursor
@@ -1942,6 +1948,12 @@ paths:
       description: 로그인 사용자가 공개 프로젝트에 댓글 또는 1단계 대댓글을 작성한다.
       operationId: project-comment-create
       parameters:
+      - name: projectId
+        in: path
+        description: 댓글을 작성할 프로젝트 ID
+        required: true
+        schema:
+          type: string
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
@@ -2039,7 +2051,7 @@ paths:
                 user-profile-summary-get:
                   value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
                     ,\"displayName\":\"재키\",\"avatarImageId\":21}}"
-  /api/v1/projects/100/comments/501:
+  /api/v1/projects/{projectId}/comments/{commentId}:
     delete:
       tags:
       - Project Comment
@@ -2047,6 +2059,18 @@ paths:
       description: 댓글 작성자 본인이 공개 프로젝트의 댓글을 soft delete한다.
       operationId: project-comment-delete
       parameters:
+      - name: projectId
+        in: path
+        description: 댓글이 속한 프로젝트 ID
+        required: true
+        schema:
+          type: string
+      - name: commentId
+        in: path
+        description: 삭제할 댓글 ID
+        required: true
+        schema:
+          type: string
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
@@ -2073,6 +2097,18 @@ paths:
         수정 시각을 유지한다.
       operationId: project-comment-update
       parameters:
+      - name: projectId
+        in: path
+        description: 댓글이 속한 프로젝트 ID
+        required: true
+        schema:
+          type: string
+      - name: commentId
+        in: path
+        description: 수정할 댓글 ID
+        required: true
+        schema:
+          type: string
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
