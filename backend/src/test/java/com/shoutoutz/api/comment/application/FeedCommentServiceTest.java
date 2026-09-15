@@ -2,6 +2,7 @@ package com.shoutoutz.api.comment.application;
 
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_DEPTH_EXCEEDED;
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_NOT_FOUND;
+import static com.shoutoutz.api.comment.domain.CommentErrorCode.MISMATCHED_COMMENT_SORT_AND_CURSOR_SORT;
 import static com.shoutoutz.api.common.exception.code.CommonErrorCode.FORBIDDEN;
 import static com.shoutoutz.api.feed.domain.FeedErrorCode.FEED_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,21 +13,29 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.shoutoutz.api.comment.application.dto.FeedCommentCursor;
+import com.shoutoutz.api.comment.application.dto.FeedCommentPage;
 import com.shoutoutz.api.comment.domain.FeedComment;
 import com.shoutoutz.api.comment.domain.FeedCommentRepository;
+import com.shoutoutz.api.comment.domain.FeedCommentSort;
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentCreateRequest;
+import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentFindRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentFindResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentFindResponse.Comment;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentUpdateResponse;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +62,9 @@ class FeedCommentServiceTest {
     private FeedCommentRepository feedCommentRepository;
 
     @Mock
+    private FeedCommentQueryRepository feedCommentQueryRepository;
+
+    @Mock
     private UserProfileRepository userProfileRepository;
 
     private FeedCommentService feedCommentService;
@@ -62,6 +74,7 @@ class FeedCommentServiceTest {
         feedCommentService = new FeedCommentService(
                 feedRepository,
                 feedCommentRepository,
+                feedCommentQueryRepository,
                 userProfileRepository
         );
     }
@@ -118,6 +131,149 @@ class FeedCommentServiceTest {
         verify(feedCommentRepository).save(captor.capture());
         assertThat(captor.getValue().getFeedId()).isEqualTo(FEED_ID);
         assertThat(captor.getValue().getParentId()).isEqualTo(PARENT_ID);
+    }
+
+    @Test
+    @DisplayName("비로그인 사용자는 댓글 목록을 조회하고 삭제된 댓글의 원문은 받지 않는다.")
+    void findsCommentsForAnonymousUser() {
+        givenActiveFeed();
+        FeedComment root = comment(COMMENT_ID, AUTHOR_ID, "루트 댓글", NOW, NOW, null);
+        FeedComment reply = FeedComment.reconstitute(
+                502L,
+                FEED_ID,
+                AUTHOR_ID + 1,
+                COMMENT_ID,
+                "대댓글",
+                NOW.plusSeconds(60),
+                NOW.plusSeconds(60),
+                null
+        );
+        FeedComment deletedRoot = FeedComment.reconstitute(
+                503L,
+                FEED_ID,
+                AUTHOR_ID,
+                null,
+                "삭제된 원문",
+                NOW.plusSeconds(120),
+                NOW.plusSeconds(120),
+                NOW.plusSeconds(180)
+        );
+        when(feedCommentQueryRepository.findRootCommentsPage(
+                FEED_ID,
+                null,
+                FeedCommentSort.LATEST,
+                5
+        )).thenReturn(new FeedCommentPage(List.of(root, deletedRoot), false));
+        when(feedCommentQueryRepository.findReplies(FEED_ID, List.of(COMMENT_ID, 503L)))
+                .thenReturn(List.of(reply));
+        givenAuthor(AUTHOR_ID, "작성자", 10L);
+        givenAuthor(AUTHOR_ID + 1, "답글 작성자", 11L);
+
+        FeedCommentFindResponse result = feedCommentService.findAll(
+                FEED_ID,
+                new FeedCommentFindRequest(null, 5, "LATEST"),
+                null
+        );
+
+        assertThat(result.comments()).extracting(Comment::id)
+                .containsExactly(COMMENT_ID, 502L, 503L);
+        assertThat(result.comments().get(0).content()).isEqualTo("루트 댓글");
+        assertThat(result.comments().get(0).editable()).isFalse();
+        assertThat(result.comments().get(1).parentId()).isEqualTo(COMMENT_ID);
+        assertThat(result.comments().get(2).content()).isNull();
+        assertThat(result.comments().get(2).deleted()).isTrue();
+        assertThat(result.comments().get(2).editable()).isFalse();
+        assertThat(result.meta().nextCursor()).isNull();
+        assertThat(result.meta().hasNext()).isFalse();
+    }
+
+    @Test
+    @DisplayName("로그인 사용자는 본인 댓글만 수정 가능 상태로 조회한다.")
+    void marksOnlyLoggedInUsersCommentsAsEditable() {
+        givenActiveFeed();
+        FeedComment ownComment = comment(COMMENT_ID, AUTHOR_ID, "내 댓글", NOW, NOW, null);
+        FeedComment otherComment = comment(502L, AUTHOR_ID + 1, "다른 댓글",
+                NOW.plusSeconds(1), NOW.plusSeconds(1), null);
+        when(feedCommentQueryRepository.findRootCommentsPage(
+                FEED_ID,
+                null,
+                FeedCommentSort.LATEST,
+                5
+        )).thenReturn(new FeedCommentPage(List.of(ownComment, otherComment), false));
+        when(feedCommentQueryRepository.findReplies(FEED_ID, List.of(COMMENT_ID, 502L)))
+                .thenReturn(List.of());
+        givenAuthor(AUTHOR_ID, "내 이름", 10L);
+        givenAuthor(AUTHOR_ID + 1, "다른 이름", 11L);
+
+        FeedCommentFindResponse result = feedCommentService.findAll(
+                FEED_ID,
+                new FeedCommentFindRequest(null, 5, "LATEST"),
+                AUTHOR_ID
+        );
+
+        assertThat(result.comments()).extracting(Comment::editable)
+                .containsExactly(true, false);
+    }
+
+    @Test
+    @DisplayName("다음 페이지가 있으면 마지막 루트 댓글 기준 커서를 반환한다.")
+    void createsNextCursorFromLastRootComment() {
+        givenActiveFeed();
+        FeedComment root = comment(COMMENT_ID, AUTHOR_ID, "첫 번째 댓글", NOW, NOW, null);
+        when(feedCommentQueryRepository.findRootCommentsPage(
+                FEED_ID,
+                null,
+                FeedCommentSort.OLDEST,
+                1
+        )).thenReturn(new FeedCommentPage(List.of(root), true));
+        when(feedCommentQueryRepository.findReplies(FEED_ID, List.of(COMMENT_ID)))
+                .thenReturn(List.of());
+        givenAuthor();
+
+        FeedCommentFindResponse result = feedCommentService.findAll(
+                FEED_ID,
+                new FeedCommentFindRequest(null, 1, "OLDEST"),
+                null
+        );
+
+        assertThat(result.meta().hasNext()).isTrue();
+        assertThat(FeedCommentCursorCodec.decode(result.meta().nextCursor()))
+                .isEqualTo(new FeedCommentCursor(NOW, COMMENT_ID, FeedCommentSort.OLDEST));
+    }
+
+    @Test
+    @DisplayName("커서의 정렬 기준이 요청 정렬 기준과 다르면 조회하지 않고 400을 던진다.")
+    void rejectsCursorWithDifferentSort() {
+        givenActiveFeed();
+        String cursor = FeedCommentCursorCodec.encode(
+                new FeedCommentCursor(NOW, COMMENT_ID, FeedCommentSort.LATEST)
+        );
+
+        assertThatThrownBy(() -> feedCommentService.findAll(
+                FEED_ID,
+                new FeedCommentFindRequest(cursor, 5, "OLDEST"),
+                null
+        )).isInstanceOfSatisfying(InvalidInputException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(
+                        MISMATCHED_COMMENT_SORT_AND_CURSOR_SORT
+                ));
+
+        verifyNoInteractions(feedCommentQueryRepository, userProfileRepository);
+    }
+
+    @Test
+    @DisplayName("존재하지 않거나 삭제된 피드면 댓글 목록을 조회하지 않고 404를 던진다.")
+    void rejectsFindAllForInactiveFeed() {
+        when(feedRepository.findActiveById(FEED_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> feedCommentService.findAll(
+                FEED_ID,
+                new FeedCommentFindRequest(null, 5, "LATEST"),
+                null
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(FEED_NOT_FOUND));
+
+        verifyNoInteractions(feedCommentRepository, feedCommentQueryRepository, userProfileRepository);
     }
 
     @Test
@@ -394,12 +550,16 @@ class FeedCommentServiceTest {
     }
 
     private void givenAuthor() {
-        when(userProfileRepository.findByUserId(AUTHOR_ID)).thenReturn(Optional.of(
+        givenAuthor(AUTHOR_ID, "샤라웃 운영팀", 10L);
+    }
+
+    private void givenAuthor(long userId, String displayName, long avatarImageId) {
+        when(userProfileRepository.findByUserId(userId)).thenReturn(Optional.of(
                 UserProfile.builder()
-                        .userId(AUTHOR_ID)
-                        .displayName("샤라웃 운영팀")
+                        .userId(userId)
+                        .displayName(displayName)
                         .userType(UserType.GENERAL)
-                        .avatarImageId(10L)
+                        .avatarImageId(avatarImageId)
                         .build()
         ));
     }

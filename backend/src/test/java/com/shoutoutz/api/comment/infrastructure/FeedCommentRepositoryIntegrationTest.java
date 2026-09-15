@@ -2,13 +2,18 @@ package com.shoutoutz.api.comment.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.shoutoutz.api.comment.application.FeedCommentQueryRepository;
+import com.shoutoutz.api.comment.application.dto.FeedCommentCursor;
+import com.shoutoutz.api.comment.application.dto.FeedCommentPage;
 import com.shoutoutz.api.comment.domain.FeedComment;
 import com.shoutoutz.api.comment.domain.FeedCommentRepository;
+import com.shoutoutz.api.comment.domain.FeedCommentSort;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +31,9 @@ class FeedCommentRepositoryIntegrationTest {
 
     @Autowired
     private FeedCommentRepository feedCommentRepository;
+
+    @Autowired
+    private FeedCommentQueryRepository feedCommentQueryRepository;
 
     @Autowired
     private FeedRepository feedRepository;
@@ -89,6 +97,58 @@ class FeedCommentRepositoryIntegrationTest {
         assertThat(found.getCreatedAt()).isEqualTo(saved.getCreatedAt());
         assertThat(found.getUpdatedAt()).isEqualTo(updated.getUpdatedAt());
         assertThat(found.getUpdatedAt()).isNotEqualTo(found.getCreatedAt());
+    }
+
+    @Test
+    @DisplayName("루트 댓글을 정렬 기준과 크기에 따라 조회하고 대댓글을 부모 ID로 조회한다")
+    void findsRootPageAndReplies() {
+        User author = userRepository.save(User.initialize("feed-list-" + uniqueSuffix()));
+        Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 본문", NOW));
+        FeedComment firstRoot = feedCommentRepository.save(
+                FeedComment.create(feed.getId(), author.getId(), null, "첫 번째 루트")
+        );
+        FeedComment reply = feedCommentRepository.save(
+                FeedComment.create(feed.getId(), author.getId(), firstRoot.getId(), "첫 번째 대댓글")
+        );
+        FeedComment secondRoot = feedCommentRepository.save(
+                FeedComment.create(feed.getId(), author.getId(), null, "두 번째 루트")
+        );
+
+        FeedCommentPage page = feedCommentQueryRepository.findRootCommentsPage(
+                feed.getId(),
+                null,
+                FeedCommentSort.LATEST,
+                1
+        );
+
+        assertThat(page.comments()).hasSize(1);
+        assertThat(page.comments().getFirst().getId()).isEqualTo(secondRoot.getId());
+        assertThat(page.hasNext()).isTrue();
+
+        FeedCommentPage nextPage = feedCommentQueryRepository.findRootCommentsPage(
+                feed.getId(),
+                new FeedCommentCursor(
+                        page.comments().getFirst().getCreatedAt(),
+                        page.comments().getFirst().getId(),
+                        FeedCommentSort.LATEST
+                ),
+                FeedCommentSort.LATEST,
+                1
+        );
+        assertThat(nextPage.comments()).extracting(FeedComment::getId)
+                .containsExactly(firstRoot.getId());
+
+        FeedCommentPage oldestPage = feedCommentQueryRepository.findRootCommentsPage(
+                feed.getId(),
+                null,
+                FeedCommentSort.OLDEST,
+                1
+        );
+        assertThat(oldestPage.comments().getFirst().getId()).isEqualTo(firstRoot.getId());
+        assertThat(feedCommentQueryRepository.findReplies(
+                feed.getId(),
+                List.of(firstRoot.getId())
+        )).extracting(FeedComment::getId).containsExactly(reply.getId());
     }
 
     private static String uniqueSuffix() {

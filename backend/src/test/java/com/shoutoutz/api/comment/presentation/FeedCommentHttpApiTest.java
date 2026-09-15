@@ -8,12 +8,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -25,8 +27,11 @@ import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.comment.application.FeedCommentService;
 import com.shoutoutz.api.comment.domain.CommentErrorCode;
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentCreateRequest;
+import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentFindRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentFindResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentFindResponse.Comment;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentUpdateResponse;
 import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
@@ -34,6 +39,7 @@ import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Instant;
+import java.util.List;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,6 +61,178 @@ class FeedCommentHttpApiTest {
 
     @MockitoBean
     private FeedCommentService feedCommentService;
+
+    @Test
+    @DisplayName("비로그인 사용자가 댓글 목록을 조회하면 댓글 목록과 페이지 정보를 반환한다.")
+    void findsCommentsForAnonymousUser() throws Exception {
+        given(feedCommentService.findAll(
+                eq(100L),
+                any(FeedCommentFindRequest.class),
+                org.mockito.ArgumentMatchers.isNull()
+        )).willReturn(new FeedCommentFindResponse(
+                List.of(
+                        new Comment(
+                                501L,
+                                "좋은 피드네요.",
+                                new FeedCommentFindResponse.Author(7L, "샤라웃 운영팀", 10L),
+                                null,
+                                Instant.parse("2026-09-14T00:00:00Z"),
+                                Instant.parse("2026-09-14T00:00:00Z"),
+                                false,
+                                false,
+                                false
+                        ),
+                        new Comment(
+                                502L,
+                                "저도 그렇게 생각합니다.",
+                                new FeedCommentFindResponse.Author(8L, "재키", 11L),
+                                501L,
+                                Instant.parse("2026-09-14T00:05:00Z"),
+                                Instant.parse("2026-09-14T00:05:00Z"),
+                                false,
+                                false,
+                                false
+                        ),
+                        new Comment(
+                                503L,
+                                null,
+                                new FeedCommentFindResponse.Author(9L, "이전 작성자", 12L),
+                                null,
+                                Instant.parse("2026-09-14T00:10:00Z"),
+                                Instant.parse("2026-09-14T00:10:00Z"),
+                                false,
+                                false,
+                                true
+                        )
+                ),
+                new FeedCommentFindResponse.Meta("next-cursor", true)
+        ));
+
+        mockMvc.perform(get("/api/v1/feeds/{feedId}/comments", 100L)
+                        .queryParam("size", "5")
+                        .queryParam("sort", "LATEST"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[0].id").value(501))
+                .andExpect(jsonPath("$.data[0].author.userId").value(7))
+                .andExpect(jsonPath("$.data[0].editable").value(false))
+                .andExpect(jsonPath("$.data[0].edited").value(false))
+                .andExpect(jsonPath("$.data[0].deleted").value(false))
+                .andExpect(jsonPath("$.data[1].parentId").value(501))
+                .andExpect(jsonPath("$.data[2].content").value(Matchers.nullValue()))
+                .andExpect(jsonPath("$.data[2].deleted").value(true))
+                .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
+                .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andDo(document(
+                        "feed-comment-find-all",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Feed Comment")
+                                .summary("피드 댓글 목록 조회")
+                                .description("비로그인 또는 로그인 사용자가 활성 피드의 댓글 목록을 조회한다. "
+                                        + "size는 루트 댓글 개수이며 각 루트 댓글 뒤에 대댓글을 반환한다.")
+                                .pathParameters(
+                                        parameterWithName("feedId").description("댓글을 조회할 피드 ID")
+                                )
+                                .queryParameters(
+                                        parameterWithName("cursor")
+                                                .description("다음 페이지 조회에 사용하는 opaque cursor")
+                                                .optional(),
+                                        parameterWithName("size")
+                                                .description("조회할 루트 댓글 개수. 기본값 5, 1~50")
+                                                .optional(),
+                                        parameterWithName("sort")
+                                                .description("루트 댓글 정렬 기준(LATEST 또는 OLDEST). 기본값 LATEST")
+                                                .optional()
+                                )
+                                .responseSchema(Schema.schema("FeedCommentFindAllSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(ARRAY).description("피드 댓글 목록"),
+                                        fieldWithPath("data[].id").type(NUMBER).description("댓글 ID"),
+                                        fieldWithPath("data[].content").type(STRING)
+                                                .description("댓글 내용. 삭제된 댓글은 null")
+                                                .optional(),
+                                        fieldWithPath("data[].author").type(OBJECT).description("댓글 작성자"),
+                                        fieldWithPath("data[].author.userId").type(NUMBER).description("작성자 ID"),
+                                        fieldWithPath("data[].author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data[].author.avatarImageId").type(NUMBER)
+                                                .description("작성자 프로필 이미지 ID")
+                                                .optional(),
+                                        fieldWithPath("data[].parentId").type(NUMBER)
+                                                .description("부모 루트 댓글 ID")
+                                                .optional(),
+                                        fieldWithPath("data[].createdAt").type(STRING)
+                                                .description("생성 시각 (UTC ISO-8601)"),
+                                        fieldWithPath("data[].updatedAt").type(STRING)
+                                                .description("수정 시각 (UTC ISO-8601)"),
+                                        fieldWithPath("data[].editable").type(BOOLEAN)
+                                                .description("현재 사용자가 수정할 수 있는지 여부"),
+                                        fieldWithPath("data[].edited").type(BOOLEAN)
+                                                .description("댓글 내용이 수정된 적이 있는지 여부"),
+                                        fieldWithPath("data[].deleted").type(BOOLEAN)
+                                                .description("댓글이 삭제되었는지 여부"),
+                                        fieldWithPath("meta.nextCursor").type(STRING)
+                                                .description("다음 페이지 cursor")
+                                                .optional(),
+                                        fieldWithPath("meta.hasNext").type(BOOLEAN)
+                                                .description("다음 페이지 존재 여부")
+                                )
+                                .build())
+                ));
+
+        verify(feedCommentService).findAll(
+                eq(100L),
+                any(FeedCommentFindRequest.class),
+                org.mockito.ArgumentMatchers.isNull()
+        );
+    }
+
+    @Test
+    @DisplayName("로그인 세션이 있으면 댓글 작성자 본인의 댓글만 editable로 반환한다.")
+    void passesOptionalLoginUserToService() throws Exception {
+        given(feedCommentService.findAll(
+                eq(100L),
+                any(FeedCommentFindRequest.class),
+                eq(7L)
+        )).willReturn(new FeedCommentFindResponse(
+                List.of(new Comment(
+                        501L,
+                        "내 댓글",
+                        new FeedCommentFindResponse.Author(7L, "샤라웃 운영팀", 10L),
+                        null,
+                        Instant.parse("2026-09-14T00:00:00Z"),
+                        Instant.parse("2026-09-14T00:00:00Z"),
+                        true,
+                        false,
+                        false
+                )),
+                new FeedCommentFindResponse.Meta(null, false)
+        ));
+
+        mockMvc.perform(get("/api/v1/feeds/{feedId}/comments", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(7L, UserRole.USER)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].editable").value(true));
+
+        verify(feedCommentService).findAll(
+                eq(100L),
+                any(FeedCommentFindRequest.class),
+                eq(7L)
+        );
+    }
+
+    @Test
+    @DisplayName("댓글 목록 조회 크기가 범위를 벗어나면 서비스를 호출하지 않고 400을 반환한다.")
+    void rejectsInvalidFindSize() throws Exception {
+        mockMvc.perform(get("/api/v1/feeds/{feedId}/comments", 100L)
+                        .queryParam("size", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(CommentErrorCode.INVALID_COMMENT_SIZE.name()));
+
+        verifyNoInteractions(feedCommentService);
+    }
 
     @Test
     @DisplayName("활성 피드에 댓글을 작성하면 201과 작성자 정보를 포함한 댓글을 반환한다.")
