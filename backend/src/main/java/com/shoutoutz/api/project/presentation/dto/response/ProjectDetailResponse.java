@@ -31,8 +31,8 @@ public record ProjectDetailResponse(
         boolean likedByMe,
         boolean bookmarkedByMe,
         long commentCount,
-        List<TechTag> techTags,
-        List<Member> members,
+        List<ProjectTechTagResponse> techTags,
+        List<ProjectMemberProfileResponse> members,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -60,45 +60,10 @@ public record ProjectDetailResponse(
                 detail.likedByMe(),
                 detail.bookmarkedByMe(),
                 detail.commentCount(),
-                detail.techTags().stream().map(TechTag::from).toList(),
-                detail.members().stream().map(Member::from).toList(),
+                detail.techTags().stream().map(ProjectTechTagResponse::from).toList(),
+                detail.members().stream().map(ProjectMemberProfileResponse::from).toList(),
                 detail.createdAt(),
                 detail.updatedAt()
         );
-    }
-
-    public record TechTag(long id, String displayName) {
-
-        private static TechTag from(ProjectDetail.TechTag techTag) {
-            return new TechTag(techTag.id(), techTag.displayName());
-        }
-    }
-
-    /**
-     * 가입한 사용자는 avatarImageId, 가입하지 않은 이관 팀원은 githubAvatarUrl과 githubProfileUrl을 가진다.
-     */
-    public record Member(
-            Long userId,
-            String handle,
-            String displayName,
-            Integer cohort,
-            String track,
-            Long avatarImageId,
-            String githubAvatarUrl,
-            String githubProfileUrl
-    ) {
-
-        private static Member from(ProjectDetail.Member member) {
-            return new Member(
-                    member.userId(),
-                    member.handle(),
-                    member.displayName(),
-                    member.cohort(),
-                    member.track(),
-                    member.avatarImageId(),
-                    member.githubAvatarUrl(),
-                    member.githubProfileUrl()
-            );
-        }
     }
 }

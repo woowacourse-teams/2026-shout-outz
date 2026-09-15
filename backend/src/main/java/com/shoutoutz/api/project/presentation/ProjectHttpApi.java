@@ -5,13 +5,17 @@ import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,6 +36,14 @@ public class ProjectHttpApi {
     ) {
         ProjectCreateResponse response = projectService.create(loginUser.userId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(SuccessResponse.success(response));
+    }
+
+    @GetMapping
+    public ResponseEntity<SuccessResponse<List<ProjectFindAllResponse.Item>>> findAll(
+            @Valid @ModelAttribute ProjectFindAllRequest request
+    ) {
+        ProjectFindAllResponse response = projectService.findAll(request);
+        return ResponseEntity.ok(SuccessResponse.success(response.items(), response.meta()));
     }
 
     /**

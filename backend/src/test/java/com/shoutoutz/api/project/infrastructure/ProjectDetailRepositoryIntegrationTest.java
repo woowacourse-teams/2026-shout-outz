@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.ProjectDetail;
-import com.shoutoutz.api.project.domain.ProjectDetail.Member;
-import com.shoutoutz.api.project.domain.ProjectDetail.TechTag;
+import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -62,11 +62,11 @@ class ProjectDetailRepositoryIntegrationTest {
         assertThat(detail.starCount()).isEqualTo(128);
         assertThat(detail.createdAt()).isNotNull();
         assertThat(detail.techTags())
-                .extracting(TechTag::id)
+                .extracting(ProjectTechTag::id)
                 .containsExactly(react, typeScript);
         assertThat(detail.members()).containsExactly(
-                Member.user(registrant.getId(), registrant.getHandle().value(), "정우진", 6, "BE", avatarImageId),
-                Member.user(member.getId(), member.getHandle().value(), "김도현", 6, "FE", null)
+                ProjectMemberProfile.user(registrant.getId(), registrant.getHandle().value(), "정우진", 6, "BE", avatarImageId),
+                ProjectMemberProfile.user(member.getId(), member.getHandle().value(), "김도현", 6, "FE", null)
         );
     }
 
@@ -143,9 +143,9 @@ class ProjectDetailRepositoryIntegrationTest {
         ProjectDetail detail = projectRepository.findDetailById(projectId, null).orElseThrow();
 
         assertThat(detail.members()).containsExactly(
-                Member.user(registrant.getId(), registrant.getHandle().value(), "정우진", 6, "BE", null),
-                Member.withdrawn(gracePeriodMember.getId(), gracePeriodMember.getHandle().value()),
-                Member.withdrawn(purgedMember.getId(), purgedMember.getHandle().value())
+                ProjectMemberProfile.user(registrant.getId(), registrant.getHandle().value(), "정우진", 6, "BE", null),
+                ProjectMemberProfile.withdrawn(gracePeriodMember.getId(), gracePeriodMember.getHandle().value()),
+                ProjectMemberProfile.withdrawn(purgedMember.getId(), purgedMember.getHandle().value())
         );
     }
 
@@ -167,10 +167,10 @@ class ProjectDetailRepositoryIntegrationTest {
 
         assertThat(detail.isArchived()).isTrue();
         assertThat(detail.members()).containsExactly(
-                Member.archived("Jihoon Kim", 7, avatarUrl("jihoon-kim"), profileUrl("jihoon-kim")),
-                Member.archived("noname-dev", 7, avatarUrl("noname-dev"), profileUrl("noname-dev")),
-                Member.user(matchedMember.getId(), matchedMember.getHandle().value(), "이서연", 7, "FE", null),
-                Member.withdrawn(withdrawnMember.getId(), withdrawnMember.getHandle().value())
+                ProjectMemberProfile.archived("Jihoon Kim", 7, avatarUrl("jihoon-kim"), profileUrl("jihoon-kim")),
+                ProjectMemberProfile.archived("noname-dev", 7, avatarUrl("noname-dev"), profileUrl("noname-dev")),
+                ProjectMemberProfile.user(matchedMember.getId(), matchedMember.getHandle().value(), "이서연", 7, "FE", null),
+                ProjectMemberProfile.withdrawn(withdrawnMember.getId(), withdrawnMember.getHandle().value())
         );
     }
 

@@ -233,6 +233,114 @@ class ProjectAcceptanceTest {
         assertThat(response.jsonPath().getBoolean("data.bookmarkedByMe")).isFalse();
     }
 
+    @Test
+    @DisplayName("비로그인 사용자가 승인된 프로젝트 목록을 검색어, 기술 스택, 기수로 걸러 조회하면 카드와 전체 개수를 반환한다.")
+    void findsApprovedProjectsWithSearchAndFilters() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        String token = uniqueToken();
+        List<Long> reactAndJava = techTagIds("react", "java");
+        long reactJavaProject = registerProject(author, teammate, token + " 리액트 자바", 6, reactAndJava);
+        long javaProject = registerProject(author, teammate, token + " 자바", 7, techTagIds("java"));
+        registerProject(author, teammate, token + " 승인 대기", 6, techTagIds("java"));
+        approve(reactJavaProject);
+        approve(javaProject);
+
+        Response all = findAll(Map.of("keyword", token));
+        Response byTechTags = findAll(Map.of("keyword", token, "techTagIds", joinIds(reactAndJava)));
+        Response byCohort = findAll(Map.of("keyword", token, "cohorts", "7"));
+
+        assertThat(all.statusCode()).as(all.asString()).isEqualTo(200);
+        assertThat(all.jsonPath().getList("data.id", Long.class)).containsExactly(javaProject, reactJavaProject);
+        assertThat(all.jsonPath().getLong("meta.totalCount")).isEqualTo(2);
+        assertThat(all.jsonPath().getBoolean("meta.hasNext")).isFalse();
+        assertThat(all.jsonPath().getString("meta.nextCursor")).isNull();
+        assertThat(all.jsonPath().getList("data[1].techTags.id", Long.class)).containsExactlyElementsOf(reactAndJava);
+        assertThat(all.jsonPath().getList("data[1].members.userId", Long.class))
+                .containsExactly(author.userId(), teammate.userId());
+        assertThat(byTechTags.jsonPath().getList("data.id", Long.class)).containsExactly(reactJavaProject);
+        assertThat(byCohort.jsonPath().getList("data.id", Long.class)).containsExactly(javaProject);
+    }
+
+    @Test
+    @DisplayName("커서로 다음 페이지를 이어서 조회하면 중복 없이 끝까지 조회하고, 마지막 페이지에는 다음 커서가 없다.")
+    void paginatesProjectsWithCursor() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        String token = uniqueToken();
+        long oldest = registerProject(author, teammate, token + " 첫 번째", 6, techTagIds("java"));
+        long middle = registerProject(author, teammate, token + " 두 번째", 6, techTagIds("java"));
+        long newest = registerProject(author, teammate, token + " 세 번째", 6, techTagIds("java"));
+        List.of(oldest, middle, newest).forEach(this::approve);
+
+        Response firstPage = findAll(Map.of("keyword", token, "size", 2));
+        Response lastPage = findAll(Map.of(
+                "keyword", token, "size", 2, "cursor", firstPage.jsonPath().getString("meta.nextCursor")));
+
+        assertThat(firstPage.jsonPath().getList("data.id", Long.class)).containsExactly(newest, middle);
+        assertThat(firstPage.jsonPath().getBoolean("meta.hasNext")).isTrue();
+        assertThat(firstPage.jsonPath().getLong("meta.totalCount")).isEqualTo(3);
+        assertThat(lastPage.statusCode()).as(lastPage.asString()).isEqualTo(200);
+        assertThat(lastPage.jsonPath().getList("data.id", Long.class)).containsExactly(oldest);
+        assertThat(lastPage.jsonPath().getBoolean("meta.hasNext")).isFalse();
+        assertThat(lastPage.jsonPath().getString("meta.nextCursor")).isNull();
+        assertThat(lastPage.jsonPath().getLong("meta.totalCount")).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("목록 조회 커서가 깨졌거나 조회 개수가 범위를 벗어나면 400을 반환한다.")
+    void rejectsInvalidProjectListRequest() {
+        Response brokenCursor = findAll(Map.of("cursor", "broken-cursor"));
+        Response tooLargeSize = findAll(Map.of("size", 51));
+
+        assertThat(brokenCursor.statusCode()).isEqualTo(400);
+        assertThat(brokenCursor.jsonPath().getString("code")).isEqualTo("PROJECT_INVALID_CURSOR");
+        assertThat(tooLargeSize.statusCode()).isEqualTo(400);
+        assertThat(tooLargeSize.jsonPath().getString("code")).isEqualTo("VALIDATION_FAILED");
+        assertThat(tooLargeSize.jsonPath().getString("details[0].field")).isEqualTo("size");
+    }
+
+    /**
+     * 제목과 기수를 정해 프로젝트를 등록한다. 등록 직후에는 승인 대기(PENDING) 상태다.
+     */
+    private long registerProject(
+            LoginSession author,
+            LoginSession teammate,
+            String title,
+            int cohort,
+            List<Long> techTagIds
+    ) {
+        Map<String, Object> body = new HashMap<>(
+                requestBody(uniqueRepositoryName(), techTagIds, List.of(teammate.handle())));
+        body.put("title", title);
+        body.put("cohort", cohort);
+        Response response = registerProject(author, body);
+        assertThat(response.statusCode()).as(response.asString()).isEqualTo(201);
+        return response.jsonPath().getLong("data.projectId");
+    }
+
+    /**
+     * 비로그인으로 목록을 조회한다.
+     */
+    private Response findAll(Map<String, ?> queryParams) {
+        return RestAssured.given()
+                .port(port)
+                .queryParams(queryParams)
+                .when()
+                .get(PROJECTS_PATH);
+    }
+
+    private static String joinIds(List<Long> ids) {
+        return String.join(",", ids.stream().map(String::valueOf).toList());
+    }
+
+    /**
+     * 로컬 DB 를 다른 테스트와 함께 쓰므로, 제목에 넣고 검색어로 쓸 무작위 토큰으로 이 테스트의 프로젝트만 조회한다.
+     */
+    private static String uniqueToken() {
+        return "tk" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+    }
+
     private long registerPendingProject(LoginSession author, LoginSession teammate, List<Long> techTagIds) {
         Response response = registerProject(author, uniqueRepositoryName(), techTagIds, List.of(teammate.handle()));
         assertThat(response.statusCode()).as(response.asString()).isEqualTo(201);

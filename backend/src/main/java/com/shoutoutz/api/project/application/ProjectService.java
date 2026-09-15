@@ -21,9 +21,13 @@ import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.DescriptionMediaReferences;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
+import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectMembers;
+import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.project.domain.ProjectSearchCondition;
+import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
@@ -33,8 +37,10 @@ import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -84,6 +90,25 @@ public class ProjectService {
 
         Project savedProject = projectRepository.save(project, request.techTagIds(), members.getUserIds());
         return new ProjectCreateResponse(savedProject.getId(), savedProject.getSlug().value());
+    }
+
+    /**
+     * 승인된 프로젝트 목록을 검색어, 필터, 정렬 조건으로 한 페이지 조회한다.
+     * 요청 값은 기본값과 검증을 거친 resolved 메서드로만 꺼내 쓴다.
+     */
+    @Transactional(readOnly = true)
+    public ProjectFindAllResponse findAll(ProjectFindAllRequest request) {
+        ProjectSort sort = request.resolvedSort();
+        ProjectPage page = projectRepository.findAll(new ProjectSearchCondition(
+                request.keyword(),
+                request.resolvedCohorts(),
+                request.resolvedTechTagIds(),
+                sort,
+                request.resolvedSize(),
+                request.resolvedCursor()
+        ));
+        ProjectCursor nextCursor = page.nextCursor(sort);
+        return ProjectFindAllResponse.of(page, nextCursor == null ? null : ProjectCursorCodec.encode(nextCursor));
     }
 
     /**

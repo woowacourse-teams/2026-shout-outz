@@ -6,9 +6,12 @@ import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectDetail;
+import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.infrastructure.jdbc.ProjectDetailJdbcRepository;
+import com.shoutoutz.api.project.infrastructure.jdbc.ProjectListJdbcRepository;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectJpaRepository;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectMemberJpaRepository;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectTagJpaRepository;
@@ -30,6 +33,7 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     private final ProjectTagJpaRepository projectTagJpaRepository;
     private final ProjectMemberJpaRepository projectMemberJpaRepository;
     private final ProjectDetailJdbcRepository projectDetailJdbcRepository;
+    private final ProjectListJdbcRepository projectListJdbcRepository;
 
     @Override
     public Project save(Project project, List<Long> techTagIds, List<Long> memberIds) {
@@ -61,6 +65,14 @@ public class ProjectRepositoryImpl implements ProjectRepository {
                 projectId,
                 ApprovalStatus.APPROVED
         );
+    }
+
+    /**
+     * 검색 조건이 동적으로 붙는 여러 테이블 조회라 JDBC 조회에 맡긴다.
+     */
+    @Override
+    public ProjectPage findAll(ProjectSearchCondition condition) {
+        return projectListJdbcRepository.findAll(condition);
     }
 
     /**
