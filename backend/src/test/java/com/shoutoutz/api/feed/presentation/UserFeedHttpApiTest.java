@@ -79,7 +79,7 @@ class UserFeedHttpApiTest {
                                 )
                                 .queryParameters(
                                         parameterWithName("cursor")
-                                                .description("다음 Slice 조회용 커서. 첫 요청은 생략")
+                                                .description("다음 페이지 조회용 커서. 첫 요청은 생략")
                                                 .optional(),
                                         parameterWithName("size")
                                                 .type(INTEGER)

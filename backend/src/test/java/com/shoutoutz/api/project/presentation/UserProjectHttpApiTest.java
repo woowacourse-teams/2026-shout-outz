@@ -3,6 +3,7 @@ package com.shoutoutz.api.project.presentation;
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
+import static com.epages.restdocs.apispec.SimpleType.INTEGER;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -87,6 +88,7 @@ class UserProjectHttpApiTest {
                                 )
                                 .queryParameters(
                                         parameterWithName("size")
+                                                .type(INTEGER)
                                                 .description("한 번에 가져올 프로젝트 수. 기본값 20, 1~50")
                                                 .optional(),
                                         parameterWithName("cursor")

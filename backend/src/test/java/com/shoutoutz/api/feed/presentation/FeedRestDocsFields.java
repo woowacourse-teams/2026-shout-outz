@@ -54,9 +54,9 @@ final class FeedRestDocsFields {
         fields.add(fieldWithPath("status").type(STRING).description("응답 상태"));
         fields.add(fieldWithPath("data").type(ARRAY).description(description));
         fields.addAll(feedFields("data[]."));
-        fields.add(fieldWithPath("meta").type(OBJECT).description("Slice 메타데이터"));
-        fields.add(fieldWithPath("meta.nextCursor").type(STRING).description("다음 Slice 커서").optional());
-        fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 Slice 존재 여부"));
+        fields.add(fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"));
+        fields.add(fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서").optional());
+        fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"));
         return fields;
     }
 }
