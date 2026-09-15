@@ -2,7 +2,7 @@ package com.shoutoutz.api.comment.application;
 
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_DEPTH_EXCEEDED;
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_NOT_FOUND;
-import static com.shoutoutz.api.comment.domain.CommentErrorCode.INVALID_COMMENT_CURSOR;
+import static com.shoutoutz.api.comment.domain.CommentErrorCode.MISMATCHED_COMMENT_SORT_AND_CURSOR_SORT;
 import static com.shoutoutz.api.common.exception.code.CommonErrorCode.FORBIDDEN;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -253,7 +253,7 @@ class ProjectCommentServiceTest {
                 null
         )).isInstanceOfSatisfying(InvalidInputException.class,
                 error -> assertThat(error.getErrorCode()).isEqualTo(
-                        INVALID_COMMENT_CURSOR
+                        MISMATCHED_COMMENT_SORT_AND_CURSOR_SORT
                 ));
 
         verifyNoInteractions(projectCommentQueryRepository, userProfileRepository);

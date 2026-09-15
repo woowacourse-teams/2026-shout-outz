@@ -533,9 +533,9 @@ paths:
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
                     ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -654,9 +654,9 @@ paths:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"}]}"
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
+                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
+                    eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -974,9 +974,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -1121,6 +1121,51 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\"}"
   /api/v1/projects/100/comments:
+    get:
+      tags:
+      - Project Comment
+      summary: 프로젝트 댓글 목록 조회
+      description: 비로그인 또는 로그인 사용자가 공개 프로젝트의 댓글 목록을 조회한다. size는 루트 댓글 개수이며 각 루트 댓글
+        뒤에 대댓글을 반환한다.
+      operationId: project-comment-find-all
+      parameters:
+      - name: cursor
+        in: query
+        description: 다음 페이지 조회에 사용하는 opaque cursor
+        required: false
+        schema:
+          type: string
+      - name: size
+        in: query
+        description: "조회할 루트 댓글 개수. 기본값 5, 1~50"
+        required: false
+        schema:
+          type: string
+      - name: sort
+        in: query
+        description: 루트 댓글 정렬 기준(LATEST 또는 OLDEST). 기본값 LATEST
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectCommentFindAllSuccessResponse"
+              examples:
+                project-comment-find-all:
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":501,\"content\"\
+                    :\"좋은 프로젝트네요.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃\
+                    \ 운영팀\",\"avatarImageId\":10},\"parentId\":null,\"createdAt\"\
+                    :\"2026-09-14T00:00:00Z\",\"updatedAt\":\"2026-09-14T00:00:00Z\"\
+                    ,\"editable\":false,\"edited\":false,\"deleted\":false},{\"id\"\
+                    :502,\"content\":\"저도 그렇게 생각합니다.\",\"author\":{\"userId\":8,\"\
+                    displayName\":\"재키\",\"avatarImageId\":11},\"parentId\":501,\"\
+                    createdAt\":\"2026-09-14T00:05:00Z\",\"updatedAt\":\"2026-09-14T00:05:00Z\"\
+                    ,\"editable\":false,\"edited\":false,\"deleted\":false}],\"meta\"\
+                    :{\"nextCursor\":\"next-cursor\",\"hasNext\":true}}"
     post:
       tags:
       - Project Comment
@@ -2114,6 +2159,85 @@ components:
               type: boolean
               description: 다음 페이지 존재 여부
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    ProjectCommentFindAllSuccessResponse:
+      title: ProjectCommentFindAllSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 프로젝트 댓글 목록
+          items:
+            required:
+            - author
+            - createdAt
+            - deleted
+            - editable
+            - edited
+            - id
+            - updatedAt
+            type: object
+            properties:
+              createdAt:
+                type: string
+                description: 생성 시각 (UTC ISO-8601)
+              deleted:
+                type: boolean
+                description: 댓글이 삭제되었는지 여부
+              edited:
+                type: boolean
+                description: 댓글 내용이 수정된 적이 있는지 여부
+              editable:
+                type: boolean
+                description: 현재 사용자가 수정할 수 있는지 여부
+              author:
+                required:
+                - displayName
+                - userId
+                type: object
+                properties:
+                  avatarImageId:
+                    type: number
+                    description: 작성자 프로필 이미지 ID
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 작성자 표시 이름
+                  userId:
+                    type: number
+                    description: 작성자 ID
+                description: 댓글 작성자
+              id:
+                type: number
+                description: 댓글 ID
+              parentId:
+                type: number
+                description: 부모 루트 댓글 ID
+                nullable: true
+              content:
+                type: string
+                description: 댓글 내용. 삭제된 댓글은 null
+                nullable: true
+              updatedAt:
+                type: string
+                description: 수정 시각 (UTC ISO-8601)
+        meta:
+          required:
+          - hasNext
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 cursor
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
         status:
           type: string
           description: 응답 상태
