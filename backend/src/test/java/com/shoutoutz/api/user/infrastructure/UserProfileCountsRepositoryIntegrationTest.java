@@ -39,8 +39,8 @@ class UserProfileCountsRepositoryIntegrationTest {
         long deletedProjectId = saveProject(Instant.now());
         saveProjectMember(activeProjectId, user.getId());
         saveProjectMember(deletedProjectId, user.getId());
-        savePost(user.getId(), null);
-        savePost(user.getId(), Instant.now());
+        saveFeed(user.getId(), null);
+        saveFeed(user.getId(), Instant.now());
 
         UserProfileCounts counts = userQueryRepository.countByUserId(user.getId());
 
@@ -77,9 +77,9 @@ class UserProfileCountsRepositoryIntegrationTest {
         );
     }
 
-    private void savePost(long userId, Instant deletedAt) {
+    private void saveFeed(long userId, Instant deletedAt) {
         jdbcTemplate.update(
-                "INSERT INTO posts (author_id, content, deleted_at) VALUES (?, ?, ?)",
+                "INSERT INTO feeds (author_id, content, deleted_at) VALUES (?, ?, ?)",
                 userId,
                 "개수 테스트 피드",
                 deletedAt == null ? null : Timestamp.from(deletedAt)

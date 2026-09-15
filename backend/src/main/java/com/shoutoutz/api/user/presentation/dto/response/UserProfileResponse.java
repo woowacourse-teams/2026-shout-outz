@@ -16,7 +16,7 @@ public record UserProfileResponse(
 ) {
     public record Counts(
             long projects,
-            long posts
+            long feeds
     ) {
     }
 }
