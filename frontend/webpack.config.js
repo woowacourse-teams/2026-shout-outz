@@ -13,6 +13,10 @@ const isProduction = process.env.NODE_ENV === 'production';
 /** @type {import("webpack").Configuration} */
 const config = {
   entry: './ssg/client.tsx',
+  watchOptions: {
+    // 타입 검사기의 재귀 감시에서 의존성과 빌드 산출물을 제외합니다.
+    ignored: /[\\/](node_modules|dist|\.build|\.git)[\\/]/,
+  },
   output: {
     path: path.resolve(__dirname, 'dist'),
     // 삭제된 라우트의 HTML이나 이전 contenthash 자산이 배포물에 남지 않게 합니다.
@@ -30,9 +34,10 @@ const config = {
     // Document는 프레임워크가 아니라 그냥 React 컴포넌트라서, 요청마다 렌더링해 줄 서버가
     // 없는 dev server에서는 미리 만들어둔 dist/index.html(predev가 채워둔 CSR 셸)을 정적으로
     // 서빙합니다. 번들(main.js)만 dev server가 갈아끼웁니다.
-    static: {
-      directory: path.resolve(__dirname, 'dist'),
-    },
+    static: [
+      { directory: path.resolve(__dirname, 'dist') },
+      { directory: path.resolve(__dirname, 'public'), publicPath: '/' },
+    ],
   },
   plugins: [
     new ForkTsCheckerWebpackPlugin(),

@@ -1,6 +1,17 @@
 [
   {
     "id": "dropit",
+    "cohort": 6,
+    "teamName": "Dropit 팀",
+    "serviceStatus": "OPERATING",
+    "deploymentUrl": "https://example.com/dropit",
+    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-shout-outz",
+    "likeCount": 84,
+    "bookmarkCount": 28,
+    "members": [
+      { "userId": 1, "displayName": "정우진", "cohort": 6, "track": "BE", "avatarUrl": null }
+    ],
+    "descriptionMd": "## 프로젝트 소개\n\n작은 서비스를 모아보고 바로 실행할 수 있는 아카이빙 서비스입니다.\n\n### 주요 기능\n\n- 프로젝트 탐색\n- 제작자와 기술 스택 소개\n\n<details><summary>구현 내용</summary>\n\nReact와 TanStack Router를 사용합니다.\n\n</details>\n\n| 영역 | 기술 |\n| --- | --- |\n| 화면 | React |\n| 데이터 | TanStack Query |",
     "name": "Dropit",
     "tagline": "작은 웹앱을 발견하고 바로 실행하는 공간",
     "description": "우테코 크루들이 만든 작은 서비스를 모아보고 바로 실행해볼 수 있는 아카이빙 서비스입니다.",
@@ -12,6 +23,16 @@
   },
   {
     "id": "shout-outz",
+    "cohort": 6,
+    "teamName": "Shout-outz 팀",
+    "serviceStatus": "OPERATING",
+    "deploymentUrl": null,
+    "githubRepositoryUrl": null,
+    "likeCount": 12,
+    "bookmarkCount": 3,
+    "members": [
+      { "userId": 2, "displayName": "고제성", "cohort": 6, "track": "FE", "avatarUrl": null }
+    ],
     "name": "Shout-outz",
     "tagline": "팀원에게 감사와 응원을 남기는 서비스",
     "description": "동료의 작은 기여를 놓치지 않고 칭찬과 감사를 기록하고 공유할 수 있는 서비스입니다.",
@@ -23,6 +44,16 @@
   },
   {
     "id": "code-review-bot",
+    "cohort": 6,
+    "teamName": "Code Review Bot 팀",
+    "serviceStatus": "OPERATING",
+    "deploymentUrl": null,
+    "githubRepositoryUrl": null,
+    "likeCount": 7,
+    "bookmarkCount": 2,
+    "members": [
+      { "userId": 3, "displayName": "김리뷰", "cohort": 6, "track": "BE", "avatarUrl": null }
+    ],
     "name": "Code Review Bot",
     "tagline": "PR을 자동으로 리뷰해주는 도우미",
     "description": "코드 변경 사항을 분석해 리뷰 코멘트를 자동으로 남겨주는 봇 서비스입니다.",

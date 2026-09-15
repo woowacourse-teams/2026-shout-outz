@@ -32,7 +32,7 @@ export function Gnb({ trailing, className, ...props }: GnbProps) {
       )}
       {...props}
     >
-      <div className="mx-auto flex max-w-[1140px] flex-wrap items-center px-4 md:px-16">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center px-4">
         <Link to="/" className="flex h-14 items-center gap-2 md:h-18 md:gap-2.5">
           <span
             className="bg-primary-600 flex size-7 items-center justify-center rounded-lg text-sm font-bold text-white md:size-8 md:text-base"
