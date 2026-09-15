@@ -4,8 +4,11 @@ import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICAT
 
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.project.domain.Project;
+import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.Slug;
+import com.shoutoutz.api.project.infrastructure.jdbc.ProjectListJdbcRepository;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectJpaRepository;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectMemberJpaRepository;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectTagJpaRepository;
@@ -25,6 +28,7 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     private final ProjectJpaRepository projectJpaRepository;
     private final ProjectTagJpaRepository projectTagJpaRepository;
     private final ProjectMemberJpaRepository projectMemberJpaRepository;
+    private final ProjectListJdbcRepository projectListJdbcRepository;
 
     @Override
     public Project save(Project project, List<Long> techTagIds, List<Long> memberIds) {
@@ -40,6 +44,14 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     @Override
     public boolean existsBySlug(Slug slug) {
         return projectJpaRepository.existsBySlug(slug.value());
+    }
+
+    /**
+     * 검색 조건이 동적으로 붙는 여러 테이블 조회라 JDBC 조회에 맡긴다.
+     */
+    @Override
+    public ProjectPage findAll(ProjectSearchCondition condition) {
+        return projectListJdbcRepository.findAll(condition);
     }
 
     /**
