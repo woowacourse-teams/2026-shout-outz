@@ -58,9 +58,51 @@ class LoginUserArgumentResolverTest {
                 .isInstanceOf(UnauthorizedException.class);
     }
 
+    @Test
+    @DisplayName("선택적 로그인이면 인증 정보가 없을 때 null을 반환한다")
+    void resolvesNullWhenOptionalAndUnauthenticated() throws Exception {
+        ServletWebRequest webRequest = new ServletWebRequest(new MockHttpServletRequest());
+
+        Object resolved = resolver.resolveArgument(
+                optionalLoginUserParameter(),
+                null,
+                webRequest,
+                null
+        );
+
+        assertThat(resolved).isNull();
+    }
+
+    @Test
+    @DisplayName("선택적 로그인이어도 인증 정보가 있으면 사용자 ID와 권한을 반환한다")
+    void resolvesAuthenticatedUserWhenOptional() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setAttribute(
+                SessionAuthenticationFilter.AUTHENTICATED_SESSION_ATTRIBUTE,
+                new AuthenticatedSession(1L, UserRole.USER)
+        );
+
+        Object resolved = resolver.resolveArgument(
+                optionalLoginUserParameter(),
+                null,
+                new ServletWebRequest(request),
+                null
+        );
+
+        assertThat(resolved).isEqualTo(new AuthenticatedUser(1L, UserRole.USER));
+    }
+
     private MethodParameter loginUserParameter() throws NoSuchMethodException {
         Method method = TestHttpApi.class.getDeclaredMethod(
                 "getAuthenticatedUser",
+                AuthenticatedUser.class
+        );
+        return new MethodParameter(method, 0);
+    }
+
+    private MethodParameter optionalLoginUserParameter() throws NoSuchMethodException {
+        Method method = TestHttpApi.class.getDeclaredMethod(
+                "getOptionalAuthenticatedUser",
                 AuthenticatedUser.class
         );
         return new MethodParameter(method, 0);
@@ -70,6 +112,10 @@ class LoginUserArgumentResolverTest {
 
         @SuppressWarnings("unused")
         void getAuthenticatedUser(@LoginUser AuthenticatedUser authenticatedUser) {
+        }
+
+        @SuppressWarnings("unused")
+        void getOptionalAuthenticatedUser(@LoginUser(required = false) AuthenticatedUser authenticatedUser) {
         }
     }
 }

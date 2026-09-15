@@ -4,16 +4,19 @@ import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICAT
 
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.project.domain.Project;
+import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.Slug;
+import com.shoutoutz.api.project.infrastructure.jdbc.ProjectDetailJdbcRepository;
 import com.shoutoutz.api.project.infrastructure.jdbc.ProjectListJdbcRepository;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectJpaRepository;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectMemberJpaRepository;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectTagJpaRepository;
 import com.shoutoutz.api.project.infrastructure.mapper.ProjectMapper;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -28,6 +31,7 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     private final ProjectJpaRepository projectJpaRepository;
     private final ProjectTagJpaRepository projectTagJpaRepository;
     private final ProjectMemberJpaRepository projectMemberJpaRepository;
+    private final ProjectDetailJdbcRepository projectDetailJdbcRepository;
     private final ProjectListJdbcRepository projectListJdbcRepository;
 
     @Override
@@ -44,6 +48,11 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     @Override
     public boolean existsBySlug(Slug slug) {
         return projectJpaRepository.existsBySlug(slug.value());
+    }
+
+    @Override
+    public Optional<ProjectDetail> findDetailById(long projectId, Long viewerId) {
+        return projectDetailJdbcRepository.findDetailById(projectId, viewerId);
     }
 
     /**

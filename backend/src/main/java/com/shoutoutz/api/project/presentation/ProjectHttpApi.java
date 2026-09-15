@@ -7,6 +7,7 @@ import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -15,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,5 +44,20 @@ public class ProjectHttpApi {
     ) {
         ProjectFindAllResponse response = projectService.findAll(request);
         return ResponseEntity.ok(SuccessResponse.success(response.items(), response.meta()));
+    }
+
+    /**
+     * 비로그인도 조회할 수 있다. 로그인한 경우에는 본인 프로젝트 조회 권한과 리액션 여부 판단에 사용한다.
+     */
+    @GetMapping("/{projectId}")
+    public ResponseEntity<SuccessResponse<ProjectDetailResponse>> findDetail(
+            @LoginUser(required = false) AuthenticatedUser loginUser,
+            @PathVariable long projectId
+    ) {
+        ProjectDetailResponse response = projectService.findDetail(
+                projectId,
+                AuthenticatedUser.userIdOrNull(loginUser)
+        );
+        return ResponseEntity.ok(SuccessResponse.success(response));
     }
 }
