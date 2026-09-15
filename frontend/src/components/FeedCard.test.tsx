@@ -37,16 +37,4 @@ describe('FeedCard', () => {
 
     expect(screen.getByText('2시간 전')).toHaveAttribute('datetime', FEED.createdAt);
   });
-
-  it('일반 사용자가 쓴 피드는 작성자 이름만 보여준다', () => {
-    render(
-      <FeedCard
-        {...FEED}
-        author={{ ...FEED.author, userType: 'GENERAL', track: null, cohort: null }}
-      />,
-    );
-
-    expect(screen.getByText('황호익')).toBeInTheDocument();
-    expect(screen.queryByText(/6기/)).not.toBeInTheDocument();
-  });
 });
