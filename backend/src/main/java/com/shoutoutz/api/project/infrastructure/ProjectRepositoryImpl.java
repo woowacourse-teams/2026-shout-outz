@@ -3,6 +3,7 @@ package com.shoutoutz.api.project.infrastructure;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_SLUG;
 
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
+import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectPage;
@@ -53,6 +54,17 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     @Override
     public Optional<ProjectDetail> findDetailById(long projectId, Long viewerId) {
         return projectDetailJdbcRepository.findDetailById(projectId, viewerId);
+    }
+
+    /**
+     * 승인 상태가 Approval이며 삭제되지 않은 프로젝트인지 확인
+     */
+    @Override
+    public boolean existsPublicById(long projectId) {
+        return projectJpaRepository.existsByIdAndApprovalStatusAndDeletedAtIsNull(
+                projectId,
+                ApprovalStatus.APPROVED
+        );
     }
 
     /**
