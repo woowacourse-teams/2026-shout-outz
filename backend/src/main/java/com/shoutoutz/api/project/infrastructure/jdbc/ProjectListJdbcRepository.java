@@ -1,6 +1,7 @@
 package com.shoutoutz.api.project.infrastructure.jdbc;
 
 import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.domain.ProjectFilterCondition;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
@@ -131,7 +132,7 @@ public class ProjectListJdbcRepository {
 
     public ProjectPage findAll(ProjectSearchCondition condition) {
         MapSqlParameterSource parameters = new MapSqlParameterSource();
-        String filteredProjectsSql = filteredProjectsSql(condition, parameters);
+        String filteredProjectsSql = filteredProjectsSql(condition.filter(), parameters);
 
         List<ProjectSummary> fetched = jdbcTemplate.query(
                 pageSql(filteredProjectsSql, condition, parameters),
@@ -181,7 +182,7 @@ public class ProjectListJdbcRepository {
      * 공개 범위, 검색어, 필터를 적용한 프로젝트
      * 목록과 전체 개수가 같은 조건을 쓴다.
      */
-    private static String filteredProjectsSql(ProjectSearchCondition condition, MapSqlParameterSource parameters) {
+    private static String filteredProjectsSql(ProjectFilterCondition condition, MapSqlParameterSource parameters) {
         StringBuilder sql = new StringBuilder(PUBLIC_PROJECTS_SQL);
         if (!condition.cohorts().isEmpty()) {
             sql.append(COHORTS_CONDITION);
