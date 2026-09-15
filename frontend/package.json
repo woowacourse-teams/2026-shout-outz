@@ -8,6 +8,9 @@
     "node": "^24.20.0",
     "npm": ">=11.19.0"
   },
+  "msw": {
+    "workerDirectory": "public"
+  },
   "scripts": {
     "build": "npm run build:client && npm run build:static",
     "build:client": "webpack --mode=production --config-node-env=production",
@@ -45,11 +48,12 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "fork-ts-checker-webpack-plugin": "^9.1.0",
-    "mini-css-extract-plugin": "^2.10.2",
     "globals": "^17.11.0",
     "html-webpack-plugin": "^5.6.8",
     "jest": "^30.5.1",
     "jest-environment-jsdom": "^30.5.1",
+    "mini-css-extract-plugin": "^2.10.2",
+    "msw": "^2.15.0",
     "postcss": "^8.5.25",
     "postcss-loader": "^8.2.1",
     "prettier": "^3.9.6",
@@ -71,8 +75,13 @@
     "@tanstack/react-router": "^1.170.29",
     "clsx": "^2.1.1",
     "core-js": "^3.50.0",
+    "ky": "^2.1.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-markdown": "^10.1.0",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.6.0"
   },
   "browserslist": [
