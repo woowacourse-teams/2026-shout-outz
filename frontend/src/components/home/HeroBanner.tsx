@@ -22,12 +22,12 @@ export function HeroBanner({
     <a
       href={href}
       className={cn(
-        'focus-visible:outline-primary-600 block overflow-hidden rounded-2xl bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2',
+        'focus-visible:outline-primary-600 block h-59 overflow-hidden rounded-2xl bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 md:h-57.5',
         className,
       )}
       {...props}
     >
-      <picture>
+      <picture className="block size-full">
         <source media="(min-width: 768px)" srcSet={originalUrl} />
         <img src={thumbnailUrl} alt={alt} className="size-full object-cover" />
       </picture>
