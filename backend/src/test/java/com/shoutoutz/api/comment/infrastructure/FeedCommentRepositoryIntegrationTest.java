@@ -72,6 +72,25 @@ class FeedCommentRepositoryIntegrationTest {
         assertThat(found.getParentId()).isEqualTo(root.getId());
     }
 
+    @Test
+    @DisplayName("기존 피드 댓글의 내용을 수정하고 생성 시각은 유지한다")
+    void updatesFeedComment() {
+        User author = userRepository.save(User.initialize("feed-update-" + uniqueSuffix()));
+        Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 본문", NOW));
+
+        FeedComment saved = feedCommentRepository.save(
+                FeedComment.create(feed.getId(), author.getId(), null, "기존 댓글")
+        );
+
+        FeedComment updated = feedCommentRepository.save(saved.updateContent("수정된 댓글"));
+        FeedComment found = feedCommentRepository.findById(saved.getId()).orElseThrow();
+
+        assertThat(found.getContent()).isEqualTo("수정된 댓글");
+        assertThat(found.getCreatedAt()).isEqualTo(saved.getCreatedAt());
+        assertThat(found.getUpdatedAt()).isEqualTo(updated.getUpdatedAt());
+        assertThat(found.getUpdatedAt()).isNotEqualTo(found.getCreatedAt());
+    }
+
     private static String uniqueSuffix() {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 12);
     }

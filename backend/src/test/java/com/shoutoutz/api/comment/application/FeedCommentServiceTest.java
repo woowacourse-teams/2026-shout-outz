@@ -2,6 +2,7 @@ package com.shoutoutz.api.comment.application;
 
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_DEPTH_EXCEEDED;
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_NOT_FOUND;
+import static com.shoutoutz.api.common.exception.code.CommonErrorCode.FORBIDDEN;
 import static com.shoutoutz.api.feed.domain.FeedErrorCode.FEED_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -14,9 +15,12 @@ import static org.mockito.Mockito.when;
 import com.shoutoutz.api.comment.domain.FeedComment;
 import com.shoutoutz.api.comment.domain.FeedCommentRepository;
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentCreateRequest;
+import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentUpdateResponse;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
@@ -38,7 +42,9 @@ class FeedCommentServiceTest {
     private static final long FEED_ID = 100L;
     private static final long AUTHOR_ID = 7L;
     private static final long PARENT_ID = 301L;
+    private static final long COMMENT_ID = 501L;
     private static final Instant NOW = Instant.parse("2026-09-14T00:00:00Z");
+    private static final Instant EDITED_AT = Instant.parse("2026-09-14T00:30:00Z");
 
     @Mock
     private FeedRepository feedRepository;
@@ -213,6 +219,174 @@ class FeedCommentServiceTest {
         verifyNoInteractions(userProfileRepository);
     }
 
+    @Test
+    @DisplayName("댓글 작성자 본인이 댓글 내용을 수정하고 수정 이력을 포함한 응답을 반환한다.")
+    void updatesCommentContent() {
+        givenActiveFeed();
+        when(feedCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "기존 댓글",
+                NOW,
+                NOW,
+                null
+        )));
+        givenAuthor();
+        when(feedCommentRepository.save(any(FeedComment.class))).thenReturn(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "수정된 댓글",
+                NOW,
+                EDITED_AT,
+                null
+        ));
+
+        FeedCommentUpdateResponse result = feedCommentService.update(
+                FEED_ID,
+                COMMENT_ID,
+                AUTHOR_ID,
+                new FeedCommentUpdateRequest("  수정된 댓글  ")
+        );
+
+        assertThat(result.id()).isEqualTo(COMMENT_ID);
+        assertThat(result.content()).isEqualTo("수정된 댓글");
+        assertThat(result.author().userId()).isEqualTo(AUTHOR_ID);
+        assertThat(result.author().displayName()).isEqualTo("샤라웃 운영팀");
+        assertThat(result.author().avatarImageId()).isEqualTo(10L);
+        assertThat(result.parentId()).isNull();
+        assertThat(result.createdAt()).isEqualTo(NOW);
+        assertThat(result.updatedAt()).isEqualTo(EDITED_AT);
+        assertThat(result.editable()).isTrue();
+        assertThat(result.edited()).isTrue();
+
+        ArgumentCaptor<FeedComment> captor = ArgumentCaptor.forClass(FeedComment.class);
+        verify(feedCommentRepository).save(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(COMMENT_ID);
+        assertThat(captor.getValue().getFeedId()).isEqualTo(FEED_ID);
+        assertThat(captor.getValue().getAuthorId()).isEqualTo(AUTHOR_ID);
+        assertThat(captor.getValue().getContent()).isEqualTo("수정된 댓글");
+    }
+
+    @Test
+    @DisplayName("트림 후 기존 내용과 같으면 저장하지 않고 기존 수정 시각을 반환한다.")
+    void doesNotUpdateWhenContentIsUnchanged() {
+        givenActiveFeed();
+        when(feedCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "기존 댓글",
+                NOW,
+                NOW,
+                null
+        )));
+        givenAuthor();
+
+        FeedCommentUpdateResponse result = feedCommentService.update(
+                FEED_ID,
+                COMMENT_ID,
+                AUTHOR_ID,
+                new FeedCommentUpdateRequest("  기존 댓글  ")
+        );
+
+        assertThat(result.content()).isEqualTo("기존 댓글");
+        assertThat(result.createdAt()).isEqualTo(NOW);
+        assertThat(result.updatedAt()).isEqualTo(NOW);
+        assertThat(result.edited()).isFalse();
+        verify(feedCommentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("존재하지 않거나 삭제된 피드에는 댓글을 수정하지 않고 404를 던진다.")
+    void rejectsUpdateForInactiveFeed() {
+        when(feedRepository.findActiveById(FEED_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> feedCommentService.update(
+                FEED_ID,
+                COMMENT_ID,
+                AUTHOR_ID,
+                new FeedCommentUpdateRequest("수정된 댓글")
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(FEED_NOT_FOUND));
+
+        verifyNoInteractions(feedCommentRepository, userProfileRepository);
+    }
+
+    @Test
+    @DisplayName("존재하지 않거나 다른 피드에 속한 댓글은 수정하지 않고 404를 던진다.")
+    void rejectsMissingOrDifferentFeedComment() {
+        givenActiveFeed();
+        when(feedCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "다른 피드 댓글",
+                NOW,
+                NOW,
+                null,
+                FEED_ID + 1
+        )));
+
+        assertThatThrownBy(() -> feedCommentService.update(
+                FEED_ID,
+                COMMENT_ID,
+                AUTHOR_ID,
+                new FeedCommentUpdateRequest("수정된 댓글")
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(COMMENT_NOT_FOUND));
+
+        verify(feedCommentRepository, never()).save(any());
+        verifyNoInteractions(userProfileRepository);
+    }
+
+    @Test
+    @DisplayName("삭제된 댓글은 수정하지 않고 404를 던진다.")
+    void rejectsDeletedComment() {
+        givenActiveFeed();
+        when(feedCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "삭제된 댓글",
+                NOW,
+                NOW,
+                NOW
+        )));
+
+        assertThatThrownBy(() -> feedCommentService.update(
+                FEED_ID,
+                COMMENT_ID,
+                AUTHOR_ID,
+                new FeedCommentUpdateRequest("수정된 댓글")
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(COMMENT_NOT_FOUND));
+
+        verify(feedCommentRepository, never()).save(any());
+        verifyNoInteractions(userProfileRepository);
+    }
+
+    @Test
+    @DisplayName("댓글 작성자가 아니면 수정하지 않고 403을 던진다.")
+    void rejectsUpdateFromAnotherAuthor() {
+        givenActiveFeed();
+        when(feedCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID + 1,
+                "기존 댓글",
+                NOW,
+                NOW,
+                null
+        )));
+
+        assertThatThrownBy(() -> feedCommentService.update(
+                FEED_ID,
+                COMMENT_ID,
+                AUTHOR_ID,
+                new FeedCommentUpdateRequest("수정된 댓글")
+        )).isInstanceOfSatisfying(ForbiddenException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(FORBIDDEN));
+
+        verify(feedCommentRepository, never()).save(any());
+        verifyNoInteractions(userProfileRepository);
+    }
+
     private void givenActiveFeed() {
         when(feedRepository.findActiveById(FEED_ID)).thenReturn(Optional.of(
                 Feed.reconstitute(FEED_ID, AUTHOR_ID, "피드 본문", NOW, NOW, null)
@@ -253,6 +427,38 @@ class FeedCommentServiceTest {
                 NOW,
                 NOW,
                 null
+        );
+    }
+
+    private FeedComment comment(
+            long commentId,
+            long authorId,
+            String content,
+            Instant createdAt,
+            Instant updatedAt,
+            Instant deletedAt
+    ) {
+        return comment(commentId, authorId, content, createdAt, updatedAt, deletedAt, FEED_ID);
+    }
+
+    private FeedComment comment(
+            long commentId,
+            long authorId,
+            String content,
+            Instant createdAt,
+            Instant updatedAt,
+            Instant deletedAt,
+            long feedId
+    ) {
+        return FeedComment.reconstitute(
+                commentId,
+                feedId,
+                authorId,
+                null,
+                content,
+                createdAt,
+                updatedAt,
+                deletedAt
         );
     }
 }
