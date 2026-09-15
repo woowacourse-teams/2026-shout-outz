@@ -10,6 +10,11 @@ public enum ProjectErrorCode implements ErrorCode {
     PROJECT_NOT_FOUND("요청한 프로젝트를 찾을 수 없습니다."),
 
     /**
+     * 프로젝트 조회 에러 코드
+     */
+    PROJECT_NOT_FOUND("프로젝트를 찾을 수 없습니다."),
+
+    /**
      * 프로젝트 등록 권한 에러 코드
      */
     PROJECT_REGISTRATION_FORBIDDEN("우아한테크코스 크루와 코치만 프로젝트를 등록할 수 있습니다."),
