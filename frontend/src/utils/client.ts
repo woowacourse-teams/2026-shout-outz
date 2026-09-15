@@ -3,7 +3,7 @@ import { type Options } from 'ky';
 
 export type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete';
 
-interface ApiSuccessBody<T, K = unknown> {
+export interface ApiSuccessBody<T, K = unknown> {
   status: 'success';
   data: T;
   meta?: K;
