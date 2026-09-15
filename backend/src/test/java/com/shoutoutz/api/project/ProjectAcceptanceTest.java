@@ -177,6 +177,86 @@ class ProjectAcceptanceTest {
         assertThat(response.jsonPath().getString("code")).isEqualTo("UNAUTHORIZED");
     }
 
+    @Test
+    @DisplayName("등록자는 승인 대기 중인 본인 프로젝트를 상세 조회할 수 있고, 기술 스택과 등록자부터 이어지는 팀원이 등록 순서대로 조회된다.")
+    void findsOwnPendingProjectDetail() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        List<Long> techTagIds = techTagIds("react", "java");
+        long projectId = registerPendingProject(author, teammate, techTagIds);
+
+        Response response = findDetail(author, projectId);
+
+        assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
+        assertThat(response.jsonPath().getString("status")).isEqualTo("success");
+        assertThat(response.jsonPath().getLong("data.id")).isEqualTo(projectId);
+        assertThat(response.jsonPath().getString("data.approvalStatus")).isEqualTo("PENDING");
+        assertThat(response.jsonPath().getLong("data.registeredBy")).isEqualTo(author.userId());
+        assertThat(response.jsonPath().getBoolean("data.likedByMe")).isFalse();
+        assertThat(response.jsonPath().getList("data.techTags.id", Long.class)).containsExactlyElementsOf(techTagIds);
+        assertThat(response.jsonPath().getList("data.members.userId", Long.class))
+                .containsExactly(author.userId(), teammate.userId());
+        assertThat(response.jsonPath().getList("data.members.handle", String.class))
+                .containsExactly(author.handle(), teammate.handle());
+    }
+
+    @Test
+    @DisplayName("승인 대기 중인 프로젝트를 등록자가 아닌 사용자나 비로그인 사용자가 조회하면, 존재 여부를 숨기고 404를 반환한다.")
+    void hidesPendingProjectFromOthers() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        LoginSession outsider = signup("GENERAL");
+        long projectId = registerPendingProject(author, teammate, techTagIds("java"));
+
+        Response outsiderResponse = findDetail(outsider, projectId);
+        Response anonymousResponse = findDetail(null, projectId);
+
+        assertThat(outsiderResponse.statusCode()).isEqualTo(404);
+        assertThat(outsiderResponse.jsonPath().getString("code")).isEqualTo("PROJECT_NOT_FOUND");
+        assertThat(anonymousResponse.statusCode()).isEqualTo(404);
+        assertThat(anonymousResponse.jsonPath().getString("code")).isEqualTo("PROJECT_NOT_FOUND");
+    }
+
+    @Test
+    @DisplayName("승인된 프로젝트는 비로그인 사용자도 상세 조회할 수 있다.")
+    void findsApprovedProjectDetailAnonymously() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        long projectId = registerPendingProject(author, teammate, techTagIds("java"));
+        approve(projectId);
+
+        Response response = findDetail(null, projectId);
+
+        assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
+        assertThat(response.jsonPath().getString("data.approvalStatus")).isEqualTo("APPROVED");
+        assertThat(response.jsonPath().getBoolean("data.likedByMe")).isFalse();
+        assertThat(response.jsonPath().getBoolean("data.bookmarkedByMe")).isFalse();
+    }
+
+    private long registerPendingProject(LoginSession author, LoginSession teammate, List<Long> techTagIds) {
+        Response response = registerProject(author, uniqueRepositoryName(), techTagIds, List.of(teammate.handle()));
+        assertThat(response.statusCode()).as(response.asString()).isEqualTo(201);
+        return response.jsonPath().getLong("data.projectId");
+    }
+
+    /**
+     * 관리자 승인 기능이 아직 없으므로, DB 에서 승인 상태를 직접 바꾼다.
+     */
+    private void approve(long projectId) {
+        jdbcTemplate.update("UPDATE projects SET approval_status = 'APPROVED' WHERE id = ?", projectId);
+    }
+
+    /**
+     * viewer 가 null 이면 세션 쿠키 없이 비로그인으로 조회한다. 조회는 CSRF 토큰이 필요 없다.
+     */
+    private Response findDetail(LoginSession viewer, long projectId) {
+        var request = RestAssured.given().port(port);
+        if (viewer != null) {
+            request.cookie("JSESSIONID", viewer.sessionId());
+        }
+        return request.when().get(PROJECTS_PATH + "/{projectId}", projectId);
+    }
+
     private Response registerProject(
             LoginSession author,
             String repositoryName,
