@@ -45,6 +45,8 @@ import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Instant;
 import java.util.List;
@@ -266,7 +268,12 @@ class ProjectHttpApiTest {
         given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(new ProjectFindAllResponse(
                 List.of(new ProjectFindAllResponse.Item(
                         100L, "loop", "루프 (Loop)", "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
-                        6, 12L, 184L, 14L)),
+                        6, 12L, 184L, 14L,
+                        List.of(new ProjectTechTagResponse(1L, "React"), new ProjectTechTagResponse(2L, "Spring")),
+                        List.of(
+                                new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BE", 101L, null, null),
+                                new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FE", null, null, null)
+                        ))),
                 new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
         ));
 
@@ -280,6 +287,8 @@ class ProjectHttpApiTest {
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data[0].id").value(100))
                 .andExpect(jsonPath("$.data[0].likeCount").value(184))
+                .andExpect(jsonPath("$.data[0].techTags[0].displayName").value("React"))
+                .andExpect(jsonPath("$.data[0].members[0].handle").value("dhyepark"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
                 .andExpect(jsonPath("$.meta.totalCount").value(48))
                 .andDo(document(
@@ -324,6 +333,34 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"),
                                         fieldWithPath("data[].commentCount").type(NUMBER)
                                                 .description("삭제되지 않은 댓글 수 (대댓글 포함)"),
+                                        fieldWithPath("data[].techTags").type(ARRAY)
+                                                .description("기술 스택 전체 목록. 등록 순서대로 정렬하며, 카드에 몇 개까지 보여줄지는 화면에서 정한다."),
+                                        fieldWithPath("data[].techTags[].id").type(NUMBER).description("기술 스택 ID"),
+                                        fieldWithPath("data[].techTags[].displayName").type(STRING).description("기술 스택 이름"),
+                                        fieldWithPath("data[].members").type(ARRAY)
+                                                .description("팀원 전체 목록. 상세 조회의 members와 같은 규칙이며, 등록 순서대로 정렬한다."),
+                                        fieldWithPath("data[].members[].userId").type(NUMBER)
+                                                .description("사용자 ID. 가입하지 않은 이관 팀원은 null이다.")
+                                                .optional(),
+                                        fieldWithPath("data[].members[].handle").type(STRING)
+                                                .description("프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.")
+                                                .optional(),
+                                        fieldWithPath("data[].members[].displayName").type(STRING)
+                                                .description("표시 이름. 탈퇴한 팀원은 '탈퇴한 사용자', "
+                                                        + "가입하지 않은 이관 팀원은 GitHub 이름(없으면 GitHub 아이디)이다."),
+                                        fieldWithPath("data[].members[].cohort").type(NUMBER)
+                                                .description("기수. 가입하지 않은 이관 팀원은 프로젝트 기수다.")
+                                                .optional(),
+                                        fieldWithPath("data[].members[].track").type(STRING).description("트랙").optional(),
+                                        fieldWithPath("data[].members[].avatarImageId").type(NUMBER)
+                                                .description("프로필 이미지 미디어 ID")
+                                                .optional(),
+                                        fieldWithPath("data[].members[].githubAvatarUrl").type(STRING)
+                                                .description("GitHub 프로필 이미지 URL. 가입하지 않은 이관 팀원만 값이 있다.")
+                                                .optional(),
+                                        fieldWithPath("data[].members[].githubProfileUrl").type(STRING)
+                                                .description("GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다.")
+                                                .optional(),
                                         fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 조회에 쓸 커서. 다음 페이지가 없으면 null")
@@ -578,12 +615,12 @@ class ProjectHttpApiTest {
                 false,
                 18,
                 List.of(
-                        new ProjectDetailResponse.TechTag(1L, "React"),
-                        new ProjectDetailResponse.TechTag(2L, "TypeScript")
+                        new ProjectTechTagResponse(1L, "React"),
+                        new ProjectTechTagResponse(2L, "TypeScript")
                 ),
                 List.of(
-                        new ProjectDetailResponse.Member(7L, "dhyepark", "박다혜", 6, "BE", 101L, null, null),
-                        new ProjectDetailResponse.Member(8L, "zzaekkii", "김도현", 6, "FE", null, null, null)
+                        new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BE", 101L, null, null),
+                        new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FE", null, null, null)
                 ),
                 Instant.parse("2026-08-09T02:30:00Z"),
                 Instant.parse("2026-08-09T03:00:00Z")

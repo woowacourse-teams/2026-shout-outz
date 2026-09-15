@@ -24,11 +24,13 @@ import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
+import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
+import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
@@ -42,6 +44,8 @@ import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
 import com.shoutoutz.api.techtag.domain.TechTag;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
@@ -459,7 +463,8 @@ class ProjectServiceTest {
     }
 
     private static ProjectSummary summary(long id, long likeCount, Instant createdAt) {
-        return new ProjectSummary(id, "loop-" + id, "루프", "한 줄 소개", 6, null, REGISTERED_BY, likeCount, 0L, createdAt);
+        return new ProjectSummary(
+                id, "loop-" + id, "루프", "한 줄 소개", 6, null, REGISTERED_BY, likeCount, 0L, List.of(), List.of(), createdAt);
     }
 
     @Test
@@ -472,8 +477,8 @@ class ProjectServiceTest {
 
         assertThat(response.id()).isEqualTo(100L);
         assertThat(response.registeredBy()).isEqualTo(REGISTERED_BY);
-        assertThat(response.techTags()).containsExactly(new ProjectDetailResponse.TechTag(1L, "React"));
-        assertThat(response.members()).containsExactly(new ProjectDetailResponse.Member(
+        assertThat(response.techTags()).containsExactly(new ProjectTechTagResponse(1L, "React"));
+        assertThat(response.members()).containsExactly(new ProjectMemberProfileResponse(
                 REGISTERED_BY, "dhyepark", "박다혜", 6, "BE", 101L, null, null
         ));
     }
@@ -535,8 +540,8 @@ class ProjectServiceTest {
                 false,
                 false,
                 0,
-                List.of(new ProjectDetail.TechTag(1L, "React")),
-                List.of(ProjectDetail.Member.user(REGISTERED_BY, "dhyepark", "박다혜", 6, "BE", 101L)),
+                List.of(new ProjectTechTag(1L, "React")),
+                List.of(ProjectMemberProfile.user(REGISTERED_BY, "dhyepark", "박다혜", 6, "BE", 101L)),
                 NOW,
                 NOW
         );

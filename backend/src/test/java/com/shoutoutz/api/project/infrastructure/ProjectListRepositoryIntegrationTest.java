@@ -3,11 +3,13 @@ package com.shoutoutz.api.project.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
+import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import java.sql.Timestamp;
@@ -15,7 +17,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -208,6 +213,38 @@ class ProjectListRepositoryIntegrationTest {
         assertThat(summary.commentCount()).isEqualTo(2);
     }
 
+    @Test
+    @DisplayName("카드마다 기술 스택과 팀원을 등록 순서대로 붙이고, 이관 프로젝트에는 이관 팀원을 붙인다.")
+    void attachesTechTagsAndMembersToEachCard() {
+        long owner = saveCrew("등록자", false);
+        long teammate = saveCrew("팀원", false);
+        long withdrawn = saveCrew("탈퇴자", true);
+        long registered = saveProject("APPROVED", 6, BASE_TIME.plus(2, ChronoUnit.HOURS));
+        jdbcTemplate.update("UPDATE projects SET registered_by = ? WHERE id = ?", owner, registered);
+        long spring = saveTechTag("Spring");
+        long react = saveTechTag("React");
+        saveProjectTag(registered, spring, 1);
+        saveProjectTag(registered, react, 0);
+        saveProjectMember(registered, withdrawn, 2);
+        saveProjectMember(registered, teammate, 1);
+        saveProjectMember(registered, owner, 0);
+        long archived = saveProject("APPROVED", 7, BASE_TIME.plus(1, ChronoUnit.HOURS));
+        saveArchivedMember(archived, null, token + "-dev", "Archived Crew");
+        long withoutTagsAndMembers = saveProject("APPROVED", 6, BASE_TIME);
+
+        Map<Long, ProjectSummary> cards = findAll(condition(token)).items().stream()
+                .collect(Collectors.toMap(ProjectSummary::id, Function.identity()));
+
+        assertThat(cards.get(registered).techTags()).extracting(ProjectTechTag::id).containsExactly(react, spring);
+        assertThat(cards.get(registered).members()).extracting(ProjectMemberProfile::userId)
+                .containsExactly(owner, teammate, withdrawn);
+        assertThat(cards.get(registered).members().getLast().displayName()).isEqualTo("탈퇴한 사용자");
+        assertThat(cards.get(archived).members())
+                .containsExactly(ProjectMemberProfile.archived("Archived Crew", 7, null, null));
+        assertThat(cards.get(withoutTagsAndMembers).techTags()).isEmpty();
+        assertThat(cards.get(withoutTagsAndMembers).members()).isEmpty();
+    }
+
     private ProjectPage findAll(ProjectSearchCondition condition) {
         return projectRepository.findAll(condition);
     }
@@ -280,6 +317,16 @@ class ProjectListRepositoryIntegrationTest {
 
     private void saveProjectMember(long projectId, long userId) {
         jdbcTemplate.update("INSERT INTO project_members (project_id, user_id) VALUES (?, ?)", projectId, userId);
+    }
+
+    private void saveProjectTag(long projectId, long techTagId, int displayOrder) {
+        jdbcTemplate.update("INSERT INTO project_tags (project_id, tech_tag_id, display_order) VALUES (?, ?, ?)",
+                projectId, techTagId, displayOrder);
+    }
+
+    private void saveProjectMember(long projectId, long userId, int displayOrder) {
+        jdbcTemplate.update("INSERT INTO project_members (project_id, user_id, display_order) VALUES (?, ?, ?)",
+                projectId, userId, displayOrder);
     }
 
     private void saveArchivedMember(long projectId, Long matchedUserId, String githubLogin, String displayName) {
