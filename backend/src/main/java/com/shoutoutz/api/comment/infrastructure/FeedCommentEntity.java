@@ -15,7 +15,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "post_comments")
+@Table(name = "feed_comments")
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -26,8 +26,8 @@ public class FeedCommentEntity extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // API에서는 feedId로 노출하지만 현재 저장소의 컬럼명은 post_id를 사용한다.
-    @Column(name = "post_id", nullable = false)
+    // API 식별자는 feedId, 데이터베이스 컬럼명은 feed_id를 사용한다.
+    @Column(name = "feed_id", nullable = false)
     private Long feedId;
 
     // TODO: JPA 연관관계로 매핑할지 논의

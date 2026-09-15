@@ -26,11 +26,11 @@ public class DatabaseMediaAccessAuthorizer implements MediaAccessAuthorizer {
                 WHERE m.id = ?
                   AND (
                       (
-                          m.purpose = 'POST_CONTENT'
+                          m.purpose = 'FEED_CONTENT'
                           AND EXISTS (
                               SELECT 1
-                              FROM post_media pm
-                              JOIN posts p ON p.id = pm.post_id
+                              FROM feed_media pm
+                              JOIN feeds p ON p.id = pm.feed_id
                               WHERE pm.media_metadata_id = m.id
                                 AND p.deleted_at IS NULL
                           )

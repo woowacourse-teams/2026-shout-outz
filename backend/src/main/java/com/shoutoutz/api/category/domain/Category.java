@@ -3,7 +3,7 @@ package com.shoutoutz.api.category.domain;
 import lombok.Getter;
 
 /**
- * 포스트 분류와 이벤트 표시 정보.
+ * 피드 분류와 이벤트 표시 정보.
  */
 @Getter
 public final class Category {

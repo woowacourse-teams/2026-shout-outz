@@ -224,7 +224,7 @@ class ProjectServiceTest {
         givenRegistrant(UserType.WOOWACOURSE_CREW);
         givenValidSlugAndTags();
         when(mediaMetadataRepository.findById(THUMBNAIL_ID))
-                .thenReturn(Optional.of(thumbnail(REGISTERED_BY, MediaPurpose.POST_CONTENT, MediaStatus.READY)));
+                .thenReturn(Optional.of(thumbnail(REGISTERED_BY, MediaPurpose.FEED_CONTENT, MediaStatus.READY)));
 
         assertInvalidThumbnail(ProjectErrorCode.PROJECT_INVALID_THUMBNAIL);
     }

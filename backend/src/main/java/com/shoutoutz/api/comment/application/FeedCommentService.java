@@ -10,7 +10,7 @@ import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentCreateReque
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentCreateResponse;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
-import com.shoutoutz.api.post.domain.PostRepository;
+import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
@@ -21,15 +21,14 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 피드 댓글 생성 흐름을 조정한다.
  *
- * 현재 피드는 기존 Post 도메인과 posts 테이블로 관리하므로 피드 존재 여부는
- * PostRepository를 사용한다. API의 식별자는 feedId로 노출하며, Post 도메인의
- * Feed 전환은 별도 작업에서 전체적으로 진행한다.
+ * 피드는 Feed 도메인과 feeds 테이블로 관리하므로 피드 존재 여부는
+ * FeedRepository를 사용한다. API의 식별자는 feedId로 노출한다.
  */
 @Service
 @RequiredArgsConstructor
 public class FeedCommentService {
 
-    private final PostRepository postRepository;
+    private final FeedRepository feedRepository;
     private final FeedCommentRepository feedCommentRepository;
     private final UserProfileRepository userProfileRepository;
 
@@ -67,7 +66,7 @@ public class FeedCommentService {
     }
 
     private void validateActiveFeed(long feedId) {
-        postRepository.findActiveById(feedId)
+        feedRepository.findActiveById(feedId)
                 .orElseThrow(() -> new EntityNotFoundException(FEED_NOT_FOUND));
     }
 

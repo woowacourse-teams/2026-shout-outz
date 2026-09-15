@@ -91,7 +91,7 @@ class CategoryHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Category")
                                 .summary("카테고리 목록 조회")
-                                .description("포스트 작성에 사용할 활성 카테고리를 표시 순서대로 조회한다.")
+                                .description("피드 작성에 사용할 활성 카테고리를 표시 순서대로 조회한다.")
                                 .responseSchema(Schema.schema("CategoryFindAllSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
@@ -203,7 +203,7 @@ class CategoryHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Category")
                                 .summary("카테고리 삭제")
-                                .description("관리자가 카테고리를 비활성화해 목록과 포스트 선택 대상에서 제외한다.")
+                                .description("관리자가 카테고리를 비활성화해 목록과 피드 선택 대상에서 제외한다.")
                                 .pathParameters(
                                         parameterWithName("categoryId")
                                                 .type(INTEGER)
@@ -504,7 +504,7 @@ class CategoryHttpApiTest {
         return ResourceSnippetParameters.builder()
                 .tag("Category")
                 .summary("카테고리 삭제")
-                .description("관리자가 카테고리를 비활성화해 목록과 포스트 선택 대상에서 제외한다.")
+                .description("관리자가 카테고리를 비활성화해 목록과 피드 선택 대상에서 제외한다.")
                 .pathParameters(parameterWithName("categoryId")
                         .type(INTEGER)
                         .description("카테고리 ID"))

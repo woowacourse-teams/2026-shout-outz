@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.comment.domain.FeedComment;
 import com.shoutoutz.api.comment.domain.FeedCommentRepository;
-import com.shoutoutz.api.post.domain.Post;
-import com.shoutoutz.api.post.domain.PostRepository;
+import com.shoutoutz.api.feed.domain.Feed;
+import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import java.time.Instant;
@@ -28,16 +28,16 @@ class FeedCommentRepositoryIntegrationTest {
     private FeedCommentRepository feedCommentRepository;
 
     @Autowired
-    private PostRepository postRepository;
+    private FeedRepository feedRepository;
 
     @Autowired
     private UserRepository userRepository;
 
     @Test
-    @DisplayName("피드 댓글을 post_comments에 저장하고 feedId와 생성 시각을 매핑한다")
+    @DisplayName("피드 댓글을 feed_comments에 저장하고 feedId와 생성 시각을 매핑한다")
     void savesAndFindsFeedComment() {
         User author = userRepository.save(User.initialize("feed-comment-" + uniqueSuffix()));
-        Post feed = postRepository.save(Post.create(author.getId(), "피드 본문", NOW));
+        Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 본문", NOW));
 
         FeedComment saved = feedCommentRepository.save(
                 FeedComment.create(feed.getId(), author.getId(), null, "  댓글 내용  ")
@@ -58,7 +58,7 @@ class FeedCommentRepositoryIntegrationTest {
     @DisplayName("같은 피드의 부모 댓글을 참조하는 대댓글을 저장한다")
     void savesReplyWithParentId() {
         User author = userRepository.save(User.initialize("feed-reply-" + uniqueSuffix()));
-        Post feed = postRepository.save(Post.create(author.getId(), "피드 본문", NOW));
+        Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 본문", NOW));
         FeedComment root = feedCommentRepository.save(
                 FeedComment.create(feed.getId(), author.getId(), null, "루트 댓글")
         );

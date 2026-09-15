@@ -38,8 +38,8 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 class S3MediaStorageTest {
 
     private static final Instant NOW = Instant.parse("2026-08-31T00:00:00Z");
-    private static final String LOGICAL_KEY = "media/post-content/object-id";
-    private static final String ACTUAL_KEY = "test-prefix/post-content/object-id";
+    private static final String LOGICAL_KEY = "media/feed-content/object-id";
+    private static final String ACTUAL_KEY = "test-prefix/feed-content/object-id";
 
     private final S3Client s3Client = mock(S3Client.class);
     private final S3Presigner s3Presigner = mock(S3Presigner.class);
@@ -147,7 +147,7 @@ class S3MediaStorageTest {
                 S3Exception.builder().statusCode(404).build()
         );
 
-        assertThatThrownBy(() -> storage.headObject("media/post-content/missing"))
+        assertThatThrownBy(() -> storage.headObject("media/feed-content/missing"))
                 .isInstanceOf(S3ObjectNotFoundException.class);
     }
 
@@ -198,7 +198,7 @@ class S3MediaStorageTest {
 
         assertThatThrownBy(() -> storage.downloadObject(LOGICAL_KEY))
                 .isInstanceOf(S3StorageException.class)
-                .hasMessage("S3 객체가 비어 있습니다: media/post-content/object-id");
+                .hasMessage("S3 객체가 비어 있습니다: media/feed-content/object-id");
     }
 
     @Test
@@ -231,7 +231,7 @@ class S3MediaStorageTest {
     void 처리된_객체를_S3에_저장한다() {
         byte[] content = "processed-image".getBytes(StandardCharsets.UTF_8);
 
-        storage.putObject("media/post-content/object-id/display", content, "IMAGE/PNG");
+        storage.putObject("media/feed-content/object-id/display", content, "IMAGE/PNG");
 
         ArgumentCaptor<PutObjectRequest> captor = ArgumentCaptor.forClass(PutObjectRequest.class);
         verify(s3Client).putObject(
@@ -239,7 +239,7 @@ class S3MediaStorageTest {
                 any(software.amazon.awssdk.core.sync.RequestBody.class)
         );
         assertThat(captor.getValue().bucket()).isEqualTo("test-bucket");
-        assertThat(captor.getValue().key()).isEqualTo("test-prefix/post-content/object-id/display");
+        assertThat(captor.getValue().key()).isEqualTo("test-prefix/feed-content/object-id/display");
         assertThat(captor.getValue().contentType()).isEqualTo("image/png");
         assertThat(captor.getValue().contentLength()).isEqualTo((long) content.length);
     }
@@ -252,9 +252,9 @@ class S3MediaStorageTest {
 
     private MediaMetadata metadata() {
         return MediaMetadata.initialize(
-                MediaPurpose.POST_CONTENT,
+                MediaPurpose.FEED_CONTENT,
                 1L,
-                "media/post-content/object-id",
+                "media/feed-content/object-id",
                 "image.webp",
                 "image/webp",
                 1024L,

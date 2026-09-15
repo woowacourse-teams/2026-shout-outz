@@ -17,8 +17,8 @@ import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentCreateReque
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentCreateResponse;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
-import com.shoutoutz.api.post.domain.Post;
-import com.shoutoutz.api.post.domain.PostRepository;
+import com.shoutoutz.api.feed.domain.Feed;
+import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -41,7 +41,7 @@ class FeedCommentServiceTest {
     private static final Instant NOW = Instant.parse("2026-09-14T00:00:00Z");
 
     @Mock
-    private PostRepository postRepository;
+    private FeedRepository feedRepository;
 
     @Mock
     private FeedCommentRepository feedCommentRepository;
@@ -54,7 +54,7 @@ class FeedCommentServiceTest {
     @BeforeEach
     void setUp() {
         feedCommentService = new FeedCommentService(
-                postRepository,
+                feedRepository,
                 feedCommentRepository,
                 userProfileRepository
         );
@@ -117,7 +117,7 @@ class FeedCommentServiceTest {
     @Test
     @DisplayName("존재하지 않거나 삭제된 피드에는 댓글을 작성하지 않고 404를 던진다.")
     void rejectsInactiveFeed() {
-        when(postRepository.findActiveById(FEED_ID)).thenReturn(Optional.empty());
+        when(feedRepository.findActiveById(FEED_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> feedCommentService.create(
                 FEED_ID,
@@ -214,8 +214,8 @@ class FeedCommentServiceTest {
     }
 
     private void givenActiveFeed() {
-        when(postRepository.findActiveById(FEED_ID)).thenReturn(Optional.of(
-                Post.reconstitute(FEED_ID, AUTHOR_ID, "피드 본문", NOW, NOW, null)
+        when(feedRepository.findActiveById(FEED_ID)).thenReturn(Optional.of(
+                Feed.reconstitute(FEED_ID, AUTHOR_ID, "피드 본문", NOW, NOW, null)
         ));
     }
 
