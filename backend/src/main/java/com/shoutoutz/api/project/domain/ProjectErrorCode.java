@@ -7,8 +7,6 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ProjectErrorCode implements ErrorCode {
-    PROJECT_NOT_FOUND("요청한 프로젝트를 찾을 수 없습니다."),
-
     /**
      * 프로젝트 조회 에러 코드
      */
