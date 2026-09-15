@@ -13,9 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as FeedsIndexRouteImport } from './routes/feeds/index'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
-import { Route as ProjectDetailIndexRouteImport } from './routes/project-detail/index'
-import { Route as ProjectDetailIdRouteImport } from './routes/project-detail/$id'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
+import { Route as ProjectsIdRouteImport } from './routes/projects/$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -37,87 +36,64 @@ const NewsIndexRoute = NewsIndexRouteImport.update({
   path: '/news/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProjectDetailIndexRoute = ProjectDetailIndexRouteImport.update({
-  id: '/project-detail/',
-  path: '/project-detail/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProjectDetailIdRoute = ProjectDetailIdRouteImport.update({
-  id: '/project-detail/$id',
-  path: '/project-detail/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsIdRoute = ProjectsIdRouteImport.update({
+  id: '/projects/$id',
+  path: '/projects/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/project-detail/$id': typeof ProjectDetailIdRoute
+  '/projects/$id': typeof ProjectsIdRoute
   '/feeds/': typeof FeedsIndexRoute
   '/news/': typeof NewsIndexRoute
-  '/project-detail/': typeof ProjectDetailIndexRoute
   '/projects/': typeof ProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/project-detail/$id': typeof ProjectDetailIdRoute
+  '/projects/$id': typeof ProjectsIdRoute
   '/feeds': typeof FeedsIndexRoute
   '/news': typeof NewsIndexRoute
-  '/project-detail': typeof ProjectDetailIndexRoute
   '/projects': typeof ProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/project-detail/$id': typeof ProjectDetailIdRoute
+  '/projects/$id': typeof ProjectsIdRoute
   '/feeds/': typeof FeedsIndexRoute
   '/news/': typeof NewsIndexRoute
-  '/project-detail/': typeof ProjectDetailIndexRoute
   '/projects/': typeof ProjectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/about'
-    | '/project-detail/$id'
-    | '/feeds/'
-    | '/news/'
-    | '/project-detail/'
-    | '/projects/'
+    '/' | '/about' | '/projects/$id' | '/feeds/' | '/news/' | '/projects/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/about'
-    | '/project-detail/$id'
-    | '/feeds'
-    | '/news'
-    | '/project-detail'
-    | '/projects'
+  to: '/' | '/about' | '/projects/$id' | '/feeds' | '/news' | '/projects'
   id:
     | '__root__'
     | '/'
     | '/about'
-    | '/project-detail/$id'
+    | '/projects/$id'
     | '/feeds/'
     | '/news/'
-    | '/project-detail/'
     | '/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  ProjectDetailIdRoute: typeof ProjectDetailIdRoute
+  ProjectsIdRoute: typeof ProjectsIdRoute
   FeedsIndexRoute: typeof FeedsIndexRoute
   NewsIndexRoute: typeof NewsIndexRoute
-  ProjectDetailIndexRoute: typeof ProjectDetailIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
 
@@ -151,25 +127,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NewsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/project-detail/': {
-      id: '/project-detail/'
-      path: '/project-detail'
-      fullPath: '/project-detail/'
-      preLoaderRoute: typeof ProjectDetailIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/project-detail/$id': {
-      id: '/project-detail/$id'
-      path: '/project-detail/$id'
-      fullPath: '/project-detail/$id'
-      preLoaderRoute: typeof ProjectDetailIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/projects/': {
       id: '/projects/'
       path: '/projects'
       fullPath: '/projects/'
       preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/$id': {
+      id: '/projects/$id'
+      path: '/projects/$id'
+      fullPath: '/projects/$id'
+      preLoaderRoute: typeof ProjectsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -178,10 +147,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  ProjectDetailIdRoute: ProjectDetailIdRoute,
+  ProjectsIdRoute: ProjectsIdRoute,
   FeedsIndexRoute: FeedsIndexRoute,
   NewsIndexRoute: NewsIndexRoute,
-  ProjectDetailIndexRoute: ProjectDetailIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
 }
 export const routeTree = rootRouteImport
