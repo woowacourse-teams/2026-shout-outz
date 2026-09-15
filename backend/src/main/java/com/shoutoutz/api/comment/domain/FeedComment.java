@@ -101,4 +101,17 @@ public class FeedComment {
                 .deletedAt(deletedAt)
                 .build();
     }
+
+    public FeedComment delete(Instant deletedAt) {
+        return FeedComment.builder()
+                .id(id)
+                .feedId(feedId)
+                .authorId(authorId)
+                .parentId(parentId)
+                .content(content)
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .deletedAt(deletedAt)
+                .build();
+    }
 }

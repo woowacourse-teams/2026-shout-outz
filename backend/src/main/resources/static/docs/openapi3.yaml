@@ -98,10 +98,10 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
-                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"\
-                    displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\",\"message\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
+                    ,\"message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
+                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
                     :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
@@ -886,10 +886,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -977,9 +977,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -1358,10 +1358,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
+                    :\"title은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -2153,6 +2153,43 @@ paths:
                   value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
                     ,\"displayName\":\"재키\",\"avatarImageId\":21}}"
   /api/v1/feeds/{feedId}/comments/{commentId}:
+    delete:
+      tags:
+      - Feed Comment
+      summary: 피드 댓글 삭제
+      description: 댓글 작성자 본인이 활성 피드의 댓글을 soft delete한다.
+      operationId: feed-comment-delete
+      parameters:
+      - name: feedId
+        in: path
+        description: 댓글이 속한 피드 ID
+        required: true
+        schema:
+          type: string
+      - name: commentId
+        in: path
+        description: 삭제할 댓글 ID
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedCommentDeleteSuccessResponse"
+              examples:
+                feed-comment-delete:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":501,\"deleted\"\
+                    :true}}"
     patch:
       tags:
       - Feed Comment
@@ -2588,6 +2625,27 @@ components:
         content:
           type: string
           description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
+    FeedCommentDeleteSuccessResponse:
+      title: FeedCommentDeleteSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - deleted
+          - id
+          type: object
+          properties:
+            deleted:
+              type: boolean
+              description: 댓글 삭제 여부
+            id:
+              type: number
+              description: 삭제된 댓글 ID
+        status:
+          type: string
+          description: 응답 상태
     UserProfileUpdateRequest:
       title: UserProfileUpdateRequest
       required:
@@ -3620,27 +3678,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    CategorySaveRequest:
-      title: CategorySaveRequest
-      required:
-      - displayName
-      - displayOrder
-      - slug
-      - type
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 고유 표시 이름
-        displayOrder:
-          type: number
-          description: 0 이상 32767 이하 표시 순서
-        type:
-          type: string
-          description: GENERAL 또는 EVENT
-        slug:
-          type: string
-          description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
     ProjectCommentUpdateSuccessResponse:
       title: ProjectCommentUpdateSuccessResponse
       required:
@@ -3700,6 +3737,27 @@ components:
         status:
           type: string
           description: 응답 상태
+    CategorySaveRequest:
+      title: CategorySaveRequest
+      required:
+      - displayName
+      - displayOrder
+      - slug
+      - type
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 고유 표시 이름
+        displayOrder:
+          type: number
+          description: 0 이상 32767 이하 표시 순서
+        type:
+          type: string
+          description: GENERAL 또는 EVENT
+        slug:
+          type: string
+          description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
     EventCreateRequest:
       title: EventCreateRequest
       required:
@@ -4176,6 +4234,40 @@ components:
         displayOrder:
           type: number
           description: 변경할 표시 순서
+    NoticeCreateRequest:
+      title: NoticeCreateRequest
+      required:
+      - authorName
+      - body
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 공지 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 공지 CTA
+        authorName:
+          type: string
+          description: 공지 작성자 이름
+        body:
+          type: string
+          description: 공지 본문
+        title:
+          type: string
+          description: 공지 제목
     CategoryUpdateSuccessResponse:
       title: CategoryUpdateSuccessResponse
       required:
@@ -4215,40 +4307,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    NoticeCreateRequest:
-      title: NoticeCreateRequest
-      required:
-      - authorName
-      - body
-      - summary
-      - title
-      type: object
-      properties:
-        summary:
-          type: string
-          description: 공지 요약
-        cta:
-          required:
-          - label
-          - url
-          type: object
-          properties:
-            label:
-              type: string
-              description: CTA 라벨
-            url:
-              type: string
-              description: CTA URL
-          description: 공지 CTA
-        authorName:
-          type: string
-          description: 공지 작성자 이름
-        body:
-          type: string
-          description: 공지 본문
-        title:
-          type: string
-          description: 공지 제목
     ProjectFindAllSuccessResponse:
       title: ProjectFindAllSuccessResponse
       required:

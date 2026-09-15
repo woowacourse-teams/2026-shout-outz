@@ -15,6 +15,7 @@ import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentCreateReque
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentFindRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentDeleteResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentFindResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentUpdateResponse;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
@@ -25,6 +26,7 @@ import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -163,6 +165,23 @@ public class FeedCommentService {
                 comment.getUpdatedAt(),
                 true,
                 comment.isEdited()
+        );
+    }
+
+    @Transactional
+    public FeedCommentDeleteResponse delete(
+            long feedId,
+            long commentId,
+            long authorId
+    ) {
+        validateActiveFeed(feedId);
+        FeedComment comment = findComment(feedId, commentId);
+        validateAuthor(comment, authorId);
+
+        FeedComment deletedComment = feedCommentRepository.save(comment.delete(Instant.now()));
+        return new FeedCommentDeleteResponse(
+                deletedComment.getId(),
+                deletedComment.isDeleted()
         );
     }
 

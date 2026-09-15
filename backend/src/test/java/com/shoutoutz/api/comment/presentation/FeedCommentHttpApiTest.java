@@ -15,6 +15,7 @@ import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,6 +31,7 @@ import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentCreateReque
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentFindRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentDeleteResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentFindResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentFindResponse.Comment;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentUpdateResponse;
@@ -406,6 +408,45 @@ class FeedCommentHttpApiTest {
     }
 
     @Test
+    @DisplayName("댓글 작성자가 댓글을 삭제하면 200과 삭제 상태를 반환한다.")
+    void deletesComment() throws Exception {
+        given(feedCommentService.delete(100L, 501L, 7L))
+                .willReturn(new FeedCommentDeleteResponse(501L, true));
+
+        mockMvc.perform(delete("/api/v1/feeds/{feedId}/comments/{commentId}", 100L, 501L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(501))
+                .andExpect(jsonPath("$.data.deleted").value(true))
+                .andDo(document(
+                        "feed-comment-delete",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Feed Comment")
+                                .summary("피드 댓글 삭제")
+                                .description("댓글 작성자 본인이 활성 피드의 댓글을 soft delete한다.")
+                                .pathParameters(
+                                        parameterWithName("feedId").description("댓글이 속한 피드 ID"),
+                                        parameterWithName("commentId").description("삭제할 댓글 ID")
+                                )
+                                .requestHeaders(
+                                        headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .responseSchema(Schema.schema("FeedCommentDeleteSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data.id").type(NUMBER).description("삭제된 댓글 ID"),
+                                        fieldWithPath("data.deleted").type(BOOLEAN).description("댓글 삭제 여부")
+                                )
+                                .build())
+                ));
+
+        verify(feedCommentService).delete(100L, 501L, 7L);
+    }
+
+    @Test
     @DisplayName("댓글 내용이 500자를 초과하면 400과 필드 오류를 반환하고 서비스를 호출하지 않는다.")
     void rejectsContentOver500CodePoints() throws Exception {
         mockMvc.perform(post("/api/v1/feeds/{feedId}/comments", 100L)
@@ -462,6 +503,16 @@ class FeedCommentHttpApiTest {
     }
 
     @Test
+    @DisplayName("로그인하지 않고 댓글을 삭제하면 401을 반환한다.")
+    void rejectsUnauthenticatedDelete() throws Exception {
+        mockMvc.perform(delete("/api/v1/feeds/{feedId}/comments/{commentId}", 100L, 501L))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+
+        verifyNoInteractions(feedCommentService);
+    }
+
+    @Test
     @DisplayName("활성 피드가 아니면 피드를 찾을 수 없다는 404를 반환한다.")
     void rejectsInactiveFeed() throws Exception {
         given(feedCommentService.create(eq(100L), eq(7L), any(FeedCommentCreateRequest.class)))
@@ -497,6 +548,20 @@ class FeedCommentHttpApiTest {
     }
 
     @Test
+    @DisplayName("활성 피드가 아니면 댓글 삭제 요청에 피드를 찾을 수 없다는 404를 반환한다.")
+    void rejectsDeleteForInactiveFeed() throws Exception {
+        given(feedCommentService.delete(100L, 501L, 7L))
+                .willThrow(new EntityNotFoundException(FeedErrorCode.FEED_NOT_FOUND));
+
+        mockMvc.perform(delete("/api/v1/feeds/{feedId}/comments/{commentId}", 100L, 501L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(FeedErrorCode.FEED_NOT_FOUND.name()));
+    }
+
+    @Test
     @DisplayName("댓글 작성자가 아니면 댓글 수정 요청에 403을 반환한다.")
     void rejectsUpdateFromAnotherAuthor() throws Exception {
         given(feedCommentService.update(
@@ -516,6 +581,20 @@ class FeedCommentHttpApiTest {
     }
 
     @Test
+    @DisplayName("댓글 작성자가 아니면 댓글 삭제 요청에 403을 반환한다.")
+    void rejectsDeleteFromAnotherAuthor() throws Exception {
+        given(feedCommentService.delete(100L, 501L, 7L))
+                .willThrow(new ForbiddenException(CommonErrorCode.FORBIDDEN));
+
+        mockMvc.perform(delete("/api/v1/feeds/{feedId}/comments/{commentId}", 100L, 501L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
     @DisplayName("삭제되었거나 다른 피드의 댓글이면 댓글 수정 요청에 404를 반환한다.")
     void rejectsUnavailableComment() throws Exception {
         given(feedCommentService.update(
@@ -530,6 +609,20 @@ class FeedCommentHttpApiTest {
                                 new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"수정된 댓글\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(CommentErrorCode.COMMENT_NOT_FOUND.name()));
+    }
+
+    @Test
+    @DisplayName("삭제되었거나 다른 피드의 댓글이면 댓글 삭제 요청에 404를 반환한다.")
+    void rejectsUnavailableCommentForDelete() throws Exception {
+        given(feedCommentService.delete(100L, 501L, 7L))
+                .willThrow(new EntityNotFoundException(CommentErrorCode.COMMENT_NOT_FOUND));
+
+        mockMvc.perform(delete("/api/v1/feeds/{feedId}/comments/{commentId}", 100L, 501L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(CommentErrorCode.COMMENT_NOT_FOUND.name()));
     }

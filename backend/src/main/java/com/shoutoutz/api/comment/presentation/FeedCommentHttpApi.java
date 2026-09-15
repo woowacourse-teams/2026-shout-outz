@@ -7,6 +7,7 @@ import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentCreateReque
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentFindRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentDeleteResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentFindResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentUpdateResponse;
 import com.shoutoutz.api.common.response.SuccessResponse;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -73,6 +75,20 @@ public class FeedCommentHttpApi {
                 commentId,
                 loginUser.userId(),
                 request
+        );
+        return ResponseEntity.ok(SuccessResponse.success(response));
+    }
+
+    @DeleteMapping("/{commentId}")
+    public ResponseEntity<SuccessResponse<FeedCommentDeleteResponse>> delete(
+            @PathVariable long feedId,
+            @PathVariable long commentId,
+            @LoginUser AuthenticatedUser loginUser
+    ) {
+        FeedCommentDeleteResponse response = feedCommentService.delete(
+                feedId,
+                commentId,
+                loginUser.userId()
         );
         return ResponseEntity.ok(SuccessResponse.success(response));
     }

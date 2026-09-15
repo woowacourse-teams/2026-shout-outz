@@ -22,6 +22,7 @@ import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentCreateReque
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentFindRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentDeleteResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentFindResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentFindResponse.Comment;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentUpdateResponse;
@@ -541,6 +542,122 @@ class FeedCommentServiceTest {
 
         verify(feedCommentRepository, never()).save(any());
         verifyNoInteractions(userProfileRepository);
+    }
+
+    @Test
+    @DisplayName("댓글 작성자 본인이 댓글을 soft delete하고 삭제 상태 응답을 반환한다.")
+    void deletesComment() {
+        givenActiveFeed();
+        when(feedCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "삭제할 댓글",
+                NOW,
+                NOW,
+                null
+        )));
+        when(feedCommentRepository.save(any(FeedComment.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        FeedCommentDeleteResponse result = feedCommentService.delete(
+                FEED_ID,
+                COMMENT_ID,
+                AUTHOR_ID
+        );
+
+        assertThat(result.id()).isEqualTo(COMMENT_ID);
+        assertThat(result.deleted()).isTrue();
+
+        ArgumentCaptor<FeedComment> captor = ArgumentCaptor.forClass(FeedComment.class);
+        verify(feedCommentRepository).save(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(COMMENT_ID);
+        assertThat(captor.getValue().getDeletedAt()).isNotNull();
+        assertThat(captor.getValue().getContent()).isEqualTo("삭제할 댓글");
+    }
+
+    @Test
+    @DisplayName("삭제된 피드에는 댓글을 삭제하지 않고 404를 던진다.")
+    void rejectsDeleteForInactiveFeed() {
+        when(feedRepository.findActiveById(FEED_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> feedCommentService.delete(
+                FEED_ID,
+                COMMENT_ID,
+                AUTHOR_ID
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(FEED_NOT_FOUND));
+
+        verifyNoInteractions(feedCommentRepository, userProfileRepository);
+    }
+
+    @Test
+    @DisplayName("이미 삭제된 댓글은 다시 삭제하지 않고 404를 던진다.")
+    void rejectsAlreadyDeletedComment() {
+        givenActiveFeed();
+        when(feedCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "삭제된 댓글",
+                NOW,
+                NOW,
+                NOW
+        )));
+
+        assertThatThrownBy(() -> feedCommentService.delete(
+                FEED_ID,
+                COMMENT_ID,
+                AUTHOR_ID
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(COMMENT_NOT_FOUND));
+
+        verify(feedCommentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("다른 피드에 속한 댓글은 삭제하지 않고 404를 던진다.")
+    void rejectsDeleteOfCommentFromDifferentFeed() {
+        givenActiveFeed();
+        when(feedCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID,
+                "다른 피드 댓글",
+                NOW,
+                NOW,
+                null,
+                FEED_ID + 1
+        )));
+
+        assertThatThrownBy(() -> feedCommentService.delete(
+                FEED_ID,
+                COMMENT_ID,
+                AUTHOR_ID
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(COMMENT_NOT_FOUND));
+
+        verify(feedCommentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("댓글 작성자가 아니면 댓글을 삭제하지 않고 403을 던진다.")
+    void rejectsDeleteFromAnotherAuthor() {
+        givenActiveFeed();
+        when(feedCommentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment(
+                COMMENT_ID,
+                AUTHOR_ID + 1,
+                "다른 사용자의 댓글",
+                NOW,
+                NOW,
+                null
+        )));
+
+        assertThatThrownBy(() -> feedCommentService.delete(
+                FEED_ID,
+                COMMENT_ID,
+                AUTHOR_ID
+        )).isInstanceOfSatisfying(ForbiddenException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(FORBIDDEN));
+
+        verify(feedCommentRepository, never()).save(any());
     }
 
     private void givenActiveFeed() {

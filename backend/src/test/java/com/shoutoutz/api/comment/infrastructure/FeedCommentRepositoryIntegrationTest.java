@@ -100,6 +100,26 @@ class FeedCommentRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("피드 댓글을 soft delete하면 삭제·수정 시각을 갱신한다")
+    void softDeletesFeedComment() {
+        User author = userRepository.save(User.initialize("feed-delete-" + uniqueSuffix()));
+        Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 본문", NOW));
+
+        FeedComment saved = feedCommentRepository.save(
+                FeedComment.create(feed.getId(), author.getId(), null, "삭제할 댓글")
+        );
+
+        FeedComment deleted = feedCommentRepository.save(saved.delete(Instant.now()));
+        FeedComment found = feedCommentRepository.findById(saved.getId()).orElseThrow();
+
+        assertThat(deleted.isDeleted()).isTrue();
+        assertThat(found.isDeleted()).isTrue();
+        assertThat(found.getDeletedAt()).isNotNull();
+        assertThat(found.getContent()).isEqualTo("삭제할 댓글");
+        assertThat(found.getUpdatedAt()).isAfter(saved.getUpdatedAt());
+    }
+
+    @Test
     @DisplayName("루트 댓글을 정렬 기준과 크기에 따라 조회하고 대댓글을 부모 ID로 조회한다")
     void findsRootPageAndReplies() {
         User author = userRepository.save(User.initialize("feed-list-" + uniqueSuffix()));
