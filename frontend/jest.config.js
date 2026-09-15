@@ -46,13 +46,14 @@ const esmPackages = [
 
 /** @type {import('jest').Config} */
 export default {
-  testEnvironment: 'jsdom',
+  testEnvironment: '<rootDir>/jest.environment.js',
+  testEnvironmentOptions: { customExportConditions: ['node', 'node-addons'] },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
-    '^.+\\.(?:[tj]sx?|mjs)$': [
+    '^.+\\.(?:[cm]?j|t)sx?$': [
       '@swc/jest',
       {
         swcrc: false,
