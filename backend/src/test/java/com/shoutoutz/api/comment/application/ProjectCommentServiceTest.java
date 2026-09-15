@@ -2,6 +2,7 @@ package com.shoutoutz.api.comment.application;
 
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_DEPTH_EXCEEDED;
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_NOT_FOUND;
+import static com.shoutoutz.api.comment.domain.CommentErrorCode.INVALID_COMMENT_CURSOR;
 import static com.shoutoutz.api.common.exception.code.CommonErrorCode.FORBIDDEN;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,20 +13,28 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.shoutoutz.api.comment.application.dto.ProjectCommentCursor;
+import com.shoutoutz.api.comment.application.dto.ProjectCommentPage;
 import com.shoutoutz.api.comment.domain.ProjectComment;
 import com.shoutoutz.api.comment.domain.ProjectCommentRepository;
+import com.shoutoutz.api.comment.domain.ProjectCommentSort;
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentCreateRequest;
+import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentFindRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentFindResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentFindResponse.Comment;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentUpdateResponse;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -52,6 +61,9 @@ class ProjectCommentServiceTest {
     private ProjectCommentRepository projectCommentRepository;
 
     @Mock
+    private ProjectCommentQueryRepository projectCommentQueryRepository;
+
+    @Mock
     private UserProfileRepository userProfileRepository;
 
     private ProjectCommentService projectCommentService;
@@ -61,6 +73,7 @@ class ProjectCommentServiceTest {
         projectCommentService = new ProjectCommentService(
                 projectRepository,
                 projectCommentRepository,
+                projectCommentQueryRepository,
                 userProfileRepository
         );
     }
@@ -116,6 +129,149 @@ class ProjectCommentServiceTest {
         ArgumentCaptor<ProjectComment> captor = ArgumentCaptor.forClass(ProjectComment.class);
         verify(projectCommentRepository).save(captor.capture());
         assertThat(captor.getValue().getParentId()).isEqualTo(PARENT_ID);
+    }
+
+    @Test
+    @DisplayName("비로그인 사용자는 댓글 목록을 조회하고 삭제된 댓글의 원문은 받지 않는다.")
+    void findsCommentsForAnonymousUser() {
+        givenPublicProject();
+        ProjectComment root = comment(COMMENT_ID, AUTHOR_ID, "루트 댓글", NOW, NOW, null);
+        ProjectComment reply = ProjectComment.reconstitute(
+                502L,
+                PROJECT_ID,
+                AUTHOR_ID + 1,
+                COMMENT_ID,
+                "대댓글",
+                NOW.plusSeconds(60),
+                NOW.plusSeconds(60),
+                null
+        );
+        ProjectComment deletedRoot = ProjectComment.reconstitute(
+                503L,
+                PROJECT_ID,
+                AUTHOR_ID,
+                null,
+                "삭제된 원문",
+                NOW.plusSeconds(120),
+                NOW.plusSeconds(120),
+                NOW.plusSeconds(180)
+        );
+        when(projectCommentQueryRepository.findRootCommentsPage(
+                PROJECT_ID,
+                null,
+                ProjectCommentSort.LATEST,
+                5
+        )).thenReturn(new ProjectCommentPage(List.of(root, deletedRoot), false));
+        when(projectCommentQueryRepository.findReplies(PROJECT_ID, List.of(COMMENT_ID, 503L)))
+                .thenReturn(List.of(reply));
+        givenAuthor(AUTHOR_ID, "작성자", 10L);
+        givenAuthor(AUTHOR_ID + 1, "답글 작성자", 11L);
+
+        ProjectCommentFindResponse result = projectCommentService.findAll(
+                PROJECT_ID,
+                new ProjectCommentFindRequest(null, 5, "LATEST"),
+                null
+        );
+
+        assertThat(result.comments()).extracting(Comment::id)
+                .containsExactly(COMMENT_ID, 502L, 503L);
+        assertThat(result.comments().get(0).content()).isEqualTo("루트 댓글");
+        assertThat(result.comments().get(0).editable()).isFalse();
+        assertThat(result.comments().get(1).parentId()).isEqualTo(COMMENT_ID);
+        assertThat(result.comments().get(2).content()).isNull();
+        assertThat(result.comments().get(2).deleted()).isTrue();
+        assertThat(result.comments().get(2).editable()).isFalse();
+        assertThat(result.meta().nextCursor()).isNull();
+        assertThat(result.meta().hasNext()).isFalse();
+    }
+
+    @Test
+    @DisplayName("로그인 사용자는 본인 댓글만 수정 가능 상태로 조회한다.")
+    void marksOnlyLoggedInUsersCommentsAsEditable() {
+        givenPublicProject();
+        ProjectComment ownComment = comment(COMMENT_ID, AUTHOR_ID, "내 댓글", NOW, NOW, null);
+        ProjectComment otherComment = comment(502L, AUTHOR_ID + 1, "다른 댓글", NOW.plusSeconds(1),
+                NOW.plusSeconds(1), null);
+        when(projectCommentQueryRepository.findRootCommentsPage(
+                PROJECT_ID,
+                null,
+                ProjectCommentSort.LATEST,
+                5
+        )).thenReturn(new ProjectCommentPage(List.of(ownComment, otherComment), false));
+        when(projectCommentQueryRepository.findReplies(PROJECT_ID, List.of(COMMENT_ID, 502L)))
+                .thenReturn(List.of());
+        givenAuthor(AUTHOR_ID, "내 이름", 10L);
+        givenAuthor(AUTHOR_ID + 1, "다른 이름", 11L);
+
+        ProjectCommentFindResponse result = projectCommentService.findAll(
+                PROJECT_ID,
+                new ProjectCommentFindRequest(null, 5, "LATEST"),
+                AUTHOR_ID
+        );
+
+        assertThat(result.comments()).extracting(Comment::editable)
+                .containsExactly(true, false);
+    }
+
+    @Test
+    @DisplayName("다음 페이지가 있으면 마지막 루트 댓글 기준 커서를 반환한다.")
+    void createsNextCursorFromLastRootComment() {
+        givenPublicProject();
+        ProjectComment root = comment(COMMENT_ID, AUTHOR_ID, "첫 번째 댓글", NOW, NOW, null);
+        when(projectCommentQueryRepository.findRootCommentsPage(
+                PROJECT_ID,
+                null,
+                ProjectCommentSort.OLDEST,
+                1
+        )).thenReturn(new ProjectCommentPage(List.of(root), true));
+        when(projectCommentQueryRepository.findReplies(PROJECT_ID, List.of(COMMENT_ID)))
+                .thenReturn(List.of());
+        givenAuthor();
+
+        ProjectCommentFindResponse result = projectCommentService.findAll(
+                PROJECT_ID,
+                new ProjectCommentFindRequest(null, 1, "OLDEST"),
+                null
+        );
+
+        assertThat(result.meta().hasNext()).isTrue();
+        assertThat(ProjectCommentCursorCodec.decode(result.meta().nextCursor()))
+                .isEqualTo(new ProjectCommentCursor(NOW, COMMENT_ID, ProjectCommentSort.OLDEST));
+    }
+
+    @Test
+    @DisplayName("커서의 정렬 기준이 요청 정렬 기준과 다르면 조회하지 않고 400을 던진다.")
+    void rejectsCursorWithDifferentSort() {
+        givenPublicProject();
+        String cursor = ProjectCommentCursorCodec.encode(
+                new ProjectCommentCursor(NOW, COMMENT_ID, ProjectCommentSort.LATEST)
+        );
+
+        assertThatThrownBy(() -> projectCommentService.findAll(
+                PROJECT_ID,
+                new ProjectCommentFindRequest(cursor, 5, "OLDEST"),
+                null
+        )).isInstanceOfSatisfying(InvalidInputException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(
+                        INVALID_COMMENT_CURSOR
+                ));
+
+        verifyNoInteractions(projectCommentQueryRepository, userProfileRepository);
+    }
+
+    @Test
+    @DisplayName("공개 프로젝트가 아니면 댓글 목록을 조회하지 않고 404를 던진다.")
+    void rejectsFindAllForNonPublicProject() {
+        when(projectRepository.existsPublicById(PROJECT_ID)).thenReturn(false);
+
+        assertThatThrownBy(() -> projectCommentService.findAll(
+                PROJECT_ID,
+                new ProjectCommentFindRequest(null, 5, "LATEST"),
+                null
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(PROJECT_NOT_FOUND));
+
+        verifyNoInteractions(projectCommentQueryRepository, userProfileRepository);
     }
 
     @Test
@@ -390,12 +546,16 @@ class ProjectCommentServiceTest {
     }
 
     private void givenAuthor() {
-        when(userProfileRepository.findByUserId(AUTHOR_ID)).thenReturn(Optional.of(
+        givenAuthor(AUTHOR_ID, "샤라웃 운영팀", 10L);
+    }
+
+    private void givenAuthor(long authorId, String displayName, Long avatarImageId) {
+        when(userProfileRepository.findByUserId(authorId)).thenReturn(Optional.of(
                 UserProfile.builder()
-                        .userId(AUTHOR_ID)
-                        .displayName("샤라웃 운영팀")
+                        .userId(authorId)
+                        .displayName(displayName)
                         .userType(UserType.GENERAL)
-                        .avatarImageId(10L)
+                        .avatarImageId(avatarImageId)
                         .build()
         ));
     }

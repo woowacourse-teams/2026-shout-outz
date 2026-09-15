@@ -39,6 +39,11 @@ class LoginUserArgumentResolver implements HandlerMethodArgumentResolver {
             return new AuthenticatedUser(authentication.userId(), authentication.role());
         }
 
+        LoginUser loginUser = parameter.getParameterAnnotation(LoginUser.class);
+        if (loginUser != null && !loginUser.required()) {
+            return null;
+        }
+
         throw new UnauthorizedException(CommonErrorCode.UNAUTHORIZED);
     }
 }

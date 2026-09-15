@@ -58,9 +58,32 @@ class LoginUserArgumentResolverTest {
                 .isInstanceOf(UnauthorizedException.class);
     }
 
+    @Test
+    @DisplayName("선택적 로그인 사용자 요청에 인증 정보가 없으면 null을 반환한다")
+    void resolvesNullForOptionalLoginUser() throws Exception {
+        ServletWebRequest webRequest = new ServletWebRequest(new MockHttpServletRequest());
+
+        Object resolved = resolver.resolveArgument(
+                optionalLoginUserParameter(),
+                null,
+                webRequest,
+                null
+        );
+
+        assertThat(resolved).isNull();
+    }
+
     private MethodParameter loginUserParameter() throws NoSuchMethodException {
         Method method = TestHttpApi.class.getDeclaredMethod(
                 "getAuthenticatedUser",
+                AuthenticatedUser.class
+        );
+        return new MethodParameter(method, 0);
+    }
+
+    private MethodParameter optionalLoginUserParameter() throws NoSuchMethodException {
+        Method method = TestHttpApi.class.getDeclaredMethod(
+                "getOptionalAuthenticatedUser",
                 AuthenticatedUser.class
         );
         return new MethodParameter(method, 0);
@@ -70,6 +93,12 @@ class LoginUserArgumentResolverTest {
 
         @SuppressWarnings("unused")
         void getAuthenticatedUser(@LoginUser AuthenticatedUser authenticatedUser) {
+        }
+
+        @SuppressWarnings("unused")
+        void getOptionalAuthenticatedUser(
+                @LoginUser(required = false) AuthenticatedUser authenticatedUser
+        ) {
         }
     }
 }
