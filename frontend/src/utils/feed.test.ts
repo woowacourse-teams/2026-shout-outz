@@ -28,6 +28,10 @@ describe('formatAuthorLabel', () => {
     );
   });
 
+  it('한글 표기를 모르는 트랙이면 이름만 보여준다', () => {
+    expect(formatAuthorLabel({ ...CREW, track: 'ANDROID' })).toBe('황호익');
+  });
+
   it('기수와 트랙 중 하나라도 없으면 이름만 보여준다', () => {
     expect(formatAuthorLabel({ ...CREW, track: null })).toBe('황호익');
     expect(formatAuthorLabel({ ...CREW, cohort: null })).toBe('황호익');
