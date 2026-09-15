@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
-                    ,\"message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
+                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"\
+                    displayOrder는 0 이상이어야 합니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -886,10 +886,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1174,10 +1174,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
+                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
+                    eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -1530,6 +1530,64 @@ paths:
                     ,\"message\":\"포스트 작성자만 요청할 수 있습니다.\"}"
         "204":
           description: "204"
+  /api/v1/projects/filters:
+    get:
+      tags:
+      - Project
+      summary: 프로젝트 필터 옵션 조회
+      description: "필터 모달에 보여줄 기수 및 기술 스택 목록과, 각 항목을 골랐을 때 나오는 프로젝트 수를 조회한다. 로그인하지\
+        \ 않아도 조회할 수 있다. 목록 조회에 적용 중인 검색어와 모달에서 고른 기수, 기술 스택을 전달하며, 선택이 바뀔 때마다 다시 요\
+        청한다. 기수 숫자는 다른 기수를 골라도 0이 되지 않도록 기수 선택을 빼고 세고, 기술 스택 숫자는 현재 조건에 그 기술 스택을 추\
+        가로 골랐을 때의 수다. 프로젝트 수가 0인 항목도 포함한다. 모달 안의 기술 스택 검색은 응답의 techTags를 이름으로 걸러 처\
+        리한다. 요청 형식이 올바르지 않거나 정의되지 않은 기수이면 400을 반환한다."
+      operationId: project-find-filter-options
+      parameters:
+      - name: keyword
+        in: query
+        description: 목록 조회에 적용 중인 검색어. 목록 조회의 keyword와 같은 조건으로 검색하며 100자 이하
+        required: false
+        schema:
+          type: string
+      - name: cohorts
+        in: query
+        description: "모달에서 고른 기수. 쉼표로 구분 (ex. 6,7)"
+        required: false
+        schema:
+          type: string
+      - name: techTagIds
+        in: query
+        description: "모달에서 고른 기술 스택. 쉼표로 구분 (ex. 1,2)"
+        required: false
+        schema:
+          type: string
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-find-filter-options-invalid-cohort:
+                  value: "{\"status\":\"error\",\"code\":\"INVALID_COHORT\",\"message\"\
+                    :\"정의되지 않은 우아한테크코스 기수입니다.\"}"
+                project-find-filter-options-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"keyword\"\
+                    ,\"message\":\"keyword는 100자를 초과할 수 없습니다.\"}]}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectFilterOptionsSuccessResponse"
+              examples:
+                project-find-filter-options:
+                  value: "{\"status\":\"success\",\"data\":{\"cohorts\":[{\"cohort\"\
+                    :7,\"year\":2025,\"projectCount\":3},{\"cohort\":6,\"year\":2024,\"\
+                    projectCount\":28}],\"techTags\":[{\"id\":2,\"displayName\":\"\
+                    React\",\"projectCount\":48},{\"id\":1,\"displayName\":\"Spring\
+                    \ Boot\",\"projectCount\":51}],\"matchedProjectCount\":8}}"
   /api/v1/projects/{projectId}:
     get:
       tags:
@@ -1743,9 +1801,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -2809,6 +2867,68 @@ components:
         title:
           type: string
           description: 프로젝트 이름 (100자 이하)
+    ProjectFilterOptionsSuccessResponse:
+      title: ProjectFilterOptionsSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - cohorts
+          - matchedProjectCount
+          - techTags
+          type: object
+          properties:
+            techTags:
+              type: array
+              description: "활성 기술 스택 전체. 이름순으로 정렬하며, 프로젝트 수가 0인 기술 스택도 포함한다."
+              items:
+                required:
+                - displayName
+                - id
+                - projectCount
+                type: object
+                properties:
+                  projectCount:
+                    type: number
+                    description: 현재 조건에 이 기술 스택을 추가로 골랐을 때의 프로젝트 수. 이미 고른 기술 스택은 matchedProjectCount와
+                      같다.
+                  displayName:
+                    type: string
+                    description: 기술 스택 이름
+                  id:
+                    type: number
+                    description: 기술 스택 ID
+            cohorts:
+              type: array
+              description: "전체 기수. 최신 기수부터 정렬하며, 프로젝트 수가 0인 기수도 포함한다."
+              items:
+                required:
+                - cohort
+                - projectCount
+                - year
+                type: object
+                properties:
+                  projectCount:
+                    type: number
+                    description: 검색어와 기술 스택 조건에 맞는 그 기수의 프로젝트 수. 다른 기수를 골라도 0이 되지
+                      않는다.
+                  year:
+                    type: number
+                    description: 기수 연도
+                  cohort:
+                    type: number
+                    description: 우아한테크코스 기수
+            matchedProjectCount:
+              type: number
+              description: 검색어와 고른 필터를 모두 적용한 프로젝트 수. 같은 조건의 목록 조회 meta.totalCount와
+                같다.
+          description: 필터 옵션
+        status:
+          type: string
+          description: 응답 상태
     api-v1-posts-1006244776:
       required:
       - categoryIds
@@ -3427,6 +3547,27 @@ components:
         status:
           type: string
           description: 응답 상태
+    CategorySaveRequest:
+      title: CategorySaveRequest
+      required:
+      - displayName
+      - displayOrder
+      - slug
+      - type
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 고유 표시 이름
+        displayOrder:
+          type: number
+          description: 0 이상 32767 이하 표시 순서
+        type:
+          type: string
+          description: GENERAL 또는 EVENT
+        slug:
+          type: string
+          description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
     ProjectCommentUpdateSuccessResponse:
       title: ProjectCommentUpdateSuccessResponse
       required:
@@ -3486,27 +3627,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    CategorySaveRequest:
-      title: CategorySaveRequest
-      required:
-      - displayName
-      - displayOrder
-      - slug
-      - type
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 고유 표시 이름
-        displayOrder:
-          type: number
-          description: 0 이상 32767 이하 표시 순서
-        type:
-          type: string
-          description: GENERAL 또는 EVENT
-        slug:
-          type: string
-          description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
     EventCreateRequest:
       title: EventCreateRequest
       required:
