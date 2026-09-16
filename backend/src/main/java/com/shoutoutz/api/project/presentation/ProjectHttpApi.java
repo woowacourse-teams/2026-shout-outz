@@ -8,14 +8,17 @@ import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectDeleteResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectRestoreResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -69,6 +72,34 @@ public class ProjectHttpApi {
         ProjectDetailResponse response = projectService.findDetail(
                 projectId,
                 AuthenticatedUser.userIdOrNull(loginUser)
+        );
+        return ResponseEntity.ok(SuccessResponse.success(response));
+    }
+
+    /**
+     * 등록자 본인만 삭제할 수 있다. 심사 중인 프로젝트도 삭제할 수 있다.
+     */
+    @DeleteMapping("/{projectId}")
+    public ResponseEntity<SuccessResponse<ProjectDeleteResponse>> delete(
+            @LoginUser AuthenticatedUser loginUser,
+            @PathVariable long projectId
+    ) {
+        ProjectDeleteResponse response = ProjectDeleteResponse.from(
+                projectService.delete(projectId, loginUser.userId())
+        );
+        return ResponseEntity.ok(SuccessResponse.success(response));
+    }
+
+    /**
+     * 등록자 본인만 복구 기한 안에 복구할 수 있다. 승인 상태는 삭제 이전 값을 그대로 유지한다.
+     */
+    @PostMapping("/{projectId}/restore")
+    public ResponseEntity<SuccessResponse<ProjectRestoreResponse>> restore(
+            @LoginUser AuthenticatedUser loginUser,
+            @PathVariable long projectId
+    ) {
+        ProjectRestoreResponse response = ProjectRestoreResponse.from(
+                projectService.restore(projectId, loginUser.userId())
         );
         return ResponseEntity.ok(SuccessResponse.success(response));
     }

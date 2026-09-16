@@ -1652,6 +1652,60 @@ paths:
                     avatarImageId\":null,\"githubAvatarUrl\":null,\"githubProfileUrl\"\
                     :null}],\"createdAt\":\"2026-08-09T02:30:00Z\",\"updatedAt\":\"\
                     2026-08-09T03:00:00Z\"}}"
+    delete:
+      tags:
+      - Project
+      summary: 프로젝트 삭제
+      description: "등록자 본인이 자신의 프로젝트를 삭제한다. 심사 중인 프로젝트도 삭제할 수 있다. 삭제된 프로젝트는 목록과 상세\
+        에서 보이지 않으며, 응답의 restoreDeadlineAt 까지 복구할 수 있다. 로그인하지 않았으면 401, 없는 프로젝트이거나\
+        \ 등록자가 아니거나 이미 삭제된 프로젝트이면 404를 반환한다."
+      operationId: project-delete
+      parameters:
+      - name: projectId
+        in: path
+        description: 삭제할 프로젝트 ID
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-delete-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_NOT_FOUND\",\"\
+                    message\":\"프로젝트를 찾을 수 없습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-delete-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDeleteSuccessResponse"
+              examples:
+                project-delete:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":100,\"deletedAt\"\
+                    :\"2026-09-06T13:30:00Z\",\"restoreDeadlineAt\":\"2026-10-06T13:30:00Z\"\
+                    }}"
   /api/v1/users/me:
     get:
       tags:
@@ -2174,6 +2228,70 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"content\"\
                     ,\"message\":\"댓글 내용은 500자를 초과할 수 없습니다.\"}]}"
+  /api/v1/projects/{projectId}/restore:
+    post:
+      tags:
+      - Project
+      summary: 프로젝트 복구
+      description: "등록자 본인이 삭제한 자신의 프로젝트를 복구 기한 안에 되살린다. 승인 상태는 삭제 이전 값을 그대로 유지한다\
+        . 로그인하지 않았으면 401, 없는 프로젝트이거나 등록자가 아니거나 삭제되지 않은 프로젝트이면 404, 복구 기한이 지났으면 409를\
+        \ 반환한다. 복구 기한이 지난 프로젝트는 이후 영구 삭제되어 복구할 수 없다."
+      operationId: project-restore
+      parameters:
+      - name: projectId
+        in: path
+        description: 복구할 프로젝트 ID
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectRestoreSuccessResponse"
+              examples:
+                project-restore:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":100,\"approvalStatus\"\
+                    :\"APPROVED\",\"restoredAt\":\"2026-09-10T05:20:00Z\"}}"
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-restore-deadline-expired:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_RESTORE_DEADLINE_EXPIRED\"\
+                    ,\"message\":\"복구 기한이 지나 프로젝트를 복구할 수 없습니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-restore-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_NOT_FOUND\",\"\
+                    message\":\"프로젝트를 찾을 수 없습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-restore-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
   /api/v1/users/me/comments:
     get:
       tags:
@@ -2922,6 +3040,36 @@ components:
               type: number
               description: 카테고리 ID
           description: 카테고리
+        status:
+          type: string
+          description: 응답 상태
+    ProjectRestoreSuccessResponse:
+      title: ProjectRestoreSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - approvalStatus
+          - id
+          - restoredAt
+          type: object
+          properties:
+            approvalStatus:
+              type: string
+              description: "승인 상태 (PENDING, APPROVED, REJECTED). 삭제 이전 값을 그대로 유지한다\
+                ."
+            restoredAt:
+              type: string
+              description: 복구 시각 (UTC)
+            id:
+              type: number
+              description: 복구한 프로젝트 ID
+        meta:
+          type: object
+          description: 메타 정보
+          nullable: true
         status:
           type: string
           description: 응답 상태
@@ -3881,6 +4029,35 @@ components:
               type: boolean
               description: 다음 페이지 존재 여부
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    ProjectDeleteSuccessResponse:
+      title: ProjectDeleteSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - deletedAt
+          - id
+          - restoreDeadlineAt
+          type: object
+          properties:
+            deletedAt:
+              type: string
+              description: 삭제 시각 (UTC)
+            restoreDeadlineAt:
+              type: string
+              description: 복구 기한 (UTC). 이 시각까지 복구할 수 있다.
+            id:
+              type: number
+              description: 삭제한 프로젝트 ID
+        meta:
+          type: object
+          description: 메타 정보
+          nullable: true
         status:
           type: string
           description: 응답 상태
