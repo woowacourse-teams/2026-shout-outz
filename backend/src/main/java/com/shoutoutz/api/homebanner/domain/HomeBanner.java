@@ -141,52 +141,67 @@ public final class HomeBanner {
     }
 
     private void validateDestination() {
+        if (!isValidDestination(
+                destinationType,
+                targetType,
+                targetId,
+                linkType,
+                linkUrl
+        )) {
+            throw invalidState();
+        }
+    }
+
+    public static boolean isValidDestination(
+            BannerDestinationType destinationType,
+            BannerTargetType targetType,
+            Long targetId,
+            BannerLinkType linkType,
+            String linkUrl
+    ) {
+        if (destinationType == null) {
+            return false;
+        }
         if (destinationType == BannerDestinationType.TARGET) {
-            validateTargetDestination();
-            return;
+            return targetType != null
+                    && targetId != null
+                    && targetId > 0
+                    && linkType == null
+                    && linkUrl == null;
         }
-        validateUrlDestination();
-    }
-
-    private void validateTargetDestination() {
-        if (targetType == null || targetId == null || targetId <= 0 || linkType != null || linkUrl != null) {
-            throw invalidState();
-        }
-    }
-
-    private void validateUrlDestination() {
         if (targetType != null || targetId != null || linkType == null || linkUrl == null) {
-            throw invalidState();
+            return false;
         }
+
+        String normalized = linkUrl.strip();
+        if (normalized.isEmpty() || normalized.length() > MAX_LINK_URL_LENGTH) {
+            return false;
+        }
+
         if (linkType == BannerLinkType.INTERNAL_PATH) {
-            validateInternalPath(linkUrl);
-            return;
+            return isValidInternalPath(normalized);
         }
-        validateExternalUrl(linkUrl);
+        return isValidExternalUrl(normalized);
     }
 
-    private static void validateInternalPath(String value) {
+    private static boolean isValidInternalPath(String value) {
         if (!value.startsWith("/") || value.startsWith("//")) {
-            throw invalidState();
+            return false;
         }
-        URI uri = toUri(value);
-        if (uri.isAbsolute() || uri.getHost() != null) {
-            throw invalidState();
-        }
-    }
-
-    private static void validateExternalUrl(String value) {
-        URI uri = toUri(value);
-        if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null) {
-            throw invalidState();
-        }
-    }
-
-    private static URI toUri(String value) {
         try {
-            return URI.create(value);
+            URI uri = URI.create(value);
+            return !uri.isAbsolute() && uri.getHost() == null;
         } catch (IllegalArgumentException exception) {
-            throw invalidState();
+            return false;
+        }
+    }
+
+    private static boolean isValidExternalUrl(String value) {
+        try {
+            URI uri = URI.create(value);
+            return "https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null;
+        } catch (IllegalArgumentException exception) {
+            return false;
         }
     }
 

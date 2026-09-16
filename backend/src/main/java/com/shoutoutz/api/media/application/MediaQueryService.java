@@ -48,8 +48,18 @@ public class MediaQueryService {
                 .orElseThrow(() -> new MediaQueryNotFoundException(mediaId));
         mediaAccessAuthorizer.authorize(requesterId, metadata);
 
+        return createDownloadUrl(metadata, variant);
+    }
+
+    /**
+     * 상위 유스케이스에서 미디어 노출 권한을 이미 확인한 경우 URL 생성만 재사용한다.
+     */
+    public MediaDownloadResponse createDownloadUrl(
+            MediaMetadata metadata,
+            MediaVariant variant
+    ) {
         if (metadata.getStatus() != MediaStatus.READY) {
-            throw new MediaNotReadyException(mediaId, metadata.getStatus());
+            throw new MediaNotReadyException(metadata.getId(), metadata.getStatus());
         }
 
         MediaVariant requestedVariant = variant == null ? DEFAULT_VARIANT : variant;
