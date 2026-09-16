@@ -25,6 +25,8 @@ import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectDetail;
+import com.shoutoutz.api.project.domain.ProjectFilterCondition;
+import com.shoutoutz.api.project.domain.ProjectFilterOptions;
 import com.shoutoutz.api.project.domain.ProjectMembers;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
@@ -39,10 +41,12 @@ import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
 import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
@@ -134,6 +138,20 @@ public class ProjectService {
                 request.resolvedSize()
         );
         return UserProjectFindResponse.from(result);
+    }
+
+    /**
+     * 필터 모달에 보여줄 기수 및 기술 스택 목록과, 각 항목을 골랐을 때 나오는 프로젝트 수를 조회한다.
+     * 목록 조회와 숫자가 맞도록, 검색어와 필터는 목록 조회와 같은 방식으로 정리해 넘긴다.
+     */
+    @Transactional(readOnly = true)
+    public ProjectFilterOptionsResponse findFilterOptions(ProjectFilterOptionsRequest request) {
+        ProjectFilterOptions options = projectRepository.findFilterOptions(new ProjectFilterCondition(
+                request.keyword(),
+                request.resolvedCohorts(),
+                request.resolvedTechTagIds()
+        ));
+        return ProjectFilterOptionsResponse.from(options);
     }
 
     /**

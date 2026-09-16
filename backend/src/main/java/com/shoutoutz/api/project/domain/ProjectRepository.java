@@ -21,4 +21,9 @@ public interface ProjectRepository {
      * 승인되고 삭제되지 않은 프로젝트 목록을 조건에 맞게 한 페이지 조회한다.
      */
     ProjectPage findAll(ProjectSearchCondition condition);
+
+    /**
+     * 승인되고 삭제되지 않은 프로젝트 중 조건에 맞는 프로젝트 수를 필터 선택지별로 조회한다.
+     */
+    ProjectFilterOptions findFilterOptions(ProjectFilterCondition condition);
 }
