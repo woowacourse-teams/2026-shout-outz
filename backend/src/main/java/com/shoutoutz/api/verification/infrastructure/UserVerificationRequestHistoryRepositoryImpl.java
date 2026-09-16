@@ -25,6 +25,14 @@ public class UserVerificationRequestHistoryRepositoryImpl
     }
 
     @Override
+    public List<UserVerificationRequestHistory> findAllByRequestId(long requestId) {
+        return historyJpaRepository.findAllByRequestIdOrderByChangedAtDescIdDesc(requestId)
+                .stream()
+                .map(UserVerificationRequestHistoryMapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public Optional<UserVerificationRequestHistory> findLatestDecisionByRequestId(
             long requestId
     ) {

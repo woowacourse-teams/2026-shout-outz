@@ -9,6 +9,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface UserVerificationRequestHistoryJpaRepository
         extends JpaRepository<UserVerificationRequestHistoryEntity, Long> {
 
+    List<UserVerificationRequestHistoryEntity>
+    findAllByRequestIdOrderByChangedAtDescIdDesc(long requestId);
+
     Optional<UserVerificationRequestHistoryEntity>
     findFirstByRequestIdAndToStatusInOrderByChangedAtDescIdDesc(
             long requestId,
