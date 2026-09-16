@@ -151,6 +151,32 @@ class FeedRepositoryIntegrationTest {
                 .containsExactly(olderPopular.getId(), noLike.getId());
     }
 
+    @Test
+    void 사용자가_작성한_피드만_최신순_커서로_조회한다() {
+        long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
+        long otherId = insertUser("WOOWACOURSE_CREW", "FRONTEND", (short) 8);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed oldest = saveFeed(authorId, "첫 번째", base.minus(2, ChronoUnit.HOURS), categoryId);
+        Feed middle = saveFeed(authorId, "두 번째", base.minus(1, ChronoUnit.HOURS), categoryId);
+        Feed latest = saveFeed(authorId, "세 번째", base, categoryId);
+        saveFeed(otherId, "다른 사용자", base.plus(1, ChronoUnit.HOURS), categoryId);
+        Feed deleted = saveFeed(authorId, "삭제", base.plus(2, ChronoUnit.HOURS), categoryId);
+        feedRepository.update(deleted.delete(base.plus(3, ChronoUnit.HOURS)));
+
+        List<FeedItem> firstPage = feedQueryRepository.findAllByAuthorId(authorId, null, 2);
+        FeedItem lastItem = firstPage.getLast();
+        List<FeedItem> secondPage = feedQueryRepository.findAllByAuthorId(
+                authorId,
+                new FeedCursor(FeedSort.LATEST, 0L, lastItem.createdAt(), lastItem.feedId()),
+                2
+        );
+
+        assertThat(firstPage).extracting(FeedItem::feedId)
+                .containsExactly(latest.getId(), middle.getId());
+        assertThat(secondPage).extracting(FeedItem::feedId).containsExactly(oldest.getId());
+    }
+
     private Feed saveFeed(long authorId, String content, Instant createdAt, long categoryId, long... mediaIds) {
         Feed feed = feedRepository.save(Feed.create(authorId, content, createdAt));
         feedRepository.saveCategories(feed.getId(), List.of(categoryId));

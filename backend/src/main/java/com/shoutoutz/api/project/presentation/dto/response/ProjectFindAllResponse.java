@@ -33,7 +33,7 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
             List<ProjectMemberProfileResponse> members
     ) {
 
-        private static Item from(ProjectSummary summary) {
+        public static Item from(ProjectSummary summary) {
             return new Item(
                     summary.id(),
                     summary.slug(),

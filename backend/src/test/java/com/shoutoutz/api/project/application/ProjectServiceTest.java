@@ -20,6 +20,7 @@ import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectCursor;
@@ -47,15 +48,18 @@ import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenEx
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
+import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
+import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
 import com.shoutoutz.api.techtag.domain.TechTag;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
@@ -100,6 +104,9 @@ class ProjectServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private UserProjectQueryRepository userProjectQueryRepository;
+
     private ProjectService projectService;
 
     @BeforeEach
@@ -109,7 +116,8 @@ class ProjectServiceTest {
                 techTagRepository,
                 mediaMetadataRepository,
                 userProfileRepository,
-                userRepository
+                userRepository,
+                userProjectQueryRepository
         );
     }
 
@@ -447,6 +455,59 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("사용자가 참여한 프로젝트를 최신순 커서 조건으로 조회한다.")
+    void findsProjectsByUser() {
+        ProjectCursor cursor = ProjectCursor.latest(NOW, 10L);
+        User user = user(REGISTERED_BY, MEMBER_HANDLE, UserStatus.ACTIVE);
+        ProjectSummary project = summary(9L, 3L, NOW.minusSeconds(60));
+        when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.of(user));
+        when(userProjectQueryRepository.findAllByUserId(REGISTERED_BY, cursor, 20))
+                .thenReturn(new UserProjectResult(List.of(project), true));
+
+        UserProjectFindResponse response = projectService.findAllByUser(
+                MEMBER_HANDLE,
+                new UserProjectFindRequest(20, ProjectCursorCodec.encode(cursor))
+        );
+
+        assertThat(response.projects()).extracting(ProjectFindAllResponse.Item::id).containsExactly(9L);
+        assertThat(response.meta().hasNext()).isTrue();
+        assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.LATEST))
+                .isEqualTo(ProjectCursor.latest(NOW.minusSeconds(60), 9L));
+        verify(userProjectQueryRepository).findAllByUserId(REGISTERED_BY, cursor, 20);
+    }
+
+    @Test
+    @DisplayName("탈퇴한 사용자의 프로젝트 목록은 공개하지 않는다.")
+    void returnsEmptyProjectsForDeletedUser() {
+        when(userRepository.findByHandle(MEMBER_HANDLE))
+                .thenReturn(Optional.of(user(REGISTERED_BY, MEMBER_HANDLE, UserStatus.DELETED)));
+
+        UserProjectFindResponse response = projectService.findAllByUser(
+                MEMBER_HANDLE,
+                new UserProjectFindRequest(null, null)
+        );
+
+        assertThat(response.projects()).isEmpty();
+        assertThat(response.meta().hasNext()).isFalse();
+        assertThat(response.meta().nextCursor()).isNull();
+        verifyNoInteractions(userProjectQueryRepository);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 handle의 프로젝트 목록은 조회할 수 없다.")
+    void rejectsUnknownUserProjects() {
+        when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.findAllByUser(
+                MEMBER_HANDLE,
+                new UserProjectFindRequest(null, null)
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(UserErrorCode.USER_NOT_FOUND));
+
+        verifyNoInteractions(userProjectQueryRepository);
+    }
+
+    @Test
     @DisplayName("정의되지 않은 기수로 필터링하면 목록을 조회하지 않고 400을 던진다.")
     void rejectsUndefinedCohortFilter() {
         assertThatThrownBy(() -> projectService.findAll(
@@ -514,6 +575,16 @@ class ProjectServiceTest {
     private static ProjectSummary summary(long id, long likeCount, Instant createdAt) {
         return new ProjectSummary(
                 id, "loop-" + id, "루프", "한 줄 소개", 6, null, REGISTERED_BY, likeCount, 0L, List.of(), List.of(), createdAt);
+    }
+
+    private static User user(long id, String handle, UserStatus status) {
+        return User.builder()
+                .id(id)
+                .handle(handle)
+                .status(status)
+                .role(UserRole.USER)
+                .deletedAt(status == UserStatus.DELETED ? NOW : null)
+                .build();
     }
 
     @Test
