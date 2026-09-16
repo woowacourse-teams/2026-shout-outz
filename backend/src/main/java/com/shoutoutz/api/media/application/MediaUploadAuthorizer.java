@@ -12,7 +12,7 @@ public interface MediaUploadAuthorizer {
      *
      * @param requesterId 인증된 요청자 ID
      * @param purpose 업로드 용도
-     * @param targetId 업로드 대상 ID. 사용자 아바타는 user_id, 프로젝트와 피드는 각 도메인 ID다.
+     * @param targetId 업로드 대상 ID. 홈 배너는 등록 전 업로드이므로 null이다.
      */
-    void authorize(long requesterId, MediaPurpose purpose, long targetId);
+    void authorize(long requesterId, MediaPurpose purpose, Long targetId);
 }

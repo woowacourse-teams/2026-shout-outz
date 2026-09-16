@@ -23,6 +23,16 @@ public class DatabaseMediaUploadAuthorizer implements MediaUploadAuthorizer {
             )
             """;
 
+    private static final String ACTIVE_ADMIN_EXISTS_SQL = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM users
+                WHERE id = ?
+                  AND status = 'ACTIVE'
+                  AND role = 'ADMIN'
+            )
+            """;
+
     private static final String PROJECT_EDITOR_EXISTS_SQL = """
             SELECT EXISTS (
                 SELECT 1
@@ -58,31 +68,39 @@ public class DatabaseMediaUploadAuthorizer implements MediaUploadAuthorizer {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
-    public void authorize(long requesterId, MediaPurpose purpose, long targetId) {
-        if (requesterId <= 0 || targetId <= 0 || purpose == null) {
+    public void authorize(long requesterId, MediaPurpose purpose, Long targetId) {
+        if (requesterId <= 0 || purpose == null) {
             throw forbidden();
         }
 
         boolean authorized = switch (purpose) {
-            case USER_AVATAR -> requesterId == targetId && exists(
+            case USER_AVATAR -> hasTarget(targetId) && requesterId == targetId && exists(
                     ACTIVE_USER_EXISTS_SQL,
                     requesterId
             );
-            case PROJECT_THUMBNAIL, PROJECT_DESCRIPTION -> exists(
+            case PROJECT_THUMBNAIL, PROJECT_DESCRIPTION -> hasTarget(targetId) && exists(
                     PROJECT_EDITOR_EXISTS_SQL,
                     targetId,
                     requesterId
             );
-            case FEED_CONTENT -> exists(
+            case FEED_CONTENT -> hasTarget(targetId) && exists(
                     FEED_AUTHOR_EXISTS_SQL,
                     requesterId,
                     targetId
+            );
+            case HOME_BANNER -> targetId == null && exists(
+                    ACTIVE_ADMIN_EXISTS_SQL,
+                    requesterId
             );
         };
 
         if (!authorized) {
             throw forbidden();
         }
+    }
+
+    private boolean hasTarget(Long targetId) {
+        return targetId != null && targetId > 0;
     }
 
     private boolean exists(String sql, Object... arguments) {
