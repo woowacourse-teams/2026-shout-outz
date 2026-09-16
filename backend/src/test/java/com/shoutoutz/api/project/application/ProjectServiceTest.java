@@ -22,6 +22,7 @@ import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectDetail;
@@ -87,6 +88,8 @@ class ProjectServiceTest {
     private static final String DESCRIPTION = "## 문제";
     private static final long THUMBNAIL_ID = 12L;
     private static final List<Long> TECH_TAG_IDS = List.of(1L, 2L);
+    private static final GithubRepositoryUrl GITHUB_REPOSITORY_URL =
+            new GithubRepositoryUrl("https://github.com/woowacourse-teams/2026-loop");
     private static final Instant NOW = Instant.parse("2026-09-10T00:00:00Z");
 
     @Mock
@@ -160,7 +163,21 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("이미 등록된 리포지토리면 409를 던지고 저장하지 않는다.")
+    @DisplayName("이미 등록된 리포지토리면 409를 던지고, 주소 중복은 검사하지 않는다.")
+    void rejectsDuplicateGithubRepository() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
+        when(projectRepository.existsByGithubRepositoryUrl(GITHUB_REPOSITORY_URL)).thenReturn(true);
+
+        assertThatThrownBy(() -> projectService.create(REGISTERED_BY, request(6, null, TECH_TAG_IDS)))
+                .isInstanceOfSatisfying(DuplicateEntityException.class, error -> assertThat(error.getErrorCode())
+                        .isEqualTo(ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY));
+
+        verify(projectRepository, never()).existsBySlug(any());
+        verify(projectRepository, never()).save(any(), anyList(), anyList());
+    }
+
+    @Test
+    @DisplayName("리포지토리는 달라도 이름이 같아 주소가 겹치면 409를 던지고 저장하지 않는다.")
     void rejectsDuplicateSlug() {
         givenRegistrant(UserType.WOOWACOURSE_CREW);
         when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(true);

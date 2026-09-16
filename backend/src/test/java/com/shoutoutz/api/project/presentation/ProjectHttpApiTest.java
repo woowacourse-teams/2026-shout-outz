@@ -81,7 +81,7 @@ class ProjectHttpApiTest {
             + "팀원은 등록자를 첫 번째로 두고 memberHandles 순서대로 저장한다. "
             + "본문 이미지는 descriptionMd에 ![설명](media://{mediaId}) 형식으로 넣는다. "
             + "요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
-            + "크루나 코치가 아니면 403, 이미 등록된 리포지토리면 409를 반환한다.";
+            + "크루나 코치가 아니면 403, 이미 등록된 리포지토리이거나 리포지토리 이름이 같아 slug가 겹치면 409를 반환한다.";
     private static final String FIND_ALL_SUMMARY = "프로젝트 목록 조회";
     private static final String FIND_ALL_DESCRIPTION = "승인된 프로젝트 목록을 검색어, 기수, 기술 스택으로 걸러 정렬 기준대로 조회한다. "
             + "로그인하지 않아도 조회할 수 있다. 커서 기반으로, 첫 요청은 cursor를 생략하고 "
@@ -207,14 +207,14 @@ class ProjectHttpApiTest {
     @DisplayName("이미 등록된 리포지토리인 경우, 409를 반환한다.")
     void rejectsDuplicateRepository() throws Exception {
         given(projectService.create(anyLong(), any(ProjectCreateRequest.class)))
-                .willThrow(new DuplicateEntityException(ProjectErrorCode.PROJECT_DUPLICATE_SLUG));
+                .willThrow(new DuplicateEntityException(ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY));
 
         mockMvc.perform(post("/api/v1/projects")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequestJson()))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("PROJECT_DUPLICATE_SLUG"))
+                .andExpect(jsonPath("$.code").value("PROJECT_DUPLICATE_GITHUB_REPOSITORY"))
                 .andDo(document("project-create-duplicate", resource(errorResource())));
     }
 

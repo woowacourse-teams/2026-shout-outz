@@ -12,6 +12,7 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -76,7 +77,7 @@ class ProjectAcceptanceTest {
     }
 
     @Test
-    @DisplayName("이미 등록된 리포지토리를 다시 등록하면 409를 반환한다.")
+    @DisplayName("표기만 다를 뿐 이미 등록된 리포지토리를 다시 등록하면 409를 반환한다.")
     void rejectsDuplicateRepository() {
         LoginSession author = signup("WOOWACOURSE_CREW");
         LoginSession teammate = signup("WOOWACOURSE_CREW");
@@ -85,7 +86,31 @@ class ProjectAcceptanceTest {
         List<String> memberHandles = List.of(teammate.handle());
         assertThat(registerProject(author, repositoryName, techTagIds, memberHandles).statusCode()).isEqualTo(201);
 
-        Response duplicated = registerProject(author, repositoryName, techTagIds, memberHandles);
+        Response duplicated = registerProject(author, requestBodyWithUrl(
+                "https://www.github.com/Woowacourse-Teams/" + repositoryName.toUpperCase(Locale.ROOT) + ".git/",
+                techTagIds,
+                memberHandles
+        ));
+
+        assertThat(duplicated.statusCode()).isEqualTo(409);
+        assertThat(duplicated.jsonPath().getString("code")).isEqualTo("PROJECT_DUPLICATE_GITHUB_REPOSITORY");
+    }
+
+    @Test
+    @DisplayName("다른 리포지토리라도 이름이 같아 주소가 겹치면 409를 반환한다.")
+    void rejectsDuplicateSlug() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        List<Long> techTagIds = techTagIds("java");
+        String repositoryName = uniqueRepositoryName();
+        List<String> memberHandles = List.of(teammate.handle());
+        assertThat(registerProject(author, repositoryName, techTagIds, memberHandles).statusCode()).isEqualTo(201);
+
+        Response duplicated = registerProject(author, requestBodyWithUrl(
+                "https://github.com/another-owner/" + repositoryName,
+                techTagIds,
+                memberHandles
+        ));
 
         assertThat(duplicated.statusCode()).isEqualTo(409);
         assertThat(duplicated.jsonPath().getString("code")).isEqualTo("PROJECT_DUPLICATE_SLUG");
@@ -463,12 +488,24 @@ class ProjectAcceptanceTest {
             List<Long> techTagIds,
             List<String> memberHandles
     ) {
+        return requestBodyWithUrl(
+                "https://github.com/woowacourse-teams/" + repositoryName,
+                techTagIds,
+                memberHandles
+        );
+    }
+
+    private static Map<String, Object> requestBodyWithUrl(
+            String githubRepositoryUrl,
+            List<Long> techTagIds,
+            List<String> memberHandles
+    ) {
         return Map.of(
                 "title", "루프 (Loop)",
                 "teamName", "루프팀",
                 "tagline", "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                 "cohort", 6,
-                "githubRepositoryUrl", "https://github.com/woowacourse-teams/" + repositoryName,
+                "githubRepositoryUrl", githubRepositoryUrl,
                 "deploymentUrl", "https://loop.team",
                 "techTagIds", techTagIds,
                 "memberHandles", memberHandles

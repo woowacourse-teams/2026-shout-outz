@@ -1,9 +1,11 @@
 package com.shoutoutz.api.project.infrastructure;
 
+import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_SLUG;
 
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectFilterCondition;
@@ -30,6 +32,7 @@ import org.springframework.stereotype.Repository;
 public class ProjectRepositoryImpl implements ProjectRepository {
 
     private static final String SLUG_UNIQUE_CONSTRAINT = "projects_slug_key";
+    private static final String GITHUB_REPOSITORY_URL_UNIQUE_CONSTRAINT = "projects_github_repository_url_key";
 
     private final ProjectJpaRepository projectJpaRepository;
     private final ProjectTagJpaRepository projectTagJpaRepository;
@@ -51,6 +54,11 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     @Override
     public boolean existsBySlug(Slug slug) {
         return projectJpaRepository.existsBySlug(slug.value());
+    }
+
+    @Override
+    public boolean existsByGithubRepositoryUrl(GithubRepositoryUrl githubRepositoryUrl) {
+        return projectJpaRepository.existsByGithubRepositoryUrl(githubRepositoryUrl.value());
     }
 
     @Override
@@ -86,22 +94,25 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     }
 
     /**
-     * 동시 요청이 사전 검사(existsBySlug)를 함께 통과하면 slug UNIQUE 제약에 걸린다.
-     * 이 경우에도 409 로 응답하도록 slug 중복 예외로 변환한다.
+     * 동시 요청이 사전 검사(existsBySlug, existsByGithubRepositoryUrl)를 함께 통과하면 UNIQUE 제약에 걸린다.
+     * 이 경우에도 409 로 응답하도록, 어긴 제약에 맞는 중복 예외로 변환한다.
      */
     private ProjectEntity saveProject(Project project) {
         try {
             return projectJpaRepository.save(ProjectMapper.toEntity(project));
         } catch (DataIntegrityViolationException e) {
-            if (isSlugUniqueViolation(e)) {
+            if (isUniqueViolation(e, SLUG_UNIQUE_CONSTRAINT)) {
                 throw new DuplicateEntityException(PROJECT_DUPLICATE_SLUG, e);
+            }
+            if (isUniqueViolation(e, GITHUB_REPOSITORY_URL_UNIQUE_CONSTRAINT)) {
+                throw new DuplicateEntityException(PROJECT_DUPLICATE_GITHUB_REPOSITORY, e);
             }
             throw e;
         }
     }
 
-    private boolean isSlugUniqueViolation(DataIntegrityViolationException e) {
+    private boolean isUniqueViolation(DataIntegrityViolationException e, String constraintName) {
         return e.getCause() instanceof ConstraintViolationException cause
-                && SLUG_UNIQUE_CONSTRAINT.equals(cause.getConstraintName());
+                && constraintName.equals(cause.getConstraintName());
     }
 }

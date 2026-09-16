@@ -1,6 +1,7 @@
 package com.shoutoutz.api.project.application;
 
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DESCRIPTION_MEDIA_NOT_READY;
+import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_SLUG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_TECH_TAG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA;
@@ -88,6 +89,7 @@ public class ProjectService {
                 request.deploymentUrl() == null ? null : new DeploymentUrl(request.deploymentUrl()),
                 request.thumbnailMediaId()
         );
+        validateGithubRepositoryNotDuplicated(project.getGithubRepositoryUrl());
         validateSlugNotDuplicated(project.getSlug());
         validateTechTags(request.techTagIds());
         validateThumbnail(request.thumbnailMediaId(), registeredBy);
@@ -182,6 +184,19 @@ public class ProjectService {
         return userType == UserType.WOOWACOURSE_CREW || userType == UserType.WOOWACOURSE_COACH;
     }
 
+    /**
+     * 같은 리포지토리를 두 프로젝트가 가리킬 수 없다.
+     * slug 검사보다 먼저 해, 리포지토리가 겹칠 때 주소 중복이 아니라 리포지토리 중복으로 응답한다.
+     */
+    private void validateGithubRepositoryNotDuplicated(GithubRepositoryUrl githubRepositoryUrl) {
+        if (projectRepository.existsByGithubRepositoryUrl(githubRepositoryUrl)) {
+            throw new DuplicateEntityException(PROJECT_DUPLICATE_GITHUB_REPOSITORY);
+        }
+    }
+
+    /**
+     * owner 가 달라도 리포지토리 이름이 같으면 slug 가 겹치므로, 리포지토리 중복과 따로 검사한다.
+     */
     private void validateSlugNotDuplicated(Slug slug) {
         if (projectRepository.existsBySlug(slug)) {
             throw new DuplicateEntityException(PROJECT_DUPLICATE_SLUG);

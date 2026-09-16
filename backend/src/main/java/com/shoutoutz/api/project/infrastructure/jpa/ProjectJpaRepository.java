@@ -8,5 +8,7 @@ public interface ProjectJpaRepository extends JpaRepository<ProjectEntity, Long>
 
     boolean existsBySlug(String slug);
 
+    boolean existsByGithubRepositoryUrl(String githubRepositoryUrl);
+
     boolean existsByIdAndApprovalStatusAndDeletedAtIsNull(long id, ApprovalStatus approvalStatus);
 }

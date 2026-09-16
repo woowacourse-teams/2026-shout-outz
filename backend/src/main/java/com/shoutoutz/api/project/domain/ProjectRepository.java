@@ -9,6 +9,12 @@ public interface ProjectRepository {
 
     boolean existsBySlug(Slug slug);
 
+    /**
+     * 같은 리포지토리를 가리키는 프로젝트가 이미 있는지 확인한다.
+     * GithubRepositoryUrl이 표기를 정규화해서 갖고 있으므로, 값 비교만으로 같은 리포지토리를 찾는다.
+     */
+    boolean existsByGithubRepositoryUrl(GithubRepositoryUrl githubRepositoryUrl);
+
     boolean existsPublicById(long projectId);
   
     /**
