@@ -12,6 +12,7 @@ function FeedRoute() {
   const navigate = Route.useNavigate();
   return (
     <FeedsPage
+      onCreate={() => void navigate({ to: '/feeds/new' })}
       sort={sort ?? 'LATEST'}
       onSortChange={(value) => void navigate({ search: { sort: value } })}
     />

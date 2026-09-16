@@ -29,7 +29,7 @@ export function FeedList({ sort }: { sort: FeedSort }) {
       {feeds.length === 0 ? (
         <p className="py-12 text-center text-gray-500">아직 등록된 피드가 없습니다.</p>
       ) : (
-        feeds.map((feed) => <FeedCard key={feed.postId} feed={feed} />)
+        feeds.map((feed) => <FeedCard key={feed.feedId} feed={feed} />)
       )}
       {isFetchNextPageError && (
         <p role="alert" className="py-3 text-sm text-red-600">

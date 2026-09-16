@@ -1,4 +1,4 @@
-import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, mutationOptions, queryOptions } from '@tanstack/react-query';
 import { httpClient } from '@/utils/client';
 
 export interface CursorMeta {
@@ -12,7 +12,7 @@ export interface Envelope<T> {
 }
 export type FeedSort = 'LATEST' | 'POPULAR';
 export interface Feed {
-  postId: number;
+  feedId: number;
   content: string;
   author: {
     handle: string;
@@ -28,8 +28,8 @@ export interface Feed {
   updatedAt: string;
 }
 
-export async function fetchFeed(postId: number, signal?: AbortSignal) {
-  const response = await httpClient<{ status: 'success'; data: Feed }>(`/api/v1/posts/${postId}`, {
+export async function fetchFeed(feedId: number, signal?: AbortSignal) {
+  const response = await httpClient<{ status: 'success'; data: Feed }>(`/api/v1/feeds/${feedId}`, {
     method: 'get',
     signal,
   });
@@ -38,12 +38,57 @@ export async function fetchFeed(postId: number, signal?: AbortSignal) {
   return response.data;
 }
 
-export function feedQuery(postId: number) {
+export function feedQuery(feedId: number) {
   return queryOptions({
-    queryKey: ['feed', postId],
-    queryFn: ({ signal }) => fetchFeed(postId, signal),
+    queryKey: ['feed', feedId],
+    queryFn: ({ signal }) => fetchFeed(feedId, signal),
   });
 }
+
+export interface SaveFeedInput {
+  content: string;
+  categoryIds: number[];
+  mediaIds: number[];
+}
+
+export async function createFeed(input: SaveFeedInput) {
+  const response = await httpClient<{ status: 'success'; data: Feed }>('/api/v1/feeds', {
+    method: 'post',
+    json: input,
+  });
+  if (!response) throw new Error('피드 응답이 비어 있습니다.');
+  return response.data;
+}
+
+export const createFeedMutation = mutationOptions({
+  mutationFn: createFeed,
+  retry: false,
+});
+export async function updateFeed(feedId: number, input: SaveFeedInput) {
+  const response = await httpClient<{ status: 'success'; data: Feed }>(`/api/v1/feeds/${feedId}`, {
+    method: 'put',
+    json: input,
+  });
+  if (!response) throw new Error('피드 응답이 비어 있습니다.');
+  return response.data;
+}
+
+export const updateFeedMutation = (feedId: number) =>
+  mutationOptions({
+    mutationFn: (input: SaveFeedInput) => updateFeed(feedId, input),
+    retry: false,
+  });
+
+export async function deleteFeed(feedId: number) {
+  await httpClient(`/api/v1/feeds/${feedId}`, { method: 'delete' });
+}
+
+export const deleteFeedMutation = (feedId: number) =>
+  mutationOptions({
+    mutationFn: () => deleteFeed(feedId),
+    retry: false,
+  });
+
 export function nextCursor(page: { meta: CursorMeta }, previous: (string | undefined)[]) {
   const cursor = page.meta.nextCursor;
   return page.meta.hasNext && cursor && !previous.includes(cursor) ? cursor : undefined;
@@ -58,7 +103,7 @@ interface FetchFeedsParams {
 }
 
 export async function fetchFeeds({ sort, categoryId, cursor, size, signal }: FetchFeedsParams) {
-  const response = await httpClient<Envelope<Feed[]>>('/api/v1/posts', {
+  const response = await httpClient<Envelope<Feed[]>>('/api/v1/feeds', {
     method: 'get',
     signal,
     searchParams: {

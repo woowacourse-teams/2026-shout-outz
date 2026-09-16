@@ -12,11 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as FeedsIndexRouteImport } from './routes/feeds/index'
-import { Route as FeedsPostIdRouteImport } from './routes/feeds/$postId'
+import { Route as FeedsFeedIdRouteImport } from './routes/feeds/$feedId'
+import { Route as FeedsNewRouteImport } from './routes/feeds/new'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as NewsNewsIdRouteImport } from './routes/news/$newsId'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectsIdRouteImport } from './routes/projects/$id'
+import { Route as FeedsFeedIdEditRouteImport } from './routes/feeds/$feedId_.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -33,9 +35,14 @@ const FeedsIndexRoute = FeedsIndexRouteImport.update({
   path: '/feeds/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FeedsPostIdRoute = FeedsPostIdRouteImport.update({
-  id: '/feeds/$postId',
-  path: '/feeds/$postId',
+const FeedsFeedIdRoute = FeedsFeedIdRouteImport.update({
+  id: '/feeds/$feedId',
+  path: '/feeds/$feedId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeedsNewRoute = FeedsNewRouteImport.update({
+  id: '/feeds/new',
+  path: '/feeds/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsIndexRoute = NewsIndexRouteImport.update({
@@ -58,80 +65,99 @@ const ProjectsIdRoute = ProjectsIdRouteImport.update({
   path: '/projects/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FeedsFeedIdEditRoute = FeedsFeedIdEditRouteImport.update({
+  id: '/feeds/$feedId_/edit',
+  path: '/feeds/$feedId/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/feeds/$postId': typeof FeedsPostIdRoute
+  '/feeds/$feedId': typeof FeedsFeedIdRoute
+  '/feeds/new': typeof FeedsNewRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/feeds/': typeof FeedsIndexRoute
   '/news/': typeof NewsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/feeds/$feedId/edit': typeof FeedsFeedIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/feeds/$postId': typeof FeedsPostIdRoute
+  '/feeds/$feedId': typeof FeedsFeedIdRoute
+  '/feeds/new': typeof FeedsNewRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/feeds': typeof FeedsIndexRoute
   '/news': typeof NewsIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/feeds/$feedId/edit': typeof FeedsFeedIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/feeds/$postId': typeof FeedsPostIdRoute
+  '/feeds/$feedId': typeof FeedsFeedIdRoute
+  '/feeds/new': typeof FeedsNewRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/feeds/': typeof FeedsIndexRoute
   '/news/': typeof NewsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/feeds/$feedId_/edit': typeof FeedsFeedIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/about'
-    | '/feeds/$postId'
+    | '/feeds/$feedId'
+    | '/feeds/new'
     | '/news/$newsId'
     | '/projects/$id'
     | '/feeds/'
     | '/news/'
     | '/projects/'
+    | '/feeds/$feedId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
-    | '/feeds/$postId'
+    | '/feeds/$feedId'
+    | '/feeds/new'
     | '/news/$newsId'
     | '/projects/$id'
     | '/feeds'
     | '/news'
     | '/projects'
+    | '/feeds/$feedId/edit'
   id:
     | '__root__'
     | '/'
     | '/about'
-    | '/feeds/$postId'
+    | '/feeds/$feedId'
+    | '/feeds/new'
     | '/news/$newsId'
     | '/projects/$id'
     | '/feeds/'
     | '/news/'
     | '/projects/'
+    | '/feeds/$feedId_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  FeedsPostIdRoute: typeof FeedsPostIdRoute
+  FeedsFeedIdRoute: typeof FeedsFeedIdRoute
+  FeedsNewRoute: typeof FeedsNewRoute
   NewsNewsIdRoute: typeof NewsNewsIdRoute
   ProjectsIdRoute: typeof ProjectsIdRoute
   FeedsIndexRoute: typeof FeedsIndexRoute
   NewsIndexRoute: typeof NewsIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
+  FeedsFeedIdEditRoute: typeof FeedsFeedIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -157,11 +183,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FeedsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/feeds/$postId': {
-      id: '/feeds/$postId'
-      path: '/feeds/$postId'
-      fullPath: '/feeds/$postId'
-      preLoaderRoute: typeof FeedsPostIdRouteImport
+    '/feeds/$feedId': {
+      id: '/feeds/$feedId'
+      path: '/feeds/$feedId'
+      fullPath: '/feeds/$feedId'
+      preLoaderRoute: typeof FeedsFeedIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/feeds/new': {
+      id: '/feeds/new'
+      path: '/feeds/new'
+      fullPath: '/feeds/new'
+      preLoaderRoute: typeof FeedsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/news/': {
@@ -192,18 +225,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/feeds/$feedId_/edit': {
+      id: '/feeds/$feedId_/edit'
+      path: '/feeds/$feedId/edit'
+      fullPath: '/feeds/$feedId/edit'
+      preLoaderRoute: typeof FeedsFeedIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  FeedsPostIdRoute: FeedsPostIdRoute,
+  FeedsFeedIdRoute: FeedsFeedIdRoute,
+  FeedsNewRoute: FeedsNewRoute,
   NewsNewsIdRoute: NewsNewsIdRoute,
   ProjectsIdRoute: ProjectsIdRoute,
   FeedsIndexRoute: FeedsIndexRoute,
   NewsIndexRoute: NewsIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
+  FeedsFeedIdEditRoute: FeedsFeedIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -17,8 +17,8 @@ export function PopularFeedList() {
       </div>
       <ol className="divide-y divide-gray-100">
         {feeds.map((feed) => (
-          <li key={feed.postId} className="py-4 first:pt-0">
-            <Link to="/feeds/$postId" params={{ postId: String(feed.postId) }}>
+          <li key={feed.feedId} className="py-4 first:pt-0">
+            <Link to="/feeds/$feedId" params={{ feedId: String(feed.feedId) }}>
               <div className="flex min-w-0 items-center gap-2">
                 <Avatar size="sm" alt={`${feed.author.displayName} 프로필`} />
                 <p className="truncate text-sm font-semibold text-gray-900">

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { Component, Suspense, useState, type ReactNode } from 'react';
 import {
+  QueryErrorResetBoundary,
   useMutation,
   useSuspenseQuery,
   useQueryClient,
@@ -18,22 +19,76 @@ import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { formatRelativeTime } from '@/utils/date';
 import { getApiErrorMessage } from '@/utils/error';
 
-export function Comments({ postId }: { postId: number }) {
+export function Comments({ feedId }: { feedId: number }) {
   return (
-    <AsyncBoundary key={postId}>
-      <CommentsWithSession postId={postId} />
+    <QueryErrorResetBoundary>
+      {({ reset }) => (
+        <SessionBoundary reset={reset} guest={<GuestComments feedId={feedId} />}>
+          <Suspense
+            fallback={
+              <p role="status" className="p-6 text-gray-500">
+                불러오는 중…
+              </p>
+            }
+          >
+            <CommentsWithSession feedId={feedId} />
+          </Suspense>
+        </SessionBoundary>
+      )}
+    </QueryErrorResetBoundary>
+  );
+}
+
+class SessionBoundary extends Component<
+  { children: ReactNode; guest: ReactNode; reset: () => void },
+  { error: unknown | null }
+> {
+  state: { error: unknown | null } = { error: null };
+
+  static getDerivedStateFromError(error: unknown) {
+    return { error };
+  }
+
+  render() {
+    if (this.state.error === null) return this.props.children;
+
+    return (
+      <div>
+        <div role="alert" className="mb-3 text-sm text-gray-600">
+          {getApiErrorMessage(this.state.error)}{' '}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              this.props.reset();
+              this.setState({ error: null });
+            }}
+          >
+            로그인 상태 다시 확인
+          </Button>
+        </div>
+        {this.props.guest}
+      </div>
+    );
+  }
+}
+
+function GuestComments({ feedId }: { feedId: number }) {
+  return (
+    <AsyncBoundary key={`guest-${feedId}`}>
+      <CommentList feedId={feedId} viewer={null} sessionReady={false} />
     </AsyncBoundary>
   );
 }
 
-function CommentsWithSession({ postId }: { postId: number }) {
+function CommentsWithSession({ feedId }: { feedId: number }) {
   const session = useSuspenseQuery(sessionQuery);
   const viewer = session.data.status === 'AUTHENTICATED' ? session.data.userId : null;
 
   return (
     <AsyncBoundary key={viewer ?? 'guest'}>
       <CommentList
-        postId={postId}
+        feedId={feedId}
         viewer={viewer}
         sessionReady={!session.isFetching && !session.isError}
       />
@@ -41,24 +96,24 @@ function CommentsWithSession({ postId }: { postId: number }) {
   );
 }
 function CommentList({
-  postId,
+  feedId,
   viewer,
   sessionReady,
 }: {
-  postId: number;
+  feedId: number;
   viewer: number | null;
   sessionReady: boolean;
 }) {
-  const query = useSuspenseInfiniteQuery(commentsQuery(postId, viewer));
+  const query = useSuspenseInfiniteQuery(commentsQuery(feedId, viewer));
   const client = useQueryClient();
-  const mutation = useMutation(commentMutation(postId));
+  const mutation = useMutation(commentMutation(feedId));
   const [content, setContent] = useState('');
   const [message, setMessage] = useState('');
   const [failure, setFailure] = useState('');
   const [refreshError, setRefreshError] = useState<unknown | null>(null);
   const items = [
     ...new Map(
-      query.data.pages.flatMap((page) => page.data.items).map((item) => [item.id, item]),
+      query.data.pages.flatMap((page) => page.data).map((item) => [item.id, item]),
     ).values(),
   ];
   async function change(input: CommentChange, onSuccess: () => void) {
@@ -74,7 +129,7 @@ function CommentList({
     setMessage(input.method === 'delete' ? '댓글을 삭제했습니다.' : '댓글을 저장했습니다.');
     try {
       await client.invalidateQueries(
-        { queryKey: ['feed-comments', postId] },
+        { queryKey: ['feed-comments', feedId] },
         { throwOnError: true },
       );
       setRefreshError(null);
@@ -93,11 +148,11 @@ function CommentList({
           }}
           className="flex items-center gap-2 rounded-lg border border-gray-200 p-1"
         >
-          <label className="sr-only" htmlFor={`new-comment-${postId}`}>
+          <label className="sr-only" htmlFor={`new-comment-${feedId}`}>
             댓글 남기기
           </label>
           <input
-            id={`new-comment-${postId}`}
+            id={`new-comment-${feedId}`}
             type="text"
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -155,8 +210,10 @@ function CommentList({
           <CommentItem
             key={item.id}
             item={item}
-            canEdit={sessionReady && viewer === item.author.userId && item.editable}
-            canDelete={sessionReady && viewer === item.author.userId}
+            canEdit={
+              !item.deleted && sessionReady && viewer === item.author.userId && item.editable
+            }
+            canDelete={!item.deleted && sessionReady && viewer === item.author.userId}
             pending={mutation.isPending}
             change={change}
           />
@@ -200,13 +257,13 @@ function CommentItem({
 }) {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [draft, setDraft] = useState(item.content);
+  const [draft, setDraft] = useState(item.content ?? '');
   return (
     <li className="min-w-0 py-4 first:pt-0 last:pb-0">
       <div className="mb-2 flex min-w-0 items-center gap-2">
-        <Avatar size="xs" src={item.author.avatarUrl ?? undefined} alt="" />
+        <Avatar size="xs" alt="" />
         <span className="min-w-0 truncate text-sm font-semibold text-gray-900">
-          {item.author.name}
+          {item.author.displayName}
         </span>
         <time dateTime={item.createdAt} className="shrink-0 text-sm text-gray-500">
           {formatRelativeTime(item.createdAt)}
@@ -246,7 +303,7 @@ function CommentItem({
         </form>
       ) : (
         <p className="text-sm leading-6 break-words whitespace-pre-wrap text-gray-600">
-          {item.content}
+          {item.deleted ? '삭제된 댓글입니다.' : item.content}
         </p>
       )}
       <div className="mt-1 flex gap-1">
@@ -256,7 +313,7 @@ function CommentItem({
             variant="ghost"
             disabled={pending}
             onClick={() => {
-              setDraft(item.content);
+              setDraft(item.content ?? '');
               setEditing(true);
             }}
           >

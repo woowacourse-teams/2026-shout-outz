@@ -25,16 +25,16 @@ afterEach(() => {
 });
 afterAll(() => server.close());
 
-function show(postId: number) {
+function show(feedId: number) {
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   const router = createRouter({
     routeTree,
-    history: createMemoryHistory({ initialEntries: [`/feeds/${postId}`] }),
+    history: createMemoryHistory({ initialEntries: [`/feeds/${feedId}`] }),
   });
   render(
     <QueryClientProvider client={client}>
       <RouterContextProvider router={router}>
-        <FeedDetailPage postId={postId} />
+        <FeedDetailPage feedId={feedId} />
       </RouterContextProvider>
     </QueryClientProvider>,
   );
@@ -52,7 +52,7 @@ test('상세 조회에 실패하면 오류 경계를 표시한다', async () => 
   const errors = jest.spyOn(console, 'error').mockImplementation(() => {});
   try {
     server.use(
-      http.get('*/api/v1/posts/:postId', () =>
+      http.get('*/api/v1/feeds/:feedId', () =>
         HttpResponse.json(
           { status: 'error', code: 'POST_NOT_FOUND', message: '피드를 찾을 수 없습니다.' },
           { status: 404 },

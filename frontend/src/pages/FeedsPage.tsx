@@ -1,4 +1,5 @@
 import type { FeedSort } from '@/apis/feed';
+import { Button } from '@/components/Button';
 import { Gnb } from '@/components/Gnb';
 import { Tab } from '@/components/Tab';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
@@ -12,8 +13,10 @@ const DESKTOP_MEDIA_QUERY = '(min-width: 64rem)';
 export function FeedsPage({
   sort,
   onSortChange,
+  onCreate,
 }: {
   sort: FeedSort;
+  onCreate: () => void;
   onSortChange: (sort: FeedSort) => void;
 }) {
   const isDesktop = useMediaQuery(DESKTOP_MEDIA_QUERY);
@@ -23,7 +26,10 @@ export function FeedsPage({
       <Gnb />
       <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 px-4 py-6 md:px-16 md:py-10 lg:grid-cols-3 lg:gap-12">
         <section className="min-w-0 lg:col-span-2">
-          <h1 className="text-2xl font-bold text-gray-900">피드</h1>
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="text-2xl font-bold text-gray-900">피드</h1>
+            <Button onClick={onCreate}>글쓰기</Button>
+          </div>
           <div className="flex flex-col gap-4">
             <div className="mt-6">
               <Tab
