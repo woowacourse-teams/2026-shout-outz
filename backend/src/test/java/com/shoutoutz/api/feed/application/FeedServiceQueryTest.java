@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.category.domain.CategoryRepository;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
 import com.shoutoutz.api.feed.application.dto.FeedCursor;
@@ -22,6 +23,7 @@ import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.List;
@@ -245,8 +247,8 @@ class FeedServiceQueryTest {
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
-                        "BACKEND",
-                        (short) 8,
+                        Track.BACKEND,
+                        Cohort.COHORT_8,
                         null
                 ),
                 List.of(),

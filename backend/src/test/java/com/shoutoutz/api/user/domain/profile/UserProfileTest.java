@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -62,8 +63,8 @@ class UserProfileTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.GENERAL)
-                .track("BACKEND")
-                .cohort((short) 8)
+                .track(Track.BACKEND)
+                .cohort(Cohort.COHORT_8)
                 .build())
                 .isInstanceOf(DomainValidationException.class);
     }
@@ -75,7 +76,7 @@ class UserProfileTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
+                .track(Track.BACKEND)
                 .build())
                 .isInstanceOf(DomainValidationException.class);
 
@@ -83,7 +84,7 @@ class UserProfileTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
-                .cohort((short) 8)
+                .cohort(Cohort.COHORT_8)
                 .build())
                 .isInstanceOf(DomainValidationException.class);
     }
@@ -95,12 +96,12 @@ class UserProfileTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
-                .cohort((short) 8)
+                .track(Track.BACKEND)
+                .cohort(Cohort.COHORT_8)
                 .build();
 
-        assertThat(profile.getTrack()).isEqualTo("BACKEND");
-        assertThat(profile.getCohort()).isEqualTo((short) 8);
+        assertThat(profile.getTrack()).isEqualTo(Track.BACKEND);
+        assertThat(profile.getCohort()).isEqualTo(Cohort.COHORT_8);
     }
 
     @Test
@@ -110,8 +111,8 @@ class UserProfileTest {
                 .userId(2L)
                 .displayName("상준")
                 .userType(UserType.WOOWACOURSE_COACH)
-                .track("BACKEND")
-                .cohort((short) 8)
+                .track(Track.BACKEND)
+                .cohort(Cohort.COHORT_8)
                 .build())
                 .isInstanceOf(DomainValidationException.class);
     }
@@ -123,10 +124,10 @@ class UserProfileTest {
                 .userId(2L)
                 .displayName("상준")
                 .userType(UserType.WOOWACOURSE_COACH)
-                .track("BACKEND")
+                .track(Track.BACKEND)
                 .build();
 
-        assertThat(profile.getTrack()).isEqualTo("BACKEND");
+        assertThat(profile.getTrack()).isEqualTo(Track.BACKEND);
         assertThat(profile.getCohort()).isNull();
     }
 
@@ -155,8 +156,8 @@ class UserProfileTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
-                .cohort((short) 8)
+                .track(Track.BACKEND)
+                .cohort(Cohort.COHORT_8)
                 .build();
 
         assertThatThrownBy(() -> profile.update(
@@ -180,8 +181,8 @@ class UserProfileTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
-                .cohort((short) 8)
+                .track(Track.BACKEND)
+                .cohort(Cohort.COHORT_8)
                 .build();
 
         UserProfile updated = profile.update(
@@ -194,6 +195,48 @@ class UserProfileTest {
 
         assertThat(updated.getDisplayName()).isEqualTo(new ProfileDisplayName("재키"));
         assertThat(updated.getBio()).isEqualTo("소개");
+    }
+
+    @Test
+    @DisplayName("크루 인증 승인 시 기수와 닉네임으로 표시 이름을 만들고 인증 정보를 반영한다")
+    void approvesWoowacourseCrewProfile() {
+        UserProfile profile = UserProfile.builder()
+                .userId(1L)
+                .displayName("기존 이름")
+                .userType(UserType.GENERAL)
+                .bio("소개")
+                .build();
+
+        UserProfile approved = profile.approve(
+                UserType.WOOWACOURSE_CREW,
+                "샤를",
+                8,
+                "BACKEND"
+        );
+
+        assertThat(approved.getDisplayName().value()).isEqualTo("8기 샤를");
+        assertThat(approved.getUserType()).isEqualTo(UserType.WOOWACOURSE_CREW);
+        assertThat(approved.getCohort()).isEqualTo(Cohort.COHORT_8);
+        assertThat(approved.getTrack()).isEqualTo(Track.BACKEND);
+        assertThat(approved.getBio()).isEqualTo("소개");
+    }
+
+    @Test
+    @DisplayName("코치 인증 승인 시 닉네임만 표시 이름으로 사용하고 기수와 트랙은 비운다")
+    void approvesWoowacourseCoachProfile() {
+        UserProfile profile = UserProfile.initialize(1L, "기존 이름");
+
+        UserProfile approved = profile.approve(
+                UserType.WOOWACOURSE_COACH,
+                "제임스",
+                null,
+                null
+        );
+
+        assertThat(approved.getDisplayName().value()).isEqualTo("제임스");
+        assertThat(approved.getUserType()).isEqualTo(UserType.WOOWACOURSE_COACH);
+        assertThat(approved.getCohort()).isNull();
+        assertThat(approved.getTrack()).isNull();
     }
 
     @Test

@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\"\
-                    ,\"message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"type\",\"\
+                    message\":\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug\
+                    \ 형식이 올바르지 않습니다.\"},{\"field\":\"displayOrder\",\"message\":\"\
+                    displayOrder는 0 이상이어야 합니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -437,11 +437,11 @@ paths:
                     :184,\"commentCount\":14,\"techTags\":[{\"id\":1,\"displayName\"\
                     :\"React\"},{\"id\":2,\"displayName\":\"Spring\"}],\"members\"\
                     :[{\"userId\":7,\"handle\":\"dhyepark\",\"displayName\":\"박다혜\"\
-                    ,\"cohort\":6,\"track\":\"BE\",\"avatarImageId\":101,\"githubAvatarUrl\"\
+                    ,\"cohort\":6,\"track\":\"BACKEND\",\"avatarImageId\":101,\"githubAvatarUrl\"\
                     :null,\"githubProfileUrl\":null},{\"userId\":8,\"handle\":\"zzaekkii\"\
-                    ,\"displayName\":\"김도현\",\"cohort\":6,\"track\":\"FE\",\"avatarImageId\"\
-                    :null,\"githubAvatarUrl\":null,\"githubProfileUrl\":null}]}],\"\
-                    meta\":{\"nextCursor\":\"UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw\"\
+                    ,\"displayName\":\"김도현\",\"cohort\":6,\"track\":\"FRONTEND\",\"\
+                    avatarImageId\":null,\"githubAvatarUrl\":null,\"githubProfileUrl\"\
+                    :null}]}],\"meta\":{\"nextCursor\":\"UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw\"\
                     ,\"hasNext\":true,\"totalCount\":48}}"
         "400":
           description: "400"
@@ -741,6 +741,88 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"example\"\
                     ,\"message\":\"example은 필수입니다.\"}]}"
+  /api/v1/admin/verification-requests:
+    get:
+      tags:
+      - Admin User Verification
+      summary: 관리자의 크루/코치 인증 신청 목록 조회
+      description: 관리자가 상태별 크루/코치 인증 신청 목록을 최신순으로 조회한다.
+      operationId: admin-verification-request-find-all
+      parameters:
+      - name: status
+        in: query
+        description: "조회할 상태(PENDING, APPROVED, REJECTED)"
+        required: false
+        schema:
+          type: string
+          default: PENDING
+      - name: size
+        in: query
+        description: "조회 개수(1~100), 기본값 20"
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      - name: cursor
+        in: query
+        description: 다음 페이지 조회용 커서
+        required: false
+        schema:
+          type: string
+      - name: Cookie
+        in: header
+        description: 인증된 관리자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-find-all-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"status\"\
+                    ,\"message\":\"status는 PENDING, APPROVED, REJECTED 중 하나여야 합니다\
+                    .\"}]}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-find-all-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-find-all-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"VERIFICATION_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 크루/코치 인증 신청을 관리할 수 있습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminVerificationRequestFindAllSuccessResponse"
+              examples:
+                admin-verification-request-find-all:
+                  value: "{\"status\":\"success\",\"data\":{\"items\":[{\"requestId\"\
+                    :101,\"applicant\":{\"userId\":42,\"handle\":\"charles\"},\"userType\"\
+                    :\"WOOWACOURSE_CREW\",\"nickname\":\"샤를\",\"cohort\":8,\"track\"\
+                    :\"BACKEND\",\"status\":\"PENDING\",\"requestedAt\":\"2026-09-16T02:30:00Z\"\
+                    }],\"nextCursor\":\"next-cursor\"}}"
   /api/v1/auth/logout:
     post:
       tags:
@@ -886,9 +968,9 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
                     message\":\"handle은 필수입니다.\"}]}"
         "409":
           description: "409"
@@ -1358,10 +1440,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
                     ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"}]}"
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -1646,12 +1728,12 @@ paths:
                     :false,\"commentCount\":18,\"techTags\":[{\"id\":1,\"displayName\"\
                     :\"React\"},{\"id\":2,\"displayName\":\"TypeScript\"}],\"members\"\
                     :[{\"userId\":7,\"handle\":\"dhyepark\",\"displayName\":\"박다혜\"\
-                    ,\"cohort\":6,\"track\":\"BE\",\"avatarImageId\":101,\"githubAvatarUrl\"\
+                    ,\"cohort\":6,\"track\":\"BACKEND\",\"avatarImageId\":101,\"githubAvatarUrl\"\
                     :null,\"githubProfileUrl\":null},{\"userId\":8,\"handle\":\"zzaekkii\"\
-                    ,\"displayName\":\"김도현\",\"cohort\":6,\"track\":\"FE\",\"avatarImageId\"\
-                    :null,\"githubAvatarUrl\":null,\"githubProfileUrl\":null}],\"\
-                    createdAt\":\"2026-08-09T02:30:00Z\",\"updatedAt\":\"2026-08-09T03:00:00Z\"\
-                    }}"
+                    ,\"displayName\":\"김도현\",\"cohort\":6,\"track\":\"FRONTEND\",\"\
+                    avatarImageId\":null,\"githubAvatarUrl\":null,\"githubProfileUrl\"\
+                    :null}],\"createdAt\":\"2026-08-09T02:30:00Z\",\"updatedAt\":\"\
+                    2026-08-09T03:00:00Z\"}}"
     put:
       tags:
       - Project
@@ -2005,9 +2087,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -2533,6 +2615,150 @@ paths:
                 user-profile-summary-get:
                   value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
                     ,\"displayName\":\"재키\",\"avatarImageId\":21}}"
+  /api/v1/users/me/verification-request:
+    get:
+      tags:
+      - User Verification
+      summary: 내 최신 크루/코치 인증 신청 조회
+      description: 신청자에게 가장 최근의 크루/코치 인증 신청 1건을 반환한다.
+      operationId: user-verification-request-get
+      parameters:
+      - name: Cookie
+        in: header
+        description: 인증된 사용자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=session-id
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserVerificationRequestSuccessResponse"
+              examples:
+                user-verification-request-get:
+                  value: "{\"status\":\"success\",\"data\":{\"requestId\":101,\"userType\"\
+                    :\"WOOWACOURSE_CREW\",\"nickname\":\"샤를\",\"cohort\":8,\"track\"\
+                    :\"BACKEND\",\"status\":\"REJECTED\",\"requestedAt\":\"2026-09-16T02:30:00Z\"\
+                    ,\"decidedAt\":\"2026-09-16T03:00:00Z\",\"reason\":\"Slack 프로필\
+                    의 기수 정보와 일치하지 않습니다.\"}}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-verification-request-get-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+  /api/v1/users/me/verification-requests:
+    post:
+      tags:
+      - User Verification
+      summary: 크루/코치 인증 신청
+      description: 로그인한 일반 사용자가 크루 또는 코치 인증을 신청한다.
+      operationId: user-verification-request-create
+      parameters:
+      - name: Cookie
+        in: header
+        description: 인증된 사용자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=session-id
+      - name: X-CSRF-Token
+        in: header
+        description: CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/api-v1-users-me-verification-requests-1075629857"
+            examples:
+              user-verification-request-create-unauthorized:
+                value: |
+                  {
+                    "userType": "WOOWACOURSE_CREW",
+                    "nickname": "샤를",
+                    "cohort": 8,
+                    "track": "BACKEND"
+                  }
+              user-verification-request-create-invalid:
+                value: |
+                  {
+                    "userType": "WOOWACOURSE_CREW",
+                    "nickname": " ",
+                    "cohort": 0,
+                    "track": "BACKEND"
+                  }
+              user-verification-request-create:
+                value: |
+                  {
+                    "userType": "WOOWACOURSE_CREW",
+                    "nickname": "샤를",
+                    "cohort": 8,
+                    "track": "BACKEND"
+                  }
+              user-verification-request-create-duplicate:
+                value: |
+                  {
+                    "userType": "WOOWACOURSE_CREW",
+                    "nickname": "샤를",
+                    "cohort": 8,
+                    "track": "BACKEND"
+                  }
+      responses:
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-verification-request-create-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-verification-request-create-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
+                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"}]}"
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserVerificationRequestCreateSuccessResponse"
+              examples:
+                user-verification-request-create:
+                  value: "{\"status\":\"success\",\"data\":{\"requestId\":10,\"userType\"\
+                    :\"WOOWACOURSE_CREW\",\"nickname\":\"샤를\",\"cohort\":8,\"track\"\
+                    :\"BACKEND\",\"status\":\"PENDING\",\"requestedAt\":\"2026-09-16T00:00:00Z\"\
+                    }}"
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                user-verification-request-create-duplicate:
+                  value: "{\"status\":\"error\",\"code\":\"VERIFICATION_REQUEST_ALREADY_PENDING\"\
+                    ,\"message\":\"이미 심사 대기 중인 인증 신청이 있습니다.\"}"
   /api/v1/users/{handle}/feeds:
     get:
       tags:
@@ -2662,9 +2888,220 @@ paths:
                     \ 도구\",\"cohort\":6,\"thumbnailMediaId\":12,\"likeCount\":184,\"\
                     commentCount\":14,\"techTags\":[{\"id\":1,\"displayName\":\"Spring\"\
                     }],\"members\":[{\"userId\":7,\"handle\":\"zzaekkii\",\"displayName\"\
-                    :\"재키\",\"cohort\":6,\"track\":\"BE\",\"avatarImageId\":21,\"\
+                    :\"재키\",\"cohort\":6,\"track\":\"BACKEND\",\"avatarImageId\":21,\"\
                     githubAvatarUrl\":null,\"githubProfileUrl\":null}]}],\"meta\"\
                     :{\"nextCursor\":\"next-cursor\",\"hasNext\":true}}"
+  /api/v1/admin/verification-requests/{requestId}/approve:
+    post:
+      tags:
+      - Admin User Verification
+      summary: 크루/코치 인증 신청 승인
+      description: 관리자가 PENDING 상태의 크루/코치 인증 신청을 승인한다.
+      operationId: admin-verification-request-approve
+      parameters:
+      - name: requestId
+        in: path
+        description: 인증 신청 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: Cookie
+        in: header
+        description: 인증된 관리자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      responses:
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-approve-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-approve-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"VERIFICATION_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 크루/코치 인증 신청을 관리할 수 있습니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-approve-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"VERIFICATION_REQUEST_NOT_FOUND\"\
+                    ,\"message\":\"크루/코치 인증 신청을 찾을 수 없습니다.\"}"
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-approve-conflict:
+                  value: "{\"status\":\"error\",\"code\":\"VERIFICATION_REQUEST_NOT_PENDING\"\
+                    ,\"message\":\"대기 중인 인증 신청만 처리할 수 있습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminVerificationRequestApproveSuccessResponse"
+              examples:
+                admin-verification-request-approve:
+                  value: "{\"status\":\"success\",\"data\":{\"requestId\":101,\"status\"\
+                    :\"APPROVED\",\"decidedBy\":{\"userId\":7,\"handle\":\"admin\"\
+                    },\"decidedAt\":\"2026-09-16T03:10:00Z\"}}"
+  /api/v1/admin/verification-requests/{requestId}/history:
+    get:
+      tags:
+      - Admin User Verification
+      summary: 관리자의 크루/코치 인증 신청 이력 조회
+      description: 관리자가 특정 크루/코치 인증 신청의 상태 변경 이력을 최신순으로 조회한다.
+      operationId: admin-verification-request-history
+      parameters:
+      - name: requestId
+        in: path
+        description: 인증 신청 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: Cookie
+        in: header
+        description: 인증된 관리자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-history-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"VERIFICATION_REQUEST_NOT_FOUND\"\
+                    ,\"message\":\"크루/코치 인증 신청을 찾을 수 없습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-history-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminVerificationRequestHistorySuccessResponse"
+              examples:
+                admin-verification-request-history:
+                  value: "{\"status\":\"success\",\"data\":{\"requestId\":101,\"items\"\
+                    :[{\"historyId\":202,\"fromStatus\":\"PENDING\",\"toStatus\":\"\
+                    REJECTED\",\"changedBy\":{\"userId\":7,\"handle\":\"admin\"},\"\
+                    reason\":\"Slack 프로필의 기수 정보와 일치하지 않습니다.\",\"changedAt\":\"2026-09-16T03:00:00Z\"\
+                    },{\"historyId\":201,\"fromStatus\":null,\"toStatus\":\"PENDING\"\
+                    ,\"changedBy\":null,\"reason\":null,\"changedAt\":\"2026-09-16T02:30:00Z\"\
+                    }]}}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-history-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"VERIFICATION_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 크루/코치 인증 신청을 관리할 수 있습니다.\"}"
+  /api/v1/admin/verification-requests/{requestId}/reject:
+    post:
+      tags:
+      - Admin User Verification
+      summary: 크루/코치 인증 신청 반려
+      description: 관리자가 PENDING 상태의 크루/코치 인증 신청을 반려한다.
+      operationId: admin-verification-request-reject
+      parameters:
+      - name: requestId
+        in: path
+        description: 인증 신청 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: Cookie
+        in: header
+        description: 인증된 관리자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      - name: Content-Type
+        in: header
+        description: application/json
+        required: true
+        schema:
+          type: string
+        example: application/json
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/api-v1-admin-verification-requests-requestId-reject-107459752"
+            examples:
+              admin-verification-request-reject-invalid:
+                value: |
+                  {
+                    "reason": "  "
+                  }
+              admin-verification-request-reject:
+                value: |
+                  {
+                    "reason": "  Slack 프로필의 기수 정보와 일치하지 않습니다.  "
+                  }
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-reject-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"reason\"\
+                    ,\"message\":\"reason은 필수입니다.\"}]}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminVerificationRequestRejectSuccessResponse"
+              examples:
+                admin-verification-request-reject:
+                  value: "{\"status\":\"success\",\"data\":{\"requestId\":101,\"status\"\
+                    :\"REJECTED\",\"reason\":\"Slack 프로필의 기수 정보와 일치하지 않습니다.\",\"decidedBy\"\
+                    :{\"userId\":7,\"handle\":\"admin\"},\"decidedAt\":\"2026-09-16T03:10:00Z\"\
+                    }}"
   /api/v1/feeds/{feedId}/comments/{commentId}:
     delete:
       tags:
@@ -3223,34 +3660,160 @@ components:
         status:
           type: string
           description: 응답 상태
-    api-v1-feeds-386280850:
+    AdminVerificationRequestHistorySuccessResponse:
+      title: AdminVerificationRequestHistorySuccessResponse
       required:
-      - categoryIds
-      - content
-      - mediaIds
+      - data
+      - status
       type: object
       properties:
-        categoryIds:
-          type: array
-          description: "활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        mediaIds:
-          type: array
-          description: 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        content:
+        data:
+          required:
+          - items
+          - requestId
+          type: object
+          properties:
+            requestId:
+              type: number
+              description: 인증 신청 ID
+            items:
+              type: array
+              description: 상태 변경 이력(최신순)
+              items:
+                required:
+                - changedAt
+                - historyId
+                - toStatus
+                type: object
+                properties:
+                  reason:
+                    type: string
+                    description: 반려 사유. 승인 또는 최초 신청이면 null
+                    nullable: true
+                  toStatus:
+                    type: string
+                    description: 변경 후 상태
+                  fromStatus:
+                    type: string
+                    description: 변경 전 상태. 최초 신청이면 null
+                    nullable: true
+                  changedBy:
+                    type: object
+                    properties:
+                      handle:
+                        type: string
+                        description: 상태를 변경한 관리자 handle
+                        nullable: true
+                      userId:
+                        type: number
+                        description: 상태를 변경한 관리자 사용자 ID
+                        nullable: true
+                    description: 상태를 변경한 관리자. 최초 신청이면 null
+                  historyId:
+                    type: number
+                    description: 이력 ID
+                  changedAt:
+                    type: string
+                    description: 상태 변경 시각(ISO-8601)
+          description: 인증 신청 이력
+        status:
           type: string
-          description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"
+          description: 응답 상태
+    UserVerificationRequestSuccessResponse:
+      title: UserVerificationRequestSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - nickname
+          - status
+          - userType
+          type: object
+          properties:
+            reason:
+              type: string
+              description: 반려 사유. REJECTED일 때만 반환
+              nullable: true
+            requestedAt:
+              type: string
+              description: 신청 시각(ISO-8601). 기존 인증 사용자는 null
+              nullable: true
+            requestId:
+              type: number
+              description: 인증 신청 ID. 기존 인증 사용자는 null
+              nullable: true
+            decidedAt:
+              type: string
+              description: 승인/반려 시각(ISO-8601). PENDING이면 null
+              nullable: true
+            nickname:
+              type: string
+              description: 신청 닉네임
+            cohort:
+              type: number
+              description: 신청 기수. 코치 신청은 null
+              nullable: true
+            userType:
+              type: string
+              description: 신청 유형
+            track:
+              type: string
+              description: 신청 트랙. 코치 신청은 null
+              nullable: true
+            status:
+              type: string
+              description: 신청 상태
+          description: 최신 인증 신청
+        status:
+          type: string
+          description: 응답 상태
+    AdminVerificationRequestRejectSuccessResponse:
+      title: AdminVerificationRequestRejectSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - decidedAt
+          - decidedBy
+          - reason
+          - requestId
+          - status
+          type: object
+          properties:
+            reason:
+              type: string
+              description: 반려 사유
+            requestId:
+              type: number
+              description: 인증 신청 ID
+            decidedAt:
+              type: string
+              description: 반려 시각(ISO-8601)
+            decidedBy:
+              required:
+              - handle
+              - userId
+              type: object
+              properties:
+                handle:
+                  type: string
+                  description: 반려한 관리자 handle
+                userId:
+                  type: number
+                  description: 반려한 관리자 사용자 ID
+              description: 반려한 관리자
+            status:
+              type: string
+              description: 변경된 신청 상태
+          description: 반려 결과
+        status:
+          type: string
+          description: 응답 상태
     NoticeCreateSuccessResponse:
       title: NoticeCreateSuccessResponse
       required:
@@ -3323,6 +3886,103 @@ components:
         status:
           type: string
           description: 응답 상태
+    api-v1-feeds-386280850:
+      required:
+      - categoryIds
+      - content
+      - mediaIds
+      type: object
+      properties:
+        categoryIds:
+          type: array
+          description: "활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        mediaIds:
+          type: array
+          description: 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        content:
+          type: string
+          description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"
+    AdminVerificationRequestFindAllSuccessResponse:
+      title: AdminVerificationRequestFindAllSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - items
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서. 다음 페이지가 없으면 null
+              nullable: true
+            items:
+              type: array
+              description: 조건에 맞는 인증 신청 목록
+              items:
+                required:
+                - applicant
+                - nickname
+                - requestId
+                - requestedAt
+                - status
+                - userType
+                type: object
+                properties:
+                  requestedAt:
+                    type: string
+                    description: 신청 시각(ISO-8601)
+                  requestId:
+                    type: number
+                    description: 인증 신청 ID
+                  nickname:
+                    type: string
+                    description: 신청 닉네임
+                  cohort:
+                    type: number
+                    description: 신청 기수. 코치 신청은 null
+                    nullable: true
+                  userType:
+                    type: string
+                    description: 신청 유형
+                  track:
+                    type: string
+                    description: 신청 트랙. 코치 신청은 null
+                    nullable: true
+                  status:
+                    type: string
+                    description: 현재 신청 상태
+                  applicant:
+                    required:
+                    - handle
+                    - userId
+                    type: object
+                    properties:
+                      handle:
+                        type: string
+                        description: 신청자 handle
+                      userId:
+                        type: number
+                        description: 신청자 사용자 ID
+                    description: 신청자 식별 정보
+          description: 인증 신청 목록
+        status:
+          type: string
+          description: 응답 상태
     ProjectCreateRequest:
       title: ProjectCreateRequest
       required:
@@ -3375,6 +4035,90 @@ components:
         title:
           type: string
           description: 프로젝트 이름 (100자 이하)
+    UserVerificationRequestCreateSuccessResponse:
+      title: UserVerificationRequestCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - nickname
+          - requestId
+          - requestedAt
+          - status
+          - userType
+          type: object
+          properties:
+            requestedAt:
+              type: string
+              description: 신청 시각(ISO-8601)
+            requestId:
+              type: number
+              description: 인증 신청 ID
+            nickname:
+              type: string
+              description: 신청 닉네임
+            cohort:
+              type: number
+              description: 신청 기수
+              nullable: true
+            userType:
+              type: string
+              description: 신청 유형
+            track:
+              type: string
+              description: 신청 트랙
+              nullable: true
+            status:
+              type: string
+              description: 신청 상태
+          description: 생성된 인증 신청
+        status:
+          type: string
+          description: 응답 상태
+    AdminVerificationRequestApproveSuccessResponse:
+      title: AdminVerificationRequestApproveSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - decidedAt
+          - decidedBy
+          - requestId
+          - status
+          type: object
+          properties:
+            requestId:
+              type: number
+              description: 인증 신청 ID
+            decidedAt:
+              type: string
+              description: 승인 시각(ISO-8601)
+            decidedBy:
+              required:
+              - handle
+              - userId
+              type: object
+              properties:
+                handle:
+                  type: string
+                  description: 승인한 관리자 handle
+                userId:
+                  type: number
+                  description: 승인한 관리자 사용자 ID
+              description: 승인한 관리자
+            status:
+              type: string
+              description: 변경된 신청 상태
+          description: 승인 결과
+        status:
+          type: string
+          description: 응답 상태
     ProjectCommentUpdateRequest:
       title: ProjectCommentUpdateRequest
       required:
@@ -3898,6 +4642,25 @@ components:
         status:
           type: string
           description: 응답 상태
+    OAuthSignupSuccessResponse:
+      title: OAuthSignupSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - userId
+          type: object
+          properties:
+            userId:
+              type: number
+              description: 생성된 사용자 ID
+          description: 가입 결과
+        status:
+          type: string
+          description: 응답 상태
     EventCreateSuccessResponse:
       title: EventCreateSuccessResponse
       required:
@@ -3982,25 +4745,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    OAuthSignupSuccessResponse:
-      title: OAuthSignupSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - userId
-          type: object
-          properties:
-            userId:
-              type: number
-              description: 생성된 사용자 ID
-          description: 가입 결과
-        status:
-          type: string
-          description: 응답 상태
     CategoryUpdateSuccessResponse:
       title: CategoryUpdateSuccessResponse
       required:
@@ -4040,6 +4784,26 @@ components:
         status:
           type: string
           description: 응답 상태
+    api-v1-users-me-verification-requests-1075629857:
+      required:
+      - nickname
+      - userType
+      type: object
+      properties:
+        nickname:
+          type: string
+          description: 우테코 닉네임(앞뒤 공백 제거 후 50자 이하)
+        cohort:
+          type: number
+          description: 크루 신청 시 기수. 양의 정수이며 실제 유효성은 관리자 확인
+          nullable: true
+        userType:
+          type: string
+          description: 신청 유형(CREW 또는 COACH)
+        track:
+          type: string
+          description: "크루 신청 시 트랙(BACKEND, FRONTEND, ANDROID)"
+          nullable: true
     ProjectCreateSuccessResponse:
       title: ProjectCreateSuccessResponse
       required:
@@ -4148,6 +4912,14 @@ components:
         status:
           type: string
           description: 응답 상태
+    api-v1-admin-verification-requests-requestId-reject-107459752:
+      required:
+      - reason
+      type: object
+      properties:
+        reason:
+          type: string
+          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     UserCommentFindAllSuccessResponse:
       title: UserCommentFindAllSuccessResponse
       required:
@@ -4281,19 +5053,6 @@ components:
         handle:
           type: string
           description: 영구 공개 핸들
-    FeedCommentCreateRequest:
-      title: FeedCommentCreateRequest
-      required:
-      - content
-      type: object
-      properties:
-        parentId:
-          type: number
-          description: 같은 피드의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글
-          nullable: true
-        content:
-          type: string
-          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
     UserFeedFindAllSuccessResponse:
       title: UserFeedFindAllSuccessResponse
       required:
@@ -4411,6 +5170,19 @@ components:
         status:
           type: string
           description: 응답 상태
+    FeedCommentCreateRequest:
+      title: FeedCommentCreateRequest
+      required:
+      - content
+      type: object
+      properties:
+        parentId:
+          type: number
+          description: 같은 피드의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글
+          nullable: true
+        content:
+          type: string
+          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
     FeedCommentDeleteSuccessResponse:
       title: FeedCommentDeleteSuccessResponse
       required:

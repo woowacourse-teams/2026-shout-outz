@@ -175,7 +175,7 @@ class UserProjectHttpApiTest {
                 14L,
                 List.of(new ProjectTechTagResponse(1L, "Spring")),
                 List.of(new ProjectMemberProfileResponse(
-                        7L, "zzaekkii", "재키", 6, "BE", 21L, null, null
+                        7L, "zzaekkii", "재키", 6, "BACKEND", 21L, null, null
                 ))
         );
     }

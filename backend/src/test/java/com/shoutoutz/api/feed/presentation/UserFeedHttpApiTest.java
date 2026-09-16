@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.category.domain.CategoryType;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
@@ -25,6 +26,7 @@ import com.shoutoutz.api.feed.domain.FeedErrorCode;
 import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.user.domain.profile.Track;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -164,8 +166,8 @@ class UserFeedHttpApiTest {
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
-                        "BACKEND",
-                        (short) 8,
+                        Track.BACKEND,
+                        Cohort.COHORT_8,
                         20L
                 ),
                 List.of(new FeedItem.Category(1L, "backend", "백엔드", CategoryType.GENERAL)),

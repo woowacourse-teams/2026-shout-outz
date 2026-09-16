@@ -1,5 +1,6 @@
 package com.shoutoutz.api.project.domain;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -58,4 +59,22 @@ public interface ProjectRepository {
      * 승인되고 삭제되지 않은 프로젝트 중 조건에 맞는 프로젝트 수를 필터 선택지별로 조회한다.
      */
     ProjectFilterOptions findFilterOptions(ProjectFilterCondition condition);
+
+    /**
+     * 등록자 본인의 삭제되지 않은 프로젝트를 소프트 삭제하고, 삭제 이력에 남길 삭제 시점 정보를 돌려준다.
+     * 삭제는 심사 중이어도 가능하므로, 승인 상태는 보지 않는다.
+     * 없는 프로젝트, 남의 프로젝트, 이미 삭제된 프로젝트는 모두 빈 값이다.
+     */
+    Optional<DeletedProject> softDelete(long projectId, long registeredBy, Instant deletedAt);
+
+    /**
+     * 등록자 본인의 삭제된 프로젝트와 아직 복구되지 않은 삭제 이력을 함께 조회한다.
+     * 없는 프로젝트, 남의 프로젝트, 삭제되지 않은 프로젝트는 모두 빈 값이다.
+     */
+    Optional<RestorableProject> findRestorable(long projectId, long registeredBy);
+
+    /**
+     * 삭제된 프로젝트를 복구하고 복구 시점의 승인 상태를 돌려준다. 복구할 프로젝트가 없으면 빈 값이다.
+     */
+    Optional<ApprovalStatus> restore(long projectId, Instant restoredAt);
 }

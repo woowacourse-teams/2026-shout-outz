@@ -1,6 +1,7 @@
 package com.shoutoutz.api.project.domain;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
+import java.time.Instant;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -20,6 +21,7 @@ public class Project {
     private final GithubRepositoryUrl githubRepositoryUrl;
     private final DeploymentUrl deploymentUrl;
     private final Long thumbnailMediaId;
+    private final Instant deletedAt;
 
     @Builder
     private Project(
@@ -35,7 +37,8 @@ public class Project {
             String descriptionMd,
             GithubRepositoryUrl githubRepositoryUrl,
             DeploymentUrl deploymentUrl,
-            Long thumbnailMediaId
+            Long thumbnailMediaId,
+            Instant deletedAt
     ) {
         ProjectValidator.validateProject(cohort, tagline, descriptionMd, deploymentUrl, serviceStatus);
         this.id = id;
@@ -51,6 +54,7 @@ public class Project {
         this.githubRepositoryUrl = githubRepositoryUrl;
         this.deploymentUrl = deploymentUrl;
         this.thumbnailMediaId = thumbnailMediaId;
+        this.deletedAt = deletedAt;
     }
 
     public static Project register(
