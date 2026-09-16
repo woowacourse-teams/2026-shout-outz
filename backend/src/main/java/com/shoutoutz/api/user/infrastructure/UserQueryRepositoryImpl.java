@@ -1,10 +1,12 @@
 package com.shoutoutz.api.user.infrastructure;
 
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.application.UserQueryRepository;
 import com.shoutoutz.api.user.application.dto.UserProfileCounts;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.user.domain.profile.Track;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -120,12 +122,26 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                         resultSet.getString("handle"),
                         resultSet.getString("display_name"),
                         UserType.valueOf(resultSet.getString("user_type")),
-                        resultSet.getString("track"),
-                        resultSet.getObject("cohort", Short.class),
+                        toTrack(resultSet.getString("track")),
+                        toCohort(resultSet.getObject("cohort", Short.class)),
                         resultSet.getObject("avatar_image_id", Long.class),
                         resultSet.getInt("relevance_rank")
                 )
         );
+    }
+
+    private Track toTrack(String value) {
+        if (value == null) {
+            return null;
+        }
+        return Track.from(value);
+    }
+
+    private Cohort toCohort(Short value) {
+        if (value == null) {
+            return null;
+        }
+        return Cohort.from(value);
     }
 
     /**

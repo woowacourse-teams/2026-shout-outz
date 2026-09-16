@@ -1,5 +1,6 @@
 package com.shoutoutz.api.user.domain.profile;
 
+import com.shoutoutz.api.cohort.domain.Cohort;
 import static com.shoutoutz.api.common.validator.DomainValidator.validateNotNull;
 import static com.shoutoutz.api.common.validator.DomainValidator.validateNotNullOrBlank;
 import static com.shoutoutz.api.user.domain.profile.UserProfileErrorCode.COACH_COHORT_NOT_ALLOWED;
@@ -38,15 +39,15 @@ final class UserProfileValidator {
     static void validateProfile(
             Long userId,
             UserType userType,
-            String track,
-            Short cohort
+            Track track,
+            Cohort cohort
     ) {
         validateNotNull(userId, USER_ID_REQUIRED);
         validateNotNull(userType, USER_TYPE_REQUIRED);
         validateCourseInformation(userType, track, cohort);
     }
 
-    private static void validateCourseInformation(UserType userType, String track, Short cohort) {
+    private static void validateCourseInformation(UserType userType, Track track, Cohort cohort) {
         if (userType == UserType.GENERAL && (track != null || cohort != null)) {
             throw new DomainValidationException(GENERAL_USER_COURSE_INFO_NOT_ALLOWED);
         }

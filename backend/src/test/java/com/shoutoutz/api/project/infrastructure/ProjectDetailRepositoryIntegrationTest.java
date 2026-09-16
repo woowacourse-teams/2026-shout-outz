@@ -8,8 +8,10 @@ import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.ServiceStatus;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.profile.Track;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,9 +40,9 @@ class ProjectDetailRepositoryIntegrationTest {
     void findsDetailWithTechTagsAndMembersInDisplayOrder() {
         User registrant = saveUser("owner");
         long avatarImageId = saveAvatar(registrant.getId());
-        saveCrewProfile(registrant.getId(), "정우진", 6, "BE", avatarImageId);
+        saveCrewProfile(registrant.getId(), "정우진", 6, "BACKEND", avatarImageId);
         User member = saveUser("member");
-        saveCrewProfile(member.getId(), "김도현", 6, "FE", null);
+        saveCrewProfile(member.getId(), "김도현", 6, "FRONTEND", null);
         long projectId = saveProject(registrant.getId(), "APPROVED");
         long react = saveTechTag("React");
         long typeScript = saveTechTag("TypeScript");
@@ -65,8 +67,10 @@ class ProjectDetailRepositoryIntegrationTest {
                 .extracting(ProjectTechTag::id)
                 .containsExactly(react, typeScript);
         assertThat(detail.members()).containsExactly(
-                ProjectMemberProfile.user(registrant.getId(), registrant.getHandle().value(), "정우진", 6, "BE", avatarImageId),
-                ProjectMemberProfile.user(member.getId(), member.getHandle().value(), "김도현", 6, "FE", null)
+                ProjectMemberProfile.user(registrant.getId(), registrant.getHandle().value(), "정우진",
+                        Cohort.COHORT_6, Track.BACKEND, avatarImageId),
+                ProjectMemberProfile.user(member.getId(), member.getHandle().value(), "김도현",
+                        Cohort.COHORT_6, Track.FRONTEND, null)
         );
     }
 
@@ -127,12 +131,12 @@ class ProjectDetailRepositoryIntegrationTest {
     @DisplayName("탈퇴한 팀원은 프로필이 남아 있든 정리됐든 목록에서 빠지지 않고 탈퇴한 사용자로 조회한다.")
     void showsWithdrawnMembersAsWithdrawnUser() {
         User registrant = saveUser("active");
-        saveCrewProfile(registrant.getId(), "정우진", 6, "BE", null);
+        saveCrewProfile(registrant.getId(), "정우진", 6, "BACKEND", null);
         User gracePeriodMember = saveUser("grace");
-        saveCrewProfile(gracePeriodMember.getId(), "유예중", 6, "FE", null);
+        saveCrewProfile(gracePeriodMember.getId(), "유예중", 6, "FRONTEND", null);
         withdraw(gracePeriodMember.getId());
         User purgedMember = saveUser("purged");
-        saveCrewProfile(purgedMember.getId(), "정리됨", 6, "FE", null);
+        saveCrewProfile(purgedMember.getId(), "정리됨", 6, "FRONTEND", null);
         withdraw(purgedMember.getId());
         jdbcTemplate.update("DELETE FROM user_profiles WHERE user_id = ?", purgedMember.getId());
         long projectId = saveProject(registrant.getId(), "APPROVED");
@@ -143,7 +147,8 @@ class ProjectDetailRepositoryIntegrationTest {
         ProjectDetail detail = projectRepository.findDetailById(projectId, null).orElseThrow();
 
         assertThat(detail.members()).containsExactly(
-                ProjectMemberProfile.user(registrant.getId(), registrant.getHandle().value(), "정우진", 6, "BE", null),
+                ProjectMemberProfile.user(registrant.getId(), registrant.getHandle().value(), "정우진",
+                        Cohort.COHORT_6, Track.BACKEND, null),
                 ProjectMemberProfile.withdrawn(gracePeriodMember.getId(), gracePeriodMember.getHandle().value()),
                 ProjectMemberProfile.withdrawn(purgedMember.getId(), purgedMember.getHandle().value())
         );
@@ -153,9 +158,9 @@ class ProjectDetailRepositoryIntegrationTest {
     @DisplayName("이관 프로젝트는 매칭된 팀원을 실제 프로필로, 매칭되지 않은 팀원을 GitHub 정보로 조회한다.")
     void findsArchivedMembersForArchivedProject() {
         User matchedMember = saveUser("matched");
-        saveCrewProfile(matchedMember.getId(), "이서연", 7, "FE", null);
+        saveCrewProfile(matchedMember.getId(), "이서연", 7, "FRONTEND", null);
         User withdrawnMember = saveUser("left");
-        saveCrewProfile(withdrawnMember.getId(), "탈퇴예정", 7, "BE", null);
+        saveCrewProfile(withdrawnMember.getId(), "탈퇴예정", 7, "BACKEND", null);
         withdraw(withdrawnMember.getId());
         long projectId = saveProject(null, "APPROVED", 7);
         saveArchivedMember(projectId, null, "jihoon-kim", "Jihoon Kim", 0);
@@ -169,7 +174,8 @@ class ProjectDetailRepositoryIntegrationTest {
         assertThat(detail.members()).containsExactly(
                 ProjectMemberProfile.archived("Jihoon Kim", 7, avatarUrl("jihoon-kim"), profileUrl("jihoon-kim")),
                 ProjectMemberProfile.archived("noname-dev", 7, avatarUrl("noname-dev"), profileUrl("noname-dev")),
-                ProjectMemberProfile.user(matchedMember.getId(), matchedMember.getHandle().value(), "이서연", 7, "FE", null),
+                ProjectMemberProfile.user(matchedMember.getId(), matchedMember.getHandle().value(), "이서연",
+                        Cohort.COHORT_7, Track.FRONTEND, null),
                 ProjectMemberProfile.withdrawn(withdrawnMember.getId(), withdrawnMember.getHandle().value())
         );
     }

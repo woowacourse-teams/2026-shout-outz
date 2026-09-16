@@ -46,6 +46,7 @@ import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.ServiceStatus;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
@@ -708,7 +709,7 @@ class ProjectServiceTest {
         assertThat(response.registeredBy()).isEqualTo(REGISTERED_BY);
         assertThat(response.techTags()).containsExactly(new ProjectTechTagResponse(1L, "React"));
         assertThat(response.members()).containsExactly(new ProjectMemberProfileResponse(
-                REGISTERED_BY, "dhyepark", "박다혜", 6, "BE", 101L, null, null
+                REGISTERED_BY, "dhyepark", "박다혜", 6, "BACKEND", 101L, null, null
         ));
     }
 
@@ -770,7 +771,14 @@ class ProjectServiceTest {
                 false,
                 0,
                 List.of(new ProjectTechTag(1L, "React")),
-                List.of(ProjectMemberProfile.user(REGISTERED_BY, "dhyepark", "박다혜", 6, "BE", 101L)),
+                List.of(ProjectMemberProfile.user(
+                        REGISTERED_BY,
+                        "dhyepark",
+                        "박다혜",
+                        Cohort.COHORT_6,
+                        Track.BACKEND,
+                        101L
+                )),
                 NOW,
                 NOW
         );
@@ -823,8 +831,8 @@ class ProjectServiceTest {
                 .userId(userId)
                 .displayName("사용자" + userId)
                 .userType(userType)
-                .track(crew ? "BACKEND" : null)
-                .cohort(crew ? (short) 6 : null)
+                .track(crew ? Track.BACKEND : null)
+                .cohort(crew ? Cohort.COHORT_6 : null)
                 .build();
     }
 

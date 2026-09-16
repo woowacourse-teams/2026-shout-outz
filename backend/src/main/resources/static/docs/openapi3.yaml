@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"type\",\"\
-                    message\":\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\"\
-                    :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\"\
+                    ,\"message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\":\"displayName은\
+                    \ 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -437,11 +437,11 @@ paths:
                     :184,\"commentCount\":14,\"techTags\":[{\"id\":1,\"displayName\"\
                     :\"React\"},{\"id\":2,\"displayName\":\"Spring\"}],\"members\"\
                     :[{\"userId\":7,\"handle\":\"dhyepark\",\"displayName\":\"박다혜\"\
-                    ,\"cohort\":6,\"track\":\"BE\",\"avatarImageId\":101,\"githubAvatarUrl\"\
+                    ,\"cohort\":6,\"track\":\"BACKEND\",\"avatarImageId\":101,\"githubAvatarUrl\"\
                     :null,\"githubProfileUrl\":null},{\"userId\":8,\"handle\":\"zzaekkii\"\
-                    ,\"displayName\":\"김도현\",\"cohort\":6,\"track\":\"FE\",\"avatarImageId\"\
-                    :null,\"githubAvatarUrl\":null,\"githubProfileUrl\":null}]}],\"\
-                    meta\":{\"nextCursor\":\"UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw\"\
+                    ,\"displayName\":\"김도현\",\"cohort\":6,\"track\":\"FRONTEND\",\"\
+                    avatarImageId\":null,\"githubAvatarUrl\":null,\"githubProfileUrl\"\
+                    :null}]}],\"meta\":{\"nextCursor\":\"UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw\"\
                     ,\"hasNext\":true,\"totalCount\":48}}"
         "400":
           description: "400"
@@ -1358,10 +1358,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
-                    eventStartAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -1646,12 +1646,12 @@ paths:
                     :false,\"commentCount\":18,\"techTags\":[{\"id\":1,\"displayName\"\
                     :\"React\"},{\"id\":2,\"displayName\":\"TypeScript\"}],\"members\"\
                     :[{\"userId\":7,\"handle\":\"dhyepark\",\"displayName\":\"박다혜\"\
-                    ,\"cohort\":6,\"track\":\"BE\",\"avatarImageId\":101,\"githubAvatarUrl\"\
+                    ,\"cohort\":6,\"track\":\"BACKEND\",\"avatarImageId\":101,\"githubAvatarUrl\"\
                     :null,\"githubProfileUrl\":null},{\"userId\":8,\"handle\":\"zzaekkii\"\
-                    ,\"displayName\":\"김도현\",\"cohort\":6,\"track\":\"FE\",\"avatarImageId\"\
-                    :null,\"githubAvatarUrl\":null,\"githubProfileUrl\":null}],\"\
-                    createdAt\":\"2026-08-09T02:30:00Z\",\"updatedAt\":\"2026-08-09T03:00:00Z\"\
-                    }}"
+                    ,\"displayName\":\"김도현\",\"cohort\":6,\"track\":\"FRONTEND\",\"\
+                    avatarImageId\":null,\"githubAvatarUrl\":null,\"githubProfileUrl\"\
+                    :null}],\"createdAt\":\"2026-08-09T02:30:00Z\",\"updatedAt\":\"\
+                    2026-08-09T03:00:00Z\"}}"
     delete:
       tags:
       - Project
@@ -1855,9 +1855,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -2512,7 +2512,7 @@ paths:
                     \ 도구\",\"cohort\":6,\"thumbnailMediaId\":12,\"likeCount\":184,\"\
                     commentCount\":14,\"techTags\":[{\"id\":1,\"displayName\":\"Spring\"\
                     }],\"members\":[{\"userId\":7,\"handle\":\"zzaekkii\",\"displayName\"\
-                    :\"재키\",\"cohort\":6,\"track\":\"BE\",\"avatarImageId\":21,\"\
+                    :\"재키\",\"cohort\":6,\"track\":\"BACKEND\",\"avatarImageId\":21,\"\
                     githubAvatarUrl\":null,\"githubProfileUrl\":null}]}],\"meta\"\
                     :{\"nextCursor\":\"next-cursor\",\"hasNext\":true}}"
   /api/v1/feeds/{feedId}/comments/{commentId}:
@@ -3004,36 +3004,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    ProjectRestoreSuccessResponse:
-      title: ProjectRestoreSuccessResponse
-      required:
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - approvalStatus
-          - id
-          - restoredAt
-          type: object
-          properties:
-            approvalStatus:
-              type: string
-              description: "승인 상태 (PENDING, APPROVED, REJECTED). 삭제 이전 값을 그대로 유지한다\
-                ."
-            restoredAt:
-              type: string
-              description: 복구 시각 (UTC)
-            id:
-              type: number
-              description: 복구한 프로젝트 ID
-        meta:
-          type: object
-          description: 메타 정보
-          nullable: true
-        status:
-          type: string
-          description: 응답 상태
     CategorySaveSuccessResponse:
       title: CategorySaveSuccessResponse
       required:
@@ -3070,6 +3040,36 @@ components:
               type: number
               description: 카테고리 ID
           description: 카테고리
+        status:
+          type: string
+          description: 응답 상태
+    ProjectRestoreSuccessResponse:
+      title: ProjectRestoreSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - approvalStatus
+          - id
+          - restoredAt
+          type: object
+          properties:
+            approvalStatus:
+              type: string
+              description: "승인 상태 (PENDING, APPROVED, REJECTED). 삭제 이전 값을 그대로 유지한다\
+                ."
+            restoredAt:
+              type: string
+              description: 복구 시각 (UTC)
+            id:
+              type: number
+              description: 복구한 프로젝트 ID
+        meta:
+          type: object
+          description: 메타 정보
+          nullable: true
         status:
           type: string
           description: 응답 상태
@@ -4493,71 +4493,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    UserProfileSuccessResponse:
-      title: UserProfileSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - counts
-          - displayName
-          - handle
-          - userType
-          type: object
-          properties:
-            avatarImageId:
-              type: number
-              description: 프로필 이미지 미디어 ID
-              nullable: true
-            counts:
-              required:
-              - feeds
-              - projects
-              type: object
-              properties:
-                projects:
-                  type: number
-                  description: 삭제되지 않은 참여 프로젝트 개수
-                feeds:
-                  type: number
-                  description: 삭제되지 않은 작성 피드 개수
-              description: 프로필 항목 개수
-            displayName:
-              type: string
-              description: 표시 이름
-            blogUrl:
-              type: string
-              description: 블로그 URL
-              nullable: true
-            githubProfileUrl:
-              type: string
-              description: GitHub 프로필 URL
-              nullable: true
-            bio:
-              type: string
-              description: 한 줄 소개
-              nullable: true
-            cohort:
-              type: number
-              description: 우테코 기수
-              nullable: true
-            handle:
-              type: string
-              description: 사용자 handle
-            userType:
-              type: string
-              description: 사용자 유형
-            track:
-              type: string
-              description: 우테코 트랙
-              nullable: true
-          description: 사용자 프로필
-        status:
-          type: string
-          description: 응답 상태
     UserProjectFindAllSuccessResponse:
       title: UserProjectFindAllSuccessResponse
       required:
@@ -4674,6 +4609,71 @@ components:
               type: boolean
               description: 다음 페이지 존재 여부
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    UserProfileSuccessResponse:
+      title: UserProfileSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - counts
+          - displayName
+          - handle
+          - userType
+          type: object
+          properties:
+            avatarImageId:
+              type: number
+              description: 프로필 이미지 미디어 ID
+              nullable: true
+            counts:
+              required:
+              - feeds
+              - projects
+              type: object
+              properties:
+                projects:
+                  type: number
+                  description: 삭제되지 않은 참여 프로젝트 개수
+                feeds:
+                  type: number
+                  description: 삭제되지 않은 작성 피드 개수
+              description: 프로필 항목 개수
+            displayName:
+              type: string
+              description: 표시 이름
+            blogUrl:
+              type: string
+              description: 블로그 URL
+              nullable: true
+            githubProfileUrl:
+              type: string
+              description: GitHub 프로필 URL
+              nullable: true
+            bio:
+              type: string
+              description: 한 줄 소개
+              nullable: true
+            cohort:
+              type: number
+              description: 우테코 기수
+              nullable: true
+            handle:
+              type: string
+              description: 사용자 handle
+            userType:
+              type: string
+              description: 사용자 유형
+            track:
+              type: string
+              description: 우테코 트랙
+              nullable: true
+          description: 사용자 프로필
         status:
           type: string
           description: 응답 상태
