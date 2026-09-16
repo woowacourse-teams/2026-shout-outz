@@ -194,7 +194,7 @@ public class UserService {
                 profile.getAvatarImageId(),
                 profile.getGithubProfileUrl(),
                 profile.getBlogUrl(),
-                new UserProfileResponse.Counts(counts.projects(), counts.posts())
+                new UserProfileResponse.Counts(counts.projects(), counts.feeds())
         );
     }
 

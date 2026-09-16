@@ -191,9 +191,9 @@ class S3MediaImageProcessorTest {
 
     private static MediaMetadata metadata(String mimeType, long sizeBytes) {
         return MediaMetadata.initialize(
-                MediaPurpose.POST_CONTENT,
+                MediaPurpose.FEED_CONTENT,
                 1L,
-                "media/post-content/object-id",
+                "media/feed-content/object-id",
                 "image.png",
                 mimeType,
                 sizeBytes,

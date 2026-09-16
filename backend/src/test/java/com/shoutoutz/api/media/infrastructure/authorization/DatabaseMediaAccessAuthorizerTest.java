@@ -34,7 +34,7 @@ class DatabaseMediaAccessAuthorizerTest {
     }
 
     @Test
-    void 삭제되지_않은_포스트에_연결된_미디어는_비로그인_조회가_가능하다() {
+    void 삭제되지_않은_피드에_연결된_미디어는_비로그인_조회가_가능하다() {
         when(jdbcTemplate.queryForObject(anyString(), eq(Boolean.class), eq(10L)))
                 .thenReturn(true);
 
@@ -44,7 +44,7 @@ class DatabaseMediaAccessAuthorizerTest {
     }
 
     @Test
-    void 포스트에_연결되지_않은_미디어는_업로더만_조회할_수_있다() {
+    void 피드에_연결되지_않은_미디어는_업로더만_조회할_수_있다() {
         when(jdbcTemplate.queryForObject(anyString(), eq(Boolean.class), eq(10L)))
                 .thenReturn(false);
 
@@ -68,9 +68,9 @@ class DatabaseMediaAccessAuthorizerTest {
         return MediaMetadata.reconstitute(
                 10L,
                 7L,
-                MediaPurpose.POST_CONTENT,
-                "media/post-content/object-id",
-                "post-image.webp",
+                MediaPurpose.FEED_CONTENT,
+                "media/feed-content/object-id",
+                "feed-image.webp",
                 "image/webp",
                 1024L,
                 MediaStatus.READY,
