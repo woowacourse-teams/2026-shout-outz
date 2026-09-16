@@ -3,10 +3,9 @@ package com.shoutoutz.api.feed.application;
 import com.shoutoutz.api.category.domain.Category;
 import com.shoutoutz.api.category.domain.CategoryRepository;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
-import com.shoutoutz.api.media.domain.MediaPurpose;
-import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.feed.application.dto.FeedCursor;
 import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
@@ -18,8 +17,12 @@ import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
+import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
+import com.shoutoutz.api.media.domain.MediaPurpose;
+import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
@@ -80,6 +83,29 @@ public class FeedService {
         List<FeedItem> feedsWithExtraItem = feedQueryRepository.findAll(
                 sort,
                 request.categoryId(),
+                cursor,
+                size + 1
+        );
+        return createSlice(feedsWithExtraItem, size, sort);
+    }
+
+    /**
+     * 사용자가 작성한 피드를 최신순으로 조회한다.
+     * 탈퇴한 사용자의 피드는 공개하지 않는다.
+     */
+    @Transactional(readOnly = true)
+    public FeedFindAllResult findAllByUser(String handle, UserFeedFindRequest request) {
+        User user = userRepository.findByHandle(handle)
+                .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
+        if (user.isDeleted()) {
+            return new FeedFindAllResult(List.of(), null, false);
+        }
+
+        FeedSort sort = FeedSort.LATEST;
+        FeedCursor cursor = feedCursorCodec.decode(request.cursor(), sort);
+        int size = request.resolvedSize();
+        List<FeedItem> feedsWithExtraItem = feedQueryRepository.findAllByAuthorId(
+                user.getId(),
                 cursor,
                 size + 1
         );

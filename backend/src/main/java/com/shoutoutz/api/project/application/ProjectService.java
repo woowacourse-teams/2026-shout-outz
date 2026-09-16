@@ -10,6 +10,7 @@ import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_NOT_FOUND;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_RESTORE_DEADLINE_EXPIRED;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_THUMBNAIL_NOT_READY;
+import static com.shoutoutz.api.user.domain.account.UserErrorCode.USER_NOT_FOUND;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
@@ -19,6 +20,7 @@ import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
@@ -49,10 +51,12 @@ import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenEx
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
+import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
+import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -79,6 +83,7 @@ public class ProjectService {
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
     private final ProjectDeletionRepository projectDeletionRepository;
+    private final UserProjectQueryRepository userProjectQueryRepository;
     private final Clock clock;
 
     @Transactional
@@ -125,6 +130,26 @@ public class ProjectService {
         ));
         ProjectCursor nextCursor = page.nextCursor(sort);
         return ProjectFindAllResponse.of(page, nextCursor == null ? null : ProjectCursorCodec.encode(nextCursor));
+    }
+
+    /**
+     * 사용자가 참여한 승인 프로젝트를 최신순으로 조회한다.
+     * 탈퇴한 사용자의 프로젝트는 공개하지 않는다.
+     */
+    @Transactional(readOnly = true)
+    public UserProjectFindResponse findAllByUser(String handle, UserProjectFindRequest request) {
+        User user = userRepository.findByHandle(handle)
+                .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND));
+        if (user.isDeleted()) {
+            return UserProjectFindResponse.from(new UserProjectResult(List.of(), false));
+        }
+
+        UserProjectResult result = userProjectQueryRepository.findAllByUserId(
+                user.getId(),
+                request.resolvedCursor(),
+                request.resolvedSize()
+        );
+        return UserProjectFindResponse.from(result);
     }
 
     /**

@@ -3,9 +3,11 @@ package com.shoutoutz.api.feed.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.category.domain.CategoryRepository;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
 import com.shoutoutz.api.feed.application.dto.FeedCursor;
 import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
@@ -13,7 +15,12 @@ import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
+import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
@@ -145,6 +152,86 @@ class FeedServiceQueryTest {
         verify(feedQueryRepository).findAll(FeedSort.POPULAR, null, null, 3);
     }
 
+    @Test
+    void 사용자가_작성한_피드를_최신순_커서로_조회한다() {
+        FeedCursor cursor = new FeedCursor(
+                FeedSort.LATEST,
+                0L,
+                Instant.parse("2026-09-12T00:00:00Z"),
+                4L
+        );
+        List<FeedItem> queried = List.of(
+                feed(3L, "2026-09-11T00:00:00Z"),
+                feed(2L, "2026-09-10T00:00:00Z"),
+                feed(1L, "2026-09-09T00:00:00Z")
+        );
+        when(userRepository.findByHandle("zzaekkii"))
+                .thenReturn(Optional.of(user(UserStatus.ACTIVE)));
+        when(feedQueryRepository.findAllByAuthorId(1L, cursor, 3))
+                .thenReturn(queried);
+
+        FeedFindAllResult result = feedService.findAllByUser(
+                "zzaekkii",
+                new UserFeedFindRequest(cursorCodec.encode(cursor), 2)
+        );
+
+        assertThat(result.items()).containsExactly(queried.get(0), queried.get(1));
+        assertThat(result.hasNext()).isTrue();
+        assertThat(cursorCodec.decode(result.nextCursor(), FeedSort.LATEST))
+                .isEqualTo(new FeedCursor(
+                        FeedSort.LATEST,
+                        0L,
+                        queried.get(1).createdAt(),
+                        queried.get(1).feedId()
+                ));
+        verify(feedQueryRepository).findAllByAuthorId(1L, cursor, 3);
+    }
+
+    @Test
+    void 탈퇴한_사용자의_피드는_공개하지_않는다() {
+        when(userRepository.findByHandle("zzaekkii"))
+                .thenReturn(Optional.of(user(UserStatus.DELETED)));
+
+        FeedFindAllResult result = feedService.findAllByUser(
+                "zzaekkii",
+                new UserFeedFindRequest(null, null)
+        );
+
+        assertThat(result.items()).isEmpty();
+        assertThat(result.nextCursor()).isNull();
+        assertThat(result.hasNext()).isFalse();
+        verifyNoInteractions(feedQueryRepository);
+    }
+
+    @Test
+    void 정지된_사용자의_기존_피드는_공개한다() {
+        when(userRepository.findByHandle("zzaekkii"))
+                .thenReturn(Optional.of(user(UserStatus.BANNED)));
+        when(feedQueryRepository.findAllByAuthorId(1L, null, 21))
+                .thenReturn(List.of(feed(1L, "2026-09-11T00:00:00Z")));
+
+        FeedFindAllResult result = feedService.findAllByUser(
+                "zzaekkii",
+                new UserFeedFindRequest(null, null)
+        );
+
+        assertThat(result.items()).hasSize(1);
+        verify(feedQueryRepository).findAllByAuthorId(1L, null, 21);
+    }
+
+    @Test
+    void 존재하지_않는_사용자의_피드는_조회할_수_없다() {
+        when(userRepository.findByHandle("missing-user")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> feedService.findAllByUser(
+                "missing-user",
+                new UserFeedFindRequest(null, null)
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(UserErrorCode.USER_NOT_FOUND));
+
+        verifyNoInteractions(feedQueryRepository);
+    }
+
     private FeedItem feed(long id, String createdAt) {
         return feed(id, createdAt, 0L);
     }
@@ -168,5 +255,19 @@ class FeedServiceQueryTest {
                 instant,
                 instant
         );
+    }
+
+    private User user(UserStatus status) {
+        Instant deletedAt = null;
+        if (status == UserStatus.DELETED) {
+            deletedAt = Instant.now();
+        }
+        return User.builder()
+                .id(1L)
+                .handle("zzaekkii")
+                .status(status)
+                .role(UserRole.USER)
+                .deletedAt(deletedAt)
+                .build();
     }
 }

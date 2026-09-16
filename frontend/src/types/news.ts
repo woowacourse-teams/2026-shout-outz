@@ -11,6 +11,14 @@ export const isNewsFilter = (value: unknown): value is NewsFilter =>
 export const isNewsSort = (value: unknown): value is NewsSort =>
   NEWS_SORTS.some((sort) => sort === value);
 
+// TODO 대체 GET /api/v1/news의 eventStatus 쿼리 파라미터 (명세는 허용 값 목록 미확정)
+export type NewsEventStatus = 'ONGOING';
+
+export interface NewsListOptions {
+  eventStatus?: NewsEventStatus;
+  size?: number;
+}
+
 // TODO 대체 NewsListItem.type (명세는 null도 포함)
 export type NewsType = 'NOTICE' | 'EVENT';
 
