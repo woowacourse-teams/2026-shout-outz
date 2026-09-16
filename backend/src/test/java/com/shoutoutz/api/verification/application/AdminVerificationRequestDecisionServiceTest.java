@@ -11,12 +11,14 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.verification.domain.UserVerificationErrorCode;
 import com.shoutoutz.api.verification.domain.UserVerificationRequest;
@@ -107,8 +109,8 @@ class AdminVerificationRequestDecisionServiceTest {
         verify(userProfileRepository).save(profileCaptor.capture());
         assertThat(profileCaptor.getValue().getDisplayName().value()).isEqualTo("8기 샤를");
         assertThat(profileCaptor.getValue().getUserType()).isEqualTo(UserType.WOOWACOURSE_CREW);
-        assertThat(profileCaptor.getValue().getCohort()).isEqualTo((short) 8);
-        assertThat(profileCaptor.getValue().getTrack()).isEqualTo("BACKEND");
+        assertThat(profileCaptor.getValue().getCohort()).isEqualTo(Cohort.COHORT_8);
+        assertThat(profileCaptor.getValue().getTrack()).isEqualTo(Track.BACKEND);
 
         ArgumentCaptor<UserVerificationRequestHistory> historyCaptor =
                 ArgumentCaptor.forClass(UserVerificationRequestHistory.class);

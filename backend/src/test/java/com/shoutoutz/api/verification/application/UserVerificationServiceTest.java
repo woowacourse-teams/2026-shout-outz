@@ -10,8 +10,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.verification.domain.UserVerificationErrorCode;
 import com.shoutoutz.api.verification.domain.UserVerificationRequest;
@@ -178,8 +180,8 @@ class UserVerificationServiceTest {
                         .userId(USER_ID)
                         .displayName("샤를")
                         .userType(UserType.WOOWACOURSE_CREW)
-                        .track("BACKEND")
-                        .cohort((short) 8)
+                        .track(Track.BACKEND)
+                        .cohort(Cohort.COHORT_8)
                         .build()));
 
         assertThatThrownBy(() -> userVerificationService.create(
@@ -410,8 +412,8 @@ class UserVerificationServiceTest {
                         .userId(USER_ID)
                         .displayName("샤를")
                         .userType(UserType.WOOWACOURSE_CREW)
-                        .track("BACKEND")
-                        .cohort((short) 8)
+                        .track(Track.BACKEND)
+                        .cohort(Cohort.COHORT_8)
                         .build()));
 
         UserVerificationRequestResponse response = userVerificationService.findLatest(USER_ID);

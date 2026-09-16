@@ -216,8 +216,8 @@ class UserProfileTest {
 
         assertThat(approved.getDisplayName().value()).isEqualTo("8기 샤를");
         assertThat(approved.getUserType()).isEqualTo(UserType.WOOWACOURSE_CREW);
-        assertThat(approved.getCohort()).isEqualTo((short) 8);
-        assertThat(approved.getTrack()).isEqualTo("BACKEND");
+        assertThat(approved.getCohort()).isEqualTo(Cohort.COHORT_8);
+        assertThat(approved.getTrack()).isEqualTo(Track.BACKEND);
         assertThat(approved.getBio()).isEqualTo("소개");
     }
 

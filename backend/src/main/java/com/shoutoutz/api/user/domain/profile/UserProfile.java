@@ -1,7 +1,7 @@
 package com.shoutoutz.api.user.domain.profile;
 
-import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.util.DataResolveUtil;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -95,8 +95,8 @@ public class UserProfile {
         String verifiedDisplayName = crew
                 ? verificationCohort + "기 " + nickname
                 : nickname;
-        String verifiedTrack = crew ? verificationTrack : null;
-        Short verifiedCohort = crew ? verificationCohort.shortValue() : null;
+        Track verifiedTrack = crew ? Track.from(verificationTrack) : null;
+        Cohort verifiedCohort = crew ? Cohort.from(verificationCohort) : null;
 
         return new UserProfile(
                 userId,

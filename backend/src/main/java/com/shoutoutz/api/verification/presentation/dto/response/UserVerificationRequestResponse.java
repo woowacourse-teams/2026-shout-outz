@@ -40,13 +40,14 @@ public record UserVerificationRequestResponse(
      * 기능 도입 전에 이미 인증된 사용자는 신청 이력 없이 현재 프로필을 승인 상태로 보여준다.
      */
     public static UserVerificationRequestResponse legacyApproved(UserProfile profile) {
-        Integer cohort = profile.getCohort() == null ? null : profile.getCohort().intValue();
+        Integer cohort = profile.getCohort() == null ? null : profile.getCohort().getValue();
+        String track = profile.getTrack() == null ? null : profile.getTrack().getValue();
         return new UserVerificationRequestResponse(
                 null,
                 profile.getUserType(),
                 profile.getDisplayName().value(),
                 cohort,
-                profile.getTrack(),
+                track,
                 VerificationRequestStatus.APPROVED,
                 null,
                 null,
