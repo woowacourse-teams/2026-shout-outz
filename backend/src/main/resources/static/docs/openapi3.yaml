@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"type\",\"\
-                    message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"\
-                    slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayOrder\",\"message\"\
-                    :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\"\
+                    ,\"message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -469,7 +469,7 @@ paths:
         서 앞 연도를 떼고 소문자로 만든다. 운영 상태는 deploymentUrl이 있으면 OPERATING, 없으면 CLOSED로 저장한다\
         . 팀원은 등록자를 첫 번째로 두고 memberHandles 순서대로 저장한다. 본문 이미지는 descriptionMd에 ![설명](media://{mediaId})\
         \ 형식으로 넣는다. 요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, 크루나\
-        \ 코치가 아니면 403, 이미 등록된 리포지토리면 409를 반환한다."
+        \ 코치가 아니면 403, 이미 등록된 리포지토리이거나 리포지토리 이름이 같아 slug가 겹치면 409를 반환한다."
       operationId: project-create
       parameters:
       - name: X-CSRF-Token
@@ -614,7 +614,7 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
                 project-create-duplicate:
-                  value: "{\"status\":\"error\",\"code\":\"PROJECT_DUPLICATE_SLUG\"\
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_DUPLICATE_GITHUB_REPOSITORY\"\
                     ,\"message\":\"이미 등록된 리포지토리입니다.\"}"
         "403":
           description: "403"
@@ -888,8 +888,8 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1358,10 +1358,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -1652,6 +1652,210 @@ paths:
                     :null,\"githubAvatarUrl\":null,\"githubProfileUrl\":null}],\"\
                     createdAt\":\"2026-08-09T02:30:00Z\",\"updatedAt\":\"2026-08-09T03:00:00Z\"\
                     }}"
+    put:
+      tags:
+      - Project
+      summary: 프로젝트 수정
+      description: "작성자가 프로젝트 정보를 수정한다. 모든 필드를 보내는 전체 교체 방식이며, 비우는 값은 null로 보낸다. techTagIds와\
+        \ memberHandles도 전체 목록을 순서대로 보낸다. 반려된 프로젝트를 수정하면 재심사 요청으로 처리되어 approvalStatus가\
+        \ PENDING으로 바뀌고, 그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. 요청값과 기술\
+        \ 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, 없거나 삭제됐거나 다른 사람의 프로젝트\
+        면 404, 이미 등록된 리포지토리로 바꾸면 409를 반환한다."
+      operationId: project-update
+      parameters:
+      - name: projectId
+        in: path
+        description: 수정할 프로젝트 ID
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdateRequest"
+            examples:
+              project-update-duplicate:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailMediaId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
+                    "serviceStatus": "OPERATING",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["zzaekkii", "sangjun121"]
+                  }
+              project-update-invalid:
+                value: "{\n  \"title\": \"루프 (Loop)\",\n  \"teamName\": \"루프팀\",\n\
+                  \  \"tagline\": \"스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구\",\n  \"cohort\"\
+                  : 6,\n  \"thumbnailMediaId\": 12,\n  \"githubRepositoryUrl\": \"\
+                  https://github.com/woowacourse-teams/2026-loop\",\n  \"deploymentUrl\"\
+                  : \"https://loop.team\",\n  \"descriptionMd\": \"## 문제\\n회고 도구와\
+                  \ 액션 아이템 관리가 흩어져 있습니다.\",\n  \n  \"techTagIds\": [1, 2, 3],\n  \"\
+                  memberHandles\": [\"zzaekkii\", \"sangjun121\"]\n}\n"
+              project-update-not-found:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailMediaId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
+                    "serviceStatus": "OPERATING",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["zzaekkii", "sangjun121"]
+                  }
+              project-update:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailMediaId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
+                    "serviceStatus": "OPERATING",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["zzaekkii", "sangjun121"]
+                  }
+              project-update-unauthorized:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailMediaId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
+                    "serviceStatus": "OPERATING",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["zzaekkii", "sangjun121"]
+                  }
+      responses:
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-update-duplicate:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_DUPLICATE_GITHUB_REPOSITORY\"\
+                    ,\"message\":\"이미 등록된 리포지토리입니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-update-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"serviceStatus\"\
+                    ,\"message\":\"serviceStatus는 필수입니다.\"}]}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-update-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_NOT_FOUND\",\"\
+                    message\":\"프로젝트를 찾을 수 없습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectUpdateSuccessResponse"
+              examples:
+                project-update:
+                  value: "{\"status\":\"success\",\"data\":{\"projectId\":100,\"approvalStatus\"\
+                    :\"PENDING\"}}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-update-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+    delete:
+      tags:
+      - Project
+      summary: 프로젝트 삭제
+      description: "등록자 본인이 자신의 프로젝트를 삭제한다. 심사 중인 프로젝트도 삭제할 수 있다. 삭제된 프로젝트는 목록과 상세\
+        에서 보이지 않으며, 응답의 restoreDeadlineAt 까지 복구할 수 있다. 로그인하지 않았으면 401, 없는 프로젝트이거나\
+        \ 등록자가 아니거나 이미 삭제된 프로젝트이면 404를 반환한다."
+      operationId: project-delete
+      parameters:
+      - name: projectId
+        in: path
+        description: 삭제할 프로젝트 ID
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-delete-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_NOT_FOUND\",\"\
+                    message\":\"프로젝트를 찾을 수 없습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-delete-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDeleteSuccessResponse"
+              examples:
+                project-delete:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":100,\"deletedAt\"\
+                    :\"2026-09-06T13:30:00Z\",\"restoreDeadlineAt\":\"2026-10-06T13:30:00Z\"\
+                    }}"
   /api/v1/users/me:
     get:
       tags:
@@ -1801,9 +2005,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -2174,6 +2378,70 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"content\"\
                     ,\"message\":\"댓글 내용은 500자를 초과할 수 없습니다.\"}]}"
+  /api/v1/projects/{projectId}/restore:
+    post:
+      tags:
+      - Project
+      summary: 프로젝트 복구
+      description: "등록자 본인이 삭제한 자신의 프로젝트를 복구 기한 안에 되살린다. 승인 상태는 삭제 이전 값을 그대로 유지한다\
+        . 로그인하지 않았으면 401, 없는 프로젝트이거나 등록자가 아니거나 삭제되지 않은 프로젝트이면 404, 복구 기한이 지났으면 409를\
+        \ 반환한다. 복구 기한이 지난 프로젝트는 이후 영구 삭제되어 복구할 수 없다."
+      operationId: project-restore
+      parameters:
+      - name: projectId
+        in: path
+        description: 복구할 프로젝트 ID
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectRestoreSuccessResponse"
+              examples:
+                project-restore:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":100,\"approvalStatus\"\
+                    :\"APPROVED\",\"restoredAt\":\"2026-09-10T05:20:00Z\"}}"
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-restore-deadline-expired:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_RESTORE_DEADLINE_EXPIRED\"\
+                    ,\"message\":\"복구 기한이 지나 프로젝트를 복구할 수 없습니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-restore-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_NOT_FOUND\",\"\
+                    message\":\"프로젝트를 찾을 수 없습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-restore-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
   /api/v1/users/me/comments:
     get:
       tags:
@@ -2886,6 +3154,36 @@ components:
         status:
           type: string
           description: 응답 상태
+    ProjectRestoreSuccessResponse:
+      title: ProjectRestoreSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - approvalStatus
+          - id
+          - restoredAt
+          type: object
+          properties:
+            approvalStatus:
+              type: string
+              description: "승인 상태 (PENDING, APPROVED, REJECTED). 삭제 이전 값을 그대로 유지한다\
+                ."
+            restoredAt:
+              type: string
+              description: 복구 시각 (UTC)
+            id:
+              type: number
+              description: 복구한 프로젝트 ID
+        meta:
+          type: object
+          description: 메타 정보
+          nullable: true
+        status:
+          type: string
+          description: 응답 상태
     CategorySaveSuccessResponse:
       title: CategorySaveSuccessResponse
       required:
@@ -3286,6 +3584,27 @@ components:
         status:
           type: string
           description: 응답 상태
+    ProjectUpdateSuccessResponse:
+      title: ProjectUpdateSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - approvalStatus
+          - projectId
+          type: object
+          properties:
+            approvalStatus:
+              type: string
+              description: "수정 후 승인 상태 (PENDING, APPROVED)"
+            projectId:
+              type: number
+              description: 수정한 프로젝트 ID
+        status:
+          type: string
+          description: 응답 상태
     CohortFindAllSuccessResponse:
       title: CohortFindAllSuccessResponse
       required:
@@ -3579,25 +3898,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    OAuthSignupSuccessResponse:
-      title: OAuthSignupSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - userId
-          type: object
-          properties:
-            userId:
-              type: number
-              description: 생성된 사용자 ID
-          description: 가입 결과
-        status:
-          type: string
-          description: 응답 상태
     EventCreateSuccessResponse:
       title: EventCreateSuccessResponse
       required:
@@ -3679,6 +3979,25 @@ components:
             id:
               type: number
               description: 이벤트 ID
+        status:
+          type: string
+          description: 응답 상태
+    OAuthSignupSuccessResponse:
+      title: OAuthSignupSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - userId
+          type: object
+          properties:
+            userId:
+              type: number
+              description: 생성된 사용자 ID
+          description: 가입 결과
         status:
           type: string
           description: 응답 상태
@@ -3881,6 +4200,35 @@ components:
               type: boolean
               description: 다음 페이지 존재 여부
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    ProjectDeleteSuccessResponse:
+      title: ProjectDeleteSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - deletedAt
+          - id
+          - restoreDeadlineAt
+          type: object
+          properties:
+            deletedAt:
+              type: string
+              description: 삭제 시각 (UTC)
+            restoreDeadlineAt:
+              type: string
+              description: 복구 기한 (UTC). 이 시각까지 복구할 수 있다.
+            id:
+              type: number
+              description: 삭제한 프로젝트 ID
+        meta:
+          type: object
+          description: 메타 정보
+          nullable: true
         status:
           type: string
           description: 응답 상태
@@ -4785,6 +5133,65 @@ components:
         status:
           type: string
           description: 응답 상태
+    ProjectUpdateRequest:
+      title: ProjectUpdateRequest
+      required:
+      - cohort
+      - githubRepositoryUrl
+      - memberHandles
+      - serviceStatus
+      - tagline
+      - teamName
+      - techTagIds
+      - title
+      type: object
+      properties:
+        teamName:
+          type: string
+          description: 팀 이름 (50자 이하)
+        techTagIds:
+          type: array
+          description: 기술 스택 ID 전체 목록. 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 달려 있던 태그는 비활성화됐어도
+            그대로 둘 수 있다.
+          items:
+            type: number
+        memberHandles:
+          type: array
+          description: 작성자를 제외한 팀원 handle 전체 목록 (1명 이상). 통째로 교체하며 배열 순서가 표시 순서가 된다.
+            이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다.
+          items:
+            type: string
+        serviceStatus:
+          type: string
+          description: "서비스 운영 상태 (OPERATING, CLOSED). deploymentUrl이 없으면 CLOSED만\
+            \ 보낼 수 있다."
+        descriptionMd:
+          type: string
+          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
+            \ 형식으로 넣는다."
+          nullable: true
+        deploymentUrl:
+          type: string
+          description: 서비스 배포 URL (http/https). 비우려면 null로 보낸다.
+          nullable: true
+        githubRepositoryUrl:
+          type: string
+          description: "https://github.com/{owner}/{repo} 형식. 바꿀 수 있지만 다른 프로젝트가 등록\
+            한 리포지토리로는 바꿀 수 없다. slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다."
+        cohort:
+          type: number
+          description: 우아한테크코스 기수 (1~8)
+        tagline:
+          type: string
+          description: 한 줄 소개 (200자 이하)
+        thumbnailMediaId:
+          type: number
+          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. 썸네일을 비우려면 null로
+            보낸다.
+          nullable: true
+        title:
+          type: string
+          description: 프로젝트 이름 (100자 이하)
     ProjectCommentUpdateSuccessResponse:
       title: ProjectCommentUpdateSuccessResponse
       required:

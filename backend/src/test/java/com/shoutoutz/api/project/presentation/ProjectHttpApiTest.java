@@ -764,6 +764,22 @@ class ProjectHttpApiTest {
                 .build();
     }
 
+    /**
+     * 같은 경로와 메서드의 스니펫은 하나의 문서로 합쳐지므로, 수정 오류도 수정 API 의 설명을 달아야 한다.
+     * 등록용 errorResource 를 쓰면 문서의 PUT 설명이 등록 API 설명으로 덮인다.
+     */
+    private static ResourceSnippetParameters updateErrorResource() {
+        return ResourceSnippetParameters.builder()
+                .tag("Project")
+                .summary(UPDATE_SUMMARY)
+                .description(UPDATE_DESCRIPTION)
+                .pathParameters(parameterWithName("projectId").description("수정할 프로젝트 ID"))
+                .requestSchema(Schema.schema("ProjectUpdateRequest"))
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse())
+                .build();
+    }
+
 
     @Test
     @DisplayName("작성자가 프로젝트를 수정하면 바뀐 승인 상태와 함께 200을 반환한다.")
@@ -847,7 +863,7 @@ class ProjectHttpApiTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.details[0].field").value("serviceStatus"))
-                .andDo(document("project-update-invalid", resource(errorResource())));
+                .andDo(document("project-update-invalid", resource(updateErrorResource())));
 
         verifyNoInteractions(projectService);
     }
@@ -860,7 +876,7 @@ class ProjectHttpApiTest {
                         .content(validUpdateRequestJson()))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
-                .andDo(document("project-update-unauthorized", resource(errorResource())));
+                .andDo(document("project-update-unauthorized", resource(updateErrorResource())));
 
         verifyNoInteractions(projectService);
     }
@@ -877,7 +893,7 @@ class ProjectHttpApiTest {
                         .content(validUpdateRequestJson()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("PROJECT_NOT_FOUND"))
-                .andDo(document("project-update-not-found", resource(errorResource())));
+                .andDo(document("project-update-not-found", resource(updateErrorResource())));
     }
 
     @Test
@@ -892,7 +908,7 @@ class ProjectHttpApiTest {
                         .content(validUpdateRequestJson()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("PROJECT_DUPLICATE_GITHUB_REPOSITORY"))
-                .andDo(document("project-update-duplicate", resource(errorResource())));
+                .andDo(document("project-update-duplicate", resource(updateErrorResource())));
     }
 
     private static String validUpdateRequestJson() {
