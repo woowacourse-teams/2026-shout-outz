@@ -2,12 +2,12 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { IconHeart, IconMessageCircle, IconShare } from '@tabler/icons-react';
 import { feedQuery } from '@/apis/feed';
 import { Avatar } from '@/components/Avatar';
-import { Gnb } from '@/components/Gnb';
 import { Button } from '@/components/Button';
+import { Footer } from '@/components/Footer';
+import { Gnb } from '@/components/Gnb';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { FeedContent } from '@/components/feeds/FeedContent';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
-import { FeedFooter } from '@/components/feeds/FeedFooter';
 import { PopularFeedList } from '@/components/feeds/PopularFeedList';
 import { Comments } from '@/components/feed-comments/Comments';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -22,7 +22,7 @@ export function FeedDetailPage({ feedId }: { feedId: number }) {
   return (
     <div className="bg-background flex min-h-dvh flex-col">
       <Gnb />
-      <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 px-4 py-6 md:px-16 md:py-10 lg:grid-cols-3 lg:gap-12">
+      <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 px-4 py-6 md:py-10 lg:grid-cols-3 lg:gap-12">
         <section className="min-w-0 lg:col-span-2" aria-label="피드 상세">
           <AsyncBoundary key={feedId}>
             <FeedDetailContent feedId={feedId} />
@@ -36,7 +36,7 @@ export function FeedDetailPage({ feedId }: { feedId: number }) {
           </div>
         )}
       </main>
-      <FeedFooter />
+      <Footer />
     </div>
   );
 }

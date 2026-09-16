@@ -1,10 +1,10 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { feedQuery } from '@/apis/feed';
 import { sessionQuery } from '@/apis/session';
-import { Gnb } from '@/components/Gnb';
 import { getButtonStyles } from '@/components/Button';
+import { Footer } from '@/components/Footer';
+import { Gnb } from '@/components/Gnb';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
-import { FeedFooter } from '@/components/feeds/FeedFooter';
 import { FeedForm } from '@/components/feeds/FeedForm';
 
 interface FeedEditorPageProps {
@@ -19,7 +19,7 @@ export function FeedEditorPage(props: FeedEditorPageProps) {
     <div className="bg-background flex min-h-dvh flex-col">
       <title>{`${title} | shout-outz`}</title>
       <Gnb />
-      <main className="w-full flex-1 px-4 pt-5 pb-7 md:px-16 md:pt-10 md:pb-20">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-7 md:pt-10 md:pb-20">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 md:gap-7">
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
@@ -32,7 +32,7 @@ export function FeedEditorPage(props: FeedEditorPageProps) {
           </AsyncBoundary>
         </div>
       </main>
-      <FeedFooter />
+      <Footer />
     </div>
   );
 }
