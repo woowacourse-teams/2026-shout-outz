@@ -1,6 +1,11 @@
 package com.shoutoutz.api.project.infrastructure.jdbc;
 
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.domain.ProjectFilterCondition;
+import com.shoutoutz.api.project.domain.ProjectFilterOptions;
+import com.shoutoutz.api.project.domain.ProjectFilterOptions.CohortCount;
+import com.shoutoutz.api.project.domain.ProjectFilterOptions.TechTagCount;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
@@ -21,8 +26,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 /**
- * 프로젝트 목록 카드의 기본 정보를 조회하는 JDBC 조회 클래스
- * 검색어와 필터가 있을 때만 조건을 붙이는 동적 쿼리이며, 목록과 전체 개수는 같은 조건으로 조회한다.
+ * 프로젝트 목록 카드의 기본 정보와 필터 선택지별 프로젝트 수를 조회하는 JDBC 조회 클래스
+ * 검색어와 필터가 있을 때만 조건을 붙이는 동적 쿼리이며, 목록, 전체 개수, 필터 선택지별 프로젝트 수는 같은 조건으로 조회한다.
  */
 @Repository
 @RequiredArgsConstructor
@@ -126,12 +131,36 @@ public class ProjectListJdbcRepository {
               )
             """;
 
+    private static final String COHORT_COUNTS_SQL = """
+            SELECT cohort, COUNT(*) AS project_count
+            FROM filtered
+            GROUP BY cohort
+            """;
+
+    /**
+     * 활성 기술 스택마다, 조건에 맞는 프로젝트 중 그 기술 스택을 사용한 프로젝트 수
+     * 기술 스택 필터는 AND라서, 이 수가 곧 그 기술 스택을 추가로 선택했을 때의 프로젝트 수다.
+     * 사용한 프로젝트가 없는 기술 스택도 0으로 포함하며, 기술 스택 선택지 조회와 같은 이름순으로 정렬한다.
+     */
+    private static final String TECH_TAG_COUNTS_SQL = """
+            SELECT t.id, t.display_name, COALESCE(c.project_count, 0) AS project_count
+            FROM tech_tags t
+            LEFT JOIN (
+                SELECT pt.tech_tag_id, COUNT(*) AS project_count
+                FROM project_tags pt
+                JOIN filtered f ON f.id = pt.project_id
+                GROUP BY pt.tech_tag_id
+            ) c ON c.tech_tag_id = t.id
+            WHERE t.is_active = true
+            ORDER BY LOWER(t.display_name), t.id
+            """;
+
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final ProjectTechTagAndMemberJdbcRepository techTagAndMemberJdbcRepository;
 
     public ProjectPage findAll(ProjectSearchCondition condition) {
         MapSqlParameterSource parameters = new MapSqlParameterSource();
-        String filteredProjectsSql = filteredProjectsSql(condition, parameters);
+        String filteredProjectsSql = filteredProjectsSql(condition.filter(), parameters);
 
         List<ProjectSummary> fetched = jdbcTemplate.query(
                 pageSql(filteredProjectsSql, condition, parameters),
@@ -148,6 +177,62 @@ public class ProjectListJdbcRepository {
         boolean hasNext = fetched.size() > condition.size();
         List<ProjectSummary> items = hasNext ? fetched.subList(0, condition.size()) : fetched;
         return new ProjectPage(withTechTagsAndMembers(items), hasNext, totalCount == null ? 0 : totalCount);
+    }
+
+    /**
+     * 필터 모달의 기수, 기술 스택 선택지와 선택지별 프로젝트 수를 조회한다.
+     * 기수는 여러 개를 고를 수 있어서(OR), 6기를 골라도 5기, 7기 숫자가 0이 되지 않도록 기수 선택은 빼고 센다.
+     */
+    public ProjectFilterOptions findFilterOptions(ProjectFilterCondition condition) {
+        return new ProjectFilterOptions(
+                countByCohort(condition.withoutCohorts()),
+                countByTechTag(condition),
+                countMatched(condition)
+        );
+    }
+
+    /**
+     * 프로젝트가 없는 기수도 0으로 채워, 최신 기수부터 반환한다.
+     */
+    private List<CohortCount> countByCohort(ProjectFilterCondition condition) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        Map<Integer, Long> counts = jdbcTemplate.query(
+                        withFiltered(filteredProjectsSql(condition, parameters), COHORT_COUNTS_SQL),
+                        parameters,
+                        (resultSet, rowNumber) -> Map.entry(resultSet.getInt("cohort"), resultSet.getLong("project_count"))
+                ).stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        return Cohort.descending().stream()
+                .map(cohort -> new CohortCount(cohort, counts.getOrDefault(cohort.getValue(), 0L)))
+                .toList();
+    }
+
+    private List<TechTagCount> countByTechTag(ProjectFilterCondition condition) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        return jdbcTemplate.query(
+                withFiltered(filteredProjectsSql(condition, parameters), TECH_TAG_COUNTS_SQL),
+                parameters,
+                (resultSet, rowNumber) -> new TechTagCount(
+                        resultSet.getLong("id"),
+                        resultSet.getString("display_name"),
+                        resultSet.getLong("project_count")
+                )
+        );
+    }
+
+    private long countMatched(ProjectFilterCondition condition) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        Long count = jdbcTemplate.queryForObject(
+                withFiltered(filteredProjectsSql(condition, parameters), "SELECT COUNT(*) FROM filtered"),
+                parameters,
+                Long.class
+        );
+        return count == null ? 0 : count;
+    }
+
+    private static String withFiltered(String filteredProjectsSql, String selectSql) {
+        return "WITH filtered AS (" + filteredProjectsSql + ")\n" + selectSql;
     }
 
     /**
@@ -181,7 +266,7 @@ public class ProjectListJdbcRepository {
      * 공개 범위, 검색어, 필터를 적용한 프로젝트
      * 목록과 전체 개수가 같은 조건을 쓴다.
      */
-    private static String filteredProjectsSql(ProjectSearchCondition condition, MapSqlParameterSource parameters) {
+    private static String filteredProjectsSql(ProjectFilterCondition condition, MapSqlParameterSource parameters) {
         StringBuilder sql = new StringBuilder(PUBLIC_PROJECTS_SQL);
         if (!condition.cohorts().isEmpty()) {
             sql.append(COHORTS_CONDITION);

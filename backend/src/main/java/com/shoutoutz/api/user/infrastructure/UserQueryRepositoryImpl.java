@@ -33,10 +33,10 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                     ) AS projects,
                     (
                         SELECT COUNT(*)
-                        FROM posts p
+                        FROM feeds p
                         WHERE p.author_id = :userId
                           AND p.deleted_at IS NULL
-                    ) AS posts
+                    ) AS feeds
                 """;
 
         return jdbcTemplate.queryForObject(
@@ -44,7 +44,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                 new MapSqlParameterSource("userId", userId),
                 (resultSet, rowNumber) -> new UserProfileCounts(
                         resultSet.getLong("projects"),
-                        resultSet.getLong("posts")
+                        resultSet.getLong("feeds")
                 )
         );
     }

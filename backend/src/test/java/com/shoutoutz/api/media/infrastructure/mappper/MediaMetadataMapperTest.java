@@ -21,9 +21,9 @@ class MediaMetadataMapperTest {
         MediaMetadata metadata = MediaMetadata.reconstitute(
                 10L,
                 7L,
-                MediaPurpose.POST_CONTENT,
-                "media/post-content/object-id",
-                "post-image.webp",
+                MediaPurpose.FEED_CONTENT,
+                "media/feed-content/object-id",
+                "feed-image.webp",
                 "image/webp",
                 1024L,
                 MediaStatus.FAILED,
@@ -38,9 +38,9 @@ class MediaMetadataMapperTest {
 
         assertThat(entity.getId()).isEqualTo(10L);
         assertThat(entity.getUploadedBy()).isEqualTo(7L);
-        assertThat(entity.getPurpose()).isEqualTo(MediaPurpose.POST_CONTENT);
-        assertThat(entity.getS3Key()).isEqualTo("media/post-content/object-id");
-        assertThat(entity.getOriginalFileName()).isEqualTo("post-image.webp");
+        assertThat(entity.getPurpose()).isEqualTo(MediaPurpose.FEED_CONTENT);
+        assertThat(entity.getS3Key()).isEqualTo("media/feed-content/object-id");
+        assertThat(entity.getOriginalFileName()).isEqualTo("feed-image.webp");
         assertThat(entity.getMimeType()).isEqualTo("image/webp");
         assertThat(entity.getSizeBytes()).isEqualTo(1024L);
         assertThat(entity.getStatus()).isEqualTo(MediaStatus.FAILED);

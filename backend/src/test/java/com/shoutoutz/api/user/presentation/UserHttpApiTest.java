@@ -167,7 +167,7 @@ class UserHttpApiTest {
                         .value("https://github.com/zzaekkii"))
                 .andExpect(jsonPath("$.data.blogUrl").value("https://zzaekkii.dev"))
                 .andExpect(jsonPath("$.data.counts.projects").value(2))
-                .andExpect(jsonPath("$.data.counts.posts").value(18))
+                .andExpect(jsonPath("$.data.counts.feeds").value(18))
                 .andDo(document(
                         "user-profile-get",
                         resource(ResourceSnippetParameters.builder()
@@ -197,7 +197,7 @@ class UserHttpApiTest {
                                         fieldWithPath("data.counts").type(OBJECT).description("프로필 항목 개수"),
                                         fieldWithPath("data.counts.projects").type(NUMBER)
                                                 .description("삭제되지 않은 참여 프로젝트 개수"),
-                                        fieldWithPath("data.counts.posts").type(NUMBER)
+                                        fieldWithPath("data.counts.feeds").type(NUMBER)
                                                 .description("삭제되지 않은 작성 피드 개수")
                                 )
                                 .build())
@@ -468,7 +468,7 @@ class UserHttpApiTest {
                         .value("https://github.com/zzaekkii"))
                 .andExpect(jsonPath("$.data.blogUrl").value("https://zzaekkii.dev"))
                 .andExpect(jsonPath("$.data.counts.projects").value(2))
-                .andExpect(jsonPath("$.data.counts.posts").value(18))
+                .andExpect(jsonPath("$.data.counts.feeds").value(18))
                 .andDo(document(
                         "user-public-profile-get",
                         resource(ResourceSnippetParameters.builder()
@@ -497,7 +497,7 @@ class UserHttpApiTest {
                                         fieldWithPath("data.counts").type(OBJECT).description("프로필 항목 개수"),
                                         fieldWithPath("data.counts.projects").type(NUMBER)
                                                 .description("삭제되지 않은 참여 프로젝트 개수"),
-                                        fieldWithPath("data.counts.posts").type(NUMBER)
+                                        fieldWithPath("data.counts.feeds").type(NUMBER)
                                                 .description("삭제되지 않은 작성 피드 개수")
                                 )
                                 .build())

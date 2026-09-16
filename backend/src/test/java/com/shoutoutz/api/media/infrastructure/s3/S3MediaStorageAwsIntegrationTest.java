@@ -55,7 +55,7 @@ class S3MediaStorageAwsIntegrationTest {
                      .build()) {
             S3MediaStorage storage = new S3MediaStorage(s3Client, s3Presigner, properties);
             String suffix = UUID.randomUUID().toString();
-            String logicalKey = MEDIA_PREFIX + "post-content/s3-integration-" + suffix;
+            String logicalKey = MEDIA_PREFIX + "feed-content/s3-integration-" + suffix;
             String variantLogicalKey = logicalKey + "/display";
 
             try {

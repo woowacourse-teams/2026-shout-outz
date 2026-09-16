@@ -43,11 +43,11 @@ public class DatabaseMediaUploadAuthorizer implements MediaUploadAuthorizer {
             )
             """;
 
-    private static final String POST_AUTHOR_EXISTS_SQL = """
+    private static final String FEED_AUTHOR_EXISTS_SQL = """
             SELECT EXISTS (
                 SELECT 1
                 FROM users u
-                JOIN posts p ON p.author_id = u.id
+                JOIN feeds p ON p.author_id = u.id
                 WHERE u.id = ?
                   AND u.status = 'ACTIVE'
                   AND p.id = ?
@@ -73,8 +73,8 @@ public class DatabaseMediaUploadAuthorizer implements MediaUploadAuthorizer {
                     targetId,
                     requesterId
             );
-            case POST_CONTENT -> exists(
-                    POST_AUTHOR_EXISTS_SQL,
+            case FEED_CONTENT -> exists(
+                    FEED_AUTHOR_EXISTS_SQL,
                     requesterId,
                     targetId
             );

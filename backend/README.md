@@ -237,9 +237,9 @@ Presigned PUT URL로 업로드할 때는 URL 발급 응답의 `Content-Type`을 
 
 ```json
 {
-  "purpose": "POST_CONTENT",
+  "purpose": "FEED_CONTENT",
   "targetId": 42,
-  "originalFileName": "post-image.webp",
+  "originalFileName": "feed-image.webp",
   "contentType": "image/webp",
   "sizeBytes": 1048576
 }
@@ -287,7 +287,7 @@ GET /api/v1/media/123?variant=THUMBNAIL
 }
 ```
 
-삭제되지 않은 게시글에 `post_media`로 연결된 `POST_CONTENT` 미디어는 비로그인 조회가 가능하다. 그 외 미디어는 업로더 본인만 조회할 수 있다. 미디어가 아직 `READY`가 아니면 Presigned URL을 발급하지 않는다.
+삭제되지 않은 피드에 `feed_media`로 연결된 `FEED_CONTENT` 미디어는 비로그인 조회가 가능하다. 그 외 미디어는 업로더 본인만 조회할 수 있다. 미디어가 아직 `READY`가 아니면 Presigned URL을 발급하지 않는다.
 
 본문에는 만료되는 S3 URL을 저장하지 않고 `media://{mediaId}`를 저장한다.
 

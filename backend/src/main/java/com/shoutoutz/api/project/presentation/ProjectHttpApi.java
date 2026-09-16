@@ -5,10 +5,12 @@ import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDeleteResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectRestoreResponse;
 import jakarta.validation.Valid;
@@ -47,6 +49,16 @@ public class ProjectHttpApi {
     ) {
         ProjectFindAllResponse response = projectService.findAll(request);
         return ResponseEntity.ok(SuccessResponse.success(response.items(), response.meta()));
+    }
+
+    /**
+     * 비로그인도 조회할 수 있다. 목록 조회에 적용 중인 검색어와 모달에서 고른 필터로 선택지별 프로젝트 수를 센다.
+     */
+    @GetMapping("/filters")
+    public ResponseEntity<SuccessResponse<ProjectFilterOptionsResponse>> findFilterOptions(
+            @Valid @ModelAttribute ProjectFilterOptionsRequest request
+    ) {
+        return ResponseEntity.ok(SuccessResponse.success(projectService.findFilterOptions(request)));
     }
 
     /**

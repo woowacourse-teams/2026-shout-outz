@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.cohort.domain.CohortErrorCode;
 import com.shoutoutz.api.cohort.domain.InvalidCohortException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
@@ -30,6 +31,10 @@ import com.shoutoutz.api.project.domain.ProjectDeletion;
 import com.shoutoutz.api.project.domain.ProjectDeletionRepository;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
+import com.shoutoutz.api.project.domain.ProjectFilterCondition;
+import com.shoutoutz.api.project.domain.ProjectFilterOptions;
+import com.shoutoutz.api.project.domain.ProjectFilterOptions.CohortCount;
+import com.shoutoutz.api.project.domain.ProjectFilterOptions.TechTagCount;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
@@ -48,9 +53,11 @@ import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
@@ -333,7 +340,7 @@ class ProjectServiceTest {
         givenRegistrant(UserType.WOOWACOURSE_CREW);
         givenValidSlugAndTags();
         when(mediaMetadataRepository.findById(THUMBNAIL_ID))
-                .thenReturn(Optional.of(thumbnail(REGISTERED_BY, MediaPurpose.POST_CONTENT, MediaStatus.READY)));
+                .thenReturn(Optional.of(thumbnail(REGISTERED_BY, MediaPurpose.FEED_CONTENT, MediaStatus.READY)));
 
         assertInvalidThumbnail(ProjectErrorCode.PROJECT_INVALID_THUMBNAIL);
     }
@@ -567,6 +574,48 @@ class ProjectServiceTest {
         assertThatThrownBy(() -> projectService.findAll(
                 new ProjectFindAllRequest(null, null, null, "POPULAR", null, latestCursor)))
                 .isInstanceOf(InvalidProjectCursorException.class);
+
+        verifyNoInteractions(projectRepository);
+    }
+
+    @Test
+    @DisplayName("필터 옵션 요청의 검색어와 필터를 목록 조회와 같은 방식으로 정리해 조회 조건으로 넘긴다.")
+    void findsFilterOptionsWithResolvedCondition() {
+        when(projectRepository.findFilterOptions(any(ProjectFilterCondition.class)))
+                .thenReturn(new ProjectFilterOptions(List.of(), List.of(), 0));
+
+        projectService.findFilterOptions(new ProjectFilterOptionsRequest(" 모아 ", List.of(7, 6, 7), List.of(2L, 1L, 2L)));
+
+        verify(projectRepository).findFilterOptions(new ProjectFilterCondition("모아", List.of(7, 6), List.of(2L, 1L)));
+    }
+
+    @Test
+    @DisplayName("기수는 기수 번호와 연도를, 기술 스택은 id와 이름을 선택지별 프로젝트 수와 함께 응답으로 옮긴다.")
+    void mapsFilterOptionsToResponse() {
+        when(projectRepository.findFilterOptions(any(ProjectFilterCondition.class)))
+                .thenReturn(new ProjectFilterOptions(
+                        List.of(new CohortCount(Cohort.COHORT_6, 28L), new CohortCount(Cohort.COHORT_5, 0L)),
+                        List.of(new TechTagCount(1L, "Spring Boot", 51L)),
+                        8L
+                ));
+
+        ProjectFilterOptionsResponse response = projectService.findFilterOptions(
+                new ProjectFilterOptionsRequest(null, null, null));
+
+        assertThat(response.cohorts()).containsExactly(
+                new ProjectFilterOptionsResponse.CohortItem(6, 2024, 28L),
+                new ProjectFilterOptionsResponse.CohortItem(5, 2023, 0L));
+        assertThat(response.techTags()).containsExactly(
+                new ProjectFilterOptionsResponse.TechTagItem(1L, "Spring Boot", 51L));
+        assertThat(response.matchedProjectCount()).isEqualTo(8L);
+    }
+
+    @Test
+    @DisplayName("정의되지 않은 기수를 선택하면 필터 옵션을 조회하지 않고 400을 던진다.")
+    void rejectsUndefinedCohortForFilterOptions() {
+        assertThatThrownBy(() -> projectService.findFilterOptions(
+                new ProjectFilterOptionsRequest(null, List.of(99), null)))
+                .isInstanceOf(InvalidCohortException.class);
 
         verifyNoInteractions(projectRepository);
     }

@@ -136,7 +136,7 @@ class UserProfileUpdateServiceTest {
     void rejectAvatarImageWithWrongPurpose() {
         givenProfileUpdateTargets();
         given(mediaMetadataRepository.findById(21L))
-                .willReturn(Optional.of(media(MediaPurpose.POST_CONTENT, MediaStatus.READY, 1L)));
+                .willReturn(Optional.of(media(MediaPurpose.FEED_CONTENT, MediaStatus.READY, 1L)));
 
         assertThatThrownBy(() -> userService.updateMyProfile(1L, request("재키", 21L)))
                 .isInstanceOf(BadRequestException.class);

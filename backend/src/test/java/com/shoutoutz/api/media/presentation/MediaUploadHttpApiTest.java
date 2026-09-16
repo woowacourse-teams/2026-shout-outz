@@ -46,9 +46,9 @@ class MediaUploadHttpApiTest {
     @Test
     void 인증된_사용자의_업로드_시작을_서비스에_전달하고_CREATED를_반환한다() {
         MediaUploadStartRequest request = new MediaUploadStartRequest(
-                MediaPurpose.POST_CONTENT,
+                MediaPurpose.FEED_CONTENT,
                 42L,
-                "post-image.webp",
+                "feed-image.webp",
                 "image/webp",
                 1024L
         );
@@ -108,9 +108,9 @@ class MediaUploadHttpApiTest {
 
     private MediaUploadStartRequest request() {
         return new MediaUploadStartRequest(
-                MediaPurpose.POST_CONTENT,
+                MediaPurpose.FEED_CONTENT,
                 42L,
-                "post-image.webp",
+                "feed-image.webp",
                 "image/webp",
                 1024L
         );

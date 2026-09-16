@@ -66,7 +66,7 @@ class MediaUploadServiceTest {
     @Test
     void 권한과_정책을_확인한_뒤_Pending_레코드와_업로드_URL을_반환한다() {
         MediaUploadStartRequest request = request();
-        String s3Key = "media/post-content/generated-id";
+        String s3Key = "media/feed-content/generated-id";
         MediaMetadata savedMetadata = savedMetadata(s3Key);
         PresignedUpload presignedUpload = new PresignedUpload(
                 s3Key,
@@ -75,14 +75,14 @@ class MediaUploadServiceTest {
                 "image/webp"
         );
 
-        when(mediaObjectKeyGenerator.generate(MediaPurpose.POST_CONTENT)).thenReturn(s3Key);
+        when(mediaObjectKeyGenerator.generate(MediaPurpose.FEED_CONTENT)).thenReturn(s3Key);
         when(s3MediaStorage.presignedUrlExpiration()).thenReturn(Duration.ofMinutes(5));
         when(mediaMetadataRepository.save(any(MediaMetadata.class))).thenReturn(savedMetadata);
         when(s3MediaStorage.createPresignedUpload(s3Key, "image/webp")).thenReturn(presignedUpload);
 
         MediaUploadStartResponse response = mediaUploadService.startUpload(7L, request);
 
-        verify(mediaUploadAuthorizer).authorize(7L, MediaPurpose.POST_CONTENT, 42L);
+        verify(mediaUploadAuthorizer).authorize(7L, MediaPurpose.FEED_CONTENT, 42L);
         verify(mediaUploadPolicy).validateImage("image/webp", 1024L);
 
         ArgumentCaptor<MediaMetadata> captor = ArgumentCaptor.forClass(MediaMetadata.class);
@@ -103,7 +103,7 @@ class MediaUploadServiceTest {
         MediaUploadStartRequest request = request();
         doThrow(new MediaUploadForbiddenException("미디어 업로드 권한이 없습니다."))
                 .when(mediaUploadAuthorizer)
-                .authorize(7L, MediaPurpose.POST_CONTENT, 42L);
+                .authorize(7L, MediaPurpose.FEED_CONTENT, 42L);
 
         assertThatThrownBy(() -> mediaUploadService.startUpload(7L, request))
                 .isInstanceOf(MediaUploadForbiddenException.class);
@@ -121,15 +121,15 @@ class MediaUploadServiceTest {
         assertThatThrownBy(() -> mediaUploadService.startUpload(7L, request))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        verify(mediaUploadAuthorizer).authorize(7L, MediaPurpose.POST_CONTENT, 42L);
+        verify(mediaUploadAuthorizer).authorize(7L, MediaPurpose.FEED_CONTENT, 42L);
         verifyNoInteractions(mediaMetadataRepository, mediaObjectKeyGenerator, s3MediaStorage);
     }
 
     private MediaUploadStartRequest request() {
         return new MediaUploadStartRequest(
-                MediaPurpose.POST_CONTENT,
+                MediaPurpose.FEED_CONTENT,
                 42L,
-                "post-image.webp",
+                "feed-image.webp",
                 "image/webp",
                 1024L
         );
@@ -139,9 +139,9 @@ class MediaUploadServiceTest {
         return MediaMetadata.reconstitute(
                 10L,
                 7L,
-                MediaPurpose.POST_CONTENT,
+                MediaPurpose.FEED_CONTENT,
                 s3Key,
-                "post-image.webp",
+                "feed-image.webp",
                 "image/webp",
                 1024L,
                 MediaStatus.PENDING_UPLOAD,

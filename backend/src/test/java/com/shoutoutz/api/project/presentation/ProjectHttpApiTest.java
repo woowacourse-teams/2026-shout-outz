@@ -46,9 +46,11 @@ import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
@@ -107,6 +109,14 @@ class ProjectHttpApiTest {
             + "볼 수 없는 프로젝트는 존재 여부를 숨기기 위해 없는 프로젝트와 같은 404를 반환한다. "
             + "registeredBy가 null이면 이전 기수에서 이관된 프로젝트다. "
             + "프로젝트 ID가 숫자가 아니면 400을 반환한다.";
+    private static final String FILTER_OPTIONS_SUMMARY = "프로젝트 필터 옵션 조회";
+    private static final String FILTER_OPTIONS_DESCRIPTION = "필터 모달에 보여줄 기수 및 기술 스택 목록과, "
+            + "각 항목을 골랐을 때 나오는 프로젝트 수를 조회한다. 로그인하지 않아도 조회할 수 있다. "
+            + "목록 조회에 적용 중인 검색어와 모달에서 고른 기수, 기술 스택을 전달하며, 선택이 바뀔 때마다 다시 요청한다. "
+            + "기수 숫자는 다른 기수를 골라도 0이 되지 않도록 기수 선택을 빼고 세고, "
+            + "기술 스택 숫자는 현재 조건에 그 기술 스택을 추가로 골랐을 때의 수다. 프로젝트 수가 0인 항목도 포함한다. "
+            + "모달 안의 기술 스택 검색은 응답의 techTags를 이름으로 걸러 처리한다. "
+            + "요청 형식이 올바르지 않거나 정의되지 않은 기수이면 400을 반환한다.";
 
     @Autowired
     private MockMvc mockMvc;
@@ -413,6 +423,102 @@ class ProjectHttpApiTest {
                 .andDo(document("project-find-all-invalid", resource(findAllErrorResource())));
 
         verifyNoInteractions(projectService);
+    }
+
+    @Test
+    @DisplayName("로그인하지 않아도 검색어, 기수, 기술 스택 조건으로 필터 옵션을 조회하고 200을 반환한다.")
+    void findsFilterOptions() throws Exception {
+        given(projectService.findFilterOptions(any(ProjectFilterOptionsRequest.class)))
+                .willReturn(new ProjectFilterOptionsResponse(
+                        List.of(
+                                new ProjectFilterOptionsResponse.CohortItem(7, 2025, 3L),
+                                new ProjectFilterOptionsResponse.CohortItem(6, 2024, 28L)
+                        ),
+                        List.of(
+                                new ProjectFilterOptionsResponse.TechTagItem(2L, "React", 48L),
+                                new ProjectFilterOptionsResponse.TechTagItem(1L, "Spring Boot", 51L)
+                        ),
+                        8L
+                ));
+
+        mockMvc.perform(get("/api/v1/projects/filters")
+                        .queryParam("keyword", "루프")
+                        .queryParam("cohorts", "6,7")
+                        .queryParam("techTagIds", "1,2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.cohorts[1].cohort").value(6))
+                .andExpect(jsonPath("$.data.cohorts[1].year").value(2024))
+                .andExpect(jsonPath("$.data.cohorts[1].projectCount").value(28))
+                .andExpect(jsonPath("$.data.techTags[1].displayName").value("Spring Boot"))
+                .andExpect(jsonPath("$.data.techTags[1].projectCount").value(51))
+                .andExpect(jsonPath("$.data.matchedProjectCount").value(8))
+                .andDo(document(
+                        "project-find-filter-options",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Project")
+                                .summary(FILTER_OPTIONS_SUMMARY)
+                                .description(FILTER_OPTIONS_DESCRIPTION)
+                                .queryParameters(
+                                        parameterWithName("keyword")
+                                                .description("목록 조회에 적용 중인 검색어. 목록 조회의 keyword와 같은 조건으로 검색하며 100자 이하")
+                                                .optional(),
+                                        parameterWithName("cohorts")
+                                                .description("모달에서 고른 기수. 쉼표로 구분 (ex. 6,7)")
+                                                .optional(),
+                                        parameterWithName("techTagIds")
+                                                .description("모달에서 고른 기술 스택. 쉼표로 구분 (ex. 1,2)")
+                                                .optional()
+                                )
+                                .responseSchema(Schema.schema("ProjectFilterOptionsSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("필터 옵션"),
+                                        fieldWithPath("data.cohorts").type(ARRAY)
+                                                .description("전체 기수. 최신 기수부터 정렬하며, 프로젝트 수가 0인 기수도 포함한다."),
+                                        fieldWithPath("data.cohorts[].cohort").type(NUMBER).description("우아한테크코스 기수"),
+                                        fieldWithPath("data.cohorts[].year").type(NUMBER).description("기수 연도"),
+                                        fieldWithPath("data.cohorts[].projectCount").type(NUMBER)
+                                                .description("검색어와 기술 스택 조건에 맞는 그 기수의 프로젝트 수. 다른 기수를 골라도 0이 되지 않는다."),
+                                        fieldWithPath("data.techTags").type(ARRAY)
+                                                .description("활성 기술 스택 전체. 이름순으로 정렬하며, 프로젝트 수가 0인 기술 스택도 포함한다."),
+                                        fieldWithPath("data.techTags[].id").type(NUMBER).description("기술 스택 ID"),
+                                        fieldWithPath("data.techTags[].displayName").type(STRING).description("기술 스택 이름"),
+                                        fieldWithPath("data.techTags[].projectCount").type(NUMBER)
+                                                .description("현재 조건에 이 기술 스택을 추가로 골랐을 때의 프로젝트 수. "
+                                                        + "이미 고른 기술 스택은 matchedProjectCount와 같다."),
+                                        fieldWithPath("data.matchedProjectCount").type(NUMBER)
+                                                .description("검색어와 고른 필터를 모두 적용한 프로젝트 수. "
+                                                        + "같은 조건의 목록 조회 meta.totalCount와 같다.")
+                                )
+                                .build())
+                ));
+
+        verify(projectService).findFilterOptions(new ProjectFilterOptionsRequest("루프", List.of(6, 7), List.of(1L, 2L)));
+    }
+
+    @Test
+    @DisplayName("필터 옵션 조회 검색어가 100자를 넘으면 400과 필드 오류를 반환하고, 서비스를 호출하지 않는다.")
+    void rejectsTooLongFilterOptionsKeyword() throws Exception {
+        mockMvc.perform(get("/api/v1/projects/filters").queryParam("keyword", "가".repeat(101)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details[0].field").value("keyword"))
+                .andDo(document("project-find-filter-options-invalid", resource(filterOptionsErrorResource())));
+
+        verifyNoInteractions(projectService);
+    }
+
+    @Test
+    @DisplayName("필터 옵션 조회에서 정의되지 않은 기수를 고르면 400을 반환한다.")
+    void rejectsUndefinedCohortForFilterOptions() throws Exception {
+        given(projectService.findFilterOptions(any(ProjectFilterOptionsRequest.class)))
+                .willThrow(new InvalidCohortException());
+
+        mockMvc.perform(get("/api/v1/projects/filters").queryParam("cohorts", "99"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_COHORT"))
+                .andDo(document("project-find-filter-options-invalid-cohort", resource(filterOptionsErrorResource())));
     }
 
     @Test
@@ -765,6 +871,16 @@ class ProjectHttpApiTest {
                 .pathParameters(
                         parameterWithName("projectId").description("복구할 프로젝트 ID")
                 )
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse())
+                .build();
+    }
+
+    private static ResourceSnippetParameters filterOptionsErrorResource() {
+        return ResourceSnippetParameters.builder()
+                .tag("Project")
+                .summary(FILTER_OPTIONS_SUMMARY)
+                .description(FILTER_OPTIONS_DESCRIPTION)
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())
                 .build();
