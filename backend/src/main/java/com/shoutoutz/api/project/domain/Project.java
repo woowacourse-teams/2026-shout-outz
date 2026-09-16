@@ -82,6 +82,13 @@ public class Project {
     }
 
     /**
+     * 등록자가 없는 이관 프로젝트는 누구의 것도 아니므로, 언제나 거짓이다.
+     */
+    public boolean isRegisteredBy(Long userId) {
+        return registeredBy != null && registeredBy.equals(userId);
+    }
+
+    /**
      * 작성자가 프로젝트 내용을 수정한다.
      * id와 등록자는 바뀌지 않으며, 승인 상태는 수정 결과에 따라 전환된다.
      * slug는 등록 시점 값으로 고정해, 리포지토리 URL을 바꿔도 따라가지 않는다.
