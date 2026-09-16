@@ -18,6 +18,7 @@ import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.snippet.Attributes.key;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -32,6 +33,8 @@ import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.DeletedProject;
+import com.shoutoutz.api.project.domain.ProjectDeletion;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
@@ -86,6 +89,10 @@ class ProjectHttpApiTest {
             + "다음 요청부터 응답의 meta.nextCursor를 그대로 전달한다. 정렬을 바꾸면 cursor 없이 처음부터 다시 요청한다. "
             + "POPULAR에서 좋아요 수가 같으면 최근 등록된 프로젝트가 앞에 온다. "
             + "요청 형식이 올바르지 않거나, 정의되지 않은 기수이거나, 커서가 올바르지 않으면 400을 반환한다.";
+    private static final String DELETE_SUMMARY = "프로젝트 삭제";
+    private static final String DELETE_DESCRIPTION = "등록자 본인이 자신의 프로젝트를 삭제한다. 심사 중인 프로젝트도 삭제할 수 있다. "
+            + "삭제된 프로젝트는 목록과 상세에서 보이지 않으며, 응답의 restoreDeadlineAt 까지 복구할 수 있다. "
+            + "로그인하지 않았으면 401, 없는 프로젝트이거나 등록자가 아니거나 이미 삭제된 프로젝트이면 404를 반환한다.";
     private static final String DETAIL_SUMMARY = "프로젝트 상세 조회";
     private static final String DETAIL_DESCRIPTION = "프로젝트 상세 화면에 필요한 기본 정보, 상세 설명, 팀원, 기술 스택, 외부 링크, "
             + "리액션 및 댓글 수를 조회한다. 로그인하지 않아도 조회할 수 있다. "
@@ -576,6 +583,91 @@ class ProjectHttpApiTest {
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())
                 .build();
+    }
+
+    @Test
+    @DisplayName("등록자가 자신의 프로젝트를 삭제하면 200과 삭제 시각, 복구 기한을 반환한다.")
+    void deletesProject() throws Exception {
+        given(projectService.delete(100L, 7L)).willReturn(projectDeletion());
+
+        mockMvc.perform(delete("/api/v1/projects/{projectId}", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(100))
+                .andExpect(jsonPath("$.data.deletedAt").value("2026-09-06T13:30:00Z"))
+                .andExpect(jsonPath("$.data.restoreDeadlineAt").value("2026-10-06T13:30:00Z"))
+                .andDo(document(
+                        "project-delete",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Project")
+                                .summary(DELETE_SUMMARY)
+                                .description(DELETE_DESCRIPTION)
+                                .pathParameters(
+                                        parameterWithName("projectId").description("삭제할 프로젝트 ID")
+                                )
+                                .requestHeaders(
+                                        headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .responseSchema(Schema.schema("ProjectDeleteSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data.id").type(NUMBER).description("삭제한 프로젝트 ID"),
+                                        fieldWithPath("data.deletedAt").type(STRING).description("삭제 시각 (UTC)"),
+                                        fieldWithPath("data.restoreDeadlineAt").type(STRING)
+                                                .description("복구 기한 (UTC). 이 시각까지 복구할 수 있다."),
+                                        fieldWithPath("meta").type(OBJECT).description("메타 정보").optional()
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    @DisplayName("없는 프로젝트이거나 등록자가 아니거나 이미 삭제된 프로젝트이면, 404를 반환한다.")
+    void rejectsDeletingNotOwnedOrAlreadyDeletedProject() throws Exception {
+        given(projectService.delete(100L, 7L))
+                .willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
+
+        mockMvc.perform(delete("/api/v1/projects/{projectId}", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PROJECT_NOT_FOUND"))
+                .andDo(document("project-delete-not-found", resource(deleteErrorResource())));
+    }
+
+    @Test
+    @DisplayName("로그인하지 않고 프로젝트 삭제를 요청하는 경우, 401을 반환하고 서비스를 호출하지 않는다.")
+    void rejectsUnauthenticatedDeletion() throws Exception {
+        mockMvc.perform(delete("/api/v1/projects/{projectId}", 100L)
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(document("project-delete-unauthorized", resource(deleteErrorResource())));
+
+        verifyNoInteractions(projectService);
+    }
+
+    private static ResourceSnippetParameters deleteErrorResource() {
+        return ResourceSnippetParameters.builder()
+                .tag("Project")
+                .summary(DELETE_SUMMARY)
+                .description(DELETE_DESCRIPTION)
+                .pathParameters(
+                        parameterWithName("projectId").description("삭제할 프로젝트 ID")
+                )
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse())
+                .build();
+    }
+
+    private static ProjectDeletion projectDeletion() {
+        return ProjectDeletion.selfDelete(
+                new DeletedProject(100L, "loop", "루프 (Loop)"),
+                7L,
+                Instant.parse("2026-09-06T13:30:00Z")
+        );
     }
 
     private static ResourceSnippetParameters detailErrorResource() {
