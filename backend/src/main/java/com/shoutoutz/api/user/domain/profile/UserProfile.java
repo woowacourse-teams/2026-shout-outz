@@ -85,6 +85,32 @@ public class UserProfile {
         );
     }
 
+    public UserProfile approve(
+            UserType verificationType,
+            String nickname,
+            Integer verificationCohort,
+            String verificationTrack
+    ) {
+        boolean crew = verificationType == UserType.WOOWACOURSE_CREW;
+        String verifiedDisplayName = crew
+                ? verificationCohort + "기 " + nickname
+                : nickname;
+        String verifiedTrack = crew ? verificationTrack : null;
+        Short verifiedCohort = crew ? verificationCohort.shortValue() : null;
+
+        return new UserProfile(
+                userId,
+                verifiedDisplayName,
+                verificationType,
+                verifiedTrack,
+                verifiedCohort,
+                bio,
+                avatarImageId,
+                githubProfileUrl,
+                blogUrl
+        );
+    }
+
     public static UserProfile initialize(Long userId, String displayName) {
         return new UserProfile(
                 userId,

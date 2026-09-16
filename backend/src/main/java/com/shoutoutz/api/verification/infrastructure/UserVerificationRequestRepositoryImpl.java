@@ -39,6 +39,12 @@ public class UserVerificationRequestRepositoryImpl implements UserVerificationRe
     }
 
     @Override
+    public Optional<UserVerificationRequest> findById(long requestId) {
+        return requestJpaRepository.findById(requestId)
+                .map(UserVerificationRequestMapper::toDomain);
+    }
+
+    @Override
     public Optional<UserVerificationRequest> findPendingByUserId(long userId) {
         return requestJpaRepository.findByUserIdAndStatus(
                         userId,

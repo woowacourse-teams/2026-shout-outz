@@ -93,4 +93,18 @@ public class UserVerificationRequest {
                 decidedAt
         );
     }
+
+    public UserVerificationRequest approve(Instant decidedAt) {
+        return reconstitute(
+                id,
+                userId,
+                userType,
+                nickname,
+                cohort,
+                track,
+                VerificationRequestStatus.APPROVED,
+                requestedAt,
+                decidedAt
+        );
+    }
 }

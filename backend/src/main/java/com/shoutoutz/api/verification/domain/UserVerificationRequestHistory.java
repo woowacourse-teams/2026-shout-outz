@@ -47,6 +47,24 @@ public class UserVerificationRequestHistory {
         );
     }
 
+    public static UserVerificationRequestHistory decision(
+            long requestId,
+            long changedBy,
+            VerificationRequestStatus toStatus,
+            String reason,
+            Instant changedAt
+    ) {
+        return new UserVerificationRequestHistory(
+                null,
+                requestId,
+                changedBy,
+                VerificationRequestStatus.PENDING,
+                toStatus,
+                reason,
+                changedAt
+        );
+    }
+
     public static UserVerificationRequestHistory reconstitute(
             Long id,
             Long requestId,

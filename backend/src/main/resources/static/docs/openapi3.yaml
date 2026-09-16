@@ -809,7 +809,7 @@ paths:
               examples:
                 admin-verification-request-find-all-forbidden:
                   value: "{\"status\":\"error\",\"code\":\"VERIFICATION_ADMIN_FORBIDDEN\"\
-                    ,\"message\":\"관리자만 크루/코치 인증 신청 목록을 조회할 수 있습니다.\"}"
+                    ,\"message\":\"관리자만 크루/코치 인증 신청을 관리할 수 있습니다.\"}"
         "200":
           description: "200"
           content:
@@ -2436,6 +2436,80 @@ paths:
                 user-verification-request-create-duplicate:
                   value: "{\"status\":\"error\",\"code\":\"VERIFICATION_REQUEST_ALREADY_PENDING\"\
                     ,\"message\":\"이미 심사 대기 중인 인증 신청이 있습니다.\"}"
+  /api/v1/admin/verification-requests/{requestId}/approve:
+    post:
+      tags:
+      - Admin User Verification
+      summary: 크루/코치 인증 신청 승인
+      description: 관리자가 PENDING 상태의 크루/코치 인증 신청을 승인한다.
+      operationId: admin-verification-request-approve
+      parameters:
+      - name: requestId
+        in: path
+        description: 인증 신청 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: Cookie
+        in: header
+        description: 인증된 관리자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      responses:
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-approve-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-approve-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"VERIFICATION_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 크루/코치 인증 신청을 관리할 수 있습니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-approve-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"VERIFICATION_REQUEST_NOT_FOUND\"\
+                    ,\"message\":\"크루/코치 인증 신청을 찾을 수 없습니다.\"}"
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-approve-conflict:
+                  value: "{\"status\":\"error\",\"code\":\"VERIFICATION_REQUEST_NOT_PENDING\"\
+                    ,\"message\":\"대기 중인 인증 신청만 처리할 수 있습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminVerificationRequestApproveSuccessResponse"
+              examples:
+                admin-verification-request-approve:
+                  value: "{\"status\":\"success\",\"data\":{\"requestId\":101,\"status\"\
+                    :\"APPROVED\",\"decidedBy\":{\"userId\":7,\"handle\":\"admin\"\
+                    },\"decidedAt\":\"2026-09-16T03:10:00Z\"}}"
   /api/v1/feeds/{feedId}/comments/{commentId}:
     delete:
       tags:
@@ -2997,58 +3071,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    ProjectCreateRequest:
-      title: ProjectCreateRequest
-      required:
-      - cohort
-      - githubRepositoryUrl
-      - memberHandles
-      - tagline
-      - teamName
-      - techTagIds
-      - title
-      type: object
-      properties:
-        teamName:
-          type: string
-          description: 팀 이름 (50자 이하)
-        techTagIds:
-          type: array
-          description: "선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다."
-          items:
-            type: number
-        memberHandles:
-          type: array
-          description: "등록자를 제외한 팀원 handle 목록 (1명 이상). 활동 중인 우아한테크코스 크루 또는 코치여야 하며\
-            , 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다."
-          items:
-            type: string
-        descriptionMd:
-          type: string
-          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
-            \ 형식으로 넣으며, 본인이 업로드한 PROJECT_DESCRIPTION 용도의 처리 완료 이미지만 쓸 수 있다."
-          nullable: true
-        deploymentUrl:
-          type: string
-          description: 서비스 배포 URL (http/https). 빈 문자열은 입력하지 않은 것으로 본다.
-          nullable: true
-        githubRepositoryUrl:
-          type: string
-          description: "https://github.com/{owner}/{repo} 형식. 리포지토리 이름으로 slug를 만든다\
-            ."
-        cohort:
-          type: number
-          description: 우아한테크코스 기수 (1~8)
-        tagline:
-          type: string
-          description: 한 줄 소개 (200자 이하)
-        thumbnailMediaId:
-          type: number
-          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID
-          nullable: true
-        title:
-          type: string
-          description: 프로젝트 이름 (100자 이하)
     AdminVerificationRequestFindAllSuccessResponse:
       title: AdminVerificationRequestFindAllSuccessResponse
       required:
@@ -3118,6 +3140,58 @@ components:
         status:
           type: string
           description: 응답 상태
+    ProjectCreateRequest:
+      title: ProjectCreateRequest
+      required:
+      - cohort
+      - githubRepositoryUrl
+      - memberHandles
+      - tagline
+      - teamName
+      - techTagIds
+      - title
+      type: object
+      properties:
+        teamName:
+          type: string
+          description: 팀 이름 (50자 이하)
+        techTagIds:
+          type: array
+          description: "선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다."
+          items:
+            type: number
+        memberHandles:
+          type: array
+          description: "등록자를 제외한 팀원 handle 목록 (1명 이상). 활동 중인 우아한테크코스 크루 또는 코치여야 하며\
+            , 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다."
+          items:
+            type: string
+        descriptionMd:
+          type: string
+          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
+            \ 형식으로 넣으며, 본인이 업로드한 PROJECT_DESCRIPTION 용도의 처리 완료 이미지만 쓸 수 있다."
+          nullable: true
+        deploymentUrl:
+          type: string
+          description: 서비스 배포 URL (http/https). 빈 문자열은 입력하지 않은 것으로 본다.
+          nullable: true
+        githubRepositoryUrl:
+          type: string
+          description: "https://github.com/{owner}/{repo} 형식. 리포지토리 이름으로 slug를 만든다\
+            ."
+        cohort:
+          type: number
+          description: 우아한테크코스 기수 (1~8)
+        tagline:
+          type: string
+          description: 한 줄 소개 (200자 이하)
+        thumbnailMediaId:
+          type: number
+          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID
+          nullable: true
+        title:
+          type: string
+          description: 프로젝트 이름 (100자 이하)
     UserVerificationRequestCreateSuccessResponse:
       title: UserVerificationRequestCreateSuccessResponse
       required:
@@ -3158,6 +3232,47 @@ components:
               type: string
               description: 신청 상태
           description: 생성된 인증 신청
+        status:
+          type: string
+          description: 응답 상태
+    AdminVerificationRequestApproveSuccessResponse:
+      title: AdminVerificationRequestApproveSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - decidedAt
+          - decidedBy
+          - requestId
+          - status
+          type: object
+          properties:
+            requestId:
+              type: number
+              description: 인증 신청 ID
+            decidedAt:
+              type: string
+              description: 승인 시각(ISO-8601)
+            decidedBy:
+              required:
+              - handle
+              - userId
+              type: object
+              properties:
+                handle:
+                  type: string
+                  description: 승인한 관리자 handle
+                userId:
+                  type: number
+                  description: 승인한 관리자 사용자 ID
+              description: 승인한 관리자
+            status:
+              type: string
+              description: 변경된 신청 상태
+          description: 승인 결과
         status:
           type: string
           description: 응답 상태
