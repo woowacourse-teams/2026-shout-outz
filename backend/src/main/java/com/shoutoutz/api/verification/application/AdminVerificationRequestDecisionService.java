@@ -18,6 +18,7 @@ import com.shoutoutz.api.verification.domain.UserVerificationRequestRepository;
 import com.shoutoutz.api.verification.domain.VerificationRequestStatus;
 import com.shoutoutz.api.verification.presentation.dto.response.AdminVerificationRequestApproveResponse;
 import com.shoutoutz.api.verification.presentation.dto.response.AdminVerificationRequestDecisionActor;
+import com.shoutoutz.api.verification.presentation.dto.response.AdminVerificationRequestRejectResponse;
 import java.time.Clock;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
@@ -71,10 +72,37 @@ public class AdminVerificationRequestDecisionService {
 
         return AdminVerificationRequestApproveResponse.of(
                 approvedRequest,
-                new AdminVerificationRequestDecisionActor(
-                        admin.getId(),
-                        admin.getHandle().value()
-                )
+                actorOf(admin)
+        );
+    }
+
+    @Transactional
+    public AdminVerificationRequestRejectResponse reject(
+            long requestId,
+            long adminUserId,
+            UserRole adminRole,
+            String reason
+    ) {
+        validateAdmin(adminRole);
+        UserVerificationRequest request = findRequest(requestId);
+        validatePending(request);
+        User admin = findAdmin(adminUserId);
+
+        Instant now = clock.instant();
+        UserVerificationRequest rejectedRequest = request.reject(now);
+        requestRepository.save(rejectedRequest);
+        historyRepository.save(UserVerificationRequestHistory.decision(
+                requestId,
+                adminUserId,
+                VerificationRequestStatus.REJECTED,
+                reason,
+                now
+        ));
+
+        return AdminVerificationRequestRejectResponse.of(
+                rejectedRequest,
+                reason,
+                actorOf(admin)
         );
     }
 
@@ -83,6 +111,18 @@ public class AdminVerificationRequestDecisionService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         UserVerificationErrorCode.VERIFICATION_REQUEST_NOT_FOUND
                 ));
+    }
+
+    private User findAdmin(long adminUserId) {
+        return userRepository.findById(adminUserId)
+                .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
+    }
+
+    private AdminVerificationRequestDecisionActor actorOf(User admin) {
+        return new AdminVerificationRequestDecisionActor(
+                admin.getId(),
+                admin.getHandle().value()
+        );
     }
 
     private void validatePending(UserVerificationRequest request) {

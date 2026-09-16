@@ -107,4 +107,18 @@ public class UserVerificationRequest {
                 decidedAt
         );
     }
+
+    public UserVerificationRequest reject(Instant decidedAt) {
+        return reconstitute(
+                id,
+                userId,
+                userType,
+                nickname,
+                cohort,
+                track,
+                VerificationRequestStatus.REJECTED,
+                requestedAt,
+                decidedAt
+        );
+    }
 }

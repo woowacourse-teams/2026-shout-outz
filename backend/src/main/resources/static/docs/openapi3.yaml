@@ -2510,6 +2510,75 @@ paths:
                   value: "{\"status\":\"success\",\"data\":{\"requestId\":101,\"status\"\
                     :\"APPROVED\",\"decidedBy\":{\"userId\":7,\"handle\":\"admin\"\
                     },\"decidedAt\":\"2026-09-16T03:10:00Z\"}}"
+  /api/v1/admin/verification-requests/{requestId}/reject:
+    post:
+      tags:
+      - Admin User Verification
+      summary: 크루/코치 인증 신청 반려
+      description: 관리자가 PENDING 상태의 크루/코치 인증 신청을 반려한다.
+      operationId: admin-verification-request-reject
+      parameters:
+      - name: requestId
+        in: path
+        description: 인증 신청 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: Cookie
+        in: header
+        description: 인증된 관리자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      - name: Content-Type
+        in: header
+        description: application/json
+        required: true
+        schema:
+          type: string
+        example: application/json
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/api-v1-admin-verification-requests-requestId-reject-107459752"
+            examples:
+              admin-verification-request-reject-invalid:
+                value: |
+                  {
+                    "reason": "  "
+                  }
+              admin-verification-request-reject:
+                value: |
+                  {
+                    "reason": "  Slack 프로필의 기수 정보와 일치하지 않습니다.  "
+                  }
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin-verification-request-reject-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"reason\"\
+                    ,\"message\":\"reason은 필수입니다.\"}]}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminVerificationRequestRejectSuccessResponse"
+              examples:
+                admin-verification-request-reject:
+                  value: "{\"status\":\"success\",\"data\":{\"requestId\":101,\"status\"\
+                    :\"REJECTED\",\"reason\":\"Slack 프로필의 기수 정보와 일치하지 않습니다.\",\"decidedBy\"\
+                    :{\"userId\":7,\"handle\":\"admin\"},\"decidedAt\":\"2026-09-16T03:10:00Z\"\
+                    }}"
   /api/v1/feeds/{feedId}/comments/{commentId}:
     delete:
       tags:
@@ -2968,6 +3037,51 @@ components:
               type: string
               description: 신청 상태
           description: 최신 인증 신청
+        status:
+          type: string
+          description: 응답 상태
+    AdminVerificationRequestRejectSuccessResponse:
+      title: AdminVerificationRequestRejectSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - decidedAt
+          - decidedBy
+          - reason
+          - requestId
+          - status
+          type: object
+          properties:
+            reason:
+              type: string
+              description: 반려 사유
+            requestId:
+              type: number
+              description: 인증 신청 ID
+            decidedAt:
+              type: string
+              description: 반려 시각(ISO-8601)
+            decidedBy:
+              required:
+              - handle
+              - userId
+              type: object
+              properties:
+                handle:
+                  type: string
+                  description: 반려한 관리자 handle
+                userId:
+                  type: number
+                  description: 반려한 관리자 사용자 ID
+              description: 반려한 관리자
+            status:
+              type: string
+              description: 변경된 신청 상태
+          description: 반려 결과
         status:
           type: string
           description: 응답 상태
@@ -4048,6 +4162,14 @@ components:
         status:
           type: string
           description: 응답 상태
+    api-v1-admin-verification-requests-requestId-reject-107459752:
+      required:
+      - reason
+      type: object
+      properties:
+        reason:
+          type: string
+          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     UserProfileSummarySuccessResponse:
       title: UserProfileSummarySuccessResponse
       required:

@@ -25,6 +25,7 @@ import com.shoutoutz.api.verification.domain.UserVerificationRequestHistoryRepos
 import com.shoutoutz.api.verification.domain.UserVerificationRequestRepository;
 import com.shoutoutz.api.verification.domain.VerificationRequestStatus;
 import com.shoutoutz.api.verification.presentation.dto.response.AdminVerificationRequestApproveResponse;
+import com.shoutoutz.api.verification.presentation.dto.response.AdminVerificationRequestRejectResponse;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -156,6 +157,52 @@ class AdminVerificationRequestDecisionServiceTest {
     }
 
     @Test
+    void 관리자가_인증_신청을_반려하고_프로필은_변경하지_않으며_이력을_남긴다() {
+        String reason = "Slack 프로필의 기수 정보와 일치하지 않습니다.";
+        UserVerificationRequest request = crewRequest();
+        given(requestRepository.findById(REQUEST_ID)).willReturn(Optional.of(request));
+        given(userRepository.findById(ADMIN_ID)).willReturn(Optional.of(admin()));
+        given(requestRepository.save(any(UserVerificationRequest.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(historyRepository.save(any(UserVerificationRequestHistory.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        AdminVerificationRequestRejectResponse response = decisionService.reject(
+                REQUEST_ID,
+                ADMIN_ID,
+                UserRole.ADMIN,
+                reason
+        );
+
+        assertThat(response.requestId()).isEqualTo(REQUEST_ID);
+        assertThat(response.status()).isEqualTo(VerificationRequestStatus.REJECTED);
+        assertThat(response.reason()).isEqualTo(reason);
+        assertThat(response.decidedBy().userId()).isEqualTo(ADMIN_ID);
+        assertThat(response.decidedBy().handle()).isEqualTo("admin");
+        assertThat(response.decidedAt()).isEqualTo(NOW);
+
+        ArgumentCaptor<UserVerificationRequest> requestCaptor =
+                ArgumentCaptor.forClass(UserVerificationRequest.class);
+        verify(requestRepository).save(requestCaptor.capture());
+        assertThat(requestCaptor.getValue().getStatus())
+                .isEqualTo(VerificationRequestStatus.REJECTED);
+        assertThat(requestCaptor.getValue().getDecidedAt()).isEqualTo(NOW);
+
+        ArgumentCaptor<UserVerificationRequestHistory> historyCaptor =
+                ArgumentCaptor.forClass(UserVerificationRequestHistory.class);
+        verify(historyRepository).save(historyCaptor.capture());
+        assertThat(historyCaptor.getValue().getFromStatus())
+                .isEqualTo(VerificationRequestStatus.PENDING);
+        assertThat(historyCaptor.getValue().getToStatus())
+                .isEqualTo(VerificationRequestStatus.REJECTED);
+        assertThat(historyCaptor.getValue().getChangedBy()).isEqualTo(ADMIN_ID);
+        assertThat(historyCaptor.getValue().getReason()).isEqualTo(reason);
+        assertThat(historyCaptor.getValue().getChangedAt()).isEqualTo(NOW);
+
+        verifyNoInteractions(userProfileRepository);
+    }
+
+    @Test
     void 관리자가_아니면_승인할_수_없다() {
         assertThatThrownBy(() -> decisionService.approve(
                 REQUEST_ID,
@@ -220,6 +267,36 @@ class AdminVerificationRequestDecisionServiceTest {
 
         verify(userProfileRepository, never()).findByUserId(any(Long.class));
         verifyNoInteractions(historyRepository, userRepository);
+    }
+
+    @Test
+    void PENDING이_아닌_신청은_반려할_수_없다() {
+        given(requestRepository.findById(REQUEST_ID)).willReturn(Optional.of(
+                UserVerificationRequest.reconstitute(
+                        REQUEST_ID,
+                        USER_ID,
+                        UserType.WOOWACOURSE_CREW,
+                        "샤를",
+                        8,
+                        "BACKEND",
+                        VerificationRequestStatus.APPROVED,
+                        NOW,
+                        NOW
+                )
+        ));
+
+        assertThatThrownBy(() -> decisionService.reject(
+                REQUEST_ID,
+                ADMIN_ID,
+                UserRole.ADMIN,
+                "반려 사유"
+        )).isInstanceOfSatisfying(
+                ConflictException.class,
+                exception -> assertThat(exception.getErrorCode())
+                        .isEqualTo(UserVerificationErrorCode.VERIFICATION_REQUEST_NOT_PENDING)
+        );
+
+        verifyNoInteractions(historyRepository, userRepository, userProfileRepository);
     }
 
     private UserVerificationRequest crewRequest() {

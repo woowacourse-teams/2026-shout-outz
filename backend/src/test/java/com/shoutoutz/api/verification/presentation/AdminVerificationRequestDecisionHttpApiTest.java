@@ -30,6 +30,7 @@ import com.shoutoutz.api.verification.domain.UserVerificationErrorCode;
 import com.shoutoutz.api.verification.domain.VerificationRequestStatus;
 import com.shoutoutz.api.verification.presentation.dto.response.AdminVerificationRequestApproveResponse;
 import com.shoutoutz.api.verification.presentation.dto.response.AdminVerificationRequestDecisionActor;
+import com.shoutoutz.api.verification.presentation.dto.response.AdminVerificationRequestRejectResponse;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,11 +39,12 @@ import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDoc
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
-@DisplayName("관리자 크루/코치 인증 신청 승인 API")
+@DisplayName("관리자 크루/코치 인증 신청 승인/반려 API")
 @WebMvcTest(controllers = AdminVerificationRequestDecisionHttpApi.class)
 @AutoConfigureMockMvc(addFilters = false)
 @AutoConfigureRestDocs
@@ -115,6 +117,105 @@ class AdminVerificationRequestDecisionHttpApiTest {
                 ));
 
         verify(decisionService).approve(REQUEST_ID, ADMIN_ID, UserRole.ADMIN);
+    }
+
+    @Test
+    @DisplayName("관리자가 PENDING 신청을 반려한다")
+    void rejectVerificationRequest() throws Exception {
+        String reason = "Slack 프로필의 기수 정보와 일치하지 않습니다.";
+        given(decisionService.reject(REQUEST_ID, ADMIN_ID, UserRole.ADMIN, reason))
+                .willReturn(new AdminVerificationRequestRejectResponse(
+                        REQUEST_ID,
+                        VerificationRequestStatus.REJECTED,
+                        reason,
+                        new AdminVerificationRequestDecisionActor(ADMIN_ID, "admin"),
+                        DECIDED_AT
+                ));
+
+        mockMvc.perform(post("/api/v1/admin/verification-requests/{requestId}/reject", REQUEST_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "reason": "  Slack 프로필의 기수 정보와 일치하지 않습니다.  "
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.requestId").value(REQUEST_ID))
+                .andExpect(jsonPath("$.data.status").value("REJECTED"))
+                .andExpect(jsonPath("$.data.reason").value(reason))
+                .andExpect(jsonPath("$.data.decidedBy.userId").value(ADMIN_ID))
+                .andExpect(jsonPath("$.data.decidedBy.handle").value("admin"))
+                .andExpect(jsonPath("$.data.decidedAt").value("2026-09-16T03:10:00Z"))
+                .andDo(document(
+                        "admin-verification-request-reject",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Admin User Verification")
+                                .summary("크루/코치 인증 신청 반려")
+                                .description("관리자가 PENDING 상태의 크루/코치 인증 신청을 반려한다.")
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("인증된 관리자의 JSESSIONID"),
+                                        headerWithName(HttpHeaders.CONTENT_TYPE)
+                                                .description("application/json")
+                                )
+                                .pathParameters(
+                                        parameterWithName("requestId")
+                                                .type(INTEGER)
+                                                .description("인증 신청 ID")
+                                )
+                                .requestSchema(Schema.schema("AdminVerificationRequestRejectRequest"))
+                                .requestFields(
+                                        fieldWithPath("reason").type(STRING)
+                                                .description("반려 사유(앞뒤 공백 제거 후 1~100자)")
+                                )
+                                .responseSchema(Schema.schema("AdminVerificationRequestRejectSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("반려 결과"),
+                                        fieldWithPath("data.requestId").type(NUMBER)
+                                                .description("인증 신청 ID"),
+                                        fieldWithPath("data.status").type(STRING)
+                                                .description("변경된 신청 상태"),
+                                        fieldWithPath("data.reason").type(STRING)
+                                                .description("반려 사유"),
+                                        fieldWithPath("data.decidedBy").type(OBJECT)
+                                                .description("반려한 관리자"),
+                                        fieldWithPath("data.decidedBy.userId").type(NUMBER)
+                                                .description("반려한 관리자 사용자 ID"),
+                                        fieldWithPath("data.decidedBy.handle").type(STRING)
+                                                .description("반려한 관리자 handle"),
+                                        fieldWithPath("data.decidedAt").type(STRING)
+                                                .description("반려 시각(ISO-8601)")
+                                )
+                                .build())
+                ));
+
+        verify(decisionService).reject(REQUEST_ID, ADMIN_ID, UserRole.ADMIN, reason);
+    }
+
+    @Test
+    @DisplayName("반려 사유가 비어 있으면 400을 반환한다")
+    void rejectVerificationRequestWithBlankReason() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/verification-requests/{requestId}/reject", REQUEST_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "reason": "  "
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andDo(document(
+                        "admin-verification-request-reject-invalid",
+                        resource(rejectErrorResource())
+                ));
+
+        verifyNoInteractions(decisionService);
     }
 
     @Test
@@ -202,6 +303,21 @@ class AdminVerificationRequestDecisionHttpApiTest {
                 .tag("Admin User Verification")
                 .summary("크루/코치 인증 신청 승인")
                 .description("관리자가 PENDING 상태의 크루/코치 인증 신청을 승인한다.")
+                .pathParameters(
+                        parameterWithName("requestId")
+                                .type(INTEGER)
+                                .description("인증 신청 ID")
+                )
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse())
+                .build();
+    }
+
+    private ResourceSnippetParameters rejectErrorResource() {
+        return ResourceSnippetParameters.builder()
+                .tag("Admin User Verification")
+                .summary("크루/코치 인증 신청 반려")
+                .description("관리자가 PENDING 상태의 크루/코치 인증 신청을 반려한다.")
                 .pathParameters(
                         parameterWithName("requestId")
                                 .type(INTEGER)
