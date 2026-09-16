@@ -29,6 +29,6 @@ class RestorableProjectTest {
     }
 
     private static RestorableProject restorable() {
-        return new RestorableProject(1L, RESTORE_DEADLINE_AT, ApprovalStatus.APPROVED);
+        return new RestorableProject(1L, RESTORE_DEADLINE_AT);
     }
 }

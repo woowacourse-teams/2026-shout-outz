@@ -8,15 +8,18 @@ import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_TECH_TAG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_THUMBNAIL;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_NOT_FOUND;
+import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_RESTORE_DEADLINE_EXPIRED;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_THUMBNAIL_NOT_READY;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.DescriptionMediaReferences;
@@ -31,6 +34,8 @@ import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
+import com.shoutoutz.api.project.domain.RestorableProject;
+import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
@@ -139,6 +144,24 @@ public class ProjectService {
         DeletedProject deletedProject = projectRepository.softDelete(projectId, registeredBy, deletedAt)
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
         return projectDeletionRepository.save(ProjectDeletion.selfDelete(deletedProject, registeredBy, deletedAt));
+    }
+
+    /**
+     * 등록자 본인만 복구 기한 안에 자신의 프로젝트를 복구할 수 있다. 승인 상태는 삭제 이전 값을 그대로 유지한다.
+     * 프로젝트 복구와 이력 기록은 같은 시각을 쓰고 한 트랜잭션으로 처리한다.
+     */
+    @Transactional
+    public RestoredProject restore(long projectId, long registeredBy) {
+        Instant restoredAt = clock.instant();
+        RestorableProject restorable = projectRepository.findRestorable(projectId, registeredBy)
+                .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
+        if (!restorable.isRestorable(restoredAt)) {
+            throw new ConflictException(PROJECT_RESTORE_DEADLINE_EXPIRED);
+        }
+        ApprovalStatus approvalStatus = projectRepository.restore(projectId, restoredAt)
+                .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
+        projectDeletionRepository.markRestored(restorable.deletionId(), registeredBy, restoredAt);
+        return new RestoredProject(projectId, approvalStatus, restoredAt);
     }
 
     /**

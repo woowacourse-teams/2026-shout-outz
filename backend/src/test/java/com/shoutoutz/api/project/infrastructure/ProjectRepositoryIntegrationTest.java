@@ -120,7 +120,7 @@ class ProjectRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("등록자 본인의 삭제된 프로젝트는 미복구 이력, 복구 기한, 승인 상태와 함께 조회된다")
+    @DisplayName("등록자 본인의 삭제된 프로젝트는 미복구 이력, 복구 기한과 함께 조회된다")
     void findsRestorableProjectWithPendingDeletion() {
         Long registeredBy = userRepository.save(User.initialize("restorer")).getId();
         ProjectEntity project = projectJpaRepository.save(
@@ -139,7 +139,6 @@ class ProjectRepositoryIntegrationTest {
                 .hasValueSatisfying(restorable -> {
                     assertThat(restorable.deletionId()).isEqualTo(deletion.getId());
                     assertThat(restorable.restoreDeadlineAt()).isEqualTo(deletion.getRestoreDeadlineAt());
-                    assertThat(restorable.approvalStatus()).isEqualTo(ApprovalStatus.APPROVED);
                 });
     }
 
@@ -166,7 +165,7 @@ class ProjectRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("삭제된 프로젝트를 복구하면 삭제 시각이 지워지고, 이미 복구된 프로젝트는 복구되지 않는다")
+    @DisplayName("삭제된 프로젝트를 복구하면 승인 상태를 돌려주고 삭제 시각이 지워지며, 이미 복구된 프로젝트는 빈 값이다")
     void restoresDeletedProjectOnlyOnce() {
         Long registeredBy = userRepository.save(User.initialize("restorer3")).getId();
         ProjectEntity project = projectJpaRepository.save(
@@ -175,8 +174,8 @@ class ProjectRepositoryIntegrationTest {
         entityManager.flush();
         projectRepository.softDelete(project.getId(), registeredBy, DELETED_AT).orElseThrow();
 
-        assertThat(projectRepository.restore(project.getId(), RESTORED_AT)).isEqualTo(1);
-        assertThat(projectRepository.restore(project.getId(), RESTORED_AT)).isZero();
+        assertThat(projectRepository.restore(project.getId(), RESTORED_AT)).contains(ApprovalStatus.APPROVED);
+        assertThat(projectRepository.restore(project.getId(), RESTORED_AT)).isEmpty();
 
         entityManager.clear();
         assertThat(projectJpaRepository.findById(project.getId()).orElseThrow().getDeletedAt()).isNull();

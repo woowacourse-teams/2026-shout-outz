@@ -8,6 +8,9 @@ import java.time.Instant;
  */
 public interface ProjectDeletionRepository {
 
+    /**
+     * 삭제할 때마다 새 이력을 남긴다. 기존 이력은 고치지 않으므로 id 가 없는 이력만 넘긴다.
+     */
     ProjectDeletion save(ProjectDeletion deletion);
 
     /**

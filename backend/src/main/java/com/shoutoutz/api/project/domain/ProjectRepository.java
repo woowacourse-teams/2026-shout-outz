@@ -37,7 +37,7 @@ public interface ProjectRepository {
     Optional<RestorableProject> findRestorable(long projectId, long registeredBy);
 
     /**
-     * 삭제된 프로젝트를 복구하고 실제로 복구한 행 수를 돌려준다. 이미 복구된 프로젝트는 0 이다.
+     * 삭제된 프로젝트를 복구하고 복구 시점의 승인 상태를 돌려준다. 복구할 프로젝트가 없으면 빈 값이다.
      */
-    int restore(long projectId, Instant restoredAt);
+    Optional<ApprovalStatus> restore(long projectId, Instant restoredAt);
 }

@@ -27,7 +27,7 @@ public class ProjectRestoreJdbcRepository {
     public Optional<RestorableProject> findRestorable(long projectId, long registeredBy) {
         return jdbcTemplate.query(
                         """
-                                SELECT d.id, d.restore_deadline_at, p.approval_status
+                                SELECT d.id, d.restore_deadline_at
                                 FROM project_deletions d
                                 JOIN projects p ON p.id = d.project_id
                                 WHERE d.project_id = ?
@@ -45,20 +45,25 @@ public class ProjectRestoreJdbcRepository {
     }
 
     /**
-     * 조건에 맞는 행이 없으면 아무것도 수정하지 않는다.
+     * 조건에 맞는 행이 없으면 아무것도 수정하지 않고 빈 값을 돌려준다.
      * 복구 요청이 동시에 들어와도 deleted_at IS NOT NULL 조건 덕분에 한 번만 성공한다.
+     * 복구 응답에 쓰는 승인 상태는 복구 시점 값을 함께 받아 온다.
      */
-    public int restoreProject(long projectId, Instant restoredAt) {
-        return jdbcTemplate.update(
-                """
-                        UPDATE projects
-                        SET deleted_at = NULL, updated_at = ?
-                        WHERE id = ?
-                          AND deleted_at IS NOT NULL
-                        """,
-                Timestamp.from(restoredAt),
-                projectId
-        );
+    public Optional<ApprovalStatus> restoreProject(long projectId, Instant restoredAt) {
+        return jdbcTemplate.query(
+                        """
+                                UPDATE projects
+                                SET deleted_at = NULL, updated_at = ?
+                                WHERE id = ?
+                                  AND deleted_at IS NOT NULL
+                                RETURNING approval_status
+                                """,
+                        (resultSet, rowNumber) -> ApprovalStatus.valueOf(resultSet.getString("approval_status")),
+                        Timestamp.from(restoredAt),
+                        projectId
+                )
+                .stream()
+                .findFirst();
     }
 
     /**
@@ -81,8 +86,7 @@ public class ProjectRestoreJdbcRepository {
     private RowMapper<RestorableProject> restorableProjectRowMapper() {
         return (resultSet, rowNumber) -> new RestorableProject(
                 resultSet.getLong("id"),
-                resultSet.getTimestamp("restore_deadline_at").toInstant(),
-                ApprovalStatus.valueOf(resultSet.getString("approval_status"))
+                resultSet.getTimestamp("restore_deadline_at").toInstant()
         );
     }
 }

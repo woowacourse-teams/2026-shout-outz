@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -13,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.cohort.domain.CohortErrorCode;
 import com.shoutoutz.api.cohort.domain.InvalidCohortException;
+import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.media.domain.MediaMetadata;
@@ -34,6 +36,8 @@ import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
+import com.shoutoutz.api.project.domain.RestorableProject;
+import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.project.domain.Slug;
@@ -148,6 +152,66 @@ class ProjectServiceTest {
         assertThatThrownBy(() -> projectService.delete(1L, REGISTERED_BY))
                 .isInstanceOfSatisfying(EntityNotFoundException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
+        verifyNoInteractions(projectDeletionRepository);
+    }
+
+    @Test
+    @DisplayName("복구 기한 안에 복구하면 프로젝트를 되살리고 삭제 이력에 복구 사실을 남긴다.")
+    void restoreRestoresProjectAndMarksDeletionRestored() {
+        RestorableProject restorable = new RestorableProject(5L, NOW.plusSeconds(1));
+        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.of(restorable));
+        when(projectRepository.restore(1L, NOW)).thenReturn(Optional.of(ApprovalStatus.APPROVED));
+
+        RestoredProject restored = projectService.restore(1L, REGISTERED_BY);
+
+        assertThat(restored).isEqualTo(new RestoredProject(1L, ApprovalStatus.APPROVED, NOW));
+        verify(projectDeletionRepository).markRestored(5L, REGISTERED_BY, NOW);
+    }
+
+    @Test
+    @DisplayName("복구 기한과 같은 시각에는 복구할 수 있다.")
+    void restoreSucceedsAtRestoreDeadline() {
+        RestorableProject restorable = new RestorableProject(5L, NOW);
+        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.of(restorable));
+        when(projectRepository.restore(1L, NOW)).thenReturn(Optional.of(ApprovalStatus.PENDING));
+
+        assertThat(projectService.restore(1L, REGISTERED_BY).approvalStatus()).isEqualTo(ApprovalStatus.PENDING);
+    }
+
+    @Test
+    @DisplayName("복구 기한이 지나면 아무것도 바꾸지 않고 복구할 수 없다고 응답한다.")
+    void restoreThrowsConflictAfterRestoreDeadline() {
+        RestorableProject restorable = new RestorableProject(5L, NOW.minusSeconds(1));
+        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.of(restorable));
+
+        assertThatThrownBy(() -> projectService.restore(1L, REGISTERED_BY))
+                .isInstanceOfSatisfying(ConflictException.class, error ->
+                        assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_RESTORE_DEADLINE_EXPIRED));
+        verify(projectRepository, never()).restore(anyLong(), any());
+        verifyNoInteractions(projectDeletionRepository);
+    }
+
+    @Test
+    @DisplayName("복구할 프로젝트가 없으면 프로젝트를 찾을 수 없다고 응답한다.")
+    void restoreThrowsNotFoundWhenNoRestorableProject() {
+        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.restore(1L, REGISTERED_BY))
+                .isInstanceOfSatisfying(EntityNotFoundException.class, error ->
+                        assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
+        verifyNoInteractions(projectDeletionRepository);
+    }
+
+    @Test
+    @DisplayName("조회한 뒤 다른 요청이 먼저 복구해 버리면 이력을 남기지 않고 프로젝트를 찾을 수 없다고 응답한다.")
+    void restoreThrowsNotFoundWhenAlreadyRestoredByAnotherRequest() {
+        RestorableProject restorable = new RestorableProject(5L, NOW.plusSeconds(1));
+        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.of(restorable));
+        when(projectRepository.restore(1L, NOW)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.restore(1L, REGISTERED_BY))
+                .isInstanceOfSatisfying(EntityNotFoundException.class, error ->
+                        assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
         verifyNoInteractions(projectDeletionRepository);
     }
 

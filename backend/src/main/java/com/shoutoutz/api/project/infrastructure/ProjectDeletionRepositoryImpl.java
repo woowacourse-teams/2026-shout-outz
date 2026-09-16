@@ -21,6 +21,9 @@ public class ProjectDeletionRepositoryImpl implements ProjectDeletionRepository 
     private final ProjectDeletionJpaRepository projectDeletionJpaRepository;
     private final ProjectRestoreJdbcRepository projectRestoreJdbcRepository;
 
+    /**
+     * id가 없는 이력만 저장하므로 항상 INSERT다. 채워진 id를 포함한 이력을 돌려준다.
+     */
     @Override
     public ProjectDeletion save(ProjectDeletion deletion) {
         ProjectDeletionEntity savedDeletion = projectDeletionJpaRepository.save(

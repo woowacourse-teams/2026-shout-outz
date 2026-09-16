@@ -99,7 +99,7 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     }
 
     @Override
-    public int restore(long projectId, Instant restoredAt) {
+    public Optional<ApprovalStatus> restore(long projectId, Instant restoredAt) {
         return projectRestoreJdbcRepository.restoreProject(projectId, restoredAt);
     }
 
