@@ -10,9 +10,11 @@ import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
+import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.infrastructure.jdbc.ProjectDetailJdbcRepository;
 import com.shoutoutz.api.project.infrastructure.jdbc.ProjectListJdbcRepository;
+import com.shoutoutz.api.project.infrastructure.jdbc.ProjectRestoreJdbcRepository;
 import com.shoutoutz.api.project.infrastructure.jdbc.ProjectSoftDeleteJdbcRepository;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectJpaRepository;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectMemberJpaRepository;
@@ -38,6 +40,7 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     private final ProjectDetailJdbcRepository projectDetailJdbcRepository;
     private final ProjectListJdbcRepository projectListJdbcRepository;
     private final ProjectSoftDeleteJdbcRepository projectSoftDeleteJdbcRepository;
+    private final ProjectRestoreJdbcRepository projectRestoreJdbcRepository;
 
     @Override
     public Project save(Project project, List<Long> techTagIds, List<Long> memberIds) {
@@ -85,6 +88,14 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     @Override
     public Optional<DeletedProject> softDelete(long projectId, long registeredBy, Instant deletedAt) {
         return projectSoftDeleteJdbcRepository.softDelete(projectId, registeredBy, deletedAt);
+    }
+
+    /**
+     * 복구 가능 여부를 한 번에 판단하도록 삭제된 프로젝트와 미복구 삭제 이력을 조인해 조회한다.
+     */
+    @Override
+    public Optional<RestorableProject> findRestorable(long projectId, long registeredBy) {
+        return projectRestoreJdbcRepository.findRestorable(projectId, registeredBy);
     }
 
     /**

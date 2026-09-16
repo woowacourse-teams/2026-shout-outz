@@ -29,4 +29,10 @@ public interface ProjectRepository {
      * 없는 프로젝트, 남의 프로젝트, 이미 삭제된 프로젝트는 모두 빈 값이다.
      */
     Optional<DeletedProject> softDelete(long projectId, long registeredBy, Instant deletedAt);
+
+    /**
+     * 등록자 본인의 삭제된 프로젝트와 아직 복구되지 않은 삭제 이력을 함께 조회한다.
+     * 없는 프로젝트, 남의 프로젝트, 삭제되지 않은 프로젝트는 모두 빈 값이다.
+     */
+    Optional<RestorableProject> findRestorable(long projectId, long registeredBy);
 }

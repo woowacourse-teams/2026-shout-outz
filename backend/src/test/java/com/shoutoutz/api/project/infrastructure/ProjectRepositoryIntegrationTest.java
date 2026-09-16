@@ -6,8 +6,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
+import com.shoutoutz.api.project.domain.ProjectDeletion;
+import com.shoutoutz.api.project.domain.ProjectDeletionRepository;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ServiceStatus;
@@ -42,6 +45,9 @@ class ProjectRepositoryIntegrationTest {
 
     @Autowired
     private ProjectJpaRepository projectJpaRepository;
+
+    @Autowired
+    private ProjectDeletionRepository projectDeletionRepository;
 
     @Autowired
     private EntityManager entityManager;
@@ -110,6 +116,52 @@ class ProjectRepositoryIntegrationTest {
         assertThat(projectRepository.softDelete(project.getId(), registeredBy, DELETED_AT)).isEmpty();
         assertThat(projectRepository.softDelete(othersProject.getId(), registeredBy, DELETED_AT)).isEmpty();
         assertThat(projectJpaRepository.findById(othersProject.getId()).orElseThrow().getDeletedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("등록자 본인의 삭제된 프로젝트는 미복구 이력, 복구 기한, 승인 상태와 함께 조회된다")
+    void findsRestorableProjectWithPendingDeletion() {
+        Long registeredBy = userRepository.save(User.initialize("restorer")).getId();
+        ProjectEntity project = projectJpaRepository.save(
+                projectEntity(ApprovalStatus.APPROVED, null, registeredBy)
+        );
+        entityManager.flush();
+        DeletedProject deleted = projectRepository.softDelete(project.getId(), registeredBy, DELETED_AT)
+                .orElseThrow();
+        ProjectDeletion deletion = projectDeletionRepository.save(
+                ProjectDeletion.selfDelete(deleted, registeredBy, DELETED_AT)
+        );
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(projectRepository.findRestorable(project.getId(), registeredBy))
+                .hasValueSatisfying(restorable -> {
+                    assertThat(restorable.deletionId()).isEqualTo(deletion.getId());
+                    assertThat(restorable.restoreDeadlineAt()).isEqualTo(deletion.getRestoreDeadlineAt());
+                    assertThat(restorable.approvalStatus()).isEqualTo(ApprovalStatus.APPROVED);
+                });
+    }
+
+    @Test
+    @DisplayName("삭제되지 않은 프로젝트와 다른 사용자의 삭제된 프로젝트는 복구 대상으로 조회되지 않는다")
+    void doesNotFindNotDeletedProjectOrOtherUsersProject() {
+        Long registeredBy = userRepository.save(User.initialize("restorer2")).getId();
+        Long otherUser = userRepository.save(User.initialize("other2")).getId();
+        ProjectEntity notDeleted = projectJpaRepository.save(
+                projectEntity(ApprovalStatus.APPROVED, null, registeredBy)
+        );
+        ProjectEntity othersProject = projectJpaRepository.save(
+                projectEntity(ApprovalStatus.APPROVED, null, otherUser)
+        );
+        entityManager.flush();
+        DeletedProject deleted = projectRepository.softDelete(othersProject.getId(), otherUser, DELETED_AT)
+                .orElseThrow();
+        projectDeletionRepository.save(ProjectDeletion.selfDelete(deleted, otherUser, DELETED_AT));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(projectRepository.findRestorable(notDeleted.getId(), registeredBy)).isEmpty();
+        assertThat(projectRepository.findRestorable(othersProject.getId(), registeredBy)).isEmpty();
     }
 
     private static ProjectEntity projectEntity(ApprovalStatus approvalStatus, Instant deletedAt) {
