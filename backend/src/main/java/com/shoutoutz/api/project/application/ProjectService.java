@@ -17,11 +17,14 @@ import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.DescriptionMediaReferences;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.domain.ProjectDeletion;
+import com.shoutoutz.api.project.domain.ProjectDeletionRepository;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectMembers;
 import com.shoutoutz.api.project.domain.ProjectPage;
@@ -48,6 +51,8 @@ import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -64,6 +69,8 @@ public class ProjectService {
     private final MediaMetadataRepository mediaMetadataRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
+    private final ProjectDeletionRepository projectDeletionRepository;
+    private final Clock clock;
 
     @Transactional
     public ProjectCreateResponse create(long registeredBy, ProjectCreateRequest request) {
@@ -120,6 +127,18 @@ public class ProjectService {
                 .filter(project -> project.isVisibleTo(loginUserId))
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
         return ProjectDetailResponse.from(detail);
+    }
+
+    /**
+     * 등록자 본인만 자신의 프로젝트를 삭제할 수 있다. (심사 중이어도 삭제 가능)
+     * 프로젝트 삭제와 이력 기록은 같은 시각을 쓰고 한 트랜잭션으로 처리한다.
+     */
+    @Transactional
+    public ProjectDeletion delete(long projectId, long registeredBy) {
+        Instant deletedAt = clock.instant();
+        DeletedProject deletedProject = projectRepository.softDelete(projectId, registeredBy, deletedAt)
+                .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
+        return projectDeletionRepository.save(ProjectDeletion.selfDelete(deletedProject, registeredBy, deletedAt));
     }
 
     /**

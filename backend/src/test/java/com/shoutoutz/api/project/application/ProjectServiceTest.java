@@ -20,8 +20,12 @@ import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.DeletedProject;
+import com.shoutoutz.api.project.domain.DeletionType;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.domain.ProjectDeletion;
+import com.shoutoutz.api.project.domain.ProjectDeletionRepository;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
@@ -55,7 +59,10 @@ import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -93,6 +100,9 @@ class ProjectServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private ProjectDeletionRepository projectDeletionRepository;
+
     private ProjectService projectService;
 
     @BeforeEach
@@ -102,8 +112,43 @@ class ProjectServiceTest {
                 techTagRepository,
                 mediaMetadataRepository,
                 userProfileRepository,
-                userRepository
+                userRepository,
+                projectDeletionRepository,
+                Clock.fixed(NOW, ZoneOffset.UTC)
         );
+    }
+
+    @Test
+    @DisplayName("프로젝트를 삭제하면 같은 시각으로 삭제하고 복구 기한이 담긴 삭제 이력을 남긴다.")
+    void deleteSoftDeletesProjectAndSavesDeletionHistory() {
+        DeletedProject deletedProject = new DeletedProject(1L, "2026-moamoa", "모아모아");
+        when(projectRepository.softDelete(1L, REGISTERED_BY, NOW)).thenReturn(Optional.of(deletedProject));
+        when(projectDeletionRepository.save(any(ProjectDeletion.class))).thenAnswer(answer -> answer.getArgument(0));
+
+        ProjectDeletion deletion = projectService.delete(1L, REGISTERED_BY);
+
+        ArgumentCaptor<ProjectDeletion> captor = ArgumentCaptor.forClass(ProjectDeletion.class);
+        verify(projectDeletionRepository).save(captor.capture());
+        ProjectDeletion saved = captor.getValue();
+        assertThat(saved.getProjectId()).isEqualTo(1L);
+        assertThat(saved.getProjectSlug()).isEqualTo("2026-moamoa");
+        assertThat(saved.getProjectTitle()).isEqualTo("모아모아");
+        assertThat(saved.getDeletedBy()).isEqualTo(REGISTERED_BY);
+        assertThat(saved.getDeletionType()).isEqualTo(DeletionType.SELF_DELETE);
+        assertThat(saved.getDeletedAt()).isEqualTo(NOW);
+        assertThat(saved.getRestoreDeadlineAt()).isEqualTo(NOW.plus(Duration.ofDays(30)));
+        assertThat(deletion.getDeletedAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    @DisplayName("삭제할 프로젝트가 없으면 삭제 이력을 남기지 않고 프로젝트를 찾을 수 없다고 응답한다.")
+    void deleteThrowsNotFoundWhenNothingDeleted() {
+        when(projectRepository.softDelete(1L, REGISTERED_BY, NOW)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.delete(1L, REGISTERED_BY))
+                .isInstanceOfSatisfying(EntityNotFoundException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
+        verifyNoInteractions(projectDeletionRepository);
     }
 
     @Test
