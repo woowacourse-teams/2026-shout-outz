@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.shoutoutz.api.category.domain.Category;
 import com.shoutoutz.api.category.domain.CategoryRepository;
 import com.shoutoutz.api.category.domain.CategoryType;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.media.domain.MediaPurpose;
@@ -324,8 +325,8 @@ class FeedServiceCommandTest {
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
-                        "BACKEND",
-                        (short) 8,
+                        Track.BACKEND,
+                        Cohort.COHORT_8,
                         null
                 ),
                 List.of(new FeedItem.Category(

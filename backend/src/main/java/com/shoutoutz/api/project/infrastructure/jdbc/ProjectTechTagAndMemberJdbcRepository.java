@@ -1,7 +1,9 @@
 package com.shoutoutz.api.project.infrastructure.jdbc;
 
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
+import com.shoutoutz.api.user.domain.profile.Track;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -139,9 +141,23 @@ public class ProjectTechTagAndMemberJdbcRepository {
                 userId,
                 handle,
                 resultSet.getString("display_name"),
-                resultSet.getObject("cohort", Integer.class),
-                resultSet.getString("track"),
+                toCohort(resultSet.getObject("cohort", Integer.class)),
+                toTrack(resultSet.getString("track")),
                 resultSet.getObject("avatar_image_id", Long.class)
         );
+    }
+
+    private static Cohort toCohort(Integer value) {
+        if (value == null) {
+            return null;
+        }
+        return Cohort.from(value);
+    }
+
+    private static Track toTrack(String value) {
+        if (value == null) {
+            return null;
+        }
+        return Track.from(value);
     }
 }

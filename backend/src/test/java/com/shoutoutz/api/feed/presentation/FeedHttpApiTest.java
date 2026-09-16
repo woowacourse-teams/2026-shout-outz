@@ -26,6 +26,7 @@ import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.category.domain.CategoryType;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
@@ -40,6 +41,7 @@ import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.user.domain.profile.Track;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -599,8 +601,8 @@ class FeedHttpApiTest {
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
-                        "BACKEND",
-                        (short) 8,
+                        Track.BACKEND,
+                        Cohort.COHORT_8,
                         21L
                 ),
                 List.of(new FeedItem.Category(

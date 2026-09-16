@@ -389,7 +389,7 @@ class ProjectListRepositoryIntegrationTest {
         long userId = saveUser("crew").getId();
         jdbcTemplate.update(
                 "INSERT INTO user_profiles (user_id, display_name, user_type, cohort, track) "
-                        + "VALUES (?, ?, 'WOOWACOURSE_CREW', 6, 'BE')",
+                        + "VALUES (?, ?, 'WOOWACOURSE_CREW', 6, 'BACKEND')",
                 userId,
                 displayName
         );

@@ -1,5 +1,8 @@
 package com.shoutoutz.api.project.domain;
 
+import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.user.domain.profile.Track;
+
 /**
  * 프로젝트 팀원 조회 모델
  * 가입한 사용자는 avatarImageId, 가입하지 않은 이관 팀원은 githubAvatarUrl과 githubProfileUrl을 가진다.
@@ -8,8 +11,8 @@ public record ProjectMemberProfile(
         Long userId,
         String handle,
         String displayName,
-        Integer cohort,
-        String track,
+        Cohort cohort,
+        Track track,
         Long avatarImageId,
         String githubAvatarUrl,
         String githubProfileUrl
@@ -21,8 +24,8 @@ public record ProjectMemberProfile(
             long userId,
             String handle,
             String displayName,
-            Integer cohort,
-            String track,
+            Cohort cohort,
+            Track track,
             Long avatarImageId
     ) {
         return new ProjectMemberProfile(userId, handle, displayName, cohort, track, avatarImageId, null, null);
@@ -44,6 +47,15 @@ public record ProjectMemberProfile(
             String githubAvatarUrl,
             String githubProfileUrl
     ) {
-        return new ProjectMemberProfile(null, null, displayName, cohort, null, null, githubAvatarUrl, githubProfileUrl);
+        return new ProjectMemberProfile(
+                null,
+                null,
+                displayName,
+                Cohort.from(cohort),
+                null,
+                null,
+                githubAvatarUrl,
+                githubProfileUrl
+        );
     }
 }

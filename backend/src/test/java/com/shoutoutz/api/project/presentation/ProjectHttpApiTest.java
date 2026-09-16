@@ -281,8 +281,8 @@ class ProjectHttpApiTest {
                         6, 12L, 184L, 14L,
                         List.of(new ProjectTechTagResponse(1L, "React"), new ProjectTechTagResponse(2L, "Spring")),
                         List.of(
-                                new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BE", 101L, null, null),
-                                new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FE", null, null, null)
+                                new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BACKEND", 101L, null, null),
+                                new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FRONTEND", null, null, null)
                         ))),
                 new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
         ));
@@ -735,8 +735,8 @@ class ProjectHttpApiTest {
                         new ProjectTechTagResponse(2L, "TypeScript")
                 ),
                 List.of(
-                        new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BE", 101L, null, null),
-                        new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FE", null, null, null)
+                        new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BACKEND", 101L, null, null),
+                        new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FRONTEND", null, null, null)
                 ),
                 Instant.parse("2026-08-09T02:30:00Z"),
                 Instant.parse("2026-08-09T03:00:00Z")

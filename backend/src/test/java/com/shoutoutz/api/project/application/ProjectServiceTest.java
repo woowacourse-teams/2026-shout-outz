@@ -600,7 +600,7 @@ class ProjectServiceTest {
         assertThat(response.registeredBy()).isEqualTo(REGISTERED_BY);
         assertThat(response.techTags()).containsExactly(new ProjectTechTagResponse(1L, "React"));
         assertThat(response.members()).containsExactly(new ProjectMemberProfileResponse(
-                REGISTERED_BY, "dhyepark", "박다혜", 6, "BE", 101L, null, null
+                REGISTERED_BY, "dhyepark", "박다혜", 6, "BACKEND", 101L, null, null
         ));
     }
 
@@ -662,7 +662,14 @@ class ProjectServiceTest {
                 false,
                 0,
                 List.of(new ProjectTechTag(1L, "React")),
-                List.of(ProjectMemberProfile.user(REGISTERED_BY, "dhyepark", "박다혜", 6, "BE", 101L)),
+                List.of(ProjectMemberProfile.user(
+                        REGISTERED_BY,
+                        "dhyepark",
+                        "박다혜",
+                        Cohort.COHORT_6,
+                        Track.BACKEND,
+                        101L
+                )),
                 NOW,
                 NOW
         );

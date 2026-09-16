@@ -1,7 +1,9 @@
 package com.shoutoutz.api.feed.presentation.dto.response;
 
 import com.shoutoutz.api.category.domain.CategoryType;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.List;
@@ -46,10 +48,24 @@ public record FeedResponse(
                     author.handle(),
                     author.displayName(),
                     author.userType(),
-                    author.track(),
-                    author.cohort(),
+                    trackValue(author.track()),
+                    cohortValue(author.cohort()),
                     author.avatarImageId()
             );
+        }
+
+        private static String trackValue(Track track) {
+            if (track == null) {
+                return null;
+            }
+            return track.getValue();
+        }
+
+        private static Short cohortValue(Cohort cohort) {
+            if (cohort == null) {
+                return null;
+            }
+            return (short) cohort.getValue();
         }
     }
 
