@@ -52,5 +52,8 @@ CREATE UNIQUE INDEX uq_user_verification_requests_pending_user
     ON user_verification_requests (user_id)
     WHERE status = 'PENDING';
 
+CREATE INDEX idx_user_verification_requests_user_id_requested_at
+    ON user_verification_requests (user_id, requested_at DESC, id DESC);
+
 CREATE INDEX idx_user_verification_request_histories_request_id
     ON user_verification_request_histories (request_id, changed_at DESC, id DESC);

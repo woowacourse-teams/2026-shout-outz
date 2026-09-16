@@ -12,4 +12,8 @@ public interface UserVerificationRequestJpaRepository
             long userId,
             VerificationRequestStatus status
     );
+
+    Optional<UserVerificationRequestEntity> findFirstByUserIdOrderByRequestedAtDescIdDesc(
+            long userId
+    );
 }

@@ -121,6 +121,71 @@ class UserVerificationRequestRepositoryIntegrationTest {
                 .contains(pending.getId());
     }
 
+    @Test
+    void 사용자의_가장_최근_신청을_신청시각_내림차순으로_조회한다() {
+        User user = userRepository.save(User.initialize(uniqueHandle()));
+        requestRepository.save(
+                UserVerificationRequest.reconstitute(
+                        null,
+                        user.getId(),
+                        UserType.WOOWACOURSE_CREW,
+                        "이전 신청",
+                        8,
+                        "BACKEND",
+                        VerificationRequestStatus.REJECTED,
+                        NOW.minusSeconds(60),
+                        NOW.minusSeconds(30)
+                )
+        );
+        UserVerificationRequest latestRequest = requestRepository.save(
+                request(user.getId(), "최신 신청")
+        );
+
+        assertThat(requestRepository.findLatestByUserId(user.getId()))
+                .map(UserVerificationRequest::getId)
+                .contains(latestRequest.getId());
+    }
+
+    @Test
+    void 신청의_최신_승인_또는_반려_이력을_조회한다() {
+        User user = userRepository.save(User.initialize(uniqueHandle()));
+        UserVerificationRequest request = requestRepository.save(
+                UserVerificationRequest.reconstitute(
+                        null,
+                        user.getId(),
+                        UserType.WOOWACOURSE_CREW,
+                        "샤를",
+                        8,
+                        "BACKEND",
+                        VerificationRequestStatus.REJECTED,
+                        NOW,
+                        NOW
+                )
+        );
+        historyRepository.save(UserVerificationRequestHistory.initial(
+                request.getId(),
+                NOW.minusSeconds(60)
+        ));
+        historyRepository.save(UserVerificationRequestHistory.reconstitute(
+                null,
+                request.getId(),
+                user.getId(),
+                VerificationRequestStatus.PENDING,
+                VerificationRequestStatus.REJECTED,
+                "Slack 정보와 일치하지 않습니다.",
+                NOW
+        ));
+        entityManager.flush();
+
+        UserVerificationRequestHistory history = historyRepository
+                .findLatestDecisionByRequestId(request.getId())
+                .orElseThrow();
+
+        assertThat(history.getToStatus()).isEqualTo(VerificationRequestStatus.REJECTED);
+        assertThat(history.getReason()).isEqualTo("Slack 정보와 일치하지 않습니다.");
+        assertThat(history.getChangedAt()).isEqualTo(NOW);
+    }
+
     private UserVerificationRequest request(long userId, String nickname) {
         return UserVerificationRequest.create(
                 userId,

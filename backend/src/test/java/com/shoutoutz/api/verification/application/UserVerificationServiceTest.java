@@ -21,6 +21,7 @@ import com.shoutoutz.api.verification.domain.UserVerificationRequestRepository;
 import com.shoutoutz.api.verification.domain.VerificationRequestStatus;
 import com.shoutoutz.api.verification.presentation.dto.request.UserVerificationRequestCreateRequest;
 import com.shoutoutz.api.verification.presentation.dto.response.UserVerificationRequestCreateResponse;
+import com.shoutoutz.api.verification.presentation.dto.response.UserVerificationRequestResponse;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -37,6 +38,7 @@ class UserVerificationServiceTest {
 
     private static final long USER_ID = 1L;
     private static final Instant NOW = Instant.parse("2026-09-16T00:00:00Z");
+    private static final Instant DECIDED_AT = Instant.parse("2026-09-16T01:00:00Z");
 
     @Mock
     private UserProfileRepository userProfileRepository;
@@ -286,6 +288,144 @@ class UserVerificationServiceTest {
 
         verify(requestRepository, never()).save(any());
         verifyNoInteractions(historyRepository);
+    }
+
+    @Test
+    void 신청_이력이_없으면_null을_반환한다() {
+        given(userProfileRepository.findByUserId(USER_ID))
+                .willReturn(Optional.of(UserProfile.initialize(USER_ID, "일반 사용자")));
+        given(requestRepository.findLatestByUserId(USER_ID)).willReturn(Optional.empty());
+
+        assertThat(userVerificationService.findLatest(USER_ID)).isNull();
+
+        verify(requestRepository).findLatestByUserId(USER_ID);
+        verifyNoInteractions(historyRepository);
+    }
+
+    @Test
+    void PENDING_신청은_심사_시각과_반려_사유를_null로_반환한다() {
+        UserVerificationRequest request = UserVerificationRequest.reconstitute(
+                20L,
+                USER_ID,
+                UserType.WOOWACOURSE_CREW,
+                "샤를",
+                8,
+                "BACKEND",
+                VerificationRequestStatus.PENDING,
+                NOW,
+                null
+        );
+        given(userProfileRepository.findByUserId(USER_ID))
+                .willReturn(Optional.of(UserProfile.initialize(USER_ID, "일반 사용자")));
+        given(requestRepository.findLatestByUserId(USER_ID)).willReturn(Optional.of(request));
+
+        UserVerificationRequestResponse response = userVerificationService.findLatest(USER_ID);
+
+        assertThat(response.requestId()).isEqualTo(20L);
+        assertThat(response.status()).isEqualTo(VerificationRequestStatus.PENDING);
+        assertThat(response.requestedAt()).isEqualTo(NOW);
+        assertThat(response.decidedAt()).isNull();
+        assertThat(response.reason()).isNull();
+        verifyNoInteractions(historyRepository);
+    }
+
+    @Test
+    void REJECTED_신청은_최신_반려_이력의_사유와_심사_시각을_반환한다() {
+        UserVerificationRequest request = UserVerificationRequest.reconstitute(
+                21L,
+                USER_ID,
+                UserType.WOOWACOURSE_CREW,
+                "샤를",
+                8,
+                "BACKEND",
+                VerificationRequestStatus.REJECTED,
+                NOW,
+                DECIDED_AT
+        );
+        UserVerificationRequestHistory history = UserVerificationRequestHistory.reconstitute(
+                31L,
+                21L,
+                99L,
+                VerificationRequestStatus.PENDING,
+                VerificationRequestStatus.REJECTED,
+                "Slack 프로필 정보와 일치하지 않습니다.",
+                DECIDED_AT
+        );
+        given(userProfileRepository.findByUserId(USER_ID))
+                .willReturn(Optional.of(UserProfile.initialize(USER_ID, "일반 사용자")));
+        given(requestRepository.findLatestByUserId(USER_ID)).willReturn(Optional.of(request));
+        given(historyRepository.findLatestDecisionByRequestId(21L))
+                .willReturn(Optional.of(history));
+
+        UserVerificationRequestResponse response = userVerificationService.findLatest(USER_ID);
+
+        assertThat(response.status()).isEqualTo(VerificationRequestStatus.REJECTED);
+        assertThat(response.decidedAt()).isEqualTo(DECIDED_AT);
+        assertThat(response.reason()).isEqualTo("Slack 프로필 정보와 일치하지 않습니다.");
+    }
+
+    @Test
+    void APPROVED_신청은_승인된_신청_정보를_반환한다() {
+        UserVerificationRequest request = UserVerificationRequest.reconstitute(
+                22L,
+                USER_ID,
+                UserType.WOOWACOURSE_COACH,
+                "제임스",
+                null,
+                null,
+                VerificationRequestStatus.APPROVED,
+                NOW,
+                null
+        );
+        UserVerificationRequestHistory history = UserVerificationRequestHistory.reconstitute(
+                32L,
+                22L,
+                99L,
+                VerificationRequestStatus.PENDING,
+                VerificationRequestStatus.APPROVED,
+                null,
+                DECIDED_AT
+        );
+        given(userProfileRepository.findByUserId(USER_ID))
+                .willReturn(Optional.of(UserProfile.initialize(USER_ID, "일반 사용자")));
+        given(requestRepository.findLatestByUserId(USER_ID)).willReturn(Optional.of(request));
+        given(historyRepository.findLatestDecisionByRequestId(22L))
+                .willReturn(Optional.of(history));
+
+        UserVerificationRequestResponse response = userVerificationService.findLatest(USER_ID);
+
+        assertThat(response.userType()).isEqualTo(UserType.WOOWACOURSE_COACH);
+        assertThat(response.nickname()).isEqualTo("제임스");
+        assertThat(response.cohort()).isNull();
+        assertThat(response.track()).isNull();
+        assertThat(response.status()).isEqualTo(VerificationRequestStatus.APPROVED);
+        assertThat(response.decidedAt()).isEqualTo(DECIDED_AT);
+        assertThat(response.reason()).isNull();
+    }
+
+    @Test
+    void 기존_인증_사용자는_신청_이력없이_승인_상태로_반환한다() {
+        given(userProfileRepository.findByUserId(USER_ID))
+                .willReturn(Optional.of(UserProfile.builder()
+                        .userId(USER_ID)
+                        .displayName("샤를")
+                        .userType(UserType.WOOWACOURSE_CREW)
+                        .track("BACKEND")
+                        .cohort((short) 8)
+                        .build()));
+
+        UserVerificationRequestResponse response = userVerificationService.findLatest(USER_ID);
+
+        assertThat(response.requestId()).isNull();
+        assertThat(response.userType()).isEqualTo(UserType.WOOWACOURSE_CREW);
+        assertThat(response.nickname()).isEqualTo("샤를");
+        assertThat(response.cohort()).isEqualTo(8);
+        assertThat(response.track()).isEqualTo("BACKEND");
+        assertThat(response.status()).isEqualTo(VerificationRequestStatus.APPROVED);
+        assertThat(response.requestedAt()).isNull();
+        assertThat(response.decidedAt()).isNull();
+        assertThat(response.reason()).isNull();
+        verifyNoInteractions(requestRepository, historyRepository);
     }
 
     private UserVerificationRequestCreateRequest crewRequest() {

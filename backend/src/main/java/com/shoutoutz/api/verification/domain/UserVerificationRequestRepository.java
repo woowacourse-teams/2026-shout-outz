@@ -7,4 +7,6 @@ public interface UserVerificationRequestRepository {
     UserVerificationRequest save(UserVerificationRequest request);
 
     Optional<UserVerificationRequest> findPendingByUserId(long userId);
+
+    Optional<UserVerificationRequest> findLatestByUserId(long userId);
 }

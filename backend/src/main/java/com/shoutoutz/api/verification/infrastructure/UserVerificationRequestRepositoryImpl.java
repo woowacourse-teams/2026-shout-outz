@@ -47,6 +47,12 @@ public class UserVerificationRequestRepositoryImpl implements UserVerificationRe
                 .map(UserVerificationRequestMapper::toDomain);
     }
 
+    @Override
+    public Optional<UserVerificationRequest> findLatestByUserId(long userId) {
+        return requestJpaRepository.findFirstByUserIdOrderByRequestedAtDescIdDesc(userId)
+                .map(UserVerificationRequestMapper::toDomain);
+    }
+
     private boolean isPendingUserUniqueViolation(Throwable exception) {
         Throwable cause = exception;
         while (cause != null) {

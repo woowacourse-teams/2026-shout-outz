@@ -11,8 +11,10 @@ import com.shoutoutz.api.verification.domain.UserVerificationRequest;
 import com.shoutoutz.api.verification.domain.UserVerificationRequestHistory;
 import com.shoutoutz.api.verification.domain.UserVerificationRequestHistoryRepository;
 import com.shoutoutz.api.verification.domain.UserVerificationRequestRepository;
+import com.shoutoutz.api.verification.domain.VerificationRequestStatus;
 import com.shoutoutz.api.verification.presentation.dto.request.UserVerificationRequestCreateRequest;
 import com.shoutoutz.api.verification.presentation.dto.response.UserVerificationRequestCreateResponse;
+import com.shoutoutz.api.verification.presentation.dto.response.UserVerificationRequestResponse;
 import java.time.Clock;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +59,39 @@ public class UserVerificationService {
         historyRepository.save(UserVerificationRequestHistory.initial(savedRequest.getId(), now));
 
         return UserVerificationRequestCreateResponse.from(savedRequest);
+    }
+
+    @Transactional(readOnly = true)
+    public UserVerificationRequestResponse findLatest(long userId) {
+        UserProfile profile = userProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        UserProfileErrorCode.USER_PROFILE_NOT_FOUND
+                ));
+        if (profile.getUserType() != UserType.GENERAL) {
+            return UserVerificationRequestResponse.legacyApproved(profile);
+        }
+
+        return requestRepository.findLatestByUserId(userId)
+                .map(this::toResponse)
+                .orElse(null);
+    }
+
+    private UserVerificationRequestResponse toResponse(UserVerificationRequest request) {
+        if (request.getStatus() == VerificationRequestStatus.PENDING) {
+            return UserVerificationRequestResponse.of(request, null, null);
+        }
+
+        UserVerificationRequestHistory decisionHistory =
+                historyRepository.findLatestDecisionByRequestId(request.getId()).orElse(null);
+        Instant decidedAt = request.getDecidedAt();
+        if (decidedAt == null && decisionHistory != null) {
+            decidedAt = decisionHistory.getChangedAt();
+        }
+        String reason = request.getStatus() == VerificationRequestStatus.REJECTED
+                && decisionHistory != null
+                ? decisionHistory.getReason()
+                : null;
+        return UserVerificationRequestResponse.of(request, decidedAt, reason);
     }
 
     private void validateApplicant(UserProfile profile) {
