@@ -8,6 +8,7 @@ import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -123,6 +124,85 @@ class ProjectTest {
                 .build())
                 .isInstanceOfSatisfying(DomainValidationException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_COHORT_NULL));
+    }
+
+    @Test
+    @DisplayName("수정하면 입력한 값으로 바꾸되, id와 등록자와 주소는 그대로 둔다.")
+    void updatesContentKeepingIdentity() {
+        Project project = projectBuilder()
+                .deploymentUrl(new DeploymentUrl("https://loop.team"))
+                .serviceStatus(ServiceStatus.OPERATING)
+                .build();
+
+        Project updated = update(project, new GithubRepositoryUrl("https://github.com/woowacourse-teams/2026-crew"));
+
+        assertThat(updated.getId()).isEqualTo(project.getId());
+        assertThat(updated.getRegisteredBy()).isEqualTo(project.getRegisteredBy());
+        assertThat(updated.getSlug()).isEqualTo(project.getSlug());
+        assertThat(updated.getTitle().value()).isEqualTo("크루 (Crew)");
+        assertThat(updated.getGithubRepositoryUrl().getRepositoryName()).isEqualTo("2026-crew");
+    }
+
+    @Test
+    @DisplayName("반려된 프로젝트를 수정하면, 재심사 요청으로 보고 승인 대기로 되돌린다.")
+    void movesRejectedProjectBackToPending() {
+        Project rejected = projectBuilder()
+                .approvalStatus(ApprovalStatus.REJECTED)
+                .serviceStatus(ServiceStatus.CLOSED)
+                .build();
+
+        assertThat(update(rejected).getApprovalStatus()).isEqualTo(ApprovalStatus.PENDING);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", "APPROVED"})
+    @DisplayName("반려되지 않은 프로젝트를 수정하면, 승인 상태를 그대로 유지한다.")
+    void keepsApprovalStatusUnlessRejected(ApprovalStatus approvalStatus) {
+        Project project = projectBuilder()
+                .approvalStatus(approvalStatus)
+                .serviceStatus(ServiceStatus.CLOSED)
+                .build();
+
+        assertThat(update(project).getApprovalStatus()).isEqualTo(approvalStatus);
+    }
+
+    @Test
+    @DisplayName("수정에도 배포 URL 없이 운영 중일 수 없다는 규칙이 그대로 적용된다.")
+    void rejectsUpdateToOperatingWithoutDeploymentUrl() {
+        Project project = projectBuilder().serviceStatus(ServiceStatus.CLOSED).build();
+
+        assertThatThrownBy(() -> project.update(
+                Cohort.COHORT_6,
+                new TeamName("루프팀"),
+                new Title("루프 (Loop)"),
+                "한 줄 소개",
+                "## 문제",
+                new GithubRepositoryUrl(REPOSITORY_URL),
+                null,
+                ServiceStatus.OPERATING,
+                null
+        ))
+                .isInstanceOfSatisfying(DomainValidationException.class,
+                        error -> assertThat(error.getErrorCode())
+                                .isEqualTo(ProjectErrorCode.PROJECT_INVALID_SERVICE_STATUS));
+    }
+
+    private static Project update(Project project) {
+        return update(project, new GithubRepositoryUrl(REPOSITORY_URL));
+    }
+
+    private static Project update(Project project, GithubRepositoryUrl githubRepositoryUrl) {
+        return project.update(
+                Cohort.COHORT_7,
+                new TeamName("크루팀"),
+                new Title("크루 (Crew)"),
+                "바뀐 한 줄 소개",
+                "## 바뀐 본문",
+                githubRepositoryUrl,
+                new DeploymentUrl("https://crew.team"),
+                ServiceStatus.OPERATING,
+                13L
+        );
     }
 
     /**

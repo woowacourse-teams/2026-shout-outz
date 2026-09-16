@@ -81,6 +81,40 @@ public class Project {
                 .build();
     }
 
+    /**
+     * 작성자가 프로젝트 내용을 수정한다.
+     * id와 등록자는 바뀌지 않으며, 승인 상태는 수정 결과에 따라 전환된다.
+     * slug는 등록 시점 값으로 고정해, 리포지토리 URL을 바꿔도 따라가지 않는다.
+     * 프로젝트 주소가 바뀌면 이미 공유된 링크가 깨지기 때문이다.
+     */
+    public Project update(
+            Cohort cohort,
+            TeamName teamName,
+            Title title,
+            String tagline,
+            String descriptionMd,
+            GithubRepositoryUrl githubRepositoryUrl,
+            DeploymentUrl deploymentUrl,
+            ServiceStatus serviceStatus,
+            Long thumbnailMediaId
+    ) {
+        return Project.builder()
+                .id(id)
+                .cohort(cohort)
+                .registeredBy(registeredBy)
+                .teamName(teamName)
+                .slug(slug)
+                .title(title)
+                .tagline(tagline)
+                .serviceStatus(serviceStatus)
+                .approvalStatus(approvalStatus.afterEdit())
+                .descriptionMd(descriptionMd)
+                .githubRepositoryUrl(githubRepositoryUrl)
+                .deploymentUrl(deploymentUrl)
+                .thumbnailMediaId(thumbnailMediaId)
+                .build();
+    }
+
     private static ServiceStatus initialServiceStatus(DeploymentUrl deploymentUrl) {
         if (deploymentUrl == null) {
             return ServiceStatus.CLOSED;
