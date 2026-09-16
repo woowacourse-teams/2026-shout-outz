@@ -6,9 +6,10 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { FeedList } from '@/components/feeds/FeedList';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
+import { findFirstUrl } from '@/components/feeds/FeedContent';
 import { Comments } from '@/components/feed-comments/Comments';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
-import { createFeedHandlers } from '@/mocks/handlers';
+import { createFeedHandlers, mockFeeds } from '@/mocks/handlers';
 import { routeTree } from '@/routeTree.gen';
 import type { ReactNode } from 'react';
 
@@ -102,13 +103,27 @@ test('빈 피드를 안내한다', async () => {
   expect(await screen.findByText('아직 등록된 피드가 없습니다.')).toBeInTheDocument();
 });
 test('피드 링크와 공유 주소가 상세 페이지를 가리킨다', async () => {
+  const feed = mockFeeds[0]!;
+  const detailPath = `/feeds/${feed.feedId}`;
   const user = userEvent.setup();
   show(<FeedList sort="LATEST" />);
   const first = (await screen.findAllByRole('article'))[0]!;
-  expect(within(first).getByRole('link', { name: /정우진/ })).toHaveAttribute('href', '/feeds/1');
+  expect(
+    within(first).getByRole('link', { name: new RegExp(feed.author.displayName) }),
+  ).toHaveAttribute('href', detailPath);
   await user.click(within(first).getByRole('button', { name: '공유' }));
   expect(await navigator.clipboard.readText()).toBe(
-    new URL('/feeds/1', window.location.origin).href,
+    new URL(detailPath, window.location.origin).href,
+  );
+});
+test('본문의 첫 번째 링크를 미리보기로 표시한다', async () => {
+  const previewUrl = findFirstUrl(mockFeeds[0]!.content);
+  if (!previewUrl) throw new Error('첫 번째 목 피드에 링크가 필요합니다.');
+  show(<FeedList sort="LATEST" />);
+  const first = (await screen.findAllByRole('article'))[0]!;
+  expect(within(first).getByRole('link', { name: `${previewUrl} 링크 열기` })).toHaveAttribute(
+    'href',
+    previewUrl,
   );
 });
 test('댓글 정렬 선택 없이 최신순으로 조회한다', async () => {

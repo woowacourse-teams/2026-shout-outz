@@ -4,7 +4,7 @@ import type { FeedComment } from '@/apis/feed-comment';
 export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
   feedId: index + 1,
   content: [
-    'Redis Pub/Sub으로 WebSocket 동기화 지연을 개선한 경험을 공유합니다.\n\n캐시 무효화와 메시지 순서를 함께 고민했어요.',
+    'Redis Pub/Sub으로 WebSocket 동기화 지연을 개선한 경험을 공유합니다.\n\n캐시 무효화와 메시지 순서를 함께 고민했어요.\n\nhttps://woojin.log/tech/redis-pub-sub',
     'TanStack Query를 사용하면서 배운 서버 상태 관리 이야기입니다.\n\n```ts\nawait queryClient.invalidateQueries({ queryKey: ["projects"] });\n```',
     '프로젝트에서 가장 기억에 남는 트러블슈팅은 무엇인가요?',
   ][index % 3]!,

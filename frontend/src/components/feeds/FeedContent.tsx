@@ -2,9 +2,17 @@ import Markdown from 'react-markdown';
 import type { Feed } from '@/apis/feed';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { FeedMedia } from '@/components/feeds/FeedMedia';
+import { LinkPreview } from '@/components/feeds/LinkPreview';
+
+const FIRST_URL_PATTERN = /https?:\/\/[^\s<>()]+/;
+
+export function findFirstUrl(content: string) {
+  return content.match(FIRST_URL_PATTERN)?.[0].replace(/[.,!?;:]+$/, '');
+}
 
 export function FeedContent({ feed }: { feed: Feed }) {
   const media = [...feed.media].sort((a, b) => a.displayOrder - b.displayOrder);
+  const firstUrl = findFirstUrl(feed.content);
 
   return (
     <>
@@ -33,6 +41,11 @@ export function FeedContent({ feed }: { feed: Feed }) {
           {feed.content}
         </Markdown>
       </div>
+      {firstUrl && (
+        <div className="mt-4">
+          <LinkPreview url={firstUrl} />
+        </div>
+      )}
       {media.length > 0 && (
         <div className="mt-4 space-y-3">
           {media.map(({ mediaId }) => (
