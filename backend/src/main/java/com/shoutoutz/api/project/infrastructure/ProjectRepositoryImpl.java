@@ -1,9 +1,11 @@
 package com.shoutoutz.api.project.infrastructure;
 
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY;
+import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_NOT_FOUND;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_DUPLICATE_SLUG;
 
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
@@ -62,6 +64,44 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     }
 
     @Override
+    public boolean existsByGithubRepositoryUrlExcluding(GithubRepositoryUrl githubRepositoryUrl, long projectId) {
+        return projectJpaRepository.existsByGithubRepositoryUrlAndIdNot(githubRepositoryUrl.value(), projectId);
+    }
+
+    @Override
+    public Optional<Project> findActiveById(long projectId) {
+        return projectJpaRepository.findByIdAndDeletedAtIsNull(projectId).map(ProjectMapper::toDomain);
+    }
+
+    @Override
+    public List<Long> findTechTagIds(long projectId) {
+        return projectTagJpaRepository.findAllByIdProjectIdOrderByDisplayOrder(projectId).stream()
+                .map(tag -> tag.getId().getTechTagId())
+                .toList();
+    }
+
+    @Override
+    public List<Long> findMemberIds(long projectId) {
+        return projectMemberJpaRepository.findAllByIdProjectIdOrderByDisplayOrder(projectId).stream()
+                .map(member -> member.getId().getUserId())
+                .toList();
+    }
+
+    /**
+     * 조회한 엔티티의 값만 바꿔 더티 체킹으로 반영한다.
+     * 도메인으로 만든 엔티티를 save 하면 매퍼가 담지 않는 조회수와 스타 수 같은 값이 함께 덮인다.
+     */
+    @Override
+    public Project update(Project project, List<Long> techTagIds, List<Long> memberIds) {
+        ProjectEntity entity = projectJpaRepository.findByIdAndDeletedAtIsNull(project.getId())
+                .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
+        updateProject(entity, project);
+        replaceTechTags(project.getId(), techTagIds);
+        replaceMembers(project.getId(), memberIds);
+        return ProjectMapper.toDomain(entity);
+    }
+
+    @Override
     public Optional<ProjectDetail> findDetailById(long projectId, Long viewerId) {
         return projectDetailJdbcRepository.findDetailById(projectId, viewerId);
     }
@@ -109,6 +149,37 @@ public class ProjectRepositoryImpl implements ProjectRepository {
             }
             throw e;
         }
+    }
+
+    /**
+     * 수정으로도 리포지토리 URL 이 겹칠 수 있으므로, 저장과 같은 방식으로 제약 위반을 중복 예외로 바꾼다.
+     * 더티 체킹은 트랜잭션이 끝날 때 반영되어, flush 하지 않으면 제약 위반이 이 자리를 지나 500 으로 나간다.
+     */
+    private void updateProject(ProjectEntity entity, Project project) {
+        entity.update(project);
+        try {
+            projectJpaRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            if (isUniqueViolation(e, GITHUB_REPOSITORY_URL_UNIQUE_CONSTRAINT)) {
+                throw new DuplicateEntityException(PROJECT_DUPLICATE_GITHUB_REPOSITORY, e);
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * 목록을 통째로 바꾸므로, 기존 항목을 모두 지우고 받은 목록을 새로 넣는다.
+     * 그대로 남는 항목은 지웠다가 다시 넣는 셈이지만, 삭제와 삽입이 같은 영속성 컨텍스트를 거쳐
+     * 같은 키를 다시 넣기 전에 삭제가 먼저 나가므로 제약에 걸리지 않는다.
+     */
+    private void replaceTechTags(Long projectId, List<Long> techTagIds) {
+        projectTagJpaRepository.deleteAllByIdProjectId(projectId);
+        projectTagJpaRepository.saveAll(ProjectMapper.toProjectTagEntities(projectId, techTagIds));
+    }
+
+    private void replaceMembers(Long projectId, List<Long> memberIds) {
+        projectMemberJpaRepository.deleteAllByIdProjectId(projectId);
+        projectMemberJpaRepository.saveAll(ProjectMapper.toProjectMemberEntities(projectId, memberIds));
     }
 
     private boolean isUniqueViolation(DataIntegrityViolationException e, String constraintName) {
