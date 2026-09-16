@@ -42,10 +42,7 @@ interface ProjectDetailResponse {
   data: ProjectDetail;
 }
 
-export async function fetchProjectDetail(
-  id: string,
-  signal?: AbortSignal,
-): Promise<ProjectDetail> {
+export async function fetchProjectDetail(id: string, signal?: AbortSignal): Promise<ProjectDetail> {
   const response = await ky
     .get(getApiUrl(`/api/v1/projects/${id}`), { signal, retry: 0, credentials: 'omit' })
     .json<ProjectDetailResponse>();
