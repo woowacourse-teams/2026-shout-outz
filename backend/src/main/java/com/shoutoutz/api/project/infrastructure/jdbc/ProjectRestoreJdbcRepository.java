@@ -2,6 +2,8 @@ package com.shoutoutz.api.project.infrastructure.jdbc;
 
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.RestorableProject;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -40,6 +42,40 @@ public class ProjectRestoreJdbcRepository {
                 )
                 .stream()
                 .findFirst();
+    }
+
+    /**
+     * 조건에 맞는 행이 없으면 아무것도 수정하지 않는다.
+     * 복구 요청이 동시에 들어와도 deleted_at IS NOT NULL 조건 덕분에 한 번만 성공한다.
+     */
+    public int restoreProject(long projectId, Instant restoredAt) {
+        return jdbcTemplate.update(
+                """
+                        UPDATE projects
+                        SET deleted_at = NULL, updated_at = ?
+                        WHERE id = ?
+                          AND deleted_at IS NOT NULL
+                        """,
+                Timestamp.from(restoredAt),
+                projectId
+        );
+    }
+
+    /**
+     * 복구할 때는 새 이력을 만들지 않고 미복구 이력에 복구 주체와 복구 시각을 채운다.
+     */
+    public int restoreDeletion(long deletionId, long restoredBy, Instant restoredAt) {
+        return jdbcTemplate.update(
+                """
+                        UPDATE project_deletions
+                        SET restored_by = ?, restored_at = ?
+                        WHERE id = ?
+                          AND restored_at IS NULL
+                        """,
+                restoredBy,
+                Timestamp.from(restoredAt),
+                deletionId
+        );
     }
 
     private RowMapper<RestorableProject> restorableProjectRowMapper() {

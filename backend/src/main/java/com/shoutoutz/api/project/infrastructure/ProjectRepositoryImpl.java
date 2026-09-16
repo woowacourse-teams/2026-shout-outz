@@ -98,6 +98,11 @@ public class ProjectRepositoryImpl implements ProjectRepository {
         return projectRestoreJdbcRepository.findRestorable(projectId, registeredBy);
     }
 
+    @Override
+    public int restore(long projectId, Instant restoredAt) {
+        return projectRestoreJdbcRepository.restoreProject(projectId, restoredAt);
+    }
+
     /**
      * 동시 요청이 사전 검사(existsBySlug)를 함께 통과하면 slug UNIQUE 제약에 걸린다.
      * 이 경우에도 409 로 응답하도록 slug 중복 예외로 변환한다.

@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 class ProjectDeletionTest {
 
     private static final long DELETED_BY = 7L;
-    private static final long RESTORED_BY = 7L;
     private static final Instant DELETED_AT = Instant.parse("2026-08-01T01:00:00Z");
     private static final Instant RESTORE_DEADLINE_AT = Instant.parse("2026-08-31T01:00:00Z");
 
@@ -25,56 +24,6 @@ class ProjectDeletionTest {
         assertThat(deletion.getDeletionType()).isEqualTo(DeletionType.SELF_DELETE);
         assertThat(deletion.getDeletedAt()).isEqualTo(DELETED_AT);
         assertThat(deletion.getRestoreDeadlineAt()).isEqualTo(RESTORE_DEADLINE_AT);
-        assertThat(deletion.getRestoredBy()).isNull();
-        assertThat(deletion.getRestoredAt()).isNull();
-    }
-
-    @Test
-    @DisplayName("복구 기한 이전에는 복구할 수 있다.")
-    void isRestorableBeforeDeadline() {
-        ProjectDeletion deletion = ProjectDeletion.selfDelete(project(), DELETED_BY, DELETED_AT);
-
-        assertThat(deletion.isRestorable(RESTORE_DEADLINE_AT.minusSeconds(1))).isTrue();
-    }
-
-    @Test
-    @DisplayName("복구 기한과 같은 시각에는 복구할 수 있다.")
-    void isRestorableAtDeadline() {
-        ProjectDeletion deletion = ProjectDeletion.selfDelete(project(), DELETED_BY, DELETED_AT);
-
-        assertThat(deletion.isRestorable(RESTORE_DEADLINE_AT)).isTrue();
-    }
-
-    @Test
-    @DisplayName("복구 기한이 지나면 복구할 수 없다.")
-    void isNotRestorableAfterDeadline() {
-        ProjectDeletion deletion = ProjectDeletion.selfDelete(project(), DELETED_BY, DELETED_AT);
-
-        assertThat(deletion.isRestorable(RESTORE_DEADLINE_AT.plusSeconds(1))).isFalse();
-    }
-
-    @Test
-    @DisplayName("복구하면 기존 이력에 복구 주체와 복구 시각만 채워진다.")
-    void restoreFillsRestoredByAndRestoredAt() {
-        Instant restoredAt = Instant.parse("2026-08-05T06:00:00Z");
-        ProjectDeletion deletion = ProjectDeletion.selfDelete(project(), DELETED_BY, DELETED_AT);
-
-        ProjectDeletion restored = deletion.restore(RESTORED_BY, restoredAt);
-
-        assertThat(restored.getRestoredBy()).isEqualTo(RESTORED_BY);
-        assertThat(restored.getRestoredAt()).isEqualTo(restoredAt);
-        assertThat(restored.getDeletedAt()).isEqualTo(DELETED_AT);
-        assertThat(restored.getRestoreDeadlineAt()).isEqualTo(RESTORE_DEADLINE_AT);
-        assertThat(restored.getDeletionType()).isEqualTo(DeletionType.SELF_DELETE);
-    }
-
-    @Test
-    @DisplayName("복구해도 기존 삭제 이력 객체는 변하지 않는다.")
-    void restoreDoesNotMutateOriginalDeletion() {
-        ProjectDeletion deletion = ProjectDeletion.selfDelete(project(), DELETED_BY, DELETED_AT);
-
-        deletion.restore(RESTORED_BY, Instant.parse("2026-08-05T06:00:00Z"));
-
         assertThat(deletion.getRestoredBy()).isNull();
         assertThat(deletion.getRestoredAt()).isNull();
     }

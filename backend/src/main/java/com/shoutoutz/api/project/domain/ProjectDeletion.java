@@ -97,27 +97,4 @@ public final class ProjectDeletion {
                 restoredAt
         );
     }
-
-    public ProjectDeletion restore(long restoredBy, Instant restoredAt) {
-        return new ProjectDeletion(
-                id,
-                projectId,
-                projectSlug,
-                projectTitle,
-                deletedBy,
-                deletionType,
-                deletionReason,
-                deletedAt,
-                restoreDeadlineAt,
-                restoredBy,
-                restoredAt
-        );
-    }
-
-    /**
-     * 복구 기한과 같은 시각까지는 복구할 수 있다.
-     */
-    public boolean isRestorable(Instant now) {
-        return !restoreDeadlineAt.isBefore(now);
-    }
 }

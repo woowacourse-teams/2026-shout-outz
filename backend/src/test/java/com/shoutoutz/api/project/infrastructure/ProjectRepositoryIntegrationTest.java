@@ -36,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 class ProjectRepositoryIntegrationTest {
 
     private static final Instant DELETED_AT = Instant.parse("2026-09-15T00:00:00Z");
+    private static final Instant RESTORED_AT = Instant.parse("2026-09-16T00:00:00Z");
 
     @Autowired
     private ProjectRepository projectRepository;
@@ -162,6 +163,23 @@ class ProjectRepositoryIntegrationTest {
 
         assertThat(projectRepository.findRestorable(notDeleted.getId(), registeredBy)).isEmpty();
         assertThat(projectRepository.findRestorable(othersProject.getId(), registeredBy)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("삭제된 프로젝트를 복구하면 삭제 시각이 지워지고, 이미 복구된 프로젝트는 복구되지 않는다")
+    void restoresDeletedProjectOnlyOnce() {
+        Long registeredBy = userRepository.save(User.initialize("restorer3")).getId();
+        ProjectEntity project = projectJpaRepository.save(
+                projectEntity(ApprovalStatus.APPROVED, null, registeredBy)
+        );
+        entityManager.flush();
+        projectRepository.softDelete(project.getId(), registeredBy, DELETED_AT).orElseThrow();
+
+        assertThat(projectRepository.restore(project.getId(), RESTORED_AT)).isEqualTo(1);
+        assertThat(projectRepository.restore(project.getId(), RESTORED_AT)).isZero();
+
+        entityManager.clear();
+        assertThat(projectJpaRepository.findById(project.getId()).orElseThrow().getDeletedAt()).isNull();
     }
 
     private static ProjectEntity projectEntity(ApprovalStatus approvalStatus, Instant deletedAt) {

@@ -25,6 +25,7 @@ class ProjectDeletionRepositoryIntegrationTest {
 
     private static final Instant DELETED_AT = Instant.parse("2026-08-01T01:00:00Z");
     private static final Instant RESTORE_DEADLINE_AT = Instant.parse("2026-08-31T01:00:00Z");
+    private static final Instant RESTORED_AT = Instant.parse("2026-08-05T06:00:00Z");
 
     @Autowired
     private ProjectDeletionRepository projectDeletionRepository;
@@ -70,8 +71,7 @@ class ProjectDeletionRepositoryIntegrationTest {
                 ProjectDeletion.selfDelete(project(projectId, "2026-first"), userId, DELETED_AT)
         );
 
-        projectDeletionRepository.save(first.restore(userId, DELETED_AT.plusSeconds(60)));
-        entityManager.flush();
+        projectDeletionRepository.markRestored(first.getId(), userId, DELETED_AT.plusSeconds(60));
         projectDeletionRepository.save(
                 ProjectDeletion.selfDelete(project(projectId, "2026-first"), userId, DELETED_AT.plusSeconds(120))
         );
@@ -84,6 +84,25 @@ class ProjectDeletionRepositoryIntegrationTest {
                 .filteredOn(entity -> entity.getRestoredAt() == null)
                 .extracting(ProjectDeletionEntity::getDeletedAt)
                 .containsExactly(DELETED_AT.plusSeconds(120));
+    }
+
+    @Test
+    @DisplayName("미복구 이력에 복구 주체와 시각을 남기고, 이미 복구된 이력은 다시 수정하지 않는다")
+    void restoresPendingDeletionOnlyOnce() {
+        long userId = userRepository.save(User.initialize("restorer")).getId();
+        ProjectDeletion deletion = projectDeletionRepository.save(
+                ProjectDeletion.selfDelete(project(3L, "2026-restore"), userId, DELETED_AT)
+        );
+        entityManager.flush();
+
+        assertThat(projectDeletionRepository.markRestored(deletion.getId(), userId, RESTORED_AT)).isEqualTo(1);
+        assertThat(projectDeletionRepository.markRestored(deletion.getId(), userId, RESTORED_AT)).isZero();
+
+        entityManager.clear();
+        ProjectDeletionEntity found = projectDeletionJpaRepository.findById(deletion.getId()).orElseThrow();
+        assertThat(found.getRestoredBy()).isEqualTo(userId);
+        assertThat(found.getRestoredAt()).isEqualTo(RESTORED_AT);
+        assertThat(found.getDeletedAt()).isEqualTo(DELETED_AT);
     }
 
     private static DeletedProject project(long id, String slug) {
