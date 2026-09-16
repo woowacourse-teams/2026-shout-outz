@@ -1,7 +1,7 @@
 package com.shoutoutz.api.user.domain.profile;
 
-import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.util.DataResolveUtil;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -78,6 +78,32 @@ public class UserProfile {
                 userType,
                 track,
                 cohort,
+                bio,
+                avatarImageId,
+                githubProfileUrl,
+                blogUrl
+        );
+    }
+
+    public UserProfile approve(
+            UserType verificationType,
+            String nickname,
+            Integer verificationCohort,
+            String verificationTrack
+    ) {
+        boolean crew = verificationType == UserType.WOOWACOURSE_CREW;
+        String verifiedDisplayName = crew
+                ? verificationCohort + "기 " + nickname
+                : nickname;
+        Track verifiedTrack = crew ? Track.from(verificationTrack) : null;
+        Cohort verifiedCohort = crew ? Cohort.from(verificationCohort) : null;
+
+        return new UserProfile(
+                userId,
+                verifiedDisplayName,
+                verificationType,
+                verifiedTrack,
+                verifiedCohort,
                 bio,
                 avatarImageId,
                 githubProfileUrl,

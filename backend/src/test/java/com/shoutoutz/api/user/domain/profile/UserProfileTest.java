@@ -198,6 +198,48 @@ class UserProfileTest {
     }
 
     @Test
+    @DisplayName("크루 인증 승인 시 기수와 닉네임으로 표시 이름을 만들고 인증 정보를 반영한다")
+    void approvesWoowacourseCrewProfile() {
+        UserProfile profile = UserProfile.builder()
+                .userId(1L)
+                .displayName("기존 이름")
+                .userType(UserType.GENERAL)
+                .bio("소개")
+                .build();
+
+        UserProfile approved = profile.approve(
+                UserType.WOOWACOURSE_CREW,
+                "샤를",
+                8,
+                "BACKEND"
+        );
+
+        assertThat(approved.getDisplayName().value()).isEqualTo("8기 샤를");
+        assertThat(approved.getUserType()).isEqualTo(UserType.WOOWACOURSE_CREW);
+        assertThat(approved.getCohort()).isEqualTo(Cohort.COHORT_8);
+        assertThat(approved.getTrack()).isEqualTo(Track.BACKEND);
+        assertThat(approved.getBio()).isEqualTo("소개");
+    }
+
+    @Test
+    @DisplayName("코치 인증 승인 시 닉네임만 표시 이름으로 사용하고 기수와 트랙은 비운다")
+    void approvesWoowacourseCoachProfile() {
+        UserProfile profile = UserProfile.initialize(1L, "기존 이름");
+
+        UserProfile approved = profile.approve(
+                UserType.WOOWACOURSE_COACH,
+                "제임스",
+                null,
+                null
+        );
+
+        assertThat(approved.getDisplayName().value()).isEqualTo("제임스");
+        assertThat(approved.getUserType()).isEqualTo(UserType.WOOWACOURSE_COACH);
+        assertThat(approved.getCohort()).isNull();
+        assertThat(approved.getTrack()).isNull();
+    }
+
+    @Test
     @DisplayName("프로필 문자열을 정제하고 공백뿐인 선택 값은 null로 변환한다")
     void sanitizesProfileStrings() {
         UserProfile profile = UserProfile.initialize(1L, "재키");
