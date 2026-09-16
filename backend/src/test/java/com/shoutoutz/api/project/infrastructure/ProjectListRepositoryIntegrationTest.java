@@ -2,7 +2,12 @@ package com.shoutoutz.api.project.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.domain.ProjectFilterCondition;
+import com.shoutoutz.api.project.domain.ProjectFilterOptions;
+import com.shoutoutz.api.project.domain.ProjectFilterOptions.CohortCount;
+import com.shoutoutz.api.project.domain.ProjectFilterOptions.TechTagCount;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
@@ -245,8 +250,101 @@ class ProjectListRepositoryIntegrationTest {
         assertThat(cards.get(withoutTagsAndMembers).members()).isEmpty();
     }
 
+    @Test
+    @DisplayName("필터 옵션의 조건에 맞는 프로젝트 수는 같은 조건의 목록 전체 개수와 같다.")
+    void matchedProjectCountEqualsListTotalCount() {
+        saveProject("APPROVED", 6, BASE_TIME);
+        saveProject("APPROVED", 7, BASE_TIME);
+        saveProject("PENDING", 6, BASE_TIME);
+        long deleted = saveProject("APPROVED", 6, BASE_TIME);
+        jdbcTemplate.update("UPDATE projects SET deleted_at = now() WHERE id = ?", deleted);
+        saveProject("검색어가 없는 제목", "소개", "APPROVED", 6, BASE_TIME);
+
+        ProjectFilterOptions options = findFilterOptions(List.of(6), List.of());
+        ProjectPage page = findAll(new ProjectSearchCondition(token, List.of(6), List.of(), ProjectSort.LATEST, 50, null));
+
+        assertThat(options.matchedProjectCount()).isEqualTo(1).isEqualTo(page.totalCount());
+    }
+
+    @Test
+    @DisplayName("필터 옵션은 모든 기수를 최신 기수부터 반환하고, 프로젝트가 없는 기수는 0개로 센다.")
+    void returnsAllCohortsDescendingWithZeroCounts() {
+        saveProject("APPROVED", 6, BASE_TIME);
+
+        ProjectFilterOptions options = findFilterOptions(List.of(), List.of());
+
+        assertThat(options.cohorts()).extracting(CohortCount::cohort).containsExactlyElementsOf(Cohort.descending());
+        assertThat(cohortCounts(options)).containsEntry(6, 1L).containsEntry(8, 0L);
+    }
+
+    @Test
+    @DisplayName("기수별 프로젝트 수는 선택한 기수로 거르지 않고, 검색어와 기술 스택 조건만 적용해 센다.")
+    void countsCohortsWithoutSelectedCohorts() {
+        long spring = saveTechTag("Spring");
+        long cohort6 = saveProject("APPROVED", 6, BASE_TIME);
+        long cohort7 = saveProject("APPROVED", 7, BASE_TIME);
+        saveProject("APPROVED", 6, BASE_TIME);
+        saveProjectTag(cohort6, spring);
+        saveProjectTag(cohort7, spring);
+
+        ProjectFilterOptions options = findFilterOptions(List.of(6), List.of(spring));
+
+        assertThat(cohortCounts(options)).containsEntry(6, 1L).containsEntry(7, 1L);
+        assertThat(options.matchedProjectCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("기술 스택별 프로젝트 수는 현재 조건에 그 기술 스택을 추가로 선택했을 때의 수이고, 사용한 프로젝트가 없으면 0개다.")
+    void countsTechTagsAsIfAdditionallySelected() {
+        long react = saveTechTag("React");
+        long spring = saveTechTag("Spring");
+        long docker = saveTechTag("Docker");
+        long reactAndSpring = saveProject("APPROVED", 6, BASE_TIME);
+        long reactOnly = saveProject("APPROVED", 6, BASE_TIME);
+        long otherCohort = saveProject("APPROVED", 7, BASE_TIME);
+        saveProjectTag(reactAndSpring, react);
+        saveProjectTag(reactAndSpring, spring);
+        saveProjectTag(reactOnly, react);
+        saveProjectTag(otherCohort, react);
+        saveProjectTag(otherCohort, spring);
+
+        ProjectFilterOptions options = findFilterOptions(List.of(6), List.of(react));
+
+        assertThat(options.matchedProjectCount()).isEqualTo(2);
+        assertThat(techTagCounts(options))
+                .containsEntry(react, 2L)
+                .containsEntry(spring, 1L)
+                .containsEntry(docker, 0L);
+    }
+
+    @Test
+    @DisplayName("비활성 기술 스택은 필터 옵션에 포함하지 않는다.")
+    void excludesInactiveTechTags() {
+        long inactive = saveTechTag("Inactive");
+        jdbcTemplate.update("UPDATE tech_tags SET is_active = false WHERE id = ?", inactive);
+        saveProjectTag(saveProject("APPROVED", 6, BASE_TIME), inactive);
+
+        ProjectFilterOptions options = findFilterOptions(List.of(), List.of());
+
+        assertThat(techTagCounts(options)).doesNotContainKey(inactive);
+    }
+
     private ProjectPage findAll(ProjectSearchCondition condition) {
         return projectRepository.findAll(condition);
+    }
+
+    private ProjectFilterOptions findFilterOptions(List<Integer> cohorts, List<Long> techTagIds) {
+        return projectRepository.findFilterOptions(new ProjectFilterCondition(token, cohorts, techTagIds));
+    }
+
+    private static Map<Integer, Long> cohortCounts(ProjectFilterOptions options) {
+        return options.cohorts().stream()
+                .collect(Collectors.toMap(count -> count.cohort().getValue(), CohortCount::projectCount));
+    }
+
+    private static Map<Long, Long> techTagCounts(ProjectFilterOptions options) {
+        return options.techTags().stream()
+                .collect(Collectors.toMap(TechTagCount::id, TechTagCount::projectCount));
     }
 
     private static ProjectSearchCondition condition(String keyword) {

@@ -31,4 +31,11 @@ public record ProjectSearchCondition(
             throw new IllegalArgumentException("커서의 정렬 기준과 조회 정렬 기준이 다릅니다.");
         }
     }
+
+    /**
+     * 정렬, 페이지 정보를 뺀 검색어와 필터 조건
+     */
+    public ProjectFilterCondition filter() {
+        return new ProjectFilterCondition(keyword, cohorts, techTagIds);
+    }
 }

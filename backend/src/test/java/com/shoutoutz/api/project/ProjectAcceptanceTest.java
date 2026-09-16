@@ -300,6 +300,44 @@ class ProjectAcceptanceTest {
         assertThat(tooLargeSize.jsonPath().getString("details[0].field")).isEqualTo("size");
     }
 
+    @Test
+    @DisplayName("비로그인 사용자가 필터 옵션을 조회하면, 목록 조회와 같은 조건으로 센 선택지별 프로젝트 수를 반환한다.")
+    void findsFilterOptionsWithSameConditionAsList() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        String token = uniqueToken();
+        List<Long> reactAndJava = techTagIds("react", "java");
+        long react = reactAndJava.get(0);
+        long java = reactAndJava.get(1);
+        long reactJava6 = registerProject(author, teammate, token + " 리액트 자바", 6, reactAndJava);
+        long java6 = registerProject(author, teammate, token + " 자바", 6, List.of(java));
+        long java7 = registerProject(author, teammate, token + " 칠기 자바", 7, List.of(java));
+        registerProject(author, teammate, token + " 승인 대기", 6, List.of(java));
+        List.of(reactJava6, java6, java7).forEach(this::approve);
+
+        Map<String, String> condition = Map.of("keyword", token, "cohorts", "6", "techTagIds", String.valueOf(java));
+        Response options = findFilterOptions(condition);
+        Response list = findAll(condition);
+
+        assertThat(options.statusCode()).as(options.asString()).isEqualTo(200);
+        assertThat(options.jsonPath().getLong("data.matchedProjectCount"))
+                .isEqualTo(2)
+                .isEqualTo(list.jsonPath().getLong("meta.totalCount"));
+        assertThat(options.jsonPath().getInt("data.cohorts.find { it.cohort == 6 }.projectCount")).isEqualTo(2);
+        assertThat(options.jsonPath().getInt("data.cohorts.find { it.cohort == 7 }.projectCount")).isEqualTo(1);
+        assertThat(options.jsonPath().getInt("data.techTags.find { it.id == " + java + " }.projectCount")).isEqualTo(2);
+        assertThat(options.jsonPath().getInt("data.techTags.find { it.id == " + react + " }.projectCount")).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("필터 옵션 조회에서 정의되지 않은 기수를 고르면 400을 반환한다.")
+    void rejectsUndefinedCohortForFilterOptions() {
+        Response response = findFilterOptions(Map.of("cohorts", "99"));
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.jsonPath().getString("code")).isEqualTo("INVALID_COHORT");
+    }
+
     /**
      * 제목과 기수를 정해 프로젝트를 등록한다. 등록 직후에는 승인 대기(PENDING) 상태다.
      */
@@ -328,6 +366,17 @@ class ProjectAcceptanceTest {
                 .queryParams(queryParams)
                 .when()
                 .get(PROJECTS_PATH);
+    }
+
+    /**
+     * 비로그인으로 필터 옵션을 조회한다.
+     */
+    private Response findFilterOptions(Map<String, ?> queryParams) {
+        return RestAssured.given()
+                .port(port)
+                .queryParams(queryParams)
+                .when()
+                .get(PROJECTS_PATH + "/filters");
     }
 
     private static String joinIds(List<Long> ids) {
