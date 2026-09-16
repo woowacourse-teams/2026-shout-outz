@@ -1,6 +1,5 @@
 package com.shoutoutz.api.homebanner.application;
 
-import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
 import com.shoutoutz.api.homebanner.domain.HomeBanner;
@@ -8,13 +7,8 @@ import com.shoutoutz.api.homebanner.domain.HomeBannerErrorCode;
 import com.shoutoutz.api.homebanner.domain.HomeBannerRepository;
 import com.shoutoutz.api.homebanner.presentation.dto.request.HomeBannerUpsertRequest;
 import com.shoutoutz.api.homebanner.presentation.dto.response.HomeBannerAdminResponse;
-import com.shoutoutz.api.media.application.MediaQueryService;
-import com.shoutoutz.api.media.domain.MediaMetadata;
-import com.shoutoutz.api.media.domain.MediaMetadataRepository;
-import com.shoutoutz.api.media.domain.MediaPurpose;
-import com.shoutoutz.api.media.domain.MediaStatus;
-import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
 import com.shoutoutz.api.user.domain.account.UserRole;
+import java.net.URI;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,8 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class HomeBannerAdminService {
 
     private final HomeBannerRepository homeBannerRepository;
-    private final MediaMetadataRepository mediaMetadataRepository;
-    private final MediaQueryService mediaQueryService;
+    private final HomeBannerImageService imageService;
     private final HomeBannerTargetValidator targetValidator;
 
     @Transactional(readOnly = true)
@@ -44,11 +37,11 @@ public class HomeBannerAdminService {
             HomeBannerUpsertRequest request
     ) {
         validateAdmin(role);
-        MediaMetadata media = validateMedia(request.mediaId());
+        URI imageUrl = imageService.createImageUrl(request.mediaId());
         targetValidator.validate(request.targetType(), request.targetId());
 
         HomeBanner saved = homeBannerRepository.save(request.toHomeBanner(userId));
-        return toResponse(saved, media);
+        return HomeBannerAdminResponse.from(saved, imageUrl);
     }
 
     @Transactional
@@ -59,7 +52,7 @@ public class HomeBannerAdminService {
     ) {
         validateAdmin(role);
         HomeBanner banner = findBanner(bannerId);
-        MediaMetadata media = validateMedia(request.mediaId());
+        URI imageUrl = imageService.createImageUrl(request.mediaId());
         targetValidator.validate(request.targetType(), request.targetId());
 
         HomeBanner updated = banner.update(
@@ -74,7 +67,7 @@ public class HomeBannerAdminService {
         );
         HomeBanner saved = homeBannerRepository.update(updated)
                 .orElseThrow(() -> new NotFoundException(HomeBannerErrorCode.HOME_BANNER_NOT_FOUND));
-        return toResponse(saved, media);
+        return HomeBannerAdminResponse.from(saved, imageUrl);
     }
 
     @Transactional
@@ -86,23 +79,10 @@ public class HomeBannerAdminService {
     }
 
     private HomeBannerAdminResponse toResponse(HomeBanner banner) {
-        return toResponse(banner, validateMedia(banner.getMediaId()));
-    }
-
-    private HomeBannerAdminResponse toResponse(HomeBanner banner, MediaMetadata media) {
         return HomeBannerAdminResponse.from(
                 banner,
-                mediaQueryService.createDownloadUrl(media, MediaVariant.DISPLAY).downloadUrl()
+                imageService.createImageUrl(banner.getMediaId())
         );
-    }
-
-    private MediaMetadata validateMedia(long mediaId) {
-        MediaMetadata media = mediaMetadataRepository.findById(mediaId)
-                .orElseThrow(() -> new NotFoundException(HomeBannerErrorCode.HOME_BANNER_MEDIA_NOT_FOUND));
-        if (media.getPurpose() != MediaPurpose.HOME_BANNER || media.getStatus() != MediaStatus.READY) {
-            throw new ConflictException(HomeBannerErrorCode.HOME_BANNER_MEDIA_INVALID);
-        }
-        return media;
     }
 
     private HomeBanner findBanner(long bannerId) {

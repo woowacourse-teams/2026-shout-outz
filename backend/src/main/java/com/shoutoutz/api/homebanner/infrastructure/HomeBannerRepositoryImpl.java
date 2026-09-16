@@ -63,6 +63,7 @@ public class HomeBannerRepositoryImpl implements HomeBannerRepository {
         if (limit <= 0) {
             return List.of();
         }
+        // 예약 노출 도입 시 active와 함께 start_at/end_at 범위를 검사한다.
         return jdbcTemplate.query(
                 """
                         SELECT %s
