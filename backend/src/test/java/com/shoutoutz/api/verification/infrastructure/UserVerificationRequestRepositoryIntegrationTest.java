@@ -6,6 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.verification.application.AdminVerificationRequestQueryRepository;
+import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestCursor;
+import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestItem;
 import com.shoutoutz.api.verification.domain.UserVerificationRequest;
 import com.shoutoutz.api.verification.domain.UserVerificationRequestHistory;
 import com.shoutoutz.api.verification.domain.UserVerificationRequestHistoryRepository;
@@ -14,6 +17,7 @@ import com.shoutoutz.api.verification.domain.VerificationRequestStatus;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +41,9 @@ class UserVerificationRequestRepositoryIntegrationTest {
 
     @Autowired
     private UserVerificationRequestHistoryRepository historyRepository;
+
+    @Autowired
+    private AdminVerificationRequestQueryRepository adminQueryRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -184,6 +191,70 @@ class UserVerificationRequestRepositoryIntegrationTest {
         assertThat(history.getToStatus()).isEqualTo(VerificationRequestStatus.REJECTED);
         assertThat(history.getReason()).isEqualTo("Slack 정보와 일치하지 않습니다.");
         assertThat(history.getChangedAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    void 관리자_목록은_상태별로_신청자_정보를_최신순과_커서로_조회한다() {
+        User olderUser = userRepository.save(User.initialize(uniqueHandle()));
+        User newerUser = userRepository.save(User.initialize(uniqueHandle()));
+        User rejectedUser = userRepository.save(User.initialize(uniqueHandle()));
+        UserVerificationRequest olderRequest = requestRepository.save(
+                UserVerificationRequest.create(
+                        olderUser.getId(),
+                        UserType.WOOWACOURSE_CREW,
+                        "이전 신청",
+                        8,
+                        "BACKEND",
+                        NOW.minusSeconds(60)
+                )
+        );
+        UserVerificationRequest newerRequest = requestRepository.save(
+                UserVerificationRequest.create(
+                        newerUser.getId(),
+                        UserType.WOOWACOURSE_COACH,
+                        "최신 신청",
+                        null,
+                        null,
+                        NOW
+                )
+        );
+        requestRepository.save(UserVerificationRequest.reconstitute(
+                null,
+                rejectedUser.getId(),
+                UserType.WOOWACOURSE_CREW,
+                "반려 신청",
+                8,
+                "ANDROID",
+                VerificationRequestStatus.REJECTED,
+                NOW.plusSeconds(60),
+                NOW.plusSeconds(120)
+        ));
+        entityManager.flush();
+
+        List<AdminVerificationRequestItem> firstPage = adminQueryRepository.findAll(
+                VerificationRequestStatus.PENDING,
+                null,
+                1
+        );
+        List<AdminVerificationRequestItem> secondPage = adminQueryRepository.findAll(
+                VerificationRequestStatus.PENDING,
+                new AdminVerificationRequestCursor(newerRequest.getRequestedAt(), newerRequest.getId()),
+                1
+        );
+
+        assertThat(firstPage).singleElement().satisfies(item -> {
+            assertThat(item.requestId()).isEqualTo(newerRequest.getId());
+            assertThat(item.userId()).isEqualTo(newerUser.getId());
+            assertThat(item.handle()).isEqualTo(newerUser.getHandle().value());
+            assertThat(item.userType()).isEqualTo(UserType.WOOWACOURSE_COACH);
+            assertThat(item.cohort()).isNull();
+            assertThat(item.track()).isNull();
+        });
+        assertThat(secondPage).singleElement().satisfies(item -> {
+            assertThat(item.requestId()).isEqualTo(olderRequest.getId());
+            assertThat(item.userId()).isEqualTo(olderUser.getId());
+            assertThat(item.nickname()).isEqualTo("이전 신청");
+        });
     }
 
     private UserVerificationRequest request(long userId, String nickname) {
