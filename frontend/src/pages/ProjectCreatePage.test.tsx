@@ -45,7 +45,8 @@ const captureCreateRequest = () => {
 };
 
 const fillRequiredFields = async (user: User) => {
-  await user.type(screen.getByRole('textbox', { name: /프로젝트 이름/ }), FORM.title);
+  // 기수 목록을 불러오는 동안에는 폼 대신 로딩 문구가 떠 있다.
+  await user.type(await screen.findByRole('textbox', { name: /프로젝트 이름/ }), FORM.title);
   await user.type(screen.getByRole('textbox', { name: /한 줄 소개/ }), FORM.tagline);
 
   await user.click(screen.getByRole('combobox', { name: /우테코 기수/ }));

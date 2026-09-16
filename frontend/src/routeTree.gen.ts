@@ -16,6 +16,7 @@ import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as NewsNewsIdRouteImport } from './routes/news/$newsId'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectsIdRouteImport } from './routes/projects/$id'
+import { Route as ProjectsNewRouteImport } from './routes/projects/new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,12 +53,18 @@ const ProjectsIdRoute = ProjectsIdRouteImport.update({
   path: '/projects/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsNewRoute = ProjectsNewRouteImport.update({
+  id: '/projects/new',
+  path: '/projects/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/projects/new': typeof ProjectsNewRoute
   '/feeds/': typeof FeedsIndexRoute
   '/news/': typeof NewsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/projects/new': typeof ProjectsNewRoute
   '/feeds': typeof FeedsIndexRoute
   '/news': typeof NewsIndexRoute
   '/projects': typeof ProjectsIndexRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/projects/new': typeof ProjectsNewRoute
   '/feeds/': typeof FeedsIndexRoute
   '/news/': typeof NewsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/news/$newsId'
     | '/projects/$id'
+    | '/projects/new'
     | '/feeds/'
     | '/news/'
     | '/projects/'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/news/$newsId'
     | '/projects/$id'
+    | '/projects/new'
     | '/feeds'
     | '/news'
     | '/projects'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/news/$newsId'
     | '/projects/$id'
+    | '/projects/new'
     | '/feeds/'
     | '/news/'
     | '/projects/'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   NewsNewsIdRoute: typeof NewsNewsIdRoute
   ProjectsIdRoute: typeof ProjectsIdRoute
+  ProjectsNewRoute: typeof ProjectsNewRoute
   FeedsIndexRoute: typeof FeedsIndexRoute
   NewsIndexRoute: typeof NewsIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/new': {
+      id: '/projects/new'
+      path: '/projects/new'
+      fullPath: '/projects/new'
+      preLoaderRoute: typeof ProjectsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   NewsNewsIdRoute: NewsNewsIdRoute,
   ProjectsIdRoute: ProjectsIdRoute,
+  ProjectsNewRoute: ProjectsNewRoute,
   FeedsIndexRoute: FeedsIndexRoute,
   NewsIndexRoute: NewsIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
