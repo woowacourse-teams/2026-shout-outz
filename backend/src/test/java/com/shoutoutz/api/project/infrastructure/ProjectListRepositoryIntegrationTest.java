@@ -219,6 +219,20 @@ class ProjectListRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("GitHub 스타 수를 조회하고, 아직 동기화하지 않은 프로젝트는 null 로 둔다.")
+    void readsStarCount() {
+        long synced = saveProject("APPROVED", 6, BASE_TIME.plusSeconds(1));
+        long notSynced = saveProject("APPROVED", 6, BASE_TIME);
+        jdbcTemplate.update("UPDATE projects SET star_count = 128 WHERE id = ?", synced);
+
+        List<ProjectSummary> items = findAll(condition(token)).items();
+
+        assertThat(items).extracting(ProjectSummary::id).containsExactly(synced, notSynced);
+        assertThat(items.getFirst().starCount()).isEqualTo(128);
+        assertThat(items.getLast().starCount()).isNull();
+    }
+
+    @Test
     @DisplayName("카드마다 기술 스택과 팀원을 등록 순서대로 붙이고, 이관 프로젝트에는 이관 팀원을 붙인다.")
     void attachesTechTagsAndMembersToEachCard() {
         long owner = saveCrew("등록자", false);

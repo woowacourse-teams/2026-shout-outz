@@ -684,7 +684,8 @@ class ProjectServiceTest {
 
     private static ProjectSummary summary(long id, long likeCount, Instant createdAt) {
         return new ProjectSummary(
-                id, "loop-" + id, "루프", "한 줄 소개", 6, null, REGISTERED_BY, likeCount, 0L, List.of(), List.of(), createdAt);
+                id, "loop-" + id, "루프", "한 줄 소개", 6, null, REGISTERED_BY, 128, likeCount, 0L,
+                List.of(), List.of(), createdAt);
     }
 
     private static User user(long id, String handle, UserStatus status) {

@@ -171,6 +171,7 @@ class UserProjectHttpApiTest {
                 "스프린트 회고와 액션 아이템을 관리하는 협업 도구",
                 6,
                 12L,
+                128,
                 184L,
                 14L,
                 List.of(new ProjectTechTagResponse(1L, "Spring")),
@@ -190,6 +191,8 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].tagline").type(STRING).description("한 줄 소개"),
                 fieldWithPath("data[].cohort").type(NUMBER).description("우아한테크코스 기수"),
                 fieldWithPath("data[].thumbnailMediaId").type(NUMBER).description("썸네일 미디어 ID").optional(),
+                fieldWithPath("data[].starCount").type(NUMBER)
+                        .description("GitHub star 수. 동기화 전이면 null이다.").optional(),
                 fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"),
                 fieldWithPath("data[].commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"),
                 fieldWithPath("data[].techTags").type(ARRAY).description("기술 스택"),

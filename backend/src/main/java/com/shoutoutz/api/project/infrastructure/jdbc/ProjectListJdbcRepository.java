@@ -48,6 +48,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 p.cohort,
                 p.thumbnail_media_id,
                 p.registered_by,
+                p.star_count,
                 p.created_at,
                 (
                     SELECT COUNT(*)
@@ -377,6 +378,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 resultSet.getInt("cohort"),
                 resultSet.getObject("thumbnail_media_id", Long.class),
                 resultSet.getObject("registered_by", Long.class),
+                resultSet.getObject("star_count", Integer.class),
                 resultSet.getLong("like_count"),
                 resultSet.getLong("comment_count"),
                 List.of(),

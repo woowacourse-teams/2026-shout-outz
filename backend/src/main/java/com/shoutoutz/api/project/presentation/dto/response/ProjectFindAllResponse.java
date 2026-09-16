@@ -19,6 +19,7 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
 
     /**
      * 기술 스택과 팀원은 전체 목록을 등록 순서대로 내려준다. 카드에 몇 개까지 보여줄지는 화면에서 정한다.
+     * starCount 는 GitHub 스타 수를 아직 동기화하지 않은 프로젝트면 null 이다.
      */
     public record Item(
             long id,
@@ -27,6 +28,7 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
             String tagline,
             int cohort,
             Long thumbnailMediaId,
+            Integer starCount,
             long likeCount,
             long commentCount,
             List<ProjectTechTagResponse> techTags,
@@ -41,6 +43,7 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
                     summary.tagline(),
                     summary.cohort(),
                     summary.thumbnailMediaId(),
+                    summary.starCount(),
                     summary.likeCount(),
                     summary.commentCount(),
                     summary.techTags().stream().map(ProjectTechTagResponse::from).toList(),
