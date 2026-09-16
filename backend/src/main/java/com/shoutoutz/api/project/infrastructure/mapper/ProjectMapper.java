@@ -35,6 +35,7 @@ public final class ProjectMapper {
                 .githubRepositoryUrl(project.getGithubRepositoryUrl().value())
                 .deploymentUrl(project.getDeploymentUrl() == null ? null : project.getDeploymentUrl().value())
                 .thumbnailMediaId(project.getThumbnailMediaId())
+                .deletedAt(project.getDeletedAt())
                 .build();
     }
 
@@ -53,6 +54,7 @@ public final class ProjectMapper {
                 .githubRepositoryUrl(new GithubRepositoryUrl(entity.getGithubRepositoryUrl()))
                 .deploymentUrl(entity.getDeploymentUrl() == null ? null : new DeploymentUrl(entity.getDeploymentUrl()))
                 .thumbnailMediaId(entity.getThumbnailMediaId())
+                .deletedAt(entity.getDeletedAt())
                 .build();
     }
 

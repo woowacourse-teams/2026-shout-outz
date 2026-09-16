@@ -301,6 +301,23 @@ class ProjectAcceptanceTest {
     }
 
     @Test
+    @DisplayName("비로그인 사용자도 handle로 사용자가 참여한 승인 프로젝트를 조회할 수 있다.")
+    void findsApprovedProjectsByUserAnonymously() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        long approved = registerProject(author, teammate, "사용자 프로젝트", 6, techTagIds("java"));
+        registerProject(author, teammate, "승인 대기 프로젝트", 6, techTagIds("java"));
+        approve(approved);
+
+        Response response = findUserProjects(teammate.handle());
+
+        assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
+        assertThat(response.jsonPath().getList("data.id", Long.class)).containsExactly(approved);
+        assertThat(response.jsonPath().getBoolean("meta.hasNext")).isFalse();
+        assertThat(response.jsonPath().getString("meta.nextCursor")).isNull();
+    }
+
+    @Test
     @DisplayName("비로그인 사용자가 필터 옵션을 조회하면, 목록 조회와 같은 조건으로 센 선택지별 프로젝트 수를 반환한다.")
     void findsFilterOptionsWithSameConditionAsList() {
         LoginSession author = signup("WOOWACOURSE_CREW");
@@ -366,6 +383,13 @@ class ProjectAcceptanceTest {
                 .queryParams(queryParams)
                 .when()
                 .get(PROJECTS_PATH);
+    }
+
+    private Response findUserProjects(String handle) {
+        return RestAssured.given()
+                .port(port)
+                .when()
+                .get("/api/v1/users/{handle}/projects", handle);
     }
 
     /**

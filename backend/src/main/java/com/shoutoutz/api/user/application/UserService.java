@@ -8,6 +8,7 @@ import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.application.dto.UserProfileCounts;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
@@ -18,6 +19,7 @@ import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
@@ -64,8 +66,8 @@ public class UserService {
                 user.getHandle().value(),
                 savedProfile.getDisplayName().value(),
                 savedProfile.getUserType(),
-                savedProfile.getTrack(),
-                savedProfile.getCohort(),
+                trackValue(savedProfile),
+                cohortValue(savedProfile),
                 savedProfile.getBio(),
                 savedProfile.getAvatarImageId(),
                 savedProfile.getGithubProfileUrl(),
@@ -188,14 +190,30 @@ public class UserService {
                 user.getHandle().value(),
                 profile.getDisplayName().value(),
                 profile.getUserType(),
-                profile.getTrack(),
-                profile.getCohort(),
+                trackValue(profile),
+                cohortValue(profile),
                 profile.getBio(),
                 profile.getAvatarImageId(),
                 profile.getGithubProfileUrl(),
                 profile.getBlogUrl(),
                 new UserProfileResponse.Counts(counts.projects(), counts.feeds())
         );
+    }
+
+    private String trackValue(UserProfile profile) {
+        Track track = profile.getTrack();
+        if (track == null) {
+            return null;
+        }
+        return track.getValue();
+    }
+
+    private Short cohortValue(UserProfile profile) {
+        Cohort cohort = profile.getCohort();
+        if (cohort == null) {
+            return null;
+        }
+        return (short) cohort.getValue();
     }
 
     /**

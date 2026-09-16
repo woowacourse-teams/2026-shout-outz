@@ -8,20 +8,28 @@ import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_TECH_TAG;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_INVALID_THUMBNAIL;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_NOT_FOUND;
+import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_RESTORE_DEADLINE_EXPIRED;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_THUMBNAIL_NOT_READY;
+import static com.shoutoutz.api.user.domain.account.UserErrorCode.USER_NOT_FOUND;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.project.application.dto.UserProjectResult;
+import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.DescriptionMediaReferences;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.domain.ProjectDeletion;
+import com.shoutoutz.api.project.domain.ProjectDeletionRepository;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectFilterCondition;
 import com.shoutoutz.api.project.domain.ProjectFilterOptions;
@@ -30,6 +38,8 @@ import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
+import com.shoutoutz.api.project.domain.RestorableProject;
+import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
@@ -41,10 +51,12 @@ import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenEx
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
+import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
+import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -52,6 +64,8 @@ import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -68,6 +82,9 @@ public class ProjectService {
     private final MediaMetadataRepository mediaMetadataRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
+    private final ProjectDeletionRepository projectDeletionRepository;
+    private final UserProjectQueryRepository userProjectQueryRepository;
+    private final Clock clock;
 
     @Transactional
     public ProjectCreateResponse create(long registeredBy, ProjectCreateRequest request) {
@@ -116,6 +133,26 @@ public class ProjectService {
     }
 
     /**
+     * 사용자가 참여한 승인 프로젝트를 최신순으로 조회한다.
+     * 탈퇴한 사용자의 프로젝트는 공개하지 않는다.
+     */
+    @Transactional(readOnly = true)
+    public UserProjectFindResponse findAllByUser(String handle, UserProjectFindRequest request) {
+        User user = userRepository.findByHandle(handle)
+                .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND));
+        if (user.isDeleted()) {
+            return UserProjectFindResponse.from(new UserProjectResult(List.of(), false));
+        }
+
+        UserProjectResult result = userProjectQueryRepository.findAllByUserId(
+                user.getId(),
+                request.resolvedCursor(),
+                request.resolvedSize()
+        );
+        return UserProjectFindResponse.from(result);
+    }
+
+    /**
      * 필터 모달에 보여줄 기수 및 기술 스택 목록과, 각 항목을 골랐을 때 나오는 프로젝트 수를 조회한다.
      * 목록 조회와 숫자가 맞도록, 검색어와 필터는 목록 조회와 같은 방식으로 정리해 넘긴다.
      */
@@ -138,6 +175,36 @@ public class ProjectService {
                 .filter(project -> project.isVisibleTo(loginUserId))
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
         return ProjectDetailResponse.from(detail);
+    }
+
+    /**
+     * 등록자 본인만 자신의 프로젝트를 삭제할 수 있다. (심사 중이어도 삭제 가능)
+     * 프로젝트 삭제와 이력 기록은 같은 시각을 쓰고 한 트랜잭션으로 처리한다.
+     */
+    @Transactional
+    public ProjectDeletion delete(long projectId, long registeredBy) {
+        Instant deletedAt = clock.instant();
+        DeletedProject deletedProject = projectRepository.softDelete(projectId, registeredBy, deletedAt)
+                .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
+        return projectDeletionRepository.save(ProjectDeletion.selfDelete(deletedProject, registeredBy, deletedAt));
+    }
+
+    /**
+     * 등록자 본인만 복구 기한 안에 자신의 프로젝트를 복구할 수 있다. 승인 상태는 삭제 이전 값을 그대로 유지한다.
+     * 프로젝트 복구와 이력 기록은 같은 시각을 쓰고 한 트랜잭션으로 처리한다.
+     */
+    @Transactional
+    public RestoredProject restore(long projectId, long registeredBy) {
+        Instant restoredAt = clock.instant();
+        RestorableProject restorable = projectRepository.findRestorable(projectId, registeredBy)
+                .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
+        if (!restorable.isRestorable(restoredAt)) {
+            throw new ConflictException(PROJECT_RESTORE_DEADLINE_EXPIRED);
+        }
+        ApprovalStatus approvalStatus = projectRepository.restore(projectId, restoredAt)
+                .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
+        projectDeletionRepository.markRestored(restorable.deletionId(), registeredBy, restoredAt);
+        return new RestoredProject(projectId, approvalStatus, restoredAt);
     }
 
     /**

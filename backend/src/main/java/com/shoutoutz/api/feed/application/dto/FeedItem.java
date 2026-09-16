@@ -1,6 +1,8 @@
 package com.shoutoutz.api.feed.application.dto;
 
 import com.shoutoutz.api.category.domain.CategoryType;
+import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.List;
@@ -22,8 +24,8 @@ public record FeedItem(
             String handle,
             String displayName,
             UserType userType,
-            String track,
-            Short cohort,
+            Track track,
+            Cohort cohort,
             Long avatarImageId
     ) {
     }

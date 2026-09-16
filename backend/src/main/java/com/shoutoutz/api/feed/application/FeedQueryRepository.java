@@ -16,5 +16,7 @@ public interface FeedQueryRepository {
 
     List<FeedItem> findAll(FeedSort sort, Long categoryId, FeedCursor cursor, int limit);
 
+    List<FeedItem> findAllByAuthorId(long authorId, FeedCursor cursor, int limit);
+
     List<FeedMediaReference> findAllMediaByIds(List<Long> mediaIds);
 }

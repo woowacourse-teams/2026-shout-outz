@@ -1,6 +1,8 @@
 package com.shoutoutz.api.project.presentation.dto.response;
 
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
+import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.user.domain.profile.Track;
 
 /**
  * 프로젝트 팀원 응답 객체
@@ -23,11 +25,25 @@ public record ProjectMemberProfileResponse(
                 member.userId(),
                 member.handle(),
                 member.displayName(),
-                member.cohort(),
-                member.track(),
+                cohortValue(member.cohort()),
+                trackValue(member.track()),
                 member.avatarImageId(),
                 member.githubAvatarUrl(),
                 member.githubProfileUrl()
         );
+    }
+
+    private static Integer cohortValue(Cohort cohort) {
+        if (cohort == null) {
+            return null;
+        }
+        return cohort.getValue();
+    }
+
+    private static String trackValue(Track track) {
+        if (track == null) {
+            return null;
+        }
+        return track.getValue();
     }
 }

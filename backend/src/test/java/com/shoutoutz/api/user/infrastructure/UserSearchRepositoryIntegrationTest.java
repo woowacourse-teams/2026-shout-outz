@@ -12,6 +12,8 @@ import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.user.domain.profile.Track;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.infrastructure.jpa.UserProfileJpaRepository;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -143,9 +145,9 @@ class UserSearchRepositoryIntegrationTest {
                 .displayName(displayName)
                 .userType(userType);
         if (userType == UserType.WOOWACOURSE_CREW) {
-            profileBuilder.track("BACKEND").cohort((short) 8);
+            profileBuilder.track(Track.BACKEND).cohort(Cohort.COHORT_8);
         } else if (userType == UserType.WOOWACOURSE_COACH) {
-            profileBuilder.track("BACKEND");
+            profileBuilder.track(Track.BACKEND);
         }
         userProfileRepository.save(profileBuilder.build());
     }

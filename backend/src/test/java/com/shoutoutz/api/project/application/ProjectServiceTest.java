@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -14,15 +15,21 @@ import static org.mockito.Mockito.when;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.cohort.domain.CohortErrorCode;
 import com.shoutoutz.api.cohort.domain.InvalidCohortException;
+import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.DeletedProject;
+import com.shoutoutz.api.project.domain.DeletionType;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.domain.ProjectDeletion;
+import com.shoutoutz.api.project.domain.ProjectDeletionRepository;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectFilterCondition;
@@ -35,8 +42,11 @@ import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
+import com.shoutoutz.api.project.domain.RestorableProject;
+import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.ServiceStatus;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
@@ -47,22 +57,28 @@ import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenEx
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
+import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
+import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
 import com.shoutoutz.api.techtag.domain.TechTag;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -100,6 +116,12 @@ class ProjectServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private ProjectDeletionRepository projectDeletionRepository;
+
+    @Mock
+    private UserProjectQueryRepository userProjectQueryRepository;
+
     private ProjectService projectService;
 
     @BeforeEach
@@ -109,8 +131,104 @@ class ProjectServiceTest {
                 techTagRepository,
                 mediaMetadataRepository,
                 userProfileRepository,
-                userRepository
+                userRepository,
+                projectDeletionRepository,
+                userProjectQueryRepository,
+                Clock.fixed(NOW, ZoneOffset.UTC)
         );
+    }
+
+    @Test
+    @DisplayName("프로젝트를 삭제하면 같은 시각으로 삭제하고 복구 기한이 담긴 삭제 이력을 남긴다.")
+    void deleteSoftDeletesProjectAndSavesDeletionHistory() {
+        DeletedProject deletedProject = new DeletedProject(1L, "2026-moamoa", "모아모아");
+        when(projectRepository.softDelete(1L, REGISTERED_BY, NOW)).thenReturn(Optional.of(deletedProject));
+        when(projectDeletionRepository.save(any(ProjectDeletion.class))).thenAnswer(answer -> answer.getArgument(0));
+
+        ProjectDeletion deletion = projectService.delete(1L, REGISTERED_BY);
+
+        ArgumentCaptor<ProjectDeletion> captor = ArgumentCaptor.forClass(ProjectDeletion.class);
+        verify(projectDeletionRepository).save(captor.capture());
+        ProjectDeletion saved = captor.getValue();
+        assertThat(saved.getProjectId()).isEqualTo(1L);
+        assertThat(saved.getProjectSlug()).isEqualTo("2026-moamoa");
+        assertThat(saved.getProjectTitle()).isEqualTo("모아모아");
+        assertThat(saved.getDeletedBy()).isEqualTo(REGISTERED_BY);
+        assertThat(saved.getDeletionType()).isEqualTo(DeletionType.SELF_DELETE);
+        assertThat(saved.getDeletedAt()).isEqualTo(NOW);
+        assertThat(saved.getRestoreDeadlineAt()).isEqualTo(NOW.plus(Duration.ofDays(30)));
+        assertThat(deletion.getDeletedAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    @DisplayName("삭제할 프로젝트가 없으면 삭제 이력을 남기지 않고 프로젝트를 찾을 수 없다고 응답한다.")
+    void deleteThrowsNotFoundWhenNothingDeleted() {
+        when(projectRepository.softDelete(1L, REGISTERED_BY, NOW)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.delete(1L, REGISTERED_BY))
+                .isInstanceOfSatisfying(EntityNotFoundException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
+        verifyNoInteractions(projectDeletionRepository);
+    }
+
+    @Test
+    @DisplayName("복구 기한 안에 복구하면 프로젝트를 되살리고 삭제 이력에 복구 사실을 남긴다.")
+    void restoreRestoresProjectAndMarksDeletionRestored() {
+        RestorableProject restorable = new RestorableProject(5L, NOW.plusSeconds(1));
+        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.of(restorable));
+        when(projectRepository.restore(1L, NOW)).thenReturn(Optional.of(ApprovalStatus.APPROVED));
+
+        RestoredProject restored = projectService.restore(1L, REGISTERED_BY);
+
+        assertThat(restored).isEqualTo(new RestoredProject(1L, ApprovalStatus.APPROVED, NOW));
+        verify(projectDeletionRepository).markRestored(5L, REGISTERED_BY, NOW);
+    }
+
+    @Test
+    @DisplayName("복구 기한과 같은 시각에는 복구할 수 있다.")
+    void restoreSucceedsAtRestoreDeadline() {
+        RestorableProject restorable = new RestorableProject(5L, NOW);
+        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.of(restorable));
+        when(projectRepository.restore(1L, NOW)).thenReturn(Optional.of(ApprovalStatus.PENDING));
+
+        assertThat(projectService.restore(1L, REGISTERED_BY).approvalStatus()).isEqualTo(ApprovalStatus.PENDING);
+    }
+
+    @Test
+    @DisplayName("복구 기한이 지나면 아무것도 바꾸지 않고 복구할 수 없다고 응답한다.")
+    void restoreThrowsConflictAfterRestoreDeadline() {
+        RestorableProject restorable = new RestorableProject(5L, NOW.minusSeconds(1));
+        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.of(restorable));
+
+        assertThatThrownBy(() -> projectService.restore(1L, REGISTERED_BY))
+                .isInstanceOfSatisfying(ConflictException.class, error ->
+                        assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_RESTORE_DEADLINE_EXPIRED));
+        verify(projectRepository, never()).restore(anyLong(), any());
+        verifyNoInteractions(projectDeletionRepository);
+    }
+
+    @Test
+    @DisplayName("복구할 프로젝트가 없으면 프로젝트를 찾을 수 없다고 응답한다.")
+    void restoreThrowsNotFoundWhenNoRestorableProject() {
+        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.restore(1L, REGISTERED_BY))
+                .isInstanceOfSatisfying(EntityNotFoundException.class, error ->
+                        assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
+        verifyNoInteractions(projectDeletionRepository);
+    }
+
+    @Test
+    @DisplayName("조회한 뒤 다른 요청이 먼저 복구해 버리면 이력을 남기지 않고 프로젝트를 찾을 수 없다고 응답한다.")
+    void restoreThrowsNotFoundWhenAlreadyRestoredByAnotherRequest() {
+        RestorableProject restorable = new RestorableProject(5L, NOW.plusSeconds(1));
+        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.of(restorable));
+        when(projectRepository.restore(1L, NOW)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.restore(1L, REGISTERED_BY))
+                .isInstanceOfSatisfying(EntityNotFoundException.class, error ->
+                        assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
+        verifyNoInteractions(projectDeletionRepository);
     }
 
     @Test
@@ -447,6 +565,59 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("사용자가 참여한 프로젝트를 최신순 커서 조건으로 조회한다.")
+    void findsProjectsByUser() {
+        ProjectCursor cursor = ProjectCursor.latest(NOW, 10L);
+        User user = user(REGISTERED_BY, MEMBER_HANDLE, UserStatus.ACTIVE);
+        ProjectSummary project = summary(9L, 3L, NOW.minusSeconds(60));
+        when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.of(user));
+        when(userProjectQueryRepository.findAllByUserId(REGISTERED_BY, cursor, 20))
+                .thenReturn(new UserProjectResult(List.of(project), true));
+
+        UserProjectFindResponse response = projectService.findAllByUser(
+                MEMBER_HANDLE,
+                new UserProjectFindRequest(20, ProjectCursorCodec.encode(cursor))
+        );
+
+        assertThat(response.projects()).extracting(ProjectFindAllResponse.Item::id).containsExactly(9L);
+        assertThat(response.meta().hasNext()).isTrue();
+        assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.LATEST))
+                .isEqualTo(ProjectCursor.latest(NOW.minusSeconds(60), 9L));
+        verify(userProjectQueryRepository).findAllByUserId(REGISTERED_BY, cursor, 20);
+    }
+
+    @Test
+    @DisplayName("탈퇴한 사용자의 프로젝트 목록은 공개하지 않는다.")
+    void returnsEmptyProjectsForDeletedUser() {
+        when(userRepository.findByHandle(MEMBER_HANDLE))
+                .thenReturn(Optional.of(user(REGISTERED_BY, MEMBER_HANDLE, UserStatus.DELETED)));
+
+        UserProjectFindResponse response = projectService.findAllByUser(
+                MEMBER_HANDLE,
+                new UserProjectFindRequest(null, null)
+        );
+
+        assertThat(response.projects()).isEmpty();
+        assertThat(response.meta().hasNext()).isFalse();
+        assertThat(response.meta().nextCursor()).isNull();
+        verifyNoInteractions(userProjectQueryRepository);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 handle의 프로젝트 목록은 조회할 수 없다.")
+    void rejectsUnknownUserProjects() {
+        when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.findAllByUser(
+                MEMBER_HANDLE,
+                new UserProjectFindRequest(null, null)
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(UserErrorCode.USER_NOT_FOUND));
+
+        verifyNoInteractions(userProjectQueryRepository);
+    }
+
+    @Test
     @DisplayName("정의되지 않은 기수로 필터링하면 목록을 조회하지 않고 400을 던진다.")
     void rejectsUndefinedCohortFilter() {
         assertThatThrownBy(() -> projectService.findAll(
@@ -516,6 +687,16 @@ class ProjectServiceTest {
                 id, "loop-" + id, "루프", "한 줄 소개", 6, null, REGISTERED_BY, likeCount, 0L, List.of(), List.of(), createdAt);
     }
 
+    private static User user(long id, String handle, UserStatus status) {
+        return User.builder()
+                .id(id)
+                .handle(handle)
+                .status(status)
+                .role(UserRole.USER)
+                .deletedAt(status == UserStatus.DELETED ? NOW : null)
+                .build();
+    }
+
     @Test
     @DisplayName("승인된 프로젝트는 비로그인 사용자도 상세 조회할 수 있고, 기술 스택과 팀원을 응답으로 옮긴다.")
     void findsApprovedProjectDetailForAnonymous() {
@@ -528,7 +709,7 @@ class ProjectServiceTest {
         assertThat(response.registeredBy()).isEqualTo(REGISTERED_BY);
         assertThat(response.techTags()).containsExactly(new ProjectTechTagResponse(1L, "React"));
         assertThat(response.members()).containsExactly(new ProjectMemberProfileResponse(
-                REGISTERED_BY, "dhyepark", "박다혜", 6, "BE", 101L, null, null
+                REGISTERED_BY, "dhyepark", "박다혜", 6, "BACKEND", 101L, null, null
         ));
     }
 
@@ -590,7 +771,14 @@ class ProjectServiceTest {
                 false,
                 0,
                 List.of(new ProjectTechTag(1L, "React")),
-                List.of(ProjectMemberProfile.user(REGISTERED_BY, "dhyepark", "박다혜", 6, "BE", 101L)),
+                List.of(ProjectMemberProfile.user(
+                        REGISTERED_BY,
+                        "dhyepark",
+                        "박다혜",
+                        Cohort.COHORT_6,
+                        Track.BACKEND,
+                        101L
+                )),
                 NOW,
                 NOW
         );
@@ -643,8 +831,8 @@ class ProjectServiceTest {
                 .userId(userId)
                 .displayName("사용자" + userId)
                 .userType(userType)
-                .track(crew ? "BACKEND" : null)
-                .cohort(crew ? (short) 6 : null)
+                .track(crew ? Track.BACKEND : null)
+                .cohort(crew ? Cohort.COHORT_6 : null)
                 .build();
     }
 
