@@ -1,4 +1,9 @@
-import { type NewsDetail, type NewsNavItem, type NewsSummary } from '@/types/news';
+import {
+  type NewsDetail,
+  type NewsEventStatus,
+  type NewsNavItem,
+  type NewsSummary,
+} from '@/types/news';
 
 /** 실제 서버가 준비되기 전까지 MSW 핸들러가 내려줄 소식 데이터. 백엔드가 뜨면 이 파일은 사라진다. */
 const NEWS: NewsSummary[] = [
@@ -65,13 +70,20 @@ const CTAS: Record<number, { label: string; url: string }> = {
   2: { label: '지금 프로젝트 등록하러 가기 ›', url: '/projects/new' },
 };
 
+// 이벤트의 진행 상태. 공지사항은 상태가 없다.
+const EVENT_STATUSES: Record<number, NewsEventStatus | 'ENDED'> = {
+  2: 'ONGOING',
+  3: 'ONGOING',
+  4: 'ENDED',
+};
+
 const AUTHOR = { userId: 1, name: '우아한테크코스 운영진' };
 
 const toNavItem = (news: NewsSummary | undefined): NewsNavItem | null =>
   news ? { id: news.id, title: news.title, publishedAt: news.publishedAt } : null;
 
-export function getNewsList(): NewsSummary[] {
-  return NEWS;
+export function getNewsList(eventStatus?: NewsEventStatus): NewsSummary[] {
+  return eventStatus ? NEWS.filter((news) => EVENT_STATUSES[news.id] === eventStatus) : NEWS;
 }
 
 /**

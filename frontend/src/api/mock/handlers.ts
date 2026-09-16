@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 
+import { getFeedList } from '@/api/mock/feed';
 import { getNewsDetail, getNewsList } from '@/api/mock/news';
 import projects from '@/api/mock/projects.json';
 import { isNewsFilter } from '@/types/news';
@@ -56,15 +57,39 @@ export const handlers = [
   ),
 
   http.get('/api/v1/news', ({ request }) => {
-    const type = new URL(request.url).searchParams.get('type');
-    const news = getNewsList();
+    const searchParams = new URL(request.url).searchParams;
+    const type = searchParams.get('type');
+    const eventStatus = searchParams.get('eventStatus') === 'ONGOING' ? 'ONGOING' : undefined;
+    const size = Number(searchParams.get('size') ?? 20);
+    const news = getNewsList(eventStatus);
+    const filtered =
+      isNewsFilter(type) && type !== 'ALL' ? news.filter((item) => item.type === type) : news;
 
     return HttpResponse.json({
       status: 'success',
-      data: isNewsFilter(type) && type !== 'ALL' ? news.filter((item) => item.type === type) : news,
+      data: filtered.slice(0, size),
       meta: { nextCursor: null },
     });
   }),
+
+  http.get('/api/v1/feeds', ({ request }) => {
+    const searchParams = new URL(request.url).searchParams;
+    const sort = searchParams.get('sort') === 'POPULAR' ? 'POPULAR' : 'LATEST';
+    const size = Number(searchParams.get('size') ?? 20);
+
+    return HttpResponse.json({
+      status: 'success',
+      data: getFeedList(sort, size),
+      meta: { nextCursor: null, hasNext: false },
+    });
+  }),
+
+  http.get('/api/v1/home/statistics', () =>
+    HttpResponse.json({
+      status: 'success',
+      data: { projectCount: 128, feedCount: 341, currentCohort: 8, ongoingEventCount: 2 },
+    }),
+  ),
 
   http.get('/api/v1/news/:newsId', ({ params }) => {
     const news = getNewsDetail(Number(params.newsId));
