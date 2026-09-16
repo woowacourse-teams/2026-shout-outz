@@ -20,6 +20,7 @@ import com.shoutoutz.api.project.infrastructure.jpa.ProjectJpaRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import jakarta.persistence.EntityManager;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +39,7 @@ class ProjectRepositoryIntegrationTest {
 
     private static final Instant DELETED_AT = Instant.parse("2026-09-15T00:00:00Z");
     private static final Instant RESTORED_AT = Instant.parse("2026-09-16T00:00:00Z");
+    private static final Instant SYNCED_AT = Instant.parse("2026-09-15T00:00:00Z");
 
     @Autowired
     private ProjectRepository projectRepository;
@@ -52,6 +55,9 @@ class ProjectRepositoryIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Test
     @DisplayName("사전 검사를 거치지 않은 같은 slug 저장이 UNIQUE 제약에 걸리면 slug 중복 예외로 변환한다")
@@ -181,6 +187,115 @@ class ProjectRepositoryIntegrationTest {
         assertThat(projectJpaRepository.findById(project.getId()).orElseThrow().getDeletedAt()).isNull();
     }
 
+    @Test
+    @DisplayName("수정해도 조회수와 스타 수, 등록 시각은 그대로 남는다")
+    void keepsCountersOnUpdate() {
+        Long registeredBy = userRepository.save(User.initialize("counter")).getId();
+        Project saved = projectRepository.save(project(registeredBy, uniqueRepositoryName()), List.of(), List.of());
+        ProjectEntity before = projectJpaRepository.findById(saved.getId()).orElseThrow();
+        jdbcTemplate.update(
+                "UPDATE projects SET view_count = 42, star_count = 7, star_synced_at = ? WHERE id = ?",
+                Timestamp.from(SYNCED_AT),
+                saved.getId()
+        );
+        entityManager.clear();
+
+        projectRepository.update(updated(saved), List.of(), List.of());
+        entityManager.flush();
+        entityManager.clear();
+
+        ProjectEntity after = projectJpaRepository.findById(saved.getId()).orElseThrow();
+        assertThat(after.getViewCount()).isEqualTo(42);
+        assertThat(after.getStarCount()).isEqualTo(7);
+        assertThat(after.getStarSyncedAt()).isEqualTo(SYNCED_AT);
+        assertThat(after.getCreatedAt()).isEqualTo(before.getCreatedAt());
+        assertThat(after.getTitle()).isEqualTo("바뀐 제목");
+    }
+
+    @Test
+    @DisplayName("수정하면 기술 스택과 팀원을 받은 목록으로 통째로 바꾸고, 목록 순서를 노출 순서로 저장한다")
+    void replacesTechTagsAndMembersOnUpdate() {
+        Long registeredBy = userRepository.save(User.initialize("replace")).getId();
+        Long teammate = userRepository.save(User.initialize("replaceteam")).getId();
+        List<Long> techTagIds = techTagIds();
+        Project saved = projectRepository.save(
+                project(registeredBy, uniqueRepositoryName()),
+                List.of(techTagIds.get(0), techTagIds.get(1)),
+                List.of(registeredBy, teammate)
+        );
+
+        projectRepository.update(
+                updated(saved),
+                List.of(techTagIds.get(2), techTagIds.get(0)),
+                List.of(teammate, registeredBy)
+        );
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(projectRepository.findTechTagIds(saved.getId()))
+                .containsExactly(techTagIds.get(2), techTagIds.get(0));
+        assertThat(projectRepository.findMemberIds(saved.getId()))
+                .containsExactly(teammate, registeredBy);
+    }
+
+    @Test
+    @DisplayName("삭제된 프로젝트는 조회되지 않는다")
+    void doesNotFindDeletedProject() {
+        ProjectEntity deleted = projectJpaRepository.save(
+                projectEntity(ApprovalStatus.APPROVED, Instant.parse("2026-09-14T00:00:00Z")));
+        ProjectEntity active = projectJpaRepository.save(projectEntity(ApprovalStatus.PENDING, null));
+
+        assertThat(projectRepository.findActiveById(deleted.getId())).isEmpty();
+        assertThat(projectRepository.findActiveById(active.getId())).isPresent();
+    }
+
+    @Test
+    @DisplayName("다른 프로젝트가 쓰는 리포지토리로 바꾸면 중복 예외로 변환한다")
+    void convertsRepositoryUniqueViolationOnUpdate() {
+        Long registeredBy = userRepository.save(User.initialize("dupupdate")).getId();
+        Project mine = projectRepository.save(project(registeredBy, uniqueRepositoryName()), List.of(), List.of());
+        Project other = projectRepository.save(project(registeredBy, uniqueRepositoryName()), List.of(), List.of());
+
+        Project conflicting = mine.update(
+                Cohort.COHORT_8,
+                new TeamName("레이스"),
+                new Title("바뀐 제목"),
+                "바뀐 한 줄 소개",
+                "설명",
+                other.getGithubRepositoryUrl(),
+                null,
+                ServiceStatus.CLOSED,
+                null
+        );
+
+        assertThatThrownBy(() -> projectRepository.update(conflicting, List.of(), List.of()))
+                .isInstanceOfSatisfying(DuplicateEntityException.class, error -> assertThat(error.getErrorCode())
+                        .isEqualTo(ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY));
+    }
+
+    private List<Long> techTagIds() {
+        return jdbcTemplate.queryForList(
+                "SELECT id FROM tech_tags WHERE is_active = true ORDER BY id LIMIT 3", Long.class);
+    }
+
+    private static Project updated(Project project) {
+        return project.update(
+                Cohort.COHORT_8,
+                new TeamName("바뀐 팀"),
+                new Title("바뀐 제목"),
+                "바뀐 한 줄 소개",
+                "바뀐 설명",
+                project.getGithubRepositoryUrl(),
+                null,
+                ServiceStatus.CLOSED,
+                null
+        );
+    }
+
+    private static String uniqueRepositoryName() {
+        return "2026-race-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+    }
+
     private static ProjectEntity projectEntity(ApprovalStatus approvalStatus, Instant deletedAt) {
         return projectEntity(approvalStatus, deletedAt, null);
     }
@@ -196,6 +311,7 @@ class ProjectRepositoryIntegrationTest {
                 .serviceStatus(ServiceStatus.OPERATING)
                 .approvalStatus(approvalStatus)
                 .githubRepositoryUrl("https://github.com/woowacourse-teams/" + slug)
+                .deploymentUrl("https://" + slug + ".team")
                 .deletedAt(deletedAt)
                 .registeredBy(registeredBy)
                 .build();
