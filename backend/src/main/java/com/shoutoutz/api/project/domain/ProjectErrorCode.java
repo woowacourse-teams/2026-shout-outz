@@ -75,6 +75,8 @@ public enum ProjectErrorCode implements ErrorCode {
     PROJECT_INVALID_TAGLINE_LENGTH("한 줄 소개는 200자 이하여야 합니다."),
     PROJECT_INVALID_DESCRIPTION_LENGTH("프로젝트 설명은 100000자 이하여야 합니다."),
 
+    PROJECT_INVALID_SERVICE_STATUS("배포 URL이 없으면 서비스 상태를 운영 중으로 둘 수 없습니다."),
+
     PROJECT_COHORT_NULL("프로젝트 기수는 null일 수 없습니다."),
     PROJECT_REGISTERED_BY_NULL("프로젝트 등록자는 null일 수 없습니다.");
 

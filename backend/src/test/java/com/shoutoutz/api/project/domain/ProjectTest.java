@@ -72,6 +72,30 @@ class ProjectTest {
     }
 
     @Test
+    @DisplayName("배포 URL이 없는데 운영 중인 프로젝트는 만들 수 없다.")
+    void rejectsOperatingWithoutDeploymentUrl() {
+        assertThatThrownBy(() -> projectBuilder()
+                .deploymentUrl(null)
+                .serviceStatus(ServiceStatus.OPERATING)
+                .build())
+                .isInstanceOfSatisfying(DomainValidationException.class,
+                        error -> assertThat(error.getErrorCode())
+                                .isEqualTo(ProjectErrorCode.PROJECT_INVALID_SERVICE_STATUS));
+    }
+
+    @Test
+    @DisplayName("서비스를 내렸어도 배포 URL은 기록으로 남길 수 있다.")
+    void allowsClosedWithDeploymentUrl() {
+        Project project = projectBuilder()
+                .deploymentUrl(new DeploymentUrl("https://loop.team"))
+                .serviceStatus(ServiceStatus.CLOSED)
+                .build();
+
+        assertThat(project.getDeploymentUrl()).isNotNull();
+        assertThat(project.getServiceStatus()).isEqualTo(ServiceStatus.CLOSED);
+    }
+
+    @Test
     @DisplayName("등록자가 없는 이관 프로젝트는 복원할 수 있다.")
     void restoresArchivedProjectWithoutRegisteredBy() {
         Project project = Project.builder()
@@ -99,6 +123,22 @@ class ProjectTest {
                 .build())
                 .isInstanceOfSatisfying(DomainValidationException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_COHORT_NULL));
+    }
+
+    /**
+     * 검증 대상 필드만 바꿔 가며 쓰도록, 나머지가 모두 유효한 빌더를 돌려준다.
+     */
+    private static Project.ProjectBuilder projectBuilder() {
+        return Project.builder()
+                .id(10L)
+                .cohort(Cohort.COHORT_6)
+                .registeredBy(1L)
+                .teamName(new TeamName("루프팀"))
+                .slug(new Slug("loop"))
+                .title(new Title("루프 (Loop)"))
+                .tagline("한 줄 소개")
+                .approvalStatus(ApprovalStatus.APPROVED)
+                .githubRepositoryUrl(new GithubRepositoryUrl(REPOSITORY_URL));
     }
 
     private static Project register(Long registeredBy, String tagline, DeploymentUrl deploymentUrl) {

@@ -37,7 +37,7 @@ public class Project {
             DeploymentUrl deploymentUrl,
             Long thumbnailMediaId
     ) {
-        ProjectValidator.validateProject(cohort, tagline, descriptionMd);
+        ProjectValidator.validateProject(cohort, tagline, descriptionMd, deploymentUrl, serviceStatus);
         this.id = id;
         this.cohort = cohort;
         this.registeredBy = registeredBy;
