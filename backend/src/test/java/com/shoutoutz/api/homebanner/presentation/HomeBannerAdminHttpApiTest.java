@@ -209,10 +209,13 @@ class HomeBannerAdminHttpApiTest {
         return List.of(
                 fieldWithPath("mediaId").type(NUMBER).description("READY HOME_BANNER 미디어 ID"),
                 fieldWithPath("destinationType").type(STRING).description("TARGET 또는 URL"),
-                fieldWithPath("targetType").description("NEWS, PROJECT, FEED 중 하나").optional(),
-                fieldWithPath("targetId").description("대상 리소스 ID").optional(),
-                fieldWithPath("linkType").description("INTERNAL_PATH 또는 EXTERNAL_URL").optional(),
-                fieldWithPath("linkUrl").description("내부 경로 또는 외부 HTTPS URL").optional(),
+                fieldWithPath("targetType").type(STRING)
+                        .description("NEWS, PROJECT, FEED 중 하나").optional(),
+                fieldWithPath("targetId").type(NUMBER).description("대상 리소스 ID").optional(),
+                fieldWithPath("linkType").type(STRING)
+                        .description("INTERNAL_PATH 또는 EXTERNAL_URL").optional(),
+                fieldWithPath("linkUrl").type(STRING)
+                        .description("내부 경로 또는 외부 HTTPS URL").optional(),
                 fieldWithPath("displayOrder").type(NUMBER).description("0 이상 표시 순서"),
                 fieldWithPath("active").type(BOOLEAN).description("즉시 노출 여부")
         );
@@ -234,10 +237,14 @@ class HomeBannerAdminHttpApiTest {
                 fieldWithPath(path + ".mediaId").type(NUMBER).description("미디어 ID"),
                 fieldWithPath(path + ".imageUrl").type(STRING).description("표시용 이미지 URL"),
                 fieldWithPath(path + ".destinationType").type(STRING).description("TARGET 또는 URL"),
-                fieldWithPath(path + ".targetType").description("NEWS, PROJECT, FEED 중 하나").optional(),
-                fieldWithPath(path + ".targetId").description("대상 리소스 ID").optional(),
-                fieldWithPath(path + ".linkType").description("INTERNAL_PATH 또는 EXTERNAL_URL").optional(),
-                fieldWithPath(path + ".linkUrl").description("내부 경로 또는 외부 HTTPS URL").optional(),
+                fieldWithPath(path + ".targetType").type(STRING)
+                        .description("NEWS, PROJECT, FEED 중 하나").optional(),
+                fieldWithPath(path + ".targetId").type(NUMBER)
+                        .description("대상 리소스 ID").optional(),
+                fieldWithPath(path + ".linkType").type(STRING)
+                        .description("INTERNAL_PATH 또는 EXTERNAL_URL").optional(),
+                fieldWithPath(path + ".linkUrl").type(STRING)
+                        .description("내부 경로 또는 외부 HTTPS URL").optional(),
                 fieldWithPath(path + ".displayOrder").type(NUMBER).description("표시 순서"),
                 fieldWithPath(path + ".active").type(BOOLEAN).description("활성 여부"),
                 fieldWithPath(path + ".createdBy").type(NUMBER).description("등록 관리자 ID"),
