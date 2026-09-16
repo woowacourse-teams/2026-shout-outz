@@ -11,6 +11,7 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.headerWit
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
+import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -121,6 +122,7 @@ class UserCommentHttpApiTest {
                                         fieldWithPath("data[].content").type(STRING).description("댓글 내용"),
                                         fieldWithPath("data[].createdAt").type(STRING).description("댓글 작성 시각"),
                                         fieldWithPath("data[].updatedAt").type(STRING).description("댓글 최종 수정 시각"),
+                                        fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 조회용 커서").optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN)

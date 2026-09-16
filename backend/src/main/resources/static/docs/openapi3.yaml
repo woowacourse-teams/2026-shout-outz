@@ -3286,59 +3286,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    UserCommentFindAllSuccessResponse:
-      title: UserCommentFindAllSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 내가 작성한 댓글 목록
-          items:
-            required:
-            - commentId
-            - content
-            - createdAt
-            - targetId
-            - type
-            - updatedAt
-            type: object
-            properties:
-              createdAt:
-                type: string
-                description: 댓글 작성 시각
-              targetId:
-                type: number
-                description: 이동할 피드 또는 프로젝트 ID
-              commentId:
-                type: number
-                description: 댓글 ID
-              type:
-                type: string
-                description: 댓글 대상 종류(FEED 또는 PROJECT)
-              content:
-                type: string
-                description: 댓글 내용
-              updatedAt:
-                type: string
-                description: 댓글 최종 수정 시각
-        meta:
-          required:
-          - hasNext
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 조회용 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-        status:
-          type: string
-          description: 응답 상태
     CohortFindAllSuccessResponse:
       title: CohortFindAllSuccessResponse
       required:
@@ -3879,6 +3826,61 @@ components:
             updatedAt:
               type: string
               description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
+        status:
+          type: string
+          description: 응답 상태
+    UserCommentFindAllSuccessResponse:
+      title: UserCommentFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 내가 작성한 댓글 목록
+          items:
+            required:
+            - commentId
+            - content
+            - createdAt
+            - targetId
+            - type
+            - updatedAt
+            type: object
+            properties:
+              createdAt:
+                type: string
+                description: 댓글 작성 시각
+              targetId:
+                type: number
+                description: 이동할 피드 또는 프로젝트 ID
+              commentId:
+                type: number
+                description: 댓글 ID
+              type:
+                type: string
+                description: 댓글 대상 종류(FEED 또는 PROJECT)
+              content:
+                type: string
+                description: 댓글 내용
+              updatedAt:
+                type: string
+                description: 댓글 최종 수정 시각
+        meta:
+          required:
+          - hasNext
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 조회용 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+          description: 페이지네이션 정보
         status:
           type: string
           description: 응답 상태

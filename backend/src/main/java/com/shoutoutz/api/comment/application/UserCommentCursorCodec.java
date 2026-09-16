@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 public class UserCommentCursorCodec {
 
     private static final String DELIMITER = "|";
+    private static final Instant MIN_POSTGRES_TIMESTAMP = Instant.parse("-4712-01-01T00:00:00Z");
+    private static final Instant MAX_POSTGRES_TIMESTAMP = Instant.parse("+294276-12-31T23:59:59.999999Z");
 
     String encode(UserCommentCursor cursor) {
         String value = cursor.createdAt()
@@ -45,6 +47,7 @@ public class UserCommentCursorCodec {
             }
 
             Instant createdAt = Instant.parse(parts[0]);
+            validateTimestampRange(createdAt);
             UserCommentType type = UserCommentType.valueOf(parts[1]);
             long commentId = Long.parseLong(parts[2]);
             if (commentId <= 0) {
@@ -53,6 +56,12 @@ public class UserCommentCursorCodec {
             return new UserCommentCursor(createdAt, type, commentId);
         } catch (IllegalArgumentException | DateTimeParseException exception) {
             throw new BadRequestException(CommentErrorCode.INVALID_COMMENT_CURSOR, exception);
+        }
+    }
+
+    private void validateTimestampRange(Instant createdAt) {
+        if (createdAt.isBefore(MIN_POSTGRES_TIMESTAMP) || createdAt.isAfter(MAX_POSTGRES_TIMESTAMP)) {
+            throw new IllegalArgumentException();
         }
     }
 }
