@@ -29,7 +29,9 @@ import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -291,8 +293,8 @@ class FeedServiceCommandTest {
                     .userId(1L)
                     .displayName("재키")
                     .userType(userType)
-                    .track("BACKEND")
-                    .cohort((short) 8)
+                    .track(Track.BACKEND)
+                    .cohort(Cohort.COHORT_8)
                     .build();
         }
         if (userType == UserType.WOOWACOURSE_COACH) {

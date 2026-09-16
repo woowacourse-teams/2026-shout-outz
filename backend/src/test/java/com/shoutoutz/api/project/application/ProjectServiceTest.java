@@ -38,6 +38,7 @@ import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.ServiceStatus;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
@@ -714,8 +715,8 @@ class ProjectServiceTest {
                 .userId(userId)
                 .displayName("사용자" + userId)
                 .userType(userType)
-                .track(crew ? "BACKEND" : null)
-                .cohort(crew ? (short) 6 : null)
+                .track(crew ? Track.BACKEND : null)
+                .cohort(crew ? Cohort.COHORT_6 : null)
                 .build();
     }
 

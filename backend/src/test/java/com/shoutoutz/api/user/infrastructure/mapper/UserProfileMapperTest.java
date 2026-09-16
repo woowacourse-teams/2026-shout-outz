@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.user.domain.profile.ProfileDisplayName;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.infrastructure.UserProfileEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -49,8 +51,8 @@ class UserProfileMapperTest {
         assertThat(profile.getUserId()).isEqualTo(1L);
         assertThat(profile.getDisplayName()).isEqualTo(new ProfileDisplayName("재키"));
         assertThat(profile.getUserType()).isEqualTo(UserType.WOOWACOURSE_CREW);
-        assertThat(profile.getTrack()).isEqualTo("BACKEND");
-        assertThat(profile.getCohort()).isEqualTo((short) 8);
+        assertThat(profile.getTrack()).isEqualTo(Track.BACKEND);
+        assertThat(profile.getCohort()).isEqualTo(Cohort.COHORT_8);
         assertThat(profile.getBio()).isEqualTo("소개");
         assertThat(profile.getAvatarImageId()).isEqualTo(123L);
         assertThat(profile.getGithubProfileUrl()).isEqualTo("https://github.com/zzaekkii");
@@ -62,8 +64,8 @@ class UserProfileMapperTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
-                .cohort((short) 8)
+                .track(Track.BACKEND)
+                .cohort(Cohort.COHORT_8)
                 .bio("소개")
                 .avatarImageId(123L)
                 .githubProfileUrl("https://github.com/zzaekkii")

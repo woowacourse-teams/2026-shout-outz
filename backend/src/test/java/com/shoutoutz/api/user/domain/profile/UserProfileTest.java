@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -62,8 +63,8 @@ class UserProfileTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.GENERAL)
-                .track("BACKEND")
-                .cohort((short) 8)
+                .track(Track.BACKEND)
+                .cohort(Cohort.COHORT_8)
                 .build())
                 .isInstanceOf(DomainValidationException.class);
     }
@@ -75,7 +76,7 @@ class UserProfileTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
+                .track(Track.BACKEND)
                 .build())
                 .isInstanceOf(DomainValidationException.class);
 
@@ -83,7 +84,7 @@ class UserProfileTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
-                .cohort((short) 8)
+                .cohort(Cohort.COHORT_8)
                 .build())
                 .isInstanceOf(DomainValidationException.class);
     }
@@ -95,12 +96,12 @@ class UserProfileTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
-                .cohort((short) 8)
+                .track(Track.BACKEND)
+                .cohort(Cohort.COHORT_8)
                 .build();
 
-        assertThat(profile.getTrack()).isEqualTo("BACKEND");
-        assertThat(profile.getCohort()).isEqualTo((short) 8);
+        assertThat(profile.getTrack()).isEqualTo(Track.BACKEND);
+        assertThat(profile.getCohort()).isEqualTo(Cohort.COHORT_8);
     }
 
     @Test
@@ -110,8 +111,8 @@ class UserProfileTest {
                 .userId(2L)
                 .displayName("상준")
                 .userType(UserType.WOOWACOURSE_COACH)
-                .track("BACKEND")
-                .cohort((short) 8)
+                .track(Track.BACKEND)
+                .cohort(Cohort.COHORT_8)
                 .build())
                 .isInstanceOf(DomainValidationException.class);
     }
@@ -123,10 +124,10 @@ class UserProfileTest {
                 .userId(2L)
                 .displayName("상준")
                 .userType(UserType.WOOWACOURSE_COACH)
-                .track("BACKEND")
+                .track(Track.BACKEND)
                 .build();
 
-        assertThat(profile.getTrack()).isEqualTo("BACKEND");
+        assertThat(profile.getTrack()).isEqualTo(Track.BACKEND);
         assertThat(profile.getCohort()).isNull();
     }
 
@@ -155,8 +156,8 @@ class UserProfileTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
-                .cohort((short) 8)
+                .track(Track.BACKEND)
+                .cohort(Cohort.COHORT_8)
                 .build();
 
         assertThatThrownBy(() -> profile.update(
@@ -180,8 +181,8 @@ class UserProfileTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
-                .cohort((short) 8)
+                .track(Track.BACKEND)
+                .cohort(Cohort.COHORT_8)
                 .build();
 
         UserProfile updated = profile.update(
