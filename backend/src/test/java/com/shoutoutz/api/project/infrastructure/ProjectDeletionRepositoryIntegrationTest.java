@@ -2,23 +2,15 @@ package com.shoutoutz.api.project.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.shoutoutz.api.cohort.domain.Cohort;
-import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.DeletionType;
-import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
-import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectDeletion;
 import com.shoutoutz.api.project.domain.ProjectDeletionRepository;
-import com.shoutoutz.api.project.domain.ServiceStatus;
-import com.shoutoutz.api.project.domain.Slug;
-import com.shoutoutz.api.project.domain.TeamName;
-import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectDeletionJpaRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
-import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -94,18 +86,7 @@ class ProjectDeletionRepositoryIntegrationTest {
                 .containsExactly(DELETED_AT.plusSeconds(120));
     }
 
-    private static Project project(Long id, String slug) {
-        return Project.builder()
-                .id(id)
-                .cohort(Cohort.COHORT_8)
-                .registeredBy(1L)
-                .teamName(new TeamName("모아모아팀"))
-                .slug(new Slug(slug))
-                .title(new Title("모아모아"))
-                .tagline("한 줄 소개")
-                .serviceStatus(ServiceStatus.OPERATING)
-                .approvalStatus(ApprovalStatus.APPROVED)
-                .githubRepositoryUrl(new GithubRepositoryUrl("https://github.com/woowacourse-teams/" + slug))
-                .build();
+    private static DeletedProject project(long id, String slug) {
+        return new DeletedProject(id, slug, "모아모아");
     }
 }

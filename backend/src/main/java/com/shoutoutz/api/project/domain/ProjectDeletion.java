@@ -54,12 +54,12 @@ public final class ProjectDeletion {
     /**
      * 프로젝트가 하드 삭제된 뒤에도 이력이 남으므로(projects 외래키 없음), slug 와 title 을 삭제 시점 값으로 복사해 둔다.
      */
-    public static ProjectDeletion selfDelete(Project project, long deletedBy, Instant deletedAt) {
+    public static ProjectDeletion selfDelete(DeletedProject project, long deletedBy, Instant deletedAt) {
         return new ProjectDeletion(
                 null,
-                project.getId(),
-                project.getSlug().value(),
-                project.getTitle().value(),
+                project.id(),
+                project.slug(),
+                project.title(),
                 deletedBy,
                 DeletionType.SELF_DELETE,
                 null,

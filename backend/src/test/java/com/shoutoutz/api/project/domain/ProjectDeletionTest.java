@@ -2,7 +2,6 @@ package com.shoutoutz.api.project.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.shoutoutz.api.cohort.domain.Cohort;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -80,19 +79,7 @@ class ProjectDeletionTest {
         assertThat(deletion.getRestoredAt()).isNull();
     }
 
-    private static Project project() {
-        return Project.builder()
-                .id(1L)
-                .cohort(Cohort.from((short) 6))
-                .registeredBy(DELETED_BY)
-                .teamName(new TeamName("모아모아팀"))
-                .slug(new Slug("2026-moamoa"))
-                .title(new Title("모아모아"))
-                .tagline("한 줄 소개")
-                .serviceStatus(ServiceStatus.OPERATING)
-                .approvalStatus(ApprovalStatus.APPROVED)
-                .descriptionMd("## 문제")
-                .githubRepositoryUrl(new GithubRepositoryUrl("https://github.com/woowacourse-teams/2026-moamoa"))
-                .build();
+    private static DeletedProject project() {
+        return new DeletedProject(1L, "2026-moamoa", "모아모아");
     }
 }
