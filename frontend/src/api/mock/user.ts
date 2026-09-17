@@ -1,4 +1,5 @@
-import { type UserFeedItem, type UserProfile, type UserProjectCard } from '@/types/user';
+import { type ProjectSummary } from '@/types/project';
+import { type UserFeedItem, type UserProfile } from '@/types/user';
 
 /** 실제 서버가 준비되기 전까지 MSW 핸들러가 내려줄 프로필 데이터. 백엔드가 뜨면 이 파일은 사라진다. */
 const PROFILE: UserProfile = {
@@ -15,29 +16,44 @@ const PROFILE: UserProfile = {
   counts: { projects: 2, feeds: 18 },
 };
 
-const PROJECTS: UserProjectCard[] = [
+const crewMember = (userId: number, handle: string, displayName: string, track: string) => ({
+  userId,
+  handle,
+  displayName,
+  cohort: 6,
+  track,
+  avatarImageId: null,
+  githubAvatarUrl: null,
+  githubProfileUrl: null,
+});
+
+const PROJECTS: ProjectSummary[] = [
   {
-    projectId: 1,
+    id: 1,
     slug: 'moamoa',
     title: '모아모아 (MoaMoa)',
-    teamName: '모아모아팀',
     tagline: '사진 한 장으로 영수증 내역을 자동 분리하고 맞춤 정산하는 웹 서비스',
-    serviceStatus: 'OPERATING',
+    cohort: 6,
     thumbnailMediaId: null,
+    likeCount: 184,
+    commentCount: 14,
     techTags: [
-      { techTagId: 1, slug: 'react', displayName: 'React' },
-      { techTagId: 3, slug: 'spring-boot', displayName: 'Spring Boot' },
+      { id: 1, displayName: 'React' },
+      { id: 3, displayName: 'Spring Boot' },
     ],
+    members: [crewMember(10, 'woojin', '정우진', 'BE')],
   },
   {
-    projectId: 2,
+    id: 2,
     slug: 'dropit',
     title: '드랍잇 (Dropit)',
-    teamName: '드랍잇팀',
     tagline: '팀 회고를 한곳에 모아 공유하는 협업 도구',
-    serviceStatus: 'CLOSED',
+    cohort: 6,
     thumbnailMediaId: null,
-    techTags: [{ techTagId: 2, slug: 'typescript', displayName: 'TypeScript' }],
+    likeCount: 32,
+    commentCount: 5,
+    techTags: [{ id: 2, displayName: 'TypeScript' }],
+    members: [crewMember(10, 'woojin', '정우진', 'BE'), crewMember(11, 'dohyun', '김도현', 'FE')],
   },
 ];
 
@@ -88,7 +104,7 @@ export function getUserProfile(handle: string): UserProfile | undefined {
   return handle === PROFILE.handle ? PROFILE : undefined;
 }
 
-export function getUserProjects(handle: string): UserProjectCard[] {
+export function getUserProjects(handle: string): ProjectSummary[] {
   return handle === PROFILE.handle ? PROJECTS : [];
 }
 

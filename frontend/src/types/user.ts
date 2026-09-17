@@ -24,18 +24,6 @@ export interface UserProfile {
   };
 }
 
-// TODO 대체 UserProjectCard
-export interface UserProjectCard {
-  projectId: number;
-  slug: string;
-  title: string;
-  teamName: string;
-  tagline: string;
-  serviceStatus: 'OPERATING' | 'CLOSED';
-  thumbnailMediaId: number | null;
-  techTags: { techTagId: number; slug: string; displayName: string }[];
-}
-
 /**
  * 프로필 피드 탭 응답. feedId는 피드 목록(`Feed`)의 feedId와 같은 값이고,
  * 작성자 이미지가 avatarUrl, 미디어가 url이며 반응·댓글 수를 포함한다.

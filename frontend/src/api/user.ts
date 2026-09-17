@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
-import { type UserFeedItem, type UserProfile, type UserProjectCard } from '@/types/user';
+import { type ProjectSummary } from '@/types/project';
+import { type UserFeedItem, type UserProfile } from '@/types/user';
 import { type ApiSuccessBody, httpClient } from '@/utils/client';
 
 const USERS_PATH = '/api/v1/users';
@@ -20,15 +21,13 @@ export const userProfileQueryOptions = (handle: string) =>
   });
 
 /** 프로필 프로젝트 탭. 첫 페이지만 조회한다(다음 커서는 아직 쓰지 않는다). */
-export async function fetchUserProjects(handle: string): Promise<UserProjectCard[]> {
+export async function fetchUserProjects(handle: string): Promise<ProjectSummary[]> {
   const path = `${USERS_PATH}/${handle}/projects`;
 
-  const body = await httpClient<ApiSuccessBody<{ items: UserProjectCard[] }>>(path, {
-    method: 'get',
-  });
+  const body = await httpClient<ApiSuccessBody<ProjectSummary[]>>(path, { method: 'get' });
   if (!body) throw new Error(`프로필 프로젝트 응답이 비어 있습니다: ${path}`);
 
-  return body.data.items;
+  return body.data;
 }
 
 export const userProjectsQueryOptions = (handle: string) =>

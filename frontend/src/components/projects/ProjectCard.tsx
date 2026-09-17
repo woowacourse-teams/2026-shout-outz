@@ -1,45 +1,77 @@
-import { useState, type ReactNode } from 'react';
+import { Avatar } from '@/components/Avatar';
+import { Badge } from '@/components/Badge';
+import { type ProjectTechTag } from '@/types/project';
 
 /**
- * 프로젝트 카드. 응답 모양이 아니라 화면에 그릴 값만 받는다.
+ * 프로젝트 카드. 프로젝트 목록과 프로필 프로젝트 탭이 같이 쓴다.
  *
- * 목록 화면과 프로필 프로젝트 탭이 같이 쓴다. 썸네일이 없으면 제목을 대신 보여준다.
+ * 응답 객체가 아니라 화면에 그릴 값만 받는다.
+ * TODO 썸네일은 응답이 thumbnailMediaId만 주어 아직 이미지를 붙이지 않고 제목을 대신 보여준다.
  */
 export interface ProjectCardProps {
   title: string;
   tagline: string;
-  thumbnailUrl?: string | null;
-  /** 제목 위에 놓을 한 줄. 예: "우아한테크코스 6기" */
-  meta?: string;
-  /** 소개 아래에 놓을 내용. 예: 기술 스택 배지 */
-  children?: ReactNode;
+  cohort: number | null;
+  likeCount: number;
+  commentCount: number;
+  techTags: ProjectTechTag[];
+  /** 참여자는 아바타로만 보여줘 이름과 식별자만 받는다 */
+  members: { userId: number; displayName: string }[];
 }
 
-export function ProjectCard({ title, tagline, thumbnailUrl, meta, children }: ProjectCardProps) {
-  const [failedUrl, setFailedUrl] = useState<string | null>();
-  const showImage = Boolean(thumbnailUrl) && thumbnailUrl !== failedUrl;
-
+export function ProjectCard({
+  title,
+  tagline,
+  cohort,
+  likeCount,
+  commentCount,
+  techTags,
+  members,
+}: ProjectCardProps) {
   return (
     <article className="min-w-0">
       <div className="flex aspect-video items-center justify-center overflow-hidden rounded-xl bg-gray-100">
-        {showImage ? (
-          <img
-            src={thumbnailUrl!}
-            alt=""
-            loading="lazy"
-            onError={() => setFailedUrl(thumbnailUrl)}
-            className="size-full object-cover"
-          />
-        ) : (
-          <span aria-hidden="true" className="px-4 text-center text-sm font-semibold text-gray-500">
-            {title}
-          </span>
-        )}
+        <span aria-hidden="true" className="px-4 text-center text-sm font-semibold text-gray-500">
+          {title}
+        </span>
       </div>
-      {meta && <p className="mt-3 text-xs text-gray-500">{meta}</p>}
+
+      {cohort !== null && (
+        <p className="mt-3 text-xs text-gray-500">{`우아한테크코스 ${cohort}기`}</p>
+      )}
       <h2 className="mt-2 text-lg font-bold wrap-break-word text-gray-900">{title}</h2>
       <p className="mt-2 text-sm leading-relaxed wrap-break-word text-gray-600">{tagline}</p>
-      {children && <div className="mt-3">{children}</div>}
+
+      {techTags.length > 0 && (
+        <ul aria-label="기술 스택" className="mt-3 flex flex-wrap gap-1.5">
+          {techTags.map((tag) => (
+            <li key={tag.id}>
+              <Badge>{tag.displayName}</Badge>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <ul className="flex items-center -space-x-2">
+          {members.map((member) => (
+            <li key={member.userId}>
+              {/* TODO 참여자 이미지를 이미지 URL로 받아 src에 연결 */}
+              <Avatar size="xs" alt={member.displayName} className="ring-2 ring-white" />
+            </li>
+          ))}
+        </ul>
+
+        <p className="flex items-center gap-3 text-xs text-gray-500">
+          <span>
+            <span aria-hidden="true">♥ </span>
+            <span aria-label="좋아요 수">{likeCount}</span>
+          </span>
+          <span>
+            댓글 <span aria-label="댓글 수">{commentCount}</span>
+          </span>
+        </p>
+      </div>
     </article>
   );
 }

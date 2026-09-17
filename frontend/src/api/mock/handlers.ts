@@ -105,14 +105,26 @@ export const handlers = [
     HttpResponse.json({
       status: 'success',
       // 상세 페이지용 JSON을 목록 API 응답 형식으로 변환한다.
-      data: projects.map(({ name, tagline }, index) => ({
+      data: projects.map(({ id, name, tagline, cohort, likeCount, techTags, members }, index) => ({
         id: index + 1,
+        slug: id,
         title: name,
         tagline,
-        thumbnailUrl: '',
-        cohort: 6,
-        deletedAt: null,
-        restoreDeadlineAt: null,
+        cohort,
+        thumbnailMediaId: null,
+        likeCount,
+        commentCount: 0,
+        techTags: techTags.map((displayName, tagIndex) => ({ id: tagIndex + 1, displayName })),
+        members: members.map((member) => ({
+          userId: member.userId,
+          handle: `crew${member.userId}`,
+          displayName: member.displayName,
+          cohort: member.cohort,
+          track: member.track,
+          avatarImageId: null,
+          githubAvatarUrl: null,
+          githubProfileUrl: null,
+        })),
       })),
     }),
   ),
@@ -168,7 +180,7 @@ export const handlers = [
   http.get('/api/v1/users/:handle/projects', ({ params }) =>
     HttpResponse.json({
       status: 'success',
-      data: { items: getUserProjects(String(params.handle)) },
+      data: getUserProjects(String(params.handle)),
       meta: { nextCursor: null, hasNext: false },
     }),
   ),
