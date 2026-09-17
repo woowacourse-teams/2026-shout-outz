@@ -39,7 +39,7 @@ public class UserFeedHttpApi {
             @Valid @ModelAttribute UserFeedFindRequest request
     ) {
         FeedFindAllResult result = feedService.findAllByUser(handle, request);
-        List<FeedResponse> response = FeedResponse.from(result.items());
+        List<FeedResponse> response = FeedResponse.from(result.items(), result.mediaUrls());
         SliceMetaResponse meta = new SliceMetaResponse(result.nextCursor(), result.hasNext());
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));
