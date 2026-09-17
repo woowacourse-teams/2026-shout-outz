@@ -21,3 +21,6 @@ aws:
     region: test-region
     key-prefix: test-prefix/
     presigned-url-expiration-seconds: 100
+
+visitor:
+  hash-secret: test-visitor-hash-secret-32-chars-min
