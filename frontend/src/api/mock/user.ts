@@ -1,5 +1,6 @@
 import { type ProjectSummary } from '@/types/project';
-import { type UserFeedItem, type UserProfile } from '@/types/user';
+import { type Feed } from '@/types/feed';
+import { type UserProfile } from '@/types/user';
 
 /** 실제 서버가 준비되기 전까지 MSW 핸들러가 내려줄 프로필 데이터. 백엔드가 뜨면 이 파일은 사라진다. */
 const PROFILE: UserProfile = {
@@ -57,44 +58,31 @@ const PROJECTS: ProjectSummary[] = [
   },
 ];
 
-const FEEDS: UserFeedItem[] = [
+const feedAuthor = {
+  handle: 'woojin',
+  displayName: '정우진',
+  userType: 'WOOWACOURSE_CREW',
+  track: 'BACKEND',
+  cohort: 6,
+  avatarImageId: null,
+};
+
+const FEEDS: Feed[] = [
   {
     feedId: 101,
     content: '영수증 OCR 파싱 작업에서 멀티스레드 비동기 큐를 적용해 응답 시간을 단축했습니다.',
-    author: {
-      userId: 10,
-      handle: 'woojin',
-      displayName: '정우진',
-      userType: 'WOOWACOURSE_CREW',
-      track: 'BACKEND',
-      cohort: 6,
-      avatarUrl: null,
-    },
-    categories: [{ categoryId: 1, slug: 'backend', displayName: '백엔드' }],
+    author: feedAuthor,
+    categories: [{ categoryId: 1, slug: 'backend', displayName: '백엔드', type: 'GENERAL' }],
     media: [],
-    reactionCounts: { LIKE: 42 },
-    viewerReactionTypes: [],
-    commentCount: 8,
     createdAt: '2026-08-27T12:45:00+09:00',
     updatedAt: '2026-08-27T12:45:00+09:00',
   },
   {
     feedId: 102,
     content: 'Redis 분산락과 Redisson 라이브러리의 Watchdog 메커니즘을 정리했습니다.',
-    author: {
-      userId: 10,
-      handle: 'woojin',
-      displayName: '정우진',
-      userType: 'WOOWACOURSE_CREW',
-      track: 'BACKEND',
-      cohort: 6,
-      avatarUrl: null,
-    },
+    author: feedAuthor,
     categories: [],
     media: [],
-    reactionCounts: { LIKE: 12 },
-    viewerReactionTypes: [],
-    commentCount: 5,
     createdAt: '2026-08-24T09:00:00+09:00',
     updatedAt: '2026-08-24T09:00:00+09:00',
   },
@@ -108,6 +96,6 @@ export function getUserProjects(handle: string): ProjectSummary[] {
   return handle === PROFILE.handle ? PROJECTS : [];
 }
 
-export function getUserFeeds(handle: string): UserFeedItem[] {
+export function getUserFeeds(handle: string): Feed[] {
   return handle === PROFILE.handle ? FEEDS : [];
 }

@@ -23,29 +23,3 @@ export interface UserProfile {
     feeds: number;
   };
 }
-
-/**
- * 프로필 피드 탭 응답. feedId는 피드 목록(`Feed`)의 feedId와 같은 값이고,
- * 작성자 이미지가 avatarUrl, 미디어가 url이며 반응·댓글 수를 포함한다.
- */
-// TODO 대체 UserFeed
-export interface UserFeedItem {
-  feedId: number;
-  content: string;
-  author: {
-    userId: number;
-    handle: string;
-    displayName: string;
-    userType: string;
-    track: string | null;
-    cohort: number | null;
-    avatarUrl: string | null;
-  };
-  categories: { categoryId: number; slug: string; displayName: string }[];
-  media: { url: string; displayOrder: number }[];
-  reactionCounts: { LIKE: number };
-  viewerReactionTypes: string[];
-  commentCount: number;
-  createdAt: string;
-  updatedAt: string;
-}

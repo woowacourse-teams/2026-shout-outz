@@ -15,7 +15,7 @@ export function FeedCard({ feed }: { feed: Feed }) {
   const [open, setOpen] = useState(false);
   return (
     <article className="min-w-0 border-b border-gray-100 py-6 first:pt-4 md:py-7">
-      <header className="flex items-start gap-3">
+      <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <Link to="/feeds/$feedId" params={{ feedId: String(feed.feedId) }}>
             <div className="flex min-w-0 items-center gap-2">
@@ -34,7 +34,7 @@ export function FeedCard({ feed }: { feed: Feed }) {
         <AsyncBoundary>
           <FeedMenu feedId={feed.feedId} authorHandle={feed.author.handle} />
         </AsyncBoundary>
-      </header>
+      </div>
       <FeedContent feed={feed} />
       <div className="mt-5 flex items-center gap-2 text-sm text-gray-500">
         <Button variant="ghost" size="sm" className="gap-1 px-2" aria-label="좋아요" disabled>

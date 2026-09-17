@@ -3,7 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 
 import { feedListQueryOptions } from '@/api/feed';
-import { FeedCard } from '@/components/FeedCard';
+import { FeedCard } from '@/components/feeds/FeedCard';
 import { Tab } from '@/components/Tab';
 import { type FeedSort } from '@/types/feed';
 
@@ -45,9 +45,9 @@ export function HomeFeedSection() {
         <p className="py-8 text-center text-sm text-gray-500">아직 작성된 피드가 없습니다.</p>
       ) : (
         <ul>
-          {feeds.map(({ feedId, author, content, createdAt }) => (
-            <li key={feedId} className="border-b border-gray-100 pt-4 pb-5 last:border-b-0">
-              <FeedCard author={author} content={content} createdAt={createdAt} />
+          {feeds.map((feed) => (
+            <li key={feed.feedId} className="min-w-0">
+              <FeedCard feed={feed} />
             </li>
           ))}
         </ul>
