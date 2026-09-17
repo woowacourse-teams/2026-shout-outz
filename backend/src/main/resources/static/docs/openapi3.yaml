@@ -2891,7 +2891,7 @@ paths:
                     techTags\":[{\"id\":1,\"displayName\":\"Spring\"}],\"members\"\
                     :[{\"handle\":\"zzaekkii\",\"displayName\":\"재키\",\"cohort\":6,\"\
                     track\":\"BACKEND\",\"avatarImageId\":21,\"githubAvatarUrl\":null,\"\
-                    githubProfileUrl\":null}]}],\"meta\":{\"nextCursor\":\"next-cursor\"\
+                    githubProfileUrl\":null}]}],\"meta\":{\"nextCursor\":\"TEFURVNUfDIwMjYtMDktMTZUMDA6MDA6MDBafDEwMA\"\
                     ,\"hasNext\":true}}"
   /api/v1/admin/verification-requests/{requestId}/approve:
     post:
