@@ -11,6 +11,7 @@ import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.homebanner.domain.BannerTargetType;
 import com.shoutoutz.api.news.application.NewsQueryRepository;
+import com.shoutoutz.api.news.application.dto.NewsDetail;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +56,23 @@ class HomeBannerTargetValidatorTest {
 
         assertThatCode(() -> validator.validate(BannerTargetType.PROJECT, 2L))
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void 존재하는_소식을_대상으로_지정할_수_있다() {
+        when(newsQueryRepository.findDetailById(2L, false))
+                .thenReturn(Optional.of(mock(NewsDetail.class)));
+
+        assertThatCode(() -> validator.validate(BannerTargetType.NEWS, 2L))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void 존재하지_않는_소식은_대상으로_지정할_수_없다() {
+        when(newsQueryRepository.findDetailById(2L, false)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> validator.validate(BannerTargetType.NEWS, 2L))
+                .isInstanceOf(NotFoundException.class);
     }
 
     @Test

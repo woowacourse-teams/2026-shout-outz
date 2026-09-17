@@ -17,6 +17,7 @@ import com.shoutoutz.api.homebanner.presentation.dto.request.HomeBannerUpsertReq
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.net.URI;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,6 +63,42 @@ class HomeBannerAdminServiceTest {
         assertThat(response.bannerId()).isEqualTo(100L);
         assertThat(response.imageUrl()).hasToString("https://s3.example.com/banner");
         verify(targetValidator).validate(BannerTargetType.PROJECT, 20L);
+    }
+
+    @Test
+    void 관리자가_전체_배너를_조회한다() {
+        HomeBanner banner = savedBanner();
+        when(homeBannerRepository.findAll()).thenReturn(List.of(banner));
+        when(imageService.createImageUrl(10L))
+                .thenReturn(URI.create("https://s3.example.com/banner"));
+
+        var responses = service.findAll(UserRole.ADMIN);
+
+        assertThat(responses).singleElement()
+                .satisfies(response -> assertThat(response.bannerId()).isEqualTo(100L));
+    }
+
+    @Test
+    void 관리자가_배너를_수정한다() {
+        HomeBanner banner = savedBanner();
+        when(homeBannerRepository.findById(100L)).thenReturn(Optional.of(banner));
+        when(homeBannerRepository.update(any(HomeBanner.class))).thenReturn(Optional.of(banner));
+        when(imageService.createImageUrl(10L))
+                .thenReturn(URI.create("https://s3.example.com/banner"));
+
+        var response = service.update(100L, UserRole.ADMIN, request());
+
+        assertThat(response.bannerId()).isEqualTo(100L);
+        verify(targetValidator).validate(BannerTargetType.PROJECT, 20L);
+    }
+
+    @Test
+    void 관리자가_배너를_삭제한다() {
+        when(homeBannerRepository.deleteById(100L)).thenReturn(true);
+
+        service.delete(100L, UserRole.ADMIN);
+
+        verify(homeBannerRepository).deleteById(100L);
     }
 
     @Test
