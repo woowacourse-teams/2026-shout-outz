@@ -2,6 +2,7 @@ package com.shoutoutz.api.project.infrastructure.jdbc;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.project.application.UserProjectQueryRepository;
+import com.shoutoutz.api.project.application.dto.UserProjectItem;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectFilterCondition;
@@ -14,6 +15,7 @@ import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
+import com.shoutoutz.api.project.domain.ServiceStatus;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -46,6 +48,35 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 p.title,
                 p.tagline,
                 p.cohort,
+                p.thumbnail_media_id,
+                p.registered_by,
+                p.created_at,
+                (
+                    SELECT COUNT(*)
+                    FROM project_reactions r
+                    WHERE r.project_id = p.id
+                      AND r.reaction_type = 'LIKE'
+                ) AS like_count,
+                (
+                    SELECT COUNT(*)
+                    FROM project_comments c
+                    WHERE c.project_id = p.id
+                      AND c.deleted_at IS NULL
+                ) AS comment_count
+            FROM projects p
+            WHERE p.approval_status = 'APPROVED'
+              AND p.deleted_at IS NULL
+            """;
+
+    private static final String USER_PROJECTS_SQL = """
+            SELECT
+                p.id,
+                p.slug,
+                p.title,
+                p.team_name,
+                p.tagline,
+                p.cohort,
+                p.service_status,
                 p.thumbnail_media_id,
                 p.registered_by,
                 p.created_at,
@@ -190,7 +221,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 .addValue("userId", userId)
                 .addValue("limit", size + 1);
         StringBuilder sql = new StringBuilder("WITH filtered AS (")
-                .append(PUBLIC_PROJECTS_SQL)
+                .append(USER_PROJECTS_SQL)
                 .append("""
                           AND (
                               EXISTS (
@@ -217,17 +248,17 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
         }
         sql.append("ORDER BY created_at DESC, id DESC\nLIMIT :limit");
 
-        List<ProjectSummary> fetched = jdbcTemplate.query(
+        List<UserProjectItem> fetched = jdbcTemplate.query(
                 sql.toString(),
                 parameters,
-                ProjectListJdbcRepository::mapSummary
+                ProjectListJdbcRepository::mapUserProject
         );
         boolean hasNext = fetched.size() > size;
-        List<ProjectSummary> projects = fetched;
+        List<UserProjectItem> projects = fetched;
         if (hasNext) {
             projects = fetched.subList(0, size);
         }
-        return new UserProjectResult(withTechTagsAndMembers(projects), hasNext);
+        return new UserProjectResult(withUserProjectDetails(projects), hasNext);
     }
 
     /**
@@ -313,6 +344,29 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 .toList();
     }
 
+    private List<UserProjectItem> withUserProjectDetails(List<UserProjectItem> projects) {
+        if (projects.isEmpty()) {
+            return projects;
+        }
+        Map<Long, List<ProjectTechTag>> techTags = techTagAndMemberJdbcRepository.findTechTags(
+                projects.stream().map(UserProjectItem::id).toList());
+        Map<Long, List<ProjectMemberProfile>> members = new HashMap<>();
+        members.putAll(techTagAndMemberJdbcRepository.findMembers(projects.stream()
+                .filter(project -> !project.isArchived())
+                .map(UserProjectItem::id)
+                .toList()));
+        members.putAll(techTagAndMemberJdbcRepository.findArchivedMembers(projects.stream()
+                .filter(UserProjectItem::isArchived)
+                .collect(Collectors.toMap(UserProjectItem::id, UserProjectItem::cohort))));
+
+        return projects.stream()
+                .map(project -> project.withTechTagsAndMembers(
+                        techTags.getOrDefault(project.id(), List.of()),
+                        members.getOrDefault(project.id(), List.of())
+                ))
+                .toList();
+    }
+
     /**
      * 공개 범위, 검색어, 필터를 적용한 프로젝트
      * 목록과 전체 개수가 같은 조건을 쓴다.
@@ -375,6 +429,25 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 resultSet.getString("title"),
                 resultSet.getString("tagline"),
                 resultSet.getInt("cohort"),
+                resultSet.getObject("thumbnail_media_id", Long.class),
+                resultSet.getObject("registered_by", Long.class),
+                resultSet.getLong("like_count"),
+                resultSet.getLong("comment_count"),
+                List.of(),
+                List.of(),
+                resultSet.getObject("created_at", OffsetDateTime.class).toInstant()
+        );
+    }
+
+    private static UserProjectItem mapUserProject(ResultSet resultSet, int rowNumber) throws SQLException {
+        return new UserProjectItem(
+                resultSet.getLong("id"),
+                resultSet.getString("slug"),
+                resultSet.getString("title"),
+                resultSet.getString("team_name"),
+                resultSet.getString("tagline"),
+                resultSet.getInt("cohort"),
+                ServiceStatus.valueOf(resultSet.getString("service_status")),
                 resultSet.getObject("thumbnail_media_id", Long.class),
                 resultSet.getObject("registered_by", Long.class),
                 resultSet.getLong("like_count"),

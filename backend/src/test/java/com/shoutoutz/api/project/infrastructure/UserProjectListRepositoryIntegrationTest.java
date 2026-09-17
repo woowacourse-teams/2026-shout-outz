@@ -4,7 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.project.application.UserProjectQueryRepository;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
-import com.shoutoutz.api.project.domain.ProjectSummary;
+import com.shoutoutz.api.project.application.dto.UserProjectItem;
+import com.shoutoutz.api.project.domain.ServiceStatus;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -54,6 +55,8 @@ class UserProjectListRepositoryIntegrationTest {
         assertThat(ids(result)).containsExactly(registered, archived);
         assertThat(result.hasNext()).isFalse();
         assertThat(result.projects()).allSatisfy(project -> {
+            assertThat(project.teamName()).isEqualTo("팀");
+            assertThat(project.serviceStatus()).isEqualTo(ServiceStatus.OPERATING);
             assertThat(project.techTags()).isNotNull();
             assertThat(project.members()).isNotNull();
         });
@@ -149,6 +152,6 @@ class UserProjectListRepositoryIntegrationTest {
     }
 
     private static List<Long> ids(UserProjectResult result) {
-        return result.projects().stream().map(ProjectSummary::id).toList();
+        return result.projects().stream().map(UserProjectItem::id).toList();
     }
 }

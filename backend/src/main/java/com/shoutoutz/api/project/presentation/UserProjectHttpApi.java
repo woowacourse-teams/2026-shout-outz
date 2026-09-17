@@ -3,7 +3,6 @@ package com.shoutoutz.api.project.presentation;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
-import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
@@ -29,7 +28,7 @@ public class UserProjectHttpApi {
     private final ProjectService projectService;
 
     @GetMapping
-    public ResponseEntity<SuccessResponse<List<ProjectFindAllResponse.Item>>> findAll(
+    public ResponseEntity<SuccessResponse<List<UserProjectFindResponse.Item>>> findAll(
             @Pattern(
                     regexp = "^[A-Za-z0-9_-]{2,30}$",
                     message = "handle 형식이 올바르지 않습니다."

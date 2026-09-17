@@ -25,8 +25,8 @@ import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
+import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
-import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
 import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
@@ -163,13 +163,15 @@ class UserProjectHttpApiTest {
                 .andDo(document("user-project-find-all-not-found", resource(errorResource())));
     }
 
-    private static ProjectFindAllResponse.Item project() {
-        return new ProjectFindAllResponse.Item(
+    private static UserProjectFindResponse.Item project() {
+        return new UserProjectFindResponse.Item(
                 100L,
                 "loop",
                 "루프",
+                "루프팀",
                 "스프린트 회고와 액션 아이템을 관리하는 협업 도구",
                 6,
+                ServiceStatus.OPERATING,
                 12L,
                 184L,
                 14L,
@@ -187,8 +189,10 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].id").type(NUMBER).description("프로젝트 ID"),
                 fieldWithPath("data[].slug").type(STRING).description("프로젝트 slug"),
                 fieldWithPath("data[].title").type(STRING).description("프로젝트 이름"),
+                fieldWithPath("data[].teamName").type(STRING).description("팀 이름"),
                 fieldWithPath("data[].tagline").type(STRING).description("한 줄 소개"),
                 fieldWithPath("data[].cohort").type(NUMBER).description("우아한테크코스 기수"),
+                fieldWithPath("data[].serviceStatus").type(STRING).description("운영 상태 (OPERATING, CLOSED)"),
                 fieldWithPath("data[].thumbnailMediaId").type(NUMBER).description("썸네일 미디어 ID").optional(),
                 fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"),
                 fieldWithPath("data[].commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"),

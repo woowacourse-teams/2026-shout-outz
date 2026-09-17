@@ -24,6 +24,7 @@ import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
+import com.shoutoutz.api.project.application.dto.UserProjectItem;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.DeletionType;
@@ -593,7 +594,7 @@ class ProjectServiceTest {
     void findsProjectsByUser() {
         ProjectCursor cursor = ProjectCursor.latest(NOW, 10L);
         User user = user(REGISTERED_BY, MEMBER_HANDLE, UserStatus.ACTIVE);
-        ProjectSummary project = summary(9L, 3L, NOW.minusSeconds(60));
+        UserProjectItem project = userProjectItem(9L, 3L, NOW.minusSeconds(60));
         when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.of(user));
         when(userProjectQueryRepository.findAllByUserId(REGISTERED_BY, cursor, 20))
                 .thenReturn(new UserProjectResult(List.of(project), true));
@@ -603,7 +604,7 @@ class ProjectServiceTest {
                 new UserProjectFindRequest(20, ProjectCursorCodec.encode(cursor))
         );
 
-        assertThat(response.projects()).extracting(ProjectFindAllResponse.Item::id).containsExactly(9L);
+        assertThat(response.projects()).extracting(UserProjectFindResponse.Item::id).containsExactly(9L);
         assertThat(response.meta().hasNext()).isTrue();
         assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.LATEST))
                 .isEqualTo(ProjectCursor.latest(NOW.minusSeconds(60), 9L));
@@ -709,6 +710,25 @@ class ProjectServiceTest {
     private static ProjectSummary summary(long id, long likeCount, Instant createdAt) {
         return new ProjectSummary(
                 id, "loop-" + id, "루프", "한 줄 소개", 6, null, REGISTERED_BY, likeCount, 0L, List.of(), List.of(), createdAt);
+    }
+
+    private static UserProjectItem userProjectItem(long id, long likeCount, Instant createdAt) {
+        return new UserProjectItem(
+                id,
+                "loop-" + id,
+                "루프",
+                "루프팀",
+                "한 줄 소개",
+                6,
+                ServiceStatus.OPERATING,
+                null,
+                REGISTERED_BY,
+                likeCount,
+                0L,
+                List.of(),
+                List.of(),
+                createdAt
+        );
     }
 
     private static User user(long id, String handle, UserStatus status) {
