@@ -1,4 +1,5 @@
 import { type FeedAuthor } from '@/types/feed';
+import type { Feed } from '@/apis/feed';
 
 const TRACK_LABELS: Record<string, string> = {
   BACKEND: '백엔드',
@@ -17,4 +18,11 @@ export function formatAuthorLabel({ displayName, track, cohort }: FeedAuthor): s
   if (trackLabel === undefined || cohort === null) return displayName;
 
   return `${displayName} · ${cohort}기 ${trackLabel}`;
+}
+
+export function getFeedAuthorName(author: Feed['author']) {
+  const track = author.track ? (TRACK_LABELS[author.track] ?? author.track) : null;
+  const description = [author.cohort && `${author.cohort}기`, track].filter(Boolean).join(' ');
+
+  return [author.displayName, description].filter(Boolean).join(' · ');
 }

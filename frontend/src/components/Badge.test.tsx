@@ -43,14 +43,12 @@ describe('Badge', () => {
   });
 
   describe('굵기', () => {
-    it('gray만 보통 굵기이고 유채색은 굵게 표시된다', () => {
+    it('모든 tone과 variant에서 굵은 글자를 표시한다', () => {
       const weightOf = (tone: BadgeTone, variant: BadgeVariant) =>
         renderBadge({ variant, tone }, /^font-/);
 
       VARIANTS.forEach((variant) => {
-        expect(weightOf('gray', variant)).toEqual(['font-normal']);
-        expect(weightOf('primary', variant)).toEqual(['font-bold']);
-        expect(weightOf('green', variant)).toEqual(['font-bold']);
+        TONES.forEach((tone) => expect(weightOf(tone, variant)).toEqual(['font-bold']));
       });
     });
   });
