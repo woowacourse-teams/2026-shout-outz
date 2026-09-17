@@ -286,4 +286,4 @@ user_profiles.avatar_image_id -> media_metadata.id
 
 본문을 응답할 때 이 참조를 READY 미디어의 CloudFront URL로 치환한다. URL은 만료되지 않으므로 클라이언트가 별도의 미디어 조회 API를 호출할 필요가 없다.
 
-프로젝트 수정 요청에서 상세 응답의 `descriptionMd`를 그대로 다시 보내는 경우에도, 기존 프로젝트 본문에 연결된 CloudFront URL은 저장 전에 `media://{mediaId}` 참조로 복원한다.
+프로젝트 수정 요청에서 상세 응답의 `descriptionMd`를 그대로 다시 보내는 경우에도, 기존 프로젝트 본문에 연결된 CloudFront URL은 URI의 scheme·host·port·path를 기준으로 저장 전에 `media://{mediaId}` 참조로 복원한다. 매칭되지 않는 외부 이미지 URL은 저장하지 않는다.

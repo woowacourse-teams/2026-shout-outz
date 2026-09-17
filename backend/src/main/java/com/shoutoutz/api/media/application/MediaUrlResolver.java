@@ -11,7 +11,9 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,13 @@ public class MediaUrlResolver {
     private static final MediaVariant DEFAULT_VARIANT = MediaVariant.DISPLAY;
     private static final Pattern DESCRIPTION_MEDIA_REFERENCE =
             Pattern.compile("media://(\\d{1,18})(?!\\d)");
+    private static final Pattern DESCRIPTION_IMAGE_SOURCE = Pattern.compile(
+            "!\\[[^\\]]*]\\(\\s*<?([^\\s)>]+)"
+    );
+    private static final Pattern DESCRIPTION_PUBLIC_IMAGE_URL = Pattern.compile(
+            "!\\[[^\\]]*]\\(\\s*<?(https?://[^\\s)>]+)",
+            Pattern.CASE_INSENSITIVE
+    );
 
     private final MediaMetadataRepository mediaMetadataRepository;
     private final MediaObjectKeyGenerator mediaObjectKeyGenerator;
@@ -89,22 +98,52 @@ public class MediaUrlResolver {
     /**
      * 프로젝트 상세 응답에 사용한 공개 URL을 저장용 media://{id} 참조로 되돌린다.
      * 수정 요청이 상세 조회 응답의 descriptionMd를 그대로 포함해도 원본 참조 형식을 유지한다.
+     * URL의 query와 fragment는 무시하고 scheme, host, port, path가 같은 공개 리소스만 변환한다.
      */
     public String replaceDescriptionUrlsWithReferences(String descriptionMd, Map<Long, URI> urls) {
         if (descriptionMd == null || descriptionMd.isEmpty() || urls == null || urls.isEmpty()) {
             return descriptionMd;
         }
 
-        String normalized = descriptionMd;
-        for (Map.Entry<Long, URI> entry : urls.entrySet()) {
-            Long mediaId = entry.getKey();
-            URI url = entry.getValue();
-            if (mediaId == null || url == null) {
+        Matcher matcher = DESCRIPTION_PUBLIC_IMAGE_URL.matcher(descriptionMd);
+        StringBuffer replaced = new StringBuffer();
+        while (matcher.find()) {
+            Long mediaId = findMatchingMediaId(matcher.group(1), urls);
+            if (mediaId == null) {
+                matcher.appendReplacement(
+                        replaced,
+                        Matcher.quoteReplacement(matcher.group())
+                );
                 continue;
             }
-            normalized = normalized.replace(url.toString(), "media://" + mediaId);
+
+            String match = matcher.group();
+            int urlStart = matcher.start(1) - matcher.start();
+            int urlEnd = matcher.end(1) - matcher.start();
+            String replacement = match.substring(0, urlStart)
+                    + "media://" + mediaId
+                    + match.substring(urlEnd);
+            matcher.appendReplacement(replaced, Matcher.quoteReplacement(replacement));
         }
-        return normalized;
+        matcher.appendTail(replaced);
+        return replaced.toString();
+    }
+
+    /**
+     * 프로젝트 본문에 저장용 참조로 변환되지 않은 이미지 소스가 있는지 확인한다.
+     * 프로젝트 수정 시 매칭되지 않은 외부 URL이나 지원하지 않는 이미지 소스가 미디어 검증을 우회하지 않도록 사용한다.
+     */
+    public boolean containsUnsupportedDescriptionImageReference(String descriptionMd) {
+        if (descriptionMd == null) {
+            return false;
+        }
+        Matcher matcher = DESCRIPTION_IMAGE_SOURCE.matcher(descriptionMd);
+        while (matcher.find()) {
+            if (!DESCRIPTION_MEDIA_REFERENCE.matcher(matcher.group(1)).matches()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private URI resolveReadyMetadata(MediaMetadata metadata, MediaVariant variant) {
@@ -117,6 +156,47 @@ public class MediaUrlResolver {
 
     private boolean isReady(MediaMetadata metadata) {
         return metadata != null && metadata.getStatus() == MediaStatus.READY;
+    }
+
+    private Long findMatchingMediaId(String rawUrl, Map<Long, URI> urls) {
+        URI requestedUrl = parseUri(rawUrl);
+        if (requestedUrl == null) {
+            return null;
+        }
+        return urls.entrySet().stream()
+                .filter(entry -> entry.getKey() != null && samePublicResource(requestedUrl, entry.getValue()))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private URI parseUri(String rawUrl) {
+        try {
+            return URI.create(rawUrl);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    private boolean samePublicResource(URI requestedUrl, URI expectedUrl) {
+        if (expectedUrl == null
+                || requestedUrl.getHost() == null
+                || expectedUrl.getHost() == null
+                || requestedUrl.getUserInfo() != null
+                || expectedUrl.getUserInfo() != null) {
+            return false;
+        }
+        return requestedUrl.getScheme().equalsIgnoreCase(expectedUrl.getScheme())
+                && requestedUrl.getHost().equalsIgnoreCase(expectedUrl.getHost())
+                && effectivePort(requestedUrl) == effectivePort(expectedUrl)
+                && Objects.equals(requestedUrl.getPath(), expectedUrl.getPath());
+    }
+
+    private int effectivePort(URI uri) {
+        if (uri.getPort() >= 0) {
+            return uri.getPort();
+        }
+        return "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
     }
 
     private Set<Long> normalizeIds(Collection<Long> mediaIds) {

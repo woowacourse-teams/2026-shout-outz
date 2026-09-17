@@ -113,6 +113,7 @@ public class ProjectService {
         validateSlugNotDuplicated(project.getSlug());
         validateTechTags(request.techTagIds());
         validateThumbnail(request.thumbnailMediaId(), registeredBy);
+        validateDescriptionMediaUrls(request.descriptionMd());
         validateDescriptionMedia(request.descriptionMd(), registeredBy);
         List<Long> memberIds = request.memberHandles().stream()
                 .map(this::resolveMemberId)
@@ -135,6 +136,7 @@ public class ProjectService {
                 ? request.thumbnailImageId()
                 : project.getThumbnailMediaId();
         String descriptionMd = normalizeDescriptionReferences(project, request.descriptionMd());
+        validateDescriptionMediaUrls(descriptionMd);
         Project updated = project.update(
                 Cohort.from(request.cohort()),
                 new TeamName(request.teamName()),
@@ -430,6 +432,12 @@ public class ProjectService {
             if (media.getStatus() != MediaStatus.READY) {
                 throw new InvalidDescriptionMediaException(PROJECT_DESCRIPTION_MEDIA_NOT_READY);
             }
+        }
+    }
+
+    private void validateDescriptionMediaUrls(String descriptionMd) {
+        if (mediaUrlResolver.containsUnsupportedDescriptionImageReference(descriptionMd)) {
+            throw new InvalidDescriptionMediaException(PROJECT_INVALID_DESCRIPTION_MEDIA);
         }
     }
 

@@ -519,6 +519,16 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("본문 이미지가 media 참조가 아니면 외부 URL을 저장하지 않는다.")
+    void rejectsUnsupportedDescriptionImageReference() {
+        givenValidProjectExceptMembers();
+        String descriptionMd = "![외부 이미지](https://external.example.com/image.png)";
+        when(mediaUrlResolver.containsUnsupportedDescriptionImageReference(descriptionMd)).thenReturn(true);
+
+        assertInvalidDescriptionMedia(descriptionMd, ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA);
+    }
+
+    @Test
     @DisplayName("본문이 다른 사용자의 이미지를 참조하면 없는 이미지와 같은 400을 던진다.")
     void rejectsOthersDescriptionMedia() {
         givenValidProjectExceptMembers();
@@ -1003,6 +1013,37 @@ class ProjectServiceTest {
         verify(projectRepository).update(projectCaptor.capture(), eq(TECH_TAG_IDS), anyList());
         assertThat(projectCaptor.getValue().getDescriptionMd())
                 .isEqualTo("![화면](media://" + descriptionMediaId + ")");
+    }
+
+    @Test
+    @DisplayName("상세 조회 응답과 매칭되지 않는 본문 이미지 URL은 저장하지 않는다.")
+    void rejectsUnmatchedDescriptionImageUrlBeforeUpdate() {
+        Project existing = existingProject(
+                ApprovalStatus.APPROVED,
+                THUMBNAIL_ID,
+                "![화면](media://21)"
+        );
+        String descriptionMd = "![화면](https://external.example.com/image.png)";
+        givenOwnedProject(existing);
+        when(mediaUrlResolver.resolveAll(List.of(21L)))
+                .thenReturn(Map.of(21L, URI.create("https://cdn.example.com/media/project-description/object-21/display")));
+        when(mediaUrlResolver.replaceDescriptionUrlsWithReferences(descriptionMd, Map.of(
+                21L,
+                URI.create("https://cdn.example.com/media/project-description/object-21/display")
+        ))).thenReturn(descriptionMd);
+        when(mediaUrlResolver.containsUnsupportedDescriptionImageReference(descriptionMd)).thenReturn(true);
+
+        assertThatThrownBy(() -> projectService.update(
+                PROJECT_ID,
+                REGISTERED_BY,
+                updateRequestWithDescription(descriptionMd)
+        )).isInstanceOfSatisfying(
+                InvalidDescriptionMediaException.class,
+                error -> assertThat(error.getErrorCode())
+                        .isEqualTo(ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA)
+        );
+
+        verify(projectRepository, never()).update(any(Project.class), eq(TECH_TAG_IDS), anyList());
     }
 
     @Test

@@ -1743,8 +1743,8 @@ paths:
       summary: 프로젝트 수정
       description: "작성자가 프로젝트 정보를 수정한다. 대부분의 필드는 전체 교체 방식이며, 비우는 값은 null로 보낸다. thumbnailImageId는\
         \ 생략하면 기존 이미지를 유지하고, 새 ID를 보내면 교체하며, null을 명시하면 제거한다. descriptionMd는 저장 시\
-        \ media://{mediaId} 형식으로 정규화하며, 상세 조회 응답의 CDN URL을 그대로 보내도 기존 본문 이미지 참조를 유\
-        지한다. techTagIds와 memberHandles도 전체 목록을 순서대로 보낸다. 반려된 프로젝트를 수정하면 재심사 요청으로 처\
+        \ media://{mediaId} 형식으로 정규화하며, 상세 조회 응답의 CDN URL은 기존 프로젝트 미디어와 매칭되는 경우에만\
+        \ 본문 이미지 참조로 복원한다. 매칭되지 않는 외부 이미지 URL은 허용하지 않는다. techTagIds와 memberHandles도\
         리되어 approvalStatus가 PENDING으로 바뀌고, 그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라\
         \ 바뀌지 않는다. 요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, 없거나\
         \ 삭제됐거나 다른 사람의 프로젝트면 404, 이미 등록된 리포지토리로 바꾸면 409를 반환한다."
@@ -5997,7 +5997,8 @@ components:
         descriptionMd:
           type: string
           description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
-            \ 형식으로 넣으며, 상세 조회 응답의 CDN URL을 그대로 보내도 기존 본문 이미지 참조를 유지한다."
+            \ 형식으로 넣으며, 상세 조회 응답의 CDN URL은 기존 프로젝트 미디어와 매칭되는 경우에만 본문 이미지 참조로\
+            \ 복원한다. 매칭되지 않는 외부 이미지 URL은 허용하지 않는다."
           nullable: true
         deploymentUrl:
           type: string

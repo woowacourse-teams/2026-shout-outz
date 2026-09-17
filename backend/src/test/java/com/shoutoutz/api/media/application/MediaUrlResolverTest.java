@@ -100,6 +100,32 @@ class MediaUrlResolverTest {
                 .isEqualTo("![화면](media://10)\n![같은 화면](media://10)");
     }
 
+    @Test
+    void 공개_URL의_인코딩과_query_fragment가_달라도_media_참조로_되돌린다() {
+        String description = "![화면](<https://cdn.example.com/media/project-description/object%2D10/display"
+                + "?cache=1#section>)";
+        Map<Long, URI> urls = Map.of(
+                10L,
+                URI.create("https://cdn.example.com/media/project-description/object-10/display")
+        );
+
+        assertThat(mediaUrlResolver.replaceDescriptionUrlsWithReferences(description, urls))
+                .isEqualTo("![화면](<media://10>)");
+    }
+
+    @Test
+    void media_참조로_변환되지_않은_이미지_소스를_감지한다() {
+        assertThat(mediaUrlResolver.containsUnsupportedDescriptionImageReference(
+                "![외부 이미지](https://external.example.com/image.png)"
+        )).isTrue();
+        assertThat(mediaUrlResolver.containsUnsupportedDescriptionImageReference(
+                "![인라인 이미지](data:image/png;base64,abc)"
+        )).isTrue();
+        assertThat(mediaUrlResolver.containsUnsupportedDescriptionImageReference(
+                "![미디어](media://10)"
+        )).isFalse();
+    }
+
     private MediaMetadata metadata(long id, MediaStatus status) {
         return MediaMetadata.reconstitute(
                 id,
