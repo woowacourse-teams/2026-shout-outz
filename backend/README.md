@@ -175,13 +175,16 @@ AWS_S3_BUCKET=<bucket-name>
 AWS_REGION=<region>
 AWS_S3_KEY_PREFIX=<key-prefix>
 AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS=<seconds>
+AWS_CLOUDFRONT_PUBLIC_BASE_URL=https://<cloudfront-domain>/
 ```
 
 IntelliJ IDEA에서 환경 변수를 설정하려면 `Run/Debug Configurations`의 `Environment variables`에 입력한다. 운영용 비밀 값은 저장소에 커밋하지 않는다.
 
 ## AWS S3 연결 설정
 
-S3 버킷과 기본 보안 설정은 기본 우테코 제공 인프라의 설정을 따라간다. 백엔드는 `AWS_S3_BUCKET`, `AWS_REGION`, `AWS_S3_KEY_PREFIX`, `AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS`를 환경별로 주입받는다.
+S3 버킷과 기본 보안 설정은 기본 우테코 제공 인프라의 설정을 따라간다. 백엔드는 `AWS_S3_BUCKET`, `AWS_REGION`, `AWS_S3_KEY_PREFIX`, `AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS`, `AWS_CLOUDFRONT_PUBLIC_BASE_URL`을 환경별로 주입받는다.
+
+S3 버킷은 계속 private으로 유지하고, 공개 이미지 조회는 CloudFront를 통해 제공한다. CloudFront는 S3를 origin으로 사용하며, origin access control(OAC)로 CloudFront만 S3 객체를 읽을 수 있도록 구성해야 한다. `AWS_CLOUDFRONT_PUBLIC_BASE_URL`에는 배포된 CloudFront 도메인의 scheme과 host를 입력한다.
 
 `develop`의 DEV 배포도 현재 `prod` 프로필로 실행되므로 DEV 서버에는 `<dev-key-prefix>`를 주입한다. 운영 환경으로 전환할 때는 애플리케이션 설정 파일을 수정하지 않고 `AWS_S3_KEY_PREFIX`만 `<prod-key-prefix>`로 변경한다.
 
@@ -197,6 +200,7 @@ export AWS_S3_BUCKET=<bucket-name>
 export AWS_REGION=<region>
 export AWS_S3_KEY_PREFIX=<dev-key-prefix>
 export AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS=<seconds>
+export AWS_CLOUDFRONT_PUBLIC_BASE_URL=https://<cloudfront-domain>/
 ```
 
 ### 실제 AWS S3 통합 테스트
@@ -207,7 +211,7 @@ export AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS=<seconds>
 RUN_AWS_INTEGRATION_TEST=true ./gradlew test --tests '*S3MediaStorageAwsIntegrationTest'
 ```
 
-테스트는 `AWS_S3_KEY_PREFIX` 아래에 UUID가 포함된 임시 객체를 만들고 Presigned PUT/GET, HeadObject, GetObject, PutObject, DeleteObject를 확인한 뒤 생성한 객체를 삭제한다. 운영용 자격 증명이나 운영 prefix로 실행하지 않는다.
+테스트는 `AWS_S3_KEY_PREFIX` 아래에 UUID가 포함된 임시 객체를 만들고 Presigned PUT, HeadObject, GetObject, PutObject, DeleteObject를 확인한 뒤 생성한 객체를 삭제한다. 조회용 공개 URL은 CloudFront 배포 상태에 의존하므로 S3 통합 테스트에서는 Presigned GET을 검증하지 않는다. 운영용 자격 증명이나 운영 prefix로 실행하지 않는다.
 
 ### 운영
 운영에서는 애플리케이션이 실행되는 AWS 런타임에 S3 접근 IAM Role을 연결한다. 장기 액세스 키를 환경변수로 등록하지 않고 AWS SDK의 기본 자격 증명 체인이 제공하는 임시 자격 증명을 사용한다.
@@ -221,7 +225,7 @@ S3 객체 연동은 `com.shoutoutz.api.media.infrastructure.s3`에서 담당한�
 | 기능 | 구현 | 설명                                                     |
 | --- | --- |--------------------------------------------------------|
 | 업로드 | `S3Presigner` | 백엔드가 Presigned PUT URL을 발급하고, 프론트엔드가 파일을 S3에 직접 업로드한다. |
-| 조회 | `S3Presigner` | 비공개 객체용 Presigned GET URL을 발급한다.                       |
+| 조회 | `MediaPublicUrlResolver` | private S3 객체의 CloudFront 공개 URL을 계산한다. |
 | 업로드 검증 | `S3Client.headObject` | 객체 존재 여부와 요청 당시의 파일 크기, MIME 타입을 비교한다.                 |
 | 삭제 | `S3Client.deleteObject` | 환경별 `AWS_S3_KEY_PREFIX` 아래의 객체를 삭제한다.                             |
 
@@ -238,14 +242,13 @@ Presigned PUT URL로 업로드할 때는 URL 발급 응답의 `Content-Type`을 
 ```json
 {
   "purpose": "FEED_CONTENT",
-  "targetId": 42,
   "originalFileName": "feed-image.webp",
   "contentType": "image/webp",
   "sizeBytes": 1048576
 }
 ```
 
-서버는 대상 수정 권한과 이미지 업로드 정책을 확인한 뒤 `media_metadata`에 `PENDING_UPLOAD` 레코드를 만들고 Presigned PUT URL을 반환한다. 프론트엔드는 응답의 `uploadUrl`로 S3에 직접 PUT하고, `contentType`을 요청 헤더에 동일하게 지정해야 한다. S3 업로드가 끝나면 완료 API를 호출한다.
+서버는 인증된 활성 사용자와 이미지 업로드 정책을 확인한 뒤 `media_metadata`에 `PENDING_UPLOAD` 레코드를 만들고 Presigned PUT URL을 반환한다. 프론트엔드는 응답의 `uploadUrl`로 S3에 직접 PUT하고, `contentType`을 요청 헤더에 동일하게 지정해야 한다. S3 업로드가 끝나면 완료 API를 호출한다. 프로젝트·피드·프로필에 미디어를 연결할 때는 각 도메인 API에서 소유자·용도·처리 상태를 다시 검증한다.
 
 ### 업로드 완료 API
 
@@ -267,11 +270,11 @@ projects.thumbnail_media_id  -> media_metadata.id
 user_profiles.avatar_image_id -> media_metadata.id
 ```
 
-프로젝트 썸네일과 사용자 프로필 이미지는 S3 URL을 저장하지 않고 각각 `thumbnail_media_id`, `avatar_image_id`로 `media_metadata.id`를 참조한다. 조회 시 `media_metadata.s3_key`를 기준으로 Presigned GET URL을 발급한다.
+프로젝트 썸네일과 사용자 프로필 이미지는 URL을 저장하지 않고 각각 `thumbnail_media_id`, `avatar_image_id`로 `media_metadata.id`를 참조한다. 조회 시 `media_metadata.s3_key`와 변형 규칙을 기준으로 CloudFront 공개 URL을 계산한다.
 
 ### 이미지 조회 API
 
-`GET /api/v1/media/{mediaId}`는 접근 권한과 `READY` 상태를 확인한 뒤 비공개 S3 객체의 Presigned GET URL을 발급한다. `variant`를 생략하면 표시용 이미지(`DISPLAY`)를 반환하며, `ORIGINAL`, `THUMBNAIL`을 선택할 수 있다.
+`GET /api/v1/media/{mediaId}`는 `READY` 상태를 확인한 뒤 private S3 객체에 대응하는 CloudFront 공개 URL을 반환한다. 모든 미디어와 변형본은 공개 리소스라는 정책이므로 별도의 조회 권한 검증이나 로그인은 요구하지 않는다. `variant`를 생략하면 표시용 이미지(`DISPLAY`)를 반환하며, `ORIGINAL`, `DISPLAY`, `THUMBNAIL`을 선택할 수 있다.
 
 ```http
 GET /api/v1/media/123?variant=THUMBNAIL
@@ -279,15 +282,13 @@ GET /api/v1/media/123?variant=THUMBNAIL
 
 ```json
 {
-  "mediaId": 123,
   "variant": "THUMBNAIL",
-  "downloadUrl": "https://s3.example.com/...",
-  "expiresAt": "2026-09-01T10:05:00Z",
+  "url": "https://<cloudfront-domain>/...",
   "contentType": "image/webp"
 }
 ```
 
-삭제되지 않은 피드에 `feed_media`로 연결된 `FEED_CONTENT` 미디어는 비로그인 조회가 가능하다. 그 외 미디어는 업로더 본인만 조회할 수 있다. 미디어가 아직 `READY`가 아니면 Presigned URL을 발급하지 않는다.
+미디어가 아직 `READY`가 아니면 공개 URL을 반환하지 않는다. 프로젝트 목록은 `thumbnailUrl`, 프로젝트 상세는 `imageUrl`, 그 외 조회 응답은 `avatarUrl`, `media[].url`처럼 변형 용도에 맞는 CloudFront URL을 반환하며 `media_id`는 노출하지 않는다.
 
 본문에는 만료되는 S3 URL을 저장하지 않고 `media://{mediaId}`를 저장한다.
 
@@ -295,4 +296,4 @@ GET /api/v1/media/123?variant=THUMBNAIL
 ![프로젝트 화면](media://123)
 ```
 
-본문을 응답하거나 렌더링할 때 이 참조를 미디어 조회 API로 해석해 `downloadUrl`을 임시로 사용한다. 현재 게시글·프로젝트 본문 API가 구현되지 않았으므로 실제 본문 변환 통합은 해당 도메인 구현 단계에서 적용한다.
+본문을 응답할 때 이 참조를 READY 미디어의 CloudFront URL로 치환한다. URL은 만료되지 않으므로 클라이언트가 매번 미디어 조회 API를 호출할 필요가 없다.
