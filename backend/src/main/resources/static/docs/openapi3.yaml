@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"\
-                    displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
+                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
+                    ,\"message\":\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -972,8 +972,8 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"}]}"
+                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1061,9 +1061,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -1443,9 +1443,9 @@ paths:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"}]}"
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
+                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
+                    eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -1745,9 +1745,10 @@ paths:
         \ 생략하면 기존 이미지를 유지하고, 새 ID를 보내면 교체하며, null을 명시하면 제거한다. descriptionMd는 저장 시\
         \ media://{mediaId} 형식으로 정규화하며, 상세 조회 응답의 CDN URL은 기존 프로젝트 미디어와 매칭되는 경우에만\
         \ 본문 이미지 참조로 복원한다. 매칭되지 않는 외부 이미지 URL은 허용하지 않는다. techTagIds와 memberHandles도\
-        리되어 approvalStatus가 PENDING으로 바뀌고, 그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라\
-        \ 바뀌지 않는다. 요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, 없거나\
-        \ 삭제됐거나 다른 사람의 프로젝트면 404, 이미 등록된 리포지토리로 바꾸면 409를 반환한다."
+        \ 전체 목록을 순서대로 보낸다. 반려된 프로젝트를 수정하면 재심사 요청으로 처리되어 approvalStatus가 PENDING으로\
+        \ 바뀌고, 그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. 요청값과 기술 스택, 썸네일, 본\
+        문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, 없거나 삭제됐거나 다른 사람의 프로젝트면 404, 이미 등록\
+        된 리포지토리로 바꾸면 409를 반환한다."
       operationId: project-update
       parameters:
       - name: projectId
@@ -2093,9 +2094,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -4683,27 +4684,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    ProjectUpdateSuccessResponse:
-      title: ProjectUpdateSuccessResponse
-      required:
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - approvalStatus
-          - projectId
-          type: object
-          properties:
-            approvalStatus:
-              type: string
-              description: "수정 후 승인 상태 (PENDING, APPROVED)"
-            projectId:
-              type: number
-              description: 수정한 프로젝트 ID
-        status:
-          type: string
-          description: 응답 상태
     CohortFindAllSuccessResponse:
       title: CohortFindAllSuccessResponse
       required:
@@ -4730,6 +4710,27 @@ components:
                   cohort:
                     type: number
                     description: 기수
+        status:
+          type: string
+          description: 응답 상태
+    ProjectUpdateSuccessResponse:
+      title: ProjectUpdateSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - approvalStatus
+          - projectId
+          type: object
+          properties:
+            approvalStatus:
+              type: string
+              description: "수정 후 승인 상태 (PENDING, APPROVED)"
+            projectId:
+              type: number
+              description: 수정한 프로젝트 ID
         status:
           type: string
           description: 응답 상태
@@ -4977,6 +4978,25 @@ components:
         eventEndAt:
           type: string
           description: 이벤트 종료 시각
+    OAuthSignupSuccessResponse:
+      title: OAuthSignupSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - userId
+          type: object
+          properties:
+            userId:
+              type: number
+              description: 생성된 사용자 ID
+          description: 가입 결과
+        status:
+          type: string
+          description: 응답 상태
     EventCreateSuccessResponse:
       title: EventCreateSuccessResponse
       required:
@@ -5058,25 +5078,6 @@ components:
             id:
               type: number
               description: 이벤트 ID
-        status:
-          type: string
-          description: 응답 상태
-    OAuthSignupSuccessResponse:
-      title: OAuthSignupSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - userId
-          type: object
-          properties:
-            userId:
-              type: number
-              description: 생성된 사용자 ID
-          description: 가입 결과
         status:
           type: string
           description: 응답 상태
@@ -5957,66 +5958,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    ProjectUpdateRequest:
-      title: ProjectUpdateRequest
-      required:
-      - cohort
-      - githubRepositoryUrl
-      - memberHandles
-      - serviceStatus
-      - tagline
-      - teamName
-      - techTagIds
-      - title
-      type: object
-      properties:
-        teamName:
-          type: string
-          description: 팀 이름 (50자 이하)
-        thumbnailImageId:
-          type: number
-          description: "본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. 필드를 생략하면 기존 썸\
-            네일을 유지하고, null을 보내면 제거한다."
-          nullable: true
-        techTagIds:
-          type: array
-          description: 기술 스택 ID 전체 목록. 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 달려 있던 태그는 비활성화됐어도
-            그대로 둘 수 있다.
-          items:
-            type: number
-        memberHandles:
-          type: array
-          description: 작성자를 제외한 팀원 handle 전체 목록 (1명 이상). 통째로 교체하며 배열 순서가 표시 순서가 된다.
-            이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다.
-          items:
-            type: string
-        serviceStatus:
-          type: string
-          description: "서비스 운영 상태 (OPERATING, CLOSED). deploymentUrl이 없으면 CLOSED만\
-            \ 보낼 수 있다."
-        descriptionMd:
-          type: string
-          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
-            \ 형식으로 넣으며, 상세 조회 응답의 CDN URL은 기존 프로젝트 미디어와 매칭되는 경우에만 본문 이미지 참조로\
-            \ 복원한다. 매칭되지 않는 외부 이미지 URL은 허용하지 않는다."
-          nullable: true
-        deploymentUrl:
-          type: string
-          description: 서비스 배포 URL (http/https). 비우려면 null로 보낸다.
-          nullable: true
-        githubRepositoryUrl:
-          type: string
-          description: "https://github.com/{owner}/{repo} 형식. 바꿀 수 있지만 다른 프로젝트가 등록\
-            한 리포지토리로는 바꿀 수 없다. slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다."
-        cohort:
-          type: number
-          description: 우아한테크코스 기수 (1~8)
-        tagline:
-          type: string
-          description: 한 줄 소개 (200자 이하)
-        title:
-          type: string
-          description: 프로젝트 이름 (100자 이하)
     FeedSaveSuccessResponse:
       title: FeedSaveSuccessResponse
       required:
@@ -6118,6 +6059,65 @@ components:
         status:
           type: string
           description: 응답 상태
+    ProjectUpdateRequest:
+      title: ProjectUpdateRequest
+      required:
+      - cohort
+      - githubRepositoryUrl
+      - memberHandles
+      - serviceStatus
+      - tagline
+      - teamName
+      - techTagIds
+      - title
+      type: object
+      properties:
+        teamName:
+          type: string
+          description: 팀 이름 (50자 이하)
+        thumbnailImageId:
+          type: number
+          description: "본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. 필드를 생략하면 기존 썸\
+            네일을 유지하고, null을 보내면 제거한다."
+          nullable: true
+        techTagIds:
+          type: array
+          description: 기술 스택 ID 전체 목록. 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 달려 있던 태그는 비활성화됐어도
+            그대로 둘 수 있다.
+          items:
+            type: number
+        memberHandles:
+          type: array
+          description: 작성자를 제외한 팀원 handle 전체 목록 (1명 이상). 통째로 교체하며 배열 순서가 표시 순서가 된다.
+            이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다.
+          items:
+            type: string
+        serviceStatus:
+          type: string
+          description: "서비스 운영 상태 (OPERATING, CLOSED). deploymentUrl이 없으면 CLOSED만\
+            \ 보낼 수 있다."
+        descriptionMd:
+          type: string
+          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
+            \ 형식으로 넣으며, 상세 조회 응답의 CDN URL을 그대로 보내도 기존 본문 이미지 참조를 유지한다."
+          nullable: true
+        deploymentUrl:
+          type: string
+          description: 서비스 배포 URL (http/https). 비우려면 null로 보낸다.
+          nullable: true
+        githubRepositoryUrl:
+          type: string
+          description: "https://github.com/{owner}/{repo} 형식. 바꿀 수 있지만 다른 프로젝트가 등록\
+            한 리포지토리로는 바꿀 수 없다. slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다."
+        cohort:
+          type: number
+          description: 우아한테크코스 기수 (1~8)
+        tagline:
+          type: string
+          description: 한 줄 소개 (200자 이하)
+        title:
+          type: string
+          description: 프로젝트 이름 (100자 이하)
     UserFeedFindAllSuccessResponse:
       title: UserFeedFindAllSuccessResponse
       required:
