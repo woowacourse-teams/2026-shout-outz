@@ -12,6 +12,7 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -76,7 +77,7 @@ class ProjectAcceptanceTest {
     }
 
     @Test
-    @DisplayName("이미 등록된 리포지토리를 다시 등록하면 409를 반환한다.")
+    @DisplayName("표기만 다를 뿐 이미 등록된 리포지토리를 다시 등록하면 409를 반환한다.")
     void rejectsDuplicateRepository() {
         LoginSession author = signup("WOOWACOURSE_CREW");
         LoginSession teammate = signup("WOOWACOURSE_CREW");
@@ -85,7 +86,31 @@ class ProjectAcceptanceTest {
         List<String> memberHandles = List.of(teammate.handle());
         assertThat(registerProject(author, repositoryName, techTagIds, memberHandles).statusCode()).isEqualTo(201);
 
-        Response duplicated = registerProject(author, repositoryName, techTagIds, memberHandles);
+        Response duplicated = registerProject(author, requestBodyWithUrl(
+                "https://www.github.com/Woowacourse-Teams/" + repositoryName.toUpperCase(Locale.ROOT) + ".git/",
+                techTagIds,
+                memberHandles
+        ));
+
+        assertThat(duplicated.statusCode()).isEqualTo(409);
+        assertThat(duplicated.jsonPath().getString("code")).isEqualTo("PROJECT_DUPLICATE_GITHUB_REPOSITORY");
+    }
+
+    @Test
+    @DisplayName("다른 리포지토리라도 이름이 같아 주소가 겹치면 409를 반환한다.")
+    void rejectsDuplicateSlug() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        List<Long> techTagIds = techTagIds("java");
+        String repositoryName = uniqueRepositoryName();
+        List<String> memberHandles = List.of(teammate.handle());
+        assertThat(registerProject(author, repositoryName, techTagIds, memberHandles).statusCode()).isEqualTo(201);
+
+        Response duplicated = registerProject(author, requestBodyWithUrl(
+                "https://github.com/another-owner/" + repositoryName,
+                techTagIds,
+                memberHandles
+        ));
 
         assertThat(duplicated.statusCode()).isEqualTo(409);
         assertThat(duplicated.jsonPath().getString("code")).isEqualTo("PROJECT_DUPLICATE_SLUG");
@@ -301,6 +326,23 @@ class ProjectAcceptanceTest {
     }
 
     @Test
+    @DisplayName("비로그인 사용자도 handle로 사용자가 참여한 승인 프로젝트를 조회할 수 있다.")
+    void findsApprovedProjectsByUserAnonymously() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        long approved = registerProject(author, teammate, "사용자 프로젝트", 6, techTagIds("java"));
+        registerProject(author, teammate, "승인 대기 프로젝트", 6, techTagIds("java"));
+        approve(approved);
+
+        Response response = findUserProjects(teammate.handle());
+
+        assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
+        assertThat(response.jsonPath().getList("data.id", Long.class)).containsExactly(approved);
+        assertThat(response.jsonPath().getBoolean("meta.hasNext")).isFalse();
+        assertThat(response.jsonPath().getString("meta.nextCursor")).isNull();
+    }
+
+    @Test
     @DisplayName("비로그인 사용자가 필터 옵션을 조회하면, 목록 조회와 같은 조건으로 센 선택지별 프로젝트 수를 반환한다.")
     void findsFilterOptionsWithSameConditionAsList() {
         LoginSession author = signup("WOOWACOURSE_CREW");
@@ -368,6 +410,13 @@ class ProjectAcceptanceTest {
                 .get(PROJECTS_PATH);
     }
 
+    private Response findUserProjects(String handle) {
+        return RestAssured.given()
+                .port(port)
+                .when()
+                .get("/api/v1/users/{handle}/projects", handle);
+    }
+
     /**
      * 비로그인으로 필터 옵션을 조회한다.
      */
@@ -414,6 +463,137 @@ class ProjectAcceptanceTest {
         return request.when().get(PROJECTS_PATH + "/{projectId}", projectId);
     }
 
+
+    @Test
+    @DisplayName("작성자가 반려된 프로젝트를 수정하면 승인 대기로 되돌아가고, 주소는 그대로 남은 채 기술 스택과 팀원이 통째로 바뀐다.")
+    void updatesRejectedProjectBackToPending() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        LoginSession newTeammate = signup("WOOWACOURSE_CREW");
+        List<Long> techTagIds = techTagIds("spring-boot", "java", "react");
+        String repositoryName = uniqueRepositoryName();
+        long projectId = registerProject(author, repositoryName, techTagIds.subList(0, 2), List.of(teammate.handle()))
+                .jsonPath()
+                .getLong("data.projectId");
+        String slug = jdbcTemplate.queryForObject("SELECT slug FROM projects WHERE id = ?", String.class, projectId);
+        reject(projectId);
+
+        Map<String, Object> body = updateRequestBody(
+                "https://github.com/woowacourse-teams/" + uniqueRepositoryName(),
+                List.of(techTagIds.get(2), techTagIds.get(0)),
+                List.of(newTeammate.handle())
+        );
+        body.put("title", "바뀐 제목");
+        body.put("serviceStatus", "CLOSED");
+        body.put("deploymentUrl", null);
+        Response response = updateProject(author, projectId, body);
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.jsonPath().getLong("data.projectId")).isEqualTo(projectId);
+        assertThat(response.jsonPath().getString("data.approvalStatus")).isEqualTo("PENDING");
+
+        Map<String, Object> project = jdbcTemplate.queryForMap(
+                "SELECT slug, title, service_status, deployment_url, approval_status FROM projects WHERE id = ?",
+                projectId);
+        assertThat(project.get("slug")).isEqualTo(slug);
+        assertThat(project.get("title")).isEqualTo("바뀐 제목");
+        assertThat(project.get("service_status")).isEqualTo("CLOSED");
+        assertThat(project.get("deployment_url")).isNull();
+        assertThat(project.get("approval_status")).isEqualTo("PENDING");
+
+        List<Long> savedTagIds = jdbcTemplate.queryForList(
+                "SELECT tech_tag_id FROM project_tags WHERE project_id = ? ORDER BY display_order", Long.class,
+                projectId);
+        assertThat(savedTagIds).containsExactly(techTagIds.get(2), techTagIds.get(0));
+
+        List<Long> memberIds = jdbcTemplate.queryForList(
+                "SELECT user_id FROM project_members WHERE project_id = ? ORDER BY display_order", Long.class,
+                projectId);
+        assertThat(memberIds).containsExactly(author.userId(), newTeammate.userId());
+    }
+
+    @Test
+    @DisplayName("승인된 프로젝트를 수정해도 승인 상태를 그대로 유지한다.")
+    void keepsApprovedStatusOnUpdate() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        List<Long> techTagIds = techTagIds("java");
+        long projectId = registerProject(author, uniqueRepositoryName(), techTagIds, List.of(teammate.handle()))
+                .jsonPath()
+                .getLong("data.projectId");
+        jdbcTemplate.update("UPDATE projects SET approval_status = 'APPROVED' WHERE id = ?", projectId);
+
+        Response response = updateProject(author, projectId, updateRequestBody(
+                "https://github.com/woowacourse-teams/" + uniqueRepositoryName(),
+                techTagIds,
+                List.of(teammate.handle())
+        ));
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.jsonPath().getString("data.approvalStatus")).isEqualTo("APPROVED");
+    }
+
+    @Test
+    @DisplayName("다른 사람의 프로젝트를 수정하면, 존재 여부를 숨기고 404를 반환한다.")
+    void rejectsUpdateByNonRegistrant() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        LoginSession stranger = signup("WOOWACOURSE_CREW");
+        List<Long> techTagIds = techTagIds("java");
+        long projectId = registerProject(author, uniqueRepositoryName(), techTagIds, List.of(teammate.handle()))
+                .jsonPath()
+                .getLong("data.projectId");
+
+        Response response = updateProject(stranger, projectId, updateRequestBody(
+                "https://github.com/woowacourse-teams/" + uniqueRepositoryName(),
+                techTagIds,
+                List.of(teammate.handle())
+        ));
+
+        assertThat(response.statusCode()).isEqualTo(404);
+        assertThat(response.jsonPath().getString("code")).isEqualTo("PROJECT_NOT_FOUND");
+        assertThat(jdbcTemplate.queryForObject("SELECT title FROM projects WHERE id = ?", String.class, projectId))
+                .isEqualTo("루프 (Loop)");
+    }
+
+    /**
+     * 관리자 심사 API 가 아직 없어, 반려 상태와 사유를 직접 만들어 둔다.
+     */
+    private void reject(long projectId) {
+        jdbcTemplate.update("UPDATE projects SET approval_status = 'REJECTED' WHERE id = ?", projectId);
+        jdbcTemplate.update(
+                "INSERT INTO project_approval_histories (project_id, from_status, to_status, reason) "
+                        + "VALUES (?, 'PENDING', 'REJECTED', ?)",
+                projectId,
+                "한 줄 소개를 구체적으로 적어주세요."
+        );
+    }
+
+    /**
+     * 수정 요청은 등록 요청에 없는 serviceStatus 를 반드시 담아야 한다.
+     */
+    private static Map<String, Object> updateRequestBody(
+            String githubRepositoryUrl,
+            List<Long> techTagIds,
+            List<String> memberHandles
+    ) {
+        Map<String, Object> body = new HashMap<>(
+                requestBodyWithUrl(githubRepositoryUrl, techTagIds, memberHandles));
+        body.put("serviceStatus", "OPERATING");
+        return body;
+    }
+
+    private Response updateProject(LoginSession author, long projectId, Map<String, Object> body) {
+        return RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", author.sessionId())
+                .header("X-CSRF-Token", author.csrfToken())
+                .contentType("application/json")
+                .body(body)
+                .when()
+                .put(PROJECTS_PATH + "/" + projectId);
+    }
+
     private Response registerProject(
             LoginSession author,
             String repositoryName,
@@ -439,12 +619,24 @@ class ProjectAcceptanceTest {
             List<Long> techTagIds,
             List<String> memberHandles
     ) {
+        return requestBodyWithUrl(
+                "https://github.com/woowacourse-teams/" + repositoryName,
+                techTagIds,
+                memberHandles
+        );
+    }
+
+    private static Map<String, Object> requestBodyWithUrl(
+            String githubRepositoryUrl,
+            List<Long> techTagIds,
+            List<String> memberHandles
+    ) {
         return Map.of(
                 "title", "루프 (Loop)",
                 "teamName", "루프팀",
                 "tagline", "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                 "cohort", 6,
-                "githubRepositoryUrl", "https://github.com/woowacourse-teams/" + repositoryName,
+                "githubRepositoryUrl", githubRepositoryUrl,
                 "deploymentUrl", "https://loop.team",
                 "techTagIds", techTagIds,
                 "memberHandles", memberHandles

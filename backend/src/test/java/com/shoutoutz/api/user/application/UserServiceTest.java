@@ -18,8 +18,10 @@ import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
@@ -130,8 +132,8 @@ class UserServiceTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
-                .cohort((short) 8)
+                .track(Track.BACKEND)
+                .cohort(Cohort.COHORT_8)
                 .bio("백엔드 개발자입니다.")
                 .avatarImageId(21L)
                 .githubProfileUrl("https://github.com/zzaekkii")
@@ -266,8 +268,8 @@ class UserServiceTest {
                 handle,
                 displayName,
                 UserType.WOOWACOURSE_CREW,
-                "BACKEND",
-                (short) 8,
+                Track.BACKEND,
+                Cohort.COHORT_8,
                 null,
                 relevanceRank
         );

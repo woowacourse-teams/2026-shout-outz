@@ -4,6 +4,8 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static com.epages.restdocs.apispec.SimpleType.INTEGER;
+import static com.shoutoutz.api.feed.presentation.FeedRestDocsFields.feedListResponseFields;
+import static com.shoutoutz.api.feed.presentation.FeedRestDocsFields.successResponseFields;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -11,11 +13,7 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
-import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
-import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
-import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
-import static org.springframework.restdocs.payload.PayloadDocumentation.applyPathPrefix;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -28,6 +26,7 @@ import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.category.domain.CategoryType;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
@@ -42,6 +41,7 @@ import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.user.domain.profile.Track;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -50,7 +50,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
@@ -103,7 +102,7 @@ class FeedHttpApiTest {
                                                 .optional()
                                 )
                                 .responseSchema(Schema.schema("FeedFindAllSuccessResponse"))
-                                .responseFields(feedListResponseFields())
+                                .responseFields(feedListResponseFields("피드 목록"))
                                 .build())
                 ));
     }
@@ -602,8 +601,8 @@ class FeedHttpApiTest {
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
-                        "BACKEND",
-                        (short) 8,
+                        Track.BACKEND,
+                        Cohort.COHORT_8,
                         21L
                 ),
                 List.of(new FeedItem.Category(
@@ -619,46 +618,4 @@ class FeedHttpApiTest {
         );
     }
 
-    private List<FieldDescriptor> feedFields(String prefix) {
-        return applyPathPrefix(prefix, List.of(
-                fieldWithPath("feedId").type(NUMBER).description("피드 ID"),
-                fieldWithPath("content").type(STRING).description("Markdown 본문"),
-                fieldWithPath("author").type(OBJECT).description("현재 작성자 프로필"),
-                fieldWithPath("author.handle").type(STRING).description("작성자 핸들"),
-                fieldWithPath("author.displayName").type(STRING).description("작성자 이름"),
-                fieldWithPath("author.userType").type(STRING).description("작성자 유형"),
-                fieldWithPath("author.track").type(STRING).description("작성자 트랙").optional(),
-                fieldWithPath("author.cohort").type(NUMBER).description("작성자 기수").optional(),
-                fieldWithPath("author.avatarImageId").type(NUMBER).description("현재 프로필 이미지 미디어 ID").optional(),
-                fieldWithPath("categories").type(ARRAY).description("카테고리 목록"),
-                fieldWithPath("categories[].categoryId").type(NUMBER).description("카테고리 ID"),
-                fieldWithPath("categories[].slug").type(STRING).description("카테고리 slug"),
-                fieldWithPath("categories[].displayName").type(STRING).description("카테고리 표시 이름"),
-                fieldWithPath("categories[].type").type(STRING).description("GENERAL 또는 EVENT"),
-                fieldWithPath("media").type(ARRAY).description("본문 미디어 목록"),
-                fieldWithPath("media[].mediaId").type(NUMBER).description("미디어 ID"),
-                fieldWithPath("media[].displayOrder").type(NUMBER).description("미디어 표시 순서"),
-                fieldWithPath("createdAt").type(STRING).description("ISO-8601 생성 시각"),
-                fieldWithPath("updatedAt").type(STRING).description("ISO-8601 수정 시각")
-        ));
-    }
-
-    private List<FieldDescriptor> successResponseFields(String feedPrefix) {
-        List<FieldDescriptor> fields = new java.util.ArrayList<>();
-        fields.add(fieldWithPath("status").type(STRING).description("응답 상태"));
-        fields.add(fieldWithPath("data").type(OBJECT).description("피드"));
-        fields.addAll(feedFields(feedPrefix));
-        return fields;
-    }
-
-    private List<FieldDescriptor> feedListResponseFields() {
-        List<FieldDescriptor> fields = new java.util.ArrayList<>();
-        fields.add(fieldWithPath("status").type(STRING).description("응답 상태"));
-        fields.add(fieldWithPath("data").type(ARRAY).description("피드 목록"));
-        fields.addAll(feedFields("data[]."));
-        fields.add(fieldWithPath("meta").type(OBJECT).description("Slice 메타데이터"));
-        fields.add(fieldWithPath("meta.nextCursor").type(STRING).description("다음 Slice 커서").optional());
-        fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 Slice 존재 여부"));
-        return fields;
-    }
 }

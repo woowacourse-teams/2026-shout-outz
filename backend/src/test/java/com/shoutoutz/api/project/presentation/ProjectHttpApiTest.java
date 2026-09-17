@@ -18,8 +18,10 @@ import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.snippet.Attributes.key;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -27,12 +29,16 @@ import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.cohort.domain.InvalidCohortException;
+import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.DeletedProject;
+import com.shoutoutz.api.project.domain.ProjectDeletion;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
+import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
@@ -43,12 +49,14 @@ import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenEx
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectUpdateRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Instant;
 import java.util.List;
@@ -81,13 +89,29 @@ class ProjectHttpApiTest {
             + "팀원은 등록자를 첫 번째로 두고 memberHandles 순서대로 저장한다. "
             + "본문 이미지는 descriptionMd에 ![설명](media://{mediaId}) 형식으로 넣는다. "
             + "요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
-            + "크루나 코치가 아니면 403, 이미 등록된 리포지토리면 409를 반환한다.";
+            + "크루나 코치가 아니면 403, 이미 등록된 리포지토리이거나 리포지토리 이름이 같아 slug가 겹치면 409를 반환한다.";
+    private static final String UPDATE_SUMMARY = "프로젝트 수정";
+    private static final String UPDATE_DESCRIPTION = "작성자가 프로젝트 정보를 수정한다. 모든 필드를 보내는 전체 교체 방식이며, "
+            + "비우는 값은 null로 보낸다. techTagIds와 memberHandles도 전체 목록을 순서대로 보낸다. "
+            + "반려된 프로젝트를 수정하면 재심사 요청으로 처리되어 approvalStatus가 PENDING으로 바뀌고, "
+            + "그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. "
+            + "요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
+            + "없거나 삭제됐거나 다른 사람의 프로젝트면 404, 이미 등록된 리포지토리로 바꾸면 409를 반환한다.";
     private static final String FIND_ALL_SUMMARY = "프로젝트 목록 조회";
     private static final String FIND_ALL_DESCRIPTION = "승인된 프로젝트 목록을 검색어, 기수, 기술 스택으로 걸러 정렬 기준대로 조회한다. "
             + "로그인하지 않아도 조회할 수 있다. 커서 기반으로, 첫 요청은 cursor를 생략하고 "
             + "다음 요청부터 응답의 meta.nextCursor를 그대로 전달한다. 정렬을 바꾸면 cursor 없이 처음부터 다시 요청한다. "
             + "POPULAR에서 좋아요 수가 같으면 최근 등록된 프로젝트가 앞에 온다. "
             + "요청 형식이 올바르지 않거나, 정의되지 않은 기수이거나, 커서가 올바르지 않으면 400을 반환한다.";
+    private static final String DELETE_SUMMARY = "프로젝트 삭제";
+    private static final String DELETE_DESCRIPTION = "등록자 본인이 자신의 프로젝트를 삭제한다. 심사 중인 프로젝트도 삭제할 수 있다. "
+            + "삭제된 프로젝트는 목록과 상세에서 보이지 않으며, 응답의 restoreDeadlineAt 까지 복구할 수 있다. "
+            + "로그인하지 않았으면 401, 없는 프로젝트이거나 등록자가 아니거나 이미 삭제된 프로젝트이면 404를 반환한다.";
+    private static final String RESTORE_SUMMARY = "프로젝트 복구";
+    private static final String RESTORE_DESCRIPTION = "등록자 본인이 삭제한 자신의 프로젝트를 복구 기한 안에 되살린다. "
+            + "승인 상태는 삭제 이전 값을 그대로 유지한다. "
+            + "로그인하지 않았으면 401, 없는 프로젝트이거나 등록자가 아니거나 삭제되지 않은 프로젝트이면 404, "
+            + "복구 기한이 지났으면 409를 반환한다. 복구 기한이 지난 프로젝트는 이후 영구 삭제되어 복구할 수 없다.";
     private static final String DETAIL_SUMMARY = "프로젝트 상세 조회";
     private static final String DETAIL_DESCRIPTION = "프로젝트 상세 화면에 필요한 기본 정보, 상세 설명, 팀원, 기술 스택, 외부 링크, "
             + "리액션 및 댓글 수를 조회한다. 로그인하지 않아도 조회할 수 있다. "
@@ -207,14 +231,14 @@ class ProjectHttpApiTest {
     @DisplayName("이미 등록된 리포지토리인 경우, 409를 반환한다.")
     void rejectsDuplicateRepository() throws Exception {
         given(projectService.create(anyLong(), any(ProjectCreateRequest.class)))
-                .willThrow(new DuplicateEntityException(ProjectErrorCode.PROJECT_DUPLICATE_SLUG));
+                .willThrow(new DuplicateEntityException(ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY));
 
         mockMvc.perform(post("/api/v1/projects")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequestJson()))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("PROJECT_DUPLICATE_SLUG"))
+                .andExpect(jsonPath("$.code").value("PROJECT_DUPLICATE_GITHUB_REPOSITORY"))
                 .andDo(document("project-create-duplicate", resource(errorResource())));
     }
 
@@ -281,8 +305,8 @@ class ProjectHttpApiTest {
                         6, 12L, 184L, 14L,
                         List.of(new ProjectTechTagResponse(1L, "React"), new ProjectTechTagResponse(2L, "Spring")),
                         List.of(
-                                new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BE", 101L, null, null),
-                                new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FE", null, null, null)
+                                new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BACKEND", 101L, null, null),
+                                new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FRONTEND", null, null, null)
                         ))),
                 new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
         ));
@@ -684,6 +708,184 @@ class ProjectHttpApiTest {
                 .build();
     }
 
+    @Test
+    @DisplayName("등록자가 자신의 프로젝트를 삭제하면 200과 삭제 시각, 복구 기한을 반환한다.")
+    void deletesProject() throws Exception {
+        given(projectService.delete(100L, 7L)).willReturn(projectDeletion());
+
+        mockMvc.perform(delete("/api/v1/projects/{projectId}", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(100))
+                .andExpect(jsonPath("$.data.deletedAt").value("2026-09-06T13:30:00Z"))
+                .andExpect(jsonPath("$.data.restoreDeadlineAt").value("2026-10-06T13:30:00Z"))
+                .andDo(document(
+                        "project-delete",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Project")
+                                .summary(DELETE_SUMMARY)
+                                .description(DELETE_DESCRIPTION)
+                                .pathParameters(
+                                        parameterWithName("projectId").description("삭제할 프로젝트 ID")
+                                )
+                                .requestHeaders(
+                                        headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .responseSchema(Schema.schema("ProjectDeleteSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data.id").type(NUMBER).description("삭제한 프로젝트 ID"),
+                                        fieldWithPath("data.deletedAt").type(STRING).description("삭제 시각 (UTC)"),
+                                        fieldWithPath("data.restoreDeadlineAt").type(STRING)
+                                                .description("복구 기한 (UTC). 이 시각까지 복구할 수 있다."),
+                                        fieldWithPath("meta").type(OBJECT).description("메타 정보").optional()
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    @DisplayName("없는 프로젝트이거나 등록자가 아니거나 이미 삭제된 프로젝트이면, 404를 반환한다.")
+    void rejectsDeletingNotOwnedOrAlreadyDeletedProject() throws Exception {
+        given(projectService.delete(100L, 7L))
+                .willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
+
+        mockMvc.perform(delete("/api/v1/projects/{projectId}", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PROJECT_NOT_FOUND"))
+                .andDo(document("project-delete-not-found", resource(deleteErrorResource())));
+    }
+
+    @Test
+    @DisplayName("로그인하지 않고 프로젝트 삭제를 요청하는 경우, 401을 반환하고 서비스를 호출하지 않는다.")
+    void rejectsUnauthenticatedDeletion() throws Exception {
+        mockMvc.perform(delete("/api/v1/projects/{projectId}", 100L)
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(document("project-delete-unauthorized", resource(deleteErrorResource())));
+
+        verifyNoInteractions(projectService);
+    }
+
+    private static ResourceSnippetParameters deleteErrorResource() {
+        return ResourceSnippetParameters.builder()
+                .tag("Project")
+                .summary(DELETE_SUMMARY)
+                .description(DELETE_DESCRIPTION)
+                .pathParameters(
+                        parameterWithName("projectId").description("삭제할 프로젝트 ID")
+                )
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse())
+                .build();
+    }
+
+    private static ProjectDeletion projectDeletion() {
+        return ProjectDeletion.selfDelete(
+                new DeletedProject(100L, "loop", "루프 (Loop)"),
+                7L,
+                Instant.parse("2026-09-06T13:30:00Z")
+        );
+    }
+
+    @Test
+    @DisplayName("등록자가 복구 기한 안에 자신의 프로젝트를 복구하면 200과 승인 상태, 복구 시각을 반환한다.")
+    void restoresProject() throws Exception {
+        given(projectService.restore(100L, 7L)).willReturn(
+                new RestoredProject(100L, ApprovalStatus.APPROVED, Instant.parse("2026-09-10T05:20:00Z"))
+        );
+
+        mockMvc.perform(post("/api/v1/projects/{projectId}/restore", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(100))
+                .andExpect(jsonPath("$.data.approvalStatus").value("APPROVED"))
+                .andExpect(jsonPath("$.data.restoredAt").value("2026-09-10T05:20:00Z"))
+                .andDo(document(
+                        "project-restore",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Project")
+                                .summary(RESTORE_SUMMARY)
+                                .description(RESTORE_DESCRIPTION)
+                                .pathParameters(
+                                        parameterWithName("projectId").description("복구할 프로젝트 ID")
+                                )
+                                .requestHeaders(
+                                        headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .responseSchema(Schema.schema("ProjectRestoreSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data.id").type(NUMBER).description("복구한 프로젝트 ID"),
+                                        fieldWithPath("data.approvalStatus").type(STRING)
+                                                .description("승인 상태 (PENDING, APPROVED, REJECTED). 삭제 이전 값을 그대로 유지한다."),
+                                        fieldWithPath("data.restoredAt").type(STRING).description("복구 시각 (UTC)"),
+                                        fieldWithPath("meta").type(OBJECT).description("메타 정보").optional()
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    @DisplayName("없는 프로젝트이거나 등록자가 아니거나 삭제되지 않은 프로젝트이면, 404를 반환한다.")
+    void rejectsRestoringNotDeletedOrNotOwnedProject() throws Exception {
+        given(projectService.restore(100L, 7L))
+                .willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
+
+        mockMvc.perform(post("/api/v1/projects/{projectId}/restore", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PROJECT_NOT_FOUND"))
+                .andDo(document("project-restore-not-found", resource(restoreErrorResource())));
+    }
+
+    @Test
+    @DisplayName("복구 기한이 지난 프로젝트를 복구하려 하면, 409를 반환한다.")
+    void rejectsRestoringAfterDeadline() throws Exception {
+        given(projectService.restore(100L, 7L))
+                .willThrow(new ConflictException(ProjectErrorCode.PROJECT_RESTORE_DEADLINE_EXPIRED));
+
+        mockMvc.perform(post("/api/v1/projects/{projectId}/restore", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("PROJECT_RESTORE_DEADLINE_EXPIRED"))
+                .andDo(document("project-restore-deadline-expired", resource(restoreErrorResource())));
+    }
+
+    @Test
+    @DisplayName("로그인하지 않고 프로젝트 복구를 요청하는 경우, 401을 반환하고 서비스를 호출하지 않는다.")
+    void rejectsUnauthenticatedRestore() throws Exception {
+        mockMvc.perform(post("/api/v1/projects/{projectId}/restore", 100L)
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(document("project-restore-unauthorized", resource(restoreErrorResource())));
+
+        verifyNoInteractions(projectService);
+    }
+
+    private static ResourceSnippetParameters restoreErrorResource() {
+        return ResourceSnippetParameters.builder()
+                .tag("Project")
+                .summary(RESTORE_SUMMARY)
+                .description(RESTORE_DESCRIPTION)
+                .pathParameters(
+                        parameterWithName("projectId").description("복구할 프로젝트 ID")
+                )
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse())
+                .build();
+    }
+
     private static ResourceSnippetParameters filterOptionsErrorResource() {
         return ResourceSnippetParameters.builder()
                 .tag("Project")
@@ -735,8 +937,8 @@ class ProjectHttpApiTest {
                         new ProjectTechTagResponse(2L, "TypeScript")
                 ),
                 List.of(
-                        new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BE", 101L, null, null),
-                        new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FE", null, null, null)
+                        new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BACKEND", 101L, null, null),
+                        new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FRONTEND", null, null, null)
                 ),
                 Instant.parse("2026-08-09T02:30:00Z"),
                 Instant.parse("2026-08-09T03:00:00Z")
@@ -752,6 +954,171 @@ class ProjectHttpApiTest {
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())
                 .build();
+    }
+
+    /**
+     * 같은 경로와 메서드의 스니펫은 하나의 문서로 합쳐지므로, 수정 오류도 수정 API 의 설명을 달아야 한다.
+     * 등록용 errorResource 를 쓰면 문서의 PUT 설명이 등록 API 설명으로 덮인다.
+     */
+    private static ResourceSnippetParameters updateErrorResource() {
+        return ResourceSnippetParameters.builder()
+                .tag("Project")
+                .summary(UPDATE_SUMMARY)
+                .description(UPDATE_DESCRIPTION)
+                .pathParameters(parameterWithName("projectId").description("수정할 프로젝트 ID"))
+                .requestSchema(Schema.schema("ProjectUpdateRequest"))
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse())
+                .build();
+    }
+
+
+    @Test
+    @DisplayName("작성자가 프로젝트를 수정하면 바뀐 승인 상태와 함께 200을 반환한다.")
+    void updatesProject() throws Exception {
+        given(projectService.update(anyLong(), anyLong(), any(ProjectUpdateRequest.class)))
+                .willReturn(new ProjectUpdateResponse(100L, ApprovalStatus.PENDING));
+
+        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUpdateRequestJson()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.projectId").value(100))
+                .andExpect(jsonPath("$.data.approvalStatus").value("PENDING"))
+                .andDo(document(
+                        "project-update",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Project")
+                                .summary(UPDATE_SUMMARY)
+                                .description(UPDATE_DESCRIPTION)
+                                .pathParameters(parameterWithName("projectId").description("수정할 프로젝트 ID"))
+                                .requestHeaders(
+                                        headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .requestSchema(Schema.schema("ProjectUpdateRequest"))
+                                .responseSchema(Schema.schema("ProjectUpdateSuccessResponse"))
+                                .requestFields(
+                                        fieldWithPath("title").type(STRING).description("프로젝트 이름 (100자 이하)"),
+                                        fieldWithPath("teamName").type(STRING).description("팀 이름 (50자 이하)"),
+                                        fieldWithPath("tagline").type(STRING).description("한 줄 소개 (200자 이하)"),
+                                        fieldWithPath("cohort").type(NUMBER).description("우아한테크코스 기수 (1~8)"),
+                                        fieldWithPath("thumbnailMediaId").type(NUMBER)
+                                                .description("본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. "
+                                                        + "썸네일을 비우려면 null로 보낸다.")
+                                                .optional(),
+                                        fieldWithPath("githubRepositoryUrl").type(STRING)
+                                                .description("https://github.com/{owner}/{repo} 형식. 바꿀 수 있지만 "
+                                                        + "다른 프로젝트가 등록한 리포지토리로는 바꿀 수 없다. "
+                                                        + "slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다."),
+                                        fieldWithPath("deploymentUrl").type(STRING)
+                                                .description("서비스 배포 URL (http/https). 비우려면 null로 보낸다.")
+                                                .optional(),
+                                        fieldWithPath("descriptionMd").type(STRING)
+                                                .description("프로젝트 설명 마크다운 (100,000자 이하). "
+                                                        + "이미지는 ![설명](media://{mediaId}) 형식으로 넣는다.")
+                                                .optional(),
+                                        fieldWithPath("serviceStatus").type(STRING)
+                                                .description("서비스 운영 상태 (OPERATING, CLOSED). "
+                                                        + "deploymentUrl이 없으면 CLOSED만 보낼 수 있다."),
+                                        fieldWithPath("techTagIds").type(ARRAY)
+                                                .description("기술 스택 ID 전체 목록. 통째로 교체하며 배열 순서가 표시 순서가 된다. "
+                                                        + "이미 달려 있던 태그는 비활성화됐어도 그대로 둘 수 있다.")
+                                                .attributes(key("itemsType").value("number")),
+                                        fieldWithPath("memberHandles").type(ARRAY)
+                                                .description("작성자를 제외한 팀원 handle 전체 목록 (1명 이상). "
+                                                        + "통째로 교체하며 배열 순서가 표시 순서가 된다. "
+                                                        + "이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다.")
+                                                .attributes(key("itemsType").value("string"))
+                                )
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data.projectId").type(NUMBER).description("수정한 프로젝트 ID"),
+                                        fieldWithPath("data.approvalStatus").type(STRING)
+                                                .description("수정 후 승인 상태 (PENDING, APPROVED)")
+                                )
+                                .build())
+                ));
+
+        verify(projectService).update(eq(100L), eq(7L), any(ProjectUpdateRequest.class));
+    }
+
+    @Test
+    @DisplayName("프로젝트 수정 요청에 필수값이 없는 경우, 400과 필드 오류를 반환하고, 서비스를 호출하지 않는다.")
+    void rejectsInvalidUpdateRequest() throws Exception {
+        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUpdateRequestJson().replace("\"serviceStatus\": \"OPERATING\",", "")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details[0].field").value("serviceStatus"))
+                .andDo(document("project-update-invalid", resource(updateErrorResource())));
+
+        verifyNoInteractions(projectService);
+    }
+
+    @Test
+    @DisplayName("로그인하지 않고 프로젝트 수정을 요청하는 경우, 요청값 검증보다 먼저 401을 반환한다.")
+    void rejectsUnauthenticatedUpdate() throws Exception {
+        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUpdateRequestJson()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(document("project-update-unauthorized", resource(updateErrorResource())));
+
+        verifyNoInteractions(projectService);
+    }
+
+    @Test
+    @DisplayName("없거나 삭제됐거나 다른 사람의 프로젝트를 수정하면, 존재 여부를 숨기고 404를 반환한다.")
+    void rejectsUpdateOfInaccessibleProject() throws Exception {
+        given(projectService.update(anyLong(), anyLong(), any(ProjectUpdateRequest.class)))
+                .willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
+
+        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUpdateRequestJson()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PROJECT_NOT_FOUND"))
+                .andDo(document("project-update-not-found", resource(updateErrorResource())));
+    }
+
+    @Test
+    @DisplayName("다른 프로젝트가 등록한 리포지토리로 바꾸면, 409를 반환한다.")
+    void rejectsUpdateToDuplicateRepository() throws Exception {
+        given(projectService.update(anyLong(), anyLong(), any(ProjectUpdateRequest.class)))
+                .willThrow(new DuplicateEntityException(ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY));
+
+        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUpdateRequestJson()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("PROJECT_DUPLICATE_GITHUB_REPOSITORY"))
+                .andDo(document("project-update-duplicate", resource(updateErrorResource())));
+    }
+
+    private static String validUpdateRequestJson() {
+        return """
+                {
+                  "title": "루프 (Loop)",
+                  "teamName": "루프팀",
+                  "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                  "cohort": 6,
+                  "thumbnailMediaId": 12,
+                  "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                  "deploymentUrl": "https://loop.team",
+                  "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
+                  "serviceStatus": "OPERATING",
+                  "techTagIds": [1, 2, 3],
+                  "memberHandles": ["zzaekkii", "sangjun121"]
+                }
+                """;
     }
 
     private static String validRequestJson() {

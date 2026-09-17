@@ -7,19 +7,25 @@ import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectUpdateRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectDeleteResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectRestoreResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,6 +44,19 @@ public class ProjectHttpApi {
     ) {
         ProjectCreateResponse response = projectService.create(loginUser.userId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(SuccessResponse.success(response));
+    }
+
+    /**
+     * 작성자만 수정할 수 있다. 반려된 프로젝트를 수정하면 재심사 요청으로 처리한다.
+     */
+    @PutMapping("/{projectId}")
+    public ResponseEntity<SuccessResponse<ProjectUpdateResponse>> update(
+            @LoginUser AuthenticatedUser loginUser,
+            @PathVariable long projectId,
+            @Valid @RequestBody ProjectUpdateRequest request
+    ) {
+        ProjectUpdateResponse response = projectService.update(projectId, loginUser.userId(), request);
+        return ResponseEntity.ok(SuccessResponse.success(response));
     }
 
     @GetMapping
@@ -69,6 +88,34 @@ public class ProjectHttpApi {
         ProjectDetailResponse response = projectService.findDetail(
                 projectId,
                 AuthenticatedUser.userIdOrNull(loginUser)
+        );
+        return ResponseEntity.ok(SuccessResponse.success(response));
+    }
+
+    /**
+     * 등록자 본인만 삭제할 수 있다. 심사 중인 프로젝트도 삭제할 수 있다.
+     */
+    @DeleteMapping("/{projectId}")
+    public ResponseEntity<SuccessResponse<ProjectDeleteResponse>> delete(
+            @LoginUser AuthenticatedUser loginUser,
+            @PathVariable long projectId
+    ) {
+        ProjectDeleteResponse response = ProjectDeleteResponse.from(
+                projectService.delete(projectId, loginUser.userId())
+        );
+        return ResponseEntity.ok(SuccessResponse.success(response));
+    }
+
+    /**
+     * 등록자 본인만 복구 기한 안에 복구할 수 있다. 승인 상태는 삭제 이전 값을 그대로 유지한다.
+     */
+    @PostMapping("/{projectId}/restore")
+    public ResponseEntity<SuccessResponse<ProjectRestoreResponse>> restore(
+            @LoginUser AuthenticatedUser loginUser,
+            @PathVariable long projectId
+    ) {
+        ProjectRestoreResponse response = ProjectRestoreResponse.from(
+                projectService.restore(projectId, loginUser.userId())
         );
         return ResponseEntity.ok(SuccessResponse.success(response));
     }

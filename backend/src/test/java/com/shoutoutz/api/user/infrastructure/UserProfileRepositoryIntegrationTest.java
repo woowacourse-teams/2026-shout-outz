@@ -12,6 +12,8 @@ import com.shoutoutz.api.user.domain.profile.ProfileDisplayName;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.user.domain.profile.Track;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.infrastructure.jpa.UserProfileJpaRepository;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;

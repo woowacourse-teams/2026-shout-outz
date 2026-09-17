@@ -1,6 +1,7 @@
 package com.shoutoutz.api.user.domain.profile;
 
 import com.shoutoutz.api.common.util.DataResolveUtil;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -13,8 +14,8 @@ public class UserProfile {
     private final Long userId;
     private final ProfileDisplayName displayName;
     private final UserType userType;
-    private final String track;
-    private final Short cohort;
+    private final Track track;
+    private final Cohort cohort;
     private final String bio;
     private final Long avatarImageId;
     private final String githubProfileUrl;
@@ -25,14 +26,13 @@ public class UserProfile {
             Long userId,
             String displayName,
             UserType userType,
-            String track,
-            Short cohort,
+            Track track,
+            Cohort cohort,
             String bio,
             Long avatarImageId,
             String githubProfileUrl,
             String blogUrl
     ) {
-        String sanitizedTrack = DataResolveUtil.sanitizeString(track);
         String sanitizedBio = DataResolveUtil.sanitizeString(bio);
         String sanitizedGithubProfileUrl = DataResolveUtil.sanitizeString(githubProfileUrl);
         String sanitizedBlogUrl = DataResolveUtil.sanitizeString(blogUrl);
@@ -40,13 +40,13 @@ public class UserProfile {
         UserProfileValidator.validateProfile(
                 userId,
                 userType,
-                sanitizedTrack,
+                track,
                 cohort
         );
         this.userId = userId;
         this.displayName = new ProfileDisplayName(displayName);
         this.userType = userType;
-        this.track = sanitizedTrack;
+        this.track = track;
         this.cohort = cohort;
         this.bio = sanitizedBio;
         this.avatarImageId = avatarImageId;
@@ -78,6 +78,32 @@ public class UserProfile {
                 userType,
                 track,
                 cohort,
+                bio,
+                avatarImageId,
+                githubProfileUrl,
+                blogUrl
+        );
+    }
+
+    public UserProfile approve(
+            UserType verificationType,
+            String nickname,
+            Integer verificationCohort,
+            String verificationTrack
+    ) {
+        boolean crew = verificationType == UserType.WOOWACOURSE_CREW;
+        String verifiedDisplayName = crew
+                ? verificationCohort + "기 " + nickname
+                : nickname;
+        Track verifiedTrack = crew ? Track.from(verificationTrack) : null;
+        Cohort verifiedCohort = crew ? Cohort.from(verificationCohort) : null;
+
+        return new UserProfile(
+                userId,
+                verifiedDisplayName,
+                verificationType,
+                verifiedTrack,
+                verifiedCohort,
                 bio,
                 avatarImageId,
                 githubProfileUrl,

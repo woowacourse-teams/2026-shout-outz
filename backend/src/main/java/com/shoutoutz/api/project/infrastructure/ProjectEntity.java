@@ -1,6 +1,7 @@
 package com.shoutoutz.api.project.infrastructure;
 
 import com.shoutoutz.api.common.entity.BaseEntity;
+import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import jakarta.persistence.Column;
@@ -79,4 +80,23 @@ public class ProjectEntity extends BaseEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    /**
+     * 작성자가 고칠 수 있는 컬럼만 바꾼다.
+     * id, slug, registered_by 는 바뀌지 않는 값이고, view_count 와 star_count, star_synced_at, deleted_at은
+     * 수정 요청이 다루지 않는 값이라 그대로 둔다. 엔티티를 새로 만들어 저장하면 이 값들이 함께 덮이므로,
+     * 조회한 엔티티의 필드만 바꿔 더티 체킹으로 반영한다.
+     */
+    public void update(Project project) {
+        this.cohort = (short) project.getCohort().getValue();
+        this.teamName = project.getTeamName().value();
+        this.title = project.getTitle().value();
+        this.tagline = project.getTagline();
+        this.serviceStatus = project.getServiceStatus();
+        this.approvalStatus = project.getApprovalStatus();
+        this.descriptionMd = project.getDescriptionMd();
+        this.githubRepositoryUrl = project.getGithubRepositoryUrl().value();
+        this.deploymentUrl = project.getDeploymentUrl() == null ? null : project.getDeploymentUrl().value();
+        this.thumbnailMediaId = project.getThumbnailMediaId();
+    }
 }

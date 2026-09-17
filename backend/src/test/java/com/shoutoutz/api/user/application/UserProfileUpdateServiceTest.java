@@ -19,7 +19,9 @@ import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateResponse;
 import java.time.Instant;
@@ -107,8 +109,8 @@ class UserProfileUpdateServiceTest {
                 .userId(1L)
                 .displayName("재키")
                 .userType(UserType.WOOWACOURSE_CREW)
-                .track("BACKEND")
-                .cohort((short) 8)
+                .track(Track.BACKEND)
+                .cohort(Cohort.COHORT_8)
                 .build();
         given(userRepository.findById(1L)).willReturn(Optional.of(user()));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));

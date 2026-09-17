@@ -1,14 +1,16 @@
 package com.shoutoutz.api.feed.infrastructure;
 
 import com.shoutoutz.api.category.domain.CategoryType;
-import com.shoutoutz.api.media.domain.MediaPurpose;
-import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.application.FeedQueryRepository;
 import com.shoutoutz.api.feed.application.dto.FeedCursor;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.FeedMediaReference;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
+import com.shoutoutz.api.media.domain.MediaPurpose;
+import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.user.domain.profile.Track;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -66,6 +68,24 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         MapSqlParameterSource parameters = new MapSqlParameterSource("limit", limit);
         appendCategoryFilter(sql, parameters, categoryId);
         appendCursorAndOrder(sql, parameters, sort, cursor);
+        sql.append("LIMIT :limit");
+
+        List<FeedBaseRow> rows = jdbcTemplate.query(
+                sql.toString(),
+                parameters,
+                (resultSet, rowNumber) -> toBaseRow(resultSet)
+        );
+        return assembleItems(rows);
+    }
+
+    @Override
+    public List<FeedItem> findAllByAuthorId(long authorId, FeedCursor cursor, int limit) {
+        StringBuilder sql = createFindAllQuery(FeedSort.LATEST);
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("authorId", authorId)
+                .addValue("limit", limit);
+        sql.append("  AND p.author_id = :authorId\n");
+        appendLatestCursorAndOrder(sql, parameters, cursor);
         sql.append("LIMIT :limit");
 
         List<FeedBaseRow> rows = jdbcTemplate.query(
@@ -308,14 +328,28 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                         resultSet.getString("handle"),
                         resultSet.getString("display_name"),
                         UserType.valueOf(resultSet.getString("user_type")),
-                        resultSet.getString("track"),
-                        resultSet.getObject("cohort", Short.class),
+                        toTrack(resultSet.getString("track")),
+                        toCohort(resultSet.getObject("cohort", Short.class)),
                         resultSet.getObject("avatar_image_id", Long.class)
                 ),
                 resultSet.getLong("like_count"),
                 resultSet.getTimestamp("created_at").toInstant(),
                 resultSet.getTimestamp("updated_at").toInstant()
         );
+    }
+
+    private Track toTrack(String value) {
+        if (value == null) {
+            return null;
+        }
+        return Track.from(value);
+    }
+
+    private Cohort toCohort(Short value) {
+        if (value == null) {
+            return null;
+        }
+        return Cohort.from(value);
     }
 
     private record FeedBaseRow(

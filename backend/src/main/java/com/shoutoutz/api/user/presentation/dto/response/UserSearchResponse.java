@@ -2,6 +2,8 @@ package com.shoutoutz.api.user.presentation.dto.response;
 
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
+import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.util.List;
 
@@ -30,10 +32,24 @@ public record UserSearchResponse(
                     item.handle(),
                     item.displayName(),
                     item.userType(),
-                    item.track(),
-                    item.cohort(),
+                    trackValue(item.track()),
+                    cohortValue(item.cohort()),
                     item.avatarImageId()
             );
+        }
+
+        private static String trackValue(Track track) {
+            if (track == null) {
+                return null;
+            }
+            return track.getValue();
+        }
+
+        private static Short cohortValue(Cohort cohort) {
+            if (cohort == null) {
+                return null;
+            }
+            return (short) cohort.getValue();
         }
     }
 

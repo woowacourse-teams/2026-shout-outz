@@ -33,6 +33,8 @@ import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
+import com.shoutoutz.api.user.domain.profile.Track;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
@@ -514,8 +516,8 @@ class UserHttpApiTest {
                                         "zzaekkii",
                                         "재키",
                                         UserType.WOOWACOURSE_CREW,
-                                        "BACKEND",
-                                        (short) 8,
+                                        Track.BACKEND,
+                                        Cohort.COHORT_8,
                                         21L,
                                         0
                                 ),
