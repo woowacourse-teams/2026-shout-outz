@@ -18,11 +18,8 @@ import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as NewsNewsIdRouteImport } from './routes/news/$newsId'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectsIdRouteImport } from './routes/projects/$id'
-<<<<<<< HEAD
 import { Route as ProjectsNewRouteImport } from './routes/projects/new'
-=======
 import { Route as FeedsFeedIdEditRouteImport } from './routes/feeds/$feedId_.edit'
->>>>>>> c2c101cb47a16f2ec8c64f1d039e8d74f73e9196
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -69,15 +66,14 @@ const ProjectsIdRoute = ProjectsIdRouteImport.update({
   path: '/projects/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-<<<<<<< HEAD
 const ProjectsNewRoute = ProjectsNewRouteImport.update({
   id: '/projects/new',
   path: '/projects/new',
-=======
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FeedsFeedIdEditRoute = FeedsFeedIdEditRouteImport.update({
   id: '/feeds/$feedId_/edit',
   path: '/feeds/$feedId/edit',
->>>>>>> c2c101cb47a16f2ec8c64f1d039e8d74f73e9196
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -242,19 +238,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-<<<<<<< HEAD
     '/projects/new': {
       id: '/projects/new'
       path: '/projects/new'
       fullPath: '/projects/new'
       preLoaderRoute: typeof ProjectsNewRouteImport
-=======
+      parentRoute: typeof rootRouteImport
+    }
     '/feeds/$feedId_/edit': {
       id: '/feeds/$feedId_/edit'
       path: '/feeds/$feedId/edit'
       fullPath: '/feeds/$feedId/edit'
       preLoaderRoute: typeof FeedsFeedIdEditRouteImport
->>>>>>> c2c101cb47a16f2ec8c64f1d039e8d74f73e9196
       parentRoute: typeof rootRouteImport
     }
   }
