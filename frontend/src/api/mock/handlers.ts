@@ -145,6 +145,13 @@ export const handlers = [
     });
   }),
 
+  http.get('/api/v1/users/me/summary', () =>
+    HttpResponse.json({
+      status: 'success',
+      data: { userId: 10, handle: 'woojin', displayName: '정우진', avatarImageId: null },
+    }),
+  ),
+
   http.get('/api/v1/users/:handle', ({ params }) => {
     const profile = getUserProfile(String(params.handle));
 
