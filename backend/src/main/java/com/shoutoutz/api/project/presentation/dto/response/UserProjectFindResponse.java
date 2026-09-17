@@ -4,7 +4,9 @@ import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.project.application.ProjectCursorCodec;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.domain.ProjectCursor;
+import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 사용자 프로젝트 목록과 커서 정보.
@@ -18,10 +20,10 @@ public record UserProjectFindResponse(
         projects = List.copyOf(projects);
     }
 
-    public static UserProjectFindResponse from(UserProjectResult result) {
+    public static UserProjectFindResponse from(UserProjectResult result, Map<Long, URI> mediaUrls) {
         return new UserProjectFindResponse(
                 result.projects().stream()
-                        .map(ProjectFindAllResponse.Item::from)
+                        .map(project -> ProjectFindAllResponse.Item.from(project, mediaUrls))
                         .toList(),
                 new SliceMetaResponse(encodeNextCursor(result.nextCursor()), result.hasNext())
         );

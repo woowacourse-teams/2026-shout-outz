@@ -18,10 +18,12 @@ import com.shoutoutz.api.cohort.domain.InvalidCohortException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.DeletedProject;
@@ -122,6 +124,9 @@ class ProjectServiceTest {
     @Mock
     private UserProjectQueryRepository userProjectQueryRepository;
 
+    @Mock
+    private MediaUrlResolver mediaUrlResolver;
+
     private ProjectService projectService;
 
     @BeforeEach
@@ -134,6 +139,7 @@ class ProjectServiceTest {
                 userRepository,
                 projectDeletionRepository,
                 userProjectQueryRepository,
+                mediaUrlResolver,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -548,6 +554,7 @@ class ProjectServiceTest {
         assertThat(response.meta().totalCount()).isEqualTo(48);
         assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.POPULAR))
                 .isEqualTo(ProjectCursor.popular(3L, NOW.minusSeconds(60), 9L));
+        verify(mediaUrlResolver).resolveAll(any(), eq(MediaVariant.THUMBNAIL));
     }
 
     @Test
