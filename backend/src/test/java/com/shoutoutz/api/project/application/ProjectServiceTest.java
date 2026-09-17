@@ -71,7 +71,6 @@ import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllRespons
 import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
-import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
 import com.shoutoutz.api.techtag.domain.TechTag;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
@@ -599,15 +598,14 @@ class ProjectServiceTest {
         when(userProjectQueryRepository.findAllByUserId(REGISTERED_BY, cursor, 20))
                 .thenReturn(new UserProjectResult(List.of(project), true));
 
-        UserProjectFindResponse response = projectService.findAllByUser(
+        UserProjectResult response = projectService.findAllByUser(
                 MEMBER_HANDLE,
                 new UserProjectFindRequest(20, ProjectCursorCodec.encode(cursor))
         );
 
-        assertThat(response.projects()).extracting(UserProjectFindResponse.Item::id).containsExactly(9L);
-        assertThat(response.meta().hasNext()).isTrue();
-        assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.LATEST))
-                .isEqualTo(ProjectCursor.latest(NOW.minusSeconds(60), 9L));
+        assertThat(response.projects()).extracting(UserProjectItem::id).containsExactly(9L);
+        assertThat(response.hasNext()).isTrue();
+        assertThat(response.nextCursor()).isEqualTo(ProjectCursor.latest(NOW.minusSeconds(60), 9L));
         verify(userProjectQueryRepository).findAllByUserId(REGISTERED_BY, cursor, 20);
     }
 
@@ -617,14 +615,14 @@ class ProjectServiceTest {
         when(userRepository.findByHandle(MEMBER_HANDLE))
                 .thenReturn(Optional.of(user(REGISTERED_BY, MEMBER_HANDLE, UserStatus.DELETED)));
 
-        UserProjectFindResponse response = projectService.findAllByUser(
+        UserProjectResult response = projectService.findAllByUser(
                 MEMBER_HANDLE,
                 new UserProjectFindRequest(null, null)
         );
 
         assertThat(response.projects()).isEmpty();
-        assertThat(response.meta().hasNext()).isFalse();
-        assertThat(response.meta().nextCursor()).isNull();
+        assertThat(response.hasNext()).isFalse();
+        assertThat(response.nextCursor()).isNull();
         verifyNoInteractions(userProjectQueryRepository);
     }
 

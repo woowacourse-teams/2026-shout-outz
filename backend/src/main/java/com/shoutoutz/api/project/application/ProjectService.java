@@ -59,7 +59,6 @@ import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
-import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -171,19 +170,18 @@ public class ProjectService {
      * 탈퇴한 사용자의 프로젝트는 공개하지 않는다.
      */
     @Transactional(readOnly = true)
-    public UserProjectFindResponse findAllByUser(String handle, UserProjectFindRequest request) {
+    public UserProjectResult findAllByUser(String handle, UserProjectFindRequest request) {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND));
         if (user.isDeleted()) {
-            return UserProjectFindResponse.from(new UserProjectResult(List.of(), false));
+            return new UserProjectResult(List.of(), false);
         }
 
-        UserProjectResult result = userProjectQueryRepository.findAllByUserId(
+        return userProjectQueryRepository.findAllByUserId(
                 user.getId(),
                 request.resolvedCursor(),
                 request.resolvedSize()
         );
-        return UserProjectFindResponse.from(result);
     }
 
     /**

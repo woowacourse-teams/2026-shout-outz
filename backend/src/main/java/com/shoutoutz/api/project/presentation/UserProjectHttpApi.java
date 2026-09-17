@@ -1,9 +1,13 @@
 package com.shoutoutz.api.project.presentation;
 
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.common.response.SuccessResponse;
+import com.shoutoutz.api.project.application.ProjectCursorCodec;
 import com.shoutoutz.api.project.application.ProjectService;
+import com.shoutoutz.api.project.application.dto.UserProjectResult;
+import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
-import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
+import com.shoutoutz.api.project.presentation.dto.response.UserProjectResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import java.util.List;
@@ -28,7 +32,7 @@ public class UserProjectHttpApi {
     private final ProjectService projectService;
 
     @GetMapping
-    public ResponseEntity<SuccessResponse<List<UserProjectFindResponse.Item>>> findAll(
+    public ResponseEntity<SuccessResponse<List<UserProjectResponse>>> findAll(
             @Pattern(
                     regexp = "^[A-Za-z0-9_-]{2,30}$",
                     message = "handle 형식이 올바르지 않습니다."
@@ -36,7 +40,17 @@ public class UserProjectHttpApi {
             @PathVariable String handle,
             @Valid @ModelAttribute UserProjectFindRequest request
     ) {
-        UserProjectFindResponse response = projectService.findAllByUser(handle, request);
-        return ResponseEntity.ok(SuccessResponse.success(response.projects(), response.meta()));
+        UserProjectResult result = projectService.findAllByUser(handle, request);
+        List<UserProjectResponse> response = UserProjectResponse.from(result.projects());
+        SliceMetaResponse meta = new SliceMetaResponse(encodeNextCursor(result.nextCursor()), result.hasNext());
+
+        return ResponseEntity.ok(SuccessResponse.success(response, meta));
+    }
+
+    private static String encodeNextCursor(ProjectCursor cursor) {
+        if (cursor == null) {
+            return null;
+        }
+        return ProjectCursorCodec.encode(cursor);
     }
 }
