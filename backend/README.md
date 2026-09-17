@@ -272,23 +272,11 @@ user_profiles.avatar_image_id -> media_metadata.id
 
 프로젝트 썸네일과 사용자 프로필 이미지는 URL을 저장하지 않고 각각 `thumbnail_media_id`, `avatar_image_id`로 `media_metadata.id`를 참조한다. 조회 시 `media_metadata.s3_key`와 변형 규칙을 기준으로 CloudFront 공개 URL을 계산한다.
 
-### 이미지 조회 API
+### 조회 응답의 미디어 URL
 
-`GET /api/v1/media/{mediaId}`는 `READY` 상태를 확인한 뒤 private S3 객체에 대응하는 CloudFront 공개 URL을 반환한다. 모든 미디어와 변형본은 공개 리소스라는 정책이므로 별도의 조회 권한 검증이나 로그인은 요구하지 않는다. `variant`를 생략하면 표시용 이미지(`DISPLAY`)를 반환하며, `ORIGINAL`, `DISPLAY`, `THUMBNAIL`을 선택할 수 있다.
+별도의 미디어 ID 조회 API는 제공하지 않는다. 프로젝트 목록·상세, 피드, 사용자 프로필 등 조회 응답은 `MediaUrlResolver`를 통해 READY 미디어의 변형 용도에 맞는 CloudFront URL을 직접 반환한다. 프로젝트 목록은 `thumbnailUrl`, 프로젝트 상세는 `imageUrl`, 그 외 조회 응답은 `avatarUrl`, `media[].url`을 사용하며 조회 응답에는 `media_id`를 노출하지 않는다.
 
-```http
-GET /api/v1/media/123?variant=THUMBNAIL
-```
-
-```json
-{
-  "variant": "THUMBNAIL",
-  "url": "https://<cloudfront-domain>/...",
-  "contentType": "image/webp"
-}
-```
-
-미디어가 아직 `READY`가 아니면 공개 URL을 반환하지 않는다. 프로젝트 목록은 `thumbnailUrl`, 프로젝트 상세는 `imageUrl`, 그 외 조회 응답은 `avatarUrl`, `media[].url`처럼 변형 용도에 맞는 CloudFront URL을 반환하며 `media_id`는 노출하지 않는다.
+업로드 시작·완료 응답의 `mediaId`는 업로드 후 프로젝트·피드·프로필에 미디어를 연결하는 명령 요청에 사용한다.
 
 본문에는 만료되는 S3 URL을 저장하지 않고 `media://{mediaId}`를 저장한다.
 
@@ -296,6 +284,6 @@ GET /api/v1/media/123?variant=THUMBNAIL
 ![프로젝트 화면](media://123)
 ```
 
-본문을 응답할 때 이 참조를 READY 미디어의 CloudFront URL로 치환한다. URL은 만료되지 않으므로 클라이언트가 매번 미디어 조회 API를 호출할 필요가 없다.
+본문을 응답할 때 이 참조를 READY 미디어의 CloudFront URL로 치환한다. URL은 만료되지 않으므로 클라이언트가 별도의 미디어 조회 API를 호출할 필요가 없다.
 
 프로젝트 수정 요청에서 상세 응답의 `descriptionMd`를 그대로 다시 보내는 경우에도, 기존 프로젝트 본문에 연결된 CloudFront URL은 저장 전에 `media://{mediaId}` 참조로 복원한다.
