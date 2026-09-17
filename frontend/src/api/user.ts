@@ -1,8 +1,16 @@
 import { queryOptions } from '@tanstack/react-query';
 import { type UserFeedItem, type UserProfile, type UserProjectCard } from '@/types/user';
+import { type ApiSuccessBody, httpClient } from '@/utils/client';
+
+const USERS_PATH = '/api/v1/users';
 
 export async function fetchUserProfile(handle: string): Promise<UserProfile> {
-  throw new Error('fetchUserProfile은 아직 구현되지 않았습니다.');
+  const path = `${USERS_PATH}/${handle}`;
+
+  const body = await httpClient<ApiSuccessBody<UserProfile>>(path, { method: 'get' });
+  if (!body) throw new Error(`프로필 응답이 비어 있습니다: ${path}`);
+
+  return body.data;
 }
 
 export const userProfileQueryOptions = (handle: string) =>
@@ -13,7 +21,14 @@ export const userProfileQueryOptions = (handle: string) =>
 
 /** 프로필 프로젝트 탭. 첫 페이지만 조회한다(다음 커서는 아직 쓰지 않는다). */
 export async function fetchUserProjects(handle: string): Promise<UserProjectCard[]> {
-  throw new Error('fetchUserProjects는 아직 구현되지 않았습니다.');
+  const path = `${USERS_PATH}/${handle}/projects`;
+
+  const body = await httpClient<ApiSuccessBody<{ items: UserProjectCard[] }>>(path, {
+    method: 'get',
+  });
+  if (!body) throw new Error(`프로필 프로젝트 응답이 비어 있습니다: ${path}`);
+
+  return body.data.items;
 }
 
 export const userProjectsQueryOptions = (handle: string) =>
@@ -22,9 +37,14 @@ export const userProjectsQueryOptions = (handle: string) =>
     queryFn: () => fetchUserProjects(handle),
   });
 
-/** 프로필 피드 탭. 첫 페이지만 조회한다. */
+/** 프로필 피드 탭. 첫 페이지만 조회한다. 피드 목록과 달리 data가 바로 배열이다. */
 export async function fetchUserFeeds(handle: string): Promise<UserFeedItem[]> {
-  throw new Error('fetchUserFeeds는 아직 구현되지 않았습니다.');
+  const path = `${USERS_PATH}/${handle}/feeds`;
+
+  const body = await httpClient<ApiSuccessBody<UserFeedItem[]>>(path, { method: 'get' });
+  if (!body) throw new Error(`프로필 피드 응답이 비어 있습니다: ${path}`);
+
+  return body.data;
 }
 
 export const userFeedsQueryOptions = (handle: string) =>
