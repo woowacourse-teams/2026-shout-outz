@@ -4,6 +4,7 @@ import { getFeedList } from '@/api/mock/feed';
 import { getNewsDetail, getNewsList } from '@/api/mock/news';
 import { getCohorts, getTechTags, searchCrewList } from '@/api/mock/project';
 import projects from '@/api/mock/projects.json';
+import { getUserFeeds, getUserProfile, getUserProjects } from '@/api/mock/user';
 import { isNewsFilter } from '@/types/news';
 
 /** 미디어 업로드 시작이 내려주는 presigned PUT URL의 목 주소 */
@@ -143,6 +144,35 @@ export const handlers = [
       meta: { nextCursor: null, hasNext: false },
     });
   }),
+
+  http.get('/api/v1/users/:handle', ({ params }) => {
+    const profile = getUserProfile(String(params.handle));
+
+    if (!profile) {
+      return HttpResponse.json(
+        { status: 'error', code: 'RESOURCE_NOT_FOUND', message: '요청한 리소스를 찾을 수 없음' },
+        { status: 404 },
+      );
+    }
+
+    return HttpResponse.json({ status: 'success', data: profile });
+  }),
+
+  http.get('/api/v1/users/:handle/projects', ({ params }) =>
+    HttpResponse.json({
+      status: 'success',
+      data: { items: getUserProjects(String(params.handle)) },
+      meta: { nextCursor: null, hasNext: false },
+    }),
+  ),
+
+  http.get('/api/v1/users/:handle/posts', ({ params }) =>
+    HttpResponse.json({
+      status: 'success',
+      data: getUserFeeds(String(params.handle)),
+      meta: { nextCursor: null, hasNext: false },
+    }),
+  ),
 
   http.get('/api/v1/home/statistics', () =>
     HttpResponse.json({
