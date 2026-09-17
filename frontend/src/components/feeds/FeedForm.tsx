@@ -53,6 +53,9 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
       });
       client.setQueryData(feedQuery(feed.feedId).queryKey, feed);
       void client.invalidateQueries({ queryKey: ['feeds'] });
+      // TODO 프로필 피드 탭은 ['users', handle, 'feeds']로 따로 캐시된다.
+      // api 폴더를 정리할 때 피드 캐시 키를 한 규칙으로 맞추고 이 줄을 없앤다.
+      void client.invalidateQueries({ queryKey: ['users'] });
       onSaved(feed.feedId);
     } catch {
       // Mutation의 오류 상태로 메시지를 표시하고 작성 내용은 유지한다.
