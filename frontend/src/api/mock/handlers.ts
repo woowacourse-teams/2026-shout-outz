@@ -11,6 +11,13 @@ import { isNewsFilter } from '@/types/news';
 export const MOCK_STORAGE_ORIGIN = 'https://storage.test';
 
 export const handlers = [
+  http.get('/api/v1/auth/session', () =>
+    HttpResponse.json({
+      status: 'success',
+      data: { status: 'UNAUTHENTICATED', userId: null, csrfToken: '', role: null },
+    }),
+  ),
+
   http.get('/api/v1/cohorts', () =>
     HttpResponse.json({ status: 'success', data: { items: getCohorts() } }),
   ),
