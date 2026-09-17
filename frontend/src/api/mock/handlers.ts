@@ -2,10 +2,70 @@ import { http, HttpResponse } from 'msw';
 
 import { getFeedList } from '@/api/mock/feed';
 import { getNewsDetail, getNewsList } from '@/api/mock/news';
+import { getCohorts, getTechTags, searchCrewList } from '@/api/mock/project';
 import projects from '@/api/mock/projects.json';
 import { isNewsFilter } from '@/types/news';
 
+/** 미디어 업로드 시작이 내려주는 presigned PUT URL의 목 주소 */
+export const MOCK_STORAGE_ORIGIN = 'https://storage.test';
+
 export const handlers = [
+  http.get('/api/v1/cohorts', () =>
+    HttpResponse.json({ status: 'success', data: { items: getCohorts() } }),
+  ),
+
+  http.get('/api/v1/tech-tags', ({ request }) => {
+    const keyword = new URL(request.url).searchParams.get('keyword');
+
+    return HttpResponse.json({ status: 'success', data: { items: getTechTags(keyword) } });
+  }),
+
+  http.get('/api/v1/users/search', ({ request }) => {
+    const keyword = new URL(request.url).searchParams.get('keyword') ?? '';
+
+    return HttpResponse.json({
+      status: 'success',
+      data: { items: searchCrewList(keyword) },
+      meta: { nextCursor: null, hasNext: false },
+    });
+  }),
+
+  http.post('/api/v1/projects', () =>
+    HttpResponse.json(
+      {
+        status: 'success',
+        data: { id: 101, approvalStatus: 'PENDING', createdAt: '2026-09-16T10:00:00+09:00' },
+      },
+      { status: 201 },
+    ),
+  ),
+
+  // 미디어 API는 다른 API와 달리 {status, data} 봉투 없이 그대로 내려준다.
+  http.post('/api/v1/media/uploads', () =>
+    HttpResponse.json(
+      {
+        mediaId: 12,
+        status: 'PENDING_UPLOAD',
+        uploadUrl: `${MOCK_STORAGE_ORIGIN}/media/12`,
+        expiresAt: '2026-09-16T10:05:00+09:00',
+        contentType: 'image/png',
+      },
+      { status: 201 },
+    ),
+  ),
+
+  http.put(`${MOCK_STORAGE_ORIGIN}/media/:mediaId`, () => new HttpResponse(null, { status: 200 })),
+
+  http.post('/api/v1/media/:mediaId/complete', ({ params }) =>
+    HttpResponse.json({
+      mediaId: Number(params.mediaId),
+      status: 'PROCESSING',
+      sizeBytes: 1024,
+      contentType: 'image/png',
+      uploadedAt: '2026-09-16T10:01:00+09:00',
+    }),
+  ),
+
   http.get('/api/v1/projects/:projectId', ({ params }) => {
     const index = projects.findIndex((_, index) => String(index + 1) === params.projectId);
     const project = projects[index];
