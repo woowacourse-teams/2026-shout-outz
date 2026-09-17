@@ -11,14 +11,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class HomeBannerService {
 
-    private static final int HOME_BANNER_LIMIT = 3;
-
     private final HomeBannerRepository homeBannerRepository;
     private final HomeBannerImageService imageService;
 
     @Transactional(readOnly = true)
     public List<HomeBannerResponse> findAll() {
-        return homeBannerRepository.findActive(HOME_BANNER_LIMIT).stream()
+        return homeBannerRepository.findAllActive().stream()
                 .map(banner -> HomeBannerResponse.from(
                         banner,
                         imageService.createImageUrl(banner.getMediaId())

@@ -34,9 +34,9 @@ class HomeBannerServiceTest {
     }
 
     @Test
-    void 활성_배너를_최대_세_개_조회한다() {
+    void 활성_배너를_전체_조회한다() {
         HomeBanner banner = banner();
-        when(homeBannerRepository.findActive(3)).thenReturn(List.of(banner));
+        when(homeBannerRepository.findAllActive()).thenReturn(List.of(banner));
         when(imageService.createImageUrl(10L))
                 .thenReturn(URI.create("https://s3.example.com/banner"));
 
@@ -45,7 +45,7 @@ class HomeBannerServiceTest {
         assertThat(response).hasSize(1);
         assertThat(response.getFirst().bannerId()).isEqualTo(100L);
         assertThat(response.getFirst().imageUrl()).hasToString("https://s3.example.com/banner");
-        verify(homeBannerRepository).findActive(3);
+        verify(homeBannerRepository).findAllActive();
     }
 
     private HomeBanner banner() {

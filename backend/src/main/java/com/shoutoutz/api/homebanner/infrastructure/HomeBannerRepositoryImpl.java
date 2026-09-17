@@ -59,10 +59,7 @@ public class HomeBannerRepositoryImpl implements HomeBannerRepository {
     }
 
     @Override
-    public List<HomeBanner> findActive(int limit) {
-        if (limit <= 0) {
-            return List.of();
-        }
+    public List<HomeBanner> findAllActive() {
         // 예약 노출 도입 시 active와 함께 start_at/end_at 범위를 검사한다.
         return jdbcTemplate.query(
                 """
@@ -70,9 +67,8 @@ public class HomeBannerRepositoryImpl implements HomeBannerRepository {
                         FROM home_banners
                         WHERE active = true
                         ORDER BY display_order, id
-                        LIMIT :limit
                         """.formatted(COLUMNS),
-                Map.of("limit", limit),
+                Map.of(),
                 (resultSet, rowNumber) -> toHomeBanner(resultSet)
         );
     }

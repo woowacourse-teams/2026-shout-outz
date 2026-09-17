@@ -11,7 +11,7 @@ public interface HomeBannerRepository {
 
     List<HomeBanner> findAll();
 
-    List<HomeBanner> findActive(int limit);
+    List<HomeBanner> findAllActive();
 
     Optional<HomeBanner> update(HomeBanner homeBanner);
 

@@ -49,16 +49,16 @@ class HomeBannerRepositoryIntegrationTest {
     }
 
     @Test
-    void 활성_배너를_표시_순서와_ID순으로_제한해_조회한다() {
+    void 활성_배너를_표시_순서와_ID순으로_전체_조회한다() {
         HomeBanner first = homeBannerRepository.save(targetBanner(1, true));
         HomeBanner second = homeBannerRepository.save(targetBanner(1, true));
-        homeBannerRepository.save(targetBanner(2, true));
+        HomeBanner third = homeBannerRepository.save(targetBanner(2, true));
         homeBannerRepository.save(targetBanner(0, false));
 
-        List<HomeBanner> banners = homeBannerRepository.findActive(2);
+        List<HomeBanner> banners = homeBannerRepository.findAllActive();
 
         assertThat(banners).extracting(HomeBanner::getId)
-                .containsExactly(first.getId(), second.getId());
+                .containsExactly(first.getId(), second.getId(), third.getId());
     }
 
     @Test

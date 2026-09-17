@@ -59,7 +59,7 @@ class HomeBannerHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Home Banner")
                                 .summary("홈 배너 목록 조회")
-                                .description("활성 홈 배너를 표시 순서대로 최대 3개 조회한다.")
+                                .description("활성 홈 배너를 표시 순서대로 전체 조회한다.")
                                 .responseSchema(Schema.schema("HomeBannerFindAllSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
