@@ -1,4 +1,4 @@
-import { formatCrewRole } from '@/utils/user';
+import { formatCrewName, formatCrewRole } from '@/utils/user';
 
 describe('formatCrewRole', () => {
   it.each([
@@ -20,5 +20,19 @@ describe('formatCrewRole', () => {
 
   it('기수도 트랙도 없으면 표시하지 않는다', () => {
     expect(formatCrewRole(null, null)).toBeNull();
+  });
+});
+
+describe('formatCrewName', () => {
+  it('이름과 소속을 가운뎃점으로 잇는다', () => {
+    expect(formatCrewName('황호익', 6, 'BACKEND')).toBe('황호익 · 6기 백엔드');
+  });
+
+  it('아는 소속만 붙인다', () => {
+    expect(formatCrewName('황호익', 6, null)).toBe('황호익 · 6기');
+  });
+
+  it('소속을 알 수 없으면 이름만 보여준다', () => {
+    expect(formatCrewName('황호익', null, null)).toBe('황호익');
   });
 });

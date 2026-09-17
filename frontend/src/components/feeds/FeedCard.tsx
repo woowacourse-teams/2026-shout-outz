@@ -8,7 +8,7 @@ import { FeedContent } from '@/components/feeds/FeedContent';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { Comments } from '@/components/feed-comments/Comments';
-import { getFeedAuthorName } from '@/utils/feed';
+import { formatCrewName } from '@/utils/user';
 import { formatRelativeTime } from '@/utils/date';
 
 export function FeedCard({ feed }: { feed: Feed }) {
@@ -22,7 +22,7 @@ export function FeedCard({ feed }: { feed: Feed }) {
               <Avatar size="md" alt={`${feed.author.displayName} 프로필`} />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-gray-900">
-                  {getFeedAuthorName(feed.author)}
+                  {formatCrewName(feed.author.displayName, feed.author.cohort, feed.author.track)}
                 </p>
                 <time className="text-sm text-gray-400" dateTime={feed.createdAt}>
                   {formatRelativeTime(feed.createdAt)}

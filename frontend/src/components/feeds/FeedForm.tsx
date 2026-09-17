@@ -6,7 +6,7 @@ import { categoriesQuery } from '@/apis/category';
 import { Select } from '@/components/Select';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
-import { getFeedAuthorName } from '@/utils/feed';
+import { formatCrewName } from '@/utils/user';
 import { getApiErrorMessage } from '@/utils/error';
 
 interface FeedFormProps {
@@ -79,7 +79,9 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
     >
       <div className="flex items-center gap-2 md:gap-3">
         <Avatar size="sm" alt="" />
-        <p className="text-sm font-semibold text-gray-900">{getFeedAuthorName(profile)}</p>
+        <p className="text-sm font-semibold text-gray-900">
+          {formatCrewName(profile.displayName, profile.cohort, profile.track)}
+        </p>
       </div>
       <div className="space-y-2">
         <label htmlFor="feed-category" className="text-sm font-medium text-gray-900">
