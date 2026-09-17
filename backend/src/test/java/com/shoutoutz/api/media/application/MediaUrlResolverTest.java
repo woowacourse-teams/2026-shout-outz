@@ -90,6 +90,16 @@ class MediaUrlResolverTest {
                         + "![같은 화면](https://cdn.example.com/display)");
     }
 
+    @Test
+    void 프로젝트_본문의_공개_URL을_media_참조로_되돌린다() {
+        String description = "![화면](https://cdn.example.com/display)\n"
+                + "![같은 화면](https://cdn.example.com/display)";
+        Map<Long, URI> urls = Map.of(10L, URI.create("https://cdn.example.com/display"));
+
+        assertThat(mediaUrlResolver.replaceDescriptionUrlsWithReferences(description, urls))
+                .isEqualTo("![화면](media://10)\n![같은 화면](media://10)");
+    }
+
     private MediaMetadata metadata(long id, MediaStatus status) {
         return MediaMetadata.reconstitute(
                 id,

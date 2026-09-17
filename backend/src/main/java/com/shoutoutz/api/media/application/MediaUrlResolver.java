@@ -86,6 +86,27 @@ public class MediaUrlResolver {
         return replaced.toString();
     }
 
+    /**
+     * 프로젝트 상세 응답에 사용한 공개 URL을 저장용 media://{id} 참조로 되돌린다.
+     * 수정 요청이 상세 조회 응답의 descriptionMd를 그대로 포함해도 원본 참조 형식을 유지한다.
+     */
+    public String replaceDescriptionUrlsWithReferences(String descriptionMd, Map<Long, URI> urls) {
+        if (descriptionMd == null || descriptionMd.isEmpty() || urls == null || urls.isEmpty()) {
+            return descriptionMd;
+        }
+
+        String normalized = descriptionMd;
+        for (Map.Entry<Long, URI> entry : urls.entrySet()) {
+            Long mediaId = entry.getKey();
+            URI url = entry.getValue();
+            if (mediaId == null || url == null) {
+                continue;
+            }
+            normalized = normalized.replace(url.toString(), "media://" + mediaId);
+        }
+        return normalized;
+    }
+
     private URI resolveReadyMetadata(MediaMetadata metadata, MediaVariant variant) {
         String objectKey = mediaObjectKeyGenerator.generateVariant(
                 metadata.getS3Key(),

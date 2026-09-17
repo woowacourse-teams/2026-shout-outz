@@ -91,8 +91,12 @@ class ProjectHttpApiTest {
             + "요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
             + "크루나 코치가 아니면 403, 이미 등록된 리포지토리이거나 리포지토리 이름이 같아 slug가 겹치면 409를 반환한다.";
     private static final String UPDATE_SUMMARY = "프로젝트 수정";
-    private static final String UPDATE_DESCRIPTION = "작성자가 프로젝트 정보를 수정한다. 모든 필드를 보내는 전체 교체 방식이며, "
-            + "비우는 값은 null로 보낸다. techTagIds와 memberHandles도 전체 목록을 순서대로 보낸다. "
+    private static final String UPDATE_DESCRIPTION = "작성자가 프로젝트 정보를 수정한다. 대부분의 필드는 전체 교체 방식이며, "
+            + "비우는 값은 null로 보낸다. thumbnailImageId는 생략하면 기존 이미지를 유지하고, "
+            + "새 ID를 보내면 교체하며, null을 명시하면 제거한다. "
+            + "descriptionMd는 저장 시 media://{mediaId} 형식으로 정규화하며, 상세 조회 응답의 CDN URL을 그대로 보내도 "
+            + "기존 본문 이미지 참조를 유지한다. "
+            + "techTagIds와 memberHandles도 전체 목록을 순서대로 보낸다. "
             + "반려된 프로젝트를 수정하면 재심사 요청으로 처리되어 approvalStatus가 PENDING으로 바뀌고, "
             + "그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. "
             + "요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
@@ -1005,9 +1009,9 @@ class ProjectHttpApiTest {
                                         fieldWithPath("teamName").type(STRING).description("팀 이름 (50자 이하)"),
                                         fieldWithPath("tagline").type(STRING).description("한 줄 소개 (200자 이하)"),
                                         fieldWithPath("cohort").type(NUMBER).description("우아한테크코스 기수 (1~8)"),
-                                        fieldWithPath("thumbnailMediaId").type(NUMBER)
+                                        fieldWithPath("thumbnailImageId").type(NUMBER)
                                                 .description("본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. "
-                                                        + "썸네일을 비우려면 null로 보낸다.")
+                                                        + "필드를 생략하면 기존 썸네일을 유지하고, null을 보내면 제거한다.")
                                                 .optional(),
                                         fieldWithPath("githubRepositoryUrl").type(STRING)
                                                 .description("https://github.com/{owner}/{repo} 형식. 바꿀 수 있지만 "
@@ -1018,7 +1022,8 @@ class ProjectHttpApiTest {
                                                 .optional(),
                                         fieldWithPath("descriptionMd").type(STRING)
                                                 .description("프로젝트 설명 마크다운 (100,000자 이하). "
-                                                        + "이미지는 ![설명](media://{mediaId}) 형식으로 넣는다.")
+                                                        + "이미지는 ![설명](media://{mediaId}) 형식으로 넣으며, "
+                                                        + "상세 조회 응답의 CDN URL을 그대로 보내도 기존 본문 이미지 참조를 유지한다.")
                                                 .optional(),
                                         fieldWithPath("serviceStatus").type(STRING)
                                                 .description("서비스 운영 상태 (OPERATING, CLOSED). "
@@ -1110,7 +1115,7 @@ class ProjectHttpApiTest {
                   "teamName": "루프팀",
                   "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                   "cohort": 6,
-                  "thumbnailMediaId": 12,
+                  "thumbnailImageId": 12,
                   "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                   "deploymentUrl": "https://loop.team",
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",

@@ -131,21 +131,27 @@ public class ProjectService {
     @Transactional
     public ProjectUpdateResponse update(long projectId, long loginUserId, ProjectUpdateRequest request) {
         Project project = findOwnedProject(projectId, loginUserId);
+        Long thumbnailMediaId = request.isThumbnailImageIdProvided()
+                ? request.thumbnailImageId()
+                : project.getThumbnailMediaId();
+        String descriptionMd = normalizeDescriptionReferences(project, request.descriptionMd());
         Project updated = project.update(
                 Cohort.from(request.cohort()),
                 new TeamName(request.teamName()),
                 new Title(request.title()),
                 request.tagline(),
-                request.descriptionMd(),
+                descriptionMd,
                 new GithubRepositoryUrl(request.githubRepositoryUrl()),
                 request.deploymentUrl() == null ? null : new DeploymentUrl(request.deploymentUrl()),
                 request.serviceStatus(),
-                request.thumbnailMediaId()
+                thumbnailMediaId
         );
         validateGithubRepositoryNotDuplicated(updated.getGithubRepositoryUrl(), projectId);
         validateTechTags(request.techTagIds(), projectRepository.findTechTagIds(projectId));
-        validateThumbnail(request.thumbnailMediaId(), loginUserId);
-        validateDescriptionMedia(request.descriptionMd(), loginUserId);
+        if (request.isThumbnailImageIdProvided()) {
+            validateThumbnail(request.thumbnailImageId(), loginUserId);
+        }
+        validateDescriptionMedia(descriptionMd, loginUserId);
         List<Long> memberIds = resolveMemberIds(request.memberHandles(), projectRepository.findMemberIds(projectId));
         ProjectMembers members = ProjectMembers.of(project.getRegisteredBy(), memberIds);
 
@@ -266,6 +272,15 @@ public class ProjectService {
                 .filter(java.util.Objects::nonNull)
                 .forEach(mediaIds::add);
         return mediaUrlResolver.resolveAll(mediaIds);
+    }
+
+    private String normalizeDescriptionReferences(Project project, String descriptionMd) {
+        List<Long> existingMediaIds = DescriptionMediaReferences.extractMediaIds(project.getDescriptionMd());
+        if (existingMediaIds.isEmpty()) {
+            return descriptionMd;
+        }
+        Map<Long, URI> mediaUrls = mediaUrlResolver.resolveAll(existingMediaIds);
+        return mediaUrlResolver.replaceDescriptionUrlsWithReferences(descriptionMd, mediaUrls);
     }
 
     /**
