@@ -98,10 +98,10 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
                     ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\"\
-                    ,\"message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
+                    ,\"message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
                     :\"type은 필수입니다.\"}]}"
         "409":
           description: "409"
@@ -969,9 +969,9 @@ paths:
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"}]}"
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1059,9 +1059,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -1440,10 +1440,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
+                    :\"title은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -2734,9 +2734,9 @@ paths:
               examples:
                 user-verification-request-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"nickname\"\
-                    ,\"message\":\"nickname은 필수입니다.\"},{\"field\":\"cohort\",\"message\"\
-                    :\"cohort는 양의 정수여야 합니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
+                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"}]}"
         "201":
           description: "201"
           content:
@@ -2889,10 +2889,10 @@ paths:
                     트 회고와 액션 아이템을 관리하는 협업 도구\",\"cohort\":6,\"serviceStatus\":\"OPERATING\"\
                     ,\"thumbnailMediaId\":12,\"likeCount\":184,\"commentCount\":14,\"\
                     techTags\":[{\"id\":1,\"displayName\":\"Spring\"}],\"members\"\
-                    :[{\"userId\":7,\"handle\":\"zzaekkii\",\"displayName\":\"재키\"\
-                    ,\"cohort\":6,\"track\":\"BACKEND\",\"avatarImageId\":21,\"githubAvatarUrl\"\
-                    :null,\"githubProfileUrl\":null}]}],\"meta\":{\"nextCursor\":\"\
-                    next-cursor\",\"hasNext\":true}}"
+                    :[{\"handle\":\"zzaekkii\",\"displayName\":\"재키\",\"cohort\":6,\"\
+                    track\":\"BACKEND\",\"avatarImageId\":21,\"githubAvatarUrl\":null,\"\
+                    githubProfileUrl\":null}]}],\"meta\":{\"nextCursor\":\"next-cursor\"\
+                    ,\"hasNext\":true}}"
   /api/v1/admin/verification-requests/{requestId}/approve:
     post:
       tags:
@@ -4644,25 +4644,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    OAuthSignupSuccessResponse:
-      title: OAuthSignupSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - userId
-          type: object
-          properties:
-            userId:
-              type: number
-              description: 생성된 사용자 ID
-          description: 가입 결과
-        status:
-          type: string
-          description: 응답 상태
     EventCreateSuccessResponse:
       title: EventCreateSuccessResponse
       required:
@@ -4747,6 +4728,25 @@ components:
         status:
           type: string
           description: 응답 상태
+    OAuthSignupSuccessResponse:
+      title: OAuthSignupSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - userId
+          type: object
+          properties:
+            userId:
+              type: number
+              description: 생성된 사용자 ID
+          description: 가입 결과
+        status:
+          type: string
+          description: 응답 상태
     CategoryUpdateSuccessResponse:
       title: CategoryUpdateSuccessResponse
       required:
@@ -4786,6 +4786,26 @@ components:
         status:
           type: string
           description: 응답 상태
+    api-v1-users-me-verification-requests-1075629857:
+      required:
+      - nickname
+      - userType
+      type: object
+      properties:
+        nickname:
+          type: string
+          description: 우테코 닉네임(앞뒤 공백 제거 후 50자 이하)
+        cohort:
+          type: number
+          description: 크루 신청 시 기수. 양의 정수이며 실제 유효성은 관리자 확인
+          nullable: true
+        userType:
+          type: string
+          description: 신청 유형(CREW 또는 COACH)
+        track:
+          type: string
+          description: "크루 신청 시 트랙(BACKEND, FRONTEND, ANDROID)"
+          nullable: true
     UserFeedFindAllSuccessResponse:
       title: UserFeedFindAllSuccessResponse
       required:
@@ -4911,26 +4931,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    api-v1-users-me-verification-requests-1075629857:
-      required:
-      - nickname
-      - userType
-      type: object
-      properties:
-        nickname:
-          type: string
-          description: 우테코 닉네임(앞뒤 공백 제거 후 50자 이하)
-        cohort:
-          type: number
-          description: 크루 신청 시 기수. 양의 정수이며 실제 유효성은 관리자 확인
-          nullable: true
-        userType:
-          type: string
-          description: 신청 유형(CREW 또는 COACH)
-        track:
-          type: string
-          description: "크루 신청 시 트랙(BACKEND, FRONTEND, ANDROID)"
-          nullable: true
     ProjectCreateSuccessResponse:
       title: ProjectCreateSuccessResponse
       required:
@@ -5578,6 +5578,129 @@ components:
         status:
           type: string
           description: 응답 상태
+    UserProjectFindAllSuccessResponse:
+      title: UserProjectFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 사용자가 참여한 프로젝트 목록
+          items:
+            required:
+            - cohort
+            - commentCount
+            - id
+            - likeCount
+            - members
+            - serviceStatus
+            - slug
+            - tagline
+            - teamName
+            - techTags
+            - title
+            type: object
+            properties:
+              teamName:
+                type: string
+                description: 팀 이름
+              techTags:
+                type: array
+                description: 기술 스택
+                items:
+                  required:
+                  - displayName
+                  - id
+                  type: object
+                  properties:
+                    displayName:
+                      type: string
+                      description: 기술 스택 이름
+                    id:
+                      type: number
+                      description: 기술 스택 ID
+              serviceStatus:
+                type: string
+                description: "운영 상태 (OPERATING, CLOSED)"
+              members:
+                type: array
+                description: 프로젝트 팀원
+                items:
+                  required:
+                  - displayName
+                  type: object
+                  properties:
+                    githubAvatarUrl:
+                      type: string
+                      description: 이관 팀원의 GitHub 프로필 이미지 URL
+                      nullable: true
+                    avatarImageId:
+                      type: number
+                      description: 프로필 이미지 ID
+                      nullable: true
+                    displayName:
+                      type: string
+                      description: 표시 이름
+                    githubProfileUrl:
+                      type: string
+                      description: 이관 팀원의 GitHub 프로필 URL
+                      nullable: true
+                    cohort:
+                      type: number
+                      description: 기수
+                      nullable: true
+                    handle:
+                      type: string
+                      description: 사용자 handle
+                      nullable: true
+                    track:
+                      type: string
+                      description: 트랙
+                      nullable: true
+              cohort:
+                type: number
+                description: 우아한테크코스 기수
+              tagline:
+                type: string
+                description: 한 줄 소개
+              likeCount:
+                type: number
+                description: 좋아요 수
+              thumbnailMediaId:
+                type: number
+                description: 썸네일 미디어 ID
+                nullable: true
+              id:
+                type: number
+                description: 프로젝트 ID
+              title:
+                type: string
+                description: 프로젝트 이름
+              slug:
+                type: string
+                description: 프로젝트 slug
+              commentCount:
+                type: number
+                description: 삭제되지 않은 댓글 수
+        meta:
+          required:
+          - hasNext
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+          description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
     FeedCommentCreateSuccessResponse:
       title: FeedCommentCreateSuccessResponse
       required:
@@ -6083,133 +6206,6 @@ components:
         title:
           type: string
           description: 공지 제목
-    UserProjectFindAllSuccessResponse:
-      title: UserProjectFindAllSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 사용자가 참여한 프로젝트 목록
-          items:
-            required:
-            - cohort
-            - commentCount
-            - id
-            - likeCount
-            - members
-            - serviceStatus
-            - slug
-            - tagline
-            - teamName
-            - techTags
-            - title
-            type: object
-            properties:
-              teamName:
-                type: string
-                description: 팀 이름
-              techTags:
-                type: array
-                description: 기술 스택
-                items:
-                  required:
-                  - displayName
-                  - id
-                  type: object
-                  properties:
-                    displayName:
-                      type: string
-                      description: 기술 스택 이름
-                    id:
-                      type: number
-                      description: 기술 스택 ID
-              serviceStatus:
-                type: string
-                description: "운영 상태 (OPERATING, CLOSED)"
-              members:
-                type: array
-                description: 프로젝트 팀원
-                items:
-                  required:
-                  - displayName
-                  type: object
-                  properties:
-                    githubAvatarUrl:
-                      type: string
-                      description: 이관 팀원의 GitHub 프로필 이미지 URL
-                      nullable: true
-                    avatarImageId:
-                      type: number
-                      description: 프로필 이미지 ID
-                      nullable: true
-                    displayName:
-                      type: string
-                      description: 표시 이름
-                    githubProfileUrl:
-                      type: string
-                      description: 이관 팀원의 GitHub 프로필 URL
-                      nullable: true
-                    cohort:
-                      type: number
-                      description: 기수
-                      nullable: true
-                    handle:
-                      type: string
-                      description: 사용자 handle
-                      nullable: true
-                    track:
-                      type: string
-                      description: 트랙
-                      nullable: true
-                    userId:
-                      type: number
-                      description: 사용자 ID
-                      nullable: true
-              cohort:
-                type: number
-                description: 우아한테크코스 기수
-              tagline:
-                type: string
-                description: 한 줄 소개
-              likeCount:
-                type: number
-                description: 좋아요 수
-              thumbnailMediaId:
-                type: number
-                description: 썸네일 미디어 ID
-                nullable: true
-              id:
-                type: number
-                description: 프로젝트 ID
-              title:
-                type: string
-                description: 프로젝트 이름
-              slug:
-                type: string
-                description: 프로젝트 slug
-              commentCount:
-                type: number
-                description: 삭제되지 않은 댓글 수
-        meta:
-          required:
-          - hasNext
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-          description: 페이지네이션 정보
-        status:
-          type: string
-          description: 응답 상태
     ProjectFindAllSuccessResponse:
       title: ProjectFindAllSuccessResponse
       required:
