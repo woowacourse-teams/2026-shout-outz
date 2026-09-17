@@ -20,7 +20,7 @@ export interface UserProfile {
   blogUrl: string | null;
   counts: {
     projects: number;
-    posts: number;
+    feeds: number;
   };
 }
 
@@ -37,12 +37,12 @@ export interface UserProjectCard {
 }
 
 /**
- * 프로필 피드 탭 응답. 피드 목록(`Feed`)과 필드가 다르다.
- * 식별자가 postId, 작성자 이미지가 avatarUrl, 미디어가 url이며 반응·댓글 수를 포함한다.
+ * 프로필 피드 탭 응답. feedId는 피드 목록(`Feed`)의 feedId와 같은 값이고,
+ * 작성자 이미지가 avatarUrl, 미디어가 url이며 반응·댓글 수를 포함한다.
  */
-// TODO 대체 UserPost
+// TODO 대체 UserFeed
 export interface UserFeedItem {
-  postId: number;
+  feedId: number;
   content: string;
   author: {
     userId: number;

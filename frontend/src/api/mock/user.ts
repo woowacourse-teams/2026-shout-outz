@@ -12,7 +12,7 @@ const PROFILE: UserProfile = {
   avatarImageId: null,
   githubProfileUrl: 'https://github.com/woojin-dev',
   blogUrl: 'https://woojin.log',
-  counts: { projects: 2, posts: 18 },
+  counts: { projects: 2, feeds: 18 },
 };
 
 const PROJECTS: UserProjectCard[] = [
@@ -43,7 +43,7 @@ const PROJECTS: UserProjectCard[] = [
 
 const FEEDS: UserFeedItem[] = [
   {
-    postId: 101,
+    feedId: 101,
     content: '영수증 OCR 파싱 작업에서 멀티스레드 비동기 큐를 적용해 응답 시간을 단축했습니다.',
     author: {
       userId: 10,
@@ -63,7 +63,7 @@ const FEEDS: UserFeedItem[] = [
     updatedAt: '2026-08-27T12:45:00+09:00',
   },
   {
-    postId: 102,
+    feedId: 102,
     content: 'Redis 분산락과 Redisson 라이브러리의 Watchdog 메커니즘을 정리했습니다.',
     author: {
       userId: 10,
