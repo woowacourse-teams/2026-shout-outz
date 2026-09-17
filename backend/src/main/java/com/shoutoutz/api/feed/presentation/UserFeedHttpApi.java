@@ -5,7 +5,7 @@ import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.feed.application.FeedService;
 import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
 import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
-import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
+import com.shoutoutz.api.feed.presentation.dto.response.UserFeedResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import java.util.List;
@@ -30,7 +30,7 @@ public class UserFeedHttpApi {
     private final FeedService feedService;
 
     @GetMapping
-    public ResponseEntity<SuccessResponse<List<FeedResponse>>> findAll(
+    public ResponseEntity<SuccessResponse<List<UserFeedResponse>>> findAll(
             @Pattern(
                     regexp = "^[A-Za-z0-9_-]{2,30}$",
                     message = "handle 형식이 올바르지 않습니다."
@@ -39,7 +39,7 @@ public class UserFeedHttpApi {
             @Valid @ModelAttribute UserFeedFindRequest request
     ) {
         FeedFindAllResult result = feedService.findAllByUser(handle, request);
-        List<FeedResponse> response = FeedResponse.from(result.items());
+        List<UserFeedResponse> response = UserFeedResponse.from(result.items());
         SliceMetaResponse meta = new SliceMetaResponse(result.nextCursor(), result.hasNext());
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));

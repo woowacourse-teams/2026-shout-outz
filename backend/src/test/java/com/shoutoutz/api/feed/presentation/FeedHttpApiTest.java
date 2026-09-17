@@ -613,6 +613,7 @@ class FeedHttpApiTest {
                 )),
                 List.of(new FeedItem.Media(21L, 0)),
                 0L,
+                0L,
                 CREATED_AT,
                 CREATED_AT
         );

@@ -4,7 +4,7 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static com.epages.restdocs.apispec.SimpleType.INTEGER;
-import static com.shoutoutz.api.feed.presentation.FeedRestDocsFields.feedListResponseFields;
+import static com.shoutoutz.api.feed.presentation.FeedRestDocsFields.userFeedListResponseFields;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -68,6 +68,8 @@ class UserFeedHttpApiTest {
                 .andExpect(jsonPath("$.data[0].author.handle").value("zzaekkii"))
                 .andExpect(jsonPath("$.data[0].categories[0].type").value("GENERAL"))
                 .andExpect(jsonPath("$.data[0].media[0].mediaId").value(30))
+                .andExpect(jsonPath("$.data[0].likeCount").value(5))
+                .andExpect(jsonPath("$.data[0].commentCount").value(3))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
                 .andDo(document(
@@ -89,7 +91,7 @@ class UserFeedHttpApiTest {
                                                 .optional()
                                 )
                                 .responseSchema(Schema.schema("UserFeedFindAllSuccessResponse"))
-                                .responseFields(feedListResponseFields("사용자가 작성한 피드 목록"))
+                                .responseFields(userFeedListResponseFields("사용자가 작성한 피드 목록"))
                                 .build())
                 ));
 
@@ -173,6 +175,7 @@ class UserFeedHttpApiTest {
                 List.of(new FeedItem.Category(1L, "backend", "백엔드", CategoryType.GENERAL)),
                 List.of(new FeedItem.Media(30L, 0)),
                 5L,
+                3L,
                 now,
                 now
         );
