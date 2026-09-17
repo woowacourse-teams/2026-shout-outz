@@ -173,7 +173,7 @@ export const handlers = [
     }),
   ),
 
-  http.get('/api/v1/users/:handle/posts', ({ params }) =>
+  http.get('/api/v1/users/:handle/feeds', ({ params }) =>
     HttpResponse.json({
       status: 'success',
       data: getUserFeeds(String(params.handle)),
