@@ -50,6 +50,10 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 class HomeBannerAdminHttpApiTest {
 
     private static final long BANNER_ID = 100L;
+    private static final String ADMIN_LIST_DESCRIPTION =
+            "관리자가 활성 여부와 관계없이 홈 배너를 표시 순서대로 조회한다.";
+    private static final String UPSERT_DESCRIPTION =
+            "TARGET은 소식·프로젝트·피드 상세를, URL은 내부 경로 또는 외부 HTTPS 주소를 지정한다.";
 
     @Autowired
     private MockMvc mockMvc;
@@ -71,7 +75,7 @@ class HomeBannerAdminHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Home Banner Admin")
                                 .summary("관리자 홈 배너 목록 조회")
-                                .description("관리자가 활성 여부와 관계없이 홈 배너를 표시 순서대로 조회한다.")
+                                .description(ADMIN_LIST_DESCRIPTION)
                                 .responseSchema(Schema.schema("HomeBannerAdminFindAllSuccessResponse"))
                                 .responseFields(listResponseFields())
                                 .build())
@@ -147,6 +151,7 @@ class HomeBannerAdminHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Home Banner Admin")
                                 .summary("관리자 홈 배너 목록 조회")
+                                .description(ADMIN_LIST_DESCRIPTION)
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -178,6 +183,7 @@ class HomeBannerAdminHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Home Banner Admin")
                                 .summary("홈 배너 등록")
+                                .description(UPSERT_DESCRIPTION)
                                 .requestSchema(Schema.schema("HomeBannerUpsertRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .requestFields(requestFields())
@@ -192,7 +198,7 @@ class HomeBannerAdminHttpApiTest {
         var builder = ResourceSnippetParameters.builder()
                 .tag("Home Banner Admin")
                 .summary(summary)
-                .description("TARGET은 소식·프로젝트·피드 상세를, URL은 내부 경로 또는 외부 HTTPS 주소를 지정한다.")
+                .description(UPSERT_DESCRIPTION)
                 .requestSchema(Schema.schema("HomeBannerUpsertRequest"))
                 .responseSchema(Schema.schema(responseSchema))
                 .requestFields(requestFields())
