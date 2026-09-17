@@ -27,7 +27,6 @@ import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
-import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
 import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
@@ -74,6 +73,7 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.data[0].title").value("루프"))
                 .andExpect(jsonPath("$.data[0].techTags[0].displayName").value("Spring"))
                 .andExpect(jsonPath("$.data[0].members[0].handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data[0].members[0].userId").doesNotExist())
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
                 .andExpect(jsonPath("$.meta.totalCount").doesNotExist())
@@ -176,8 +176,8 @@ class UserProjectHttpApiTest {
                 184L,
                 14L,
                 List.of(new ProjectTechTagResponse(1L, "Spring")),
-                List.of(new ProjectMemberProfileResponse(
-                        7L, "zzaekkii", "재키", 6, "BACKEND", 21L, null, null
+                List.of(new UserProjectFindResponse.Member(
+                        "zzaekkii", "재키", 6, "BACKEND", 21L, null, null
                 ))
         );
     }
@@ -200,7 +200,6 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].techTags[].id").type(NUMBER).description("기술 스택 ID"),
                 fieldWithPath("data[].techTags[].displayName").type(STRING).description("기술 스택 이름"),
                 fieldWithPath("data[].members").type(ARRAY).description("프로젝트 팀원"),
-                fieldWithPath("data[].members[].userId").type(NUMBER).description("사용자 ID").optional(),
                 fieldWithPath("data[].members[].handle").type(STRING).description("사용자 handle").optional(),
                 fieldWithPath("data[].members[].displayName").type(STRING).description("표시 이름"),
                 fieldWithPath("data[].members[].cohort").type(NUMBER).description("기수").optional(),
