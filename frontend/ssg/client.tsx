@@ -14,10 +14,9 @@ const router = createAppRouter(queryClient);
 // 갈립니다(App은 이 분기를 모릅니다 - src/App.tsx 참고).
 async function bootstrap() {
   if (process.env.NODE_ENV === 'development') {
-    const { worker } = await import('@/api/mock/browser');
+    const { worker } = await import('@/mocks/browser');
     await worker.start({ onUnhandledRequest: 'bypass' });
   }
-
   const routerHydrationState = window.$_TSR;
   const tree = (
     <Document>
