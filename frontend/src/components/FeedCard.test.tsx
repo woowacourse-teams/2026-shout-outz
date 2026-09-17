@@ -38,6 +38,20 @@ describe('FeedCard', () => {
     expect(screen.getByText('2시간 전')).toHaveAttribute('datetime', FEED.createdAt);
   });
 
+  it('좋아요·댓글 수를 주면 함께 보여준다', () => {
+    render(<FeedCard {...FEED} likeCount={42} commentCount={8} />);
+
+    expect(screen.getByText('42')).toBeInTheDocument();
+    expect(screen.getByText('8')).toBeInTheDocument();
+  });
+
+  it('좋아요·댓글 수를 주지 않으면 그 자리를 그리지 않는다', () => {
+    render(<FeedCard {...FEED} />);
+
+    expect(screen.queryByLabelText('좋아요 수')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('댓글 수')).not.toBeInTheDocument();
+  });
+
   it('Markdown 본문은 기호 대신 서식으로 보여준다', () => {
     render(<FeedCard {...FEED} content="루프 프로젝트에 **Redis Pub/Sub**을 적용했습니다." />);
 
