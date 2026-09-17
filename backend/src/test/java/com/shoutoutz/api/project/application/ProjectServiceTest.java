@@ -17,6 +17,7 @@ import com.shoutoutz.api.cohort.domain.CohortErrorCode;
 import com.shoutoutz.api.cohort.domain.InvalidCohortException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
+import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
@@ -26,6 +27,7 @@ import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.DeletionType;
+import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectDeletion;
@@ -48,6 +50,8 @@ import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.project.domain.Slug;
+import com.shoutoutz.api.project.domain.TeamName;
+import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
@@ -57,11 +61,13 @@ import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenEx
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectUpdateRequest;
 import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
 import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
@@ -95,10 +101,14 @@ class ProjectServiceTest {
 
     private static final long REGISTERED_BY = 7L;
     private static final long MEMBER_ID = 8L;
+    private static final long OTHER_USER_ID = 9L;
+    private static final long PROJECT_ID = 100L;
     private static final String MEMBER_HANDLE = "zzaekkii";
     private static final String DESCRIPTION = "## 문제";
     private static final long THUMBNAIL_ID = 12L;
     private static final List<Long> TECH_TAG_IDS = List.of(1L, 2L);
+    private static final GithubRepositoryUrl GITHUB_REPOSITORY_URL =
+            new GithubRepositoryUrl("https://github.com/woowacourse-teams/2026-loop");
     private static final Instant NOW = Instant.parse("2026-09-10T00:00:00Z");
 
     @Mock
@@ -270,7 +280,21 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("이미 등록된 리포지토리면 409를 던지고 저장하지 않는다.")
+    @DisplayName("이미 등록된 리포지토리면 409를 던지고, 주소 중복은 검사하지 않는다.")
+    void rejectsDuplicateGithubRepository() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
+        when(projectRepository.existsByGithubRepositoryUrl(GITHUB_REPOSITORY_URL)).thenReturn(true);
+
+        assertThatThrownBy(() -> projectService.create(REGISTERED_BY, request(6, null, TECH_TAG_IDS)))
+                .isInstanceOfSatisfying(DuplicateEntityException.class, error -> assertThat(error.getErrorCode())
+                        .isEqualTo(ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY));
+
+        verify(projectRepository, never()).existsBySlug(any());
+        verify(projectRepository, never()).save(any(), anyList(), anyList());
+    }
+
+    @Test
+    @DisplayName("리포지토리는 달라도 이름이 같아 주소가 겹치면 409를 던지고 저장하지 않는다.")
     void rejectsDuplicateSlug() {
         givenRegistrant(UserType.WOOWACOURSE_CREW);
         when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(true);
@@ -801,12 +825,16 @@ class ProjectServiceTest {
         when(userProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile(userId, userType)));
     }
 
+    /**
+     * 탈퇴 상태는 탈퇴 시각과 함께 있어야 하므로, DELETED 일 때만 시각을 채운다.
+     */
     private void givenMemberAccount(String handle, long userId, UserStatus status) {
         User user = User.builder()
                 .id(userId)
                 .handle(handle)
                 .status(status)
                 .role(UserRole.USER)
+                .deletedAt(status == UserStatus.DELETED ? NOW : null)
                 .build();
         when(userRepository.findByHandle(handle)).thenReturn(Optional.of(user));
     }
@@ -855,6 +883,166 @@ class ProjectServiceTest {
                 .isInstanceOfSatisfying(InvalidThumbnailException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(expected));
         verify(projectRepository, never()).save(any(), anyList(), anyList());
+    }
+
+
+    @Test
+    @DisplayName("반려된 프로젝트를 수정하면 재심사 요청으로 보고, 승인 대기로 되돌린다.")
+    void updatesRejectedProjectToPending() {
+        Project rejected = existingProject(ApprovalStatus.REJECTED);
+        givenOwnedProject(rejected);
+        givenMemberAccount(MEMBER_HANDLE, MEMBER_ID, UserStatus.ACTIVE);
+        when(userProfileRepository.findByUserId(MEMBER_ID))
+                .thenReturn(Optional.of(profile(MEMBER_ID, UserType.WOOWACOURSE_CREW)));
+        when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
+        when(projectRepository.update(any(Project.class), eq(TECH_TAG_IDS), anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProjectUpdateResponse result = projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest());
+
+        assertThat(result.projectId()).isEqualTo(PROJECT_ID);
+        assertThat(result.approvalStatus()).isEqualTo(ApprovalStatus.PENDING);
+
+        ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<Long>> memberIdsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(projectRepository).update(projectCaptor.capture(), eq(TECH_TAG_IDS), memberIdsCaptor.capture());
+        assertThat(projectCaptor.getValue().getSlug()).isEqualTo(rejected.getSlug());
+        assertThat(memberIdsCaptor.getValue()).containsExactly(REGISTERED_BY, MEMBER_ID);
+    }
+
+    @Test
+    @DisplayName("없는 프로젝트를 수정하면 404를 던진다.")
+    void rejectsUpdateOfMissingProject() {
+        when(projectRepository.findActiveById(PROJECT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest()))
+                .isInstanceOfSatisfying(EntityNotFoundException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("다른 사람의 프로젝트를 수정하면, 존재 여부를 숨기고 404를 던진다.")
+    void rejectsUpdateByNonRegistrant() {
+        givenOwnedProject(existingProject(ApprovalStatus.APPROVED));
+
+        assertThatThrownBy(() -> projectService.update(PROJECT_ID, OTHER_USER_ID, updateRequest()))
+                .isInstanceOfSatisfying(EntityNotFoundException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
+
+        verify(projectRepository, never()).update(any(), anyList(), anyList());
+    }
+
+    @Test
+    @DisplayName("다른 프로젝트가 등록한 리포지토리로 바꾸면 409를 던진다.")
+    void rejectsUpdateToDuplicateGithubRepository() {
+        givenOwnedProject(existingProject(ApprovalStatus.APPROVED));
+        when(projectRepository.existsByGithubRepositoryUrlExcluding(GITHUB_REPOSITORY_URL, PROJECT_ID))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest()))
+                .isInstanceOfSatisfying(DuplicateEntityException.class, error -> assertThat(error.getErrorCode())
+                        .isEqualTo(ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY));
+    }
+
+    @Test
+    @DisplayName("이미 팀원인 사용자가 탈퇴했어도, 목록에 그대로 두면 수정할 수 있다.")
+    void keepsWithdrawnMemberAlreadyOnProject() {
+        givenOwnedProject(existingProject(ApprovalStatus.APPROVED));
+        givenMemberAccount(MEMBER_HANDLE, MEMBER_ID, UserStatus.DELETED);
+        when(projectRepository.findMemberIds(PROJECT_ID)).thenReturn(List.of(REGISTERED_BY, MEMBER_ID));
+        when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
+        when(projectRepository.update(any(Project.class), eq(TECH_TAG_IDS), anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest());
+
+        verify(userProfileRepository, never()).findByUserId(MEMBER_ID);
+    }
+
+    @Test
+    @DisplayName("탈퇴한 사용자를 팀원으로 새로 추가하면 400을 던진다.")
+    void rejectsWithdrawnMemberNewlyAdded() {
+        givenOwnedProject(existingProject(ApprovalStatus.APPROVED));
+        givenMemberAccount(MEMBER_HANDLE, MEMBER_ID, UserStatus.DELETED);
+        when(projectRepository.findMemberIds(PROJECT_ID)).thenReturn(List.of(REGISTERED_BY));
+        when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
+
+        assertThatThrownBy(() -> projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest()))
+                .isInstanceOfSatisfying(InvalidProjectMemberException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_INVALID_MEMBER));
+    }
+
+    @Test
+    @DisplayName("이미 달려 있던 기술 스택은 비활성이어도 그대로 둘 수 있고, 새로 추가하는 것만 검사한다.")
+    void keepsInactiveTechTagAlreadyOnProject() {
+        givenOwnedProject(existingProject(ApprovalStatus.APPROVED));
+        givenMemberAccount(MEMBER_HANDLE, MEMBER_ID, UserStatus.ACTIVE);
+        when(userProfileRepository.findByUserId(MEMBER_ID))
+                .thenReturn(Optional.of(profile(MEMBER_ID, UserType.WOOWACOURSE_CREW)));
+        when(projectRepository.findTechTagIds(PROJECT_ID)).thenReturn(List.of(1L));
+        when(techTagRepository.findAllActiveByIds(List.of(2L))).thenReturn(activeTags(2L));
+        when(projectRepository.update(any(Project.class), eq(TECH_TAG_IDS), anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest());
+
+        verify(techTagRepository).findAllActiveByIds(List.of(2L));
+    }
+
+    @Test
+    @DisplayName("배포 URL 없이 운영 중으로 수정하면 400을 던지고, 조회 외에는 아무것도 하지 않는다.")
+    void rejectsUpdateToOperatingWithoutDeploymentUrl() {
+        givenOwnedProject(existingProject(ApprovalStatus.APPROVED));
+
+        assertThatThrownBy(() -> projectService.update(
+                PROJECT_ID,
+                REGISTERED_BY,
+                updateRequest(null, ServiceStatus.OPERATING)
+        ))
+                .isInstanceOfSatisfying(DomainValidationException.class, error -> assertThat(error.getErrorCode())
+                        .isEqualTo(ProjectErrorCode.PROJECT_INVALID_SERVICE_STATUS));
+
+        verifyNoInteractions(techTagRepository, mediaMetadataRepository);
+    }
+
+    private void givenOwnedProject(Project project) {
+        when(projectRepository.findActiveById(PROJECT_ID)).thenReturn(Optional.of(project));
+    }
+
+    private static Project existingProject(ApprovalStatus approvalStatus) {
+        return Project.builder()
+                .id(PROJECT_ID)
+                .cohort(Cohort.COHORT_6)
+                .registeredBy(REGISTERED_BY)
+                .teamName(new TeamName("루프팀"))
+                .slug(new Slug("loop"))
+                .title(new Title("루프 (Loop)"))
+                .tagline("한 줄 소개")
+                .serviceStatus(ServiceStatus.CLOSED)
+                .approvalStatus(approvalStatus)
+                .githubRepositoryUrl(GITHUB_REPOSITORY_URL)
+                .build();
+    }
+
+    private static ProjectUpdateRequest updateRequest() {
+        return updateRequest("https://loop.team", ServiceStatus.OPERATING);
+    }
+
+    private static ProjectUpdateRequest updateRequest(String deploymentUrl, ServiceStatus serviceStatus) {
+        return new ProjectUpdateRequest(
+                "루프 (Loop)",
+                "루프팀",
+                "바뀐 한 줄 소개",
+                6,
+                null,
+                GITHUB_REPOSITORY_URL.value(),
+                deploymentUrl,
+                DESCRIPTION,
+                serviceStatus,
+                TECH_TAG_IDS,
+                List.of(MEMBER_HANDLE)
+        );
     }
 
     private static ProjectCreateRequest request(List<String> memberHandles) {

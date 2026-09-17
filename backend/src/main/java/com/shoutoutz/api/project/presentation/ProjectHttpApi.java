@@ -7,12 +7,14 @@ import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectUpdateRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDeleteResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectRestoreResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,6 +44,19 @@ public class ProjectHttpApi {
     ) {
         ProjectCreateResponse response = projectService.create(loginUser.userId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(SuccessResponse.success(response));
+    }
+
+    /**
+     * 작성자만 수정할 수 있다. 반려된 프로젝트를 수정하면 재심사 요청으로 처리한다.
+     */
+    @PutMapping("/{projectId}")
+    public ResponseEntity<SuccessResponse<ProjectUpdateResponse>> update(
+            @LoginUser AuthenticatedUser loginUser,
+            @PathVariable long projectId,
+            @Valid @RequestBody ProjectUpdateRequest request
+    ) {
+        ProjectUpdateResponse response = projectService.update(projectId, loginUser.userId(), request);
+        return ResponseEntity.ok(SuccessResponse.success(response));
     }
 
     @GetMapping

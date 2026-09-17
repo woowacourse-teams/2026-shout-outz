@@ -99,10 +99,10 @@ paths:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"type\",\"\
-                    message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"\
-                    slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayOrder\",\"message\"\
-                    :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\"\
+                    :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\",\"message\"\
+                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -470,7 +470,7 @@ paths:
         서 앞 연도를 떼고 소문자로 만든다. 운영 상태는 deploymentUrl이 있으면 OPERATING, 없으면 CLOSED로 저장한다\
         . 팀원은 등록자를 첫 번째로 두고 memberHandles 순서대로 저장한다. 본문 이미지는 descriptionMd에 ![설명](media://{mediaId})\
         \ 형식으로 넣는다. 요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, 크루나\
-        \ 코치가 아니면 403, 이미 등록된 리포지토리면 409를 반환한다."
+        \ 코치가 아니면 403, 이미 등록된 리포지토리이거나 리포지토리 이름이 같아 slug가 겹치면 409를 반환한다."
       operationId: project-create
       parameters:
       - name: X-CSRF-Token
@@ -615,7 +615,7 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
                 project-create-duplicate:
-                  value: "{\"status\":\"error\",\"code\":\"PROJECT_DUPLICATE_SLUG\"\
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_DUPLICATE_GITHUB_REPOSITORY\"\
                     ,\"message\":\"이미 등록된 리포지토리입니다.\"}"
         "403":
           description: "403"
@@ -969,10 +969,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1060,9 +1060,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -1441,9 +1441,9 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
                     :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
@@ -2735,9 +2735,9 @@ paths:
               examples:
                 user-verification-request-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
-                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
-                    ,\"message\":\"nickname은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"},{\"field\":\"cohort\",\"message\"\
+                    :\"cohort는 양의 정수여야 합니다.\"}]}"
         "201":
           description: "201"
           content:

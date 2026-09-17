@@ -31,12 +31,13 @@ public enum ProjectErrorCode implements ErrorCode {
      * 프로젝트 식별자 (Slug) 에러 코드
      */
     PROJECT_INVALID_SLUG("리포지토리 이름으로 프로젝트 주소를 만들 수 없습니다. 소문자와 숫자, 하이픈만 사용할 수 있습니다."),
-    PROJECT_DUPLICATE_SLUG("이미 등록된 리포지토리입니다."),
+    PROJECT_DUPLICATE_SLUG("이미 사용 중인 프로젝트 주소입니다. 리포지토리 이름이 같은 프로젝트가 있는지 확인해주세요."),
 
     /**
      * 프로젝트 링크 에러 코드
      */
     PROJECT_INVALID_GITHUB_REPOSITORY_URL("GitHub 리포지토리 URL 형식이 올바르지 않습니다."),
+    PROJECT_DUPLICATE_GITHUB_REPOSITORY("이미 등록된 리포지토리입니다."),
     PROJECT_REPOSITORY_NAME_EXTRACTION_FAILED("GitHub 리포지토리 URL에서 리포지토리 이름을 추출할 수 없습니다."),
     PROJECT_INVALID_DEPLOYMENT_URL("서비스 배포 URL 형식이 올바르지 않습니다."),
 
@@ -78,6 +79,8 @@ public enum ProjectErrorCode implements ErrorCode {
     PROJECT_TAGLINE_NULL_OR_BLANK("한 줄 소개는 null이거나 빈값일 수 없습니다."),
     PROJECT_INVALID_TAGLINE_LENGTH("한 줄 소개는 200자 이하여야 합니다."),
     PROJECT_INVALID_DESCRIPTION_LENGTH("프로젝트 설명은 100000자 이하여야 합니다."),
+
+    PROJECT_INVALID_SERVICE_STATUS("배포 URL이 없으면 서비스 상태를 운영 중으로 둘 수 없습니다."),
 
     PROJECT_COHORT_NULL("프로젝트 기수는 null일 수 없습니다."),
     PROJECT_REGISTERED_BY_NULL("프로젝트 등록자는 null일 수 없습니다.");

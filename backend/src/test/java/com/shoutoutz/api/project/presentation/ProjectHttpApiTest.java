@@ -21,6 +21,7 @@ import static org.springframework.restdocs.snippet.Attributes.key;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,12 +49,14 @@ import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenEx
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
+import com.shoutoutz.api.project.presentation.dto.request.ProjectUpdateRequest;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectCreateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Instant;
 import java.util.List;
@@ -86,7 +89,14 @@ class ProjectHttpApiTest {
             + "팀원은 등록자를 첫 번째로 두고 memberHandles 순서대로 저장한다. "
             + "본문 이미지는 descriptionMd에 ![설명](media://{mediaId}) 형식으로 넣는다. "
             + "요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
-            + "크루나 코치가 아니면 403, 이미 등록된 리포지토리면 409를 반환한다.";
+            + "크루나 코치가 아니면 403, 이미 등록된 리포지토리이거나 리포지토리 이름이 같아 slug가 겹치면 409를 반환한다.";
+    private static final String UPDATE_SUMMARY = "프로젝트 수정";
+    private static final String UPDATE_DESCRIPTION = "작성자가 프로젝트 정보를 수정한다. 모든 필드를 보내는 전체 교체 방식이며, "
+            + "비우는 값은 null로 보낸다. techTagIds와 memberHandles도 전체 목록을 순서대로 보낸다. "
+            + "반려된 프로젝트를 수정하면 재심사 요청으로 처리되어 approvalStatus가 PENDING으로 바뀌고, "
+            + "그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. "
+            + "요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
+            + "없거나 삭제됐거나 다른 사람의 프로젝트면 404, 이미 등록된 리포지토리로 바꾸면 409를 반환한다.";
     private static final String FIND_ALL_SUMMARY = "프로젝트 목록 조회";
     private static final String FIND_ALL_DESCRIPTION = "승인된 프로젝트 목록을 검색어, 기수, 기술 스택으로 걸러 정렬 기준대로 조회한다. "
             + "로그인하지 않아도 조회할 수 있다. 커서 기반으로, 첫 요청은 cursor를 생략하고 "
@@ -221,14 +231,14 @@ class ProjectHttpApiTest {
     @DisplayName("이미 등록된 리포지토리인 경우, 409를 반환한다.")
     void rejectsDuplicateRepository() throws Exception {
         given(projectService.create(anyLong(), any(ProjectCreateRequest.class)))
-                .willThrow(new DuplicateEntityException(ProjectErrorCode.PROJECT_DUPLICATE_SLUG));
+                .willThrow(new DuplicateEntityException(ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY));
 
         mockMvc.perform(post("/api/v1/projects")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequestJson()))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("PROJECT_DUPLICATE_SLUG"))
+                .andExpect(jsonPath("$.code").value("PROJECT_DUPLICATE_GITHUB_REPOSITORY"))
                 .andDo(document("project-create-duplicate", resource(errorResource())));
     }
 
@@ -948,6 +958,171 @@ class ProjectHttpApiTest {
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())
                 .build();
+    }
+
+    /**
+     * 같은 경로와 메서드의 스니펫은 하나의 문서로 합쳐지므로, 수정 오류도 수정 API 의 설명을 달아야 한다.
+     * 등록용 errorResource 를 쓰면 문서의 PUT 설명이 등록 API 설명으로 덮인다.
+     */
+    private static ResourceSnippetParameters updateErrorResource() {
+        return ResourceSnippetParameters.builder()
+                .tag("Project")
+                .summary(UPDATE_SUMMARY)
+                .description(UPDATE_DESCRIPTION)
+                .pathParameters(parameterWithName("projectId").description("수정할 프로젝트 ID"))
+                .requestSchema(Schema.schema("ProjectUpdateRequest"))
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse())
+                .build();
+    }
+
+
+    @Test
+    @DisplayName("작성자가 프로젝트를 수정하면 바뀐 승인 상태와 함께 200을 반환한다.")
+    void updatesProject() throws Exception {
+        given(projectService.update(anyLong(), anyLong(), any(ProjectUpdateRequest.class)))
+                .willReturn(new ProjectUpdateResponse(100L, ApprovalStatus.PENDING));
+
+        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUpdateRequestJson()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.projectId").value(100))
+                .andExpect(jsonPath("$.data.approvalStatus").value("PENDING"))
+                .andDo(document(
+                        "project-update",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Project")
+                                .summary(UPDATE_SUMMARY)
+                                .description(UPDATE_DESCRIPTION)
+                                .pathParameters(parameterWithName("projectId").description("수정할 프로젝트 ID"))
+                                .requestHeaders(
+                                        headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .requestSchema(Schema.schema("ProjectUpdateRequest"))
+                                .responseSchema(Schema.schema("ProjectUpdateSuccessResponse"))
+                                .requestFields(
+                                        fieldWithPath("title").type(STRING).description("프로젝트 이름 (100자 이하)"),
+                                        fieldWithPath("teamName").type(STRING).description("팀 이름 (50자 이하)"),
+                                        fieldWithPath("tagline").type(STRING).description("한 줄 소개 (200자 이하)"),
+                                        fieldWithPath("cohort").type(NUMBER).description("우아한테크코스 기수 (1~8)"),
+                                        fieldWithPath("thumbnailMediaId").type(NUMBER)
+                                                .description("본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. "
+                                                        + "썸네일을 비우려면 null로 보낸다.")
+                                                .optional(),
+                                        fieldWithPath("githubRepositoryUrl").type(STRING)
+                                                .description("https://github.com/{owner}/{repo} 형식. 바꿀 수 있지만 "
+                                                        + "다른 프로젝트가 등록한 리포지토리로는 바꿀 수 없다. "
+                                                        + "slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다."),
+                                        fieldWithPath("deploymentUrl").type(STRING)
+                                                .description("서비스 배포 URL (http/https). 비우려면 null로 보낸다.")
+                                                .optional(),
+                                        fieldWithPath("descriptionMd").type(STRING)
+                                                .description("프로젝트 설명 마크다운 (100,000자 이하). "
+                                                        + "이미지는 ![설명](media://{mediaId}) 형식으로 넣는다.")
+                                                .optional(),
+                                        fieldWithPath("serviceStatus").type(STRING)
+                                                .description("서비스 운영 상태 (OPERATING, CLOSED). "
+                                                        + "deploymentUrl이 없으면 CLOSED만 보낼 수 있다."),
+                                        fieldWithPath("techTagIds").type(ARRAY)
+                                                .description("기술 스택 ID 전체 목록. 통째로 교체하며 배열 순서가 표시 순서가 된다. "
+                                                        + "이미 달려 있던 태그는 비활성화됐어도 그대로 둘 수 있다.")
+                                                .attributes(key("itemsType").value("number")),
+                                        fieldWithPath("memberHandles").type(ARRAY)
+                                                .description("작성자를 제외한 팀원 handle 전체 목록 (1명 이상). "
+                                                        + "통째로 교체하며 배열 순서가 표시 순서가 된다. "
+                                                        + "이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다.")
+                                                .attributes(key("itemsType").value("string"))
+                                )
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data.projectId").type(NUMBER).description("수정한 프로젝트 ID"),
+                                        fieldWithPath("data.approvalStatus").type(STRING)
+                                                .description("수정 후 승인 상태 (PENDING, APPROVED)")
+                                )
+                                .build())
+                ));
+
+        verify(projectService).update(eq(100L), eq(7L), any(ProjectUpdateRequest.class));
+    }
+
+    @Test
+    @DisplayName("프로젝트 수정 요청에 필수값이 없는 경우, 400과 필드 오류를 반환하고, 서비스를 호출하지 않는다.")
+    void rejectsInvalidUpdateRequest() throws Exception {
+        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUpdateRequestJson().replace("\"serviceStatus\": \"OPERATING\",", "")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details[0].field").value("serviceStatus"))
+                .andDo(document("project-update-invalid", resource(updateErrorResource())));
+
+        verifyNoInteractions(projectService);
+    }
+
+    @Test
+    @DisplayName("로그인하지 않고 프로젝트 수정을 요청하는 경우, 요청값 검증보다 먼저 401을 반환한다.")
+    void rejectsUnauthenticatedUpdate() throws Exception {
+        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUpdateRequestJson()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(document("project-update-unauthorized", resource(updateErrorResource())));
+
+        verifyNoInteractions(projectService);
+    }
+
+    @Test
+    @DisplayName("없거나 삭제됐거나 다른 사람의 프로젝트를 수정하면, 존재 여부를 숨기고 404를 반환한다.")
+    void rejectsUpdateOfInaccessibleProject() throws Exception {
+        given(projectService.update(anyLong(), anyLong(), any(ProjectUpdateRequest.class)))
+                .willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
+
+        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUpdateRequestJson()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PROJECT_NOT_FOUND"))
+                .andDo(document("project-update-not-found", resource(updateErrorResource())));
+    }
+
+    @Test
+    @DisplayName("다른 프로젝트가 등록한 리포지토리로 바꾸면, 409를 반환한다.")
+    void rejectsUpdateToDuplicateRepository() throws Exception {
+        given(projectService.update(anyLong(), anyLong(), any(ProjectUpdateRequest.class)))
+                .willThrow(new DuplicateEntityException(ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY));
+
+        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUpdateRequestJson()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("PROJECT_DUPLICATE_GITHUB_REPOSITORY"))
+                .andDo(document("project-update-duplicate", resource(updateErrorResource())));
+    }
+
+    private static String validUpdateRequestJson() {
+        return """
+                {
+                  "title": "루프 (Loop)",
+                  "teamName": "루프팀",
+                  "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                  "cohort": 6,
+                  "thumbnailMediaId": 12,
+                  "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                  "deploymentUrl": "https://loop.team",
+                  "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
+                  "serviceStatus": "OPERATING",
+                  "techTagIds": [1, 2, 3],
+                  "memberHandles": ["zzaekkii", "sangjun121"]
+                }
+                """;
     }
 
     private static String validRequestJson() {

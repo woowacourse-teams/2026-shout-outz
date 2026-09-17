@@ -110,7 +110,7 @@ class UserCommentQueryRepositoryIntegrationTest {
                             service_status, approval_status, github_repository_url, deleted_at
                         ) VALUES (
                             8, ?, '테스트 팀', ?, '테스트 프로젝트', '프로젝트 소개',
-                            'OPERATING', ?, 'https://github.com/test/project',
+                            'OPERATING', ?, ?,
                             ?
                         )
                         RETURNING id
@@ -119,6 +119,7 @@ class UserCommentQueryRepositoryIntegrationTest {
                 authorId,
                 "comment-" + token,
                 approvalStatus,
+                "https://github.com/test/comment-" + token,
                 deletedAt(deleted, BASE_TIME)
         );
     }
