@@ -57,6 +57,7 @@ required_variables=(
   AWS_S3_KEY_PREFIX
   AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS
   AWS_CLOUDFRONT_PUBLIC_BASE_URL
+  VISITOR_HASH_SECRET
 )
 
 for variable_name in "${required_variables[@]}"; do

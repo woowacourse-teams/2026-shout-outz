@@ -8,6 +8,7 @@ import static org.mockito.BDDMockito.given;
 import com.shoutoutz.api.auth.application.port.GitHubOAuthIdentityPort;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
+import com.shoutoutz.api.visitor.application.VisitorKeyHasher;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 class ProjectAcceptanceTest {
 
     private static final String PROJECTS_PATH = "/api/v1/projects";
+    private static final String VISITOR_COOKIE_NAME = "VISITOR_ID";
 
     @LocalServerPort
     private int port;
@@ -44,6 +46,9 @@ class ProjectAcceptanceTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private VisitorKeyHasher visitorKeyHasher;
 
     @Test
     @DisplayName("로그인한 사용자가 프로젝트를 등록하면 프로젝트, 기술 태그, 등록자부터 이어지는 팀원이 함께 저장된다.")
@@ -240,6 +245,34 @@ class ProjectAcceptanceTest {
         assertThat(outsiderResponse.jsonPath().getString("code")).isEqualTo("PROJECT_NOT_FOUND");
         assertThat(anonymousResponse.statusCode()).isEqualTo(404);
         assertThat(anonymousResponse.jsonPath().getString("code")).isEqualTo("PROJECT_NOT_FOUND");
+    }
+
+    @Test
+    @DisplayName("비로그인 사용자가 CSRF 토큰 없이 조회를 기록하면, 방문자 쿠키를 발급받고, 같은 쿠키로 다시 기록해도 조회수는 한 번만 오른다.")
+    void recordsViewOncePerVisitorPerDay() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        long projectId = registerPendingProject(author, teammate, techTagIds("java"));
+        approve(projectId);
+
+        Response first = recordView(null, projectId); // 쿠키, 세션, CSRF 토큰 없이 첫 요청
+
+        assertThat(first.statusCode()).as(first.asString()).isEqualTo(200);
+        assertThat(first.jsonPath().getLong("data.viewCount")).isEqualTo(1);
+        String visitorId = first.getCookie(VISITOR_COOKIE_NAME);
+        assertThat(visitorId).isNotBlank();
+        assertThat(first.getDetailedCookie(VISITOR_COOKIE_NAME).isHttpOnly()).isTrue();
+
+        Response repeated = recordView(visitorId, projectId); // 받은 쿠키로 다시 요청
+
+        assertThat(repeated.statusCode()).as(repeated.asString()).isEqualTo(200);
+        assertThat(repeated.jsonPath().getLong("data.viewCount")).isEqualTo(1);
+        assertThat(repeated.getCookie(VISITOR_COOKIE_NAME)).isNull();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT view_count FROM projects WHERE id = ?", Long.class, projectId)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForList(
+                "SELECT visitor_key_hash FROM project_view_days WHERE project_id = ?", String.class, projectId))
+                .containsExactly(visitorKeyHasher.hash(visitorId));
     }
 
     @Test
@@ -450,6 +483,18 @@ class ProjectAcceptanceTest {
      */
     private void approve(long projectId) {
         jdbcTemplate.update("UPDATE projects SET approval_status = 'APPROVED' WHERE id = ?", projectId);
+    }
+
+    /**
+     * visitorId 가 null 이면 방문자 쿠키 없이 처음 방문한 것처럼 요청한다.
+     * 세션 쿠키와 CSRF 토큰 없이 비로그인으로 요청한다.
+     */
+    private Response recordView(String visitorId, long projectId) {
+        var request = RestAssured.given().port(port);
+        if (visitorId != null) {
+            request.cookie(VISITOR_COOKIE_NAME, visitorId);
+        }
+        return request.when().post(PROJECTS_PATH + "/{projectId}/views", projectId);
     }
 
     /**
