@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
@@ -27,6 +28,7 @@ import com.shoutoutz.api.auth.application.command.OAuthSignupResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.auth.exception.AuthErrorCode;
+import com.shoutoutz.api.auth.presentation.dto.response.AuthSessionResponse;
 import com.shoutoutz.api.auth.presentation.security.CsrfTokenManager;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
@@ -246,11 +248,11 @@ class AuthApiDocumentationTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("인증 세션 정보"),
-                                        fieldWithPath("data.status").type(STRING)
-                                                .description("UNAUTHENTICATED, SIGNUP_REQUIRED, AUTHENTICATED"),
+                                        new EnumFields(AuthSessionResponse.Status.class).withPath("data.status")
+                                                .description("세션 인증 상태"),
                                         fieldWithPath("data.userId").type(NUMBER)
                                                 .description("인증된 사용자 ID").optional(),
-                                        fieldWithPath("data.role").type(STRING)
+                                        new EnumFields(UserRole.class).withPath("data.role")
                                                 .description("인증된 사용자 권한").optional(),
                                         fieldWithPath("data.csrfToken").type(STRING)
                                                 .description("상태 변경 요청에 사용할 CSRF Token")
