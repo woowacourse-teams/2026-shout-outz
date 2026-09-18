@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                   ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                   :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayOrder\",\"message\"\
-                   :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\",\"message\"\
-                   :\"type은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"type\",\"\
+                    message\":\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\"\
+                    :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\",\"message\"\
+                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -970,10 +970,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1442,10 +1442,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
+                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
+                    eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -2094,9 +2094,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -5180,6 +5180,35 @@ components:
         status:
           type: string
           description: 응답 상태
+    FeedSaveRequest:
+      title: FeedSaveRequest
+      required:
+      - categoryIds
+      - content
+      - mediaIds
+      type: object
+      properties:
+        categoryIds:
+          type: array
+          description: "활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        mediaIds:
+          type: array
+          description: 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        content:
+          type: string
+          description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"
     OAuthSignupRequest:
       title: OAuthSignupRequest
       required:
@@ -5235,35 +5264,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedSaveRequest:
-      title: FeedSaveRequest
-      required:
-      - categoryIds
-      - content
-      - mediaIds
-      type: object
-      properties:
-        categoryIds:
-          type: array
-          description: "활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        mediaIds:
-          type: array
-          description: 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        content:
-          type: string
-          description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"
     UserProjectFindAllSuccessResponse:
       title: UserProjectFindAllSuccessResponse
       required:
@@ -5571,30 +5571,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    CategorySaveRequest:
-      title: CategorySaveRequest
-      required:
-      - displayName
-      - displayOrder
-      - slug
-      - type
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 고유 표시 이름
-        displayOrder:
-          type: number
-          description: 0 이상 32767 이하 표시 순서
-        type:
-          type: string
-          description: 카테고리 유형
-          enum:
-          - GENERAL
-          - EVENT
-        slug:
-          type: string
-          description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
     ProjectFilterOptionsSuccessResponse:
       title: ProjectFilterOptionsSuccessResponse
       required:
@@ -5657,6 +5633,30 @@ components:
         status:
           type: string
           description: 응답 상태
+    CategorySaveRequest:
+      title: CategorySaveRequest
+      required:
+      - displayName
+      - displayOrder
+      - slug
+      - type
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 고유 표시 이름
+        displayOrder:
+          type: number
+          description: 0 이상 32767 이하 표시 순서
+        type:
+          type: string
+          description: 카테고리 유형
+          enum:
+          - GENERAL
+          - EVENT
+        slug:
+          type: string
+          description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
     FeedCommentUpdateSuccessResponse:
       title: FeedCommentUpdateSuccessResponse
       required:
