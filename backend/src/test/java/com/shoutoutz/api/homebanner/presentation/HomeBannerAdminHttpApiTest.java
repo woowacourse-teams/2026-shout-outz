@@ -15,6 +15,7 @@ import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -48,6 +50,8 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 class HomeBannerAdminHttpApiTest {
 
     private static final long BANNER_ID = 100L;
+    private static final String SESSION_COOKIE = "JSESSIONID=admin-session";
+    private static final String CSRF_TOKEN = "csrf-token";
     private static final String ADMIN_LIST_DESCRIPTION =
             "관리자가 활성 여부와 관계없이 홈 배너를 표시 순서대로 조회한다.";
     private static final String UPSERT_DESCRIPTION =
@@ -65,6 +69,7 @@ class HomeBannerAdminHttpApiTest {
                 .willReturn(List.of(response()));
 
         mockMvc.perform(get("/api/v1/admin/home/banners")
+                        .header(HttpHeaders.COOKIE, SESSION_COOKIE)
                         .with(authenticated(UserRole.ADMIN)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].bannerId").value(BANNER_ID))
@@ -74,6 +79,10 @@ class HomeBannerAdminHttpApiTest {
                                 .tag("Home Banner Admin")
                                 .summary("관리자 홈 배너 목록 조회")
                                 .description(ADMIN_LIST_DESCRIPTION)
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("인증된 관리자의 JSESSIONID")
+                                )
                                 .responseSchema(Schema.schema("HomeBannerAdminFindAllSuccessResponse"))
                                 .responseFields(listResponseFields())
                                 .build())
@@ -89,6 +98,8 @@ class HomeBannerAdminHttpApiTest {
         )).willReturn(response());
 
         mockMvc.perform(post("/api/v1/admin/home/banners")
+                        .header(HttpHeaders.COOKIE, SESSION_COOKIE)
+                        .header("X-CSRF-Token", CSRF_TOKEN)
                         .with(authenticated(UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequest()))
@@ -109,6 +120,8 @@ class HomeBannerAdminHttpApiTest {
         )).willReturn(response());
 
         mockMvc.perform(put("/api/v1/admin/home/banners/{bannerId}", BANNER_ID)
+                        .header(HttpHeaders.COOKIE, SESSION_COOKIE)
+                        .header("X-CSRF-Token", CSRF_TOKEN)
                         .with(authenticated(UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequest()))
@@ -123,6 +136,8 @@ class HomeBannerAdminHttpApiTest {
     @Test
     void 관리자가_배너만_삭제한다() throws Exception {
         mockMvc.perform(delete("/api/v1/admin/home/banners/{bannerId}", BANNER_ID)
+                        .header(HttpHeaders.COOKIE, SESSION_COOKIE)
+                        .header("X-CSRF-Token", CSRF_TOKEN)
                         .with(authenticated(UserRole.ADMIN)))
                 .andExpect(status().isNoContent())
                 .andDo(document(
@@ -131,6 +146,12 @@ class HomeBannerAdminHttpApiTest {
                                 .tag("Home Banner Admin")
                                 .summary("홈 배너 삭제")
                                 .description("관리자가 배너 데이터만 삭제하며 연결된 미디어는 삭제하지 않는다.")
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("인증된 관리자의 JSESSIONID"),
+                                        headerWithName("X-CSRF-Token")
+                                                .description("세션 조회로 발급받은 CSRF 토큰")
+                                )
                                 .pathParameters(parameterWithName("bannerId")
                                         .type(INTEGER)
                                         .description("홈 배너 ID"))
@@ -161,6 +182,8 @@ class HomeBannerAdminHttpApiTest {
     @Test
     void 이동_필드를_혼용하면_400을_반환한다() throws Exception {
         mockMvc.perform(post("/api/v1/admin/home/banners")
+                        .header(HttpHeaders.COOKIE, SESSION_COOKIE)
+                        .header("X-CSRF-Token", CSRF_TOKEN)
                         .with(authenticated(UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -182,6 +205,12 @@ class HomeBannerAdminHttpApiTest {
                                 .tag("Home Banner Admin")
                                 .summary("홈 배너 등록")
                                 .description(UPSERT_DESCRIPTION)
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("인증된 관리자의 JSESSIONID"),
+                                        headerWithName("X-CSRF-Token")
+                                                .description("세션 조회로 발급받은 CSRF 토큰")
+                                )
                                 .requestSchema(Schema.schema("HomeBannerUpsertRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .requestFields(requestFields())
@@ -197,6 +226,12 @@ class HomeBannerAdminHttpApiTest {
                 .tag("Home Banner Admin")
                 .summary(summary)
                 .description(UPSERT_DESCRIPTION)
+                .requestHeaders(
+                        headerWithName(HttpHeaders.COOKIE)
+                                .description("인증된 관리자의 JSESSIONID"),
+                        headerWithName("X-CSRF-Token")
+                                .description("세션 조회로 발급받은 CSRF 토큰")
+                )
                 .requestSchema(Schema.schema("HomeBannerUpsertRequest"))
                 .responseSchema(Schema.schema(responseSchema))
                 .requestFields(requestFields())
