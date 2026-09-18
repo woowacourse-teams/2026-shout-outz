@@ -11,7 +11,6 @@ import jakarta.validation.constraints.Size;
  */
 public record MediaUploadStartRequest(
         @NotNull MediaPurpose purpose,
-        @NotNull @Positive Long targetId,
         @NotBlank @Size(max = 255) String originalFileName,
         @NotBlank String contentType,
         @Positive long sizeBytes

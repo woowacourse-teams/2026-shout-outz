@@ -17,10 +17,12 @@ import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.DeletedProject;
@@ -67,11 +69,14 @@ import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,6 +92,7 @@ public class ProjectService {
     private final UserRepository userRepository;
     private final ProjectDeletionRepository projectDeletionRepository;
     private final UserProjectQueryRepository userProjectQueryRepository;
+    private final MediaUrlResolver mediaUrlResolver;
     private final Clock clock;
 
     @Transactional
@@ -107,6 +113,7 @@ public class ProjectService {
         validateSlugNotDuplicated(project.getSlug());
         validateTechTags(request.techTagIds());
         validateThumbnail(request.thumbnailMediaId(), registeredBy);
+        validateDescriptionMediaUrls(request.descriptionMd());
         validateDescriptionMedia(request.descriptionMd(), registeredBy);
         List<Long> memberIds = request.memberHandles().stream()
                 .map(this::resolveMemberId)
@@ -125,21 +132,28 @@ public class ProjectService {
     @Transactional
     public ProjectUpdateResponse update(long projectId, long loginUserId, ProjectUpdateRequest request) {
         Project project = findOwnedProject(projectId, loginUserId);
+        Long thumbnailMediaId = request.isThumbnailImageIdProvided()
+                ? request.thumbnailImageId()
+                : project.getThumbnailMediaId();
+        String descriptionMd = normalizeDescriptionReferences(project, request.descriptionMd());
+        validateDescriptionMediaUrls(descriptionMd);
         Project updated = project.update(
                 Cohort.from(request.cohort()),
                 new TeamName(request.teamName()),
                 new Title(request.title()),
                 request.tagline(),
-                request.descriptionMd(),
+                descriptionMd,
                 new GithubRepositoryUrl(request.githubRepositoryUrl()),
                 request.deploymentUrl() == null ? null : new DeploymentUrl(request.deploymentUrl()),
                 request.serviceStatus(),
-                request.thumbnailMediaId()
+                thumbnailMediaId
         );
         validateGithubRepositoryNotDuplicated(updated.getGithubRepositoryUrl(), projectId);
         validateTechTags(request.techTagIds(), projectRepository.findTechTagIds(projectId));
-        validateThumbnail(request.thumbnailMediaId(), loginUserId);
-        validateDescriptionMedia(request.descriptionMd(), loginUserId);
+        if (request.isThumbnailImageIdProvided()) {
+            validateThumbnail(request.thumbnailImageId(), loginUserId);
+        }
+        validateDescriptionMedia(descriptionMd, loginUserId);
         List<Long> memberIds = resolveMemberIds(request.memberHandles(), projectRepository.findMemberIds(projectId));
         ProjectMembers members = ProjectMembers.of(project.getRegisteredBy(), memberIds);
 
@@ -163,7 +177,12 @@ public class ProjectService {
                 request.resolvedCursor()
         ));
         ProjectCursor nextCursor = page.nextCursor(sort);
-        return ProjectFindAllResponse.of(page, nextCursor == null ? null : ProjectCursorCodec.encode(nextCursor));
+        Map<Long, URI> mediaUrls = resolveProjectMediaUrls(page.items(), MediaVariant.THUMBNAIL);
+        return ProjectFindAllResponse.of(
+                page,
+                nextCursor == null ? null : ProjectCursorCodec.encode(nextCursor),
+                mediaUrls
+        );
     }
 
     /**
@@ -175,7 +194,7 @@ public class ProjectService {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND));
         if (user.isDeleted()) {
-            return UserProjectFindResponse.from(new UserProjectResult(List.of(), false));
+            return UserProjectFindResponse.from(new UserProjectResult(List.of(), false), Map.of());
         }
 
         UserProjectResult result = userProjectQueryRepository.findAllByUserId(
@@ -183,7 +202,10 @@ public class ProjectService {
                 request.resolvedCursor(),
                 request.resolvedSize()
         );
-        return UserProjectFindResponse.from(result);
+        return UserProjectFindResponse.from(
+                result,
+                resolveProjectMediaUrls(result.projects(), MediaVariant.THUMBNAIL)
+        );
     }
 
     /**
@@ -208,7 +230,59 @@ public class ProjectService {
         ProjectDetail detail = projectRepository.findDetailById(projectId, loginUserId)
                 .filter(project -> project.isVisibleTo(loginUserId))
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
-        return ProjectDetailResponse.from(detail);
+        Map<Long, URI> mediaUrls = resolveProjectMediaUrls(detail);
+        String descriptionMd = mediaUrlResolver.replaceDescriptionReferences(
+                detail.descriptionMd(),
+                mediaUrls
+        );
+        if (descriptionMd == null && detail.descriptionMd() != null) {
+            descriptionMd = detail.descriptionMd();
+        }
+        return ProjectDetailResponse.from(
+                detail,
+                mediaUrls,
+                descriptionMd
+        );
+    }
+
+    private Map<Long, URI> resolveProjectMediaUrls(
+            List<com.shoutoutz.api.project.domain.ProjectSummary> projects,
+            MediaVariant variant
+    ) {
+        Set<Long> mediaIds = new HashSet<>();
+        projects.forEach(project -> {
+            if (project.thumbnailMediaId() != null) {
+                mediaIds.add(project.thumbnailMediaId());
+            }
+            project.members().stream()
+                    .map(com.shoutoutz.api.project.domain.ProjectMemberProfile::avatarImageId)
+                    .filter(java.util.Objects::nonNull)
+                    .forEach(mediaIds::add);
+        });
+        return mediaUrlResolver.resolveAll(mediaIds, variant);
+    }
+
+    private Map<Long, URI> resolveProjectMediaUrls(ProjectDetail detail) {
+        Set<Long> mediaIds = new HashSet<>(
+                DescriptionMediaReferences.extractMediaIds(detail.descriptionMd())
+        );
+        if (detail.thumbnailMediaId() != null) {
+            mediaIds.add(detail.thumbnailMediaId());
+        }
+        detail.members().stream()
+                .map(com.shoutoutz.api.project.domain.ProjectMemberProfile::avatarImageId)
+                .filter(java.util.Objects::nonNull)
+                .forEach(mediaIds::add);
+        return mediaUrlResolver.resolveAll(mediaIds);
+    }
+
+    private String normalizeDescriptionReferences(Project project, String descriptionMd) {
+        List<Long> existingMediaIds = DescriptionMediaReferences.extractMediaIds(project.getDescriptionMd());
+        if (existingMediaIds.isEmpty()) {
+            return descriptionMd;
+        }
+        Map<Long, URI> mediaUrls = mediaUrlResolver.resolveAll(existingMediaIds);
+        return mediaUrlResolver.replaceDescriptionUrlsWithReferences(descriptionMd, mediaUrls);
     }
 
     /**
@@ -358,6 +432,12 @@ public class ProjectService {
             if (media.getStatus() != MediaStatus.READY) {
                 throw new InvalidDescriptionMediaException(PROJECT_DESCRIPTION_MEDIA_NOT_READY);
             }
+        }
+    }
+
+    private void validateDescriptionMediaUrls(String descriptionMd) {
+        if (mediaUrlResolver.containsUnsupportedDescriptionImageReference(descriptionMd)) {
+            throw new InvalidDescriptionMediaException(PROJECT_INVALID_DESCRIPTION_MEDIA);
         }
     }
 

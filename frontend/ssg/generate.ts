@@ -1,6 +1,6 @@
 /// <reference types="node" />
 
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderCsrShell, renderStaticPage } from './render';
@@ -58,7 +58,6 @@ async function main(): Promise<void> {
   const target = process.argv[2];
 
   if (target === '--csr-shell') {
-    rmSync(distDir, { recursive: true, force: true });
     await generateCsrShell(distDir, { script: '/main.js' });
     return;
   }

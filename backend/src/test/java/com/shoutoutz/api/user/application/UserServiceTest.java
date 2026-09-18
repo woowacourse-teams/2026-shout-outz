@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.user.application.dto.UserProfileCounts;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
@@ -25,6 +26,7 @@ import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +53,9 @@ class UserServiceTest {
     @Mock
     private MediaMetadataRepository mediaMetadataRepository;
 
+    @Mock
+    private MediaUrlResolver mediaUrlResolver;
+
     private UserSearchCursorCodec userSearchCursorCodec;
 
     private UserService userService;
@@ -63,7 +68,8 @@ class UserServiceTest {
                 userProfileRepository,
                 userQueryRepository,
                 userSearchCursorCodec,
-                mediaMetadataRepository
+                mediaMetadataRepository,
+                mediaUrlResolver
         );
     }
 
@@ -84,13 +90,15 @@ class UserServiceTest {
                 .build();
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
+        given(mediaUrlResolver.resolve(21L))
+                .willReturn(URI.create("https://cdn.example.com/media/21/display"));
 
         UserProfileSummaryResponse result = userService.getMyProfileSummary(1L);
 
         assertThat(result).isEqualTo(new UserProfileSummaryResponse(
                 "zzaekkii",
                 "재키",
-                21L
+                "https://cdn.example.com/media/21/display"
         ));
     }
 
@@ -143,6 +151,8 @@ class UserServiceTest {
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
         given(userQueryRepository.countByUserId(1L)).willReturn(counts);
+        given(mediaUrlResolver.resolve(21L))
+                .willReturn(URI.create("https://cdn.example.com/media/21/display"));
 
         UserProfileResponse result = userService.getMyProfile(1L);
 
@@ -152,7 +162,7 @@ class UserServiceTest {
         assertThat(result.track()).isEqualTo("BACKEND");
         assertThat(result.cohort()).isEqualTo((short) 8);
         assertThat(result.bio()).isEqualTo("백엔드 개발자입니다.");
-        assertThat(result.avatarImageId()).isEqualTo(21L);
+        assertThat(result.avatarUrl()).isEqualTo("https://cdn.example.com/media/21/display");
         assertThat(result.githubProfileUrl()).isEqualTo("https://github.com/zzaekkii");
         assertThat(result.blogUrl()).isEqualTo("https://zzaekkii.dev");
         assertThat(result.counts()).isEqualTo(new UserProfileResponse.Counts(2L, 18L));
@@ -203,7 +213,7 @@ class UserServiceTest {
         assertThat(result.track()).isNull();
         assertThat(result.cohort()).isNull();
         assertThat(result.bio()).isNull();
-        assertThat(result.avatarImageId()).isNull();
+        assertThat(result.avatarUrl()).isNull();
         assertThat(result.githubProfileUrl()).isNull();
         assertThat(result.blogUrl()).isNull();
         assertThat(result.counts()).isEqualTo(new UserProfileResponse.Counts(0L, 0L));

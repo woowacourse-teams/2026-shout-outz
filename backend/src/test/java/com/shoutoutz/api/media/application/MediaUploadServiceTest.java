@@ -82,7 +82,7 @@ class MediaUploadServiceTest {
 
         MediaUploadStartResponse response = mediaUploadService.startUpload(7L, request);
 
-        verify(mediaUploadAuthorizer).authorize(7L, MediaPurpose.FEED_CONTENT, 42L);
+        verify(mediaUploadAuthorizer).authorize(7L, MediaPurpose.FEED_CONTENT);
         verify(mediaUploadPolicy).validateImage("image/webp", 1024L);
 
         ArgumentCaptor<MediaMetadata> captor = ArgumentCaptor.forClass(MediaMetadata.class);
@@ -103,7 +103,7 @@ class MediaUploadServiceTest {
         MediaUploadStartRequest request = request();
         doThrow(new MediaUploadForbiddenException("미디어 업로드 권한이 없습니다."))
                 .when(mediaUploadAuthorizer)
-                .authorize(7L, MediaPurpose.FEED_CONTENT, 42L);
+                .authorize(7L, MediaPurpose.FEED_CONTENT);
 
         assertThatThrownBy(() -> mediaUploadService.startUpload(7L, request))
                 .isInstanceOf(MediaUploadForbiddenException.class);
@@ -121,14 +121,13 @@ class MediaUploadServiceTest {
         assertThatThrownBy(() -> mediaUploadService.startUpload(7L, request))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        verify(mediaUploadAuthorizer).authorize(7L, MediaPurpose.FEED_CONTENT, 42L);
+        verify(mediaUploadAuthorizer).authorize(7L, MediaPurpose.FEED_CONTENT);
         verifyNoInteractions(mediaMetadataRepository, mediaObjectKeyGenerator, s3MediaStorage);
     }
 
     private MediaUploadStartRequest request() {
         return new MediaUploadStartRequest(
                 MediaPurpose.FEED_CONTENT,
-                42L,
                 "feed-image.webp",
                 "image/webp",
                 1024L

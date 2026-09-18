@@ -46,3 +46,12 @@ export function formatRelativeTime(isoDateTime: string, now: Date = new Date()):
 
   return formatDotDate(isoDateTime);
 }
+
+export function formatDateTime(value: string) {
+  const date = new Date(value);
+  const pad = (number: number) => String(number).padStart(2, '0');
+  const day = [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join('.');
+  const time = [pad(date.getHours()), pad(date.getMinutes())].join(':');
+
+  return `${day} ${time}`;
+}

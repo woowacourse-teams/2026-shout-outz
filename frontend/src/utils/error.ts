@@ -24,3 +24,6 @@ export const isApiResponseError = (
   error: unknown,
 ): error is HTTPError<ApiErrorBody> & { data: ApiErrorBody } =>
   isHTTPError(error) && isApiErrorBody(error.data);
+
+export const getApiErrorMessage = (error: unknown) =>
+  isApiResponseError(error) ? error.data.message : '요청에 실패했습니다. 다시 시도해 주세요.';

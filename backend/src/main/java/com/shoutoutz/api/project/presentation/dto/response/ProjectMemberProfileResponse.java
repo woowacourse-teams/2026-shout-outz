@@ -3,11 +3,13 @@ package com.shoutoutz.api.project.presentation.dto.response;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.domain.profile.Track;
+import java.net.URI;
+import java.util.Map;
 
 /**
  * 프로젝트 팀원 응답 객체
  * 상세 조회와 목록 조회 응답이 함께 쓴다.
- * 가입한 사용자는 avatarImageId, 가입하지 않은 이관 팀원은 githubAvatarUrl과 githubProfileUrl을 가진다.
+ * 가입한 사용자는 avatarUrl, 가입하지 않은 이관 팀원은 githubAvatarUrl과 githubProfileUrl을 가진다.
  */
 public record ProjectMemberProfileResponse(
         Long userId,
@@ -15,22 +17,47 @@ public record ProjectMemberProfileResponse(
         String displayName,
         Integer cohort,
         String track,
-        Long avatarImageId,
+        String avatarUrl,
         String githubAvatarUrl,
         String githubProfileUrl
 ) {
 
-    public static ProjectMemberProfileResponse from(ProjectMemberProfile member) {
+    public static ProjectMemberProfileResponse from(
+            ProjectMemberProfile member,
+            Map<Long, URI> mediaUrls
+    ) {
         return new ProjectMemberProfileResponse(
                 member.userId(),
                 member.handle(),
                 member.displayName(),
                 cohortValue(member.cohort()),
                 trackValue(member.track()),
-                member.avatarImageId(),
+                toUrl(mediaUrls, member.avatarImageId()),
                 member.githubAvatarUrl(),
                 member.githubProfileUrl()
         );
+    }
+
+    @Deprecated
+    public ProjectMemberProfileResponse(
+            Long userId,
+            String handle,
+            String displayName,
+            Integer cohort,
+            String track,
+            Long avatarImageId,
+            String githubAvatarUrl,
+            String githubProfileUrl
+    ) {
+        this(userId, handle, displayName, cohort, track, (String) null, githubAvatarUrl, githubProfileUrl);
+    }
+
+    private static String toUrl(Map<Long, URI> mediaUrls, Long mediaId) {
+        if (mediaId == null || mediaUrls == null) {
+            return null;
+        }
+        URI url = mediaUrls.get(mediaId);
+        return url == null ? null : url.toString();
     }
 
     private static Integer cohortValue(Cohort cohort) {

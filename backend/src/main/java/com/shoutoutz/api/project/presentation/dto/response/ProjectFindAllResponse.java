@@ -2,7 +2,9 @@ package com.shoutoutz.api.project.presentation.dto.response;
 
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectSummary;
+import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 public record ProjectFindAllResponse(List<Item> items, Meta meta) {
 
@@ -10,9 +12,13 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
         items = List.copyOf(items);
     }
 
-    public static ProjectFindAllResponse of(ProjectPage page, String nextCursor) {
+    public static ProjectFindAllResponse of(
+            ProjectPage page,
+            String nextCursor,
+            Map<Long, URI> mediaUrls
+    ) {
         return new ProjectFindAllResponse(
-                page.items().stream().map(Item::from).toList(),
+                page.items().stream().map(item -> Item.from(item, mediaUrls)).toList(),
                 new Meta(nextCursor, page.hasNext(), page.totalCount())
         );
     }
@@ -27,7 +33,7 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
             String title,
             String tagline,
             int cohort,
-            Long thumbnailMediaId,
+            String thumbnailUrl,
             Integer starCount,
             long likeCount,
             long commentCount,
@@ -35,20 +41,49 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
             List<ProjectMemberProfileResponse> members
     ) {
 
-        public static Item from(ProjectSummary summary) {
+        public static Item from(ProjectSummary summary, Map<Long, URI> mediaUrls) {
             return new Item(
                     summary.id(),
                     summary.slug(),
                     summary.title(),
                     summary.tagline(),
                     summary.cohort(),
-                    summary.thumbnailMediaId(),
+                    toUrl(mediaUrls, summary.thumbnailMediaId()),
                     summary.starCount(),
                     summary.likeCount(),
                     summary.commentCount(),
                     summary.techTags().stream().map(ProjectTechTagResponse::from).toList(),
-                    summary.members().stream().map(ProjectMemberProfileResponse::from).toList()
+                    summary.members().stream()
+                            .map(member -> ProjectMemberProfileResponse.from(member, mediaUrls))
+                            .toList()
             );
+        }
+
+        /**
+         * 기존 테스트와 내부 호출 호환을 위한 생성자. 외부 응답에는 URL만 노출한다.
+         */
+        @Deprecated
+        public Item(
+                long id,
+                String slug,
+                String title,
+                String tagline,
+                int cohort,
+                Long thumbnailMediaId,
+                long likeCount,
+                long commentCount,
+                List<ProjectTechTagResponse> techTags,
+                List<ProjectMemberProfileResponse> members
+        ) {
+            this(id, slug, title, tagline, cohort, (String) null, null, likeCount, commentCount, techTags, members);
+        }
+
+        private static String toUrl(Map<Long, URI> mediaUrls, Long mediaId) {
+            if (mediaId == null || mediaUrls == null) {
+                return null;
+            }
+            URI url = mediaUrls.get(mediaId);
+            return url == null ? null : url.toString();
         }
     }
 

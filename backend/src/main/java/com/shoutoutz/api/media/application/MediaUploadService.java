@@ -34,7 +34,7 @@ public class MediaUploadService {
             long requesterId,
             MediaUploadStartRequest request
     ) {
-        mediaUploadAuthorizer.authorize(requesterId, request.purpose(), request.targetId());
+        mediaUploadAuthorizer.authorize(requesterId, request.purpose());
         mediaUploadPolicy.validateImage(request.contentType(), request.sizeBytes());
 
         Instant now = Instant.now();

@@ -9,7 +9,7 @@ public record UserProfileUpdateResponse(
         String track,
         Short cohort,
         String bio,
-        Long avatarImageId,
+        String avatarUrl,
         String githubProfileUrl,
         String blogUrl
 ) {
