@@ -255,7 +255,7 @@ class FeedHttpApiTest {
                 .andExpect(status().isUnauthorized())
                 .andDo(document(
                         "feed-save-unauthorized",
-                        resource(errorResponse(
+                        resource(createErrorResponse(
                                 "피드 작성",
                                 "크루 또는 코치가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다."
                         ))
@@ -278,7 +278,7 @@ class FeedHttpApiTest {
                 .andExpect(status().isBadRequest())
                 .andDo(document(
                         "feed-save-invalid",
-                        resource(errorResponse(
+                        resource(createErrorResponse(
                                 "피드 작성",
                                 "크루 또는 코치가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다."
                         ))
@@ -306,7 +306,7 @@ class FeedHttpApiTest {
                 .andExpect(status().isBadRequest())
                 .andDo(document(
                         "feed-update-invalid",
-                        resource(pathErrorResponse(
+                        resource(updateErrorResponse(
                                 "피드 수정",
                                 "작성자가 본문, 카테고리, 본문 미디어를 전체 교체한다."
                         ))
@@ -407,7 +407,7 @@ class FeedHttpApiTest {
                 .andExpect(jsonPath("$.code").value("FEED_WRITER_TYPE_FORBIDDEN"))
                 .andDo(document(
                         "feed-save-forbidden",
-                        resource(errorResponse(
+                        resource(createErrorResponse(
                                 "피드 작성",
                                 "크루 또는 코치가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다."
                         ))
@@ -429,7 +429,7 @@ class FeedHttpApiTest {
                 .andExpect(status().isForbidden())
                 .andDo(document(
                         "feed-update-forbidden",
-                        resource(pathErrorResponse(
+                        resource(updateErrorResponse(
                                 "피드 수정",
                                 "작성자가 본문, 카테고리, 본문 미디어를 전체 교체한다."
                         ))
@@ -455,7 +455,7 @@ class FeedHttpApiTest {
                 .andExpect(status().isUnauthorized())
                 .andDo(document(
                         "feed-update-unauthorized",
-                        resource(pathErrorResponse(
+                        resource(updateErrorResponse(
                                 "피드 수정",
                                 "작성자가 본문, 카테고리, 본문 미디어를 전체 교체한다."
                         ))
@@ -488,7 +488,7 @@ class FeedHttpApiTest {
                 .andExpect(status().isNotFound())
                 .andDo(document(
                         "feed-update-not-found",
-                        resource(pathErrorResponse(
+                        resource(updateErrorResponse(
                                 "피드 수정",
                                 "작성자가 본문, 카테고리, 본문 미디어를 전체 교체한다."
                         ))
@@ -582,6 +582,31 @@ class FeedHttpApiTest {
                 .tag("Feed")
                 .summary(summary)
                 .description(description)
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse())
+                .build();
+    }
+
+    private ResourceSnippetParameters createErrorResponse(String summary, String description) {
+        return ResourceSnippetParameters.builder()
+                .tag("Feed")
+                .summary(summary)
+                .description(description)
+                .requestSchema(Schema.schema("FeedSaveRequest"))
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse())
+                .build();
+    }
+
+    private ResourceSnippetParameters updateErrorResponse(String summary, String description) {
+        return ResourceSnippetParameters.builder()
+                .tag("Feed")
+                .summary(summary)
+                .description(description)
+                .pathParameters(parameterWithName("feedId")
+                        .type(INTEGER)
+                        .description("피드 ID"))
+                .requestSchema(Schema.schema("FeedUpdateRequest"))
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())
                 .build();

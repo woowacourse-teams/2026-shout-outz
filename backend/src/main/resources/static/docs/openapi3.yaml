@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
-                    ,\"message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\"\
+                    ,\"message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -231,7 +231,7 @@ paths:
         content:
           application/json;charset=UTF-8:
             schema:
-              $ref: "#/components/schemas/api-v1-feeds-386280850"
+              $ref: "#/components/schemas/FeedSaveRequest"
             examples:
               feed-save-forbidden:
                 value: |
@@ -971,9 +971,9 @@ paths:
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"}]}"
+                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1225,7 +1225,7 @@ paths:
         content:
           application/json;charset=UTF-8:
             schema:
-              $ref: "#/components/schemas/api-v1-feeds-feedId917004437"
+              $ref: "#/components/schemas/FeedUpdateRequest"
             examples:
               feed-update-not-found:
                 value: |
@@ -1442,10 +1442,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
                     ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"}]}"
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
@@ -2691,7 +2691,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/api-v1-users-me-verification-requests-1075629857"
+              $ref: "#/components/schemas/UserVerificationRequestCreateRequest"
             examples:
               user-verification-request-create-unauthorized:
                 value: |
@@ -3080,7 +3080,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/api-v1-admin-verification-requests-requestId-reject-107459752"
+              $ref: "#/components/schemas/AdminVerificationRequestRejectRequest"
             examples:
               admin-verification-request-reject-invalid:
                 value: |
@@ -3504,6 +3504,15 @@ components:
         status:
           type: string
           description: 응답 상태
+    AdminVerificationRequestRejectRequest:
+      title: AdminVerificationRequestRejectRequest
+      required:
+      - reason
+      type: object
+      properties:
+        reason:
+          type: string
+          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     FeedCommentCreateSuccessResponse:
       title: FeedCommentCreateSuccessResponse
       required:
@@ -4162,34 +4171,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    api-v1-feeds-386280850:
-      required:
-      - categoryIds
-      - content
-      - mediaIds
-      type: object
-      properties:
-        categoryIds:
-          type: array
-          description: "활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        mediaIds:
-          type: array
-          description: 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        content:
-          type: string
-          description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"
     ProjectFindDetailSuccessResponse:
       title: ProjectFindDetailSuccessResponse
       required:
@@ -5276,48 +5257,8 @@ components:
         status:
           type: string
           description: 응답 상태
-    api-v1-users-me-verification-requests-1075629857:
-      required:
-      - nickname
-      - userType
-      type: object
-      properties:
-        nickname:
-          type: string
-          description: 우테코 닉네임(앞뒤 공백 제거 후 50자 이하)
-        cohort:
-          type: number
-          description: 크루 신청 시 기수. 양의 정수이며 실제 유효성은 관리자 확인
-          nullable: true
-        userType:
-          type: string
-          description: 신청 유형(CREW 또는 COACH)
-        track:
-          type: string
-          description: "크루 신청 시 트랙(BACKEND, FRONTEND, ANDROID)"
-          nullable: true
-    ProjectCreateSuccessResponse:
-      title: ProjectCreateSuccessResponse
-      required:
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - projectId
-          - slug
-          type: object
-          properties:
-            projectId:
-              type: number
-              description: 등록된 프로젝트 ID
-            slug:
-              type: string
-              description: 프로젝트 주소로 쓰이는 slug
-        status:
-          type: string
-          description: 응답 상태
-    api-v1-feeds-feedId917004437:
+    FeedUpdateRequest:
+      title: FeedUpdateRequest
       required:
       - categoryIds
       - content
@@ -5345,14 +5286,27 @@ components:
         content:
           type: string
           description: 변경할 Markdown 본문
-    api-v1-admin-verification-requests-requestId-reject-107459752:
+    ProjectCreateSuccessResponse:
+      title: ProjectCreateSuccessResponse
       required:
-      - reason
+      - status
       type: object
       properties:
-        reason:
+        data:
+          required:
+          - projectId
+          - slug
+          type: object
+          properties:
+            projectId:
+              type: number
+              description: 등록된 프로젝트 ID
+            slug:
+              type: string
+              description: 프로젝트 주소로 쓰이는 slug
+        status:
           type: string
-          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
+          description: 응답 상태
     UserCommentFindAllSuccessResponse:
       title: UserCommentFindAllSuccessResponse
       required:
@@ -5525,6 +5479,35 @@ components:
         content:
           type: string
           description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
+    FeedSaveRequest:
+      title: FeedSaveRequest
+      required:
+      - categoryIds
+      - content
+      - mediaIds
+      type: object
+      properties:
+        categoryIds:
+          type: array
+          description: "활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        mediaIds:
+          type: array
+          description: 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        content:
+          type: string
+          description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"
     OAuthSignupRequest:
       title: OAuthSignupRequest
       required:
@@ -5663,6 +5646,27 @@ components:
         status:
           type: string
           description: 응답 상태
+    UserVerificationRequestCreateRequest:
+      title: UserVerificationRequestCreateRequest
+      required:
+      - nickname
+      - userType
+      type: object
+      properties:
+        nickname:
+          type: string
+          description: 우테코 닉네임(앞뒤 공백 제거 후 50자 이하)
+        cohort:
+          type: number
+          description: 크루 신청 시 기수. 양의 정수이며 실제 유효성은 관리자 확인
+          nullable: true
+        userType:
+          type: string
+          description: 신청 유형(CREW 또는 COACH)
+        track:
+          type: string
+          description: "크루 신청 시 트랙(BACKEND, FRONTEND, ANDROID)"
+          nullable: true
     ProjectFilterOptionsSuccessResponse:
       title: ProjectFilterOptionsSuccessResponse
       required:

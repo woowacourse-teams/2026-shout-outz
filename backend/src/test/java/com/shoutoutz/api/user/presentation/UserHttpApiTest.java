@@ -368,6 +368,7 @@ class UserHttpApiTest {
                                 .tag("User")
                                 .summary("내 프로필 수정")
                                 .description("로그인한 사용자의 수정 가능한 프로필 정보를 저장한다.")
+                                .requestSchema(Schema.schema("UserProfileUpdateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())

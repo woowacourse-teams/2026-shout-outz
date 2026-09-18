@@ -839,6 +839,7 @@ class NewsHttpApiTest {
                                 .tag("News")
                                 .summary("공지 생성")
                                 .description("공지와 선택적인 CTA를 생성한다.")
+                                .requestSchema(Schema.schema("NoticeCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -870,6 +871,7 @@ class NewsHttpApiTest {
                                 .tag("News")
                                 .summary("이벤트 생성")
                                 .description("이벤트와 선택적인 CTA를 생성한다.")
+                                .requestSchema(Schema.schema("EventCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -899,6 +901,7 @@ class NewsHttpApiTest {
                                 .tag("News")
                                 .summary("이벤트 생성")
                                 .description("이벤트와 선택적인 CTA를 생성한다.")
+                                .requestSchema(Schema.schema("EventCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -933,6 +936,7 @@ class NewsHttpApiTest {
                                 .tag("News")
                                 .summary("이벤트 생성 실패")
                                 .description("이벤트 시작 시각이 종료 시각보다 늦으면 400 Bad Request를 반환한다.")
+                                .requestSchema(Schema.schema("EventCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -965,7 +969,8 @@ class NewsHttpApiTest {
                         "news-notice-create-cta-invalid",
                         resource(errorResponseResource(
                                 "공지 생성",
-                                "공지와 선택적인 CTA를 생성한다."))
+                                "공지와 선택적인 CTA를 생성한다.",
+                                "NoticeCreateRequest"))
                 ));
 
         verifyNoInteractions(newsService);
@@ -983,7 +988,8 @@ class NewsHttpApiTest {
                         "news-notice-create-malformed-json",
                         resource(errorResponseResource(
                                 "공지 생성",
-                                "공지와 선택적인 CTA를 생성한다."))
+                                "공지와 선택적인 CTA를 생성한다.",
+                                "NoticeCreateRequest"))
                 ));
 
         verifyNoInteractions(newsService);
@@ -1004,7 +1010,8 @@ class NewsHttpApiTest {
                         "news-notice-create-domain-invalid",
                         resource(errorResponseResource(
                                 "공지 생성",
-                                "공지와 선택적인 CTA를 생성한다."))
+                                "공지와 선택적인 CTA를 생성한다.",
+                                "NoticeCreateRequest"))
                 ));
 
         verify(newsService).createNotice(any(NoticeCreateRequest.class));
@@ -1025,7 +1032,8 @@ class NewsHttpApiTest {
                         "news-event-create-domain-invalid",
                         resource(errorResponseResource(
                                 "이벤트 생성",
-                                "이벤트와 선택적인 CTA를 생성한다."))
+                                "이벤트와 선택적인 CTA를 생성한다.",
+                                "EventCreateRequest"))
                 ));
 
         verify(newsService).createEvent(any(EventCreateRequest.class));
@@ -1094,11 +1102,16 @@ class NewsHttpApiTest {
                 """;
     }
 
-    private ResourceSnippetParameters errorResponseResource(String summary, String description) {
+    private ResourceSnippetParameters errorResponseResource(
+            String summary,
+            String description,
+            String requestSchemaName
+    ) {
         return ResourceSnippetParameters.builder()
                 .tag("News")
                 .summary(summary)
                 .description(description)
+                .requestSchema(Schema.schema(requestSchemaName))
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())
                 .build();
