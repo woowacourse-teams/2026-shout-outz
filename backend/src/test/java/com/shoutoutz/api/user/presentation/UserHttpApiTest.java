@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
@@ -190,8 +191,8 @@ class UserHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("사용자 프로필"),
                                         fieldWithPath("data.handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
-                                        fieldWithPath("data.userType").type(STRING).description("사용자 유형"),
-                                        fieldWithPath("data.track").type(STRING).description("우테코 트랙").optional(),
+                                        new EnumFields(UserType.class).withPath("data.userType").description("사용자 유형"),
+                                        new EnumFields(Track.class).withPath("data.track").description("우테코 트랙").optional(),
                                         fieldWithPath("data.cohort").type(NUMBER).description("우테코 기수").optional(),
                                         fieldWithPath("data.bio").type(STRING).description("한 줄 소개").optional(),
                                         fieldWithPath("data.avatarUrl").type(STRING)
@@ -308,8 +309,8 @@ class UserHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("수정된 사용자 프로필"),
                                         fieldWithPath("data.handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
-                                        fieldWithPath("data.userType").type(STRING).description("사용자 유형"),
-                                        fieldWithPath("data.track").type(STRING).description("우테코 트랙").optional(),
+                                        new EnumFields(UserType.class).withPath("data.userType").description("사용자 유형"),
+                                        new EnumFields(Track.class).withPath("data.track").description("우테코 트랙").optional(),
                                         fieldWithPath("data.cohort").type(NUMBER).description("우테코 기수").optional(),
                                         fieldWithPath("data.bio").type(STRING).description("한 줄 소개").optional(),
                                         fieldWithPath("data.avatarUrl").type(STRING)
@@ -368,6 +369,7 @@ class UserHttpApiTest {
                                 .tag("User")
                                 .summary("내 프로필 수정")
                                 .description("로그인한 사용자의 수정 가능한 프로필 정보를 저장한다.")
+                                .requestSchema(Schema.schema("UserProfileUpdateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -492,8 +494,8 @@ class UserHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("사용자 공개 프로필"),
                                         fieldWithPath("data.handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
-                                        fieldWithPath("data.userType").type(STRING).description("사용자 유형").optional(),
-                                        fieldWithPath("data.track").type(STRING).description("우테코 트랙").optional(),
+                                        new EnumFields(UserType.class).withPath("data.userType").description("사용자 유형"),
+                                        new EnumFields(Track.class).withPath("data.track").description("우테코 트랙").optional(),
                                         fieldWithPath("data.cohort").type(NUMBER).description("우테코 기수").optional(),
                                         fieldWithPath("data.bio").type(STRING).description("한 줄 소개").optional(),
                                         fieldWithPath("data.avatarUrl").type(STRING)
@@ -583,8 +585,8 @@ class UserHttpApiTest {
                                         fieldWithPath("data.items").type(ARRAY).description("검색된 크루와 코치"),
                                         fieldWithPath("data.items[].handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.items[].displayName").type(STRING).description("표시 이름"),
-                                        fieldWithPath("data.items[].userType").type(STRING).description("사용자 유형"),
-                                        fieldWithPath("data.items[].track").type(STRING)
+                                        new EnumFields(UserType.class).withPath("data.items[].userType").description("사용자 유형"),
+                                        new EnumFields(Track.class).withPath("data.items[].track")
                                                 .description("우테코 트랙").optional(),
                                         fieldWithPath("data.items[].cohort").type(NUMBER)
                                                 .description("우테코 기수").optional(),

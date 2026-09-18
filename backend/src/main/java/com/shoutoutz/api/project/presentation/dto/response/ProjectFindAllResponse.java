@@ -25,6 +25,7 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
 
     /**
      * 기술 스택과 팀원은 전체 목록을 등록 순서대로 내려준다. 카드에 몇 개까지 보여줄지는 화면에서 정한다.
+     * starCount 는 GitHub 스타 수를 아직 동기화하지 않은 프로젝트면 null 이다.
      */
     public record Item(
             long id,
@@ -33,6 +34,7 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
             String tagline,
             int cohort,
             String thumbnailUrl,
+            Integer starCount,
             long likeCount,
             long commentCount,
             List<ProjectTechTagResponse> techTags,
@@ -47,6 +49,7 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
                     summary.tagline(),
                     summary.cohort(),
                     toUrl(mediaUrls, summary.thumbnailMediaId()),
+                    summary.starCount(),
                     summary.likeCount(),
                     summary.commentCount(),
                     summary.techTags().stream().map(ProjectTechTagResponse::from).toList(),
@@ -72,7 +75,7 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
                 List<ProjectTechTagResponse> techTags,
                 List<ProjectMemberProfileResponse> members
         ) {
-            this(id, slug, title, tagline, cohort, (String) null, likeCount, commentCount, techTags, members);
+            this(id, slug, title, tagline, cohort, (String) null, null, likeCount, commentCount, techTags, members);
         }
 
         private static String toUrl(Map<Long, URI> mediaUrls, Long mediaId) {

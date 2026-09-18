@@ -20,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.common.exception.code.CommonErrorCode;
@@ -138,12 +139,14 @@ class NewsHttpApiTest {
                                         fieldWithPath("status")
                                                 .type(STRING)
                                                 .description("응답 상태"),
+                                        fieldWithPath("data")
+                                                .type(OBJECT)
+                                                .description("생성된 공지"),
                                         fieldWithPath("data.id")
                                                 .type(NUMBER)
                                                 .description("공지 ID"),
-                                        fieldWithPath("data.type")
-                                                .type(STRING)
-                                                .description("공지 유형"),
+                                        new EnumFields(NewsType.class).withPath("data.type")
+                                                .description("소식 유형. 공지 등록이므로 항상 NOTICE다."),
                                         fieldWithPath("data.title")
                                                 .type(STRING)
                                                 .description("공지 제목"),
@@ -274,8 +277,9 @@ class NewsHttpApiTest {
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("생성된 이벤트"),
                                         fieldWithPath("data.id").type(NUMBER).description("이벤트 ID"),
-                                        fieldWithPath("data.type").type(STRING).description("소식 유형"),
+                                        new EnumFields(NewsType.class).withPath("data.type").description("소식 유형. 이벤트 등록이므로 항상 EVENT다."),
                                         fieldWithPath("data.title").type(STRING).description("이벤트 제목"),
                                         fieldWithPath("data.summary").type(STRING).description("이벤트 요약"),
                                         fieldWithPath("data.body").type(STRING).description("이벤트 본문"),
@@ -283,7 +287,7 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.name").type(STRING).description("작성자 이름"),
                                         fieldWithPath("data.publishedAt").type(STRING).description("게시 시각"),
-                                        fieldWithPath("data.eventStatus").type(STRING).description("이벤트 상태"),
+                                        new EnumFields(EventStatus.class).withPath("data.eventStatus").description("이벤트 상태"),
                                         fieldWithPath("data.eventStartAt").type(STRING).description("이벤트 시작 시각"),
                                         fieldWithPath("data.eventEndAt").type(STRING).description("이벤트 종료 시각"),
                                         fieldWithPath("data.isPinned").type(BOOLEAN).description("고정 여부"),
@@ -398,8 +402,7 @@ class NewsHttpApiTest {
                                         fieldWithPath("data[].id")
                                                 .type(NUMBER)
                                                 .description("소식 ID"),
-                                        fieldWithPath("data[].type")
-                                                .type(STRING)
+                                        new EnumFields(NewsType.class).withPath("data[].type")
                                                 .description("소식 유형"),
                                         fieldWithPath("data[].title")
                                                 .type(STRING)
@@ -410,8 +413,7 @@ class NewsHttpApiTest {
                                         fieldWithPath("data[].publishedAt")
                                                 .type(STRING)
                                                 .description("게시 시각"),
-                                        fieldWithPath("data[].eventStatus")
-                                                .type(STRING)
+                                        new EnumFields(EventStatus.class).withPath("data[].eventStatus")
                                                 .description("이벤트 상태. 공지인 경우 null")
                                                 .optional(),
                                         fieldWithPath("data[].eventStartAt")
@@ -526,11 +528,13 @@ class NewsHttpApiTest {
                                         fieldWithPath("status")
                                                 .type(STRING)
                                                 .description("응답 상태"),
+                                        fieldWithPath("data")
+                                                .type(OBJECT)
+                                                .description("소식 상세"),
                                         fieldWithPath("data.id")
                                                 .type(NUMBER)
                                                 .description("소식 ID"),
-                                        fieldWithPath("data.type")
-                                                .type(STRING)
+                                        new EnumFields(NewsType.class).withPath("data.type")
                                                 .description("소식 유형"),
                                         fieldWithPath("data.title")
                                                 .type(STRING)
@@ -550,8 +554,7 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.publishedAt")
                                                 .type(STRING)
                                                 .description("게시 시각"),
-                                        fieldWithPath("data.eventStatus")
-                                                .type(STRING)
+                                        new EnumFields(EventStatus.class).withPath("data.eventStatus")
                                                 .description("이벤트 상태. 공지인 경우 null")
                                                 .optional(),
                                         fieldWithPath("data.eventStartAt")
@@ -839,6 +842,7 @@ class NewsHttpApiTest {
                                 .tag("News")
                                 .summary("공지 생성")
                                 .description("공지와 선택적인 CTA를 생성한다.")
+                                .requestSchema(Schema.schema("NoticeCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -870,6 +874,7 @@ class NewsHttpApiTest {
                                 .tag("News")
                                 .summary("이벤트 생성")
                                 .description("이벤트와 선택적인 CTA를 생성한다.")
+                                .requestSchema(Schema.schema("EventCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -899,6 +904,7 @@ class NewsHttpApiTest {
                                 .tag("News")
                                 .summary("이벤트 생성")
                                 .description("이벤트와 선택적인 CTA를 생성한다.")
+                                .requestSchema(Schema.schema("EventCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -933,6 +939,7 @@ class NewsHttpApiTest {
                                 .tag("News")
                                 .summary("이벤트 생성 실패")
                                 .description("이벤트 시작 시각이 종료 시각보다 늦으면 400 Bad Request를 반환한다.")
+                                .requestSchema(Schema.schema("EventCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -965,7 +972,8 @@ class NewsHttpApiTest {
                         "news-notice-create-cta-invalid",
                         resource(errorResponseResource(
                                 "공지 생성",
-                                "공지와 선택적인 CTA를 생성한다."))
+                                "공지와 선택적인 CTA를 생성한다.",
+                                "NoticeCreateRequest"))
                 ));
 
         verifyNoInteractions(newsService);
@@ -983,7 +991,8 @@ class NewsHttpApiTest {
                         "news-notice-create-malformed-json",
                         resource(errorResponseResource(
                                 "공지 생성",
-                                "공지와 선택적인 CTA를 생성한다."))
+                                "공지와 선택적인 CTA를 생성한다.",
+                                "NoticeCreateRequest"))
                 ));
 
         verifyNoInteractions(newsService);
@@ -1004,7 +1013,8 @@ class NewsHttpApiTest {
                         "news-notice-create-domain-invalid",
                         resource(errorResponseResource(
                                 "공지 생성",
-                                "공지와 선택적인 CTA를 생성한다."))
+                                "공지와 선택적인 CTA를 생성한다.",
+                                "NoticeCreateRequest"))
                 ));
 
         verify(newsService).createNotice(any(NoticeCreateRequest.class));
@@ -1025,7 +1035,8 @@ class NewsHttpApiTest {
                         "news-event-create-domain-invalid",
                         resource(errorResponseResource(
                                 "이벤트 생성",
-                                "이벤트와 선택적인 CTA를 생성한다."))
+                                "이벤트와 선택적인 CTA를 생성한다.",
+                                "EventCreateRequest"))
                 ));
 
         verify(newsService).createEvent(any(EventCreateRequest.class));
@@ -1094,11 +1105,16 @@ class NewsHttpApiTest {
                 """;
     }
 
-    private ResourceSnippetParameters errorResponseResource(String summary, String description) {
+    private ResourceSnippetParameters errorResponseResource(
+            String summary,
+            String description,
+            String requestSchemaName
+    ) {
         return ResourceSnippetParameters.builder()
                 .tag("News")
                 .summary(summary)
                 .description(description)
+                .requestSchema(Schema.schema(requestSchemaName))
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())
                 .build();

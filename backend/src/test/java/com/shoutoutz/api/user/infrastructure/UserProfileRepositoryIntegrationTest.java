@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +45,9 @@ class UserProfileRepositoryIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Test
     @DisplayName("사용자 프로필을 저장하고 사용자 ID로 조회한다")
@@ -159,5 +163,19 @@ class UserProfileRepositoryIntegrationTest {
 
         assertThatThrownBy(() -> userProfileJpaRepository.saveAndFlush(profileEntity))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    @DisplayName("데이터베이스는 정의되지 않은 트랙을 허용하지 않는다")
+    void rejectsUndefinedTrackAtDatabase() {
+        User savedUser = userRepository.save(User.initialize("invalid-track-user"));
+
+        assertThatThrownBy(() -> jdbcTemplate.update(
+                """
+                        INSERT INTO user_profiles (user_id, display_name, user_type, track)
+                        VALUES (?, '재키', 'WOOWACOURSE_COACH', 'BE')
+                        """,
+                savedUser.getId()
+        )).isInstanceOf(DataIntegrityViolationException.class);
     }
 }

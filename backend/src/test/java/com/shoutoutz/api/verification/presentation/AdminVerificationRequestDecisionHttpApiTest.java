@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
@@ -102,7 +103,7 @@ class AdminVerificationRequestDecisionHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("승인 결과"),
                                         fieldWithPath("data.requestId").type(NUMBER)
                                                 .description("인증 신청 ID"),
-                                        fieldWithPath("data.status").type(STRING)
+                                        new EnumFields(VerificationRequestStatus.class).withPath("data.status")
                                                 .description("변경된 신청 상태"),
                                         fieldWithPath("data.decidedBy").type(OBJECT)
                                                 .description("승인한 관리자"),
@@ -177,7 +178,7 @@ class AdminVerificationRequestDecisionHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("반려 결과"),
                                         fieldWithPath("data.requestId").type(NUMBER)
                                                 .description("인증 신청 ID"),
-                                        fieldWithPath("data.status").type(STRING)
+                                        new EnumFields(VerificationRequestStatus.class).withPath("data.status")
                                                 .description("변경된 신청 상태"),
                                         fieldWithPath("data.reason").type(STRING)
                                                 .description("반려 사유"),
@@ -323,6 +324,7 @@ class AdminVerificationRequestDecisionHttpApiTest {
                                 .type(INTEGER)
                                 .description("인증 신청 ID")
                 )
+                .requestSchema(Schema.schema("AdminVerificationRequestRejectRequest"))
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())
                 .build();

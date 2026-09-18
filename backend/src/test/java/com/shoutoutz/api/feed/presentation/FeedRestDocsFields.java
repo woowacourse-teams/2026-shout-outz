@@ -8,6 +8,10 @@ import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.applyPathPrefix;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 
+import com.epages.restdocs.apispec.EnumFields;
+import com.shoutoutz.api.category.domain.CategoryType;
+import com.shoutoutz.api.user.domain.profile.Track;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.restdocs.payload.FieldDescriptor;
@@ -24,15 +28,15 @@ final class FeedRestDocsFields {
                 fieldWithPath("author").type(OBJECT).description("현재 작성자 프로필"),
                 fieldWithPath("author.handle").type(STRING).description("작성자 핸들"),
                 fieldWithPath("author.displayName").type(STRING).description("작성자 이름"),
-                fieldWithPath("author.userType").type(STRING).description("작성자 유형"),
-                fieldWithPath("author.track").type(STRING).description("작성자 트랙").optional(),
+                new EnumFields(UserType.class).withPath("author.userType").description("작성자 유형"),
+                new EnumFields(Track.class).withPath("author.track").description("작성자 트랙").optional(),
                 fieldWithPath("author.cohort").type(NUMBER).description("작성자 기수").optional(),
                 fieldWithPath("author.avatarUrl").type(STRING).description("현재 프로필 이미지 공개 URL").optional(),
                 fieldWithPath("categories").type(ARRAY).description("카테고리 목록"),
                 fieldWithPath("categories[].categoryId").type(NUMBER).description("카테고리 ID"),
                 fieldWithPath("categories[].slug").type(STRING).description("카테고리 slug"),
                 fieldWithPath("categories[].displayName").type(STRING).description("카테고리 표시 이름"),
-                fieldWithPath("categories[].type").type(STRING).description("GENERAL 또는 EVENT"),
+                new EnumFields(CategoryType.class).withPath("categories[].type").description("카테고리 유형"),
                 fieldWithPath("media").type(ARRAY).description("본문 미디어 목록"),
                 fieldWithPath("media[].url").type(STRING).description("본문 미디어 공개 URL"),
                 fieldWithPath("media[].displayOrder").type(NUMBER).description("미디어 표시 순서"),
@@ -57,6 +61,13 @@ final class FeedRestDocsFields {
         fields.add(fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"));
         fields.add(fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서").optional());
         fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"));
+        return fields;
+    }
+
+    static List<FieldDescriptor> userFeedListResponseFields(String description) {
+        List<FieldDescriptor> fields = feedListResponseFields(description);
+        fields.add(fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"));
+        fields.add(fieldWithPath("data[].commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"));
         return fields;
     }
 }

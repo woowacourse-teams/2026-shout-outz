@@ -37,6 +37,9 @@ function AuthorMenu({
       await mutation.mutateAsync();
       client.removeQueries({ queryKey: ['feed', feedId], exact: true });
       void client.invalidateQueries({ queryKey: ['feeds'] });
+      // TODO 프로필 피드 탭은 ['users', handle, 'feeds']로 따로 캐시된다.
+      // api 폴더를 정리할 때 피드 캐시 키를 한 규칙으로 맞추고 이 줄을 없앤다.
+      void client.invalidateQueries({ queryKey: ['users'] });
       void navigate({ to: '/feeds', search: { sort: 'LATEST' } });
     } catch {
       // Mutation의 오류를 확인 UI에 표시한다.

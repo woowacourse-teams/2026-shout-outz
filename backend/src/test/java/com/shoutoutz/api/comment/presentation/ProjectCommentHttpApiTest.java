@@ -318,6 +318,7 @@ class ProjectCommentHttpApiTest {
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("생성된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("댓글 ID"),
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
@@ -403,6 +404,7 @@ class ProjectCommentHttpApiTest {
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("수정된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("댓글 ID"),
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
@@ -460,6 +462,7 @@ class ProjectCommentHttpApiTest {
                                 .responseSchema(Schema.schema("ProjectCommentDeleteSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("삭제된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("삭제된 댓글 ID"),
                                         fieldWithPath("data.deleted").type(BOOLEAN).description("댓글 삭제 여부")
                                 )
@@ -488,6 +491,7 @@ class ProjectCommentHttpApiTest {
                                 .pathParameters(
                                         parameterWithName("projectId").description("댓글을 작성할 프로젝트 ID")
                                 )
+                                .requestSchema(Schema.schema("ProjectCommentCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())

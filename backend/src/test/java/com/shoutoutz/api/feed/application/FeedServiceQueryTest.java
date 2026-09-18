@@ -259,6 +259,7 @@ class FeedServiceQueryTest {
                 List.of(),
                 List.of(),
                 likeCount,
+                0L,
                 instant,
                 instant
         );
