@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
@@ -31,6 +32,7 @@ import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileR
 import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
 import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
+import com.shoutoutz.api.user.domain.profile.Track;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -203,7 +205,7 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].members[].handle").type(STRING).description("사용자 handle").optional(),
                 fieldWithPath("data[].members[].displayName").type(STRING).description("표시 이름"),
                 fieldWithPath("data[].members[].cohort").type(NUMBER).description("기수").optional(),
-                fieldWithPath("data[].members[].track").type(STRING).description("트랙").optional(),
+                new EnumFields(Track.class).withPath("data[].members[].track").description("트랙").optional(),
                 fieldWithPath("data[].members[].avatarUrl").type(STRING).description("CloudFront에서 제공하는 공개 프로필 이미지 URL").optional(),
                 fieldWithPath("data[].members[].githubAvatarUrl").type(STRING)
                         .description("이관 팀원의 GitHub 프로필 이미지 URL").optional(),
