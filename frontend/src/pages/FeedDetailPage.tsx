@@ -11,7 +11,7 @@ import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { PopularFeedList } from '@/components/feeds/PopularFeedList';
 import { Comments } from '@/components/feed-comments/Comments';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { getFeedAuthorName } from '@/utils/feed';
+import { formatCrewName } from '@/utils/user';
 import { formatRelativeTime } from '@/utils/date';
 
 const DESKTOP_MEDIA_QUERY = '(min-width: 64rem)';
@@ -52,7 +52,7 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
           <Avatar size="md" alt={`${feed.author.displayName} 프로필`} />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-gray-900">
-              {getFeedAuthorName(feed.author)}
+              {formatCrewName(feed.author.displayName, feed.author.cohort, feed.author.track)}
             </p>
             <time dateTime={feed.createdAt} className="text-sm text-gray-500">
               {formatRelativeTime(feed.createdAt)}

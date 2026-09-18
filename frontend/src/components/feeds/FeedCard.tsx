@@ -8,21 +8,21 @@ import { FeedContent } from '@/components/feeds/FeedContent';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { Comments } from '@/components/feed-comments/Comments';
-import { getFeedAuthorName } from '@/utils/feed';
+import { formatCrewName } from '@/utils/user';
 import { formatRelativeTime } from '@/utils/date';
 
 export function FeedCard({ feed }: { feed: Feed }) {
   const [open, setOpen] = useState(false);
   return (
     <article className="min-w-0 border-b border-gray-100 py-6 first:pt-4 md:py-7">
-      <header className="flex items-start gap-3">
+      <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <Link to="/feeds/$feedId" params={{ feedId: String(feed.feedId) }}>
             <div className="flex min-w-0 items-center gap-2">
               <Avatar size="md" alt={`${feed.author.displayName} 프로필`} />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-gray-900">
-                  {getFeedAuthorName(feed.author)}
+                  {formatCrewName(feed.author.displayName, feed.author.cohort, feed.author.track)}
                 </p>
                 <time className="text-sm text-gray-400" dateTime={feed.createdAt}>
                   {formatRelativeTime(feed.createdAt)}
@@ -34,7 +34,7 @@ export function FeedCard({ feed }: { feed: Feed }) {
         <AsyncBoundary>
           <FeedMenu feedId={feed.feedId} authorHandle={feed.author.handle} />
         </AsyncBoundary>
-      </header>
+      </div>
       <FeedContent feed={feed} />
       <div className="mt-5 flex items-center gap-2 text-sm text-gray-500">
         <Button variant="ghost" size="sm" className="gap-1 px-2" aria-label="좋아요" disabled>
