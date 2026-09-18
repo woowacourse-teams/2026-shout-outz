@@ -192,7 +192,10 @@ class ProjectRepositoryIntegrationTest {
     void keepsCountersOnUpdate() {
         Long registeredBy = userRepository.save(User.initialize("counter")).getId();
         Project saved = projectRepository.save(project(registeredBy, uniqueRepositoryName()), List.of(), List.of());
-        ProjectEntity before = projectJpaRepository.findById(saved.getId()).orElseThrow();
+        entityManager.flush();
+        entityManager.clear();
+
+        Instant createdAtBefore = projectJpaRepository.findById(saved.getId()).orElseThrow().getCreatedAt();
         jdbcTemplate.update(
                 "UPDATE projects SET view_count = 42, star_count = 7, star_synced_at = ? WHERE id = ?",
                 Timestamp.from(SYNCED_AT),
@@ -208,7 +211,7 @@ class ProjectRepositoryIntegrationTest {
         assertThat(after.getViewCount()).isEqualTo(42);
         assertThat(after.getStarCount()).isEqualTo(7);
         assertThat(after.getStarSyncedAt()).isEqualTo(SYNCED_AT);
-        assertThat(after.getCreatedAt()).isEqualTo(before.getCreatedAt());
+        assertThat(after.getCreatedAt()).isEqualTo(createdAtBefore);
         assertThat(after.getTitle()).isEqualTo("바뀐 제목");
     }
 
