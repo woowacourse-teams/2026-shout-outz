@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
@@ -102,8 +103,8 @@ class CategoryHttpApiTest {
                                                 .description("카테고리 slug"),
                                         fieldWithPath("data[].displayName").type(STRING)
                                                 .description("표시 이름"),
-                                        fieldWithPath("data[].type").type(STRING)
-                                                .description("GENERAL 또는 EVENT"),
+                                        new EnumFields(CategoryType.class).withPath("data[].type")
+                                                .description("카테고리 유형"),
                                         fieldWithPath("data[].displayOrder").type(NUMBER)
                                                 .description("표시 순서")
                                 )
@@ -138,8 +139,8 @@ class CategoryHttpApiTest {
                                                 .description("영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"),
                                         fieldWithPath("displayName").type(STRING)
                                                 .description("고유 표시 이름"),
-                                        fieldWithPath("type").type(STRING)
-                                                .description("GENERAL 또는 EVENT"),
+                                        new EnumFields(CategoryType.class).withPath("type")
+                                                .description("카테고리 유형"),
                                         fieldWithPath("displayOrder").type(NUMBER)
                                                 .description("0 이상 32767 이하 표시 순서")
                                 )
@@ -520,7 +521,7 @@ class CategoryHttpApiTest {
                 fieldWithPath("data.categoryId").type(NUMBER).description("카테고리 ID"),
                 fieldWithPath("data.slug").type(STRING).description("카테고리 slug"),
                 fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
-                fieldWithPath("data.type").type(STRING).description("GENERAL 또는 EVENT"),
+                new EnumFields(CategoryType.class).withPath("data.type").description("카테고리 유형"),
                 fieldWithPath("data.displayOrder").type(NUMBER).description("표시 순서"),
                 fieldWithPath("data.active").type(BOOLEAN).description("활성 여부")
         );

@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
@@ -115,8 +116,8 @@ class UserCommentHttpApiTest {
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(ARRAY).description("내가 작성한 댓글 목록"),
                                         fieldWithPath("data[].commentId").type(NUMBER).description("댓글 ID"),
-                                        fieldWithPath("data[].type").type(STRING)
-                                                .description("댓글 대상 종류(FEED 또는 PROJECT)"),
+                                        new EnumFields(UserCommentType.class).withPath("data[].type")
+                                                .description("댓글 대상 종류"),
                                         fieldWithPath("data[].targetId").type(NUMBER)
                                                 .description("이동할 피드 또는 프로젝트 ID"),
                                         fieldWithPath("data[].content").type(STRING).description("댓글 내용"),
