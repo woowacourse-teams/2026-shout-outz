@@ -493,7 +493,7 @@ class UserHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("사용자 공개 프로필"),
                                         fieldWithPath("data.handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
-                                        new EnumFields(UserType.class).withPath("data.userType").description("사용자 유형").optional(),
+                                        new EnumFields(UserType.class).withPath("data.userType").description("사용자 유형"),
                                         new EnumFields(Track.class).withPath("data.track").description("우테코 트랙").optional(),
                                         fieldWithPath("data.cohort").type(NUMBER).description("우테코 기수").optional(),
                                         fieldWithPath("data.bio").type(STRING).description("한 줄 소개").optional(),
