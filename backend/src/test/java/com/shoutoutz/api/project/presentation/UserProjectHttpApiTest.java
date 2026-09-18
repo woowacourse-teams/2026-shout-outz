@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.cohort.domain.Cohort;
@@ -217,7 +218,7 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].teamName").type(STRING).description("팀 이름"),
                 fieldWithPath("data[].tagline").type(STRING).description("한 줄 소개"),
                 fieldWithPath("data[].cohort").type(NUMBER).description("우아한테크코스 기수"),
-                fieldWithPath("data[].serviceStatus").type(STRING).description("운영 상태 (OPERATING, CLOSED)"),
+                new EnumFields(ServiceStatus.class).withPath("data[].serviceStatus").description("운영 상태"),
                 fieldWithPath("data[].thumbnailUrl").type(STRING).description("CloudFront에서 제공하는 공개 썸네일 URL").optional(),
                 fieldWithPath("data[].starCount").type(NUMBER)
                         .description("GitHub star 수. 동기화 전이면 null이다.").optional(),
@@ -230,7 +231,7 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].members[].handle").type(STRING).description("사용자 handle").optional(),
                 fieldWithPath("data[].members[].displayName").type(STRING).description("표시 이름"),
                 fieldWithPath("data[].members[].cohort").type(NUMBER).description("기수").optional(),
-                fieldWithPath("data[].members[].track").type(STRING).description("트랙").optional(),
+                new EnumFields(Track.class).withPath("data[].members[].track").description("트랙").optional(),
                 fieldWithPath("data[].members[].avatarUrl").type(STRING).description("CloudFront에서 제공하는 공개 프로필 이미지 URL").optional(),
                 fieldWithPath("data[].members[].githubAvatarUrl").type(STRING)
                         .description("이관 팀원의 GitHub 프로필 이미지 URL").optional(),
