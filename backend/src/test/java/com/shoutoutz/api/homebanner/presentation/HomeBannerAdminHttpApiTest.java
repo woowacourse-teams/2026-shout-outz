@@ -27,8 +27,6 @@ import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.homebanner.application.HomeBannerAdminService;
-import com.shoutoutz.api.homebanner.domain.BannerDestinationType;
-import com.shoutoutz.api.homebanner.domain.BannerTargetType;
 import com.shoutoutz.api.homebanner.presentation.dto.request.HomeBannerUpsertRequest;
 import com.shoutoutz.api.homebanner.presentation.dto.response.HomeBannerAdminResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
@@ -290,8 +288,8 @@ class HomeBannerAdminHttpApiTest {
                 BANNER_ID,
                 10L,
                 URI.create("https://cdn.example.com/banner"),
-                BannerDestinationType.TARGET,
-                BannerTargetType.PROJECT,
+                "TARGET",
+                "PROJECT",
                 20L,
                 null,
                 null,

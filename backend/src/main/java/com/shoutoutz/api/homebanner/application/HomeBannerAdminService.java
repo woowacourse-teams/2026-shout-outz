@@ -2,6 +2,9 @@ package com.shoutoutz.api.homebanner.application;
 
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
+import com.shoutoutz.api.homebanner.domain.BannerDestinationType;
+import com.shoutoutz.api.homebanner.domain.BannerLinkType;
+import com.shoutoutz.api.homebanner.domain.BannerTargetType;
 import com.shoutoutz.api.homebanner.domain.HomeBanner;
 import com.shoutoutz.api.homebanner.domain.HomeBannerErrorCode;
 import com.shoutoutz.api.homebanner.domain.HomeBannerRepository;
@@ -38,10 +41,21 @@ public class HomeBannerAdminService {
     ) {
         validateAdmin(role);
         URI imageUrl = imageService.createImageUrl(request.mediaId());
-        targetValidator.validate(request.targetType(), request.targetId());
+        BannerTargetType targetType = targetTypeOf(request.targetType());
+        targetValidator.validate(targetType, request.targetId());
 
-        HomeBanner saved = homeBannerRepository.save(request.toHomeBanner(userId));
-        return HomeBannerAdminResponse.from(saved, imageUrl);
+        HomeBanner saved = homeBannerRepository.save(HomeBanner.create(
+                request.mediaId(),
+                BannerDestinationType.valueOf(request.destinationType()),
+                targetType,
+                request.targetId(),
+                linkTypeOf(request.linkType()),
+                request.linkUrl(),
+                request.displayOrder(),
+                request.active(),
+                userId
+        ));
+        return toResponse(saved, imageUrl);
     }
 
     @Transactional
@@ -53,21 +67,22 @@ public class HomeBannerAdminService {
         validateAdmin(role);
         HomeBanner banner = findBanner(bannerId);
         URI imageUrl = imageService.createImageUrl(request.mediaId());
-        targetValidator.validate(request.targetType(), request.targetId());
+        BannerTargetType targetType = targetTypeOf(request.targetType());
+        targetValidator.validate(targetType, request.targetId());
 
         HomeBanner updated = banner.update(
                 request.mediaId(),
-                request.destinationType(),
-                request.targetType(),
+                BannerDestinationType.valueOf(request.destinationType()),
+                targetType,
                 request.targetId(),
-                request.linkType(),
+                linkTypeOf(request.linkType()),
                 request.linkUrl(),
                 request.displayOrder(),
                 request.active()
         );
         HomeBanner saved = homeBannerRepository.update(updated)
                 .orElseThrow(() -> new NotFoundException(HomeBannerErrorCode.HOME_BANNER_NOT_FOUND));
-        return HomeBannerAdminResponse.from(saved, imageUrl);
+        return toResponse(saved, imageUrl);
     }
 
     @Transactional
@@ -79,10 +94,37 @@ public class HomeBannerAdminService {
     }
 
     private HomeBannerAdminResponse toResponse(HomeBanner banner) {
-        return HomeBannerAdminResponse.from(
-                banner,
-                imageService.createImageUrl(banner.getMediaId())
+        return toResponse(banner, imageService.createImageUrl(banner.getMediaId()));
+    }
+
+    private HomeBannerAdminResponse toResponse(HomeBanner banner, URI imageUrl) {
+        return new HomeBannerAdminResponse(
+                banner.getId(),
+                banner.getMediaId(),
+                imageUrl,
+                banner.getDestinationType().name(),
+                enumName(banner.getTargetType()),
+                banner.getTargetId(),
+                enumName(banner.getLinkType()),
+                banner.getLinkUrl(),
+                banner.getDisplayOrder(),
+                banner.isActive(),
+                banner.getCreatedBy(),
+                banner.getCreatedAt(),
+                banner.getUpdatedAt()
         );
+    }
+
+    private BannerTargetType targetTypeOf(String value) {
+        return value == null ? null : BannerTargetType.valueOf(value);
+    }
+
+    private BannerLinkType linkTypeOf(String value) {
+        return value == null ? null : BannerLinkType.valueOf(value);
+    }
+
+    private String enumName(Enum<?> value) {
+        return value == null ? null : value.name();
     }
 
     private HomeBanner findBanner(long bannerId) {

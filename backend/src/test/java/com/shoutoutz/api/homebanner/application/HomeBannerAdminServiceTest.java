@@ -130,8 +130,8 @@ class HomeBannerAdminServiceTest {
     private HomeBannerUpsertRequest request() {
         return new HomeBannerUpsertRequest(
                 10L,
-                BannerDestinationType.TARGET,
-                BannerTargetType.PROJECT,
+                "TARGET",
+                "PROJECT",
                 20L,
                 null,
                 null,

@@ -14,8 +14,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.homebanner.application.HomeBannerService;
-import com.shoutoutz.api.homebanner.domain.BannerDestinationType;
-import com.shoutoutz.api.homebanner.domain.BannerLinkType;
 import com.shoutoutz.api.homebanner.presentation.dto.response.HomeBannerResponse;
 import java.net.URI;
 import java.util.List;
@@ -42,10 +40,10 @@ class HomeBannerHttpApiTest {
                 new HomeBannerResponse(
                         100L,
                         URI.create("https://cdn.example.com/banner"),
-                        BannerDestinationType.URL,
+                        "URL",
                         null,
                         null,
-                        BannerLinkType.EXTERNAL_URL,
+                        "EXTERNAL_URL",
                         "https://example.com/promotion"
                 )
         ));
