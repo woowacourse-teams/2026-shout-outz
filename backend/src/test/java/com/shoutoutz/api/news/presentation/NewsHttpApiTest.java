@@ -139,6 +139,9 @@ class NewsHttpApiTest {
                                         fieldWithPath("status")
                                                 .type(STRING)
                                                 .description("응답 상태"),
+                                        fieldWithPath("data")
+                                                .type(OBJECT)
+                                                .description("생성된 공지"),
                                         fieldWithPath("data.id")
                                                 .type(NUMBER)
                                                 .description("공지 ID"),
@@ -274,6 +277,7 @@ class NewsHttpApiTest {
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("생성된 이벤트"),
                                         fieldWithPath("data.id").type(NUMBER).description("이벤트 ID"),
                                         new EnumFields(NewsType.class).withPath("data.type").description("소식 유형. 이벤트 등록이므로 항상 EVENT다."),
                                         fieldWithPath("data.title").type(STRING).description("이벤트 제목"),
@@ -524,6 +528,9 @@ class NewsHttpApiTest {
                                         fieldWithPath("status")
                                                 .type(STRING)
                                                 .description("응답 상태"),
+                                        fieldWithPath("data")
+                                                .type(OBJECT)
+                                                .description("소식 상세"),
                                         fieldWithPath("data.id")
                                                 .type(NUMBER)
                                                 .description("소식 ID"),
