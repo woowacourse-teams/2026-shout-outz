@@ -91,8 +91,12 @@ class ProjectHttpApiTest {
             + "요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
             + "크루나 코치가 아니면 403, 이미 등록된 리포지토리이거나 리포지토리 이름이 같아 slug가 겹치면 409를 반환한다.";
     private static final String UPDATE_SUMMARY = "프로젝트 수정";
-    private static final String UPDATE_DESCRIPTION = "작성자가 프로젝트 정보를 수정한다. 모든 필드를 보내는 전체 교체 방식이며, "
-            + "비우는 값은 null로 보낸다. techTagIds와 memberHandles도 전체 목록을 순서대로 보낸다. "
+    private static final String UPDATE_DESCRIPTION = "작성자가 프로젝트 정보를 수정한다. 대부분의 필드는 전체 교체 방식이며, "
+            + "비우는 값은 null로 보낸다. thumbnailImageId는 생략하면 기존 이미지를 유지하고, "
+            + "새 ID를 보내면 교체하며, null을 명시하면 제거한다. "
+            + "descriptionMd는 저장 시 media://{mediaId} 형식으로 정규화하며, 상세 조회 응답의 CDN URL은 기존 프로젝트 미디어와 "
+            + "매칭되는 경우에만 본문 이미지 참조로 복원한다. 매칭되지 않는 외부 이미지 URL은 허용하지 않는다. "
+            + "techTagIds와 memberHandles도 전체 목록을 순서대로 보낸다. "
             + "반려된 프로젝트를 수정하면 재심사 요청으로 처리되어 approvalStatus가 PENDING으로 바뀌고, "
             + "그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. "
             + "요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
@@ -302,11 +306,11 @@ class ProjectHttpApiTest {
         given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(new ProjectFindAllResponse(
                 List.of(new ProjectFindAllResponse.Item(
                         100L, "loop", "루프 (Loop)", "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
-                        6, 12L, 184L, 14L,
+                        6, "https://cdn.example.com/thumbnail", 184L, 14L,
                         List.of(new ProjectTechTagResponse(1L, "React"), new ProjectTechTagResponse(2L, "Spring")),
                         List.of(
-                                new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BACKEND", 101L, null, null),
-                                new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FRONTEND", null, null, null)
+                                new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BACKEND", "https://cdn.example.com/avatar-101", null, null),
+                                new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FRONTEND", (Long) null, null, null)
                         ))),
                 new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
         ));
@@ -361,8 +365,8 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data[].title").type(STRING).description("프로젝트 이름"),
                                         fieldWithPath("data[].tagline").type(STRING).description("한 줄 소개"),
                                         fieldWithPath("data[].cohort").type(NUMBER).description("우아한테크코스 기수"),
-                                        fieldWithPath("data[].thumbnailMediaId").type(NUMBER)
-                                                .description("썸네일 미디어 ID. 이미지 URL은 GET /api/v1/media/{mediaId}로 받는다.")
+                                        fieldWithPath("data[].thumbnailUrl").type(STRING)
+                                                .description("CloudFront에서 제공하는 공개 썸네일 URL")
                                                 .optional(),
                                         fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"),
                                         fieldWithPath("data[].commentCount").type(NUMBER)
@@ -386,8 +390,8 @@ class ProjectHttpApiTest {
                                                 .description("기수. 가입하지 않은 이관 팀원은 프로젝트 기수다.")
                                                 .optional(),
                                         fieldWithPath("data[].members[].track").type(STRING).description("트랙").optional(),
-                                        fieldWithPath("data[].members[].avatarImageId").type(NUMBER)
-                                                .description("프로필 이미지 미디어 ID")
+                                        fieldWithPath("data[].members[].avatarUrl").type(STRING)
+                                                .description("CloudFront에서 제공하는 공개 프로필 이미지 URL")
                                                 .optional(),
                                         fieldWithPath("data[].members[].githubAvatarUrl").type(STRING)
                                                 .description("GitHub 프로필 이미지 URL. 가입하지 않은 이관 팀원만 값이 있다.")
@@ -564,11 +568,11 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data.teamName").type(STRING).description("팀 이름"),
                                         fieldWithPath("data.tagline").type(STRING).description("한 줄 소개"),
                                         fieldWithPath("data.cohort").type(NUMBER).description("우아한테크코스 기수"),
-                                        fieldWithPath("data.thumbnailMediaId").type(NUMBER)
-                                                .description("썸네일 미디어 ID. 이미지 URL은 GET /api/v1/media/{mediaId}로 받는다.")
+                                        fieldWithPath("data.imageUrl").type(STRING)
+                                                .description("CloudFront에서 제공하는 공개 이미지 URL")
                                                 .optional(),
                                         fieldWithPath("data.descriptionMd").type(STRING)
-                                                .description("프로젝트 설명 마크다운. 본문 이미지는 media://{mediaId} 형식으로 들어 있다.")
+                                                .description("프로젝트 설명 마크다운. 본문 이미지 참조는 공개 URL로 변환되어 있다.")
                                                 .optional(),
                                         fieldWithPath("data.githubRepositoryUrl").type(STRING).description("GitHub 리포지토리 URL"),
                                         fieldWithPath("data.deploymentUrl").type(STRING).description("서비스 배포 URL").optional(),
@@ -612,8 +616,8 @@ class ProjectHttpApiTest {
                                                 .description("기수. 가입하지 않은 이관 팀원은 프로젝트 기수다.")
                                                 .optional(),
                                         fieldWithPath("data.members[].track").type(STRING).description("트랙").optional(),
-                                        fieldWithPath("data.members[].avatarImageId").type(NUMBER)
-                                                .description("프로필 이미지 미디어 ID")
+                                        fieldWithPath("data.members[].avatarUrl").type(STRING)
+                                                .description("CloudFront에서 제공하는 공개 프로필 이미지 URL")
                                                 .optional(),
                                         fieldWithPath("data.members[].githubAvatarUrl").type(STRING)
                                                 .description("GitHub 프로필 이미지 URL. 가입하지 않은 이관 팀원만 값이 있다.")
@@ -917,7 +921,7 @@ class ProjectHttpApiTest {
                 "루프팀",
                 "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                 6,
-                12L,
+                "https://cdn.example.com/thumbnail",
                 "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
                 "https://github.com/woowacourse-teams/2026-loop",
                 "https://loop.team",
@@ -937,8 +941,8 @@ class ProjectHttpApiTest {
                         new ProjectTechTagResponse(2L, "TypeScript")
                 ),
                 List.of(
-                        new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BACKEND", 101L, null, null),
-                        new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FRONTEND", null, null, null)
+                        new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BACKEND", "https://cdn.example.com/avatar-101", null, null),
+                        new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FRONTEND", (Long) null, null, null)
                 ),
                 Instant.parse("2026-08-09T02:30:00Z"),
                 Instant.parse("2026-08-09T03:00:00Z")
@@ -1005,9 +1009,9 @@ class ProjectHttpApiTest {
                                         fieldWithPath("teamName").type(STRING).description("팀 이름 (50자 이하)"),
                                         fieldWithPath("tagline").type(STRING).description("한 줄 소개 (200자 이하)"),
                                         fieldWithPath("cohort").type(NUMBER).description("우아한테크코스 기수 (1~8)"),
-                                        fieldWithPath("thumbnailMediaId").type(NUMBER)
+                                        fieldWithPath("thumbnailImageId").type(NUMBER)
                                                 .description("본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. "
-                                                        + "썸네일을 비우려면 null로 보낸다.")
+                                                        + "필드를 생략하면 기존 썸네일을 유지하고, null을 보내면 제거한다.")
                                                 .optional(),
                                         fieldWithPath("githubRepositoryUrl").type(STRING)
                                                 .description("https://github.com/{owner}/{repo} 형식. 바꿀 수 있지만 "
@@ -1018,7 +1022,8 @@ class ProjectHttpApiTest {
                                                 .optional(),
                                         fieldWithPath("descriptionMd").type(STRING)
                                                 .description("프로젝트 설명 마크다운 (100,000자 이하). "
-                                                        + "이미지는 ![설명](media://{mediaId}) 형식으로 넣는다.")
+                                                        + "이미지는 ![설명](media://{mediaId}) 형식으로 넣으며, "
+                                                        + "상세 조회 응답의 CDN URL을 그대로 보내도 기존 본문 이미지 참조를 유지한다.")
                                                 .optional(),
                                         fieldWithPath("serviceStatus").type(STRING)
                                                 .description("서비스 운영 상태 (OPERATING, CLOSED). "
@@ -1110,7 +1115,7 @@ class ProjectHttpApiTest {
                   "teamName": "루프팀",
                   "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                   "cohort": 6,
-                  "thumbnailMediaId": 12,
+                  "thumbnailImageId": 12,
                   "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                   "deploymentUrl": "https://loop.team",
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
