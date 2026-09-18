@@ -342,6 +342,7 @@ class FeedServiceCommandTest {
                 )),
                 List.of(new FeedItem.Media(20L, 0)),
                 0L,
+                0L,
                 NOW,
                 NOW
         );

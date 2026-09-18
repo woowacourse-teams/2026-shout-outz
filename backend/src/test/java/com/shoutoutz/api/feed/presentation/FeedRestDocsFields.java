@@ -63,4 +63,11 @@ final class FeedRestDocsFields {
         fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"));
         return fields;
     }
+
+    static List<FieldDescriptor> userFeedListResponseFields(String description) {
+        List<FieldDescriptor> fields = feedListResponseFields(description);
+        fields.add(fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"));
+        fields.add(fieldWithPath("data[].commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"));
+        return fields;
+    }
 }

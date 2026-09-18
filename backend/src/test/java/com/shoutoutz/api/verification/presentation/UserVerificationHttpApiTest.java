@@ -279,6 +279,7 @@ class UserVerificationHttpApiTest {
                                 .tag("User Verification")
                                 .summary("크루/코치 인증 신청")
                                 .description("로그인한 일반 사용자가 크루 또는 코치 인증을 신청한다.")
+                                .requestSchema(Schema.schema("UserVerificationRequestCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -348,6 +349,7 @@ class UserVerificationHttpApiTest {
                 .tag("User Verification")
                 .summary("크루/코치 인증 신청")
                 .description("로그인한 일반 사용자가 크루 또는 코치 인증을 신청한다.")
+                .requestSchema(Schema.schema("UserVerificationRequestCreateRequest"))
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())
                 .build();

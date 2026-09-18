@@ -26,6 +26,7 @@ import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
+import com.shoutoutz.api.project.application.dto.UserProjectItem;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.DeletionType;
@@ -72,7 +73,6 @@ import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllRespons
 import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
-import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
 import com.shoutoutz.api.techtag.domain.TechTag;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
@@ -91,6 +91,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -577,10 +578,14 @@ class ProjectServiceTest {
     @Test
     @DisplayName("다음 페이지가 있으면 이번 페이지 마지막 프로젝트의 위치를 다음 커서로 내려준다.")
     void returnsNextCursorOfLastProject() {
-        ProjectSummary first = summary(10L, 5L, NOW);
+        ProjectSummary first = summaryWithMedia(10L, 5L, NOW);
         ProjectSummary last = summary(9L, 3L, NOW.minusSeconds(60));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(first, last), true, 48));
+        when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL))
+                .thenReturn(Map.of(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail")));
+        when(mediaUrlResolver.resolveAll(Set.of(21L), MediaVariant.DISPLAY))
+                .thenReturn(Map.of(21L, URI.create("https://cdn.example.com/avatar-21")));
 
         ProjectFindAllResponse response = projectService.findAll(
                 new ProjectFindAllRequest(null, null, null, "POPULAR", 2, null));
@@ -590,7 +595,12 @@ class ProjectServiceTest {
         assertThat(response.meta().totalCount()).isEqualTo(48);
         assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.POPULAR))
                 .isEqualTo(ProjectCursor.popular(3L, NOW.minusSeconds(60), 9L));
-        verify(mediaUrlResolver).resolveAll(any(), eq(MediaVariant.THUMBNAIL));
+        assertThat(response.items().getFirst().thumbnailUrl())
+                .isEqualTo("https://cdn.example.com/thumbnail");
+        assertThat(response.items().getFirst().members().getFirst().avatarUrl())
+                .isEqualTo("https://cdn.example.com/avatar-21");
+        verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL);
+        verify(mediaUrlResolver).resolveAll(Set.of(21L), MediaVariant.DISPLAY);
     }
 
     @Test
@@ -612,21 +622,30 @@ class ProjectServiceTest {
     void findsProjectsByUser() {
         ProjectCursor cursor = ProjectCursor.latest(NOW, 10L);
         User user = user(REGISTERED_BY, MEMBER_HANDLE, UserStatus.ACTIVE);
-        ProjectSummary project = summary(9L, 3L, NOW.minusSeconds(60));
+        UserProjectItem project = userProjectItem(9L, 3L, NOW.minusSeconds(60));
         when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.of(user));
         when(userProjectQueryRepository.findAllByUserId(REGISTERED_BY, cursor, 20))
                 .thenReturn(new UserProjectResult(List.of(project), true));
+        when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL))
+                .thenReturn(Map.of(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail")));
+        when(mediaUrlResolver.resolveAll(Set.of(21L), MediaVariant.DISPLAY))
+                .thenReturn(Map.of(21L, URI.create("https://cdn.example.com/avatar-21")));
 
-        UserProjectFindResponse response = projectService.findAllByUser(
+        UserProjectResult response = projectService.findAllByUser(
                 MEMBER_HANDLE,
                 new UserProjectFindRequest(20, ProjectCursorCodec.encode(cursor))
         );
 
-        assertThat(response.projects()).extracting(ProjectFindAllResponse.Item::id).containsExactly(9L);
-        assertThat(response.meta().hasNext()).isTrue();
-        assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.LATEST))
-                .isEqualTo(ProjectCursor.latest(NOW.minusSeconds(60), 9L));
+        assertThat(response.projects()).extracting(UserProjectItem::id).containsExactly(9L);
+        assertThat(response.hasNext()).isTrue();
+        assertThat(response.nextCursor()).isEqualTo(ProjectCursor.latest(NOW.minusSeconds(60), 9L));
+        assertThat(response.mediaUrls())
+                .containsEntry(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail"))
+                .containsEntry(21L, URI.create("https://cdn.example.com/avatar-21"))
+                .hasSize(2);
         verify(userProjectQueryRepository).findAllByUserId(REGISTERED_BY, cursor, 20);
+        verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL);
+        verify(mediaUrlResolver).resolveAll(Set.of(21L), MediaVariant.DISPLAY);
     }
 
     @Test
@@ -635,14 +654,14 @@ class ProjectServiceTest {
         when(userRepository.findByHandle(MEMBER_HANDLE))
                 .thenReturn(Optional.of(user(REGISTERED_BY, MEMBER_HANDLE, UserStatus.DELETED)));
 
-        UserProjectFindResponse response = projectService.findAllByUser(
+        UserProjectResult response = projectService.findAllByUser(
                 MEMBER_HANDLE,
                 new UserProjectFindRequest(null, null)
         );
 
         assertThat(response.projects()).isEmpty();
-        assertThat(response.meta().hasNext()).isFalse();
-        assertThat(response.meta().nextCursor()).isNull();
+        assertThat(response.hasNext()).isFalse();
+        assertThat(response.nextCursor()).isNull();
         verifyNoInteractions(userProjectQueryRepository);
     }
 
@@ -729,6 +748,58 @@ class ProjectServiceTest {
         return new ProjectSummary(
                 id, "loop-" + id, "루프", "한 줄 소개", 6, null, REGISTERED_BY, 128, likeCount, 0L,
                 List.of(), List.of(), createdAt);
+    }
+
+    private static ProjectSummary summaryWithMedia(long id, long likeCount, Instant createdAt) {
+        return new ProjectSummary(
+                id,
+                "loop-" + id,
+                "루프",
+                "한 줄 소개",
+                6,
+                THUMBNAIL_ID,
+                REGISTERED_BY,
+                128,
+                likeCount,
+                0L,
+                List.of(),
+                List.of(ProjectMemberProfile.user(
+                        MEMBER_ID,
+                        MEMBER_HANDLE,
+                        "재키",
+                        Cohort.COHORT_6,
+                        Track.BACKEND,
+                        21L
+                )),
+                createdAt
+        );
+    }
+
+    private static UserProjectItem userProjectItem(long id, long likeCount, Instant createdAt) {
+        return new UserProjectItem(
+                id,
+                "loop-" + id,
+                "루프",
+                "루프팀",
+                "한 줄 소개",
+                6,
+                ServiceStatus.OPERATING,
+                THUMBNAIL_ID,
+                REGISTERED_BY,
+                128,
+                likeCount,
+                0L,
+                List.of(),
+                List.of(ProjectMemberProfile.user(
+                        MEMBER_ID,
+                        MEMBER_HANDLE,
+                        "재키",
+                        Cohort.COHORT_6,
+                        Track.BACKEND,
+                        21L
+                )),
+                createdAt
+        );
     }
 
     private static User user(long id, String handle, UserStatus status) {

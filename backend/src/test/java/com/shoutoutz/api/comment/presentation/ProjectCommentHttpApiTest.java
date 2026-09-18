@@ -488,6 +488,7 @@ class ProjectCommentHttpApiTest {
                                 .pathParameters(
                                         parameterWithName("projectId").description("댓글을 작성할 프로젝트 ID")
                                 )
+                                .requestSchema(Schema.schema("ProjectCommentCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())

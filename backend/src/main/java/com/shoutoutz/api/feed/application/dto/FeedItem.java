@@ -17,6 +17,7 @@ public record FeedItem(
         List<Category> categories,
         List<Media> media,
         long likeCount,
+        long commentCount,
         Instant createdAt,
         Instant updatedAt
 ) {

@@ -23,6 +23,7 @@ import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
+import com.shoutoutz.api.project.application.dto.UserProjectItem;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.DeletedProject;
@@ -36,11 +37,13 @@ import com.shoutoutz.api.project.domain.ProjectDeletionRepository;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectFilterCondition;
 import com.shoutoutz.api.project.domain.ProjectFilterOptions;
+import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectMembers;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
+import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.Slug;
@@ -61,7 +64,6 @@ import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
-import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -72,9 +74,11 @@ import com.shoutoutz.api.user.domain.profile.UserType;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -177,7 +181,7 @@ public class ProjectService {
                 request.resolvedCursor()
         ));
         ProjectCursor nextCursor = page.nextCursor(sort);
-        Map<Long, URI> mediaUrls = resolveProjectMediaUrls(page.items(), MediaVariant.THUMBNAIL);
+        Map<Long, URI> mediaUrls = resolveProjectMediaUrls(page.items());
         return ProjectFindAllResponse.of(
                 page,
                 nextCursor == null ? null : ProjectCursorCodec.encode(nextCursor),
@@ -190,11 +194,11 @@ public class ProjectService {
      * 탈퇴한 사용자의 프로젝트는 공개하지 않는다.
      */
     @Transactional(readOnly = true)
-    public UserProjectFindResponse findAllByUser(String handle, UserProjectFindRequest request) {
+    public UserProjectResult findAllByUser(String handle, UserProjectFindRequest request) {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND));
         if (user.isDeleted()) {
-            return UserProjectFindResponse.from(new UserProjectResult(List.of(), false), Map.of());
+            return new UserProjectResult(List.of(), false);
         }
 
         UserProjectResult result = userProjectQueryRepository.findAllByUserId(
@@ -202,9 +206,10 @@ public class ProjectService {
                 request.resolvedCursor(),
                 request.resolvedSize()
         );
-        return UserProjectFindResponse.from(
-                result,
-                resolveProjectMediaUrls(result.projects(), MediaVariant.THUMBNAIL)
+        return new UserProjectResult(
+                result.projects(),
+                result.hasNext(),
+                resolveUserProjectMediaUrls(result.projects())
         );
     }
 
@@ -245,21 +250,45 @@ public class ProjectService {
         );
     }
 
-    private Map<Long, URI> resolveProjectMediaUrls(
-            List<com.shoutoutz.api.project.domain.ProjectSummary> projects,
-            MediaVariant variant
-    ) {
-        Set<Long> mediaIds = new HashSet<>();
+    private Map<Long, URI> resolveProjectMediaUrls(List<ProjectSummary> projects) {
+        Set<Long> thumbnailIds = new HashSet<>();
+        Set<Long> avatarIds = new HashSet<>();
         projects.forEach(project -> {
             if (project.thumbnailMediaId() != null) {
-                mediaIds.add(project.thumbnailMediaId());
+                thumbnailIds.add(project.thumbnailMediaId());
             }
             project.members().stream()
-                    .map(com.shoutoutz.api.project.domain.ProjectMemberProfile::avatarImageId)
-                    .filter(java.util.Objects::nonNull)
-                    .forEach(mediaIds::add);
+                    .map(ProjectMemberProfile::avatarImageId)
+                    .filter(Objects::nonNull)
+                    .forEach(avatarIds::add);
         });
-        return mediaUrlResolver.resolveAll(mediaIds, variant);
+        return resolveProjectListMediaUrls(thumbnailIds, avatarIds);
+    }
+
+    private Map<Long, URI> resolveUserProjectMediaUrls(List<UserProjectItem> projects) {
+        Set<Long> thumbnailIds = new HashSet<>();
+        Set<Long> avatarIds = new HashSet<>();
+        projects.forEach(project -> {
+            if (project.thumbnailMediaId() != null) {
+                thumbnailIds.add(project.thumbnailMediaId());
+            }
+            project.members().stream()
+                    .map(ProjectMemberProfile::avatarImageId)
+                    .filter(Objects::nonNull)
+                    .forEach(avatarIds::add);
+        });
+        return resolveProjectListMediaUrls(thumbnailIds, avatarIds);
+    }
+
+    private Map<Long, URI> resolveProjectListMediaUrls(Set<Long> thumbnailIds, Set<Long> avatarIds) {
+        Map<Long, URI> mediaUrls = new HashMap<>();
+        if (!thumbnailIds.isEmpty()) {
+            mediaUrls.putAll(mediaUrlResolver.resolveAll(thumbnailIds, MediaVariant.THUMBNAIL));
+        }
+        if (!avatarIds.isEmpty()) {
+            mediaUrls.putAll(mediaUrlResolver.resolveAll(avatarIds, MediaVariant.DISPLAY));
+        }
+        return Map.copyOf(mediaUrls);
     }
 
     private Map<Long, URI> resolveProjectMediaUrls(ProjectDetail detail) {
