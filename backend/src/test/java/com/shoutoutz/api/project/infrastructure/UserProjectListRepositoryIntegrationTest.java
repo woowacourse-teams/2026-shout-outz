@@ -57,6 +57,7 @@ class UserProjectListRepositoryIntegrationTest {
         assertThat(result.projects()).allSatisfy(project -> {
             assertThat(project.teamName()).isEqualTo("팀");
             assertThat(project.serviceStatus()).isEqualTo(ServiceStatus.OPERATING);
+            assertThat(project.starCount()).isEqualTo(128);
             assertThat(project.techTags()).isNotNull();
             assertThat(project.members()).isNotNull();
         });
@@ -111,9 +112,9 @@ class UserProjectListRepositoryIntegrationTest {
                 """
                         INSERT INTO projects (
                             cohort, registered_by, team_name, slug, title, tagline,
-                            github_repository_url, service_status, approval_status, created_at, deleted_at
+                            github_repository_url, service_status, approval_status, star_count, created_at, deleted_at
                         )
-                        VALUES (?, ?, '팀', ?, ?, '한 줄 소개', ?, 'OPERATING', ?, ?, ?)
+                        VALUES (?, ?, '팀', ?, ?, '한 줄 소개', ?, 'OPERATING', ?, 128, ?, ?)
                         RETURNING id
                         """,
                 Long.class,

@@ -306,7 +306,7 @@ class ProjectHttpApiTest {
         given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(new ProjectFindAllResponse(
                 List.of(new ProjectFindAllResponse.Item(
                         100L, "loop", "루프 (Loop)", "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
-                        6, "https://cdn.example.com/thumbnail", 184L, 14L,
+                        6, "https://cdn.example.com/thumbnail", 128, 184L, 14L,
                         List.of(new ProjectTechTagResponse(1L, "React"), new ProjectTechTagResponse(2L, "Spring")),
                         List.of(
                                 new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BACKEND", "https://cdn.example.com/avatar-101", null, null),
@@ -324,6 +324,7 @@ class ProjectHttpApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data[0].id").value(100))
+                .andExpect(jsonPath("$.data[0].starCount").value(128))
                 .andExpect(jsonPath("$.data[0].likeCount").value(184))
                 .andExpect(jsonPath("$.data[0].techTags[0].displayName").value("React"))
                 .andExpect(jsonPath("$.data[0].members[0].handle").value("dhyepark"))
@@ -367,6 +368,9 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data[].cohort").type(NUMBER).description("우아한테크코스 기수"),
                                         fieldWithPath("data[].thumbnailUrl").type(STRING)
                                                 .description("CloudFront에서 제공하는 공개 썸네일 URL")
+                                                .optional(),
+                                        fieldWithPath("data[].starCount").type(NUMBER)
+                                                .description("GitHub star 수. 동기화 전이면 null이다.")
                                                 .optional(),
                                         fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"),
                                         fieldWithPath("data[].commentCount").type(NUMBER)

@@ -88,6 +88,7 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.data[0].thumbnailUrl")
                         .value("https://cdn.example.com/thumbnail"))
                 .andExpect(jsonPath("$.data[0].thumbnailMediaId").doesNotExist())
+                .andExpect(jsonPath("$.data[0].starCount").value(128))
                 .andExpect(jsonPath("$.data[0].techTags[0].displayName").value("Spring"))
                 .andExpect(jsonPath("$.data[0].members[0].handle").value("zzaekkii"))
                 .andExpect(jsonPath("$.data[0].members[0].avatarUrl")
@@ -195,6 +196,7 @@ class UserProjectHttpApiTest {
                 ServiceStatus.OPERATING,
                 12L,
                 7L,
+                128,
                 184L,
                 14L,
                 List.of(new ProjectTechTag(1L, "Spring")),
@@ -217,6 +219,8 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].cohort").type(NUMBER).description("우아한테크코스 기수"),
                 fieldWithPath("data[].serviceStatus").type(STRING).description("운영 상태 (OPERATING, CLOSED)"),
                 fieldWithPath("data[].thumbnailUrl").type(STRING).description("CloudFront에서 제공하는 공개 썸네일 URL").optional(),
+                fieldWithPath("data[].starCount").type(NUMBER)
+                        .description("GitHub star 수. 동기화 전이면 null이다.").optional(),
                 fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"),
                 fieldWithPath("data[].commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"),
                 fieldWithPath("data[].techTags").type(ARRAY).description("기술 스택"),
