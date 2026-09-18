@@ -17,12 +17,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.verification.application.UserVerificationService;
 import com.shoutoutz.api.verification.domain.UserVerificationErrorCode;
@@ -110,15 +112,15 @@ class UserVerificationHttpApiTest {
                                 )
                                 .requestSchema(Schema.schema("UserVerificationRequestCreateRequest"))
                                 .requestFields(
-                                        fieldWithPath("userType").type(STRING)
-                                                .description("신청 유형(CREW 또는 COACH)"),
+                                        new EnumFields(UserType.class).withPath("userType")
+                                                .description("신청 유형. WOOWACOURSE_CREW 또는 WOOWACOURSE_COACH만 보낼 수 있다."),
                                         fieldWithPath("nickname").type(STRING)
                                                 .description("우테코 닉네임(앞뒤 공백 제거 후 50자 이하)"),
                                         fieldWithPath("cohort").type(NUMBER)
                                                 .description("크루 신청 시 기수. 양의 정수이며 실제 유효성은 관리자 확인")
                                                 .optional(),
-                                        fieldWithPath("track").type(STRING)
-                                                .description("크루 신청 시 트랙(BACKEND, FRONTEND, ANDROID)")
+                                        new EnumFields(Track.class).withPath("track")
+                                                .description("크루 신청 시 트랙")
                                                 .optional()
                                 )
                                 .responseSchema(Schema.schema("UserVerificationRequestCreateSuccessResponse"))
@@ -127,15 +129,15 @@ class UserVerificationHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("생성된 인증 신청"),
                                         fieldWithPath("data.requestId").type(NUMBER)
                                                 .description("인증 신청 ID"),
-                                        fieldWithPath("data.userType").type(STRING)
+                                        new EnumFields(UserType.class).withPath("data.userType")
                                                 .description("신청 유형"),
                                         fieldWithPath("data.nickname").type(STRING)
                                                 .description("신청 닉네임"),
                                         fieldWithPath("data.cohort").type(NUMBER)
                                                 .description("신청 기수").optional(),
-                                        fieldWithPath("data.track").type(STRING)
+                                        new EnumFields(Track.class).withPath("data.track")
                                                 .description("신청 트랙").optional(),
-                                        fieldWithPath("data.status").type(STRING)
+                                        new EnumFields(VerificationRequestStatus.class).withPath("data.status")
                                                 .description("신청 상태"),
                                         fieldWithPath("data.requestedAt").type(STRING)
                                                 .description("신청 시각(ISO-8601)")
@@ -199,17 +201,17 @@ class UserVerificationHttpApiTest {
                                         fieldWithPath("data.requestId").type(NUMBER)
                                                 .description("인증 신청 ID. 기존 인증 사용자는 null")
                                                 .optional(),
-                                        fieldWithPath("data.userType").type(STRING)
+                                        new EnumFields(UserType.class).withPath("data.userType")
                                                 .description("신청 유형"),
                                         fieldWithPath("data.nickname").type(STRING)
                                                 .description("신청 닉네임"),
                                         fieldWithPath("data.cohort").type(NUMBER)
                                                 .description("신청 기수. 코치 신청은 null")
                                                 .optional(),
-                                        fieldWithPath("data.track").type(STRING)
+                                        new EnumFields(Track.class).withPath("data.track")
                                                 .description("신청 트랙. 코치 신청은 null")
                                                 .optional(),
-                                        fieldWithPath("data.status").type(STRING)
+                                        new EnumFields(VerificationRequestStatus.class).withPath("data.status")
                                                 .description("신청 상태"),
                                         fieldWithPath("data.requestedAt").type(STRING)
                                                 .description("신청 시각(ISO-8601). 기존 인증 사용자는 null")
