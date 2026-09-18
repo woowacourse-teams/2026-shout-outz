@@ -138,6 +138,9 @@ class NewsHttpApiTest {
                                         fieldWithPath("status")
                                                 .type(STRING)
                                                 .description("응답 상태"),
+                                        fieldWithPath("data")
+                                                .type(OBJECT)
+                                                .description("생성된 공지"),
                                         fieldWithPath("data.id")
                                                 .type(NUMBER)
                                                 .description("공지 ID"),
@@ -274,6 +277,7 @@ class NewsHttpApiTest {
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("생성된 이벤트"),
                                         fieldWithPath("data.id").type(NUMBER).description("이벤트 ID"),
                                         fieldWithPath("data.type").type(STRING).description("소식 유형"),
                                         fieldWithPath("data.title").type(STRING).description("이벤트 제목"),
@@ -526,6 +530,9 @@ class NewsHttpApiTest {
                                         fieldWithPath("status")
                                                 .type(STRING)
                                                 .description("응답 상태"),
+                                        fieldWithPath("data")
+                                                .type(OBJECT)
+                                                .description("소식 상세"),
                                         fieldWithPath("data.id")
                                                 .type(NUMBER)
                                                 .description("소식 ID"),

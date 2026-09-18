@@ -193,6 +193,7 @@ class ProjectHttpApiTest {
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("등록된 프로젝트"),
                                         fieldWithPath("data.projectId").type(NUMBER).description("등록된 프로젝트 ID"),
                                         fieldWithPath("data.slug").type(STRING).description("프로젝트 주소로 쓰이는 slug")
                                 )
@@ -566,6 +567,7 @@ class ProjectHttpApiTest {
                                 .responseSchema(Schema.schema("ProjectFindDetailSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("프로젝트 상세"),
                                         fieldWithPath("data.id").type(NUMBER).description("프로젝트 ID"),
                                         fieldWithPath("data.slug").type(STRING).description("프로젝트 주소로 쓰이는 slug"),
                                         fieldWithPath("data.title").type(STRING).description("프로젝트 이름"),
@@ -744,6 +746,7 @@ class ProjectHttpApiTest {
                                 .responseSchema(Schema.schema("ProjectDeleteSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("삭제 결과"),
                                         fieldWithPath("data.id").type(NUMBER).description("삭제한 프로젝트 ID"),
                                         fieldWithPath("data.deletedAt").type(STRING).description("삭제 시각 (UTC)"),
                                         fieldWithPath("data.restoreDeadlineAt").type(STRING)
@@ -831,6 +834,7 @@ class ProjectHttpApiTest {
                                 .responseSchema(Schema.schema("ProjectRestoreSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("복구 결과"),
                                         fieldWithPath("data.id").type(NUMBER).description("복구한 프로젝트 ID"),
                                         fieldWithPath("data.approvalStatus").type(STRING)
                                                 .description("승인 상태 (PENDING, APPROVED, REJECTED). 삭제 이전 값을 그대로 유지한다."),
@@ -1044,6 +1048,7 @@ class ProjectHttpApiTest {
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("수정 결과"),
                                         fieldWithPath("data.projectId").type(NUMBER).description("수정한 프로젝트 ID"),
                                         fieldWithPath("data.approvalStatus").type(STRING)
                                                 .description("수정 후 승인 상태 (PENDING, APPROVED)")

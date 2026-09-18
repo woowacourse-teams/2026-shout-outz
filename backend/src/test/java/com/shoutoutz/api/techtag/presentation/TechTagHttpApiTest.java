@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
+import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
@@ -65,6 +66,7 @@ class TechTagHttpApiTest {
                                 .responseSchema(Schema.schema("TechTagFindAllSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("기술 스택 목록"),
                                         fieldWithPath("data.items").type(ARRAY).description("기술 스택 목록"),
                                         fieldWithPath("data.items[].id").type(NUMBER).description("기술 스택 ID"),
                                         fieldWithPath("data.items[].displayName").type(STRING).description("화면 표시 이름")
