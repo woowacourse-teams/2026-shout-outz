@@ -37,6 +37,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                         SELECT p.id,
                                p.content,
                                0 AS like_count,
+                               0 AS comment_count,
                                p.created_at,
                                p.updated_at,
                                u.handle,
@@ -80,7 +81,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
 
     @Override
     public List<FeedItem> findAllByAuthorId(long authorId, FeedCursor cursor, int limit) {
-        StringBuilder sql = createFindAllQuery(FeedSort.LATEST);
+        StringBuilder sql = createUserFeedQuery();
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("authorId", authorId)
                 .addValue("limit", limit);
@@ -96,15 +97,13 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         return assembleItems(rows);
     }
 
-    /**
-     * 최신순은 좋아요 집계를 생략하고 인기순에서만 전체 좋아요 수 집계
-     */
     private StringBuilder createFindAllQuery(FeedSort sort) {
         return switch (sort) {
             case LATEST -> new StringBuilder("""
                     SELECT p.id,
                            p.content,
                            0 AS like_count,
+                           0 AS comment_count,
                            p.created_at,
                            p.updated_at,
                            u.handle,
@@ -122,6 +121,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                     SELECT p.id,
                            p.content,
                            COALESCE(reactions.like_count, 0) AS like_count,
+                           0 AS comment_count,
                            p.created_at,
                            p.updated_at,
                            u.handle,
@@ -142,6 +142,37 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                     WHERE p.deleted_at IS NULL
                     """);
         };
+    }
+
+    private StringBuilder createUserFeedQuery() {
+        return new StringBuilder("""
+                SELECT p.id,
+                       p.content,
+                       (
+                           SELECT COUNT(*)
+                           FROM feed_reactions r
+                           WHERE r.feed_id = p.id
+                             AND r.reaction_type = 'LIKE'
+                       ) AS like_count,
+                       (
+                           SELECT COUNT(*)
+                           FROM feed_comments c
+                           WHERE c.feed_id = p.id
+                             AND c.deleted_at IS NULL
+                       ) AS comment_count,
+                       p.created_at,
+                       p.updated_at,
+                       u.handle,
+                       up.display_name,
+                       up.user_type,
+                       up.track,
+                       up.cohort,
+                       up.avatar_image_id
+                FROM feeds p
+                JOIN users u ON u.id = p.author_id
+                JOIN user_profiles up ON up.user_id = u.id
+                WHERE p.deleted_at IS NULL
+                """);
     }
 
     /**
@@ -333,6 +364,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                         resultSet.getObject("avatar_image_id", Long.class)
                 ),
                 resultSet.getLong("like_count"),
+                resultSet.getLong("comment_count"),
                 resultSet.getTimestamp("created_at").toInstant(),
                 resultSet.getTimestamp("updated_at").toInstant()
         );
@@ -357,6 +389,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
             String content,
             FeedItem.Author author,
             long likeCount,
+            long commentCount,
             java.time.Instant createdAt,
             java.time.Instant updatedAt
     ) {
@@ -371,6 +404,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                     categories,
                     media,
                     likeCount,
+                    commentCount,
                     createdAt,
                     updatedAt
             );

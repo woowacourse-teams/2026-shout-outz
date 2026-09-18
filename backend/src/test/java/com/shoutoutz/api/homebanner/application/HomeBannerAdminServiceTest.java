@@ -56,12 +56,12 @@ class HomeBannerAdminServiceTest {
         HomeBanner saved = savedBanner();
         when(homeBannerRepository.save(any(HomeBanner.class))).thenReturn(saved);
         when(imageService.createImageUrl(10L))
-                .thenReturn(URI.create("https://s3.example.com/banner"));
+                .thenReturn(URI.create("https://cdn.example.com/banner"));
 
         var response = service.save(1L, UserRole.ADMIN, request);
 
         assertThat(response.bannerId()).isEqualTo(100L);
-        assertThat(response.imageUrl()).hasToString("https://s3.example.com/banner");
+        assertThat(response.imageUrl()).hasToString("https://cdn.example.com/banner");
         verify(targetValidator).validate(BannerTargetType.PROJECT, 20L);
     }
 
@@ -70,7 +70,7 @@ class HomeBannerAdminServiceTest {
         HomeBanner banner = savedBanner();
         when(homeBannerRepository.findAll()).thenReturn(List.of(banner));
         when(imageService.createImageUrl(10L))
-                .thenReturn(URI.create("https://s3.example.com/banner"));
+                .thenReturn(URI.create("https://cdn.example.com/banner"));
 
         var responses = service.findAll(UserRole.ADMIN);
 
@@ -84,7 +84,7 @@ class HomeBannerAdminServiceTest {
         when(homeBannerRepository.findById(100L)).thenReturn(Optional.of(banner));
         when(homeBannerRepository.update(any(HomeBanner.class))).thenReturn(Optional.of(banner));
         when(imageService.createImageUrl(10L))
-                .thenReturn(URI.create("https://s3.example.com/banner"));
+                .thenReturn(URI.create("https://cdn.example.com/banner"));
 
         var response = service.update(100L, UserRole.ADMIN, request());
 

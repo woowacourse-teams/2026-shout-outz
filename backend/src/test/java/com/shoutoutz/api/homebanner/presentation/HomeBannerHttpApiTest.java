@@ -41,7 +41,7 @@ class HomeBannerHttpApiTest {
         given(homeBannerService.findAll()).willReturn(List.of(
                 new HomeBannerResponse(
                         100L,
-                        URI.create("https://s3.example.com/banner"),
+                        URI.create("https://cdn.example.com/banner"),
                         BannerDestinationType.URL,
                         null,
                         null,

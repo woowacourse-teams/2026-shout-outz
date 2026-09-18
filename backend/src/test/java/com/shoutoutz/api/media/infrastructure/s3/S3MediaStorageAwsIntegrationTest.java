@@ -61,7 +61,6 @@ class S3MediaStorageAwsIntegrationTest {
             try {
                 verifyPresignedPut(storage, s3Client, properties, logicalKey);
                 verifyHeadAndDownload(storage, s3Client, properties, logicalKey);
-                verifyPresignedGet(storage, logicalKey);
                 verifyPutObjectAndDelete(storage, s3Client, properties, variantLogicalKey);
             } finally {
                 // 테스트가 중간에 실패해도 생성된 객체가 남지 않도록 원본과 변형본을 정리한다.
@@ -113,21 +112,6 @@ class S3MediaStorageAwsIntegrationTest {
                 .bucket(properties.bucket())
                 .key(actualKey(properties, logicalKey))
                 .build()).contentType()).isEqualTo(CONTENT_TYPE);
-    }
-
-    private void verifyPresignedGet(S3MediaStorage storage, String logicalKey)
-            throws IOException, InterruptedException {
-        PresignedDownload download = storage.createPresignedDownload(logicalKey);
-
-        assertThat(download.key()).isEqualTo(logicalKey);
-
-        HttpRequest request = HttpRequest.newBuilder(download.url())
-                .GET()
-                .build();
-        HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
-
-        assertThat(response.statusCode()).isBetween(200, 299);
-        assertThat(response.body()).containsExactly(ORIGINAL_CONTENT);
     }
 
     private void verifyPutObjectAndDelete(

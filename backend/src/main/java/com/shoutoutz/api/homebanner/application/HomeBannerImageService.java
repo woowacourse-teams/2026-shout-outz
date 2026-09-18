@@ -3,7 +3,7 @@ package com.shoutoutz.api.homebanner.application;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
 import com.shoutoutz.api.homebanner.domain.HomeBannerErrorCode;
-import com.shoutoutz.api.media.application.MediaQueryService;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
@@ -19,12 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class HomeBannerImageService {
 
     private final MediaMetadataRepository mediaMetadataRepository;
-    private final MediaQueryService mediaQueryService;
+    private final MediaUrlResolver mediaUrlResolver;
 
     @Transactional(readOnly = true)
     public URI createImageUrl(long mediaId) {
         MediaMetadata media = findValidMedia(mediaId);
-        return mediaQueryService.createDownloadUrl(media, MediaVariant.DISPLAY).downloadUrl();
+        return mediaUrlResolver.resolve(media, MediaVariant.DISPLAY);
     }
 
     private MediaMetadata findValidMedia(long mediaId) {

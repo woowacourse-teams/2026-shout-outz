@@ -21,3 +21,5 @@ aws:
     region: test-region
     key-prefix: test-prefix/
     presigned-url-expiration-seconds: 100
+  cloudfront:
+    public-base-url: https://cdn.example.com/

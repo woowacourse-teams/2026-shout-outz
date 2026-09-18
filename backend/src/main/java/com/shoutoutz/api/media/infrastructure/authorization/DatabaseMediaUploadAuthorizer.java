@@ -8,7 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 /**
- * 현재 스키마의 소유자, 팀원, 작성자 관계를 이용한 미디어 업로드 권한 확인
+ * 활성 사용자와 미디어 업로드 용도를 확인하는 미디어 업로드 권한 검증
  */
 @Repository
 @RequiredArgsConstructor
@@ -32,75 +32,23 @@ public class DatabaseMediaUploadAuthorizer implements MediaUploadAuthorizer {
                   AND role = 'ADMIN'
             )
             """;
-
-    private static final String PROJECT_EDITOR_EXISTS_SQL = """
-            SELECT EXISTS (
-                SELECT 1
-                FROM users u
-                JOIN projects p ON p.id = ?
-                WHERE u.id = ?
-                  AND u.status = 'ACTIVE'
-                  AND p.deleted_at IS NULL
-                  AND (
-                      p.registered_by = u.id
-                      OR EXISTS (
-                          SELECT 1
-                          FROM project_members pm
-                          WHERE pm.project_id = p.id
-                            AND pm.user_id = u.id
-                      )
-                  )
-            )
-            """;
-
-    private static final String FEED_AUTHOR_EXISTS_SQL = """
-            SELECT EXISTS (
-                SELECT 1
-                FROM users u
-                JOIN feeds p ON p.author_id = u.id
-                WHERE u.id = ?
-                  AND u.status = 'ACTIVE'
-                  AND p.id = ?
-                  AND p.deleted_at IS NULL
-            )
-            """;
-
     private final JdbcTemplate jdbcTemplate;
 
+    /**
+     * 홈 배너는 활성 관리자만, 나머지 용도는 활성 사용자만 업로드할 수 있다.
+     */
     @Override
-    public void authorize(long requesterId, MediaPurpose purpose, Long targetId) {
+    public void authorize(long requesterId, MediaPurpose purpose) {
         if (requesterId <= 0 || purpose == null) {
             throw forbidden();
         }
 
-        boolean authorized = switch (purpose) {
-            case USER_AVATAR -> hasTarget(targetId) && requesterId == targetId && exists(
-                    ACTIVE_USER_EXISTS_SQL,
-                    requesterId
-            );
-            case PROJECT_THUMBNAIL, PROJECT_DESCRIPTION -> hasTarget(targetId) && exists(
-                    PROJECT_EDITOR_EXISTS_SQL,
-                    targetId,
-                    requesterId
-            );
-            case FEED_CONTENT -> hasTarget(targetId) && exists(
-                    FEED_AUTHOR_EXISTS_SQL,
-                    requesterId,
-                    targetId
-            );
-            case HOME_BANNER -> targetId == null && exists(
-                    ACTIVE_ADMIN_EXISTS_SQL,
-                    requesterId
-            );
-        };
-
-        if (!authorized) {
+        String authorizationSql = purpose == MediaPurpose.HOME_BANNER
+                ? ACTIVE_ADMIN_EXISTS_SQL
+                : ACTIVE_USER_EXISTS_SQL;
+        if (!exists(authorizationSql, requesterId)) {
             throw forbidden();
         }
-    }
-
-    private boolean hasTarget(Long targetId) {
-        return targetId != null && targetId > 0;
     }
 
     private boolean exists(String sql, Object... arguments) {

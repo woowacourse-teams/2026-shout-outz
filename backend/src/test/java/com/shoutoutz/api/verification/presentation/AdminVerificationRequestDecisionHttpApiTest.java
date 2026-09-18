@@ -323,6 +323,7 @@ class AdminVerificationRequestDecisionHttpApiTest {
                                 .type(INTEGER)
                                 .description("인증 신청 ID")
                 )
+                .requestSchema(Schema.schema("AdminVerificationRequestRejectRequest"))
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())
                 .build();

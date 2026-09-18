@@ -6,13 +6,12 @@ import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
-import com.shoutoutz.api.media.application.MediaQueryService;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
-import com.shoutoutz.api.media.presentation.dto.response.MediaDownloadResponse;
 import java.net.URI;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -32,25 +31,25 @@ class HomeBannerImageServiceTest {
     private MediaMetadataRepository mediaMetadataRepository;
 
     @Mock
-    private MediaQueryService mediaQueryService;
+    private MediaUrlResolver mediaUrlResolver;
 
     private HomeBannerImageService imageService;
 
     @BeforeEach
     void setUp() {
-        imageService = new HomeBannerImageService(mediaMetadataRepository, mediaQueryService);
+        imageService = new HomeBannerImageService(mediaMetadataRepository, mediaUrlResolver);
     }
 
     @Test
     void READY_HOME_BANNER_미디어의_표시_URL을_반환한다() {
         MediaMetadata media = metadata(MediaPurpose.HOME_BANNER, MediaStatus.READY);
         when(mediaMetadataRepository.findById(10L)).thenReturn(Optional.of(media));
-        when(mediaQueryService.createDownloadUrl(media, MediaVariant.DISPLAY))
-                .thenReturn(downloadResponse());
+        when(mediaUrlResolver.resolve(media, MediaVariant.DISPLAY))
+                .thenReturn(URI.create("https://cdn.example.com/banner"));
 
         URI imageUrl = imageService.createImageUrl(10L);
 
-        assertThat(imageUrl).hasToString("https://s3.example.com/banner");
+        assertThat(imageUrl).hasToString("https://cdn.example.com/banner");
     }
 
     @Test
@@ -94,16 +93,6 @@ class HomeBannerImageServiceTest {
                 NOW,
                 NOW,
                 NOW
-        );
-    }
-
-    private MediaDownloadResponse downloadResponse() {
-        return new MediaDownloadResponse(
-                10L,
-                MediaVariant.DISPLAY,
-                URI.create("https://s3.example.com/banner"),
-                NOW.plus(5, ChronoUnit.MINUTES),
-                "image/webp"
         );
     }
 }

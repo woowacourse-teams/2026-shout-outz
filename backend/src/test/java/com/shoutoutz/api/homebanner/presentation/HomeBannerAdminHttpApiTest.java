@@ -289,7 +289,7 @@ class HomeBannerAdminHttpApiTest {
         return new HomeBannerAdminResponse(
                 BANNER_ID,
                 10L,
-                URI.create("https://s3.example.com/banner"),
+                URI.create("https://cdn.example.com/banner"),
                 BannerDestinationType.TARGET,
                 BannerTargetType.PROJECT,
                 20L,

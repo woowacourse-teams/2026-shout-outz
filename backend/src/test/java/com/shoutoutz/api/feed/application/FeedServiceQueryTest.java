@@ -15,6 +15,7 @@ import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.FeedRepository;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
 import com.shoutoutz.api.user.domain.account.User;
@@ -52,6 +53,9 @@ class FeedServiceQueryTest {
     @Mock
     private UserProfileRepository userProfileRepository;
 
+    @Mock
+    private MediaUrlResolver mediaUrlResolver;
+
     private FeedCursorCodec cursorCodec;
     private FeedService feedService;
 
@@ -65,6 +69,7 @@ class FeedServiceQueryTest {
                 userRepository,
                 userProfileRepository,
                 cursorCodec,
+                mediaUrlResolver,
                 java.time.Clock.systemUTC()
         );
     }
@@ -254,6 +259,7 @@ class FeedServiceQueryTest {
                 List.of(),
                 List.of(),
                 likeCount,
+                0L,
                 instant,
                 instant
         );

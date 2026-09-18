@@ -38,13 +38,13 @@ class HomeBannerServiceTest {
         HomeBanner banner = banner();
         when(homeBannerRepository.findAllActive()).thenReturn(List.of(banner));
         when(imageService.createImageUrl(10L))
-                .thenReturn(URI.create("https://s3.example.com/banner"));
+                .thenReturn(URI.create("https://cdn.example.com/banner"));
 
         var response = service.findAll();
 
         assertThat(response).hasSize(1);
         assertThat(response.getFirst().bannerId()).isEqualTo(100L);
-        assertThat(response.getFirst().imageUrl()).hasToString("https://s3.example.com/banner");
+        assertThat(response.getFirst().imageUrl()).hasToString("https://cdn.example.com/banner");
         verify(homeBannerRepository).findAllActive();
     }
 

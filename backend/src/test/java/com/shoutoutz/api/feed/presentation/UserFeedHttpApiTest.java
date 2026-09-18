@@ -4,7 +4,7 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static com.epages.restdocs.apispec.SimpleType.INTEGER;
-import static com.shoutoutz.api.feed.presentation.FeedRestDocsFields.feedListResponseFields;
+import static com.shoutoutz.api.feed.presentation.FeedRestDocsFields.userFeedListResponseFields;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -27,8 +27,10 @@ import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.domain.profile.Track;
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +59,15 @@ class UserFeedHttpApiTest {
     @DisplayName("로그인하지 않아도 사용자가 작성한 피드를 조회한다")
     void findsUserFeeds() throws Exception {
         given(feedService.findAllByUser("zzaekkii", new UserFeedFindRequest("current-cursor", 20)))
-                .willReturn(new FeedFindAllResult(List.of(feed()), "next-cursor", true));
+                .willReturn(new FeedFindAllResult(
+                        List.of(feed()),
+                        "next-cursor",
+                        true,
+                        Map.of(
+                                20L, URI.create("https://cdn.example.com/media/20/display"),
+                                30L, URI.create("https://cdn.example.com/media/30/display")
+                        )
+                ));
 
         mockMvc.perform(get("/api/v1/users/{handle}/feeds", "zzaekkii")
                         .queryParam("cursor", "current-cursor")
@@ -66,8 +76,13 @@ class UserFeedHttpApiTest {
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data[0].feedId").value(10))
                 .andExpect(jsonPath("$.data[0].author.handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data[0].author.avatarUrl")
+                        .value("https://cdn.example.com/media/20/display"))
                 .andExpect(jsonPath("$.data[0].categories[0].type").value("GENERAL"))
-                .andExpect(jsonPath("$.data[0].media[0].mediaId").value(30))
+                .andExpect(jsonPath("$.data[0].media[0].url")
+                        .value("https://cdn.example.com/media/30/display"))
+                .andExpect(jsonPath("$.data[0].likeCount").value(5))
+                .andExpect(jsonPath("$.data[0].commentCount").value(3))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
                 .andDo(document(
@@ -89,7 +104,7 @@ class UserFeedHttpApiTest {
                                                 .optional()
                                 )
                                 .responseSchema(Schema.schema("UserFeedFindAllSuccessResponse"))
-                                .responseFields(feedListResponseFields("사용자가 작성한 피드 목록"))
+                                .responseFields(userFeedListResponseFields("사용자가 작성한 피드 목록"))
                                 .build())
                 ));
 
@@ -173,6 +188,7 @@ class UserFeedHttpApiTest {
                 List.of(new FeedItem.Category(1L, "backend", "백엔드", CategoryType.GENERAL)),
                 List.of(new FeedItem.Media(30L, 0)),
                 5L,
+                3L,
                 now,
                 now
         );

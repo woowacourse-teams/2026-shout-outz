@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.media.application.exception.MediaUploadForbiddenException;
@@ -30,11 +29,11 @@ class DatabaseMediaUploadAuthorizerTest {
     }
 
     @Test
-    void 활성_관리자는_targetId_없이_홈_배너_미디어를_업로드할_수_있다() {
+    void 활성_관리자는_홈_배너_미디어를_업로드할_수_있다() {
         when(jdbcTemplate.queryForObject(anyString(), eq(Boolean.class), eq(7L)))
                 .thenReturn(true);
 
-        authorizer.authorize(7L, MediaPurpose.HOME_BANNER, null);
+        authorizer.authorize(7L, MediaPurpose.HOME_BANNER);
 
         verify(jdbcTemplate).queryForObject(anyString(), eq(Boolean.class), eq(7L));
     }
@@ -44,23 +43,17 @@ class DatabaseMediaUploadAuthorizerTest {
         when(jdbcTemplate.queryForObject(anyString(), eq(Boolean.class), eq(7L)))
                 .thenReturn(false);
 
-        assertThatThrownBy(() -> authorizer.authorize(7L, MediaPurpose.HOME_BANNER, null))
+        assertThatThrownBy(() -> authorizer.authorize(7L, MediaPurpose.HOME_BANNER))
                 .isInstanceOf(MediaUploadForbiddenException.class);
     }
 
     @Test
-    void 홈_배너에_targetId가_있으면_DB를_조회하지_않고_거부한다() {
-        assertThatThrownBy(() -> authorizer.authorize(7L, MediaPurpose.HOME_BANNER, 1L))
-                .isInstanceOf(MediaUploadForbiddenException.class);
+    void 활성_사용자는_기존_목적의_미디어를_업로드할_수_있다() {
+        when(jdbcTemplate.queryForObject(anyString(), eq(Boolean.class), eq(7L)))
+                .thenReturn(true);
 
-        verifyNoInteractions(jdbcTemplate);
-    }
+        authorizer.authorize(7L, MediaPurpose.FEED_CONTENT);
 
-    @Test
-    void 기존_목적에_targetId가_없으면_DB를_조회하지_않고_거부한다() {
-        assertThatThrownBy(() -> authorizer.authorize(7L, MediaPurpose.FEED_CONTENT, null))
-                .isInstanceOf(MediaUploadForbiddenException.class);
-
-        verifyNoInteractions(jdbcTemplate);
+        verify(jdbcTemplate).queryForObject(anyString(), eq(Boolean.class), eq(7L));
     }
 }
