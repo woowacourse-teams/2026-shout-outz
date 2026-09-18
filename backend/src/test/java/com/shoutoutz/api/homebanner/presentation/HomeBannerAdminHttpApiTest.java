@@ -135,11 +135,15 @@ class HomeBannerAdminHttpApiTest {
 
     @Test
     void 관리자가_배너만_삭제한다() throws Exception {
+        given(homeBannerAdminService.delete(BANNER_ID, UserRole.ADMIN)).willReturn(BANNER_ID);
+
         mockMvc.perform(delete("/api/v1/admin/home/banners/{bannerId}", BANNER_ID)
                         .header(HttpHeaders.COOKIE, SESSION_COOKIE)
                         .header("X-CSRF-Token", CSRF_TOKEN)
                         .with(authenticated(UserRole.ADMIN)))
-                .andExpect(status().isNoContent())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(BANNER_ID))
                 .andDo(document(
                         "admin-home-banner-delete",
                         resource(ResourceSnippetParameters.builder()
@@ -155,6 +159,11 @@ class HomeBannerAdminHttpApiTest {
                                 .pathParameters(parameterWithName("bannerId")
                                         .type(INTEGER)
                                         .description("홈 배너 ID"))
+                                .responseSchema(Schema.schema("HomeBannerDeleteSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data.id").type(NUMBER).description("삭제한 홈 배너 ID")
+                                )
                                 .build())
                 ));
 

@@ -6,6 +6,7 @@ import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.homebanner.application.HomeBannerAdminService;
 import com.shoutoutz.api.homebanner.presentation.dto.request.HomeBannerUpsertRequest;
 import com.shoutoutz.api.homebanner.presentation.dto.response.HomeBannerAdminResponse;
+import com.shoutoutz.api.homebanner.presentation.dto.response.HomeBannerDeleteResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -64,11 +65,11 @@ public class HomeBannerAdminHttpApi {
     }
 
     @DeleteMapping("/{bannerId}")
-    public ResponseEntity<Void> delete(
+    public ResponseEntity<SuccessResponse<HomeBannerDeleteResponse>> delete(
             @PathVariable long bannerId,
             @LoginUser AuthenticatedUser user
     ) {
-        homeBannerAdminService.delete(bannerId, user.role());
-        return ResponseEntity.noContent().build();
+        long deletedBannerId = homeBannerAdminService.delete(bannerId, user.role());
+        return ResponseEntity.ok(SuccessResponse.success(new HomeBannerDeleteResponse(deletedBannerId)));
     }
 }

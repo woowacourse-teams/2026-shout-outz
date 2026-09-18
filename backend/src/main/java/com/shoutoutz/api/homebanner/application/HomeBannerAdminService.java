@@ -86,11 +86,12 @@ public class HomeBannerAdminService {
     }
 
     @Transactional
-    public void delete(long bannerId, UserRole role) {
+    public long delete(long bannerId, UserRole role) {
         validateAdmin(role);
         if (!homeBannerRepository.deleteById(bannerId)) {
             throw new NotFoundException(HomeBannerErrorCode.HOME_BANNER_NOT_FOUND);
         }
+        return bannerId;
     }
 
     private HomeBannerAdminResponse toResponse(HomeBanner banner) {

@@ -3133,8 +3133,15 @@ paths:
           type: string
         example: csrf-token
       responses:
-        "204":
-          description: "204"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomeBannerDeleteSuccessResponse"
+              examples:
+                admin-home-banner-delete:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":100}}"
   /api/v1/admin/verification-requests/{requestId}/approve:
     post:
       tags:
@@ -6302,6 +6309,23 @@ components:
               type: number
               description: 검색어와 필터가 적용된 프로젝트 수
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    HomeBannerDeleteSuccessResponse:
+      title: HomeBannerDeleteSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - id
+          type: object
+          properties:
+            id:
+              type: number
+              description: 삭제한 홈 배너 ID
         status:
           type: string
           description: 응답 상태

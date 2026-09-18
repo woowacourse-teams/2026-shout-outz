@@ -96,8 +96,9 @@ class HomeBannerAdminServiceTest {
     void 관리자가_배너를_삭제한다() {
         when(homeBannerRepository.deleteById(100L)).thenReturn(true);
 
-        service.delete(100L, UserRole.ADMIN);
+        long deletedBannerId = service.delete(100L, UserRole.ADMIN);
 
+        assertThat(deletedBannerId).isEqualTo(100L);
         verify(homeBannerRepository).deleteById(100L);
     }
 
