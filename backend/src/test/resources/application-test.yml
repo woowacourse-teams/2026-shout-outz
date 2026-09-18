@@ -23,3 +23,6 @@ aws:
     presigned-url-expiration-seconds: 100
   cloudfront:
     public-base-url: https://cdn.example.com/
+
+visitor:
+  hash-secret: test-visitor-hash-secret-32-chars-min

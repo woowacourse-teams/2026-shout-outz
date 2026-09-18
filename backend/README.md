@@ -176,6 +176,7 @@ AWS_REGION=<region>
 AWS_S3_KEY_PREFIX=<key-prefix>
 AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS=<seconds>
 AWS_CLOUDFRONT_PUBLIC_BASE_URL=https://<cloudfront-domain>/
+VISITOR_HASH_SECRET=<32자 이상의 임의 문자열>
 ```
 
 IntelliJ IDEA에서 환경 변수를 설정하려면 `Run/Debug Configurations`의 `Environment variables`에 입력한다. 운영용 비밀 값은 저장소에 커밋하지 않는다.

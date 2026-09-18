@@ -11,9 +11,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.homebanner.application.HomeBannerService;
+import com.shoutoutz.api.homebanner.domain.BannerDestinationType;
+import com.shoutoutz.api.homebanner.domain.BannerLinkType;
+import com.shoutoutz.api.homebanner.domain.BannerTargetType;
 import com.shoutoutz.api.homebanner.presentation.dto.response.HomeBannerResponse;
 import java.net.URI;
 import java.util.List;
@@ -64,14 +68,15 @@ class HomeBannerHttpApiTest {
                                         fieldWithPath("data").type(ARRAY).description("활성 홈 배너 목록"),
                                         fieldWithPath("data[].bannerId").type(NUMBER).description("배너 ID"),
                                         fieldWithPath("data[].imageUrl").type(STRING).description("표시용 이미지 URL"),
-                                        fieldWithPath("data[].destinationType").type(STRING)
-                                                .description("TARGET 또는 URL"),
-                                        fieldWithPath("data[].targetType").type(STRING)
-                                                .description("NEWS, PROJECT, FEED 중 하나").optional(),
+                                        new EnumFields(BannerDestinationType.class)
+                                                .withPath("data[].destinationType")
+                                                .description("이동 방식"),
+                                        new EnumFields(BannerTargetType.class).withPath("data[].targetType")
+                                                .description("대상 리소스 유형").optional(),
                                         fieldWithPath("data[].targetId").type(NUMBER)
                                                 .description("대상 리소스 ID").optional(),
-                                        fieldWithPath("data[].linkType").type(STRING)
-                                                .description("INTERNAL_PATH 또는 EXTERNAL_URL").optional(),
+                                        new EnumFields(BannerLinkType.class).withPath("data[].linkType")
+                                                .description("URL 유형").optional(),
                                         fieldWithPath("data[].linkUrl").type(STRING)
                                                 .description("내부 경로 또는 외부 HTTPS URL").optional()
                                 )

@@ -25,6 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
@@ -58,6 +59,7 @@ import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileR
 import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.profile.Track;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
@@ -193,6 +195,7 @@ class ProjectHttpApiTest {
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("등록된 프로젝트"),
                                         fieldWithPath("data.projectId").type(NUMBER).description("등록된 프로젝트 ID"),
                                         fieldWithPath("data.slug").type(STRING).description("프로젝트 주소로 쓰이는 slug")
                                 )
@@ -393,7 +396,9 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data[].members[].cohort").type(NUMBER)
                                                 .description("기수. 가입하지 않은 이관 팀원은 프로젝트 기수다.")
                                                 .optional(),
-                                        fieldWithPath("data[].members[].track").type(STRING).description("트랙").optional(),
+                                        new EnumFields(Track.class).withPath("data[].members[].track")
+                                                .description("트랙")
+                                                .optional(),
                                         fieldWithPath("data[].members[].avatarUrl").type(STRING)
                                                 .description("CloudFront에서 제공하는 공개 프로필 이미지 URL")
                                                 .optional(),
@@ -566,6 +571,7 @@ class ProjectHttpApiTest {
                                 .responseSchema(Schema.schema("ProjectFindDetailSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("프로젝트 상세"),
                                         fieldWithPath("data.id").type(NUMBER).description("프로젝트 ID"),
                                         fieldWithPath("data.slug").type(STRING).description("프로젝트 주소로 쓰이는 slug"),
                                         fieldWithPath("data.title").type(STRING).description("프로젝트 이름"),
@@ -580,9 +586,10 @@ class ProjectHttpApiTest {
                                                 .optional(),
                                         fieldWithPath("data.githubRepositoryUrl").type(STRING).description("GitHub 리포지토리 URL"),
                                         fieldWithPath("data.deploymentUrl").type(STRING).description("서비스 배포 URL").optional(),
-                                        fieldWithPath("data.serviceStatus").type(STRING).description("운영 상태 (OPERATING, CLOSED)"),
-                                        fieldWithPath("data.approvalStatus").type(STRING)
-                                                .description("승인 상태 (PENDING, APPROVED, REJECTED)"),
+                                        new EnumFields(ServiceStatus.class).withPath("data.serviceStatus")
+                                                .description("운영 상태"),
+                                        new EnumFields(ApprovalStatus.class).withPath("data.approvalStatus")
+                                                .description("승인 상태"),
                                         fieldWithPath("data.rejectReason").type(STRING)
                                                 .description("반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다.")
                                                 .optional(),
@@ -619,7 +626,9 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data.members[].cohort").type(NUMBER)
                                                 .description("기수. 가입하지 않은 이관 팀원은 프로젝트 기수다.")
                                                 .optional(),
-                                        fieldWithPath("data.members[].track").type(STRING).description("트랙").optional(),
+                                        new EnumFields(Track.class).withPath("data.members[].track")
+                                                .description("트랙")
+                                                .optional(),
                                         fieldWithPath("data.members[].avatarUrl").type(STRING)
                                                 .description("CloudFront에서 제공하는 공개 프로필 이미지 URL")
                                                 .optional(),
@@ -744,6 +753,7 @@ class ProjectHttpApiTest {
                                 .responseSchema(Schema.schema("ProjectDeleteSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("삭제 결과"),
                                         fieldWithPath("data.id").type(NUMBER).description("삭제한 프로젝트 ID"),
                                         fieldWithPath("data.deletedAt").type(STRING).description("삭제 시각 (UTC)"),
                                         fieldWithPath("data.restoreDeadlineAt").type(STRING)
@@ -831,9 +841,10 @@ class ProjectHttpApiTest {
                                 .responseSchema(Schema.schema("ProjectRestoreSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("복구 결과"),
                                         fieldWithPath("data.id").type(NUMBER).description("복구한 프로젝트 ID"),
-                                        fieldWithPath("data.approvalStatus").type(STRING)
-                                                .description("승인 상태 (PENDING, APPROVED, REJECTED). 삭제 이전 값을 그대로 유지한다."),
+                                        new EnumFields(ApprovalStatus.class).withPath("data.approvalStatus")
+                                                .description("승인 상태. 삭제 이전 값을 그대로 유지한다."),
                                         fieldWithPath("data.restoredAt").type(STRING).description("복구 시각 (UTC)"),
                                         fieldWithPath("meta").type(OBJECT).description("메타 정보").optional()
                                 )
@@ -1029,9 +1040,8 @@ class ProjectHttpApiTest {
                                                         + "이미지는 ![설명](media://{mediaId}) 형식으로 넣으며, "
                                                         + "상세 조회 응답의 CDN URL을 그대로 보내도 기존 본문 이미지 참조를 유지한다.")
                                                 .optional(),
-                                        fieldWithPath("serviceStatus").type(STRING)
-                                                .description("서비스 운영 상태 (OPERATING, CLOSED). "
-                                                        + "deploymentUrl이 없으면 CLOSED만 보낼 수 있다."),
+                                        new EnumFields(ServiceStatus.class).withPath("serviceStatus")
+                                                .description("서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있다."),
                                         fieldWithPath("techTagIds").type(ARRAY)
                                                 .description("기술 스택 ID 전체 목록. 통째로 교체하며 배열 순서가 표시 순서가 된다. "
                                                         + "이미 달려 있던 태그는 비활성화됐어도 그대로 둘 수 있다.")
@@ -1044,9 +1054,10 @@ class ProjectHttpApiTest {
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("수정 결과"),
                                         fieldWithPath("data.projectId").type(NUMBER).description("수정한 프로젝트 ID"),
-                                        fieldWithPath("data.approvalStatus").type(STRING)
-                                                .description("수정 후 승인 상태 (PENDING, APPROVED)")
+                                        new EnumFields(ApprovalStatus.class).withPath("data.approvalStatus")
+                                                .description("수정 후 승인 상태. PENDING 또는 APPROVED이며 REJECTED는 오지 않는다.")
                                 )
                                 .build())
                 ));

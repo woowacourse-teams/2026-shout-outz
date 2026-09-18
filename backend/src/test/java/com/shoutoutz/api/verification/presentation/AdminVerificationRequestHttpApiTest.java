@@ -18,12 +18,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.verification.application.AdminVerificationRequestService;
 import com.shoutoutz.api.verification.domain.UserVerificationErrorCode;
@@ -135,17 +137,17 @@ class AdminVerificationRequestHttpApiTest {
                                                 .description("신청자 사용자 ID"),
                                         fieldWithPath("data.items[].applicant.handle").type(STRING)
                                                 .description("신청자 handle"),
-                                        fieldWithPath("data.items[].userType").type(STRING)
+                                        new EnumFields(UserType.class).withPath("data.items[].userType")
                                                 .description("신청 유형"),
                                         fieldWithPath("data.items[].nickname").type(STRING)
                                                 .description("신청 닉네임"),
                                         fieldWithPath("data.items[].cohort").type(NUMBER)
                                                 .description("신청 기수. 코치 신청은 null")
                                                 .optional(),
-                                        fieldWithPath("data.items[].track").type(STRING)
+                                        new EnumFields(Track.class).withPath("data.items[].track")
                                                 .description("신청 트랙. 코치 신청은 null")
                                                 .optional(),
-                                        fieldWithPath("data.items[].status").type(STRING)
+                                        new EnumFields(VerificationRequestStatus.class).withPath("data.items[].status")
                                                 .description("현재 신청 상태"),
                                         fieldWithPath("data.items[].requestedAt").type(STRING)
                                                 .description("신청 시각(ISO-8601)"),

@@ -23,11 +23,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.homebanner.application.HomeBannerAdminService;
+import com.shoutoutz.api.homebanner.domain.BannerDestinationType;
+import com.shoutoutz.api.homebanner.domain.BannerLinkType;
+import com.shoutoutz.api.homebanner.domain.BannerTargetType;
 import com.shoutoutz.api.homebanner.presentation.dto.request.HomeBannerUpsertRequest;
 import com.shoutoutz.api.homebanner.presentation.dto.response.HomeBannerAdminResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
@@ -162,6 +166,7 @@ class HomeBannerAdminHttpApiTest {
                                 .responseSchema(Schema.schema("HomeBannerDeleteSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("삭제 결과"),
                                         fieldWithPath("data.id").type(NUMBER).description("삭제한 홈 배너 ID")
                                 )
                                 .build())
@@ -256,12 +261,13 @@ class HomeBannerAdminHttpApiTest {
     private List<FieldDescriptor> requestFields() {
         return List.of(
                 fieldWithPath("mediaId").type(NUMBER).description("READY HOME_BANNER 미디어 ID"),
-                fieldWithPath("destinationType").type(STRING).description("TARGET 또는 URL"),
-                fieldWithPath("targetType").type(STRING)
-                        .description("NEWS, PROJECT, FEED 중 하나").optional(),
+                new EnumFields(BannerDestinationType.class).withPath("destinationType")
+                        .description("이동 방식"),
+                new EnumFields(BannerTargetType.class).withPath("targetType")
+                        .description("대상 리소스 유형").optional(),
                 fieldWithPath("targetId").type(NUMBER).description("대상 리소스 ID").optional(),
-                fieldWithPath("linkType").type(STRING)
-                        .description("INTERNAL_PATH 또는 EXTERNAL_URL").optional(),
+                new EnumFields(BannerLinkType.class).withPath("linkType")
+                        .description("URL 유형").optional(),
                 fieldWithPath("linkUrl").type(STRING)
                         .description("내부 경로 또는 외부 HTTPS URL").optional(),
                 fieldWithPath("displayOrder").type(NUMBER).description("0 이상 표시 순서"),
@@ -284,13 +290,14 @@ class HomeBannerAdminHttpApiTest {
                 fieldWithPath(path + ".bannerId").type(NUMBER).description("배너 ID"),
                 fieldWithPath(path + ".mediaId").type(NUMBER).description("미디어 ID"),
                 fieldWithPath(path + ".imageUrl").type(STRING).description("표시용 이미지 URL"),
-                fieldWithPath(path + ".destinationType").type(STRING).description("TARGET 또는 URL"),
-                fieldWithPath(path + ".targetType").type(STRING)
-                        .description("NEWS, PROJECT, FEED 중 하나").optional(),
+                new EnumFields(BannerDestinationType.class).withPath(path + ".destinationType")
+                        .description("이동 방식"),
+                new EnumFields(BannerTargetType.class).withPath(path + ".targetType")
+                        .description("대상 리소스 유형").optional(),
                 fieldWithPath(path + ".targetId").type(NUMBER)
                         .description("대상 리소스 ID").optional(),
-                fieldWithPath(path + ".linkType").type(STRING)
-                        .description("INTERNAL_PATH 또는 EXTERNAL_URL").optional(),
+                new EnumFields(BannerLinkType.class).withPath(path + ".linkType")
+                        .description("URL 유형").optional(),
                 fieldWithPath(path + ".linkUrl").type(STRING)
                         .description("내부 경로 또는 외부 HTTPS URL").optional(),
                 fieldWithPath(path + ".displayOrder").type(NUMBER).description("표시 순서"),

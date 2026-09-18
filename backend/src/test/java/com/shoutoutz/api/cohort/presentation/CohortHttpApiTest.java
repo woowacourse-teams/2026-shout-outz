@@ -4,6 +4,7 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
+import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -46,6 +47,7 @@ class CohortHttpApiTest {
                                 .responseSchema(Schema.schema("CohortFindAllSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("기수 목록"),
                                         fieldWithPath("data.items").type(ARRAY).description("기수 목록 (최신 기수부터)"),
                                         fieldWithPath("data.items[].cohort").type(NUMBER).description("기수"),
                                         fieldWithPath("data.items[].year").type(NUMBER).description("진행 연도")

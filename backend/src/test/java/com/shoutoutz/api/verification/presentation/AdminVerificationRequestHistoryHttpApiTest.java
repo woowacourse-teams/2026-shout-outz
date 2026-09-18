@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
@@ -134,10 +135,10 @@ class AdminVerificationRequestHistoryHttpApiTest {
                                                 .description("상태 변경 이력(최신순)"),
                                         fieldWithPath("data.items[].historyId").type(NUMBER)
                                                 .description("이력 ID"),
-                                        fieldWithPath("data.items[].fromStatus").type(STRING)
+                                        new EnumFields(VerificationRequestStatus.class).withPath("data.items[].fromStatus")
                                                 .description("변경 전 상태. 최초 신청이면 null")
                                                 .optional(),
-                                        fieldWithPath("data.items[].toStatus").type(STRING)
+                                        new EnumFields(VerificationRequestStatus.class).withPath("data.items[].toStatus")
                                                 .description("변경 후 상태"),
                                         fieldWithPath("data.items[].changedBy").type(OBJECT)
                                                 .description("상태를 변경한 관리자. 최초 신청이면 null")

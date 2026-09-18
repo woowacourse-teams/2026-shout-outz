@@ -302,6 +302,7 @@ class FeedCommentHttpApiTest {
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("생성된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("댓글 ID"),
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
@@ -388,6 +389,7 @@ class FeedCommentHttpApiTest {
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("수정된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("댓글 ID"),
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
@@ -445,6 +447,7 @@ class FeedCommentHttpApiTest {
                                 .responseSchema(Schema.schema("FeedCommentDeleteSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("삭제된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("삭제된 댓글 ID"),
                                         fieldWithPath("data.deleted").type(BOOLEAN).description("댓글 삭제 여부")
                                 )
