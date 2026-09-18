@@ -24,6 +24,7 @@ import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
@@ -66,6 +67,9 @@ class FeedServiceCommandTest {
     @Mock
     private UserProfileRepository userProfileRepository;
 
+    @Mock
+    private MediaUrlResolver mediaUrlResolver;
+
     private FeedService feedService;
 
     @BeforeEach
@@ -77,6 +81,7 @@ class FeedServiceCommandTest {
                 userRepository,
                 userProfileRepository,
                 new FeedCursorCodec(),
+                mediaUrlResolver,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -336,6 +341,7 @@ class FeedServiceCommandTest {
                         CategoryType.GENERAL
                 )),
                 List.of(new FeedItem.Media(20L, 0)),
+                0L,
                 0L,
                 NOW,
                 NOW

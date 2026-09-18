@@ -40,7 +40,9 @@ import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateResponse;
+import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -75,7 +77,7 @@ class UserHttpApiTest {
                 .willReturn(new UserProfileSummaryResponse(
                         "zzaekkii",
                         "재키",
-                        21L
+                        "https://cdn.example.com/media/21/display"
                 ));
 
         mockMvc.perform(get("/api/v1/users/me/summary")
@@ -89,7 +91,8 @@ class UserHttpApiTest {
                 .andExpect(jsonPath("$.data.userId").doesNotExist())
                 .andExpect(jsonPath("$.data.handle").value("zzaekkii"))
                 .andExpect(jsonPath("$.data.displayName").value("재키"))
-                .andExpect(jsonPath("$.data.avatarImageId").value(21))
+                .andExpect(jsonPath("$.data.avatarUrl")
+                        .value("https://cdn.example.com/media/21/display"))
                 .andDo(document(
                         "user-profile-summary-get",
                         resource(ResourceSnippetParameters.builder()
@@ -106,8 +109,8 @@ class UserHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("프로필 요약 정보"),
                                         fieldWithPath("data.handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
-                                        fieldWithPath("data.avatarImageId").type(NUMBER)
-                                                .description("프로필 이미지 미디어 ID").optional()
+                                        fieldWithPath("data.avatarUrl").type(STRING)
+                                                .description("프로필 이미지 공개 URL").optional()
                                 )
                                 .build())
                 ));
@@ -143,7 +146,7 @@ class UserHttpApiTest {
                         "BACKEND",
                         (short) 8,
                         "백엔드 개발자입니다.",
-                        21L,
+                        "https://cdn.example.com/media/21/display",
                         "https://github.com/zzaekkii",
                         "https://zzaekkii.dev",
                         new UserProfileResponse.Counts(2L, 18L)
@@ -164,7 +167,8 @@ class UserHttpApiTest {
                 .andExpect(jsonPath("$.data.track").value("BACKEND"))
                 .andExpect(jsonPath("$.data.cohort").value(8))
                 .andExpect(jsonPath("$.data.bio").value("백엔드 개발자입니다."))
-                .andExpect(jsonPath("$.data.avatarImageId").value(21))
+                .andExpect(jsonPath("$.data.avatarUrl")
+                        .value("https://cdn.example.com/media/21/display"))
                 .andExpect(jsonPath("$.data.githubProfileUrl")
                         .value("https://github.com/zzaekkii"))
                 .andExpect(jsonPath("$.data.blogUrl").value("https://zzaekkii.dev"))
@@ -190,8 +194,8 @@ class UserHttpApiTest {
                                         fieldWithPath("data.track").type(STRING).description("우테코 트랙").optional(),
                                         fieldWithPath("data.cohort").type(NUMBER).description("우테코 기수").optional(),
                                         fieldWithPath("data.bio").type(STRING).description("한 줄 소개").optional(),
-                                        fieldWithPath("data.avatarImageId").type(NUMBER)
-                                                .description("프로필 이미지 미디어 ID").optional(),
+                                        fieldWithPath("data.avatarUrl").type(STRING)
+                                                .description("프로필 이미지 공개 URL").optional(),
                                         fieldWithPath("data.githubProfileUrl").type(STRING)
                                                 .description("GitHub 프로필 URL").optional(),
                                         fieldWithPath("data.blogUrl").type(STRING)
@@ -240,7 +244,7 @@ class UserHttpApiTest {
                         "BACKEND",
                         (short) 8,
                         "백엔드 개발자입니다.",
-                        21L,
+                        "https://cdn.example.com/media/21/display",
                         "https://github.com/zzaekkii",
                         "https://zzaekkii.dev"
                 ));
@@ -271,7 +275,8 @@ class UserHttpApiTest {
                 .andExpect(jsonPath("$.data.track").value("BACKEND"))
                 .andExpect(jsonPath("$.data.cohort").value(8))
                 .andExpect(jsonPath("$.data.bio").value("백엔드 개발자입니다."))
-                .andExpect(jsonPath("$.data.avatarImageId").value(21))
+                .andExpect(jsonPath("$.data.avatarUrl")
+                        .value("https://cdn.example.com/media/21/display"))
                 .andExpect(jsonPath("$.data.githubProfileUrl").value("https://github.com/zzaekkii"))
                 .andExpect(jsonPath("$.data.blogUrl").value("https://zzaekkii.dev"))
                 .andDo(document(
@@ -307,8 +312,8 @@ class UserHttpApiTest {
                                         fieldWithPath("data.track").type(STRING).description("우테코 트랙").optional(),
                                         fieldWithPath("data.cohort").type(NUMBER).description("우테코 기수").optional(),
                                         fieldWithPath("data.bio").type(STRING).description("한 줄 소개").optional(),
-                                        fieldWithPath("data.avatarImageId").type(NUMBER)
-                                                .description("프로필 이미지 미디어 ID").optional(),
+                                        fieldWithPath("data.avatarUrl").type(STRING)
+                                                .description("프로필 이미지 공개 URL").optional(),
                                         fieldWithPath("data.githubProfileUrl").type(STRING)
                                                 .description("GitHub 프로필 URL").optional(),
                                         fieldWithPath("data.blogUrl").type(STRING)
@@ -363,6 +368,7 @@ class UserHttpApiTest {
                                 .tag("User")
                                 .summary("내 프로필 수정")
                                 .description("로그인한 사용자의 수정 가능한 프로필 정보를 저장한다.")
+                                .requestSchema(Schema.schema("UserProfileUpdateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -449,7 +455,7 @@ class UserHttpApiTest {
                         "BACKEND",
                         (short) 8,
                         "백엔드 개발자입니다.",
-                        21L,
+                        "https://cdn.example.com/media/21/display",
                         "https://github.com/zzaekkii",
                         "https://zzaekkii.dev",
                         new UserProfileResponse.Counts(2L, 18L)
@@ -465,7 +471,8 @@ class UserHttpApiTest {
                 .andExpect(jsonPath("$.data.track").value("BACKEND"))
                 .andExpect(jsonPath("$.data.cohort").value(8))
                 .andExpect(jsonPath("$.data.bio").value("백엔드 개발자입니다."))
-                .andExpect(jsonPath("$.data.avatarImageId").value(21))
+                .andExpect(jsonPath("$.data.avatarUrl")
+                        .value("https://cdn.example.com/media/21/display"))
                 .andExpect(jsonPath("$.data.githubProfileUrl")
                         .value("https://github.com/zzaekkii"))
                 .andExpect(jsonPath("$.data.blogUrl").value("https://zzaekkii.dev"))
@@ -490,8 +497,8 @@ class UserHttpApiTest {
                                         fieldWithPath("data.track").type(STRING).description("우테코 트랙").optional(),
                                         fieldWithPath("data.cohort").type(NUMBER).description("우테코 기수").optional(),
                                         fieldWithPath("data.bio").type(STRING).description("한 줄 소개").optional(),
-                                        fieldWithPath("data.avatarImageId").type(NUMBER)
-                                                .description("프로필 이미지 미디어 ID").optional(),
+                                        fieldWithPath("data.avatarUrl").type(STRING)
+                                                .description("프로필 이미지 공개 URL").optional(),
                                         fieldWithPath("data.githubProfileUrl").type(STRING)
                                                 .description("GitHub 프로필 URL").optional(),
                                         fieldWithPath("data.blogUrl").type(STRING)
@@ -532,7 +539,8 @@ class UserHttpApiTest {
                                 )
                         ),
                         "eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0",
-                        true
+                        true,
+                        Map.of(21L, URI.create("https://cdn.example.com/media/21/display"))
                 ));
 
         mockMvc.perform(get("/api/v1/users/search")
@@ -544,7 +552,8 @@ class UserHttpApiTest {
                 .andExpect(jsonPath("$.data.items[0].userType").value("WOOWACOURSE_CREW"))
                 .andExpect(jsonPath("$.data.items[0].track").value("BACKEND"))
                 .andExpect(jsonPath("$.data.items[0].cohort").value(8))
-                .andExpect(jsonPath("$.data.items[0].avatarImageId").value(21))
+                .andExpect(jsonPath("$.data.items[0].avatarUrl")
+                        .value("https://cdn.example.com/media/21/display"))
                 .andExpect(jsonPath("$.data.items[1].handle").value("coach-jack"))
                 .andExpect(jsonPath("$.data.items[1].userType").value("WOOWACOURSE_COACH"))
                 .andExpect(jsonPath("$.data.items[1].track").isEmpty())
@@ -580,8 +589,8 @@ class UserHttpApiTest {
                                                 .description("우테코 트랙").optional(),
                                         fieldWithPath("data.items[].cohort").type(NUMBER)
                                                 .description("우테코 기수").optional(),
-                                        fieldWithPath("data.items[].avatarImageId").type(NUMBER)
-                                                .description("프로필 이미지 미디어 ID").optional(),
+                                        fieldWithPath("data.items[].avatarUrl").type(STRING)
+                                                .description("프로필 이미지 공개 URL").optional(),
                                         fieldWithPath("meta").type(OBJECT).description("페이지 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 커서").optional(),

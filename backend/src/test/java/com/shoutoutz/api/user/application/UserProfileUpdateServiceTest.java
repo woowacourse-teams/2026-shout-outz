@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
@@ -51,6 +52,9 @@ class UserProfileUpdateServiceTest {
     @Mock
     private UserSearchCursorCodec userSearchCursorCodec;
 
+    @Mock
+    private MediaUrlResolver mediaUrlResolver;
+
     private UserService userService;
 
     @BeforeEach
@@ -60,7 +64,8 @@ class UserProfileUpdateServiceTest {
                 userProfileRepository,
                 userQueryRepository,
                 userSearchCursorCodec,
-                mediaMetadataRepository
+                mediaMetadataRepository,
+                mediaUrlResolver
         );
     }
 
@@ -76,12 +81,14 @@ class UserProfileUpdateServiceTest {
                 .willReturn(Optional.of(media(MediaPurpose.USER_AVATAR, MediaStatus.READY, 1L)));
         given(userProfileRepository.save(org.mockito.ArgumentMatchers.any(UserProfile.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
+        given(mediaUrlResolver.resolve(21L))
+                .willReturn(java.net.URI.create("https://cdn.example.com/media/21/display"));
 
         UserProfileUpdateResponse result = userService.updateMyProfile(1L, request);
 
         assertThat(result.handle()).isEqualTo("zzaekkii");
         assertThat(result.displayName()).isEqualTo("새 이름");
-        assertThat(result.avatarImageId()).isEqualTo(21L);
+        assertThat(result.avatarUrl()).isEqualTo("https://cdn.example.com/media/21/display");
         assertThat(result.bio()).isEqualTo("백엔드 개발자입니다.");
     }
 
@@ -98,7 +105,7 @@ class UserProfileUpdateServiceTest {
                 request("재키", null)
         );
 
-        assertThat(result.avatarImageId()).isNull();
+        assertThat(result.avatarUrl()).isNull();
         then(mediaMetadataRepository).shouldHaveNoInteractions();
     }
 

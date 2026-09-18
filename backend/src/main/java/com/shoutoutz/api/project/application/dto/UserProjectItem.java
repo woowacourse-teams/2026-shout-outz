@@ -1,19 +1,23 @@
-package com.shoutoutz.api.project.domain;
+package com.shoutoutz.api.project.application.dto;
 
+import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.domain.ProjectMemberProfile;
+import com.shoutoutz.api.project.domain.ProjectTechTag;
+import com.shoutoutz.api.project.domain.ServiceStatus;
 import java.time.Instant;
 import java.util.List;
 
 /**
- * 프로젝트 목록 카드에 필요한 조회 모델
- * 등록자(registeredBy)가 없으면, 이전 기수에서 이관된 프로젝트다.
- * GitHub 스타 수(starCount)는 아직 동기화하지 않은 프로젝트면 없다.
+ * 사용자 페이지의 프로젝트 카드 조회 결과.
  */
-public record ProjectSummary(
+public record UserProjectItem(
         long id,
         String slug,
         String title,
+        String teamName,
         String tagline,
         int cohort,
+        ServiceStatus serviceStatus,
         Long thumbnailMediaId,
         Long registeredBy,
         Integer starCount,
@@ -28,24 +32,22 @@ public record ProjectSummary(
         return registeredBy == null;
     }
 
-    /**
-     * 이 프로젝트를 기준으로 다음 페이지를 조회하는 커서
-     * 정렬에 쓰인 값을 그대로 담아야 다음 페이지에서 이 프로젝트 바로 다음부터 조회할 수 있다.
-     */
-    public ProjectCursor toCursor(ProjectSort sort) {
-        if (sort == ProjectSort.POPULAR) {
-            return ProjectCursor.popular(likeCount, createdAt, id);
-        }
+    public ProjectCursor toCursor() {
         return ProjectCursor.latest(createdAt, id);
     }
 
-    public ProjectSummary withTechTagsAndMembers(List<ProjectTechTag> techTags, List<ProjectMemberProfile> members) {
-        return new ProjectSummary(
+    public UserProjectItem withTechTagsAndMembers(
+            List<ProjectTechTag> techTags,
+            List<ProjectMemberProfile> members
+    ) {
+        return new UserProjectItem(
                 id,
                 slug,
                 title,
+                teamName,
                 tagline,
                 cohort,
+                serviceStatus,
                 thumbnailMediaId,
                 registeredBy,
                 starCount,

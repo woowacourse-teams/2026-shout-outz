@@ -23,10 +23,12 @@ import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.feed.domain.FeedRepository;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import java.time.Instant;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +53,7 @@ public class FeedCommentService {
     private final FeedCommentRepository feedCommentRepository;
     private final FeedCommentQueryRepository feedCommentQueryRepository;
     private final UserProfileRepository userProfileRepository;
+    private final MediaUrlResolver mediaUrlResolver;
 
     @Transactional
     public FeedCommentCreateResponse create(
@@ -76,7 +79,7 @@ public class FeedCommentService {
                 new FeedCommentCreateResponse.Author(
                         author.getUserId(),
                         author.getDisplayName().value(),
-                        author.getAvatarImageId()
+                        toUrl(mediaUrlResolver.resolve(author.getAvatarImageId()))
                 ),
                 savedComment.getParentId(),
                 savedComment.getCreatedAt(),
@@ -117,14 +120,21 @@ public class FeedCommentService {
 
         // 3. 작성자 조회 후 응답 객체 생성
         Map<Long, UserProfile> authors = new HashMap<>();
-        List<FeedCommentFindResponse.Comment> comments = new ArrayList<>();
+        List<FeedComment> orderedComments = new ArrayList<>();
 
         for (FeedComment root : page.comments()) {
-            comments.add(toFindResponse(root, loginUserId, authors));
+            authors.computeIfAbsent(root.getAuthorId(), this::findAuthor);
+            orderedComments.add(root);
             for (FeedComment reply : repliesByParentId.getOrDefault(root.getId(), List.of())) {
-                comments.add(toFindResponse(reply, loginUserId, authors));
+                authors.computeIfAbsent(reply.getAuthorId(), this::findAuthor);
+                orderedComments.add(reply);
             }
         }
+
+        Map<Long, URI> avatarUrls = resolveAvatarUrls(authors.values());
+        List<FeedCommentFindResponse.Comment> comments = orderedComments.stream()
+                .map(comment -> toFindResponse(comment, loginUserId, authors, avatarUrls))
+                .toList();
 
         // 4. meta 정보: 다음 커서 정보 제공
         String nextCursor = page.hasNext() && !page.comments().isEmpty()
@@ -158,7 +168,7 @@ public class FeedCommentService {
                 new FeedCommentUpdateResponse.Author(
                         author.getUserId(),
                         author.getDisplayName().value(),
-                        author.getAvatarImageId()
+                        toUrl(mediaUrlResolver.resolve(author.getAvatarImageId()))
                 ),
                 comment.getParentId(),
                 comment.getCreatedAt(),
@@ -229,7 +239,8 @@ public class FeedCommentService {
     private FeedCommentFindResponse.Comment toFindResponse(
             FeedComment comment,
             Long loginUserId,
-            Map<Long, UserProfile> authors
+            Map<Long, UserProfile> authors,
+            Map<Long, URI> avatarUrls
     ) {
         UserProfile author = authors.computeIfAbsent(comment.getAuthorId(), this::findAuthor);
         // 삭제된 댓글이 아니며, 작성자가 본인인 경우 수정 가능
@@ -241,7 +252,7 @@ public class FeedCommentService {
                 new FeedCommentFindResponse.Author(
                         author.getUserId(),
                         author.getDisplayName().value(),
-                        author.getAvatarImageId()
+                        toUrl(findUrl(avatarUrls, author.getAvatarImageId()))
                 ),
                 comment.getParentId(),
                 comment.getCreatedAt(),
@@ -263,5 +274,24 @@ public class FeedCommentService {
         if (cursor != null && cursor.sort() != sort) {
             throw new InvalidInputException(CommentErrorCode.MISMATCHED_COMMENT_SORT_AND_CURSOR_SORT);
         }
+    }
+
+    private Map<Long, URI> resolveAvatarUrls(Iterable<UserProfile> authors) {
+        List<Long> avatarImageIds = new ArrayList<>();
+        for (UserProfile author : authors) {
+            if (author.getAvatarImageId() != null) {
+                avatarImageIds.add(author.getAvatarImageId());
+            }
+        }
+        Map<Long, URI> urls = mediaUrlResolver.resolveAll(avatarImageIds);
+        return urls == null ? Map.of() : urls;
+    }
+
+    private static URI findUrl(Map<Long, URI> urls, Long mediaId) {
+        return mediaId == null ? null : urls.get(mediaId);
+    }
+
+    private static String toUrl(URI url) {
+        return url == null ? null : url.toString();
     }
 }

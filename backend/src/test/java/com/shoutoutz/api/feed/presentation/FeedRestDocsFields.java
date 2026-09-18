@@ -27,14 +27,14 @@ final class FeedRestDocsFields {
                 fieldWithPath("author.userType").type(STRING).description("작성자 유형"),
                 fieldWithPath("author.track").type(STRING).description("작성자 트랙").optional(),
                 fieldWithPath("author.cohort").type(NUMBER).description("작성자 기수").optional(),
-                fieldWithPath("author.avatarImageId").type(NUMBER).description("현재 프로필 이미지 미디어 ID").optional(),
+                fieldWithPath("author.avatarUrl").type(STRING).description("현재 프로필 이미지 공개 URL").optional(),
                 fieldWithPath("categories").type(ARRAY).description("카테고리 목록"),
                 fieldWithPath("categories[].categoryId").type(NUMBER).description("카테고리 ID"),
                 fieldWithPath("categories[].slug").type(STRING).description("카테고리 slug"),
                 fieldWithPath("categories[].displayName").type(STRING).description("카테고리 표시 이름"),
                 fieldWithPath("categories[].type").type(STRING).description("GENERAL 또는 EVENT"),
                 fieldWithPath("media").type(ARRAY).description("본문 미디어 목록"),
-                fieldWithPath("media[].mediaId").type(NUMBER).description("미디어 ID"),
+                fieldWithPath("media[].url").type(STRING).description("본문 미디어 공개 URL"),
                 fieldWithPath("media[].displayOrder").type(NUMBER).description("미디어 표시 순서"),
                 fieldWithPath("createdAt").type(STRING).description("ISO-8601 생성 시각"),
                 fieldWithPath("updatedAt").type(STRING).description("ISO-8601 수정 시각")
@@ -57,6 +57,13 @@ final class FeedRestDocsFields {
         fields.add(fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"));
         fields.add(fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서").optional());
         fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"));
+        return fields;
+    }
+
+    static List<FieldDescriptor> userFeedListResponseFields(String description) {
+        List<FieldDescriptor> fields = feedListResponseFields(description);
+        fields.add(fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"));
+        fields.add(fieldWithPath("data[].commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"));
         return fields;
     }
 }

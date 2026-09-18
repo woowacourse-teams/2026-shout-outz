@@ -30,8 +30,6 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
@@ -81,21 +79,8 @@ class S3MediaStorageTest {
     }
 
     @Test
-    void 조회용_Presigned_URL을_발급한다() throws Exception {
-        PresignedGetObjectRequest presigned = mock(PresignedGetObjectRequest.class);
-        when(presigned.url()).thenReturn(new URL("https://s3.example.com/download"));
-        when(presigned.expiration()).thenReturn(NOW.plus(5, ChronoUnit.MINUTES));
-        when(s3Presigner.presignGetObject(any(GetObjectPresignRequest.class))).thenReturn(presigned);
-
-        PresignedDownload result = storage.createPresignedDownload(LOGICAL_KEY);
-
-        assertThat(result.key()).isEqualTo(LOGICAL_KEY);
-        assertThat(result.url()).hasToString("https://s3.example.com/download");
-
-        ArgumentCaptor<GetObjectPresignRequest> captor = ArgumentCaptor.forClass(GetObjectPresignRequest.class);
-        verify(s3Presigner).presignGetObject(captor.capture());
-        assertThat(captor.getValue().getObjectRequest().bucket()).isEqualTo("test-bucket");
-        assertThat(captor.getValue().getObjectRequest().key()).isEqualTo(ACTUAL_KEY);
+    void 논리_키를_환경별_실제_키로_변환한다() {
+        assertThat(storage.actualKey(LOGICAL_KEY)).isEqualTo(ACTUAL_KEY);
     }
 
     @Test

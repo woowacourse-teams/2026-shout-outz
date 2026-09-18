@@ -73,6 +73,7 @@ class UserProfileCsrfApiDocumentationTest {
                                         headerWithName(CsrfProtectionFilter.CSRF_HEADER)
                                                 .description("세션 조회 API에서 발급받은 CSRF Token")
                                 )
+                                .requestSchema(Schema.schema("UserProfileUpdateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())

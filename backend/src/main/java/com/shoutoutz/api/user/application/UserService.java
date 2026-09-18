@@ -4,6 +4,7 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
@@ -25,6 +26,7 @@ import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,7 @@ public class UserService {
     private final UserQueryRepository userQueryRepository;
     private final UserSearchCursorCodec userSearchCursorCodec;
     private final MediaMetadataRepository mediaMetadataRepository;
+    private final MediaUrlResolver mediaUrlResolver;
 
     @Transactional
     public UserProfileUpdateResponse updateMyProfile(
@@ -69,7 +72,7 @@ public class UserService {
                 trackValue(savedProfile),
                 cohortValue(savedProfile),
                 savedProfile.getBio(),
-                savedProfile.getAvatarImageId(),
+                toUrl(mediaUrlResolver.resolve(savedProfile.getAvatarImageId())),
                 savedProfile.getGithubProfileUrl(),
                 savedProfile.getBlogUrl()
         );
@@ -83,7 +86,7 @@ public class UserService {
         return new UserProfileSummaryResponse(
                 user.getHandle().value(),
                 profile.getDisplayName().value(),
-                profile.getAvatarImageId()
+                toUrl(mediaUrlResolver.resolve(profile.getAvatarImageId()))
         );
     }
 
@@ -135,11 +138,12 @@ public class UserService {
             int size
     ) {
         if (searchedItems.size() <= size) {
-            return new UserSearchResult(List.copyOf(searchedItems), null, false);
+            List<UserSearchItem> items = List.copyOf(searchedItems);
+            return new UserSearchResult(items, null, false, resolveAvatarUrls(items));
         }
 
         List<UserSearchItem> items = List.copyOf(searchedItems.subList(0, size));
-        return new UserSearchResult(items, encodeCursor(items.getLast()), true);
+        return new UserSearchResult(items, encodeCursor(items.getLast()), true, resolveAvatarUrls(items));
     }
 
     private String encodeCursor(UserSearchItem item) {
@@ -193,7 +197,7 @@ public class UserService {
                 trackValue(profile),
                 cohortValue(profile),
                 profile.getBio(),
-                profile.getAvatarImageId(),
+                toUrl(mediaUrlResolver.resolve(profile.getAvatarImageId())),
                 profile.getGithubProfileUrl(),
                 profile.getBlogUrl(),
                 new UserProfileResponse.Counts(counts.projects(), counts.feeds())
@@ -214,6 +218,18 @@ public class UserService {
             return null;
         }
         return (short) cohort.getValue();
+    }
+
+    private Map<Long, java.net.URI> resolveAvatarUrls(List<UserSearchItem> items) {
+        Map<Long, java.net.URI> urls = mediaUrlResolver.resolveAll(items.stream()
+                .map(UserSearchItem::avatarImageId)
+                .filter(Objects::nonNull)
+                .toList());
+        return urls == null ? Map.of() : urls;
+    }
+
+    private String toUrl(java.net.URI url) {
+        return url == null ? null : url.toString();
     }
 
     /**
