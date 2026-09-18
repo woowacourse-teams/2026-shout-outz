@@ -62,26 +62,26 @@ class ProjectViewRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("오늘 첫 조회면 기록을 남기고 조회수를 1 올린다")
+    @DisplayName("오늘 첫 조회면 기록을 남기고 조회수를 1 올린 뒤, 올린 조회수를 돌려준다")
     void recordsFirstViewOfDay() {
         long projectId = saveProject("APPROVED");
 
-        boolean recorded = projectViewRepository.record(projectId, VISITOR, TODAY, VIEWED_AT);
+        long viewCount = projectViewRepository.record(projectId, VISITOR, TODAY, VIEWED_AT);
 
-        assertThat(recorded).isTrue();
+        assertThat(viewCount).isEqualTo(1);
         assertThat(viewCount(projectId)).isEqualTo(1);
         assertThat(viewDayCount(projectId)).isEqualTo(1);
     }
 
     @Test
-    @DisplayName("같은 방문자가 같은 날 다시 조회하면 기록하지 않고 조회수도 그대로다")
+    @DisplayName("같은 방문자가 같은 날 다시 조회하면 기록하지 않고, 현재 조회수를 그대로 돌려준다")
     void ignoresRepeatedViewOnSameDay() {
         long projectId = saveProject("APPROVED");
         projectViewRepository.record(projectId, VISITOR, TODAY, VIEWED_AT);
 
-        boolean recorded = projectViewRepository.record(projectId, VISITOR, TODAY, VIEWED_AT.plusSeconds(3600));
+        long viewCount = projectViewRepository.record(projectId, VISITOR, TODAY, VIEWED_AT.plusSeconds(3600));
 
-        assertThat(recorded).isFalse();
+        assertThat(viewCount).isEqualTo(1);
         assertThat(viewCount(projectId)).isEqualTo(1);
         assertThat(viewDayCount(projectId)).isEqualTo(1);
     }
@@ -92,11 +92,11 @@ class ProjectViewRepositoryIntegrationTest {
         long projectId = saveProject("APPROVED");
         projectViewRepository.record(projectId, VISITOR, TODAY, VIEWED_AT);
 
-        boolean recorded = projectViewRepository.record(
+        long viewCount = projectViewRepository.record(
                 projectId, VISITOR, TODAY.plusDays(1), VIEWED_AT.plusSeconds(86_400)
         );
 
-        assertThat(recorded).isTrue();
+        assertThat(viewCount).isEqualTo(2);
         assertThat(viewCount(projectId)).isEqualTo(2);
     }
 
@@ -106,8 +106,9 @@ class ProjectViewRepositoryIntegrationTest {
         long projectId = saveProject("APPROVED");
 
         projectViewRepository.record(projectId, VISITOR, TODAY, VIEWED_AT);
-        projectViewRepository.record(projectId, OTHER_VISITOR, TODAY, VIEWED_AT);
+        long viewCount = projectViewRepository.record(projectId, OTHER_VISITOR, TODAY, VIEWED_AT);
 
+        assertThat(viewCount).isEqualTo(2);
         assertThat(viewCount(projectId)).isEqualTo(2);
     }
 
@@ -122,6 +123,19 @@ class ProjectViewRepositoryIntegrationTest {
 
         assertThat(viewCount(projectId)).isEqualTo(1);
         assertThat(viewCount(otherProjectId)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("기존 조회수에 이어서 올리고, 재조회면 올리지 않은 현재 값을 돌려준다")
+    void returnsViewCountBasedOnExistingCount() {
+        long projectId = saveProject("APPROVED");
+        jdbcTemplate.update("UPDATE projects SET view_count = 128 WHERE id = ?", projectId);
+
+        long firstViewCount = projectViewRepository.record(projectId, VISITOR, TODAY, VIEWED_AT);
+        long repeatedViewCount = projectViewRepository.record(projectId, VISITOR, TODAY, VIEWED_AT);
+
+        assertThat(firstViewCount).isEqualTo(129);
+        assertThat(repeatedViewCount).isEqualTo(129);
     }
 
     @Test

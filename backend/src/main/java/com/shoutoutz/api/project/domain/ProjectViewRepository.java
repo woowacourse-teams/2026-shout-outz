@@ -16,7 +16,7 @@ public interface ProjectViewRepository {
 
     /**
      * 같은 날 같은 방문자의 첫 조회일 때만 기록하고 조회수를 1 올린다.
-     * 새로 기록했으면 true, 이미 기록돼 있었으면 false 다.
+     * 이번 조회를 반영한 조회수를 돌려준다. 이미 기록돼 있었으면 현재 조회수 그대로다.
      */
-    boolean record(long projectId, VisitorKey visitorKey, LocalDate viewedOn, Instant viewedAt);
+    long record(long projectId, VisitorKey visitorKey, LocalDate viewedOn, Instant viewedAt);
 }

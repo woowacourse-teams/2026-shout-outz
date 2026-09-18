@@ -39,29 +39,39 @@ public class ProjectViewRepositoryImpl implements ProjectViewRepository {
     }
 
     /**
-     * 기록과 조회수 증가를 한 문장으로 처리한다.
+     * 기록, 조회수 증가, 조회수 조회를 한 문장으로 처리한다.
      * 같은 방문자의 요청이 동시에 들어와도 기본 키 충돌로 한 건만 INSERT 되고, 조회수도 그 한 번만 오른다.
+     * 한 문장 안의 SELECT 는 같은 문장의 UPDATE 이전 값을 보므로, 올린 값(updated)을 먼저 쓰고
+     * 이미 기록돼 있어 올리지 않았을 때만 현재 값을 쓴다.
      */
     @Override
-    public boolean record(long projectId, VisitorKey visitorKey, LocalDate viewedOn, Instant viewedAt) {
-        int updatedRows = jdbcTemplate.update(
+    public long record(long projectId, VisitorKey visitorKey, LocalDate viewedOn, Instant viewedAt) {
+        Long viewCount = jdbcTemplate.queryForObject(
                 """
                         WITH recorded AS (
                             INSERT INTO project_view_days (project_id, visitor_key_hash, viewed_on, first_seen_at)
                             VALUES (:projectId, :visitorKeyHash, :viewedOn, :viewedAt)
                             ON CONFLICT (project_id, visitor_key_hash, viewed_on) DO NOTHING
                             RETURNING project_id
+                        ),
+                        updated AS (
+                            UPDATE projects
+                            SET view_count = view_count + 1
+                            WHERE id IN (SELECT project_id FROM recorded)
+                            RETURNING view_count
                         )
-                        UPDATE projects
-                        SET view_count = view_count + 1
-                        WHERE id IN (SELECT project_id FROM recorded)
+                        SELECT COALESCE(
+                            (SELECT view_count FROM updated),
+                            (SELECT view_count FROM projects WHERE id = :projectId)
+                        )
                         """,
                 new MapSqlParameterSource()
                         .addValue("projectId", projectId)
                         .addValue("visitorKeyHash", visitorKey.hash())
                         .addValue("viewedOn", viewedOn)
-                        .addValue("viewedAt", Timestamp.from(viewedAt))
+                        .addValue("viewedAt", Timestamp.from(viewedAt)),
+                Long.class
         );
-        return updatedRows == 1;
+        return viewCount;
     }
 }

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectViewRepository;
+import com.shoutoutz.api.project.presentation.dto.response.ProjectViewRecordResponse;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
 import java.time.Clock;
 import java.time.Instant;
@@ -34,14 +35,16 @@ class ProjectViewServiceTest {
     private ProjectViewRepository projectViewRepository;
 
     @Test
-    @DisplayName("조회할 수 있는 프로젝트면 현재 시각과 한국 날짜로 조회를 기록한다")
+    @DisplayName("조회할 수 있는 프로젝트면 현재 시각과 한국 날짜로 조회를 기록하고, 기록 후 조회수를 반환한다")
     void recordsView() {
         Instant now = Instant.parse("2026-09-18T01:00:00Z");
         given(projectViewRepository.existsViewableProject(PROJECT_ID)).willReturn(true);
+        given(projectViewRepository.record(PROJECT_ID, VISITOR, LocalDate.parse("2026-09-18"), now))
+                .willReturn(129L);
 
-        service(now).record(PROJECT_ID, VISITOR);
+        ProjectViewRecordResponse response = service(now).record(PROJECT_ID, VISITOR);
 
-        verify(projectViewRepository).record(PROJECT_ID, VISITOR, LocalDate.parse("2026-09-18"), now);
+        assertThat(response).isEqualTo(new ProjectViewRecordResponse(129));
     }
 
     @ParameterizedTest
@@ -61,16 +64,16 @@ class ProjectViewServiceTest {
     }
 
     @Test
-    @DisplayName("같은 날 이미 기록된 조회여도 예외 없이 끝난다")
-    void ignoresAlreadyRecordedView() {
+    @DisplayName("같은 날 이미 기록된 조회여도 예외 없이 현재 조회수를 반환한다")
+    void returnsCurrentViewCountForAlreadyRecordedView() {
         Instant now = Instant.parse("2026-09-18T01:00:00Z");
         given(projectViewRepository.existsViewableProject(PROJECT_ID)).willReturn(true);
         given(projectViewRepository.record(PROJECT_ID, VISITOR, LocalDate.parse("2026-09-18"), now))
-                .willReturn(false);
+                .willReturn(128L);
 
-        service(now).record(PROJECT_ID, VISITOR);
+        ProjectViewRecordResponse response = service(now).record(PROJECT_ID, VISITOR);
 
-        verify(projectViewRepository).record(PROJECT_ID, VISITOR, LocalDate.parse("2026-09-18"), now);
+        assertThat(response.viewCount()).isEqualTo(128);
     }
 
     @Test
