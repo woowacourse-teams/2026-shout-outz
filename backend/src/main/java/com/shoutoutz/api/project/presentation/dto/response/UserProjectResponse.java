@@ -5,7 +5,9 @@ import com.shoutoutz.api.project.application.dto.UserProjectItem;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.user.domain.profile.Track;
+import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 사용자 페이지의 프로젝트 카드 응답.
@@ -18,20 +20,26 @@ public record UserProjectResponse(
         String tagline,
         int cohort,
         ServiceStatus serviceStatus,
-        Long thumbnailMediaId,
+        String thumbnailUrl,
         long likeCount,
         long commentCount,
         List<ProjectTechTagResponse> techTags,
         List<Member> members
 ) {
 
-    public static List<UserProjectResponse> from(List<UserProjectItem> projects) {
+    public static List<UserProjectResponse> from(
+            List<UserProjectItem> projects,
+            Map<Long, URI> mediaUrls
+    ) {
         return projects.stream()
-                .map(UserProjectResponse::from)
+                .map(project -> from(project, mediaUrls))
                 .toList();
     }
 
-    private static UserProjectResponse from(UserProjectItem project) {
+    private static UserProjectResponse from(
+            UserProjectItem project,
+            Map<Long, URI> mediaUrls
+    ) {
         return new UserProjectResponse(
                 project.id(),
                 project.slug(),
@@ -40,11 +48,11 @@ public record UserProjectResponse(
                 project.tagline(),
                 project.cohort(),
                 project.serviceStatus(),
-                project.thumbnailMediaId(),
+                toUrl(mediaUrls, project.thumbnailMediaId()),
                 project.likeCount(),
                 project.commentCount(),
                 project.techTags().stream().map(ProjectTechTagResponse::from).toList(),
-                project.members().stream().map(Member::from).toList()
+                project.members().stream().map(member -> Member.from(member, mediaUrls)).toList()
         );
     }
 
@@ -53,18 +61,21 @@ public record UserProjectResponse(
             String displayName,
             Integer cohort,
             String track,
-            Long avatarImageId,
+            String avatarUrl,
             String githubAvatarUrl,
             String githubProfileUrl
     ) {
 
-        private static Member from(ProjectMemberProfile member) {
+        private static Member from(
+                ProjectMemberProfile member,
+                Map<Long, URI> mediaUrls
+        ) {
             return new Member(
                     member.handle(),
                     member.displayName(),
                     cohortValue(member.cohort()),
                     trackValue(member.track()),
-                    member.avatarImageId(),
+                    toUrl(mediaUrls, member.avatarImageId()),
                     member.githubAvatarUrl(),
                     member.githubProfileUrl()
             );
@@ -83,5 +94,13 @@ public record UserProjectResponse(
             }
             return track.getValue();
         }
+    }
+
+    private static String toUrl(Map<Long, URI> mediaUrls, Long mediaId) {
+        if (mediaId == null || mediaUrls == null) {
+            return null;
+        }
+        URI url = mediaUrls.get(mediaId);
+        return url == null ? null : url.toString();
     }
 }

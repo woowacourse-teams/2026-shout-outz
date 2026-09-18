@@ -74,7 +74,6 @@ public class S3MediaImageProcessor implements MediaImageProcessor {
                     format,
                     "썸네일 이미지 생성에 실패했습니다."
             );
-
             s3MediaStorage.putObject(sourceKey, sanitizedOriginal, format.mimeType());
             s3MediaStorage.putObject(displayKey, display, format.mimeType());
             s3MediaStorage.putObject(thumbnailKey, thumbnail, format.mimeType());

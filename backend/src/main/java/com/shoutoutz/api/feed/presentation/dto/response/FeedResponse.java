@@ -5,8 +5,10 @@ import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 public record FeedResponse(
         long feedId,
@@ -15,23 +17,32 @@ public record FeedResponse(
         List<Category> categories,
         List<Media> media,
         Instant createdAt,
-        Instant updatedAt
+    Instant updatedAt
 ) {
     public static FeedResponse from(FeedItem feed) {
+        return from(feed, Map.of());
+    }
+
+    public static FeedResponse from(FeedItem feed, Map<Long, URI> mediaUrls) {
+        Map<Long, URI> urls = mediaUrls == null ? Map.of() : mediaUrls;
         return new FeedResponse(
                 feed.feedId(),
                 feed.content(),
-                Author.from(feed.author()),
+                Author.from(feed.author(), urls),
                 feed.categories().stream().map(Category::from).toList(),
-                feed.media().stream().map(Media::from).toList(),
+                feed.media().stream().map(media -> Media.from(media, urls)).toList(),
                 feed.createdAt(),
                 feed.updatedAt()
         );
     }
 
     public static List<FeedResponse> from(List<FeedItem> feeds) {
+        return from(feeds, Map.of());
+    }
+
+    public static List<FeedResponse> from(List<FeedItem> feeds, Map<Long, URI> mediaUrls) {
         return feeds.stream()
-                .map(FeedResponse::from)
+                .map(feed -> from(feed, mediaUrls))
                 .toList();
     }
 
@@ -41,16 +52,16 @@ public record FeedResponse(
             UserType userType,
             String track,
             Short cohort,
-            Long avatarImageId
+            String avatarUrl
     ) {
-        private static Author from(FeedItem.Author author) {
+        private static Author from(FeedItem.Author author, Map<Long, URI> mediaUrls) {
             return new Author(
                     author.handle(),
                     author.displayName(),
                     author.userType(),
                     trackValue(author.track()),
                     cohortValue(author.cohort()),
-                    author.avatarImageId()
+                    toUrl(findUrl(mediaUrls, author.avatarImageId()))
             );
         }
 
@@ -85,9 +96,17 @@ public record FeedResponse(
         }
     }
 
-    public record Media(long mediaId, int displayOrder) {
-        private static Media from(FeedItem.Media media) {
-            return new Media(media.mediaId(), media.displayOrder());
+    public record Media(String url, int displayOrder) {
+        private static Media from(FeedItem.Media media, Map<Long, URI> mediaUrls) {
+            return new Media(toUrl(findUrl(mediaUrls, media.mediaId())), media.displayOrder());
         }
+    }
+
+    private static URI findUrl(Map<Long, URI> mediaUrls, Long mediaId) {
+        return mediaId == null ? null : mediaUrls.get(mediaId);
+    }
+
+    private static String toUrl(URI url) {
+        return url == null ? null : url.toString();
     }
 }

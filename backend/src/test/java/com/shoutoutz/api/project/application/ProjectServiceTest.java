@@ -19,10 +19,12 @@ import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.application.dto.UserProjectItem;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
@@ -81,11 +83,13 @@ import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
@@ -132,6 +136,9 @@ class ProjectServiceTest {
     @Mock
     private UserProjectQueryRepository userProjectQueryRepository;
 
+    @Mock
+    private MediaUrlResolver mediaUrlResolver;
+
     private ProjectService projectService;
 
     @BeforeEach
@@ -144,6 +151,7 @@ class ProjectServiceTest {
                 userRepository,
                 projectDeletionRepository,
                 userProjectQueryRepository,
+                mediaUrlResolver,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -511,6 +519,16 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("본문 이미지가 media 참조가 아니면 외부 URL을 저장하지 않는다.")
+    void rejectsUnsupportedDescriptionImageReference() {
+        givenValidProjectExceptMembers();
+        String descriptionMd = "![외부 이미지](https://external.example.com/image.png)";
+        when(mediaUrlResolver.containsUnsupportedDescriptionImageReference(descriptionMd)).thenReturn(true);
+
+        assertInvalidDescriptionMedia(descriptionMd, ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA);
+    }
+
+    @Test
     @DisplayName("본문이 다른 사용자의 이미지를 참조하면 없는 이미지와 같은 400을 던진다.")
     void rejectsOthersDescriptionMedia() {
         givenValidProjectExceptMembers();
@@ -572,6 +590,7 @@ class ProjectServiceTest {
         assertThat(response.meta().totalCount()).isEqualTo(48);
         assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.POPULAR))
                 .isEqualTo(ProjectCursor.popular(3L, NOW.minusSeconds(60), 9L));
+        verify(mediaUrlResolver).resolveAll(any(), eq(MediaVariant.THUMBNAIL));
     }
 
     @Test
@@ -597,6 +616,11 @@ class ProjectServiceTest {
         when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.of(user));
         when(userProjectQueryRepository.findAllByUserId(REGISTERED_BY, cursor, 20))
                 .thenReturn(new UserProjectResult(List.of(project), true));
+        when(mediaUrlResolver.resolveAll(any(), eq(MediaVariant.THUMBNAIL)))
+                .thenReturn(Map.of(
+                        THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail"),
+                        21L, URI.create("https://cdn.example.com/avatar-21")
+                ));
 
         UserProjectResult response = projectService.findAllByUser(
                 MEMBER_HANDLE,
@@ -606,6 +630,10 @@ class ProjectServiceTest {
         assertThat(response.projects()).extracting(UserProjectItem::id).containsExactly(9L);
         assertThat(response.hasNext()).isTrue();
         assertThat(response.nextCursor()).isEqualTo(ProjectCursor.latest(NOW.minusSeconds(60), 9L));
+        assertThat(response.mediaUrls())
+                .containsEntry(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail"))
+                .containsEntry(21L, URI.create("https://cdn.example.com/avatar-21"))
+                .hasSize(2);
         verify(userProjectQueryRepository).findAllByUserId(REGISTERED_BY, cursor, 20);
     }
 
@@ -719,12 +747,19 @@ class ProjectServiceTest {
                 "한 줄 소개",
                 6,
                 ServiceStatus.OPERATING,
-                null,
+                THUMBNAIL_ID,
                 REGISTERED_BY,
                 likeCount,
                 0L,
                 List.of(),
-                List.of(),
+                List.of(ProjectMemberProfile.user(
+                        MEMBER_ID,
+                        MEMBER_HANDLE,
+                        "재키",
+                        Cohort.COHORT_6,
+                        Track.BACKEND,
+                        21L
+                )),
                 createdAt
         );
     }
@@ -929,6 +964,123 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("수정 요청에서 썸네일 필드를 생략하면 기존 썸네일을 유지한다.")
+    void keepsExistingThumbnailWhenUpdateOmitsThumbnail() {
+        Project existing = existingProject(ApprovalStatus.APPROVED, THUMBNAIL_ID);
+        givenValidProjectUpdate(existing);
+
+        projectService.update(PROJECT_ID, REGISTERED_BY, updateRequestWithoutThumbnail());
+
+        ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
+        verify(projectRepository).update(projectCaptor.capture(), eq(TECH_TAG_IDS), anyList());
+        assertThat(projectCaptor.getValue().getThumbnailMediaId()).isEqualTo(THUMBNAIL_ID);
+        verifyNoInteractions(mediaMetadataRepository);
+    }
+
+    @Test
+    @DisplayName("수정 요청에서 썸네일에 null을 명시하면 기존 썸네일을 제거한다.")
+    void removesExistingThumbnailWhenUpdateSetsThumbnailToNull() {
+        Project existing = existingProject(ApprovalStatus.APPROVED, THUMBNAIL_ID);
+        givenValidProjectUpdate(existing);
+
+        projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest());
+
+        ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
+        verify(projectRepository).update(projectCaptor.capture(), eq(TECH_TAG_IDS), anyList());
+        assertThat(projectCaptor.getValue().getThumbnailMediaId()).isNull();
+        verifyNoInteractions(mediaMetadataRepository);
+    }
+
+    @Test
+    @DisplayName("수정 요청에 새로운 썸네일 ID를 보내면 썸네일을 교체한다.")
+    void replacesExistingThumbnailWhenUpdateSendsThumbnailId() {
+        long newThumbnailId = 13L;
+        Project existing = existingProject(ApprovalStatus.APPROVED, THUMBNAIL_ID);
+        givenValidProjectUpdate(existing);
+        when(mediaMetadataRepository.findById(newThumbnailId))
+                .thenReturn(Optional.of(media(
+                        newThumbnailId,
+                        REGISTERED_BY,
+                        MediaPurpose.PROJECT_THUMBNAIL,
+                        MediaStatus.READY
+                )));
+
+        projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest(newThumbnailId));
+
+        ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
+        verify(projectRepository).update(projectCaptor.capture(), eq(TECH_TAG_IDS), anyList());
+        assertThat(projectCaptor.getValue().getThumbnailMediaId()).isEqualTo(newThumbnailId);
+    }
+
+    @Test
+    @DisplayName("상세 조회에서 받은 본문 이미지 CDN URL을 수정할 때 media 참조로 되돌려 저장한다.")
+    void normalizesDescriptionCdnUrlsBeforeUpdate() {
+        long descriptionMediaId = 21L;
+        String descriptionUrl = "https://cdn.example.com/media/project-description/object-21/display";
+        Project existing = existingProject(
+                ApprovalStatus.APPROVED,
+                THUMBNAIL_ID,
+                "![화면](media://" + descriptionMediaId + ")"
+        );
+        givenValidProjectUpdate(existing);
+        when(mediaUrlResolver.resolveAll(List.of(descriptionMediaId)))
+                .thenReturn(Map.of(descriptionMediaId, URI.create(descriptionUrl)));
+        when(mediaUrlResolver.replaceDescriptionUrlsWithReferences(
+                "![화면](" + descriptionUrl + ")",
+                Map.of(descriptionMediaId, URI.create(descriptionUrl))
+        )).thenReturn("![화면](media://" + descriptionMediaId + ")");
+        when(mediaMetadataRepository.findById(descriptionMediaId))
+                .thenReturn(Optional.of(media(
+                        descriptionMediaId,
+                        REGISTERED_BY,
+                        MediaPurpose.PROJECT_DESCRIPTION,
+                        MediaStatus.READY
+                )));
+
+        projectService.update(
+                PROJECT_ID,
+                REGISTERED_BY,
+                updateRequestWithDescription("![화면](" + descriptionUrl + ")")
+        );
+
+        ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
+        verify(projectRepository).update(projectCaptor.capture(), eq(TECH_TAG_IDS), anyList());
+        assertThat(projectCaptor.getValue().getDescriptionMd())
+                .isEqualTo("![화면](media://" + descriptionMediaId + ")");
+    }
+
+    @Test
+    @DisplayName("상세 조회 응답과 매칭되지 않는 본문 이미지 URL은 저장하지 않는다.")
+    void rejectsUnmatchedDescriptionImageUrlBeforeUpdate() {
+        Project existing = existingProject(
+                ApprovalStatus.APPROVED,
+                THUMBNAIL_ID,
+                "![화면](media://21)"
+        );
+        String descriptionMd = "![화면](https://external.example.com/image.png)";
+        givenOwnedProject(existing);
+        when(mediaUrlResolver.resolveAll(List.of(21L)))
+                .thenReturn(Map.of(21L, URI.create("https://cdn.example.com/media/project-description/object-21/display")));
+        when(mediaUrlResolver.replaceDescriptionUrlsWithReferences(descriptionMd, Map.of(
+                21L,
+                URI.create("https://cdn.example.com/media/project-description/object-21/display")
+        ))).thenReturn(descriptionMd);
+        when(mediaUrlResolver.containsUnsupportedDescriptionImageReference(descriptionMd)).thenReturn(true);
+
+        assertThatThrownBy(() -> projectService.update(
+                PROJECT_ID,
+                REGISTERED_BY,
+                updateRequestWithDescription(descriptionMd)
+        )).isInstanceOfSatisfying(
+                InvalidDescriptionMediaException.class,
+                error -> assertThat(error.getErrorCode())
+                        .isEqualTo(ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA)
+        );
+
+        verify(projectRepository, never()).update(any(Project.class), eq(TECH_TAG_IDS), anyList());
+    }
+
+    @Test
     @DisplayName("없는 프로젝트를 수정하면 404를 던진다.")
     void rejectsUpdateOfMissingProject() {
         when(projectRepository.findActiveById(PROJECT_ID)).thenReturn(Optional.empty());
@@ -1027,7 +1179,29 @@ class ProjectServiceTest {
         when(projectRepository.findActiveById(PROJECT_ID)).thenReturn(Optional.of(project));
     }
 
+    private void givenValidProjectUpdate(Project project) {
+        givenOwnedProject(project);
+        givenMemberAccount(MEMBER_HANDLE, MEMBER_ID, UserStatus.ACTIVE);
+        when(userProfileRepository.findByUserId(MEMBER_ID))
+                .thenReturn(Optional.of(profile(MEMBER_ID, UserType.WOOWACOURSE_CREW)));
+        when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
+        when(projectRepository.update(any(Project.class), eq(TECH_TAG_IDS), anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
     private static Project existingProject(ApprovalStatus approvalStatus) {
+        return existingProject(approvalStatus, null);
+    }
+
+    private static Project existingProject(ApprovalStatus approvalStatus, Long thumbnailMediaId) {
+        return existingProject(approvalStatus, thumbnailMediaId, null);
+    }
+
+    private static Project existingProject(
+            ApprovalStatus approvalStatus,
+            Long thumbnailMediaId,
+            String descriptionMd
+    ) {
         return Project.builder()
                 .id(PROJECT_ID)
                 .cohort(Cohort.COHORT_6)
@@ -1036,14 +1210,63 @@ class ProjectServiceTest {
                 .slug(new Slug("loop"))
                 .title(new Title("루프 (Loop)"))
                 .tagline("한 줄 소개")
+                .descriptionMd(descriptionMd)
                 .serviceStatus(ServiceStatus.CLOSED)
                 .approvalStatus(approvalStatus)
                 .githubRepositoryUrl(GITHUB_REPOSITORY_URL)
+                .thumbnailMediaId(thumbnailMediaId)
                 .build();
     }
 
     private static ProjectUpdateRequest updateRequest() {
         return updateRequest("https://loop.team", ServiceStatus.OPERATING);
+    }
+
+    private static ProjectUpdateRequest updateRequest(long thumbnailImageId) {
+        return new ProjectUpdateRequest(
+                "루프 (Loop)",
+                "루프팀",
+                "바뀐 한 줄 소개",
+                6,
+                thumbnailImageId,
+                GITHUB_REPOSITORY_URL.value(),
+                "https://loop.team",
+                DESCRIPTION,
+                ServiceStatus.OPERATING,
+                TECH_TAG_IDS,
+                List.of(MEMBER_HANDLE)
+        );
+    }
+
+    private static ProjectUpdateRequest updateRequestWithDescription(String descriptionMd) {
+        return new ProjectUpdateRequest(
+                "루프 (Loop)",
+                "루프팀",
+                "바뀐 한 줄 소개",
+                6,
+                null,
+                GITHUB_REPOSITORY_URL.value(),
+                "https://loop.team",
+                descriptionMd,
+                ServiceStatus.OPERATING,
+                TECH_TAG_IDS,
+                List.of(MEMBER_HANDLE)
+        );
+    }
+
+    private static ProjectUpdateRequest updateRequestWithoutThumbnail() {
+        ProjectUpdateRequest request = new ProjectUpdateRequest();
+        request.setTitle("루프 (Loop)");
+        request.setTeamName("루프팀");
+        request.setTagline("바뀐 한 줄 소개");
+        request.setCohort(6);
+        request.setGithubRepositoryUrl(GITHUB_REPOSITORY_URL.value());
+        request.setDeploymentUrl("https://loop.team");
+        request.setDescriptionMd(DESCRIPTION);
+        request.setServiceStatus(ServiceStatus.OPERATING);
+        request.setTechTagIds(TECH_TAG_IDS);
+        request.setMemberHandles(List.of(MEMBER_HANDLE));
+        return request;
     }
 
     private static ProjectUpdateRequest updateRequest(String deploymentUrl, ServiceStatus serviceStatus) {

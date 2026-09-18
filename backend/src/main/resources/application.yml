@@ -23,6 +23,8 @@ aws:
     region: ${AWS_REGION}
     key-prefix: ${AWS_S3_KEY_PREFIX}
     presigned-url-expiration-seconds: ${AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS}
+  cloudfront:
+    public-base-url: ${AWS_CLOUDFRONT_PUBLIC_BASE_URL}
 
 github:
   oauth:

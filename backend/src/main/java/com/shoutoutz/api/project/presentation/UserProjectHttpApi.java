@@ -41,7 +41,10 @@ public class UserProjectHttpApi {
             @Valid @ModelAttribute UserProjectFindRequest request
     ) {
         UserProjectResult result = projectService.findAllByUser(handle, request);
-        List<UserProjectResponse> response = UserProjectResponse.from(result.projects());
+        List<UserProjectResponse> response = UserProjectResponse.from(
+                result.projects(),
+                result.mediaUrls()
+        );
         SliceMetaResponse meta = new SliceMetaResponse(encodeNextCursor(result.nextCursor()), result.hasNext());
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));

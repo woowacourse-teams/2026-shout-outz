@@ -35,8 +35,10 @@ import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
 import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.profile.Track;
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,7 +70,14 @@ class UserProjectHttpApiTest {
     @DisplayName("로그인하지 않아도 사용자가 참여한 프로젝트를 조회한다.")
     void findsUserProjects() throws Exception {
         given(projectService.findAllByUser("zzaekkii", new UserProjectFindRequest(20, null)))
-                .willReturn(new UserProjectResult(List.of(project()), true));
+                .willReturn(new UserProjectResult(
+                        List.of(project()),
+                        true,
+                        Map.of(
+                                12L, URI.create("https://cdn.example.com/thumbnail"),
+                                21L, URI.create("https://cdn.example.com/avatar-21")
+                        )
+                ));
 
         mockMvc.perform(get("/api/v1/users/{handle}/projects", "zzaekkii")
                         .queryParam("size", "20"))
@@ -76,8 +85,14 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data[0].id").value(100))
                 .andExpect(jsonPath("$.data[0].title").value("루프"))
+                .andExpect(jsonPath("$.data[0].thumbnailUrl")
+                        .value("https://cdn.example.com/thumbnail"))
+                .andExpect(jsonPath("$.data[0].thumbnailMediaId").doesNotExist())
                 .andExpect(jsonPath("$.data[0].techTags[0].displayName").value("Spring"))
                 .andExpect(jsonPath("$.data[0].members[0].handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data[0].members[0].avatarUrl")
+                        .value("https://cdn.example.com/avatar-21"))
+                .andExpect(jsonPath("$.data[0].members[0].avatarImageId").doesNotExist())
                 .andExpect(jsonPath("$.data[0].members[0].userId").doesNotExist())
                 .andExpect(jsonPath("$.meta.nextCursor").value(ProjectCursorCodec.encode(
                         ProjectCursor.latest(CREATED_AT, 100L))))
@@ -201,7 +216,7 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].tagline").type(STRING).description("한 줄 소개"),
                 fieldWithPath("data[].cohort").type(NUMBER).description("우아한테크코스 기수"),
                 fieldWithPath("data[].serviceStatus").type(STRING).description("운영 상태 (OPERATING, CLOSED)"),
-                fieldWithPath("data[].thumbnailMediaId").type(NUMBER).description("썸네일 미디어 ID").optional(),
+                fieldWithPath("data[].thumbnailUrl").type(STRING).description("CloudFront에서 제공하는 공개 썸네일 URL").optional(),
                 fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"),
                 fieldWithPath("data[].commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"),
                 fieldWithPath("data[].techTags").type(ARRAY).description("기술 스택"),
@@ -212,7 +227,7 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].members[].displayName").type(STRING).description("표시 이름"),
                 fieldWithPath("data[].members[].cohort").type(NUMBER).description("기수").optional(),
                 fieldWithPath("data[].members[].track").type(STRING).description("트랙").optional(),
-                fieldWithPath("data[].members[].avatarImageId").type(NUMBER).description("프로필 이미지 ID").optional(),
+                fieldWithPath("data[].members[].avatarUrl").type(STRING).description("CloudFront에서 제공하는 공개 프로필 이미지 URL").optional(),
                 fieldWithPath("data[].members[].githubAvatarUrl").type(STRING)
                         .description("이관 팀원의 GitHub 프로필 이미지 URL").optional(),
                 fieldWithPath("data[].members[].githubProfileUrl").type(STRING)
