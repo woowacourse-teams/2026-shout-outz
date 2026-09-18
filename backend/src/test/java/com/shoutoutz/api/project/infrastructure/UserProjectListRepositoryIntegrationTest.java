@@ -4,7 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.project.application.UserProjectQueryRepository;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
-import com.shoutoutz.api.project.domain.ProjectSummary;
+import com.shoutoutz.api.project.application.dto.UserProjectItem;
+import com.shoutoutz.api.project.domain.ServiceStatus;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -54,6 +55,9 @@ class UserProjectListRepositoryIntegrationTest {
         assertThat(ids(result)).containsExactly(registered, archived);
         assertThat(result.hasNext()).isFalse();
         assertThat(result.projects()).allSatisfy(project -> {
+            assertThat(project.teamName()).isEqualTo("팀");
+            assertThat(project.serviceStatus()).isEqualTo(ServiceStatus.OPERATING);
+            assertThat(project.starCount()).isEqualTo(128);
             assertThat(project.techTags()).isNotNull();
             assertThat(project.members()).isNotNull();
         });
@@ -108,9 +112,9 @@ class UserProjectListRepositoryIntegrationTest {
                 """
                         INSERT INTO projects (
                             cohort, registered_by, team_name, slug, title, tagline,
-                            github_repository_url, service_status, approval_status, created_at, deleted_at
+                            github_repository_url, service_status, approval_status, star_count, created_at, deleted_at
                         )
-                        VALUES (?, ?, '팀', ?, ?, '한 줄 소개', ?, 'OPERATING', ?, ?, ?)
+                        VALUES (?, ?, '팀', ?, ?, '한 줄 소개', ?, 'OPERATING', ?, 128, ?, ?)
                         RETURNING id
                         """,
                 Long.class,
@@ -149,6 +153,6 @@ class UserProjectListRepositoryIntegrationTest {
     }
 
     private static List<Long> ids(UserProjectResult result) {
-        return result.projects().stream().map(ProjectSummary::id).toList();
+        return result.projects().stream().map(UserProjectItem::id).toList();
     }
 }

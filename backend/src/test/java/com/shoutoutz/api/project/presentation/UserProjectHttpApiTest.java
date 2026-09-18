@@ -20,18 +20,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
-import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
+import com.shoutoutz.api.project.application.ProjectCursorCodec;
 import com.shoutoutz.api.project.application.ProjectService;
+import com.shoutoutz.api.project.application.dto.UserProjectItem;
+import com.shoutoutz.api.project.application.dto.UserProjectResult;
+import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.domain.ProjectMemberProfile;
+import com.shoutoutz.api.project.domain.ServiceStatus;
+import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
 import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
-import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
-import com.shoutoutz.api.project.presentation.dto.response.ProjectMemberProfileResponse;
-import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagResponse;
-import com.shoutoutz.api.project.presentation.dto.response.UserProjectFindResponse;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
+import com.shoutoutz.api.user.domain.profile.Track;
+import java.net.URI;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +51,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest(controllers = UserProjectHttpApi.class)
 @AutoConfigureRestDocs
 class UserProjectHttpApiTest {
+
+    private static final Instant CREATED_AT = Instant.parse("2026-09-16T00:00:00Z");
 
     private static final String SUMMARY = "사용자 프로젝트 목록 조회";
     private static final String DESCRIPTION = "handle로 사용자가 참여한 승인 프로젝트를 최신순으로 조회한다. "
@@ -61,9 +70,13 @@ class UserProjectHttpApiTest {
     @DisplayName("로그인하지 않아도 사용자가 참여한 프로젝트를 조회한다.")
     void findsUserProjects() throws Exception {
         given(projectService.findAllByUser("zzaekkii", new UserProjectFindRequest(20, null)))
-                .willReturn(new UserProjectFindResponse(
+                .willReturn(new UserProjectResult(
                         List.of(project()),
-                        new SliceMetaResponse("next-cursor", true)
+                        true,
+                        Map.of(
+                                12L, URI.create("https://cdn.example.com/thumbnail"),
+                                21L, URI.create("https://cdn.example.com/avatar-21")
+                        )
                 ));
 
         mockMvc.perform(get("/api/v1/users/{handle}/projects", "zzaekkii")
@@ -72,9 +85,18 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data[0].id").value(100))
                 .andExpect(jsonPath("$.data[0].title").value("루프"))
+                .andExpect(jsonPath("$.data[0].thumbnailUrl")
+                        .value("https://cdn.example.com/thumbnail"))
+                .andExpect(jsonPath("$.data[0].thumbnailMediaId").doesNotExist())
+                .andExpect(jsonPath("$.data[0].starCount").value(128))
                 .andExpect(jsonPath("$.data[0].techTags[0].displayName").value("Spring"))
                 .andExpect(jsonPath("$.data[0].members[0].handle").value("zzaekkii"))
-                .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
+                .andExpect(jsonPath("$.data[0].members[0].avatarUrl")
+                        .value("https://cdn.example.com/avatar-21"))
+                .andExpect(jsonPath("$.data[0].members[0].avatarImageId").doesNotExist())
+                .andExpect(jsonPath("$.data[0].members[0].userId").doesNotExist())
+                .andExpect(jsonPath("$.meta.nextCursor").value(ProjectCursorCodec.encode(
+                        ProjectCursor.latest(CREATED_AT, 100L))))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
                 .andExpect(jsonPath("$.meta.totalCount").doesNotExist())
                 .andDo(document(
@@ -107,7 +129,7 @@ class UserProjectHttpApiTest {
     @DisplayName("파라미터를 생략하면 기본 조회 조건을 사용한다.")
     void usesDefaultParameters() throws Exception {
         given(projectService.findAllByUser("zzaekkii", new UserProjectFindRequest(null, null)))
-                .willReturn(new UserProjectFindResponse(List.of(), new SliceMetaResponse(null, false)));
+                .willReturn(new UserProjectResult(List.of(), false));
 
         mockMvc.perform(get("/api/v1/users/{handle}/projects", "zzaekkii"))
                 .andExpect(status().isOk())
@@ -163,21 +185,25 @@ class UserProjectHttpApiTest {
                 .andDo(document("user-project-find-all-not-found", resource(errorResource())));
     }
 
-    private static ProjectFindAllResponse.Item project() {
-        return new ProjectFindAllResponse.Item(
+    private static UserProjectItem project() {
+        return new UserProjectItem(
                 100L,
                 "loop",
                 "루프",
+                "루프팀",
                 "스프린트 회고와 액션 아이템을 관리하는 협업 도구",
                 6,
-                "https://cdn.example.com/thumbnail",
+                ServiceStatus.OPERATING,
+                12L,
+                7L,
                 128,
                 184L,
                 14L,
-                List.of(new ProjectTechTagResponse(1L, "Spring")),
-                List.of(new ProjectMemberProfileResponse(
-                        7L, "zzaekkii", "재키", 6, "BACKEND", "https://cdn.example.com/avatar-21", null, null
-                ))
+                List.of(new ProjectTechTag(1L, "Spring")),
+                List.of(ProjectMemberProfile.user(
+                        7L, "zzaekkii", "재키", Cohort.COHORT_6, Track.BACKEND, 21L
+                )),
+                CREATED_AT
         );
     }
 
@@ -188,8 +214,10 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].id").type(NUMBER).description("프로젝트 ID"),
                 fieldWithPath("data[].slug").type(STRING).description("프로젝트 slug"),
                 fieldWithPath("data[].title").type(STRING).description("프로젝트 이름"),
+                fieldWithPath("data[].teamName").type(STRING).description("팀 이름"),
                 fieldWithPath("data[].tagline").type(STRING).description("한 줄 소개"),
                 fieldWithPath("data[].cohort").type(NUMBER).description("우아한테크코스 기수"),
+                fieldWithPath("data[].serviceStatus").type(STRING).description("운영 상태 (OPERATING, CLOSED)"),
                 fieldWithPath("data[].thumbnailUrl").type(STRING).description("CloudFront에서 제공하는 공개 썸네일 URL").optional(),
                 fieldWithPath("data[].starCount").type(NUMBER)
                         .description("GitHub star 수. 동기화 전이면 null이다.").optional(),
@@ -199,7 +227,6 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].techTags[].id").type(NUMBER).description("기술 스택 ID"),
                 fieldWithPath("data[].techTags[].displayName").type(STRING).description("기술 스택 이름"),
                 fieldWithPath("data[].members").type(ARRAY).description("프로젝트 팀원"),
-                fieldWithPath("data[].members[].userId").type(NUMBER).description("사용자 ID").optional(),
                 fieldWithPath("data[].members[].handle").type(STRING).description("사용자 handle").optional(),
                 fieldWithPath("data[].members[].displayName").type(STRING).description("표시 이름"),
                 fieldWithPath("data[].members[].cohort").type(NUMBER).description("기수").optional(),

@@ -125,6 +125,7 @@ class VisitorHttpApiTest {
                                 .tag("Visitor")
                                 .summary("방문자 생성")
                                 .description("방문자를 생성한다.")
+                                .requestSchema(Schema.schema("VisitorSaveRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())

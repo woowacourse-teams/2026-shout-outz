@@ -163,6 +163,9 @@ class FeedRepositoryIntegrationTest {
         saveFeed(otherId, "다른 사용자", base.plus(1, ChronoUnit.HOURS), categoryId);
         Feed deleted = saveFeed(authorId, "삭제", base.plus(2, ChronoUnit.HOURS), categoryId);
         feedRepository.update(deleted.delete(base.plus(3, ChronoUnit.HOURS)));
+        insertLike(latest.getId(), otherId);
+        insertComment(latest.getId(), otherId, false);
+        insertComment(latest.getId(), otherId, true);
 
         List<FeedItem> firstPage = feedQueryRepository.findAllByAuthorId(authorId, null, 2);
         FeedItem lastItem = firstPage.getLast();
@@ -174,6 +177,8 @@ class FeedRepositoryIntegrationTest {
 
         assertThat(firstPage).extracting(FeedItem::feedId)
                 .containsExactly(latest.getId(), middle.getId());
+        assertThat(firstPage.getFirst().likeCount()).isEqualTo(1L);
+        assertThat(firstPage.getFirst().commentCount()).isEqualTo(1L);
         assertThat(secondPage).extracting(FeedItem::feedId).containsExactly(oldest.getId());
     }
 
@@ -238,6 +243,18 @@ class FeedRepositoryIntegrationTest {
                         """,
                 feedId,
                 userId
+        );
+    }
+
+    private void insertComment(long feedId, long userId, boolean deleted) {
+        jdbcTemplate.update(
+                """
+                        INSERT INTO feed_comments (feed_id, author_id, content, deleted_at)
+                        VALUES (?, ?, '댓글', ?)
+                        """,
+                feedId,
+                userId,
+                deleted ? java.sql.Timestamp.from(Instant.parse("2026-09-11T01:00:00Z")) : null
         );
     }
 }
