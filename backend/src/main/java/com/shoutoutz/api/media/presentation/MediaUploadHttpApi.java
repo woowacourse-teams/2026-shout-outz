@@ -1,12 +1,13 @@
 package com.shoutoutz.api.media.presentation;
 
+import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
+import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.media.application.MediaUploadService;
 import com.shoutoutz.api.media.application.MediaUploadCompletionService;
 import com.shoutoutz.api.media.presentation.dto.request.MediaUploadStartRequest;
 import com.shoutoutz.api.media.presentation.dto.response.MediaUploadCompleteResponse;
 import com.shoutoutz.api.media.presentation.dto.response.MediaUploadStartResponse;
 import jakarta.validation.Valid;
-import java.security.Principal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * 미디어(이미지) 등록 API
@@ -34,32 +34,19 @@ public class MediaUploadHttpApi {
      */
     @PostMapping("/uploads")
     public ResponseEntity<MediaUploadStartResponse> startUpload(
-            @Valid @RequestBody MediaUploadStartRequest request,
-            Principal principal
+            @LoginUser AuthenticatedUser user,
+            @Valid @RequestBody MediaUploadStartRequest request
     ) {
-        long requesterId = requireRequesterId(principal);
-        MediaUploadStartResponse response = mediaUploadService.startUpload(requesterId, request);
+        MediaUploadStartResponse response = mediaUploadService.startUpload(user.userId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/{mediaId}/complete")
     public ResponseEntity<MediaUploadCompleteResponse> completeUpload(
             @PathVariable long mediaId,
-            Principal principal
+            @LoginUser AuthenticatedUser user
     ) {
-        long requesterId = requireRequesterId(principal);
-        MediaUploadCompleteResponse response = mediaUploadCompletionService.completeUpload(requesterId, mediaId);
+        MediaUploadCompleteResponse response = mediaUploadCompletionService.completeUpload(user.userId(), mediaId);
         return ResponseEntity.ok(response);
-    }
-
-    private static long requireRequesterId(Principal principal) {
-        if (principal == null || principal.getName() == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증된 사용자만 미디어를 업로드할 수 있습니다.");
-        }
-        try {
-            return Long.parseLong(principal.getName());
-        } catch (NumberFormatException exception) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 주체의 사용자 ID가 올바르지 않습니다.");
-        }
     }
 }
