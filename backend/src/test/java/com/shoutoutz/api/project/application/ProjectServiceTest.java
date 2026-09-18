@@ -91,6 +91,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -577,10 +578,14 @@ class ProjectServiceTest {
     @Test
     @DisplayName("다음 페이지가 있으면 이번 페이지 마지막 프로젝트의 위치를 다음 커서로 내려준다.")
     void returnsNextCursorOfLastProject() {
-        ProjectSummary first = summary(10L, 5L, NOW);
+        ProjectSummary first = summaryWithMedia(10L, 5L, NOW);
         ProjectSummary last = summary(9L, 3L, NOW.minusSeconds(60));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(first, last), true, 48));
+        when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL))
+                .thenReturn(Map.of(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail")));
+        when(mediaUrlResolver.resolveAll(Set.of(21L), MediaVariant.DISPLAY))
+                .thenReturn(Map.of(21L, URI.create("https://cdn.example.com/avatar-21")));
 
         ProjectFindAllResponse response = projectService.findAll(
                 new ProjectFindAllRequest(null, null, null, "POPULAR", 2, null));
@@ -590,7 +595,12 @@ class ProjectServiceTest {
         assertThat(response.meta().totalCount()).isEqualTo(48);
         assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.POPULAR))
                 .isEqualTo(ProjectCursor.popular(3L, NOW.minusSeconds(60), 9L));
-        verify(mediaUrlResolver).resolveAll(any(), eq(MediaVariant.THUMBNAIL));
+        assertThat(response.items().getFirst().thumbnailUrl())
+                .isEqualTo("https://cdn.example.com/thumbnail");
+        assertThat(response.items().getFirst().members().getFirst().avatarUrl())
+                .isEqualTo("https://cdn.example.com/avatar-21");
+        verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL);
+        verify(mediaUrlResolver).resolveAll(Set.of(21L), MediaVariant.DISPLAY);
     }
 
     @Test
@@ -616,11 +626,10 @@ class ProjectServiceTest {
         when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.of(user));
         when(userProjectQueryRepository.findAllByUserId(REGISTERED_BY, cursor, 20))
                 .thenReturn(new UserProjectResult(List.of(project), true));
-        when(mediaUrlResolver.resolveAll(any(), eq(MediaVariant.THUMBNAIL)))
-                .thenReturn(Map.of(
-                        THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail"),
-                        21L, URI.create("https://cdn.example.com/avatar-21")
-                ));
+        when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL))
+                .thenReturn(Map.of(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail")));
+        when(mediaUrlResolver.resolveAll(Set.of(21L), MediaVariant.DISPLAY))
+                .thenReturn(Map.of(21L, URI.create("https://cdn.example.com/avatar-21")));
 
         UserProjectResult response = projectService.findAllByUser(
                 MEMBER_HANDLE,
@@ -635,6 +644,8 @@ class ProjectServiceTest {
                 .containsEntry(21L, URI.create("https://cdn.example.com/avatar-21"))
                 .hasSize(2);
         verify(userProjectQueryRepository).findAllByUserId(REGISTERED_BY, cursor, 20);
+        verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL);
+        verify(mediaUrlResolver).resolveAll(Set.of(21L), MediaVariant.DISPLAY);
     }
 
     @Test
@@ -737,6 +748,31 @@ class ProjectServiceTest {
         return new ProjectSummary(
                 id, "loop-" + id, "루프", "한 줄 소개", 6, null, REGISTERED_BY, 128, likeCount, 0L,
                 List.of(), List.of(), createdAt);
+    }
+
+    private static ProjectSummary summaryWithMedia(long id, long likeCount, Instant createdAt) {
+        return new ProjectSummary(
+                id,
+                "loop-" + id,
+                "루프",
+                "한 줄 소개",
+                6,
+                THUMBNAIL_ID,
+                REGISTERED_BY,
+                128,
+                likeCount,
+                0L,
+                List.of(),
+                List.of(ProjectMemberProfile.user(
+                        MEMBER_ID,
+                        MEMBER_HANDLE,
+                        "재키",
+                        Cohort.COHORT_6,
+                        Track.BACKEND,
+                        21L
+                )),
+                createdAt
+        );
     }
 
     private static UserProjectItem userProjectItem(long id, long likeCount, Instant createdAt) {

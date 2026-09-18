@@ -43,6 +43,7 @@ import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectSearchCondition;
 import com.shoutoutz.api.project.domain.ProjectSort;
+import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.Slug;
@@ -73,6 +74,7 @@ import com.shoutoutz.api.user.domain.profile.UserType;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -179,7 +181,7 @@ public class ProjectService {
                 request.resolvedCursor()
         ));
         ProjectCursor nextCursor = page.nextCursor(sort);
-        Map<Long, URI> mediaUrls = resolveProjectMediaUrls(page.items(), MediaVariant.THUMBNAIL);
+        Map<Long, URI> mediaUrls = resolveProjectMediaUrls(page.items());
         return ProjectFindAllResponse.of(
                 page,
                 nextCursor == null ? null : ProjectCursorCodec.encode(nextCursor),
@@ -248,35 +250,45 @@ public class ProjectService {
         );
     }
 
-    private Map<Long, URI> resolveProjectMediaUrls(
-            List<com.shoutoutz.api.project.domain.ProjectSummary> projects,
-            MediaVariant variant
-    ) {
-        Set<Long> mediaIds = new HashSet<>();
+    private Map<Long, URI> resolveProjectMediaUrls(List<ProjectSummary> projects) {
+        Set<Long> thumbnailIds = new HashSet<>();
+        Set<Long> avatarIds = new HashSet<>();
         projects.forEach(project -> {
             if (project.thumbnailMediaId() != null) {
-                mediaIds.add(project.thumbnailMediaId());
+                thumbnailIds.add(project.thumbnailMediaId());
             }
             project.members().stream()
                     .map(ProjectMemberProfile::avatarImageId)
                     .filter(Objects::nonNull)
-                    .forEach(mediaIds::add);
+                    .forEach(avatarIds::add);
         });
-        return mediaUrlResolver.resolveAll(mediaIds, variant);
+        return resolveProjectListMediaUrls(thumbnailIds, avatarIds);
     }
 
     private Map<Long, URI> resolveUserProjectMediaUrls(List<UserProjectItem> projects) {
-        Set<Long> mediaIds = new HashSet<>();
+        Set<Long> thumbnailIds = new HashSet<>();
+        Set<Long> avatarIds = new HashSet<>();
         projects.forEach(project -> {
             if (project.thumbnailMediaId() != null) {
-                mediaIds.add(project.thumbnailMediaId());
+                thumbnailIds.add(project.thumbnailMediaId());
             }
             project.members().stream()
-                    .map(com.shoutoutz.api.project.domain.ProjectMemberProfile::avatarImageId)
-                    .filter(java.util.Objects::nonNull)
-                    .forEach(mediaIds::add);
+                    .map(ProjectMemberProfile::avatarImageId)
+                    .filter(Objects::nonNull)
+                    .forEach(avatarIds::add);
         });
-        return mediaUrlResolver.resolveAll(mediaIds, MediaVariant.THUMBNAIL);
+        return resolveProjectListMediaUrls(thumbnailIds, avatarIds);
+    }
+
+    private Map<Long, URI> resolveProjectListMediaUrls(Set<Long> thumbnailIds, Set<Long> avatarIds) {
+        Map<Long, URI> mediaUrls = new HashMap<>();
+        if (!thumbnailIds.isEmpty()) {
+            mediaUrls.putAll(mediaUrlResolver.resolveAll(thumbnailIds, MediaVariant.THUMBNAIL));
+        }
+        if (!avatarIds.isEmpty()) {
+            mediaUrls.putAll(mediaUrlResolver.resolveAll(avatarIds, MediaVariant.DISPLAY));
+        }
+        return Map.copyOf(mediaUrls);
     }
 
     private Map<Long, URI> resolveProjectMediaUrls(ProjectDetail detail) {
