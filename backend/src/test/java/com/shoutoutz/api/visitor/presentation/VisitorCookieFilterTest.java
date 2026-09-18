@@ -3,10 +3,13 @@ package com.shoutoutz.api.visitor.presentation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.visitor.VisitorProperties;
+import com.shoutoutz.api.visitor.application.VisitorKeyHasher;
+import com.shoutoutz.api.visitor.domain.VisitorKey;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,12 +25,14 @@ class VisitorCookieFilterTest {
     private static final String COOKIE_NAME = "VISITOR_ID";
     private static final String VISITOR_ID = "3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b";
 
-    private final VisitorCookieFilter filter = new VisitorCookieFilter(
-            new VisitorProperties(COOKIE_NAME, Duration.ofDays(365), true, "Lax", "a".repeat(32))
-    );
+    private static final VisitorProperties PROPERTIES =
+            new VisitorProperties(COOKIE_NAME, Duration.ofDays(365), true, "Lax", "a".repeat(32));
+
+    private final VisitorKeyHasher hasher = new VisitorKeyHasher(PROPERTIES);
+    private final VisitorCookieFilter filter = new VisitorCookieFilter(PROPERTIES, hasher);
 
     @Test
-    @DisplayName("방문자 쿠키가 없으면 새 식별값을 발급하고 요청 속성에 담는다")
+    @DisplayName("방문자 쿠키가 없으면 새 식별값을 발급하고, 해시한 방문자 키를 요청 속성에 담는다")
     void issuesVisitorIdWhenCookieIsMissing() throws ServletException, IOException {
         MockHttpServletRequest request = apiRequest("POST");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -37,7 +42,8 @@ class VisitorCookieFilterTest {
 
         String issuedVisitorId = response.getCookie(COOKIE_NAME).getValue();
         assertThat(UUID.fromString(issuedVisitorId).toString()).isEqualTo(issuedVisitorId);
-        assertThat(request.getAttribute(VisitorCookieFilter.VISITOR_ID_ATTRIBUTE)).isEqualTo(issuedVisitorId);
+        assertThat(request.getAttribute(VisitorCookieFilter.VISITOR_KEY_ATTRIBUTE))
+                .isEqualTo(new VisitorKey(hasher.hash(issuedVisitorId)));
         assertThat(filterChain.getRequest()).isSameAs(request);
     }
 
@@ -54,7 +60,7 @@ class VisitorCookieFilterTest {
     }
 
     @Test
-    @DisplayName("올바른 방문자 쿠키가 있으면 새로 발급하지 않고 그 값을 요청 속성에 담는다")
+    @DisplayName("올바른 방문자 쿠키가 있으면 새로 발급하지 않고, 그 값을 해시한 방문자 키를 요청 속성에 담는다")
     void keepsValidVisitorId() throws ServletException, IOException {
         MockHttpServletRequest request = apiRequest("POST");
         request.setCookies(new Cookie(COOKIE_NAME, VISITOR_ID));
@@ -63,7 +69,21 @@ class VisitorCookieFilterTest {
         filter.doFilter(request, response, new MockFilterChain());
 
         assertThat(response.getHeader(HttpHeaders.SET_COOKIE)).isNull();
-        assertThat(request.getAttribute(VisitorCookieFilter.VISITOR_ID_ATTRIBUTE)).isEqualTo(VISITOR_ID);
+        assertThat(request.getAttribute(VisitorCookieFilter.VISITOR_KEY_ATTRIBUTE))
+                .isEqualTo(new VisitorKey(hasher.hash(VISITOR_ID)));
+    }
+
+    @Test
+    @DisplayName("쿠키 원래 값은 요청 속성에 남기지 않는다")
+    void doesNotExposeRawVisitorId() throws ServletException, IOException {
+        MockHttpServletRequest request = apiRequest("POST");
+        request.setCookies(new Cookie(COOKIE_NAME, VISITOR_ID));
+
+        filter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(Collections.list(request.getAttributeNames()))
+                .map(request::getAttribute)
+                .doesNotContain(VISITOR_ID);
     }
 
     @ParameterizedTest
@@ -78,7 +98,8 @@ class VisitorCookieFilterTest {
 
         String issuedVisitorId = response.getCookie(COOKIE_NAME).getValue();
         assertThat(issuedVisitorId).isNotEqualTo(invalidVisitorId);
-        assertThat(request.getAttribute(VisitorCookieFilter.VISITOR_ID_ATTRIBUTE)).isEqualTo(issuedVisitorId);
+        assertThat(request.getAttribute(VisitorCookieFilter.VISITOR_KEY_ATTRIBUTE))
+                .isEqualTo(new VisitorKey(hasher.hash(issuedVisitorId)));
     }
 
     @Test
@@ -91,7 +112,8 @@ class VisitorCookieFilterTest {
         filter.doFilter(request, response, new MockFilterChain());
 
         assertThat(response.getHeader(HttpHeaders.SET_COOKIE)).isNull();
-        assertThat(request.getAttribute(VisitorCookieFilter.VISITOR_ID_ATTRIBUTE)).isEqualTo(VISITOR_ID);
+        assertThat(request.getAttribute(VisitorCookieFilter.VISITOR_KEY_ATTRIBUTE))
+                .isEqualTo(new VisitorKey(hasher.hash(VISITOR_ID)));
     }
 
     @Test
@@ -104,7 +126,7 @@ class VisitorCookieFilterTest {
         filter.doFilter(request, response, filterChain);
 
         assertThat(response.getHeader(HttpHeaders.SET_COOKIE)).isNull();
-        assertThat(request.getAttribute(VisitorCookieFilter.VISITOR_ID_ATTRIBUTE)).isNull();
+        assertThat(request.getAttribute(VisitorCookieFilter.VISITOR_KEY_ATTRIBUTE)).isNull();
         assertThat(filterChain.getRequest()).isSameAs(request);
     }
 
@@ -117,7 +139,7 @@ class VisitorCookieFilterTest {
         filter.doFilter(request, response, new MockFilterChain());
 
         assertThat(response.getHeader(HttpHeaders.SET_COOKIE)).isNull();
-        assertThat(request.getAttribute(VisitorCookieFilter.VISITOR_ID_ATTRIBUTE)).isNull();
+        assertThat(request.getAttribute(VisitorCookieFilter.VISITOR_KEY_ATTRIBUTE)).isNull();
     }
 
     private MockHttpServletRequest apiRequest(String method) {

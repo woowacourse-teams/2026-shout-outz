@@ -1,6 +1,8 @@
 package com.shoutoutz.api.visitor.presentation;
 
 import com.shoutoutz.api.visitor.VisitorProperties;
+import com.shoutoutz.api.visitor.application.VisitorKeyHasher;
+import com.shoutoutz.api.visitor.domain.VisitorKey;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -18,17 +20,19 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * API 요청마다 방문자 식별 쿠키를 확인하고, 없거나 형식이 잘못됐으면 새로 발급한다.
- * 새로 발급한 요청에서도 방문자를 식별할 수 있도록, 최종 식별값을 요청 속성에 담는다.
+ * 새로 발급한 요청에서도 방문자를 식별할 수 있도록, 최종 식별값을 해시한 방문자 키를 요청 속성에 담는다.
+ * 쿠키 원래 값은 요청 속성에 남기지 않는다.
  */
 @RequiredArgsConstructor
 class VisitorCookieFilter extends OncePerRequestFilter {
 
-    static final String VISITOR_ID_ATTRIBUTE = VisitorCookieFilter.class.getName() + ".visitorId";
+    static final String VISITOR_KEY_ATTRIBUTE = VisitorKey.class.getName();
 
     private static final String API_PATH = "/api/";
     private static final String COOKIE_PATH = "/";
 
     private final VisitorProperties properties;
+    private final VisitorKeyHasher visitorKeyHasher;
 
     /**
      * CORS 사전 요청(OPTIONS)은 브라우저가 쿠키를 싣지 않으므로 발급하지 않는다.
@@ -47,7 +51,7 @@ class VisitorCookieFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String visitorId = findVisitorId(request)
                 .orElseGet(() -> issueVisitorId(response));
-        request.setAttribute(VISITOR_ID_ATTRIBUTE, visitorId);
+        request.setAttribute(VISITOR_KEY_ATTRIBUTE, new VisitorKey(visitorKeyHasher.hash(visitorId)));
 
         filterChain.doFilter(request, response);
     }
