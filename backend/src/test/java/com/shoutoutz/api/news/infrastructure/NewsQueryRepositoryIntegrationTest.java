@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.news.application.NewsQueryRepository;
 import com.shoutoutz.api.news.application.dto.NewsDetail;
+import com.shoutoutz.api.news.application.dto.NewsPage;
+import com.shoutoutz.api.news.domain.enums.EventStatus;
 import com.shoutoutz.api.news.domain.enums.NewsType;
 import com.shoutoutz.api.news.infrastructure.jpa.NewsJpaRepository;
 import com.shoutoutz.api.user.domain.account.User;
@@ -75,7 +77,54 @@ class NewsQueryRepositoryIntegrationTest {
         assertThat(detail.next().id()).isEqualTo(next.getId());
     }
 
+    @Test
+    @DisplayName("삭제된 소식은 상세·목록·이전/다음 조회에서 제외한다")
+    void excludesDeletedNewsFromQueries() {
+        User user = userRepository.save(User.initialize("news-deleted-query"));
+        NewsEntity previous = newsJpaRepository.save(event(
+                user.getId(), PUBLISHED_AT.minusSeconds(60)
+        ));
+        NewsEntity current = newsJpaRepository.save(event(user.getId(), PUBLISHED_AT));
+        NewsEntity deleted = newsJpaRepository.save(event(
+                user.getId(), PUBLISHED_AT.plusSeconds(60), PUBLISHED_AT
+        ));
+        newsJpaRepository.flush();
+
+        assertThat(newsQueryRepository.findDetailById(deleted.getId(), false)).isEmpty();
+
+        NewsDetail detail = newsQueryRepository.findDetailById(current.getId(), true).orElseThrow();
+        assertThat(detail.previous().id()).isEqualTo(previous.getId());
+        assertThat(detail.next()).isNull();
+
+        NewsPage page = newsQueryRepository.findAll(null, null, PUBLISHED_AT, null, 20);
+        assertThat(page.items()).extracting("id").doesNotContain(deleted.getId());
+    }
+
+    @Test
+    @DisplayName("유형과 이벤트 상태 필터를 실제 조회 조건에 반영한다")
+    void appliesTypeAndEventStatusFilters() {
+        User user = userRepository.save(User.initialize("news-filter-query"));
+        NewsEntity notice = newsJpaRepository.save(notice(user.getId(), PUBLISHED_AT));
+        NewsEntity ongoing = newsJpaRepository.save(event(user.getId(), PUBLISHED_AT));
+        NewsEntity upcoming = newsJpaRepository.save(event(
+                user.getId(), PUBLISHED_AT.plusSeconds(120)));
+        newsJpaRepository.flush();
+
+        NewsPage noticePage = newsQueryRepository.findAll(
+                NewsType.NOTICE, null, PUBLISHED_AT, null, 20);
+        NewsPage ongoingPage = newsQueryRepository.findAll(
+                NewsType.EVENT, EventStatus.ONGOING, PUBLISHED_AT, null, 20);
+
+        assertThat(noticePage.items()).extracting("id").containsExactly(notice.getId());
+        assertThat(ongoingPage.items()).extracting("id").containsExactly(ongoing.getId());
+        assertThat(ongoingPage.items()).extracting("id").doesNotContain(upcoming.getId());
+    }
+
     private NewsEntity event(Long authorId, Instant publishedAt) {
+        return event(authorId, publishedAt, null);
+    }
+
+    private NewsEntity event(Long authorId, Instant publishedAt, Instant deletedAt) {
         return NewsEntity.builder()
                 .type(NewsType.EVENT)
                 .title("이벤트 제목")
@@ -90,6 +139,21 @@ class NewsQueryRepositoryIntegrationTest {
                 .pinOrder(null)
                 .ctaLabel("참여하기")
                 .ctaUrl("/events/1")
+                .deletedAt(deletedAt)
+                .build();
+    }
+
+    private NewsEntity notice(Long authorId, Instant publishedAt) {
+        return NewsEntity.builder()
+                .type(NewsType.NOTICE)
+                .title("공지 제목")
+                .summary("공지 요약")
+                .body("공지 본문")
+                .authorId(authorId)
+                .authorName("작성자")
+                .publishedAt(publishedAt)
+                .pinned(false)
+                .pinOrder(null)
                 .build();
     }
 }

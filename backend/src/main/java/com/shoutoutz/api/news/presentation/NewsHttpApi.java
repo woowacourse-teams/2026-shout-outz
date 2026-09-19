@@ -1,15 +1,20 @@
 package com.shoutoutz.api.news.presentation;
 
+import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
+import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.news.application.NewsService;
 import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NewsFindAllRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NewsFindRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NewsUpdateRequest;
 import com.shoutoutz.api.news.presentation.dto.response.EventCreateResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsDeleteResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NewsFindAllResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NewsFindResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NoticeCreateResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsUpdateResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -17,8 +22,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -73,6 +80,28 @@ public class NewsHttpApi {
     ) {
         NewsFindRequest request = new NewsFindRequest(newsId, navigation);
         NewsFindResponse response = newsService.findDetail(request);
+        return ResponseEntity.ok(SuccessResponse.success(response));
+    }
+
+    @PutMapping("/{newsId}")
+    public ResponseEntity<SuccessResponse<NewsUpdateResponse>> update(
+            @LoginUser AuthenticatedUser loginUser,
+            @PathVariable long newsId,
+            @Valid @RequestBody NewsUpdateRequest request
+    ) {
+        NewsUpdateResponse response = newsService.update(newsId, loginUser.role(), request);
+        return ResponseEntity.ok(SuccessResponse.success(response));
+    }
+
+    @DeleteMapping("/{newsId}")
+    public ResponseEntity<SuccessResponse<NewsDeleteResponse>> delete(
+            @LoginUser AuthenticatedUser loginUser,
+            @PathVariable long newsId
+    ) {
+        NewsDeleteResponse response = newsService.delete(
+                newsId,
+                loginUser.role()
+        );
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
 }

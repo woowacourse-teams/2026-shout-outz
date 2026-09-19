@@ -1,6 +1,11 @@
 package com.shoutoutz.api.news.application;
 
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.common.exception.custom.ValidationFailedException;
+import com.shoutoutz.api.common.response.ErrorResponse;
 import com.shoutoutz.api.news.application.dto.NewsCursor;
 import com.shoutoutz.api.news.application.dto.NewsDetail;
 import com.shoutoutz.api.news.application.dto.NewsPage;
@@ -8,20 +13,26 @@ import com.shoutoutz.api.news.application.dto.NewsSummary;
 import com.shoutoutz.api.news.domain.News;
 import com.shoutoutz.api.news.domain.NewsCta;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
+import com.shoutoutz.api.news.domain.NewsEventPeriod;
 import com.shoutoutz.api.news.domain.NewsRepository;
+import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.news.domain.enums.EventStatus;
 import com.shoutoutz.api.news.domain.enums.NewsType;
 import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NewsFindAllRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NewsFindRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NewsUpdateRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.response.EventCreateResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NewsFindAllResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NewsFindResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsDeleteResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsUpdateResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NoticeCreateResponse;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,6 +75,8 @@ public class NewsService {
 
     @Transactional
     public EventCreateResponse createEvent(EventCreateRequest request) {
+        NewsEventPeriod eventPeriod = resolveEventPeriod(
+                NewsType.EVENT, request.eventStartAt(), request.eventEndAt());
         NewsCta cta = toCta(request.cta());
         Instant now = clock.instant();
         News event = News.createEvent(
@@ -72,8 +85,8 @@ public class NewsService {
                 request.body(),
                 resolveAuthorId(),
                 request.authorName(),
-                request.eventStartAt(),
-                request.eventEndAt(),
+                eventPeriod.startAt(),
+                eventPeriod.endAt(),
                 cta,
                 now
         );
@@ -93,6 +106,38 @@ public class NewsService {
                 savedEvent.getPinOrder(),
                 toEventCta(savedEvent.getCta())
         );
+    }
+
+    @Transactional
+    public NewsUpdateResponse update(long newsId, UserRole role, NewsUpdateRequest request) {
+        validateAdmin(role);
+        validateNewsId(newsId);
+        News current = newsRepository.findActiveById(newsId)
+                .orElseThrow(() -> new EntityNotFoundException(NewsErrorCode.NEWS_NOT_FOUND));
+
+        NewsEventPeriod eventPeriod = resolveEventPeriod(
+                current.getType(), request.eventStartAt(), request.eventEndAt());
+        News updated = current.update(
+                request.title(),
+                request.summary(),
+                request.body(),
+                request.authorName(),
+                eventPeriod,
+                toCta(request.cta())
+        );
+        News saved = newsRepository.update(updated);
+        return NewsUpdateResponse.from(saved, clock.instant());
+    }
+
+    @Transactional
+    public NewsDeleteResponse delete(long newsId, UserRole role) {
+        validateAdmin(role);
+        validateNewsId(newsId);
+        Instant deletedAt = clock.instant();
+        if (!newsRepository.softDelete(newsId, deletedAt)) {
+            throw new EntityNotFoundException(NewsErrorCode.NEWS_NOT_FOUND);
+        }
+        return new NewsDeleteResponse(newsId, deletedAt);
     }
 
     /**
@@ -154,6 +199,54 @@ public class NewsService {
     private Long resolveAuthorId() {
         // TODO: 관리자 인증 권한 검증 후, 인증 주체의 authorId를 주입한다.
         return 0L;
+    }
+
+    private void validateAdmin(UserRole role) {
+        if (role != UserRole.ADMIN) {
+            throw new ForbiddenException(NewsErrorCode.NEWS_ADMIN_FORBIDDEN);
+        }
+    }
+
+    private void validateNewsId(long newsId) {
+        if (newsId <= 0) {
+            throw new InvalidInputException(NewsErrorCode.NEWS_INVALID_ID_SIZE);
+        }
+    }
+
+    private void validateEventPeriod(Instant startAt, Instant endAt) {
+        if (startAt != null && endAt != null && startAt.isAfter(endAt)) {
+            throw new BadRequestException(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID);
+        }
+    }
+
+    private NewsEventPeriod resolveEventPeriod(
+            NewsType type,
+            Instant startAt,
+            Instant endAt
+    ) {
+        if (type == NewsType.NOTICE) {
+            if (startAt != null || endAt != null) {
+                throw new BadRequestException(NewsErrorCode.NEWS_EVENT_PERIOD_NOT_ALLOWED);
+            }
+            return null;
+        }
+
+        List<ErrorResponse.ErrorDetail> details = new ArrayList<>();
+        if (startAt == null) {
+            details.add(new ErrorResponse.ErrorDetail("eventStartAt", "eventStartAt은 필수입니다."));
+        }
+        if (endAt == null) {
+            details.add(new ErrorResponse.ErrorDetail("eventEndAt", "eventEndAt은 필수입니다."));
+        }
+        if (!details.isEmpty()) {
+            throw new ValidationFailedException(details);
+        }
+        validateEventPeriod(startAt, endAt);
+        return new NewsEventPeriod(startAt, endAt);
+    }
+
+    private NewsCta toCta(NewsUpdateRequest.Cta cta) {
+        return cta == null ? null : toCta(cta.label(), cta.url());
     }
 
     private NewsCta toCta(NoticeCreateRequest.Cta cta) {

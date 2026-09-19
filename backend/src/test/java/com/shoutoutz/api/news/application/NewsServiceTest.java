@@ -14,15 +14,20 @@ import com.shoutoutz.api.news.application.dto.NewsDetail;
 import com.shoutoutz.api.news.application.dto.NewsPage;
 import com.shoutoutz.api.news.application.dto.NewsSummary;
 import com.shoutoutz.api.news.domain.enums.EventStatus;
+import com.shoutoutz.api.news.domain.News;
+import com.shoutoutz.api.news.domain.NewsCta;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
 import com.shoutoutz.api.news.domain.NewsRepository;
 import com.shoutoutz.api.news.domain.enums.NewsType;
 import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NewsFindAllRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NewsFindRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NewsUpdateRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.response.NewsFindAllResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NewsFindResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsUpdateResponse;
+import com.shoutoutz.api.user.domain.account.UserRole;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
@@ -111,6 +116,117 @@ class NewsServiceTest {
 
         verify(clock).instant();
         verifyNoInteractions(newsRepository, newsQueryRepository);
+    }
+
+    @Test
+    @DisplayName("이벤트 생성의 시작 시각이 종료 시각보다 늦으면 400 통합 오류 코드로 거절한다")
+    void rejectsInvalidEventPeriodWithBadRequest() {
+        EventCreateRequest request = new EventCreateRequest(
+                "이벤트",
+                "요약",
+                "본문",
+                "작성자",
+                Instant.parse("2026-10-01T00:00:00Z"),
+                Instant.parse("2026-09-30T23:59:59Z"),
+                null
+        );
+
+        assertThatThrownBy(() -> newsService.createEvent(request))
+                .isInstanceOfSatisfying(BadRequestException.class,
+                        error -> assertThat(error.getErrorCode())
+                                .isEqualTo(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID));
+
+        verifyNoInteractions(clock, newsRepository, newsQueryRepository);
+    }
+
+    @Test
+    @DisplayName("관리자는 소식의 편집 가능 필드만 수정하고 수정 응답을 받는다")
+    void updatesEditableNewsFieldsAsAdmin() {
+        News current = News.createEvent(
+                "기존 제목",
+                "기존 요약",
+                "기존 본문",
+                1L,
+                "기존 작성자",
+                Instant.parse("2026-09-01T00:00:00Z"),
+                Instant.parse("2026-09-30T23:59:59Z"),
+                new NewsCta("기존 CTA", "/old"),
+                PUBLISHED_AT
+        );
+        current = News.builder()
+                .id(102L)
+                .type(current.getType())
+                .title(current.getTitle())
+                .summary(current.getSummary())
+                .body(current.getBody())
+                .authorId(current.getAuthorId())
+                .authorName(current.getAuthorName())
+                .publishedAt(current.getPublishedAt())
+                .eventPeriod(new com.shoutoutz.api.news.domain.NewsEventPeriod(
+                        current.getEventStartAt(), current.getEventEndAt()))
+                .pinned(true)
+                .pinOrder(1)
+                .cta(current.getCta())
+                .build();
+        NewsUpdateRequest request = updateRequest(
+                "수정 제목",
+                "수정 요약",
+                "수정 본문",
+                "수정 작성자",
+                "2026-09-10T00:00:00Z",
+                "2026-09-20T00:00:00Z",
+                null
+        );
+        News expected = current.update(
+                request.title(),
+                request.summary(),
+                request.body(),
+                request.authorName(),
+                new com.shoutoutz.api.news.domain.NewsEventPeriod(
+                        request.eventStartAt(), request.eventEndAt()),
+                null
+        );
+        when(newsRepository.findActiveById(102L)).thenReturn(Optional.of(current));
+        when(newsRepository.update(org.mockito.ArgumentMatchers.any(News.class))).thenReturn(expected);
+        when(clock.instant()).thenReturn(PUBLISHED_AT);
+
+        NewsUpdateResponse response = newsService.update(102L, UserRole.ADMIN, request);
+
+        assertThat(response.id()).isEqualTo(102L);
+        assertThat(response.title()).isEqualTo("수정 제목");
+        assertThat(response.summary()).isEqualTo("수정 요약");
+        assertThat(response.isPinned()).isTrue();
+        assertThat(response.pinOrder()).isEqualTo(1);
+        assertThat(response.cta()).isNull();
+        verify(newsRepository).update(org.mockito.ArgumentMatchers.any(News.class));
+    }
+
+    @Test
+    @DisplayName("관리자가 아닌 사용자는 소식 수정에 접근할 수 없다")
+    void rejectsNewsUpdateForNonAdmin() {
+        NewsUpdateRequest request = updateRequest(
+                "제목", "요약", "본문", "작성자", null, null, null);
+
+        assertThatThrownBy(() -> newsService.update(102L, UserRole.USER, request))
+                .isInstanceOfSatisfying(com.shoutoutz.api.common.exception.custom.ForbiddenException.class,
+                        error -> assertThat(error.getErrorCode())
+                                .isEqualTo(NewsErrorCode.NEWS_ADMIN_FORBIDDEN));
+
+        verifyNoInteractions(newsRepository, newsQueryRepository, clock);
+    }
+
+    @Test
+    @DisplayName("관리자가 소식을 소프트 삭제하고 삭제 시각을 반환한다")
+    void softDeletesNews() {
+        Instant deletedAt = Instant.parse("2026-09-19T12:00:00Z");
+        when(clock.instant()).thenReturn(deletedAt);
+        when(newsRepository.softDelete(102L, deletedAt)).thenReturn(true);
+
+        var response = newsService.delete(102L, UserRole.ADMIN);
+
+        assertThat(response.id()).isEqualTo(102L);
+        assertThat(response.deletedAt()).isEqualTo(deletedAt);
+        verify(newsRepository).softDelete(102L, deletedAt);
     }
 
     @Test
@@ -354,6 +470,26 @@ class NewsServiceTest {
                 Instant.parse("2026-09-30T23:59:59Z"),
                 new EventCreateRequest.Cta("프로젝트 등록하기", "/projects/3001")
         );
+    }
+
+    private NewsUpdateRequest updateRequest(
+            String title,
+            String summary,
+            String body,
+            String authorName,
+            String eventStartAt,
+            String eventEndAt,
+            NewsUpdateRequest.Cta cta
+    ) {
+        NewsUpdateRequest request = new NewsUpdateRequest();
+        request.setTitle(title);
+        request.setSummary(summary);
+        request.setBody(body);
+        request.setAuthorName(authorName);
+        request.setEventStartAt(eventStartAt == null ? null : Instant.parse(eventStartAt));
+        request.setEventEndAt(eventEndAt == null ? null : Instant.parse(eventEndAt));
+        request.setCta(cta);
+        return request;
     }
 
     // TODO: 인증 방식 확정 후 authorId 주입을 구현하면 저장 및 응답 성공 테스트를 추가한다.
