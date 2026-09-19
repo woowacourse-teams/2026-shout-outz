@@ -10,10 +10,10 @@ export interface FeedListParams {
 export interface FeedAuthor {
   handle: string;
   displayName: string;
-  userType: string;
-  track: string | null;
+  userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+  track: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
   cohort: number | null;
-  avatarImageId: number | null;
+  avatarUrl: string | null;
 }
 
 // TODO 대체 FeedCategory
@@ -26,8 +26,11 @@ export interface FeedCategory {
 
 // TODO 대체 FeedMedia
 export interface FeedMedia {
-  mediaId: number;
+  /** 작성 API의 미디어 ID. 조회 응답에서는 공개 URL만 내려올 수 있다. */
+  mediaId?: number;
   displayOrder: number;
+  /** 조회 응답의 공개 미디어 URL */
+  url?: string;
 }
 
 // TODO 대체 Feed

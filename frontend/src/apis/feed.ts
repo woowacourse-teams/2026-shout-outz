@@ -1,5 +1,8 @@
 import { infiniteQueryOptions, mutationOptions, queryOptions } from '@tanstack/react-query';
 import { httpClient } from '@/utils/client';
+import type { Feed, FeedSort } from '@/types/feed';
+
+export type { Feed, FeedSort } from '@/types/feed';
 
 export interface CursorMeta {
   nextCursor: string | null;
@@ -10,24 +13,6 @@ export interface Envelope<T> {
   data: T;
   meta: CursorMeta;
 }
-export type FeedSort = 'LATEST' | 'POPULAR';
-export interface Feed {
-  feedId: number;
-  content: string;
-  author: {
-    handle: string;
-    displayName: string;
-    userType: string;
-    track: string | null;
-    cohort: number | null;
-    avatarImageId: number | null;
-  };
-  categories: { categoryId: number; slug: string; displayName: string; type: string }[];
-  media: { mediaId: number; displayOrder: number }[];
-  createdAt: string;
-  updatedAt: string;
-}
-
 export async function fetchFeed(feedId: number, signal?: AbortSignal) {
   const response = await httpClient<{ status: 'success'; data: Feed }>(`/api/v1/feeds/${feedId}`, {
     method: 'get',

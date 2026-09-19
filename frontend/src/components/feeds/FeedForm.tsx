@@ -49,7 +49,7 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
         ],
         mediaIds: [...(initialFeed?.media ?? [])]
           .sort((a, b) => a.displayOrder - b.displayOrder)
-          .map((item) => item.mediaId),
+          .flatMap((item) => (item.mediaId === undefined ? [] : [item.mediaId])),
       });
       client.setQueryData(feedQuery(feed.feedId).queryKey, feed);
       void client.invalidateQueries({ queryKey: ['feeds'] });

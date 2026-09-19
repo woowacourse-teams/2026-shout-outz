@@ -164,7 +164,7 @@ export const handlers = [
         title: name,
         tagline,
         cohort,
-        thumbnailMediaId: null,
+        thumbnailUrl: null,
         likeCount,
         commentCount: 0,
         techTags: techTags.map((displayName, tagIndex) => ({ id: tagIndex + 1, displayName })),
@@ -173,12 +173,13 @@ export const handlers = [
           handle: `crew${member.userId}`,
           displayName: member.displayName,
           cohort: member.cohort,
-          track: member.track,
-          avatarImageId: null,
+          track: member.track === 'BE' ? 'BACKEND' : 'FRONTEND',
+          avatarUrl: null,
           githubAvatarUrl: null,
           githubProfileUrl: null,
         })),
       })),
+      meta: { nextCursor: null, hasNext: false, totalCount: projects.length },
     }),
   ),
 
@@ -213,7 +214,7 @@ export const handlers = [
   http.get('/api/v1/users/me/summary', () =>
     HttpResponse.json({
       status: 'success',
-      data: { userId: 10, handle: 'woojin', displayName: '정우진', avatarImageId: null },
+      data: { userId: 10, handle: 'woojin', displayName: '정우진', avatarUrl: null },
     }),
   ),
 

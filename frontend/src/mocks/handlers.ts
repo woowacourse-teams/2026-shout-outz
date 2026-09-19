@@ -14,7 +14,7 @@ export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
     userType: 'WOOWACOURSE_CREW',
     track: index % 2 ? 'FRONTEND' : 'BACKEND',
     cohort: 6,
-    avatarImageId: null,
+    avatarUrl: null,
   },
   categories: [{ categoryId: 1, slug: 'backend', displayName: '개발 이야기', type: 'GENERAL' }],
   media: [],
@@ -102,7 +102,7 @@ export function createFeedHandlers() {
     http.get('/api/v1/users/me/summary', () =>
       HttpResponse.json({
         status: 'success',
-        data: { handle: 'crew0', displayName: '정우진', avatarImageId: null },
+        data: { handle: 'crew0', displayName: '정우진', avatarUrl: null },
       }),
     ),
     http.put('/api/v1/feeds/:feedId', async ({ params, request }) => {
