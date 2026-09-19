@@ -10,6 +10,66 @@ import { isNewsFilter } from '@/types/news';
 export const MOCK_STORAGE_ORIGIN = 'https://storage.test';
 
 export const handlers = [
+  http.get('/api/v1/auth/session', () =>
+    HttpResponse.json({
+      status: 'success',
+      data: {
+        status: 'AUTHENTICATED',
+        userId: 1,
+        role: 'USER',
+        csrfToken: 'development-token',
+      },
+    }),
+  ),
+
+  http.post('/api/v1/auth/signup', () =>
+    HttpResponse.json({ status: 'success', data: { userId: 1 } }, { status: 201 }),
+  ),
+
+  http.post('/api/v1/auth/logout', () => new HttpResponse(null, { status: 204 })),
+
+  http.get('/api/v1/users/me/summary', () =>
+    HttpResponse.json({
+      status: 'success',
+      data: { handle: 'crew0', displayName: '정우진', avatarImageId: null },
+    }),
+  ),
+
+  http.get('/api/v1/users/me/verification-request', () =>
+    HttpResponse.json({
+      status: 'success',
+      data: {
+        requestId: 1,
+        userType: 'WOOWACOURSE_CREW',
+        nickname: '우진',
+        cohort: 8,
+        track: 'BACKEND',
+        status: 'APPROVED',
+        requestedAt: '2026-09-16T00:00:00Z',
+        decidedAt: '2026-09-16T01:00:00Z',
+        reason: null,
+      },
+    }),
+  ),
+
+  http.post('/api/v1/users/me/verification-requests', async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json(
+      {
+        status: 'success',
+        data: {
+          requestId: 2,
+          ...body,
+          status: 'PENDING',
+          requestedAt: '2026-09-19T00:00:00Z',
+          decidedAt: null,
+          reason: null,
+        },
+      },
+      { status: 201 },
+    );
+  }),
+
   http.get('/api/v1/cohorts', () =>
     HttpResponse.json({ status: 'success', data: { items: getCohorts() } }),
   ),

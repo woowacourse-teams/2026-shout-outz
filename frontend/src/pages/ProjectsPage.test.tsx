@@ -40,9 +40,33 @@ function renderPage(path = '/projects') {
 test('목록 API 응답을 카드로 표시한다', async () => {
   renderPage();
   expect(await screen.findByRole('heading', { name: 'Dropit' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: '프로젝트 등록' })).toHaveAttribute(
+    'href',
+    '/projects/new',
+  );
   expect(screen.getAllByRole('listitem')).toHaveLength(3);
   expect(screen.getByRole('heading', { name: 'Shout-outz' })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Code Review Bot' })).toBeInTheDocument();
+});
+
+test('로그인하지 않은 사용자에게 프로젝트 등록 링크를 노출하지 않는다', async () => {
+  server.use(
+    http.get('/api/v1/auth/session', () =>
+      HttpResponse.json({
+        status: 'success',
+        data: {
+          status: 'UNAUTHENTICATED',
+          userId: null,
+          role: null,
+          csrfToken: 'token',
+        },
+      }),
+    ),
+  );
+
+  renderPage();
+  await screen.findByRole('heading', { name: 'Dropit' });
+  expect(screen.queryByRole('link', { name: '프로젝트 등록' })).not.toBeInTheDocument();
 });
 
 test('빈 목록을 안내한다', async () => {
