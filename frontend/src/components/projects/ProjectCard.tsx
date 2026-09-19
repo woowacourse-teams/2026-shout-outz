@@ -6,7 +6,7 @@ import { type ProjectTechTag } from '@/types/project';
  * 프로젝트 카드. 프로젝트 목록과 프로필 프로젝트 탭이 같이 쓴다.
  *
  * 응답 객체가 아니라 화면에 그릴 값만 받는다.
- * TODO 썸네일은 응답이 thumbnailMediaId만 주어 아직 이미지를 붙이지 않고 제목을 대신 보여준다.
+ * TODO 썸네일 이미지는 아직 연결하지 않고 제목을 대신 보여준다.
  */
 export interface ProjectCardProps {
   title: string;
@@ -16,7 +16,7 @@ export interface ProjectCardProps {
   commentCount: number;
   techTags: ProjectTechTag[];
   /** 참여자는 아바타로만 보여줘 이름과 식별자만 받는다 */
-  members: { userId: number; displayName: string }[];
+  members: { userId: number | null; displayName: string }[];
 }
 
 export function ProjectCard({
@@ -54,8 +54,8 @@ export function ProjectCard({
 
       <div className="mt-4 flex items-center justify-between gap-2">
         <ul className="flex items-center -space-x-2">
-          {members.map((member) => (
-            <li key={member.userId}>
+          {members.map((member, index) => (
+            <li key={member.userId ?? `${member.displayName}-${index}`}>
               {/* TODO 참여자 이미지를 이미지 URL로 받아 src에 연결 */}
               <Avatar size="xs" alt={member.displayName} className="ring-2 ring-white" />
             </li>

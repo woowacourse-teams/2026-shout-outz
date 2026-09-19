@@ -8,14 +8,13 @@ export const isProfileTab = (value: unknown): value is ProfileTab =>
 
 // TODO 대체 UserProfile
 export interface UserProfile {
-  userId: number;
   handle: string;
   displayName: string;
-  userType: string;
-  track: string | null;
+  userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+  track: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
   cohort: number | null;
   bio: string | null;
-  avatarImageId: number | null;
+  avatarUrl: string | null;
   githubProfileUrl: string | null;
   blogUrl: string | null;
   counts: {

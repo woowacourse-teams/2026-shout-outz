@@ -4,12 +4,12 @@ import { httpClient } from '@/utils/client';
 interface ProfileSummary {
   handle: string;
   displayName: string;
-  avatarImageId: number | null;
+  avatarUrl: string | null;
 }
 
 interface MyProfile extends ProfileSummary {
-  userType: string;
-  track: string | null;
+  userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+  track: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
   cohort: number | null;
 }
 

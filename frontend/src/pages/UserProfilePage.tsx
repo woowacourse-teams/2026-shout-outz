@@ -1,10 +1,10 @@
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 
 import {
-  userFeedsQueryOptions,
+  userFeedsInfiniteQueryOptions,
   userProfileQueryOptions,
-  userProjectsQueryOptions,
+  userProjectsInfiniteQueryOptions,
 } from '@/api/user';
 import { FeedCard } from '@/components/feeds/FeedCard';
 import { Footer } from '@/components/Footer';
@@ -94,7 +94,8 @@ function MyProfileActions({ handle }: { handle: string }) {
 }
 
 function ProjectTab({ handle }: { handle: string }) {
-  const { data: projects } = useSuspenseQuery(userProjectsQueryOptions(handle));
+  const query = useSuspenseInfiniteQuery(userProjectsInfiniteQueryOptions(handle));
+  const projects = query.data.pages.flatMap((page) => page.data);
 
   return (
     <section aria-label="프로젝트">
@@ -117,12 +118,18 @@ function ProjectTab({ handle }: { handle: string }) {
           ))}
         </ul>
       )}
+      {query.hasNextPage && (
+        <button type="button" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>
+          {query.isFetchingNextPage ? '불러오는 중…' : '프로젝트 더 보기'}
+        </button>
+      )}
     </section>
   );
 }
 
 function FeedTab({ handle }: { handle: string }) {
-  const { data: feeds } = useSuspenseQuery(userFeedsQueryOptions(handle));
+  const query = useSuspenseInfiniteQuery(userFeedsInfiniteQueryOptions(handle));
+  const feeds = query.data.pages.flatMap((page) => page.data);
 
   return (
     <section aria-label="피드">
@@ -136,6 +143,11 @@ function FeedTab({ handle }: { handle: string }) {
             </li>
           ))}
         </ul>
+      )}
+      {query.hasNextPage && (
+        <button type="button" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>
+          {query.isFetchingNextPage ? '불러오는 중…' : '피드 더 보기'}
+        </button>
       )}
     </section>
   );
