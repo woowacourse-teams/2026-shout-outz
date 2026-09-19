@@ -1,5 +1,6 @@
 import { Footer } from '@/components/Footer';
-import { Gnb } from '@/components/Gnb';
+import { AppGnb } from '@/components/AppGnb';
+import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { HeroBanner, type HeroBannerProps } from '@/components/home/HeroBanner';
 import { HomeEventSection } from '@/components/home/HomeEventSection';
 import { HomeFeedSection } from '@/components/home/HomeFeedSection';
@@ -17,17 +18,23 @@ export function HomePage() {
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <title>shout-outz</title>
-      <Gnb />
+      <AppGnb />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pt-6 pb-12 md:gap-8 md:pt-10 md:pb-20">
         <HeroBanner {...HERO_BANNER} />
-        <HomeStatistics />
+        <AsyncBoundary>
+          <HomeStatistics />
+        </AsyncBoundary>
 
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
           <div className="min-w-0 lg:flex-1">
-            <HomeFeedSection />
+            <AsyncBoundary>
+              <HomeFeedSection />
+            </AsyncBoundary>
           </div>
           <div className="lg:w-93 lg:shrink-0">
-            <HomeEventSection />
+            <AsyncBoundary>
+              <HomeEventSection />
+            </AsyncBoundary>
           </div>
         </div>
       </main>

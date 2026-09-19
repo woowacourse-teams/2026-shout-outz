@@ -160,18 +160,37 @@ describe('HomePage', () => {
     });
   });
 
-  it.each(['/api/v1/home/statistics', '/api/v1/feeds', '/api/v1/news'])(
-    '%s 조회가 실패하면 홈 에러 화면을 보여준다',
-    async (path) => {
+  it.each([
+    {
+      path: '/api/v1/home/statistics',
+      failedRegion: '서비스 통계',
+      preservedRegions: ['피드', '진행 중인 크루 이벤트'],
+    },
+    {
+      path: '/api/v1/feeds',
+      failedRegion: '피드',
+      preservedRegions: ['서비스 통계', '진행 중인 크루 이벤트'],
+    },
+    {
+      path: '/api/v1/news',
+      failedRegion: '진행 중인 크루 이벤트',
+      preservedRegions: ['서비스 통계', '피드'],
+    },
+  ])(
+    '$path 조회가 실패하면 해당 영역에만 에러 화면을 보여준다',
+    async ({ path, failedRegion, preservedRegions }) => {
       failWith500(path);
       const consoleError = silenceConsoleError();
       try {
         renderRoute('/');
 
-        expect(
-          await screen.findByText('홈 화면을 불러오지 못했습니다.', {}, ERROR_TIMEOUT),
-        ).toBeInTheDocument();
-        expect(screen.queryByRole('region', { name: '피드' })).not.toBeInTheDocument();
+        expect(await screen.findByRole('alert', {}, ERROR_TIMEOUT)).toHaveTextContent(
+          '요청에 실패했습니다. 다시 시도해 주세요.',
+        );
+        expect(screen.queryByRole('region', { name: failedRegion })).not.toBeInTheDocument();
+        for (const region of preservedRegions) {
+          expect(screen.getByRole('region', { name: region })).toBeInTheDocument();
+        }
       } finally {
         consoleError.mockRestore();
       }

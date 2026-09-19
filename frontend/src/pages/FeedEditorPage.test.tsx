@@ -123,7 +123,7 @@ test('비로그인 사용자는 폼 대신 로그인 안내를 본다', async ()
   show();
   expect(await screen.findByRole('link', { name: 'GitHub 로그인' })).toHaveAttribute(
     'href',
-    `${process.env.API_BASE_URL || ''}/oauth2/authorization/github`,
+    'http://localhost/oauth2/authorization/github',
   );
   expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 });

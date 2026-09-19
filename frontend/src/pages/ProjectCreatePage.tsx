@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 
 import { cohortsQueryOptions, createProjectMutationOptions } from '@/api/project';
-import { Button } from '@/components/Button';
+import { Button, getButtonStyles } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { Footer } from '@/components/Footer';
-import { Gnb } from '@/components/Gnb';
+import { AppGnb } from '@/components/AppGnb';
 import { Input } from '@/components/Input';
 import { MemberField } from '@/components/projects/MemberField';
 import { Select } from '@/components/Select';
@@ -14,6 +14,9 @@ import { TechTagField } from '@/components/projects/TechTagField';
 import { ThumbnailField } from '@/components/projects/ThumbnailField';
 import { type ProjectFormErrors, type ProjectFormValues } from '@/types/project';
 import { toProjectCreateRequest, validateProjectForm } from '@/utils/project';
+import { sessionQuery } from '@/apis/session';
+import { verificationRequestQuery } from '@/apis/verification';
+import { getGithubLoginUrl } from '@/utils/auth';
 
 const EMPTY_FORM: ProjectFormValues = {
   title: '',
@@ -38,6 +41,66 @@ const EMPTY_FORM: ProjectFormValues = {
  * 등록에 성공하면 폼 대신 완료 안내와 프로젝트 목록으로 가는 버튼을 보여준다.
  */
 export function ProjectCreatePage() {
+  const { data: session } = useSuspenseQuery(sessionQuery);
+
+  if (session.status === 'UNAUTHENTICATED') {
+    return (
+      <ProjectCreateGuard
+        title="로그인이 필요해요."
+        description="프로젝트를 등록하려면 먼저 GitHub로 로그인해 주세요."
+        action={
+          <a href={getGithubLoginUrl()} className={getButtonStyles({})}>
+            GitHub 로그인
+          </a>
+        }
+      />
+    );
+  }
+  if (session.status === 'SIGNUP_REQUIRED') {
+    return (
+      <ProjectCreateGuard
+        title="가입을 먼저 완료해 주세요."
+        description="프로필을 만든 뒤 프로젝트 등록 자격을 확인할 수 있습니다."
+        action={
+          <Link to="/signup" className={getButtonStyles({})}>
+            가입 계속하기
+          </Link>
+        }
+      />
+    );
+  }
+  return <VerifiedProjectCreatePage />;
+}
+
+function VerifiedProjectCreatePage() {
+  const { data: verification } = useSuspenseQuery(verificationRequestQuery);
+
+  if (verification?.status !== 'APPROVED') {
+    const description =
+      verification?.status === 'PENDING'
+        ? '구성원 인증 신청을 검토하고 있습니다. 승인 후 프로젝트를 등록할 수 있습니다.'
+        : verification?.status === 'REJECTED'
+          ? `구성원 인증이 반려되었습니다.${verification.reason ? ` ${verification.reason}` : ''}`
+          : '우아한테크코스 구성원 인증을 받은 뒤 프로젝트를 등록할 수 있습니다.';
+    return (
+      <ProjectCreateGuard
+        title="구성원 인증이 필요해요."
+        description={description}
+        action={
+          verification?.status !== 'PENDING' ? (
+            <Link to="/mypage/verification" className={getButtonStyles({})}>
+              구성원 인증 신청
+            </Link>
+          ) : undefined
+        }
+      />
+    );
+  }
+
+  return <ProjectCreateForm />;
+}
+
+function ProjectCreateForm() {
   const { data: cohorts } = useSuspenseQuery(cohortsQueryOptions());
   const [values, setValues] = useState<ProjectFormValues>(EMPTY_FORM);
   const [errors, setErrors] = useState<ProjectFormErrors>({});
@@ -59,7 +122,7 @@ export function ProjectCreatePage() {
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <title>프로젝트 등록 | shout-outz</title>
-      <Gnb />
+      <AppGnb />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-12 md:pt-10 md:pb-20">
         {createProject.isSuccess ? (
@@ -205,6 +268,31 @@ export function ProjectCreatePage() {
         )}
       </main>
 
+      <Footer />
+    </div>
+  );
+}
+
+function ProjectCreateGuard({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="bg-background flex min-h-dvh flex-col text-gray-900">
+      <title>프로젝트 등록 | shout-outz</title>
+      <AppGnb />
+      <main className="mx-auto flex w-full max-w-xl flex-1 items-center px-4 py-12">
+        <section className="w-full rounded-xl border border-gray-200 p-6 text-center md:p-8">
+          <h1 className="text-xl font-bold">{title}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-gray-600">{description}</p>
+          {action && <div className="mt-6">{action}</div>}
+        </section>
+      </main>
       <Footer />
     </div>
   );
