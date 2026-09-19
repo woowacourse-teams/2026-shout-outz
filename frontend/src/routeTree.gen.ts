@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as FeedsIndexRouteImport } from './routes/feeds/index'
 import { Route as FeedsFeedIdRouteImport } from './routes/feeds/$feedId'
 import { Route as FeedsNewRouteImport } from './routes/feeds/new'
@@ -18,11 +19,8 @@ import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as NewsNewsIdRouteImport } from './routes/news/$newsId'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectsIdRouteImport } from './routes/projects/$id'
-<<<<<<< HEAD
 import { Route as ProjectsNewRouteImport } from './routes/projects/new'
-=======
 import { Route as FeedsFeedIdEditRouteImport } from './routes/feeds/$feedId_.edit'
->>>>>>> c2c101cb47a16f2ec8c64f1d039e8d74f73e9196
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -32,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FeedsIndexRoute = FeedsIndexRouteImport.update({
@@ -69,21 +72,21 @@ const ProjectsIdRoute = ProjectsIdRouteImport.update({
   path: '/projects/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-<<<<<<< HEAD
 const ProjectsNewRoute = ProjectsNewRouteImport.update({
   id: '/projects/new',
   path: '/projects/new',
-=======
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FeedsFeedIdEditRoute = FeedsFeedIdEditRouteImport.update({
   id: '/feeds/$feedId_/edit',
   path: '/feeds/$feedId/edit',
->>>>>>> c2c101cb47a16f2ec8c64f1d039e8d74f73e9196
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/signup': typeof SignupRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
   '/news/$newsId': typeof NewsNewsIdRoute
@@ -97,6 +100,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/signup': typeof SignupRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
   '/news/$newsId': typeof NewsNewsIdRoute
@@ -111,6 +115,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/signup': typeof SignupRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
   '/news/$newsId': typeof NewsNewsIdRoute
@@ -126,6 +131,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/signup'
     | '/feeds/$feedId'
     | '/feeds/new'
     | '/news/$newsId'
@@ -139,6 +145,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/signup'
     | '/feeds/$feedId'
     | '/feeds/new'
     | '/news/$newsId'
@@ -152,6 +159,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/signup'
     | '/feeds/$feedId'
     | '/feeds/new'
     | '/news/$newsId'
@@ -166,6 +174,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  SignupRoute: typeof SignupRoute
   FeedsFeedIdRoute: typeof FeedsFeedIdRoute
   FeedsNewRoute: typeof FeedsNewRoute
   NewsNewsIdRoute: typeof NewsNewsIdRoute
@@ -191,6 +200,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/feeds/': {
@@ -242,19 +258,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-<<<<<<< HEAD
     '/projects/new': {
       id: '/projects/new'
       path: '/projects/new'
       fullPath: '/projects/new'
       preLoaderRoute: typeof ProjectsNewRouteImport
-=======
+      parentRoute: typeof rootRouteImport
+    }
     '/feeds/$feedId_/edit': {
       id: '/feeds/$feedId_/edit'
       path: '/feeds/$feedId/edit'
       fullPath: '/feeds/$feedId/edit'
       preLoaderRoute: typeof FeedsFeedIdEditRouteImport
->>>>>>> c2c101cb47a16f2ec8c64f1d039e8d74f73e9196
       parentRoute: typeof rootRouteImport
     }
   }
@@ -263,6 +278,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  SignupRoute: SignupRoute,
   FeedsFeedIdRoute: FeedsFeedIdRoute,
   FeedsNewRoute: FeedsNewRoute,
   NewsNewsIdRoute: NewsNewsIdRoute,
