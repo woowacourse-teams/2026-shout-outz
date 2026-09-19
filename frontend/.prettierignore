@@ -3,3 +3,4 @@ node_modules
 package-lock.json
 ssg/.build
 src/routeTree.gen.ts
+src/api/generated
