@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import ky from 'ky';
+import { type ApiSuccessBody, httpClient } from '@/utils/client';
 
 // 목록 PDF에서 확인된 표시 필드만 사용한다. 상세 페이지의 SSG mock 타입과는 별개다.
 export interface ProjectListItem {
@@ -11,14 +11,13 @@ export interface ProjectListItem {
 }
 
 export async function fetchProjectList(signal?: AbortSignal): Promise<ProjectListItem[]> {
-  const response = await ky
-    .get(new URL('/api/v1/projects', window.location.origin), { signal, retry: 0 })
-    .json<{
-      status: string;
-      data: ProjectListItem[];
-    }>();
+  const response = await httpClient<ApiSuccessBody<ProjectListItem[]>>('/api/v1/projects', {
+    method: 'get',
+    signal,
+    retry: 0,
+  });
 
-  if (response.status !== 'success' || !Array.isArray(response.data)) {
+  if (!response || !Array.isArray(response.data)) {
     throw new Error('프로젝트 목록 응답을 확인할 수 없습니다.');
   }
 
