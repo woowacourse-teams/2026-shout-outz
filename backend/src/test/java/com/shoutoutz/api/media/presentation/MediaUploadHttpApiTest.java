@@ -1,120 +1,114 @@
 package com.shoutoutz.api.media.presentation;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.media.application.MediaUploadCompletionService;
 import com.shoutoutz.api.media.application.MediaUploadService;
-import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.media.presentation.dto.request.MediaUploadStartRequest;
 import com.shoutoutz.api.media.presentation.dto.response.MediaUploadCompleteResponse;
 import com.shoutoutz.api.media.presentation.dto.response.MediaUploadStartResponse;
+import com.shoutoutz.api.user.domain.account.UserRole;
 import java.net.URI;
-import java.security.Principal;
 import java.time.Instant;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(controllers = MediaUploadHttpApi.class)
 class MediaUploadHttpApiTest {
 
+    private static final long USER_ID = 7L;
     private static final Instant EXPIRES_AT = Instant.parse("2026-08-31T00:05:00Z");
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
     private MediaUploadService mediaUploadService;
 
-    @Mock
+    @MockitoBean
     private MediaUploadCompletionService mediaUploadCompletionService;
 
-    private MediaUploadHttpApi mediaUploadHttpApi;
-
-    @BeforeEach
-    void setUp() {
-        mediaUploadHttpApi = new MediaUploadHttpApi(mediaUploadService, mediaUploadCompletionService);
-    }
-
     @Test
-    void 인증된_사용자의_업로드_시작을_서비스에_전달하고_CREATED를_반환한다() {
-        MediaUploadStartRequest request = new MediaUploadStartRequest(
-                MediaPurpose.FEED_CONTENT,
-                "feed-image.webp",
-                "image/webp",
-                1024L
-        );
-        MediaUploadStartResponse expected = new MediaUploadStartResponse(
+    void 인증된_사용자의_업로드_시작을_서비스에_전달하고_CREATED를_반환한다() throws Exception {
+        MediaUploadStartResponse response = new MediaUploadStartResponse(
                 10L,
                 MediaStatus.PENDING_UPLOAD,
                 URI.create("https://s3.example.com/upload"),
                 EXPIRES_AT,
                 "image/webp"
         );
-        when(mediaUploadService.startUpload(7L, request)).thenReturn(expected);
+        given(mediaUploadService.startUpload(eq(USER_ID), any(MediaUploadStartRequest.class)))
+                .willReturn(response);
 
-        ResponseEntity<MediaUploadStartResponse> response = mediaUploadHttpApi.startUpload(request, principal("7"));
+        mockMvc.perform(post("/api/v1/media/uploads")
+                        .requestAttr(AuthenticatedSession.class.getName(), authenticatedSession())
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(uploadStartRequest()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.mediaId").value(10L))
+                .andExpect(jsonPath("$.status").value("PENDING_UPLOAD"));
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isSameAs(expected);
-        verify(mediaUploadService).startUpload(7L, request);
+        verify(mediaUploadService).startUpload(eq(USER_ID), any(MediaUploadStartRequest.class));
     }
 
     @Test
-    void 인증된_사용자의_업로드_완료를_서비스에_전달하고_OK를_반환한다() {
-        MediaUploadCompleteResponse expected = new MediaUploadCompleteResponse(
+    void 인증된_사용자의_업로드_완료를_서비스에_전달하고_OK를_반환한다() throws Exception {
+        MediaUploadCompleteResponse response = new MediaUploadCompleteResponse(
                 10L,
                 MediaStatus.PROCESSING,
                 1024L,
                 "image/webp",
                 EXPIRES_AT
         );
-        when(mediaUploadCompletionService.completeUpload(7L, 10L)).thenReturn(expected);
+        given(mediaUploadCompletionService.completeUpload(USER_ID, 10L)).willReturn(response);
 
-        ResponseEntity<MediaUploadCompleteResponse> response = mediaUploadHttpApi.completeUpload(10L, principal("7"));
+        mockMvc.perform(post("/api/v1/media/{mediaId}/complete", 10L)
+                        .requestAttr(AuthenticatedSession.class.getName(), authenticatedSession())
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mediaId").value(10L))
+                .andExpect(jsonPath("$.status").value("PROCESSING"));
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isSameAs(expected);
-        verify(mediaUploadCompletionService).completeUpload(7L, 10L);
+        verify(mediaUploadCompletionService).completeUpload(USER_ID, 10L);
     }
 
     @Test
-    void 인증_정보가_없으면_업로드_서비스를_호출하지_않고_401을_반환한다() {
-        Throwable thrown = catchThrowable(() -> mediaUploadHttpApi.startUpload(request(), null));
+    void 인증_정보가_없으면_업로드_서비스를_호출하지_않고_401을_반환한다() throws Exception {
+        mockMvc.perform(post("/api/v1/media/uploads")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(uploadStartRequest()))
+                .andExpect(status().isUnauthorized());
 
-        assertThat(thrown).isInstanceOf(ResponseStatusException.class);
-        assertThat(((ResponseStatusException) thrown).getStatusCode().value())
-                .isEqualTo(HttpStatus.UNAUTHORIZED.value());
         verifyNoInteractions(mediaUploadService, mediaUploadCompletionService);
     }
 
-    @Test
-    void 숫자가_아닌_인증_주체는_거부한다() {
-        Throwable thrown = catchThrowable(() -> mediaUploadHttpApi.startUpload(request(), principal("user-7")));
-
-        assertThat(thrown).isInstanceOf(ResponseStatusException.class);
-        assertThat(((ResponseStatusException) thrown).getStatusCode().value())
-                .isEqualTo(HttpStatus.UNAUTHORIZED.value());
-        verifyNoInteractions(mediaUploadService, mediaUploadCompletionService);
+    private AuthenticatedSession authenticatedSession() {
+        return new AuthenticatedSession(USER_ID, UserRole.USER);
     }
 
-    private MediaUploadStartRequest request() {
-        return new MediaUploadStartRequest(
-                MediaPurpose.FEED_CONTENT,
-                "feed-image.webp",
-                "image/webp",
-                1024L
-        );
-    }
-
-    private Principal principal(String name) {
-        return () -> name;
+    private String uploadStartRequest() {
+        return """
+                {
+                  "purpose": "FEED_CONTENT",
+                  "originalFileName": "feed-image.webp",
+                  "contentType": "image/webp",
+                  "sizeBytes": 1024
+                }
+                """;
     }
 }

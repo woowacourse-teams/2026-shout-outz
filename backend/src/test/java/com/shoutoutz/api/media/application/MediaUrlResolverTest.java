@@ -81,6 +81,19 @@ class MediaUrlResolverTest {
     }
 
     @Test
+    void READY_미디어를_조회_없이_공개_URL로_변환한다() {
+        MediaMetadata ready = metadata(10L, MediaStatus.READY);
+        when(mediaObjectKeyGenerator.generateVariant(ready.getS3Key(), MediaVariant.DISPLAY))
+                .thenReturn(ready.getS3Key() + "/display");
+        when(mediaPublicUrlResolver.resolve(ready.getS3Key() + "/display"))
+                .thenReturn(URI.create("https://cdn.example.com/display"));
+
+        URI url = mediaUrlResolver.resolve(ready, MediaVariant.DISPLAY);
+
+        assertThat(url).hasToString("https://cdn.example.com/display");
+    }
+
+    @Test
     void 프로젝트_본문의_media_참조를_공개_URL로_치환한다() {
         String description = "![화면](media://10)\n![같은 화면](media://10)";
         Map<Long, URI> urls = Map.of(10L, URI.create("https://cdn.example.com/display"));

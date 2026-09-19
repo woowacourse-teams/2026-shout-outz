@@ -53,6 +53,14 @@ public class MediaUrlResolver {
         return resolveAll(List.of(mediaId), variant).get(mediaId);
     }
 
+    public URI resolve(MediaMetadata metadata, MediaVariant variant) {
+        if (!isReady(metadata)) {
+            return null;
+        }
+        MediaVariant requestedVariant = variant == null ? DEFAULT_VARIANT : variant;
+        return resolveReadyMetadata(metadata, requestedVariant);
+    }
+
     public Map<Long, URI> resolveAll(Collection<Long> mediaIds) {
         return resolveAll(mediaIds, DEFAULT_VARIANT);
     }

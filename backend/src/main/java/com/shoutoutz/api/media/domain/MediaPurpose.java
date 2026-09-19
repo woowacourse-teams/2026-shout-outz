@@ -7,5 +7,6 @@ public enum MediaPurpose {
     USER_AVATAR,
     PROJECT_THUMBNAIL,
     PROJECT_DESCRIPTION,
-    FEED_CONTENT
+    FEED_CONTENT,
+    HOME_BANNER
 }

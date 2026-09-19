@@ -28,6 +28,33 @@ class MediaSchemaIntegrationTest {
         assertThat(setNullForeignKeyCount("user_profiles", "user_profiles_avatar_image_fk")).isEqualTo(1);
     }
 
+    @Test
+    void 홈_배너_미디어_목적을_저장할_수_있다() {
+        jdbcTemplate.update("INSERT INTO users (handle, role) VALUES ('banner-admin', 'ADMIN')");
+
+        int inserted = jdbcTemplate.update("""
+                INSERT INTO media_metadata (
+                    uploaded_by,
+                    purpose,
+                    s3_key,
+                    mime_type,
+                    size_bytes,
+                    status,
+                    expires_at
+                ) VALUES (
+                    (SELECT id FROM users WHERE handle = 'banner-admin'),
+                    'HOME_BANNER',
+                    'media/home-banner/test-id',
+                    'image/webp',
+                    1024,
+                    'PENDING_UPLOAD',
+                    now() + interval '5 minutes'
+                )
+                """);
+
+        assertThat(inserted).isEqualTo(1);
+    }
+
     private int columnCount(String tableName, String columnName) {
         return jdbcTemplate.queryForObject(
                 """
