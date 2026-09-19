@@ -88,4 +88,10 @@ describe('AuthActions', () => {
 
     expect(await screen.findByRole('link', { name: '로그인' })).toBeInTheDocument();
   });
+
+  it('로그인한 사용자의 이름을 내 프로필로 연결한다', async () => {
+    renderRoute('/');
+
+    expect(await screen.findByRole('link', { name: '정우진' })).toHaveAttribute('href', '/users');
+  });
 });

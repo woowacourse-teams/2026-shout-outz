@@ -62,3 +62,37 @@ export interface ProjectFormValues {
 }
 
 export type ProjectFormErrors = Partial<Record<keyof ProjectFormValues, string>>;
+
+export interface ProjectTechTag {
+  id: number;
+  displayName: string;
+}
+
+export interface ProjectMember {
+  userId: number;
+  handle: string;
+  displayName: string;
+  cohort: number | null;
+  track: string | null;
+  avatarImageId: number | null;
+  githubAvatarUrl: string | null;
+  githubProfileUrl: string | null;
+}
+
+/**
+ * 프로젝트 카드 공통 응답.
+ * 프로젝트 목록과 프로필 프로젝트 탭이 같은 모양으로 내려준다.
+ */
+// TODO 대체 ProjectListItem
+export interface ProjectSummary {
+  id: number;
+  slug: string;
+  title: string;
+  tagline: string;
+  cohort: number | null;
+  thumbnailMediaId: number | null;
+  likeCount: number;
+  commentCount: number;
+  techTags: ProjectTechTag[];
+  members: ProjectMember[];
+}

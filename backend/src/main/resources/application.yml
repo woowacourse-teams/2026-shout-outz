@@ -23,6 +23,8 @@ aws:
     region: ${AWS_REGION}
     key-prefix: ${AWS_S3_KEY_PREFIX}
     presigned-url-expiration-seconds: ${AWS_S3_PRESIGNED_URL_EXPIRATION_SECONDS}
+  cloudfront:
+    public-base-url: ${AWS_CLOUDFRONT_PUBLIC_BASE_URL}
 
 github:
   oauth:
@@ -37,6 +39,14 @@ auth:
     completion-uri: ${FRONTEND_OAUTH_COMPLETION_URI:http://localhost:5173}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+# 방문자 식별 쿠키 속성은 세션 쿠키와 맞춘다.
+visitor:
+  cookie-name: VISITOR_ID
+  cookie-max-age: ${VISITOR_COOKIE_MAX_AGE:365d}
+  cookie-secure: ${SESSION_COOKIE_SECURE:false}
+  cookie-same-site: Lax
+  hash-secret: ${VISITOR_HASH_SECRET}
 
 server:
   servlet:

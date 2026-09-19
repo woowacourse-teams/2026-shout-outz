@@ -28,7 +28,7 @@ public record FeedCommentFindResponse(
     public record Author(
             Long userId,
             String displayName,
-            Long avatarImageId
+            String avatarUrl
     ) {
     }
 

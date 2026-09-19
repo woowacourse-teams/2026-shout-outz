@@ -76,7 +76,8 @@ class FeedCommentHttpApiTest {
                         new Comment(
                                 501L,
                                 "좋은 피드네요.",
-                                new FeedCommentFindResponse.Author(7L, "샤라웃 운영팀", 10L),
+                                new FeedCommentFindResponse.Author(
+                                        7L, "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
                                 null,
                                 Instant.parse("2026-09-14T00:00:00Z"),
                                 Instant.parse("2026-09-14T00:00:00Z"),
@@ -87,7 +88,8 @@ class FeedCommentHttpApiTest {
                         new Comment(
                                 502L,
                                 "저도 그렇게 생각합니다.",
-                                new FeedCommentFindResponse.Author(8L, "재키", 11L),
+                                new FeedCommentFindResponse.Author(
+                                        8L, "재키", "https://cdn.example.com/media/11/display"),
                                 501L,
                                 Instant.parse("2026-09-14T00:05:00Z"),
                                 Instant.parse("2026-09-14T00:05:00Z"),
@@ -98,7 +100,8 @@ class FeedCommentHttpApiTest {
                         new Comment(
                                 503L,
                                 null,
-                                new FeedCommentFindResponse.Author(9L, "이전 작성자", 12L),
+                                new FeedCommentFindResponse.Author(
+                                        9L, "이전 작성자", "https://cdn.example.com/media/12/display"),
                                 null,
                                 Instant.parse("2026-09-14T00:10:00Z"),
                                 Instant.parse("2026-09-14T00:10:00Z"),
@@ -158,8 +161,8 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data[].author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data[].author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data[].author.displayName").type(STRING).description("작성자 표시 이름"),
-                                        fieldWithPath("data[].author.avatarImageId").type(NUMBER)
-                                                .description("작성자 프로필 이미지 ID")
+                                        fieldWithPath("data[].author.avatarUrl").type(STRING)
+                                                .description("작성자 프로필 이미지 공개 URL")
                                                 .optional(),
                                         fieldWithPath("data[].parentId").type(NUMBER)
                                                 .description("부모 루트 댓글 ID")
@@ -201,7 +204,8 @@ class FeedCommentHttpApiTest {
                 List.of(new Comment(
                         501L,
                         "내 댓글",
-                        new FeedCommentFindResponse.Author(7L, "샤라웃 운영팀", 10L),
+                        new FeedCommentFindResponse.Author(
+                                7L, "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
                         null,
                         Instant.parse("2026-09-14T00:00:00Z"),
                         Instant.parse("2026-09-14T00:00:00Z"),
@@ -243,7 +247,8 @@ class FeedCommentHttpApiTest {
                 .willReturn(new FeedCommentCreateResponse(
                         501L,
                         "좋은 피드네요.",
-                        new FeedCommentCreateResponse.Author(7L, "샤라웃 운영팀", 10L),
+                        new FeedCommentCreateResponse.Author(
+                                7L, "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
                         null,
                         Instant.parse("2026-09-14T00:00:00Z"),
                         Instant.parse("2026-09-14T00:00:00Z"),
@@ -266,7 +271,8 @@ class FeedCommentHttpApiTest {
                 .andExpect(jsonPath("$.data.content").value("좋은 피드네요."))
                 .andExpect(jsonPath("$.data.author.userId").value(7))
                 .andExpect(jsonPath("$.data.author.displayName").value("샤라웃 운영팀"))
-                .andExpect(jsonPath("$.data.author.avatarImageId").value(10))
+                .andExpect(jsonPath("$.data.author.avatarUrl")
+                        .value("https://cdn.example.com/media/10/display"))
                 .andExpect(jsonPath("$.data.parentId").value(Matchers.nullValue()))
                 .andExpect(jsonPath("$.data.createdAt").value("2026-09-14T00:00:00Z"))
                 .andExpect(jsonPath("$.data.updatedAt").value("2026-09-14T00:00:00Z"))
@@ -296,13 +302,14 @@ class FeedCommentHttpApiTest {
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("생성된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("댓글 ID"),
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
-                                        fieldWithPath("data.author.avatarImageId").type(NUMBER)
-                                                .description("작성자 프로필 이미지 ID")
+                                        fieldWithPath("data.author.avatarUrl").type(STRING)
+                                                .description("작성자 프로필 이미지 공개 URL")
                                                 .optional(),
                                         fieldWithPath("data.parentId").type(NUMBER).description("부모 댓글 ID")
                                                 .optional(),
@@ -327,7 +334,8 @@ class FeedCommentHttpApiTest {
         )).willReturn(new FeedCommentUpdateResponse(
                 501L,
                 "수정된 댓글입니다.",
-                new FeedCommentUpdateResponse.Author(7L, "샤라웃 운영팀", 10L),
+                new FeedCommentUpdateResponse.Author(
+                        7L, "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
                 null,
                 Instant.parse("2026-09-14T00:00:00Z"),
                 Instant.parse("2026-09-14T00:30:00Z"),
@@ -351,7 +359,8 @@ class FeedCommentHttpApiTest {
                 .andExpect(jsonPath("$.data.content").value("수정된 댓글입니다."))
                 .andExpect(jsonPath("$.data.author.userId").value(7))
                 .andExpect(jsonPath("$.data.author.displayName").value("샤라웃 운영팀"))
-                .andExpect(jsonPath("$.data.author.avatarImageId").value(10))
+                .andExpect(jsonPath("$.data.author.avatarUrl")
+                        .value("https://cdn.example.com/media/10/display"))
                 .andExpect(jsonPath("$.data.parentId").value(Matchers.nullValue()))
                 .andExpect(jsonPath("$.data.createdAt").value("2026-09-14T00:00:00Z"))
                 .andExpect(jsonPath("$.data.updatedAt").value("2026-09-14T00:30:00Z"))
@@ -380,13 +389,14 @@ class FeedCommentHttpApiTest {
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("수정된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("댓글 ID"),
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
-                                        fieldWithPath("data.author.avatarImageId").type(NUMBER)
-                                                .description("작성자 프로필 이미지 ID")
+                                        fieldWithPath("data.author.avatarUrl").type(STRING)
+                                                .description("작성자 프로필 이미지 공개 URL")
                                                 .optional(),
                                         fieldWithPath("data.parentId").type(NUMBER).description("부모 댓글 ID")
                                                 .optional(),
@@ -437,6 +447,7 @@ class FeedCommentHttpApiTest {
                                 .responseSchema(Schema.schema("FeedCommentDeleteSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("삭제된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("삭제된 댓글 ID"),
                                         fieldWithPath("data.deleted").type(BOOLEAN).description("댓글 삭제 여부")
                                 )

@@ -11,6 +11,9 @@ spring:
       include-stacktrace: never
       include-binding-errors: never
 
+visitor:
+  cookie-secure: ${SESSION_COOKIE_SECURE:true}
+
 server:
   servlet:
     session:

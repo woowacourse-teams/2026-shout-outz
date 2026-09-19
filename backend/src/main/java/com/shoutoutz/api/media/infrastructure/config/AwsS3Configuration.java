@@ -13,7 +13,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
  * S3 SDK 클라이언트를 애플리케이션 생명주기에 맞춰 생성한다.
  */
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(S3Properties.class)
+@EnableConfigurationProperties({S3Properties.class, CloudFrontProperties.class})
 public class AwsS3Configuration {
 
     @Bean

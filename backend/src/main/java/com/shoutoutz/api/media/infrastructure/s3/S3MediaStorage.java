@@ -22,13 +22,11 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 /**
- * S3 미디어 객체에 대한 업로드 URL 발급, 조회 URL 발급, 검증, 삭제를 담당한다.
+ * S3 미디어 객체에 대한 업로드 URL 발급, 객체 검증, 삭제를 담당한다.
  *
  * <p> 파일 바이트는 백엔드가 직접 받지 않는다. 업로드는 Presigned PUT URL을 통해
  * 클라이언트가 S3로 직접 수행하고, 백엔드는 완료 요청이 들어오는 시점에 {@code HeadObject}로 검증한다.</p>
@@ -85,34 +83,6 @@ public class S3MediaStorage {
             );
         } catch (SdkException exception) {
             throw new S3StorageException("S3 업로드용 Presigned URL 발급에 실패했습니다.", exception);
-        }
-    }
-
-    /**
-     * 비공개 S3 객체를 조회할 때 사용할 Presigned GET URL을 발급한다.
-     * 객체 접근 권한과 미디어 상태 검증은 이 메서드를 호출하기 전에 수행한다.
-     */
-    public PresignedDownload createPresignedDownload(String key) {
-        String validatedKey = validateKey(key);
-        String actualKey = toActualKey(validatedKey);
-        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(properties.bucket())
-                .key(actualKey)
-                .build();
-        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(properties.presignedUrlExpiration())
-                .getObjectRequest(getObjectRequest)
-                .build();
-
-        try {
-            PresignedGetObjectRequest presigned = s3Presigner.presignGetObject(presignRequest);
-            return new PresignedDownload(
-                    validatedKey,
-                    URI.create(presigned.url().toString()),
-                    presigned.expiration()
-            );
-        } catch (SdkException exception) {
-            throw new S3StorageException("S3 조회용 Presigned URL 발급에 실패했습니다.", exception);
         }
     }
 
@@ -262,6 +232,14 @@ public class S3MediaStorage {
             throw new IllegalArgumentException("S3 객체 키는 media/ prefix를 사용하는 유효한 키여야 합니다.");
         }
         return normalized;
+    }
+
+    /**
+     * 논리 키를 환경별 S3 실제 키로 변환한다.
+     * CloudFront URL을 만들 때도 동일한 key prefix 규칙을 사용해야 한다.
+     */
+    public String actualKey(String key) {
+        return toActualKey(validateKey(key));
     }
 
     private String toActualKey(String validatedKey) {

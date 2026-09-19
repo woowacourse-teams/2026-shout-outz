@@ -22,7 +22,15 @@ export function ProjectList() {
             params={{ id: String(project.id) }}
             className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
           >
-            <ProjectCard project={project} />
+            <ProjectCard
+              title={project.title}
+              tagline={project.tagline}
+              cohort={project.cohort}
+              likeCount={project.likeCount}
+              commentCount={project.commentCount}
+              techTags={project.techTags}
+              members={project.members}
+            />
           </Link>
         </li>
       ))}

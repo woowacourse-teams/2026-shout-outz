@@ -4,6 +4,7 @@ import { getFeedList } from '@/api/mock/feed';
 import { getNewsDetail, getNewsList } from '@/api/mock/news';
 import { getCohorts, getTechTags, searchCrewList } from '@/api/mock/project';
 import projects from '@/api/mock/projects.json';
+import { getUserFeeds, getUserProfile, getUserProjects } from '@/api/mock/user';
 import { isNewsFilter } from '@/types/news';
 
 /** 미디어 업로드 시작이 내려주는 presigned PUT URL의 목 주소 */
@@ -27,13 +28,6 @@ export const handlers = [
   ),
 
   http.post('/api/v1/auth/logout', () => new HttpResponse(null, { status: 204 })),
-
-  http.get('/api/v1/users/me/summary', () =>
-    HttpResponse.json({
-      status: 'success',
-      data: { handle: 'crew0', displayName: '정우진', avatarImageId: null },
-    }),
-  ),
 
   http.get('/api/v1/users/me/verification-request', () =>
     HttpResponse.json({
@@ -164,14 +158,26 @@ export const handlers = [
     HttpResponse.json({
       status: 'success',
       // 상세 페이지용 JSON을 목록 API 응답 형식으로 변환한다.
-      data: projects.map(({ name, tagline }, index) => ({
+      data: projects.map(({ id, name, tagline, cohort, likeCount, techTags, members }, index) => ({
         id: index + 1,
+        slug: id,
         title: name,
         tagline,
-        thumbnailUrl: '',
-        cohort: 6,
-        deletedAt: null,
-        restoreDeadlineAt: null,
+        cohort,
+        thumbnailMediaId: null,
+        likeCount,
+        commentCount: 0,
+        techTags: techTags.map((displayName, tagIndex) => ({ id: tagIndex + 1, displayName })),
+        members: members.map((member) => ({
+          userId: member.userId,
+          handle: `crew${member.userId}`,
+          displayName: member.displayName,
+          cohort: member.cohort,
+          track: member.track,
+          avatarImageId: null,
+          githubAvatarUrl: null,
+          githubProfileUrl: null,
+        })),
       })),
     }),
   ),
@@ -203,6 +209,42 @@ export const handlers = [
       meta: { nextCursor: null, hasNext: false },
     });
   }),
+
+  http.get('/api/v1/users/me/summary', () =>
+    HttpResponse.json({
+      status: 'success',
+      data: { userId: 10, handle: 'woojin', displayName: '정우진', avatarImageId: null },
+    }),
+  ),
+
+  http.get('/api/v1/users/:handle', ({ params }) => {
+    const profile = getUserProfile(String(params.handle));
+
+    if (!profile) {
+      return HttpResponse.json(
+        { status: 'error', code: 'RESOURCE_NOT_FOUND', message: '요청한 리소스를 찾을 수 없음' },
+        { status: 404 },
+      );
+    }
+
+    return HttpResponse.json({ status: 'success', data: profile });
+  }),
+
+  http.get('/api/v1/users/:handle/projects', ({ params }) =>
+    HttpResponse.json({
+      status: 'success',
+      data: getUserProjects(String(params.handle)),
+      meta: { nextCursor: null, hasNext: false },
+    }),
+  ),
+
+  http.get('/api/v1/users/:handle/feeds', ({ params }) =>
+    HttpResponse.json({
+      status: 'success',
+      data: getUserFeeds(String(params.handle)),
+      meta: { nextCursor: null, hasNext: false },
+    }),
+  ),
 
   http.get('/api/v1/home/statistics', () =>
     HttpResponse.json({

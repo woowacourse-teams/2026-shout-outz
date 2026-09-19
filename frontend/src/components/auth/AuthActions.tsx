@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 
 import { logoutMutation, sessionQuery } from '@/apis/session';
 import { myProfileSummaryQuery } from '@/apis/user';
@@ -36,9 +36,12 @@ export function AuthActions() {
     return (
       <div className="flex items-center gap-2">
         {authenticated && (
-          <span className="hidden text-sm font-medium text-gray-700 sm:inline">
+          <Link
+            to="/users"
+            className="hidden text-sm font-medium text-gray-700 hover:text-gray-900 sm:inline"
+          >
             {profile.data?.displayName ?? '로그인됨'}
-          </span>
+          </Link>
         )}
         <Button
           size="sm"

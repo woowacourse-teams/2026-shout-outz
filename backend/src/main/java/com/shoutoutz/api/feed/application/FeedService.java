@@ -14,6 +14,7 @@ import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
 import com.shoutoutz.api.feed.domain.FeedRepository;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
@@ -31,6 +32,7 @@ import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -54,6 +56,7 @@ public class FeedService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final FeedCursorCodec feedCursorCodec;
+    private final MediaUrlResolver mediaUrlResolver;
     private final Clock clock;
 
     @Transactional
@@ -67,12 +70,12 @@ public class FeedService {
         feedRepository.saveCategories(savedFeed.getId(), request.categoryIds());
         feedRepository.saveMedia(savedFeed.getId(), request.mediaIds());
 
-        return FeedResponse.from(findFeedItem(savedFeed.getId()));
+        return toResponse(findFeedItem(savedFeed.getId()));
     }
 
     @Transactional(readOnly = true)
     public FeedResponse findFeed(long feedId) {
-        return FeedResponse.from(findFeedItem(feedId));
+        return toResponse(findFeedItem(feedId));
     }
 
     @Transactional(readOnly = true)
@@ -121,7 +124,7 @@ public class FeedService {
         Feed updatedFeed = feedRepository.update(feed.updateContent(request.content(), clock.instant()));
         feedRepository.saveCategories(feedId, request.categoryIds());
         feedRepository.saveMedia(feedId, request.mediaIds());
-        return FeedResponse.from(findFeedItem(updatedFeed.getId()));
+        return toResponse(findFeedItem(updatedFeed.getId()));
     }
 
     @Transactional
@@ -139,7 +142,8 @@ public class FeedService {
             FeedSort sort
     ) {
         if (feedsWithExtraItem.size() <= size) {
-            return new FeedFindAllResult(List.copyOf(feedsWithExtraItem), null, false);
+            List<FeedItem> items = List.copyOf(feedsWithExtraItem);
+            return new FeedFindAllResult(items, null, false, resolveMediaUrls(items));
         }
 
         List<FeedItem> items = List.copyOf(feedsWithExtraItem.subList(0, size));
@@ -152,7 +156,23 @@ public class FeedService {
                         lastItem.feedId()
                 )
         );
-        return new FeedFindAllResult(items, nextCursor, true);
+        return new FeedFindAllResult(items, nextCursor, true, resolveMediaUrls(items));
+    }
+
+    private FeedResponse toResponse(FeedItem item) {
+        return FeedResponse.from(item, resolveMediaUrls(List.of(item)));
+    }
+
+    private Map<Long, java.net.URI> resolveMediaUrls(List<FeedItem> items) {
+        Set<Long> mediaIds = items.stream()
+                .flatMap(item -> java.util.stream.Stream.concat(
+                        java.util.stream.Stream.of(item.author().avatarImageId()),
+                        item.media().stream().map(FeedItem.Media::mediaId)
+                ))
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        Map<Long, java.net.URI> urls = mediaUrlResolver.resolveAll(mediaIds);
+        return urls == null ? Map.of() : urls;
     }
 
     /**

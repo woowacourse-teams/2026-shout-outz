@@ -5,7 +5,9 @@ import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 public record UserSearchResponse(
         List<Item> items
@@ -13,7 +15,7 @@ public record UserSearchResponse(
 
     public static UserSearchResponse from(UserSearchResult result) {
         List<Item> items = result.items().stream()
-                .map(Item::from)
+                .map(item -> Item.from(item, result.avatarUrls()))
                 .toList();
         return new UserSearchResponse(items);
     }
@@ -24,17 +26,17 @@ public record UserSearchResponse(
             UserType userType,
             String track,
             Short cohort,
-            Long avatarImageId
+            String avatarUrl
     ) {
 
-        private static Item from(UserSearchItem item) {
+        private static Item from(UserSearchItem item, Map<Long, URI> avatarUrls) {
             return new Item(
                     item.handle(),
                     item.displayName(),
                     item.userType(),
                     trackValue(item.track()),
                     cohortValue(item.cohort()),
-                    item.avatarImageId()
+                    toUrl(findUrl(avatarUrls, item.avatarImageId()))
             );
         }
 
@@ -50,6 +52,14 @@ public record UserSearchResponse(
                 return null;
             }
             return (short) cohort.getValue();
+        }
+
+        private static String toUrl(URI url) {
+            return url == null ? null : url.toString();
+        }
+
+        private static URI findUrl(Map<Long, URI> avatarUrls, Long avatarImageId) {
+            return avatarImageId == null ? null : avatarUrls.get(avatarImageId);
         }
     }
 

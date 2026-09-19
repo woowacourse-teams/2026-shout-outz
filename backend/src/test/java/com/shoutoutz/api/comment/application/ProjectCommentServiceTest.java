@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -30,10 +31,12 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -67,6 +70,9 @@ class ProjectCommentServiceTest {
     @Mock
     private UserProfileRepository userProfileRepository;
 
+    @Mock
+    private MediaUrlResolver mediaUrlResolver;
+
     private ProjectCommentService projectCommentService;
 
     @BeforeEach
@@ -75,8 +81,11 @@ class ProjectCommentServiceTest {
                 projectRepository,
                 projectCommentRepository,
                 projectCommentQueryRepository,
-                userProfileRepository
+                userProfileRepository,
+                mediaUrlResolver
         );
+        lenient().when(mediaUrlResolver.resolve(10L))
+                .thenReturn(URI.create("https://cdn.example.com/media/10/display"));
     }
 
     @Test
@@ -97,7 +106,8 @@ class ProjectCommentServiceTest {
         assertThat(result.content()).isEqualTo("좋은 프로젝트네요.");
         assertThat(result.author().userId()).isEqualTo(AUTHOR_ID);
         assertThat(result.author().displayName()).isEqualTo("샤라웃 운영팀");
-        assertThat(result.author().avatarImageId()).isEqualTo(10L);
+        assertThat(result.author().avatarUrl())
+                .isEqualTo("https://cdn.example.com/media/10/display");
         assertThat(result.parentId()).isNull();
         assertThat(result.createdAt()).isEqualTo(NOW);
         assertThat(result.updatedAt()).isEqualTo(NOW);
@@ -407,7 +417,8 @@ class ProjectCommentServiceTest {
         assertThat(result.content()).isEqualTo("수정된 댓글");
         assertThat(result.author().userId()).isEqualTo(AUTHOR_ID);
         assertThat(result.author().displayName()).isEqualTo("샤라웃 운영팀");
-        assertThat(result.author().avatarImageId()).isEqualTo(10L);
+        assertThat(result.author().avatarUrl())
+                .isEqualTo("https://cdn.example.com/media/10/display");
         assertThat(result.parentId()).isNull();
         assertThat(result.createdAt()).isEqualTo(NOW);
         assertThat(result.updatedAt()).isEqualTo(EDITED_AT);

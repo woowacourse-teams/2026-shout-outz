@@ -44,7 +44,8 @@ test('목록 API 응답을 카드로 표시한다', async () => {
     'href',
     '/projects/new',
   );
-  expect(screen.getAllByRole('listitem')).toHaveLength(3);
+  // 카드 안에 기술 스택·참여자 목록이 생겨 listitem 전체를 세면 카드 수와 다르다.
+  expect(screen.getAllByRole('article')).toHaveLength(3);
   expect(screen.getByRole('heading', { name: 'Shout-outz' })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Code Review Bot' })).toBeInTheDocument();
 });
@@ -78,17 +79,18 @@ test('빈 목록을 안내한다', async () => {
 });
 
 test('조회 실패 후 다시 시도하면 목록을 표시한다', async () => {
-  server.use(
-    http.get('/api/v1/projects', () => new HttpResponse(null, { status: 500 }), { once: true }),
-  );
+  // httpClient(ky)가 5xx GET을 재시도하므로 한 번만 실패시키면 재시도에서 성공해 버린다.
+  server.use(http.get('/api/v1/projects', () => new HttpResponse(null, { status: 500 })));
   const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
   try {
     renderPage();
-    const retryButton = await screen.findByRole('button', { name: '다시 시도' });
+    // httpClient(ky)가 5xx GET을 두 번 재시도한 뒤에 실패해 오류 화면이 기본 대기 시간보다 늦게 뜬다.
+    const retryButton = await screen.findByRole('button', { name: '다시 시도' }, { timeout: 3000 });
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: '프로젝트' })).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
 
+    server.resetHandlers();
     await userEvent.click(retryButton);
     expect(await screen.findByRole('heading', { name: 'Dropit' })).toBeInTheDocument();
   } finally {
