@@ -1,4 +1,5 @@
 import ky from 'ky';
+import { getApiOrigin } from '@/utils/auth';
 
 let csrfToken: string | null = null;
 
@@ -9,7 +10,7 @@ export const setCsrfToken = (token: string | null) => {
 const CSRF_HEADER = 'X-CSRF-TOKEN';
 const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-const apiOrigin = process.env.API_ORIGIN || undefined;
+const apiOrigin = getApiOrigin();
 
 export const kyInstance = ky.create({
   baseUrl: apiOrigin,

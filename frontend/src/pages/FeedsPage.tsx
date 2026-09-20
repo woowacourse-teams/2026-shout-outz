@@ -1,7 +1,7 @@
 import type { FeedSort } from '@/apis/feed';
 import { Button } from '@/components/Button';
 import { Footer } from '@/components/Footer';
-import { Gnb } from '@/components/Gnb';
+import { AppGnb } from '@/components/AppGnb';
 import { Tab } from '@/components/Tab';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { FeedList } from '@/components/feeds/FeedList';
@@ -23,7 +23,7 @@ export function FeedsPage({
 
   return (
     <div className="bg-background flex min-h-dvh flex-col">
-      <Gnb />
+      <AppGnb />
       <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 px-4 py-6 md:py-10 lg:grid-cols-3 lg:gap-12">
         <section className="min-w-0 lg:col-span-2">
           <div className="flex items-start justify-between gap-4">

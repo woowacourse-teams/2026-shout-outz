@@ -18,6 +18,7 @@ import { Avatar } from '@/components/Avatar';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { formatRelativeTime } from '@/utils/date';
 import { getApiErrorMessage } from '@/utils/error';
+import { getGithubLoginUrl } from '@/utils/auth';
 
 export function Comments({ feedId }: { feedId: number }) {
   return (
@@ -171,10 +172,7 @@ function CommentList({
       ) : (
         <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
           댓글을 작성하려면{' '}
-          <a
-            className="text-primary-600 underline"
-            href={`${process.env.API_BASE_URL || ''}/oauth2/authorization/github`}
-          >
+          <a className="text-primary-600 underline" href={getGithubLoginUrl()}>
             GitHub 로그인
           </a>
           이 필요합니다.

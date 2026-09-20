@@ -1,4 +1,4 @@
-import { queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import {
   type NewsDetail,
   type NewsFilter,
@@ -10,12 +10,23 @@ import { type ApiSuccessBody, httpClient } from '@/utils/client';
 
 const NEWS_PATH = '/api/v1/news';
 
+interface NewsListMeta {
+  nextCursor: string | null;
+  hasNext: boolean;
+}
+
+type NewsListResponse = {
+  status: 'success';
+  data: NewsSummary[];
+  meta: NewsListMeta;
+};
+
 export async function fetchNewsList(
   type: NewsFilter,
   sort: NewsSort,
   options?: NewsListOptions,
 ): Promise<NewsSummary[]> {
-  const body = await httpClient<ApiSuccessBody<NewsSummary[]>>(NEWS_PATH, {
+  const body = await httpClient<NewsListResponse>(NEWS_PATH, {
     method: 'get',
     // ky가 값이 undefined인 옵션은 쿼리에서 뺀다.
     searchParams: { type, sort, ...options },
@@ -39,6 +50,28 @@ export const newsListQueryOptions = (type: NewsFilter, sort: NewsSort, options?:
     queryKey: ['news', { type, sort, ...options }],
     queryFn: () => fetchNewsList(type, sort, options),
   });
+
+export const newsInfiniteQueryOptions = (type: NewsFilter, sort: NewsSort) =>
+  infiniteQueryOptions({
+    queryKey: ['news', { type, sort }],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      fetchNewsPage(type, sort, pageParam),
+    getNextPageParam: (last) =>
+      last.meta?.hasNext && last.meta.nextCursor ? last.meta.nextCursor : undefined,
+  });
+
+async function fetchNewsPage(type: NewsFilter, sort: NewsSort, cursor?: string) {
+  const body = await httpClient<NewsListResponse>(NEWS_PATH, {
+    method: 'get',
+    searchParams: { type, sort, ...(cursor ? { cursor } : {}) },
+  });
+  if (!body) throw new Error(`소식 목록 응답이 비어 있습니다: ${NEWS_PATH}`);
+  return {
+    ...body,
+    meta: body.meta ?? { nextCursor: null, hasNext: false },
+  };
+}
 
 export const newsDetailQueryOptions = (newsId: number) =>
   queryOptions({

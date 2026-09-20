@@ -12,7 +12,7 @@ const crew = (
   userType: 'WOOWACOURSE_CREW',
   track,
   cohort,
-  avatarImageId: null,
+  avatarUrl: null,
 });
 
 const feed = (feedId: number, author: FeedAuthor, content: string, createdAt: string): Feed => ({
@@ -59,7 +59,7 @@ const FEEDS: Feed[] = [
       userType: 'GENERAL',
       track: null,
       cohort: null,
-      avatarImageId: null,
+      avatarUrl: null,
     },
     '우테코 크루분들의 프로젝트 구경하러 왔습니다. 좋은 자료 감사합니다!',
     '2026-09-10T12:00:00+09:00',

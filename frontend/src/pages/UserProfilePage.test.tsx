@@ -29,6 +29,10 @@ describe('UserProfilePage', () => {
       'href',
       'https://github.com/woojin-dev',
     );
+    expect(await screen.findByRole('link', { name: '구성원 인증' })).toHaveAttribute(
+      'href',
+      '/mypage/verification',
+    );
   });
 
   describe('탭', () => {
