@@ -312,8 +312,8 @@ class ProjectHttpApiTest {
                         6, "https://cdn.example.com/thumbnail", 128, 184L, 14L,
                         List.of(new ProjectTechTagResponse(1L, "React"), new ProjectTechTagResponse(2L, "Spring")),
                         List.of(
-                                new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BACKEND", "https://cdn.example.com/avatar-101", null, null),
-                                new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FRONTEND", (Long) null, null, null)
+                                new ProjectMemberProfileResponse("dhyepark", "박다혜", 6, "BACKEND", "https://cdn.example.com/avatar-101", null, null),
+                                new ProjectMemberProfileResponse("zzaekkii", "김도현", 6, "FRONTEND", null, null, null)
                         ))),
                 new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
         ));
@@ -384,9 +384,6 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data[].techTags[].displayName").type(STRING).description("기술 스택 이름"),
                                         fieldWithPath("data[].members").type(ARRAY)
                                                 .description("팀원 전체 목록. 상세 조회의 members와 같은 규칙이며, 등록 순서대로 정렬한다."),
-                                        fieldWithPath("data[].members[].userId").type(NUMBER)
-                                                .description("사용자 ID. 가입하지 않은 이관 팀원은 null이다.")
-                                                .optional(),
                                         fieldWithPath("data[].members[].handle").type(STRING)
                                                 .description("프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.")
                                                 .optional(),
@@ -612,11 +609,7 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data.techTags[].id").type(NUMBER).description("기술 스택 ID"),
                                         fieldWithPath("data.techTags[].displayName").type(STRING).description("기술 스택 이름"),
                                         fieldWithPath("data.members").type(ARRAY)
-                                                .description("팀원 목록. 신규 프로젝트는 등록 순서대로이며 등록자가 첫 번째다. "
-                                                        + "userId가 registeredBy와 같은 팀원이 작성자다."),
-                                        fieldWithPath("data.members[].userId").type(NUMBER)
-                                                .description("사용자 ID. 가입하지 않은 이관 팀원은 null이다.")
-                                                .optional(),
+                                                .description("팀원 목록. 신규 프로젝트는 등록 순서대로이며 등록자가 첫 번째다."),
                                         fieldWithPath("data.members[].handle").type(STRING)
                                                 .description("프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.")
                                                 .optional(),
@@ -956,8 +949,8 @@ class ProjectHttpApiTest {
                         new ProjectTechTagResponse(2L, "TypeScript")
                 ),
                 List.of(
-                        new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BACKEND", "https://cdn.example.com/avatar-101", null, null),
-                        new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FRONTEND", (Long) null, null, null)
+                        new ProjectMemberProfileResponse("dhyepark", "박다혜", 6, "BACKEND", "https://cdn.example.com/avatar-101", null, null),
+                        new ProjectMemberProfileResponse("zzaekkii", "김도현", 6, "FRONTEND", null, null, null)
                 ),
                 Instant.parse("2026-08-09T02:30:00Z"),
                 Instant.parse("2026-08-09T03:00:00Z")

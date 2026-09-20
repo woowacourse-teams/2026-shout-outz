@@ -824,7 +824,7 @@ class ProjectServiceTest {
         assertThat(response.registeredBy()).isEqualTo(REGISTERED_BY);
         assertThat(response.techTags()).containsExactly(new ProjectTechTagResponse(1L, "React"));
         assertThat(response.members()).containsExactly(new ProjectMemberProfileResponse(
-                REGISTERED_BY, "dhyepark", "박다혜", 6, "BACKEND", 101L, null, null
+                "dhyepark", "박다혜", 6, "BACKEND", null, null, null
         ));
     }
 
