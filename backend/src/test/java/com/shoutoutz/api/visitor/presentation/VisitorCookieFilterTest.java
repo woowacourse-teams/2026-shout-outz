@@ -47,16 +47,34 @@ class VisitorCookieFilterTest {
         assertThat(filterChain.getRequest()).isSameAs(request);
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = {"Lax", "None"})
     @DisplayName("발급한 쿠키는 HttpOnly, Secure, SameSite, 경로, 만료 기간을 설정값대로 가진다")
-    void issuesCookieWithConfiguredAttributes() throws ServletException, IOException {
+    void issuesCookieWithConfiguredAttributes(String sameSite) throws ServletException, IOException {
+        VisitorProperties properties = new VisitorProperties(
+                COOKIE_NAME,
+                Duration.ofDays(365),
+                true,
+                sameSite,
+                "a".repeat(32)
+        );
+        VisitorCookieFilter configuredFilter = new VisitorCookieFilter(
+                properties,
+                new VisitorKeyHasher(properties)
+        );
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        filter.doFilter(apiRequest("GET"), response, new MockFilterChain());
+        configuredFilter.doFilter(apiRequest("GET"), response, new MockFilterChain());
 
         assertThat(response.getHeader(HttpHeaders.SET_COOKIE))
                 .startsWith(COOKIE_NAME + "=")
-                .contains("Path=/", "Max-Age=31536000", "Secure", "HttpOnly", "SameSite=Lax");
+                .contains(
+                        "Path=/",
+                        "Max-Age=31536000",
+                        "Secure",
+                        "HttpOnly",
+                        "SameSite=" + sameSite
+                );
     }
 
     @Test
