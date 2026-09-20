@@ -4,15 +4,8 @@ import type {
   UserProfileSuccessResponse,
   UserProfileSummarySuccessResponse,
 } from '@/api/generated/schema';
-import type { ProfileSummary, UserProfile } from '@/types/user';
 
-export type { ProfileSummary };
-
-/**
- * 마이페이지 조회(`GET /api/v1/users/me`)는 공개 프로필(`GET /users/{handle}`)과 같은 응답을 준다.
- */
-export type MyProfile = UserProfile;
-
+/** 마이페이지 조회(`GET /api/v1/users/me`)는 공개 프로필과 같은 `UserProfileSuccessResponse`를 준다. */
 export async function fetchMyProfile(signal?: AbortSignal) {
   const response = await httpClient<UserProfileSuccessResponse>('/api/v1/users/me', {
     method: 'get',

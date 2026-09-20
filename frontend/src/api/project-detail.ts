@@ -2,10 +2,9 @@ import { queryOptions } from '@tanstack/react-query';
 import ky from 'ky';
 import { getApiUrl } from '@/api/url';
 import type { ProjectFindDetailSuccessResponse } from '@/api/generated/schema';
-import type { ProjectDetail, ProjectDetailMember } from '@/types/project';
+import type { ProjectDetail } from '@/types/project';
 
 export type { ProjectDetail };
-export type ProjectMember = ProjectDetailMember;
 
 export async function fetchProjectDetail(id: string, signal?: AbortSignal): Promise<ProjectDetail> {
   const response = await ky

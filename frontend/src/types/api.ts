@@ -11,7 +11,6 @@
  */
 import type {
   AuthSessionSuccessResponse,
-  CategoryFindAllSuccessResponse,
   CohortFindAllSuccessResponse,
   FeedCommentFindAllSuccessResponse,
   FeedFindAllSuccessResponse,
@@ -29,15 +28,14 @@ import type {
   UserProjectFindAllSuccessResponse,
   UserSearchSuccessResponse,
   UserVerificationRequestCreateRequest,
-  UserVerificationRequestCreateSuccessResponse,
   UserVerificationRequestSuccessResponse,
 } from '@/api/generated/schema';
 
 /** 봉투에서 `data`만 꺼낸다. 생성기가 `data?`로 뽑은 응답도 있어 undefined를 벗긴다. */
-export type Data<T extends { data?: unknown }> = NonNullable<T['data']>;
+type Data<T extends { data?: unknown }> = NonNullable<T['data']>;
 
 /** 봉투에서 `meta`만 꺼낸다. */
-export type Meta<T extends { meta?: unknown }> = NonNullable<T['meta']>;
+type Meta<T extends { meta?: unknown }> = NonNullable<T['meta']>;
 
 /** 배열 타입에서 원소 타입을 꺼낸다. */
 export type Item<T> = T extends readonly (infer E)[] ? E : never;
@@ -53,7 +51,6 @@ export type UserType = Data<UserProfileSuccessResponse>['userType'];
 // ── 세션 ────────────────────────────────────────────────────────────────────
 
 export type SessionData = Data<AuthSessionSuccessResponse>;
-export type SessionStatus = SessionData['status'];
 
 // ── 사용자 ──────────────────────────────────────────────────────────────────
 
@@ -62,12 +59,10 @@ export type UserProfileSummaryData = Data<UserProfileSummarySuccessResponse>;
 export type UserSearchItem = Item<Data<UserSearchSuccessResponse>['items']>;
 
 export type VerificationRequestData = Data<UserVerificationRequestSuccessResponse>;
-export type VerificationRequestCreated = Data<UserVerificationRequestCreateSuccessResponse>;
 export type VerificationRequestBody = UserVerificationRequestCreateRequest;
 
 // ── 카테고리 · 기수 · 기술 스택 ───────────────────────────────────────────────
 
-export type CategoryItem = Item<Data<CategoryFindAllSuccessResponse>>;
 export type CohortItem = Item<Data<CohortFindAllSuccessResponse>['items']>;
 export type TechTagItem = Item<Data<TechTagFindAllSuccessResponse>['items']>;
 

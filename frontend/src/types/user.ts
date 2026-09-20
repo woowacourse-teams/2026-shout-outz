@@ -1,11 +1,5 @@
 import { PROFILE_TABS } from '@/constants/user';
-import type {
-  Track,
-  UserProfileData,
-  UserProfileSummaryData,
-  UserSearchItem,
-  UserType,
-} from '@/types/api';
+import type { Track, UserProfileData, UserSearchItem, UserType } from '@/types/api';
 
 export type ProfileTab = (typeof PROFILE_TABS)[number];
 
@@ -17,6 +11,3 @@ export type { Track, UserType, UserSearchItem };
 
 /** 공개 프로필. `GET /api/v1/users/{handle}` */
 export type UserProfile = UserProfileData;
-
-/** 프로필 요약. `GET /api/v1/users/me/summary` */
-export type ProfileSummary = UserProfileSummaryData;

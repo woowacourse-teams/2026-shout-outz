@@ -1,11 +1,10 @@
 import { mutationOptions, queryOptions } from '@tanstack/react-query';
 import { httpClient } from '@/utils/client';
 import { setCsrfToken } from '@/utils/http';
-import type { SessionData, SessionStatus } from '@/types/api';
+import type { SessionData } from '@/types/api';
 import type { OAuthSignupRequest, OAuthSignupSuccessResponse } from '@/api/generated/schema';
 
 export type Session = SessionData;
-export type { SessionStatus };
 
 export type SignupInput = OAuthSignupRequest;
 

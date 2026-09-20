@@ -10,8 +10,6 @@ import type { Track } from '@/types/user';
 /** 최신 인증 신청. 신청 이력이 없으면 서버가 data를 비워 보낸다. */
 export type VerificationRequest = VerificationRequestData;
 
-export type VerificationStatus = VerificationRequest['status'];
-
 /** 신청 유형. 스키마는 GENERAL도 포함하지만 서버가 받는 값은 이 둘뿐이다. */
 export type VerificationUserType = Extract<
   VerificationRequestBody['userType'],

@@ -11,7 +11,6 @@ import type { CursorMeta } from '@/types/api';
 import type { FeedSort } from '@/types/feed';
 
 export type { Feed, FeedSort } from '@/types/feed';
-export type { CursorMeta };
 
 export async function fetchFeed(feedId: number, signal?: AbortSignal) {
   const response = await httpClient<FeedFindSuccessResponse>(`/api/v1/feeds/${feedId}`, {

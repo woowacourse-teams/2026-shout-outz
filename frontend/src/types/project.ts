@@ -60,8 +60,6 @@ export type UserProjectListItem = UserProjectListItemData;
 export type ProjectSummary = ProjectListItem;
 
 export type ProjectTechTag = Item<ProjectListItem['techTags']>;
-export type ProjectMember = Item<ProjectListItem['members']>;
 
 /** 상세 응답. `GET /api/v1/projects/{projectId}` */
 export type ProjectDetail = ProjectDetailData;
-export type ProjectDetailMember = Item<ProjectDetail['members']>;
