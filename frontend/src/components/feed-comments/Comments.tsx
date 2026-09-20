@@ -84,7 +84,7 @@ function GuestComments({ feedId }: { feedId: number }) {
 
 function CommentsWithSession({ feedId }: { feedId: number }) {
   const session = useSuspenseQuery(sessionQuery);
-  const viewer = session.data.status === 'AUTHENTICATED' ? session.data.userId : null;
+  const viewer = session.data.status === 'AUTHENTICATED' ? (session.data.userId ?? null) : null;
 
   return (
     <AsyncBoundary key={viewer ?? 'guest'}>
@@ -259,7 +259,7 @@ function CommentItem({
   return (
     <li className="min-w-0 py-4 first:pt-0 last:pb-0">
       <div className="mb-2 flex min-w-0 items-center gap-2">
-        <Avatar size="xs" alt="" />
+        <Avatar size="xs" src={item.author.avatarUrl ?? undefined} alt="" />
         <span className="min-w-0 truncate text-sm font-semibold text-gray-900">
           {item.author.displayName}
         </span>

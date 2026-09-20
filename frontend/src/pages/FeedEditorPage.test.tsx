@@ -241,7 +241,12 @@ test('다른 작성자의 피드는 수정 폼을 표시하지 않는다', async
   expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 });
 
-test('수정 시 기존 이벤트 카테고리와 미디어 연결을 보존한다', async () => {
+/**
+ * 조회 응답의 미디어는 공개 URL만 내려주고 mediaId가 없다(schema.ts의 FeedFindSuccessResponse).
+ * 그래서 수정 요청에 기존 첨부를 다시 실어 보낼 방법이 없어 mediaIds는 빈 배열로 나간다.
+ * 첨부 업로드 UI가 붙어 폼이 mediaId를 직접 들고 있게 되면 이 테스트를 보존 검증으로 되돌린다.
+ */
+test('수정 시 기존 이벤트 카테고리는 보존하고 미디어는 비워 보낸다', async () => {
   const original = {
     ...mockFeeds[0]!,
     categories: [
@@ -249,8 +254,8 @@ test('수정 시 기존 이벤트 카테고리와 미디어 연결을 보존한�
       { categoryId: 3, slug: 'event', displayName: '이벤트', type: 'EVENT' },
     ],
     media: [
-      { mediaId: 32, displayOrder: 1 },
-      { mediaId: 31, displayOrder: 0 },
+      { displayOrder: 1, url: 'https://cdn.example.com/media/32' },
+      { displayOrder: 0, url: 'https://cdn.example.com/media/31' },
     ],
   };
   let body: unknown;
@@ -265,7 +270,7 @@ test('수정 시 기존 이벤트 카테고리와 미디어 연결을 보존한�
   const { onSaved } = show(1);
   await user.click(await screen.findByRole('button', { name: '수정 완료' }));
   await waitFor(() => expect(onSaved).toHaveBeenCalledWith(1));
-  expect(body).toEqual({ content: original.content, categoryIds: [1, 3], mediaIds: [31, 32] });
+  expect(body).toEqual({ content: original.content, categoryIds: [1, 3], mediaIds: [] });
 });
 
 test('본인 글 메뉴에서 수정하고 저장하면 상세 페이지로 돌아간다', async () => {

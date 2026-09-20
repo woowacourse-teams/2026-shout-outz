@@ -1,16 +1,12 @@
 import { queryOptions } from '@tanstack/react-query';
 import { httpClient } from '@/utils/client';
+import type { CategoryFindAllSuccessResponse } from '@/api/generated/schema';
+import type { CategoryItem } from '@/types/api';
 
-export interface Category {
-  categoryId: number;
-  slug: string;
-  displayName: string;
-  type: 'GENERAL' | 'EVENT';
-  displayOrder: number;
-}
+export type Category = CategoryItem;
 
 export async function fetchCategories(signal?: AbortSignal) {
-  const response = await httpClient<{ status: 'success'; data: Category[] }>('/api/v1/categories', {
+  const response = await httpClient<CategoryFindAllSuccessResponse>('/api/v1/categories', {
     method: 'get',
     signal,
   });

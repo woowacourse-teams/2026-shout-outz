@@ -1,4 +1,11 @@
 import { PROFILE_TABS } from '@/constants/user';
+import type {
+  Track,
+  UserProfileData,
+  UserProfileSummaryData,
+  UserSearchItem,
+  UserType,
+} from '@/types/api';
 
 export type ProfileTab = (typeof PROFILE_TABS)[number];
 
@@ -6,19 +13,10 @@ export type ProfileTab = (typeof PROFILE_TABS)[number];
 export const isProfileTab = (value: unknown): value is ProfileTab =>
   PROFILE_TABS.some((tab) => tab === value);
 
-// TODO 대체 UserProfile
-export interface UserProfile {
-  handle: string;
-  displayName: string;
-  userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
-  track: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
-  cohort: number | null;
-  bio: string | null;
-  avatarUrl: string | null;
-  githubProfileUrl: string | null;
-  blogUrl: string | null;
-  counts: {
-    projects: number;
-    feeds: number;
-  };
-}
+export type { Track, UserType, UserSearchItem };
+
+/** 공개 프로필. `GET /api/v1/users/{handle}` */
+export type UserProfile = UserProfileData;
+
+/** 프로필 요약. `GET /api/v1/users/me/summary` */
+export type ProfileSummary = UserProfileSummaryData;

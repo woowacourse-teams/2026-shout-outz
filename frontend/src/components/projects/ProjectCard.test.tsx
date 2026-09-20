@@ -12,10 +12,7 @@ const PROJECT: ProjectCardProps = {
     { id: 1, displayName: 'React' },
     { id: 2, displayName: 'Spring' },
   ],
-  members: [
-    { userId: 7, displayName: '박다혜' },
-    { userId: 8, displayName: '김도현' },
-  ],
+  members: [{ displayName: '박다혜' }, { displayName: '김도현' }],
 };
 
 describe('ProjectCard', () => {

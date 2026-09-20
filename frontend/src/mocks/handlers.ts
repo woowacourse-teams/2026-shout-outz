@@ -31,7 +31,7 @@ export function createFeedHandlers() {
         {
           id: id * 10,
           content: '경험을 공유해 주셔서 감사합니다!',
-          author: { userId: 1, displayName: '개발용 사용자', avatarImageId: null },
+          author: { userId: 1, displayName: '개발용 사용자', avatarUrl: null },
           parentId: null,
           createdAt: '2026-09-14T00:00:00Z',
           updatedAt: '2026-09-14T00:00:00Z',
@@ -65,7 +65,16 @@ export function createFeedHandlers() {
       }),
     ),
     http.get('/api/v1/users/me', () =>
-      HttpResponse.json({ status: 'success', data: mockFeeds[0]!.author }),
+      HttpResponse.json({
+        status: 'success',
+        data: {
+          ...mockFeeds[0]!.author,
+          bio: null,
+          githubProfileUrl: null,
+          blogUrl: null,
+          counts: { projects: 0, feeds: 1 },
+        },
+      }),
     ),
     http.post('/api/v1/feeds', async ({ request }) => {
       const body = (await request.json()) as {
@@ -135,8 +144,7 @@ export function createFeedHandlers() {
         body.categoryIds.some((id) => id !== 1 && id !== 3) ||
         new Set(body.categoryIds).size !== body.categoryIds.length ||
         !Array.isArray(body.mediaIds) ||
-        new Set(body.mediaIds).size !== body.mediaIds.length ||
-        body.mediaIds.some((id) => !existing.media.some((media) => media.mediaId === id))
+        new Set(body.mediaIds).size !== body.mediaIds.length
       ) {
         return HttpResponse.json(
           {
@@ -155,7 +163,11 @@ export function createFeedHandlers() {
             ? { categoryId: 1, slug: 'backend', displayName: '백엔드', type: 'GENERAL' }
             : { categoryId: 3, slug: 'tecode-talk', displayName: '테코드톡', type: 'EVENT' },
         ),
-        media: body.mediaIds.map((mediaId, displayOrder) => ({ mediaId, displayOrder })),
+        // 조회 응답의 미디어는 공개 URL만 내려준다. mediaId는 요청에만 쓴다.
+        media: body.mediaIds.map((mediaId, displayOrder) => ({
+          displayOrder,
+          url: `https://cdn.example.com/media/${mediaId}`,
+        })),
         updatedAt: new Date().toISOString(),
       };
       feeds[index] = feed;
@@ -235,7 +247,7 @@ export function createFeedHandlers() {
       const item: FeedComment = {
         id: sequence++,
         content: body.content,
-        author: { userId: 1, displayName: '개발용 사용자', avatarImageId: null },
+        author: { userId: 1, displayName: '개발용 사용자', avatarUrl: null },
         parentId: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

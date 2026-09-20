@@ -1,16 +1,17 @@
 import { infiniteQueryOptions, mutationOptions } from '@tanstack/react-query';
 import { httpClient } from '@/utils/client';
-import { nextCursor, type Envelope } from '@/apis/feed';
-export interface FeedComment {
-  id: number;
-  content: string | null;
-  author: { userId: number; displayName: string; avatarImageId: number | null };
-  parentId: number | null;
-  createdAt: string;
-  updatedAt: string;
-  editable: boolean;
-  edited: boolean;
-  deleted: boolean;
+import { nextCursor } from '@/apis/feed';
+import type { FeedCommentFindAllSuccessResponse } from '@/api/generated/schema';
+import type { CursorMeta } from '@/types/api';
+import type { FeedComment } from '@/types/feed';
+
+export type { FeedComment };
+
+/** 댓글 목록은 meta가 optional이라 봉투를 따로 둔다. */
+interface CommentsPage {
+  status: string;
+  data: FeedComment[];
+  meta: CursorMeta;
 }
 
 interface FetchCommentsParams {
@@ -21,14 +22,20 @@ interface FetchCommentsParams {
 }
 
 export async function fetchComments({ feedId, cursor, size, signal }: FetchCommentsParams) {
-  const response = await httpClient<Envelope<FeedComment[]>>(`/api/v1/feeds/${feedId}/comments`, {
-    method: 'get',
-    signal,
-    searchParams: { sort: 'LATEST', size, ...(cursor ? { cursor } : {}) },
-  });
+  const response = await httpClient<FeedCommentFindAllSuccessResponse>(
+    `/api/v1/feeds/${feedId}/comments`,
+    {
+      method: 'get',
+      signal,
+      searchParams: { sort: 'LATEST', size, ...(cursor ? { cursor } : {}) },
+    },
+  );
 
   if (!response) throw new Error('댓글 응답이 비어 있습니다.');
-  return response;
+  return {
+    ...response,
+    meta: response.meta ?? { hasNext: false, nextCursor: null },
+  } satisfies CommentsPage;
 }
 
 export function commentsQuery(feedId: number, viewer: number | null) {

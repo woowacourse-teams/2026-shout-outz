@@ -32,6 +32,7 @@ export function ProjectList() {
                 likeCount={project.likeCount}
                 commentCount={project.commentCount}
                 techTags={project.techTags}
+                thumbnailUrl={project.thumbnailUrl}
                 members={project.members}
               />
             </Link>

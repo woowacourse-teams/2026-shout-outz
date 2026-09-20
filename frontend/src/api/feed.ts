@@ -1,13 +1,12 @@
 import { queryOptions } from '@tanstack/react-query';
-import { type Feed, type FeedListParams } from '@/types/feed';
-import { type ApiSuccessBody, httpClient } from '@/utils/client';
+import type { FeedFindAllSuccessResponse } from '@/api/generated/schema';
+import { type FeedListItem, type FeedListParams } from '@/types/feed';
+import { httpClient } from '@/utils/client';
 
 const FEEDS_PATH = '/api/v1/feeds';
 
-export async function fetchFeedList({ sort, size }: FeedListParams): Promise<Feed[]> {
-  const body = await httpClient<
-    ApiSuccessBody<Feed[], { nextCursor: string | null; hasNext: boolean }>
-  >(FEEDS_PATH, {
+export async function fetchFeedList({ sort, size }: FeedListParams): Promise<FeedListItem[]> {
+  const body = await httpClient<FeedFindAllSuccessResponse>(FEEDS_PATH, {
     method: 'get',
     searchParams: { sort, size },
   });

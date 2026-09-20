@@ -55,6 +55,7 @@ export function UserProfilePage() {
           bio={profile.bio}
           githubProfileUrl={profile.githubProfileUrl}
           blogUrl={profile.blogUrl}
+          avatarUrl={profile.avatarUrl}
         />
 
         <MyProfileActions handle={handle} />
@@ -112,6 +113,7 @@ function ProjectTab({ handle }: { handle: string }) {
                 likeCount={project.likeCount}
                 commentCount={project.commentCount}
                 techTags={project.techTags}
+                thumbnailUrl={project.thumbnailUrl}
                 members={project.members}
               />
             </li>
@@ -119,7 +121,11 @@ function ProjectTab({ handle }: { handle: string }) {
         </ul>
       )}
       {query.hasNextPage && (
-        <button type="button" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>
+        <button
+          type="button"
+          disabled={query.isFetchingNextPage}
+          onClick={() => void query.fetchNextPage()}
+        >
           {query.isFetchingNextPage ? '불러오는 중…' : '프로젝트 더 보기'}
         </button>
       )}
@@ -145,7 +151,11 @@ function FeedTab({ handle }: { handle: string }) {
         </ul>
       )}
       {query.hasNextPage && (
-        <button type="button" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>
+        <button
+          type="button"
+          disabled={query.isFetchingNextPage}
+          onClick={() => void query.fetchNextPage()}
+        >
           {query.isFetchingNextPage ? '불러오는 중…' : '피드 더 보기'}
         </button>
       )}

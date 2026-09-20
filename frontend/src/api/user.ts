@@ -1,15 +1,20 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { type ProjectSummary } from '@/types/project';
-import { type Feed } from '@/types/feed';
+import type {
+  UserFeedFindAllSuccessResponse,
+  UserProfileSuccessResponse,
+  UserProjectFindAllSuccessResponse,
+} from '@/api/generated/schema';
+import { type UserProjectListItem } from '@/types/project';
+import { type UserFeedListItem } from '@/types/feed';
 import { type UserProfile } from '@/types/user';
-import { type ApiSuccessBody, httpClient } from '@/utils/client';
+import { httpClient } from '@/utils/client';
 
 const USERS_PATH = '/api/v1/users';
 
 export async function fetchUserProfile(handle: string): Promise<UserProfile> {
   const path = `${USERS_PATH}/${handle}`;
 
-  const body = await httpClient<ApiSuccessBody<UserProfile>>(path, { method: 'get' });
+  const body = await httpClient<UserProfileSuccessResponse>(path, { method: 'get' });
   if (!body) throw new Error(`프로필 응답이 비어 있습니다: ${path}`);
 
   return body.data;
@@ -22,7 +27,7 @@ export const userProfileQueryOptions = (handle: string) =>
   });
 
 /** 프로필 프로젝트 탭. 첫 페이지만 조회한다(다음 커서는 아직 쓰지 않는다). */
-export async function fetchUserProjects(handle: string): Promise<ProjectSummary[]> {
+export async function fetchUserProjects(handle: string): Promise<UserProjectListItem[]> {
   const page = await fetchUserProjectsPage(handle);
   return page.data;
 }
@@ -30,12 +35,11 @@ export async function fetchUserProjects(handle: string): Promise<ProjectSummary[
 async function fetchUserProjectsPage(handle: string, cursor?: string, signal?: AbortSignal) {
   const path = `${USERS_PATH}/${handle}/projects`;
 
-  const body = await httpClient<
-    ApiSuccessBody<
-      ProjectSummary[],
-      { nextCursor: string | null; hasNext: boolean }
-    >
-  >(path, { method: 'get', signal, searchParams: cursor ? { cursor } : undefined });
+  const body = await httpClient<UserProjectFindAllSuccessResponse>(path, {
+    method: 'get',
+    signal,
+    searchParams: cursor ? { cursor } : undefined,
+  });
   if (!body) throw new Error(`프로필 프로젝트 응답이 비어 있습니다: ${path}`);
 
   return { data: body.data, meta: body.meta ?? { nextCursor: null, hasNext: false } };
@@ -57,7 +61,7 @@ export const userProjectsInfiniteQueryOptions = (handle: string) =>
   });
 
 /** 프로필 피드 탭. 첫 페이지만 조회한다. 응답은 피드 목록과 같은 모양이다. */
-export async function fetchUserFeeds(handle: string): Promise<Feed[]> {
+export async function fetchUserFeeds(handle: string): Promise<UserFeedListItem[]> {
   const page = await fetchUserFeedsPage(handle);
   return page.data;
 }
@@ -65,10 +69,11 @@ export async function fetchUserFeeds(handle: string): Promise<Feed[]> {
 async function fetchUserFeedsPage(handle: string, cursor?: string, signal?: AbortSignal) {
   const path = `${USERS_PATH}/${handle}/feeds`;
 
-  const body = await httpClient<ApiSuccessBody<Feed[], { nextCursor: string | null; hasNext: boolean }>>(
-    path,
-    { method: 'get', signal, searchParams: cursor ? { cursor } : undefined },
-  );
+  const body = await httpClient<UserFeedFindAllSuccessResponse>(path, {
+    method: 'get',
+    signal,
+    searchParams: cursor ? { cursor } : undefined,
+  });
   if (!body) throw new Error(`프로필 피드 응답이 비어 있습니다: ${path}`);
 
   return { data: body.data, meta: body.meta ?? { nextCursor: null, hasNext: false } };

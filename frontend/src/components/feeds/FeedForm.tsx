@@ -47,9 +47,9 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
             .filter((item) => item.type === 'EVENT')
             .map((item) => item.categoryId) ?? []),
         ],
-        mediaIds: [...(initialFeed?.media ?? [])]
-          .sort((a, b) => a.displayOrder - b.displayOrder)
-          .flatMap((item) => (item.mediaId === undefined ? [] : [item.mediaId])),
+        // 조회 응답의 미디어에는 mediaId가 없어 기존 첨부를 그대로 다시 보낼 수 없다.
+        // 첨부 업로드 UI가 붙을 때 폼이 mediaId를 직접 들고 있도록 바꾼다(docs/api-types.md).
+        mediaIds: [],
       });
       client.setQueryData(feedQuery(feed.feedId).queryKey, feed);
       void client.invalidateQueries({ queryKey: ['feeds'] });

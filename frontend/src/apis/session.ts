@@ -1,18 +1,13 @@
 import { mutationOptions, queryOptions } from '@tanstack/react-query';
 import { httpClient } from '@/utils/client';
 import { setCsrfToken } from '@/utils/http';
+import type { SessionData, SessionStatus } from '@/types/api';
+import type { OAuthSignupRequest, OAuthSignupSuccessResponse } from '@/api/generated/schema';
 
-export interface Session {
-  status: 'AUTHENTICATED' | 'UNAUTHENTICATED' | 'SIGNUP_REQUIRED';
-  userId: number | null;
-  csrfToken: string;
-  role: string | null;
-}
+export type Session = SessionData;
+export type { SessionStatus };
 
-export interface SignupInput {
-  handle: string;
-  displayName: string;
-}
+export type SignupInput = OAuthSignupRequest;
 
 export async function fetchSession(signal?: AbortSignal) {
   const response = await httpClient<{ status: 'success'; data: Session }>('/api/v1/auth/session', {
@@ -41,10 +36,10 @@ export const sessionQuery = queryOptions({
 });
 
 export async function signup(input: SignupInput) {
-  const response = await httpClient<{ status: 'success'; data: { userId: number } }>(
-    '/api/v1/auth/signup',
-    { method: 'post', json: input },
-  );
+  const response = await httpClient<OAuthSignupSuccessResponse>('/api/v1/auth/signup', {
+    method: 'post',
+    json: input,
+  });
 
   if (!response) throw new Error('가입 결과를 확인하지 못했습니다.');
   return response.data;

@@ -1,6 +1,5 @@
 import Markdown from 'react-markdown';
 import type { Feed } from '@/apis/feed';
-import { FeedMedia } from '@/components/feeds/FeedMedia';
 import { Image } from '@/components/Image';
 import { LinkPreview } from '@/components/feeds/LinkPreview';
 
@@ -48,23 +47,16 @@ export function FeedContent({ feed }: { feed: Feed }) {
       )}
       {media.length > 0 && (
         <div className="mt-4 space-y-3">
-          {media.map(({ mediaId, url }, index) => (
-            url ? (
-              <Image
-                key={url}
-                src={url}
-                alt="피드 첨부 이미지"
-                loading="lazy"
-                className="max-h-96 w-full rounded-xl bg-gray-50 object-contain"
-                fallback={<p className="text-sm text-gray-500">이미지를 불러오지 못했습니다.</p>}
-              />
-            ) : mediaId !== undefined ? (
-              <FeedMedia key={mediaId} mediaId={mediaId} />
-            ) : (
-              <p key={`media-${index}`} className="text-sm text-gray-500">
-                이미지를 불러오지 못했습니다.
-              </p>
-            )
+          {/* 조회 응답의 미디어는 공개 URL만 내려온다. mediaId로 따로 조회하던 경로는 없앴다. */}
+          {media.map(({ url, displayOrder }) => (
+            <Image
+              key={`${displayOrder}-${url}`}
+              src={url}
+              alt="피드 첨부 이미지"
+              loading="lazy"
+              className="max-h-96 w-full rounded-xl bg-gray-50 object-contain"
+              fallback={<p className="text-sm text-gray-500">이미지를 불러오지 못했습니다.</p>}
+            />
           ))}
         </div>
       )}
