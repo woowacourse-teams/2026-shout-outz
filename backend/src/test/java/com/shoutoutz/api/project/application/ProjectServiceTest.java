@@ -821,7 +821,7 @@ class ProjectServiceTest {
         ProjectDetailResponse response = projectService.findDetail(100L, null);
 
         assertThat(response.id()).isEqualTo(100L);
-        assertThat(response.registeredBy()).isEqualTo(REGISTERED_BY);
+        assertThat(response.editable()).isFalse();
         assertThat(response.techTags()).containsExactly(new ProjectTechTagResponse(1L, "React"));
         assertThat(response.members()).containsExactly(new ProjectMemberProfileResponse(
                 "dhyepark", "박다혜", 6, "BACKEND", null, null, null
@@ -837,6 +837,7 @@ class ProjectServiceTest {
         ProjectDetailResponse response = projectService.findDetail(100L, REGISTERED_BY);
 
         assertThat(response.approvalStatus()).isEqualTo(ApprovalStatus.REJECTED);
+        assertThat(response.editable()).isTrue();
     }
 
     @Test

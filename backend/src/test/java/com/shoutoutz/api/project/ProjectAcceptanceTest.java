@@ -221,7 +221,7 @@ class ProjectAcceptanceTest {
         assertThat(response.jsonPath().getString("status")).isEqualTo("success");
         assertThat(response.jsonPath().getLong("data.id")).isEqualTo(projectId);
         assertThat(response.jsonPath().getString("data.approvalStatus")).isEqualTo("PENDING");
-        assertThat(response.jsonPath().getLong("data.registeredBy")).isEqualTo(author.userId());
+        assertThat(response.jsonPath().getBoolean("data.editable")).isTrue();
         assertThat(response.jsonPath().getBoolean("data.likedByMe")).isFalse();
         assertThat(response.jsonPath().getList("data.techTags.id", Long.class)).containsExactlyElementsOf(techTagIds);
         assertThat(response.jsonPath().getList("data.members.handle", String.class))
@@ -285,6 +285,7 @@ class ProjectAcceptanceTest {
 
         assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
         assertThat(response.jsonPath().getString("data.approvalStatus")).isEqualTo("APPROVED");
+        assertThat(response.jsonPath().getBoolean("data.editable")).isFalse();
         assertThat(response.jsonPath().getBoolean("data.likedByMe")).isFalse();
         assertThat(response.jsonPath().getBoolean("data.bookmarkedByMe")).isFalse();
     }

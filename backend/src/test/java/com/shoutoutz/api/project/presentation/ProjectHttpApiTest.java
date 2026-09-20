@@ -123,7 +123,7 @@ class ProjectHttpApiTest {
             + "리액션 및 댓글 수를 조회한다. 로그인하지 않아도 조회할 수 있다. "
             + "승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 조회할 수 있으며, "
             + "볼 수 없는 프로젝트는 존재 여부를 숨기기 위해 없는 프로젝트와 같은 404를 반환한다. "
-            + "registeredBy가 null이면 이전 기수에서 이관된 프로젝트다. "
+            + "editable은 요청자가 등록자 본인인지를 나타내며, 수정·삭제 버튼 노출에 쓴다. "
             + "프로젝트 ID가 숫자가 아니면 400을 반환한다.";
     private static final String FILTER_OPTIONS_SUMMARY = "프로젝트 필터 옵션 조회";
     private static final String FILTER_OPTIONS_DESCRIPTION = "필터 모달에 보여줄 기수 및 기술 스택 목록과, "
@@ -550,7 +550,7 @@ class ProjectHttpApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data.id").value(100))
-                .andExpect(jsonPath("$.data.registeredBy").value(7))
+                .andExpect(jsonPath("$.data.editable").value(false))
                 .andExpect(jsonPath("$.data.rejectReason").value(nullValue()))
                 .andExpect(jsonPath("$.data.likedByMe").value(false))
                 .andExpect(jsonPath("$.data.techTags[0].displayName").value("React"))
@@ -590,9 +590,6 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data.rejectReason").type(STRING)
                                                 .description("반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다.")
                                                 .optional(),
-                                        fieldWithPath("data.registeredBy").type(NUMBER)
-                                                .description("등록자 사용자 ID. null이면 이전 기수에서 이관된 프로젝트다.")
-                                                .optional(),
                                         fieldWithPath("data.viewCount").type(NUMBER).description("조회수"),
                                         fieldWithPath("data.starCount").type(NUMBER)
                                                 .description("GitHub star 수. 동기화 전이면 null이다.")
@@ -603,6 +600,9 @@ class ProjectHttpApiTest {
                                                 .description("요청자의 좋아요 여부. 비로그인이면 false다."),
                                         fieldWithPath("data.bookmarkedByMe").type(BOOLEAN)
                                                 .description("요청자의 북마크 여부. 비로그인이면 false다."),
+                                        fieldWithPath("data.editable").type(BOOLEAN)
+                                                .description("요청자가 등록자 본인인지 여부. 수정·삭제할 수 있는 사용자에게만 true다. "
+                                                        + "비로그인이거나 이전 기수에서 이관된 프로젝트면 false다."),
                                         fieldWithPath("data.commentCount").type(NUMBER)
                                                 .description("삭제되지 않은 댓글 수 (대댓글 포함)"),
                                         fieldWithPath("data.techTags").type(ARRAY).description("기술 스택 목록. 등록 순서대로 정렬한다."),
@@ -936,11 +936,11 @@ class ProjectHttpApiTest {
                 ServiceStatus.OPERATING,
                 ApprovalStatus.APPROVED,
                 null,
-                7L,
                 831,
                 128,
                 84,
                 28,
+                false,
                 false,
                 false,
                 18,
