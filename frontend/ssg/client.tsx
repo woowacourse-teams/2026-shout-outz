@@ -5,6 +5,8 @@ import '@/styles/index.css';
 import { Document } from '@/Document';
 import { App } from '@/App';
 import { createAppRouter } from './router';
+import { analytics } from '@/utils/analytics';
+import { connectRouterPageViews } from '@/utils/analytics/connect';
 
 const queryClient = new QueryClient();
 const router = createAppRouter(queryClient);
@@ -17,6 +19,8 @@ async function bootstrap() {
     const { worker } = await import('@/mocks/browser');
     await worker.start({ onUnhandledRequest: 'bypass' });
   }
+  connectRouterPageViews(router, analytics, window.location.pathname + window.location.search);
+
   const routerHydrationState = window.$_TSR;
   const tree = (
     <Document>
