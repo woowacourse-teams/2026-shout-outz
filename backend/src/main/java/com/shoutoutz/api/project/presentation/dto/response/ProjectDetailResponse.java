@@ -25,13 +25,13 @@ public record ProjectDetailResponse(
         ServiceStatus serviceStatus,
         ApprovalStatus approvalStatus,
         String rejectReason,
-        Long registeredBy,
         int viewCount,
         Integer starCount,
         long likeCount,
         long bookmarkCount,
         boolean likedByMe,
         boolean bookmarkedByMe,
+        boolean editable,
         long commentCount,
         List<ProjectTechTagResponse> techTags,
         List<ProjectMemberProfileResponse> members,
@@ -42,7 +42,8 @@ public record ProjectDetailResponse(
     public static ProjectDetailResponse from(
             ProjectDetail detail,
             Map<Long, URI> mediaUrls,
-            String descriptionMd
+            String descriptionMd,
+            Long viewerId
     ) {
         return new ProjectDetailResponse(
                 detail.id(),
@@ -58,13 +59,13 @@ public record ProjectDetailResponse(
                 detail.serviceStatus(),
                 detail.approvalStatus(),
                 detail.rejectReason(),
-                detail.registeredBy(),
                 detail.viewCount(),
                 detail.starCount(),
                 detail.likeCount(),
                 detail.bookmarkCount(),
                 detail.likedByMe(),
                 detail.bookmarkedByMe(),
+                detail.isEditableBy(viewerId),
                 detail.commentCount(),
                 detail.techTags().stream().map(ProjectTechTagResponse::from).toList(),
                 detail.members().stream()
@@ -72,63 +73,6 @@ public record ProjectDetailResponse(
                         .toList(),
                 detail.createdAt(),
                 detail.updatedAt()
-        );
-    }
-
-    @Deprecated
-    public ProjectDetailResponse(
-            long id,
-            String slug,
-            String title,
-            String teamName,
-            String tagline,
-            int cohort,
-            Long thumbnailMediaId,
-            String descriptionMd,
-            String githubRepositoryUrl,
-            String deploymentUrl,
-            ServiceStatus serviceStatus,
-            ApprovalStatus approvalStatus,
-            String rejectReason,
-            Long registeredBy,
-            int viewCount,
-            Integer starCount,
-            long likeCount,
-            long bookmarkCount,
-            boolean likedByMe,
-            boolean bookmarkedByMe,
-            long commentCount,
-            List<ProjectTechTagResponse> techTags,
-            List<ProjectMemberProfileResponse> members,
-            Instant createdAt,
-            Instant updatedAt
-    ) {
-        this(
-                id,
-                slug,
-                title,
-                teamName,
-                tagline,
-                cohort,
-                (String) null,
-                descriptionMd,
-                githubRepositoryUrl,
-                deploymentUrl,
-                serviceStatus,
-                approvalStatus,
-                rejectReason,
-                registeredBy,
-                viewCount,
-                starCount,
-                likeCount,
-                bookmarkCount,
-                likedByMe,
-                bookmarkedByMe,
-                commentCount,
-                techTags,
-                members,
-                createdAt,
-                updatedAt
         );
     }
 

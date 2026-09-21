@@ -246,7 +246,8 @@ public class ProjectService {
         return ProjectDetailResponse.from(
                 detail,
                 mediaUrls,
-                descriptionMd
+                descriptionMd,
+                loginUserId
         );
     }
 

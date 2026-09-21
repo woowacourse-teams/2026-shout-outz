@@ -43,6 +43,25 @@ class ProjectDetailTest {
         assertThat(detail.isVisibleTo(null)).isFalse();
     }
 
+    @Test
+    @DisplayName("등록자 본인만 수정할 수 있고, 다른 사용자와 비로그인 사용자는 수정할 수 없다.")
+    void onlyRegistrantCanEdit() {
+        ProjectDetail detail = detail(ApprovalStatus.APPROVED, REGISTERED_BY);
+
+        assertThat(detail.isEditableBy(REGISTERED_BY)).isTrue();
+        assertThat(detail.isEditableBy(OTHER_USER)).isFalse();
+        assertThat(detail.isEditableBy(null)).isFalse();
+    }
+
+    @Test
+    @DisplayName("등록자가 없는 이관 프로젝트는 비로그인 사용자를 포함해 누구도 수정할 수 없다.")
+    void archivedProjectIsNotEditable() {
+        ProjectDetail detail = detail(ApprovalStatus.APPROVED, null);
+
+        assertThat(detail.isEditableBy(null)).isFalse();
+        assertThat(detail.isEditableBy(REGISTERED_BY)).isFalse();
+    }
+
     private static ProjectDetail detail(ApprovalStatus approvalStatus, Long registeredBy) {
         return new ProjectDetail(
                 1L,

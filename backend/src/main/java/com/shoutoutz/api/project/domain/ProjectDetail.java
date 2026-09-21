@@ -43,11 +43,17 @@ public record ProjectDetail(
 
     /**
      * 승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 볼 수 있다.
-     * 이관 프로젝트(등록자 null)를 비로그인 사용자(null)가 요청하면 null끼리 같다고 판단되지 않도록, 등록자가 있을 때만 비교한다.
      */
     public boolean isVisibleTo(Long viewerId) {
-        return approvalStatus == ApprovalStatus.APPROVED
-                || (registeredBy != null && registeredBy.equals(viewerId));
+        return approvalStatus == ApprovalStatus.APPROVED || isEditableBy(viewerId);
+    }
+
+    /**
+     * 등록자 본인만 수정하거나 삭제할 수 있다.
+     * 이관 프로젝트(등록자 null)를 비로그인 사용자(null)가 요청하면 null끼리 같다고 판단되지 않도록, 등록자가 있을 때만 비교한다.
+     */
+    public boolean isEditableBy(Long viewerId) {
+        return registeredBy != null && registeredBy.equals(viewerId);
     }
 
     public ProjectDetail withTechTagsAndMembers(List<ProjectTechTag> techTags, List<ProjectMemberProfile> members) {
