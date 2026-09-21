@@ -88,6 +88,8 @@ class FeedHttpApiTest {
                         .queryParam("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].feedId").value(FEED_ID))
+                .andExpect(jsonPath("$.data[0].author.avatarImageId").value(21L))
+                .andExpect(jsonPath("$.data[0].media[0].mediaId").value(21L))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
                 .andDo(document(

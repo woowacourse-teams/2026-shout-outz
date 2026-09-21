@@ -99,9 +99,9 @@ paths:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"\
-                    displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\",\"message\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
+                    ,\"message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
                     :\"slug 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
@@ -215,12 +215,12 @@ paths:
                   value: "{\"status\":\"success\",\"data\":[{\"feedId\":10,\"content\"\
                     :\"본문입니다.\",\"author\":{\"handle\":\"zzaekkii\",\"displayName\"\
                     :\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\":\"BACKEND\"\
-                    ,\"cohort\":8,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
+                    ,\"cohort\":8,\"avatarImageId\":21,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
                     },\"categories\":[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\"\
-                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"url\":\"https://cdn.example.com/media/21/display\"\
-                    ,\"displayOrder\":0}],\"createdAt\":\"2026-09-11T00:00:00Z\",\"\
-                    updatedAt\":\"2026-09-11T00:00:00Z\"}],\"meta\":{\"nextCursor\"\
-                    :\"next-cursor\",\"hasNext\":true}}"
+                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"mediaId\":21,\"\
+                    url\":\"https://cdn.example.com/media/21/display\",\"displayOrder\"\
+                    :0}],\"createdAt\":\"2026-09-11T00:00:00Z\",\"updatedAt\":\"2026-09-11T00:00:00Z\"\
+                    }],\"meta\":{\"nextCursor\":\"next-cursor\",\"hasNext\":true}}"
     post:
       tags:
       - Feed
@@ -292,11 +292,12 @@ paths:
                   value: "{\"status\":\"success\",\"data\":{\"feedId\":10,\"content\"\
                     :\"본문입니다.\",\"author\":{\"handle\":\"zzaekkii\",\"displayName\"\
                     :\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\":\"BACKEND\"\
-                    ,\"cohort\":8,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
+                    ,\"cohort\":8,\"avatarImageId\":21,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
                     },\"categories\":[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\"\
-                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"url\":\"https://cdn.example.com/media/21/display\"\
-                    ,\"displayOrder\":0}],\"createdAt\":\"2026-09-11T00:00:00Z\",\"\
-                    updatedAt\":\"2026-09-11T00:00:00Z\"}}"
+                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"mediaId\":21,\"\
+                    url\":\"https://cdn.example.com/media/21/display\",\"displayOrder\"\
+                    :0}],\"createdAt\":\"2026-09-11T00:00:00Z\",\"updatedAt\":\"2026-09-11T00:00:00Z\"\
+                    }}"
   /api/v1/news:
     get:
       tags:
@@ -924,10 +925,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1015,9 +1016,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -1146,11 +1147,12 @@ paths:
                   value: "{\"status\":\"success\",\"data\":{\"feedId\":10,\"content\"\
                     :\"본문입니다.\",\"author\":{\"handle\":\"zzaekkii\",\"displayName\"\
                     :\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\":\"BACKEND\"\
-                    ,\"cohort\":8,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
+                    ,\"cohort\":8,\"avatarImageId\":21,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
                     },\"categories\":[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\"\
-                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"url\":\"https://cdn.example.com/media/21/display\"\
-                    ,\"displayOrder\":0}],\"createdAt\":\"2026-09-11T00:00:00Z\",\"\
-                    updatedAt\":\"2026-09-11T00:00:00Z\"}}"
+                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"mediaId\":21,\"\
+                    url\":\"https://cdn.example.com/media/21/display\",\"displayOrder\"\
+                    :0}],\"createdAt\":\"2026-09-11T00:00:00Z\",\"updatedAt\":\"2026-09-11T00:00:00Z\"\
+                    }}"
         "404":
           description: "404"
           content:
@@ -1217,11 +1219,12 @@ paths:
                   value: "{\"status\":\"success\",\"data\":{\"feedId\":10,\"content\"\
                     :\"본문입니다.\",\"author\":{\"handle\":\"zzaekkii\",\"displayName\"\
                     :\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\":\"BACKEND\"\
-                    ,\"cohort\":8,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
+                    ,\"cohort\":8,\"avatarImageId\":21,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
                     },\"categories\":[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\"\
-                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"url\":\"https://cdn.example.com/media/21/display\"\
-                    ,\"displayOrder\":0}],\"createdAt\":\"2026-09-11T00:00:00Z\",\"\
-                    updatedAt\":\"2026-09-11T00:00:00Z\"}}"
+                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"mediaId\":21,\"\
+                    url\":\"https://cdn.example.com/media/21/display\",\"displayOrder\"\
+                    :0}],\"createdAt\":\"2026-09-11T00:00:00Z\",\"updatedAt\":\"2026-09-11T00:00:00Z\"\
+                    }}"
         "403":
           description: "403"
           content:
@@ -1445,9 +1448,9 @@ paths:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"}]}"
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -3118,12 +3121,13 @@ paths:
                   value: "{\"status\":\"success\",\"data\":[{\"feedId\":10,\"content\"\
                     :\"사용자 피드 본문\",\"author\":{\"handle\":\"zzaekkii\",\"displayName\"\
                     :\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\":\"BACKEND\"\
-                    ,\"cohort\":8,\"avatarUrl\":\"https://cdn.example.com/media/20/display\"\
+                    ,\"cohort\":8,\"avatarImageId\":20,\"avatarUrl\":\"https://cdn.example.com/media/20/display\"\
                     },\"categories\":[{\"categoryId\":1,\"slug\":\"backend\",\"displayName\"\
-                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"url\":\"https://cdn.example.com/media/30/display\"\
-                    ,\"displayOrder\":0}],\"likeCount\":5,\"commentCount\":3,\"createdAt\"\
-                    :\"2026-09-16T00:00:00Z\",\"updatedAt\":\"2026-09-16T00:00:00Z\"\
-                    }],\"meta\":{\"nextCursor\":\"next-cursor\",\"hasNext\":true}}"
+                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"mediaId\":30,\"\
+                    url\":\"https://cdn.example.com/media/30/display\",\"displayOrder\"\
+                    :0}],\"likeCount\":5,\"commentCount\":3,\"createdAt\":\"2026-09-16T00:00:00Z\"\
+                    ,\"updatedAt\":\"2026-09-16T00:00:00Z\"}],\"meta\":{\"nextCursor\"\
+                    :\"next-cursor\",\"hasNext\":true}}"
         "404":
           description: "404"
           content:
@@ -3717,6 +3721,15 @@ paths:
                 type: string
 components:
   schemas:
+    AdminVerificationRequestRejectRequest:
+      title: AdminVerificationRequestRejectRequest
+      required:
+      - reason
+      type: object
+      properties:
+        reason:
+          type: string
+          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     CategoryUpdateSuccessResponse:
       title: CategoryUpdateSuccessResponse
       required:
@@ -3759,15 +3772,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    AdminVerificationRequestRejectRequest:
-      title: AdminVerificationRequestRejectRequest
-      required:
-      - reason
-      type: object
-      properties:
-        reason:
-          type: string
-          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     FeedCommentDeleteSuccessResponse:
       title: FeedCommentDeleteSuccessResponse
       required:
@@ -4295,6 +4299,126 @@ components:
         title:
           type: string
           description: 프로젝트 이름 (100자 이하)
+    FeedSaveSuccessResponse:
+      title: FeedSaveSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - categories
+          - content
+          - createdAt
+          - feedId
+          - media
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: ISO-8601 생성 시각
+            feedId:
+              type: number
+              description: 피드 ID
+            author:
+              required:
+              - displayName
+              - handle
+              - userType
+              type: object
+              properties:
+                avatarImageId:
+                  type: number
+                  description: 현재 프로필 이미지 미디어 ID
+                  nullable: true
+                avatarUrl:
+                  type: string
+                  description: 현재 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 핸들
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  enum:
+                  - GENERAL
+                  - WOOWACOURSE_CREW
+                  - WOOWACOURSE_COACH
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                  enum:
+                  - BACKEND
+                  - ANDROID
+                  - FRONTEND
+              description: 현재 작성자 프로필
+            media:
+              type: array
+              description: 본문 미디어 목록
+              items:
+                required:
+                - displayOrder
+                - mediaId
+                - url
+                type: object
+                properties:
+                  displayOrder:
+                    type: number
+                    description: 미디어 표시 순서
+                  mediaId:
+                    type: number
+                    description: 본문 미디어 ID
+                  url:
+                    type: string
+                    description: 본문 미디어 공개 URL
+            categories:
+              type: array
+              description: 카테고리 목록
+              items:
+                required:
+                - categoryId
+                - displayName
+                - slug
+                - type
+                type: object
+                properties:
+                  displayName:
+                    type: string
+                    description: 카테고리 표시 이름
+                  type:
+                    type: string
+                    description: 카테고리 유형
+                    enum:
+                    - GENERAL
+                    - EVENT
+                  slug:
+                    type: string
+                    description: 카테고리 slug
+                  categoryId:
+                    type: number
+                    description: 카테고리 ID
+            content:
+              type: string
+              description: Markdown 본문
+            updatedAt:
+              type: string
+              description: ISO-8601 수정 시각
+          description: 피드
+        status:
+          type: string
+          description: 응답 상태
     UserVerificationRequestCreateRequest:
       title: UserVerificationRequestCreateRequest
       required:
@@ -4514,115 +4638,139 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedSaveSuccessResponse:
-      title: FeedSaveSuccessResponse
+    FeedFindAllSuccessResponse:
+      title: FeedFindAllSuccessResponse
       required:
       - data
+      - meta
       - status
       type: object
       properties:
         data:
-          required:
-          - author
-          - categories
-          - content
-          - createdAt
-          - feedId
-          - media
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: ISO-8601 생성 시각
-            feedId:
-              type: number
-              description: 피드 ID
-            author:
-              required:
-              - displayName
-              - handle
-              - userType
-              type: object
-              properties:
-                avatarUrl:
-                  type: string
-                  description: 현재 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 이름
-                cohort:
-                  type: number
-                  description: 작성자 기수
-                  nullable: true
-                handle:
-                  type: string
-                  description: 작성자 핸들
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  enum:
-                  - GENERAL
-                  - WOOWACOURSE_CREW
-                  - WOOWACOURSE_COACH
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                  enum:
-                  - BACKEND
-                  - ANDROID
-                  - FRONTEND
-              description: 현재 작성자 프로필
-            media:
-              type: array
-              description: 본문 미디어 목록
-              items:
+          type: array
+          description: 피드 목록
+          items:
+            required:
+            - author
+            - categories
+            - content
+            - createdAt
+            - feedId
+            - media
+            - updatedAt
+            type: object
+            properties:
+              createdAt:
+                type: string
+                description: ISO-8601 생성 시각
+              feedId:
+                type: number
+                description: 피드 ID
+              author:
                 required:
-                - displayOrder
-                - url
-                type: object
-                properties:
-                  displayOrder:
-                    type: number
-                    description: 미디어 표시 순서
-                  url:
-                    type: string
-                    description: 본문 미디어 공개 URL
-            categories:
-              type: array
-              description: 카테고리 목록
-              items:
-                required:
-                - categoryId
                 - displayName
-                - slug
-                - type
+                - handle
+                - userType
                 type: object
                 properties:
+                  avatarImageId:
+                    type: number
+                    description: 현재 프로필 이미지 미디어 ID
+                    nullable: true
+                  avatarUrl:
+                    type: string
+                    description: 현재 프로필 이미지 공개 URL
+                    nullable: true
                   displayName:
                     type: string
-                    description: 카테고리 표시 이름
-                  type:
+                    description: 작성자 이름
+                  cohort:
+                    type: number
+                    description: 작성자 기수
+                    nullable: true
+                  handle:
                     type: string
-                    description: 카테고리 유형
+                    description: 작성자 핸들
+                  userType:
+                    type: string
+                    description: 작성자 유형
                     enum:
                     - GENERAL
-                    - EVENT
-                  slug:
+                    - WOOWACOURSE_CREW
+                    - WOOWACOURSE_COACH
+                  track:
                     type: string
-                    description: 카테고리 slug
-                  categoryId:
-                    type: number
-                    description: 카테고리 ID
-            content:
+                    description: 작성자 트랙
+                    nullable: true
+                    enum:
+                    - BACKEND
+                    - ANDROID
+                    - FRONTEND
+                description: 현재 작성자 프로필
+              media:
+                type: array
+                description: 본문 미디어 목록
+                items:
+                  required:
+                  - displayOrder
+                  - mediaId
+                  - url
+                  type: object
+                  properties:
+                    displayOrder:
+                      type: number
+                      description: 미디어 표시 순서
+                    mediaId:
+                      type: number
+                      description: 본문 미디어 ID
+                    url:
+                      type: string
+                      description: 본문 미디어 공개 URL
+              categories:
+                type: array
+                description: 카테고리 목록
+                items:
+                  required:
+                  - categoryId
+                  - displayName
+                  - slug
+                  - type
+                  type: object
+                  properties:
+                    displayName:
+                      type: string
+                      description: 카테고리 표시 이름
+                    type:
+                      type: string
+                      description: 카테고리 유형
+                      enum:
+                      - GENERAL
+                      - EVENT
+                    slug:
+                      type: string
+                      description: 카테고리 slug
+                    categoryId:
+                      type: number
+                      description: 카테고리 ID
+              content:
+                type: string
+                description: Markdown 본문
+              updatedAt:
+                type: string
+                description: ISO-8601 수정 시각
+        meta:
+          required:
+          - hasNext
+          type: object
+          properties:
+            nextCursor:
               type: string
-              description: Markdown 본문
-            updatedAt:
-              type: string
-              description: ISO-8601 수정 시각
-          description: 피드
+              description: 다음 페이지 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+          description: 페이지네이션 정보
         status:
           type: string
           description: 응답 상태
@@ -4755,134 +4903,6 @@ components:
                 - NEWS
                 - PROJECT
                 - FEED
-        status:
-          type: string
-          description: 응답 상태
-    FeedFindAllSuccessResponse:
-      title: FeedFindAllSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 피드 목록
-          items:
-            required:
-            - author
-            - categories
-            - content
-            - createdAt
-            - feedId
-            - media
-            - updatedAt
-            type: object
-            properties:
-              createdAt:
-                type: string
-                description: ISO-8601 생성 시각
-              feedId:
-                type: number
-                description: 피드 ID
-              author:
-                required:
-                - displayName
-                - handle
-                - userType
-                type: object
-                properties:
-                  avatarUrl:
-                    type: string
-                    description: 현재 프로필 이미지 공개 URL
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 작성자 이름
-                  cohort:
-                    type: number
-                    description: 작성자 기수
-                    nullable: true
-                  handle:
-                    type: string
-                    description: 작성자 핸들
-                  userType:
-                    type: string
-                    description: 작성자 유형
-                    enum:
-                    - GENERAL
-                    - WOOWACOURSE_CREW
-                    - WOOWACOURSE_COACH
-                  track:
-                    type: string
-                    description: 작성자 트랙
-                    nullable: true
-                    enum:
-                    - BACKEND
-                    - ANDROID
-                    - FRONTEND
-                description: 현재 작성자 프로필
-              media:
-                type: array
-                description: 본문 미디어 목록
-                items:
-                  required:
-                  - displayOrder
-                  - url
-                  type: object
-                  properties:
-                    displayOrder:
-                      type: number
-                      description: 미디어 표시 순서
-                    url:
-                      type: string
-                      description: 본문 미디어 공개 URL
-              categories:
-                type: array
-                description: 카테고리 목록
-                items:
-                  required:
-                  - categoryId
-                  - displayName
-                  - slug
-                  - type
-                  type: object
-                  properties:
-                    displayName:
-                      type: string
-                      description: 카테고리 표시 이름
-                    type:
-                      type: string
-                      description: 카테고리 유형
-                      enum:
-                      - GENERAL
-                      - EVENT
-                    slug:
-                      type: string
-                      description: 카테고리 slug
-                    categoryId:
-                      type: number
-                      description: 카테고리 ID
-              content:
-                type: string
-                description: Markdown 본문
-              updatedAt:
-                type: string
-                description: ISO-8601 수정 시각
-        meta:
-          required:
-          - hasNext
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-          description: 페이지네이션 정보
         status:
           type: string
           description: 응답 상태
@@ -5166,6 +5186,126 @@ components:
         content:
           type: string
           description: 변경할 Markdown 본문
+    FeedFindSuccessResponse:
+      title: FeedFindSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - categories
+          - content
+          - createdAt
+          - feedId
+          - media
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: ISO-8601 생성 시각
+            feedId:
+              type: number
+              description: 피드 ID
+            author:
+              required:
+              - displayName
+              - handle
+              - userType
+              type: object
+              properties:
+                avatarImageId:
+                  type: number
+                  description: 현재 프로필 이미지 미디어 ID
+                  nullable: true
+                avatarUrl:
+                  type: string
+                  description: 현재 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 핸들
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  enum:
+                  - GENERAL
+                  - WOOWACOURSE_CREW
+                  - WOOWACOURSE_COACH
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                  enum:
+                  - BACKEND
+                  - ANDROID
+                  - FRONTEND
+              description: 현재 작성자 프로필
+            media:
+              type: array
+              description: 본문 미디어 목록
+              items:
+                required:
+                - displayOrder
+                - mediaId
+                - url
+                type: object
+                properties:
+                  displayOrder:
+                    type: number
+                    description: 미디어 표시 순서
+                  mediaId:
+                    type: number
+                    description: 본문 미디어 ID
+                  url:
+                    type: string
+                    description: 본문 미디어 공개 URL
+            categories:
+              type: array
+              description: 카테고리 목록
+              items:
+                required:
+                - categoryId
+                - displayName
+                - slug
+                - type
+                type: object
+                properties:
+                  displayName:
+                    type: string
+                    description: 카테고리 표시 이름
+                  type:
+                    type: string
+                    description: 카테고리 유형
+                    enum:
+                    - GENERAL
+                    - EVENT
+                  slug:
+                    type: string
+                    description: 카테고리 slug
+                  categoryId:
+                    type: number
+                    description: 카테고리 ID
+            content:
+              type: string
+              description: Markdown 본문
+            updatedAt:
+              type: string
+              description: ISO-8601 수정 시각
+          description: 피드
+        status:
+          type: string
+          description: 응답 상태
     ProjectUpdateRequest:
       title: ProjectUpdateRequest
       required:
@@ -5791,6 +5931,126 @@ components:
         status:
           type: string
           description: 응답 상태
+    FeedUpdateSuccessResponse:
+      title: FeedUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - categories
+          - content
+          - createdAt
+          - feedId
+          - media
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: ISO-8601 생성 시각
+            feedId:
+              type: number
+              description: 피드 ID
+            author:
+              required:
+              - displayName
+              - handle
+              - userType
+              type: object
+              properties:
+                avatarImageId:
+                  type: number
+                  description: 현재 프로필 이미지 미디어 ID
+                  nullable: true
+                avatarUrl:
+                  type: string
+                  description: 현재 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 핸들
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  enum:
+                  - GENERAL
+                  - WOOWACOURSE_CREW
+                  - WOOWACOURSE_COACH
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                  enum:
+                  - BACKEND
+                  - ANDROID
+                  - FRONTEND
+              description: 현재 작성자 프로필
+            media:
+              type: array
+              description: 본문 미디어 목록
+              items:
+                required:
+                - displayOrder
+                - mediaId
+                - url
+                type: object
+                properties:
+                  displayOrder:
+                    type: number
+                    description: 미디어 표시 순서
+                  mediaId:
+                    type: number
+                    description: 본문 미디어 ID
+                  url:
+                    type: string
+                    description: 본문 미디어 공개 URL
+            categories:
+              type: array
+              description: 카테고리 목록
+              items:
+                required:
+                - categoryId
+                - displayName
+                - slug
+                - type
+                type: object
+                properties:
+                  displayName:
+                    type: string
+                    description: 카테고리 표시 이름
+                  type:
+                    type: string
+                    description: 카테고리 유형
+                    enum:
+                    - GENERAL
+                    - EVENT
+                  slug:
+                    type: string
+                    description: 카테고리 slug
+                  categoryId:
+                    type: number
+                    description: 카테고리 ID
+            content:
+              type: string
+              description: Markdown 본문
+            updatedAt:
+              type: string
+              description: ISO-8601 수정 시각
+          description: 피드
+        status:
+          type: string
+          description: 응답 상태
     HomeBannerAdminUpdateSuccessResponse:
       title: HomeBannerAdminUpdateSuccessResponse
       required:
@@ -5868,19 +6128,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    OAuthSignupRequest:
-      title: OAuthSignupRequest
-      required:
-      - displayName
-      - handle
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 프로필 표시 이름
-        handle:
-          type: string
-          description: 영구 공개 핸들
     CategorySaveSuccessResponse:
       title: CategorySaveSuccessResponse
       required:
@@ -5952,6 +6199,19 @@ components:
         content:
           type: string
           description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"
+    OAuthSignupRequest:
+      title: OAuthSignupRequest
+      required:
+      - displayName
+      - handle
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 프로필 표시 이름
+        handle:
+          type: string
+          description: 영구 공개 핸들
     UserProjectFindAllSuccessResponse:
       title: UserProjectFindAllSuccessResponse
       required:
@@ -6147,118 +6407,6 @@ components:
           type: string
           description: 한 줄 소개
           nullable: true
-    FeedFindSuccessResponse:
-      title: FeedFindSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - categories
-          - content
-          - createdAt
-          - feedId
-          - media
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: ISO-8601 생성 시각
-            feedId:
-              type: number
-              description: 피드 ID
-            author:
-              required:
-              - displayName
-              - handle
-              - userType
-              type: object
-              properties:
-                avatarUrl:
-                  type: string
-                  description: 현재 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 이름
-                cohort:
-                  type: number
-                  description: 작성자 기수
-                  nullable: true
-                handle:
-                  type: string
-                  description: 작성자 핸들
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  enum:
-                  - GENERAL
-                  - WOOWACOURSE_CREW
-                  - WOOWACOURSE_COACH
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                  enum:
-                  - BACKEND
-                  - ANDROID
-                  - FRONTEND
-              description: 현재 작성자 프로필
-            media:
-              type: array
-              description: 본문 미디어 목록
-              items:
-                required:
-                - displayOrder
-                - url
-                type: object
-                properties:
-                  displayOrder:
-                    type: number
-                    description: 미디어 표시 순서
-                  url:
-                    type: string
-                    description: 본문 미디어 공개 URL
-            categories:
-              type: array
-              description: 카테고리 목록
-              items:
-                required:
-                - categoryId
-                - displayName
-                - slug
-                - type
-                type: object
-                properties:
-                  displayName:
-                    type: string
-                    description: 카테고리 표시 이름
-                  type:
-                    type: string
-                    description: 카테고리 유형
-                    enum:
-                    - GENERAL
-                    - EVENT
-                  slug:
-                    type: string
-                    description: 카테고리 slug
-                  categoryId:
-                    type: number
-                    description: 카테고리 ID
-            content:
-              type: string
-              description: Markdown 본문
-            updatedAt:
-              type: string
-              description: ISO-8601 수정 시각
-          description: 피드
-        status:
-          type: string
-          description: 응답 상태
     NewsDeleteSuccessResponse:
       title: NewsDeleteSuccessResponse
       required:
@@ -6664,142 +6812,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    UserFeedFindAllSuccessResponse:
-      title: UserFeedFindAllSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 사용자가 작성한 피드 목록
-          items:
-            required:
-            - author
-            - categories
-            - commentCount
-            - content
-            - createdAt
-            - feedId
-            - likeCount
-            - media
-            - updatedAt
-            type: object
-            properties:
-              createdAt:
-                type: string
-                description: ISO-8601 생성 시각
-              feedId:
-                type: number
-                description: 피드 ID
-              author:
-                required:
-                - displayName
-                - handle
-                - userType
-                type: object
-                properties:
-                  avatarUrl:
-                    type: string
-                    description: 현재 프로필 이미지 공개 URL
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 작성자 이름
-                  cohort:
-                    type: number
-                    description: 작성자 기수
-                    nullable: true
-                  handle:
-                    type: string
-                    description: 작성자 핸들
-                  userType:
-                    type: string
-                    description: 작성자 유형
-                    enum:
-                    - GENERAL
-                    - WOOWACOURSE_CREW
-                    - WOOWACOURSE_COACH
-                  track:
-                    type: string
-                    description: 작성자 트랙
-                    nullable: true
-                    enum:
-                    - BACKEND
-                    - ANDROID
-                    - FRONTEND
-                description: 현재 작성자 프로필
-              likeCount:
-                type: number
-                description: 좋아요 수
-              media:
-                type: array
-                description: 본문 미디어 목록
-                items:
-                  required:
-                  - displayOrder
-                  - url
-                  type: object
-                  properties:
-                    displayOrder:
-                      type: number
-                      description: 미디어 표시 순서
-                    url:
-                      type: string
-                      description: 본문 미디어 공개 URL
-              categories:
-                type: array
-                description: 카테고리 목록
-                items:
-                  required:
-                  - categoryId
-                  - displayName
-                  - slug
-                  - type
-                  type: object
-                  properties:
-                    displayName:
-                      type: string
-                      description: 카테고리 표시 이름
-                    type:
-                      type: string
-                      description: 카테고리 유형
-                      enum:
-                      - GENERAL
-                      - EVENT
-                    slug:
-                      type: string
-                      description: 카테고리 slug
-                    categoryId:
-                      type: number
-                      description: 카테고리 ID
-              content:
-                type: string
-                description: Markdown 본문
-              commentCount:
-                type: number
-                description: 삭제되지 않은 댓글 수
-              updatedAt:
-                type: string
-                description: ISO-8601 수정 시각
-        meta:
-          required:
-          - hasNext
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-          description: 페이지네이션 정보
-        status:
-          type: string
-          description: 응답 상태
     NewsFindAllSuccessResponse:
       title: NewsFindAllSuccessResponse
       required:
@@ -7096,6 +7108,150 @@ components:
               type: number
               description: 소식 ID
           description: 수정된 소식
+        status:
+          type: string
+          description: 응답 상태
+    UserFeedFindAllSuccessResponse:
+      title: UserFeedFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 사용자가 작성한 피드 목록
+          items:
+            required:
+            - author
+            - categories
+            - commentCount
+            - content
+            - createdAt
+            - feedId
+            - likeCount
+            - media
+            - updatedAt
+            type: object
+            properties:
+              createdAt:
+                type: string
+                description: ISO-8601 생성 시각
+              feedId:
+                type: number
+                description: 피드 ID
+              author:
+                required:
+                - displayName
+                - handle
+                - userType
+                type: object
+                properties:
+                  avatarImageId:
+                    type: number
+                    description: 현재 프로필 이미지 미디어 ID
+                    nullable: true
+                  avatarUrl:
+                    type: string
+                    description: 현재 프로필 이미지 공개 URL
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 작성자 이름
+                  cohort:
+                    type: number
+                    description: 작성자 기수
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 작성자 핸들
+                  userType:
+                    type: string
+                    description: 작성자 유형
+                    enum:
+                    - GENERAL
+                    - WOOWACOURSE_CREW
+                    - WOOWACOURSE_COACH
+                  track:
+                    type: string
+                    description: 작성자 트랙
+                    nullable: true
+                    enum:
+                    - BACKEND
+                    - ANDROID
+                    - FRONTEND
+                description: 현재 작성자 프로필
+              likeCount:
+                type: number
+                description: 좋아요 수
+              media:
+                type: array
+                description: 본문 미디어 목록
+                items:
+                  required:
+                  - displayOrder
+                  - mediaId
+                  - url
+                  type: object
+                  properties:
+                    displayOrder:
+                      type: number
+                      description: 미디어 표시 순서
+                    mediaId:
+                      type: number
+                      description: 본문 미디어 ID
+                    url:
+                      type: string
+                      description: 본문 미디어 공개 URL
+              categories:
+                type: array
+                description: 카테고리 목록
+                items:
+                  required:
+                  - categoryId
+                  - displayName
+                  - slug
+                  - type
+                  type: object
+                  properties:
+                    displayName:
+                      type: string
+                      description: 카테고리 표시 이름
+                    type:
+                      type: string
+                      description: 카테고리 유형
+                      enum:
+                      - GENERAL
+                      - EVENT
+                    slug:
+                      type: string
+                      description: 카테고리 slug
+                    categoryId:
+                      type: number
+                      description: 카테고리 ID
+              content:
+                type: string
+                description: Markdown 본문
+              commentCount:
+                type: number
+                description: 삭제되지 않은 댓글 수
+              updatedAt:
+                type: string
+                description: ISO-8601 수정 시각
+        meta:
+          required:
+          - hasNext
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+          description: 페이지네이션 정보
         status:
           type: string
           description: 응답 상태
@@ -7484,115 +7640,3 @@ components:
         title:
           type: string
           description: 공지 제목
-    FeedUpdateSuccessResponse:
-      title: FeedUpdateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - categories
-          - content
-          - createdAt
-          - feedId
-          - media
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: ISO-8601 생성 시각
-            feedId:
-              type: number
-              description: 피드 ID
-            author:
-              required:
-              - displayName
-              - handle
-              - userType
-              type: object
-              properties:
-                avatarUrl:
-                  type: string
-                  description: 현재 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 이름
-                cohort:
-                  type: number
-                  description: 작성자 기수
-                  nullable: true
-                handle:
-                  type: string
-                  description: 작성자 핸들
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  enum:
-                  - GENERAL
-                  - WOOWACOURSE_CREW
-                  - WOOWACOURSE_COACH
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                  enum:
-                  - BACKEND
-                  - ANDROID
-                  - FRONTEND
-              description: 현재 작성자 프로필
-            media:
-              type: array
-              description: 본문 미디어 목록
-              items:
-                required:
-                - displayOrder
-                - url
-                type: object
-                properties:
-                  displayOrder:
-                    type: number
-                    description: 미디어 표시 순서
-                  url:
-                    type: string
-                    description: 본문 미디어 공개 URL
-            categories:
-              type: array
-              description: 카테고리 목록
-              items:
-                required:
-                - categoryId
-                - displayName
-                - slug
-                - type
-                type: object
-                properties:
-                  displayName:
-                    type: string
-                    description: 카테고리 표시 이름
-                  type:
-                    type: string
-                    description: 카테고리 유형
-                    enum:
-                    - GENERAL
-                    - EVENT
-                  slug:
-                    type: string
-                    description: 카테고리 slug
-                  categoryId:
-                    type: number
-                    description: 카테고리 ID
-            content:
-              type: string
-              description: Markdown 본문
-            updatedAt:
-              type: string
-              description: ISO-8601 수정 시각
-          description: 피드
-        status:
-          type: string
-          description: 응답 상태

@@ -52,6 +52,7 @@ public record FeedResponse(
             UserType userType,
             String track,
             Short cohort,
+            Long avatarImageId,
             String avatarUrl
     ) {
         private static Author from(FeedItem.Author author, Map<Long, URI> mediaUrls) {
@@ -61,6 +62,7 @@ public record FeedResponse(
                     author.userType(),
                     trackValue(author.track()),
                     cohortValue(author.cohort()),
+                    author.avatarImageId(),
                     toUrl(findUrl(mediaUrls, author.avatarImageId()))
             );
         }
@@ -96,9 +98,13 @@ public record FeedResponse(
         }
     }
 
-    public record Media(String url, int displayOrder) {
+    public record Media(long mediaId, String url, int displayOrder) {
         private static Media from(FeedItem.Media media, Map<Long, URI> mediaUrls) {
-            return new Media(toUrl(findUrl(mediaUrls, media.mediaId())), media.displayOrder());
+            return new Media(
+                    media.mediaId(),
+                    toUrl(findUrl(mediaUrls, media.mediaId())),
+                    media.displayOrder()
+            );
         }
     }
 
