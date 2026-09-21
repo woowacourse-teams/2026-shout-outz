@@ -37,8 +37,9 @@ public enum NewsErrorCode implements ErrorCode {
     NEWS_EVENT_START_AT_NULL("이벤트 시작 시각은 null일 수 없습니다."),
     NEWS_EVENT_END_AT_NULL("이벤트 종료 시각은 null일 수 없습니다."),
     NEWS_EVENT_PERIOD_INVALID("이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다."),
-    NEWS_EVENT_START_AT_NOT_ALLOWED("공지의 이벤트 시작 시각은 null이어야 합니다."),
-    NEWS_EVENT_END_AT_NOT_ALLOWED("공지의 이벤트 종료 시각은 null이어야 합니다."),
+    NEWS_EVENT_PERIOD_NOT_ALLOWED("공지의 eventStartAt과 eventEndAt은 모두 null이어야 합니다."),
+
+    NEWS_ADMIN_FORBIDDEN("관리자만 소식을 관리할 수 있습니다."),
 
     /**
      * 소식 콜투액션 (News Cta) 에러 코드

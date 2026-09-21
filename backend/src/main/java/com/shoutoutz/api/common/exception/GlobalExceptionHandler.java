@@ -3,6 +3,7 @@ package com.shoutoutz.api.common.exception;
 import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.code.ErrorCode;
 import com.shoutoutz.api.common.exception.custom.CustomException;
+import com.shoutoutz.api.common.exception.custom.ValidationFailedException;
 import com.shoutoutz.api.common.response.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
 import java.util.Arrays;
@@ -103,6 +104,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ErrorCode errorCode = e.getErrorCode();
         logException(e.getHttpStatus(), errorCode, e);
         return createErrorResponse(e.getHttpStatus(), errorCode);
+    }
+
+    @ExceptionHandler(ValidationFailedException.class)
+    public ResponseEntity<Object> handleValidationFailedException(ValidationFailedException e) {
+        ErrorCode errorCode = e.getErrorCode();
+        logException(e.getHttpStatus(), errorCode, e);
+        return createErrorResponse(e.getHttpStatus(), errorCode, e.getDetails());
     }
 
     @ExceptionHandler({Exception.class})

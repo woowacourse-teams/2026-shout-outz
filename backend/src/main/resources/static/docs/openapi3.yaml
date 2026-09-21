@@ -99,10 +99,10 @@ paths:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayOrder\",\"message\"\
-                    :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"}]}"
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"\
+                    displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\",\"message\"\
+                    :\"slug 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -924,10 +924,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1328,7 +1328,7 @@ paths:
       tags:
       - News
       summary: 이벤트 생성
-      description: 이벤트와 선택적인 CTA를 생성한다.
+      description: 관리자가 이벤트와 선택적인 CTA를 생성한다.
       operationId: news-event-create
       requestBody:
         content:
@@ -1357,7 +1357,35 @@ paths:
                     "body": "본문",
                     "authorName": "샤라웃 운영팀"
                   }
+              news-event-create-forbidden:
+                value: |
+                  {
+                    "title": "프로젝트 아카이빙 챌린지",
+                    "summary": "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                    "body": "프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.",
+                    "authorName": "샤라웃 운영팀",
+                    "eventStartAt": "2026-09-01T00:00:00Z",
+                    "eventEndAt": "2026-09-30T23:59:59Z",
+                    "cta": {
+                      "label": "프로젝트 등록하기",
+                      "url": "/projects/3001"
+                    }
+                  }
               news-event-create-domain-invalid:
+                value: |
+                  {
+                    "title": "프로젝트 아카이빙 챌린지",
+                    "summary": "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                    "body": "프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.",
+                    "authorName": "샤라웃 운영팀",
+                    "eventStartAt": "2026-09-01T00:00:00Z",
+                    "eventEndAt": "2026-09-30T23:59:59Z",
+                    "cta": {
+                      "label": "프로젝트 등록하기",
+                      "url": "/projects/3001"
+                    }
+                  }
+              news-event-create-unauthorized:
                 value: |
                   {
                     "title": "프로젝트 아카이빙 챌린지",
@@ -1416,18 +1444,27 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"}]}"
-                news-event-create-period-order-invalid:
-                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 eventEndAt보다 늦을 수 없습니다.\"}]}"
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
+                    :\"title은 필수입니다.\"}]}"
+                news-event-create-period-order-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
+                    ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
                 news-event-create-period-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
                     ,\"message\":\"eventStartAt은 필수입니다.\"}]}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-event-create-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 소식을 관리할 수 있습니다.\"}"
         "500":
           description: "500"
           content:
@@ -1438,12 +1475,22 @@ paths:
                 news-event-create-domain-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-event-create-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
   /api/v1/news/notices:
     post:
       tags:
       - News
       summary: 공지 생성
-      description: 공지와 선택적인 CTA를 생성한다.
+      description: 관리자가 공지와 선택적인 CTA를 생성한다.
       operationId: news-notice-create
       requestBody:
         content:
@@ -1494,6 +1541,30 @@ paths:
                       "url": "example.com"
                     }
                   }
+              news-notice-create-unauthorized:
+                value: |
+                  {
+                    "title": "우아한테크코스 6기 최종 프로젝트 데모데이 안내",
+                    "summary": "최종 프로젝트 데모데이 일정을 안내합니다.",
+                    "body": "우아한테크코스 6기 최종 프로젝트 데모데이는 2026년 9월 12일에 진행됩니다.",
+                    "authorName": "샤라웃 운영팀",
+                    "cta": {
+                      "label": "데모데이 일정 확인",
+                      "url": "example.com"
+                    }
+                  }
+              news-notice-create-forbidden:
+                value: |
+                  {
+                    "title": "우아한테크코스 6기 최종 프로젝트 데모데이 안내",
+                    "summary": "최종 프로젝트 데모데이 일정을 안내합니다.",
+                    "body": "우아한테크코스 6기 최종 프로젝트 데모데이는 2026년 9월 12일에 진행됩니다.",
+                    "authorName": "샤라웃 운영팀",
+                    "cta": {
+                      "label": "데모데이 일정 확인",
+                      "url": "example.com"
+                    }
+                  }
               news-notice-create-malformed-json:
                 value: "{\"title\":"
       responses:
@@ -1539,6 +1610,26 @@ paths:
                 news-notice-create-domain-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_INVALID_AUTHOR_ID_SIZE\"\
                     ,\"message\":\"소식 작성자 ID는 0보다 커야 합니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-notice-create-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-notice-create-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 소식을 관리할 수 있습니다.\"}"
   /api/v1/news/{newsId}:
     get:
       tags:
@@ -1588,6 +1679,75 @@ paths:
                 news-find-detail-not-found:
                   value: "{\"status\":\"error\",\"code\":\"RESOURCE_NOT_FOUND\",\"\
                     message\":\"자원을 찾을 수 없습니다.\"}"
+    put:
+      tags:
+      - News
+      summary: 소식 수정
+      description: 관리자가 소식의 편집 가능 필드를 전체 교체한다.
+      operationId: news-update
+      parameters:
+      - name: newsId
+        in: path
+        description: 수정할 소식 ID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/NewsUpdateRequest"
+            examples:
+              news-update:
+                value: |
+                  {
+                    "title": "수정된 공지",
+                    "summary": "수정된 요약",
+                    "body": "수정된 본문",
+                    "authorName": "샤라웃 운영팀",
+                    "eventStartAt": null,
+                    "eventEndAt": null,
+                    "cta": null
+                  }
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsUpdateSuccessResponse"
+              examples:
+                news-update:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":106,\"type\":\"\
+                    NOTICE\",\"title\":\"수정된 공지\",\"summary\":\"수정된 요약\",\"body\"\
+                    :\"수정된 본문\",\"author\":{\"userId\":1,\"name\":\"샤라웃 운영팀\"},\"\
+                    publishedAt\":\"2026-09-05T00:00:00Z\",\"eventStatus\":null,\"\
+                    eventStartAt\":null,\"eventEndAt\":null,\"isPinned\":false,\"\
+                    pinOrder\":null,\"cta\":null}}"
+    delete:
+      tags:
+      - News
+      summary: 소식 삭제
+      description: 관리자가 소식을 소프트 삭제하고 삭제 시각을 반환한다.
+      operationId: news-delete
+      parameters:
+      - name: newsId
+        in: path
+        description: 삭제할 소식 ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsDeleteSuccessResponse"
+              examples:
+                news-delete:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":106,\"deletedAt\"\
+                    :\"2026-09-19T12:00:00Z\"}}"
   /api/v1/projects/filters:
     get:
       tags:
@@ -2883,9 +3043,9 @@ paths:
               examples:
                 user-verification-request-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"nickname\"\
-                    ,\"message\":\"nickname은 필수입니다.\"},{\"field\":\"cohort\",\"message\"\
-                    :\"cohort는 양의 정수여야 합니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
+                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"}]}"
         "201":
           description: "201"
           content:
@@ -5708,35 +5868,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedSaveRequest:
-      title: FeedSaveRequest
-      required:
-      - categoryIds
-      - content
-      - mediaIds
-      type: object
-      properties:
-        categoryIds:
-          type: array
-          description: "활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        mediaIds:
-          type: array
-          description: 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        content:
-          type: string
-          description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"
     OAuthSignupRequest:
       title: OAuthSignupRequest
       required:
@@ -5792,6 +5923,35 @@ components:
         status:
           type: string
           description: 응답 상태
+    FeedSaveRequest:
+      title: FeedSaveRequest
+      required:
+      - categoryIds
+      - content
+      - mediaIds
+      type: object
+      properties:
+        categoryIds:
+          type: array
+          description: "활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        mediaIds:
+          type: array
+          description: 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        content:
+          type: string
+          description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"
     UserProjectFindAllSuccessResponse:
       title: UserProjectFindAllSuccessResponse
       required:
@@ -6099,6 +6259,33 @@ components:
         status:
           type: string
           description: 응답 상태
+    NewsDeleteSuccessResponse:
+      title: NewsDeleteSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - deletedAt
+          - id
+          type: object
+          properties:
+            deletedAt:
+              type: string
+              description: 삭제 시각
+            id:
+              type: number
+              description: 삭제한 소식 ID
+          description: 삭제 결과
+        meta:
+          type: object
+          description: 메타 정보
+          nullable: true
+        status:
+          type: string
+          description: 응답 상태
     ProjectFilterOptionsSuccessResponse:
       title: ProjectFilterOptionsSuccessResponse
       required:
@@ -6246,6 +6433,47 @@ components:
         status:
           type: string
           description: 응답 상태
+    NewsUpdateRequest:
+      title: NewsUpdateRequest
+      required:
+      - authorName
+      - body
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 소식 요약
+        cta:
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+              nullable: true
+            url:
+              type: string
+              description: CTA URL
+              nullable: true
+          description: CTA. 삭제할 때 null
+        eventStartAt:
+          type: string
+          description: 이벤트 시작 시각. 공지는 null
+          nullable: true
+        authorName:
+          type: string
+          description: 표시 작성자 이름
+        body:
+          type: string
+          description: 소식 본문
+        title:
+          type: string
+          description: 소식 제목
+        eventEndAt:
+          type: string
+          description: 이벤트 종료 시각. 공지는 null
+          nullable: true
     ProjectCommentUpdateSuccessResponse:
       title: ProjectCommentUpdateSuccessResponse
       required:
@@ -6780,6 +7008,94 @@ components:
                     type: number
                     description: 기수
           description: 기수 목록
+        status:
+          type: string
+          description: 응답 상태
+    NewsUpdateSuccessResponse:
+      title: NewsUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - id
+          - isPinned
+          - publishedAt
+          - summary
+          - title
+          - type
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 소식 요약
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - name
+              - userId
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 작성자 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 작성자
+            pinOrder:
+              type: number
+              description: 고정 순서
+              nullable: true
+            body:
+              type: string
+              description: 소식 본문
+            title:
+              type: string
+              description: 소식 제목
+            type:
+              type: string
+              description: 소식 유형
+              enum:
+              - NOTICE
+              - EVENT
+            eventEndAt:
+              type: string
+              description: 이벤트 종료 시각
+              nullable: true
+            cta:
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                  nullable: true
+                url:
+                  type: string
+                  description: CTA URL
+                  nullable: true
+              description: CTA
+            eventStartAt:
+              type: string
+              description: 이벤트 시작 시각
+              nullable: true
+            eventStatus:
+              type: string
+              description: 이벤트 상태. 공지는 null
+              nullable: true
+            id:
+              type: number
+              description: 소식 ID
+          description: 수정된 소식
         status:
           type: string
           description: 응답 상태
