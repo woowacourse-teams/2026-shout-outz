@@ -38,6 +38,7 @@ import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
+import com.shoutoutz.api.feed.presentation.dto.request.FeedSuggestionRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
@@ -137,6 +138,55 @@ class FeedHttpApiTest {
                 .andExpect(jsonPath("$.data").isEmpty());
 
         verify(feedService).findAllFeed(any(FeedFindAllRequest.class));
+    }
+
+    @Test
+    @DisplayName("피드 제목 자동완성 후보를 최대 10개 조회한다")
+    void findTitleSuggestions() throws Exception {
+        given(feedService.findTitleSuggestions(any(FeedSuggestionRequest.class)))
+                .willReturn(List.of("우테코", "우테코 회고"));
+
+        mockMvc.perform(get("/api/v1/feeds/search/suggestions")
+                        .queryParam("keyword", "우테코")
+                        .queryParam("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0]").value("우테코"))
+                .andExpect(jsonPath("$.data[1]").value("우테코 회고"))
+                .andDo(document(
+                        "feed-title-suggestions",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Feed")
+                                .summary("피드 제목 자동완성")
+                                .description("입력 중인 검색어와 일치하는 피드 제목을 최대 10개 반환한다.")
+                                .queryParameters(
+                                        parameterWithName("keyword")
+                                                .description("자동완성 검색어(Unicode 2자 이상 100자 이하)"),
+                                        parameterWithName("size")
+                                                .type(INTEGER)
+                                                .description("조회 크기(기본 10, 최대 10)")
+                                                .optional()
+                                )
+                                .responseSchema(Schema.schema("FeedTitleSuggestionsSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(ARRAY)
+                                                .description("피드 제목 자동완성 후보 문자열 목록")
+                                )
+                                .build())
+                ));
+
+        verify(feedService).findTitleSuggestions(any(FeedSuggestionRequest.class));
+    }
+
+    @Test
+    @DisplayName("자동완성 검색어와 조회 크기가 범위를 벗어나면 400을 반환한다")
+    void rejectInvalidTitleSuggestionRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/feeds/search/suggestions")
+                        .queryParam("keyword", "한")
+                        .queryParam("size", "11"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(feedService);
     }
 
     @Test

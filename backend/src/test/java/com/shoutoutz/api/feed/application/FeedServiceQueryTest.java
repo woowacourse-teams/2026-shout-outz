@@ -18,6 +18,7 @@ import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
+import com.shoutoutz.api.feed.presentation.dto.request.FeedSuggestionRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
@@ -216,6 +217,18 @@ class FeedServiceQueryTest {
         assertThatThrownBy(() -> feedService.findAllFeed(relevanceWithoutKeyword))
                 .isInstanceOf(BadRequestException.class);
         verifyNoInteractions(feedQueryRepository);
+    }
+
+    @Test
+    void 피드_제목_자동완성_후보를_조회한다() {
+        FeedSuggestionRequest request = new FeedSuggestionRequest(" 우테코 ", null);
+        when(feedQueryRepository.findTitleSuggestions("우테코", 10))
+                .thenReturn(List.of("우테코", "우테코 회고"));
+
+        List<String> result = feedService.findTitleSuggestions(request);
+
+        assertThat(result).containsExactly("우테코", "우테코 회고");
+        verify(feedQueryRepository).findTitleSuggestions("우테코", 10);
     }
 
     @Test

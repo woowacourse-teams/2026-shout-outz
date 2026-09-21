@@ -266,6 +266,43 @@ class FeedRepositoryIntegrationTest {
     }
 
     @Test
+    void 피드_제목_자동완성_후보를_중복_없이_정확도순으로_조회한다() {
+        long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        saveFeed(authorId, "우테코", "본문", base, categoryId);
+        saveFeed(authorId, "우테코 회고", "본문", base.plus(1, ChronoUnit.HOURS), categoryId);
+        saveFeed(authorId, "우테코 회고", "다른 본문", base.plus(2, ChronoUnit.HOURS), categoryId);
+        saveFeed(authorId, "함께한 우테코 이야기", "본문", base.plus(3, ChronoUnit.HOURS), categoryId);
+        Feed deleted = saveFeed(
+                authorId,
+                "우테코 삭제",
+                "본문",
+                base.plus(4, ChronoUnit.HOURS),
+                categoryId
+        );
+        feedRepository.update(deleted.delete(base.plus(5, ChronoUnit.HOURS)));
+
+        List<String> suggestions = feedQueryRepository.findTitleSuggestions("우테코", 10);
+
+        assertThat(suggestions).containsExactly("우테코", "우테코 회고", "함께한 우테코 이야기");
+        assertThat(feedQueryRepository.findTitleSuggestions("우테코", 2))
+                .containsExactly("우테코", "우테코 회고");
+    }
+
+    @Test
+    void 제목_자동완성에서도_LIKE_와일드카드를_일반_문자로_검색한다() {
+        long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        saveFeed(authorId, "진행률 100%", "본문", base, categoryId);
+        saveFeed(authorId, "진행률 1000", "본문", base, categoryId);
+
+        assertThat(feedQueryRepository.findTitleSuggestions("100%", 10))
+                .containsExactly("진행률 100%");
+    }
+
+    @Test
     void 사용자가_작성한_피드만_최신순_커서로_조회한다() {
         long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
         long otherId = insertUser("WOOWACOURSE_CREW", "FRONTEND", (short) 8);

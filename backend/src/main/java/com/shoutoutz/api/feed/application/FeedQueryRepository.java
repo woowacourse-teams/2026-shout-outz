@@ -24,5 +24,7 @@ public interface FeedQueryRepository {
 
     List<FeedItem> findAllByAuthorId(long authorId, FeedCursor cursor, int limit);
 
+    List<String> findTitleSuggestions(String keyword, int limit);
+
     List<FeedMediaReference> findAllMediaByIds(List<Long> mediaIds);
 }

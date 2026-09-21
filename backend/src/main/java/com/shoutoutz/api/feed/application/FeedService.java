@@ -17,6 +17,7 @@ import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
+import com.shoutoutz.api.feed.presentation.dto.request.FeedSuggestionRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
@@ -97,6 +98,14 @@ public class FeedService {
                 size + 1
         );
         return createSlice(feedsWithExtraItem, size, sort);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> findTitleSuggestions(FeedSuggestionRequest request) {
+        return feedQueryRepository.findTitleSuggestions(
+                request.keyword(),
+                request.resolvedSize()
+        );
     }
 
     /**

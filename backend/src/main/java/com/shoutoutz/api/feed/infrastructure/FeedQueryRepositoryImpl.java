@@ -101,6 +101,43 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         return assembleItems(rows);
     }
 
+    @Override
+    public List<String> findTitleSuggestions(String keyword, int limit) {
+        String escapedKeyword = escapeLikePattern(keyword);
+        return jdbcTemplate.queryForList(
+                """
+                        WITH matching_titles AS (
+                            SELECT p.title,
+                                   CASE
+                                       WHEN lower(p.title) = lower(:keyword) THEN 0
+                                       WHEN lower(p.title) LIKE lower(:prefixPattern) ESCAPE '\\' THEN 1
+                                       ELSE 2
+                                   END AS relevance_rank,
+                                   p.created_at,
+                                   p.id,
+                                   row_number() OVER (
+                                       PARTITION BY lower(p.title)
+                                       ORDER BY p.created_at DESC, p.id DESC
+                                   ) AS duplicate_rank
+                            FROM feeds p
+                            WHERE p.deleted_at IS NULL
+                              AND lower(p.title) LIKE lower(:containsPattern) ESCAPE '\\'
+                        )
+                        SELECT title
+                        FROM matching_titles
+                        WHERE duplicate_rank = 1
+                        ORDER BY relevance_rank, created_at DESC, id DESC
+                        LIMIT :limit
+                        """,
+                new MapSqlParameterSource()
+                        .addValue("keyword", keyword)
+                        .addValue("prefixPattern", escapedKeyword + "%")
+                        .addValue("containsPattern", "%" + escapedKeyword + "%")
+                        .addValue("limit", limit),
+                String.class
+        );
+    }
+
     private StringBuilder createFindAllQuery(FeedSort sort) {
         return switch (sort) {
             case LATEST -> new StringBuilder("""
