@@ -12,6 +12,7 @@ import java.util.List;
  */
 public record FeedItem(
         long feedId,
+        String title,
         String content,
         Author author,
         List<Category> categories,

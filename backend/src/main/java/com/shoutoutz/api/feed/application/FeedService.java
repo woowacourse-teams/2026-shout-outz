@@ -67,7 +67,12 @@ public class FeedService {
         validateMedia(request.mediaIds(), userId);
 
         Instant now = clock.instant();
-        Feed savedFeed = feedRepository.save(Feed.create(userId, request.content(), now));
+        Feed savedFeed = feedRepository.save(Feed.create(
+                userId,
+                request.title(),
+                request.content(),
+                now
+        ));
         feedRepository.saveCategories(savedFeed.getId(), request.categoryIds());
         feedRepository.saveMedia(savedFeed.getId(), request.mediaIds());
 
@@ -122,7 +127,11 @@ public class FeedService {
         validateCategories(request.categoryIds());
         validateMedia(request.mediaIds(), userId);
 
-        Feed updatedFeed = feedRepository.update(feed.updateContent(request.content(), clock.instant()));
+        Feed updatedFeed = feedRepository.update(feed.update(
+                request.title(),
+                request.content(),
+                clock.instant()
+        ));
         feedRepository.saveCategories(feedId, request.categoryIds());
         feedRepository.saveMedia(feedId, request.mediaIds());
         return toCommandResponse(findFeedItem(updatedFeed.getId()));

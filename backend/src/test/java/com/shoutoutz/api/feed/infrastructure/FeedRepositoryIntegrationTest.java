@@ -103,6 +103,7 @@ class FeedRepositoryIntegrationTest {
         assertThat(feedQueryRepository.findById(deleted.getId())).isEmpty();
 
         FeedItem detail = feedQueryRepository.findById(oldest.getId()).orElseThrow();
+        assertThat(detail.title()).isEqualTo(oldest.getTitle());
         assertThat(detail.categories()).extracting(FeedItem.Category::categoryId)
                 .containsExactly(categoryId);
         assertThat(detail.categories()).extracting(FeedItem.Category::type)
@@ -183,7 +184,7 @@ class FeedRepositoryIntegrationTest {
     }
 
     private Feed saveFeed(long authorId, String content, Instant createdAt, long categoryId, long... mediaIds) {
-        Feed feed = feedRepository.save(Feed.create(authorId, content, createdAt));
+        Feed feed = feedRepository.save(Feed.create(authorId, "제목 " + content, content, createdAt));
         feedRepository.saveCategories(feed.getId(), List.of(categoryId));
         feedRepository.saveMedia(feed.getId(), java.util.Arrays.stream(mediaIds).boxed().toList());
         return feed;

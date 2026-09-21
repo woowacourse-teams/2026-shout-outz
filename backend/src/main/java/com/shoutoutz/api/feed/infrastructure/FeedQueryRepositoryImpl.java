@@ -35,6 +35,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         List<FeedBaseRow> rows = jdbcTemplate.query(
                 """
                         SELECT p.id,
+                               p.title,
                                p.content,
                                0 AS like_count,
                                0 AS comment_count,
@@ -101,6 +102,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         return switch (sort) {
             case LATEST -> new StringBuilder("""
                     SELECT p.id,
+                           p.title,
                            p.content,
                            0 AS like_count,
                            0 AS comment_count,
@@ -119,6 +121,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                     """);
             case POPULAR -> new StringBuilder("""
                     SELECT p.id,
+                           p.title,
                            p.content,
                            COALESCE(reactions.like_count, 0) AS like_count,
                            0 AS comment_count,
@@ -147,6 +150,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
     private StringBuilder createUserFeedQuery() {
         return new StringBuilder("""
                 SELECT p.id,
+                       p.title,
                        p.content,
                        (
                            SELECT COUNT(*)
@@ -354,6 +358,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
     private FeedBaseRow toBaseRow(ResultSet resultSet) throws SQLException {
         return new FeedBaseRow(
                 resultSet.getLong("id"),
+                resultSet.getString("title"),
                 resultSet.getString("content"),
                 new FeedItem.Author(
                         resultSet.getString("handle"),
@@ -386,6 +391,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
 
     private record FeedBaseRow(
             long feedId,
+            String title,
             String content,
             FeedItem.Author author,
             long likeCount,
@@ -399,6 +405,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         ) {
             return new FeedItem(
                     feedId,
+                    title,
                     content,
                     author,
                     categories,

@@ -12,6 +12,7 @@ import java.util.Map;
 
 public record FeedResponse(
         long feedId,
+        String title,
         String content,
         Author author,
         List<Category> categories,
@@ -27,6 +28,7 @@ public record FeedResponse(
         Map<Long, URI> urls = mediaUrls == null ? Map.of() : mediaUrls;
         return new FeedResponse(
                 feed.feedId(),
+                feed.title(),
                 feed.content(),
                 Author.from(feed.author(), urls),
                 feed.categories().stream().map(Category::from).toList(),

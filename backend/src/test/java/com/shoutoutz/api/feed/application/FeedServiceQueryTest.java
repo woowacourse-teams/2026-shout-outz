@@ -247,6 +247,7 @@ class FeedServiceQueryTest {
         Instant instant = Instant.parse(createdAt);
         return new FeedItem(
                 id,
+                "제목 " + id,
                 "본문 " + id,
                 new FeedItem.Author(
                         "zzaekkii",

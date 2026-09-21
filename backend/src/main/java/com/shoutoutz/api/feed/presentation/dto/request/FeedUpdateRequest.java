@@ -8,6 +8,10 @@ import org.hibernate.validator.constraints.CodePointLength;
 import org.hibernate.validator.constraints.UniqueElements;
 
 public record FeedUpdateRequest(
+        @NotBlank(message = "title은 필수입니다.")
+        @CodePointLength(max = 100, message = "title은 100자를 초과할 수 없습니다.")
+        String title,
+
         @NotBlank(message = "content는 필수입니다.")
         @CodePointLength(max = 500, message = "content는 500자를 초과할 수 없습니다.")
         String content,
