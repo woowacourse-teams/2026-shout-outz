@@ -16,6 +16,7 @@ public record ProjectMemberProfileResponse(
         String displayName,
         Integer cohort,
         String track,
+        Long avatarImageId,
         String avatarUrl,
         String githubAvatarUrl,
         String githubProfileUrl
@@ -30,6 +31,7 @@ public record ProjectMemberProfileResponse(
                 member.displayName(),
                 cohortValue(member.cohort()),
                 trackValue(member.track()),
+                member.avatarImageId(),
                 toUrl(mediaUrls, member.avatarImageId()),
                 member.githubAvatarUrl(),
                 member.githubProfileUrl()

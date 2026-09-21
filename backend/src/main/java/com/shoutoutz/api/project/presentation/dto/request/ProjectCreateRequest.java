@@ -25,7 +25,7 @@ public record ProjectCreateRequest(
         @NotNull(message = "cohort는 필수입니다.")
         Integer cohort,
 
-        Long thumbnailMediaId,
+        Long thumbnailImageId,
 
         @NotBlank(message = "githubRepositoryUrl은 필수입니다.")
         @CodePointLength(max = 2_048, message = "githubRepositoryUrl은 2,048자를 초과할 수 없습니다.")

@@ -27,6 +27,7 @@ public class HomeBannerService {
         URI imageUrl = imageService.createImageUrl(banner.getMediaId());
         return new HomeBannerResponse(
                 banner.getId(),
+                banner.getMediaId(),
                 imageUrl,
                 banner.getDestinationType().name(),
                 enumName(banner.getTargetType()),

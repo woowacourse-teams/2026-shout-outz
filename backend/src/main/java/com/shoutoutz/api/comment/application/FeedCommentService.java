@@ -252,6 +252,7 @@ public class FeedCommentService {
                 new FeedCommentFindResponse.Author(
                         author.getUserId(),
                         author.getDisplayName().value(),
+                        author.getAvatarImageId(),
                         toUrl(findUrl(avatarUrls, author.getAvatarImageId()))
                 ),
                 comment.getParentId(),

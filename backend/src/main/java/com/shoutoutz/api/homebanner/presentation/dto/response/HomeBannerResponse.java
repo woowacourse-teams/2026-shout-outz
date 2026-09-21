@@ -4,6 +4,7 @@ import java.net.URI;
 
 public record HomeBannerResponse(
         long bannerId,
+        long mediaId,
         URI imageUrl,
         String destinationType,
         String targetType,
