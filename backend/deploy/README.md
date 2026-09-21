@@ -29,6 +29,26 @@ deploy/
 └── shout-outz-backend.service
 ```
 
+## 요청 경로와 HTTPS
+
+배포 흐름과 별개로, 외부 요청은 nginx를 거쳐 애플리케이션에 도달한다.
+
+```text
+브라우저
+→ https://{API 도메인} (nginx 443, TLS 종료)
+→ http://127.0.0.1:8080 (Spring Boot)
+```
+
+인증서는 Let's Encrypt에서 발급받아 nginx가 보유하고 certbot이 90일 주기로 갱신한다. 애플리케이션은 TLS를 다루지 않는다.
+
+애플리케이션은 `application-prod.yml`의 `server.address`로 루프백에만 바인딩한다. 보안 그룹 `project-public`을 여러 팀이 공유해 8080 인바운드 규칙을 수정할 수 없으므로 외부 접근 차단을 이 바인딩으로 처리한 것이다. 따라서 nginx는 선택이 아니라 필수 구성 요소이며, nginx가 없으면 애플리케이션이 정상 기동해도 외부에서 접근할 수 없다.
+
+인증서를 애플리케이션이 아니라 nginx가 들고 있으므로 인증서 수명은 배포 주기와 분리된다. 갱신에 애플리케이션 재시작이 필요하지 않고 배포가 TLS 연결을 끊지 않는다. 같은 이유로 TLS 종료 지점을 이후 ALB로 옮기더라도 애플리케이션 설정은 그대로 쓸 수 있다.
+
+CodeDeploy가 애플리케이션을 재시작하는 동안 nginx는 502를 반환한다. 이전처럼 연결이 거부되지는 않으므로, 배포 직후의 502는 장애가 아니라 기동 대기로 읽는다.
+
+nginx 설정은 `nginx/shout-outz-backend.conf`에 서버 파일의 사본으로 둔다. 자동으로 반영되지 않으므로 서버에서 설정을 변경하면 저장소 사본도 함께 갱신한다. 443 블록과 리다이렉트의 `# managed by Certbot` 주석 줄은 갱신 때 certbot이 다시 손대므로 직접 수정하지 않는다.
+
 ## EC2 사전 준비
 
 배포 전에 EC2에 Java 21과 CodeDeploy Agent 2.0 이상을 설치한다.
