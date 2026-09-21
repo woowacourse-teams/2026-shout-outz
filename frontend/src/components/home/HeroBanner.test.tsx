@@ -14,6 +14,7 @@ const ROUTE_PATHS = ['/', '/projects/$id', '/news/$newsId', '/feeds/$feedId'];
 
 const banner = (overrides: Partial<HomeBanner> = {}): HomeBanner => ({
   bannerId: 100,
+  mediaId: 21,
   imageUrl: 'https://cdn.example.com/banners/loop.webp',
   destinationType: 'URL',
   ...overrides,

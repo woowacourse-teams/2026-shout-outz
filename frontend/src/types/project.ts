@@ -33,7 +33,7 @@ export interface ProjectFormValues {
   teamName: string;
   tagline: string;
   cohort: number | null;
-  thumbnailMediaId: number | null;
+  thumbnailImageId: number | null;
   githubRepositoryUrl: string;
   deploymentUrl: string;
   descriptionMd: string;

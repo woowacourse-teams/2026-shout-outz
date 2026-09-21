@@ -144,7 +144,8 @@ export function createFeedHandlers() {
         body.categoryIds.some((id) => id !== 1 && id !== 3) ||
         new Set(body.categoryIds).size !== body.categoryIds.length ||
         !Array.isArray(body.mediaIds) ||
-        new Set(body.mediaIds).size !== body.mediaIds.length
+        new Set(body.mediaIds).size !== body.mediaIds.length ||
+        body.mediaIds.some((id) => !existing.media.some((media) => media.mediaId === id))
       ) {
         return HttpResponse.json(
           {
@@ -163,9 +164,9 @@ export function createFeedHandlers() {
             ? { categoryId: 1, slug: 'backend', displayName: '백엔드', type: 'GENERAL' }
             : { categoryId: 3, slug: 'tecode-talk', displayName: '테코드톡', type: 'EVENT' },
         ),
-        // 조회 응답의 미디어는 공개 URL만 내려준다. mediaId는 요청에만 쓴다.
         media: body.mediaIds.map((mediaId, displayOrder) => ({
           displayOrder,
+          mediaId,
           url: `https://cdn.example.com/media/${mediaId}`,
         })),
         updatedAt: new Date().toISOString(),

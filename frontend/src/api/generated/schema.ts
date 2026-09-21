@@ -384,6 +384,8 @@ export interface FeedCommentFindAllSuccessResponse {
   data: {
     /** 댓글 작성자 */
     author: {
+      /** 작성자 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 작성자 표시 이름 */
@@ -462,6 +464,8 @@ export interface FeedFindAllSuccessResponse {
   data: {
     /** 현재 작성자 프로필 */
     author: {
+      /** 현재 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** 현재 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 작성자 기수 */
@@ -496,6 +500,8 @@ export interface FeedFindAllSuccessResponse {
     media: {
       /** 미디어 표시 순서 */
       displayOrder: number;
+      /** 본문 미디어 ID */
+      mediaId: number;
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
@@ -519,6 +525,8 @@ export interface FeedFindSuccessResponse {
   data: {
     /** 현재 작성자 프로필 */
     author: {
+      /** 현재 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** 현재 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 작성자 기수 */
@@ -553,6 +561,8 @@ export interface FeedFindSuccessResponse {
     media: {
       /** 미디어 표시 순서 */
       displayOrder: number;
+      /** 본문 미디어 ID */
+      mediaId: number;
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
@@ -813,6 +823,8 @@ export interface HomeBannerFindAllSuccessResponse {
     linkType?: "INTERNAL_PATH" | "EXTERNAL_URL" | null;
     /** 내부 경로 또는 외부 HTTPS URL */
     linkUrl?: string | null;
+    /** 배너 이미지 미디어 ID */
+    mediaId: number;
     /** 대상 리소스 ID */
     targetId?: number | null;
     /** 대상 리소스 유형 */
@@ -1173,6 +1185,8 @@ export interface ProjectCommentFindAllSuccessResponse {
   data: {
     /** 댓글 작성자 */
     author: {
+      /** 작성자 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 작성자 표시 이름 */
@@ -1264,7 +1278,7 @@ export interface ProjectCreateRequest {
   /** 선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다. */
   techTagIds: number[];
   /** 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID */
-  thumbnailMediaId?: number | null;
+  thumbnailImageId?: number | null;
   /** 프로젝트 이름 (100자 이하) */
   title: string;
 }
@@ -1342,6 +1356,8 @@ export interface ProjectFindAllSuccessResponse {
     likeCount: number;
     /** 팀원 전체 목록. 상세 조회의 members와 같은 규칙이며, 등록 순서대로 정렬한다. */
     members: {
+      /** 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** CloudFront에서 제공하는 공개 프로필 이미지 URL */
       avatarUrl?: string | null;
       /** 기수. 가입하지 않은 이관 팀원은 프로젝트 기수다. */
@@ -1370,6 +1386,8 @@ export interface ProjectFindAllSuccessResponse {
       /** 기술 스택 ID */
       id: number;
     }[];
+    /** 프로젝트 썸네일 미디어 ID */
+    thumbnailImageId?: number | null;
     /** CloudFront에서 제공하는 공개 썸네일 URL */
     thumbnailUrl?: string | null;
     /** 프로젝트 이름 */
@@ -1408,6 +1426,13 @@ export interface ProjectFindDetailSuccessResponse {
     deploymentUrl?: string | null;
     /** 프로젝트 설명 마크다운. 본문 이미지 참조는 공개 URL로 변환되어 있다. */
     descriptionMd?: string | null;
+    /** 본문 이미지의 미디어 ID와 공개 URL 매핑 */
+    descriptionMedia: {
+      /** 본문 이미지 미디어 ID */
+      mediaId: number;
+      /** 본문 이미지 공개 URL */
+      url: string;
+    }[];
     /** 요청자가 등록자 본인인지 여부. 수정·삭제할 수 있는 사용자에게만 true다. 비로그인이거나 이전 기수에서 이관된 프로젝트면 false다. */
     editable: boolean;
     /** GitHub 리포지토리 URL */
@@ -1422,6 +1447,8 @@ export interface ProjectFindDetailSuccessResponse {
     likedByMe: boolean;
     /** 팀원 목록. 신규 프로젝트는 등록 순서대로이며 등록자가 첫 번째다. */
     members: {
+      /** 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** CloudFront에서 제공하는 공개 프로필 이미지 URL */
       avatarUrl?: string | null;
       /** 기수. 가입하지 않은 이관 팀원은 프로젝트 기수다. */
@@ -1456,6 +1483,8 @@ export interface ProjectFindDetailSuccessResponse {
       /** 기술 스택 ID */
       id: number;
     }[];
+    /** 프로젝트 썸네일 미디어 ID */
+    thumbnailImageId?: number | null;
     /** 프로젝트 이름 */
     title: string;
     /** 수정 시각 */
@@ -1586,6 +1615,8 @@ export interface UserFeedFindAllSuccessResponse {
   data: {
     /** 현재 작성자 프로필 */
     author: {
+      /** 현재 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** 현재 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 작성자 기수 */
@@ -1624,6 +1655,8 @@ export interface UserFeedFindAllSuccessResponse {
     media: {
       /** 미디어 표시 순서 */
       displayOrder: number;
+      /** 본문 미디어 ID */
+      mediaId: number;
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
@@ -1645,6 +1678,8 @@ export interface UserFeedFindAllSuccessResponse {
 export interface UserProfileSuccessResponse {
   /** 사용자 공개 프로필 */
   data: {
+    /** 프로필 이미지 미디어 ID */
+    avatarImageId?: number | null;
     /** 프로필 이미지 공개 URL */
     avatarUrl?: string | null;
     /** 한 줄 소개 */
@@ -1679,6 +1714,8 @@ export interface UserProfileSuccessResponse {
 export interface UserProfileSummarySuccessResponse {
   /** 프로필 요약 정보 */
   data: {
+    /** 프로필 이미지 미디어 ID */
+    avatarImageId?: number | null;
     /** 프로필 이미지 공개 URL */
     avatarUrl?: string | null;
     /** 표시 이름 */
@@ -1745,6 +1782,8 @@ export interface UserProjectFindAllSuccessResponse {
     likeCount: number;
     /** 프로젝트 팀원 */
     members: {
+      /** 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** CloudFront에서 제공하는 공개 프로필 이미지 URL */
       avatarUrl?: string | null;
       /** 기수 */
@@ -1777,6 +1816,8 @@ export interface UserProjectFindAllSuccessResponse {
       /** 기술 스택 ID */
       id: number;
     }[];
+    /** 프로젝트 썸네일 이미지 ID */
+    thumbnailImageId?: number | null;
     /** CloudFront에서 제공하는 공개 썸네일 URL */
     thumbnailUrl?: string | null;
     /** 프로젝트 이름 */
@@ -1799,6 +1840,8 @@ export interface UserSearchSuccessResponse {
   data: {
     /** 검색된 크루와 코치 */
     items: {
+      /** 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 우테코 기수 */
