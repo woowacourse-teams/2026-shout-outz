@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug 형식이\
-                    \ 올바르지 않습니다.\"},{\"field\":\"displayOrder\",\"message\":\"displayOrder는\
-                    \ 0 이상이어야 합니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
+                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"\
+                    displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1018,9 +1018,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -1324,10 +1324,10 @@ paths:
                 $ref: "#/components/schemas/HomeBannerFindAllSuccessResponse"
               examples:
                 home-banner-find-all:
-                  value: "{\"status\":\"success\",\"data\":[{\"bannerId\":100,\"imageUrl\"\
-                    :\"https://cdn.example.com/banner\",\"destinationType\":\"URL\"\
-                    ,\"targetType\":null,\"targetId\":null,\"linkType\":\"EXTERNAL_URL\"\
-                    ,\"linkUrl\":\"https://example.com/promotion\"}]}"
+                  value: "{\"status\":\"success\",\"data\":[{\"bannerId\":100,\"mediaId\"\
+                    :10,\"imageUrl\":\"https://cdn.example.com/banner\",\"destinationType\"\
+                    :\"URL\",\"targetType\":null,\"targetId\":null,\"linkType\":\"\
+                    EXTERNAL_URL\",\"linkUrl\":\"https://example.com/promotion\"}]}"
   /api/v1/news/events:
     post:
       tags:
@@ -1449,10 +1449,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
+                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
+                    eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -2236,9 +2236,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -3730,6 +3730,15 @@ paths:
                 type: string
 components:
   schemas:
+    AdminVerificationRequestRejectRequest:
+      title: AdminVerificationRequestRejectRequest
+      required:
+      - reason
+      type: object
+      properties:
+        reason:
+          type: string
+          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     CategoryUpdateSuccessResponse:
       title: CategoryUpdateSuccessResponse
       required:
@@ -3772,15 +3781,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    AdminVerificationRequestRejectRequest:
-      title: AdminVerificationRequestRejectRequest
-      required:
-      - reason
-      type: object
-      properties:
-        reason:
-          type: string
-          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     FeedCommentDeleteSuccessResponse:
       title: FeedCommentDeleteSuccessResponse
       required:
@@ -5172,61 +5172,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    HomeBannerFindAllSuccessResponse:
-      title: HomeBannerFindAllSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 활성 홈 배너 목록
-          items:
-            required:
-            - bannerId
-            - destinationType
-            - imageUrl
-            type: object
-            properties:
-              targetId:
-                type: number
-                description: 대상 리소스 ID
-                nullable: true
-              bannerId:
-                type: number
-                description: 배너 ID
-              imageUrl:
-                type: string
-                description: 표시용 이미지 URL
-              linkUrl:
-                type: string
-                description: 내부 경로 또는 외부 HTTPS URL
-                nullable: true
-              destinationType:
-                type: string
-                description: 이동 방식
-                enum:
-                - TARGET
-                - URL
-              linkType:
-                type: string
-                description: URL 유형
-                nullable: true
-                enum:
-                - INTERNAL_PATH
-                - EXTERNAL_URL
-              targetType:
-                type: string
-                description: 대상 리소스 유형
-                nullable: true
-                enum:
-                - NEWS
-                - PROJECT
-                - FEED
-        status:
-          type: string
-          description: 응답 상태
     UserProfileSummarySuccessResponse:
       title: UserProfileSummarySuccessResponse
       required:
@@ -5377,6 +5322,65 @@ components:
         eventEndAt:
           type: string
           description: 이벤트 종료 시각
+    HomeBannerFindAllSuccessResponse:
+      title: HomeBannerFindAllSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 활성 홈 배너 목록
+          items:
+            required:
+            - bannerId
+            - destinationType
+            - imageUrl
+            - mediaId
+            type: object
+            properties:
+              targetId:
+                type: number
+                description: 대상 리소스 ID
+                nullable: true
+              bannerId:
+                type: number
+                description: 배너 ID
+              imageUrl:
+                type: string
+                description: 표시용 이미지 URL
+              linkUrl:
+                type: string
+                description: 내부 경로 또는 외부 HTTPS URL
+                nullable: true
+              destinationType:
+                type: string
+                description: 이동 방식
+                enum:
+                - TARGET
+                - URL
+              linkType:
+                type: string
+                description: URL 유형
+                nullable: true
+                enum:
+                - INTERNAL_PATH
+                - EXTERNAL_URL
+              targetType:
+                type: string
+                description: 대상 리소스 유형
+                nullable: true
+                enum:
+                - NEWS
+                - PROJECT
+                - FEED
+              mediaId:
+                type: number
+                description: 배너 이미지 미디어 ID
+        status:
+          type: string
+          description: 응답 상태
     OAuthSignupSuccessResponse:
       title: OAuthSignupSuccessResponse
       required:
