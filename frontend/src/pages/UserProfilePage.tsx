@@ -1,19 +1,22 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
+import { useQuery, useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { getRouteApi, Link } from '@tanstack/react-router';
 
 import {
-  userFeedsQueryOptions,
+  userFeedsInfiniteQueryOptions,
   userProfileQueryOptions,
-  userProjectsQueryOptions,
+  userProjectsInfiniteQueryOptions,
 } from '@/api/user';
 import { FeedCard } from '@/components/feeds/FeedCard';
 import { Footer } from '@/components/Footer';
-import { Gnb } from '@/components/Gnb';
+import { AppGnb } from '@/components/AppGnb';
 import { ProfileHeader } from '@/components/users/ProfileHeader';
 import { ProfileTabs } from '@/components/users/ProfileTabs';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { DEFAULT_PROFILE_TAB } from '@/constants/user';
 import { type ProfileTab } from '@/types/user';
+import { sessionQuery } from '@/apis/session';
+import { myProfileSummaryQuery } from '@/apis/user';
+import { getButtonStyles } from '@/components/Button';
 
 const route = getRouteApi('/users/$handle');
 
@@ -42,7 +45,7 @@ export function UserProfilePage() {
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <title>{`${profile.displayName} | shout-outz`}</title>
-      <Gnb />
+      <AppGnb />
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 pt-6 pb-12 md:gap-8 md:pt-10 md:pb-20">
         <ProfileHeader
@@ -53,6 +56,8 @@ export function UserProfilePage() {
           githubProfileUrl={profile.githubProfileUrl}
           blogUrl={profile.blogUrl}
         />
+
+        <MyProfileActions handle={handle} />
 
         <ProfileTabs
           value={currentTab}
@@ -69,8 +74,28 @@ export function UserProfilePage() {
   );
 }
 
+function MyProfileActions({ handle }: { handle: string }) {
+  const session = useQuery({ ...sessionQuery, enabled: typeof window !== 'undefined' });
+  const authenticated = session.data?.status === 'AUTHENTICATED' && session.data.userId !== null;
+  const me = useQuery({
+    ...myProfileSummaryQuery(session.data?.userId ?? 0),
+    enabled: authenticated,
+  });
+
+  if (me.data?.handle !== handle) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Link to="/mypage/verification" className={getButtonStyles({ variant: 'outline' })}>
+        구성원 인증
+      </Link>
+    </div>
+  );
+}
+
 function ProjectTab({ handle }: { handle: string }) {
-  const { data: projects } = useSuspenseQuery(userProjectsQueryOptions(handle));
+  const query = useSuspenseInfiniteQuery(userProjectsInfiniteQueryOptions(handle));
+  const projects = query.data.pages.flatMap((page) => page.data);
 
   return (
     <section aria-label="프로젝트">
@@ -93,12 +118,18 @@ function ProjectTab({ handle }: { handle: string }) {
           ))}
         </ul>
       )}
+      {query.hasNextPage && (
+        <button type="button" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>
+          {query.isFetchingNextPage ? '불러오는 중…' : '프로젝트 더 보기'}
+        </button>
+      )}
     </section>
   );
 }
 
 function FeedTab({ handle }: { handle: string }) {
-  const { data: feeds } = useSuspenseQuery(userFeedsQueryOptions(handle));
+  const query = useSuspenseInfiniteQuery(userFeedsInfiniteQueryOptions(handle));
+  const feeds = query.data.pages.flatMap((page) => page.data);
 
   return (
     <section aria-label="피드">
@@ -112,6 +143,11 @@ function FeedTab({ handle }: { handle: string }) {
             </li>
           ))}
         </ul>
+      )}
+      {query.hasNextPage && (
+        <button type="button" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>
+          {query.isFetchingNextPage ? '불러오는 중…' : '피드 더 보기'}
+        </button>
       )}
     </section>
   );

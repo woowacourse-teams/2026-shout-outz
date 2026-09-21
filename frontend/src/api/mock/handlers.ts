@@ -14,9 +14,55 @@ export const handlers = [
   http.get('/api/v1/auth/session', () =>
     HttpResponse.json({
       status: 'success',
-      data: { status: 'UNAUTHENTICATED', userId: null, csrfToken: '', role: null },
+      data: {
+        status: 'AUTHENTICATED',
+        userId: 1,
+        role: 'USER',
+        csrfToken: 'development-token',
+      },
     }),
   ),
+
+  http.post('/api/v1/auth/signup', () =>
+    HttpResponse.json({ status: 'success', data: { userId: 1 } }, { status: 201 }),
+  ),
+
+  http.post('/api/v1/auth/logout', () => new HttpResponse(null, { status: 204 })),
+
+  http.get('/api/v1/users/me/verification-request', () =>
+    HttpResponse.json({
+      status: 'success',
+      data: {
+        requestId: 1,
+        userType: 'WOOWACOURSE_CREW',
+        nickname: '우진',
+        cohort: 8,
+        track: 'BACKEND',
+        status: 'APPROVED',
+        requestedAt: '2026-09-16T00:00:00Z',
+        decidedAt: '2026-09-16T01:00:00Z',
+        reason: null,
+      },
+    }),
+  ),
+
+  http.post('/api/v1/users/me/verification-requests', async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json(
+      {
+        status: 'success',
+        data: {
+          requestId: 2,
+          ...body,
+          status: 'PENDING',
+          requestedAt: '2026-09-19T00:00:00Z',
+          decidedAt: null,
+          reason: null,
+        },
+      },
+      { status: 201 },
+    );
+  }),
 
   http.get('/api/v1/cohorts', () =>
     HttpResponse.json({ status: 'success', data: { items: getCohorts() } }),
@@ -118,7 +164,7 @@ export const handlers = [
         title: name,
         tagline,
         cohort,
-        thumbnailMediaId: null,
+        thumbnailUrl: null,
         likeCount,
         commentCount: 0,
         techTags: techTags.map((displayName, tagIndex) => ({ id: tagIndex + 1, displayName })),
@@ -127,12 +173,13 @@ export const handlers = [
           handle: `crew${member.userId}`,
           displayName: member.displayName,
           cohort: member.cohort,
-          track: member.track,
-          avatarImageId: null,
+          track: member.track === 'BE' ? 'BACKEND' : 'FRONTEND',
+          avatarUrl: null,
           githubAvatarUrl: null,
           githubProfileUrl: null,
         })),
       })),
+      meta: { nextCursor: null, hasNext: false, totalCount: projects.length },
     }),
   ),
 
@@ -167,7 +214,7 @@ export const handlers = [
   http.get('/api/v1/users/me/summary', () =>
     HttpResponse.json({
       status: 'success',
-      data: { userId: 10, handle: 'woojin', displayName: '정우진', avatarImageId: null },
+      data: { userId: 10, handle: 'woojin', displayName: '정우진', avatarUrl: null },
     }),
   ),
 

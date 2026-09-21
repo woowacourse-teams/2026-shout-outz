@@ -67,6 +67,23 @@ const fillRequiredFields = async (user: User) => {
 };
 
 describe('ProjectCreatePage', () => {
+  it('구성원 인증을 받지 않은 사용자는 등록 폼 대신 인증 신청 안내를 본다', async () => {
+    server.use(
+      http.get('/api/v1/users/me/verification-request', () =>
+        HttpResponse.json({ status: 'success', data: null }),
+      ),
+    );
+
+    renderRoute('/projects/new');
+
+    expect(await screen.findByText('구성원 인증이 필요해요.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '구성원 인증 신청' })).toHaveAttribute(
+      'href',
+      '/mypage/verification',
+    );
+    expect(screen.queryByRole('textbox', { name: /프로젝트 이름/ })).not.toBeInTheDocument();
+  });
+
   it('명세의 필드를 모두 입력해 등록한다', async () => {
     const user = userEvent.setup();
     const received = captureCreateRequest();

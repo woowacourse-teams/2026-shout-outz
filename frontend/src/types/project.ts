@@ -69,12 +69,12 @@ export interface ProjectTechTag {
 }
 
 export interface ProjectMember {
-  userId: number;
-  handle: string;
+  userId: number | null;
+  handle: string | null;
   displayName: string;
   cohort: number | null;
-  track: string | null;
-  avatarImageId: number | null;
+  track: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+  avatarUrl: string | null;
   githubAvatarUrl: string | null;
   githubProfileUrl: string | null;
 }
@@ -90,7 +90,7 @@ export interface ProjectSummary {
   title: string;
   tagline: string;
   cohort: number | null;
-  thumbnailMediaId: number | null;
+  thumbnailUrl: string | null;
   likeCount: number;
   commentCount: number;
   techTags: ProjectTechTag[];

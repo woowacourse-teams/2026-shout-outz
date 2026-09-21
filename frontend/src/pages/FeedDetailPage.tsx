@@ -4,7 +4,7 @@ import { feedQuery } from '@/apis/feed';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Footer } from '@/components/Footer';
-import { Gnb } from '@/components/Gnb';
+import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { FeedContent } from '@/components/feeds/FeedContent';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
@@ -21,7 +21,7 @@ export function FeedDetailPage({ feedId }: { feedId: number }) {
 
   return (
     <div className="bg-background flex min-h-dvh flex-col">
-      <Gnb />
+      <AppGnb />
       <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 px-4 py-6 md:py-10 lg:grid-cols-3 lg:gap-12">
         <section className="min-w-0 lg:col-span-2" aria-label="피드 상세">
           <AsyncBoundary key={feedId}>

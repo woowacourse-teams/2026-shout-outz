@@ -1,11 +1,17 @@
-import { queryOptions } from '@tanstack/react-query';
+import { mutationOptions, queryOptions } from '@tanstack/react-query';
 import { httpClient } from '@/utils/client';
 import { setCsrfToken } from '@/utils/http';
+
 export interface Session {
   status: 'AUTHENTICATED' | 'UNAUTHENTICATED' | 'SIGNUP_REQUIRED';
   userId: number | null;
   csrfToken: string;
   role: string | null;
+}
+
+export interface SignupInput {
+  handle: string;
+  displayName: string;
 }
 
 export async function fetchSession(signal?: AbortSignal) {
@@ -32,4 +38,29 @@ export const sessionQuery = queryOptions({
       throw error;
     }
   },
+});
+
+export async function signup(input: SignupInput) {
+  const response = await httpClient<{ status: 'success'; data: { userId: number } }>(
+    '/api/v1/auth/signup',
+    { method: 'post', json: input },
+  );
+
+  if (!response) throw new Error('가입 결과를 확인하지 못했습니다.');
+  return response.data;
+}
+
+export const signupMutation = mutationOptions({
+  mutationFn: signup,
+  retry: false,
+});
+
+export async function logout() {
+  await httpClient('/api/v1/auth/logout', { method: 'post' });
+  setCsrfToken(null);
+}
+
+export const logoutMutation = mutationOptions({
+  mutationFn: logout,
+  retry: false,
 });

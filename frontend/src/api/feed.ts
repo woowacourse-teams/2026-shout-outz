@@ -5,7 +5,9 @@ import { type ApiSuccessBody, httpClient } from '@/utils/client';
 const FEEDS_PATH = '/api/v1/feeds';
 
 export async function fetchFeedList({ sort, size }: FeedListParams): Promise<Feed[]> {
-  const body = await httpClient<ApiSuccessBody<Feed[]>>(FEEDS_PATH, {
+  const body = await httpClient<
+    ApiSuccessBody<Feed[], { nextCursor: string | null; hasNext: boolean }>
+  >(FEEDS_PATH, {
     method: 'get',
     searchParams: { sort, size },
   });

@@ -17,6 +17,7 @@ export type NewsEventStatus = 'ONGOING';
 export interface NewsListOptions {
   eventStatus?: NewsEventStatus;
   size?: number;
+  cursor?: string;
 }
 
 // TODO 대체 NewsListItem.type (명세는 null도 포함)
