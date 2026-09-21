@@ -19,6 +19,7 @@ import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
+import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
@@ -60,7 +61,7 @@ public class FeedService {
     private final Clock clock;
 
     @Transactional
-    public FeedResponse saveFeed(long userId, FeedSaveRequest request) {
+    public FeedCommandResponse saveFeed(long userId, FeedSaveRequest request) {
         validateWriter(userId);
         validateCategories(request.categoryIds());
         validateMedia(request.mediaIds(), userId);
@@ -70,12 +71,12 @@ public class FeedService {
         feedRepository.saveCategories(savedFeed.getId(), request.categoryIds());
         feedRepository.saveMedia(savedFeed.getId(), request.mediaIds());
 
-        return toResponse(findFeedItem(savedFeed.getId()));
+        return toCommandResponse(findFeedItem(savedFeed.getId()));
     }
 
     @Transactional(readOnly = true)
     public FeedResponse findFeed(long feedId) {
-        return toResponse(findFeedItem(feedId));
+        return toQueryResponse(findFeedItem(feedId));
     }
 
     @Transactional(readOnly = true)
@@ -116,7 +117,7 @@ public class FeedService {
     }
 
     @Transactional
-    public FeedResponse updateFeed(long feedId, long userId, FeedUpdateRequest request) {
+    public FeedCommandResponse updateFeed(long feedId, long userId, FeedUpdateRequest request) {
         Feed feed = findOwnedFeed(feedId, userId);
         validateCategories(request.categoryIds());
         validateMedia(request.mediaIds(), userId);
@@ -124,7 +125,7 @@ public class FeedService {
         Feed updatedFeed = feedRepository.update(feed.updateContent(request.content(), clock.instant()));
         feedRepository.saveCategories(feedId, request.categoryIds());
         feedRepository.saveMedia(feedId, request.mediaIds());
-        return toResponse(findFeedItem(updatedFeed.getId()));
+        return toCommandResponse(findFeedItem(updatedFeed.getId()));
     }
 
     @Transactional
@@ -159,8 +160,12 @@ public class FeedService {
         return new FeedFindAllResult(items, nextCursor, true, resolveMediaUrls(items));
     }
 
-    private FeedResponse toResponse(FeedItem item) {
+    private FeedResponse toQueryResponse(FeedItem item) {
         return FeedResponse.from(item, resolveMediaUrls(List.of(item)));
+    }
+
+    private FeedCommandResponse toCommandResponse(FeedItem item) {
+        return FeedCommandResponse.from(item, resolveMediaUrls(List.of(item)));
     }
 
     private Map<Long, java.net.URI> resolveMediaUrls(List<FeedItem> items) {

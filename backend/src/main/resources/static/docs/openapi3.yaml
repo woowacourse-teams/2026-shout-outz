@@ -215,12 +215,12 @@ paths:
                   value: "{\"status\":\"success\",\"data\":[{\"feedId\":10,\"content\"\
                     :\"본문입니다.\",\"author\":{\"handle\":\"zzaekkii\",\"displayName\"\
                     :\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\":\"BACKEND\"\
-                    ,\"cohort\":8,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
+                    ,\"cohort\":8,\"avatarImageId\":21,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
                     },\"categories\":[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\"\
-                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"url\":\"https://cdn.example.com/media/21/display\"\
-                    ,\"displayOrder\":0}],\"createdAt\":\"2026-09-11T00:00:00Z\",\"\
-                    updatedAt\":\"2026-09-11T00:00:00Z\"}],\"meta\":{\"nextCursor\"\
-                    :\"next-cursor\",\"hasNext\":true}}"
+                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"mediaId\":21,\"\
+                    url\":\"https://cdn.example.com/media/21/display\",\"displayOrder\"\
+                    :0}],\"createdAt\":\"2026-09-11T00:00:00Z\",\"updatedAt\":\"2026-09-11T00:00:00Z\"\
+                    }],\"meta\":{\"nextCursor\":\"next-cursor\",\"hasNext\":true}}"
     post:
       tags:
       - Feed
@@ -434,14 +434,16 @@ paths:
                 project-find-all:
                   value: "{\"status\":\"success\",\"data\":[{\"id\":100,\"slug\":\"\
                     loop\",\"title\":\"루프 (Loop)\",\"tagline\":\"스프린트 회고와 액션 아이템을\
-                    \ 하나로 엮은 실시간 협업 도구\",\"cohort\":6,\"thumbnailUrl\":\"https://cdn.example.com/thumbnail\"\
-                    ,\"starCount\":128,\"likeCount\":184,\"commentCount\":14,\"techTags\"\
-                    :[{\"id\":1,\"displayName\":\"React\"},{\"id\":2,\"displayName\"\
-                    :\"Spring\"}],\"members\":[{\"handle\":\"dhyepark\",\"displayName\"\
-                    :\"박다혜\",\"cohort\":6,\"track\":\"BACKEND\",\"avatarUrl\":\"https://cdn.example.com/avatar-101\"\
-                    ,\"githubAvatarUrl\":null,\"githubProfileUrl\":null},{\"handle\"\
-                    :\"zzaekkii\",\"displayName\":\"김도현\",\"cohort\":6,\"track\":\"\
-                    FRONTEND\",\"avatarUrl\":null,\"githubAvatarUrl\":null,\"githubProfileUrl\"\
+                    \ 하나로 엮은 실시간 협업 도구\",\"cohort\":6,\"thumbnailImageId\":12,\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/thumbnail\",\"starCount\":128,\"likeCount\"\
+                    :184,\"commentCount\":14,\"techTags\":[{\"id\":1,\"displayName\"\
+                    :\"React\"},{\"id\":2,\"displayName\":\"Spring\"}],\"members\"\
+                    :[{\"handle\":\"dhyepark\",\"displayName\":\"박다혜\",\"cohort\"\
+                    :6,\"track\":\"BACKEND\",\"avatarImageId\":101,\"avatarUrl\":\"\
+                    https://cdn.example.com/avatar-101\",\"githubAvatarUrl\":null,\"\
+                    githubProfileUrl\":null},{\"handle\":\"zzaekkii\",\"displayName\"\
+                    :\"김도현\",\"cohort\":6,\"track\":\"FRONTEND\",\"avatarImageId\"\
+                    :null,\"avatarUrl\":null,\"githubAvatarUrl\":null,\"githubProfileUrl\"\
                     :null}]}],\"meta\":{\"nextCursor\":\"UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw\"\
                     ,\"hasNext\":true,\"totalCount\":48}}"
         "400":
@@ -493,7 +495,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -507,7 +509,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -521,7 +523,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -535,7 +537,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -544,7 +546,7 @@ paths:
                   }
               project-create-invalid:
                 value: "{\n  \n  \"teamName\": \"루프팀\",\n  \"tagline\": \"스프린트 회고와\
-                  \ 액션 아이템을 하나로 엮은 실시간 협업 도구\",\n  \"cohort\": 6,\n  \"thumbnailMediaId\"\
+                  \ 액션 아이템을 하나로 엮은 실시간 협업 도구\",\n  \"cohort\": 6,\n  \"thumbnailImageId\"\
                   : 12,\n  \"githubRepositoryUrl\": \"https://github.com/woowacourse-teams/2026-loop\"\
                   ,\n  \"deploymentUrl\": \"https://loop.team\",\n  \"descriptionMd\"\
                   : \"## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)\"\
@@ -557,7 +559,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -571,7 +573,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -585,7 +587,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -599,7 +601,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -1146,11 +1148,12 @@ paths:
                   value: "{\"status\":\"success\",\"data\":{\"feedId\":10,\"content\"\
                     :\"본문입니다.\",\"author\":{\"handle\":\"zzaekkii\",\"displayName\"\
                     :\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\":\"BACKEND\"\
-                    ,\"cohort\":8,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
+                    ,\"cohort\":8,\"avatarImageId\":21,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
                     },\"categories\":[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\"\
-                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"url\":\"https://cdn.example.com/media/21/display\"\
-                    ,\"displayOrder\":0}],\"createdAt\":\"2026-09-11T00:00:00Z\",\"\
-                    updatedAt\":\"2026-09-11T00:00:00Z\"}}"
+                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"mediaId\":21,\"\
+                    url\":\"https://cdn.example.com/media/21/display\",\"displayOrder\"\
+                    :0}],\"createdAt\":\"2026-09-11T00:00:00Z\",\"updatedAt\":\"2026-09-11T00:00:00Z\"\
+                    }}"
         "404":
           description: "404"
           content:
@@ -1319,10 +1322,10 @@ paths:
                 $ref: "#/components/schemas/HomeBannerFindAllSuccessResponse"
               examples:
                 home-banner-find-all:
-                  value: "{\"status\":\"success\",\"data\":[{\"bannerId\":100,\"imageUrl\"\
-                    :\"https://cdn.example.com/banner\",\"destinationType\":\"URL\"\
-                    ,\"targetType\":null,\"targetId\":null,\"linkType\":\"EXTERNAL_URL\"\
-                    ,\"linkUrl\":\"https://example.com/promotion\"}]}"
+                  value: "{\"status\":\"success\",\"data\":[{\"bannerId\":100,\"mediaId\"\
+                    :10,\"imageUrl\":\"https://cdn.example.com/banner\",\"destinationType\"\
+                    :\"URL\",\"targetType\":null,\"targetId\":null,\"linkType\":\"\
+                    EXTERNAL_URL\",\"linkUrl\":\"https://example.com/promotion\"}]}"
   /api/v1/home/statistics:
     get:
       tags:
@@ -1872,23 +1875,25 @@ paths:
                 project-find-detail:
                   value: "{\"status\":\"success\",\"data\":{\"id\":100,\"slug\":\"\
                     loop\",\"title\":\"루프 (Loop)\",\"teamName\":\"루프팀\",\"tagline\"\
-                    :\"스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구\",\"cohort\":6,\"imageUrl\"\
-                    :\"https://cdn.example.com/thumbnail\",\"descriptionMd\":\"##\
-                    \ 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\",\"githubRepositoryUrl\":\"\
-                    https://github.com/woowacourse-teams/2026-loop\",\"deploymentUrl\"\
-                    :\"https://loop.team\",\"serviceStatus\":\"OPERATING\",\"approvalStatus\"\
-                    :\"APPROVED\",\"rejectReason\":null,\"viewCount\":831,\"starCount\"\
-                    :128,\"likeCount\":84,\"bookmarkCount\":28,\"likedByMe\":false,\"\
-                    bookmarkedByMe\":false,\"editable\":false,\"commentCount\":18,\"\
-                    techTags\":[{\"id\":1,\"displayName\":\"React\"},{\"id\":2,\"\
-                    displayName\":\"TypeScript\"}],\"members\":[{\"handle\":\"dhyepark\"\
-                    ,\"displayName\":\"박다혜\",\"cohort\":6,\"track\":\"BACKEND\",\"\
-                    avatarUrl\":\"https://cdn.example.com/avatar-101\",\"githubAvatarUrl\"\
-                    :null,\"githubProfileUrl\":null},{\"handle\":\"zzaekkii\",\"displayName\"\
-                    :\"김도현\",\"cohort\":6,\"track\":\"FRONTEND\",\"avatarUrl\":null,\"\
-                    githubAvatarUrl\":null,\"githubProfileUrl\":null}],\"createdAt\"\
-                    :\"2026-08-09T02:30:00Z\",\"updatedAt\":\"2026-08-09T03:00:00Z\"\
-                    }}"
+                    :\"스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구\",\"cohort\":6,\"thumbnailImageId\"\
+                    :12,\"imageUrl\":\"https://cdn.example.com/thumbnail\",\"descriptionMd\"\
+                    :\"## 문제\\n![회고 화면](https://cdn.example.com/description-21)\"\
+                    ,\"descriptionMedia\":[{\"mediaId\":21,\"url\":\"https://cdn.example.com/description-21\"\
+                    }],\"githubRepositoryUrl\":\"https://github.com/woowacourse-teams/2026-loop\"\
+                    ,\"deploymentUrl\":\"https://loop.team\",\"serviceStatus\":\"\
+                    OPERATING\",\"approvalStatus\":\"APPROVED\",\"rejectReason\":null,\"\
+                    viewCount\":831,\"starCount\":128,\"likeCount\":84,\"bookmarkCount\"\
+                    :28,\"likedByMe\":false,\"bookmarkedByMe\":false,\"editable\"\
+                    :false,\"commentCount\":18,\"techTags\":[{\"id\":1,\"displayName\"\
+                    :\"React\"},{\"id\":2,\"displayName\":\"TypeScript\"}],\"members\"\
+                    :[{\"handle\":\"dhyepark\",\"displayName\":\"박다혜\",\"cohort\"\
+                    :6,\"track\":\"BACKEND\",\"avatarImageId\":101,\"avatarUrl\":\"\
+                    https://cdn.example.com/avatar-101\",\"githubAvatarUrl\":null,\"\
+                    githubProfileUrl\":null},{\"handle\":\"zzaekkii\",\"displayName\"\
+                    :\"김도현\",\"cohort\":6,\"track\":\"FRONTEND\",\"avatarImageId\"\
+                    :null,\"avatarUrl\":null,\"githubAvatarUrl\":null,\"githubProfileUrl\"\
+                    :null}],\"createdAt\":\"2026-08-09T02:30:00Z\",\"updatedAt\":\"\
+                    2026-08-09T03:00:00Z\"}}"
     put:
       tags:
       - Project
@@ -2122,10 +2127,11 @@ paths:
                 user-profile-get:
                   value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
                     ,\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\"\
-                    :\"BACKEND\",\"cohort\":8,\"bio\":\"백엔드 개발자입니다.\",\"avatarUrl\"\
-                    :\"https://cdn.example.com/media/21/display\",\"githubProfileUrl\"\
-                    :\"https://github.com/zzaekkii\",\"blogUrl\":\"https://zzaekkii.dev\"\
-                    ,\"counts\":{\"projects\":2,\"feeds\":18}}}"
+                    :\"BACKEND\",\"cohort\":8,\"bio\":\"백엔드 개발자입니다.\",\"avatarImageId\"\
+                    :21,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
+                    ,\"githubProfileUrl\":\"https://github.com/zzaekkii\",\"blogUrl\"\
+                    :\"https://zzaekkii.dev\",\"counts\":{\"projects\":2,\"feeds\"\
+                    :18}}}"
         "401":
           description: "401"
           content:
@@ -2324,9 +2330,10 @@ paths:
                 user-search-get:
                   value: "{\"status\":\"success\",\"data\":{\"items\":[{\"handle\"\
                     :\"zzaekkii\",\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\"\
-                    ,\"track\":\"BACKEND\",\"cohort\":8,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
-                    },{\"handle\":\"coach-jack\",\"displayName\":\"재키 코치\",\"userType\"\
-                    :\"WOOWACOURSE_COACH\",\"track\":null,\"cohort\":null,\"avatarUrl\"\
+                    ,\"track\":\"BACKEND\",\"cohort\":8,\"avatarImageId\":21,\"avatarUrl\"\
+                    :\"https://cdn.example.com/media/21/display\"},{\"handle\":\"\
+                    coach-jack\",\"displayName\":\"재키 코치\",\"userType\":\"WOOWACOURSE_COACH\"\
+                    ,\"track\":null,\"cohort\":null,\"avatarImageId\":null,\"avatarUrl\"\
                     :null}]},\"meta\":{\"nextCursor\":\"eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0\"\
                     ,\"hasNext\":true}}"
         "400":
@@ -2368,10 +2375,11 @@ paths:
                 user-public-profile-get:
                   value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
                     ,\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\"\
-                    :\"BACKEND\",\"cohort\":8,\"bio\":\"백엔드 개발자입니다.\",\"avatarUrl\"\
-                    :\"https://cdn.example.com/media/21/display\",\"githubProfileUrl\"\
-                    :\"https://github.com/zzaekkii\",\"blogUrl\":\"https://zzaekkii.dev\"\
-                    ,\"counts\":{\"projects\":2,\"feeds\":18}}}"
+                    :\"BACKEND\",\"cohort\":8,\"bio\":\"백엔드 개발자입니다.\",\"avatarImageId\"\
+                    :21,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
+                    ,\"githubProfileUrl\":\"https://github.com/zzaekkii\",\"blogUrl\"\
+                    :\"https://zzaekkii.dev\",\"counts\":{\"projects\":2,\"feeds\"\
+                    :18}}}"
         "404":
           description: "404"
           content:
@@ -2553,20 +2561,20 @@ paths:
                 feed-comment-find-all:
                   value: "{\"status\":\"success\",\"data\":[{\"id\":501,\"content\"\
                     :\"좋은 피드네요.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃 운\
-                    영팀\",\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    영팀\",\"avatarImageId\":10,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:00:00Z\",\"editable\":false,\"edited\"\
                     :false,\"deleted\":false},{\"id\":502,\"content\":\"저도 그렇게 생각합\
-                    니다.\",\"author\":{\"userId\":8,\"displayName\":\"재키\",\"avatarUrl\"\
-                    :\"https://cdn.example.com/media/11/display\"},\"parentId\":501,\"\
-                    createdAt\":\"2026-09-14T00:05:00Z\",\"updatedAt\":\"2026-09-14T00:05:00Z\"\
-                    ,\"editable\":false,\"edited\":false,\"deleted\":false},{\"id\"\
-                    :503,\"content\":null,\"author\":{\"userId\":9,\"displayName\"\
-                    :\"이전 작성자\",\"avatarUrl\":\"https://cdn.example.com/media/12/display\"\
-                    },\"parentId\":null,\"createdAt\":\"2026-09-14T00:10:00Z\",\"\
-                    updatedAt\":\"2026-09-14T00:10:00Z\",\"editable\":false,\"edited\"\
-                    :false,\"deleted\":true}],\"meta\":{\"nextCursor\":\"next-cursor\"\
-                    ,\"hasNext\":true}}"
+                    니다.\",\"author\":{\"userId\":8,\"displayName\":\"재키\",\"avatarImageId\"\
+                    :11,\"avatarUrl\":\"https://cdn.example.com/media/11/display\"\
+                    },\"parentId\":501,\"createdAt\":\"2026-09-14T00:05:00Z\",\"updatedAt\"\
+                    :\"2026-09-14T00:05:00Z\",\"editable\":false,\"edited\":false,\"\
+                    deleted\":false},{\"id\":503,\"content\":null,\"author\":{\"userId\"\
+                    :9,\"displayName\":\"이전 작성자\",\"avatarImageId\":12,\"avatarUrl\"\
+                    :\"https://cdn.example.com/media/12/display\"},\"parentId\":null,\"\
+                    createdAt\":\"2026-09-14T00:10:00Z\",\"updatedAt\":\"2026-09-14T00:10:00Z\"\
+                    ,\"editable\":false,\"edited\":false,\"deleted\":true}],\"meta\"\
+                    :{\"nextCursor\":\"next-cursor\",\"hasNext\":true}}"
     post:
       tags:
       - Feed Comment
@@ -2656,15 +2664,16 @@ paths:
                 project-comment-find-all:
                   value: "{\"status\":\"success\",\"data\":[{\"id\":501,\"content\"\
                     :\"좋은 프로젝트네요.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃\
-                    \ 운영팀\",\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    \ 운영팀\",\"avatarImageId\":10,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:00:00Z\",\"editable\":false,\"edited\"\
                     :false,\"deleted\":false},{\"id\":502,\"content\":\"저도 그렇게 생각합\
-                    니다.\",\"author\":{\"userId\":8,\"displayName\":\"재키\",\"avatarUrl\"\
-                    :\"https://cdn.example.com/media/11/display\"},\"parentId\":501,\"\
-                    createdAt\":\"2026-09-14T00:05:00Z\",\"updatedAt\":\"2026-09-14T00:05:00Z\"\
-                    ,\"editable\":false,\"edited\":false,\"deleted\":false}],\"meta\"\
-                    :{\"nextCursor\":\"next-cursor\",\"hasNext\":true}}"
+                    니다.\",\"author\":{\"userId\":8,\"displayName\":\"재키\",\"avatarImageId\"\
+                    :11,\"avatarUrl\":\"https://cdn.example.com/media/11/display\"\
+                    },\"parentId\":501,\"createdAt\":\"2026-09-14T00:05:00Z\",\"updatedAt\"\
+                    :\"2026-09-14T00:05:00Z\",\"editable\":false,\"edited\":false,\"\
+                    deleted\":false}],\"meta\":{\"nextCursor\":\"next-cursor\",\"\
+                    hasNext\":true}}"
     post:
       tags:
       - Project Comment
@@ -2940,8 +2949,8 @@ paths:
               examples:
                 user-profile-summary-get:
                   value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
-                    ,\"displayName\":\"재키\",\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
-                    }}"
+                    ,\"displayName\":\"재키\",\"avatarImageId\":21,\"avatarUrl\":\"\
+                    https://cdn.example.com/media/21/display\"}}"
   /api/v1/users/me/verification-request:
     get:
       tags:
@@ -3136,12 +3145,13 @@ paths:
                   value: "{\"status\":\"success\",\"data\":[{\"feedId\":10,\"content\"\
                     :\"사용자 피드 본문\",\"author\":{\"handle\":\"zzaekkii\",\"displayName\"\
                     :\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\":\"BACKEND\"\
-                    ,\"cohort\":8,\"avatarUrl\":\"https://cdn.example.com/media/20/display\"\
+                    ,\"cohort\":8,\"avatarImageId\":20,\"avatarUrl\":\"https://cdn.example.com/media/20/display\"\
                     },\"categories\":[{\"categoryId\":1,\"slug\":\"backend\",\"displayName\"\
-                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"url\":\"https://cdn.example.com/media/30/display\"\
-                    ,\"displayOrder\":0}],\"likeCount\":5,\"commentCount\":3,\"createdAt\"\
-                    :\"2026-09-16T00:00:00Z\",\"updatedAt\":\"2026-09-16T00:00:00Z\"\
-                    }],\"meta\":{\"nextCursor\":\"next-cursor\",\"hasNext\":true}}"
+                    :\"백엔드\",\"type\":\"GENERAL\"}],\"media\":[{\"mediaId\":30,\"\
+                    url\":\"https://cdn.example.com/media/30/display\",\"displayOrder\"\
+                    :0}],\"likeCount\":5,\"commentCount\":3,\"createdAt\":\"2026-09-16T00:00:00Z\"\
+                    ,\"updatedAt\":\"2026-09-16T00:00:00Z\"}],\"meta\":{\"nextCursor\"\
+                    :\"next-cursor\",\"hasNext\":true}}"
         "404":
           description: "404"
           content:
@@ -3214,13 +3224,14 @@ paths:
                   value: "{\"status\":\"success\",\"data\":[{\"id\":100,\"slug\":\"\
                     loop\",\"title\":\"루프\",\"teamName\":\"루프팀\",\"tagline\":\"스프린\
                     트 회고와 액션 아이템을 관리하는 협업 도구\",\"cohort\":6,\"serviceStatus\":\"OPERATING\"\
-                    ,\"thumbnailUrl\":\"https://cdn.example.com/thumbnail\",\"starCount\"\
-                    :128,\"likeCount\":184,\"commentCount\":14,\"techTags\":[{\"id\"\
-                    :1,\"displayName\":\"Spring\"}],\"members\":[{\"handle\":\"zzaekkii\"\
-                    ,\"displayName\":\"재키\",\"cohort\":6,\"track\":\"BACKEND\",\"\
-                    avatarUrl\":\"https://cdn.example.com/avatar-21\",\"githubAvatarUrl\"\
-                    :null,\"githubProfileUrl\":null}]}],\"meta\":{\"nextCursor\":\"\
-                    TEFURVNUfDIwMjYtMDktMTZUMDA6MDA6MDBafDEwMA\",\"hasNext\":true}}"
+                    ,\"thumbnailImageId\":12,\"thumbnailUrl\":\"https://cdn.example.com/thumbnail\"\
+                    ,\"starCount\":128,\"likeCount\":184,\"commentCount\":14,\"techTags\"\
+                    :[{\"id\":1,\"displayName\":\"Spring\"}],\"members\":[{\"handle\"\
+                    :\"zzaekkii\",\"displayName\":\"재키\",\"cohort\":6,\"track\":\"\
+                    BACKEND\",\"avatarImageId\":21,\"avatarUrl\":\"https://cdn.example.com/avatar-21\"\
+                    ,\"githubAvatarUrl\":null,\"githubProfileUrl\":null}]}],\"meta\"\
+                    :{\"nextCursor\":\"TEFURVNUfDIwMjYtMDktMTZUMDA6MDA6MDBafDEwMA\"\
+                    ,\"hasNext\":true}}"
   /api/v1/admin/home/banners/{bannerId}:
     put:
       tags:
@@ -4055,6 +4066,10 @@ components:
               - BACKEND
               - ANDROID
               - FRONTEND
+            avatarImageId:
+              type: number
+              description: 프로필 이미지 미디어 ID
+              nullable: true
           description: 사용자 공개 프로필
         status:
           type: string
@@ -4306,13 +4321,13 @@ components:
         tagline:
           type: string
           description: 한 줄 소개 (200자 이하)
-        thumbnailMediaId:
-          type: number
-          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID
-          nullable: true
         title:
           type: string
           description: 프로젝트 이름 (100자 이하)
+        thumbnailImageId:
+          type: number
+          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID
+          nullable: true
     UserVerificationRequestCreateRequest:
       title: UserVerificationRequestCreateRequest
       required:
@@ -4736,6 +4751,7 @@ components:
             - bannerId
             - destinationType
             - imageUrl
+            - mediaId
             type: object
             properties:
               targetId:
@@ -4773,6 +4789,9 @@ components:
                 - NEWS
                 - PROJECT
                 - FEED
+              mediaId:
+                type: number
+                description: 배너 이미지 미디어 ID
         status:
           type: string
           description: 응답 상태
@@ -4840,6 +4859,10 @@ components:
                     - BACKEND
                     - ANDROID
                     - FRONTEND
+                  avatarImageId:
+                    type: number
+                    description: 현재 프로필 이미지 미디어 ID
+                    nullable: true
                 description: 현재 작성자 프로필
               media:
                 type: array
@@ -4848,6 +4871,7 @@ components:
                   required:
                   - displayOrder
                   - url
+                  - mediaId
                   type: object
                   properties:
                     displayOrder:
@@ -4856,6 +4880,9 @@ components:
                     url:
                       type: string
                       description: 본문 미디어 공개 URL
+                    mediaId:
+                      type: number
+                      description: 본문 미디어 ID
               categories:
                 type: array
                 description: 카테고리 목록
@@ -5151,6 +5178,10 @@ components:
             handle:
               type: string
               description: 사용자 handle
+            avatarImageId:
+              type: number
+              description: 프로필 이미지 미디어 ID
+              nullable: true
           description: 프로필 요약 정보
         status:
           type: string
@@ -5447,6 +5478,10 @@ components:
                       - BACKEND
                       - ANDROID
                       - FRONTEND
+                    avatarImageId:
+                      type: number
+                      description: 프로필 이미지 미디어 ID
+                      nullable: true
               cohort:
                 type: number
                 description: 우아한테크코스 기수
@@ -5471,6 +5506,10 @@ components:
               thumbnailUrl:
                 type: string
                 description: CloudFront에서 제공하는 공개 썸네일 URL
+                nullable: true
+              thumbnailImageId:
+                type: number
+                description: 프로젝트 썸네일 미디어 ID
                 nullable: true
         meta:
           required:
@@ -5541,6 +5580,10 @@ components:
                   userId:
                     type: number
                     description: 작성자 ID
+                  avatarImageId:
+                    type: number
+                    description: 작성자 프로필 이미지 미디어 ID
+                    nullable: true
                 description: 댓글 작성자
               id:
                 type: number
@@ -5628,6 +5671,7 @@ components:
           - title
           - updatedAt
           - viewCount
+          - descriptionMedia
           type: object
           properties:
             teamName:
@@ -5698,6 +5742,10 @@ components:
                     - BACKEND
                     - ANDROID
                     - FRONTEND
+                  avatarImageId:
+                    type: number
+                    description: 프로필 이미지 미디어 ID
+                    nullable: true
             descriptionMd:
               type: string
               description: 프로젝트 설명 마크다운. 본문 이미지 참조는 공개 URL로 변환되어 있다.
@@ -5767,6 +5815,25 @@ components:
             tagline:
               type: string
               description: 한 줄 소개
+            thumbnailImageId:
+              type: number
+              description: 프로젝트 썸네일 미디어 ID
+              nullable: true
+            descriptionMedia:
+              type: array
+              description: 본문 이미지의 미디어 ID와 공개 URL 매핑
+              items:
+                required:
+                - mediaId
+                - url
+                type: object
+                properties:
+                  mediaId:
+                    type: number
+                    description: 본문 이미지 미디어 ID
+                  url:
+                    type: string
+                    description: 본문 이미지 공개 URL
           description: 프로젝트 상세
         status:
           type: string
@@ -5823,6 +5890,10 @@ components:
                     - BACKEND
                     - ANDROID
                     - FRONTEND
+                  avatarImageId:
+                    type: number
+                    description: 프로필 이미지 미디어 ID
+                    nullable: true
           description: 검색 결과
         meta:
           required:
@@ -6106,6 +6177,10 @@ components:
                       - BACKEND
                       - ANDROID
                       - FRONTEND
+                    avatarImageId:
+                      type: number
+                      description: 프로필 이미지 미디어 ID
+                      nullable: true
               tagline:
                 type: string
                 description: 한 줄 소개
@@ -6118,6 +6193,10 @@ components:
               thumbnailUrl:
                 type: string
                 description: CloudFront에서 제공하는 공개 썸네일 URL
+                nullable: true
+              thumbnailImageId:
+                type: number
+                description: 프로젝트 썸네일 이미지 ID
                 nullable: true
         meta:
           required:
@@ -6256,6 +6335,10 @@ components:
                   - BACKEND
                   - ANDROID
                   - FRONTEND
+                avatarImageId:
+                  type: number
+                  description: 현재 프로필 이미지 미디어 ID
+                  nullable: true
               description: 현재 작성자 프로필
             media:
               type: array
@@ -6264,6 +6347,7 @@ components:
                 required:
                 - displayOrder
                 - url
+                - mediaId
                 type: object
                 properties:
                   displayOrder:
@@ -6272,6 +6356,9 @@ components:
                   url:
                     type: string
                     description: 본문 미디어 공개 URL
+                  mediaId:
+                    type: number
+                    description: 본문 미디어 ID
             categories:
               type: array
               description: 카테고리 목록
@@ -6779,6 +6866,10 @@ components:
                     - BACKEND
                     - ANDROID
                     - FRONTEND
+                  avatarImageId:
+                    type: number
+                    description: 현재 프로필 이미지 미디어 ID
+                    nullable: true
                 description: 현재 작성자 프로필
               likeCount:
                 type: number
@@ -6790,6 +6881,7 @@ components:
                   required:
                   - displayOrder
                   - url
+                  - mediaId
                   type: object
                   properties:
                     displayOrder:
@@ -6798,6 +6890,9 @@ components:
                     url:
                       type: string
                       description: 본문 미디어 공개 URL
+                    mediaId:
+                      type: number
+                      description: 본문 미디어 ID
               categories:
                 type: array
                 description: 카테고리 목록
@@ -7456,6 +7551,10 @@ components:
                   userId:
                     type: number
                     description: 작성자 ID
+                  avatarImageId:
+                    type: number
+                    description: 작성자 프로필 이미지 미디어 ID
+                    nullable: true
                 description: 댓글 작성자
               id:
                 type: number

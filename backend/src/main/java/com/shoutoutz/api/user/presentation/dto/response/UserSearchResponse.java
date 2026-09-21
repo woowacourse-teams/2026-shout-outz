@@ -26,6 +26,7 @@ public record UserSearchResponse(
             UserType userType,
             String track,
             Short cohort,
+            Long avatarImageId,
             String avatarUrl
     ) {
 
@@ -36,6 +37,7 @@ public record UserSearchResponse(
                     item.userType(),
                     trackValue(item.track()),
                     cohortValue(item.cohort()),
+                    item.avatarImageId(),
                     toUrl(findUrl(avatarUrls, item.avatarImageId()))
             );
         }

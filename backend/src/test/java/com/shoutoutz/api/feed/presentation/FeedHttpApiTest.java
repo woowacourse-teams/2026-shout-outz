@@ -5,6 +5,7 @@ import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithNam
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static com.epages.restdocs.apispec.SimpleType.INTEGER;
 import static com.shoutoutz.api.feed.presentation.FeedRestDocsFields.feedListResponseFields;
+import static com.shoutoutz.api.feed.presentation.FeedRestDocsFields.commandSuccessResponseFields;
 import static com.shoutoutz.api.feed.presentation.FeedRestDocsFields.successResponseFields;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -38,6 +39,7 @@ import com.shoutoutz.api.feed.domain.FeedErrorCode;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
+import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -88,6 +90,8 @@ class FeedHttpApiTest {
                         .queryParam("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].feedId").value(FEED_ID))
+                .andExpect(jsonPath("$.data[0].author.avatarImageId").value(21L))
+                .andExpect(jsonPath("$.data[0].media[0].mediaId").value(21L))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
                 .andDo(document(
@@ -154,7 +158,7 @@ class FeedHttpApiTest {
     @DisplayName("크루 또는 코치가 피드를 작성한다")
     void saveFeed() throws Exception {
         given(feedService.saveFeed(eq(USER_ID), any(FeedSaveRequest.class)))
-                .willReturn(response());
+                .willReturn(commandResponse());
 
         mockMvc.perform(post("/api/v1/feeds")
                         .with(authenticated())
@@ -168,6 +172,8 @@ class FeedHttpApiTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.feedId").value(FEED_ID))
+                .andExpect(jsonPath("$.data.author.avatarImageId").doesNotExist())
+                .andExpect(jsonPath("$.data.media[0].mediaId").doesNotExist())
                 .andDo(document(
                         "feed-save",
                         resource(ResourceSnippetParameters.builder()
@@ -184,7 +190,7 @@ class FeedHttpApiTest {
                                         fieldWithPath("mediaIds").type(ARRAY)
                                                 .description("작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록")
                                 )
-                                .responseFields(successResponseFields("data."))
+                                .responseFields(commandSuccessResponseFields("data."))
                                 .build())
                 ));
 
@@ -195,7 +201,7 @@ class FeedHttpApiTest {
     @DisplayName("작성자가 피드 전체 내용을 수정한다")
     void updateFeed() throws Exception {
         given(feedService.updateFeed(eq(FEED_ID), eq(USER_ID), any(FeedUpdateRequest.class)))
-                .willReturn(response());
+                .willReturn(commandResponse());
 
         mockMvc.perform(put("/api/v1/feeds/{feedId}", FEED_ID)
                         .with(authenticated())
@@ -203,6 +209,8 @@ class FeedHttpApiTest {
                         .content(validUpdateRequest()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.feedId").value(FEED_ID))
+                .andExpect(jsonPath("$.data.author.avatarImageId").doesNotExist())
+                .andExpect(jsonPath("$.data.media[0].mediaId").doesNotExist())
                 .andDo(document(
                         "feed-update",
                         resource(ResourceSnippetParameters.builder()
@@ -220,7 +228,7 @@ class FeedHttpApiTest {
                                                 .description("변경할 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음)"),
                                         fieldWithPath("mediaIds").type(ARRAY).description("변경할 본문 미디어 ID 목록")
                                 )
-                                .responseFields(successResponseFields("data."))
+                                .responseFields(commandSuccessResponseFields("data."))
                                 .build())
                 ));
     }
@@ -653,6 +661,10 @@ class FeedHttpApiTest {
 
     private FeedResponse response() {
         return FeedResponse.from(feedItem(), mediaUrls());
+    }
+
+    private FeedCommandResponse commandResponse() {
+        return FeedCommandResponse.from(feedItem(), mediaUrls());
     }
 
     private Map<Long, URI> mediaUrls() {

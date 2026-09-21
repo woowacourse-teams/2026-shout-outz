@@ -10,22 +10,19 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-public record FeedResponse(
+public record FeedCommandResponse(
         long feedId,
         String content,
         Author author,
         List<Category> categories,
         List<Media> media,
         Instant createdAt,
-    Instant updatedAt
+        Instant updatedAt
 ) {
-    public static FeedResponse from(FeedItem feed) {
-        return from(feed, Map.of());
-    }
 
-    public static FeedResponse from(FeedItem feed, Map<Long, URI> mediaUrls) {
+    public static FeedCommandResponse from(FeedItem feed, Map<Long, URI> mediaUrls) {
         Map<Long, URI> urls = mediaUrls == null ? Map.of() : mediaUrls;
-        return new FeedResponse(
+        return new FeedCommandResponse(
                 feed.feedId(),
                 feed.content(),
                 Author.from(feed.author(), urls),
@@ -36,23 +33,12 @@ public record FeedResponse(
         );
     }
 
-    public static List<FeedResponse> from(List<FeedItem> feeds) {
-        return from(feeds, Map.of());
-    }
-
-    public static List<FeedResponse> from(List<FeedItem> feeds, Map<Long, URI> mediaUrls) {
-        return feeds.stream()
-                .map(feed -> from(feed, mediaUrls))
-                .toList();
-    }
-
     public record Author(
             String handle,
             String displayName,
             UserType userType,
             String track,
             Short cohort,
-            Long avatarImageId,
             String avatarUrl
     ) {
         private static Author from(FeedItem.Author author, Map<Long, URI> mediaUrls) {
@@ -62,23 +48,16 @@ public record FeedResponse(
                     author.userType(),
                     trackValue(author.track()),
                     cohortValue(author.cohort()),
-                    author.avatarImageId(),
                     toUrl(findUrl(mediaUrls, author.avatarImageId()))
             );
         }
 
         private static String trackValue(Track track) {
-            if (track == null) {
-                return null;
-            }
-            return track.getValue();
+            return track == null ? null : track.getValue();
         }
 
         private static Short cohortValue(Cohort cohort) {
-            if (cohort == null) {
-                return null;
-            }
-            return (short) cohort.getValue();
+            return cohort == null ? null : (short) cohort.getValue();
         }
     }
 
@@ -98,13 +77,9 @@ public record FeedResponse(
         }
     }
 
-    public record Media(long mediaId, String url, int displayOrder) {
+    public record Media(String url, int displayOrder) {
         private static Media from(FeedItem.Media media, Map<Long, URI> mediaUrls) {
-            return new Media(
-                    media.mediaId(),
-                    toUrl(findUrl(mediaUrls, media.mediaId())),
-                    media.displayOrder()
-            );
+            return new Media(toUrl(findUrl(mediaUrls, media.mediaId())), media.displayOrder());
         }
     }
 

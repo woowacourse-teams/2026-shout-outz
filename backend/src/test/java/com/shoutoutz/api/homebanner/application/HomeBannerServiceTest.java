@@ -44,6 +44,7 @@ class HomeBannerServiceTest {
 
         assertThat(response).hasSize(1);
         assertThat(response.getFirst().bannerId()).isEqualTo(100L);
+        assertThat(response.getFirst().mediaId()).isEqualTo(10L);
         assertThat(response.getFirst().imageUrl()).hasToString("https://cdn.example.com/banner");
         verify(homeBannerRepository).findAllActive();
     }

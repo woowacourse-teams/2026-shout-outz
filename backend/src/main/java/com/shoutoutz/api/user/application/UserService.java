@@ -86,6 +86,7 @@ public class UserService {
         return new UserProfileSummaryResponse(
                 user.getHandle().value(),
                 profile.getDisplayName().value(),
+                profile.getAvatarImageId(),
                 toUrl(mediaUrlResolver.resolve(profile.getAvatarImageId()))
         );
     }
@@ -197,6 +198,7 @@ public class UserService {
                 trackValue(profile),
                 cohortValue(profile),
                 profile.getBio(),
+                profile.getAvatarImageId(),
                 toUrl(mediaUrlResolver.resolve(profile.getAvatarImageId())),
                 profile.getGithubProfileUrl(),
                 profile.getBlogUrl(),
@@ -239,6 +241,7 @@ public class UserService {
         return new UserProfileResponse(
                 user.getHandle().value(),
                 DELETED_USER_DISPLAY_NAME,
+                null,
                 null,
                 null,
                 null,

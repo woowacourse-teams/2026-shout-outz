@@ -43,6 +43,7 @@ class HomeBannerHttpApiTest {
         given(homeBannerService.findAll()).willReturn(List.of(
                 new HomeBannerResponse(
                         100L,
+                        10L,
                         URI.create("https://cdn.example.com/banner"),
                         "URL",
                         null,
@@ -55,6 +56,7 @@ class HomeBannerHttpApiTest {
         mockMvc.perform(get("/api/v1/home/banners"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].bannerId").value(100L))
+                .andExpect(jsonPath("$.data[0].mediaId").value(10L))
                 .andExpect(jsonPath("$.data[0].destinationType").value("URL"))
                 .andDo(document(
                         "home-banner-find-all",
@@ -67,6 +69,7 @@ class HomeBannerHttpApiTest {
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(ARRAY).description("활성 홈 배너 목록"),
                                         fieldWithPath("data[].bannerId").type(NUMBER).description("배너 ID"),
+                                        fieldWithPath("data[].mediaId").type(NUMBER).description("배너 이미지 미디어 ID"),
                                         fieldWithPath("data[].imageUrl").type(STRING).description("표시용 이미지 URL"),
                                         new EnumFields(BannerDestinationType.class)
                                                 .withPath("data[].destinationType")
