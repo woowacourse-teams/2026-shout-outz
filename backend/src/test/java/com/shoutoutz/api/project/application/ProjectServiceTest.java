@@ -1296,13 +1296,13 @@ class ProjectServiceTest {
         return updateRequest("https://loop.team", ServiceStatus.OPERATING);
     }
 
-    private static ProjectUpdateRequest updateRequest(long thumbnailImageId) {
+    private static ProjectUpdateRequest updateRequest(long thumbnailMediaId) {
         return new ProjectUpdateRequest(
                 "루프 (Loop)",
                 "루프팀",
                 "바뀐 한 줄 소개",
                 6,
-                thumbnailImageId,
+                thumbnailMediaId,
                 GITHUB_REPOSITORY_URL.value(),
                 "https://loop.team",
                 DESCRIPTION,

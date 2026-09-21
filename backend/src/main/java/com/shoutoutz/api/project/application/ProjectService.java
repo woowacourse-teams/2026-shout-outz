@@ -136,8 +136,8 @@ public class ProjectService {
     @Transactional
     public ProjectUpdateResponse update(long projectId, long loginUserId, ProjectUpdateRequest request) {
         Project project = findOwnedProject(projectId, loginUserId);
-        Long thumbnailMediaId = request.isThumbnailImageIdProvided()
-                ? request.thumbnailImageId()
+        Long thumbnailMediaId = request.isThumbnailMediaIdProvided()
+                ? request.thumbnailMediaId()
                 : project.getThumbnailMediaId();
         String descriptionMd = normalizeDescriptionReferences(project, request.descriptionMd());
         validateDescriptionMediaUrls(descriptionMd);
@@ -154,8 +154,8 @@ public class ProjectService {
         );
         validateGithubRepositoryNotDuplicated(updated.getGithubRepositoryUrl(), projectId);
         validateTechTags(request.techTagIds(), projectRepository.findTechTagIds(projectId));
-        if (request.isThumbnailImageIdProvided()) {
-            validateThumbnail(request.thumbnailImageId(), loginUserId);
+        if (request.isThumbnailMediaIdProvided()) {
+            validateThumbnail(request.thumbnailMediaId(), loginUserId);
         }
         validateDescriptionMedia(descriptionMd, loginUserId);
         List<Long> memberIds = resolveMemberIds(request.memberHandles(), projectRepository.findMemberIds(projectId));

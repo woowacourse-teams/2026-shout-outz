@@ -1882,7 +1882,7 @@ paths:
       tags:
       - Project
       summary: 프로젝트 수정
-      description: "작성자가 프로젝트 정보를 수정한다. 대부분의 필드는 전체 교체 방식이며, 비우는 값은 null로 보낸다. thumbnailImageId는\
+      description: "작성자가 프로젝트 정보를 수정한다. 대부분의 필드는 전체 교체 방식이며, 비우는 값은 null로 보낸다. thumbnailMediaId는\
         \ 생략하면 기존 이미지를 유지하고, 새 ID를 보내면 교체하며, null을 명시하면 제거한다. descriptionMd는 저장 시\
         \ media://{mediaId} 형식으로 정규화하며, 상세 조회 응답의 CDN URL은 기존 프로젝트 미디어와 매칭되는 경우에만\
         \ 본문 이미지 참조로 복원한다. 매칭되지 않는 외부 이미지 URL은 허용하지 않는다. techTagIds와 memberHandles도\
@@ -1918,7 +1918,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailImageId": 12,
+                    "thumbnailMediaId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
@@ -1929,7 +1929,7 @@ paths:
               project-update-invalid:
                 value: "{\n  \"title\": \"루프 (Loop)\",\n  \"teamName\": \"루프팀\",\n\
                   \  \"tagline\": \"스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구\",\n  \"cohort\"\
-                  : 6,\n  \"thumbnailImageId\": 12,\n  \"githubRepositoryUrl\": \"\
+                  : 6,\n  \"thumbnailMediaId\": 12,\n  \"githubRepositoryUrl\": \"\
                   https://github.com/woowacourse-teams/2026-loop\",\n  \"deploymentUrl\"\
                   : \"https://loop.team\",\n  \"descriptionMd\": \"## 문제\\n회고 도구와\
                   \ 액션 아이템 관리가 흩어져 있습니다.\",\n  \n  \"techTagIds\": [1, 2, 3],\n  \"\
@@ -1941,7 +1941,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailImageId": 12,
+                    "thumbnailMediaId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
@@ -1956,7 +1956,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailImageId": 12,
+                    "thumbnailMediaId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
@@ -1971,7 +1971,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailImageId": 12,
+                    "thumbnailMediaId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
@@ -5223,11 +5223,6 @@ components:
         teamName:
           type: string
           description: 팀 이름 (50자 이하)
-        thumbnailImageId:
-          type: number
-          description: "본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. 필드를 생략하면 기존 썸\
-            네일을 유지하고, null을 보내면 제거한다."
-          nullable: true
         techTagIds:
           type: array
           description: 기술 스택 ID 전체 목록. 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 달려 있던 태그는 비활성화됐어도
@@ -5268,6 +5263,11 @@ components:
         title:
           type: string
           description: 프로젝트 이름 (100자 이하)
+        thumbnailMediaId:
+          type: number
+          description: "본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. 필드를 생략하면 기존 썸\
+            네일을 유지하고, null을 보내면 제거한다."
+          nullable: true
     ProjectDeleteSuccessResponse:
       title: ProjectDeleteSuccessResponse
       required:
