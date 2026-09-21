@@ -79,7 +79,7 @@ class ProjectCommentHttpApiTest {
                                 501L,
                                 "좋은 프로젝트네요.",
                                 new ProjectCommentFindResponse.Author(
-                                        7L, "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
+                                        7L, "샤라웃 운영팀", 10L, "https://cdn.example.com/media/10/display"),
                                 null,
                                 Instant.parse("2026-09-14T00:00:00Z"),
                                 Instant.parse("2026-09-14T00:00:00Z"),
@@ -91,7 +91,7 @@ class ProjectCommentHttpApiTest {
                                 502L,
                                 "저도 그렇게 생각합니다.",
                                 new ProjectCommentFindResponse.Author(
-                                        8L, "재키", "https://cdn.example.com/media/11/display"),
+                                        8L, "재키", 11L, "https://cdn.example.com/media/11/display"),
                                 501L,
                                 Instant.parse("2026-09-14T00:05:00Z"),
                                 Instant.parse("2026-09-14T00:05:00Z"),
@@ -111,6 +111,7 @@ class ProjectCommentHttpApiTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].id").value(501))
                 .andExpect(jsonPath("$.data[0].author.userId").value(7))
+                .andExpect(jsonPath("$.data[0].author.avatarImageId").value(10L))
                 .andExpect(jsonPath("$.data[0].editable").value(false))
                 .andExpect(jsonPath("$.data[0].edited").value(false))
                 .andExpect(jsonPath("$.data[0].deleted").value(false))
@@ -149,6 +150,9 @@ class ProjectCommentHttpApiTest {
                                         fieldWithPath("data[].author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data[].author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data[].author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data[].author.avatarImageId").type(NUMBER)
+                                                .description("작성자 프로필 이미지 미디어 ID")
+                                                .optional(),
                                         fieldWithPath("data[].author.avatarUrl").type(STRING)
                                                 .description("작성자 프로필 이미지 공개 URL")
                                                 .optional(),
@@ -193,7 +197,7 @@ class ProjectCommentHttpApiTest {
                         501L,
                         "내 댓글",
                         new ProjectCommentFindResponse.Author(
-                                7L, "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
+                                7L, "샤라웃 운영팀", 10L, "https://cdn.example.com/media/10/display"),
                         null,
                         Instant.parse("2026-09-14T00:00:00Z"),
                         Instant.parse("2026-09-14T00:00:00Z"),
@@ -229,7 +233,7 @@ class ProjectCommentHttpApiTest {
                         503L,
                         null,
                         new ProjectCommentFindResponse.Author(
-                                7L, "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
+                                7L, "샤라웃 운영팀", 10L, "https://cdn.example.com/media/10/display"),
                         null,
                         Instant.parse("2026-09-14T00:00:00Z"),
                         Instant.parse("2026-09-14T00:00:00Z"),
@@ -265,7 +269,7 @@ class ProjectCommentHttpApiTest {
                         501L,
                         "좋은 프로젝트네요.",
                         new ProjectCommentCreateResponse.Author(
-                                7L, "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
+                                7L, "샤라웃 운영팀", 10L, "https://cdn.example.com/media/10/display"),
                         null,
                         Instant.parse("2026-09-14T00:00:00Z"),
                         Instant.parse("2026-09-14T00:00:00Z"),
@@ -287,6 +291,7 @@ class ProjectCommentHttpApiTest {
                 .andExpect(jsonPath("$.data.content").value("좋은 프로젝트네요."))
                 .andExpect(jsonPath("$.data.author.userId").value(7))
                 .andExpect(jsonPath("$.data.author.displayName").value("샤라웃 운영팀"))
+                .andExpect(jsonPath("$.data.author.avatarImageId").value(10L))
                 .andExpect(jsonPath("$.data.author.avatarUrl")
                         .value("https://cdn.example.com/media/10/display"))
                 .andExpect(jsonPath("$.data.parentId").value(Matchers.nullValue()))
@@ -324,6 +329,9 @@ class ProjectCommentHttpApiTest {
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.avatarImageId").type(NUMBER)
+                                                .description("작성자 프로필 이미지 미디어 ID")
+                                                .optional(),
                                         fieldWithPath("data.author.avatarUrl").type(STRING)
                                                 .description("작성자 프로필 이미지 공개 URL")
                                                 .optional(),
@@ -351,7 +359,7 @@ class ProjectCommentHttpApiTest {
                 501L,
                 "수정된 댓글입니다.",
                 new ProjectCommentUpdateResponse.Author(
-                        7L, "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
+                        7L, "샤라웃 운영팀", 10L, "https://cdn.example.com/media/10/display"),
                 null,
                 Instant.parse("2026-09-14T00:00:00Z"),
                 Instant.parse("2026-09-14T00:30:00Z"),
@@ -374,6 +382,7 @@ class ProjectCommentHttpApiTest {
                 .andExpect(jsonPath("$.data.content").value("수정된 댓글입니다."))
                 .andExpect(jsonPath("$.data.author.userId").value(7))
                 .andExpect(jsonPath("$.data.author.displayName").value("샤라웃 운영팀"))
+                .andExpect(jsonPath("$.data.author.avatarImageId").value(10L))
                 .andExpect(jsonPath("$.data.author.avatarUrl")
                         .value("https://cdn.example.com/media/10/display"))
                 .andExpect(jsonPath("$.data.parentId").value(Matchers.nullValue()))
@@ -410,6 +419,9 @@ class ProjectCommentHttpApiTest {
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.avatarImageId").type(NUMBER)
+                                                .description("작성자 프로필 이미지 미디어 ID")
+                                                .optional(),
                                         fieldWithPath("data.author.avatarUrl").type(STRING)
                                                 .description("작성자 프로필 이미지 공개 URL")
                                                 .optional(),

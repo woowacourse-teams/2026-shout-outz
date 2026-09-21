@@ -73,6 +73,7 @@ public class ProjectCommentService {
                 new ProjectCommentCreateResponse.Author(
                         author.getUserId(),
                         author.getDisplayName().value(),
+                        author.getAvatarImageId(),
                         toUrl(mediaUrlResolver.resolve(author.getAvatarImageId()))
                 ),
                 savedComment.getParentId(),
@@ -163,6 +164,7 @@ public class ProjectCommentService {
                 new ProjectCommentUpdateResponse.Author(
                         author.getUserId(),
                         author.getDisplayName().value(),
+                        author.getAvatarImageId(),
                         toUrl(mediaUrlResolver.resolve(author.getAvatarImageId()))
                 ),
                 comment.getParentId(),
@@ -241,6 +243,7 @@ public class ProjectCommentService {
                 new ProjectCommentFindResponse.Author(
                         author.getUserId(),
                         author.getDisplayName().value(),
+                        author.getAvatarImageId(),
                         toUrl(findUrl(avatarUrls, author.getAvatarImageId()))
                 ),
                 comment.getParentId(),

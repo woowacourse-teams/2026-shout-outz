@@ -106,6 +106,7 @@ class ProjectCommentServiceTest {
         assertThat(result.content()).isEqualTo("좋은 프로젝트네요.");
         assertThat(result.author().userId()).isEqualTo(AUTHOR_ID);
         assertThat(result.author().displayName()).isEqualTo("샤라웃 운영팀");
+        assertThat(result.author().avatarImageId()).isEqualTo(10L);
         assertThat(result.author().avatarUrl())
                 .isEqualTo("https://cdn.example.com/media/10/display");
         assertThat(result.parentId()).isNull();
@@ -417,6 +418,7 @@ class ProjectCommentServiceTest {
         assertThat(result.content()).isEqualTo("수정된 댓글");
         assertThat(result.author().userId()).isEqualTo(AUTHOR_ID);
         assertThat(result.author().displayName()).isEqualTo("샤라웃 운영팀");
+        assertThat(result.author().avatarImageId()).isEqualTo(10L);
         assertThat(result.author().avatarUrl())
                 .isEqualTo("https://cdn.example.com/media/10/display");
         assertThat(result.parentId()).isNull();

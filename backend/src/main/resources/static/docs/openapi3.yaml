@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
-                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
-                    ,\"message\":\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug 형식이\
+                    \ 올바르지 않습니다.\"},{\"field\":\"displayOrder\",\"message\":\"displayOrder는\
+                    \ 0 이상이어야 합니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -929,8 +929,8 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1449,10 +1449,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
-                    eventStartAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
+                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -2236,9 +2236,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -2545,20 +2545,20 @@ paths:
                 feed-comment-find-all:
                   value: "{\"status\":\"success\",\"data\":[{\"id\":501,\"content\"\
                     :\"좋은 피드네요.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃 운\
-                    영팀\",\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    영팀\",\"avatarImageId\":10,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:00:00Z\",\"editable\":false,\"edited\"\
                     :false,\"deleted\":false},{\"id\":502,\"content\":\"저도 그렇게 생각합\
-                    니다.\",\"author\":{\"userId\":8,\"displayName\":\"재키\",\"avatarUrl\"\
-                    :\"https://cdn.example.com/media/11/display\"},\"parentId\":501,\"\
-                    createdAt\":\"2026-09-14T00:05:00Z\",\"updatedAt\":\"2026-09-14T00:05:00Z\"\
-                    ,\"editable\":false,\"edited\":false,\"deleted\":false},{\"id\"\
-                    :503,\"content\":null,\"author\":{\"userId\":9,\"displayName\"\
-                    :\"이전 작성자\",\"avatarUrl\":\"https://cdn.example.com/media/12/display\"\
-                    },\"parentId\":null,\"createdAt\":\"2026-09-14T00:10:00Z\",\"\
-                    updatedAt\":\"2026-09-14T00:10:00Z\",\"editable\":false,\"edited\"\
-                    :false,\"deleted\":true}],\"meta\":{\"nextCursor\":\"next-cursor\"\
-                    ,\"hasNext\":true}}"
+                    니다.\",\"author\":{\"userId\":8,\"displayName\":\"재키\",\"avatarImageId\"\
+                    :11,\"avatarUrl\":\"https://cdn.example.com/media/11/display\"\
+                    },\"parentId\":501,\"createdAt\":\"2026-09-14T00:05:00Z\",\"updatedAt\"\
+                    :\"2026-09-14T00:05:00Z\",\"editable\":false,\"edited\":false,\"\
+                    deleted\":false},{\"id\":503,\"content\":null,\"author\":{\"userId\"\
+                    :9,\"displayName\":\"이전 작성자\",\"avatarImageId\":12,\"avatarUrl\"\
+                    :\"https://cdn.example.com/media/12/display\"},\"parentId\":null,\"\
+                    createdAt\":\"2026-09-14T00:10:00Z\",\"updatedAt\":\"2026-09-14T00:10:00Z\"\
+                    ,\"editable\":false,\"edited\":false,\"deleted\":true}],\"meta\"\
+                    :{\"nextCursor\":\"next-cursor\",\"hasNext\":true}}"
     post:
       tags:
       - Feed Comment
@@ -2601,7 +2601,7 @@ paths:
                 feed-comment-create:
                   value: "{\"status\":\"success\",\"data\":{\"id\":501,\"content\"\
                     :\"좋은 피드네요.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃 운\
-                    영팀\",\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    영팀\",\"avatarImageId\":10,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:00:00Z\",\"editable\":true}}"
   /api/v1/projects/{projectId}/comments:
@@ -2648,15 +2648,16 @@ paths:
                 project-comment-find-all:
                   value: "{\"status\":\"success\",\"data\":[{\"id\":501,\"content\"\
                     :\"좋은 프로젝트네요.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃\
-                    \ 운영팀\",\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    \ 운영팀\",\"avatarImageId\":10,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:00:00Z\",\"editable\":false,\"edited\"\
                     :false,\"deleted\":false},{\"id\":502,\"content\":\"저도 그렇게 생각합\
-                    니다.\",\"author\":{\"userId\":8,\"displayName\":\"재키\",\"avatarUrl\"\
-                    :\"https://cdn.example.com/media/11/display\"},\"parentId\":501,\"\
-                    createdAt\":\"2026-09-14T00:05:00Z\",\"updatedAt\":\"2026-09-14T00:05:00Z\"\
-                    ,\"editable\":false,\"edited\":false,\"deleted\":false}],\"meta\"\
-                    :{\"nextCursor\":\"next-cursor\",\"hasNext\":true}}"
+                    니다.\",\"author\":{\"userId\":8,\"displayName\":\"재키\",\"avatarImageId\"\
+                    :11,\"avatarUrl\":\"https://cdn.example.com/media/11/display\"\
+                    },\"parentId\":501,\"createdAt\":\"2026-09-14T00:05:00Z\",\"updatedAt\"\
+                    :\"2026-09-14T00:05:00Z\",\"editable\":false,\"edited\":false,\"\
+                    deleted\":false}],\"meta\":{\"nextCursor\":\"next-cursor\",\"\
+                    hasNext\":true}}"
     post:
       tags:
       - Project Comment
@@ -2717,7 +2718,7 @@ paths:
                 project-comment-create:
                   value: "{\"status\":\"success\",\"data\":{\"id\":501,\"content\"\
                     :\"좋은 프로젝트네요.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃\
-                    \ 운영팀\",\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    \ 운영팀\",\"avatarImageId\":10,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:00:00Z\",\"editable\":true}}"
         "400":
@@ -3053,9 +3054,9 @@ paths:
               examples:
                 user-verification-request-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
-                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
-                    ,\"message\":\"nickname은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"},{\"field\":\"cohort\",\"message\"\
+                    :\"cohort는 양의 정수여야 합니다.\"}]}"
         "201":
           description: "201"
           content:
@@ -3613,7 +3614,7 @@ paths:
                 feed-comment-update:
                   value: "{\"status\":\"success\",\"data\":{\"id\":501,\"content\"\
                     :\"수정된 댓글입니다.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃\
-                    \ 운영팀\",\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    \ 운영팀\",\"avatarImageId\":10,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:30:00Z\",\"editable\":true,\"edited\"\
                     :true}}"
@@ -3704,7 +3705,7 @@ paths:
                 project-comment-update:
                   value: "{\"status\":\"success\",\"data\":{\"id\":501,\"content\"\
                     :\"수정된 댓글입니다.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃\
-                    \ 운영팀\",\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    \ 운영팀\",\"avatarImageId\":10,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:30:00Z\",\"editable\":true,\"edited\"\
                     :true}}"
@@ -3916,6 +3917,89 @@ components:
                     type: string
                     description: 상태 변경 시각(ISO-8601)
           description: 인증 신청 이력
+        status:
+          type: string
+          description: 응답 상태
+    FeedCommentFindAllSuccessResponse:
+      title: FeedCommentFindAllSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 피드 댓글 목록
+          items:
+            required:
+            - author
+            - createdAt
+            - deleted
+            - editable
+            - edited
+            - id
+            - updatedAt
+            type: object
+            properties:
+              createdAt:
+                type: string
+                description: 생성 시각 (UTC ISO-8601)
+              deleted:
+                type: boolean
+                description: 댓글이 삭제되었는지 여부
+              edited:
+                type: boolean
+                description: 댓글 내용이 수정된 적이 있는지 여부
+              editable:
+                type: boolean
+                description: 현재 사용자가 수정할 수 있는지 여부
+              author:
+                required:
+                - displayName
+                - userId
+                type: object
+                properties:
+                  avatarImageId:
+                    type: number
+                    description: 작성자 프로필 이미지 미디어 ID
+                    nullable: true
+                  avatarUrl:
+                    type: string
+                    description: 작성자 프로필 이미지 공개 URL
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 작성자 표시 이름
+                  userId:
+                    type: number
+                    description: 작성자 ID
+                description: 댓글 작성자
+              id:
+                type: number
+                description: 댓글 ID
+              parentId:
+                type: number
+                description: 부모 루트 댓글 ID
+                nullable: true
+              content:
+                type: string
+                description: 댓글 내용. 삭제된 댓글은 null
+                nullable: true
+              updatedAt:
+                type: string
+                description: 수정 시각 (UTC ISO-8601)
+        meta:
+          required:
+          - hasNext
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 cursor
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
         status:
           type: string
           description: 응답 상태
@@ -4453,6 +4537,35 @@ components:
         title:
           type: string
           description: 프로젝트 이름 (100자 이하)
+    UserVerificationRequestCreateRequest:
+      title: UserVerificationRequestCreateRequest
+      required:
+      - nickname
+      - userType
+      type: object
+      properties:
+        nickname:
+          type: string
+          description: 우테코 닉네임(앞뒤 공백 제거 후 50자 이하)
+        cohort:
+          type: number
+          description: 크루 신청 시 기수. 양의 정수이며 실제 유효성은 관리자 확인
+          nullable: true
+        userType:
+          type: string
+          description: 신청 유형. WOOWACOURSE_CREW 또는 WOOWACOURSE_COACH만 보낼 수 있다.
+          enum:
+          - GENERAL
+          - WOOWACOURSE_CREW
+          - WOOWACOURSE_COACH
+        track:
+          type: string
+          description: 크루 신청 시 트랙
+          nullable: true
+          enum:
+          - BACKEND
+          - ANDROID
+          - FRONTEND
     FeedSaveSuccessResponse:
       title: FeedSaveSuccessResponse
       required:
@@ -4573,35 +4686,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    UserVerificationRequestCreateRequest:
-      title: UserVerificationRequestCreateRequest
-      required:
-      - nickname
-      - userType
-      type: object
-      properties:
-        nickname:
-          type: string
-          description: 우테코 닉네임(앞뒤 공백 제거 후 50자 이하)
-        cohort:
-          type: number
-          description: 크루 신청 시 기수. 양의 정수이며 실제 유효성은 관리자 확인
-          nullable: true
-        userType:
-          type: string
-          description: 신청 유형. WOOWACOURSE_CREW 또는 WOOWACOURSE_COACH만 보낼 수 있다.
-          enum:
-          - GENERAL
-          - WOOWACOURSE_CREW
-          - WOOWACOURSE_COACH
-        track:
-          type: string
-          description: 크루 신청 시 트랙
-          nullable: true
-          enum:
-          - BACKEND
-          - ANDROID
-          - FRONTEND
     HomeBannerUpsertRequest:
       title: HomeBannerUpsertRequest
       required:
@@ -5002,6 +5086,89 @@ components:
               type: string
               description: 수정 시각
           description: 홈 배너 데이터
+        status:
+          type: string
+          description: 응답 상태
+    ProjectCommentFindAllSuccessResponse:
+      title: ProjectCommentFindAllSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 프로젝트 댓글 목록
+          items:
+            required:
+            - author
+            - createdAt
+            - deleted
+            - editable
+            - edited
+            - id
+            - updatedAt
+            type: object
+            properties:
+              createdAt:
+                type: string
+                description: 생성 시각 (UTC ISO-8601)
+              deleted:
+                type: boolean
+                description: 댓글이 삭제되었는지 여부
+              edited:
+                type: boolean
+                description: 댓글 내용이 수정된 적이 있는지 여부
+              editable:
+                type: boolean
+                description: 현재 사용자가 수정할 수 있는지 여부
+              author:
+                required:
+                - displayName
+                - userId
+                type: object
+                properties:
+                  avatarImageId:
+                    type: number
+                    description: 작성자 프로필 이미지 미디어 ID
+                    nullable: true
+                  avatarUrl:
+                    type: string
+                    description: 작성자 프로필 이미지 공개 URL
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 작성자 표시 이름
+                  userId:
+                    type: number
+                    description: 작성자 ID
+                description: 댓글 작성자
+              id:
+                type: number
+                description: 댓글 ID
+              parentId:
+                type: number
+                description: 부모 루트 댓글 ID
+                nullable: true
+              content:
+                type: string
+                description: 댓글 내용. 삭제된 댓글은 null
+                nullable: true
+              updatedAt:
+                type: string
+                description: 수정 시각 (UTC ISO-8601)
+        meta:
+          required:
+          - hasNext
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 cursor
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
         status:
           type: string
           description: 응답 상태
@@ -5692,8 +5859,27 @@ components:
         status:
           type: string
           description: 응답 상태
-    ProjectCommentCreateSuccessResponse:
-      title: ProjectCommentCreateSuccessResponse
+    HomeBannerDeleteSuccessResponse:
+      title: HomeBannerDeleteSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - id
+          type: object
+          properties:
+            id:
+              type: number
+              description: 삭제한 홈 배너 ID
+          description: 삭제 결과
+        status:
+          type: string
+          description: 응답 상태
+    ProjectCommentUpdateSuccessResponse:
+      title: ProjectCommentUpdateSuccessResponse
       required:
       - data
       - status
@@ -5705,6 +5891,7 @@ components:
           - content
           - createdAt
           - editable
+          - edited
           - id
           - updatedAt
           type: object
@@ -5712,6 +5899,9 @@ components:
             createdAt:
               type: string
               description: 생성 시각 (UTC ISO-8601)
+            edited:
+              type: boolean
+              description: 댓글 내용이 수정된 적이 있는지 여부
             editable:
               type: boolean
               description: 현재 사용자가 수정할 수 있는지 여부
@@ -5721,6 +5911,10 @@ components:
               - userId
               type: object
               properties:
+                avatarImageId:
+                  type: number
+                  description: 작성자 프로필 이미지 미디어 ID
+                  nullable: true
                 avatarUrl:
                   type: string
                   description: 작성자 프로필 이미지 공개 URL
@@ -5744,106 +5938,8 @@ components:
               description: 저장된 댓글 내용
             updatedAt:
               type: string
-              description: 수정 시각 (UTC ISO-8601)
-          description: 생성된 댓글
-        status:
-          type: string
-          description: 응답 상태
-    FeedCommentFindAllSuccessResponse:
-      title: FeedCommentFindAllSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 피드 댓글 목록
-          items:
-            required:
-            - author
-            - createdAt
-            - deleted
-            - editable
-            - edited
-            - id
-            - updatedAt
-            type: object
-            properties:
-              createdAt:
-                type: string
-                description: 생성 시각 (UTC ISO-8601)
-              deleted:
-                type: boolean
-                description: 댓글이 삭제되었는지 여부
-              edited:
-                type: boolean
-                description: 댓글 내용이 수정된 적이 있는지 여부
-              editable:
-                type: boolean
-                description: 현재 사용자가 수정할 수 있는지 여부
-              author:
-                required:
-                - displayName
-                - userId
-                type: object
-                properties:
-                  avatarUrl:
-                    type: string
-                    description: 작성자 프로필 이미지 공개 URL
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 작성자 표시 이름
-                  userId:
-                    type: number
-                    description: 작성자 ID
-                description: 댓글 작성자
-              id:
-                type: number
-                description: 댓글 ID
-              parentId:
-                type: number
-                description: 부모 루트 댓글 ID
-                nullable: true
-              content:
-                type: string
-                description: 댓글 내용. 삭제된 댓글은 null
-                nullable: true
-              updatedAt:
-                type: string
-                description: 수정 시각 (UTC ISO-8601)
-        meta:
-          required:
-          - hasNext
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 cursor
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-        status:
-          type: string
-          description: 응답 상태
-    HomeBannerDeleteSuccessResponse:
-      title: HomeBannerDeleteSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - id
-          type: object
-          properties:
-            id:
-              type: number
-              description: 삭제한 홈 배너 ID
-          description: 삭제 결과
+              description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
+          description: 수정된 댓글
         status:
           type: string
           description: 응답 상태
@@ -6053,19 +6149,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    OAuthSignupRequest:
-      title: OAuthSignupRequest
-      required:
-      - displayName
-      - handle
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 프로필 표시 이름
-        handle:
-          type: string
-          description: 영구 공개 핸들
     FeedSaveRequest:
       title: FeedSaveRequest
       required:
@@ -6137,6 +6220,19 @@ components:
         status:
           type: string
           description: 응답 상태
+    OAuthSignupRequest:
+      title: OAuthSignupRequest
+      required:
+      - displayName
+      - handle
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 프로필 표시 이름
+        handle:
+          type: string
+          description: 영구 공개 핸들
     FeedCommentCreateRequest:
       title: FeedCommentCreateRequest
       required:
@@ -6421,6 +6517,67 @@ components:
         status:
           type: string
           description: 응답 상태
+    ProjectCommentCreateSuccessResponse:
+      title: ProjectCommentCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - content
+          - createdAt
+          - editable
+          - id
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 생성 시각 (UTC ISO-8601)
+            editable:
+              type: boolean
+              description: 현재 사용자가 수정할 수 있는지 여부
+            author:
+              required:
+              - displayName
+              - userId
+              type: object
+              properties:
+                avatarImageId:
+                  type: number
+                  description: 작성자 프로필 이미지 미디어 ID
+                  nullable: true
+                avatarUrl:
+                  type: string
+                  description: 작성자 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 댓글 작성자
+            id:
+              type: number
+              description: 댓글 ID
+            parentId:
+              type: number
+              description: 부모 댓글 ID
+              nullable: true
+            content:
+              type: string
+              description: 저장된 댓글 내용
+            updatedAt:
+              type: string
+              description: 수정 시각 (UTC ISO-8601)
+          description: 생성된 댓글
+        status:
+          type: string
+          description: 응답 상태
     ProjectFilterOptionsSuccessResponse:
       title: ProjectFilterOptionsSuccessResponse
       required:
@@ -6507,67 +6664,6 @@ components:
         slug:
           type: string
           description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
-    FeedCommentUpdateSuccessResponse:
-      title: FeedCommentUpdateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - content
-          - createdAt
-          - editable
-          - edited
-          - id
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: 생성 시각 (UTC ISO-8601)
-            edited:
-              type: boolean
-              description: 댓글 내용이 수정된 적이 있는지 여부
-            editable:
-              type: boolean
-              description: 현재 사용자가 수정할 수 있는지 여부
-            author:
-              required:
-              - displayName
-              - userId
-              type: object
-              properties:
-                avatarUrl:
-                  type: string
-                  description: 작성자 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 댓글 작성자
-            id:
-              type: number
-              description: 댓글 ID
-            parentId:
-              type: number
-              description: 부모 댓글 ID
-              nullable: true
-            content:
-              type: string
-              description: 저장된 댓글 내용
-            updatedAt:
-              type: string
-              description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
-          description: 수정된 댓글
-        status:
-          type: string
-          description: 응답 상태
     NewsUpdateRequest:
       title: NewsUpdateRequest
       required:
@@ -6609,8 +6705,8 @@ components:
           type: string
           description: 이벤트 종료 시각. 공지는 null
           nullable: true
-    ProjectCommentUpdateSuccessResponse:
-      title: ProjectCommentUpdateSuccessResponse
+    FeedCommentUpdateSuccessResponse:
+      title: FeedCommentUpdateSuccessResponse
       required:
       - data
       - status
@@ -6642,6 +6738,10 @@ components:
               - userId
               type: object
               properties:
+                avatarImageId:
+                  type: number
+                  description: 작성자 프로필 이미지 미디어 ID
+                  nullable: true
                 avatarUrl:
                   type: string
                   description: 작성자 프로필 이미지 공개 URL
@@ -6667,6 +6767,67 @@ components:
               type: string
               description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
           description: 수정된 댓글
+        status:
+          type: string
+          description: 응답 상태
+    FeedCommentCreateSuccessResponse:
+      title: FeedCommentCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - content
+          - createdAt
+          - editable
+          - id
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 생성 시각 (UTC ISO-8601)
+            editable:
+              type: boolean
+              description: 현재 사용자가 수정할 수 있는지 여부
+            author:
+              required:
+              - displayName
+              - userId
+              type: object
+              properties:
+                avatarImageId:
+                  type: number
+                  description: 작성자 프로필 이미지 미디어 ID
+                  nullable: true
+                avatarUrl:
+                  type: string
+                  description: 작성자 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 댓글 작성자
+            id:
+              type: number
+              description: 댓글 ID
+            parentId:
+              type: number
+              description: 부모 댓글 ID
+              nullable: true
+            content:
+              type: string
+              description: 저장된 댓글 내용
+            updatedAt:
+              type: string
+              description: 수정 시각 (UTC ISO-8601)
+          description: 생성된 댓글
         status:
           type: string
           description: 응답 상태
@@ -7397,63 +7558,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedCommentCreateSuccessResponse:
-      title: FeedCommentCreateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - content
-          - createdAt
-          - editable
-          - id
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: 생성 시각 (UTC ISO-8601)
-            editable:
-              type: boolean
-              description: 현재 사용자가 수정할 수 있는지 여부
-            author:
-              required:
-              - displayName
-              - userId
-              type: object
-              properties:
-                avatarUrl:
-                  type: string
-                  description: 작성자 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 댓글 작성자
-            id:
-              type: number
-              description: 댓글 ID
-            parentId:
-              type: number
-              description: 부모 댓글 ID
-              nullable: true
-            content:
-              type: string
-              description: 저장된 댓글 내용
-            updatedAt:
-              type: string
-              description: 수정 시각 (UTC ISO-8601)
-          description: 생성된 댓글
-        status:
-          type: string
-          description: 응답 상태
     EventCreateSuccessResponse:
       title: EventCreateSuccessResponse
       required:
@@ -7571,85 +7675,6 @@ components:
               type: number
               description: 수정한 프로젝트 ID
           description: 수정 결과
-        status:
-          type: string
-          description: 응답 상태
-    ProjectCommentFindAllSuccessResponse:
-      title: ProjectCommentFindAllSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 프로젝트 댓글 목록
-          items:
-            required:
-            - author
-            - createdAt
-            - deleted
-            - editable
-            - edited
-            - id
-            - updatedAt
-            type: object
-            properties:
-              createdAt:
-                type: string
-                description: 생성 시각 (UTC ISO-8601)
-              deleted:
-                type: boolean
-                description: 댓글이 삭제되었는지 여부
-              edited:
-                type: boolean
-                description: 댓글 내용이 수정된 적이 있는지 여부
-              editable:
-                type: boolean
-                description: 현재 사용자가 수정할 수 있는지 여부
-              author:
-                required:
-                - displayName
-                - userId
-                type: object
-                properties:
-                  avatarUrl:
-                    type: string
-                    description: 작성자 프로필 이미지 공개 URL
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 작성자 표시 이름
-                  userId:
-                    type: number
-                    description: 작성자 ID
-                description: 댓글 작성자
-              id:
-                type: number
-                description: 댓글 ID
-              parentId:
-                type: number
-                description: 부모 루트 댓글 ID
-                nullable: true
-              content:
-                type: string
-                description: 댓글 내용. 삭제된 댓글은 null
-                nullable: true
-              updatedAt:
-                type: string
-                description: 수정 시각 (UTC ISO-8601)
-        meta:
-          required:
-          - hasNext
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 cursor
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
         status:
           type: string
           description: 응답 상태
