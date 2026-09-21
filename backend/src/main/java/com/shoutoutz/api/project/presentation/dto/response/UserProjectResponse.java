@@ -20,7 +20,7 @@ public record UserProjectResponse(
         String tagline,
         int cohort,
         ServiceStatus serviceStatus,
-        Long thumbnailMediaId,
+        Long thumbnailImageId,
         String thumbnailUrl,
         Integer starCount,
         long likeCount,

@@ -33,7 +33,7 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
             String title,
             String tagline,
             int cohort,
-            Long thumbnailMediaId,
+            Long thumbnailImageId,
             String thumbnailUrl,
             Integer starCount,
             long likeCount,

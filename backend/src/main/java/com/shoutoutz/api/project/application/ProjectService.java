@@ -111,12 +111,12 @@ public class ProjectService {
                 request.descriptionMd(),
                 new GithubRepositoryUrl(request.githubRepositoryUrl()),
                 request.deploymentUrl() == null ? null : new DeploymentUrl(request.deploymentUrl()),
-                request.thumbnailMediaId()
+                request.thumbnailImageId()
         );
         validateGithubRepositoryNotDuplicated(project.getGithubRepositoryUrl());
         validateSlugNotDuplicated(project.getSlug());
         validateTechTags(request.techTagIds());
-        validateThumbnail(request.thumbnailMediaId(), registeredBy);
+        validateThumbnail(request.thumbnailImageId(), registeredBy);
         validateDescriptionMediaUrls(request.descriptionMd());
         validateDescriptionMedia(request.descriptionMd(), registeredBy);
         List<Long> memberIds = request.memberHandles().stream()
@@ -136,8 +136,8 @@ public class ProjectService {
     @Transactional
     public ProjectUpdateResponse update(long projectId, long loginUserId, ProjectUpdateRequest request) {
         Project project = findOwnedProject(projectId, loginUserId);
-        Long thumbnailMediaId = request.isThumbnailMediaIdProvided()
-                ? request.thumbnailMediaId()
+        Long thumbnailMediaId = request.isThumbnailImageIdProvided()
+                ? request.thumbnailImageId()
                 : project.getThumbnailMediaId();
         String descriptionMd = normalizeDescriptionReferences(project, request.descriptionMd());
         validateDescriptionMediaUrls(descriptionMd);
@@ -154,8 +154,8 @@ public class ProjectService {
         );
         validateGithubRepositoryNotDuplicated(updated.getGithubRepositoryUrl(), projectId);
         validateTechTags(request.techTagIds(), projectRepository.findTechTagIds(projectId));
-        if (request.isThumbnailMediaIdProvided()) {
-            validateThumbnail(request.thumbnailMediaId(), loginUserId);
+        if (request.isThumbnailImageIdProvided()) {
+            validateThumbnail(request.thumbnailImageId(), loginUserId);
         }
         validateDescriptionMedia(descriptionMd, loginUserId);
         List<Long> memberIds = resolveMemberIds(request.memberHandles(), projectRepository.findMemberIds(projectId));

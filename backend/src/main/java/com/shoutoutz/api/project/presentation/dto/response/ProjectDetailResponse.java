@@ -19,7 +19,7 @@ public record ProjectDetailResponse(
         String teamName,
         String tagline,
         int cohort,
-        Long thumbnailMediaId,
+        Long thumbnailImageId,
         String imageUrl,
         String descriptionMd,
         List<DescriptionMedia> descriptionMedia,

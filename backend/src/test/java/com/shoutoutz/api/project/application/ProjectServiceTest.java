@@ -597,7 +597,7 @@ class ProjectServiceTest {
                 .isEqualTo(ProjectCursor.popular(3L, NOW.minusSeconds(60), 9L));
         assertThat(response.items().getFirst().thumbnailUrl())
                 .isEqualTo("https://cdn.example.com/thumbnail");
-        assertThat(response.items().getFirst().thumbnailMediaId()).isEqualTo(THUMBNAIL_ID);
+        assertThat(response.items().getFirst().thumbnailImageId()).isEqualTo(THUMBNAIL_ID);
         assertThat(response.items().getFirst().members().getFirst().avatarUrl())
                 .isEqualTo("https://cdn.example.com/avatar-21");
         assertThat(response.items().getFirst().members().getFirst().avatarImageId()).isEqualTo(21L);
@@ -850,7 +850,7 @@ class ProjectServiceTest {
 
         ProjectDetailResponse response = projectService.findDetail(100L, null);
 
-        assertThat(response.thumbnailMediaId()).isEqualTo(THUMBNAIL_ID);
+        assertThat(response.thumbnailImageId()).isEqualTo(THUMBNAIL_ID);
         assertThat(response.imageUrl()).isEqualTo("https://cdn.example.com/thumbnail");
         assertThat(response.descriptionMedia()).containsExactly(
                 new ProjectDetailResponse.DescriptionMedia(descriptionMediaId, descriptionUrl)

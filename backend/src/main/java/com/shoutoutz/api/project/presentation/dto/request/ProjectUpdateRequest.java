@@ -21,7 +21,7 @@ import org.hibernate.validator.constraints.CodePointLength;
  * techTagIds와 memberHandles도 전체 교체이며, 목록 순서가 그대로 노출 순서가 된다.
  * memberHandles 에는 등록 요청과 같이 작성자 본인을 넣지 않는다.
  *
- * <p>thumbnailMediaId는 필드의 존재 여부에 따라 다음처럼 처리한다.</p>
+ * <p>thumbnailImageId는 필드의 존재 여부에 따라 다음처럼 처리한다.</p>
  * <ul>
  *     <li>필드 생략: 기존 썸네일 유지</li>
  *     <li>미디어 ID 전달: 썸네일 교체</li>
@@ -45,8 +45,8 @@ public final class ProjectUpdateRequest {
     @NotNull(message = "cohort는 필수입니다.")
     private Integer cohort;
 
-    private Long thumbnailMediaId;
-    private boolean thumbnailMediaIdProvided;
+    private Long thumbnailImageId;
+    private boolean thumbnailImageIdProvided;
 
     @NotBlank(message = "githubRepositoryUrl은 필수입니다.")
     @CodePointLength(max = 2_048, message = "githubRepositoryUrl은 2,048자를 초과할 수 없습니다.")
@@ -80,14 +80,14 @@ public final class ProjectUpdateRequest {
 
     /**
      * 테스트와 내부 호출에서 사용하는 전체 필드 생성자.
-     * 생성자에 thumbnailMediaId를 전달한 것은 명시적 입력으로 간주한다.
+     * 생성자에 thumbnailImageId를 전달한 것은 명시적 입력으로 간주한다.
      */
     public ProjectUpdateRequest(
             String title,
             String teamName,
             String tagline,
             Integer cohort,
-            Long thumbnailMediaId,
+            Long thumbnailImageId,
             String githubRepositoryUrl,
             String deploymentUrl,
             String descriptionMd,
@@ -99,8 +99,8 @@ public final class ProjectUpdateRequest {
         this.teamName = teamName;
         this.tagline = tagline;
         this.cohort = cohort;
-        this.thumbnailMediaId = thumbnailMediaId;
-        this.thumbnailMediaIdProvided = true;
+        this.thumbnailImageId = thumbnailImageId;
+        this.thumbnailImageIdProvided = true;
         this.githubRepositoryUrl = githubRepositoryUrl;
         this.deploymentUrl = normalizeDeploymentUrl(deploymentUrl);
         this.descriptionMd = descriptionMd;
@@ -125,13 +125,13 @@ public final class ProjectUpdateRequest {
         return cohort;
     }
 
-    public Long thumbnailMediaId() {
-        return thumbnailMediaId;
+    public Long thumbnailImageId() {
+        return thumbnailImageId;
     }
 
     @JsonIgnore
-    public boolean isThumbnailMediaIdProvided() {
-        return thumbnailMediaIdProvided;
+    public boolean isThumbnailImageIdProvided() {
+        return thumbnailImageIdProvided;
     }
 
     public String githubRepositoryUrl() {
@@ -174,10 +174,10 @@ public final class ProjectUpdateRequest {
         this.cohort = cohort;
     }
 
-    @JsonSetter(value = "thumbnailMediaId", nulls = Nulls.SET)
-    public void setThumbnailMediaId(Long thumbnailMediaId) {
-        this.thumbnailMediaId = thumbnailMediaId;
-        this.thumbnailMediaIdProvided = true;
+    @JsonSetter(value = "thumbnailImageId", nulls = Nulls.SET)
+    public void setThumbnailImageId(Long thumbnailImageId) {
+        this.thumbnailImageId = thumbnailImageId;
+        this.thumbnailImageIdProvided = true;
     }
 
     public void setGithubRepositoryUrl(String githubRepositoryUrl) {

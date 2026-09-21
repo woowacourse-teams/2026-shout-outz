@@ -435,7 +435,7 @@ paths:
                 project-find-all:
                   value: "{\"status\":\"success\",\"data\":[{\"id\":100,\"slug\":\"\
                     loop\",\"title\":\"루프 (Loop)\",\"tagline\":\"스프린트 회고와 액션 아이템을\
-                    \ 하나로 엮은 실시간 협업 도구\",\"cohort\":6,\"thumbnailMediaId\":12,\"thumbnailUrl\"\
+                    \ 하나로 엮은 실시간 협업 도구\",\"cohort\":6,\"thumbnailImageId\":12,\"thumbnailUrl\"\
                     :\"https://cdn.example.com/thumbnail\",\"starCount\":128,\"likeCount\"\
                     :184,\"commentCount\":14,\"techTags\":[{\"id\":1,\"displayName\"\
                     :\"React\"},{\"id\":2,\"displayName\":\"Spring\"}],\"members\"\
@@ -496,7 +496,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -510,7 +510,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -524,7 +524,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -538,7 +538,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -547,7 +547,7 @@ paths:
                   }
               project-create-invalid:
                 value: "{\n  \n  \"teamName\": \"루프팀\",\n  \"tagline\": \"스프린트 회고와\
-                  \ 액션 아이템을 하나로 엮은 실시간 협업 도구\",\n  \"cohort\": 6,\n  \"thumbnailMediaId\"\
+                  \ 액션 아이템을 하나로 엮은 실시간 협업 도구\",\n  \"cohort\": 6,\n  \"thumbnailImageId\"\
                   : 12,\n  \"githubRepositoryUrl\": \"https://github.com/woowacourse-teams/2026-loop\"\
                   ,\n  \"deploymentUrl\": \"https://loop.team\",\n  \"descriptionMd\"\
                   : \"## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)\"\
@@ -560,7 +560,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -574,7 +574,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -588,7 +588,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -602,7 +602,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
@@ -1859,7 +1859,7 @@ paths:
                 project-find-detail:
                   value: "{\"status\":\"success\",\"data\":{\"id\":100,\"slug\":\"\
                     loop\",\"title\":\"루프 (Loop)\",\"teamName\":\"루프팀\",\"tagline\"\
-                    :\"스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구\",\"cohort\":6,\"thumbnailMediaId\"\
+                    :\"스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구\",\"cohort\":6,\"thumbnailImageId\"\
                     :12,\"imageUrl\":\"https://cdn.example.com/thumbnail\",\"descriptionMd\"\
                     :\"## 문제\\n![회고 화면](https://cdn.example.com/description-21)\"\
                     ,\"descriptionMedia\":[{\"mediaId\":21,\"url\":\"https://cdn.example.com/description-21\"\
@@ -1882,7 +1882,7 @@ paths:
       tags:
       - Project
       summary: 프로젝트 수정
-      description: "작성자가 프로젝트 정보를 수정한다. 대부분의 필드는 전체 교체 방식이며, 비우는 값은 null로 보낸다. thumbnailMediaId는\
+      description: "작성자가 프로젝트 정보를 수정한다. 대부분의 필드는 전체 교체 방식이며, 비우는 값은 null로 보낸다. thumbnailImageId는\
         \ 생략하면 기존 이미지를 유지하고, 새 ID를 보내면 교체하며, null을 명시하면 제거한다. descriptionMd는 저장 시\
         \ media://{mediaId} 형식으로 정규화하며, 상세 조회 응답의 CDN URL은 기존 프로젝트 미디어와 매칭되는 경우에만\
         \ 본문 이미지 참조로 복원한다. 매칭되지 않는 외부 이미지 URL은 허용하지 않는다. techTagIds와 memberHandles도\
@@ -1918,7 +1918,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
@@ -1929,7 +1929,7 @@ paths:
               project-update-invalid:
                 value: "{\n  \"title\": \"루프 (Loop)\",\n  \"teamName\": \"루프팀\",\n\
                   \  \"tagline\": \"스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구\",\n  \"cohort\"\
-                  : 6,\n  \"thumbnailMediaId\": 12,\n  \"githubRepositoryUrl\": \"\
+                  : 6,\n  \"thumbnailImageId\": 12,\n  \"githubRepositoryUrl\": \"\
                   https://github.com/woowacourse-teams/2026-loop\",\n  \"deploymentUrl\"\
                   : \"https://loop.team\",\n  \"descriptionMd\": \"## 문제\\n회고 도구와\
                   \ 액션 아이템 관리가 흩어져 있습니다.\",\n  \n  \"techTagIds\": [1, 2, 3],\n  \"\
@@ -1941,7 +1941,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
@@ -1956,7 +1956,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
@@ -1971,7 +1971,7 @@ paths:
                     "teamName": "루프팀",
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
-                    "thumbnailMediaId": 12,
+                    "thumbnailImageId": 12,
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
@@ -3208,7 +3208,7 @@ paths:
                   value: "{\"status\":\"success\",\"data\":[{\"id\":100,\"slug\":\"\
                     loop\",\"title\":\"루프\",\"teamName\":\"루프팀\",\"tagline\":\"스프린\
                     트 회고와 액션 아이템을 관리하는 협업 도구\",\"cohort\":6,\"serviceStatus\":\"OPERATING\"\
-                    ,\"thumbnailMediaId\":12,\"thumbnailUrl\":\"https://cdn.example.com/thumbnail\"\
+                    ,\"thumbnailImageId\":12,\"thumbnailUrl\":\"https://cdn.example.com/thumbnail\"\
                     ,\"starCount\":128,\"likeCount\":184,\"commentCount\":14,\"techTags\"\
                     :[{\"id\":1,\"displayName\":\"Spring\"}],\"members\":[{\"handle\"\
                     :\"zzaekkii\",\"displayName\":\"재키\",\"cohort\":6,\"track\":\"\
@@ -4305,13 +4305,13 @@ components:
         tagline:
           type: string
           description: 한 줄 소개 (200자 이하)
-        thumbnailMediaId:
-          type: number
-          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID
-          nullable: true
         title:
           type: string
           description: 프로젝트 이름 (100자 이하)
+        thumbnailImageId:
+          type: number
+          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID
+          nullable: true
     UserVerificationRequestCreateRequest:
       title: UserVerificationRequestCreateRequest
       required:
@@ -5223,6 +5223,11 @@ components:
         teamName:
           type: string
           description: 팀 이름 (50자 이하)
+        thumbnailImageId:
+          type: number
+          description: "본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. 필드를 생략하면 기존 썸\
+            네일을 유지하고, null을 보내면 제거한다."
+          nullable: true
         techTagIds:
           type: array
           description: 기술 스택 ID 전체 목록. 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 달려 있던 태그는 비활성화됐어도
@@ -5263,11 +5268,6 @@ components:
         title:
           type: string
           description: 프로젝트 이름 (100자 이하)
-        thumbnailMediaId:
-          type: number
-          description: "본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. 필드를 생략하면 기존 썸\
-            네일을 유지하고, null을 보내면 제거한다."
-          nullable: true
     ProjectDeleteSuccessResponse:
       title: ProjectDeleteSuccessResponse
       required:
@@ -5472,7 +5472,7 @@ components:
                 type: string
                 description: CloudFront에서 제공하는 공개 썸네일 URL
                 nullable: true
-              thumbnailMediaId:
+              thumbnailImageId:
                 type: number
                 description: 프로젝트 썸네일 미디어 ID
                 nullable: true
@@ -5780,7 +5780,7 @@ components:
             tagline:
               type: string
               description: 한 줄 소개
-            thumbnailMediaId:
+            thumbnailImageId:
               type: number
               description: 프로젝트 썸네일 미디어 ID
               nullable: true
@@ -6159,9 +6159,9 @@ components:
                 type: string
                 description: CloudFront에서 제공하는 공개 썸네일 URL
                 nullable: true
-              thumbnailMediaId:
+              thumbnailImageId:
                 type: number
-                description: 프로젝트 썸네일 미디어 ID
+                description: 프로젝트 썸네일 이미지 ID
                 nullable: true
         meta:
           required:

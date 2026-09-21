@@ -10,33 +10,33 @@ class ProjectUpdateRequestTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void thumbnailMediaId를_생략하면_미전달로_구분한다() throws Exception {
+    void thumbnailImageId를_생략하면_미전달로_구분한다() throws Exception {
         ProjectUpdateRequest request = objectMapper.readValue(baseJson(""), ProjectUpdateRequest.class);
 
-        assertThat(request.isThumbnailMediaIdProvided()).isFalse();
-        assertThat(request.thumbnailMediaId()).isNull();
+        assertThat(request.isThumbnailImageIdProvided()).isFalse();
+        assertThat(request.thumbnailImageId()).isNull();
     }
 
     @Test
-    void thumbnailMediaId에_null을_명시하면_전달된_값으로_구분한다() throws Exception {
+    void thumbnailImageId에_null을_명시하면_전달된_값으로_구분한다() throws Exception {
         ProjectUpdateRequest request = objectMapper.readValue(
-                baseJson("\"thumbnailMediaId\": null,"),
+                baseJson("\"thumbnailImageId\": null,"),
                 ProjectUpdateRequest.class
         );
 
-        assertThat(request.isThumbnailMediaIdProvided()).isTrue();
-        assertThat(request.thumbnailMediaId()).isNull();
+        assertThat(request.isThumbnailImageIdProvided()).isTrue();
+        assertThat(request.thumbnailImageId()).isNull();
     }
 
     @Test
-    void thumbnailMediaId를_보내면_전달된_값으로_구분한다() throws Exception {
+    void thumbnailImageId를_보내면_전달된_값으로_구분한다() throws Exception {
         ProjectUpdateRequest request = objectMapper.readValue(
-                baseJson("\"thumbnailMediaId\": 12,"),
+                baseJson("\"thumbnailImageId\": 12,"),
                 ProjectUpdateRequest.class
         );
 
-        assertThat(request.isThumbnailMediaIdProvided()).isTrue();
-        assertThat(request.thumbnailMediaId()).isEqualTo(12L);
+        assertThat(request.isThumbnailImageIdProvided()).isTrue();
+        assertThat(request.thumbnailImageId()).isEqualTo(12L);
     }
 
     private static String baseJson(String thumbnailField) {
