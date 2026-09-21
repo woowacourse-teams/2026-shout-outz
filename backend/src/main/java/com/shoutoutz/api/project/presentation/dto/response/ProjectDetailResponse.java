@@ -1,6 +1,7 @@
 package com.shoutoutz.api.project.presentation.dto.response;
 
 import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.DescriptionMediaReferences;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import java.net.URI;
@@ -18,8 +19,10 @@ public record ProjectDetailResponse(
         String teamName,
         String tagline,
         int cohort,
+        Long thumbnailMediaId,
         String imageUrl,
         String descriptionMd,
+        List<DescriptionMedia> descriptionMedia,
         String githubRepositoryUrl,
         String deploymentUrl,
         ServiceStatus serviceStatus,
@@ -52,8 +55,10 @@ public record ProjectDetailResponse(
                 detail.teamName(),
                 detail.tagline(),
                 detail.cohort(),
+                detail.thumbnailMediaId(),
                 toUrl(mediaUrls, detail.thumbnailMediaId()),
                 descriptionMd,
+                DescriptionMedia.from(detail.descriptionMd(), mediaUrls),
                 detail.githubRepositoryUrl(),
                 detail.deploymentUrl(),
                 detail.serviceStatus(),
@@ -82,6 +87,15 @@ public record ProjectDetailResponse(
         }
         URI url = mediaUrls.get(mediaId);
         return url == null ? null : url.toString();
+    }
+
+    public record DescriptionMedia(long mediaId, String url) {
+
+        private static List<DescriptionMedia> from(String descriptionMd, Map<Long, URI> mediaUrls) {
+            return DescriptionMediaReferences.extractMediaIds(descriptionMd).stream()
+                    .map(mediaId -> new DescriptionMedia(mediaId, toUrl(mediaUrls, mediaId)))
+                    .toList();
+        }
     }
 
 }

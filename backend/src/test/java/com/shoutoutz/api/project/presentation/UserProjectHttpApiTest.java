@@ -88,13 +88,13 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.data[0].title").value("루프"))
                 .andExpect(jsonPath("$.data[0].thumbnailUrl")
                         .value("https://cdn.example.com/thumbnail"))
-                .andExpect(jsonPath("$.data[0].thumbnailMediaId").doesNotExist())
+                .andExpect(jsonPath("$.data[0].thumbnailMediaId").value(12L))
                 .andExpect(jsonPath("$.data[0].starCount").value(128))
                 .andExpect(jsonPath("$.data[0].techTags[0].displayName").value("Spring"))
                 .andExpect(jsonPath("$.data[0].members[0].handle").value("zzaekkii"))
                 .andExpect(jsonPath("$.data[0].members[0].avatarUrl")
                         .value("https://cdn.example.com/avatar-21"))
-                .andExpect(jsonPath("$.data[0].members[0].avatarImageId").doesNotExist())
+                .andExpect(jsonPath("$.data[0].members[0].avatarImageId").value(21L))
                 .andExpect(jsonPath("$.data[0].members[0].userId").doesNotExist())
                 .andExpect(jsonPath("$.meta.nextCursor").value(ProjectCursorCodec.encode(
                         ProjectCursor.latest(CREATED_AT, 100L))))
@@ -219,6 +219,7 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].tagline").type(STRING).description("한 줄 소개"),
                 fieldWithPath("data[].cohort").type(NUMBER).description("우아한테크코스 기수"),
                 new EnumFields(ServiceStatus.class).withPath("data[].serviceStatus").description("운영 상태"),
+                fieldWithPath("data[].thumbnailMediaId").type(NUMBER).description("프로젝트 썸네일 미디어 ID").optional(),
                 fieldWithPath("data[].thumbnailUrl").type(STRING).description("CloudFront에서 제공하는 공개 썸네일 URL").optional(),
                 fieldWithPath("data[].starCount").type(NUMBER)
                         .description("GitHub star 수. 동기화 전이면 null이다.").optional(),
@@ -232,6 +233,7 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].members[].displayName").type(STRING).description("표시 이름"),
                 fieldWithPath("data[].members[].cohort").type(NUMBER).description("기수").optional(),
                 new EnumFields(Track.class).withPath("data[].members[].track").description("트랙").optional(),
+                fieldWithPath("data[].members[].avatarImageId").type(NUMBER).description("프로필 이미지 미디어 ID").optional(),
                 fieldWithPath("data[].members[].avatarUrl").type(STRING).description("CloudFront에서 제공하는 공개 프로필 이미지 URL").optional(),
                 fieldWithPath("data[].members[].githubAvatarUrl").type(STRING)
                         .description("이관 팀원의 GitHub 프로필 이미지 URL").optional(),
