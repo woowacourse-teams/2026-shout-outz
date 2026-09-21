@@ -19,6 +19,7 @@ public record FeedItem(
         List<Media> media,
         long likeCount,
         long commentCount,
+        int relevanceRank,
         Instant createdAt,
         Instant updatedAt
 ) {

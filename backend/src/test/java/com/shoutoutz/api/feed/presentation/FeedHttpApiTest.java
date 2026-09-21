@@ -100,14 +100,21 @@ class FeedHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Feed")
                                 .summary("피드 목록 조회")
-                                .description("전체 공개 피드를 최신순 또는 전체 기간 인기순 Slice로 조회한다.")
+                                .description("전체 공개 피드를 최신순, 인기순 또는 키워드 정확도순 Slice로 조회한다.")
                                 .queryParameters(
-                                        parameterWithName("sort").description("LATEST 또는 POPULAR, 기본 LATEST").optional(),
+                                        parameterWithName("sort")
+                                                .description("LATEST, POPULAR 또는 RELEVANCE. 검색어가 없으면 기본 LATEST, 있으면 기본 RELEVANCE")
+                                                .optional(),
                                         parameterWithName("categoryId")
                                                 .type(INTEGER)
                                                 .description("카테고리 ID")
                                                 .optional(),
-                                        parameterWithName("cursor").description("다음 Slice 커서").optional(),
+                                        parameterWithName("keyword")
+                                                .description("제목과 본문 검색어(Unicode 최대 100자)")
+                                                .optional(),
+                                        parameterWithName("cursor")
+                                                .description("같은 검색어, 카테고리, 정렬 조건의 다음 Slice 커서")
+                                                .optional(),
                                         parameterWithName("size")
                                                 .type(INTEGER)
                                                 .description("조회 크기(기본 20, 최대 100)")
@@ -409,6 +416,16 @@ class FeedHttpApiTest {
     }
 
     @Test
+    @DisplayName("검색어가 Unicode 100자를 초과하면 400을 반환한다")
+    void rejectOverlongKeyword() throws Exception {
+        mockMvc.perform(get("/api/v1/feeds")
+                        .queryParam("keyword", "가".repeat(101)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(feedService);
+    }
+
+    @Test
     @DisplayName("해석할 수 없는 목록 커서는 400을 반환한다")
     void rejectInvalidCursor() throws Exception {
         given(feedService.findAllFeed(any(FeedFindAllRequest.class)))
@@ -684,6 +701,7 @@ class FeedHttpApiTest {
                 List.of(new FeedItem.Media(21L, 0)),
                 0L,
                 0L,
+                0,
                 CREATED_AT,
                 CREATED_AT
         );

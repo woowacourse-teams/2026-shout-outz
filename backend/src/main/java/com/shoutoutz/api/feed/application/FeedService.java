@@ -92,6 +92,7 @@ public class FeedService {
         List<FeedItem> feedsWithExtraItem = feedQueryRepository.findAll(
                 sort,
                 request.categoryId(),
+                request.keyword(),
                 cursor,
                 size + 1
         );
@@ -161,6 +162,7 @@ public class FeedService {
         String nextCursor = feedCursorCodec.encode(
                 new FeedCursor(
                         sort,
+                        lastItem.relevanceRank(),
                         lastItem.likeCount(),
                         lastItem.createdAt(),
                         lastItem.feedId()

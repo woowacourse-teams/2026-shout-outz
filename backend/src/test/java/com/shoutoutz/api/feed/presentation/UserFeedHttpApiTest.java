@@ -192,6 +192,7 @@ class UserFeedHttpApiTest {
                 List.of(new FeedItem.Media(30L, 0)),
                 5L,
                 3L,
+                0,
                 now,
                 now
         );

@@ -14,7 +14,13 @@ public interface FeedQueryRepository {
 
     Optional<FeedItem> findById(long feedId);
 
-    List<FeedItem> findAll(FeedSort sort, Long categoryId, FeedCursor cursor, int limit);
+    List<FeedItem> findAll(
+            FeedSort sort,
+            Long categoryId,
+            String keyword,
+            FeedCursor cursor,
+            int limit
+    );
 
     List<FeedItem> findAllByAuthorId(long authorId, FeedCursor cursor, int limit);
 
