@@ -1,6 +1,6 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-import { newsListQueryOptions } from '@/api/news';
+import { newsInfiniteQueryOptions } from '@/api/news';
 import { NewsItem } from '@/components/NewsItem';
 import { Select } from '@/components/Select';
 import { Tab } from '@/components/Tab';
@@ -30,8 +30,8 @@ export function NewsPage() {
     navigate({ search: (previous) => ({ ...previous, ...next }) });
   };
 
-  // TODO api 연동 시에 쿼리로 변경
-  const { data: news } = useSuspenseQuery(newsListQueryOptions(filter, sortBy));
+  const query = useSuspenseInfiniteQuery(newsInfiniteQueryOptions(filter, sortBy));
+  const news = query.data.pages.flatMap((page) => page.data);
 
   return (
     <main className="flex flex-col gap-5 px-4 pt-5 pb-7 md:gap-7 md:px-16 md:pt-10 md:pb-20">
@@ -81,6 +81,16 @@ export function NewsPage() {
           </li>
         ))}
       </ul>
+      {query.hasNextPage && (
+        <button
+          type="button"
+          className="border-primary-600 text-primary-600 mt-2 rounded-lg border px-4 py-2 text-sm font-semibold"
+          disabled={query.isFetchingNextPage}
+          onClick={() => void query.fetchNextPage({ cancelRefetch: false })}
+        >
+          {query.isFetchingNextPage ? '불러오는 중…' : '소식 더 보기'}
+        </button>
+      )}
     </main>
   );
 }

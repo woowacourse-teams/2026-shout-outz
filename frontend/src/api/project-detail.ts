@@ -3,10 +3,10 @@ import ky from 'ky';
 import { getApiUrl } from '@/api/url';
 
 export interface ProjectMember {
-  userId: number;
+  userId: number | null;
   displayName: string;
-  cohort: number;
-  track: string;
+  cohort: number | null;
+  track: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
   avatarUrl: string | null;
 }
 

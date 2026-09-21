@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as FeedsIndexRouteImport } from './routes/feeds/index'
 import { Route as FeedsFeedIdRouteImport } from './routes/feeds/$feedId'
 import { Route as FeedsNewRouteImport } from './routes/feeds/new'
+import { Route as MypageVerificationRouteImport } from './routes/mypage/verification'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as NewsNewsIdRouteImport } from './routes/news/$newsId'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
@@ -33,6 +35,11 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FeedsIndexRoute = FeedsIndexRouteImport.update({
   id: '/feeds/',
   path: '/feeds/',
@@ -46,6 +53,11 @@ const FeedsFeedIdRoute = FeedsFeedIdRouteImport.update({
 const FeedsNewRoute = FeedsNewRouteImport.update({
   id: '/feeds/new',
   path: '/feeds/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MypageVerificationRoute = MypageVerificationRouteImport.update({
+  id: '/mypage/verification',
+  path: '/mypage/verification',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsIndexRoute = NewsIndexRouteImport.update({
@@ -92,8 +104,10 @@ const FeedsFeedIdEditRoute = FeedsFeedIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/signup': typeof SignupRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
+  '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -107,8 +121,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/signup': typeof SignupRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
+  '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -123,8 +139,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/signup': typeof SignupRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
+  '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$id': typeof ProjectsIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -140,8 +158,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/signup'
     | '/feeds/$feedId'
     | '/feeds/new'
+    | '/mypage/verification'
     | '/news/$newsId'
     | '/projects/$id'
     | '/projects/new'
@@ -155,8 +175,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/signup'
     | '/feeds/$feedId'
     | '/feeds/new'
+    | '/mypage/verification'
     | '/news/$newsId'
     | '/projects/$id'
     | '/projects/new'
@@ -170,8 +192,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/signup'
     | '/feeds/$feedId'
     | '/feeds/new'
+    | '/mypage/verification'
     | '/news/$newsId'
     | '/projects/$id'
     | '/projects/new'
@@ -186,8 +210,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  SignupRoute: typeof SignupRoute
   FeedsFeedIdRoute: typeof FeedsFeedIdRoute
   FeedsNewRoute: typeof FeedsNewRoute
+  MypageVerificationRoute: typeof MypageVerificationRoute
   NewsNewsIdRoute: typeof NewsNewsIdRoute
   ProjectsIdRoute: typeof ProjectsIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
@@ -215,6 +241,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/feeds/': {
       id: '/feeds/'
       path: '/feeds'
@@ -234,6 +267,13 @@ declare module '@tanstack/react-router' {
       path: '/feeds/new'
       fullPath: '/feeds/new'
       preLoaderRoute: typeof FeedsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mypage/verification': {
+      id: '/mypage/verification'
+      path: '/mypage/verification'
+      fullPath: '/mypage/verification'
+      preLoaderRoute: typeof MypageVerificationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/news/': {
@@ -298,8 +338,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  SignupRoute: SignupRoute,
   FeedsFeedIdRoute: FeedsFeedIdRoute,
   FeedsNewRoute: FeedsNewRoute,
+  MypageVerificationRoute: MypageVerificationRoute,
   NewsNewsIdRoute: NewsNewsIdRoute,
   ProjectsIdRoute: ProjectsIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,

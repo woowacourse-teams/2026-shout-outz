@@ -1,5 +1,4 @@
 import path from 'node:path';
-import webpack from 'webpack';
 import { fileURLToPath } from 'node:url';
 import 'webpack-dev-server';
 import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
@@ -9,10 +8,16 @@ import { tanstackRouter } from '@tanstack/router-plugin/webpack';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 const isProduction = process.env.NODE_ENV === 'production';
 
 /** @type {import("webpack").Configuration} */
 const config = {
+  dotenv: {
+    dir: __dirname,
+    template: ['src/.env', '.env'],
+    prefix: 'API_ORIGIN',
+  },
   entry: './ssg/client.tsx',
   // 타입 검사 플러그인의 디렉터리 감시에도 적용해 의존성과 생성물을 제외합니다.
   watchOptions: {
@@ -30,6 +35,7 @@ const config = {
     chunkFilename: isProduction ? '[name].[contenthash:8].chunk.js' : '[name].chunk.js',
   },
   devServer: {
+    port: 5173,
     open: true,
     historyApiFallback: true,
     // Document는 프레임워크가 아니라 그냥 React 컴포넌트라서, 요청마다 렌더링해 줄 서버가
@@ -41,10 +47,6 @@ const config = {
     ],
   },
   plugins: [
-    // webpack은 브라우저 번들에 process를 정의하지 않는다. API 오리진을 빌드 시점에
-    // 값으로 박아 넣는다. 값을 주지 않으면 빈 문자열이 되고, 그때는 상대 경로로 나가
-    // 현재 오리진을 쓴다(개발 중에는 MSW 워커가 가로챈다).
-    new webpack.EnvironmentPlugin({ API_ORIGIN: '' }),
     new ForkTsCheckerWebpackPlugin(),
     tanstackRouter({
       target: 'react',

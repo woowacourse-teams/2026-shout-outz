@@ -86,14 +86,20 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
             {project.members.length ? (
               <ul className="mt-4 space-y-3">
                 {project.members.map((member, index) => (
-                  <li key={member.userId} className="flex items-center gap-3">
+                  <li
+                    key={member.userId ?? `${member.displayName}-${index}`}
+                    className="flex items-center gap-3"
+                  >
                     <Avatar src={member.avatarUrl ?? undefined} alt="" />
                     <p className="text-sm font-semibold break-words">
                       {member.displayName}
-                      {index === 0 ? ' (작성자)' : ''} · {member.cohort}기{' '}
-                      {({ BE: '백엔드', FE: '프론트엔드' } as Record<string, string>)[
-                        member.track
-                      ] ?? member.track}
+                      {index === 0 ? ' (작성자)' : ''}
+                      {member.cohort !== null && ` · ${member.cohort}기`}{' '}
+                      {({
+                        ANDROID: '안드로이드',
+                        BACKEND: '백엔드',
+                        FRONTEND: '프론트엔드',
+                      } as Record<string, string>)[member.track ?? ''] ?? member.track}
                     </p>
                   </li>
                 ))}

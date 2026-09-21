@@ -23,10 +23,19 @@ public class DatabaseMediaUploadAuthorizer implements MediaUploadAuthorizer {
             )
             """;
 
+    private static final String ACTIVE_ADMIN_EXISTS_SQL = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM users
+                WHERE id = ?
+                  AND status = 'ACTIVE'
+                  AND role = 'ADMIN'
+            )
+            """;
     private final JdbcTemplate jdbcTemplate;
 
     /**
-     * 실제 사용자가 활성 사용자 인지 검증한다.
+     * 홈 배너는 활성 관리자만, 나머지 용도는 활성 사용자만 업로드할 수 있다.
      */
     @Override
     public void authorize(long requesterId, MediaPurpose purpose) {
@@ -34,7 +43,10 @@ public class DatabaseMediaUploadAuthorizer implements MediaUploadAuthorizer {
             throw forbidden();
         }
 
-        if (!exists(ACTIVE_USER_EXISTS_SQL, requesterId)) {
+        String authorizationSql = purpose == MediaPurpose.HOME_BANNER
+                ? ACTIVE_ADMIN_EXISTS_SQL
+                : ACTIVE_USER_EXISTS_SQL;
+        if (!exists(authorizationSql, requesterId)) {
             throw forbidden();
         }
     }
