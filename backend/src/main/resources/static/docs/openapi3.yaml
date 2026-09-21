@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"type\",\"\
-                    message\":\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug\
-                    \ 형식이 올바르지 않습니다.\"},{\"field\":\"displayOrder\",\"message\":\"\
-                    displayOrder는 0 이상이어야 합니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
+                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
+                    ,\"message\":\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -929,8 +929,8 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"}]}"
+                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1018,9 +1018,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -1449,10 +1449,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
+                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
+                    eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -2111,10 +2111,11 @@ paths:
                 user-profile-get:
                   value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
                     ,\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\"\
-                    :\"BACKEND\",\"cohort\":8,\"bio\":\"백엔드 개발자입니다.\",\"avatarUrl\"\
-                    :\"https://cdn.example.com/media/21/display\",\"githubProfileUrl\"\
-                    :\"https://github.com/zzaekkii\",\"blogUrl\":\"https://zzaekkii.dev\"\
-                    ,\"counts\":{\"projects\":2,\"feeds\":18}}}"
+                    :\"BACKEND\",\"cohort\":8,\"bio\":\"백엔드 개발자입니다.\",\"avatarImageId\"\
+                    :21,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
+                    ,\"githubProfileUrl\":\"https://github.com/zzaekkii\",\"blogUrl\"\
+                    :\"https://zzaekkii.dev\",\"counts\":{\"projects\":2,\"feeds\"\
+                    :18}}}"
         "401":
           description: "401"
           content:
@@ -2313,9 +2314,10 @@ paths:
                 user-search-get:
                   value: "{\"status\":\"success\",\"data\":{\"items\":[{\"handle\"\
                     :\"zzaekkii\",\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\"\
-                    ,\"track\":\"BACKEND\",\"cohort\":8,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
-                    },{\"handle\":\"coach-jack\",\"displayName\":\"재키 코치\",\"userType\"\
-                    :\"WOOWACOURSE_COACH\",\"track\":null,\"cohort\":null,\"avatarUrl\"\
+                    ,\"track\":\"BACKEND\",\"cohort\":8,\"avatarImageId\":21,\"avatarUrl\"\
+                    :\"https://cdn.example.com/media/21/display\"},{\"handle\":\"\
+                    coach-jack\",\"displayName\":\"재키 코치\",\"userType\":\"WOOWACOURSE_COACH\"\
+                    ,\"track\":null,\"cohort\":null,\"avatarImageId\":null,\"avatarUrl\"\
                     :null}]},\"meta\":{\"nextCursor\":\"eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0\"\
                     ,\"hasNext\":true}}"
         "400":
@@ -2357,10 +2359,11 @@ paths:
                 user-public-profile-get:
                   value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
                     ,\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"track\"\
-                    :\"BACKEND\",\"cohort\":8,\"bio\":\"백엔드 개발자입니다.\",\"avatarUrl\"\
-                    :\"https://cdn.example.com/media/21/display\",\"githubProfileUrl\"\
-                    :\"https://github.com/zzaekkii\",\"blogUrl\":\"https://zzaekkii.dev\"\
-                    ,\"counts\":{\"projects\":2,\"feeds\":18}}}"
+                    :\"BACKEND\",\"cohort\":8,\"bio\":\"백엔드 개발자입니다.\",\"avatarImageId\"\
+                    :21,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
+                    ,\"githubProfileUrl\":\"https://github.com/zzaekkii\",\"blogUrl\"\
+                    :\"https://zzaekkii.dev\",\"counts\":{\"projects\":2,\"feeds\"\
+                    :18}}}"
         "404":
           description: "404"
           content:
@@ -2929,8 +2932,8 @@ paths:
               examples:
                 user-profile-summary-get:
                   value: "{\"status\":\"success\",\"data\":{\"handle\":\"zzaekkii\"\
-                    ,\"displayName\":\"재키\",\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
-                    }}"
+                    ,\"displayName\":\"재키\",\"avatarImageId\":21,\"avatarUrl\":\"\
+                    https://cdn.example.com/media/21/display\"}}"
   /api/v1/users/me/verification-request:
     get:
       tags:
@@ -3726,15 +3729,6 @@ paths:
                 type: string
 components:
   schemas:
-    AdminVerificationRequestRejectRequest:
-      title: AdminVerificationRequestRejectRequest
-      required:
-      - reason
-      type: object
-      properties:
-        reason:
-          type: string
-          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     CategoryUpdateSuccessResponse:
       title: CategoryUpdateSuccessResponse
       required:
@@ -3777,6 +3771,15 @@ components:
         status:
           type: string
           description: 응답 상태
+    AdminVerificationRequestRejectRequest:
+      title: AdminVerificationRequestRejectRequest
+      required:
+      - reason
+      type: object
+      properties:
+        reason:
+          type: string
+          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     FeedCommentDeleteSuccessResponse:
       title: FeedCommentDeleteSuccessResponse
       required:
@@ -3916,6 +3919,83 @@ components:
         status:
           type: string
           description: 응답 상태
+    UserProfileSuccessResponse:
+      title: UserProfileSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - counts
+          - displayName
+          - handle
+          - userType
+          type: object
+          properties:
+            avatarImageId:
+              type: number
+              description: 프로필 이미지 미디어 ID
+              nullable: true
+            avatarUrl:
+              type: string
+              description: 프로필 이미지 공개 URL
+              nullable: true
+            counts:
+              required:
+              - feeds
+              - projects
+              type: object
+              properties:
+                projects:
+                  type: number
+                  description: 삭제되지 않은 참여 프로젝트 개수
+                feeds:
+                  type: number
+                  description: 삭제되지 않은 작성 피드 개수
+              description: 프로필 항목 개수
+            displayName:
+              type: string
+              description: 표시 이름
+            blogUrl:
+              type: string
+              description: 블로그 URL
+              nullable: true
+            githubProfileUrl:
+              type: string
+              description: GitHub 프로필 URL
+              nullable: true
+            bio:
+              type: string
+              description: 한 줄 소개
+              nullable: true
+            cohort:
+              type: number
+              description: 우테코 기수
+              nullable: true
+            handle:
+              type: string
+              description: 사용자 handle
+            userType:
+              type: string
+              description: 사용자 유형
+              enum:
+              - GENERAL
+              - WOOWACOURSE_CREW
+              - WOOWACOURSE_COACH
+            track:
+              type: string
+              description: 우테코 트랙
+              nullable: true
+              enum:
+              - BACKEND
+              - ANDROID
+              - FRONTEND
+          description: 사용자 프로필
+        status:
+          type: string
+          description: 응답 상태
     ProjectCommentDeleteSuccessResponse:
       title: ProjectCommentDeleteSuccessResponse
       required:
@@ -3974,79 +4054,6 @@ components:
               - SIGNUP_REQUIRED
               - AUTHENTICATED
           description: 인증 세션 정보
-        status:
-          type: string
-          description: 응답 상태
-    UserProfileSuccessResponse:
-      title: UserProfileSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - counts
-          - displayName
-          - handle
-          - userType
-          type: object
-          properties:
-            avatarUrl:
-              type: string
-              description: 프로필 이미지 공개 URL
-              nullable: true
-            counts:
-              required:
-              - feeds
-              - projects
-              type: object
-              properties:
-                projects:
-                  type: number
-                  description: 삭제되지 않은 참여 프로젝트 개수
-                feeds:
-                  type: number
-                  description: 삭제되지 않은 작성 피드 개수
-              description: 프로필 항목 개수
-            displayName:
-              type: string
-              description: 표시 이름
-            blogUrl:
-              type: string
-              description: 블로그 URL
-              nullable: true
-            githubProfileUrl:
-              type: string
-              description: GitHub 프로필 URL
-              nullable: true
-            bio:
-              type: string
-              description: 한 줄 소개
-              nullable: true
-            cohort:
-              type: number
-              description: 우테코 기수
-              nullable: true
-            handle:
-              type: string
-              description: 사용자 handle
-            userType:
-              type: string
-              description: 사용자 유형
-              enum:
-              - GENERAL
-              - WOOWACOURSE_CREW
-              - WOOWACOURSE_COACH
-            track:
-              type: string
-              description: 우테코 트랙
-              nullable: true
-              enum:
-              - BACKEND
-              - ANDROID
-              - FRONTEND
-          description: 사용자 공개 프로필
         status:
           type: string
           description: 응답 상태
@@ -5053,6 +5060,37 @@ components:
         status:
           type: string
           description: 응답 상태
+    UserProfileSummarySuccessResponse:
+      title: UserProfileSummarySuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - displayName
+          - handle
+          type: object
+          properties:
+            avatarImageId:
+              type: number
+              description: 프로필 이미지 미디어 ID
+              nullable: true
+            avatarUrl:
+              type: string
+              description: 프로필 이미지 공개 URL
+              nullable: true
+            displayName:
+              type: string
+              description: 표시 이름
+            handle:
+              type: string
+              description: 사용자 handle
+          description: 프로필 요약 정보
+        status:
+          type: string
+          description: 응답 상태
     NoticeCreateSuccessResponse:
       title: NoticeCreateSuccessResponse
       required:
@@ -5274,33 +5312,6 @@ components:
                     type: number
                     description: 기술 스택 ID
           description: 기술 스택 목록
-        status:
-          type: string
-          description: 응답 상태
-    UserProfileSummarySuccessResponse:
-      title: UserProfileSummarySuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - displayName
-          - handle
-          type: object
-          properties:
-            avatarUrl:
-              type: string
-              description: 프로필 이미지 공개 URL
-              nullable: true
-            displayName:
-              type: string
-              description: 표시 이름
-            handle:
-              type: string
-              description: 사용자 handle
-          description: 프로필 요약 정보
         status:
           type: string
           description: 응답 상태
@@ -5845,75 +5856,6 @@ components:
         content:
           type: string
           description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
-    UserSearchSuccessResponse:
-      title: UserSearchSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - items
-          type: object
-          properties:
-            items:
-              type: array
-              description: 검색된 크루와 코치
-              items:
-                required:
-                - displayName
-                - handle
-                - userType
-                type: object
-                properties:
-                  avatarUrl:
-                    type: string
-                    description: 프로필 이미지 공개 URL
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 표시 이름
-                  cohort:
-                    type: number
-                    description: 우테코 기수
-                    nullable: true
-                  handle:
-                    type: string
-                    description: 사용자 handle
-                  userType:
-                    type: string
-                    description: 사용자 유형
-                    enum:
-                    - GENERAL
-                    - WOOWACOURSE_CREW
-                    - WOOWACOURSE_COACH
-                  track:
-                    type: string
-                    description: 우테코 트랙
-                    nullable: true
-                    enum:
-                    - BACKEND
-                    - ANDROID
-                    - FRONTEND
-          description: 검색 결과
-        meta:
-          required:
-          - hasNext
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-          description: 페이지 정보
-        status:
-          type: string
-          description: 응답 상태
     FeedUpdateSuccessResponse:
       title: FeedUpdateSuccessResponse
       required:
@@ -6111,6 +6053,19 @@ components:
         status:
           type: string
           description: 응답 상태
+    OAuthSignupRequest:
+      title: OAuthSignupRequest
+      required:
+      - displayName
+      - handle
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 프로필 표시 이름
+        handle:
+          type: string
+          description: 영구 공개 핸들
     FeedSaveRequest:
       title: FeedSaveRequest
       required:
@@ -6140,19 +6095,6 @@ components:
         content:
           type: string
           description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"
-    OAuthSignupRequest:
-      title: OAuthSignupRequest
-      required:
-      - displayName
-      - handle
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 프로필 표시 이름
-        handle:
-          type: string
-          description: 영구 공개 핸들
     CategorySaveSuccessResponse:
       title: CategorySaveSuccessResponse
       required:
@@ -7320,6 +7262,79 @@ components:
           type: object
           description: 메타 정보
           nullable: true
+        status:
+          type: string
+          description: 응답 상태
+    UserSearchSuccessResponse:
+      title: UserSearchSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - items
+          type: object
+          properties:
+            items:
+              type: array
+              description: 검색된 크루와 코치
+              items:
+                required:
+                - displayName
+                - handle
+                - userType
+                type: object
+                properties:
+                  avatarImageId:
+                    type: number
+                    description: 프로필 이미지 미디어 ID
+                    nullable: true
+                  avatarUrl:
+                    type: string
+                    description: 프로필 이미지 공개 URL
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 표시 이름
+                  cohort:
+                    type: number
+                    description: 우테코 기수
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 사용자 handle
+                  userType:
+                    type: string
+                    description: 사용자 유형
+                    enum:
+                    - GENERAL
+                    - WOOWACOURSE_CREW
+                    - WOOWACOURSE_COACH
+                  track:
+                    type: string
+                    description: 우테코 트랙
+                    nullable: true
+                    enum:
+                    - BACKEND
+                    - ANDROID
+                    - FRONTEND
+          description: 검색 결과
+        meta:
+          required:
+          - hasNext
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+          description: 페이지 정보
         status:
           type: string
           description: 응답 상태

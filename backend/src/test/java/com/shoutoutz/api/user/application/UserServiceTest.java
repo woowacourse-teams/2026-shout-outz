@@ -98,6 +98,7 @@ class UserServiceTest {
         assertThat(result).isEqualTo(new UserProfileSummaryResponse(
                 "zzaekkii",
                 "재키",
+                21L,
                 "https://cdn.example.com/media/21/display"
         ));
     }
@@ -162,6 +163,7 @@ class UserServiceTest {
         assertThat(result.track()).isEqualTo("BACKEND");
         assertThat(result.cohort()).isEqualTo((short) 8);
         assertThat(result.bio()).isEqualTo("백엔드 개발자입니다.");
+        assertThat(result.avatarImageId()).isEqualTo(21L);
         assertThat(result.avatarUrl()).isEqualTo("https://cdn.example.com/media/21/display");
         assertThat(result.githubProfileUrl()).isEqualTo("https://github.com/zzaekkii");
         assertThat(result.blogUrl()).isEqualTo("https://zzaekkii.dev");
@@ -213,6 +215,7 @@ class UserServiceTest {
         assertThat(result.track()).isNull();
         assertThat(result.cohort()).isNull();
         assertThat(result.bio()).isNull();
+        assertThat(result.avatarImageId()).isNull();
         assertThat(result.avatarUrl()).isNull();
         assertThat(result.githubProfileUrl()).isNull();
         assertThat(result.blogUrl()).isNull();
