@@ -4,7 +4,9 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -16,16 +18,22 @@ import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
+import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.code.CommonErrorCode;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.common.exception.custom.ValidationFailedException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.news.application.NewsService;
 import com.shoutoutz.api.news.domain.enums.EventStatus;
@@ -35,10 +43,14 @@ import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NewsFindAllRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NewsFindRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NewsUpdateRequest;
 import com.shoutoutz.api.news.presentation.dto.response.EventCreateResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsDeleteResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NewsFindAllResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NewsFindResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsUpdateResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NoticeCreateResponse;
+import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
@@ -62,6 +74,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @WebMvcTest(controllers = NewsHttpApi.class)
 @AutoConfigureRestDocs
 class NewsHttpApiTest {
+
+    private static final String AUTHENTICATED_SESSION_ATTRIBUTE = AuthenticatedSession.class.getName();
 
     @Autowired
     private MockMvc mockMvc;
@@ -87,10 +101,13 @@ class NewsHttpApiTest {
                 null,
                 new NoticeCreateResponse.Cta("일정 확인", "example.com")
         );
-        given(newsService.createNotice(any(NoticeCreateRequest.class)))
+        given(newsService.createNotice(
+                eq(1L), eq(UserRole.ADMIN), any(NoticeCreateRequest.class)))
                 .willReturn(result);
 
         mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJsonWithCta()))
                 .andExpect(status().isCreated())
@@ -108,7 +125,7 @@ class NewsHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("News")
                                 .summary("공지 생성")
-                                .description("공지와 선택적인 CTA를 생성한다.")
+                                .description("관리자가 공지와 선택적인 CTA를 생성한다.")
                                 .requestSchema(Schema.schema("NoticeCreateRequest"))
                                 .responseSchema(Schema.schema("NoticeCreateSuccessResponse"))
                                 .requestFields(
@@ -189,7 +206,8 @@ class NewsHttpApiTest {
                                 .build())
                 ));
 
-        verify(newsService).createNotice(any(NoticeCreateRequest.class));
+        verify(newsService).createNotice(
+                eq(1L), eq(UserRole.ADMIN), any(NoticeCreateRequest.class));
     }
 
     @Test
@@ -207,10 +225,13 @@ class NewsHttpApiTest {
                 null,
                 null
         );
-        given(newsService.createNotice(any(NoticeCreateRequest.class)))
+        given(newsService.createNotice(
+                eq(1L), eq(UserRole.ADMIN), any(NoticeCreateRequest.class)))
                 .willReturn(result);
 
         mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJsonWithoutCta()))
                 .andExpect(status().isCreated())
@@ -239,10 +260,13 @@ class NewsHttpApiTest {
                 null,
                 new EventCreateResponse.Cta("프로젝트 등록하기", "/projects/3001")
         );
-        given(newsService.createEvent(any(EventCreateRequest.class)))
+        given(newsService.createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class)))
                 .willReturn(result);
 
         mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(eventRequestJsonWithCta()))
                 .andExpect(status().isCreated())
@@ -261,7 +285,7 @@ class NewsHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("News")
                                 .summary("이벤트 생성")
-                                .description("이벤트와 선택적인 CTA를 생성한다.")
+                                .description("관리자가 이벤트와 선택적인 CTA를 생성한다.")
                                 .requestSchema(Schema.schema("EventCreateRequest"))
                                 .responseSchema(Schema.schema("EventCreateSuccessResponse"))
                                 .requestFields(
@@ -299,7 +323,8 @@ class NewsHttpApiTest {
                                 .build())
                 ));
 
-        verify(newsService).createEvent(any(EventCreateRequest.class));
+        verify(newsService).createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class));
     }
 
     @Test
@@ -320,10 +345,13 @@ class NewsHttpApiTest {
                 null,
                 null
         );
-        given(newsService.createEvent(any(EventCreateRequest.class)))
+        given(newsService.createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class)))
                 .willReturn(result);
 
         mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(eventRequestJsonWithoutCta()))
                 .andExpect(status().isCreated())
@@ -827,6 +855,8 @@ class NewsHttpApiTest {
     @DisplayName("공지 생성 실패 테스트. 필수 요청값이 없으면 400을 반환하고 서비스를 호출하지 않는다.")
     void returnsBadRequestWithoutCallingServiceWhenNoticeRequiredFieldIsMissing() throws Exception {
         mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -841,7 +871,7 @@ class NewsHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("News")
                                 .summary("공지 생성")
-                                .description("공지와 선택적인 CTA를 생성한다.")
+                                .description("관리자가 공지와 선택적인 CTA를 생성한다.")
                                 .requestSchema(Schema.schema("NoticeCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
@@ -859,6 +889,8 @@ class NewsHttpApiTest {
     @DisplayName("이벤트 생성 실패 테스트. 필수 요청값이 없으면 400을 반환하고 서비스를 호출하지 않는다.")
     void returnsBadRequestWithoutCallingServiceWhenEventRequiredFieldIsMissing() throws Exception {
         mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -873,7 +905,7 @@ class NewsHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("News")
                                 .summary("이벤트 생성")
-                                .description("이벤트와 선택적인 CTA를 생성한다.")
+                                .description("관리자가 이벤트와 선택적인 CTA를 생성한다.")
                                 .requestSchema(Schema.schema("EventCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
@@ -887,6 +919,8 @@ class NewsHttpApiTest {
     @DisplayName("이벤트 시작 시각이 없으면 400을 반환하고 서비스를 호출하지 않는다")
     void returnsBadRequestWithoutCallingServiceWhenEventStartAtIsMissing() throws Exception {
         mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -903,7 +937,7 @@ class NewsHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("News")
                                 .summary("이벤트 생성")
-                                .description("이벤트와 선택적인 CTA를 생성한다.")
+                                .description("관리자가 이벤트와 선택적인 CTA를 생성한다.")
                                 .requestSchema(Schema.schema("EventCreateRequest"))
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
@@ -914,9 +948,15 @@ class NewsHttpApiTest {
     }
 
     @Test
-    @DisplayName("이벤트 시작 시각이 종료 시각보다 늦으면 400을 반환하고 서비스를 호출하지 않는다")
+    @DisplayName("이벤트 시작 시각이 종료 시각보다 늦으면 통합 기간 오류 코드로 400을 반환한다")
     void returnsBadRequestWhenEventStartAtIsAfterEndAt() throws Exception {
+        given(newsService.createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class)))
+                .willThrow(new BadRequestException(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID));
+
         mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -929,10 +969,7 @@ class NewsHttpApiTest {
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.details[0].field").value("eventStartAt"))
-                .andExpect(jsonPath("$.details[0].message")
-                        .value("eventStartAt은 eventEndAt보다 늦을 수 없습니다."))
+                .andExpect(jsonPath("$.code").value(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID.name()))
                 .andDo(document(
                         "news-event-create-period-order-invalid",
                         resource(ResourceSnippetParameters.builder()
@@ -945,13 +982,16 @@ class NewsHttpApiTest {
                                 .build())
                 ));
 
-        verifyNoInteractions(newsService);
+        verify(newsService).createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class));
     }
 
     @Test
     @DisplayName("공지 CTA 검증에 실패하면 400을 반환하고 서비스를 호출하지 않는다")
     void returnsBadRequestWhenNoticeCtaIsInvalid() throws Exception {
         mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -972,7 +1012,7 @@ class NewsHttpApiTest {
                         "news-notice-create-cta-invalid",
                         resource(errorResponseResource(
                                 "공지 생성",
-                                "공지와 선택적인 CTA를 생성한다.",
+                                "관리자가 공지와 선택적인 CTA를 생성한다.",
                                 "NoticeCreateRequest"))
                 ));
 
@@ -983,6 +1023,8 @@ class NewsHttpApiTest {
     @DisplayName("잘못된 JSON 요청 본문은 400 오류 응답으로 반환한다")
     void returnsBadRequestWhenNoticeRequestBodyIsMalformed() throws Exception {
         mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":"))
                 .andExpect(status().isBadRequest())
@@ -991,7 +1033,7 @@ class NewsHttpApiTest {
                         "news-notice-create-malformed-json",
                         resource(errorResponseResource(
                                 "공지 생성",
-                                "공지와 선택적인 CTA를 생성한다.",
+                                "관리자가 공지와 선택적인 CTA를 생성한다.",
                                 "NoticeCreateRequest"))
                 ));
 
@@ -1001,10 +1043,13 @@ class NewsHttpApiTest {
     @Test
     @DisplayName("공지 생성 중 도메인 예외가 발생하면 500 오류 응답을 반환한다")
     void returnsInternalServerErrorWhenNoticeDomainValidationFails() throws Exception {
-        given(newsService.createNotice(any(NoticeCreateRequest.class)))
+        given(newsService.createNotice(
+                eq(1L), eq(UserRole.ADMIN), any(NoticeCreateRequest.class)))
                 .willThrow(new DomainValidationException(NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE));
 
         mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJsonWithCta()))
                 .andExpect(status().isInternalServerError())
@@ -1013,20 +1058,24 @@ class NewsHttpApiTest {
                         "news-notice-create-domain-invalid",
                         resource(errorResponseResource(
                                 "공지 생성",
-                                "공지와 선택적인 CTA를 생성한다.",
+                                "관리자가 공지와 선택적인 CTA를 생성한다.",
                                 "NoticeCreateRequest"))
                 ));
 
-        verify(newsService).createNotice(any(NoticeCreateRequest.class));
+        verify(newsService).createNotice(
+                eq(1L), eq(UserRole.ADMIN), any(NoticeCreateRequest.class));
     }
 
     @Test
     @DisplayName("이벤트 생성 중 도메인 예외가 발생하면 500 오류 응답을 반환한다")
     void returnsInternalServerErrorWhenEventDomainValidationFails() throws Exception {
-        given(newsService.createEvent(any(EventCreateRequest.class)))
+        given(newsService.createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class)))
                 .willThrow(new DomainValidationException(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID));
 
         mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(eventRequestJsonWithCta()))
                 .andExpect(status().isInternalServerError())
@@ -1035,15 +1084,305 @@ class NewsHttpApiTest {
                         "news-event-create-domain-invalid",
                         resource(errorResponseResource(
                                 "이벤트 생성",
-                                "이벤트와 선택적인 CTA를 생성한다.",
+                                "관리자가 이벤트와 선택적인 CTA를 생성한다.",
                                 "EventCreateRequest"))
                 ));
 
-        verify(newsService).createEvent(any(EventCreateRequest.class));
+        verify(newsService).createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class));
     }
 
-    // TODO: 인증 방식 확정 후 미인증 요청의 401 응답과 서비스 미호출을 검증한다.
-    // TODO: 권한 정책 적용 후 관리자 외 사용자의 403 응답을 검증한다.
+    @Test
+    @DisplayName("관리자가 전체 필드를 전달해 소식을 수정하면 200과 수정 결과를 반환한다")
+    void updatesNewsAsAdmin() throws Exception {
+        NewsUpdateResponse result = new NewsUpdateResponse(
+                106L,
+                NewsType.NOTICE,
+                "수정된 공지",
+                "수정된 요약",
+                "수정된 본문",
+                new NewsUpdateResponse.Author(1L, "샤라웃 운영팀"),
+                Instant.parse("2026-09-05T00:00:00Z"),
+                null,
+                null,
+                null,
+                false,
+                null,
+                null
+        );
+        given(newsService.update(eq(106L), eq(UserRole.ADMIN), any(NewsUpdateRequest.class)))
+                .willReturn(result);
+
+        mockMvc.perform(put("/api/v1/news/{newsId}", 106L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "수정된 공지",
+                                  "summary": "수정된 요약",
+                                  "body": "수정된 본문",
+                                  "authorName": "샤라웃 운영팀",
+                                  "eventStartAt": null,
+                                  "eventEndAt": null,
+                                  "cta": null
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(106))
+                .andExpect(jsonPath("$.data.summary").value("수정된 요약"))
+                .andExpect(jsonPath("$.data.cta").value(nullValue()))
+                .andDo(document(
+                        "news-update",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("소식 수정")
+                                .description("관리자가 소식의 편집 가능 필드를 전체 교체한다.")
+                                .pathParameters(parameterWithName("newsId").description("수정할 소식 ID"))
+                                .requestSchema(Schema.schema("NewsUpdateRequest"))
+                                .responseSchema(Schema.schema("NewsUpdateSuccessResponse"))
+                                .requestFields(
+                                        fieldWithPath("title").type(STRING).description("소식 제목"),
+                                        fieldWithPath("summary").type(STRING).description("소식 요약"),
+                                        fieldWithPath("body").type(STRING).description("소식 본문"),
+                                        fieldWithPath("authorName").type(STRING).description("표시 작성자 이름"),
+                                        fieldWithPath("eventStartAt").type(STRING)
+                                                .description("이벤트 시작 시각. 공지는 null").optional(),
+                                        fieldWithPath("eventEndAt").type(STRING)
+                                                .description("이벤트 종료 시각. 공지는 null").optional(),
+                                        fieldWithPath("cta").type(OBJECT)
+                                                .description("CTA. 삭제할 때 null").optional(),
+                                        fieldWithPath("cta.label").type(STRING).description("CTA 라벨").optional(),
+                                        fieldWithPath("cta.url").type(STRING).description("CTA URL").optional()
+                                )
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("수정된 소식"),
+                                        fieldWithPath("data.id").type(NUMBER).description("소식 ID"),
+                                        new EnumFields(NewsType.class).withPath("data.type")
+                                                .description("소식 유형"),
+                                        fieldWithPath("data.title").type(STRING).description("소식 제목"),
+                                        fieldWithPath("data.summary").type(STRING).description("소식 요약"),
+                                        fieldWithPath("data.body").type(STRING).description("소식 본문"),
+                                        fieldWithPath("data.author").type(OBJECT).description("작성자"),
+                                        fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
+                                        fieldWithPath("data.author.name").type(STRING).description("작성자 이름"),
+                                        fieldWithPath("data.publishedAt").type(STRING).description("게시 시각"),
+                                        fieldWithPath("data.eventStatus").type(STRING)
+                                                .description("이벤트 상태. 공지는 null").optional(),
+                                        fieldWithPath("data.eventStartAt").type(STRING)
+                                                .description("이벤트 시작 시각").optional(),
+                                        fieldWithPath("data.eventEndAt").type(STRING)
+                                                .description("이벤트 종료 시각").optional(),
+                                        fieldWithPath("data.isPinned").type(BOOLEAN).description("고정 여부"),
+                                        fieldWithPath("data.pinOrder").type(NUMBER).description("고정 순서").optional(),
+                                        fieldWithPath("data.cta").type(OBJECT).description("CTA").optional(),
+                                        fieldWithPath("data.cta.label").type(STRING).description("CTA 라벨").optional(),
+                                        fieldWithPath("data.cta.url").type(STRING).description("CTA URL").optional()
+                                )
+                                .build())
+                ));
+
+        verify(newsService).update(eq(106L), eq(UserRole.ADMIN), any(NewsUpdateRequest.class));
+    }
+
+    @Test
+    @DisplayName("수정 요청에서 CTA 필드를 생략하면 명시적 null을 요구하는 400을 반환한다")
+    void rejectsNewsUpdateWhenCtaIsOmitted() throws Exception {
+        mockMvc.perform(put("/api/v1/news/{newsId}", 106L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "수정된 공지",
+                                  "summary": "수정된 요약",
+                                  "body": "수정된 본문",
+                                  "authorName": "샤라웃 운영팀",
+                                  "eventStartAt": null,
+                                  "eventEndAt": null
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.VALIDATION_FAILED.name()))
+                .andExpect(jsonPath("$.details[0].field").value("cta"))
+                .andExpect(jsonPath("$.details[0].message")
+                        .value("cta는 필수입니다. 삭제하려면 null을 명시해주세요."));
+
+        mockMvc.perform(put("/api/v1/news/{newsId}", 106L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "수정된 공지",
+                                  "summary": "수정된 요약",
+                                  "body": "수정된 본문",
+                                  "authorName": "샤라웃 운영팀",
+                                  "cta": null
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.VALIDATION_FAILED.name()))
+                .andExpect(jsonPath("$.details[*].field", hasItem("eventStartAt")))
+                .andExpect(jsonPath("$.details[*].field", hasItem("eventEndAt")));
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("수정 서비스가 이벤트 기간 상세 오류를 반환하면 details와 함께 400을 반환한다")
+    void returnsEventPeriodDetailsWhenNewsUpdateHasMissingEventEndAt() throws Exception {
+        given(newsService.update(eq(106L), eq(UserRole.ADMIN), any(NewsUpdateRequest.class)))
+                .willThrow(new ValidationFailedException(List.of(
+                        new com.shoutoutz.api.common.response.ErrorResponse.ErrorDetail(
+                                "eventEndAt", "eventEndAt은 필수입니다.")
+                )));
+
+        mockMvc.perform(put("/api/v1/news/{newsId}", 106L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "이벤트 수정",
+                                  "summary": "이벤트 요약",
+                                  "body": "이벤트 본문",
+                                  "authorName": "샤라웃 운영팀",
+                                  "eventStartAt": "2026-10-01T00:00:00+09:00",
+                                  "eventEndAt": null,
+                                  "cta": null
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.VALIDATION_FAILED.name()))
+                .andExpect(jsonPath("$.details[0].field").value("eventEndAt"));
+
+        verify(newsService).update(eq(106L), eq(UserRole.ADMIN), any(NewsUpdateRequest.class));
+    }
+
+    @Test
+    @DisplayName("관리자가 소식을 삭제하면 200과 삭제 시각을 반환한다")
+    void deletesNewsAsAdmin() throws Exception {
+        given(newsService.delete(106L, UserRole.ADMIN))
+                .willReturn(new NewsDeleteResponse(
+                        106L,
+                        Instant.parse("2026-09-19T12:00:00Z")
+                ));
+
+        mockMvc.perform(delete("/api/v1/news/{newsId}", 106L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(106))
+                .andExpect(jsonPath("$.data.deletedAt").value("2026-09-19T12:00:00Z"))
+                .andDo(document(
+                        "news-delete",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("소식 삭제")
+                                .description("관리자가 소식을 소프트 삭제하고 삭제 시각을 반환한다.")
+                                .pathParameters(parameterWithName("newsId").description("삭제할 소식 ID"))
+                                .responseSchema(Schema.schema("NewsDeleteSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("삭제 결과"),
+                                        fieldWithPath("data.id").type(NUMBER).description("삭제한 소식 ID"),
+                                        fieldWithPath("data.deletedAt").type(STRING).description("삭제 시각"),
+                                        fieldWithPath("meta").type(OBJECT).description("메타 정보").optional()
+                                )
+                                .build())
+                ));
+
+        verify(newsService).delete(106L, UserRole.ADMIN);
+    }
+
+    @Test
+    @DisplayName("로그인하지 않고 소식 생성·수정·삭제를 요청하면 401을 반환하고 서비스를 호출하지 않는다")
+    void rejectsUnauthenticatedNewsMutation() throws Exception {
+        mockMvc.perform(post("/api/v1/news/notices")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJsonWithCta()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.UNAUTHORIZED.name()))
+                .andDo(document(
+                        "news-notice-create-unauthorized",
+                        resource(errorResponseResource(
+                                "공지 생성",
+                                "관리자 로그인이 필요하다.",
+                                "NoticeCreateRequest"))
+                ));
+
+        mockMvc.perform(post("/api/v1/news/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(eventRequestJsonWithCta()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.UNAUTHORIZED.name()))
+                .andDo(document(
+                        "news-event-create-unauthorized",
+                        resource(errorResponseResource(
+                                "이벤트 생성",
+                                "관리자 로그인이 필요하다.",
+                                "EventCreateRequest"))
+                ));
+
+        mockMvc.perform(delete("/api/v1/news/{newsId}", 106L))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.UNAUTHORIZED.name()));
+
+        mockMvc.perform(put("/api/v1/news/{newsId}", 106L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.UNAUTHORIZED.name()));
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("일반 사용자가 소식을 생성하면 403을 반환한다")
+    void rejectsNonAdminNewsCreation() throws Exception {
+        given(newsService.createNotice(
+                eq(1L), eq(UserRole.USER), any(NoticeCreateRequest.class)))
+                .willThrow(new ForbiddenException(NewsErrorCode.NEWS_ADMIN_FORBIDDEN));
+        given(newsService.createEvent(
+                eq(1L), eq(UserRole.USER), any(EventCreateRequest.class)))
+                .willThrow(new ForbiddenException(NewsErrorCode.NEWS_ADMIN_FORBIDDEN));
+
+        mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJsonWithCta()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(NewsErrorCode.NEWS_ADMIN_FORBIDDEN.name()))
+                .andExpect(jsonPath("$.message").value("관리자만 소식을 관리할 수 있습니다."))
+                .andDo(document(
+                        "news-notice-create-forbidden",
+                        resource(errorResponseResource(
+                                "공지 생성",
+                                "관리자만 공지를 생성할 수 있다.",
+                                "NoticeCreateRequest"))
+                ));
+
+        mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(eventRequestJsonWithCta()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(NewsErrorCode.NEWS_ADMIN_FORBIDDEN.name()))
+                .andExpect(jsonPath("$.message").value("관리자만 소식을 관리할 수 있습니다."))
+                .andDo(document(
+                        "news-event-create-forbidden",
+                        resource(errorResponseResource(
+                                "이벤트 생성",
+                                "관리자만 이벤트를 생성할 수 있다.",
+                                "EventCreateRequest"))
+                ));
+    }
 
     /**
      * 헬퍼 메서드

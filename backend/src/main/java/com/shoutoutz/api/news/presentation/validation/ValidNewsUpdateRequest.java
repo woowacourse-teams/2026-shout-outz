@@ -8,19 +8,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * 이벤트 기간의 순서 유효성을 검증하는
- * 커스텀 Bean Validation 어노테이션.
- *
- * Bean Validation과 동일하게, MethodArgumentNotValidException가 발생한다.
- */
 @Documented
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = EventPeriodRequestValidator.class)
-public @interface ValidEventPeriod {
+@Constraint(validatedBy = NewsUpdateRequestValidator.class)
+public @interface ValidNewsUpdateRequest {
 
-    String message() default "eventStartAt은 eventEndAt보다 늦을 수 없습니다.";
+    String message() default "수정할 필드는 모두 요청에 포함해야 합니다.";
 
     Class<?>[] groups() default {};
 

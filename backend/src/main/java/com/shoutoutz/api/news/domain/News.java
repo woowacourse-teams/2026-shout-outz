@@ -89,6 +89,34 @@ public class News {
         return eventPeriod.statusAt(now);
     }
 
+    /**
+     * 수정 API가 허용하는 필드만 바꾼 새 aggregate를 만든다.
+     * 유형, 작성자, 게시 시각, 핀 상태는 기존 값을 그대로 유지한다.
+     */
+    public News update(
+            String title,
+            String summary,
+            String body,
+            String authorName,
+            NewsEventPeriod eventPeriod,
+            NewsCta cta
+    ) {
+        return News.builder()
+                .id(id)
+                .type(type)
+                .title(title)
+                .summary(summary)
+                .body(body)
+                .authorId(authorId)
+                .authorName(authorName)
+                .publishedAt(publishedAt)
+                .eventPeriod(eventPeriod)
+                .pinned(pinned)
+                .pinOrder(pinOrder)
+                .cta(cta)
+                .build();
+    }
+
     public static News createNotice(
             String title,
             String summary,

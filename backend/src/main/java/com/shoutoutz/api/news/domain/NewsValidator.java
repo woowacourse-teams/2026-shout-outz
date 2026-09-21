@@ -11,7 +11,7 @@ import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_CTA_INVALID_LABEL
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_CTA_INVALID_URL_LENGTH;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_CTA_LABEL_NULL_OR_BLANK;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_CTA_URL_NULL_OR_BLANK;
-import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_START_AT_NOT_ALLOWED;
+import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_PERIOD_NOT_ALLOWED;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_EVENT_START_AT_NULL;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE;
 import static com.shoutoutz.api.news.domain.NewsErrorCode.NEWS_INVALID_AUTHOR_NAME_LENGTH;
@@ -129,7 +129,7 @@ final class NewsValidator {
         }
 
         if (eventPeriod != null) {
-            throw new DomainValidationException(NEWS_EVENT_START_AT_NOT_ALLOWED);
+            throw new DomainValidationException(NEWS_EVENT_PERIOD_NOT_ALLOWED);
         }
     }
 
