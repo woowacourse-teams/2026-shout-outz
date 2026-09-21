@@ -45,7 +45,7 @@ visitor:
   cookie-name: VISITOR_ID
   cookie-max-age: ${VISITOR_COOKIE_MAX_AGE:365d}
   cookie-secure: ${SESSION_COOKIE_SECURE:false}
-  cookie-same-site: Lax
+  cookie-same-site: ${SESSION_COOKIE_SAME_SITE:Lax}
   hash-secret: ${VISITOR_HASH_SECRET}
 
 server:
@@ -55,4 +55,4 @@ server:
       cookie:
         http-only: true
         secure: ${SESSION_COOKIE_SECURE:false}
-        same-site: lax
+        same-site: ${SESSION_COOKIE_SAME_SITE:Lax}
