@@ -100,9 +100,9 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"\
-                    displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"}]}"
+                    :\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug 형식이\
+                    \ 올바르지 않습니다.\"},{\"field\":\"displayOrder\",\"message\":\"displayOrder는\
+                    \ 0 이상이어야 합니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -925,9 +925,9 @@ paths:
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"}]}"
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1323,6 +1323,24 @@ paths:
                     :\"https://cdn.example.com/banner\",\"destinationType\":\"URL\"\
                     ,\"targetType\":null,\"targetId\":null,\"linkType\":\"EXTERNAL_URL\"\
                     ,\"linkUrl\":\"https://example.com/promotion\"}]}"
+  /api/v1/home/statistics:
+    get:
+      tags:
+      - Home
+      summary: 홈 통계 조회
+      description: "프로젝트, 피드, 전체 기수 개수, 진행 중인 이벤트 통계를 조회한다."
+      operationId: home-statistics-find
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomeStatisticsSuccessResponse"
+              examples:
+                home-statistics-find:
+                  value: "{\"status\":\"success\",\"data\":{\"projectCount\":128,\"\
+                    feedCount\":341,\"currentCohort\":8,\"ongoingEventCount\":2}}"
   /api/v1/news/events:
     post:
       tags:
@@ -1445,9 +1463,9 @@ paths:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"}]}"
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -5137,6 +5155,37 @@ components:
         status:
           type: string
           description: 응답 상태
+    HomeStatisticsSuccessResponse:
+      title: HomeStatisticsSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - currentCohort
+          - feedCount
+          - ongoingEventCount
+          - projectCount
+          type: object
+          properties:
+            projectCount:
+              type: number
+              description: 승인되었고 삭제되지 않은 프로젝트 수
+            currentCohort:
+              type: number
+              description: 전체 기수 개수
+            feedCount:
+              type: number
+              description: 삭제되지 않은 피드 수
+            ongoingEventCount:
+              type: number
+              description: 조회 시각에 진행 중인 삭제되지 않은 이벤트 수
+          description: 홈 통계
+        status:
+          type: string
+          description: 응답 상태
     FeedUpdateRequest:
       title: FeedUpdateRequest
       required:
@@ -5868,19 +5917,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    OAuthSignupRequest:
-      title: OAuthSignupRequest
-      required:
-      - displayName
-      - handle
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 프로필 표시 이름
-        handle:
-          type: string
-          description: 영구 공개 핸들
     CategorySaveSuccessResponse:
       title: CategorySaveSuccessResponse
       required:
@@ -5952,6 +5988,19 @@ components:
         content:
           type: string
           description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"
+    OAuthSignupRequest:
+      title: OAuthSignupRequest
+      required:
+      - displayName
+      - handle
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 프로필 표시 이름
+        handle:
+          type: string
+          description: 영구 공개 핸들
     UserProjectFindAllSuccessResponse:
       title: UserProjectFindAllSuccessResponse
       required:
