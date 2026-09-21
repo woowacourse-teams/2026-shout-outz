@@ -49,6 +49,31 @@ describe('HomePage', () => {
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   });
 
+  describe('홈 배너', () => {
+    it('맨 앞 배너를 대상 리소스로 가는 링크로 보여준다', async () => {
+      renderRoute('/');
+
+      const banner = await screen.findByRole('link', { name: '홈 배너' });
+
+      expect(banner).toHaveAttribute('href', '/projects/1');
+      expect(within(banner).getByRole('img')).toHaveAttribute(
+        'src',
+        'https://cdn.example.com/banners/loop.webp',
+      );
+    });
+
+    it('활성 배너가 없으면 배너 자리를 비운다', async () => {
+      server.use(
+        http.get('/api/v1/home/banners', () => HttpResponse.json({ status: 'success', data: [] })),
+      );
+
+      renderRoute('/');
+
+      await screen.findByRole('region', { name: '서비스 통계' });
+      expect(screen.queryByRole('link', { name: '홈 배너' })).not.toBeInTheDocument();
+    });
+  });
+
   describe('서비스 통계', () => {
     it('프로젝트·피드·기수·진행 중 이벤트 수를 각 설명과 함께 보여준다', async () => {
       renderRoute('/');

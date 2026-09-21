@@ -15,6 +15,8 @@ import type {
   FeedCommentFindAllSuccessResponse,
   FeedFindAllSuccessResponse,
   FeedFindSuccessResponse,
+  HomeBannerFindAllSuccessResponse,
+  HomeStatisticsSuccessResponse,
   NewsFindAllSuccessResponse,
   NewsFindDetailSuccessResponse,
   ProjectCreateRequest as GeneratedProjectCreateRequest,
@@ -81,6 +83,11 @@ export type ProjectListItemData = Item<Data<ProjectFindAllSuccessResponse>>;
 export type ProjectListMetaData = Meta<ProjectFindAllSuccessResponse>;
 export type UserProjectListItemData = Item<Data<UserProjectFindAllSuccessResponse>>;
 export type ProjectDetailData = Data<ProjectFindDetailSuccessResponse>;
+
+// ── 홈 ──────────────────────────────────────────────────────────────────────
+
+export type HomeStatisticsData = Data<HomeStatisticsSuccessResponse>;
+export type HomeBannerItem = Item<Data<HomeBannerFindAllSuccessResponse>>;
 
 // ── 소식 ────────────────────────────────────────────────────────────────────
 

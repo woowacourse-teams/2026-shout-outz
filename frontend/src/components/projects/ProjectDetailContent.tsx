@@ -87,7 +87,7 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
               <ul className="mt-4 space-y-3">
                 {project.members.map((member, index) => (
                   <li
-                    key={member.userId ?? `${member.displayName}-${index}`}
+                    key={member.handle ?? `${member.displayName}-${index}`}
                     className="flex items-center gap-3"
                   >
                     <Avatar src={member.avatarUrl ?? undefined} alt="" />
