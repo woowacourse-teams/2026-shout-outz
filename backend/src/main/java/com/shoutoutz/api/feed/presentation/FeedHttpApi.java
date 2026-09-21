@@ -9,6 +9,7 @@ import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
+import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -53,23 +54,23 @@ public class FeedHttpApi {
     }
 
     @PostMapping
-    public ResponseEntity<SuccessResponse<FeedResponse>> saveFeed(
+    public ResponseEntity<SuccessResponse<FeedCommandResponse>> saveFeed(
             @LoginUser AuthenticatedUser user,
             @Valid @RequestBody FeedSaveRequest request
     ) {
-        FeedResponse response = feedService.saveFeed(user.userId(), request);
+        FeedCommandResponse response = feedService.saveFeed(user.userId(), request);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(SuccessResponse.success(response));
     }
 
     @PutMapping("/{feedId}")
-    public ResponseEntity<SuccessResponse<FeedResponse>> updateFeed(
+    public ResponseEntity<SuccessResponse<FeedCommandResponse>> updateFeed(
             @PathVariable long feedId,
             @LoginUser AuthenticatedUser user,
             @Valid @RequestBody FeedUpdateRequest request
     ) {
-        FeedResponse response = feedService.updateFeed(feedId, user.userId(), request);
+        FeedCommandResponse response = feedService.updateFeed(feedId, user.userId(), request);
 
         return ResponseEntity.ok(SuccessResponse.success(response));
     }

@@ -23,7 +23,7 @@ import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
-import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
+import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -105,7 +105,7 @@ class FeedServiceCommandTest {
         when(feedRepository.save(any(Feed.class))).thenReturn(saved);
         when(feedQueryRepository.findById(10L)).thenReturn(Optional.of(item));
 
-        FeedResponse result = feedService.saveFeed(1L, request);
+        FeedCommandResponse result = feedService.saveFeed(1L, request);
 
         assertThat(result.feedId()).isEqualTo(item.feedId());
         verify(feedRepository).saveCategories(10L, List.of(1L, 2L, 3L));

@@ -15,7 +15,6 @@ public record ProjectCommentCreateResponse(
     public record Author(
             Long userId,
             String displayName,
-            Long avatarImageId,
             String avatarUrl
     ) {
     }
