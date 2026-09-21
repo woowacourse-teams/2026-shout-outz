@@ -37,20 +37,12 @@ function fakeClient() {
 }
 
 describe('connectRouterPageViews', () => {
-  it('연결하는 순간의 화면을 먼저 보낸다', () => {
-    const { router } = fakeRouter();
-    const { client, paths } = fakeClient();
-
-    connectRouterPageViews(router, client, '/feeds?sort=LATEST');
-
-    expect(paths).toEqual(['/feeds?sort=LATEST']);
-  });
-
   it('화면을 옮길 때마다 보낸다', () => {
     const { router, navigate } = fakeRouter();
     const { client, paths } = fakeClient();
-    connectRouterPageViews(router, client, '/');
+    connectRouterPageViews(router, client);
 
+    navigate('/');
     navigate('/users/woojin', '?tab=feeds');
     navigate('/feeds/101');
 
@@ -61,7 +53,7 @@ describe('connectRouterPageViews', () => {
     const fake = fakeRouter();
     const { client } = fakeClient();
 
-    connectRouterPageViews(fake.router, client, '/')();
+    connectRouterPageViews(fake.router, client)();
 
     expect(fake.unsubscribed).toBe(true);
   });

@@ -10,10 +10,7 @@ export interface PageViewRouter {
 export function connectRouterPageViews(
   router: PageViewRouter,
   client: AnalyticsClient,
-  initialPath: string,
 ): () => void {
-  client.pageView(initialPath);
-
   return router.subscribe('onResolved', ({ toLocation }) => {
     client.pageView(toLocation.pathname + toLocation.searchStr);
   });

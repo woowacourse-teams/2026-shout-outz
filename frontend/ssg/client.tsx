@@ -19,7 +19,8 @@ async function bootstrap() {
     const { worker } = await import('@/mocks/browser');
     await worker.start({ onUnhandledRequest: 'bypass' });
   }
-  connectRouterPageViews(router, analytics, window.location.pathname + window.location.search);
+  // 라우터가 첫 경로를 해석하는 렌더보다 먼저 연결해야 최초 진입도 페이지뷰로 잡히기 때문에 순서 주의해야 함
+  connectRouterPageViews(router, analytics);
 
   const routerHydrationState = window.$_TSR;
   const tree = (
