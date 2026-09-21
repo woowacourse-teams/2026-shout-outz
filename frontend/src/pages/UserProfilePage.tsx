@@ -17,6 +17,7 @@ import { type ProfileTab } from '@/types/user';
 import { sessionQuery } from '@/apis/session';
 import { myProfileSummaryQuery } from '@/apis/user';
 import { getButtonStyles } from '@/components/Button';
+import { analytics } from '@/utils/analytics';
 
 const route = getRouteApi('/users/$handle');
 
@@ -39,6 +40,7 @@ export function UserProfilePage() {
   const { data: profile } = useSuspenseQuery(userProfileQueryOptions(handle));
 
   const changeTab = (next: ProfileTab) => {
+    analytics.track({ name: 'profile_tab_changed', tab: next });
     navigate({ search: (previous) => ({ ...previous, tab: next }) });
   };
 
@@ -119,7 +121,11 @@ function ProjectTab({ handle }: { handle: string }) {
         </ul>
       )}
       {query.hasNextPage && (
-        <button type="button" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>
+        <button
+          type="button"
+          disabled={query.isFetchingNextPage}
+          onClick={() => void query.fetchNextPage()}
+        >
           {query.isFetchingNextPage ? '불러오는 중…' : '프로젝트 더 보기'}
         </button>
       )}
@@ -139,13 +145,17 @@ function FeedTab({ handle }: { handle: string }) {
         <ul>
           {feeds.map((feed) => (
             <li key={feed.feedId} className="min-w-0">
-              <FeedCard feed={feed} />
+              <FeedCard feed={feed} surface="profile" />
             </li>
           ))}
         </ul>
       )}
       {query.hasNextPage && (
-        <button type="button" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>
+        <button
+          type="button"
+          disabled={query.isFetchingNextPage}
+          onClick={() => void query.fetchNextPage()}
+        >
           {query.isFetchingNextPage ? '불러오는 중…' : '피드 더 보기'}
         </button>
       )}

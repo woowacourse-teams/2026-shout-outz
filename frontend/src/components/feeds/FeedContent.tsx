@@ -48,7 +48,7 @@ export function FeedContent({ feed }: { feed: Feed }) {
       )}
       {media.length > 0 && (
         <div className="mt-4 space-y-3">
-          {media.map(({ mediaId, url }, index) => (
+          {media.map(({ mediaId, url }, index) =>
             url ? (
               <Image
                 key={url}
@@ -64,8 +64,8 @@ export function FeedContent({ feed }: { feed: Feed }) {
               <p key={`media-${index}`} className="text-sm text-gray-500">
                 이미지를 불러오지 못했습니다.
               </p>
-            )
-          ))}
+            ),
+          )}
         </div>
       )}
     </>

@@ -7,6 +7,7 @@ import { myProfileSummaryQuery } from '@/apis/user';
 import { Button, getButtonStyles } from '@/components/Button';
 import { getGithubLoginUrl } from '@/utils/auth';
 import { getApiErrorMessage } from '@/utils/error';
+import { analytics, toPathPattern } from '@/utils/analytics';
 
 export function AuthActions() {
   const queryClient = useQueryClient();
@@ -61,7 +62,13 @@ export function AuthActions() {
   }
 
   return (
-    <a href={getGithubLoginUrl()} className={getButtonStyles({ size: 'sm' })}>
+    <a
+      href={getGithubLoginUrl()}
+      onClick={() =>
+        analytics.track({ name: 'login_started', from: toPathPattern(window.location.pathname) })
+      }
+      className={getButtonStyles({ size: 'sm' })}
+    >
       로그인
     </a>
   );

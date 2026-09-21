@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { projectListInfiniteQueryOptions } from '@/api/project-list';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { Button } from '@/components/Button';
+import { analytics } from '@/utils/analytics';
 
 export function ProjectList() {
   const query = useSuspenseInfiniteQuery(projectListInfiniteQueryOptions());
@@ -24,6 +25,14 @@ export function ProjectList() {
               to="/projects/$id"
               params={{ id: String(project.id) }}
               className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
+              onClick={() => {
+                analytics.track({ name: 'card_clicked', target: 'project', surface: 'projects' });
+                analytics.track({
+                  name: 'project_detail_opened',
+                  projectId: project.id,
+                  from: 'projects',
+                });
+              }}
             >
               <ProjectCard
                 title={project.title}

@@ -95,11 +95,13 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
                       {member.displayName}
                       {index === 0 ? ' (작성자)' : ''}
                       {member.cohort !== null && ` · ${member.cohort}기`}{' '}
-                      {({
-                        ANDROID: '안드로이드',
-                        BACKEND: '백엔드',
-                        FRONTEND: '프론트엔드',
-                      } as Record<string, string>)[member.track ?? ''] ?? member.track}
+                      {(
+                        {
+                          ANDROID: '안드로이드',
+                          BACKEND: '백엔드',
+                          FRONTEND: '프론트엔드',
+                        } as Record<string, string>
+                      )[member.track ?? ''] ?? member.track}
                     </p>
                   </li>
                 ))}
