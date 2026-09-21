@@ -39,21 +39,29 @@ public class NewsHttpApi {
 
     private final NewsService newsService;
 
-    // TODO: 인증 객체 ROLE 조회 필요
     @PostMapping("/notices")
     public ResponseEntity<SuccessResponse<NoticeCreateResponse>> createNotice(
+            @LoginUser AuthenticatedUser loginUser,
             @Valid @RequestBody NoticeCreateRequest request
     ) {
-        NoticeCreateResponse response = newsService.createNotice(request);
+        NoticeCreateResponse response = newsService.createNotice(
+                loginUser.userId(),
+                loginUser.role(),
+                request
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(SuccessResponse.success(response));
     }
 
-    // TODO: 인증 객체 ROLE 조회 필요
     @PostMapping("/events")
     public ResponseEntity<SuccessResponse<EventCreateResponse>> createEvent(
+            @LoginUser AuthenticatedUser loginUser,
             @Valid @RequestBody EventCreateRequest request
     ) {
-        EventCreateResponse response = newsService.createEvent(request);
+        EventCreateResponse response = newsService.createEvent(
+                loginUser.userId(),
+                loginUser.role(),
+                request
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(SuccessResponse.success(response));
     }
 

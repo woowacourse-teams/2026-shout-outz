@@ -46,14 +46,19 @@ public class NewsService {
     private final Clock clock;
 
     @Transactional
-    public NoticeCreateResponse createNotice(NoticeCreateRequest request) {
+    public NoticeCreateResponse createNotice(
+            long authorId,
+            UserRole role,
+            NoticeCreateRequest request
+    ) {
+        validateAdmin(role);
         NewsCta cta = toCta(request.cta());
         Instant now = clock.instant();
         News notice = News.createNotice(
                 request.title(),
                 request.summary(),
                 request.body(),
-                resolveAuthorId(),
+                authorId,
                 request.authorName(),
                 cta,
                 now
@@ -74,7 +79,12 @@ public class NewsService {
     }
 
     @Transactional
-    public EventCreateResponse createEvent(EventCreateRequest request) {
+    public EventCreateResponse createEvent(
+            long authorId,
+            UserRole role,
+            EventCreateRequest request
+    ) {
+        validateAdmin(role);
         NewsEventPeriod eventPeriod = resolveEventPeriod(
                 NewsType.EVENT, request.eventStartAt(), request.eventEndAt());
         NewsCta cta = toCta(request.cta());
@@ -83,7 +93,7 @@ public class NewsService {
                 request.title(),
                 request.summary(),
                 request.body(),
-                resolveAuthorId(),
+                authorId,
                 request.authorName(),
                 eventPeriod.startAt(),
                 eventPeriod.endAt(),
@@ -194,11 +204,6 @@ public class NewsService {
                 toNavigation(newsDetail.previous()),
                 toNavigation(newsDetail.next())
         );
-    }
-
-    private Long resolveAuthorId() {
-        // TODO: 관리자 인증 권한 검증 후, 인증 주체의 authorId를 주입한다.
-        return 0L;
     }
 
     private void validateAdmin(UserRole role) {

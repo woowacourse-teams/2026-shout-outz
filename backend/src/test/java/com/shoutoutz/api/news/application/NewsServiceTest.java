@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.news.application.dto.NewsDetail;
 import com.shoutoutz.api.news.application.dto.NewsPage;
@@ -64,22 +65,22 @@ class NewsServiceTest {
     }
 
     @Test
-    @DisplayName("인증 구현 전 임시 작성자 ID가 유효하지 않아 CTA 포함 공지를 저장하지 않는다")
-    void rejectsNoticeWithCtaWhileAuthenticationIsPending() {
+    @DisplayName("관리자 작성자 ID가 유효하지 않아 CTA 포함 공지를 저장하지 않는다")
+    void rejectsNoticeWithCtaWhenAuthorIdIsInvalid() {
         when(clock.instant()).thenReturn(PUBLISHED_AT);
 
-        assertInvalidAuthorId(requestWithCta());
+        assertInvalidAuthorId(requestWithCta(), 0L);
 
         verify(clock).instant();
         verifyNoInteractions(newsRepository, newsQueryRepository);
     }
 
     @Test
-    @DisplayName("인증 구현 전 임시 작성자 ID가 유효하지 않아 CTA 없는 공지도 저장하지 않는다")
-    void rejectsNoticeWithoutCtaWhileAuthenticationIsPending() {
+    @DisplayName("관리자 작성자 ID가 유효하지 않아 CTA 없는 공지도 저장하지 않는다")
+    void rejectsNoticeWithoutCtaWhenAuthorIdIsInvalid() {
         when(clock.instant()).thenReturn(PUBLISHED_AT);
 
-        assertInvalidAuthorId(requestWithoutCta());
+        assertInvalidAuthorId(requestWithoutCta(), 0L);
 
         verify(clock).instant();
         verifyNoInteractions(newsRepository, newsQueryRepository);
@@ -96,7 +97,7 @@ class NewsServiceTest {
                 new NoticeCreateRequest.Cta(" ", "example.com")
         );
 
-        assertThatThrownBy(() -> newsService.createNotice(request))
+        assertThatThrownBy(() -> newsService.createNotice(0L, UserRole.ADMIN, request))
                 .isInstanceOfSatisfying(DomainValidationException.class,
                         error -> Assertions.assertThat(error.getErrorCode())
                                 .isEqualTo(NewsErrorCode.NEWS_CTA_LABEL_NULL_OR_BLANK));
@@ -105,11 +106,11 @@ class NewsServiceTest {
     }
 
     @Test
-    @DisplayName("인증 구현 전 임시 작성자 ID가 유효하지 않아 이벤트를 저장하지 않는다")
-    void rejectsEventWhileAuthenticationIsPending() {
+    @DisplayName("관리자 작성자 ID가 유효하지 않아 이벤트를 저장하지 않는다")
+    void rejectsEventWhenAuthorIdIsInvalid() {
         when(clock.instant()).thenReturn(PUBLISHED_AT);
 
-        assertThatThrownBy(() -> newsService.createEvent(eventRequestWithCta()))
+        assertThatThrownBy(() -> newsService.createEvent(0L, UserRole.ADMIN, eventRequestWithCta()))
                 .isInstanceOfSatisfying(DomainValidationException.class,
                         error -> Assertions.assertThat(error.getErrorCode())
                                 .isEqualTo(NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE));
@@ -131,10 +132,34 @@ class NewsServiceTest {
                 null
         );
 
-        assertThatThrownBy(() -> newsService.createEvent(request))
+        assertThatThrownBy(() -> newsService.createEvent(1L, UserRole.ADMIN, request))
                 .isInstanceOfSatisfying(BadRequestException.class,
                         error -> assertThat(error.getErrorCode())
                                 .isEqualTo(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID));
+
+        verifyNoInteractions(clock, newsRepository, newsQueryRepository);
+    }
+
+    @Test
+    @DisplayName("관리자가 아니면 공지 생성을 거절한다")
+    void rejectsNoticeCreationWhenRoleIsNotAdmin() {
+        assertThatThrownBy(() -> newsService.createNotice(
+                1L, UserRole.USER, requestWithoutCta()))
+                .isInstanceOfSatisfying(ForbiddenException.class,
+                        error -> assertThat(error.getErrorCode())
+                                .isEqualTo(NewsErrorCode.NEWS_ADMIN_FORBIDDEN));
+
+        verifyNoInteractions(clock, newsRepository, newsQueryRepository);
+    }
+
+    @Test
+    @DisplayName("관리자가 아니면 이벤트 생성을 거절한다")
+    void rejectsEventCreationWhenRoleIsNotAdmin() {
+        assertThatThrownBy(() -> newsService.createEvent(
+                1L, UserRole.USER, eventRequestWithCta()))
+                .isInstanceOfSatisfying(ForbiddenException.class,
+                        error -> assertThat(error.getErrorCode())
+                                .isEqualTo(NewsErrorCode.NEWS_ADMIN_FORBIDDEN));
 
         verifyNoInteractions(clock, newsRepository, newsQueryRepository);
     }
@@ -433,8 +458,8 @@ class NewsServiceTest {
         verifyNoInteractions(clock, newsRepository, newsQueryRepository);
     }
 
-    private void assertInvalidAuthorId(NoticeCreateRequest request) {
-        assertThatThrownBy(() -> newsService.createNotice(request))
+    private void assertInvalidAuthorId(NoticeCreateRequest request, long authorId) {
+        assertThatThrownBy(() -> newsService.createNotice(authorId, UserRole.ADMIN, request))
                 .isInstanceOfSatisfying(DomainValidationException.class,
                         error -> Assertions.assertThat(error.getErrorCode())
                                 .isEqualTo(NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE));
