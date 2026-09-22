@@ -110,7 +110,7 @@ function SignupForm({ onComplete }: SignupPageProps) {
     } catch (error) {
       analytics.track({
         name: 'signup_failed',
-        reason: isApiResponseError(error) ? error.data.code : 'UNKNOWN',
+        reason: isApiResponseError(error) ? error.data.message : 'UNKNOWN',
       });
       if (isApiResponseError(error)) {
         const fieldErrors = Object.fromEntries(
