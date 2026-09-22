@@ -79,7 +79,7 @@ class UserProfileCountsRepositoryIntegrationTest {
 
     private void saveFeed(long userId, Instant deletedAt) {
         jdbcTemplate.update(
-                "INSERT INTO feeds (author_id, content, deleted_at) VALUES (?, ?, ?)",
+                "INSERT INTO feeds (author_id, title, content, deleted_at) VALUES (?, '테스트 피드', ?, ?)",
                 userId,
                 "개수 테스트 피드",
                 deletedAt == null ? null : Timestamp.from(deletedAt)

@@ -11,15 +11,19 @@ import java.util.Base64;
 import org.springframework.stereotype.Component;
 
 /**
- * 목록 정렬값과 생성 시각, 피드 ID를 감추는 URL-safe 커서 변환기
+ * 목록 정렬값과 정렬별 페이지 기준을 감추는 URL-safe 커서 변환기
  */
 @Component
 public class FeedCursorCodec {
 
     private static final String DELIMITER = "|";
+    private static final int MIN_RELEVANCE_RANK = 0;
+    private static final int MAX_RELEVANCE_RANK = 3;
 
     String encode(FeedCursor cursor) {
         String value = cursor.sort()
+                + DELIMITER
+                + cursor.relevanceRank()
                 + DELIMITER
                 + cursor.likeCount()
                 + DELIMITER
@@ -45,18 +49,24 @@ public class FeedCursorCodec {
                     StandardCharsets.UTF_8
             );
             String[] parts = decoded.split("\\|", -1);
-            if (parts.length != 4) {
+            if (parts.length != 5) {
                 throw new IllegalArgumentException();
             }
 
             FeedSort sort = FeedSort.valueOf(parts[0]);
-            long likeCount = Long.parseLong(parts[1]);
-            Instant createdAt = Instant.parse(parts[2]);
-            long feedId = Long.parseLong(parts[3]);
-            if (sort != expectedSort || likeCount < 0 || feedId <= 0) {
+            int relevanceRank = Integer.parseInt(parts[1]);
+            long likeCount = Long.parseLong(parts[2]);
+            Instant createdAt = Instant.parse(parts[3]);
+            long feedId = Long.parseLong(parts[4]);
+            if (sort != expectedSort
+                    || relevanceRank < MIN_RELEVANCE_RANK
+                    || relevanceRank > MAX_RELEVANCE_RANK
+                    || (sort != FeedSort.RELEVANCE && relevanceRank != 0)
+                    || likeCount < 0
+                    || feedId <= 0) {
                 throw new IllegalArgumentException();
             }
-            return new FeedCursor(sort, likeCount, createdAt, feedId);
+            return new FeedCursor(sort, relevanceRank, likeCount, createdAt, feedId);
         } catch (IllegalArgumentException | DateTimeParseException exception) {
             throw new BadRequestException(FeedErrorCode.FEED_CURSOR_INVALID, exception);
         }

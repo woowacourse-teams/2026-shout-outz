@@ -12,12 +12,14 @@ import java.util.List;
  */
 public record FeedItem(
         long feedId,
+        String title,
         String content,
         Author author,
         List<Category> categories,
         List<Media> media,
         long likeCount,
         long commentCount,
+        int relevanceRank,
         Instant createdAt,
         Instant updatedAt
 ) {

@@ -38,6 +38,7 @@ import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
+import com.shoutoutz.api.feed.presentation.dto.request.FeedSuggestionRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
@@ -90,6 +91,7 @@ class FeedHttpApiTest {
                         .queryParam("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].feedId").value(FEED_ID))
+                .andExpect(jsonPath("$.data[0].title").value("피드 제목"))
                 .andExpect(jsonPath("$.data[0].author.avatarImageId").value(21L))
                 .andExpect(jsonPath("$.data[0].media[0].mediaId").value(21L))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
@@ -99,14 +101,21 @@ class FeedHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Feed")
                                 .summary("피드 목록 조회")
-                                .description("전체 공개 피드를 최신순 또는 전체 기간 인기순 Slice로 조회한다.")
+                                .description("전체 공개 피드를 최신순, 인기순 또는 키워드 정확도순 Slice로 조회한다.")
                                 .queryParameters(
-                                        parameterWithName("sort").description("LATEST 또는 POPULAR, 기본 LATEST").optional(),
+                                        parameterWithName("sort")
+                                                .description("LATEST, POPULAR 또는 RELEVANCE. 검색어가 없으면 기본 LATEST, 있으면 기본 RELEVANCE")
+                                                .optional(),
                                         parameterWithName("categoryId")
                                                 .type(INTEGER)
                                                 .description("카테고리 ID")
                                                 .optional(),
-                                        parameterWithName("cursor").description("다음 Slice 커서").optional(),
+                                        parameterWithName("keyword")
+                                                .description("제목과 본문 검색어(Unicode 최대 100자)")
+                                                .optional(),
+                                        parameterWithName("cursor")
+                                                .description("같은 검색어, 카테고리, 정렬 조건의 다음 Slice 커서")
+                                                .optional(),
                                         parameterWithName("size")
                                                 .type(INTEGER)
                                                 .description("조회 크기(기본 20, 최대 100)")
@@ -132,12 +141,62 @@ class FeedHttpApiTest {
     }
 
     @Test
+    @DisplayName("피드 제목 자동완성 후보를 최대 10개 조회한다")
+    void findTitleSuggestions() throws Exception {
+        given(feedService.findTitleSuggestions(any(FeedSuggestionRequest.class)))
+                .willReturn(List.of("우테코", "우테코 회고"));
+
+        mockMvc.perform(get("/api/v1/feeds/search/suggestions")
+                        .queryParam("keyword", "우테코")
+                        .queryParam("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0]").value("우테코"))
+                .andExpect(jsonPath("$.data[1]").value("우테코 회고"))
+                .andDo(document(
+                        "feed-title-suggestions",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Feed")
+                                .summary("피드 제목 자동완성")
+                                .description("입력 중인 검색어와 일치하는 피드 제목을 최대 10개 반환한다.")
+                                .queryParameters(
+                                        parameterWithName("keyword")
+                                                .description("자동완성 검색어(Unicode 2자 이상 100자 이하)"),
+                                        parameterWithName("size")
+                                                .type(INTEGER)
+                                                .description("조회 크기(기본 10, 최대 10)")
+                                                .optional()
+                                )
+                                .responseSchema(Schema.schema("FeedTitleSuggestionsSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(ARRAY)
+                                                .description("피드 제목 자동완성 후보 문자열 목록")
+                                )
+                                .build())
+                ));
+
+        verify(feedService).findTitleSuggestions(any(FeedSuggestionRequest.class));
+    }
+
+    @Test
+    @DisplayName("자동완성 검색어와 조회 크기가 범위를 벗어나면 400을 반환한다")
+    void rejectInvalidTitleSuggestionRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/feeds/search/suggestions")
+                        .queryParam("keyword", "한")
+                        .queryParam("size", "11"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(feedService);
+    }
+
+    @Test
     @DisplayName("전체 공개 피드 상세를 조회한다")
     void findFeed() throws Exception {
         given(feedService.findFeed(FEED_ID)).willReturn(response());
 
         mockMvc.perform(get("/api/v1/feeds/{feedId}", FEED_ID))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.title").value("피드 제목"))
                 .andExpect(jsonPath("$.data.content").value("본문입니다."))
                 .andDo(document(
                         "feed-find",
@@ -165,6 +224,7 @@ class FeedHttpApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
+                                  "title": "피드 제목",
                                   "content": "본문입니다.",
                                   "categoryIds": [3],
                                   "mediaIds": [21]
@@ -183,6 +243,8 @@ class FeedHttpApiTest {
                                 .requestSchema(Schema.schema("FeedSaveRequest"))
                                 .responseSchema(Schema.schema("FeedSaveSuccessResponse"))
                                 .requestFields(
+                                        fieldWithPath("title").type(STRING)
+                                                .description("피드 제목(공백 제외 1자 이상, Unicode 최대 100자)"),
                                         fieldWithPath("content").type(STRING)
                                                 .description("Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"),
                                         fieldWithPath("categoryIds").type(ARRAY)
@@ -223,6 +285,7 @@ class FeedHttpApiTest {
                                 .requestSchema(Schema.schema("FeedUpdateRequest"))
                                 .responseSchema(Schema.schema("FeedUpdateSuccessResponse"))
                                 .requestFields(
+                                        fieldWithPath("title").type(STRING).description("변경할 피드 제목"),
                                         fieldWithPath("content").type(STRING).description("변경할 Markdown 본문"),
                                         fieldWithPath("categoryIds").type(ARRAY)
                                                 .description("변경할 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음)"),
@@ -281,7 +344,7 @@ class FeedHttpApiTest {
                         .with(authenticated())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"content":"   ","categoryIds":[1],"mediaIds":[]}
+                                {"title":"제목","content":"   ","categoryIds":[1],"mediaIds":[]}
                                 """))
                 .andExpect(status().isBadRequest())
                 .andDo(document(
@@ -295,7 +358,30 @@ class FeedHttpApiTest {
                         .with(authenticated())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"content":"%s","categoryIds":[1],"mediaIds":[]}
+                                {"title":"제목","content":"%s","categoryIds":[1],"mediaIds":[]}
+                                """.formatted(overLimit)))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(feedService);
+    }
+
+    @Test
+    @DisplayName("제목이 공백이거나 Unicode 100자를 초과하면 400을 반환한다")
+    void rejectInvalidTitle() throws Exception {
+        String overLimit = "😀".repeat(101);
+
+        mockMvc.perform(post("/api/v1/feeds")
+                        .with(authenticated())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"   ","content":"본문","categoryIds":[1],"mediaIds":[]}
+                                """))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/v1/feeds")
+                        .with(authenticated())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"%s","content":"본문","categoryIds":[1],"mediaIds":[]}
                                 """.formatted(overLimit)))
                 .andExpect(status().isBadRequest());
 
@@ -310,7 +396,7 @@ class FeedHttpApiTest {
         mockMvc.perform(put("/api/v1/feeds/{feedId}", FEED_ID)
                         .with(authenticated())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"content\":\"   \",\"categoryIds\":[1],\"mediaIds\":[]}"))
+                        .content("{\"title\":\"제목\",\"content\":\"   \",\"categoryIds\":[1],\"mediaIds\":[]}"))
                 .andExpect(status().isBadRequest())
                 .andDo(document(
                         "feed-update-invalid",
@@ -322,7 +408,7 @@ class FeedHttpApiTest {
         mockMvc.perform(put("/api/v1/feeds/{feedId}", FEED_ID)
                         .with(authenticated())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"content\":\"%s\",\"categoryIds\":[1],\"mediaIds\":[]}".formatted(overLimit)))
+                        .content("{\"title\":\"제목\",\"content\":\"%s\",\"categoryIds\":[1],\"mediaIds\":[]}".formatted(overLimit)))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(feedService);
@@ -335,14 +421,14 @@ class FeedHttpApiTest {
                         .with(authenticated())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"content":"본문","categoryIds":[1,1],"mediaIds":[]}
+                                {"title":"제목","content":"본문","categoryIds":[1,1],"mediaIds":[]}
                                 """))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(post("/api/v1/feeds")
                         .with(authenticated())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"content":"본문","categoryIds":[null],"mediaIds":[]}
+                                {"title":"제목","content":"본문","categoryIds":[null],"mediaIds":[]}
                                 """))
                 .andExpect(status().isBadRequest());
 
@@ -375,6 +461,16 @@ class FeedHttpApiTest {
                                 "전체 공개 피드를 최신순 또는 전체 기간 인기순 Slice로 조회한다."
                         ))
                 ));
+
+        verifyNoInteractions(feedService);
+    }
+
+    @Test
+    @DisplayName("검색어가 Unicode 100자를 초과하면 400을 반환한다")
+    void rejectOverlongKeyword() throws Exception {
+        mockMvc.perform(get("/api/v1/feeds")
+                        .queryParam("keyword", "가".repeat(101)))
+                .andExpect(status().isBadRequest());
 
         verifyNoInteractions(feedService);
     }
@@ -575,13 +671,13 @@ class FeedHttpApiTest {
 
     private String validCreateRequest() {
         return """
-                {"content":"본문","categoryIds":[1],"mediaIds":[]}
+                {"title":"피드 제목","content":"본문","categoryIds":[1],"mediaIds":[]}
                 """;
     }
 
     private String validUpdateRequest() {
         return """
-                {"content":"수정 본문","categoryIds":[1],"mediaIds":[]}
+                {"title":"수정 제목","content":"수정 본문","categoryIds":[1],"mediaIds":[]}
                 """;
     }
 
@@ -636,6 +732,7 @@ class FeedHttpApiTest {
     private FeedItem feedItem() {
         return new FeedItem(
                 FEED_ID,
+                "피드 제목",
                 "본문입니다.",
                 new FeedItem.Author(
                         "zzaekkii",
@@ -654,6 +751,7 @@ class FeedHttpApiTest {
                 List.of(new FeedItem.Media(21L, 0)),
                 0L,
                 0L,
+                0,
                 CREATED_AT,
                 CREATED_AT
         );

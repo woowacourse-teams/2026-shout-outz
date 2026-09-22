@@ -91,7 +91,7 @@ class HomeStatisticsQueryRepositoryIntegrationTest {
 
     private void saveFeed(long authorId, Instant deletedAt) {
         jdbcTemplate.update(
-                "INSERT INTO feeds (author_id, content, deleted_at) VALUES (?, ?, ?)",
+                "INSERT INTO feeds (author_id, title, content, deleted_at) VALUES (?, '테스트 피드', ?, ?)",
                 authorId,
                 "홈 통계 테스트 피드",
                 deletedAt == null ? null : Timestamp.from(deletedAt)

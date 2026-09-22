@@ -8,6 +8,7 @@ import com.shoutoutz.api.feed.application.FeedService;
 import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
+import com.shoutoutz.api.feed.presentation.dto.request.FeedSuggestionRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
@@ -42,6 +43,15 @@ public class FeedHttpApi {
         SliceMetaResponse meta = new SliceMetaResponse(result.nextCursor(), result.hasNext());
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));
+    }
+
+    @GetMapping("/search/suggestions")
+    public ResponseEntity<SuccessResponse<List<String>>> findTitleSuggestions(
+            @Valid @ModelAttribute FeedSuggestionRequest request
+    ) {
+        List<String> response = feedService.findTitleSuggestions(request);
+
+        return ResponseEntity.ok(SuccessResponse.success(response));
     }
 
     @GetMapping("/{feedId}")

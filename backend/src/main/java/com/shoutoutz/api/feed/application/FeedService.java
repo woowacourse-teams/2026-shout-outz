@@ -17,6 +17,7 @@ import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
+import com.shoutoutz.api.feed.presentation.dto.request.FeedSuggestionRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
@@ -67,7 +68,12 @@ public class FeedService {
         validateMedia(request.mediaIds(), userId);
 
         Instant now = clock.instant();
-        Feed savedFeed = feedRepository.save(Feed.create(userId, request.content(), now));
+        Feed savedFeed = feedRepository.save(Feed.create(
+                userId,
+                request.title(),
+                request.content(),
+                now
+        ));
         feedRepository.saveCategories(savedFeed.getId(), request.categoryIds());
         feedRepository.saveMedia(savedFeed.getId(), request.mediaIds());
 
@@ -87,10 +93,19 @@ public class FeedService {
         List<FeedItem> feedsWithExtraItem = feedQueryRepository.findAll(
                 sort,
                 request.categoryId(),
+                request.keyword(),
                 cursor,
                 size + 1
         );
         return createSlice(feedsWithExtraItem, size, sort);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> findTitleSuggestions(FeedSuggestionRequest request) {
+        return feedQueryRepository.findTitleSuggestions(
+                request.keyword(),
+                request.resolvedSize()
+        );
     }
 
     /**
@@ -122,7 +137,11 @@ public class FeedService {
         validateCategories(request.categoryIds());
         validateMedia(request.mediaIds(), userId);
 
-        Feed updatedFeed = feedRepository.update(feed.updateContent(request.content(), clock.instant()));
+        Feed updatedFeed = feedRepository.update(feed.update(
+                request.title(),
+                request.content(),
+                clock.instant()
+        ));
         feedRepository.saveCategories(feedId, request.categoryIds());
         feedRepository.saveMedia(feedId, request.mediaIds());
         return toCommandResponse(findFeedItem(updatedFeed.getId()));
@@ -152,6 +171,7 @@ public class FeedService {
         String nextCursor = feedCursorCodec.encode(
                 new FeedCursor(
                         sort,
+                        lastItem.relevanceRank(),
                         lastItem.likeCount(),
                         lastItem.createdAt(),
                         lastItem.feedId()

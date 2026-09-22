@@ -178,6 +178,7 @@ class UserFeedHttpApiTest {
         Instant now = Instant.parse("2026-09-16T00:00:00Z");
         return new FeedItem(
                 10L,
+                "사용자 피드 제목",
                 "사용자 피드 본문",
                 new FeedItem.Author(
                         "zzaekkii",
@@ -191,6 +192,7 @@ class UserFeedHttpApiTest {
                 List.of(new FeedItem.Media(30L, 0)),
                 5L,
                 3L,
+                0,
                 now,
                 now
         );

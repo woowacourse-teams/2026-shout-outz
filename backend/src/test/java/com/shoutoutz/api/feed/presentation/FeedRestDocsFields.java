@@ -24,6 +24,7 @@ final class FeedRestDocsFields {
     static List<FieldDescriptor> feedFields(String prefix) {
         return applyPathPrefix(prefix, List.of(
                 fieldWithPath("feedId").type(NUMBER).description("피드 ID"),
+                fieldWithPath("title").type(STRING).description("피드 제목"),
                 fieldWithPath("content").type(STRING).description("Markdown 본문"),
                 fieldWithPath("author").type(OBJECT).description("현재 작성자 프로필"),
                 fieldWithPath("author.handle").type(STRING).description("작성자 핸들"),
@@ -61,6 +62,7 @@ final class FeedRestDocsFields {
         fields.add(fieldWithPath("data").type(OBJECT).description("피드"));
         fields.addAll(applyPathPrefix(prefix, List.of(
                 fieldWithPath("feedId").type(NUMBER).description("피드 ID"),
+                fieldWithPath("title").type(STRING).description("피드 제목"),
                 fieldWithPath("content").type(STRING).description("Markdown 본문"),
                 fieldWithPath("author").type(OBJECT).description("현재 작성자 프로필"),
                 fieldWithPath("author.handle").type(STRING).description("작성자 핸들"),

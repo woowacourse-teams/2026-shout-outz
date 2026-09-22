@@ -81,13 +81,16 @@ class FeedRepositoryIntegrationTest {
                 FeedSort.LATEST,
                 null,
                 null,
+                null,
                 2
         );
         List<FeedItem> secondSlice = feedQueryRepository.findAll(
                 FeedSort.LATEST,
                 null,
+                null,
                 new FeedCursor(
                         FeedSort.LATEST,
+                        0,
                         0L,
                         firstSlice.get(1).createdAt(),
                         firstSlice.get(1).feedId()
@@ -97,12 +100,13 @@ class FeedRepositoryIntegrationTest {
         assertThat(firstSlice).extracting(FeedItem::feedId)
                 .containsExactly(latest.getId(), middle.getId());
         assertThat(secondSlice).extracting(FeedItem::feedId).containsExactly(oldest.getId());
-        assertThat(feedQueryRepository.findAll(FeedSort.LATEST, categoryId, null, 10))
+        assertThat(feedQueryRepository.findAll(FeedSort.LATEST, categoryId, null, null, 10))
                 .extracting(FeedItem::feedId)
                 .containsExactly(latest.getId(), middle.getId(), oldest.getId());
         assertThat(feedQueryRepository.findById(deleted.getId())).isEmpty();
 
         FeedItem detail = feedQueryRepository.findById(oldest.getId()).orElseThrow();
+        assertThat(detail.title()).isEqualTo(oldest.getTitle());
         assertThat(detail.categories()).extracting(FeedItem.Category::categoryId)
                 .containsExactly(categoryId);
         assertThat(detail.categories()).extracting(FeedItem.Category::type)
@@ -129,14 +133,17 @@ class FeedRepositoryIntegrationTest {
                 FeedSort.POPULAR,
                 null,
                 null,
+                null,
                 1
         );
         FeedItem firstItem = firstSlice.getFirst();
         List<FeedItem> secondSlice = feedQueryRepository.findAll(
                 FeedSort.POPULAR,
                 null,
+                null,
                 new FeedCursor(
                         FeedSort.POPULAR,
+                        0,
                         firstItem.likeCount(),
                         firstItem.createdAt(),
                         firstItem.feedId()
@@ -149,6 +156,150 @@ class FeedRepositoryIntegrationTest {
         assertThat(firstItem.likeCount()).isEqualTo(2L);
         assertThat(secondSlice).extracting(FeedItem::feedId)
                 .containsExactly(olderPopular.getId(), noLike.getId());
+    }
+
+    @Test
+    void 제목과_본문을_검색해_정확도순과_최신순으로_조회한다() {
+        long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
+        long categoryId = insertCategory(true);
+        long otherCategoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed exact = saveFeed(authorId, "우테코", "본문", base, categoryId);
+        Feed olderPrefix = saveFeed(
+                authorId,
+                "우테코 이전 이야기",
+                "본문",
+                base.plus(1, ChronoUnit.HOURS),
+                categoryId
+        );
+        Feed latestPrefix = saveFeed(
+                authorId,
+                "우테코 최신 이야기",
+                "본문",
+                base.plus(2, ChronoUnit.HOURS),
+                categoryId
+        );
+        Feed titleContains = saveFeed(
+                authorId,
+                "함께한 우테코 회고",
+                "본문",
+                base.plus(3, ChronoUnit.HOURS),
+                categoryId
+        );
+        Feed contentContains = saveFeed(
+                authorId,
+                "다른 제목",
+                "우테코 본문",
+                base.plus(4, ChronoUnit.HOURS),
+                categoryId
+        );
+        saveFeed(authorId, "검색 제외", "다른 본문", base.plus(5, ChronoUnit.HOURS), categoryId);
+        saveFeed(
+                authorId,
+                "우테코 다른 카테고리",
+                "본문",
+                base.plus(6, ChronoUnit.HOURS),
+                otherCategoryId
+        );
+        Feed deleted = saveFeed(
+                authorId,
+                "우테코 삭제 피드",
+                "본문",
+                base.plus(7, ChronoUnit.HOURS),
+                categoryId
+        );
+        feedRepository.update(deleted.delete(base.plus(8, ChronoUnit.HOURS)));
+
+        List<FeedItem> firstPage = feedQueryRepository.findAll(
+                FeedSort.RELEVANCE,
+                categoryId,
+                "우테코",
+                null,
+                2
+        );
+        FeedItem lastItem = firstPage.getLast();
+        List<FeedItem> secondPage = feedQueryRepository.findAll(
+                FeedSort.RELEVANCE,
+                categoryId,
+                "우테코",
+                new FeedCursor(
+                        FeedSort.RELEVANCE,
+                        lastItem.relevanceRank(),
+                        0L,
+                        lastItem.createdAt(),
+                        lastItem.feedId()
+                ),
+                10
+        );
+
+        assertThat(firstPage).extracting(FeedItem::feedId)
+                .containsExactly(exact.getId(), latestPrefix.getId());
+        assertThat(secondPage).extracting(FeedItem::feedId)
+                .containsExactly(
+                        olderPrefix.getId(),
+                        titleContains.getId(),
+                        contentContains.getId()
+                );
+        assertThat(firstPage).extracting(FeedItem::relevanceRank).containsExactly(0, 1);
+        assertThat(secondPage).extracting(FeedItem::relevanceRank).containsExactly(1, 2, 3);
+    }
+
+    @Test
+    void LIKE_와일드카드를_일반_문자로_검색한다() {
+        long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed percent = saveFeed(authorId, "진행률 100%", "본문", base, categoryId);
+        Feed underscore = saveFeed(authorId, "검색_대상", "본문", base, categoryId);
+        Feed backslash = saveFeed(authorId, "경로\\검색", "본문", base, categoryId);
+        saveFeed(authorId, "진행률 1000", "검색대상", base, categoryId);
+
+        assertThat(feedQueryRepository.findAll(
+                FeedSort.RELEVANCE, categoryId, "%", null, 10
+        )).extracting(FeedItem::feedId).containsExactly(percent.getId());
+        assertThat(feedQueryRepository.findAll(
+                FeedSort.RELEVANCE, categoryId, "_", null, 10
+        )).extracting(FeedItem::feedId).containsExactly(underscore.getId());
+        assertThat(feedQueryRepository.findAll(
+                FeedSort.RELEVANCE, categoryId, "\\", null, 10
+        )).extracting(FeedItem::feedId).containsExactly(backslash.getId());
+    }
+
+    @Test
+    void 피드_제목_자동완성_후보를_중복_없이_정확도순으로_조회한다() {
+        long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        saveFeed(authorId, "우테코", "본문", base, categoryId);
+        saveFeed(authorId, "우테코 회고", "본문", base.plus(1, ChronoUnit.HOURS), categoryId);
+        saveFeed(authorId, "우테코 회고", "다른 본문", base.plus(2, ChronoUnit.HOURS), categoryId);
+        saveFeed(authorId, "함께한 우테코 이야기", "본문", base.plus(3, ChronoUnit.HOURS), categoryId);
+        Feed deleted = saveFeed(
+                authorId,
+                "우테코 삭제",
+                "본문",
+                base.plus(4, ChronoUnit.HOURS),
+                categoryId
+        );
+        feedRepository.update(deleted.delete(base.plus(5, ChronoUnit.HOURS)));
+
+        List<String> suggestions = feedQueryRepository.findTitleSuggestions("우테코", 10);
+
+        assertThat(suggestions).containsExactly("우테코", "우테코 회고", "함께한 우테코 이야기");
+        assertThat(feedQueryRepository.findTitleSuggestions("우테코", 2))
+                .containsExactly("우테코", "우테코 회고");
+    }
+
+    @Test
+    void 제목_자동완성에서도_LIKE_와일드카드를_일반_문자로_검색한다() {
+        long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        saveFeed(authorId, "진행률 100%", "본문", base, categoryId);
+        saveFeed(authorId, "진행률 1000", "본문", base, categoryId);
+
+        assertThat(feedQueryRepository.findTitleSuggestions("100%", 10))
+                .containsExactly("진행률 100%");
     }
 
     @Test
@@ -171,7 +322,7 @@ class FeedRepositoryIntegrationTest {
         FeedItem lastItem = firstPage.getLast();
         List<FeedItem> secondPage = feedQueryRepository.findAllByAuthorId(
                 authorId,
-                new FeedCursor(FeedSort.LATEST, 0L, lastItem.createdAt(), lastItem.feedId()),
+                new FeedCursor(FeedSort.LATEST, 0, 0L, lastItem.createdAt(), lastItem.feedId()),
                 2
         );
 
@@ -183,7 +334,18 @@ class FeedRepositoryIntegrationTest {
     }
 
     private Feed saveFeed(long authorId, String content, Instant createdAt, long categoryId, long... mediaIds) {
-        Feed feed = feedRepository.save(Feed.create(authorId, content, createdAt));
+        return saveFeed(authorId, "제목 " + content, content, createdAt, categoryId, mediaIds);
+    }
+
+    private Feed saveFeed(
+            long authorId,
+            String title,
+            String content,
+            Instant createdAt,
+            long categoryId,
+            long... mediaIds
+    ) {
+        Feed feed = feedRepository.save(Feed.create(authorId, title, content, createdAt));
         feedRepository.saveCategories(feed.getId(), List.of(categoryId));
         feedRepository.saveMedia(feed.getId(), java.util.Arrays.stream(mediaIds).boxed().toList());
         return feed;

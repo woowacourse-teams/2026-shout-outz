@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.category.domain.CategoryRepository;
 import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
 import com.shoutoutz.api.feed.application.dto.FeedCursor;
@@ -17,6 +18,7 @@ import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
+import com.shoutoutz.api.feed.presentation.dto.request.FeedSuggestionRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
@@ -94,6 +96,7 @@ class FeedServiceQueryTest {
     void size보다_한_건_더_조회해_다음_슬라이스_커서를_만든다() {
         FeedCursor cursor = new FeedCursor(
                 FeedSort.LATEST,
+                0,
                 0L,
                 Instant.parse("2026-09-12T00:00:00Z"),
                 4L
@@ -101,6 +104,7 @@ class FeedServiceQueryTest {
         FeedFindAllRequest request = new FeedFindAllRequest(
                 FeedSort.LATEST,
                 1L,
+                null,
                 cursorCodec.encode(cursor),
                 2
         );
@@ -109,7 +113,7 @@ class FeedServiceQueryTest {
                 feed(2L, "2026-09-10T00:00:00Z"),
                 feed(1L, "2026-09-09T00:00:00Z")
         );
-        when(feedQueryRepository.findAll(FeedSort.LATEST, 1L, cursor, 3))
+        when(feedQueryRepository.findAll(FeedSort.LATEST, 1L, null, cursor, 3))
                 .thenReturn(queried);
 
         FeedFindAllResult result = feedService.findAllFeed(request);
@@ -119,17 +123,18 @@ class FeedServiceQueryTest {
         assertThat(cursorCodec.decode(result.nextCursor(), FeedSort.LATEST))
                 .isEqualTo(new FeedCursor(
                         FeedSort.LATEST,
+                        0,
                         0L,
                         queried.get(1).createdAt(),
                         2L
                 ));
-        verify(feedQueryRepository).findAll(FeedSort.LATEST, 1L, cursor, 3);
+        verify(feedQueryRepository).findAll(FeedSort.LATEST, 1L, null, cursor, 3);
     }
 
     @Test
     void 다음_슬라이스가_없으면_커서를_반환하지_않는다() {
-        FeedFindAllRequest request = new FeedFindAllRequest(null, null, null, 2);
-        when(feedQueryRepository.findAll(FeedSort.LATEST, null, null, 3))
+        FeedFindAllRequest request = new FeedFindAllRequest(null, null, null, null, 2);
+        when(feedQueryRepository.findAll(FeedSort.LATEST, null, null, null, 3))
                 .thenReturn(List.of(feed(1L, "2026-09-11T00:00:00Z")));
 
         FeedFindAllResult result = feedService.findAllFeed(request);
@@ -144,25 +149,93 @@ class FeedServiceQueryTest {
                 FeedSort.POPULAR,
                 null,
                 null,
+                null,
                 2
         );
         List<FeedItem> queried = List.of(
                 feed(2L, "2026-09-10T00:00:00Z", 5L),
                 feed(1L, "2026-09-09T00:00:00Z", 3L)
         );
-        when(feedQueryRepository.findAll(FeedSort.POPULAR, null, null, 3))
+        when(feedQueryRepository.findAll(FeedSort.POPULAR, null, null, null, 3))
                 .thenReturn(queried);
 
         FeedFindAllResult result = feedService.findAllFeed(request);
 
         assertThat(result.items()).containsExactlyElementsOf(queried);
-        verify(feedQueryRepository).findAll(FeedSort.POPULAR, null, null, 3);
+        verify(feedQueryRepository).findAll(FeedSort.POPULAR, null, null, null, 3);
+    }
+
+    @Test
+    void 검색어가_있으면_정확도순으로_조회한다() {
+        FeedFindAllRequest request = new FeedFindAllRequest(
+                null,
+                1L,
+                " 검색어 ",
+                null,
+                2
+        );
+        List<FeedItem> queried = List.of(feed(1L, "2026-09-11T00:00:00Z"));
+        when(feedQueryRepository.findAll(
+                FeedSort.RELEVANCE,
+                1L,
+                "검색어",
+                null,
+                3
+        )).thenReturn(queried);
+
+        FeedFindAllResult result = feedService.findAllFeed(request);
+
+        assertThat(result.items()).containsExactlyElementsOf(queried);
+        verify(feedQueryRepository).findAll(
+                FeedSort.RELEVANCE,
+                1L,
+                "검색어",
+                null,
+                3
+        );
+    }
+
+    @Test
+    void 검색어와_정렬_조건의_잘못된_조합을_거부한다() {
+        FeedFindAllRequest latestSearch = new FeedFindAllRequest(
+                FeedSort.LATEST,
+                null,
+                "검색어",
+                null,
+                20
+        );
+        FeedFindAllRequest relevanceWithoutKeyword = new FeedFindAllRequest(
+                FeedSort.RELEVANCE,
+                null,
+                null,
+                null,
+                20
+        );
+
+        assertThatThrownBy(() -> feedService.findAllFeed(latestSearch))
+                .isInstanceOf(BadRequestException.class);
+        assertThatThrownBy(() -> feedService.findAllFeed(relevanceWithoutKeyword))
+                .isInstanceOf(BadRequestException.class);
+        verifyNoInteractions(feedQueryRepository);
+    }
+
+    @Test
+    void 피드_제목_자동완성_후보를_조회한다() {
+        FeedSuggestionRequest request = new FeedSuggestionRequest(" 우테코 ", null);
+        when(feedQueryRepository.findTitleSuggestions("우테코", 10))
+                .thenReturn(List.of("우테코", "우테코 회고"));
+
+        List<String> result = feedService.findTitleSuggestions(request);
+
+        assertThat(result).containsExactly("우테코", "우테코 회고");
+        verify(feedQueryRepository).findTitleSuggestions("우테코", 10);
     }
 
     @Test
     void 사용자가_작성한_피드를_최신순_커서로_조회한다() {
         FeedCursor cursor = new FeedCursor(
                 FeedSort.LATEST,
+                0,
                 0L,
                 Instant.parse("2026-09-12T00:00:00Z"),
                 4L
@@ -187,6 +260,7 @@ class FeedServiceQueryTest {
         assertThat(cursorCodec.decode(result.nextCursor(), FeedSort.LATEST))
                 .isEqualTo(new FeedCursor(
                         FeedSort.LATEST,
+                        0,
                         0L,
                         queried.get(1).createdAt(),
                         queried.get(1).feedId()
@@ -247,6 +321,7 @@ class FeedServiceQueryTest {
         Instant instant = Instant.parse(createdAt);
         return new FeedItem(
                 id,
+                "제목 " + id,
                 "본문 " + id,
                 new FeedItem.Author(
                         "zzaekkii",
@@ -260,6 +335,7 @@ class FeedServiceQueryTest {
                 List.of(),
                 likeCount,
                 0L,
+                0,
                 instant,
                 instant
         );
