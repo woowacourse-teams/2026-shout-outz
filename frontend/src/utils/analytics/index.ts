@@ -1,5 +1,6 @@
 import { consoleAdapter } from '@/utils/analytics/console-adapter';
 import { createAnalytics } from '@/utils/analytics/create-analytics';
+import { posthogAdapter } from '@/utils/analytics/posthog-adapter';
 import { type AnalyticsAdapter } from '@/utils/analytics/types';
 
 export { createAnalytics } from '@/utils/analytics/create-analytics';
@@ -15,13 +16,22 @@ export type {
 
 const MOBILE_MAX_WIDTH = 768;
 
-// TODO 수집 도구가 정해지면 여기에 어댑터를 추가
-const adapters: AnalyticsAdapter[] =
-  process.env.NODE_ENV === 'development' ? [consoleAdapter()] : [];
+const POSTHOG_KEY = process.env.POSTHOG_KEY;
+const POSTHOG_HOST = process.env.POSTHOG_HOST ?? 'https://us.i.posthog.com';
+
+const isBrowser = typeof window !== 'undefined';
+
+function createAdapters(): AnalyticsAdapter[] {
+  if (!isBrowser) return [];
+  if (POSTHOG_KEY) return [posthogAdapter({ key: POSTHOG_KEY, host: POSTHOG_HOST })];
+  if (process.env.NODE_ENV === 'development') return [consoleAdapter()];
+
+  return [];
+}
 
 // 최종적으로 사용할 객체
 export const analytics = createAnalytics({
-  adapters,
+  adapters: createAdapters(),
   getContext: () => ({
     path: typeof window === 'undefined' ? '' : window.location.pathname + window.location.search,
     viewport:

@@ -16,7 +16,7 @@ const config = {
   dotenv: {
     dir: __dirname,
     template: ['src/.env', '.env'],
-    prefix: 'API_ORIGIN',
+    prefix: ['API_ORIGIN', 'POSTHOG_'],
   },
   entry: './ssg/client.tsx',
   // 타입 검사 플러그인의 디렉터리 감시에도 적용해 의존성과 생성물을 제외합니다.
