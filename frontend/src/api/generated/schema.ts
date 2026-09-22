@@ -384,6 +384,8 @@ export interface FeedCommentFindAllSuccessResponse {
   data: {
     /** 댓글 작성자 */
     author: {
+      /** 작성자 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 작성자 표시 이름 */
@@ -462,6 +464,8 @@ export interface FeedFindAllSuccessResponse {
   data: {
     /** 현재 작성자 프로필 */
     author: {
+      /** 현재 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** 현재 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 작성자 기수 */
@@ -496,6 +500,8 @@ export interface FeedFindAllSuccessResponse {
     media: {
       /** 미디어 표시 순서 */
       displayOrder: number;
+      /** 본문 미디어 ID */
+      mediaId: number;
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
@@ -519,6 +525,8 @@ export interface FeedFindSuccessResponse {
   data: {
     /** 현재 작성자 프로필 */
     author: {
+      /** 현재 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** 현재 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 작성자 기수 */
@@ -553,6 +561,8 @@ export interface FeedFindSuccessResponse {
     media: {
       /** 미디어 표시 순서 */
       displayOrder: number;
+      /** 본문 미디어 ID */
+      mediaId: number;
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
@@ -683,6 +693,199 @@ export interface FeedUpdateSuccessResponse {
   status: string;
 }
 
+/** HomeBannerAdminFindAllSuccessResponse */
+export interface HomeBannerAdminFindAllSuccessResponse {
+  /** 홈 배너 데이터 */
+  data: {
+    /** 활성 여부 */
+    active: boolean;
+    /** 배너 ID */
+    bannerId: number;
+    /** 생성 시각 */
+    createdAt: string;
+    /** 등록 관리자 ID */
+    createdBy: number;
+    /** 이동 방식 */
+    destinationType: "TARGET" | "URL";
+    /** 표시 순서 */
+    displayOrder: number;
+    /** 표시용 이미지 URL */
+    imageUrl: string;
+    /** URL 유형 */
+    linkType?: "INTERNAL_PATH" | "EXTERNAL_URL" | null;
+    /** 내부 경로 또는 외부 HTTPS URL */
+    linkUrl?: string | null;
+    /** 미디어 ID */
+    mediaId: number;
+    /** 대상 리소스 ID */
+    targetId?: number | null;
+    /** 대상 리소스 유형 */
+    targetType?: "NEWS" | "PROJECT" | "FEED" | null;
+    /** 수정 시각 */
+    updatedAt: string;
+  }[];
+  /** 응답 상태 */
+  status: string;
+}
+
+/** HomeBannerAdminSaveSuccessResponse */
+export interface HomeBannerAdminSaveSuccessResponse {
+  /** 홈 배너 데이터 */
+  data: {
+    /** 활성 여부 */
+    active: boolean;
+    /** 배너 ID */
+    bannerId: number;
+    /** 생성 시각 */
+    createdAt: string;
+    /** 등록 관리자 ID */
+    createdBy: number;
+    /** 이동 방식 */
+    destinationType: "TARGET" | "URL";
+    /** 표시 순서 */
+    displayOrder: number;
+    /** 표시용 이미지 URL */
+    imageUrl: string;
+    /** URL 유형 */
+    linkType?: "INTERNAL_PATH" | "EXTERNAL_URL" | null;
+    /** 내부 경로 또는 외부 HTTPS URL */
+    linkUrl?: string | null;
+    /** 미디어 ID */
+    mediaId: number;
+    /** 대상 리소스 ID */
+    targetId?: number | null;
+    /** 대상 리소스 유형 */
+    targetType?: "NEWS" | "PROJECT" | "FEED" | null;
+    /** 수정 시각 */
+    updatedAt: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** HomeBannerAdminUpdateSuccessResponse */
+export interface HomeBannerAdminUpdateSuccessResponse {
+  /** 홈 배너 데이터 */
+  data: {
+    /** 활성 여부 */
+    active: boolean;
+    /** 배너 ID */
+    bannerId: number;
+    /** 생성 시각 */
+    createdAt: string;
+    /** 등록 관리자 ID */
+    createdBy: number;
+    /** 이동 방식 */
+    destinationType: "TARGET" | "URL";
+    /** 표시 순서 */
+    displayOrder: number;
+    /** 표시용 이미지 URL */
+    imageUrl: string;
+    /** URL 유형 */
+    linkType?: "INTERNAL_PATH" | "EXTERNAL_URL" | null;
+    /** 내부 경로 또는 외부 HTTPS URL */
+    linkUrl?: string | null;
+    /** 미디어 ID */
+    mediaId: number;
+    /** 대상 리소스 ID */
+    targetId?: number | null;
+    /** 대상 리소스 유형 */
+    targetType?: "NEWS" | "PROJECT" | "FEED" | null;
+    /** 수정 시각 */
+    updatedAt: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** HomeBannerDeleteSuccessResponse */
+export interface HomeBannerDeleteSuccessResponse {
+  /** 삭제 결과 */
+  data: {
+    /** 삭제한 홈 배너 ID */
+    id: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** HomeBannerFindAllSuccessResponse */
+export interface HomeBannerFindAllSuccessResponse {
+  /** 활성 홈 배너 목록 */
+  data: {
+    /** 배너 ID */
+    bannerId: number;
+    /** 이동 방식 */
+    destinationType: "TARGET" | "URL";
+    /** 표시용 이미지 URL */
+    imageUrl: string;
+    /** URL 유형 */
+    linkType?: "INTERNAL_PATH" | "EXTERNAL_URL" | null;
+    /** 내부 경로 또는 외부 HTTPS URL */
+    linkUrl?: string | null;
+    /** 배너 이미지 미디어 ID */
+    mediaId: number;
+    /** 대상 리소스 ID */
+    targetId?: number | null;
+    /** 대상 리소스 유형 */
+    targetType?: "NEWS" | "PROJECT" | "FEED" | null;
+  }[];
+  /** 응답 상태 */
+  status: string;
+}
+
+/** HomeBannerUpsertRequest */
+export interface HomeBannerUpsertRequest {
+  /** 즉시 노출 여부 */
+  active: boolean;
+  /** 이동 방식 */
+  destinationType: "TARGET" | "URL";
+  /** 0 이상 표시 순서 */
+  displayOrder: number;
+  /** URL 유형 */
+  linkType?: "INTERNAL_PATH" | "EXTERNAL_URL" | null;
+  /** 내부 경로 또는 외부 HTTPS URL */
+  linkUrl?: string | null;
+  /** READY HOME_BANNER 미디어 ID */
+  mediaId: number;
+  /** 대상 리소스 ID */
+  targetId?: number | null;
+  /** 대상 리소스 유형 */
+  targetType?: "NEWS" | "PROJECT" | "FEED" | null;
+}
+
+/** HomeStatisticsSuccessResponse */
+export interface HomeStatisticsSuccessResponse {
+  /** 홈 통계 */
+  data: {
+    /** 전체 기수 개수 */
+    currentCohort: number;
+    /** 삭제되지 않은 피드 수 */
+    feedCount: number;
+    /** 조회 시각에 진행 중인 삭제되지 않은 이벤트 수 */
+    ongoingEventCount: number;
+    /** 승인되었고 삭제되지 않은 프로젝트 수 */
+    projectCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** NewsDeleteSuccessResponse */
+export interface NewsDeleteSuccessResponse {
+  /** 삭제 결과 */
+  data: {
+    /** 삭제 시각 */
+    deletedAt: string;
+    /** 삭제한 소식 ID */
+    id: number;
+  };
+  /** 메타 정보 */
+  meta?: object | null;
+  /** 응답 상태 */
+  status: string;
+}
+
 /** NewsFindAllSuccessResponse */
 export interface NewsFindAllSuccessResponse {
   /** 소식 목록 */
@@ -771,6 +974,74 @@ export interface NewsFindDetailSuccessResponse {
     };
     /** 게시 시각 */
     publishedAt: string;
+    /** 소식 제목 */
+    title: string;
+    /** 소식 유형 */
+    type: "NOTICE" | "EVENT";
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** NewsUpdateRequest */
+export interface NewsUpdateRequest {
+  /** 표시 작성자 이름 */
+  authorName: string;
+  /** 소식 본문 */
+  body: string;
+  /** CTA. 삭제할 때 null */
+  cta?: {
+    /** CTA 라벨 */
+    label?: string | null;
+    /** CTA URL */
+    url?: string | null;
+  };
+  /** 이벤트 종료 시각. 공지는 null */
+  eventEndAt?: string | null;
+  /** 이벤트 시작 시각. 공지는 null */
+  eventStartAt?: string | null;
+  /** 소식 요약 */
+  summary: string;
+  /** 소식 제목 */
+  title: string;
+}
+
+/** NewsUpdateSuccessResponse */
+export interface NewsUpdateSuccessResponse {
+  /** 수정된 소식 */
+  data: {
+    /** 작성자 */
+    author: {
+      /** 작성자 이름 */
+      name: string;
+      /** 작성자 ID */
+      userId: number;
+    };
+    /** 소식 본문 */
+    body: string;
+    /** CTA */
+    cta?: {
+      /** CTA 라벨 */
+      label?: string | null;
+      /** CTA URL */
+      url?: string | null;
+    };
+    /** 이벤트 종료 시각 */
+    eventEndAt?: string | null;
+    /** 이벤트 시작 시각 */
+    eventStartAt?: string | null;
+    /** 이벤트 상태. 공지는 null */
+    eventStatus?: string | null;
+    /** 소식 ID */
+    id: number;
+    /** 고정 여부 */
+    isPinned: boolean;
+    /** 고정 순서 */
+    pinOrder?: number | null;
+    /** 게시 시각 */
+    publishedAt: string;
+    /** 소식 요약 */
+    summary: string;
     /** 소식 제목 */
     title: string;
     /** 소식 유형 */
@@ -914,6 +1185,8 @@ export interface ProjectCommentFindAllSuccessResponse {
   data: {
     /** 댓글 작성자 */
     author: {
+      /** 작성자 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 작성자 표시 이름 */
@@ -1005,7 +1278,7 @@ export interface ProjectCreateRequest {
   /** 선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다. */
   techTagIds: number[];
   /** 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID */
-  thumbnailMediaId?: number | null;
+  thumbnailImageId?: number | null;
   /** 프로젝트 이름 (100자 이하) */
   title: string;
 }
@@ -1083,6 +1356,8 @@ export interface ProjectFindAllSuccessResponse {
     likeCount: number;
     /** 팀원 전체 목록. 상세 조회의 members와 같은 규칙이며, 등록 순서대로 정렬한다. */
     members: {
+      /** 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** CloudFront에서 제공하는 공개 프로필 이미지 URL */
       avatarUrl?: string | null;
       /** 기수. 가입하지 않은 이관 팀원은 프로젝트 기수다. */
@@ -1097,8 +1372,6 @@ export interface ProjectFindAllSuccessResponse {
       handle?: string | null;
       /** 트랙 */
       track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
-      /** 사용자 ID. 가입하지 않은 이관 팀원은 null이다. */
-      userId?: number | null;
     }[];
     /** 프로젝트 주소로 쓰이는 slug */
     slug: string;
@@ -1113,6 +1386,8 @@ export interface ProjectFindAllSuccessResponse {
       /** 기술 스택 ID */
       id: number;
     }[];
+    /** 프로젝트 썸네일 미디어 ID */
+    thumbnailImageId?: number | null;
     /** CloudFront에서 제공하는 공개 썸네일 URL */
     thumbnailUrl?: string | null;
     /** 프로젝트 이름 */
@@ -1151,6 +1426,15 @@ export interface ProjectFindDetailSuccessResponse {
     deploymentUrl?: string | null;
     /** 프로젝트 설명 마크다운. 본문 이미지 참조는 공개 URL로 변환되어 있다. */
     descriptionMd?: string | null;
+    /** 본문 이미지의 미디어 ID와 공개 URL 매핑 */
+    descriptionMedia: {
+      /** 본문 이미지 미디어 ID */
+      mediaId: number;
+      /** 본문 이미지 공개 URL */
+      url: string;
+    }[];
+    /** 요청자가 등록자 본인인지 여부. 수정·삭제할 수 있는 사용자에게만 true다. 비로그인이거나 이전 기수에서 이관된 프로젝트면 false다. */
+    editable: boolean;
     /** GitHub 리포지토리 URL */
     githubRepositoryUrl: string;
     /** 프로젝트 ID */
@@ -1161,8 +1445,10 @@ export interface ProjectFindDetailSuccessResponse {
     likeCount: number;
     /** 요청자의 좋아요 여부. 비로그인이면 false다. */
     likedByMe: boolean;
-    /** 팀원 목록. 신규 프로젝트는 등록 순서대로이며 등록자가 첫 번째다. userId가 registeredBy와 같은 팀원이 작성자다. */
+    /** 팀원 목록. 신규 프로젝트는 등록 순서대로이며 등록자가 첫 번째다. */
     members: {
+      /** 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** CloudFront에서 제공하는 공개 프로필 이미지 URL */
       avatarUrl?: string | null;
       /** 기수. 가입하지 않은 이관 팀원은 프로젝트 기수다. */
@@ -1177,11 +1463,7 @@ export interface ProjectFindDetailSuccessResponse {
       handle?: string | null;
       /** 트랙 */
       track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
-      /** 사용자 ID. 가입하지 않은 이관 팀원은 null이다. */
-      userId?: number | null;
     }[];
-    /** 등록자 사용자 ID. null이면 이전 기수에서 이관된 프로젝트다. */
-    registeredBy?: number | null;
     /** 반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다. */
     rejectReason?: string | null;
     /** 운영 상태 */
@@ -1201,6 +1483,8 @@ export interface ProjectFindDetailSuccessResponse {
       /** 기술 스택 ID */
       id: number;
     }[];
+    /** 프로젝트 썸네일 미디어 ID */
+    thumbnailImageId?: number | null;
     /** 프로젝트 이름 */
     title: string;
     /** 수정 시각 */
@@ -1331,6 +1615,8 @@ export interface UserFeedFindAllSuccessResponse {
   data: {
     /** 현재 작성자 프로필 */
     author: {
+      /** 현재 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** 현재 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 작성자 기수 */
@@ -1369,6 +1655,8 @@ export interface UserFeedFindAllSuccessResponse {
     media: {
       /** 미디어 표시 순서 */
       displayOrder: number;
+      /** 본문 미디어 ID */
+      mediaId: number;
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
@@ -1390,6 +1678,8 @@ export interface UserFeedFindAllSuccessResponse {
 export interface UserProfileSuccessResponse {
   /** 사용자 공개 프로필 */
   data: {
+    /** 프로필 이미지 미디어 ID */
+    avatarImageId?: number | null;
     /** 프로필 이미지 공개 URL */
     avatarUrl?: string | null;
     /** 한 줄 소개 */
@@ -1424,6 +1714,8 @@ export interface UserProfileSuccessResponse {
 export interface UserProfileSummarySuccessResponse {
   /** 프로필 요약 정보 */
   data: {
+    /** 프로필 이미지 미디어 ID */
+    avatarImageId?: number | null;
     /** 프로필 이미지 공개 URL */
     avatarUrl?: string | null;
     /** 표시 이름 */
@@ -1490,6 +1782,8 @@ export interface UserProjectFindAllSuccessResponse {
     likeCount: number;
     /** 프로젝트 팀원 */
     members: {
+      /** 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** CloudFront에서 제공하는 공개 프로필 이미지 URL */
       avatarUrl?: string | null;
       /** 기수 */
@@ -1522,6 +1816,8 @@ export interface UserProjectFindAllSuccessResponse {
       /** 기술 스택 ID */
       id: number;
     }[];
+    /** 프로젝트 썸네일 이미지 ID */
+    thumbnailImageId?: number | null;
     /** CloudFront에서 제공하는 공개 썸네일 URL */
     thumbnailUrl?: string | null;
     /** 프로젝트 이름 */
@@ -1544,6 +1840,8 @@ export interface UserSearchSuccessResponse {
   data: {
     /** 검색된 크루와 코치 */
     items: {
+      /** 프로필 이미지 미디어 ID */
+      avatarImageId?: number | null;
       /** 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 우테코 기수 */
@@ -1629,23 +1927,4 @@ export interface UserVerificationRequestSuccessResponse {
   };
   /** 응답 상태 */
   status: string;
-}
-
-/** VisitorCreateSuccessResponse */
-export interface VisitorCreateSuccessResponse {
-  /** 생성된 방문자 정보 */
-  data: {
-    /** 방문자 예시 값 */
-    example: string;
-    /** 방문자 ID */
-    id: number;
-  };
-  /** 응답 상태 */
-  status: string;
-}
-
-/** VisitorSaveRequest */
-export interface VisitorSaveRequest {
-  /** 방문자 예시 값 */
-  example: string;
 }

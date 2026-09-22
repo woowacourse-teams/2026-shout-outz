@@ -1,20 +1,13 @@
 import { queryOptions } from '@tanstack/react-query';
 import { httpClient } from '@/utils/client';
+import type {
+  UserProfileSuccessResponse,
+  UserProfileSummarySuccessResponse,
+} from '@/api/generated/schema';
 
-interface ProfileSummary {
-  handle: string;
-  displayName: string;
-  avatarUrl: string | null;
-}
-
-interface MyProfile extends ProfileSummary {
-  userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
-  track: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
-  cohort: number | null;
-}
-
+/** 마이페이지 조회(`GET /api/v1/users/me`)는 공개 프로필과 같은 `UserProfileSuccessResponse`를 준다. */
 export async function fetchMyProfile(signal?: AbortSignal) {
-  const response = await httpClient<{ status: 'success'; data: MyProfile }>('/api/v1/users/me', {
+  const response = await httpClient<UserProfileSuccessResponse>('/api/v1/users/me', {
     method: 'get',
     signal,
   });
@@ -29,10 +22,10 @@ export const myProfileQuery = (userId: number) =>
   });
 
 export async function fetchMyProfileSummary(signal?: AbortSignal) {
-  const response = await httpClient<{ status: 'success'; data: ProfileSummary }>(
-    '/api/v1/users/me/summary',
-    { method: 'get', signal },
-  );
+  const response = await httpClient<UserProfileSummarySuccessResponse>('/api/v1/users/me/summary', {
+    method: 'get',
+    signal,
+  });
   if (!response) throw new Error('프로필 응답이 비어 있습니다.');
   return response.data;
 }

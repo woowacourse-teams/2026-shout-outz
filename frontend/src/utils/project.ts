@@ -63,7 +63,7 @@ export function toProjectCreateRequest(values: ProjectFormValues): ProjectCreate
     teamName: values.teamName.trim(),
     tagline: values.tagline.trim(),
     cohort: values.cohort,
-    thumbnailMediaId: values.thumbnailMediaId,
+    thumbnailImageId: values.thumbnailImageId,
     githubRepositoryUrl: values.githubRepositoryUrl.trim(),
     deploymentUrl: values.deploymentUrl.trim() || null,
     descriptionMd: values.descriptionMd.trim(),

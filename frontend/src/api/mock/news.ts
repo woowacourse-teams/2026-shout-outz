@@ -13,6 +13,7 @@ const NEWS: NewsSummary[] = [
     title: '우아한테크코스 6기 최종 프로젝트 데모데이 일정 및 참관 안내',
     summary: '6기 크루들이 준비한 최종 프로젝트 데모데이가 오는 9월 진행됩니다.',
     publishedAt: '2026-08-25T10:00:00+09:00',
+    isPinned: false,
   },
   {
     id: 2,
@@ -21,6 +22,7 @@ const NEWS: NewsSummary[] = [
     summary:
       '지금 팀 프로젝트를 등록하면 전체 크루 피드백과 함께 우테코 공식 굿즈팩을 선물로 드립니다.',
     publishedAt: '2026-08-25T10:00:00+09:00',
+    isPinned: false,
   },
   {
     id: 3,
@@ -28,6 +30,7 @@ const NEWS: NewsSummary[] = [
     title: '주간 베스트 기술 회고 피드 선정 - 커피 쿠폰 증정',
     summary: '매주 좋아요 TOP 3 피드 작성자에게 커피 쿠폰을 드립니다.',
     publishedAt: '2026-08-20T10:00:00+09:00',
+    isPinned: false,
   },
   {
     id: 4,
@@ -35,6 +38,7 @@ const NEWS: NewsSummary[] = [
     title: '[종료] 상반기 크루 스프린트 회고 피드 작성 리워드 이벤트',
     summary: '상반기 동안 우수하게 소통해 준 크루분들에게 감사의 마음을 전했던 이벤트입니다.',
     publishedAt: '2026-07-15T10:00:00+09:00',
+    isPinned: false,
   },
 ];
 
@@ -71,7 +75,7 @@ const CTAS: Record<number, { label: string; url: string }> = {
 };
 
 // 이벤트의 진행 상태. 공지사항은 상태가 없다.
-const EVENT_STATUSES: Record<number, NewsEventStatus | 'ENDED'> = {
+const EVENT_STATUSES: Record<number, NewsEventStatus> = {
   2: 'ONGOING',
   3: 'ONGOING',
   4: 'ENDED',
@@ -79,8 +83,9 @@ const EVENT_STATUSES: Record<number, NewsEventStatus | 'ENDED'> = {
 
 const AUTHOR = { userId: 1, name: '우아한테크코스 운영진' };
 
-const toNavItem = (news: NewsSummary | undefined): NewsNavItem | null =>
-  news ? { id: news.id, title: news.title, publishedAt: news.publishedAt } : null;
+// 상세 응답의 previous·next는 optional이라 없을 때 undefined로 둔다.
+const toNavItem = (news: NewsSummary | undefined): NewsNavItem | undefined =>
+  news ? { id: news.id, title: news.title, publishedAt: news.publishedAt } : undefined;
 
 export function getNewsList(eventStatus?: NewsEventStatus): NewsSummary[] {
   return eventStatus ? NEWS.filter((news) => EVENT_STATUSES[news.id] === eventStatus) : NEWS;
@@ -103,7 +108,8 @@ export function getNewsDetail(newsId: number): NewsDetail | undefined {
     publishedAt: news.publishedAt,
     body: BODIES[newsId] ?? '',
     author: AUTHOR,
-    cta: CTAS[newsId] ?? null,
+    isPinned: news.isPinned,
+    cta: CTAS[newsId],
     previous: toNavItem(NEWS[index + 1]),
     next: toNavItem(NEWS[index - 1]),
   };

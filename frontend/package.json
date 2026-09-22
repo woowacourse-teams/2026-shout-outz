@@ -27,7 +27,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "generate:api": "swagger-typescript-api generate -p http://54.180.242.138:8080/docs/openapi3.yaml -o src/api/generated -n schema.ts --no-client --enum-style=union --sort-types --clean-output"
+    "generate:api": "swagger-typescript-api generate -p http://api.shout-ou.tz:8080/docs/openapi3.yaml -o src/api/generated -n schema.ts --no-client --enum-style=union --sort-types --clean-output"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

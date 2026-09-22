@@ -11,7 +11,7 @@ import { getApiErrorMessage } from '@/utils/error';
 
 export function FeedMenu({ authorHandle, feedId }: { authorHandle: string; feedId: number }) {
   const { data: session } = useSuspenseQuery(sessionQuery);
-  if (session.status !== 'AUTHENTICATED' || session.userId === null) return null;
+  if (session.status !== 'AUTHENTICATED' || session.userId == null) return null;
 
   return <AuthorMenu feedId={feedId} authorHandle={authorHandle} userId={session.userId} />;
 }

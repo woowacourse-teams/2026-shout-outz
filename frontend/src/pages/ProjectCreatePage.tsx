@@ -23,7 +23,7 @@ const EMPTY_FORM: ProjectFormValues = {
   teamName: '',
   tagline: '',
   cohort: null,
-  thumbnailMediaId: null,
+  thumbnailImageId: null,
   githubRepositoryUrl: '',
   deploymentUrl: '',
   descriptionMd: '',
@@ -196,9 +196,9 @@ function ProjectCreateForm() {
               </Field>
 
               <ThumbnailField
-                value={values.thumbnailMediaId}
-                onChange={(mediaId) => setField('thumbnailMediaId', mediaId)}
-                error={errors.thumbnailMediaId}
+                value={values.thumbnailImageId}
+                onChange={(mediaId) => setField('thumbnailImageId', mediaId)}
+                error={errors.thumbnailImageId}
               />
 
               <Field label="GitHub 레포지토리 URL *" error={errors.githubRepositoryUrl}>

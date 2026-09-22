@@ -101,7 +101,7 @@ describe('ProjectCreatePage', () => {
         teamName: FORM.teamName,
         tagline: FORM.tagline,
         cohort: 6,
-        thumbnailMediaId: null,
+        thumbnailImageId: null,
         githubRepositoryUrl: FORM.githubRepositoryUrl,
         deploymentUrl: FORM.deploymentUrl,
         descriptionMd: FORM.descriptionMd,

@@ -40,7 +40,7 @@ export function FeedEditorPage(props: FeedEditorPageProps) {
 
 function AuthenticatedForm(props: FeedEditorPageProps) {
   const { data: session } = useSuspenseQuery(sessionQuery);
-  if (session.status !== 'AUTHENTICATED' || session.userId === null) {
+  if (session.status !== 'AUTHENTICATED' || session.userId == null) {
     return (
       <div className="space-y-4">
         <p className="text-sm text-gray-600">피드를 작성하거나 수정하려면 로그인이 필요합니다.</p>
