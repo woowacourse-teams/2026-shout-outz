@@ -96,6 +96,10 @@ sudo chmod -x /etc/update-motd.d/50-landscape-sysinfo
 
 `fwupd`는 D-Bus로 다시 기동될 수 있다. 이후 `ps aux | grep fwupd`에 다시 보이면 `sudo systemctl mask fwupd.service`로 막는다.
 
+애플리케이션의 힙 상한(`shout-outz-backend.service`의 `-Xmx`)은 위 절차를 적용한 상태를 전제로 계산한 값이다. 현재 `-Xmx320m`은 힙 320MB에 힙 외 영역 약 170MB, OS와 에이전트 약 360MB를 더해 903MB 안에 들어가도록 잡았다. 메모리 확보 절차를 건너뛰면 OS 몫이 460MB로 늘어 이 값으로도 물리 메모리를 초과하므로, 두 가지는 함께 적용해야 한다.
+
+인스턴스 사양을 변경하면 `-Xmx`도 함께 조정한다. 비율 방식(`-XX:MaxRAMPercentage`)과 달리 절대값은 사양 변경을 자동으로 따라가지 않으므로, 메모리를 늘려도 애플리케이션은 기존 상한을 유지한다.
+
 운영 비밀값은 Pipeline이나 BuildArtifact에 포함하지 않고 EC2에만 저장한다.
 
 ```bash
