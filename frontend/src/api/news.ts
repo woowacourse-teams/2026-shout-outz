@@ -6,20 +6,15 @@ import {
   type NewsSort,
   type NewsSummary,
 } from '@/types/news';
-import { type ApiSuccessBody, httpClient } from '@/utils/client';
+import { httpClient } from '@/utils/client';
+import type {
+  NewsFindAllSuccessResponse,
+  NewsFindDetailSuccessResponse,
+} from '@/api/generated/schema';
 
 const NEWS_PATH = '/api/v1/news';
 
-interface NewsListMeta {
-  nextCursor: string | null;
-  hasNext: boolean;
-}
-
-type NewsListResponse = {
-  status: 'success';
-  data: NewsSummary[];
-  meta: NewsListMeta;
-};
+type NewsListResponse = NewsFindAllSuccessResponse;
 
 export async function fetchNewsList(
   type: NewsFilter,
@@ -39,7 +34,7 @@ export async function fetchNewsList(
 export async function fetchNewsDetail(newsId: number): Promise<NewsDetail> {
   const path = `${NEWS_PATH}/${newsId}`;
 
-  const body = await httpClient<ApiSuccessBody<NewsDetail>>(path, { method: 'get' });
+  const body = await httpClient<NewsFindDetailSuccessResponse>(path, { method: 'get' });
   if (!body) throw new Error(`소식 상세 응답이 비어 있습니다: ${path}`);
 
   return body.data;
@@ -55,8 +50,7 @@ export const newsInfiniteQueryOptions = (type: NewsFilter, sort: NewsSort) =>
   infiniteQueryOptions({
     queryKey: ['news', { type, sort }],
     initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam }) =>
-      fetchNewsPage(type, sort, pageParam),
+    queryFn: ({ pageParam }) => fetchNewsPage(type, sort, pageParam),
     getNextPageParam: (last) =>
       last.meta?.hasNext && last.meta.nextCursor ? last.meta.nextCursor : undefined,
   });

@@ -7,7 +7,8 @@ import { analytics } from '@/utils/analytics';
 
 export function AnalyticsIdentifier() {
   const { data: session } = useQuery({ ...sessionQuery, throwOnError: false });
-  const userId = session?.status === 'AUTHENTICATED' ? session.userId : null;
+  // 스키마상 userId가 없을 수 있어 둘 다 확인한다.
+  const userId = session?.status === 'AUTHENTICATED' ? (session.userId ?? null) : null;
 
   const { data: profile } = useQuery({
     ...myProfileSummaryQuery(userId ?? 0),

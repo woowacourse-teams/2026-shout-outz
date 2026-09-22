@@ -13,9 +13,15 @@ spring:
 
 visitor:
   cookie-secure: ${SESSION_COOKIE_SECURE:true}
+  cookie-same-site: ${SESSION_COOKIE_SAME_SITE:None}
 
 server:
+  # 외부 요청은 nginx가 받으므로, 애플리케이션은 루프백에만 열어 직접 접근을 막는다.
+  address: 127.0.0.1
+  # 프록시가 전달하는 X-Forwarded-* 헤더를 신뢰해 원래 요청의 스킴과 호스트를 인식한다.
+  forward-headers-strategy: framework
   servlet:
     session:
       cookie:
         secure: ${SESSION_COOKIE_SECURE:true}
+        same-site: ${SESSION_COOKIE_SAME_SITE:None}

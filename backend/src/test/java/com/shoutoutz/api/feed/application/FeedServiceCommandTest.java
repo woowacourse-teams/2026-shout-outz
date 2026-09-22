@@ -23,7 +23,7 @@ import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
-import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
+import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -95,7 +95,15 @@ class FeedServiceCommandTest {
             UserType userType
     ) {
         FeedSaveRequest request = request();
-        Feed saved = Feed.reconstitute(10L, 1L, request.content(), NOW, NOW, null);
+        Feed saved = Feed.reconstitute(
+                10L,
+                1L,
+                request.title(),
+                request.content(),
+                NOW,
+                NOW,
+                null
+        );
         FeedItem item = item();
         givenWriter(userType);
         when(categoryRepository.findAllActiveByIds(request.categoryIds()))
@@ -105,7 +113,7 @@ class FeedServiceCommandTest {
         when(feedRepository.save(any(Feed.class))).thenReturn(saved);
         when(feedQueryRepository.findById(10L)).thenReturn(Optional.of(item));
 
-        FeedResponse result = feedService.saveFeed(1L, request);
+        FeedCommandResponse result = feedService.saveFeed(1L, request);
 
         assertThat(result.feedId()).isEqualTo(item.feedId());
         verify(feedRepository).saveCategories(10L, List.of(1L, 2L, 3L));
@@ -164,9 +172,10 @@ class FeedServiceCommandTest {
     }
 
     @Test
-    void 작성자는_피드_본문과_카테고리와_미디어를_수정한다() {
-        Feed feed = Feed.reconstitute(10L, 1L, "기존 본문", NOW, NOW, null);
+    void 작성자는_피드_제목과_본문과_카테고리와_미디어를_수정한다() {
+        Feed feed = Feed.reconstitute(10L, 1L, "기존 제목", "기존 본문", NOW, NOW, null);
         FeedUpdateRequest request = new FeedUpdateRequest(
+                "수정 제목",
                 "수정 본문",
                 List.of(3L),
                 List.of()
@@ -186,13 +195,13 @@ class FeedServiceCommandTest {
 
     @Test
     void 작성자가_아니면_피드를_수정할_수_없다() {
-        Feed feed = Feed.reconstitute(10L, 2L, "본문", NOW, NOW, null);
+        Feed feed = Feed.reconstitute(10L, 2L, "제목", "본문", NOW, NOW, null);
         when(feedRepository.findActiveById(10L)).thenReturn(Optional.of(feed));
 
         assertThatThrownBy(() -> feedService.updateFeed(
                 10L,
                 1L,
-                new FeedUpdateRequest("수정", List.of(3L), List.of())
+                new FeedUpdateRequest("수정 제목", "수정", List.of(3L), List.of())
         )).isInstanceOf(ForbiddenException.class);
 
         verify(feedRepository, never()).update(any());
@@ -200,7 +209,7 @@ class FeedServiceCommandTest {
 
     @Test
     void 작성자는_피드를_soft_delete한다() {
-        Feed feed = Feed.reconstitute(10L, 1L, "본문", NOW, NOW, null);
+        Feed feed = Feed.reconstitute(10L, 1L, "제목", "본문", NOW, NOW, null);
         when(feedRepository.findActiveById(10L)).thenReturn(Optional.of(feed));
         when(feedRepository.update(any(Feed.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -211,7 +220,7 @@ class FeedServiceCommandTest {
 
     @Test
     void 작성자가_아니면_피드를_삭제할_수_없다() {
-        Feed feed = Feed.reconstitute(10L, 2L, "본문", NOW, NOW, null);
+        Feed feed = Feed.reconstitute(10L, 2L, "제목", "본문", NOW, NOW, null);
         when(feedRepository.findActiveById(10L)).thenReturn(Optional.of(feed));
 
         assertThatThrownBy(() -> feedService.deleteFeed(10L, 1L))
@@ -225,7 +234,7 @@ class FeedServiceCommandTest {
         givenWriter(UserType.WOOWACOURSE_CREW);
         when(categoryRepository.findAllActiveByIds(List.of(2L, 3L)))
                 .thenReturn(List.of(eventCategory(2L), eventCategory(3L)));
-        FeedSaveRequest request = new FeedSaveRequest("본문", List.of(2L, 3L), List.of());
+        FeedSaveRequest request = new FeedSaveRequest("제목", "본문", List.of(2L, 3L), List.of());
 
         assertThatThrownBy(() -> feedService.saveFeed(1L, request))
                 .isInstanceOf(BadRequestException.class);
@@ -238,7 +247,7 @@ class FeedServiceCommandTest {
         givenWriter(UserType.WOOWACOURSE_CREW);
         when(categoryRepository.findAllActiveByIds(List.of(1L, 4L)))
                 .thenReturn(List.of(generalCategory(1L), generalCategory(4L)));
-        FeedSaveRequest request = new FeedSaveRequest("본문", List.of(1L, 4L), List.of());
+        FeedSaveRequest request = new FeedSaveRequest("제목", "본문", List.of(1L, 4L), List.of());
 
         assertThatThrownBy(() -> feedService.saveFeed(1L, request))
                 .isInstanceOf(BadRequestException.class);
@@ -247,7 +256,7 @@ class FeedServiceCommandTest {
     }
 
     private FeedSaveRequest request() {
-        return new FeedSaveRequest("본문", List.of(1L, 2L, 3L), List.of(20L));
+        return new FeedSaveRequest("제목", "본문", List.of(1L, 2L, 3L), List.of(20L));
     }
 
     private List<Category> categories() {
@@ -325,6 +334,7 @@ class FeedServiceCommandTest {
     private FeedItem item() {
         return new FeedItem(
                 10L,
+                "제목",
                 "본문",
                 new FeedItem.Author(
                         "zzaekkii",
@@ -343,6 +353,7 @@ class FeedServiceCommandTest {
                 List.of(new FeedItem.Media(20L, 0)),
                 0L,
                 0L,
+                0,
                 NOW,
                 NOW
         );

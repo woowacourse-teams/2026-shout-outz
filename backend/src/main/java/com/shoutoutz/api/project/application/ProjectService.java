@@ -111,12 +111,12 @@ public class ProjectService {
                 request.descriptionMd(),
                 new GithubRepositoryUrl(request.githubRepositoryUrl()),
                 request.deploymentUrl() == null ? null : new DeploymentUrl(request.deploymentUrl()),
-                request.thumbnailMediaId()
+                request.thumbnailImageId()
         );
         validateGithubRepositoryNotDuplicated(project.getGithubRepositoryUrl());
         validateSlugNotDuplicated(project.getSlug());
         validateTechTags(request.techTagIds());
-        validateThumbnail(request.thumbnailMediaId(), registeredBy);
+        validateThumbnail(request.thumbnailImageId(), registeredBy);
         validateDescriptionMediaUrls(request.descriptionMd());
         validateDescriptionMedia(request.descriptionMd(), registeredBy);
         List<Long> memberIds = request.memberHandles().stream()
@@ -246,7 +246,8 @@ public class ProjectService {
         return ProjectDetailResponse.from(
                 detail,
                 mediaUrls,
-                descriptionMd
+                descriptionMd,
+                loginUserId
         );
     }
 

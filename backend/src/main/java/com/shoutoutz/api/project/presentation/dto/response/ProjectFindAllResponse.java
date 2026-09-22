@@ -33,6 +33,7 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
             String title,
             String tagline,
             int cohort,
+            Long thumbnailImageId,
             String thumbnailUrl,
             Integer starCount,
             long likeCount,
@@ -48,6 +49,7 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
                     summary.title(),
                     summary.tagline(),
                     summary.cohort(),
+                    summary.thumbnailMediaId(),
                     toUrl(mediaUrls, summary.thumbnailMediaId()),
                     summary.starCount(),
                     summary.likeCount(),
@@ -57,25 +59,6 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
                             .map(member -> ProjectMemberProfileResponse.from(member, mediaUrls))
                             .toList()
             );
-        }
-
-        /**
-         * 기존 테스트와 내부 호출 호환을 위한 생성자. 외부 응답에는 URL만 노출한다.
-         */
-        @Deprecated
-        public Item(
-                long id,
-                String slug,
-                String title,
-                String tagline,
-                int cohort,
-                Long thumbnailMediaId,
-                long likeCount,
-                long commentCount,
-                List<ProjectTechTagResponse> techTags,
-                List<ProjectMemberProfileResponse> members
-        ) {
-            this(id, slug, title, tagline, cohort, (String) null, null, likeCount, commentCount, techTags, members);
         }
 
         private static String toUrl(Map<Long, URI> mediaUrls, Long mediaId) {

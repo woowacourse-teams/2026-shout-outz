@@ -24,7 +24,7 @@ const EMPTY_FORM: ProjectFormValues = {
   teamName: '',
   tagline: '',
   cohort: null,
-  thumbnailMediaId: null,
+  thumbnailImageId: null,
   githubRepositoryUrl: '',
   deploymentUrl: '',
   descriptionMd: '',
@@ -112,11 +112,6 @@ function VerifiedProjectCreatePage() {
 
 function ProjectCreateForm() {
   const { data: cohorts } = useSuspenseQuery(cohortsQueryOptions());
-
-  useEffect(() => {
-    analytics.track({ name: 'project_create_started', from: document.referrer });
-  }, []);
-
   const [values, setValues] = useState<ProjectFormValues>(EMPTY_FORM);
   const [errors, setErrors] = useState<ProjectFormErrors>({});
   const createProject = useMutation(createProjectMutationOptions);
@@ -125,6 +120,10 @@ function ProjectCreateForm() {
     field: Key,
     value: ProjectFormValues[Key],
   ) => setValues((current) => ({ ...current, [field]: value }));
+
+  useEffect(() => {
+    analytics.track({ name: 'project_create_started', from: document.referrer });
+  }, []);
 
   const submit = () => {
     const nextErrors = validateProjectForm(values);
@@ -145,7 +144,7 @@ function ProjectCreateForm() {
           cohort: values.cohort!,
           techTagCount: values.techTags.length,
           memberCount: values.memberHandles.length,
-          hasThumbnail: values.thumbnailMediaId !== null,
+          hasThumbnail: values.thumbnailImageId !== null,
           hasDeploymentUrl: values.deploymentUrl.trim() !== '',
         }),
       onError: () =>
@@ -230,9 +229,9 @@ function ProjectCreateForm() {
               </Field>
 
               <ThumbnailField
-                value={values.thumbnailMediaId}
-                onChange={(mediaId) => setField('thumbnailMediaId', mediaId)}
-                error={errors.thumbnailMediaId}
+                value={values.thumbnailImageId}
+                onChange={(mediaId) => setField('thumbnailImageId', mediaId)}
+                error={errors.thumbnailImageId}
               />
 
               <Field label="GitHub 레포지토리 URL *" error={errors.githubRepositoryUrl}>

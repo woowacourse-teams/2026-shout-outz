@@ -6,7 +6,7 @@ const FILLED: ProjectFormValues = {
   teamName: '루프팀',
   tagline: '스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구',
   cohort: 6,
-  thumbnailMediaId: 12,
+  thumbnailImageId: 12,
   githubRepositoryUrl: 'https://github.com/woowacourse-teams/2026-loop',
   deploymentUrl: 'https://loop.team',
   descriptionMd: '## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.',
@@ -52,7 +52,7 @@ describe('validateProjectForm', () => {
           teamName: '',
           descriptionMd: '',
           deploymentUrl: '',
-          thumbnailMediaId: null,
+          thumbnailImageId: null,
         }),
       ).toEqual({});
     });
@@ -84,7 +84,7 @@ describe('toProjectCreateRequest', () => {
       teamName: '루프팀',
       tagline: '스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구',
       cohort: 6,
-      thumbnailMediaId: 12,
+      thumbnailImageId: 12,
       githubRepositoryUrl: 'https://github.com/woowacourse-teams/2026-loop',
       deploymentUrl: 'https://loop.team',
       descriptionMd: '## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.',

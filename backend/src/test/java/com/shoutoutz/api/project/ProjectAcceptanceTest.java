@@ -221,11 +221,9 @@ class ProjectAcceptanceTest {
         assertThat(response.jsonPath().getString("status")).isEqualTo("success");
         assertThat(response.jsonPath().getLong("data.id")).isEqualTo(projectId);
         assertThat(response.jsonPath().getString("data.approvalStatus")).isEqualTo("PENDING");
-        assertThat(response.jsonPath().getLong("data.registeredBy")).isEqualTo(author.userId());
+        assertThat(response.jsonPath().getBoolean("data.editable")).isTrue();
         assertThat(response.jsonPath().getBoolean("data.likedByMe")).isFalse();
         assertThat(response.jsonPath().getList("data.techTags.id", Long.class)).containsExactlyElementsOf(techTagIds);
-        assertThat(response.jsonPath().getList("data.members.userId", Long.class))
-                .containsExactly(author.userId(), teammate.userId());
         assertThat(response.jsonPath().getList("data.members.handle", String.class))
                 .containsExactly(author.handle(), teammate.handle());
     }
@@ -287,6 +285,7 @@ class ProjectAcceptanceTest {
 
         assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
         assertThat(response.jsonPath().getString("data.approvalStatus")).isEqualTo("APPROVED");
+        assertThat(response.jsonPath().getBoolean("data.editable")).isFalse();
         assertThat(response.jsonPath().getBoolean("data.likedByMe")).isFalse();
         assertThat(response.jsonPath().getBoolean("data.bookmarkedByMe")).isFalse();
     }
@@ -314,8 +313,8 @@ class ProjectAcceptanceTest {
         assertThat(all.jsonPath().getBoolean("meta.hasNext")).isFalse();
         assertThat(all.jsonPath().getString("meta.nextCursor")).isNull();
         assertThat(all.jsonPath().getList("data[1].techTags.id", Long.class)).containsExactlyElementsOf(reactAndJava);
-        assertThat(all.jsonPath().getList("data[1].members.userId", Long.class))
-                .containsExactly(author.userId(), teammate.userId());
+        assertThat(all.jsonPath().getList("data[1].members.handle", String.class))
+                .containsExactly(author.handle(), teammate.handle());
         assertThat(byTechTags.jsonPath().getList("data.id", Long.class)).containsExactly(reactJavaProject);
         assertThat(byCohort.jsonPath().getList("data.id", Long.class)).containsExactly(javaProject);
     }

@@ -12,11 +12,11 @@ import java.util.Map;
  * 가입한 사용자는 avatarUrl, 가입하지 않은 이관 팀원은 githubAvatarUrl과 githubProfileUrl을 가진다.
  */
 public record ProjectMemberProfileResponse(
-        Long userId,
         String handle,
         String displayName,
         Integer cohort,
         String track,
+        Long avatarImageId,
         String avatarUrl,
         String githubAvatarUrl,
         String githubProfileUrl
@@ -27,29 +27,15 @@ public record ProjectMemberProfileResponse(
             Map<Long, URI> mediaUrls
     ) {
         return new ProjectMemberProfileResponse(
-                member.userId(),
                 member.handle(),
                 member.displayName(),
                 cohortValue(member.cohort()),
                 trackValue(member.track()),
+                member.avatarImageId(),
                 toUrl(mediaUrls, member.avatarImageId()),
                 member.githubAvatarUrl(),
                 member.githubProfileUrl()
         );
-    }
-
-    @Deprecated
-    public ProjectMemberProfileResponse(
-            Long userId,
-            String handle,
-            String displayName,
-            Integer cohort,
-            String track,
-            Long avatarImageId,
-            String githubAvatarUrl,
-            String githubProfileUrl
-    ) {
-        this(userId, handle, displayName, cohort, track, (String) null, githubAvatarUrl, githubProfileUrl);
     }
 
     private static String toUrl(Map<Long, URI> mediaUrls, Long mediaId) {

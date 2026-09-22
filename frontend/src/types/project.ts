@@ -1,46 +1,27 @@
-// TODO 대체 ProjectCreateRequest
-export interface ProjectCreateRequest {
-  title: string;
-  teamName: string;
-  tagline: string;
-  cohort: number;
-  thumbnailMediaId: number | null;
-  githubRepositoryUrl: string;
-  deploymentUrl: string | null;
-  descriptionMd: string;
-  /** 배열 순서를 그대로 표시 순서로 저장한다 */
-  techTagIds: number[];
-  /** 작성자 본인은 포함하지 않는다. 서버가 작성자를 맨 앞에 저장한다 */
-  memberHandles: string[];
-}
+import type {
+  CohortItem,
+  Item,
+  ProjectCreateBody,
+  ProjectCreatedData,
+  ProjectDetailData,
+  ProjectListItemData,
+  ProjectListMetaData,
+  TechTagItem,
+  UserProjectListItemData,
+  UserSearchItem,
+} from '@/types/api';
 
-export interface ProjectCreated {
-  id: number;
-  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
-  createdAt: string;
-}
+/** POST /api/v1/projects 요청 본문 */
+export type ProjectCreateRequest = ProjectCreateBody;
 
-// TODO 대체 CohortOption
-export interface CohortOption {
-  cohort: number;
-  year: number;
-}
+/** 등록 응답은 `{ projectId, slug }`다. 승인 상태와 생성 시각은 내려오지 않는다. */
+export type ProjectCreated = ProjectCreatedData;
 
-// TODO 대체 TechTag
-export interface TechTag {
-  id: number;
-  displayName: string;
-}
+export type CohortOption = CohortItem;
+export type TechTag = TechTagItem;
 
-// TODO 대체 UserSearchItem
-export interface CrewSearchItem {
-  handle: string;
-  displayName: string;
-  userType: string;
-  track: string | null;
-  cohort: number | null;
-  avatarImageId: number | null;
-}
+/** 참여 팀원 검색 결과. `GET /api/v1/users/search` */
+export type CrewSearchItem = UserSearchItem;
 
 /**
  * 프로젝트 등록 폼이 들고 있는 값.
@@ -52,7 +33,7 @@ export interface ProjectFormValues {
   teamName: string;
   tagline: string;
   cohort: number | null;
-  thumbnailMediaId: number | null;
+  thumbnailImageId: number | null;
   githubRepositoryUrl: string;
   deploymentUrl: string;
   descriptionMd: string;
@@ -63,36 +44,22 @@ export interface ProjectFormValues {
 
 export type ProjectFormErrors = Partial<Record<keyof ProjectFormValues, string>>;
 
-export interface ProjectTechTag {
-  id: number;
-  displayName: string;
-}
+/** 목록 응답 한 건. `GET /api/v1/projects` */
+export type ProjectListItem = ProjectListItemData;
+export type ProjectListMeta = ProjectListMetaData;
 
-export interface ProjectMember {
-  userId: number | null;
-  handle: string | null;
-  displayName: string;
-  cohort: number | null;
-  track: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
-  avatarUrl: string | null;
-  githubAvatarUrl: string | null;
-  githubProfileUrl: string | null;
-}
+/** 프로필 프로젝트 탭 한 건. `GET /api/v1/users/{handle}/projects` */
+export type UserProjectListItem = UserProjectListItemData;
 
 /**
- * 프로젝트 카드 공통 응답.
- * 프로젝트 목록과 프로필 프로젝트 탭이 같은 모양으로 내려준다.
+ * 프로젝트 카드가 다루는 공통 모양.
+ *
+ * 목록과 프로필 탭이 같은 필드를 내려주지만 프로필 탭에는 `members[].userId`가 없고
+ * 목록에는 `serviceStatus`·`teamName`이 없다. 카드가 쓰는 교집합만 남긴다.
  */
-// TODO 대체 ProjectListItem
-export interface ProjectSummary {
-  id: number;
-  slug: string;
-  title: string;
-  tagline: string;
-  cohort: number | null;
-  thumbnailUrl: string | null;
-  likeCount: number;
-  commentCount: number;
-  techTags: ProjectTechTag[];
-  members: ProjectMember[];
-}
+export type ProjectSummary = ProjectListItem;
+
+export type ProjectTechTag = Item<ProjectListItem['techTags']>;
+
+/** 상세 응답. `GET /api/v1/projects/{projectId}` */
+export type ProjectDetail = ProjectDetailData;

@@ -673,7 +673,7 @@ class FeedCommentServiceTest {
 
     private void givenActiveFeed() {
         when(feedRepository.findActiveById(FEED_ID)).thenReturn(Optional.of(
-                Feed.reconstitute(FEED_ID, AUTHOR_ID, "피드 본문", NOW, NOW, null)
+                Feed.reconstitute(FEED_ID, AUTHOR_ID, "피드 제목", "피드 본문", NOW, NOW, null)
         ));
     }
 

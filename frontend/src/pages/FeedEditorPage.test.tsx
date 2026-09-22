@@ -249,8 +249,8 @@ test('수정 시 기존 이벤트 카테고리와 미디어 연결을 보존한�
       { categoryId: 3, slug: 'event', displayName: '이벤트', type: 'EVENT' },
     ],
     media: [
-      { mediaId: 32, displayOrder: 1 },
-      { mediaId: 31, displayOrder: 0 },
+      { displayOrder: 1, mediaId: 32, url: 'https://cdn.example.com/media/32' },
+      { displayOrder: 0, mediaId: 31, url: 'https://cdn.example.com/media/31' },
     ],
   };
   let body: unknown;

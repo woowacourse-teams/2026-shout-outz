@@ -3,6 +3,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { hydrate } from '@tanstack/react-router/ssr/client';
 import '@/styles/index.css';
 import { Document } from '@/Document';
+import { getApiOrigin } from '@/utils/auth';
 import { App } from '@/App';
 import { createAppRouter } from './router';
 import { analytics } from '@/utils/analytics';
@@ -15,7 +16,9 @@ const router = createAppRouter(queryClient);
 // <Document><App/></Document>를 그리고, 이 문서가 실제로 프리렌더됐는지에 따라 마운트 방식만
 // 갈립니다(App은 이 분기를 모릅니다 - src/App.tsx 참고).
 async function bootstrap() {
-  if (process.env.NODE_ENV === 'development') {
+  // API_ORIGIN을 지정하면 실제 서버에 붙는다는 뜻이라 목을 띄우지 않는다.
+  // .env의 API_ORIGIN을 비워 두면(기본값) 지금까지처럼 MSW가 모든 요청을 가로챈다.
+  if (process.env.NODE_ENV === 'development' && !getApiOrigin()) {
     const { worker } = await import('@/mocks/browser');
     await worker.start({ onUnhandledRequest: 'bypass' });
   }

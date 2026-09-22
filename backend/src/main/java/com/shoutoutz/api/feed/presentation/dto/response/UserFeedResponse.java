@@ -11,6 +11,7 @@ import java.util.Map;
  */
 public record UserFeedResponse(
         long feedId,
+        String title,
         String content,
         FeedResponse.Author author,
         List<FeedResponse.Category> categories,
@@ -34,6 +35,7 @@ public record UserFeedResponse(
         FeedResponse response = FeedResponse.from(feed, mediaUrls);
         return new UserFeedResponse(
                 response.feedId(),
+                response.title(),
                 response.content(),
                 response.author(),
                 response.categories(),

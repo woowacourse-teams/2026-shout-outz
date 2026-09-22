@@ -76,9 +76,11 @@ class UserFeedHttpApiTest {
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data[0].feedId").value(10))
                 .andExpect(jsonPath("$.data[0].author.handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data[0].author.avatarImageId").value(20L))
                 .andExpect(jsonPath("$.data[0].author.avatarUrl")
                         .value("https://cdn.example.com/media/20/display"))
                 .andExpect(jsonPath("$.data[0].categories[0].type").value("GENERAL"))
+                .andExpect(jsonPath("$.data[0].media[0].mediaId").value(30L))
                 .andExpect(jsonPath("$.data[0].media[0].url")
                         .value("https://cdn.example.com/media/30/display"))
                 .andExpect(jsonPath("$.data[0].likeCount").value(5))
@@ -176,6 +178,7 @@ class UserFeedHttpApiTest {
         Instant now = Instant.parse("2026-09-16T00:00:00Z");
         return new FeedItem(
                 10L,
+                "사용자 피드 제목",
                 "사용자 피드 본문",
                 new FeedItem.Author(
                         "zzaekkii",
@@ -189,6 +192,7 @@ class UserFeedHttpApiTest {
                 List.of(new FeedItem.Media(30L, 0)),
                 5L,
                 3L,
+                0,
                 now,
                 now
         );

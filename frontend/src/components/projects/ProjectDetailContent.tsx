@@ -15,7 +15,7 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
     throw new ProjectNotApprovedError();
   }
 
-  const thumbnail = project.thumbnailUrl?.trim();
+  const thumbnail = project.imageUrl?.trim();
   const links = [
     { label: '서비스 바로가기 ↗', url: project.deploymentUrl?.trim(), variant: 'primary' as const },
     {
@@ -76,7 +76,7 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
       </section>
       <div className="mt-10 grid min-w-0 gap-10 pb-10 lg:mt-16 lg:grid-cols-3 lg:gap-12 lg:pb-20">
         <section aria-label="프로젝트 소개" className="min-w-0 lg:col-span-2">
-          <MarkdownContent>{project.descriptionMd}</MarkdownContent>
+          <MarkdownContent>{project.descriptionMd ?? ''}</MarkdownContent>
         </section>
         <aside className="min-w-0 space-y-10">
           <section aria-labelledby="project-members">
@@ -87,7 +87,7 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
               <ul className="mt-4 space-y-3">
                 {project.members.map((member, index) => (
                   <li
-                    key={member.userId ?? `${member.displayName}-${index}`}
+                    key={member.handle ?? `${member.displayName}-${index}`}
                     className="flex items-center gap-3"
                   >
                     <Avatar src={member.avatarUrl ?? undefined} alt="" />

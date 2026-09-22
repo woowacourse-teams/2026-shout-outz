@@ -28,6 +28,7 @@ public record ProjectCommentFindResponse(
     public record Author(
             Long userId,
             String displayName,
+            Long avatarImageId,
             String avatarUrl
     ) {
     }

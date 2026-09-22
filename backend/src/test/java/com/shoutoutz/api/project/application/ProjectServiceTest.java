@@ -597,8 +597,10 @@ class ProjectServiceTest {
                 .isEqualTo(ProjectCursor.popular(3L, NOW.minusSeconds(60), 9L));
         assertThat(response.items().getFirst().thumbnailUrl())
                 .isEqualTo("https://cdn.example.com/thumbnail");
+        assertThat(response.items().getFirst().thumbnailImageId()).isEqualTo(THUMBNAIL_ID);
         assertThat(response.items().getFirst().members().getFirst().avatarUrl())
                 .isEqualTo("https://cdn.example.com/avatar-21");
+        assertThat(response.items().getFirst().members().getFirst().avatarImageId()).isEqualTo(21L);
         verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL);
         verify(mediaUrlResolver).resolveAll(Set.of(21L), MediaVariant.DISPLAY);
     }
@@ -821,11 +823,40 @@ class ProjectServiceTest {
         ProjectDetailResponse response = projectService.findDetail(100L, null);
 
         assertThat(response.id()).isEqualTo(100L);
-        assertThat(response.registeredBy()).isEqualTo(REGISTERED_BY);
+        assertThat(response.editable()).isFalse();
         assertThat(response.techTags()).containsExactly(new ProjectTechTagResponse(1L, "React"));
         assertThat(response.members()).containsExactly(new ProjectMemberProfileResponse(
-                REGISTERED_BY, "dhyepark", "박다혜", 6, "BACKEND", 101L, null, null
+                "dhyepark", "박다혜", 6, "BACKEND", 101L, null, null, null
         ));
+    }
+
+    @Test
+    @DisplayName("프로젝트 상세 조회에서 썸네일, 팀원 아바타와 본문 이미지의 ID와 URL을 함께 반환한다.")
+    void returnsMediaIdsAndUrlsInProjectDetail() {
+        long descriptionMediaId = 21L;
+        String storedDescription = "![화면](media://" + descriptionMediaId + ")";
+        String descriptionUrl = "https://cdn.example.com/description-21";
+        ProjectDetail detail = projectDetail(ApprovalStatus.APPROVED, storedDescription);
+        Map<Long, URI> mediaUrls = Map.of(
+                THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail"),
+                101L, URI.create("https://cdn.example.com/avatar-101"),
+                descriptionMediaId, URI.create(descriptionUrl)
+        );
+        when(projectRepository.findDetailById(100L, null)).thenReturn(Optional.of(detail));
+        when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID, 101L, descriptionMediaId)))
+                .thenReturn(mediaUrls);
+        when(mediaUrlResolver.replaceDescriptionReferences(storedDescription, mediaUrls))
+                .thenReturn("![화면](" + descriptionUrl + ")");
+
+        ProjectDetailResponse response = projectService.findDetail(100L, null);
+
+        assertThat(response.thumbnailImageId()).isEqualTo(THUMBNAIL_ID);
+        assertThat(response.imageUrl()).isEqualTo("https://cdn.example.com/thumbnail");
+        assertThat(response.descriptionMedia()).containsExactly(
+                new ProjectDetailResponse.DescriptionMedia(descriptionMediaId, descriptionUrl)
+        );
+        assertThat(response.members().getFirst().avatarImageId()).isEqualTo(101L);
+        assertThat(response.members().getFirst().avatarUrl()).isEqualTo("https://cdn.example.com/avatar-101");
     }
 
     @Test
@@ -837,6 +868,7 @@ class ProjectServiceTest {
         ProjectDetailResponse response = projectService.findDetail(100L, REGISTERED_BY);
 
         assertThat(response.approvalStatus()).isEqualTo(ApprovalStatus.REJECTED);
+        assertThat(response.editable()).isTrue();
     }
 
     @Test
@@ -863,6 +895,10 @@ class ProjectServiceTest {
     }
 
     private static ProjectDetail projectDetail(ApprovalStatus approvalStatus) {
+        return projectDetail(approvalStatus, DESCRIPTION);
+    }
+
+    private static ProjectDetail projectDetail(ApprovalStatus approvalStatus, String descriptionMd) {
         return new ProjectDetail(
                 100L,
                 "loop",
@@ -871,7 +907,7 @@ class ProjectServiceTest {
                 "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                 6,
                 THUMBNAIL_ID,
-                DESCRIPTION,
+                descriptionMd,
                 "https://github.com/woowacourse-teams/2026-loop",
                 "https://loop.team",
                 ServiceStatus.OPERATING,
@@ -1260,13 +1296,13 @@ class ProjectServiceTest {
         return updateRequest("https://loop.team", ServiceStatus.OPERATING);
     }
 
-    private static ProjectUpdateRequest updateRequest(long thumbnailImageId) {
+    private static ProjectUpdateRequest updateRequest(long thumbnailMediaId) {
         return new ProjectUpdateRequest(
                 "루프 (Loop)",
                 "루프팀",
                 "바뀐 한 줄 소개",
                 6,
-                thumbnailImageId,
+                thumbnailMediaId,
                 GITHUB_REPOSITORY_URL.value(),
                 "https://loop.team",
                 DESCRIPTION,

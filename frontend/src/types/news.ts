@@ -1,4 +1,5 @@
 import { NEWS_FILTERS, NEWS_SORTS } from '@/constants/news';
+import type { NewsDetailData, NewsListItemData } from '@/types/api';
 
 export type NewsFilter = (typeof NEWS_FILTERS)[number];
 
@@ -11,8 +12,11 @@ export const isNewsFilter = (value: unknown): value is NewsFilter =>
 export const isNewsSort = (value: unknown): value is NewsSort =>
   NEWS_SORTS.some((sort) => sort === value);
 
-// TODO 대체 GET /api/v1/news의 eventStatus 쿼리 파라미터 (명세는 허용 값 목록 미확정)
-export type NewsEventStatus = 'ONGOING';
+/** 소식 유형. 스키마의 `type` 값을 그대로 쓴다. */
+export type NewsType = NewsListItemData['type'];
+
+/** 이벤트 상태. 목록 조회의 eventStatus 쿼리 파라미터로도 쓴다. */
+export type NewsEventStatus = NonNullable<NewsListItemData['eventStatus']>;
 
 export interface NewsListOptions {
   eventStatus?: NewsEventStatus;
@@ -20,42 +24,12 @@ export interface NewsListOptions {
   cursor?: string;
 }
 
-// TODO 대체 NewsListItem.type (명세는 null도 포함)
-export type NewsType = 'NOTICE' | 'EVENT';
+/** 목록 한 건. `GET /api/v1/news` */
+export type NewsSummary = NewsListItemData;
 
-// TODO 대체 NewsListItem
-export interface NewsSummary {
-  id: number;
-  type: NewsType;
-  title: string;
-  summary: string;
-  publishedAt: string;
-}
+/** 상세. `GET /api/v1/news/{newsId}` */
+export type NewsDetail = NewsDetailData;
 
-// TODO 대체 NewsAuthor
-export interface NewsAuthor {
-  userId: number;
-  name: string;
-}
-
-// TODO 대체 NewsCta
-export interface NewsCta {
-  label: string;
-  url: string;
-}
-
-// TODO 대체 NewsNavItem
-export interface NewsNavItem {
-  id: number;
-  title: string;
-  publishedAt: string;
-}
-
-// TODO 대체 NewsDetail
-export interface NewsDetail extends Omit<NewsSummary, 'summary'> {
-  body: string;
-  author: NewsAuthor;
-  cta: NewsCta | null;
-  previous: NewsNavItem | null;
-  next: NewsNavItem | null;
-}
+export type NewsAuthor = NewsDetail['author'];
+export type NewsCta = NonNullable<NewsDetail['cta']>;
+export type NewsNavItem = NonNullable<NewsDetail['previous']>;

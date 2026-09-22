@@ -17,8 +17,10 @@ import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
+import com.shoutoutz.api.feed.presentation.dto.request.FeedSuggestionRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
+import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
@@ -60,22 +62,27 @@ public class FeedService {
     private final Clock clock;
 
     @Transactional
-    public FeedResponse saveFeed(long userId, FeedSaveRequest request) {
+    public FeedCommandResponse saveFeed(long userId, FeedSaveRequest request) {
         validateWriter(userId);
         validateCategories(request.categoryIds());
         validateMedia(request.mediaIds(), userId);
 
         Instant now = clock.instant();
-        Feed savedFeed = feedRepository.save(Feed.create(userId, request.content(), now));
+        Feed savedFeed = feedRepository.save(Feed.create(
+                userId,
+                request.title(),
+                request.content(),
+                now
+        ));
         feedRepository.saveCategories(savedFeed.getId(), request.categoryIds());
         feedRepository.saveMedia(savedFeed.getId(), request.mediaIds());
 
-        return toResponse(findFeedItem(savedFeed.getId()));
+        return toCommandResponse(findFeedItem(savedFeed.getId()));
     }
 
     @Transactional(readOnly = true)
     public FeedResponse findFeed(long feedId) {
-        return toResponse(findFeedItem(feedId));
+        return toQueryResponse(findFeedItem(feedId));
     }
 
     @Transactional(readOnly = true)
@@ -86,10 +93,19 @@ public class FeedService {
         List<FeedItem> feedsWithExtraItem = feedQueryRepository.findAll(
                 sort,
                 request.categoryId(),
+                request.keyword(),
                 cursor,
                 size + 1
         );
         return createSlice(feedsWithExtraItem, size, sort);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> findTitleSuggestions(FeedSuggestionRequest request) {
+        return feedQueryRepository.findTitleSuggestions(
+                request.keyword(),
+                request.resolvedSize()
+        );
     }
 
     /**
@@ -116,15 +132,19 @@ public class FeedService {
     }
 
     @Transactional
-    public FeedResponse updateFeed(long feedId, long userId, FeedUpdateRequest request) {
+    public FeedCommandResponse updateFeed(long feedId, long userId, FeedUpdateRequest request) {
         Feed feed = findOwnedFeed(feedId, userId);
         validateCategories(request.categoryIds());
         validateMedia(request.mediaIds(), userId);
 
-        Feed updatedFeed = feedRepository.update(feed.updateContent(request.content(), clock.instant()));
+        Feed updatedFeed = feedRepository.update(feed.update(
+                request.title(),
+                request.content(),
+                clock.instant()
+        ));
         feedRepository.saveCategories(feedId, request.categoryIds());
         feedRepository.saveMedia(feedId, request.mediaIds());
-        return toResponse(findFeedItem(updatedFeed.getId()));
+        return toCommandResponse(findFeedItem(updatedFeed.getId()));
     }
 
     @Transactional
@@ -151,6 +171,7 @@ public class FeedService {
         String nextCursor = feedCursorCodec.encode(
                 new FeedCursor(
                         sort,
+                        lastItem.relevanceRank(),
                         lastItem.likeCount(),
                         lastItem.createdAt(),
                         lastItem.feedId()
@@ -159,8 +180,12 @@ public class FeedService {
         return new FeedFindAllResult(items, nextCursor, true, resolveMediaUrls(items));
     }
 
-    private FeedResponse toResponse(FeedItem item) {
+    private FeedResponse toQueryResponse(FeedItem item) {
         return FeedResponse.from(item, resolveMediaUrls(List.of(item)));
+    }
+
+    private FeedCommandResponse toCommandResponse(FeedItem item) {
+        return FeedCommandResponse.from(item, resolveMediaUrls(List.of(item)));
     }
 
     private Map<Long, java.net.URI> resolveMediaUrls(List<FeedItem> items) {

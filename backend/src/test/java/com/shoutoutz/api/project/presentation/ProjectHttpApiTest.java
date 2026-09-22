@@ -123,7 +123,7 @@ class ProjectHttpApiTest {
             + "리액션 및 댓글 수를 조회한다. 로그인하지 않아도 조회할 수 있다. "
             + "승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 조회할 수 있으며, "
             + "볼 수 없는 프로젝트는 존재 여부를 숨기기 위해 없는 프로젝트와 같은 404를 반환한다. "
-            + "registeredBy가 null이면 이전 기수에서 이관된 프로젝트다. "
+            + "editable은 요청자가 등록자 본인인지를 나타내며, 수정·삭제 버튼 노출에 쓴다. "
             + "프로젝트 ID가 숫자가 아니면 400을 반환한다.";
     private static final String FILTER_OPTIONS_SUMMARY = "프로젝트 필터 옵션 조회";
     private static final String FILTER_OPTIONS_DESCRIPTION = "필터 모달에 보여줄 기수 및 기술 스택 목록과, "
@@ -171,7 +171,7 @@ class ProjectHttpApiTest {
                                         fieldWithPath("teamName").type(STRING).description("팀 이름 (50자 이하)"),
                                         fieldWithPath("tagline").type(STRING).description("한 줄 소개 (200자 이하)"),
                                         fieldWithPath("cohort").type(NUMBER).description("우아한테크코스 기수 (1~8)"),
-                                        fieldWithPath("thumbnailMediaId").type(NUMBER)
+                                        fieldWithPath("thumbnailImageId").type(NUMBER)
                                                 .description("본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID")
                                                 .optional(),
                                         fieldWithPath("githubRepositoryUrl").type(STRING)
@@ -309,11 +309,11 @@ class ProjectHttpApiTest {
         given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(new ProjectFindAllResponse(
                 List.of(new ProjectFindAllResponse.Item(
                         100L, "loop", "루프 (Loop)", "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
-                        6, "https://cdn.example.com/thumbnail", 128, 184L, 14L,
+                        6, 12L, "https://cdn.example.com/thumbnail", 128, 184L, 14L,
                         List.of(new ProjectTechTagResponse(1L, "React"), new ProjectTechTagResponse(2L, "Spring")),
                         List.of(
-                                new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BACKEND", "https://cdn.example.com/avatar-101", null, null),
-                                new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FRONTEND", (Long) null, null, null)
+                                new ProjectMemberProfileResponse("dhyepark", "박다혜", 6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
+                                new ProjectMemberProfileResponse("zzaekkii", "김도현", 6, "FRONTEND", null, null, null, null)
                         ))),
                 new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
         ));
@@ -327,10 +327,12 @@ class ProjectHttpApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data[0].id").value(100))
+                .andExpect(jsonPath("$.data[0].thumbnailImageId").value(12L))
                 .andExpect(jsonPath("$.data[0].starCount").value(128))
                 .andExpect(jsonPath("$.data[0].likeCount").value(184))
                 .andExpect(jsonPath("$.data[0].techTags[0].displayName").value("React"))
                 .andExpect(jsonPath("$.data[0].members[0].handle").value("dhyepark"))
+                .andExpect(jsonPath("$.data[0].members[0].avatarImageId").value(101L))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
                 .andExpect(jsonPath("$.meta.totalCount").value(48))
                 .andDo(document(
@@ -369,6 +371,9 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data[].title").type(STRING).description("프로젝트 이름"),
                                         fieldWithPath("data[].tagline").type(STRING).description("한 줄 소개"),
                                         fieldWithPath("data[].cohort").type(NUMBER).description("우아한테크코스 기수"),
+                                        fieldWithPath("data[].thumbnailImageId").type(NUMBER)
+                                                .description("프로젝트 썸네일 미디어 ID")
+                                                .optional(),
                                         fieldWithPath("data[].thumbnailUrl").type(STRING)
                                                 .description("CloudFront에서 제공하는 공개 썸네일 URL")
                                                 .optional(),
@@ -384,9 +389,6 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data[].techTags[].displayName").type(STRING).description("기술 스택 이름"),
                                         fieldWithPath("data[].members").type(ARRAY)
                                                 .description("팀원 전체 목록. 상세 조회의 members와 같은 규칙이며, 등록 순서대로 정렬한다."),
-                                        fieldWithPath("data[].members[].userId").type(NUMBER)
-                                                .description("사용자 ID. 가입하지 않은 이관 팀원은 null이다.")
-                                                .optional(),
                                         fieldWithPath("data[].members[].handle").type(STRING)
                                                 .description("프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.")
                                                 .optional(),
@@ -398,6 +400,9 @@ class ProjectHttpApiTest {
                                                 .optional(),
                                         new EnumFields(Track.class).withPath("data[].members[].track")
                                                 .description("트랙")
+                                                .optional(),
+                                        fieldWithPath("data[].members[].avatarImageId").type(NUMBER)
+                                                .description("프로필 이미지 미디어 ID")
                                                 .optional(),
                                         fieldWithPath("data[].members[].avatarUrl").type(STRING)
                                                 .description("CloudFront에서 제공하는 공개 프로필 이미지 URL")
@@ -553,11 +558,14 @@ class ProjectHttpApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data.id").value(100))
-                .andExpect(jsonPath("$.data.registeredBy").value(7))
+                .andExpect(jsonPath("$.data.thumbnailImageId").value(12L))
+                .andExpect(jsonPath("$.data.descriptionMedia[0].mediaId").value(21L))
+                .andExpect(jsonPath("$.data.editable").value(false))
                 .andExpect(jsonPath("$.data.rejectReason").value(nullValue()))
                 .andExpect(jsonPath("$.data.likedByMe").value(false))
                 .andExpect(jsonPath("$.data.techTags[0].displayName").value("React"))
                 .andExpect(jsonPath("$.data.members[0].handle").value("dhyepark"))
+                .andExpect(jsonPath("$.data.members[0].avatarImageId").value(101L))
                 .andExpect(jsonPath("$.data.members[0].githubAvatarUrl").value(nullValue()))
                 .andDo(document(
                         "project-find-detail",
@@ -578,12 +586,21 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data.teamName").type(STRING).description("팀 이름"),
                                         fieldWithPath("data.tagline").type(STRING).description("한 줄 소개"),
                                         fieldWithPath("data.cohort").type(NUMBER).description("우아한테크코스 기수"),
+                                        fieldWithPath("data.thumbnailImageId").type(NUMBER)
+                                                .description("프로젝트 썸네일 미디어 ID")
+                                                .optional(),
                                         fieldWithPath("data.imageUrl").type(STRING)
                                                 .description("CloudFront에서 제공하는 공개 이미지 URL")
                                                 .optional(),
                                         fieldWithPath("data.descriptionMd").type(STRING)
                                                 .description("프로젝트 설명 마크다운. 본문 이미지 참조는 공개 URL로 변환되어 있다.")
                                                 .optional(),
+                                        fieldWithPath("data.descriptionMedia").type(ARRAY)
+                                                .description("본문 이미지의 미디어 ID와 공개 URL 매핑"),
+                                        fieldWithPath("data.descriptionMedia[].mediaId").type(NUMBER)
+                                                .description("본문 이미지 미디어 ID"),
+                                        fieldWithPath("data.descriptionMedia[].url").type(STRING)
+                                                .description("본문 이미지 공개 URL"),
                                         fieldWithPath("data.githubRepositoryUrl").type(STRING).description("GitHub 리포지토리 URL"),
                                         fieldWithPath("data.deploymentUrl").type(STRING).description("서비스 배포 URL").optional(),
                                         new EnumFields(ServiceStatus.class).withPath("data.serviceStatus")
@@ -592,9 +609,6 @@ class ProjectHttpApiTest {
                                                 .description("승인 상태"),
                                         fieldWithPath("data.rejectReason").type(STRING)
                                                 .description("반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다.")
-                                                .optional(),
-                                        fieldWithPath("data.registeredBy").type(NUMBER)
-                                                .description("등록자 사용자 ID. null이면 이전 기수에서 이관된 프로젝트다.")
                                                 .optional(),
                                         fieldWithPath("data.viewCount").type(NUMBER).description("조회수"),
                                         fieldWithPath("data.starCount").type(NUMBER)
@@ -606,17 +620,16 @@ class ProjectHttpApiTest {
                                                 .description("요청자의 좋아요 여부. 비로그인이면 false다."),
                                         fieldWithPath("data.bookmarkedByMe").type(BOOLEAN)
                                                 .description("요청자의 북마크 여부. 비로그인이면 false다."),
+                                        fieldWithPath("data.editable").type(BOOLEAN)
+                                                .description("요청자가 등록자 본인인지 여부. 수정·삭제할 수 있는 사용자에게만 true다. "
+                                                        + "비로그인이거나 이전 기수에서 이관된 프로젝트면 false다."),
                                         fieldWithPath("data.commentCount").type(NUMBER)
                                                 .description("삭제되지 않은 댓글 수 (대댓글 포함)"),
                                         fieldWithPath("data.techTags").type(ARRAY).description("기술 스택 목록. 등록 순서대로 정렬한다."),
                                         fieldWithPath("data.techTags[].id").type(NUMBER).description("기술 스택 ID"),
                                         fieldWithPath("data.techTags[].displayName").type(STRING).description("기술 스택 이름"),
                                         fieldWithPath("data.members").type(ARRAY)
-                                                .description("팀원 목록. 신규 프로젝트는 등록 순서대로이며 등록자가 첫 번째다. "
-                                                        + "userId가 registeredBy와 같은 팀원이 작성자다."),
-                                        fieldWithPath("data.members[].userId").type(NUMBER)
-                                                .description("사용자 ID. 가입하지 않은 이관 팀원은 null이다.")
-                                                .optional(),
+                                                .description("팀원 목록. 신규 프로젝트는 등록 순서대로이며 등록자가 첫 번째다."),
                                         fieldWithPath("data.members[].handle").type(STRING)
                                                 .description("프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.")
                                                 .optional(),
@@ -628,6 +641,9 @@ class ProjectHttpApiTest {
                                                 .optional(),
                                         new EnumFields(Track.class).withPath("data.members[].track")
                                                 .description("트랙")
+                                                .optional(),
+                                        fieldWithPath("data.members[].avatarImageId").type(NUMBER)
+                                                .description("프로필 이미지 미디어 ID")
                                                 .optional(),
                                         fieldWithPath("data.members[].avatarUrl").type(STRING)
                                                 .description("CloudFront에서 제공하는 공개 프로필 이미지 URL")
@@ -936,18 +952,23 @@ class ProjectHttpApiTest {
                 "루프팀",
                 "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                 6,
+                12L,
                 "https://cdn.example.com/thumbnail",
-                "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
+                "## 문제\n![회고 화면](https://cdn.example.com/description-21)",
+                List.of(new ProjectDetailResponse.DescriptionMedia(
+                        21L,
+                        "https://cdn.example.com/description-21"
+                )),
                 "https://github.com/woowacourse-teams/2026-loop",
                 "https://loop.team",
                 ServiceStatus.OPERATING,
                 ApprovalStatus.APPROVED,
                 null,
-                7L,
                 831,
                 128,
                 84,
                 28,
+                false,
                 false,
                 false,
                 18,
@@ -956,8 +977,8 @@ class ProjectHttpApiTest {
                         new ProjectTechTagResponse(2L, "TypeScript")
                 ),
                 List.of(
-                        new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", 6, "BACKEND", "https://cdn.example.com/avatar-101", null, null),
-                        new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", 6, "FRONTEND", (Long) null, null, null)
+                        new ProjectMemberProfileResponse("dhyepark", "박다혜", 6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
+                        new ProjectMemberProfileResponse("zzaekkii", "김도현", 6, "FRONTEND", null, null, null, null)
                 ),
                 Instant.parse("2026-08-09T02:30:00Z"),
                 Instant.parse("2026-08-09T03:00:00Z")
@@ -1148,7 +1169,7 @@ class ProjectHttpApiTest {
                   "teamName": "루프팀",
                   "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                   "cohort": 6,
-                  "thumbnailMediaId": 12,
+                  "thumbnailImageId": 12,
                   "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                   "deploymentUrl": "https://loop.team",
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)",

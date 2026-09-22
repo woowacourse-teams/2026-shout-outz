@@ -1,7 +1,7 @@
-// TODO 대체 GET /api/v1/home/statistics 응답의 data (명세는 모든 필드 nullable 미확정)
-export interface HomeStatistics {
-  projectCount: number;
-  feedCount: number;
-  currentCohort: number;
-  ongoingEventCount: number;
-}
+import type { HomeBannerItem, HomeStatisticsData } from '@/types/api';
+
+/** 홈 통계. `GET /api/v1/home/statistics` */
+export type HomeStatistics = HomeStatisticsData;
+
+/** 홈 배너 한 건. `GET /api/v1/home/banners` */
+export type HomeBanner = HomeBannerItem;

@@ -57,6 +57,7 @@ export function UserProfilePage() {
           bio={profile.bio}
           githubProfileUrl={profile.githubProfileUrl}
           blogUrl={profile.blogUrl}
+          avatarUrl={profile.avatarUrl}
         />
 
         <MyProfileActions handle={handle} />
@@ -114,6 +115,7 @@ function ProjectTab({ handle }: { handle: string }) {
                 likeCount={project.likeCount}
                 commentCount={project.commentCount}
                 techTags={project.techTags}
+                thumbnailUrl={project.thumbnailUrl}
                 members={project.members}
               />
             </li>

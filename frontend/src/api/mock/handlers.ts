@@ -247,6 +247,23 @@ export const handlers = [
     }),
   ),
 
+  http.get('/api/v1/home/banners', () =>
+    HttpResponse.json({
+      status: 'success',
+      data: [
+        {
+          bannerId: 100,
+          imageUrl: 'https://cdn.example.com/banners/loop.webp',
+          destinationType: 'TARGET',
+          targetType: 'PROJECT',
+          targetId: 1,
+          linkType: null,
+          linkUrl: null,
+        },
+      ],
+    }),
+  ),
+
   http.get('/api/v1/home/statistics', () =>
     HttpResponse.json({
       status: 'success',

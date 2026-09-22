@@ -31,7 +31,7 @@ export function createFeedHandlers() {
         {
           id: id * 10,
           content: '경험을 공유해 주셔서 감사합니다!',
-          author: { userId: 1, displayName: '개발용 사용자', avatarImageId: null },
+          author: { userId: 1, displayName: '개발용 사용자', avatarUrl: null },
           parentId: null,
           createdAt: '2026-09-14T00:00:00Z',
           updatedAt: '2026-09-14T00:00:00Z',
@@ -65,7 +65,16 @@ export function createFeedHandlers() {
       }),
     ),
     http.get('/api/v1/users/me', () =>
-      HttpResponse.json({ status: 'success', data: mockFeeds[0]!.author }),
+      HttpResponse.json({
+        status: 'success',
+        data: {
+          ...mockFeeds[0]!.author,
+          bio: null,
+          githubProfileUrl: null,
+          blogUrl: null,
+          counts: { projects: 0, feeds: 1 },
+        },
+      }),
     ),
     http.post('/api/v1/feeds', async ({ request }) => {
       const body = (await request.json()) as {
@@ -155,7 +164,11 @@ export function createFeedHandlers() {
             ? { categoryId: 1, slug: 'backend', displayName: '백엔드', type: 'GENERAL' }
             : { categoryId: 3, slug: 'tecode-talk', displayName: '테코드톡', type: 'EVENT' },
         ),
-        media: body.mediaIds.map((mediaId, displayOrder) => ({ mediaId, displayOrder })),
+        media: body.mediaIds.map((mediaId, displayOrder) => ({
+          displayOrder,
+          mediaId,
+          url: `https://cdn.example.com/media/${mediaId}`,
+        })),
         updatedAt: new Date().toISOString(),
       };
       feeds[index] = feed;
@@ -235,7 +248,7 @@ export function createFeedHandlers() {
       const item: FeedComment = {
         id: sequence++,
         content: body.content,
-        author: { userId: 1, displayName: '개발용 사용자', avatarImageId: null },
+        author: { userId: 1, displayName: '개발용 사용자', avatarUrl: null },
         parentId: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

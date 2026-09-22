@@ -1,23 +1,14 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { type ProjectSummary } from '@/types/project';
+import type { ProjectFindAllSuccessResponse } from '@/api/generated/schema';
+import { type ProjectListMeta, type ProjectSummary } from '@/types/project';
 import { httpClient } from '@/utils/client';
 
 const PROJECTS_PATH = '/api/v1/projects';
 
-interface ProjectListMeta {
-  nextCursor: string | null;
-  hasNext: boolean;
-  totalCount: number;
-}
-
-type ProjectListResponse = {
-  status: 'success';
-  data: ProjectSummary[];
-  meta: ProjectListMeta;
-};
+const EMPTY_META: ProjectListMeta = { nextCursor: null, hasNext: false, totalCount: 0 };
 
 export async function fetchProjectListPage(cursor?: string, signal?: AbortSignal) {
-  const response = await httpClient<ProjectListResponse>(PROJECTS_PATH, {
+  const response = await httpClient<ProjectFindAllSuccessResponse>(PROJECTS_PATH, {
     method: 'get',
     signal,
     retry: 0,
@@ -30,7 +21,7 @@ export async function fetchProjectListPage(cursor?: string, signal?: AbortSignal
 
   return {
     projects: response.data,
-    meta: response.meta ?? { nextCursor: null, hasNext: false, totalCount: response.data.length },
+    meta: response.meta ?? { ...EMPTY_META, totalCount: response.data.length },
   };
 }
 

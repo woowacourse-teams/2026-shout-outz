@@ -20,6 +20,7 @@ public record UserProjectResponse(
         String tagline,
         int cohort,
         ServiceStatus serviceStatus,
+        Long thumbnailImageId,
         String thumbnailUrl,
         Integer starCount,
         long likeCount,
@@ -49,6 +50,7 @@ public record UserProjectResponse(
                 project.tagline(),
                 project.cohort(),
                 project.serviceStatus(),
+                project.thumbnailMediaId(),
                 toUrl(mediaUrls, project.thumbnailMediaId()),
                 project.starCount(),
                 project.likeCount(),
@@ -63,6 +65,7 @@ public record UserProjectResponse(
             String displayName,
             Integer cohort,
             String track,
+            Long avatarImageId,
             String avatarUrl,
             String githubAvatarUrl,
             String githubProfileUrl
@@ -77,6 +80,7 @@ public record UserProjectResponse(
                     member.displayName(),
                     cohortValue(member.cohort()),
                     trackValue(member.track()),
+                    member.avatarImageId(),
                     toUrl(mediaUrls, member.avatarImageId()),
                     member.githubAvatarUrl(),
                     member.githubProfileUrl()

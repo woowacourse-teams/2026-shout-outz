@@ -1,20 +1,19 @@
 import { infiniteQueryOptions, mutationOptions, queryOptions } from '@tanstack/react-query';
 import { httpClient } from '@/utils/client';
-import type { Feed, FeedSort } from '@/types/feed';
+import type {
+  FeedFindAllSuccessResponse,
+  FeedFindSuccessResponse,
+  FeedSaveRequest,
+  FeedSaveSuccessResponse,
+  FeedUpdateSuccessResponse,
+} from '@/api/generated/schema';
+import type { CursorMeta } from '@/types/api';
+import type { FeedSort } from '@/types/feed';
 
 export type { Feed, FeedSort } from '@/types/feed';
 
-export interface CursorMeta {
-  nextCursor: string | null;
-  hasNext: boolean;
-}
-export interface Envelope<T> {
-  status: 'success';
-  data: T;
-  meta: CursorMeta;
-}
 export async function fetchFeed(feedId: number, signal?: AbortSignal) {
-  const response = await httpClient<{ status: 'success'; data: Feed }>(`/api/v1/feeds/${feedId}`, {
+  const response = await httpClient<FeedFindSuccessResponse>(`/api/v1/feeds/${feedId}`, {
     method: 'get',
     signal,
   });
@@ -30,14 +29,19 @@ export function feedQuery(feedId: number) {
   });
 }
 
-export interface SaveFeedInput {
-  content: string;
+/**
+ * 피드 작성·수정 요청 본문.
+ *
+ * 스키마는 categoryIds·mediaIds를 `(object | boolean | string | number)[]`로 뽑는다(생성기가
+ * 배열 원소 타입을 못 읽은 결과다). 서버가 받는 값은 ID 숫자라 number[]로 좁혀 쓴다.
+ */
+export interface SaveFeedInput extends Omit<FeedSaveRequest, 'categoryIds' | 'mediaIds'> {
   categoryIds: number[];
   mediaIds: number[];
 }
 
 export async function createFeed(input: SaveFeedInput) {
-  const response = await httpClient<{ status: 'success'; data: Feed }>('/api/v1/feeds', {
+  const response = await httpClient<FeedSaveSuccessResponse>('/api/v1/feeds', {
     method: 'post',
     json: input,
   });
@@ -50,7 +54,7 @@ export const createFeedMutation = mutationOptions({
   retry: false,
 });
 export async function updateFeed(feedId: number, input: SaveFeedInput) {
-  const response = await httpClient<{ status: 'success'; data: Feed }>(`/api/v1/feeds/${feedId}`, {
+  const response = await httpClient<FeedUpdateSuccessResponse>(`/api/v1/feeds/${feedId}`, {
     method: 'put',
     json: input,
   });
@@ -88,7 +92,7 @@ interface FetchFeedsParams {
 }
 
 export async function fetchFeeds({ sort, categoryId, cursor, size, signal }: FetchFeedsParams) {
-  const response = await httpClient<Envelope<Feed[]>>('/api/v1/feeds', {
+  const response = await httpClient<FeedFindAllSuccessResponse>('/api/v1/feeds', {
     method: 'get',
     signal,
     searchParams: {

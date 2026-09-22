@@ -8,6 +8,7 @@ public final class Feed {
 
     private final Long id;
     private final Long authorId;
+    private final String title;
     private final String content;
     private final Instant createdAt;
     private final Instant updatedAt;
@@ -16,6 +17,7 @@ public final class Feed {
     private Feed(
             Long id,
             Long authorId,
+            String title,
             String content,
             Instant createdAt,
             Instant updatedAt,
@@ -24,6 +26,7 @@ public final class Feed {
         FeedValidator.validate(
                 id,
                 authorId,
+                title,
                 content,
                 createdAt,
                 updatedAt,
@@ -31,33 +34,35 @@ public final class Feed {
         );
         this.id = id;
         this.authorId = authorId;
+        this.title = title;
         this.content = content;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
     }
 
-    public static Feed create(long authorId, String content, Instant now) {
-        return new Feed(null, authorId, content, now, now, null);
+    public static Feed create(long authorId, String title, String content, Instant now) {
+        return new Feed(null, authorId, title, content, now, now, null);
     }
 
     public static Feed reconstitute(
             long id,
             long authorId,
+            String title,
             String content,
             Instant createdAt,
             Instant updatedAt,
             Instant deletedAt
     ) {
-        return new Feed(id, authorId, content, createdAt, updatedAt, deletedAt);
+        return new Feed(id, authorId, title, content, createdAt, updatedAt, deletedAt);
     }
 
-    public Feed updateContent(String content, Instant updatedAt) {
-        return new Feed(id, authorId, content, createdAt, updatedAt, deletedAt);
+    public Feed update(String title, String content, Instant updatedAt) {
+        return new Feed(id, authorId, title, content, createdAt, updatedAt, deletedAt);
     }
 
     public Feed delete(Instant deletedAt) {
-        return new Feed(id, authorId, content, createdAt, deletedAt, deletedAt);
+        return new Feed(id, authorId, title, content, createdAt, deletedAt, deletedAt);
     }
 
     public boolean isWrittenBy(long userId) {

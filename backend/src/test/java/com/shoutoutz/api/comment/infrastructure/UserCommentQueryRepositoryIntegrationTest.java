@@ -91,8 +91,8 @@ class UserCommentQueryRepositoryIntegrationTest {
     private long insertFeed(long authorId, boolean deleted) {
         return jdbcTemplate.queryForObject(
                 """
-                        INSERT INTO feeds (author_id, content, deleted_at)
-                        VALUES (?, '피드 본문', ?)
+                        INSERT INTO feeds (author_id, title, content, deleted_at)
+                        VALUES (?, '테스트 피드', '피드 본문', ?)
                         RETURNING id
                         """,
                 Long.class,

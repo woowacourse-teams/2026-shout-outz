@@ -241,6 +241,7 @@ public class ProjectCommentService {
                 new ProjectCommentFindResponse.Author(
                         author.getUserId(),
                         author.getDisplayName().value(),
+                        author.getAvatarImageId(),
                         toUrl(findUrl(avatarUrls, author.getAvatarImageId()))
                 ),
                 comment.getParentId(),

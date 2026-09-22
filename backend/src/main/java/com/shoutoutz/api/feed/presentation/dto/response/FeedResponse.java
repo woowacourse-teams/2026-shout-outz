@@ -12,6 +12,7 @@ import java.util.Map;
 
 public record FeedResponse(
         long feedId,
+        String title,
         String content,
         Author author,
         List<Category> categories,
@@ -27,6 +28,7 @@ public record FeedResponse(
         Map<Long, URI> urls = mediaUrls == null ? Map.of() : mediaUrls;
         return new FeedResponse(
                 feed.feedId(),
+                feed.title(),
                 feed.content(),
                 Author.from(feed.author(), urls),
                 feed.categories().stream().map(Category::from).toList(),
@@ -52,6 +54,7 @@ public record FeedResponse(
             UserType userType,
             String track,
             Short cohort,
+            Long avatarImageId,
             String avatarUrl
     ) {
         private static Author from(FeedItem.Author author, Map<Long, URI> mediaUrls) {
@@ -61,6 +64,7 @@ public record FeedResponse(
                     author.userType(),
                     trackValue(author.track()),
                     cohortValue(author.cohort()),
+                    author.avatarImageId(),
                     toUrl(findUrl(mediaUrls, author.avatarImageId()))
             );
         }
@@ -96,9 +100,13 @@ public record FeedResponse(
         }
     }
 
-    public record Media(String url, int displayOrder) {
+    public record Media(long mediaId, String url, int displayOrder) {
         private static Media from(FeedItem.Media media, Map<Long, URI> mediaUrls) {
-            return new Media(toUrl(findUrl(mediaUrls, media.mediaId())), media.displayOrder());
+            return new Media(
+                    media.mediaId(),
+                    toUrl(findUrl(mediaUrls, media.mediaId())),
+                    media.displayOrder()
+            );
         }
     }
 

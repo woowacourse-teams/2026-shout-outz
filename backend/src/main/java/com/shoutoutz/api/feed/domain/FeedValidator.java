@@ -1,6 +1,7 @@
 package com.shoutoutz.api.feed.domain;
 
 import static com.shoutoutz.api.common.validator.DomainValidator.validateLongMinSize;
+import static com.shoutoutz.api.common.validator.DomainValidator.validateMaxLength;
 import static com.shoutoutz.api.common.validator.DomainValidator.validateNotNull;
 import static com.shoutoutz.api.common.validator.DomainValidator.validateNotNullOrBlank;
 import static com.shoutoutz.api.feed.domain.FeedErrorCode.FEED_INVALID_STATE;
@@ -13,12 +14,15 @@ import java.time.Instant;
  */
 final class FeedValidator {
 
+    private static final int MAX_TITLE_LENGTH = 100;
+
     private FeedValidator() {
     }
 
     static void validate(
             Long id,
             Long authorId,
+            String title,
             String content,
             Instant createdAt,
             Instant updatedAt,
@@ -29,6 +33,8 @@ final class FeedValidator {
         }
         validateNotNull(authorId, FEED_INVALID_STATE);
         validateLongMinSize(authorId, 1, FEED_INVALID_STATE);
+        validateNotNullOrBlank(title, FEED_INVALID_STATE);
+        validateMaxLength(title, MAX_TITLE_LENGTH, FEED_INVALID_STATE);
         validateNotNullOrBlank(content, FEED_INVALID_STATE);
         validateNotNull(createdAt, FEED_INVALID_STATE);
         validateNotNull(updatedAt, FEED_INVALID_STATE);
