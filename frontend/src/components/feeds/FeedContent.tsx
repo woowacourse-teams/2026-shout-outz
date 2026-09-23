@@ -9,13 +9,28 @@ export function findFirstUrl(content: string) {
   return content.match(FIRST_URL_PATTERN)?.[0].replace(/[.,!?;:]+$/, '');
 }
 
-export function FeedContent({ feed }: { feed: Feed }) {
+/**
+ * 피드 본문. 카드와 상세가 같이 쓴다.
+ *
+ * 제목은 본문 위에 굵게 얹는다. 카드에서는 `h3`, 상세에서는 `h2`가 맞아 `titleAs`로 받는다
+ * (상세는 위에 다른 제목이 없어 이 제목이 문서의 두 번째 단계다).
+ */
+export function FeedContent({
+  feed,
+  titleAs: Title = 'h3',
+}: {
+  feed: Feed;
+  titleAs?: 'h2' | 'h3';
+}) {
   const media = [...feed.media].sort((a, b) => a.displayOrder - b.displayOrder);
   const firstUrl = findFirstUrl(feed.content);
 
   return (
     <>
-      <div className="mt-5 space-y-3 text-base leading-7 break-words text-gray-800">
+      <Title className="mt-4 text-base leading-snug font-bold break-words text-gray-900 md:text-lg">
+        {feed.title}
+      </Title>
+      <div className="mt-2 space-y-3 text-base leading-7 break-words text-gray-800">
         <Markdown
           skipHtml
           components={{

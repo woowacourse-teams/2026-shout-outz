@@ -57,14 +57,19 @@ export interface ButtonProps extends ComponentProps<'button'>, ButtonVariants {}
  */
 export type ButtonStylesOptions = ButtonVariants & { className?: string };
 
+// 비활성은 native `disabled` 속성으로만 표현하므로, 보이는 것도 여기서 같이 처리한다.
+// hover 배경은 `disabled:hover:*`로 각 variant에서 되돌린다.
 const BASE =
-  'inline-flex cursor-pointer items-center justify-center rounded-lg whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:outline-none';
+  'inline-flex cursor-pointer items-center justify-center rounded-lg whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50';
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'bg-primary-500 font-medium text-white hover:bg-primary-600',
-  secondary: 'border border-gray-200 bg-gray-100 font-medium text-gray-600 hover:bg-gray-200',
-  outline: 'border border-gray-200 font-medium text-gray-600 hover:bg-gray-50',
-  ghost: 'font-medium text-gray-600 hover:bg-gray-100',
+  primary:
+    'bg-primary-500 font-medium text-white hover:bg-primary-600 disabled:hover:bg-primary-500',
+  secondary:
+    'border border-gray-200 bg-gray-100 font-medium text-gray-600 hover:bg-gray-200 disabled:hover:bg-gray-100',
+  outline:
+    'border border-gray-200 font-medium text-gray-600 hover:bg-gray-50 disabled:hover:bg-transparent',
+  ghost: 'font-medium text-gray-600 hover:bg-gray-100 disabled:hover:bg-transparent',
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {

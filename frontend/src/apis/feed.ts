@@ -34,11 +34,17 @@ export function feedQuery(feedId: number) {
  *
  * 스키마는 categoryIds·mediaIds를 `(object | boolean | string | number)[]`로 뽑는다(생성기가
  * 배열 원소 타입을 못 읽은 결과다). 서버가 받는 값은 ID 숫자라 number[]로 좁혀 쓴다.
+ *
+ * `title`은 작성·수정 모두 필수다(공백 제외 1자 이상, 100자 이하).
  */
 export interface SaveFeedInput extends Omit<FeedSaveRequest, 'categoryIds' | 'mediaIds'> {
   categoryIds: number[];
   mediaIds: number[];
 }
+
+/** 제목·본문 길이 한도. 서버 제약과 같은 값을 화면에서도 미리 막는다. */
+export const FEED_TITLE_MAX = 100;
+export const FEED_CONTENT_MAX = 500;
 
 export async function createFeed(input: SaveFeedInput) {
   const response = await httpClient<FeedSaveSuccessResponse>('/api/v1/feeds', {

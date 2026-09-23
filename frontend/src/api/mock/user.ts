@@ -77,6 +77,7 @@ const feedAuthor = {
 const FEEDS: Feed[] = [
   {
     feedId: 101,
+    title: '영수증 OCR 비동기 큐 최적화',
     content: '영수증 OCR 파싱 작업에서 멀티스레드 비동기 큐를 적용해 응답 시간을 단축했습니다.',
     author: feedAuthor,
     categories: [{ categoryId: 1, slug: 'backend', displayName: '백엔드', type: 'GENERAL' }],
@@ -86,6 +87,7 @@ const FEEDS: Feed[] = [
   },
   {
     feedId: 102,
+    title: 'Redis 분산락과 Redisson Watchdog',
     content: 'Redis 분산락과 Redisson 라이브러리의 Watchdog 메커니즘을 정리했습니다.',
     author: feedAuthor,
     categories: [],

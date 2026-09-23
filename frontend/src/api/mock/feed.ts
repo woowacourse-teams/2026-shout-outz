@@ -17,6 +17,7 @@ const crew = (
 
 const feed = (feedId: number, author: FeedAuthor, content: string, createdAt: string): Feed => ({
   feedId,
+  title: content.slice(0, 30),
   content,
   author,
   categories: [],
