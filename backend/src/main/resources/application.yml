@@ -37,8 +37,9 @@ github:
 auth:
   oauth:
     completion-uri: ${FRONTEND_OAUTH_COMPLETION_URI:http://localhost:5173}
-  cors:
-    allowed-origin-patterns: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+cors:
+  allowed-origin-patterns: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 
 # 방문자 식별 쿠키 속성은 세션 쿠키와 맞춘다.
 visitor:

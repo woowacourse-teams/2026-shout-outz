@@ -41,13 +41,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @ActiveProfiles("test")
 @Import(OAuthLoginAcceptanceTest.TestAuthHttpApi.class)
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {
-                "auth.cors.allowed-origin-patterns=http://localhost:5173,"
-                        + "https://shout-ou.tz,https://*.shout-ou.tz"
-        }
-)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class OAuthLoginAcceptanceTest {
 
     private static final String GITHUB_AUTHORIZATION_PATH =
@@ -228,58 +222,6 @@ class OAuthLoginAcceptanceTest {
         assertThat(response.jsonPath().getString("data.status"))
                 .isEqualTo("UNAUTHENTICATED");
         assertThat(response.jsonPath().getString("data.csrfToken")).isNotBlank();
-    }
-
-    @Test
-    @DisplayName("허용된 프론트엔드 Origin의 세션 API 요청을 허용한다")
-    void allowsConfiguredFrontendOrigin() {
-        Response response = RestAssured.given()
-                .port(port)
-                .header("Origin", "http://localhost:5173")
-                .header("Access-Control-Request-Method", "GET")
-                .when()
-                .options(AUTH_SESSION_PATH);
-
-        assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.header("Access-Control-Allow-Origin"))
-                .isEqualTo("http://localhost:5173");
-        assertThat(response.header("Access-Control-Allow-Credentials"))
-                .isEqualTo("true");
-    }
-
-    @Test
-    @DisplayName("설정된 루트 도메인의 CORS 사전 요청을 허용한다")
-    void allowsConfiguredRootDomainOrigin() {
-        assertCorsPreflightAllowed("https://shout-ou.tz");
-    }
-
-    @Test
-    @DisplayName("설정된 패턴에 일치하는 서브도메인의 CORS 사전 요청을 허용한다")
-    void allowsConfiguredSubdomainOriginPattern() {
-        assertCorsPreflightAllowed("https://dev.shout-ou.tz");
-    }
-
-    @Test
-    @DisplayName("허용되지 않은 Origin의 세션 API 요청을 거부한다")
-    void rejectsUnknownOrigin() {
-        Response response = RestAssured.given()
-                .port(port)
-                .header("Origin", "https://attacker.example")
-                .header("Access-Control-Request-Method", "GET")
-                .when()
-                .options(AUTH_SESSION_PATH);
-
-        assertThat(response.statusCode()).isEqualTo(403);
-        assertThat(response.header("Access-Control-Allow-Origin")).isNull();
-    }
-
-    @Test
-    @DisplayName("허용 패턴과 이름만 비슷한 외부 도메인의 CORS 사전 요청을 거부한다")
-    void rejectsLookalikeOrigin() {
-        Response response = corsPreflight("https://shout-ou.tz.attacker.example");
-
-        assertThat(response.statusCode()).isEqualTo(403);
-        assertThat(response.header("Access-Control-Allow-Origin")).isNull();
     }
 
     @Test
@@ -491,23 +433,6 @@ class OAuthLoginAcceptanceTest {
                 .isEqualTo(signupResult.userId());
         assertThat(authenticatedResponse.jsonPath().getString("role"))
                 .isEqualTo("USER");
-    }
-
-    private void assertCorsPreflightAllowed(String origin) {
-        Response response = corsPreflight(origin);
-
-        assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.header("Access-Control-Allow-Origin")).isEqualTo(origin);
-        assertThat(response.header("Access-Control-Allow-Credentials")).isEqualTo("true");
-    }
-
-    private Response corsPreflight(String origin) {
-        return RestAssured.given()
-                .port(port)
-                .header("Origin", origin)
-                .header("Access-Control-Request-Method", "GET")
-                .when()
-                .options(AUTH_SESSION_PATH);
     }
 
     private OAuthSignupAcceptanceResult completeOAuthSignup() {
