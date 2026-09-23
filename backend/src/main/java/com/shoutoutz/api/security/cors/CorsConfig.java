@@ -1,4 +1,4 @@
-package com.shoutoutz.api.common.config;
+package com.shoutoutz.api.security.cors;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

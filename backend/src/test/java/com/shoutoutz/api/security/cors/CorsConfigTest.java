@@ -1,4 +1,4 @@
-package com.shoutoutz.api.common.config;
+package com.shoutoutz.api.security.cors;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
