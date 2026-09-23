@@ -1,0 +1,10 @@
+package com.shoutoutz.api.security.cors;
+
+import java.util.List;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "cors")
+record CorsProperties(
+        List<String> allowedOriginPatterns
+) {
+}
