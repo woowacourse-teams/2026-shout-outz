@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { handlers } from '@/api/mock/handlers';
+import { ModalProvider } from '@/components/ModalProvider';
 import { MarkdownContent } from '@/components/MarkdownContent';
 import { routeTree } from '@/routeTree.gen';
 
@@ -29,7 +30,9 @@ function renderPage(path = '/projects/1') {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <ModalProvider>
+        <RouterProvider router={router} />
+      </ModalProvider>
     </QueryClientProvider>,
   );
 }

@@ -4,6 +4,7 @@ import { render } from '@testing-library/react';
 import { setupServer } from 'msw/node';
 
 import { handlers } from '@/api/mock/handlers';
+import { ModalProvider } from '@/components/ModalProvider';
 import { routeTree } from '@/routeTree.gen';
 
 /**
@@ -46,7 +47,9 @@ export function renderRoute(entry: string) {
 
   render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <ModalProvider>
+        <RouterProvider router={router} />
+      </ModalProvider>
     </QueryClientProvider>,
   );
 

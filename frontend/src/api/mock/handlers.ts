@@ -120,6 +120,19 @@ export const handlers = [
     }),
   ),
 
+  http.get('/api/v1/projects/filters', ({ request }) => {
+    const selected = new URL(request.url).searchParams.get('techTagIds')?.split(',') ?? [];
+
+    return HttpResponse.json({
+      status: 'success',
+      data: {
+        // 고른 조건이 늘수록 남는 수가 줄어드는 것만 흉내 낸다.
+        matchedProjectCount: Math.max(projects.length - selected.length, 0),
+        cohorts: getCohorts().map(({ cohort, year }) => ({ cohort, year, projectCount: cohort })),
+        techTags: getTechTags().map((tag) => ({ ...tag, projectCount: tag.id * 2 })),
+      },
+    });
+  }),
   http.get('/api/v1/projects/:projectId', ({ params }) => {
     const index = projects.findIndex((_, index) => String(index + 1) === params.projectId);
     const project = projects[index];
