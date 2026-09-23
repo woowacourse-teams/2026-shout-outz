@@ -26,7 +26,9 @@ class AuthWebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping(API_PATH)
-                .allowedOrigins(authCorsProperties.allowedOrigins().toArray(String[]::new))
+                .allowedOriginPatterns(
+                        authCorsProperties.allowedOriginPatterns().toArray(String[]::new)
+                )
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("Content-Type", "X-CSRF-Token")
                 .allowCredentials(true);
