@@ -1,15 +1,9 @@
 name: Deploy Frontend Artifacts
 
-# GitHub Actions 설정 (Settings → Secrets and variables → Actions)
-#
-# [Environments]
-# production (main), development (develop)
-# API_ORIGIN=https://api.example.com
-#
-# [Repository variables]
+# [variables]
 # MIRROR_TARGET_REPO=git@github.com:owner/private-repo.git
 #
-# [Repository 또는 Environment secrets]
+# [secrets]
 # PRIVATE_REPO_DEPLOY_KEY=<SSH private key>
 
 on:
@@ -46,7 +40,6 @@ jobs:
 
       - name: Verify required configuration
         env:
-          API_ORIGIN: ${{ vars.API_ORIGIN }}
           MIRROR_TARGET_REPO: ${{ vars.MIRROR_TARGET_REPO }}
           DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
         run: |
@@ -58,7 +51,7 @@ jobs:
               fail=1
             fi
           }
-          check vars.API_ORIGIN                 "$API_ORIGIN"
+
           check vars.MIRROR_TARGET_REPO         "$MIRROR_TARGET_REPO"
           check secrets.PRIVATE_REPO_DEPLOY_KEY "$DEPLOY_KEY"
           [ "$fail" -eq 0 ] || exit 1
@@ -95,9 +88,21 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          NODE_ENV: production
-          API_ORIGIN: ${{ vars.API_ORIGIN }}
-        run: npm run build
+          GITHUB_VARS_JSON: ${{ toJSON(vars) }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { spawnSync } from 'node:child_process';
+
+          const { GITHUB_VARS_JSON, ...inheritedEnv } = process.env;
+          const variables = JSON.parse(GITHUB_VARS_JSON);
+          const result = spawnSync('npm', ['run', 'build'], {
+            stdio: 'inherit',
+            env: { ...inheritedEnv, ...variables, NODE_ENV: 'production' },
+          });
+
+          if (result.error) throw result.error;
+          process.exit(result.status ?? 1);
+          NODE
 
       - name: Verify build output
         working-directory: frontend
