@@ -9,6 +9,7 @@ import { Tab } from '@/components/Tab';
 import { NewsListBoundary } from '@/components/news/NewsListBoundary';
 import { DEFAULT_NEWS_FILTER, DEFAULT_NEWS_SORT, NEWS_FILTERS, NEWS_SORTS } from '@/constants/news';
 import type { NewsFilter, NewsSort } from '@/types/news';
+import { analytics } from '@/utils/analytics';
 
 const FILTER_LABELS: Record<NewsFilter, string> = {
   ALL: '전체',
@@ -48,7 +49,10 @@ export function NewsPage() {
             variant="chip"
             size="sm"
             value={filter}
-            onChange={(value) => setSearch({ type: value as NewsFilter })}
+            onChange={(value) => {
+              analytics.track({ name: 'news_filter_changed', type: value });
+              setSearch({ type: value as NewsFilter });
+            }}
             aria-label="소식 분류"
           >
             {NEWS_FILTERS.map((value) => (

@@ -3,6 +3,7 @@ import type { ComponentProps, ReactNode } from 'react';
 
 import { tabItemBaseStyle, tabItemSizeStyles, tabItemStyles } from '@/components/Tab';
 import { cn } from '@/utils/cn';
+import { analytics, toPathPattern, type NavTab } from '@/utils/analytics';
 
 export const GNB_ITEMS = linkOptions([
   { to: '/', activeOptions: { exact: true }, label: '홈' },
@@ -10,6 +11,13 @@ export const GNB_ITEMS = linkOptions([
   { to: '/projects', label: '프로젝트' },
   { to: '/news', label: '소식' },
 ]);
+
+const NAV_TAB_BY_PATH: Record<string, NavTab> = {
+  '/': 'home',
+  '/feeds': 'feeds',
+  '/projects': 'projects',
+  '/news': 'news',
+};
 
 export interface GnbProps extends ComponentProps<'header'> {
   trailing?: ReactNode;
@@ -45,7 +53,18 @@ export function Gnb({ trailing, className, ...props }: GnbProps) {
 
         <nav className="order-last flex h-11 w-full items-center gap-4 border-t border-gray-100 md:order-none md:ml-9 md:h-18 md:w-auto md:gap-2 md:border-t-0">
           {GNB_ITEMS.map((item) => (
-            <Link key={item.to} {...item} className={NAV_ITEM}>
+            <Link
+              key={item.to}
+              {...item}
+              className={NAV_ITEM}
+              onClick={() =>
+                analytics.track({
+                  name: 'nav_tab_clicked',
+                  tab: NAV_TAB_BY_PATH[item.to]!,
+                  from: toPathPattern(window.location.pathname),
+                })
+              }
+            >
               {item.label}
             </Link>
           ))}

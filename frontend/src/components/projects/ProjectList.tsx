@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { countProjectFilters } from '@/constants/project';
 import { type ProjectFilter } from '@/types/project';
+import { analytics } from '@/utils/analytics';
 
 export interface ProjectListProps {
   filter: ProjectFilter;
@@ -33,6 +34,14 @@ export function ProjectList({ filter, onResetFilter }: ProjectListProps) {
               to="/projects/$id"
               params={{ id: String(project.id) }}
               className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
+              onClick={() => {
+                analytics.track({ name: 'card_clicked', target: 'project', surface: 'projects' });
+                analytics.track({
+                  name: 'project_detail_opened',
+                  projectId: project.id,
+                  from: 'projects',
+                });
+              }}
             >
               <ProjectCard
                 title={project.title}

@@ -19,6 +19,7 @@ import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { formatRelativeTime } from '@/utils/date';
 import { getApiErrorMessage } from '@/utils/error';
 import { getGithubLoginUrl } from '@/utils/auth';
+import { analytics, toPathPattern } from '@/utils/analytics';
 
 export function Comments({ feedId }: { feedId: number }) {
   return (
@@ -122,6 +123,7 @@ function CommentList({
     setMessage('');
     try {
       await mutation.mutateAsync(input);
+      if (input.method === 'post') analytics.track({ name: 'comment_submitted' });
     } catch (error) {
       setFailure(getApiErrorMessage(error));
       return;
@@ -172,7 +174,16 @@ function CommentList({
       ) : (
         <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
           댓글을 작성하려면{' '}
-          <a className="text-primary-600 underline" href={getGithubLoginUrl()}>
+          <a
+            className="text-primary-600 underline"
+            href={getGithubLoginUrl()}
+            onClick={() =>
+              analytics.track({
+                name: 'login_started',
+                from: toPathPattern(window.location.pathname),
+              })
+            }
+          >
             GitHub 로그인
           </a>
           이 필요합니다.

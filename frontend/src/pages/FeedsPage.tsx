@@ -7,6 +7,7 @@ import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { FeedList } from '@/components/feeds/FeedList';
 import { PopularFeedList } from '@/components/feeds/PopularFeedList';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { analytics } from '@/utils/analytics';
 
 const DESKTOP_MEDIA_QUERY = '(min-width: 64rem)';
 
@@ -36,7 +37,10 @@ export function FeedsPage({
                 variant="chip"
                 size="sm"
                 value={sort}
-                onChange={(value) => onSortChange(value as FeedSort)}
+                onChange={(value) => {
+                  analytics.track({ name: 'feed_sort_changed', sort: value, surface: 'feeds' });
+                  onSortChange(value as FeedSort);
+                }}
                 aria-label="피드 정렬"
               >
                 <Tab.Item value="LATEST">최신순</Tab.Item>

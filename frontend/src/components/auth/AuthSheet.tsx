@@ -3,6 +3,7 @@ import { IconBrandGithub } from '@tabler/icons-react';
 import { Modal } from '@/components/Modal';
 import { Button, getButtonStyles } from '@/components/Button';
 import { getGithubLoginUrl } from '@/utils/auth';
+import { analytics, toPathPattern } from '@/utils/analytics';
 
 export interface AuthSheetProps {
   onClose: () => void;
@@ -30,6 +31,12 @@ export function AuthSheet({ onClose }: AuthSheetProps) {
 
         <a
           href={getGithubLoginUrl()}
+          onClick={() =>
+            analytics.track({
+              name: 'login_started',
+              from: toPathPattern(window.location.pathname),
+            })
+          }
           className={getButtonStyles({
             size: 'lg',
             className: 'mt-2 w-full gap-2 rounded-2xl bg-gray-900 hover:bg-gray-800',

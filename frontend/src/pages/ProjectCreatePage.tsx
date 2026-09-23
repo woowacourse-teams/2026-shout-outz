@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 
@@ -17,6 +17,7 @@ import { toProjectCreateRequest, validateProjectForm } from '@/utils/project';
 import { sessionQuery } from '@/apis/session';
 import { verificationRequestQuery } from '@/apis/verification';
 import { getGithubLoginUrl } from '@/utils/auth';
+import { analytics, toPathPattern } from '@/utils/analytics';
 
 const EMPTY_FORM: ProjectFormValues = {
   title: '',
@@ -49,7 +50,16 @@ export function ProjectCreatePage() {
         title="로그인이 필요해요."
         description="프로젝트를 등록하려면 먼저 GitHub로 로그인해 주세요."
         action={
-          <a href={getGithubLoginUrl()} className={getButtonStyles({})}>
+          <a
+            href={getGithubLoginUrl()}
+            onClick={() =>
+              analytics.track({
+                name: 'login_started',
+                from: toPathPattern(window.location.pathname),
+              })
+            }
+            className={getButtonStyles({})}
+          >
             GitHub 로그인
           </a>
         }
@@ -111,12 +121,35 @@ function ProjectCreateForm() {
     value: ProjectFormValues[Key],
   ) => setValues((current) => ({ ...current, [field]: value }));
 
+  useEffect(() => {
+    analytics.track({ name: 'project_create_started', from: document.referrer });
+  }, []);
+
   const submit = () => {
     const nextErrors = validateProjectForm(values);
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length > 0) {
+      analytics.track({
+        name: 'project_create_failed',
+        reason: 'VALIDATION',
+        invalidFields: Object.keys(nextErrors),
+      });
+      return;
+    }
 
-    createProject.mutate(toProjectCreateRequest(values));
+    createProject.mutate(toProjectCreateRequest(values), {
+      onSuccess: () =>
+        analytics.track({
+          name: 'project_create_submitted',
+          cohort: values.cohort!,
+          techTagCount: values.techTags.length,
+          memberCount: values.members.length,
+          hasThumbnail: values.thumbnailImageId !== null,
+          hasDeploymentUrl: values.deploymentUrl.trim() !== '',
+        }),
+      onError: () =>
+        analytics.track({ name: 'project_create_failed', reason: 'SERVER', invalidFields: [] }),
+    });
   };
 
   return (

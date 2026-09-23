@@ -8,6 +8,7 @@ import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { formatCrewName } from '@/utils/user';
 import { getApiErrorMessage } from '@/utils/error';
+import { analytics } from '@/utils/analytics';
 
 interface FeedFormProps {
   userId: number;
@@ -50,7 +51,7 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
         // 수정은 전체 교체라, 조회 응답이 준 mediaId를 표시 순서대로 다시 실어 기존 첨부를 지킨다.
         mediaIds: [...(initialFeed?.media ?? [])]
           .sort((a, b) => a.displayOrder - b.displayOrder)
-          .map((item) => item.mediaId),
+          .flatMap((item) => (item.mediaId === undefined ? [] : [item.mediaId])),
       });
       // 작성·수정 응답의 media에는 아직 mediaId가 없다(조회 응답에만 있다). 그 값을 상세 캐시에
       // 그대로 넣으면 바로 이어서 수정할 때 첨부 ID를 잃으므로, 캐시를 비우고 다시 읽게 한다.
@@ -59,8 +60,18 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
       // TODO 프로필 피드 탭은 ['users', handle, 'feeds']로 따로 캐시된다.
       // api 폴더를 정리할 때 피드 캐시 키를 한 규칙으로 맞추고 이 줄을 없앤다.
       void client.invalidateQueries({ queryKey: ['users'] });
+      if (!initialFeed) {
+        analytics.track({
+          name: 'feed_create_submitted',
+          categoryCount: feed.categories.length,
+          mediaCount: feed.media.length,
+        });
+      }
       onSaved(feed.feedId);
     } catch {
+      if (!initialFeed) {
+        analytics.track({ name: 'feed_create_failed', reason: '요청 실패' });
+      }
       // Mutation의 오류 상태로 메시지를 표시하고 작성 내용은 유지한다.
     } finally {
       submitting.current = false;

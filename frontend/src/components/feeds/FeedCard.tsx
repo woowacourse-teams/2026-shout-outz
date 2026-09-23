@@ -10,14 +10,21 @@ import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { Comments } from '@/components/feed-comments/Comments';
 import { formatCrewName } from '@/utils/user';
 import { formatRelativeTime } from '@/utils/date';
+import { analytics, type FeedSurface } from '@/utils/analytics';
 
-export function FeedCard({ feed }: { feed: Feed }) {
+export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }) {
   const [open, setOpen] = useState(false);
   return (
     <article className="min-w-0 border-b border-gray-100 py-6 first:pt-4 md:py-7">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <Link to="/feeds/$feedId" params={{ feedId: String(feed.feedId) }}>
+          <Link
+            to="/feeds/$feedId"
+            params={{ feedId: String(feed.feedId) }}
+            onClick={() =>
+              analytics.track({ name: 'feed_detail_opened', feedId: feed.feedId, from: surface })
+            }
+          >
             <div className="flex min-w-0 items-center gap-2">
               <Avatar size="md" alt={`${feed.author.displayName} 프로필`} />
               <div className="min-w-0">

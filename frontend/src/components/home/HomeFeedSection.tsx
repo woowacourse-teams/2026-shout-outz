@@ -6,6 +6,7 @@ import { feedListQueryOptions } from '@/api/feed';
 import { FeedCard } from '@/components/feeds/FeedCard';
 import { Tab } from '@/components/Tab';
 import { type FeedSort } from '@/types/feed';
+import { analytics } from '@/utils/analytics';
 
 const HOME_FEED_SIZE = 3;
 
@@ -20,7 +21,10 @@ export function HomeFeedSection() {
   const { data: feeds } = useSuspenseQuery(feedListQueryOptions({ sort, size: HOME_FEED_SIZE }));
 
   // TODO fallback을 보여주지 않지만 반응이 없는 것처럼 보일 수도 있음. 논의 후에 적용하면 좋을 것 같아서 남겨둠
-  const changeSort = (value: string) => startTransition(() => setSort(value as FeedSort));
+  const changeSort = (value: string) => {
+    analytics.track({ name: 'feed_sort_changed', sort: value, surface: 'home' });
+    startTransition(() => setSort(value as FeedSort));
+  };
 
   return (
     <section aria-label="피드" className="flex flex-col gap-3">
@@ -36,6 +40,7 @@ export function HomeFeedSection() {
         <Link
           to="/feeds"
           className="text-primary-600 focus-visible:outline-primary-600 shrink-0 rounded-sm text-sm font-bold focus-visible:outline-2"
+          onClick={() => analytics.track({ name: 'section_more_clicked', target: 'feeds' })}
         >
           피드 전체보기 ›
         </Link>
@@ -47,7 +52,7 @@ export function HomeFeedSection() {
         <ul>
           {feeds.map((feed) => (
             <li key={feed.feedId} className="min-w-0">
-              <FeedCard feed={feed} />
+              <FeedCard feed={feed} surface="home" />
             </li>
           ))}
         </ul>

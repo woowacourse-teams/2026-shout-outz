@@ -6,6 +6,8 @@ import { Document } from '@/Document';
 import { getApiOrigin } from '@/utils/auth';
 import { App } from '@/App';
 import { createAppRouter } from './router';
+import { analytics } from '@/utils/analytics';
+import { connectRouterPageViews } from '@/utils/analytics/connect';
 
 const queryClient = new QueryClient();
 const router = createAppRouter(queryClient);
@@ -20,6 +22,9 @@ async function bootstrap() {
     const { worker } = await import('@/mocks/browser');
     await worker.start({ onUnhandledRequest: 'bypass' });
   }
+  // 라우터가 첫 경로를 해석하는 렌더보다 먼저 연결해야 최초 진입도 페이지뷰로 잡히기 때문에 순서 주의해야 함
+  connectRouterPageViews(router, analytics);
+
   const routerHydrationState = window.$_TSR;
   const tree = (
     <Document>

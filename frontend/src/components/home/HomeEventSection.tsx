@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router';
 
 import { newsListQueryOptions } from '@/api/news';
 import { NewsItem } from '@/components/NewsItem';
+import { analytics } from '@/utils/analytics';
 
 const HOME_EVENT_SIZE = 2;
 
@@ -23,6 +24,7 @@ export function HomeEventSection() {
         <Link
           to="/news"
           className="text-primary-600 focus-visible:outline-primary-600 shrink-0 rounded-sm text-xs font-bold focus-visible:outline-2"
+          onClick={() => analytics.track({ name: 'section_more_clicked', target: 'news' })}
         >
           소식 더보기 ›
         </Link>
@@ -38,6 +40,15 @@ export function HomeEventSection() {
                 to="/news/$newsId"
                 params={{ newsId: String(id) }}
                 className="focus-visible:outline-primary-600 block rounded-sm focus-visible:outline-2"
+                onClick={() => {
+                  analytics.track({ name: 'card_clicked', target: 'news', surface: 'home' });
+                  analytics.track({
+                    name: 'news_detail_opened',
+                    newsId: id,
+                    type: event.type,
+                    from: 'home',
+                  });
+                }}
               >
                 <NewsItem {...event} />
               </Link>

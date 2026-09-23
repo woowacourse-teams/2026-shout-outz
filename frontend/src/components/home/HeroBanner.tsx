@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import { type HomeBanner } from '@/types/home';
 import { cn } from '@/utils/cn';
 import { resolveHomeBannerLink } from '@/utils/home-banner';
+import { analytics } from '@/utils/analytics';
 
 /**
  * 홈 상단 배너.
@@ -37,6 +38,7 @@ export function HeroBanner({ banner, className }: HeroBannerProps) {
         target="_blank"
         rel="noopener noreferrer"
         className={cn(FRAME, className)}
+        onClick={() => analytics.track({ name: 'hero_banner_clicked' })}
       >
         {image}
       </a>
@@ -44,7 +46,11 @@ export function HeroBanner({ banner, className }: HeroBannerProps) {
   }
 
   return (
-    <Link to={link.href} className={cn(FRAME, className)}>
+    <Link
+      to={link.href}
+      className={cn(FRAME, className)}
+      onClick={() => analytics.track({ name: 'hero_banner_clicked' })}
+    >
       {image}
     </Link>
   );

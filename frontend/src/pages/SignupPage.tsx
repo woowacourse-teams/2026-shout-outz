@@ -9,6 +9,7 @@ import { Footer } from '@/components/Footer';
 import { Input } from '@/components/Input';
 import { getGithubLoginUrl } from '@/utils/auth';
 import { getApiErrorMessage, isApiResponseError } from '@/utils/error';
+import { analytics, toPathPattern } from '@/utils/analytics';
 
 interface SignupPageProps {
   onComplete: () => void;
@@ -64,7 +65,13 @@ function SignupContent({ onComplete }: SignupPageProps) {
       <p className="mt-2 text-sm text-gray-600">
         로그인 후 서비스에서 사용할 정보를 입력해 주세요.
       </p>
-      <a href={getGithubLoginUrl()} className={getButtonStyles({ className: 'mt-5' })}>
+      <a
+        href={getGithubLoginUrl()}
+        onClick={() =>
+          analytics.track({ name: 'login_started', from: toPathPattern(window.location.pathname) })
+        }
+        className={getButtonStyles({ className: 'mt-5' })}
+      >
         GitHub 로그인
       </a>
     </div>
@@ -97,9 +104,14 @@ function SignupForm({ onComplete }: SignupPageProps) {
 
     try {
       await mutation.mutateAsync({ handle, displayName: displayName.trim() });
+      analytics.track({ name: 'signup_submitted' });
       await queryClient.fetchQuery(sessionQuery);
       onComplete();
     } catch (error) {
+      analytics.track({
+        name: 'signup_failed',
+        reason: isApiResponseError(error) ? error.data.code : 'UNKNOWN',
+      });
       if (isApiResponseError(error)) {
         const fieldErrors = Object.fromEntries(
           (error.data.details ?? []).map((detail) => [detail.field, detail.message]),
