@@ -63,7 +63,7 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
           <FeedMenu feedId={feed.feedId} authorHandle={feed.author.handle} />
         </AsyncBoundary>
       </div>
-      <FeedContent feed={feed} />
+      <FeedContent feed={feed} titleAs="h2" />
       <div className="mt-5 flex items-center gap-2">
         <Button variant="ghost" size="sm" className="gap-1 px-2" aria-label="좋아요" disabled>
           <IconHeart className="size-4" aria-hidden="true" />

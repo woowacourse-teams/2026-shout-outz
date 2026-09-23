@@ -1,6 +1,13 @@
 import { useRef, useState } from 'react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { createFeedMutation, updateFeedMutation, feedQuery, type Feed } from '@/apis/feed';
+import {
+  createFeedMutation,
+  FEED_CONTENT_MAX,
+  FEED_TITLE_MAX,
+  feedQuery,
+  updateFeedMutation,
+  type Feed,
+} from '@/apis/feed';
 import { myProfileQuery } from '@/apis/user';
 import { categoriesQuery } from '@/apis/category';
 import { Select } from '@/components/Select';
@@ -32,14 +39,19 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
     initialFeed ? updateFeedMutation(initialFeed.feedId) : createFeedMutation,
   );
   const submitting = useRef(false);
+  const [title, setTitle] = useState(initialFeed?.title ?? '');
   const [content, setContent] = useState(initialFeed?.content ?? '');
-  const tooLong = Array.from(content).length > 500;
+  // 길이는 코드 포인트로 센다. 서버가 Unicode 기준으로 재므로 이모지·한글이 같은 수로 잡힌다.
+  const titleTooLong = Array.from(title).length > FEED_TITLE_MAX;
+  const tooLong = Array.from(content).length > FEED_CONTENT_MAX;
+  const invalid = !title.trim() || !content.trim() || !hasCategory || titleTooLong || tooLong;
 
   async function submit() {
-    if (!content.trim() || !hasCategory || tooLong || submitting.current) return;
+    if (invalid || submitting.current) return;
     submitting.current = true;
     try {
       const feed = await mutation.mutateAsync({
+        title: title.trim(),
         content,
         categoryIds: [
           Number(categoryId),
@@ -113,6 +125,26 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
           </p>
         )}
       </div>
+      <div className="space-y-2">
+        <label htmlFor="feed-title" className="text-sm font-medium text-gray-900">
+          제목
+        </label>
+        <input
+          id="feed-title"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          placeholder="어떤 이야기인지 한 줄로 알려주세요."
+          disabled={mutation.isPending}
+          aria-invalid={titleTooLong || undefined}
+          aria-describedby={titleTooLong ? 'feed-title-error' : undefined}
+          className="focus-visible:outline-primary-600 h-11 w-full rounded-lg bg-gray-100 px-4 text-sm text-gray-900 outline-none placeholder:text-gray-500 focus-visible:outline-2"
+        />
+        {titleTooLong && (
+          <p id="feed-title-error" role="alert" className="text-sm text-red-600">
+            {`제목은 ${FEED_TITLE_MAX}자 이하로 입력해 주세요.`}
+          </p>
+        )}
+      </div>
       <div className="focus-within:ring-primary-600 rounded-xl border border-gray-200 p-4 focus-within:ring-2 md:p-5">
         <label htmlFor="feed-content" className="sr-only">
           피드 내용
@@ -131,7 +163,7 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
       </div>
       {tooLong && (
         <p id="feed-content-error" role="alert" className="text-sm text-red-600">
-          본문은 500자 이하로 입력해 주세요.
+          {`본문은 ${FEED_CONTENT_MAX}자 이하로 입력해 주세요.`}
         </p>
       )}
       {mutation.isError && (
@@ -146,7 +178,7 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
         <Button
           type="submit"
           className="flex-1 md:flex-none"
-          disabled={!content.trim() || !hasCategory || tooLong || mutation.isPending}
+          disabled={invalid || mutation.isPending}
         >
           {mutation.isPending ? '저장 중…' : initialFeed ? '수정 완료' : '피드 등록하기'}
         </Button>

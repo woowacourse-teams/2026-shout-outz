@@ -505,6 +505,8 @@ export interface FeedFindAllSuccessResponse {
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
+    /** 피드 제목 */
+    title: string;
     /** ISO-8601 수정 시각 */
     updatedAt: string;
   }[];
@@ -566,6 +568,8 @@ export interface FeedFindSuccessResponse {
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
+    /** 피드 제목 */
+    title: string;
     /** ISO-8601 수정 시각 */
     updatedAt: string;
   };
@@ -581,6 +585,8 @@ export interface FeedSaveRequest {
   content: string;
   /** 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록 */
   mediaIds: (object | boolean | string | number)[];
+  /** 피드 제목(공백 제외 1자 이상, Unicode 최대 100자) */
+  title: string;
 }
 
 /** FeedSaveSuccessResponse */
@@ -626,9 +632,19 @@ export interface FeedSaveSuccessResponse {
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
+    /** 피드 제목 */
+    title: string;
     /** ISO-8601 수정 시각 */
     updatedAt: string;
   };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** FeedTitleSuggestionsSuccessResponse */
+export interface FeedTitleSuggestionsSuccessResponse {
+  /** 피드 제목 자동완성 후보 문자열 목록 */
+  data: (object | boolean | string | number)[];
   /** 응답 상태 */
   status: string;
 }
@@ -641,6 +657,8 @@ export interface FeedUpdateRequest {
   content: string;
   /** 변경할 본문 미디어 ID 목록 */
   mediaIds: (object | boolean | string | number)[];
+  /** 변경할 피드 제목 */
+  title: string;
 }
 
 /** FeedUpdateSuccessResponse */
@@ -686,6 +704,8 @@ export interface FeedUpdateSuccessResponse {
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
+    /** 피드 제목 */
+    title: string;
     /** ISO-8601 수정 시각 */
     updatedAt: string;
   };
@@ -1660,6 +1680,8 @@ export interface UserFeedFindAllSuccessResponse {
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
+    /** 피드 제목 */
+    title: string;
     /** ISO-8601 수정 시각 */
     updatedAt: string;
   }[];
@@ -1676,7 +1698,7 @@ export interface UserFeedFindAllSuccessResponse {
 
 /** UserProfileSuccessResponse */
 export interface UserProfileSuccessResponse {
-  /** 사용자 공개 프로필 */
+  /** 사용자 프로필 */
   data: {
     /** 프로필 이미지 미디어 ID */
     avatarImageId?: number | null;

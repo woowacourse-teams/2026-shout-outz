@@ -3,6 +3,9 @@ import type { Feed } from '@/apis/feed';
 import type { FeedComment } from '@/apis/feed-comment';
 export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
   feedId: index + 1,
+  title: ['WebSocket 동기화 개선기', 'TanStack Query 서버 상태 관리', '기억에 남는 트러블슈팅'][
+    index % 3
+  ]!,
   content: [
     'Redis Pub/Sub으로 WebSocket 동기화 지연을 개선한 경험을 공유합니다.\n\n캐시 무효화와 메시지 순서를 함께 고민했어요.\n\nhttps://woojin.log/tech/redis-pub-sub',
     'TanStack Query를 사용하면서 배운 서버 상태 관리 이야기입니다.\n\n```ts\nawait queryClient.invalidateQueries({ queryKey: ["projects"] });\n```',
@@ -78,11 +81,14 @@ export function createFeedHandlers() {
     ),
     http.post('/api/v1/feeds', async ({ request }) => {
       const body = (await request.json()) as {
+        title: string;
         content: string;
         categoryIds: number[];
         mediaIds: number[];
       };
       if (
+        !body.title?.trim() ||
+        Array.from(body.title).length > 100 ||
         !body.content?.trim() ||
         Array.from(body.content).length > 500 ||
         body.categoryIds?.length !== 1 ||
@@ -93,7 +99,7 @@ export function createFeedHandlers() {
           {
             status: 'error',
             code: 'VALIDATION_ERROR',
-            message: '본문과 카테고리를 확인해 주세요.',
+            message: '제목과 본문, 카테고리를 확인해 주세요.',
           },
           { status: 400 },
         );
@@ -101,6 +107,7 @@ export function createFeedHandlers() {
       const feed: Feed = {
         ...mockFeeds[0]!,
         feedId: sequence++,
+        title: body.title,
         content: body.content,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -132,11 +139,14 @@ export function createFeedHandlers() {
           { status: 403 },
         );
       const body = (await request.json()) as {
+        title: string;
         content: string;
         categoryIds: number[];
         mediaIds: number[];
       };
       if (
+        !body.title?.trim() ||
+        Array.from(body.title).length > 100 ||
         !body.content?.trim() ||
         Array.from(body.content).length > 500 ||
         !Array.isArray(body.categoryIds) ||
@@ -158,6 +168,7 @@ export function createFeedHandlers() {
       }
       const feed: Feed = {
         ...existing,
+        title: body.title,
         content: body.content,
         categories: body.categoryIds.map((id) =>
           id === 1

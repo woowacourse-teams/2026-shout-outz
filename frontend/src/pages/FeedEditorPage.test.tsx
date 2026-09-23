@@ -1,5 +1,7 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+type User = ReturnType<typeof userEvent.setup>;
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   createMemoryHistory,
@@ -47,6 +49,13 @@ function show(feedId?: number) {
   return { onSaved, onCancel };
 }
 
+/** 제목은 작성·수정 모두 필수라, 본문만 보는 테스트에서도 한 번은 채워야 제출이 열린다. */
+const fillTitle = async (user: User, value = '제목') => {
+  const input = await screen.findByRole('textbox', { name: '제목' });
+  await user.clear(input);
+  await user.type(input, value);
+};
+
 test('실제 작성자를 표시하고 등록한 피드를 상세와 목록에서 조회할 수 있다', async () => {
   const user = userEvent.setup();
   const { onSaved } = show();
@@ -55,6 +64,7 @@ test('실제 작성자를 표시하고 등록한 피드를 상세와 목록에�
   await user.click(screen.getByRole('option', { name: '백엔드' }));
   expect(screen.getByText('정우진 · 6기 백엔드')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeDisabled();
+  await fillTitle(user, '새 피드 제목');
   await user.type(input, '새로운 기술 이야기');
   await user.click(screen.getByRole('button', { name: '피드 등록하기' }));
   await screen.findByRole('button', { name: '피드 등록하기' });
@@ -81,6 +91,7 @@ test('실패하면 서버 메시지와 입력 내용을 유지한다', async () 
   const input = await screen.findByRole('textbox', { name: '피드 내용' });
   await user.click(screen.getByRole('combobox', { name: '카테고리' }));
   await user.click(screen.getByRole('option', { name: '백엔드' }));
+  await fillTitle(user);
   await user.type(input, '보존할 내용');
   await user.click(screen.getByRole('button', { name: '피드 등록하기' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -96,6 +107,7 @@ test('Unicode 500자까지 허용하고 초과하면 등록을 막는다', async
   const input = await screen.findByRole('textbox', { name: '피드 내용' });
   await user.click(screen.getByRole('combobox', { name: '카테고리' }));
   await user.click(screen.getByRole('option', { name: '백엔드' }));
+  await fillTitle(user);
   await user.click(input);
   await user.paste('😀'.repeat(500));
   expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeEnabled();
@@ -131,6 +143,7 @@ test('비로그인 사용자는 폼 대신 로그인 안내를 본다', async ()
 test('카테고리가 없으면 등록을 막고 EVENT는 선택지에서 제외한다', async () => {
   const user = userEvent.setup();
   show();
+  await fillTitle(user);
   await user.type(await screen.findByRole('textbox', { name: '피드 내용' }), '내용');
   expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeDisabled();
   await user.click(screen.getByRole('combobox', { name: '카테고리' }));
@@ -157,6 +170,7 @@ test('등록 중에는 중복 요청을 보내지 않는다', async () => {
   );
   const user = userEvent.setup();
   show();
+  await fillTitle(user);
   await user.type(await screen.findByRole('textbox', { name: '피드 내용' }), '내용');
   await user.click(screen.getByRole('combobox', { name: '카테고리' }));
   await user.click(screen.getByRole('option', { name: '백엔드' }));
@@ -187,6 +201,7 @@ test('목록에서 작성 페이지 진입 후 등록하면 생성한 상세 페
   );
   const user = userEvent.setup();
   await user.click(await screen.findByRole('button', { name: '글쓰기' }));
+  await fillTitle(user);
   await user.type(
     await screen.findByRole('textbox', { name: '피드 내용' }),
     '등록 후 상세에서 확인할 내용',
@@ -265,7 +280,12 @@ test('수정 시 기존 이벤트 카테고리와 미디어 연결을 보존한�
   const { onSaved } = show(1);
   await user.click(await screen.findByRole('button', { name: '수정 완료' }));
   await waitFor(() => expect(onSaved).toHaveBeenCalledWith(1));
-  expect(body).toEqual({ content: original.content, categoryIds: [1, 3], mediaIds: [31, 32] });
+  expect(body).toEqual({
+    title: original.title,
+    content: original.content,
+    categoryIds: [1, 3],
+    mediaIds: [31, 32],
+  });
 });
 
 test('본인 글 메뉴에서 수정하고 저장하면 상세 페이지로 돌아간다', async () => {
@@ -358,4 +378,90 @@ test('삭제 실패 시 서버 메시지를 표시하고 상세에 머문다', a
     '본인이 작성한 피드만 삭제할 수 있습니다.',
   );
   expect(router.state.location.pathname).toBe('/feeds/1');
+});
+
+test('제목이 비면 등록을 막는다', async () => {
+  const user = userEvent.setup();
+  show();
+
+  await user.type(await screen.findByRole('textbox', { name: '피드 내용' }), '내용');
+  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+  await user.click(screen.getByRole('option', { name: '백엔드' }));
+  expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeDisabled();
+
+  await fillTitle(user);
+
+  expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeEnabled();
+});
+
+test('제목은 Unicode 100자까지 허용하고 초과하면 등록을 막는다', async () => {
+  const user = userEvent.setup();
+  show();
+
+  await user.type(await screen.findByRole('textbox', { name: '피드 내용' }), '내용');
+  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+  await user.click(screen.getByRole('option', { name: '백엔드' }));
+
+  const title = await screen.findByRole('textbox', { name: '제목' });
+  await user.click(title);
+  await user.paste('😀'.repeat(100));
+  expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeEnabled();
+
+  await user.paste('가');
+
+  expect(screen.getByRole('alert')).toHaveTextContent('제목은 100자 이하로 입력해 주세요.');
+  expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeDisabled();
+});
+
+test('제목 앞뒤 공백은 잘라서 보낸다', async () => {
+  let body: unknown;
+  server.use(
+    http.post('*/api/v1/feeds', async ({ request }) => {
+      body = await request.json();
+      return HttpResponse.json({ status: 'success', data: mockFeeds[0] }, { status: 201 });
+    }),
+  );
+  const user = userEvent.setup();
+  show();
+
+  await fillTitle(user, '  제목에 공백  ');
+  await user.type(await screen.findByRole('textbox', { name: '피드 내용' }), '내용');
+  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+  await user.click(screen.getByRole('option', { name: '백엔드' }));
+  await user.click(screen.getByRole('button', { name: '피드 등록하기' }));
+
+  await waitFor(() => expect(body).toHaveProperty('title', '제목에 공백'));
+});
+
+test('수정 화면은 기존 제목을 채워 보여준다', async () => {
+  const user = userEvent.setup();
+  show(1);
+
+  expect(await screen.findByRole('textbox', { name: '제목' })).toHaveValue(mockFeeds[0]!.title);
+
+  await user.clear(screen.getByRole('textbox', { name: '제목' }));
+
+  expect(screen.getByRole('button', { name: '수정 완료' })).toBeDisabled();
+});
+
+test('제목·본문·카테고리가 하나라도 비면 등록 버튼이 잠겨 있다', async () => {
+  const user = userEvent.setup();
+  show();
+
+  const submit = await screen.findByRole('button', { name: '피드 등록하기' });
+  expect(submit).toBeDisabled();
+
+  await fillTitle(user);
+  expect(submit).toBeDisabled();
+
+  await user.type(screen.getByRole('textbox', { name: '피드 내용' }), '내용');
+  expect(submit).toBeDisabled();
+
+  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+  await user.click(screen.getByRole('option', { name: '백엔드' }));
+  expect(submit).toBeEnabled();
+
+  // 하나라도 지우면 다시 잠긴다.
+  await user.clear(screen.getByRole('textbox', { name: '제목' }));
+  expect(submit).toBeDisabled();
 });
