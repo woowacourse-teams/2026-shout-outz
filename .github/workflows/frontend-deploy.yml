@@ -1,0 +1,180 @@
+name: Deploy Frontend Artifacts
+
+# GitHub Actions 설정 (Settings → Secrets and variables → Actions)
+#
+# [Environments]
+# production (main), development (develop)
+# API_ORIGIN=https://api.example.com
+#
+# [Repository variables]
+# MIRROR_TARGET_REPO=git@github.com:owner/private-repo.git
+#
+# [Repository 또는 Environment secrets]
+# PRIVATE_REPO_DEPLOY_KEY=<SSH private key>
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - frontend/**
+  workflow_dispatch:
+
+# 배포 키 보호를 위해 PR 이벤트에서는 실행하지 않는다.
+
+concurrency:
+  # 같은 소스 브랜치의 이전 실행은 최신 실행으로 대체한다.
+  group: frontend-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-push:
+    # push와 수동 실행만 허용한다. PR 이벤트가 추가되어도 배포하지 않는다.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify required configuration
+        env:
+          API_ORIGIN: ${{ vars.API_ORIGIN }}
+          MIRROR_TARGET_REPO: ${{ vars.MIRROR_TARGET_REPO }}
+          DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          fail=0
+          check() {
+            if [ -z "$2" ]; then
+              echo "::error::$1 미설정"
+              fail=1
+            fi
+          }
+          check vars.API_ORIGIN                 "$API_ORIGIN"
+          check vars.MIRROR_TARGET_REPO         "$MIRROR_TARGET_REPO"
+          check secrets.PRIVATE_REPO_DEPLOY_KEY "$DEPLOY_KEY"
+          [ "$fail" -eq 0 ] || exit 1
+          echo "변수 확인 완료"
+
+      - name: Setup and verify SSH key
+        env:
+          DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          if ! ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null 2>&1; then
+            echo "::error::개인키를 읽을 수 없습니다. gh secret set PRIVATE_REPO_DEPLOY_KEY < ~/.ssh/mirror_key 로 재등록하세요"
+            exit 1
+          fi
+          echo "키 정상"
+
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        env:
+          NODE_ENV: production
+          API_ORIGIN: ${{ vars.API_ORIGIN }}
+        run: npm run build
+
+      - name: Verify build output
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          test -f dist/index.html || { echo "::error::dist/index.html 없음"; exit 1; }
+
+          echo "파일 수: $(find dist -type f | wc -l)"
+          du -sh dist
+
+      - name: Push build output to private repo
+        env:
+          TARGET_REPO: ${{ vars.MIRROR_TARGET_REPO }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
+          GIT_SSH_COMMAND: 'ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes'
+        run: |
+          set -euo pipefail
+
+          case "$SOURCE_BRANCH" in
+            main|develop) ;;
+            *) echo "::error::지원하지 않는 소스 브랜치: $SOURCE_BRANCH"; exit 1 ;;
+          esac
+
+          git clone --filter=blob:none --branch main "$TARGET_REPO" deploy-repo
+          cd deploy-repo
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          stage_artifact() {
+            # 대상 main에서 artifact/main과 artifact/develop을 독립적으로 관리한다.
+            rm -rf "artifact/$SOURCE_BRANCH"
+            mkdir -p "artifact/$SOURCE_BRANCH"
+            cp -R "$GITHUB_WORKSPACE/frontend/dist/." "artifact/$SOURCE_BRANCH/"
+            git add -A "artifact/$SOURCE_BRANCH"
+          }
+
+          commit_artifact() {
+            git commit \
+              -m "Deploy $SOURCE_BRANCH ${GITHUB_SHA::7}" \
+              -m "Source: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
+          }
+
+          stage_artifact
+
+          if git diff --cached --quiet; then
+            echo "변경 사항 없음 — push 생략"
+            exit 0
+          fi
+
+          commit_artifact
+
+          # 동시 배포로 push가 거절되면 최신 대상 main에서 산출물을 다시 반영한다.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              break
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::대상 저장소 push에 3회 실패했습니다"
+              exit 1
+            fi
+
+            echo "push 충돌 감지 — 대상 main을 반영한 뒤 재시도합니다 ($attempt/3)"
+            git fetch origin main
+            git reset --hard origin/main
+            stage_artifact
+
+            if git diff --cached --quiet; then
+              echo "동일한 산출물이 이미 배포되어 push를 생략합니다"
+              exit 0
+            fi
+
+            commit_artifact
+          done
+
+          echo "artifact/$SOURCE_BRANCH 배포 완료"
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519

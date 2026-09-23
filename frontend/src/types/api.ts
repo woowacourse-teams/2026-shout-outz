@@ -21,6 +21,7 @@ import type {
   NewsFindDetailSuccessResponse,
   ProjectCreateRequest as GeneratedProjectCreateRequest,
   ProjectCreateSuccessResponse,
+  ProjectFilterOptionsSuccessResponse,
   ProjectFindAllSuccessResponse,
   ProjectFindDetailSuccessResponse,
   TechTagFindAllSuccessResponse,
@@ -83,6 +84,7 @@ export type ProjectListItemData = Item<Data<ProjectFindAllSuccessResponse>>;
 export type ProjectListMetaData = Meta<ProjectFindAllSuccessResponse>;
 export type UserProjectListItemData = Item<Data<UserProjectFindAllSuccessResponse>>;
 export type ProjectDetailData = Data<ProjectFindDetailSuccessResponse>;
+export type ProjectFilterOptionsData = Data<ProjectFilterOptionsSuccessResponse>;
 
 // ── 홈 ──────────────────────────────────────────────────────────────────────
 

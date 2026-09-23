@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { handlers } from '@/api/mock/handlers';
+import { ModalProvider } from '@/components/ModalProvider';
 import { routeTree } from '@/routeTree.gen';
 
 const server = setupServer(...handlers);
@@ -32,7 +33,9 @@ function renderPage(path = '/projects') {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <ModalProvider>
+        <RouterProvider router={router} />
+      </ModalProvider>
     </QueryClientProvider>,
   );
 }

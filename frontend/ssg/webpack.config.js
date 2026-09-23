@@ -10,6 +10,11 @@ const __dirname = path.dirname(__filename);
 export default (_env, argv) => ({
   mode: argv.mode ?? 'development',
   target: 'node',
+  dotenv: {
+    dir: path.resolve(__dirname, '..'),
+    template: ['.env'],
+    prefix: 'API_ORIGIN',
+  },
   entry: path.resolve(__dirname, 'generate.ts'),
   output: {
     path: path.resolve(__dirname, '.build'),

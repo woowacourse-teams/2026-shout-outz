@@ -29,7 +29,7 @@ const EMPTY_FORM: ProjectFormValues = {
   deploymentUrl: '',
   descriptionMd: '',
   techTags: [],
-  memberHandles: [],
+  members: [],
 };
 
 /**
@@ -143,7 +143,7 @@ function ProjectCreateForm() {
           name: 'project_create_submitted',
           cohort: values.cohort!,
           techTagCount: values.techTags.length,
-          memberCount: values.memberHandles.length,
+          memberCount: values.members.length,
           hasThumbnail: values.thumbnailImageId !== null,
           hasDeploymentUrl: values.deploymentUrl.trim() !== '',
         }),
@@ -281,9 +281,9 @@ function ProjectCreateForm() {
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-medium text-gray-900">참여 팀원 *</p>
                 <MemberField
-                  value={values.memberHandles}
-                  onChange={(handles) => setField('memberHandles', handles)}
-                  error={errors.memberHandles}
+                  value={values.members}
+                  onChange={(members) => setField('members', members)}
+                  error={errors.members}
                 />
               </div>
 

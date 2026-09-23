@@ -4,12 +4,13 @@ import { Link, useNavigate } from '@tanstack/react-router';
 
 import { logoutMutation, sessionQuery } from '@/apis/session';
 import { myProfileSummaryQuery } from '@/apis/user';
-import { Button, getButtonStyles } from '@/components/Button';
-import { getGithubLoginUrl } from '@/utils/auth';
+import { AuthSheet } from '@/components/auth/AuthSheet';
+import { Button } from '@/components/Button';
+import { useModal } from '@/hooks/useModal';
 import { getApiErrorMessage } from '@/utils/error';
-import { analytics, toPathPattern } from '@/utils/analytics';
 
 export function AuthActions() {
+  const { open } = useModal();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const session = useQuery({ ...sessionQuery, enabled: typeof window !== 'undefined' });
@@ -62,14 +63,11 @@ export function AuthActions() {
   }
 
   return (
-    <a
-      href={getGithubLoginUrl()}
-      onClick={() =>
-        analytics.track({ name: 'login_started', from: toPathPattern(window.location.pathname) })
-      }
-      className={getButtonStyles({ size: 'sm' })}
+    <Button
+      size="sm"
+      onClick={() => void open<void>((close) => <AuthSheet onClose={() => close()} />)}
     >
       로그인
-    </a>
+    </Button>
   );
 }

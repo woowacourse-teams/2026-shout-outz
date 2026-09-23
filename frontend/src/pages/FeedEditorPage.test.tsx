@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ModalProvider } from '@/components/ModalProvider';
 import {
   createMemoryHistory,
   createRouter,
@@ -39,9 +40,11 @@ function show(feedId?: number) {
   const onCancel = jest.fn();
   render(
     <QueryClientProvider client={client}>
-      <RouterContextProvider router={router}>
-        <FeedEditorPage feedId={feedId} onCancel={onCancel} onSaved={onSaved} />
-      </RouterContextProvider>
+      <ModalProvider>
+        <RouterContextProvider router={router}>
+          <FeedEditorPage feedId={feedId} onCancel={onCancel} onSaved={onSaved} />
+        </RouterContextProvider>
+      </ModalProvider>
     </QueryClientProvider>,
   );
   return { onSaved, onCancel };
@@ -182,7 +185,9 @@ test('목록에서 작성 페이지 진입 후 등록하면 생성한 상세 페
   });
   render(
     <QueryClientProvider client={client}>
-      <RouterProvider router={router} />
+      <ModalProvider>
+        <RouterProvider router={router} />
+      </ModalProvider>
     </QueryClientProvider>,
   );
   const user = userEvent.setup();
@@ -280,7 +285,9 @@ test('본인 글 메뉴에서 수정하고 저장하면 상세 페이지로 돌�
   });
   render(
     <QueryClientProvider client={client}>
-      <RouterProvider router={router} />
+      <ModalProvider>
+        <RouterProvider router={router} />
+      </ModalProvider>
     </QueryClientProvider>,
   );
   const user = userEvent.setup();
@@ -307,7 +314,9 @@ test('삭제 확인 후 피드를 목록에서 제거하고 상세 조회도 실
   });
   render(
     <QueryClientProvider client={client}>
-      <RouterProvider router={router} />
+      <ModalProvider>
+        <RouterProvider router={router} />
+      </ModalProvider>
     </QueryClientProvider>,
   );
   const user = userEvent.setup();
@@ -347,7 +356,9 @@ test('삭제 실패 시 서버 메시지를 표시하고 상세에 머문다', a
   });
   render(
     <QueryClientProvider client={client}>
-      <RouterProvider router={router} />
+      <ModalProvider>
+        <RouterProvider router={router} />
+      </ModalProvider>
     </QueryClientProvider>,
   );
   const user = userEvent.setup();
