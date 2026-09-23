@@ -1,6 +1,7 @@
 import { cleanup, render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ModalProvider } from '@/components/ModalProvider';
 import { createMemoryHistory, createRouter, RouterContextProvider } from '@tanstack/react-router';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
@@ -66,9 +67,11 @@ function show(children: ReactNode) {
   });
   const wrap = (content: ReactNode) => (
     <QueryClientProvider client={client}>
-      <RouterContextProvider router={router}>
-        <AsyncBoundary>{content}</AsyncBoundary>
-      </RouterContextProvider>
+      <ModalProvider>
+        <RouterContextProvider router={router}>
+          <AsyncBoundary>{content}</AsyncBoundary>
+        </RouterContextProvider>
+      </ModalProvider>
     </QueryClientProvider>
   );
   const view = render(wrap(children));

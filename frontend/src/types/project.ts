@@ -4,6 +4,7 @@ import type {
   ProjectCreateBody,
   ProjectCreatedData,
   ProjectDetailData,
+  ProjectFilterOptionsData,
   ProjectListItemData,
   ProjectListMetaData,
   TechTagItem,
@@ -39,7 +40,8 @@ export interface ProjectFormValues {
   descriptionMd: string;
   /** 칩에 이름을 보여줘야 해서 id만 들고 있지 않는다 */
   techTags: TechTag[];
-  memberHandles: string[];
+  /** 제출에는 handle만 쓰지만, 칩에 이름을 보여줘야 해서 고른 크루를 통째로 들고 있는다 */
+  members: CrewSearchItem[];
 }
 
 export type ProjectFormErrors = Partial<Record<keyof ProjectFormValues, string>>;
@@ -60,6 +62,26 @@ export type UserProjectListItem = UserProjectListItemData;
 export type ProjectSummary = ProjectListItem;
 
 export type ProjectTechTag = Item<ProjectListItem['techTags']>;
+
+/**
+ * 프로젝트 목록을 좁히는 조건.
+ *
+ * URL 검색 파라미터와 모달이 같은 모양을 쓴다. 비어 있으면 전체 조회다.
+ */
+export interface ProjectFilter {
+  keyword: string;
+  cohorts: number[];
+  techTagIds: number[];
+  sort: ProjectSort;
+}
+
+/** `GET /api/v1/projects`의 sort. 스키마가 쿼리 파라미터는 내보내지 않아 여기서 정의한다. */
+export type ProjectSort = 'LATEST' | 'POPULAR';
+
+/** 필터 선택지와 각 선택지의 프로젝트 수. `GET /api/v1/projects/filters` */
+export type ProjectFilterOptions = ProjectFilterOptionsData;
+export type ProjectFilterCohort = Item<ProjectFilterOptions['cohorts']>;
+export type ProjectFilterTechTag = Item<ProjectFilterOptions['techTags']>;
 
 /** 상세 응답. `GET /api/v1/projects/{projectId}` */
 export type ProjectDetail = ProjectDetailData;

@@ -32,8 +32,8 @@ export function validateProjectForm(values: ProjectFormValues): ProjectFormError
   if (!values.tagline.trim()) errors.tagline = '한 줄 소개를 입력해 주세요.';
   if (values.cohort === null) errors.cohort = '우테코 기수를 선택해 주세요.';
   if (values.techTags.length === 0) errors.techTags = '기술 스택을 1개 이상 선택해 주세요.';
-  if (values.memberHandles.length === 0) {
-    errors.memberHandles = '참여 팀원을 1명 이상 선택해 주세요.';
+  if (values.members.length === 0) {
+    errors.members = '참여 팀원을 1명 이상 선택해 주세요.';
   }
 
   const githubRepositoryUrl = values.githubRepositoryUrl.trim();
@@ -68,6 +68,6 @@ export function toProjectCreateRequest(values: ProjectFormValues): ProjectCreate
     deploymentUrl: values.deploymentUrl.trim() || null,
     descriptionMd: values.descriptionMd.trim(),
     techTagIds: values.techTags.map((tag) => tag.id),
-    memberHandles: values.memberHandles,
+    memberHandles: values.members.map((member) => member.handle),
   };
 }
