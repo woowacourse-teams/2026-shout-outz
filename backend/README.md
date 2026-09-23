@@ -171,6 +171,7 @@ SPRING_PROFILES_ACTIVE=prod
 SPRING_DATASOURCE_URL=jdbc:postgresql://<host>:<port>/<database>
 SPRING_DATASOURCE_USERNAME=<username>
 SPRING_DATASOURCE_PASSWORD=<password>
+CORS_ALLOWED_ORIGINS=https://shout-ou.tz,https://*.shout-ou.tz
 AWS_S3_BUCKET=<bucket-name>
 AWS_REGION=<region>
 AWS_S3_KEY_PREFIX=<key-prefix>
@@ -180,6 +181,8 @@ VISITOR_HASH_SECRET=<32자 이상의 임의 문자열>
 ```
 
 IntelliJ IDEA에서 환경 변수를 설정하려면 `Run/Debug Configurations`의 `Environment variables`에 입력한다. 운영용 비밀 값은 저장소에 커밋하지 않는다.
+
+`CORS_ALLOWED_ORIGINS`에는 쉼표로 구분한 Origin 또는 Origin 패턴을 입력한다. `https://*.shout-ou.tz`는 서브도메인만 허용하므로 루트 도메인도 사용한다면 `https://shout-ou.tz`를 별도로 함께 지정해야 한다. 자격 증명을 포함한 CORS 요청을 허용하므로 전체 Origin을 여는 `*` 대신 팀이 관리하는 도메인만 명시한다.
 
 ## AWS S3 연결 설정
 
