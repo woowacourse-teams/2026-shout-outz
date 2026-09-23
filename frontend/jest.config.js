@@ -48,6 +48,8 @@ const esmPackages = [
 export default {
   testEnvironment: '<rootDir>/jest.environment.js',
   testEnvironmentOptions: { customExportConditions: ['node', 'node-addons'] },
+  // 모달을 열고 검색해 고르는 흐름은 기본 5초로는 빠듯하다.
+  testTimeout: 15_000,
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',

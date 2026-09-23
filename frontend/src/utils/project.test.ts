@@ -14,7 +14,10 @@ const FILLED: ProjectFormValues = {
     { id: 1, displayName: 'React' },
     { id: 2, displayName: 'TypeScript' },
   ],
-  memberHandles: ['dhyepark', 'zzaekkii'],
+  members: [
+    { handle: 'dhyepark', displayName: '두리', userType: 'WOOWACOURSE_CREW' },
+    { handle: 'zzaekkii', displayName: '재키', userType: 'WOOWACOURSE_CREW' },
+  ],
 };
 
 describe('validateProjectForm', () => {
@@ -31,11 +34,11 @@ describe('validateProjectForm', () => {
         cohort: null,
         githubRepositoryUrl: '',
         techTags: [],
-        memberHandles: [],
+        members: [],
       });
 
       expect(Object.keys(errors).sort()).toEqual(
-        ['cohort', 'githubRepositoryUrl', 'memberHandles', 'tagline', 'techTags', 'title'].sort(),
+        ['cohort', 'githubRepositoryUrl', 'members', 'tagline', 'techTags', 'title'].sort(),
       );
     });
 

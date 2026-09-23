@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ModalProvider } from '@/components/ModalProvider';
 import { createMemoryHistory, createRouter, RouterContextProvider } from '@tanstack/react-router';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
@@ -33,9 +34,11 @@ function show(feedId: number) {
   });
   render(
     <QueryClientProvider client={client}>
-      <RouterContextProvider router={router}>
-        <FeedDetailPage feedId={feedId} />
-      </RouterContextProvider>
+      <ModalProvider>
+        <RouterContextProvider router={router}>
+          <FeedDetailPage feedId={feedId} />
+        </RouterContextProvider>
+      </ModalProvider>
     </QueryClientProvider>,
   );
 }
