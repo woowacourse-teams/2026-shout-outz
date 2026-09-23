@@ -22,12 +22,12 @@ describe('AuthActions', () => {
 
     renderRoute('/');
 
-    expect(screen.queryByRole('link', { name: '로그인' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '로그인' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '로그아웃' })).not.toBeInTheDocument();
-    expect(await screen.findByRole('link', { name: '로그인' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '로그인' })).toBeInTheDocument();
   });
 
-  it('비로그인 상태에서 GitHub 로그인 링크를 보여준다', async () => {
+  it('비로그인 상태에서 로그인 시트로 GitHub 링크를 안내한다', async () => {
     server.use(
       http.get('/api/v1/auth/session', () =>
         HttpResponse.json({
@@ -37,9 +37,12 @@ describe('AuthActions', () => {
       ),
     );
 
+    const user = userEvent.setup();
     renderRoute('/');
 
-    expect(await screen.findByRole('link', { name: '로그인' })).toHaveAttribute(
+    await user.click(await screen.findByRole('button', { name: '로그인' }));
+
+    expect(await screen.findByRole('link', { name: 'GitHub 계정으로 시작하기' })).toHaveAttribute(
       'href',
       'http://localhost/oauth2/authorization/github',
     );
@@ -86,7 +89,7 @@ describe('AuthActions', () => {
     renderRoute('/');
     await user.click(await screen.findByRole('button', { name: '로그아웃' }));
 
-    expect(await screen.findByRole('link', { name: '로그인' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '로그인' })).toBeInTheDocument();
   });
 
   it('로그인한 사용자의 이름을 내 프로필로 연결한다', async () => {
