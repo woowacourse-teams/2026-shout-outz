@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
-                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"\
-                    displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"type\",\"\
+                    message\":\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\"\
+                    :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
+                    :\"slug 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -936,8 +936,8 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1025,9 +1025,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -1474,10 +1474,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
+                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -2261,9 +2261,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -3787,6 +3787,48 @@ paths:
                 type: string
 components:
   schemas:
+    FeedUpdateRequest:
+      title: FeedUpdateRequest
+      required:
+      - categoryIds
+      - content
+      - mediaIds
+      - title
+      type: object
+      properties:
+        categoryIds:
+          type: array
+          description: "변경할 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음)"
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        mediaIds:
+          type: array
+          description: 변경할 본문 미디어 ID 목록
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        title:
+          type: string
+          description: 변경할 피드 제목
+        content:
+          type: string
+          description: "변경할 Markdown 본문(공백 제외 1자 이상, Unicode 최대 5,000자)"
+    AdminVerificationRequestRejectRequest:
+      title: AdminVerificationRequestRejectRequest
+      required:
+      - reason
+      type: object
+      properties:
+        reason:
+          type: string
+          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     CategoryUpdateSuccessResponse:
       title: CategoryUpdateSuccessResponse
       required:
@@ -3829,15 +3871,39 @@ components:
         status:
           type: string
           description: 응답 상태
-    AdminVerificationRequestRejectRequest:
-      title: AdminVerificationRequestRejectRequest
+    FeedSaveRequest:
+      title: FeedSaveRequest
       required:
-      - reason
+      - categoryIds
+      - content
+      - mediaIds
+      - title
       type: object
       properties:
-        reason:
+        categoryIds:
+          type: array
+          description: "활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        mediaIds:
+          type: array
+          description: 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        title:
           type: string
-          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
+          description: "피드 제목(공백 제외 1자 이상, Unicode 최대 100자)"
+        content:
+          type: string
+          description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 5,000자)"
     FeedCommentDeleteSuccessResponse:
       title: FeedCommentDeleteSuccessResponse
       required:
@@ -4279,39 +4345,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedUpdateRequest:
-      title: FeedUpdateRequest
-      required:
-      - categoryIds
-      - content
-      - mediaIds
-      - title
-      type: object
-      properties:
-        categoryIds:
-          type: array
-          description: "변경할 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음)"
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        mediaIds:
-          type: array
-          description: 변경할 본문 미디어 ID 목록
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        title:
-          type: string
-          description: 변경할 피드 제목
-        content:
-          type: string
-          description: 변경할 Markdown 본문
     ProjectCommentDeleteSuccessResponse:
       title: ProjectCommentDeleteSuccessResponse
       required:
@@ -4910,39 +4943,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedSaveRequest:
-      title: FeedSaveRequest
-      required:
-      - categoryIds
-      - content
-      - mediaIds
-      - title
-      type: object
-      properties:
-        categoryIds:
-          type: array
-          description: "활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        mediaIds:
-          type: array
-          description: 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        title:
-          type: string
-          description: "피드 제목(공백 제외 1자 이상, Unicode 최대 100자)"
-        content:
-          type: string
-          description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"
     HomeBannerAdminSaveSuccessResponse:
       title: HomeBannerAdminSaveSuccessResponse
       required:
@@ -5211,6 +5211,48 @@ components:
         status:
           type: string
           description: 응답 상태
+    EventCreateRequest:
+      title: EventCreateRequest
+      required:
+      - authorName
+      - body
+      - eventEndAt
+      - eventStartAt
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 이벤트 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 이벤트 CTA
+        eventStartAt:
+          type: string
+          description: 이벤트 시작 시각
+        authorName:
+          type: string
+          description: 이벤트 작성자 이름
+        body:
+          type: string
+          description: 이벤트 본문
+        title:
+          type: string
+          description: 이벤트 제목
+        eventEndAt:
+          type: string
+          description: 이벤트 종료 시각
     ProjectFindAllSuccessResponse:
       title: ProjectFindAllSuccessResponse
       required:
@@ -5406,48 +5448,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    EventCreateRequest:
-      title: EventCreateRequest
-      required:
-      - authorName
-      - body
-      - eventEndAt
-      - eventStartAt
-      - summary
-      - title
-      type: object
-      properties:
-        summary:
-          type: string
-          description: 이벤트 요약
-        cta:
-          required:
-          - label
-          - url
-          type: object
-          properties:
-            label:
-              type: string
-              description: CTA 라벨
-            url:
-              type: string
-              description: CTA URL
-          description: 이벤트 CTA
-        eventStartAt:
-          type: string
-          description: 이벤트 시작 시각
-        authorName:
-          type: string
-          description: 이벤트 작성자 이름
-        body:
-          type: string
-          description: 이벤트 본문
-        title:
-          type: string
-          description: 이벤트 제목
-        eventEndAt:
-          type: string
-          description: 이벤트 종료 시각
     OAuthSignupSuccessResponse:
       title: OAuthSignupSuccessResponse
       required:
@@ -6038,19 +6038,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    OAuthSignupRequest:
-      title: OAuthSignupRequest
-      required:
-      - displayName
-      - handle
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 프로필 표시 이름
-        handle:
-          type: string
-          description: 영구 공개 핸들
     CategorySaveSuccessResponse:
       title: CategorySaveSuccessResponse
       required:
@@ -6093,6 +6080,19 @@ components:
         status:
           type: string
           description: 응답 상태
+    OAuthSignupRequest:
+      title: OAuthSignupRequest
+      required:
+      - displayName
+      - handle
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 프로필 표시 이름
+        handle:
+          type: string
+          description: 영구 공개 핸들
     FeedCommentCreateRequest:
       title: FeedCommentCreateRequest
       required:
