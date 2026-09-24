@@ -6,7 +6,8 @@ readonly SERVICE_USER="shoutoutz"
 readonly APP_ROOT="/opt/shout-outz"
 readonly APP_DIR="${APP_ROOT}/app"
 readonly ENV_FILE="${APP_ROOT}/shout-outz.env"
-readonly MIN_FREE_KB=$((512 * 1024))
+readonly MIN_FREE_MB=256
+readonly MIN_FREE_KB=$((MIN_FREE_MB * 1024))
 
 log() {
   printf '[before-install] %s\n' "$*"
@@ -80,7 +81,7 @@ available_kb="$(df -Pk "$APP_ROOT" | awk 'NR == 2 {print $4}')"
 [[ "$available_kb" =~ ^[0-9]+$ ]] || fail "남은 디스크 용량을 확인할 수 없습니다."
 
 if (( available_kb < MIN_FREE_KB )); then
-  fail "디스크 여유 공간이 512MB보다 적습니다."
+  fail "디스크 여유 공간이 ${MIN_FREE_MB}MB보다 적습니다."
 fi
 
 log "사전 검증을 통과했습니다."
