@@ -13,7 +13,7 @@ public record FeedSaveRequest(
         String title,
 
         @NotBlank(message = "content는 필수입니다.")
-        @CodePointLength(max = 500, message = "content는 500자를 초과할 수 없습니다.")
+        @CodePointLength(max = 5_000, message = "content는 5,000자를 초과할 수 없습니다.")
         String content,
 
         @NotEmpty(message = "categoryIds는 하나 이상 필요합니다.")
