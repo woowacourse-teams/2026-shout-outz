@@ -83,7 +83,9 @@ public enum ProjectErrorCode implements ErrorCode {
     PROJECT_INVALID_SERVICE_STATUS("배포 URL이 없으면 서비스 상태를 운영 중으로 둘 수 없습니다."),
 
     PROJECT_COHORT_NULL("프로젝트 기수는 null일 수 없습니다."),
-    PROJECT_REGISTERED_BY_NULL("프로젝트 등록자는 null일 수 없습니다.");
+    PROJECT_REGISTERED_BY_NULL("프로젝트 등록자는 null일 수 없습니다."),
+
+    REACTION_TYPE_INVALID("지원하지 않는 프로젝트 반응 타입입니다.");
 
     private final String message;
 }
