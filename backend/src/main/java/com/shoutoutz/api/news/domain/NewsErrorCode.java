@@ -60,7 +60,9 @@ public enum NewsErrorCode implements ErrorCode {
     NEWS_INVALID_SIZE_FILTER_INPUT("소식 조회 개수는 1 이상 50 이하여야 합니다."),
     NEWS_INVALID_CURSOR_FILTER_INPUT("소식 목록 조회 커서가 올바르지 않습니다."),
 
-    NEWS_NOT_FOUND("해당 소식을 찾을 수 없습니다. 소식 ID를 다시 확인해주세요.");
+    NEWS_NOT_FOUND("해당 소식을 찾을 수 없습니다. 소식 ID를 다시 확인해주세요."),
+
+    REACTION_TYPE_INVALID("지원하지 않는 소식 반응 타입입니다.");
 
     private final String message;
 }

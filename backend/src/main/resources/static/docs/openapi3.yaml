@@ -99,10 +99,10 @@ paths:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
-                    ,\"message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"}]}"
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\"\
+                    ,\"message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\":\"displayName은\
+                    \ 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -934,10 +934,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1025,9 +1025,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -1474,10 +1474,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -3739,6 +3739,133 @@ paths:
                   value: "{\"status\":\"success\",\"data\":{\"feedId\":10,\"type\"\
                     :\"BOOKMARK\",\"active\":false,\"likeCount\":11,\"bookmarkCount\"\
                     :3}}"
+  /api/v1/news/{newsId}/reactions/{type}:
+    put:
+      tags:
+      - News Reaction
+      summary: 소식 반응 추가
+      description: "현재 로그인 사용자가 삭제되지 않은 소식에 type 반응을 추가한다. 현재는 LIKE만 지원하며, 이미 존재하는\
+        \ 반응이면 현재 상태를 반환한다."
+      operationId: news-reaction-add
+      parameters:
+      - name: newsId
+        in: path
+        description: 소식 ID
+        required: true
+        schema:
+          type: string
+      - name: type
+        in: path
+        description: 반응 타입. 현재 LIKE만 지원한다.
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-reaction-add-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_NOT_FOUND\",\"message\"\
+                    :\"해당 소식을 찾을 수 없습니다. 소식 ID를 다시 확인해주세요.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-reaction-add-invalid-type:
+                  value: "{\"status\":\"error\",\"code\":\"REACTION_TYPE_INVALID\"\
+                    ,\"message\":\"지원하지 않는 소식 반응 타입입니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsReactionSuccessResponse"
+              examples:
+                news-reaction-add:
+                  value: "{\"status\":\"success\",\"data\":{\"newsId\":100,\"type\"\
+                    :\"LIKE\",\"active\":true,\"likeCount\":21}}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-reaction-add-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+    delete:
+      tags:
+      - News Reaction
+      summary: 소식 반응 제거
+      description: "현재 로그인 사용자가 삭제되지 않은 소식의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 없어도\
+        \ 현재 상태를 반환한다."
+      operationId: news-reaction-remove
+      parameters:
+      - name: newsId
+        in: path
+        description: 소식 ID
+        required: true
+        schema:
+          type: string
+      - name: type
+        in: path
+        description: 반응 타입. 현재 LIKE만 지원한다.
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsReactionSuccessResponse"
+              examples:
+                news-reaction-remove:
+                  value: "{\"status\":\"success\",\"data\":{\"newsId\":100,\"type\"\
+                    :\"LIKE\",\"active\":false,\"likeCount\":20}}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-reaction-remove-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                news-reaction-remove-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"NEWS_NOT_FOUND\",\"message\"\
+                    :\"해당 소식을 찾을 수 없습니다. 소식 ID를 다시 확인해주세요.\"}"
   /api/v1/projects/{projectId}/comments/{commentId}:
     delete:
       tags:
@@ -3960,15 +4087,6 @@ components:
         content:
           type: string
           description: "변경할 Markdown 본문(공백 제외 1자 이상, Unicode 최대 5,000자)"
-    AdminVerificationRequestRejectRequest:
-      title: AdminVerificationRequestRejectRequest
-      required:
-      - reason
-      type: object
-      properties:
-        reason:
-          type: string
-          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     CategoryUpdateSuccessResponse:
       title: CategoryUpdateSuccessResponse
       required:
@@ -4011,6 +4129,15 @@ components:
         status:
           type: string
           description: 응답 상태
+    AdminVerificationRequestRejectRequest:
+      title: AdminVerificationRequestRejectRequest
+      required:
+      - reason
+      type: object
+      properties:
+        reason:
+          type: string
+          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     FeedSaveRequest:
       title: FeedSaveRequest
       required:
@@ -5351,48 +5478,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    EventCreateRequest:
-      title: EventCreateRequest
-      required:
-      - authorName
-      - body
-      - eventEndAt
-      - eventStartAt
-      - summary
-      - title
-      type: object
-      properties:
-        summary:
-          type: string
-          description: 이벤트 요약
-        cta:
-          required:
-          - label
-          - url
-          type: object
-          properties:
-            label:
-              type: string
-              description: CTA 라벨
-            url:
-              type: string
-              description: CTA URL
-          description: 이벤트 CTA
-        eventStartAt:
-          type: string
-          description: 이벤트 시작 시각
-        authorName:
-          type: string
-          description: 이벤트 작성자 이름
-        body:
-          type: string
-          description: 이벤트 본문
-        title:
-          type: string
-          description: 이벤트 제목
-        eventEndAt:
-          type: string
-          description: 이벤트 종료 시각
     ProjectFindAllSuccessResponse:
       title: ProjectFindAllSuccessResponse
       required:
@@ -5588,6 +5673,48 @@ components:
         status:
           type: string
           description: 응답 상태
+    EventCreateRequest:
+      title: EventCreateRequest
+      required:
+      - authorName
+      - body
+      - eventEndAt
+      - eventStartAt
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 이벤트 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 이벤트 CTA
+        eventStartAt:
+          type: string
+          description: 이벤트 시작 시각
+        authorName:
+          type: string
+          description: 이벤트 작성자 이름
+        body:
+          type: string
+          description: 이벤트 본문
+        title:
+          type: string
+          description: 이벤트 제목
+        eventEndAt:
+          type: string
+          description: 이벤트 종료 시각
     OAuthSignupSuccessResponse:
       title: OAuthSignupSuccessResponse
       required:
@@ -6833,6 +6960,37 @@ components:
               type: string
               description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
           description: 수정된 댓글
+        status:
+          type: string
+          description: 응답 상태
+    NewsReactionSuccessResponse:
+      title: NewsReactionSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - likeCount
+          - newsId
+          - type
+          type: object
+          properties:
+            newsId:
+              type: number
+              description: 소식 ID
+            active:
+              type: boolean
+              description: 요청한 반응의 활성 상태
+            likeCount:
+              type: number
+              description: 소식 좋아요 수
+            type:
+              type: string
+              description: 반응 타입. 현재 LIKE만 지원하며 향후 확장할 수 있다.
+          description: 소식 반응 변경 결과
         status:
           type: string
           description: 응답 상태
