@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"type\",\"\
-                    message\":\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\"\
-                    :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
+                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -934,10 +934,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1474,10 +1474,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -3675,6 +3675,70 @@ paths:
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:30:00Z\",\"editable\":true,\"edited\"\
                     :true}}"
+  /api/v1/feeds/{feedId}/reactions/{type}:
+    put:
+      tags:
+      - Feed Reaction
+      summary: 피드 반응 추가
+      description: 현재 로그인 사용자가 피드에 좋아요 또는 북마크를 추가한다. 이미 존재하는 반응이면 현재 상태를 반환한다.
+      operationId: feed-reaction-add
+      parameters:
+      - name: feedId
+        in: path
+        description: 피드 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: type
+        in: path
+        description: 반응 타입(LIKE 또는 BOOKMARK)
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedReactionSuccessResponse"
+              examples:
+                feed-reaction-add:
+                  value: "{\"status\":\"success\",\"data\":{\"feedId\":10,\"type\"\
+                    :\"LIKE\",\"active\":true,\"likeCount\":12,\"bookmarkCount\":3}}"
+    delete:
+      tags:
+      - Feed Reaction
+      summary: 피드 반응 제거
+      description: 현재 로그인 사용자가 피드의 좋아요 또는 북마크를 제거한다. 반응이 없어도 현재 상태를 반환한다.
+      operationId: feed-reaction-remove
+      parameters:
+      - name: feedId
+        in: path
+        description: 피드 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: type
+        in: path
+        description: 반응 타입(LIKE 또는 BOOKMARK)
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedReactionSuccessResponse"
+              examples:
+                feed-reaction-remove:
+                  value: "{\"status\":\"success\",\"data\":{\"feedId\":10,\"type\"\
+                    :\"BOOKMARK\",\"active\":false,\"likeCount\":11,\"bookmarkCount\"\
+                    :3}}"
   /api/v1/projects/{projectId}/comments/{commentId}:
     delete:
       tags:
@@ -5211,48 +5275,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    EventCreateRequest:
-      title: EventCreateRequest
-      required:
-      - authorName
-      - body
-      - eventEndAt
-      - eventStartAt
-      - summary
-      - title
-      type: object
-      properties:
-        summary:
-          type: string
-          description: 이벤트 요약
-        cta:
-          required:
-          - label
-          - url
-          type: object
-          properties:
-            label:
-              type: string
-              description: CTA 라벨
-            url:
-              type: string
-              description: CTA URL
-          description: 이벤트 CTA
-        eventStartAt:
-          type: string
-          description: 이벤트 시작 시각
-        authorName:
-          type: string
-          description: 이벤트 작성자 이름
-        body:
-          type: string
-          description: 이벤트 본문
-        title:
-          type: string
-          description: 이벤트 제목
-        eventEndAt:
-          type: string
-          description: 이벤트 종료 시각
     ProjectFindAllSuccessResponse:
       title: ProjectFindAllSuccessResponse
       required:
@@ -5448,6 +5470,48 @@ components:
         status:
           type: string
           description: 응답 상태
+    EventCreateRequest:
+      title: EventCreateRequest
+      required:
+      - authorName
+      - body
+      - eventEndAt
+      - eventStartAt
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 이벤트 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 이벤트 CTA
+        eventStartAt:
+          type: string
+          description: 이벤트 시작 시각
+        authorName:
+          type: string
+          description: 이벤트 작성자 이름
+        body:
+          type: string
+          description: 이벤트 본문
+        title:
+          type: string
+          description: 이벤트 제목
+        eventEndAt:
+          type: string
+          description: 이벤트 종료 시각
     OAuthSignupSuccessResponse:
       title: OAuthSignupSuccessResponse
       required:
@@ -5673,6 +5737,41 @@ components:
           type: object
           description: 메타 정보
           nullable: true
+        status:
+          type: string
+          description: 응답 상태
+    FeedReactionSuccessResponse:
+      title: FeedReactionSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - bookmarkCount
+          - feedId
+          - likeCount
+          - type
+          type: object
+          properties:
+            feedId:
+              type: number
+              description: 피드 ID
+            bookmarkCount:
+              type: number
+              description: 피드 북마크 수
+            active:
+              type: boolean
+              description: 요청한 반응의 활성 상태
+            likeCount:
+              type: number
+              description: 피드 좋아요 수
+            type:
+              type: string
+              description: 반응 타입(LIKE 또는 BOOKMARK)
+          description: 피드 반응 변경 결과
         status:
           type: string
           description: 응답 상태
