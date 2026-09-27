@@ -1,8 +1,10 @@
-import { queryOptions } from '@tanstack/react-query';
+import { mutationOptions, queryOptions } from '@tanstack/react-query';
 import { httpClient } from '@/utils/client';
 import type {
   UserProfileSuccessResponse,
   UserProfileSummarySuccessResponse,
+  UserProfileUpdateRequest,
+  UserProfileUpdateSuccessResponse,
 } from '@/api/generated/schema';
 
 /** 마이페이지 조회(`GET /api/v1/users/me`)는 공개 프로필과 같은 `UserProfileSuccessResponse`를 준다. */
@@ -35,3 +37,20 @@ export const myProfileSummaryQuery = (userId: number) =>
     queryKey: ['my-profile-summary', userId],
     queryFn: ({ signal }) => fetchMyProfileSummary(signal),
   });
+
+export type UpdateMyProfileInput = UserProfileUpdateRequest;
+
+export async function updateMyProfile(input: UpdateMyProfileInput) {
+  const response = await httpClient<UserProfileUpdateSuccessResponse>('/api/v1/users/me', {
+    method: 'put',
+    json: input,
+  });
+  if (!response) throw new Error('프로필 수정 결과를 확인하지 못했습니다.');
+
+  return response.data;
+}
+
+export const updateMyProfileMutation = mutationOptions({
+  mutationFn: updateMyProfile,
+  retry: false,
+});
