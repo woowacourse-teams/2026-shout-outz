@@ -11,6 +11,7 @@ public enum CommentErrorCode implements ErrorCode {
     COMMENT_DEPTH_EXCEEDED("대댓글은 한 단계까지만 작성할 수 있습니다."),
 
     REACTION_TYPE_INVALID("지원하지 않는 댓글 반응 타입입니다."),
+    REACTION_NOT_FOUND("요청한 반응을 찾을 수 없습니다."),
 
     INVALID_COMMENT_CURSOR("올바르지 않은 댓글 커서입니다."),
     INVALID_COMMENT_SORT("올바르지 않은 댓글 정렬 기준입니다."),

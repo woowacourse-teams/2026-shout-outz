@@ -54,8 +54,10 @@ class FeedReactionRepositoryIntegrationTest {
         assertThat(feedReactionRepository.countByFeedId(feed.getId()))
                 .isEqualTo(new FeedReactionCounts(2L, 1L));
 
-        feedReactionRepository.remove(feed.getId(), authorId, FeedReactionType.LIKE);
-        feedReactionRepository.remove(feed.getId(), authorId, FeedReactionType.LIKE);
+        assertThat(feedReactionRepository.remove(feed.getId(), authorId, FeedReactionType.LIKE))
+                .isTrue();
+        assertThat(feedReactionRepository.remove(feed.getId(), authorId, FeedReactionType.LIKE))
+                .isFalse();
 
         assertThat(feedReactionRepository.countByFeedId(feed.getId()))
                 .isEqualTo(new FeedReactionCounts(1L, 1L));

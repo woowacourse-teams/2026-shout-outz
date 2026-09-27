@@ -85,7 +85,8 @@ public enum ProjectErrorCode implements ErrorCode {
     PROJECT_COHORT_NULL("프로젝트 기수는 null일 수 없습니다."),
     PROJECT_REGISTERED_BY_NULL("프로젝트 등록자는 null일 수 없습니다."),
 
-    REACTION_TYPE_INVALID("지원하지 않는 프로젝트 반응 타입입니다.");
+    REACTION_TYPE_INVALID("지원하지 않는 프로젝트 반응 타입입니다."),
+    REACTION_NOT_FOUND("요청한 반응을 찾을 수 없습니다.");
 
     private final String message;
 }

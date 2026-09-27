@@ -32,7 +32,9 @@ public class FeedReactionService {
         FeedReactionType reactionType = FeedReactionType.from(type);
         validateActiveFeed(feedId);
 
-        feedReactionRepository.remove(feedId, userId, reactionType);
+        if (!feedReactionRepository.remove(feedId, userId, reactionType)) {
+            throw new EntityNotFoundException(FeedErrorCode.REACTION_NOT_FOUND);
+        }
         return response(feedId, reactionType, false);
     }
 

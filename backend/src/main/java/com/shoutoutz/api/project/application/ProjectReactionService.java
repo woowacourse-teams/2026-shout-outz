@@ -5,6 +5,7 @@ import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_NOT_FOUN
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.Project;
+import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectReactionCounts;
 import com.shoutoutz.api.project.domain.ProjectReactionRepository;
 import com.shoutoutz.api.project.domain.ProjectReactionType;
@@ -38,7 +39,9 @@ public class ProjectReactionService {
         ProjectReactionType reactionType = ProjectReactionType.from(type);
         findActiveProject(projectId);
 
-        projectReactionRepository.remove(projectId, userId, reactionType);
+        if (!projectReactionRepository.remove(projectId, userId, reactionType)) {
+            throw new EntityNotFoundException(ProjectErrorCode.REACTION_NOT_FOUND);
+        }
         return response(projectId, reactionType, false);
     }
 

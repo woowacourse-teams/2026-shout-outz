@@ -26,7 +26,9 @@ import com.shoutoutz.api.comment.application.FeedCommentReactionService;
 import com.shoutoutz.api.comment.domain.CommentErrorCode;
 import com.shoutoutz.api.comment.domain.FeedCommentReactionType;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentReactionResponse;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,7 +136,7 @@ class FeedCommentReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Feed Comment Reaction")
                                 .summary("피드 댓글 반응 제거")
-                                .description("활성 피드의 삭제되지 않은 댓글에서 현재 로그인 사용자의 AGREE 반응을 제거한다. 반응이 없어도 현재 상태를 반환한다.")
+                                .description("활성 피드의 삭제되지 않은 댓글에서 현재 로그인 사용자의 AGREE 반응을 제거한다. 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("feedId").type(INTEGER).description("피드 ID"),
                                         parameterWithName("commentId").type(INTEGER).description("댓글 ID"),
@@ -145,6 +147,48 @@ class FeedCommentReactionHttpApiTest {
                                 )
                                 .responseSchema(Schema.schema("FeedCommentReactionSuccessResponse"))
                                 .responseFields(successResponseFields())
+                                .build())
+                ));
+
+        verify(feedCommentReactionService).remove(FEED_ID, COMMENT_ID, USER_ID, "AGREE");
+    }
+
+    @Test
+    void 피드_댓글에_반응이_없으면_삭제할_때_404를_반환한다() throws Exception {
+        willThrow(new EntityNotFoundException(CommentErrorCode.REACTION_NOT_FOUND))
+                .given(feedCommentReactionService).remove(FEED_ID, COMMENT_ID, USER_ID, "AGREE");
+
+        mockMvc.perform(delete(
+                                "/api/v1/feeds/{feedId}/comments/{commentId}/reactions/{type}",
+                                FEED_ID,
+                                COMMENT_ID,
+                                "AGREE"
+                        )
+                        .requestAttr(
+                                AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(USER_ID, UserRole.USER)
+                        )
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value(CommentErrorCode.REACTION_NOT_FOUND.name()))
+                .andExpect(jsonPath("$.message").value("요청한 반응을 찾을 수 없습니다."))
+                .andDo(document(
+                        "feed-comment-reaction-remove-reaction-not-found",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Feed Comment Reaction")
+                                .summary("피드 댓글 반응 제거")
+                                .description("현재 로그인 사용자의 해당 피드 댓글 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
+                                .pathParameters(
+                                        parameterWithName("feedId").type(INTEGER).description("피드 ID"),
+                                        parameterWithName("commentId").type(INTEGER).description("댓글 ID"),
+                                        parameterWithName("type").description("반응 타입(현재 AGREE)")
+                                )
+                                .requestHeaders(
+                                        headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
                                 .build())
                 ));
 

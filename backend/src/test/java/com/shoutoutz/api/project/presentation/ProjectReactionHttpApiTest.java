@@ -21,7 +21,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.project.application.ProjectReactionService;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectReactionType;
@@ -115,7 +117,7 @@ class ProjectReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Project Reaction")
                                 .summary("프로젝트 반응 제거")
-                                .description("삭제되지 않은 프로젝트에서 현재 로그인 사용자의 좋아요 또는 북마크를 제거한다. 승인 상태와 무관하게 처리한다.")
+                                .description("삭제되지 않은 프로젝트에서 현재 로그인 사용자의 좋아요 또는 북마크를 제거한다. 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다. 승인 상태와 무관하게 처리한다.")
                                 .pathParameters(
                                         parameterWithName("projectId").description("프로젝트 ID"),
                                         parameterWithName("type").description("반응 타입(LIKE 또는 BOOKMARK)")
@@ -125,6 +127,42 @@ class ProjectReactionHttpApiTest {
                                 )
                                 .responseSchema(Schema.schema("ProjectReactionSuccessResponse"))
                                 .responseFields(successResponseFields())
+                                .build())
+                ));
+
+        verify(projectReactionService).remove(PROJECT_ID, USER_ID, "BOOKMARK");
+    }
+
+    @Test
+    void 프로젝트에_반응이_없으면_삭제할_때_404를_반환한다() throws Exception {
+        willThrow(new EntityNotFoundException(ProjectErrorCode.REACTION_NOT_FOUND))
+                .given(projectReactionService).remove(PROJECT_ID, USER_ID, "BOOKMARK");
+
+        mockMvc.perform(delete("/api/v1/projects/{projectId}/reactions/{type}", PROJECT_ID, "BOOKMARK")
+                        .requestAttr(
+                                AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(USER_ID, UserRole.USER)
+                        )
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value(ProjectErrorCode.REACTION_NOT_FOUND.name()))
+                .andExpect(jsonPath("$.message").value("요청한 반응을 찾을 수 없습니다."))
+                .andDo(document(
+                        "project-reaction-remove-reaction-not-found",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Project Reaction")
+                                .summary("프로젝트 반응 제거")
+                                .description("현재 로그인 사용자의 해당 프로젝트 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
+                                .pathParameters(
+                                        parameterWithName("projectId").description("프로젝트 ID"),
+                                        parameterWithName("type").description("반응 타입(LIKE 또는 BOOKMARK)")
+                                )
+                                .requestHeaders(
+                                        headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
                                 .build())
                 ));
 

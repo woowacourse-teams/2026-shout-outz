@@ -1,6 +1,7 @@
 package com.shoutoutz.api.comment.application;
 
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_NOT_FOUND;
+import static com.shoutoutz.api.comment.domain.CommentErrorCode.REACTION_NOT_FOUND;
 import static com.shoutoutz.api.feed.domain.FeedErrorCode.FEED_NOT_FOUND;
 
 import com.shoutoutz.api.comment.domain.FeedComment;
@@ -49,7 +50,9 @@ public class FeedCommentReactionService {
         validateActiveFeed(feedId);
         findActiveComment(feedId, commentId);
 
-        feedCommentReactionRepository.remove(commentId, userId, reactionType);
+        if (!feedCommentReactionRepository.remove(commentId, userId, reactionType)) {
+            throw new EntityNotFoundException(REACTION_NOT_FOUND);
+        }
         return response(feedId, commentId, reactionType, false);
     }
 

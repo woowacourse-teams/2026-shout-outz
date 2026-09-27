@@ -30,8 +30,8 @@ public class NewsReactionRepositoryImpl implements NewsReactionRepository {
     }
 
     @Override
-    public void remove(long newsId, long userId, NewsReactionType type) {
-        jdbcTemplate.update(
+    public boolean remove(long newsId, long userId, NewsReactionType type) {
+        return jdbcTemplate.update(
                 """
                         DELETE FROM news_reactions
                         WHERE news_id = :newsId
@@ -42,7 +42,7 @@ public class NewsReactionRepositoryImpl implements NewsReactionRepository {
                         .addValue("newsId", newsId)
                         .addValue("userId", userId)
                         .addValue("reactionType", type.name())
-        );
+        ) == 1;
     }
 
     @Override

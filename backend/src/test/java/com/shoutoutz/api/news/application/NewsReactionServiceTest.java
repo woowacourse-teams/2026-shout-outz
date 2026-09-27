@@ -56,9 +56,11 @@ class NewsReactionServiceTest {
     }
 
     @Test
-    void 소식에서_좋아요를_멱등하게_제거하고_반응_수를_반환한다() {
+    void 소식에서_좋아요를_제거하고_반응_수를_반환한다() {
         givenActiveNews();
         when(newsReactionRepository.countByNewsId(NEWS_ID)).thenReturn(20L);
+        when(newsReactionRepository.remove(NEWS_ID, USER_ID, NewsReactionType.LIKE))
+                .thenReturn(true);
 
         NewsReactionResponse response = newsReactionService.remove(NEWS_ID, USER_ID, "LIKE");
 
@@ -66,6 +68,20 @@ class NewsReactionServiceTest {
                 new NewsReactionResponse(NEWS_ID, NewsReactionType.LIKE, false, 20L)
         );
         verify(newsReactionRepository).remove(NEWS_ID, USER_ID, NewsReactionType.LIKE);
+    }
+
+    @Test
+    void 소식에_반응이_없으면_반응_삭제_404_오류로_처리한다() {
+        givenActiveNews();
+        when(newsReactionRepository.remove(NEWS_ID, USER_ID, NewsReactionType.LIKE))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> newsReactionService.remove(NEWS_ID, USER_ID, "LIKE"))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasFieldOrPropertyWithValue("errorCode", NewsErrorCode.REACTION_NOT_FOUND);
+
+        verify(newsReactionRepository).remove(NEWS_ID, USER_ID, NewsReactionType.LIKE);
+        verify(newsReactionRepository, never()).countByNewsId(NEWS_ID);
     }
 
     @Test

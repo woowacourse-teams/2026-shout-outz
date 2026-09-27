@@ -35,8 +35,10 @@ class NewsReactionRepositoryIntegrationTest {
 
         assertThat(newsReactionRepository.countByNewsId(newsId)).isEqualTo(2L);
 
-        newsReactionRepository.remove(newsId, firstUserId, NewsReactionType.LIKE);
-        newsReactionRepository.remove(newsId, firstUserId, NewsReactionType.LIKE);
+        assertThat(newsReactionRepository.remove(newsId, firstUserId, NewsReactionType.LIKE))
+                .isTrue();
+        assertThat(newsReactionRepository.remove(newsId, firstUserId, NewsReactionType.LIKE))
+                .isFalse();
 
         assertThat(newsReactionRepository.countByNewsId(newsId)).isEqualTo(1L);
     }

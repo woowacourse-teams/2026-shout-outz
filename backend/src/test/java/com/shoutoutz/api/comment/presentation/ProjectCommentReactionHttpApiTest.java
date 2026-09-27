@@ -26,7 +26,9 @@ import com.shoutoutz.api.comment.application.ProjectCommentReactionService;
 import com.shoutoutz.api.comment.domain.CommentErrorCode;
 import com.shoutoutz.api.comment.domain.ProjectCommentReactionType;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentReactionResponse;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,7 +136,7 @@ class ProjectCommentReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Project Comment Reaction")
                                 .summary("프로젝트 댓글 반응 제거")
-                                .description("삭제되지 않은 프로젝트 댓글에서 현재 로그인 사용자의 AGREE 반응을 제거한다. 반응이 없어도 현재 상태를 반환한다.")
+                                .description("삭제되지 않은 프로젝트 댓글에서 현재 로그인 사용자의 AGREE 반응을 제거한다. 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("projectId").type(INTEGER).description("프로젝트 ID"),
                                         parameterWithName("commentId").type(INTEGER).description("댓글 ID"),
@@ -145,6 +147,48 @@ class ProjectCommentReactionHttpApiTest {
                                 )
                                 .responseSchema(Schema.schema("ProjectCommentReactionSuccessResponse"))
                                 .responseFields(successResponseFields())
+                                .build())
+                ));
+
+        verify(projectCommentReactionService).remove(PROJECT_ID, COMMENT_ID, USER_ID, "AGREE");
+    }
+
+    @Test
+    void 프로젝트_댓글에_반응이_없으면_삭제할_때_404를_반환한다() throws Exception {
+        willThrow(new EntityNotFoundException(CommentErrorCode.REACTION_NOT_FOUND))
+                .given(projectCommentReactionService).remove(PROJECT_ID, COMMENT_ID, USER_ID, "AGREE");
+
+        mockMvc.perform(delete(
+                                "/api/v1/projects/{projectId}/comments/{commentId}/reactions/{type}",
+                                PROJECT_ID,
+                                COMMENT_ID,
+                                "AGREE"
+                        )
+                        .requestAttr(
+                                AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(USER_ID, UserRole.USER)
+                        )
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value(CommentErrorCode.REACTION_NOT_FOUND.name()))
+                .andExpect(jsonPath("$.message").value("요청한 반응을 찾을 수 없습니다."))
+                .andDo(document(
+                        "project-comment-reaction-remove-reaction-not-found",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Project Comment Reaction")
+                                .summary("프로젝트 댓글 반응 제거")
+                                .description("현재 로그인 사용자의 해당 프로젝트 댓글 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
+                                .pathParameters(
+                                        parameterWithName("projectId").type(INTEGER).description("프로젝트 ID"),
+                                        parameterWithName("commentId").type(INTEGER).description("댓글 ID"),
+                                        parameterWithName("type").description("반응 타입(현재 AGREE)")
+                                )
+                                .requestHeaders(
+                                        headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
                                 .build())
                 ));
 

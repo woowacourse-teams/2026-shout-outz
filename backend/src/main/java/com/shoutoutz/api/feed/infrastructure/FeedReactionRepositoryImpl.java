@@ -31,8 +31,8 @@ public class FeedReactionRepositoryImpl implements FeedReactionRepository {
     }
 
     @Override
-    public void remove(long feedId, long userId, FeedReactionType type) {
-        jdbcTemplate.update(
+    public boolean remove(long feedId, long userId, FeedReactionType type) {
+        return jdbcTemplate.update(
                 """
                         DELETE FROM feed_reactions
                         WHERE feed_id = :feedId
@@ -43,7 +43,7 @@ public class FeedReactionRepositoryImpl implements FeedReactionRepository {
                         .addValue("feedId", feedId)
                         .addValue("userId", userId)
                         .addValue("reactionType", type.name())
-        );
+        ) == 1;
     }
 
     @Override

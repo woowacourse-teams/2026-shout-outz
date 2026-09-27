@@ -1,6 +1,7 @@
 package com.shoutoutz.api.comment.application;
 
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_NOT_FOUND;
+import static com.shoutoutz.api.comment.domain.CommentErrorCode.REACTION_NOT_FOUND;
 import static com.shoutoutz.api.project.domain.ProjectErrorCode.PROJECT_NOT_FOUND;
 
 import com.shoutoutz.api.comment.domain.ProjectComment;
@@ -54,7 +55,9 @@ public class ProjectCommentReactionService {
         findActiveProject(projectId);
         findActiveComment(projectId, commentId);
 
-        projectCommentReactionRepository.remove(commentId, userId, reactionType);
+        if (!projectCommentReactionRepository.remove(commentId, userId, reactionType)) {
+            throw new EntityNotFoundException(REACTION_NOT_FOUND);
+        }
         return response(projectId, commentId, reactionType, false);
     }
 

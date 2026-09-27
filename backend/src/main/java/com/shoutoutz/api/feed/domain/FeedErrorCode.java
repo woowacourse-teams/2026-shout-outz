@@ -16,7 +16,8 @@ public enum FeedErrorCode implements ErrorCode {
     FEED_MEDIA_INVALID("사용할 수 없는 본문 이미지가 포함되어 있습니다."),
     FEED_SEARCH_SORT_INVALID("검색어와 정렬 조건의 조합이 올바르지 않습니다."),
     FEED_CURSOR_INVALID("피드 커서가 올바르지 않습니다."),
-    REACTION_TYPE_INVALID("지원하지 않는 피드 반응 타입입니다.");
+    REACTION_TYPE_INVALID("지원하지 않는 피드 반응 타입입니다."),
+    REACTION_NOT_FOUND("요청한 반응을 찾을 수 없습니다.");
 
     private final String message;
 }

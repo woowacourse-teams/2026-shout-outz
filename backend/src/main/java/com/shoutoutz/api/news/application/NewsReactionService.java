@@ -31,7 +31,9 @@ public class NewsReactionService {
         NewsReactionType reactionType = NewsReactionType.from(type);
         validateActiveNews(newsId);
 
-        newsReactionRepository.remove(newsId, userId, reactionType);
+        if (!newsReactionRepository.remove(newsId, userId, reactionType)) {
+            throw new EntityNotFoundException(NewsErrorCode.REACTION_NOT_FOUND);
+        }
         return response(newsId, reactionType, false);
     }
 

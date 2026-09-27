@@ -79,10 +79,12 @@ class FeedCommentReactionServiceTest {
     }
 
     @Test
-    void 피드_댓글의_공감을_멱등하게_제거한다() {
+    void 피드_댓글의_공감을_제거한다() {
         givenActiveFeed();
         givenComment(FEED_ID, false);
         givenCounts(6L);
+        when(feedCommentReactionRepository.remove(COMMENT_ID, USER_ID, FeedCommentReactionType.AGREE))
+                .thenReturn(true);
 
         FeedCommentReactionResponse response = feedCommentReactionService.remove(
                 FEED_ID,
@@ -100,6 +102,27 @@ class FeedCommentReactionServiceTest {
         ));
         verify(feedCommentReactionRepository)
                 .remove(COMMENT_ID, USER_ID, FeedCommentReactionType.AGREE);
+    }
+
+    @Test
+    void 피드_댓글에_반응이_없으면_반응_삭제_404_오류로_처리한다() {
+        givenActiveFeed();
+        givenComment(FEED_ID, false);
+        when(feedCommentReactionRepository.remove(COMMENT_ID, USER_ID, FeedCommentReactionType.AGREE))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> feedCommentReactionService.remove(
+                FEED_ID,
+                COMMENT_ID,
+                USER_ID,
+                "AGREE"
+        ))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasFieldOrPropertyWithValue("errorCode", CommentErrorCode.REACTION_NOT_FOUND);
+
+        verify(feedCommentReactionRepository)
+                .remove(COMMENT_ID, USER_ID, FeedCommentReactionType.AGREE);
+        verify(feedCommentReactionRepository, never()).countByCommentId(COMMENT_ID);
     }
 
     @Test

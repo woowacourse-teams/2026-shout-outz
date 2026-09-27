@@ -38,8 +38,10 @@ class ProjectReactionRepositoryIntegrationTest {
         assertThat(projectReactionRepository.countByProjectId(projectId))
                 .isEqualTo(new ProjectReactionCounts(2L, 1L));
 
-        projectReactionRepository.remove(projectId, firstUserId, ProjectReactionType.LIKE);
-        projectReactionRepository.remove(projectId, firstUserId, ProjectReactionType.LIKE);
+        assertThat(projectReactionRepository.remove(projectId, firstUserId, ProjectReactionType.LIKE))
+                .isTrue();
+        assertThat(projectReactionRepository.remove(projectId, firstUserId, ProjectReactionType.LIKE))
+                .isFalse();
 
         assertThat(projectReactionRepository.countByProjectId(projectId))
                 .isEqualTo(new ProjectReactionCounts(1L, 1L));

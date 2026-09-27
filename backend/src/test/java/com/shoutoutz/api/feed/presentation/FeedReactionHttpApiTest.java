@@ -21,8 +21,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.common.exception.code.CommonErrorCode;
+import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.feed.application.FeedReactionService;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
 import com.shoutoutz.api.feed.domain.FeedReactionType;
@@ -98,13 +100,42 @@ class FeedReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Feed Reaction")
                                 .summary("피드 반응 제거")
-                                .description("현재 로그인 사용자가 피드의 좋아요 또는 북마크를 제거한다. 반응이 없어도 현재 상태를 반환한다.")
+                                .description("현재 로그인 사용자가 피드의 좋아요 또는 북마크를 제거한다. 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("feedId").type(INTEGER).description("피드 ID"),
                                         parameterWithName("type").description("반응 타입(LIKE 또는 BOOKMARK)")
                                 )
                                 .responseSchema(Schema.schema("FeedReactionSuccessResponse"))
                                 .responseFields(successResponseFields())
+                                .build())
+                ));
+
+        verify(feedReactionService).remove(FEED_ID, USER_ID, "BOOKMARK");
+    }
+
+    @Test
+    void 피드에_반응이_없으면_삭제할_때_404를_반환한다() throws Exception {
+        willThrow(new EntityNotFoundException(FeedErrorCode.REACTION_NOT_FOUND))
+                .given(feedReactionService).remove(FEED_ID, USER_ID, "BOOKMARK");
+
+        mockMvc.perform(delete("/api/v1/feeds/{feedId}/reactions/{type}", FEED_ID, "BOOKMARK")
+                        .with(authenticated()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value(FeedErrorCode.REACTION_NOT_FOUND.name()))
+                .andExpect(jsonPath("$.message").value("요청한 반응을 찾을 수 없습니다."))
+                .andDo(document(
+                        "feed-reaction-remove-reaction-not-found",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Feed Reaction")
+                                .summary("피드 반응 제거")
+                                .description("현재 로그인 사용자의 해당 피드 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
+                                .pathParameters(
+                                        parameterWithName("feedId").type(INTEGER).description("피드 ID"),
+                                        parameterWithName("type").description("반응 타입(LIKE 또는 BOOKMARK)")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
                                 .build())
                 ));
 

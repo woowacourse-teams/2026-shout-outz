@@ -103,7 +103,7 @@ class NewsReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("News Reaction")
                                 .summary("소식 반응 제거")
-                                .description("현재 로그인 사용자가 삭제되지 않은 소식의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 없어도 현재 상태를 반환한다.")
+                                .description("현재 로그인 사용자가 삭제되지 않은 소식의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("newsId").description("소식 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
@@ -113,6 +113,39 @@ class NewsReactionHttpApiTest {
                                 )
                                 .responseSchema(Schema.schema("NewsReactionSuccessResponse"))
                                 .responseFields(successResponseFields())
+                                .build())
+                ));
+
+        verify(newsReactionService).remove(NEWS_ID, USER_ID, "LIKE");
+    }
+
+    @Test
+    void 소식에_반응이_없으면_삭제할_때_404를_반환한다() throws Exception {
+        given(newsReactionService.remove(NEWS_ID, USER_ID, "LIKE"))
+                .willThrow(new EntityNotFoundException(NewsErrorCode.REACTION_NOT_FOUND));
+
+        mockMvc.perform(delete("/api/v1/news/{newsId}/reactions/{type}", NEWS_ID, "LIKE")
+                        .with(authenticated())
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value(NewsErrorCode.REACTION_NOT_FOUND.name()))
+                .andExpect(jsonPath("$.message").value("요청한 반응을 찾을 수 없습니다."))
+                .andDo(document(
+                        "news-reaction-remove-reaction-not-found",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News Reaction")
+                                .summary("소식 반응 제거")
+                                .description("현재 로그인 사용자의 해당 소식 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
+                                .pathParameters(
+                                        parameterWithName("newsId").description("소식 ID"),
+                                        parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
+                                )
+                                .requestHeaders(
+                                        headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
                                 .build())
                 ));
 
@@ -178,7 +211,7 @@ class NewsReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("News Reaction")
                                 .summary("소식 반응 제거")
-                                .description("현재 로그인 사용자가 삭제되지 않은 소식의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 없어도 현재 상태를 반환한다.")
+                                .description("현재 로그인 사용자가 삭제되지 않은 소식의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("newsId").description("소식 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
@@ -237,7 +270,7 @@ class NewsReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("News Reaction")
                                 .summary("소식 반응 제거")
-                                .description("현재 로그인 사용자가 삭제되지 않은 소식의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 없어도 현재 상태를 반환한다.")
+                                .description("현재 로그인 사용자가 삭제되지 않은 소식의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("newsId").description("소식 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")

@@ -49,8 +49,10 @@ class FeedCommentReactionRepositoryIntegrationTest {
         assertThat(feedCommentReactionRepository.countByCommentId(commentId))
                 .isEqualTo(new FeedCommentReactionCounts(2L));
 
-        feedCommentReactionRepository.remove(commentId, firstUserId, FeedCommentReactionType.AGREE);
-        feedCommentReactionRepository.remove(commentId, firstUserId, FeedCommentReactionType.AGREE);
+        assertThat(feedCommentReactionRepository.remove(commentId, firstUserId, FeedCommentReactionType.AGREE))
+                .isTrue();
+        assertThat(feedCommentReactionRepository.remove(commentId, firstUserId, FeedCommentReactionType.AGREE))
+                .isFalse();
 
         assertThat(feedCommentReactionRepository.countByCommentId(commentId))
                 .isEqualTo(new FeedCommentReactionCounts(1L));

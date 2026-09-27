@@ -31,8 +31,8 @@ public class ProjectCommentReactionRepositoryImpl implements ProjectCommentReact
     }
 
     @Override
-    public void remove(long commentId, long userId, ProjectCommentReactionType type) {
-        jdbcTemplate.update(
+    public boolean remove(long commentId, long userId, ProjectCommentReactionType type) {
+        return jdbcTemplate.update(
                 """
                         DELETE FROM project_comment_reactions
                         WHERE comment_id = :commentId
@@ -43,7 +43,7 @@ public class ProjectCommentReactionRepositoryImpl implements ProjectCommentReact
                         .addValue("commentId", commentId)
                         .addValue("userId", userId)
                         .addValue("reactionType", type.name())
-        );
+        ) == 1;
     }
 
     @Override

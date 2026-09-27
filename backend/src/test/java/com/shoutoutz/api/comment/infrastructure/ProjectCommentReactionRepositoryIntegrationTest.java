@@ -38,8 +38,10 @@ class ProjectCommentReactionRepositoryIntegrationTest {
         assertThat(projectCommentReactionRepository.countByCommentId(commentId))
                 .isEqualTo(new ProjectCommentReactionCounts(2L));
 
-        projectCommentReactionRepository.remove(commentId, firstUserId, ProjectCommentReactionType.AGREE);
-        projectCommentReactionRepository.remove(commentId, firstUserId, ProjectCommentReactionType.AGREE);
+        assertThat(projectCommentReactionRepository.remove(commentId, firstUserId, ProjectCommentReactionType.AGREE))
+                .isTrue();
+        assertThat(projectCommentReactionRepository.remove(commentId, firstUserId, ProjectCommentReactionType.AGREE))
+                .isFalse();
 
         assertThat(projectCommentReactionRepository.countByCommentId(commentId))
                 .isEqualTo(new ProjectCommentReactionCounts(1L));

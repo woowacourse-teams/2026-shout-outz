@@ -66,6 +66,8 @@ class ProjectReactionServiceTest {
     void 승인_대기_프로젝트의_기존_북마크를_제거한다() {
         givenProject(ApprovalStatus.PENDING);
         givenCounts(83L, 27L);
+        when(projectReactionRepository.remove(PROJECT_ID, USER_ID, ProjectReactionType.BOOKMARK))
+                .thenReturn(true);
 
         ProjectReactionResponse response = projectReactionService.remove(
                 PROJECT_ID,
@@ -77,6 +79,20 @@ class ProjectReactionServiceTest {
                 new ProjectReactionResponse(PROJECT_ID, ProjectReactionType.BOOKMARK, false, 83L, 27L)
         );
         verify(projectReactionRepository).remove(PROJECT_ID, USER_ID, ProjectReactionType.BOOKMARK);
+    }
+
+    @Test
+    void 프로젝트에_반응이_없으면_반응_삭제_404_오류로_처리한다() {
+        givenProject(ApprovalStatus.APPROVED);
+        when(projectReactionRepository.remove(PROJECT_ID, USER_ID, ProjectReactionType.LIKE))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> projectReactionService.remove(PROJECT_ID, USER_ID, "LIKE"))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ProjectErrorCode.REACTION_NOT_FOUND);
+
+        verify(projectReactionRepository).remove(PROJECT_ID, USER_ID, ProjectReactionType.LIKE);
+        verify(projectReactionRepository, never()).countByProjectId(PROJECT_ID);
     }
 
     @Test

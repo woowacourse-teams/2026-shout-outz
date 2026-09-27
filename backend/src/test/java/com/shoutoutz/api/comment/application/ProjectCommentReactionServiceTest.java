@@ -106,6 +106,8 @@ class ProjectCommentReactionServiceTest {
         givenProject(ApprovalStatus.PENDING);
         givenComment(PROJECT_ID, false);
         givenCounts(6L);
+        when(projectCommentReactionRepository.remove(COMMENT_ID, USER_ID, ProjectCommentReactionType.AGREE))
+                .thenReturn(true);
 
         ProjectCommentReactionResponse response = projectCommentReactionService.remove(
                 PROJECT_ID,
@@ -123,6 +125,27 @@ class ProjectCommentReactionServiceTest {
         ));
         verify(projectCommentReactionRepository)
                 .remove(COMMENT_ID, USER_ID, ProjectCommentReactionType.AGREE);
+    }
+
+    @Test
+    void 프로젝트_댓글에_반응이_없으면_반응_삭제_404_오류로_처리한다() {
+        givenProject(ApprovalStatus.APPROVED);
+        givenComment(PROJECT_ID, false);
+        when(projectCommentReactionRepository.remove(COMMENT_ID, USER_ID, ProjectCommentReactionType.AGREE))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> projectCommentReactionService.remove(
+                PROJECT_ID,
+                COMMENT_ID,
+                USER_ID,
+                "AGREE"
+        ))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasFieldOrPropertyWithValue("errorCode", CommentErrorCode.REACTION_NOT_FOUND);
+
+        verify(projectCommentReactionRepository)
+                .remove(COMMENT_ID, USER_ID, ProjectCommentReactionType.AGREE);
+        verify(projectCommentReactionRepository, never()).countByCommentId(COMMENT_ID);
     }
 
     @Test

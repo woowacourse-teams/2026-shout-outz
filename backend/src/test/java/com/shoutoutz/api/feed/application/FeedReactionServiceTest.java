@@ -56,9 +56,11 @@ class FeedReactionServiceTest {
     }
 
     @Test
-    void 피드에서_북마크를_멱등하게_제거하고_반응_수를_반환한다() {
+    void 피드에서_북마크를_제거하고_반응_수를_반환한다() {
         givenActiveFeed();
         givenCounts(11L, 2L);
+        when(feedReactionRepository.remove(FEED_ID, USER_ID, FeedReactionType.BOOKMARK))
+                .thenReturn(true);
 
         FeedReactionResponse response = feedReactionService.remove(FEED_ID, USER_ID, "BOOKMARK");
 
@@ -66,6 +68,20 @@ class FeedReactionServiceTest {
                 new FeedReactionResponse(FEED_ID, FeedReactionType.BOOKMARK, false, 11L, 2L)
         );
         verify(feedReactionRepository).remove(FEED_ID, USER_ID, FeedReactionType.BOOKMARK);
+    }
+
+    @Test
+    void 피드에_반응이_없으면_반응_삭제_404_오류로_처리한다() {
+        givenActiveFeed();
+        when(feedReactionRepository.remove(FEED_ID, USER_ID, FeedReactionType.BOOKMARK))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> feedReactionService.remove(FEED_ID, USER_ID, "BOOKMARK"))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasFieldOrPropertyWithValue("errorCode", FeedErrorCode.REACTION_NOT_FOUND);
+
+        verify(feedReactionRepository).remove(FEED_ID, USER_ID, FeedReactionType.BOOKMARK);
+        verify(feedReactionRepository, never()).countByFeedId(FEED_ID);
     }
 
     @Test
