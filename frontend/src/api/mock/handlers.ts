@@ -4,7 +4,7 @@ import { getFeedList } from '@/api/mock/feed';
 import { getNewsDetail, getNewsList } from '@/api/mock/news';
 import { getCohorts, getTechTags, searchCrewList } from '@/api/mock/project';
 import projects from '@/api/mock/projects.json';
-import { getUserFeeds, getUserProfile, getUserProjects } from '@/api/mock/user';
+import { getUserFeeds, getUserProfile, getUserProjects, updateProfile } from '@/api/mock/user';
 import { isNewsFilter } from '@/types/news';
 
 /** 미디어 업로드 시작이 내려주는 presigned PUT URL의 목 주소 */
@@ -230,6 +230,35 @@ export const handlers = [
       data: { userId: 10, handle: 'woojin', displayName: '정우진', avatarUrl: null },
     }),
   ),
+
+  http.put('/api/v1/users/me', async ({ request }) => {
+    const body = (await request.json()) as {
+      displayName: string;
+      bio?: string | null;
+      blogUrl?: string | null;
+      githubProfileUrl?: string | null;
+      avatarImageId?: number | null;
+    };
+
+    if (!body.displayName?.trim()) {
+      return HttpResponse.json(
+        { status: 'error', code: 'VALIDATION_ERROR', message: '표시 이름을 확인해 주세요.' },
+        { status: 400 },
+      );
+    }
+
+    // 서버는 mediaId를 공개 URL로 바꿔서 돌려준다. null이면 기본 프로필로 돌아간다.
+    const data = updateProfile({
+      displayName: body.displayName,
+      bio: body.bio ?? null,
+      blogUrl: body.blogUrl ?? null,
+      githubProfileUrl: body.githubProfileUrl ?? null,
+      avatarUrl:
+        body.avatarImageId == null ? null : `${MOCK_STORAGE_ORIGIN}/media/${body.avatarImageId}`,
+    });
+
+    return HttpResponse.json({ status: 'success', data });
+  }),
 
   http.get('/api/v1/users/:handle', ({ params }) => {
     const profile = getUserProfile(String(params.handle));

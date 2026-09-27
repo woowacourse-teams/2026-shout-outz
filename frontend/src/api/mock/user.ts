@@ -3,7 +3,7 @@ import { type Feed, type FeedAuthor } from '@/types/feed';
 import { type UserProfile } from '@/types/user';
 
 /** 실제 서버가 준비되기 전까지 MSW 핸들러가 내려줄 프로필 데이터. 백엔드가 뜨면 이 파일은 사라진다. */
-const PROFILE: UserProfile = {
+let PROFILE: UserProfile = {
   handle: 'woojin',
   displayName: '정우진',
   userType: 'WOOWACOURSE_CREW',
@@ -97,14 +97,26 @@ const FEEDS: Feed[] = [
   },
 ];
 
+/**
+ * 피드 목은 작성자 handle을 `crew0`으로, 프로필 목은 `woojin`으로 쓴다. 개발 화면에서 둘이 같은
+ * 사람으로 보이도록 두 handle을 모두 이 프로필로 받는다.
+ */
+const PROFILE_HANDLES = new Set([PROFILE.handle, 'crew0']);
+
 export function getUserProfile(handle: string): UserProfile | undefined {
-  return handle === PROFILE.handle ? PROFILE : undefined;
+  // 조회한 handle을 그대로 돌려줘야 "내 프로필인지" 판단이 맞는다.
+  return PROFILE_HANDLES.has(handle) ? { ...PROFILE, handle } : undefined;
 }
 
 export function getUserProjects(handle: string): ProjectSummary[] {
-  return handle === PROFILE.handle ? PROJECTS : [];
+  return PROFILE_HANDLES.has(handle) ? PROJECTS : [];
 }
 
 export function getUserFeeds(handle: string): Feed[] {
-  return handle === PROFILE.handle ? FEEDS : [];
+  return PROFILE_HANDLES.has(handle) ? FEEDS : [];
+}
+
+export function updateProfile(patch: Partial<UserProfile> & { avatarUrl?: string | null }) {
+  PROFILE = { ...PROFILE, ...patch };
+  return PROFILE;
 }
