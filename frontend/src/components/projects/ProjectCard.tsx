@@ -70,7 +70,8 @@ export function ProjectCard({
             <li key={`${member.displayName}-${index}`}>
               <Avatar
                 size="xs"
-                src={member.avatarUrl ?? undefined}
+                src={member.avatarUrl}
+                name={member.displayName}
                 alt={member.displayName}
                 className="ring-2 ring-white"
               />

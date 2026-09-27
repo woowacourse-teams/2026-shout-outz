@@ -36,7 +36,7 @@ export function ProfileHeader({
   return (
     <header className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
-        <Avatar size="lg" src={avatarUrl ?? undefined} alt="" />
+        <Avatar size="lg" src={avatarUrl} name={displayName} alt="" />
         <div className="flex min-w-0 flex-col gap-1.5">
           <h1 className="text-xl font-bold break-words text-gray-900 md:text-2xl">{displayName}</h1>
           {role && (

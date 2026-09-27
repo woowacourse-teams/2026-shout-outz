@@ -94,7 +94,12 @@ export function CrewSelectModal({ initial, onApply, onClose }: CrewSelectModalPr
                     isSelected ? 'bg-primary-50' : 'bg-gray-50 hover:bg-gray-100 md:bg-transparent',
                   )}
                 >
-                  <Avatar size="sm" src={crew.avatarUrl ?? undefined} alt="" />
+                  <Avatar
+                    size="sm"
+                    src={crew.avatarUrl}
+                    name={crew.displayName}
+                    alt=""
+                  />
                   <span className="flex min-w-0 flex-col">
                     <span
                       className={cn(

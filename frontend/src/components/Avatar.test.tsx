@@ -104,3 +104,78 @@ describe('Avatar', () => {
     });
   });
 });
+
+describe('Avatar 기본 프로필', () => {
+  it('이미지가 없으면 이름의 첫 글자를 보여준다', () => {
+    render(<Avatar name="정우진" alt="정우진" />);
+
+    expect(screen.getByRole('img', { name: '정우진' })).toHaveTextContent('정');
+  });
+
+  it('이미지가 있으면 첫 글자를 보여주지 않는다', () => {
+    render(<Avatar src={AVATAR_URL} name="정우진" alt="정우진" />);
+
+    expect(screen.getByRole('img', { name: '정우진' })).toHaveAttribute('src', AVATAR_URL);
+    expect(screen.queryByText('정')).not.toBeInTheDocument();
+  });
+
+  it('이미지 로드에 실패하면 기본 프로필로 돌아간다', () => {
+    const { container } = render(<Avatar src={AVATAR_URL} name="정우진" alt="정우진" />);
+
+    fireEvent.error(container.querySelector('img')!);
+
+    expect(container.querySelector('img')).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '정우진' })).toHaveTextContent('정');
+  });
+
+  it('이름이 없으면 빈 원을 그린다', () => {
+    render(<Avatar alt="프로필" />);
+
+    expect(screen.getByRole('img', { name: '프로필' })).toBeEmptyDOMElement();
+  });
+
+  it('같은 이름은 늘 같은 색으로 그린다', () => {
+    const { container: first } = render(<Avatar name="정우진" alt="" />);
+    const { container: second } = render(<Avatar name="정우진" alt="" />);
+
+    expect(first.firstElementChild?.className).toBe(second.firstElementChild?.className);
+  });
+
+  it('이름이 다르면 색이 갈린다', () => {
+    const { container: woojin } = render(<Avatar name="정우진" alt="" />);
+    const { container: dohyun } = render(<Avatar name="김도현" alt="" />);
+
+    expect(woojin.firstElementChild?.className).not.toBe(dohyun.firstElementChild?.className);
+  });
+
+  it('첫 글자는 이름 옆에서 중복으로 읽히지 않는다', () => {
+    const { container } = render(<Avatar name="정우진" alt="" />);
+
+    expect(container.querySelector('span')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('alt가 빈 문자열이면 img에 alt 속성이 빈 값으로 남는다', () => {
+    const { container } = render(<Avatar src={AVATAR_URL} name="정우진" alt="" />);
+    const image = container.querySelector('img')!;
+
+    // alt 속성이 없는 것과 빈 alt는 다르다. 없으면 스크린리더가 파일명을 읽고,
+    // 비어 있으면 장식으로 보고 건너뛴다.
+    expect(image.hasAttribute('alt')).toBe(true);
+    expect(image.getAttribute('alt')).toBe('');
+  });
+
+  it('src가 null이면 기본 프로필로 떨어진다', () => {
+    // 서버가 사진 없는 유저에게 주는 값. 호출부가 undefined로 바꾸지 않아도 된다.
+    render(<Avatar src={null} name="정우진" alt="정우진" />);
+
+    expect(screen.getByRole('img', { name: '정우진' })).toHaveTextContent('정');
+  });
+
+  it('alt가 빈 문자열이면 기본 프로필도 이름을 읽지 않는다', () => {
+    const { container } = render(<Avatar name="정우진" alt="" />);
+    const box = container.firstElementChild!;
+
+    expect(box).not.toHaveAttribute('role');
+    expect(box).not.toHaveAttribute('aria-label');
+  });
+});

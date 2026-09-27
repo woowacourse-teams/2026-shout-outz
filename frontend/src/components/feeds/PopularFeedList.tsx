@@ -20,7 +20,12 @@ export function PopularFeedList() {
           <li key={feed.feedId} className="py-4 first:pt-0">
             <Link to="/feeds/$feedId" params={{ feedId: String(feed.feedId) }}>
               <div className="flex min-w-0 items-center gap-2">
-                <Avatar size="sm" alt={`${feed.author.displayName} 프로필`} />
+                <Avatar
+                  size="sm"
+                  src={feed.author.avatarUrl}
+                  name={feed.author.displayName}
+                  alt=""
+                />
                 <p className="truncate text-sm font-semibold text-gray-900">
                   {formatCrewName(feed.author.displayName, feed.author.cohort, feed.author.track)}
                 </p>

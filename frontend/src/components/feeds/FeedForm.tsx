@@ -107,7 +107,7 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
       }}
     >
       <div className="flex items-center gap-2 md:gap-3">
-        <Avatar size="sm" alt="" />
+        <Avatar size="sm" src={profile.avatarUrl} name={profile.displayName} alt="" />
         <p className="text-sm font-semibold text-gray-900">
           {formatCrewName(profile.displayName, profile.cohort, profile.track)}
         </p>

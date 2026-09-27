@@ -49,7 +49,12 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
       <title>{`${feed.author.displayName}의 피드 | shout-outz`}</title>
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <Avatar size="md" alt={`${feed.author.displayName} 프로필`} />
+          <Avatar
+            size="md"
+            src={feed.author.avatarUrl}
+            name={feed.author.displayName}
+            alt=""
+          />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-gray-900">
               {formatCrewName(feed.author.displayName, feed.author.cohort, feed.author.track)}

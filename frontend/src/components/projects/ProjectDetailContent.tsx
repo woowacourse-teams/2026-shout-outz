@@ -90,7 +90,7 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
                     key={member.handle ?? `${member.displayName}-${index}`}
                     className="flex items-center gap-3"
                   >
-                    <Avatar src={member.avatarUrl ?? undefined} alt="" />
+                    <Avatar src={member.avatarUrl} name={member.displayName} alt="" />
                     <p className="text-sm font-semibold break-words">
                       {member.displayName}
                       {index === 0 ? ' (작성자)' : ''}

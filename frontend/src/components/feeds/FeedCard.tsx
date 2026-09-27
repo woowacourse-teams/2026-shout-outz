@@ -26,7 +26,12 @@ export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }
             }
           >
             <div className="flex min-w-0 items-center gap-2">
-              <Avatar size="md" alt={`${feed.author.displayName} 프로필`} />
+              <Avatar
+                size="md"
+                src={feed.author.avatarUrl}
+                name={feed.author.displayName}
+                alt=""
+              />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-gray-900">
                   {formatCrewName(feed.author.displayName, feed.author.cohort, feed.author.track)}
