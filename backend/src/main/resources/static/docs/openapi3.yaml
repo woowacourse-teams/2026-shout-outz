@@ -99,9 +99,9 @@ paths:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\"\
-                    ,\"message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\":\"displayName은\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
+                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\":\"type은\
                     \ 필수입니다.\"}]}"
         "409":
           description: "409"
@@ -934,10 +934,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1474,10 +1474,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
+                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -3110,9 +3110,9 @@ paths:
               examples:
                 user-verification-request-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
-                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
-                    ,\"message\":\"nickname은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"},{\"field\":\"cohort\",\"message\"\
+                    :\"cohort는 양의 정수여야 합니다.\"}]}"
         "201":
           description: "201"
           content:
@@ -4033,6 +4033,98 @@ paths:
                   value: "{\"status\":\"success\",\"data\":{\"projectId\":100,\"type\"\
                     :\"BOOKMARK\",\"active\":false,\"likeCount\":83,\"bookmarkCount\"\
                     :27}}"
+  /api/v1/projects/{projectId}/comments/{commentId}/reactions/{type}:
+    put:
+      tags:
+      - Project Comment Reaction
+      summary: 프로젝트 댓글 반응 추가
+      description: 승인 완료되고 삭제되지 않은 프로젝트 댓글에 현재 로그인 사용자의 AGREE 반응을 추가한다. 이미 존재하는 반응이면
+        현재 상태를 반환한다.
+      operationId: project-comment-reaction-add
+      parameters:
+      - name: projectId
+        in: path
+        description: 프로젝트 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: commentId
+        in: path
+        description: 댓글 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: type
+        in: path
+        description: 반응 타입(현재 AGREE)
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectCommentReactionSuccessResponse"
+              examples:
+                project-comment-reaction-add:
+                  value: "{\"status\":\"success\",\"data\":{\"projectId\":100,\"commentId\"\
+                    :501,\"type\":\"AGREE\",\"active\":true,\"agreeCount\":7}}"
+    delete:
+      tags:
+      - Project Comment Reaction
+      summary: 프로젝트 댓글 반응 제거
+      description: 삭제되지 않은 프로젝트 댓글에서 현재 로그인 사용자의 AGREE 반응을 제거한다. 반응이 없어도 현재 상태를 반환한다.
+      operationId: project-comment-reaction-remove
+      parameters:
+      - name: projectId
+        in: path
+        description: 프로젝트 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: commentId
+        in: path
+        description: 댓글 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: type
+        in: path
+        description: 반응 타입(현재 AGREE)
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectCommentReactionSuccessResponse"
+              examples:
+                project-comment-reaction-remove:
+                  value: "{\"status\":\"success\",\"data\":{\"projectId\":100,\"commentId\"\
+                    :501,\"type\":\"AGREE\",\"active\":false,\"agreeCount\":6}}"
   /oauth2/authorization/github:
     get:
       tags:
@@ -5478,6 +5570,48 @@ components:
         status:
           type: string
           description: 응답 상태
+    EventCreateRequest:
+      title: EventCreateRequest
+      required:
+      - authorName
+      - body
+      - eventEndAt
+      - eventStartAt
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 이벤트 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 이벤트 CTA
+        eventStartAt:
+          type: string
+          description: 이벤트 시작 시각
+        authorName:
+          type: string
+          description: 이벤트 작성자 이름
+        body:
+          type: string
+          description: 이벤트 본문
+        title:
+          type: string
+          description: 이벤트 제목
+        eventEndAt:
+          type: string
+          description: 이벤트 종료 시각
     ProjectFindAllSuccessResponse:
       title: ProjectFindAllSuccessResponse
       required:
@@ -5673,48 +5807,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    EventCreateRequest:
-      title: EventCreateRequest
-      required:
-      - authorName
-      - body
-      - eventEndAt
-      - eventStartAt
-      - summary
-      - title
-      type: object
-      properties:
-        summary:
-          type: string
-          description: 이벤트 요약
-        cta:
-          required:
-          - label
-          - url
-          type: object
-          properties:
-            label:
-              type: string
-              description: CTA 라벨
-            url:
-              type: string
-              description: CTA URL
-          description: 이벤트 CTA
-        eventStartAt:
-          type: string
-          description: 이벤트 시작 시각
-        authorName:
-          type: string
-          description: 이벤트 작성자 이름
-        body:
-          type: string
-          description: 이벤트 본문
-        title:
-          type: string
-          description: 이벤트 제목
-        eventEndAt:
-          type: string
-          description: 이벤트 종료 시각
     OAuthSignupSuccessResponse:
       title: OAuthSignupSuccessResponse
       required:
@@ -6714,6 +6806,30 @@ components:
         status:
           type: string
           description: 응답 상태
+    CategorySaveRequest:
+      title: CategorySaveRequest
+      required:
+      - displayName
+      - displayOrder
+      - slug
+      - type
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 고유 표시 이름
+        displayOrder:
+          type: number
+          description: 0 이상 32767 이하 표시 순서
+        type:
+          type: string
+          description: 카테고리 유형
+          enum:
+          - GENERAL
+          - EVENT
+        slug:
+          type: string
+          description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
     ProjectFilterOptionsSuccessResponse:
       title: ProjectFilterOptionsSuccessResponse
       required:
@@ -6776,30 +6892,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    CategorySaveRequest:
-      title: CategorySaveRequest
-      required:
-      - displayName
-      - displayOrder
-      - slug
-      - type
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 고유 표시 이름
-        displayOrder:
-          type: number
-          description: 0 이상 32767 이하 표시 순서
-        type:
-          type: string
-          description: 카테고리 유형
-          enum:
-          - GENERAL
-          - EVENT
-        slug:
-          type: string
-          description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
     FeedCommentUpdateSuccessResponse:
       title: FeedCommentUpdateSuccessResponse
       required:
@@ -8197,6 +8289,41 @@ components:
               type: string
               description: ISO-8601 수정 시각
           description: 피드
+        status:
+          type: string
+          description: 응답 상태
+    ProjectCommentReactionSuccessResponse:
+      title: ProjectCommentReactionSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - agreeCount
+          - commentId
+          - projectId
+          - type
+          type: object
+          properties:
+            agreeCount:
+              type: number
+              description: 댓글 공감 수
+            active:
+              type: boolean
+              description: 요청한 반응의 활성 상태
+            commentId:
+              type: number
+              description: 댓글 ID
+            type:
+              type: string
+              description: 반응 타입(현재 AGREE)
+            projectId:
+              type: number
+              description: 프로젝트 ID
+          description: 프로젝트 댓글 반응 변경 결과
         status:
           type: string
           description: 응답 상태
