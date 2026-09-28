@@ -4,6 +4,7 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static com.epages.restdocs.apispec.SimpleType.INTEGER;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -91,6 +92,7 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.data[0].id").value(100))
                 .andExpect(jsonPath("$.data[0].title").value("루프"))
                 .andExpect(jsonPath("$.data[0].approvalStatus").value("APPROVED"))
+                .andExpect(jsonPath("$.data[0].rejectReason").value(nullValue()))
                 .andExpect(jsonPath("$.data[0].thumbnailUrl")
                         .value("https://cdn.example.com/thumbnail"))
                 .andExpect(jsonPath("$.data[0].thumbnailImageId").value(12L))
@@ -134,6 +136,26 @@ class UserProjectHttpApiTest {
                 ));
 
         verify(projectService).findAllByUser("@zzaekkii", new UserProjectFindRequest(20, null));
+    }
+
+    @Test
+    @DisplayName("반려 사유가 있으면 프로젝트 목록 응답에 함께 반환한다.")
+    void returnsRejectReason() throws Exception {
+        given(projectService.findAllByUser("@zzaekkii", new UserProjectFindRequest(null, null)))
+                .willReturn(new UserProjectResult(
+                        List.of(project(ApprovalStatus.REJECTED, "한 줄 소개를 구체적으로 적어주세요.")),
+                        false,
+                        1L,
+                        Map.of()
+                ));
+
+        mockMvc.perform(get("/api/v1/users/{handle}/projects", "@zzaekkii"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].approvalStatus").value("REJECTED"))
+                .andExpect(jsonPath("$.data[0].rejectReason")
+                        .value("한 줄 소개를 구체적으로 적어주세요."));
+
+        verify(projectService).findAllByUser("@zzaekkii", new UserProjectFindRequest(null, null));
     }
 
     @Test
@@ -198,6 +220,10 @@ class UserProjectHttpApiTest {
     }
 
     private static UserProjectItem project() {
+        return project(ApprovalStatus.APPROVED, null);
+    }
+
+    private static UserProjectItem project(ApprovalStatus approvalStatus, String rejectReason) {
         return new UserProjectItem(
                 100L,
                 "loop",
@@ -206,12 +232,16 @@ class UserProjectHttpApiTest {
                 "스프린트 회고와 액션 아이템을 관리하는 협업 도구",
                 6,
                 ServiceStatus.OPERATING,
-                ApprovalStatus.APPROVED,
+                approvalStatus,
+                rejectReason,
                 12L,
                 7L,
                 128,
                 184L,
                 14L,
+                0L,
+                false,
+                false,
                 List.of(new ProjectTechTag(1L, "Spring")),
                 List.of(ProjectMemberProfile.user(
                         7L, "@zzaekkii", "재키", Cohort.COHORT_6, Track.BACKEND, 21L
@@ -232,6 +262,8 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].cohort").type(NUMBER).description("우아한테크코스 기수"),
                 new EnumFields(ServiceStatus.class).withPath("data[].serviceStatus").description("운영 상태"),
                 new EnumFields(ApprovalStatus.class).withPath("data[].approvalStatus").description("심사 상태"),
+                fieldWithPath("data[].rejectReason").type(STRING)
+                        .description("반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다.").optional(),
                 fieldWithPath("data[].thumbnailImageId").type(NUMBER).description("프로젝트 썸네일 이미지 ID").optional(),
                 fieldWithPath("data[].thumbnailUrl").type(STRING).description("CloudFront에서 제공하는 공개 썸네일 URL").optional(),
                 fieldWithPath("data[].starCount").type(NUMBER)
