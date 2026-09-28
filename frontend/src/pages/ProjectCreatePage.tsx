@@ -13,7 +13,7 @@ import { Select } from '@/components/Select';
 import { TechTagField } from '@/components/projects/TechTagField';
 import { ThumbnailField } from '@/components/projects/ThumbnailField';
 import { type ProjectFormErrors, type ProjectFormValues } from '@/types/project';
-import { toProjectCreateRequest, validateProjectForm } from '@/utils/project';
+import { toProjectCreateRequest, toProjectFormErrors, validateProjectForm } from '@/utils/project';
 import { sessionQuery } from '@/apis/session';
 import { verificationRequestQuery } from '@/apis/verification';
 import { getGithubLoginUrl } from '@/utils/auth';
@@ -147,8 +147,16 @@ function ProjectCreateForm() {
           hasThumbnail: values.thumbnailImageId !== null,
           hasDeploymentUrl: values.deploymentUrl.trim() !== '',
         }),
-      onError: () =>
-        analytics.track({ name: 'project_create_failed', reason: 'SERVER', invalidFields: [] }),
+      onError: (error) => {
+        // 서버가 짚어 준 칸이 있으면 그 칸에 붙인다. 없으면 폼 아래 공통 문구만 남는다.
+        const serverErrors = toProjectFormErrors(error);
+        setErrors(serverErrors);
+        analytics.track({
+          name: 'project_create_failed',
+          reason: 'SERVER',
+          invalidFields: Object.keys(serverErrors),
+        });
+      },
     });
   };
 
@@ -187,7 +195,7 @@ function ProjectCreateForm() {
                 )}
               </Field>
 
-              <Field label="팀 이름" error={errors.teamName}>
+              <Field label="팀 이름 *" error={errors.teamName}>
                 {(id) => (
                   <Input
                     id={id}

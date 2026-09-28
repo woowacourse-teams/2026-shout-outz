@@ -1,5 +1,5 @@
 import { type ProjectFormValues } from '@/types/project';
-import { toProjectCreateRequest, validateProjectForm } from '@/utils/project';
+import { toProjectCreateRequest, toProjectFormErrors, validateProjectForm } from '@/utils/project';
 
 const FILLED: ProjectFormValues = {
   title: '루프 (Loop)',
@@ -30,6 +30,7 @@ describe('validateProjectForm', () => {
       const errors = validateProjectForm({
         ...FILLED,
         title: '',
+        teamName: '',
         tagline: '',
         cohort: null,
         githubRepositoryUrl: '',
@@ -38,7 +39,15 @@ describe('validateProjectForm', () => {
       });
 
       expect(Object.keys(errors).sort()).toEqual(
-        ['cohort', 'githubRepositoryUrl', 'members', 'tagline', 'techTags', 'title'].sort(),
+        [
+          'cohort',
+          'githubRepositoryUrl',
+          'members',
+          'tagline',
+          'teamName',
+          'techTags',
+          'title',
+        ].sort(),
       );
     });
 
@@ -48,16 +57,20 @@ describe('validateProjectForm', () => {
   });
 
   describe('선택 입력', () => {
-    it('팀 이름, 상세 설명, 배포 URL, 썸네일은 비어 있어도 된다', () => {
+    it('상세 설명, 배포 URL, 썸네일은 비어 있어도 된다', () => {
       expect(
         validateProjectForm({
           ...FILLED,
-          teamName: '',
           descriptionMd: '',
           deploymentUrl: '',
           thumbnailImageId: null,
         }),
       ).toEqual({});
+    });
+
+    // 문서 기준으로 팀 이름은 등록·수정 모두 필수다. 예전에는 프론트만 선택으로 두고 있었다.
+    it('팀 이름은 비면 서버가 400을 주므로 여기서 막는다', () => {
+      expect(validateProjectForm({ ...FILLED, teamName: '   ' })).toHaveProperty('teamName');
     });
   });
 
@@ -108,5 +121,113 @@ describe('toProjectCreateRequest', () => {
 
   it('검증을 통과하지 않은 값이 오면 던진다', () => {
     expect(() => toProjectCreateRequest({ ...FILLED, cohort: null })).toThrow();
+  });
+
+  // 서버가 앞뒤 공백을 자르는 대상에서 descriptionMd만 빠져 있다.
+  // 여기서 자르면 코드블록 들여쓰기처럼 의미 있는 공백이 사라진다.
+  it('상세 설명은 앞뒤 공백을 자르지 않고 그대로 보낸다', () => {
+    const descriptionMd = '    코드블록으로 시작하는 본문\n';
+
+    expect(toProjectCreateRequest({ ...FILLED, descriptionMd }).descriptionMd).toBe(descriptionMd);
+  });
+});
+
+describe('GitHub 레포지토리 URL', () => {
+  const errorFor = (githubRepositoryUrl: string) =>
+    validateProjectForm({ ...FILLED, githubRepositoryUrl }).githubRepositoryUrl;
+
+  it.each([
+    'https://github.com/owner/repo',
+    'https://www.github.com/owner/repo',
+    'https://github.com/owner/repo.git',
+    'https://github.com/owner/repo/',
+  ])('통과: %s', (url) => {
+    expect(errorFor(url)).toBeUndefined();
+  });
+
+  // 호스트만 보던 예전 검사가 전부 통과시켜 서버 400으로 넘기던 주소들이다.
+  it.each([
+    'http://github.com/owner/repo',
+    'https://github.com',
+    'https://github.com/owner',
+    'https://github.com/owner/repo/tree/main',
+    'https://github.com/owner/repo?tab=readme',
+    'https://gitlab.com/owner/repo',
+  ])('차단: %s', (url) => {
+    expect(errorFor(url)).toBeDefined();
+  });
+});
+
+describe('글자 수 상한', () => {
+  it.each([
+    ['title', 100],
+    ['teamName', 50],
+    ['tagline', 200],
+    ['descriptionMd', 100_000],
+  ] as const)('%s는 %d자까지 받는다', (field, max) => {
+    expect(validateProjectForm({ ...FILLED, [field]: 'ㄱ'.repeat(max) })[field]).toBeUndefined();
+    expect(validateProjectForm({ ...FILLED, [field]: 'ㄱ'.repeat(max + 1) })[field]).toBeDefined();
+  });
+
+  // 서버는 코드포인트로 센다. str.length(UTF-16)로 세면 이 이모지가 200자로 잡혀 막힌다.
+  it('이모지는 서버와 같이 코드포인트로 센다', () => {
+    const tagline = '😀'.repeat(100);
+
+    expect(tagline.length).toBe(200);
+    expect(validateProjectForm({ ...FILLED, tagline }).tagline).toBeUndefined();
+  });
+});
+
+describe('toProjectFormErrors', () => {
+  const httpError = (data: unknown) =>
+    Object.assign(new Error('HTTPError'), {
+      name: 'HTTPError',
+      response: new Response(null, { status: 400 }),
+      request: new Request('http://localhost/api/v1/projects'),
+      options: {},
+      data,
+    });
+
+  it('VALIDATION_FAILED의 details를 필드별 문구로 편다', () => {
+    const error = httpError({
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+      message: '입력값이 올바르지 않습니다.',
+      details: [
+        { field: 'teamName', message: '팀 이름은 필수입니다.' },
+        { field: 'memberHandles', message: '팀원을 1명 이상 선택해 주세요.' },
+      ],
+    });
+
+    expect(toProjectFormErrors(error)).toEqual({
+      teamName: '팀 이름은 필수입니다.',
+      members: '팀원을 1명 이상 선택해 주세요.',
+    });
+  });
+
+  it('details가 없는 코드는 표에 적힌 입력칸에 붙인다', () => {
+    const error = httpError({
+      status: 'error',
+      code: 'PROJECT_DUPLICATE_SLUG',
+      message: '같은 주소의 프로젝트가 이미 있습니다.',
+    });
+
+    expect(toProjectFormErrors(error)).toEqual({
+      githubRepositoryUrl: '같은 주소의 프로젝트가 이미 있습니다.',
+    });
+  });
+
+  it('입력칸과 무관한 코드는 빈 객체를 준다', () => {
+    const error = httpError({
+      status: 'error',
+      code: 'PROJECT_REGISTRATION_FORBIDDEN',
+      message: '등록 권한이 없습니다.',
+    });
+
+    expect(toProjectFormErrors(error)).toEqual({});
+  });
+
+  it('우리 서버 에러가 아니면 빈 객체를 준다', () => {
+    expect(toProjectFormErrors(new Error('network'))).toEqual({});
   });
 });
