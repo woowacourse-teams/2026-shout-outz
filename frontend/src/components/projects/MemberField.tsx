@@ -2,6 +2,7 @@ import { IconPlus } from '@tabler/icons-react';
 
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
 import { CrewSelectModal } from '@/components/modals/CrewSelectModal';
 import { useModal } from '@/hooks/useModal';
 import { type CrewSearchItem } from '@/types/project';
@@ -36,12 +37,18 @@ export function MemberField({ author, value, onChange, error }: MemberFieldProps
         <ul aria-label="선택한 참여 팀원" className="flex flex-wrap gap-2">
           {author && (
             <li key={author.handle}>
-              <Badge tone="primary">{author.displayName} (작성자)</Badge>
+              <Badge tone="primary" className="gap-1">
+                {author.displayName} (작성자)
+                <CrewStatusBadge userType={author.userType} cohort={author.cohort} />
+              </Badge>
             </li>
           )}
           {members.map((crew) => (
             <li key={crew.handle}>
-              <Badge tone="primary">{crew.displayName}</Badge>
+              <Badge tone="primary" className="gap-1">
+                {crew.displayName}
+                <CrewStatusBadge userType={crew.userType} cohort={crew.cohort} />
+              </Badge>
             </li>
           ))}
         </ul>

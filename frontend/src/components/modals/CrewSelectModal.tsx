@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { crewSearchQueryOptions } from '@/api/project';
 import { Avatar } from '@/components/Avatar';
+import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
 import { Button } from '@/components/Button';
 import {
   ModalSearchInput,
@@ -67,6 +68,7 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
         <div className="flex items-center gap-2 rounded-xl bg-gray-50 p-3 text-sm font-semibold text-gray-900">
           <Avatar size="sm" src={author.avatarUrl ?? undefined} alt="" />
           <span>{author.displayName}</span>
+          <CrewStatusBadge userType={author.userType} cohort={author.cohort} />
           <span className="text-primary-600 text-xs">작성자 · 항상 포함</span>
         </div>
       )}
@@ -113,13 +115,16 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
                 >
                   <Avatar size="sm" src={crew.avatarUrl ?? undefined} alt="" />
                   <span className="flex min-w-0 flex-col">
-                    <span
-                      className={cn(
-                        'truncate text-sm font-bold',
-                        isSelected ? 'text-primary-600' : 'text-gray-900',
-                      )}
-                    >
-                      {crew.displayName}
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span
+                        className={cn(
+                          'truncate text-sm font-bold',
+                          isSelected ? 'text-primary-600' : 'text-gray-900',
+                        )}
+                      >
+                        {crew.displayName}
+                      </span>
+                      <CrewStatusBadge userType={crew.userType} cohort={crew.cohort} />
                     </span>
                     <span className="truncate text-xs text-gray-500">
                       {role ? `우아한테크코스 ${role}` : `@${crew.handle}`}

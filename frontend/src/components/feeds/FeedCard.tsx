@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { IconHeart, IconMessageCircle, IconShare } from '@tabler/icons-react';
 import type { Feed } from '@/apis/feed';
-import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
+import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { FeedContent } from '@/components/feeds/FeedContent';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { Comments } from '@/components/feed-comments/Comments';
-import { formatCrewName } from '@/utils/user';
-import { formatRelativeTime } from '@/utils/date';
 import { analytics, type FeedSurface } from '@/utils/analytics';
 
 export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }) {
@@ -25,17 +23,7 @@ export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }
               analytics.track({ name: 'feed_detail_opened', feedId: feed.feedId, from: surface })
             }
           >
-            <div className="flex min-w-0 items-center gap-2">
-              <Avatar size="md" alt={`${feed.author.displayName} 프로필`} />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-gray-900">
-                  {formatCrewName(feed.author.displayName, feed.author.cohort, feed.author.track)}
-                </p>
-                <time className="text-sm text-gray-400" dateTime={feed.createdAt}>
-                  {formatRelativeTime(feed.createdAt)}
-                </time>
-              </div>
-            </div>
+            <FeedAuthor author={feed.author} createdAt={feed.createdAt} />
           </Link>
         </div>
         <AsyncBoundary>

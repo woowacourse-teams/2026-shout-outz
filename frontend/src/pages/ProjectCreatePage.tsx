@@ -62,10 +62,7 @@ function toFormValues(project: ProjectDetail, authorHandle: string): ProjectForm
             {
               handle: member.handle,
               displayName: member.displayName,
-              userType:
-                member.cohort != null && member.track
-                  ? ('WOOWACOURSE_CREW' as const)
-                  : ('GENERAL' as const),
+              userType: member.userType ?? 'GENERAL',
               cohort: member.cohort,
               track: member.track,
               avatarUrl: member.avatarUrl,

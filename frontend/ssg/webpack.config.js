@@ -13,7 +13,7 @@ export default (_env, argv) => ({
   dotenv: {
     dir: path.resolve(__dirname, '..'),
     template: ['.env'],
-    prefix: 'API_ORIGIN',
+    prefix: ['API_ORIGIN', 'CURRENT_COHORT'],
   },
   entry: path.resolve(__dirname, 'generate.ts'),
   output: {

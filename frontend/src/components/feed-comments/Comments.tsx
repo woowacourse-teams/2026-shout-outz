@@ -15,6 +15,7 @@ import {
 import { sessionQuery } from '@/apis/session';
 import { Button } from '@/components/Button';
 import { Avatar } from '@/components/Avatar';
+import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { formatRelativeTime } from '@/utils/date';
 import { getApiErrorMessage } from '@/utils/error';
@@ -274,6 +275,7 @@ function CommentItem({
         <span className="min-w-0 truncate text-sm font-semibold text-gray-900">
           {item.author.displayName}
         </span>
+        <CrewStatusBadge userType={item.author.userType} cohort={item.author.cohort} size="xs" />
         <time dateTime={item.createdAt} className="shrink-0 text-sm text-gray-500">
           {formatRelativeTime(item.createdAt)}
           {item.edited ? ' · 수정됨' : ''}

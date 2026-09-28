@@ -17,7 +17,7 @@ export interface ProjectCardProps {
   commentCount: number;
   techTags: ProjectTechTag[];
   thumbnailUrl?: string | null;
-  /** 참여자는 아바타로만 보여줘 이름과 이미지만 받는다 */
+  /** 작은 카드에서는 참여자를 아바타로만 보여준다. */
   members: { displayName: string; avatarUrl?: string | null }[];
 }
 

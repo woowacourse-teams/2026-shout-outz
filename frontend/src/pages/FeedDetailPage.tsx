@@ -1,18 +1,16 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { IconHeart, IconMessageCircle, IconShare } from '@tabler/icons-react';
 import { feedQuery } from '@/apis/feed';
-import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { FeedContent } from '@/components/feeds/FeedContent';
+import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { PopularFeedList } from '@/components/feeds/PopularFeedList';
 import { Comments } from '@/components/feed-comments/Comments';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { formatCrewName } from '@/utils/user';
-import { formatRelativeTime } from '@/utils/date';
 
 const DESKTOP_MEDIA_QUERY = '(min-width: 64rem)';
 
@@ -48,17 +46,7 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
     <article className="min-w-0">
       <title>{`${feed.author.displayName}의 피드 | shout-outz`}</title>
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <Avatar size="md" alt={`${feed.author.displayName} 프로필`} />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-gray-900">
-              {formatCrewName(feed.author.displayName, feed.author.cohort, feed.author.track)}
-            </p>
-            <time dateTime={feed.createdAt} className="text-sm text-gray-500">
-              {formatRelativeTime(feed.createdAt)}
-            </time>
-          </div>
-        </div>
+        <FeedAuthor author={feed.author} createdAt={feed.createdAt} />
         <AsyncBoundary>
           <FeedMenu feedId={feed.feedId} authorHandle={feed.author.handle} />
         </AsyncBoundary>

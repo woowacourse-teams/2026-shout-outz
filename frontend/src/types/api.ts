@@ -49,6 +49,11 @@ type Meta<T extends { meta?: unknown }> = NonNullable<T['meta']>;
 /** 배열 타입에서 원소 타입을 꺼낸다. */
 export type Item<T> = T extends readonly (infer E)[] ? E : never;
 
+/** 병합된 API가 내려주지만 아직 생성 타입에 없는 팀원 유형을 화면 타입에 반영한다. */
+type WithProjectMemberType<T extends { members: unknown[] }> = Omit<T, 'members'> & {
+  members: (Item<T['members']> & { userType?: UserType | null })[];
+};
+
 /** 커서 페이지네이션 meta. 목록 응답이 공통으로 쓴다. */
 export type CursorMeta = Meta<FeedFindAllSuccessResponse>;
 
@@ -80,17 +85,25 @@ export type TechTagItem = Item<Data<TechTagFindAllSuccessResponse>['items']>;
 export type FeedData = Data<FeedFindSuccessResponse>;
 export type FeedListItemData = Item<Data<FeedFindAllSuccessResponse>>;
 export type UserFeedListItemData = Item<Data<UserFeedFindAllSuccessResponse>>;
-export type FeedCommentData = Item<Data<FeedCommentFindAllSuccessResponse>>;
+type GeneratedFeedComment = Item<Data<FeedCommentFindAllSuccessResponse>>;
+export type FeedCommentData = Omit<GeneratedFeedComment, 'author'> & {
+  author: GeneratedFeedComment['author'] & {
+    userType?: UserType | null;
+    cohort?: number | null;
+  };
+};
 
 // ── 프로젝트 ────────────────────────────────────────────────────────────────
 
 export type ProjectCreateBody = GeneratedProjectCreateRequest;
 export type ProjectUpdateRequest = GeneratedProjectUpdateRequest;
 export type ProjectCreatedData = Data<ProjectCreateSuccessResponse>;
-export type ProjectListItemData = Item<Data<ProjectFindAllSuccessResponse>>;
+export type ProjectListItemData = WithProjectMemberType<Item<Data<ProjectFindAllSuccessResponse>>>;
 export type ProjectListMetaData = Meta<ProjectFindAllSuccessResponse>;
-export type UserProjectListItemData = Item<Data<UserProjectFindAllSuccessResponse>>;
-export type ProjectDetailData = Data<ProjectFindDetailSuccessResponse>;
+export type UserProjectListItemData = WithProjectMemberType<
+  Item<Data<UserProjectFindAllSuccessResponse>>
+>;
+export type ProjectDetailData = WithProjectMemberType<Data<ProjectFindDetailSuccessResponse>>;
 export type ProjectFilterOptionsData = Data<ProjectFilterOptionsSuccessResponse>;
 
 // ── 홈 ──────────────────────────────────────────────────────────────────────

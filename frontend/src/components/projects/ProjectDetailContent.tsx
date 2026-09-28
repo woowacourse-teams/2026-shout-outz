@@ -6,6 +6,7 @@ import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { getButtonStyles } from '@/components/Button';
 import { MarkdownContent } from '@/components/MarkdownContent';
+import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
 import { ProjectNotApprovedError } from '@/errors/project';
 
 export function ProjectDetailContent({ projectId }: { projectId: string }) {
@@ -101,18 +102,25 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
                     className="flex items-center gap-3"
                   >
                     <Avatar src={member.avatarUrl ?? undefined} alt="" />
-                    <p className="text-sm font-semibold break-words">
-                      {member.displayName}
-                      {index === 0 ? ' (작성자)' : ''}
-                      {member.cohort !== null && ` · ${member.cohort}기`}{' '}
-                      {(
-                        {
-                          ANDROID: '안드로이드',
-                          BACKEND: '백엔드',
-                          FRONTEND: '프론트엔드',
-                        } as Record<string, string>
-                      )[member.track ?? ''] ?? member.track}
-                    </p>
+                    <div className="min-w-0 text-sm">
+                      <p className="flex items-center gap-1.5 font-semibold break-words">
+                        <span>
+                          {member.displayName}
+                          {index === 0 ? ' (작성자)' : ''}
+                        </span>
+                        <CrewStatusBadge userType={member.userType} cohort={member.cohort} />
+                      </p>
+                      <p className="text-gray-500">
+                        {member.cohort != null && `${member.cohort}기 `}
+                        {(
+                          {
+                            ANDROID: '안드로이드',
+                            BACKEND: '백엔드',
+                            FRONTEND: '프론트엔드',
+                          } as Record<string, string>
+                        )[member.track ?? ''] ?? member.track}
+                      </p>
+                    </div>
                   </li>
                 ))}
               </ul>

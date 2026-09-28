@@ -1,9 +1,8 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { feedsQuery } from '@/apis/feed';
-import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
-import { formatCrewName } from '@/utils/user';
+import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 
 export function PopularFeedList() {
   const { data } = useSuspenseInfiniteQuery(feedsQuery('POPULAR', undefined, 3));
@@ -19,12 +18,7 @@ export function PopularFeedList() {
         {feeds.map((feed) => (
           <li key={feed.feedId} className="py-4 first:pt-0">
             <Link to="/feeds/$feedId" params={{ feedId: String(feed.feedId) }}>
-              <div className="flex min-w-0 items-center gap-2">
-                <Avatar size="sm" alt={`${feed.author.displayName} 프로필`} />
-                <p className="truncate text-sm font-semibold text-gray-900">
-                  {formatCrewName(feed.author.displayName, feed.author.cohort, feed.author.track)}
-                </p>
-              </div>
+              <FeedAuthor author={feed.author} avatarSize="sm" />
               <p className="mt-2 line-clamp-2 text-sm leading-5 text-gray-600">“{feed.content}”</p>
             </Link>
           </li>
