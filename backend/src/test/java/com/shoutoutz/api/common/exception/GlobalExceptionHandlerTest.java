@@ -258,8 +258,9 @@ class GlobalExceptionHandlerTest {
         return Stream.of(
                 Arguments.of(HttpStatus.BAD_REQUEST, CommonErrorCode.VALIDATION_FAILED),
                 Arguments.of(HttpStatus.NOT_FOUND, CommonErrorCode.RESOURCE_NOT_FOUND),
-                Arguments.of(HttpStatus.METHOD_NOT_ALLOWED, CommonErrorCode.VALIDATION_FAILED),
-                Arguments.of(HttpStatus.UNSUPPORTED_MEDIA_TYPE, CommonErrorCode.VALIDATION_FAILED),
+                Arguments.of(HttpStatus.METHOD_NOT_ALLOWED, CommonErrorCode.METHOD_NOT_ALLOWED),
+                Arguments.of(HttpStatus.UNSUPPORTED_MEDIA_TYPE, CommonErrorCode.UNSUPPORTED_MEDIA_TYPE),
+                Arguments.of(HttpStatus.NOT_ACCEPTABLE, CommonErrorCode.VALIDATION_FAILED),
                 Arguments.of(HttpStatus.INTERNAL_SERVER_ERROR, CommonErrorCode.INTERNAL_SERVER_ERROR),
                 Arguments.of(HttpStatus.SERVICE_UNAVAILABLE, CommonErrorCode.INTERNAL_SERVER_ERROR));
     }
