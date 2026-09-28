@@ -3,6 +3,7 @@ package com.shoutoutz.api.project.application.dto;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
+import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import java.time.Instant;
 import java.util.List;
@@ -18,6 +19,7 @@ public record UserProjectItem(
         String tagline,
         int cohort,
         ServiceStatus serviceStatus,
+        ApprovalStatus approvalStatus,
         Long thumbnailMediaId,
         Long registeredBy,
         Integer starCount,
@@ -39,6 +41,7 @@ public record UserProjectItem(
             String tagline,
             int cohort,
             ServiceStatus serviceStatus,
+            ApprovalStatus approvalStatus,
             Long thumbnailMediaId,
             Long registeredBy,
             Integer starCount,
@@ -56,6 +59,7 @@ public record UserProjectItem(
                 tagline,
                 cohort,
                 serviceStatus,
+                approvalStatus,
                 thumbnailMediaId,
                 registeredBy,
                 starCount,
@@ -90,6 +94,7 @@ public record UserProjectItem(
                 tagline,
                 cohort,
                 serviceStatus,
+                approvalStatus,
                 thumbnailMediaId,
                 registeredBy,
                 starCount,
