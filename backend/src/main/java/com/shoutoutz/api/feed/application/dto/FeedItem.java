@@ -19,10 +19,44 @@ public record FeedItem(
         List<Media> media,
         long likeCount,
         long commentCount,
+        long bookmarkCount,
+        boolean likedByMe,
+        boolean bookmarkedByMe,
         int relevanceRank,
         Instant createdAt,
         Instant updatedAt
 ) {
+    public FeedItem(
+            long feedId,
+            String title,
+            String content,
+            Author author,
+            List<Category> categories,
+            List<Media> media,
+            long likeCount,
+            long commentCount,
+            int relevanceRank,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        this(
+                feedId,
+                title,
+                content,
+                author,
+                categories,
+                media,
+                likeCount,
+                commentCount,
+                0L,
+                false,
+                false,
+                relevanceRank,
+                createdAt,
+                updatedAt
+        );
+    }
+
     public record Author(
             String handle,
             String displayName,

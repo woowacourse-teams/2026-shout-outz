@@ -169,6 +169,10 @@ class ProjectCommentHttpApiTest {
                                                 .description("댓글 내용이 수정된 적이 있는지 여부"),
                                         fieldWithPath("data[].deleted").type(BOOLEAN)
                                                 .description("댓글이 삭제되었는지 여부"),
+                                        fieldWithPath("data[].agreeCount").type(NUMBER)
+                                                .description("댓글 공감 수"),
+                                        fieldWithPath("data[].agreedByMe").type(BOOLEAN)
+                                                .description("현재 사용자의 공감 여부. 비로그인이면 false"),
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 cursor")
                                                 .optional(),

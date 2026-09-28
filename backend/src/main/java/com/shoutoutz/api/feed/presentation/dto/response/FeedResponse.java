@@ -17,8 +17,13 @@ public record FeedResponse(
         Author author,
         List<Category> categories,
         List<Media> media,
+        long likeCount,
+        long bookmarkCount,
+        boolean likedByMe,
+        boolean bookmarkedByMe,
+        long commentCount,
         Instant createdAt,
-    Instant updatedAt
+        Instant updatedAt
 ) {
     public static FeedResponse from(FeedItem feed) {
         return from(feed, Map.of());
@@ -33,6 +38,11 @@ public record FeedResponse(
                 Author.from(feed.author(), urls),
                 feed.categories().stream().map(Category::from).toList(),
                 feed.media().stream().map(media -> Media.from(media, urls)).toList(),
+                feed.likeCount(),
+                feed.bookmarkCount(),
+                feed.likedByMe(),
+                feed.bookmarkedByMe(),
+                feed.commentCount(),
                 feed.createdAt(),
                 feed.updatedAt()
         );

@@ -36,9 +36,13 @@ public class FeedHttpApi {
 
     @GetMapping
     public ResponseEntity<SuccessResponse<List<FeedResponse>>> findAllFeed(
+            @LoginUser(required = false) AuthenticatedUser loginUser,
             @Valid @ModelAttribute FeedFindAllRequest request
     ) {
-        FeedFindAllResult result = feedService.findAllFeed(request);
+        Long viewerId = AuthenticatedUser.userIdOrNull(loginUser);
+        FeedFindAllResult result = viewerId == null
+                ? feedService.findAllFeed(request)
+                : feedService.findAllFeed(request, viewerId);
         List<FeedResponse> response = FeedResponse.from(result.items(), result.mediaUrls());
         SliceMetaResponse meta = new SliceMetaResponse(result.nextCursor(), result.hasNext());
 
@@ -56,9 +60,13 @@ public class FeedHttpApi {
 
     @GetMapping("/{feedId}")
     public ResponseEntity<SuccessResponse<FeedResponse>> findFeed(
+            @LoginUser(required = false) AuthenticatedUser loginUser,
             @PathVariable long feedId
     ) {
-        FeedResponse response = feedService.findFeed(feedId);
+        Long viewerId = AuthenticatedUser.userIdOrNull(loginUser);
+        FeedResponse response = viewerId == null
+                ? feedService.findFeed(feedId)
+                : feedService.findFeed(feedId, viewerId);
 
         return ResponseEntity.ok(SuccessResponse.success(response));
     }

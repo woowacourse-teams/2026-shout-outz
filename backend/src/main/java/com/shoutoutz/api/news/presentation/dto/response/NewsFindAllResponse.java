@@ -27,8 +27,38 @@ public record NewsFindAllResponse(List<Item> items, Meta meta) {
             Instant eventStartAt,
             Instant eventEndAt,
             boolean isPinned,
-            Integer pinOrder
+            Integer pinOrder,
+            long likeCount,
+            boolean likedByMe
     ) {
+
+        public Item(
+                long id,
+                NewsType type,
+                String title,
+                String summary,
+                Instant publishedAt,
+                EventStatus eventStatus,
+                Instant eventStartAt,
+                Instant eventEndAt,
+                boolean isPinned,
+                Integer pinOrder
+        ) {
+            this(
+                    id,
+                    type,
+                    title,
+                    summary,
+                    publishedAt,
+                    eventStatus,
+                    eventStartAt,
+                    eventEndAt,
+                    isPinned,
+                    pinOrder,
+                    0L,
+                    false
+            );
+        }
     }
 
     public record Meta(String nextCursor, boolean hasNext) {

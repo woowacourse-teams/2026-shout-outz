@@ -123,6 +123,9 @@ class UserCommentHttpApiTest {
                                         fieldWithPath("data[].content").type(STRING).description("댓글 내용"),
                                         fieldWithPath("data[].createdAt").type(STRING).description("댓글 작성 시각"),
                                         fieldWithPath("data[].updatedAt").type(STRING).description("댓글 최종 수정 시각"),
+                                        fieldWithPath("data[].agreeCount").type(NUMBER).description("댓글 공감 수"),
+                                        fieldWithPath("data[].agreedByMe").type(BOOLEAN)
+                                                .description("현재 사용자의 공감 여부"),
                                         fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 조회용 커서").optional(),

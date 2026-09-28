@@ -225,6 +225,11 @@ class UserProjectHttpApiTest {
                         .description("GitHub star 수. 동기화 전이면 null이다.").optional(),
                 fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"),
                 fieldWithPath("data[].commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"),
+                fieldWithPath("data[].bookmarkCount").type(NUMBER).description("북마크 수"),
+                fieldWithPath("data[].likedByMe").type(BOOLEAN)
+                        .description("요청자의 좋아요 여부. 비로그인이면 false다."),
+                fieldWithPath("data[].bookmarkedByMe").type(BOOLEAN)
+                        .description("요청자의 북마크 여부. 비로그인이면 false다."),
                 fieldWithPath("data[].techTags").type(ARRAY).description("기술 스택"),
                 fieldWithPath("data[].techTags[].id").type(NUMBER).description("기술 스택 ID"),
                 fieldWithPath("data[].techTags[].displayName").type(STRING).description("기술 스택 이름"),

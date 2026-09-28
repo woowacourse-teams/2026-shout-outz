@@ -43,6 +43,11 @@ final class FeedRestDocsFields {
                 fieldWithPath("media[].mediaId").type(NUMBER).description("본문 미디어 ID"),
                 fieldWithPath("media[].url").type(STRING).description("본문 미디어 공개 URL"),
                 fieldWithPath("media[].displayOrder").type(NUMBER).description("미디어 표시 순서"),
+                fieldWithPath("likeCount").type(NUMBER).description("좋아요 수"),
+                fieldWithPath("bookmarkCount").type(NUMBER).description("북마크 수"),
+                fieldWithPath("likedByMe").type(BOOLEAN).description("요청자의 좋아요 여부. 비로그인이면 false"),
+                fieldWithPath("bookmarkedByMe").type(BOOLEAN).description("요청자의 북마크 여부. 비로그인이면 false"),
+                fieldWithPath("commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"),
                 fieldWithPath("createdAt").type(STRING).description("ISO-8601 생성 시각"),
                 fieldWithPath("updatedAt").type(STRING).description("ISO-8601 수정 시각")
         ));
@@ -97,9 +102,6 @@ final class FeedRestDocsFields {
     }
 
     static List<FieldDescriptor> userFeedListResponseFields(String description) {
-        List<FieldDescriptor> fields = feedListResponseFields(description);
-        fields.add(fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"));
-        fields.add(fieldWithPath("data[].commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"));
-        return fields;
+        return feedListResponseFields(description);
     }
 }

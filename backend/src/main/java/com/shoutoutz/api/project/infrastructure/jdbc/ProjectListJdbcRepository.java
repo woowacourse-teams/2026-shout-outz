@@ -18,6 +18,7 @@ import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
@@ -60,10 +61,30 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 ) AS like_count,
                 (
                     SELECT COUNT(*)
+                    FROM project_reactions r
+                    WHERE r.project_id = p.id
+                      AND r.reaction_type = 'BOOKMARK'
+                ) AS bookmark_count,
+                (
+                    SELECT COUNT(*)
                     FROM project_comments c
                     WHERE c.project_id = p.id
                       AND c.deleted_at IS NULL
-                ) AS comment_count
+                ) AS comment_count,
+                EXISTS (
+                    SELECT 1
+                    FROM project_reactions r
+                    WHERE r.project_id = p.id
+                      AND r.user_id = :viewerId
+                      AND r.reaction_type = 'LIKE'
+                ) AS liked_by_me,
+                EXISTS (
+                    SELECT 1
+                    FROM project_reactions r
+                    WHERE r.project_id = p.id
+                      AND r.user_id = :viewerId
+                      AND r.reaction_type = 'BOOKMARK'
+                ) AS bookmarked_by_me
             FROM projects p
             WHERE p.approval_status = 'APPROVED'
               AND p.deleted_at IS NULL
@@ -90,10 +111,30 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 ) AS like_count,
                 (
                     SELECT COUNT(*)
+                    FROM project_reactions r
+                    WHERE r.project_id = p.id
+                      AND r.reaction_type = 'BOOKMARK'
+                ) AS bookmark_count,
+                (
+                    SELECT COUNT(*)
                     FROM project_comments c
                     WHERE c.project_id = p.id
                       AND c.deleted_at IS NULL
-                ) AS comment_count
+                ) AS comment_count,
+                EXISTS (
+                    SELECT 1
+                    FROM project_reactions r
+                    WHERE r.project_id = p.id
+                      AND r.user_id = :viewerId
+                      AND r.reaction_type = 'LIKE'
+                ) AS liked_by_me,
+                EXISTS (
+                    SELECT 1
+                    FROM project_reactions r
+                    WHERE r.project_id = p.id
+                      AND r.user_id = :viewerId
+                      AND r.reaction_type = 'BOOKMARK'
+                ) AS bookmarked_by_me
             FROM projects p
             WHERE p.approval_status = 'APPROVED'
               AND p.deleted_at IS NULL
@@ -194,8 +235,13 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
     private final ProjectTechTagAndMemberJdbcRepository techTagAndMemberJdbcRepository;
 
     public ProjectPage findAll(ProjectSearchCondition condition) {
+        return findAll(condition, null);
+    }
+
+    public ProjectPage findAll(ProjectSearchCondition condition, Long viewerId) {
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         String filteredProjectsSql = filteredProjectsSql(condition.filter(), parameters);
+        parameters.addValue("viewerId", viewerId, Types.BIGINT);
 
         List<ProjectSummary> fetched = jdbcTemplate.query(
                 pageSql(filteredProjectsSql, condition, parameters),
@@ -219,8 +265,19 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
      */
     @Override
     public UserProjectResult findAllByUserId(long userId, ProjectCursor cursor, int size) {
+        return findAllByUserId(userId, null, cursor, size);
+    }
+
+    @Override
+    public UserProjectResult findAllByUserId(
+            long userId,
+            Long viewerId,
+            ProjectCursor cursor,
+            int size
+    ) {
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("userId", userId)
+                .addValue("viewerId", viewerId, Types.BIGINT)
                 .addValue("limit", size + 1);
         StringBuilder sql = new StringBuilder("WITH filtered AS (")
                 .append(USER_PROJECTS_SQL)
@@ -375,6 +432,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
      */
     private static String filteredProjectsSql(ProjectFilterCondition condition, MapSqlParameterSource parameters) {
         StringBuilder sql = new StringBuilder(PUBLIC_PROJECTS_SQL);
+        parameters.addValue("viewerId", null, Types.BIGINT);
         if (!condition.cohorts().isEmpty()) {
             sql.append(COHORTS_CONDITION);
             parameters.addValue("cohorts", condition.cohorts());
@@ -436,6 +494,9 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 resultSet.getObject("star_count", Integer.class),
                 resultSet.getLong("like_count"),
                 resultSet.getLong("comment_count"),
+                resultSet.getLong("bookmark_count"),
+                resultSet.getBoolean("liked_by_me"),
+                resultSet.getBoolean("bookmarked_by_me"),
                 List.of(),
                 List.of(),
                 resultSet.getObject("created_at", OffsetDateTime.class).toInstant()
@@ -456,6 +517,9 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 resultSet.getObject("star_count", Integer.class),
                 resultSet.getLong("like_count"),
                 resultSet.getLong("comment_count"),
+                resultSet.getLong("bookmark_count"),
+                resultSet.getBoolean("liked_by_me"),
+                resultSet.getBoolean("bookmarked_by_me"),
                 List.of(),
                 List.of(),
                 resultSet.getObject("created_at", OffsetDateTime.class).toInstant()

@@ -17,6 +17,9 @@ public record UserFeedResponse(
         List<FeedResponse.Category> categories,
         List<FeedResponse.Media> media,
         long likeCount,
+        long bookmarkCount,
+        boolean likedByMe,
+        boolean bookmarkedByMe,
         long commentCount,
         Instant createdAt,
         Instant updatedAt
@@ -40,8 +43,11 @@ public record UserFeedResponse(
                 response.author(),
                 response.categories(),
                 response.media(),
-                feed.likeCount(),
-                feed.commentCount(),
+                response.likeCount(),
+                response.bookmarkCount(),
+                response.likedByMe(),
+                response.bookmarkedByMe(),
+                response.commentCount(),
                 response.createdAt(),
                 response.updatedAt()
         );

@@ -29,6 +29,18 @@ public class UserCommentService {
         return createResult(comments, size);
     }
 
+    public UserCommentResult findAll(long userId, Long viewerId, UserCommentFindRequest request) {
+        UserCommentCursor cursor = cursorCodec.decode(request.cursor());
+        int size = request.resolvedSize();
+        List<UserCommentItem> comments = userCommentQueryRepository.findAllByAuthorId(
+                userId,
+                viewerId,
+                cursor,
+                size + 1
+        );
+        return createResult(comments, size);
+    }
+
     private UserCommentResult createResult(List<UserCommentItem> comments, int size) {
         if (comments.size() <= size) {
             return new UserCommentResult(comments, null, false);

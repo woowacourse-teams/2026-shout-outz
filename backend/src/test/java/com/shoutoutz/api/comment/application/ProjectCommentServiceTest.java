@@ -18,6 +18,8 @@ import com.shoutoutz.api.comment.application.dto.ProjectCommentCursor;
 import com.shoutoutz.api.comment.application.dto.ProjectCommentPage;
 import com.shoutoutz.api.comment.domain.ProjectComment;
 import com.shoutoutz.api.comment.domain.ProjectCommentRepository;
+import com.shoutoutz.api.comment.domain.ProjectCommentReactionCounts;
+import com.shoutoutz.api.comment.domain.ProjectCommentReactionRepository;
 import com.shoutoutz.api.comment.domain.ProjectCommentSort;
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentCreateRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentFindRequest;
@@ -39,6 +41,7 @@ import com.shoutoutz.api.user.domain.profile.UserType;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -73,6 +76,9 @@ class ProjectCommentServiceTest {
     @Mock
     private MediaUrlResolver mediaUrlResolver;
 
+    @Mock
+    private ProjectCommentReactionRepository projectCommentReactionRepository;
+
     private ProjectCommentService projectCommentService;
 
     @BeforeEach
@@ -82,7 +88,8 @@ class ProjectCommentServiceTest {
                 projectCommentRepository,
                 projectCommentQueryRepository,
                 userProfileRepository,
-                mediaUrlResolver
+                mediaUrlResolver,
+                projectCommentReactionRepository
         );
         lenient().when(mediaUrlResolver.resolve(10L))
                 .thenReturn(URI.create("https://cdn.example.com/media/10/display"));
@@ -211,6 +218,11 @@ class ProjectCommentServiceTest {
         )).thenReturn(new ProjectCommentPage(List.of(ownComment, otherComment), false));
         when(projectCommentQueryRepository.findReplies(PROJECT_ID, List.of(COMMENT_ID, 502L)))
                 .thenReturn(List.of());
+        when(projectCommentReactionRepository.findByCommentIds(List.of(COMMENT_ID, 502L), AUTHOR_ID))
+                .thenReturn(Map.of(
+                        COMMENT_ID, new ProjectCommentReactionCounts(4L, true),
+                        502L, new ProjectCommentReactionCounts(2L, false)
+                ));
         givenAuthor(AUTHOR_ID, "내 이름", 10L);
         givenAuthor(AUTHOR_ID + 1, "다른 이름", 11L);
 
@@ -221,6 +233,10 @@ class ProjectCommentServiceTest {
         );
 
         assertThat(result.comments()).extracting(Comment::editable)
+                .containsExactly(true, false);
+        assertThat(result.comments()).extracting(Comment::agreeCount)
+                .containsExactly(4L, 2L);
+        assertThat(result.comments()).extracting(Comment::agreedByMe)
                 .containsExactly(true, false);
     }
 

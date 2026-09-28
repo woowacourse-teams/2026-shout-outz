@@ -79,6 +79,50 @@ class UserCommentQueryRepositoryIntegrationTest {
                 .containsExactly(olderFeedCommentId);
     }
 
+    @Test
+    void 내_댓글_조회에_댓글_공감_수와_현재_사용자_여부를_함께_반환한다() {
+        long authorId = insertUser();
+        long viewerId = insertUser();
+        long feedId = insertFeed(authorId, false);
+        long projectId = insertProject(authorId, "APPROVED", false);
+        long feedCommentId = insertFeedComment(feedId, authorId, "피드 댓글", BASE_TIME, false);
+        long projectCommentId = insertProjectComment(
+                projectId,
+                authorId,
+                "프로젝트 댓글",
+                BASE_TIME.plusSeconds(60),
+                false
+        );
+        jdbcTemplate.update(
+                "INSERT INTO feed_comment_reactions (comment_id, user_id, reaction_type) VALUES (?, ?, 'AGREE'), (?, ?, 'AGREE')",
+                feedCommentId, viewerId, feedCommentId, authorId
+        );
+        jdbcTemplate.update(
+                "INSERT INTO project_comment_reactions (comment_id, user_id, reaction_type) VALUES (?, ?, 'AGREE')",
+                projectCommentId, authorId
+        );
+
+        List<UserCommentItem> comments = userCommentQueryRepository.findAllByAuthorId(
+                authorId,
+                viewerId,
+                null,
+                20
+        );
+
+        UserCommentItem feedComment = comments.stream()
+                .filter(comment -> comment.commentId() == feedCommentId)
+                .findFirst()
+                .orElseThrow();
+        UserCommentItem projectComment = comments.stream()
+                .filter(comment -> comment.commentId() == projectCommentId)
+                .findFirst()
+                .orElseThrow();
+        assertThat(feedComment.agreeCount()).isEqualTo(2L);
+        assertThat(feedComment.agreedByMe()).isTrue();
+        assertThat(projectComment.agreeCount()).isEqualTo(1L);
+        assertThat(projectComment.agreedByMe()).isFalse();
+    }
+
     private long insertUser() {
         String handle = "comment_" + token();
         return jdbcTemplate.queryForObject(

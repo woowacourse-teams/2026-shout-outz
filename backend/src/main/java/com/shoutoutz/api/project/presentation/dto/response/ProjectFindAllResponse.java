@@ -38,9 +38,45 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
             Integer starCount,
             long likeCount,
             long commentCount,
+            long bookmarkCount,
+            boolean likedByMe,
+            boolean bookmarkedByMe,
             List<ProjectTechTagResponse> techTags,
             List<ProjectMemberProfileResponse> members
     ) {
+
+        public Item(
+                long id,
+                String slug,
+                String title,
+                String tagline,
+                int cohort,
+                Long thumbnailImageId,
+                String thumbnailUrl,
+                Integer starCount,
+                long likeCount,
+                long commentCount,
+                List<ProjectTechTagResponse> techTags,
+                List<ProjectMemberProfileResponse> members
+        ) {
+            this(
+                    id,
+                    slug,
+                    title,
+                    tagline,
+                    cohort,
+                    thumbnailImageId,
+                    thumbnailUrl,
+                    starCount,
+                    likeCount,
+                    commentCount,
+                    0L,
+                    false,
+                    false,
+                    techTags,
+                    members
+            );
+        }
 
         public static Item from(ProjectSummary summary, Map<Long, URI> mediaUrls) {
             return new Item(
@@ -54,6 +90,9 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
                     summary.starCount(),
                     summary.likeCount(),
                     summary.commentCount(),
+                    summary.bookmarkCount(),
+                    summary.likedByMe(),
+                    summary.bookmarkedByMe(),
                     summary.techTags().stream().map(ProjectTechTagResponse::from).toList(),
                     summary.members().stream()
                             .map(member -> ProjectMemberProfileResponse.from(member, mediaUrls))

@@ -21,8 +21,24 @@ public record FeedCommentFindResponse(
             Instant updatedAt,
             boolean editable,
             boolean edited,
-            boolean deleted
+            boolean deleted,
+            long agreeCount,
+            boolean agreedByMe
     ) {
+
+        public Comment(
+                Long id,
+                String content,
+                Author author,
+                Long parentId,
+                Instant createdAt,
+                Instant updatedAt,
+                boolean editable,
+                boolean edited,
+                boolean deleted
+        ) {
+            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted, 0L, false);
+        }
     }
 
     public record Author(

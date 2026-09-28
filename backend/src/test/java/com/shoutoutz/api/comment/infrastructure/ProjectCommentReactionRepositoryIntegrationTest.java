@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.shoutoutz.api.comment.domain.ProjectCommentReactionCounts;
 import com.shoutoutz.api.comment.domain.ProjectCommentReactionRepository;
 import com.shoutoutz.api.comment.domain.ProjectCommentReactionType;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,10 @@ class ProjectCommentReactionRepositoryIntegrationTest {
 
         assertThat(projectCommentReactionRepository.countByCommentId(commentId))
                 .isEqualTo(new ProjectCommentReactionCounts(2L));
+        assertThat(projectCommentReactionRepository.findByCommentIds(List.of(commentId), firstUserId))
+                .containsEntry(commentId, new ProjectCommentReactionCounts(2L, true));
+        assertThat(projectCommentReactionRepository.findByCommentIds(List.of(commentId), null))
+                .containsEntry(commentId, new ProjectCommentReactionCounts(2L, false));
 
         assertThat(projectCommentReactionRepository.remove(commentId, firstUserId, ProjectCommentReactionType.AGREE))
                 .isTrue();

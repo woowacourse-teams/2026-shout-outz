@@ -84,6 +84,25 @@ class UserProjectListRepositoryIntegrationTest {
         assertThat(secondResult.hasNext()).isFalse();
     }
 
+    @Test
+    @DisplayName("사용자 프로젝트 목록도 현재 사용자의 좋아요와 북마크 여부를 조회한다.")
+    void readsViewerReactionState() {
+        long userId = saveUser();
+        long projectId = saveMemberProject(userId, BASE_TIME);
+        jdbcTemplate.update(
+                "INSERT INTO project_reactions (project_id, user_id, reaction_type) VALUES (?, ?, 'LIKE'), (?, ?, 'BOOKMARK')",
+                projectId, userId, projectId, userId
+        );
+
+        UserProjectResult result = userProjectQueryRepository.findAllByUserId(userId, userId, null, 20);
+        UserProjectItem project = result.projects().getFirst();
+
+        assertThat(project.likeCount()).isEqualTo(1L);
+        assertThat(project.bookmarkCount()).isEqualTo(1L);
+        assertThat(project.likedByMe()).isTrue();
+        assertThat(project.bookmarkedByMe()).isTrue();
+    }
+
     private long saveMemberProject(long userId, Instant createdAt) {
         long projectId = saveProject("APPROVED", userId, createdAt, false);
         saveProjectMember(projectId, userId);

@@ -11,6 +11,19 @@ public record UserCommentItem(
         long targetId,
         String content,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        long agreeCount,
+        boolean agreedByMe
 ) {
+
+    public UserCommentItem(
+            long commentId,
+            UserCommentType type,
+            long targetId,
+            String content,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        this(commentId, type, targetId, content, createdAt, updatedAt, 0L, false);
+    }
 }

@@ -159,6 +159,49 @@ class FeedRepositoryIntegrationTest {
     }
 
     @Test
+    void 피드_조회에_좋아요와_북마크_수와_현재_사용자_반응_여부를_함께_반환한다() {
+        long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
+        long viewerId = insertUser("GENERAL", null, null);
+        long otherId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Feed feed = saveFeed(authorId, "반응 피드", Instant.parse("2026-09-11T00:00:00Z"), categoryId);
+        insertLike(feed.getId(), viewerId);
+        insertLike(feed.getId(), otherId);
+        insertBookmark(feed.getId(), viewerId);
+        insertComment(feed.getId(), otherId, false);
+
+        FeedItem detail = feedQueryRepository.findById(feed.getId(), viewerId).orElseThrow();
+        FeedItem listItem = feedQueryRepository.findAll(
+                FeedSort.LATEST,
+                null,
+                null,
+                viewerId,
+                null,
+                10
+        ).stream().filter(item -> item.feedId() == feed.getId()).findFirst().orElseThrow();
+        FeedItem userFeedItem = feedQueryRepository.findAllByAuthorId(
+                authorId,
+                viewerId,
+                null,
+                10
+        ).stream().filter(item -> item.feedId() == feed.getId()).findFirst().orElseThrow();
+
+        assertThat(detail.likeCount()).isEqualTo(2L);
+        assertThat(detail.bookmarkCount()).isEqualTo(1L);
+        assertThat(detail.commentCount()).isEqualTo(1L);
+        assertThat(detail.likedByMe()).isTrue();
+        assertThat(detail.bookmarkedByMe()).isTrue();
+        assertThat(listItem.likedByMe()).isTrue();
+        assertThat(listItem.bookmarkedByMe()).isTrue();
+        assertThat(userFeedItem.likedByMe()).isTrue();
+        assertThat(userFeedItem.bookmarkedByMe()).isTrue();
+
+        FeedItem anonymous = feedQueryRepository.findById(feed.getId()).orElseThrow();
+        assertThat(anonymous.likedByMe()).isFalse();
+        assertThat(anonymous.bookmarkedByMe()).isFalse();
+    }
+
+    @Test
     void 제목과_본문을_검색해_정확도순과_최신순으로_조회한다() {
         long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
         long categoryId = insertCategory(true);
@@ -402,6 +445,17 @@ class FeedRepositoryIntegrationTest {
                 """
                         INSERT INTO feed_reactions (feed_id, user_id, reaction_type, created_at)
                         VALUES (?, ?, 'LIKE', '2020-01-01T00:00:00Z')
+                        """,
+                feedId,
+                userId
+        );
+    }
+
+    private void insertBookmark(long feedId, long userId) {
+        jdbcTemplate.update(
+                """
+                        INSERT INTO feed_reactions (feed_id, user_id, reaction_type, created_at)
+                        VALUES (?, ?, 'BOOKMARK', '2020-01-01T00:00:00Z')
                         """,
                 feedId,
                 userId

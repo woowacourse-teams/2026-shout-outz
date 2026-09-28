@@ -10,6 +10,8 @@ import com.shoutoutz.api.comment.application.dto.ProjectCommentPage;
 import com.shoutoutz.api.comment.domain.CommentErrorCode;
 import com.shoutoutz.api.comment.domain.ProjectComment;
 import com.shoutoutz.api.comment.domain.ProjectCommentRepository;
+import com.shoutoutz.api.comment.domain.ProjectCommentReactionCounts;
+import com.shoutoutz.api.comment.domain.ProjectCommentReactionRepository;
 import com.shoutoutz.api.comment.domain.ProjectCommentSort;
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentCreateRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.ProjectCommentFindRequest;
@@ -35,12 +37,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 public class ProjectCommentService {
 
     private final ProjectRepository projectRepository;
@@ -48,6 +49,41 @@ public class ProjectCommentService {
     private final ProjectCommentQueryRepository projectCommentQueryRepository;
     private final UserProfileRepository userProfileRepository;
     private final MediaUrlResolver mediaUrlResolver;
+    private final ProjectCommentReactionRepository projectCommentReactionRepository;
+
+    @Autowired
+    public ProjectCommentService(
+            ProjectRepository projectRepository,
+            ProjectCommentRepository projectCommentRepository,
+            ProjectCommentQueryRepository projectCommentQueryRepository,
+            UserProfileRepository userProfileRepository,
+            MediaUrlResolver mediaUrlResolver,
+            ProjectCommentReactionRepository projectCommentReactionRepository
+    ) {
+        this.projectRepository = projectRepository;
+        this.projectCommentRepository = projectCommentRepository;
+        this.projectCommentQueryRepository = projectCommentQueryRepository;
+        this.userProfileRepository = userProfileRepository;
+        this.mediaUrlResolver = mediaUrlResolver;
+        this.projectCommentReactionRepository = projectCommentReactionRepository;
+    }
+
+    public ProjectCommentService(
+            ProjectRepository projectRepository,
+            ProjectCommentRepository projectCommentRepository,
+            ProjectCommentQueryRepository projectCommentQueryRepository,
+            UserProfileRepository userProfileRepository,
+            MediaUrlResolver mediaUrlResolver
+    ) {
+        this(
+                projectRepository,
+                projectCommentRepository,
+                projectCommentQueryRepository,
+                userProfileRepository,
+                mediaUrlResolver,
+                null
+        );
+    }
 
     @Transactional
     public ProjectCommentCreateResponse create(
@@ -126,8 +162,9 @@ public class ProjectCommentService {
         }
 
         Map<Long, URI> avatarUrls = resolveAvatarUrls(authors.values());
+        Map<Long, ProjectCommentReactionCounts> reactionCounts = findReactionCounts(orderedComments, loginUserId);
         List<ProjectCommentFindResponse.Comment> comments = orderedComments.stream()
-                .map(comment -> toFindResponse(comment, loginUserId, authors, avatarUrls))
+                .map(comment -> toFindResponse(comment, loginUserId, authors, avatarUrls, reactionCounts))
                 .toList();
 
         // 4. meta 정보: 다음 커서 정보 제공
@@ -229,12 +266,16 @@ public class ProjectCommentService {
             ProjectComment comment,
             Long loginUserId,
             Map<Long, UserProfile> authors,
-            Map<Long, URI> avatarUrls
+            Map<Long, URI> avatarUrls,
+            Map<Long, ProjectCommentReactionCounts> reactionCounts
     ) {
         UserProfile author = authors.computeIfAbsent(comment.getAuthorId(), this::findAuthor);
         // 삭제된 댓글이 아니며, 작성자가 본인인 경우 수정 가능
         boolean editable = !comment.isDeleted()
                 && Objects.equals(comment.getAuthorId(), loginUserId);
+        ProjectCommentReactionCounts counts = comment.isDeleted()
+                ? new ProjectCommentReactionCounts(0L, false)
+                : reactionCounts.getOrDefault(comment.getId(), new ProjectCommentReactionCounts(0L, false));
         return new ProjectCommentFindResponse.Comment(
                 comment.getId(),
                 comment.isDeleted() ? null : comment.getContent(),
@@ -249,8 +290,24 @@ public class ProjectCommentService {
                 comment.getUpdatedAt(),
                 editable,
                 comment.isEdited(),
-                comment.isDeleted()
+                comment.isDeleted(),
+                counts.agreeCount(),
+                counts.agreedByMe()
         );
+    }
+
+    private Map<Long, ProjectCommentReactionCounts> findReactionCounts(
+            List<ProjectComment> comments,
+            Long loginUserId
+    ) {
+        if (comments.isEmpty() || projectCommentReactionRepository == null) {
+            return Map.of();
+        }
+        Map<Long, ProjectCommentReactionCounts> counts = projectCommentReactionRepository.findByCommentIds(
+                comments.stream().map(ProjectComment::getId).toList(),
+                loginUserId
+        );
+        return counts == null ? Map.of() : counts;
     }
 
     private ProjectCommentCursor toCursor(ProjectComment comment, ProjectCommentSort sort) {

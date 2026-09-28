@@ -14,6 +14,8 @@ public interface FeedQueryRepository {
 
     Optional<FeedItem> findById(long feedId);
 
+    Optional<FeedItem> findById(long feedId, Long viewerId);
+
     List<FeedItem> findAll(
             FeedSort sort,
             Long categoryId,
@@ -22,7 +24,23 @@ public interface FeedQueryRepository {
             int limit
     );
 
+    List<FeedItem> findAll(
+            FeedSort sort,
+            Long categoryId,
+            String keyword,
+            Long viewerId,
+            FeedCursor cursor,
+            int limit
+    );
+
     List<FeedItem> findAllByAuthorId(long authorId, FeedCursor cursor, int limit);
+
+    List<FeedItem> findAllByAuthorId(
+            long authorId,
+            Long viewerId,
+            FeedCursor cursor,
+            int limit
+    );
 
     List<String> findTitleSuggestions(String keyword, int limit);
 
