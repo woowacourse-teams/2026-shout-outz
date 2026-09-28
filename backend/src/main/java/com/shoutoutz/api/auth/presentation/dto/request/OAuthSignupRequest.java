@@ -1,6 +1,6 @@
 package com.shoutoutz.api.auth.presentation.dto.request;
 
-import static com.shoutoutz.api.user.domain.account.Handle.FORMAT_REGEX;
+import static com.shoutoutz.api.user.domain.account.Handle.HANDLE_FORMAT_REGEX;
 
 import com.shoutoutz.api.auth.application.command.OAuthSignupCommand;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
@@ -11,7 +11,7 @@ import org.hibernate.validator.constraints.CodePointLength;
 public record OAuthSignupRequest(
         @NotBlank(message = "handle은 필수입니다.")
         @Pattern(
-                regexp = FORMAT_REGEX,
+                regexp = HANDLE_FORMAT_REGEX,
                 message = "handle 형식이 올바르지 않습니다."
         )
         String handle,

@@ -5,8 +5,8 @@ import java.util.regex.Pattern;
 
 public record Handle(String value) {
 
-    public static final String FORMAT_REGEX = "^@[A-Za-z0-9_-]{2,30}$";
-    static final Pattern FORMAT_PATTERN = Pattern.compile(FORMAT_REGEX);
+    public static final String HANDLE_FORMAT_REGEX = "^@[A-Za-z0-9_-]{2,30}$";
+    static final Pattern FORMAT_PATTERN = Pattern.compile(HANDLE_FORMAT_REGEX);
 
     public Handle {
         UserValidator.validateHandle(value);

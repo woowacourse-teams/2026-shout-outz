@@ -1,6 +1,6 @@
 package com.shoutoutz.api.project.presentation;
 
-import static com.shoutoutz.api.user.domain.account.Handle.FORMAT_REGEX;
+import static com.shoutoutz.api.user.domain.account.Handle.HANDLE_FORMAT_REGEX;
 
 import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
@@ -39,7 +39,7 @@ public class UserProjectHttpApi {
     public ResponseEntity<SuccessResponse<List<UserProjectResponse>>> findAll(
             @LoginUser(required = false) AuthenticatedUser loginUser,
             @Pattern(
-                    regexp = FORMAT_REGEX,
+                    regexp = HANDLE_FORMAT_REGEX,
                     message = "handle 형식이 올바르지 않습니다."
             )
             @PathVariable String handle,
