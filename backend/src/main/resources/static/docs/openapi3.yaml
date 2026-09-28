@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
-                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
-                    ,\"message\":\"type은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"type\",\"\
+                    message\":\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\"\
+                    :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\",\"message\"\
+                    :\"slug 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1052,10 +1052,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1595,10 +1595,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
-                    eventStartAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
+                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -2409,9 +2409,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -3439,13 +3439,14 @@ paths:
                   value: "{\"status\":\"success\",\"data\":[{\"id\":100,\"slug\":\"\
                     loop\",\"title\":\"루프\",\"teamName\":\"루프팀\",\"tagline\":\"스프린\
                     트 회고와 액션 아이템을 관리하는 협업 도구\",\"cohort\":6,\"serviceStatus\":\"OPERATING\"\
-                    ,\"thumbnailImageId\":12,\"thumbnailUrl\":\"https://cdn.example.com/thumbnail\"\
-                    ,\"starCount\":128,\"likeCount\":184,\"commentCount\":14,\"bookmarkCount\"\
-                    :0,\"likedByMe\":false,\"bookmarkedByMe\":false,\"techTags\":[{\"\
-                    id\":1,\"displayName\":\"Spring\"}],\"members\":[{\"userId\":7,\"\
-                    handle\":\"zzaekkii\",\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\"\
-                    ,\"cohort\":6,\"track\":\"BACKEND\",\"avatarImageId\":21,\"avatarUrl\"\
-                    :\"https://cdn.example.com/avatar-21\",\"githubAvatarUrl\":null,\"\
+                    ,\"approvalStatus\":\"APPROVED\",\"thumbnailImageId\":12,\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/thumbnail\",\"starCount\":128,\"likeCount\"\
+                    :184,\"commentCount\":14,\"bookmarkCount\":0,\"likedByMe\":false,\"\
+                    bookmarkedByMe\":false,\"techTags\":[{\"id\":1,\"displayName\"\
+                    :\"Spring\"}],\"members\":[{\"userId\":7,\"handle\":\"zzaekkii\"\
+                    ,\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\",\"cohort\"\
+                    :6,\"track\":\"BACKEND\",\"avatarImageId\":21,\"avatarUrl\":\"\
+                    https://cdn.example.com/avatar-21\",\"githubAvatarUrl\":null,\"\
                     githubProfileUrl\":null}]}],\"meta\":{\"nextCursor\":\"TEFURVNUfDIwMjYtMDktMTZUMDA6MDA6MDBafDEwMA\"\
                     ,\"hasNext\":true,\"totalCount\":3}}"
   /api/v1/admin/home/banners/{bannerId}:
@@ -6396,6 +6397,48 @@ components:
         status:
           type: string
           description: 응답 상태
+    EventCreateRequest:
+      title: EventCreateRequest
+      required:
+      - authorName
+      - body
+      - eventEndAt
+      - eventStartAt
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 이벤트 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 이벤트 CTA
+        eventStartAt:
+          type: string
+          description: 이벤트 시작 시각
+        authorName:
+          type: string
+          description: 이벤트 작성자 이름
+        body:
+          type: string
+          description: 이벤트 본문
+        title:
+          type: string
+          description: 이벤트 제목
+        eventEndAt:
+          type: string
+          description: 이벤트 종료 시각
     HomeBannerFindAllSuccessResponse:
       title: HomeBannerFindAllSuccessResponse
       required:
@@ -6455,48 +6498,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    EventCreateRequest:
-      title: EventCreateRequest
-      required:
-      - authorName
-      - body
-      - eventEndAt
-      - eventStartAt
-      - summary
-      - title
-      type: object
-      properties:
-        summary:
-          type: string
-          description: 이벤트 요약
-        cta:
-          required:
-          - label
-          - url
-          type: object
-          properties:
-            label:
-              type: string
-              description: CTA 라벨
-            url:
-              type: string
-              description: CTA URL
-          description: 이벤트 CTA
-        eventStartAt:
-          type: string
-          description: 이벤트 시작 시각
-        authorName:
-          type: string
-          description: 이벤트 작성자 이름
-        body:
-          type: string
-          description: 이벤트 본문
-        title:
-          type: string
-          description: 이벤트 제목
-        eventEndAt:
-          type: string
-          description: 이벤트 종료 시각
     OAuthSignupSuccessResponse:
       title: OAuthSignupSuccessResponse
       required:
@@ -6599,6 +6600,181 @@ components:
                     type: number
                     description: 기술 스택 ID
           description: 기술 스택 목록
+        status:
+          type: string
+          description: 응답 상태
+    UserProjectFindAllSuccessResponse:
+      title: UserProjectFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 사용자가 참여한 프로젝트 목록
+          items:
+            required:
+            - approvalStatus
+            - bookmarkCount
+            - bookmarkedByMe
+            - cohort
+            - commentCount
+            - id
+            - likeCount
+            - likedByMe
+            - members
+            - serviceStatus
+            - slug
+            - tagline
+            - teamName
+            - techTags
+            - title
+            type: object
+            properties:
+              approvalStatus:
+                type: string
+                description: 심사 상태
+                enum:
+                - PENDING
+                - APPROVED
+                - REJECTED
+              teamName:
+                type: string
+                description: 팀 이름
+              techTags:
+                type: array
+                description: 기술 스택
+                items:
+                  required:
+                  - displayName
+                  - id
+                  type: object
+                  properties:
+                    displayName:
+                      type: string
+                      description: 기술 스택 이름
+                    id:
+                      type: number
+                      description: 기술 스택 ID
+              bookmarkedByMe:
+                type: boolean
+                description: 요청자의 북마크 여부. 비로그인이면 false다.
+              cohort:
+                type: number
+                description: 우아한테크코스 기수
+              likeCount:
+                type: number
+                description: 좋아요 수
+              title:
+                type: string
+                description: 프로젝트 이름
+              commentCount:
+                type: number
+                description: 삭제되지 않은 댓글 수
+              thumbnailImageId:
+                type: number
+                description: 프로젝트 썸네일 이미지 ID
+                nullable: true
+              starCount:
+                type: number
+                description: GitHub star 수. 동기화 전이면 null이다.
+                nullable: true
+              likedByMe:
+                type: boolean
+                description: 요청자의 좋아요 여부. 비로그인이면 false다.
+              serviceStatus:
+                type: string
+                description: 운영 상태
+                enum:
+                - OPERATING
+                - CLOSED
+              members:
+                type: array
+                description: 프로젝트 팀원
+                items:
+                  required:
+                  - displayName
+                  type: object
+                  properties:
+                    githubAvatarUrl:
+                      type: string
+                      description: 이관 팀원의 GitHub 프로필 이미지 URL
+                      nullable: true
+                    avatarImageId:
+                      type: number
+                      description: 프로필 이미지 미디어 ID
+                      nullable: true
+                    avatarUrl:
+                      type: string
+                      description: CloudFront에서 제공하는 공개 프로필 이미지 URL
+                      nullable: true
+                    displayName:
+                      type: string
+                      description: 표시 이름
+                    githubProfileUrl:
+                      type: string
+                      description: 이관 팀원의 GitHub 프로필 URL
+                      nullable: true
+                    cohort:
+                      type: number
+                      description: 기수
+                      nullable: true
+                    handle:
+                      type: string
+                      description: 사용자 handle
+                      nullable: true
+                    userType:
+                      type: string
+                      description: 사용자 유형
+                      nullable: true
+                    track:
+                      type: string
+                      description: 트랙
+                      nullable: true
+                      enum:
+                      - BACKEND
+                      - ANDROID
+                      - FRONTEND
+                    userId:
+                      type: number
+                      description: 사용자 ID. 이관 팀원은 null이다.
+                      nullable: true
+              bookmarkCount:
+                type: number
+                description: 북마크 수
+              tagline:
+                type: string
+                description: 한 줄 소개
+              id:
+                type: number
+                description: 프로젝트 ID
+              slug:
+                type: string
+                description: 프로젝트 slug
+              thumbnailUrl:
+                type: string
+                description: CloudFront에서 제공하는 공개 썸네일 URL
+                nullable: true
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: "커서와 size에 무관한 조회 가능한 전체 참여 프로젝트 수. 본인 조회는 승인 대기 프로젝트를\
+                \ 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함"
+          description: 페이지네이션 정보
         status:
           type: string
           description: 응답 상태
@@ -6909,37 +7085,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    HomeStatisticsSuccessResponse:
-      title: HomeStatisticsSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - currentCohort
-          - feedCount
-          - ongoingEventCount
-          - projectCount
-          type: object
-          properties:
-            projectCount:
-              type: number
-              description: 승인되었고 삭제되지 않은 프로젝트 수
-            currentCohort:
-              type: number
-              description: 전체 기수 개수
-            feedCount:
-              type: number
-              description: 삭제되지 않은 피드 수
-            ongoingEventCount:
-              type: number
-              description: 조회 시각에 진행 중인 삭제되지 않은 이벤트 수
-          description: 홈 통계
-        status:
-          type: string
-          description: 응답 상태
     UserProfileUpdateSuccessResponse:
       title: UserProfileUpdateSuccessResponse
       required:
@@ -7000,6 +7145,37 @@ components:
               type: number
               description: 사용자 ID
           description: 수정된 사용자 프로필
+        status:
+          type: string
+          description: 응답 상태
+    HomeStatisticsSuccessResponse:
+      title: HomeStatisticsSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - currentCohort
+          - feedCount
+          - ongoingEventCount
+          - projectCount
+          type: object
+          properties:
+            projectCount:
+              type: number
+              description: 승인되었고 삭제되지 않은 프로젝트 수
+            currentCohort:
+              type: number
+              description: 전체 기수 개수
+            feedCount:
+              type: number
+              description: 삭제되지 않은 피드 수
+            ongoingEventCount:
+              type: number
+              description: 조회 시각에 진행 중인 삭제되지 않은 이벤트 수
+          description: 홈 통계
         status:
           type: string
           description: 응답 상태
@@ -7244,19 +7420,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    OAuthSignupRequest:
-      title: OAuthSignupRequest
-      required:
-      - displayName
-      - handle
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 프로필 표시 이름
-        handle:
-          type: string
-          description: 영구 공개 핸들
     CategorySaveSuccessResponse:
       title: CategorySaveSuccessResponse
       required:
@@ -7299,6 +7462,19 @@ components:
         status:
           type: string
           description: 응답 상태
+    OAuthSignupRequest:
+      title: OAuthSignupRequest
+      required:
+      - displayName
+      - handle
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 프로필 표시 이름
+        handle:
+          type: string
+          description: 영구 공개 핸들
     FeedCommentCreateRequest:
       title: FeedCommentCreateRequest
       required:
@@ -8114,173 +8290,6 @@ components:
               type: string
               description: ISO-8601 수정 시각
           description: 피드
-        status:
-          type: string
-          description: 응답 상태
-    UserProjectFindAllSuccessResponse:
-      title: UserProjectFindAllSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 사용자가 참여한 프로젝트 목록
-          items:
-            required:
-            - bookmarkCount
-            - bookmarkedByMe
-            - cohort
-            - commentCount
-            - id
-            - likeCount
-            - likedByMe
-            - members
-            - serviceStatus
-            - slug
-            - tagline
-            - teamName
-            - techTags
-            - title
-            type: object
-            properties:
-              teamName:
-                type: string
-                description: 팀 이름
-              techTags:
-                type: array
-                description: 기술 스택
-                items:
-                  required:
-                  - displayName
-                  - id
-                  type: object
-                  properties:
-                    displayName:
-                      type: string
-                      description: 기술 스택 이름
-                    id:
-                      type: number
-                      description: 기술 스택 ID
-              bookmarkedByMe:
-                type: boolean
-                description: 요청자의 북마크 여부. 비로그인이면 false다.
-              cohort:
-                type: number
-                description: 우아한테크코스 기수
-              likeCount:
-                type: number
-                description: 좋아요 수
-              title:
-                type: string
-                description: 프로젝트 이름
-              commentCount:
-                type: number
-                description: 삭제되지 않은 댓글 수
-              thumbnailImageId:
-                type: number
-                description: 프로젝트 썸네일 이미지 ID
-                nullable: true
-              starCount:
-                type: number
-                description: GitHub star 수. 동기화 전이면 null이다.
-                nullable: true
-              likedByMe:
-                type: boolean
-                description: 요청자의 좋아요 여부. 비로그인이면 false다.
-              serviceStatus:
-                type: string
-                description: 운영 상태
-                enum:
-                - OPERATING
-                - CLOSED
-              members:
-                type: array
-                description: 프로젝트 팀원
-                items:
-                  required:
-                  - displayName
-                  type: object
-                  properties:
-                    githubAvatarUrl:
-                      type: string
-                      description: 이관 팀원의 GitHub 프로필 이미지 URL
-                      nullable: true
-                    avatarImageId:
-                      type: number
-                      description: 프로필 이미지 미디어 ID
-                      nullable: true
-                    avatarUrl:
-                      type: string
-                      description: CloudFront에서 제공하는 공개 프로필 이미지 URL
-                      nullable: true
-                    displayName:
-                      type: string
-                      description: 표시 이름
-                    githubProfileUrl:
-                      type: string
-                      description: 이관 팀원의 GitHub 프로필 URL
-                      nullable: true
-                    cohort:
-                      type: number
-                      description: 기수
-                      nullable: true
-                    handle:
-                      type: string
-                      description: 사용자 handle
-                      nullable: true
-                    userType:
-                      type: string
-                      description: 사용자 유형
-                      nullable: true
-                    track:
-                      type: string
-                      description: 트랙
-                      nullable: true
-                      enum:
-                      - BACKEND
-                      - ANDROID
-                      - FRONTEND
-                    userId:
-                      type: number
-                      description: 사용자 ID. 이관 팀원은 null이다.
-                      nullable: true
-              bookmarkCount:
-                type: number
-                description: 북마크 수
-              tagline:
-                type: string
-                description: 한 줄 소개
-              id:
-                type: number
-                description: 프로젝트 ID
-              slug:
-                type: string
-                description: 프로젝트 slug
-              thumbnailUrl:
-                type: string
-                description: CloudFront에서 제공하는 공개 썸네일 URL
-                nullable: true
-        meta:
-          required:
-          - hasNext
-          - totalCount
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-            totalCount:
-              type: number
-              description: "커서와 size에 무관한 조회 가능한 전체 참여 프로젝트 수. 본인 조회는 승인 대기 프로젝트를\
-                \ 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함"
-          description: 페이지네이션 정보
         status:
           type: string
           description: 응답 상태

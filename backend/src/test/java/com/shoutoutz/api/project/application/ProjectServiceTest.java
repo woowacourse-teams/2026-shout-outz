@@ -853,6 +853,7 @@ class ProjectServiceTest {
                 "한 줄 소개",
                 6,
                 ServiceStatus.OPERATING,
+                ApprovalStatus.APPROVED,
                 THUMBNAIL_ID,
                 REGISTERED_BY,
                 128,

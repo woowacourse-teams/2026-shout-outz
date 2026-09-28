@@ -4,6 +4,7 @@ import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.project.application.UserProjectQueryRepository;
 import com.shoutoutz.api.project.application.dto.UserProjectItem;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
+import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectFilterCondition;
 import com.shoutoutz.api.project.domain.ProjectFilterOptions;
@@ -99,6 +100,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 p.tagline,
                 p.cohort,
                 p.service_status,
+                p.approval_status,
                 p.thumbnail_media_id,
                 p.registered_by,
                 p.star_count,
@@ -539,6 +541,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 resultSet.getString("tagline"),
                 resultSet.getInt("cohort"),
                 ServiceStatus.valueOf(resultSet.getString("service_status")),
+                ApprovalStatus.valueOf(resultSet.getString("approval_status")),
                 resultSet.getObject("thumbnail_media_id", Long.class),
                 resultSet.getObject("registered_by", Long.class),
                 resultSet.getObject("star_count", Integer.class),

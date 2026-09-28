@@ -29,6 +29,7 @@ import com.shoutoutz.api.project.application.ProjectCursorCodec;
 import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.application.dto.UserProjectItem;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
+import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ServiceStatus;
@@ -89,6 +90,7 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data[0].id").value(100))
                 .andExpect(jsonPath("$.data[0].title").value("루프"))
+                .andExpect(jsonPath("$.data[0].approvalStatus").value("APPROVED"))
                 .andExpect(jsonPath("$.data[0].thumbnailUrl")
                         .value("https://cdn.example.com/thumbnail"))
                 .andExpect(jsonPath("$.data[0].thumbnailImageId").value(12L))
@@ -204,6 +206,7 @@ class UserProjectHttpApiTest {
                 "스프린트 회고와 액션 아이템을 관리하는 협업 도구",
                 6,
                 ServiceStatus.OPERATING,
+                ApprovalStatus.APPROVED,
                 12L,
                 7L,
                 128,
@@ -228,6 +231,7 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].tagline").type(STRING).description("한 줄 소개"),
                 fieldWithPath("data[].cohort").type(NUMBER).description("우아한테크코스 기수"),
                 new EnumFields(ServiceStatus.class).withPath("data[].serviceStatus").description("운영 상태"),
+                new EnumFields(ApprovalStatus.class).withPath("data[].approvalStatus").description("심사 상태"),
                 fieldWithPath("data[].thumbnailImageId").type(NUMBER).description("프로젝트 썸네일 이미지 ID").optional(),
                 fieldWithPath("data[].thumbnailUrl").type(STRING).description("CloudFront에서 제공하는 공개 썸네일 URL").optional(),
                 fieldWithPath("data[].starCount").type(NUMBER)
