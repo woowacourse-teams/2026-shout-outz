@@ -78,7 +78,7 @@ class FeedCommentHttpApiTest {
                                 501L,
                                 "좋은 피드네요.",
                                 new FeedCommentFindResponse.Author(
-                                        7L, "샤라웃 운영팀", 10L, "https://cdn.example.com/media/10/display"),
+                                        7L, "@author7", "샤라웃 운영팀", 10L, "https://cdn.example.com/media/10/display"),
                                 null,
                                 Instant.parse("2026-09-14T00:00:00Z"),
                                 Instant.parse("2026-09-14T00:00:00Z"),
@@ -90,7 +90,7 @@ class FeedCommentHttpApiTest {
                                 502L,
                                 "저도 그렇게 생각합니다.",
                                 new FeedCommentFindResponse.Author(
-                                        8L, "재키", 11L, "https://cdn.example.com/media/11/display"),
+                                        8L, "@author8", "재키", 11L, "https://cdn.example.com/media/11/display"),
                                 501L,
                                 Instant.parse("2026-09-14T00:05:00Z"),
                                 Instant.parse("2026-09-14T00:05:00Z"),
@@ -102,7 +102,7 @@ class FeedCommentHttpApiTest {
                                 503L,
                                 null,
                                 new FeedCommentFindResponse.Author(
-                                        9L, "이전 작성자", 12L, "https://cdn.example.com/media/12/display"),
+                                        9L, "@author9", "이전 작성자", 12L, "https://cdn.example.com/media/12/display"),
                                 null,
                                 Instant.parse("2026-09-14T00:10:00Z"),
                                 Instant.parse("2026-09-14T00:10:00Z"),
@@ -122,6 +122,7 @@ class FeedCommentHttpApiTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].id").value(501))
                 .andExpect(jsonPath("$.data[0].author.userId").value(7))
+                .andExpect(jsonPath("$.data[0].author.handle").value("@author7"))
                 .andExpect(jsonPath("$.data[0].author.avatarImageId").value(10L))
                 .andExpect(jsonPath("$.data[0].editable").value(false))
                 .andExpect(jsonPath("$.data[0].edited").value(false))
@@ -163,6 +164,7 @@ class FeedCommentHttpApiTest {
                                                 .optional(),
                                         fieldWithPath("data[].author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data[].author.userId").type(NUMBER).description("작성자 ID"),
+                                        fieldWithPath("data[].author.handle").type(STRING).description("작성자 handle").optional(),
                                         fieldWithPath("data[].author.displayName").type(STRING).description("작성자 표시 이름"),
                                         fieldWithPath("data[].author.userType").type(STRING).description("작성자 유형").optional(),
                                         fieldWithPath("data[].author.track").type(STRING).description("작성자 트랙").optional(),
@@ -222,7 +224,7 @@ class FeedCommentHttpApiTest {
                         501L,
                         "내 댓글",
                         new FeedCommentFindResponse.Author(
-                                7L, "샤라웃 운영팀", 10L, "https://cdn.example.com/media/10/display"),
+                                7L, "@author7", "샤라웃 운영팀", 10L, "https://cdn.example.com/media/10/display"),
                         null,
                         Instant.parse("2026-09-14T00:00:00Z"),
                         Instant.parse("2026-09-14T00:00:00Z"),
@@ -265,7 +267,7 @@ class FeedCommentHttpApiTest {
                         501L,
                         "좋은 피드네요.",
                         new FeedCommentCreateResponse.Author(
-                                7L, "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
+                                7L, "@author7", "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
                         null,
                         Instant.parse("2026-09-14T00:00:00Z"),
                         Instant.parse("2026-09-14T00:00:00Z"),
@@ -287,6 +289,7 @@ class FeedCommentHttpApiTest {
                 .andExpect(jsonPath("$.data.id").value(501))
                 .andExpect(jsonPath("$.data.content").value("좋은 피드네요."))
                 .andExpect(jsonPath("$.data.author.userId").value(7))
+                .andExpect(jsonPath("$.data.author.handle").value("@author7"))
                 .andExpect(jsonPath("$.data.author.displayName").value("샤라웃 운영팀"))
                 .andExpect(jsonPath("$.data.author.avatarImageId").doesNotExist())
                 .andExpect(jsonPath("$.data.author.avatarUrl")
@@ -325,6 +328,7 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
+                                        fieldWithPath("data.author.handle").type(STRING).description("작성자 handle").optional(),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
                                         fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
                                         fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
@@ -356,7 +360,7 @@ class FeedCommentHttpApiTest {
                 501L,
                 "수정된 댓글입니다.",
                 new FeedCommentUpdateResponse.Author(
-                        7L, "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
+                        7L, "@author7", "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
                 null,
                 Instant.parse("2026-09-14T00:00:00Z"),
                 Instant.parse("2026-09-14T00:30:00Z"),
@@ -416,6 +420,7 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
+                                        fieldWithPath("data.author.handle").type(STRING).description("작성자 handle").optional(),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
                                         fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
                                         fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),

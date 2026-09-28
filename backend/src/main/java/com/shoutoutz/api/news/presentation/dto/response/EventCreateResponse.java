@@ -24,13 +24,22 @@ public record EventCreateResponse(
     public record Author(
             long userId,
             String name,
+            String handle,
             String displayName,
             UserType userType,
             String track,
             Short cohort
     ) {
+        public Author(long userId, String name, String handle) {
+            this(userId, name, handle, name, null, null, null);
+        }
+
         public Author(long userId, String name) {
-            this(userId, name, name, null, null, null);
+            this(userId, name, null, name, null, null, null);
+        }
+
+        public Author(long userId, String name, String displayName, UserType userType, String track, Short cohort) {
+            this(userId, name, null, displayName, userType, track, cohort);
         }
     }
 
