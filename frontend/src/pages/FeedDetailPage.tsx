@@ -6,7 +6,7 @@ import { Button } from '@/components/Button';
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
-import { FeedContent } from '@/components/feeds/FeedContent';
+import { FeedDetailBody } from '@/components/feeds/FeedDetailBody';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { PopularFeedList } from '@/components/feeds/PopularFeedList';
 import { Comments } from '@/components/feed-comments/Comments';
@@ -63,7 +63,7 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
           <FeedMenu feedId={feed.feedId} authorHandle={feed.author.handle} />
         </AsyncBoundary>
       </div>
-      <FeedContent feed={feed} titleAs="h2" />
+      <FeedDetailBody feed={feed} />
       <div className="mt-5 flex items-center gap-2">
         <Button variant="ghost" size="sm" className="gap-1 px-2" aria-label="좋아요" disabled>
           <IconHeart className="size-4" aria-hidden="true" />
