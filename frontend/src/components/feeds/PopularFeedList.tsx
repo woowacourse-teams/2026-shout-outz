@@ -20,23 +20,25 @@ export function PopularFeedList() {
           const excerpt = toPlainText(feed.content);
           return (
             <li key={feed.feedId} className="py-4 first:pt-0">
-              <Link
-                to="/feeds/$feedId"
-                params={{ feedId: String(feed.feedId) }}
-                className="group focus-visible:outline-primary-600 block rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4"
-              >
-                <p className="group-hover:text-primary-600 line-clamp-2 text-base leading-snug font-bold break-words text-gray-900 transition-colors">
-                  {feed.title}
-                </p>
-                {excerpt && (
-                  <p className="mt-1.5 line-clamp-2 text-sm leading-5 break-words text-gray-600">
-                    {excerpt}
+              <div className="min-w-0">
+                <Link
+                  to="/feeds/$feedId"
+                  params={{ feedId: String(feed.feedId) }}
+                  className="group focus-visible:outline-primary-600 block rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4"
+                >
+                  <p className="group-hover:text-primary-600 line-clamp-2 text-base leading-snug font-bold break-words text-gray-900 transition-colors">
+                    {feed.title}
                   </p>
-                )}
+                  {excerpt && (
+                    <p className="mt-1.5 line-clamp-2 text-sm leading-5 break-words text-gray-600">
+                      {excerpt}
+                    </p>
+                  )}
+                </Link>
                 <div className="mt-3 flex min-w-0 items-center gap-2">
                   <FeedAuthor author={feed.author} avatarSize="sm" />
                 </div>
-              </Link>
+              </div>
             </li>
           );
         })}
