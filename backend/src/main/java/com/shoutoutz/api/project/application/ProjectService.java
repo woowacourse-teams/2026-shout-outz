@@ -51,6 +51,7 @@ import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
+import com.shoutoutz.api.project.domain.exception.InvalidSlugException;
 import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
@@ -255,10 +256,12 @@ public class ProjectService {
 
     /**
      * 승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 조회할 수 있다.
+     * slug 형식에 맞지 않는 값은 그런 프로젝트가 없는 것과 같으므로 404로 응답한다.
      */
     @Transactional(readOnly = true)
-    public ProjectDetailResponse findDetail(long projectId, Long loginUserId) {
-        ProjectDetail detail = projectRepository.findDetailById(projectId, loginUserId)
+    public ProjectDetailResponse findDetail(String slug, Long loginUserId) {
+        ProjectDetail detail = toSlug(slug)
+                .flatMap(value -> projectRepository.findDetailBySlug(value, loginUserId))
                 .filter(project -> project.isVisibleTo(loginUserId))
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
         Map<Long, URI> mediaUrls = resolveProjectMediaUrls(detail);
@@ -275,6 +278,14 @@ public class ProjectService {
                 descriptionMd,
                 loginUserId
         );
+    }
+
+    private Optional<Slug> toSlug(String slug) {
+        try {
+            return Optional.of(new Slug(slug));
+        } catch (InvalidSlugException e) {
+            return Optional.empty();
+        }
     }
 
     private Map<Long, URI> resolveProjectMediaUrls(List<ProjectSummary> projects) {

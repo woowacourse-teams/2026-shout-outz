@@ -52,7 +52,7 @@ class ProjectDetailRepositoryIntegrationTest {
         saveProjectMember(projectId, member.getId(), 1);
         saveProjectMember(projectId, registrant.getId(), 0);
 
-        ProjectDetail detail = projectRepository.findDetailById(projectId, null).orElseThrow();
+        ProjectDetail detail = projectRepository.findDetailBySlug(slugOf(projectId), null).orElseThrow();
 
         assertThat(detail.title()).isEqualTo("모아모아");
         assertThat(detail.teamName()).isEqualTo("모아모아팀");
@@ -73,17 +73,6 @@ class ProjectDetailRepositoryIntegrationTest {
                 ProjectMemberProfile.user(member.getId(), member.getHandle().value(), "김도현",
                         Cohort.COHORT_6, Track.FRONTEND, null)
         );
-    }
-
-    @Test
-    @DisplayName("없거나 삭제된 프로젝트는 조회되지 않는다.")
-    void returnsEmptyWhenProjectMissingOrDeleted() {
-        User registrant = saveUser("deleted");
-        long deletedProjectId = saveProject(registrant.getId(), "APPROVED");
-        jdbcTemplate.update("UPDATE projects SET deleted_at = now() WHERE id = ?", deletedProjectId);
-
-        assertThat(projectRepository.findDetailById(deletedProjectId, null)).isEmpty();
-        assertThat(projectRepository.findDetailById(-1L, null)).isEmpty();
     }
 
     @Test
@@ -117,7 +106,7 @@ class ProjectDetailRepositoryIntegrationTest {
         long deletedProjectId = saveProject(registrant.getId(), "APPROVED");
         jdbcTemplate.update("UPDATE projects SET deleted_at = now() WHERE id = ?", deletedProjectId);
 
-        assertThat(projectRepository.findDetailBySlug(new Slug(findSlug(deletedProjectId)), null)).isEmpty();
+        assertThat(projectRepository.findDetailBySlug(slugOf(deletedProjectId), null)).isEmpty();
         assertThat(projectRepository.findDetailBySlug(new Slug("missing-" + UUID.randomUUID()), null)).isEmpty();
     }
 
@@ -131,9 +120,9 @@ class ProjectDetailRepositoryIntegrationTest {
         long approvedProjectId = saveProject(registrant.getId(), "APPROVED");
         saveRejectHistory(approvedProjectId, "승인 전 반려 사유", "now()");
 
-        assertThat(projectRepository.findDetailById(rejectedProjectId, null).orElseThrow().rejectReason())
+        assertThat(projectRepository.findDetailBySlug(slugOf(rejectedProjectId), null).orElseThrow().rejectReason())
                 .isEqualTo("두 번째 반려 사유");
-        assertThat(projectRepository.findDetailById(approvedProjectId, null).orElseThrow().rejectReason())
+        assertThat(projectRepository.findDetailBySlug(slugOf(approvedProjectId), null).orElseThrow().rejectReason())
                 .isNull();
     }
 
@@ -151,8 +140,8 @@ class ProjectDetailRepositoryIntegrationTest {
         saveComment(projectId, bookmarker.getId(), parentCommentId, false);
         saveComment(projectId, liker.getId(), null, true);
 
-        ProjectDetail likerView = projectRepository.findDetailById(projectId, liker.getId()).orElseThrow();
-        ProjectDetail anonymousView = projectRepository.findDetailById(projectId, null).orElseThrow();
+        ProjectDetail likerView = projectRepository.findDetailBySlug(slugOf(projectId), liker.getId()).orElseThrow();
+        ProjectDetail anonymousView = projectRepository.findDetailBySlug(slugOf(projectId), null).orElseThrow();
 
         assertThat(likerView.likeCount()).isEqualTo(2);
         assertThat(likerView.bookmarkCount()).isEqualTo(1);
@@ -180,7 +169,7 @@ class ProjectDetailRepositoryIntegrationTest {
         saveProjectMember(projectId, gracePeriodMember.getId(), 1);
         saveProjectMember(projectId, purgedMember.getId(), 2);
 
-        ProjectDetail detail = projectRepository.findDetailById(projectId, null).orElseThrow();
+        ProjectDetail detail = projectRepository.findDetailBySlug(slugOf(projectId), null).orElseThrow();
 
         assertThat(detail.members()).containsExactly(
                 ProjectMemberProfile.user(registrant.getId(), registrant.getHandle().value(), "정우진",
@@ -204,7 +193,7 @@ class ProjectDetailRepositoryIntegrationTest {
         saveArchivedMember(projectId, matchedMember.getId(), "seoyeon", "Seoyeon Lee", 2);
         saveArchivedMember(projectId, withdrawnMember.getId(), "left-dev", "Left Dev", 3);
 
-        ProjectDetail detail = projectRepository.findDetailById(projectId, null).orElseThrow();
+        ProjectDetail detail = projectRepository.findDetailBySlug(slugOf(projectId), null).orElseThrow();
 
         assertThat(detail.isArchived()).isTrue();
         assertThat(detail.members()).containsExactly(
@@ -273,6 +262,10 @@ class ProjectDetailRepositoryIntegrationTest {
                 "https://github.com/woowacourse-teams/detail-" + suffix,
                 approvalStatus
         );
+    }
+
+    private Slug slugOf(long projectId) {
+        return new Slug(findSlug(projectId));
     }
 
     private String findSlug(long projectId) {

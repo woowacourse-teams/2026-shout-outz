@@ -504,13 +504,15 @@ class ProjectAcceptanceTest {
 
     /**
      * viewer 가 null 이면 세션 쿠키 없이 비로그인으로 조회한다. 조회는 CSRF 토큰이 필요 없다.
+     * 상세 조회는 slug 로 하므로, 등록한 프로젝트의 slug 를 찾아 주소를 만든다.
      */
     private Response findDetail(LoginSession viewer, long projectId) {
+        String slug = jdbcTemplate.queryForObject("SELECT slug FROM projects WHERE id = ?", String.class, projectId);
         var request = RestAssured.given().port(port);
         if (viewer != null) {
             request.cookie("JSESSIONID", viewer.sessionId());
         }
-        return request.when().get(PROJECTS_PATH + "/{projectId}", projectId);
+        return request.when().get(PROJECTS_PATH + "/@{slug}", slug);
     }
 
 

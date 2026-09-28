@@ -26,13 +26,8 @@ public class ProjectDetailJdbcRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final ProjectTechTagAndMemberJdbcRepository techTagAndMemberJdbcRepository;
 
-    public Optional<ProjectDetail> findDetailById(long projectId, Long viewerId) {
-        return findProject("p.id = :projectId", new MapSqlParameterSource("projectId", projectId), viewerId)
-                .map(this::withTechTagsAndMembers);
-    }
-
     public Optional<ProjectDetail> findDetailBySlug(Slug slug, Long viewerId) {
-        return findProject("p.slug = :slug", new MapSqlParameterSource("slug", slug.value()), viewerId)
+        return findProject(slug, viewerId)
                 .map(this::withTechTagsAndMembers);
     }
 
@@ -56,9 +51,8 @@ public class ProjectDetailJdbcRepository {
      * 반려 사유는 REJECTED 상태일 때만 가장 최근 반려 이력의 사유를 쓴다.
      * 댓글 수는 삭제된 댓글을 제외하고, 대댓글을 포함한다.
      * 비로그인이면 viewerId가 null이라, user_id 비교가 거짓이 되어, likedByMe와 bookmarkedByMe는 false다.
-     * condition은 한 건을 고르는 조건이며, 호출하는 곳에서 고정 문자열로만 넘긴다.
      */
-    private Optional<ProjectDetail> findProject(String condition, MapSqlParameterSource parameters, Long viewerId) {
+    private Optional<ProjectDetail> findProject(Slug slug, Long viewerId) {
         String sql = """
                 SELECT
                     p.id,
@@ -121,10 +115,12 @@ public class ProjectDetailJdbcRepository {
                           AND r.reaction_type = 'BOOKMARK'
                     ) AS bookmarked_by_me
                 FROM projects p
-                WHERE %s
+                WHERE p.slug = :slug
                   AND p.deleted_at IS NULL
-                """.formatted(condition);
-        parameters.addValue("viewerId", viewerId, Types.BIGINT);
+                """;
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("slug", slug.value())
+                .addValue("viewerId", viewerId, Types.BIGINT);
 
         return jdbcTemplate.query(sql, parameters, (resultSet, rowNumber) -> new ProjectDetail(
                         resultSet.getLong("id"),

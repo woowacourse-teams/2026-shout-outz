@@ -97,6 +97,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -884,10 +886,10 @@ class ProjectServiceTest {
     @Test
     @DisplayName("승인된 프로젝트는 비로그인 사용자도 상세 조회할 수 있고, 기술 스택과 팀원을 응답으로 옮긴다.")
     void findsApprovedProjectDetailForAnonymous() {
-        when(projectRepository.findDetailById(100L, null))
+        when(projectRepository.findDetailBySlug(new Slug("loop"), null))
                 .thenReturn(Optional.of(projectDetail(ApprovalStatus.APPROVED)));
 
-        ProjectDetailResponse response = projectService.findDetail(100L, null);
+        ProjectDetailResponse response = projectService.findDetail("loop", null);
 
         assertThat(response.id()).isEqualTo(100L);
         assertThat(response.editable()).isFalse();
@@ -918,13 +920,13 @@ class ProjectServiceTest {
                 101L, URI.create("https://cdn.example.com/avatar-101"),
                 descriptionMediaId, URI.create(descriptionUrl)
         );
-        when(projectRepository.findDetailById(100L, null)).thenReturn(Optional.of(detail));
+        when(projectRepository.findDetailBySlug(new Slug("loop"), null)).thenReturn(Optional.of(detail));
         when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID, 101L, descriptionMediaId)))
                 .thenReturn(mediaUrls);
         when(mediaUrlResolver.replaceDescriptionReferences(storedDescription, mediaUrls))
                 .thenReturn("![화면](" + descriptionUrl + ")");
 
-        ProjectDetailResponse response = projectService.findDetail(100L, null);
+        ProjectDetailResponse response = projectService.findDetail("loop", null);
 
         assertThat(response.thumbnailImageId()).isEqualTo(THUMBNAIL_ID);
         assertThat(response.imageUrl()).isEqualTo("https://cdn.example.com/thumbnail");
@@ -938,10 +940,10 @@ class ProjectServiceTest {
     @Test
     @DisplayName("승인되지 않은 프로젝트도 등록자 본인은 상세 조회할 수 있다.")
     void findsUnapprovedProjectDetailForRegistrant() {
-        when(projectRepository.findDetailById(100L, REGISTERED_BY))
+        when(projectRepository.findDetailBySlug(new Slug("loop"), REGISTERED_BY))
                 .thenReturn(Optional.of(projectDetail(ApprovalStatus.REJECTED)));
 
-        ProjectDetailResponse response = projectService.findDetail(100L, REGISTERED_BY);
+        ProjectDetailResponse response = projectService.findDetail("loop", REGISTERED_BY);
 
         assertThat(response.approvalStatus()).isEqualTo(ApprovalStatus.REJECTED);
         assertThat(response.editable()).isTrue();
@@ -950,18 +952,27 @@ class ProjectServiceTest {
     @Test
     @DisplayName("승인되지 않은 프로젝트를 등록자가 아닌 사용자가 조회하면 존재 여부를 숨기고 404를 던진다.")
     void hidesUnapprovedProjectFromOthers() {
-        when(projectRepository.findDetailById(100L, MEMBER_ID))
+        when(projectRepository.findDetailBySlug(new Slug("loop"), MEMBER_ID))
                 .thenReturn(Optional.of(projectDetail(ApprovalStatus.PENDING)));
 
-        assertProjectNotFound(() -> projectService.findDetail(100L, MEMBER_ID));
+        assertProjectNotFound(() -> projectService.findDetail("loop", MEMBER_ID));
     }
 
     @Test
     @DisplayName("없거나 삭제된 프로젝트를 조회하면 404를 던진다.")
     void rejectsMissingProject() {
-        when(projectRepository.findDetailById(100L, null)).thenReturn(Optional.empty());
+        when(projectRepository.findDetailBySlug(new Slug("loop"), null)).thenReturn(Optional.empty());
 
-        assertProjectNotFound(() -> projectService.findDetail(100L, null));
+        assertProjectNotFound(() -> projectService.findDetail("loop", null));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Loop", "a_b", "-loop", ""})
+    @DisplayName("slug 형식에 맞지 않는 값으로 조회하면 프로젝트를 찾지 않고 404를 던진다.")
+    void rejectsMalformedSlug(String slug) {
+        assertProjectNotFound(() -> projectService.findDetail(slug, null));
+
+        verify(projectRepository, never()).findDetailBySlug(any(), any());
     }
 
     private static void assertProjectNotFound(ThrowingCallable callable) {
