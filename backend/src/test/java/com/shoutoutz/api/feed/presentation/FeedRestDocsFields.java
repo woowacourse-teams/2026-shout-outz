@@ -27,6 +27,7 @@ final class FeedRestDocsFields {
                 fieldWithPath("title").type(STRING).description("피드 제목"),
                 fieldWithPath("content").type(STRING).description("Markdown 본문"),
                 fieldWithPath("author").type(OBJECT).description("현재 작성자 프로필"),
+                fieldWithPath("author.userId").type(NUMBER).description("작성자 ID"),
                 fieldWithPath("author.handle").type(STRING).description("작성자 핸들"),
                 fieldWithPath("author.displayName").type(STRING).description("작성자 이름"),
                 new EnumFields(UserType.class).withPath("author.userType").description("작성자 유형"),
@@ -43,6 +44,11 @@ final class FeedRestDocsFields {
                 fieldWithPath("media[].mediaId").type(NUMBER).description("본문 미디어 ID"),
                 fieldWithPath("media[].url").type(STRING).description("본문 미디어 공개 URL"),
                 fieldWithPath("media[].displayOrder").type(NUMBER).description("미디어 표시 순서"),
+                fieldWithPath("likeCount").type(NUMBER).description("좋아요 수"),
+                fieldWithPath("bookmarkCount").type(NUMBER).description("북마크 수"),
+                fieldWithPath("likedByMe").type(BOOLEAN).description("요청자의 좋아요 여부. 비로그인이면 false"),
+                fieldWithPath("bookmarkedByMe").type(BOOLEAN).description("요청자의 북마크 여부. 비로그인이면 false"),
+                fieldWithPath("commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"),
                 fieldWithPath("createdAt").type(STRING).description("ISO-8601 생성 시각"),
                 fieldWithPath("updatedAt").type(STRING).description("ISO-8601 수정 시각")
         ));
@@ -65,6 +71,7 @@ final class FeedRestDocsFields {
                 fieldWithPath("title").type(STRING).description("피드 제목"),
                 fieldWithPath("content").type(STRING).description("Markdown 본문"),
                 fieldWithPath("author").type(OBJECT).description("현재 작성자 프로필"),
+                fieldWithPath("author.userId").type(NUMBER).description("작성자 ID"),
                 fieldWithPath("author.handle").type(STRING).description("작성자 핸들"),
                 fieldWithPath("author.displayName").type(STRING).description("작성자 이름"),
                 new EnumFields(UserType.class).withPath("author.userType").description("작성자 유형"),
@@ -86,6 +93,23 @@ final class FeedRestDocsFields {
     }
 
     static List<FieldDescriptor> feedListResponseFields(String description) {
+        return feedListResponseFields(
+                description,
+                "커서와 size를 제외한 조회 조건을 만족하는 전체 피드 수"
+        );
+    }
+
+    static List<FieldDescriptor> userFeedListResponseFields(String description) {
+        return feedListResponseFields(
+                description,
+                "커서와 size에 무관한 해당 사용자의 전체 공개 피드 수"
+        );
+    }
+
+    private static List<FieldDescriptor> feedListResponseFields(
+            String description,
+            String totalCountDescription
+    ) {
         List<FieldDescriptor> fields = new ArrayList<>();
         fields.add(fieldWithPath("status").type(STRING).description("응답 상태"));
         fields.add(fieldWithPath("data").type(ARRAY).description(description));
@@ -93,13 +117,8 @@ final class FeedRestDocsFields {
         fields.add(fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"));
         fields.add(fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서").optional());
         fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"));
-        return fields;
-    }
-
-    static List<FieldDescriptor> userFeedListResponseFields(String description) {
-        List<FieldDescriptor> fields = feedListResponseFields(description);
-        fields.add(fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"));
-        fields.add(fieldWithPath("data[].commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"));
+        fields.add(fieldWithPath("meta.totalCount").type(NUMBER)
+                .description(totalCountDescription));
         return fields;
     }
 }

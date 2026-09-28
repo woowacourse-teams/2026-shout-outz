@@ -141,21 +141,21 @@ class FeedCommentRepositoryIntegrationTest {
                 1
         );
 
-        assertThat(page.comments()).hasSize(1);
-        assertThat(page.comments().getFirst().getId()).isEqualTo(secondRoot.getId());
+        assertThat(page.items()).hasSize(1);
+        assertThat(page.items().getFirst().getId()).isEqualTo(secondRoot.getId());
         assertThat(page.hasNext()).isTrue();
 
         FeedCommentPage nextPage = feedCommentQueryRepository.findRootCommentsPage(
                 feed.getId(),
                 new FeedCommentCursor(
-                        page.comments().getFirst().getCreatedAt(),
-                        page.comments().getFirst().getId(),
+                        page.items().getFirst().getCreatedAt(),
+                        page.items().getFirst().getId(),
                         FeedCommentSort.LATEST
                 ),
                 FeedCommentSort.LATEST,
                 1
         );
-        assertThat(nextPage.comments()).extracting(FeedComment::getId)
+        assertThat(nextPage.items()).extracting(FeedComment::getId)
                 .containsExactly(firstRoot.getId());
 
         FeedCommentPage oldestPage = feedCommentQueryRepository.findRootCommentsPage(
@@ -164,11 +164,14 @@ class FeedCommentRepositoryIntegrationTest {
                 FeedCommentSort.OLDEST,
                 1
         );
-        assertThat(oldestPage.comments().getFirst().getId()).isEqualTo(firstRoot.getId());
+        assertThat(oldestPage.items().getFirst().getId()).isEqualTo(firstRoot.getId());
         assertThat(feedCommentQueryRepository.findReplies(
                 feed.getId(),
                 List.of(firstRoot.getId())
         )).extracting(FeedComment::getId).containsExactly(reply.getId());
+        assertThat(page.totalCount()).isEqualTo(3L);
+        assertThat(nextPage.totalCount()).isEqualTo(3L);
+        assertThat(oldestPage.totalCount()).isEqualTo(3L);
     }
 
     private static String uniqueSuffix() {

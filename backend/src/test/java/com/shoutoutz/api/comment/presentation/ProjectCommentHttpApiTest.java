@@ -40,6 +40,7 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Instant;
@@ -100,7 +101,7 @@ class ProjectCommentHttpApiTest {
                                 false
                         )
                 ),
-                new ProjectCommentFindResponse.Meta("next-cursor", true)
+                new SliceMetaResponse("next-cursor", true, 2L)
         ));
 
         mockMvc.perform(get("/api/v1/projects/{projectId}/comments", 100L)
@@ -118,6 +119,7 @@ class ProjectCommentHttpApiTest {
                 .andExpect(jsonPath("$.data[1].parentId").value(501))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andExpect(jsonPath("$.meta.totalCount").value(2))
                 .andDo(document(
                         "project-comment-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -150,6 +152,9 @@ class ProjectCommentHttpApiTest {
                                         fieldWithPath("data[].author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data[].author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data[].author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data[].author.userType").type(STRING).description("작성자 유형").optional(),
+                                        fieldWithPath("data[].author.track").type(STRING).description("작성자 트랙").optional(),
+                                        fieldWithPath("data[].author.cohort").type(NUMBER).description("작성자 기수").optional(),
                                         fieldWithPath("data[].author.avatarImageId").type(NUMBER)
                                                 .description("작성자 프로필 이미지 미디어 ID")
                                                 .optional(),
@@ -169,11 +174,19 @@ class ProjectCommentHttpApiTest {
                                                 .description("댓글 내용이 수정된 적이 있는지 여부"),
                                         fieldWithPath("data[].deleted").type(BOOLEAN)
                                                 .description("댓글이 삭제되었는지 여부"),
+                                        fieldWithPath("data[].agreeCount").type(NUMBER)
+                                                .description("댓글 공감 수"),
+                                        fieldWithPath("data[].agreedByMe").type(BOOLEAN)
+                                                .description("현재 사용자의 공감 여부. 비로그인이면 false"),
+                                        fieldWithPath("meta").type(OBJECT)
+                                                .description("페이지네이션 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 cursor")
                                                 .optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN)
-                                                .description("다음 페이지 존재 여부")
+                                                .description("다음 페이지 존재 여부"),
+                                        fieldWithPath("meta.totalCount").type(NUMBER)
+                                                .description("커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수")
                                 )
                                 .build())
                 ));
@@ -205,7 +218,7 @@ class ProjectCommentHttpApiTest {
                         false,
                         false
                 )),
-                new ProjectCommentFindResponse.Meta(null, false)
+                new SliceMetaResponse(null, false, 1L)
         ));
 
         mockMvc.perform(get("/api/v1/projects/{projectId}/comments", 100L)
@@ -241,7 +254,7 @@ class ProjectCommentHttpApiTest {
                         false,
                         true
                 )),
-                new ProjectCommentFindResponse.Meta(null, false)
+                new SliceMetaResponse(null, false, 1L)
         ));
 
         mockMvc.perform(get("/api/v1/projects/{projectId}/comments", 100L))
@@ -329,6 +342,9 @@ class ProjectCommentHttpApiTest {
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
+                                        fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
+                                        fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
                                         fieldWithPath("data.author.avatarUrl").type(STRING)
                                                 .description("작성자 프로필 이미지 공개 URL")
                                                 .optional(),
@@ -416,6 +432,9 @@ class ProjectCommentHttpApiTest {
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
+                                        fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
+                                        fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
                                         fieldWithPath("data.author.avatarUrl").type(STRING)
                                                 .description("작성자 프로필 이미지 공개 URL")
                                                 .optional(),

@@ -1,11 +1,13 @@
 package com.shoutoutz.api.comment.presentation.dto.response;
 
+import com.shoutoutz.api.common.response.SliceMetaResponse;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.List;
 
 public record ProjectCommentFindResponse(
         List<Comment> comments,
-        Meta meta
+        SliceMetaResponse meta
 ) {
 
     public ProjectCommentFindResponse {
@@ -21,21 +23,42 @@ public record ProjectCommentFindResponse(
             Instant updatedAt,
             boolean editable,
             boolean edited,
-            boolean deleted
+            boolean deleted,
+            long agreeCount,
+            boolean agreedByMe
     ) {
+
+        public Comment(
+                Long id,
+                String content,
+                Author author,
+                Long parentId,
+                Instant createdAt,
+                Instant updatedAt,
+                boolean editable,
+                boolean edited,
+                boolean deleted
+        ) {
+            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted, 0L, false);
+        }
     }
 
     public record Author(
             Long userId,
             String displayName,
+            UserType userType,
+            String track,
+            Short cohort,
             Long avatarImageId,
             String avatarUrl
     ) {
-    }
-
-    public record Meta(
-            String nextCursor,
-            boolean hasNext
-    ) {
+        public Author(
+                Long userId,
+                String displayName,
+                Long avatarImageId,
+                String avatarUrl
+        ) {
+            this(userId, displayName, null, null, null, avatarImageId, avatarUrl);
+        }
     }
 }

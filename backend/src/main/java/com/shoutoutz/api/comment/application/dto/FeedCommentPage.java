@@ -4,14 +4,15 @@ import com.shoutoutz.api.comment.domain.FeedComment;
 import java.util.List;
 
 /**
- * 전체 피드 댓글 조회시의 응답 객체
+ * 전체 피드 댓글 조회 결과
  */
 public record FeedCommentPage(
-        List<FeedComment> comments,
-        boolean hasNext
+        List<FeedComment> items,
+        boolean hasNext,
+        long totalCount
 ) {
 
     public FeedCommentPage {
-        comments = List.copyOf(comments);
+        items = List.copyOf(items);
     }
 }

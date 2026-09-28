@@ -69,7 +69,8 @@ class UserCommentHttpApiTest {
                                 comment(12L, UserCommentType.PROJECT, 202L)
                         ),
                         "next-cursor",
-                        true
+                        true,
+                        4L
                 ));
 
         mockMvc.perform(get("/api/v1/users/me/comments")
@@ -92,6 +93,7 @@ class UserCommentHttpApiTest {
                 .andExpect(jsonPath("$.data[1].type").value("PROJECT"))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andExpect(jsonPath("$.meta.totalCount").value(4))
                 .andDo(document(
                         "user-comment-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -123,11 +125,16 @@ class UserCommentHttpApiTest {
                                         fieldWithPath("data[].content").type(STRING).description("댓글 내용"),
                                         fieldWithPath("data[].createdAt").type(STRING).description("댓글 작성 시각"),
                                         fieldWithPath("data[].updatedAt").type(STRING).description("댓글 최종 수정 시각"),
+                                        fieldWithPath("data[].agreeCount").type(NUMBER).description("댓글 공감 수"),
+                                        fieldWithPath("data[].agreedByMe").type(BOOLEAN)
+                                                .description("현재 사용자의 공감 여부"),
                                         fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 조회용 커서").optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN)
-                                                .description("다음 페이지 존재 여부")
+                                                .description("다음 페이지 존재 여부"),
+                                        fieldWithPath("meta.totalCount").type(NUMBER)
+                                                .description("커서와 size에 무관한 조회 가능한 전체 작성 댓글 수")
                                 )
                                 .build())
                 ));
@@ -140,7 +147,7 @@ class UserCommentHttpApiTest {
     void usesDefaultParameters() throws Exception {
         UserCommentFindRequest request = new UserCommentFindRequest(null, null);
         given(userCommentService.findAll(1L, request))
-                .willReturn(new UserCommentResult(List.of(), null, false));
+                .willReturn(new UserCommentResult(List.of(), null, false, 0L));
 
         mockMvc.perform(get("/api/v1/users/me/comments")
                         .requestAttr(
@@ -150,7 +157,8 @@ class UserCommentHttpApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andExpect(jsonPath("$.meta.nextCursor").doesNotExist())
-                .andExpect(jsonPath("$.meta.hasNext").value(false));
+                .andExpect(jsonPath("$.meta.hasNext").value(false))
+                .andExpect(jsonPath("$.meta.totalCount").value(0));
 
         verify(userCommentService).findAll(1L, request);
     }

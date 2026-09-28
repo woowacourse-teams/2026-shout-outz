@@ -30,8 +30,8 @@ public enum ProjectErrorCode implements ErrorCode {
     /**
      * 프로젝트 식별자 (Slug) 에러 코드
      */
-    PROJECT_INVALID_SLUG("리포지토리 이름으로 프로젝트 주소를 만들 수 없습니다. 소문자와 숫자, 하이픈만 사용할 수 있습니다."),
-    PROJECT_DUPLICATE_SLUG("이미 사용 중인 프로젝트 주소입니다. 리포지토리 이름이 같은 프로젝트가 있는지 확인해주세요."),
+    PROJECT_INVALID_SLUG("리포지토리 이름으로 프로젝트 주소를 만들 수 없습니다. 이름에 영문자나 숫자가 있어야 하고, 주소는 100자를 넘을 수 없습니다."),
+    PROJECT_DUPLICATE_SLUG("이미 사용 중인 프로젝트 주소입니다. 리포지토리 이름이 같거나 앞 연도나 특수문자만 다른 프로젝트가 있는지 확인해주세요."),
 
     /**
      * 프로젝트 링크 에러 코드
@@ -50,10 +50,9 @@ public enum ProjectErrorCode implements ErrorCode {
     /**
      * 프로젝트 팀원 에러 코드
      */
-    PROJECT_MEMBER_REQUIRED("팀 프로젝트만 등록할 수 있습니다. 등록자 외 팀원을 한 명 이상 입력해주세요."),
+    PROJECT_MEMBER_REQUIRED("팀 프로젝트만 등록할 수 있습니다. 팀원을 한 명 이상 입력해주세요."),
     PROJECT_DUPLICATE_MEMBER("팀원 목록에 중복된 사용자가 있습니다."),
     PROJECT_INVALID_MEMBER("팀원으로 추가할 수 없는 사용자가 포함되어 있습니다. 활동 중인 우아한테크코스 크루나 코치만 팀원이 될 수 있습니다."),
-    PROJECT_MEMBER_INCLUDES_REGISTRANT("등록자 본인은 팀원 목록에 넣지 않아도 됩니다."),
 
     /**
      * 프로젝트 썸네일 에러 코드
@@ -83,7 +82,10 @@ public enum ProjectErrorCode implements ErrorCode {
     PROJECT_INVALID_SERVICE_STATUS("배포 URL이 없으면 서비스 상태를 운영 중으로 둘 수 없습니다."),
 
     PROJECT_COHORT_NULL("프로젝트 기수는 null일 수 없습니다."),
-    PROJECT_REGISTERED_BY_NULL("프로젝트 등록자는 null일 수 없습니다.");
+    PROJECT_REGISTERED_BY_NULL("프로젝트 등록자는 null일 수 없습니다."),
+
+    REACTION_TYPE_INVALID("지원하지 않는 프로젝트 반응 타입입니다."),
+    REACTION_NOT_FOUND("요청한 반응을 찾을 수 없습니다.");
 
     private final String message;
 }

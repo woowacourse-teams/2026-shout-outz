@@ -11,12 +11,9 @@ import java.util.Map;
 public record UserProjectResult(
         List<UserProjectItem> projects,
         boolean hasNext,
+        long totalCount,
         Map<Long, URI> mediaUrls
 ) {
-
-    public UserProjectResult(List<UserProjectItem> projects, boolean hasNext) {
-        this(projects, hasNext, Map.of());
-    }
 
     public UserProjectResult {
         projects = List.copyOf(projects);

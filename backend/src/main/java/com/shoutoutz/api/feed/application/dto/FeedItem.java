@@ -19,11 +19,46 @@ public record FeedItem(
         List<Media> media,
         long likeCount,
         long commentCount,
+        long bookmarkCount,
+        boolean likedByMe,
+        boolean bookmarkedByMe,
         int relevanceRank,
         Instant createdAt,
         Instant updatedAt
 ) {
+    public FeedItem(
+            long feedId,
+            String title,
+            String content,
+            Author author,
+            List<Category> categories,
+            List<Media> media,
+            long likeCount,
+            long commentCount,
+            int relevanceRank,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        this(
+                feedId,
+                title,
+                content,
+                author,
+                categories,
+                media,
+                likeCount,
+                commentCount,
+                0L,
+                false,
+                false,
+                relevanceRank,
+                createdAt,
+                updatedAt
+        );
+    }
+
     public record Author(
+            Long userId,
             String handle,
             String displayName,
             UserType userType,
@@ -31,6 +66,17 @@ public record FeedItem(
             Cohort cohort,
             Long avatarImageId
     ) {
+
+        public Author(
+                String handle,
+                String displayName,
+                UserType userType,
+                Track track,
+                Cohort cohort,
+                Long avatarImageId
+        ) {
+            this(null, handle, displayName, userType, track, cohort, avatarImageId);
+        }
     }
 
     public record Category(

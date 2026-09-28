@@ -122,7 +122,7 @@ public class ProjectService {
         List<Long> memberIds = request.memberHandles().stream()
                 .map(this::resolveMemberId)
                 .toList();
-        ProjectMembers members = ProjectMembers.of(registeredBy, memberIds);
+        ProjectMembers members = ProjectMembers.of(memberIds);
 
         Project savedProject = projectRepository.save(project, request.techTagIds(), members.getUserIds());
         return new ProjectCreateResponse(savedProject.getId(), savedProject.getSlug().value());
@@ -159,7 +159,7 @@ public class ProjectService {
         }
         validateDescriptionMedia(descriptionMd, loginUserId);
         List<Long> memberIds = resolveMemberIds(request.memberHandles(), projectRepository.findMemberIds(projectId));
-        ProjectMembers members = ProjectMembers.of(project.getRegisteredBy(), memberIds);
+        ProjectMembers members = ProjectMembers.of(memberIds);
 
         Project savedProject = projectRepository.update(updated, request.techTagIds(), members.getUserIds());
         return ProjectUpdateResponse.from(savedProject);
@@ -171,15 +171,23 @@ public class ProjectService {
      */
     @Transactional(readOnly = true)
     public ProjectFindAllResponse findAll(ProjectFindAllRequest request) {
+        return findAll(request, null);
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectFindAllResponse findAll(ProjectFindAllRequest request, Long viewerId) {
         ProjectSort sort = request.resolvedSort();
-        ProjectPage page = projectRepository.findAll(new ProjectSearchCondition(
+        ProjectSearchCondition condition = new ProjectSearchCondition(
                 request.keyword(),
                 request.resolvedCohorts(),
                 request.resolvedTechTagIds(),
                 sort,
                 request.resolvedSize(),
                 request.resolvedCursor()
-        ));
+        );
+        ProjectPage page = viewerId == null
+                ? projectRepository.findAll(condition)
+                : projectRepository.findAll(condition, viewerId);
         ProjectCursor nextCursor = page.nextCursor(sort);
         Map<Long, URI> mediaUrls = resolveProjectMediaUrls(page.items());
         return ProjectFindAllResponse.of(
@@ -195,20 +203,37 @@ public class ProjectService {
      */
     @Transactional(readOnly = true)
     public UserProjectResult findAllByUser(String handle, UserProjectFindRequest request) {
+        return findAllByUser(handle, request, null);
+    }
+
+    @Transactional(readOnly = true)
+    public UserProjectResult findAllByUser(
+            String handle,
+            UserProjectFindRequest request,
+            Long viewerId
+    ) {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND));
         if (user.isDeleted()) {
-            return new UserProjectResult(List.of(), false);
+            return new UserProjectResult(List.of(), false, 0L, Map.of());
         }
 
-        UserProjectResult result = userProjectQueryRepository.findAllByUserId(
-                user.getId(),
-                request.resolvedCursor(),
-                request.resolvedSize()
-        );
+        UserProjectResult result = viewerId == null
+                ? userProjectQueryRepository.findAllByUserId(
+                        user.getId(),
+                        request.resolvedCursor(),
+                        request.resolvedSize()
+                )
+                : userProjectQueryRepository.findAllByUserId(
+                        user.getId(),
+                        viewerId,
+                        request.resolvedCursor(),
+                        request.resolvedSize()
+                );
         return new UserProjectResult(
                 result.projects(),
                 result.hasNext(),
+                result.totalCount(),
                 resolveUserProjectMediaUrls(result.projects())
         );
     }

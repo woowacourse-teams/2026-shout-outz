@@ -123,7 +123,7 @@ class ProjectCommentRepositoryIntegrationTest {
                 ProjectCommentSort.LATEST,
                 10
         );
-        assertThat(page.comments()).extracting(ProjectComment::getId)
+        assertThat(page.items()).extracting(ProjectComment::getId)
                 .contains(root.getId());
         assertThat(projectCommentQueryRepository.findReplies(
                 project.getId(),
@@ -158,21 +158,21 @@ class ProjectCommentRepositoryIntegrationTest {
                 1
         );
 
-        assertThat(page.comments()).hasSize(1);
-        assertThat(page.comments().getFirst().getId()).isEqualTo(secondRoot.getId());
+        assertThat(page.items()).hasSize(1);
+        assertThat(page.items().getFirst().getId()).isEqualTo(secondRoot.getId());
         assertThat(page.hasNext()).isTrue();
 
         ProjectCommentPage nextPage = projectCommentQueryRepository.findRootCommentsPage(
                 project.getId(),
                 new ProjectCommentCursor(
-                        page.comments().getFirst().getCreatedAt(),
-                        page.comments().getFirst().getId(),
+                        page.items().getFirst().getCreatedAt(),
+                        page.items().getFirst().getId(),
                         ProjectCommentSort.LATEST
                 ),
                 ProjectCommentSort.LATEST,
                 1
         );
-        assertThat(nextPage.comments()).extracting(ProjectComment::getId)
+        assertThat(nextPage.items()).extracting(ProjectComment::getId)
                 .containsExactly(firstRoot.getId());
 
         ProjectCommentPage oldestPage = projectCommentQueryRepository.findRootCommentsPage(
@@ -181,11 +181,14 @@ class ProjectCommentRepositoryIntegrationTest {
                 ProjectCommentSort.OLDEST,
                 1
         );
-        assertThat(oldestPage.comments().getFirst().getId()).isEqualTo(firstRoot.getId());
+        assertThat(oldestPage.items().getFirst().getId()).isEqualTo(firstRoot.getId());
         assertThat(projectCommentQueryRepository.findReplies(
                 project.getId(),
                 List.of(firstRoot.getId())
         )).extracting(ProjectComment::getId).containsExactly(reply.getId());
+        assertThat(page.totalCount()).isEqualTo(3L);
+        assertThat(nextPage.totalCount()).isEqualTo(3L);
+        assertThat(oldestPage.totalCount()).isEqualTo(3L);
     }
 
     private static Project project(Long registeredBy) {

@@ -1,5 +1,7 @@
 package com.shoutoutz.api.project.presentation;
 
+import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
+import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.project.application.ProjectCursorCodec;
@@ -33,6 +35,7 @@ public class UserProjectHttpApi {
 
     @GetMapping
     public ResponseEntity<SuccessResponse<List<UserProjectResponse>>> findAll(
+            @LoginUser(required = false) AuthenticatedUser loginUser,
             @Pattern(
                     regexp = "^[A-Za-z0-9_-]{2,30}$",
                     message = "handle 형식이 올바르지 않습니다."
@@ -40,12 +43,19 @@ public class UserProjectHttpApi {
             @PathVariable String handle,
             @Valid @ModelAttribute UserProjectFindRequest request
     ) {
-        UserProjectResult result = projectService.findAllByUser(handle, request);
+        Long viewerId = AuthenticatedUser.userIdOrNull(loginUser);
+        UserProjectResult result = viewerId == null
+                ? projectService.findAllByUser(handle, request)
+                : projectService.findAllByUser(handle, request, viewerId);
         List<UserProjectResponse> response = UserProjectResponse.from(
                 result.projects(),
                 result.mediaUrls()
         );
-        SliceMetaResponse meta = new SliceMetaResponse(encodeNextCursor(result.nextCursor()), result.hasNext());
+        SliceMetaResponse meta = new SliceMetaResponse(
+                encodeNextCursor(result.nextCursor()),
+                result.hasNext(),
+                result.totalCount()
+        );
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));
     }

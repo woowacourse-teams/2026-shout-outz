@@ -82,6 +82,7 @@ class FeedHttpApiTest {
                         List.of(feed),
                         "next-cursor",
                         true,
+                        12L,
                         mediaUrls()
                 ));
 
@@ -96,6 +97,7 @@ class FeedHttpApiTest {
                 .andExpect(jsonPath("$.data[0].media[0].mediaId").value(21L))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andExpect(jsonPath("$.meta.totalCount").value(12))
                 .andDo(document(
                         "feed-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -131,7 +133,7 @@ class FeedHttpApiTest {
     @DisplayName("존재하지 않는 카테고리 ID로 조회하면 빈 목록을 반환한다")
     void findAllFeedByMissingCategoryId() throws Exception {
         given(feedService.findAllFeed(any(FeedFindAllRequest.class)))
-                .willReturn(new FeedFindAllResult(List.of(), null, false));
+                .willReturn(new FeedFindAllResult(List.of(), null, false, 0L, Map.of()));
 
         mockMvc.perform(get("/api/v1/feeds").queryParam("categoryId", "0"))
                 .andExpect(status().isOk())
@@ -246,7 +248,7 @@ class FeedHttpApiTest {
                                         fieldWithPath("title").type(STRING)
                                                 .description("피드 제목(공백 제외 1자 이상, Unicode 최대 100자)"),
                                         fieldWithPath("content").type(STRING)
-                                                .description("Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자)"),
+                                                .description("Markdown 본문(공백 제외 1자 이상, Unicode 최대 5,000자)"),
                                         fieldWithPath("categoryIds").type(ARRAY)
                                                 .description("활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"),
                                         fieldWithPath("mediaIds").type(ARRAY)
@@ -286,7 +288,8 @@ class FeedHttpApiTest {
                                 .responseSchema(Schema.schema("FeedUpdateSuccessResponse"))
                                 .requestFields(
                                         fieldWithPath("title").type(STRING).description("변경할 피드 제목"),
-                                        fieldWithPath("content").type(STRING).description("변경할 Markdown 본문"),
+                                        fieldWithPath("content").type(STRING)
+                                                .description("변경할 Markdown 본문(공백 제외 1자 이상, Unicode 최대 5,000자)"),
                                         fieldWithPath("categoryIds").type(ARRAY)
                                                 .description("변경할 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음)"),
                                         fieldWithPath("mediaIds").type(ARRAY).description("변경할 본문 미디어 ID 목록")
@@ -294,6 +297,34 @@ class FeedHttpApiTest {
                                 .responseFields(commandSuccessResponseFields("data."))
                                 .build())
                 ));
+    }
+
+    @Test
+    @DisplayName("작성 및 수정 본문은 Unicode 5,000자까지 허용한다")
+    void acceptContentAtLimit() throws Exception {
+        String atLimit = "😀".repeat(5_000);
+        given(feedService.saveFeed(eq(USER_ID), any(FeedSaveRequest.class)))
+                .willReturn(commandResponse());
+        given(feedService.updateFeed(eq(FEED_ID), eq(USER_ID), any(FeedUpdateRequest.class)))
+                .willReturn(commandResponse());
+
+        mockMvc.perform(post("/api/v1/feeds")
+                        .with(authenticated())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"제목","content":"%s","categoryIds":[1],"mediaIds":[]}
+                                """.formatted(atLimit)))
+                .andExpect(status().isCreated());
+        mockMvc.perform(put("/api/v1/feeds/{feedId}", FEED_ID)
+                        .with(authenticated())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"제목","content":"%s","categoryIds":[1],"mediaIds":[]}
+                                """.formatted(atLimit)))
+                .andExpect(status().isOk());
+
+        verify(feedService).saveFeed(eq(USER_ID), any(FeedSaveRequest.class));
+        verify(feedService).updateFeed(eq(FEED_ID), eq(USER_ID), any(FeedUpdateRequest.class));
     }
 
     @Test
@@ -336,9 +367,9 @@ class FeedHttpApiTest {
     }
 
     @Test
-    @DisplayName("본문이 공백이거나 Unicode 500자를 초과하면 400을 반환한다")
+    @DisplayName("작성 본문이 공백이거나 Unicode 5,000자를 초과하면 400을 반환한다")
     void rejectInvalidContent() throws Exception {
-        String overLimit = "😀".repeat(501);
+        String overLimit = "😀".repeat(5_001);
 
         mockMvc.perform(post("/api/v1/feeds")
                         .with(authenticated())
@@ -389,9 +420,9 @@ class FeedHttpApiTest {
     }
 
     @Test
-    @DisplayName("수정 본문이 공백이거나 Unicode 500자를 초과하면 400을 반환한다")
+    @DisplayName("수정 본문이 공백이거나 Unicode 5,000자를 초과하면 400을 반환한다")
     void rejectInvalidUpdateContent() throws Exception {
-        String overLimit = "😀".repeat(501);
+        String overLimit = "😀".repeat(5_001);
 
         mockMvc.perform(put("/api/v1/feeds/{feedId}", FEED_ID)
                         .with(authenticated())
@@ -735,6 +766,7 @@ class FeedHttpApiTest {
                 "피드 제목",
                 "본문입니다.",
                 new FeedItem.Author(
+                        USER_ID,
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,

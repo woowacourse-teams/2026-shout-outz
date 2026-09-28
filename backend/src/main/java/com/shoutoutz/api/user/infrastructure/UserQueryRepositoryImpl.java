@@ -5,6 +5,7 @@ import com.shoutoutz.api.user.application.UserQueryRepository;
 import com.shoutoutz.api.user.application.dto.UserProfileCounts;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
+import com.shoutoutz.api.user.application.dto.UserSearchPage;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.domain.profile.Track;
 import java.util.List;
@@ -52,15 +53,16 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
     }
 
     @Override
-    public List<UserSearchItem> searchWoowaMember(
+    public UserSearchPage searchWoowaMember(
             String keyword,
             UserSearchCursor cursor,
-            int limit
+            int size
     ) {
         String escapedKeyword = escapeLikePattern(keyword);
         String sql = """
                 WITH ranked_woowa_users AS (
                     SELECT
+                        u.id AS user_id,
                         u.handle,
                         up.display_name,
                         up.user_type,
@@ -90,7 +92,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                 .addValue("keyword", keyword)
                 .addValue("prefixPattern", escapedKeyword + "%")
                 .addValue("containsPattern", "%" + escapedKeyword + "%")
-                .addValue("limit", limit);
+                .addValue("limit", size + 1);
 
         if (cursor != null) {
             sql += """
@@ -115,10 +117,11 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                 LIMIT :limit
                 """;
 
-        return jdbcTemplate.query(
+        List<UserSearchItem> items = jdbcTemplate.query(
                 sql,
                 parameters,
                 (resultSet, rowNumber) -> new UserSearchItem(
+                        resultSet.getObject("user_id", Long.class),
                         resultSet.getString("handle"),
                         resultSet.getString("display_name"),
                         UserType.valueOf(resultSet.getString("user_type")),
@@ -128,6 +131,36 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                         resultSet.getInt("relevance_rank")
                 )
         );
+        return createSearchPage(items, size, countWoowaMember(keyword));
+    }
+
+    private long countWoowaMember(String keyword) {
+        String escapedKeyword = escapeLikePattern(keyword);
+        return jdbcTemplate.queryForObject(
+                """
+                        SELECT COUNT(*)
+                        FROM users u
+                        JOIN user_profiles up ON up.user_id = u.id
+                        WHERE u.status = 'ACTIVE'
+                          AND up.user_type IN ('WOOWACOURSE_CREW', 'WOOWACOURSE_COACH')
+                          AND (
+                              lower(u.handle) LIKE lower(:containsPattern) ESCAPE '\\'
+                              OR lower(up.display_name) LIKE lower(:containsPattern) ESCAPE '\\'
+                          )
+                        """,
+                new MapSqlParameterSource(
+                        "containsPattern",
+                        "%" + escapedKeyword + "%"
+                ),
+                Long.class
+        );
+    }
+
+    private UserSearchPage createSearchPage(List<UserSearchItem> items, int size, long totalCount) {
+        if (items.size() <= size) {
+            return new UserSearchPage(items, false, totalCount);
+        }
+        return new UserSearchPage(items.subList(0, size), true, totalCount);
     }
 
     private Track toTrack(String value) {

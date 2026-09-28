@@ -19,6 +19,8 @@ import com.shoutoutz.api.news.domain.News;
 import com.shoutoutz.api.news.domain.NewsCta;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
 import com.shoutoutz.api.news.domain.NewsRepository;
+import com.shoutoutz.api.news.domain.NewsReactionCounts;
+import com.shoutoutz.api.news.domain.NewsReactionRepository;
 import com.shoutoutz.api.news.domain.enums.NewsType;
 import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.request.NewsFindAllRequest;
@@ -34,6 +36,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,11 +60,14 @@ class NewsServiceTest {
     @Mock
     private Clock clock;
 
+    @Mock
+    private NewsReactionRepository newsReactionRepository;
+
     private NewsService newsService;
 
     @BeforeEach
     void setUp() {
-        newsService = new NewsService(newsRepository, newsQueryRepository, clock);
+        newsService = new NewsService(newsRepository, newsQueryRepository, clock, newsReactionRepository);
     }
 
     @Test
@@ -270,7 +276,9 @@ class NewsServiceTest {
         );
         when(clock.instant()).thenReturn(PUBLISHED_AT);
         when(newsQueryRepository.findAll(null, null, PUBLISHED_AT, null, 1))
-                .thenReturn(new NewsPage(List.of(event), true));
+                .thenReturn(new NewsPage(List.of(event), true, 5L));
+        when(newsReactionRepository.findCountsByNewsIds(List.of(102L), null))
+                .thenReturn(Map.of(102L, new NewsReactionCounts(7L, true)));
 
         NewsFindAllResponse response = newsService.findAll(
                 new NewsFindAllRequest(null, null, "LATEST", 1, null)
@@ -280,11 +288,14 @@ class NewsServiceTest {
         assertThat(response.items().get(0).id()).isEqualTo(102L);
         assertThat(response.items().get(0).type()).isEqualTo(NewsType.EVENT);
         assertThat(response.items().get(0).eventStatus()).isEqualTo(EventStatus.ONGOING);
+        assertThat(response.items().get(0).likeCount()).isEqualTo(7L);
+        assertThat(response.items().get(0).likedByMe()).isTrue();
         assertThat(response.meta().hasNext()).isTrue();
         assertThat(NewsCursorCodec.decode(response.meta().nextCursor()).id()).isEqualTo(102L);
         assertThat(NewsCursorCodec.decode(response.meta().nextCursor()).publishedAt())
                 .isEqualTo(PUBLISHED_AT);
         verify(newsQueryRepository).findAll(null, null, PUBLISHED_AT, null, 1);
+        verify(newsReactionRepository).findCountsByNewsIds(List.of(102L), null);
     }
 
     @Test
@@ -303,7 +314,7 @@ class NewsServiceTest {
         );
         when(clock.instant()).thenReturn(PUBLISHED_AT);
         when(newsQueryRepository.findAll(NewsType.NOTICE, null, PUBLISHED_AT, null, 20))
-                .thenReturn(new NewsPage(List.of(notice), false));
+                .thenReturn(new NewsPage(List.of(notice), false, 1L));
 
         NewsFindAllResponse response = newsService.findAll(
                 new NewsFindAllRequest("NOTICE", null, "LATEST", 20, null)
@@ -345,6 +356,8 @@ class NewsServiceTest {
         );
         when(newsQueryRepository.findDetailById(102L, true)).thenReturn(Optional.of(detail));
         when(clock.instant()).thenReturn(PUBLISHED_AT);
+        when(newsReactionRepository.findCountsByNewsId(102L, null))
+                .thenReturn(new NewsReactionCounts(11L, true));
 
         NewsFindResponse response = newsService.findDetail(
                 new NewsFindRequest(102L, true)
@@ -356,10 +369,13 @@ class NewsServiceTest {
         assertThat(response.author().userId()).isEqualTo(1L);
         assertThat(response.author().name()).isEqualTo("샤라웃 운영팀");
         assertThat(response.eventStatus()).isEqualTo(EventStatus.ONGOING);
+        assertThat(response.likeCount()).isEqualTo(11L);
+        assertThat(response.likedByMe()).isTrue();
         assertThat(response.cta().label()).isEqualTo("프로젝트 등록하기");
         assertThat(response.previous().id()).isEqualTo(101L);
         assertThat(response.next().id()).isEqualTo(103L);
         verify(newsQueryRepository).findDetailById(102L, true);
+        verify(newsReactionRepository).findCountsByNewsId(102L, null);
         verify(clock).instant();
     }
 

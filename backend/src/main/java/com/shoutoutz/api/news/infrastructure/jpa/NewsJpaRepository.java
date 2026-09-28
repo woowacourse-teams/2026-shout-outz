@@ -139,6 +139,30 @@ public interface NewsJpaRepository extends JpaRepository<NewsEntity, Long> {
             Pageable pageable
     );
 
+    long countByDeletedAtIsNull();
+
+    long countByDeletedAtIsNullAndType(NewsType type);
+
+    @Query("""
+            SELECT COUNT(news)
+            FROM NewsEntity news
+            WHERE news.deletedAt IS NULL
+              AND news.type = com.shoutoutz.api.news.domain.enums.NewsType.EVENT
+              AND (
+                    (:eventStatus = 'UPCOMING'
+                        AND news.eventStartAt > :now)
+                    OR (:eventStatus = 'ONGOING'
+                        AND news.eventStartAt <= :now
+                        AND news.eventEndAt >= :now)
+                    OR (:eventStatus = 'ENDED'
+                        AND news.eventEndAt < :now)
+              )
+            """)
+    long countAllForListByEventStatus(
+            @Param("eventStatus") String eventStatus,
+            @Param("now") Instant now
+    );
+
     @Query("""
             SELECT new com.shoutoutz.api.news.application.dto.NewsDetail$Navigation(
                 news.id,

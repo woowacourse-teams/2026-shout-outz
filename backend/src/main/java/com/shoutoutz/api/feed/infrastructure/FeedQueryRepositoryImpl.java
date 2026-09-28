@@ -6,6 +6,7 @@ import com.shoutoutz.api.feed.application.FeedQueryRepository;
 import com.shoutoutz.api.feed.application.dto.FeedCursor;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.FeedMediaReference;
+import com.shoutoutz.api.feed.application.dto.FeedPage;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
@@ -14,6 +15,7 @@ import com.shoutoutz.api.user.domain.profile.Track;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,16 +34,52 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
 
     @Override
     public Optional<FeedItem> findById(long feedId) {
+        return findById(feedId, null);
+    }
+
+    @Override
+    public Optional<FeedItem> findById(long feedId, Long viewerId) {
         List<FeedBaseRow> rows = jdbcTemplate.query(
                 """
                         SELECT p.id,
                                p.title,
                                p.content,
-                               0 AS like_count,
-                               0 AS comment_count,
+                               (
+                                   SELECT COUNT(*)
+                                   FROM feed_reactions r
+                                   WHERE r.feed_id = p.id
+                                     AND r.reaction_type = 'LIKE'
+                               ) AS like_count,
+                               (
+                                   SELECT COUNT(*)
+                                   FROM feed_reactions r
+                                   WHERE r.feed_id = p.id
+                                     AND r.reaction_type = 'BOOKMARK'
+                               ) AS bookmark_count,
+                               (
+                                   SELECT COUNT(*)
+                                   FROM feed_comments c
+                                   WHERE c.feed_id = p.id
+                                     AND c.deleted_at IS NULL
+                               ) AS comment_count,
+                               EXISTS (
+                                   SELECT 1
+                                   FROM feed_reactions r
+                                   WHERE r.feed_id = p.id
+                                     AND r.user_id = :viewerId
+                                     AND r.reaction_type = 'LIKE'
+                               ) AS liked_by_me,
+                               EXISTS (
+                                   SELECT 1
+                                   FROM feed_reactions r
+                                   WHERE r.feed_id = p.id
+                                     AND r.user_id = :viewerId
+                                     AND r.reaction_type = 'BOOKMARK'
+                               ) AS bookmarked_by_me,
                                0 AS relevance_rank,
                                p.created_at,
                                p.updated_at,
+                               u.id AS user_id,
                                u.handle,
                                up.display_name,
                                up.user_type,
@@ -54,22 +92,37 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                         WHERE p.id = :feedId
                           AND p.deleted_at IS NULL
                         """,
-                Map.of("feedId", feedId),
+                new MapSqlParameterSource()
+                        .addValue("feedId", feedId)
+                        .addValue("viewerId", viewerId, Types.BIGINT),
                 (resultSet, rowNumber) -> toBaseRow(resultSet)
         );
         return assembleItems(rows).stream().findFirst();
     }
 
     @Override
-    public List<FeedItem> findAll(
+    public FeedPage findAll(
             FeedSort sort,
             Long categoryId,
             String keyword,
             FeedCursor cursor,
-            int limit
+            int size
+    ) {
+        return findAll(sort, categoryId, keyword, null, cursor, size);
+    }
+
+    @Override
+    public FeedPage findAll(
+            FeedSort sort,
+            Long categoryId,
+            String keyword,
+            Long viewerId,
+            FeedCursor cursor,
+            int size
     ) {
         StringBuilder sql = createFindAllQuery(sort);
-        MapSqlParameterSource parameters = new MapSqlParameterSource("limit", limit);
+        MapSqlParameterSource parameters = new MapSqlParameterSource("limit", size + 1)
+                .addValue("viewerId", viewerId, Types.BIGINT);
         appendKeywordParameters(parameters, keyword);
         appendCategoryFilter(sql, parameters, categoryId);
         appendCursorAndOrder(sql, parameters, sort, cursor);
@@ -80,15 +133,27 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                 parameters,
                 (resultSet, rowNumber) -> toBaseRow(resultSet)
         );
-        return assembleItems(rows);
+        List<FeedItem> items = assembleItems(rows);
+        return createPage(items, size, countAll(categoryId, keyword));
     }
 
     @Override
-    public List<FeedItem> findAllByAuthorId(long authorId, FeedCursor cursor, int limit) {
+    public FeedPage findAllByAuthorId(long authorId, FeedCursor cursor, int size) {
+        return findAllByAuthorId(authorId, null, cursor, size);
+    }
+
+    @Override
+    public FeedPage findAllByAuthorId(
+            long authorId,
+            Long viewerId,
+            FeedCursor cursor,
+            int size
+    ) {
         StringBuilder sql = createUserFeedQuery();
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("authorId", authorId)
-                .addValue("limit", limit);
+                .addValue("viewerId", viewerId, Types.BIGINT)
+                .addValue("limit", size + 1);
         sql.append("  AND p.author_id = :authorId\n");
         appendLatestCursorAndOrder(sql, parameters, cursor);
         sql.append("LIMIT :limit");
@@ -98,7 +163,48 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                 parameters,
                 (resultSet, rowNumber) -> toBaseRow(resultSet)
         );
-        return assembleItems(rows);
+        List<FeedItem> items = assembleItems(rows);
+        return createPage(items, size, countAllByAuthorId(authorId));
+    }
+
+    private long countAll(Long categoryId, String keyword) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT COUNT(*)
+                FROM feeds p
+                WHERE p.deleted_at IS NULL
+                """);
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        if (keyword != null) {
+            sql.append("""
+                      AND (
+                          lower(p.title) LIKE lower(:containsPattern) ESCAPE '\\'
+                          OR lower(p.content) LIKE lower(:containsPattern) ESCAPE '\\'
+                      )
+                    """);
+            appendKeywordParameters(parameters, keyword);
+        }
+        appendCategoryFilter(sql, parameters, categoryId);
+        return jdbcTemplate.queryForObject(sql.toString(), parameters, Long.class);
+    }
+
+    private long countAllByAuthorId(long authorId) {
+        return jdbcTemplate.queryForObject(
+                """
+                        SELECT COUNT(*)
+                        FROM feeds p
+                        WHERE p.deleted_at IS NULL
+                          AND p.author_id = :authorId
+                        """,
+                Map.of("authorId", authorId),
+                Long.class
+        );
+    }
+
+    private FeedPage createPage(List<FeedItem> items, int size, long totalCount) {
+        if (items.size() <= size) {
+            return new FeedPage(items, false, totalCount);
+        }
+        return new FeedPage(items.subList(0, size), true, totalCount);
     }
 
     @Override
@@ -144,11 +250,42 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                     SELECT p.id,
                            p.title,
                            p.content,
-                           0 AS like_count,
-                           0 AS comment_count,
+                           (
+                               SELECT COUNT(*)
+                               FROM feed_reactions r
+                               WHERE r.feed_id = p.id
+                                 AND r.reaction_type = 'LIKE'
+                           ) AS like_count,
+                           (
+                               SELECT COUNT(*)
+                               FROM feed_reactions r
+                               WHERE r.feed_id = p.id
+                                 AND r.reaction_type = 'BOOKMARK'
+                           ) AS bookmark_count,
+                           (
+                               SELECT COUNT(*)
+                               FROM feed_comments c
+                               WHERE c.feed_id = p.id
+                                 AND c.deleted_at IS NULL
+                           ) AS comment_count,
+                           EXISTS (
+                               SELECT 1
+                               FROM feed_reactions r
+                               WHERE r.feed_id = p.id
+                                 AND r.user_id = :viewerId
+                                 AND r.reaction_type = 'LIKE'
+                           ) AS liked_by_me,
+                           EXISTS (
+                               SELECT 1
+                               FROM feed_reactions r
+                               WHERE r.feed_id = p.id
+                                 AND r.user_id = :viewerId
+                                 AND r.reaction_type = 'BOOKMARK'
+                           ) AS bookmarked_by_me,
                            0 AS relevance_rank,
                            p.created_at,
                            p.updated_at,
+                           u.id AS user_id,
                            u.handle,
                            up.display_name,
                            up.user_type,
@@ -165,10 +302,36 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                            p.title,
                            p.content,
                            COALESCE(reactions.like_count, 0) AS like_count,
-                           0 AS comment_count,
+                           (
+                               SELECT COUNT(*)
+                               FROM feed_reactions r
+                               WHERE r.feed_id = p.id
+                                 AND r.reaction_type = 'BOOKMARK'
+                           ) AS bookmark_count,
+                           (
+                               SELECT COUNT(*)
+                               FROM feed_comments c
+                               WHERE c.feed_id = p.id
+                                 AND c.deleted_at IS NULL
+                           ) AS comment_count,
+                           EXISTS (
+                               SELECT 1
+                               FROM feed_reactions r
+                               WHERE r.feed_id = p.id
+                                 AND r.user_id = :viewerId
+                                 AND r.reaction_type = 'LIKE'
+                           ) AS liked_by_me,
+                           EXISTS (
+                               SELECT 1
+                               FROM feed_reactions r
+                               WHERE r.feed_id = p.id
+                                 AND r.user_id = :viewerId
+                                 AND r.reaction_type = 'BOOKMARK'
+                           ) AS bookmarked_by_me,
                            0 AS relevance_rank,
                            p.created_at,
                            p.updated_at,
+                           u.id AS user_id,
                            u.handle,
                            up.display_name,
                            up.user_type,
@@ -191,8 +354,38 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                         SELECT p.id,
                                p.title,
                                p.content,
-                               0 AS like_count,
-                               0 AS comment_count,
+                               (
+                                   SELECT COUNT(*)
+                                   FROM feed_reactions r
+                                   WHERE r.feed_id = p.id
+                                     AND r.reaction_type = 'LIKE'
+                               ) AS like_count,
+                               (
+                                   SELECT COUNT(*)
+                                   FROM feed_reactions r
+                                   WHERE r.feed_id = p.id
+                                     AND r.reaction_type = 'BOOKMARK'
+                               ) AS bookmark_count,
+                               (
+                                   SELECT COUNT(*)
+                                   FROM feed_comments c
+                                   WHERE c.feed_id = p.id
+                                     AND c.deleted_at IS NULL
+                               ) AS comment_count,
+                               EXISTS (
+                                   SELECT 1
+                                   FROM feed_reactions r
+                                   WHERE r.feed_id = p.id
+                                     AND r.user_id = :viewerId
+                                     AND r.reaction_type = 'LIKE'
+                               ) AS liked_by_me,
+                               EXISTS (
+                                   SELECT 1
+                                   FROM feed_reactions r
+                                   WHERE r.feed_id = p.id
+                                     AND r.user_id = :viewerId
+                                     AND r.reaction_type = 'BOOKMARK'
+                               ) AS bookmarked_by_me,
                                CASE
                                    WHEN lower(p.title) = lower(:keyword) THEN 0
                                    WHEN lower(p.title) LIKE lower(:prefixPattern) ESCAPE '\\' THEN 1
@@ -201,6 +394,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                                END AS relevance_rank,
                                p.created_at,
                                p.updated_at,
+                               u.id AS user_id,
                                u.handle,
                                up.display_name,
                                up.user_type,
@@ -236,13 +430,34 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                        ) AS like_count,
                        (
                            SELECT COUNT(*)
+                           FROM feed_reactions r
+                           WHERE r.feed_id = p.id
+                             AND r.reaction_type = 'BOOKMARK'
+                       ) AS bookmark_count,
+                       (
+                           SELECT COUNT(*)
                            FROM feed_comments c
                            WHERE c.feed_id = p.id
                              AND c.deleted_at IS NULL
                        ) AS comment_count,
+                       EXISTS (
+                           SELECT 1
+                           FROM feed_reactions r
+                           WHERE r.feed_id = p.id
+                             AND r.user_id = :viewerId
+                             AND r.reaction_type = 'LIKE'
+                       ) AS liked_by_me,
+                       EXISTS (
+                           SELECT 1
+                           FROM feed_reactions r
+                           WHERE r.feed_id = p.id
+                             AND r.user_id = :viewerId
+                             AND r.reaction_type = 'BOOKMARK'
+                       ) AS bookmarked_by_me,
                        0 AS relevance_rank,
                        p.created_at,
                        p.updated_at,
+                       u.id AS user_id,
                        u.handle,
                        up.display_name,
                        up.user_type,
@@ -478,20 +693,27 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
     }
 
     private FeedBaseRow toBaseRow(ResultSet resultSet) throws SQLException {
+        UserType userType = UserType.valueOf(resultSet.getString("user_type"));
+        Track track = toTrack(resultSet.getString("track"));
+        Cohort cohort = toCohort(resultSet.getObject("cohort", Short.class));
         return new FeedBaseRow(
                 resultSet.getLong("id"),
                 resultSet.getString("title"),
                 resultSet.getString("content"),
                 new FeedItem.Author(
+                        resultSet.getObject("user_id", Long.class),
                         resultSet.getString("handle"),
                         resultSet.getString("display_name"),
-                        UserType.valueOf(resultSet.getString("user_type")),
-                        toTrack(resultSet.getString("track")),
-                        toCohort(resultSet.getObject("cohort", Short.class)),
+                        userType,
+                        userType == UserType.WOOWACOURSE_CREW ? track : null,
+                        userType == UserType.WOOWACOURSE_CREW ? cohort : null,
                         resultSet.getObject("avatar_image_id", Long.class)
                 ),
                 resultSet.getLong("like_count"),
                 resultSet.getLong("comment_count"),
+                resultSet.getLong("bookmark_count"),
+                resultSet.getBoolean("liked_by_me"),
+                resultSet.getBoolean("bookmarked_by_me"),
                 resultSet.getInt("relevance_rank"),
                 resultSet.getTimestamp("created_at").toInstant(),
                 resultSet.getTimestamp("updated_at").toInstant()
@@ -519,6 +741,9 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
             FeedItem.Author author,
             long likeCount,
             long commentCount,
+            long bookmarkCount,
+            boolean likedByMe,
+            boolean bookmarkedByMe,
             int relevanceRank,
             java.time.Instant createdAt,
             java.time.Instant updatedAt
@@ -536,6 +761,9 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                     media,
                     likeCount,
                     commentCount,
+                    bookmarkCount,
+                    likedByMe,
+                    bookmarkedByMe,
                     relevanceRank,
                     createdAt,
                     updatedAt

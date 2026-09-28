@@ -30,8 +30,8 @@ public record GithubRepositoryUrl(String value) {
     private static final int MAX_LENGTH = 2_048;
 
     /**
-     * 길이는 사용자가 입력한 원본으로 검증한다.
-     * 정규화로 짧아진 값을 재면, 입력칸에서 막힌 길이가 서버에서는 통과하는 어긋남이 생긴다.
+     * 길이는 정규화하기 전 값으로 검증한다. 요청 DTO 가 앞뒤 공백만 잘라 넘기므로, DTO 의 길이 검증과 같은 값을 잰다.
+     * 정규화로 짧아진 값을 재면, DTO 에서 막힌 길이가 여기서는 통과하는 어긋남이 생긴다.
      */
     public GithubRepositoryUrl {
         validateNotNullOrBlank(value, ProjectErrorCode.PROJECT_INVALID_GITHUB_REPOSITORY_URL);

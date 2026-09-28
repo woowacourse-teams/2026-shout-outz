@@ -75,7 +75,8 @@ public class FeedCommentRepositoryImpl implements FeedCommentRepository, FeedCom
                 .limit(size)
                 .map(FeedCommentMapper::toDomain)
                 .toList();
-        return new FeedCommentPage(roots, hasNext);
+        long totalCount = feedCommentJpaRepository.countByFeedIdAndDeletedAtIsNull(feedId);
+        return new FeedCommentPage(roots, hasNext, totalCount);
     }
 
     @Override

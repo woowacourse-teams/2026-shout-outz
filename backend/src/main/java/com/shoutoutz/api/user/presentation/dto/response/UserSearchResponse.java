@@ -21,6 +21,7 @@ public record UserSearchResponse(
     }
 
     public record Item(
+            Long userId,
             String handle,
             String displayName,
             UserType userType,
@@ -30,27 +31,40 @@ public record UserSearchResponse(
             String avatarUrl
     ) {
 
+        public Item(
+                String handle,
+                String displayName,
+                UserType userType,
+                String track,
+                Short cohort,
+                Long avatarImageId,
+                String avatarUrl
+        ) {
+            this(null, handle, displayName, userType, track, cohort, avatarImageId, avatarUrl);
+        }
+
         private static Item from(UserSearchItem item, Map<Long, URI> avatarUrls) {
             return new Item(
+                    item.userId(),
                     item.handle(),
                     item.displayName(),
                     item.userType(),
-                    trackValue(item.track()),
-                    cohortValue(item.cohort()),
+                    trackValue(item.userType(), item.track()),
+                    cohortValue(item.userType(), item.cohort()),
                     item.avatarImageId(),
                     toUrl(findUrl(avatarUrls, item.avatarImageId()))
             );
         }
 
-        private static String trackValue(Track track) {
-            if (track == null) {
+        private static String trackValue(UserType userType, Track track) {
+            if (userType != UserType.WOOWACOURSE_CREW || track == null) {
                 return null;
             }
             return track.getValue();
         }
 
-        private static Short cohortValue(Cohort cohort) {
-            if (cohort == null) {
+        private static Short cohortValue(UserType userType, Cohort cohort) {
+            if (userType != UserType.WOOWACOURSE_CREW || cohort == null) {
                 return null;
             }
             return (short) cohort.getValue();
@@ -62,16 +76,6 @@ public record UserSearchResponse(
 
         private static URI findUrl(Map<Long, URI> avatarUrls, Long avatarImageId) {
             return avatarImageId == null ? null : avatarUrls.get(avatarImageId);
-        }
-    }
-
-    public record Meta(
-            String nextCursor,
-            boolean hasNext
-    ) {
-
-        public static Meta from(UserSearchResult result) {
-            return new Meta(result.nextCursor(), result.hasNext());
         }
     }
 }

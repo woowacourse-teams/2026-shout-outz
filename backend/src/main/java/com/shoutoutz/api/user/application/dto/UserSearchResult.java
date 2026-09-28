@@ -8,12 +8,9 @@ public record UserSearchResult(
         List<UserSearchItem> items,
         String nextCursor,
         boolean hasNext,
+        long totalCount,
         Map<Long, URI> avatarUrls
 ) {
-
-    public UserSearchResult(List<UserSearchItem> items, String nextCursor, boolean hasNext) {
-        this(items, nextCursor, hasNext, Map.of());
-    }
 
     public UserSearchResult {
         items = items == null ? List.of() : List.copyOf(items);

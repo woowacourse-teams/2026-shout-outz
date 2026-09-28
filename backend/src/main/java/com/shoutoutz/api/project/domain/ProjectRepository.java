@@ -32,7 +32,7 @@ public interface ProjectRepository {
     List<Long> findTechTagIds(long projectId);
 
     /**
-     * 프로젝트의 팀원 id 를 저장된 순서대로 조회한다. 등록자가 0번이다.
+     * 프로젝트의 팀원 id 를 저장된 순서대로 조회한다.
      */
     List<Long> findMemberIds(long projectId);
 
@@ -54,6 +54,8 @@ public interface ProjectRepository {
      * 승인되고 삭제되지 않은 프로젝트 목록을 조건에 맞게 한 페이지 조회한다.
      */
     ProjectPage findAll(ProjectSearchCondition condition);
+
+    ProjectPage findAll(ProjectSearchCondition condition, Long viewerId);
 
     /**
      * 승인되고 삭제되지 않은 프로젝트 중 조건에 맞는 프로젝트 수를 필터 선택지별로 조회한다.

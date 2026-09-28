@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.shoutoutz.api.comment.application.UserCommentQueryRepository;
 import com.shoutoutz.api.comment.application.dto.UserCommentCursor;
 import com.shoutoutz.api.comment.application.dto.UserCommentItem;
+import com.shoutoutz.api.comment.application.dto.UserCommentPage;
 import com.shoutoutz.api.comment.application.dto.UserCommentType;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -61,22 +62,68 @@ class UserCommentQueryRepositoryIntegrationTest {
         insertProjectComment(pendingProjectId, authorId, "미승인 프로젝트 댓글", BASE_TIME.plusSeconds(270), false);
         insertProjectComment(deletedProjectId, authorId, "삭제된 프로젝트 댓글", BASE_TIME.plusSeconds(260), false);
 
-        List<UserCommentItem> firstPage = userCommentQueryRepository.findAllByAuthorId(authorId, null, 2);
-        UserCommentItem lastItem = firstPage.getLast();
-        List<UserCommentItem> secondPage = userCommentQueryRepository.findAllByAuthorId(
+        UserCommentPage firstPage = userCommentQueryRepository.findAllByAuthorId(authorId, null, 2);
+        UserCommentItem lastItem = firstPage.items().getLast();
+        UserCommentPage secondPage = userCommentQueryRepository.findAllByAuthorId(
                 authorId,
                 new UserCommentCursor(lastItem.createdAt(), lastItem.type(), lastItem.commentId()),
                 2
         );
 
-        assertThat(firstPage).extracting(UserCommentItem::commentId)
+        assertThat(firstPage.items()).extracting(UserCommentItem::commentId)
                 .containsExactly(latestFeedCommentId, projectCommentId);
-        assertThat(firstPage).extracting(UserCommentItem::type)
+        assertThat(firstPage.items()).extracting(UserCommentItem::type)
                 .containsExactly(UserCommentType.FEED, UserCommentType.PROJECT);
-        assertThat(firstPage).extracting(UserCommentItem::targetId)
+        assertThat(firstPage.items()).extracting(UserCommentItem::targetId)
                 .containsExactly(feedId, projectId);
-        assertThat(secondPage).extracting(UserCommentItem::commentId)
+        assertThat(secondPage.items()).extracting(UserCommentItem::commentId)
                 .containsExactly(olderFeedCommentId);
+        assertThat(firstPage.totalCount()).isEqualTo(3L);
+        assertThat(secondPage.totalCount()).isEqualTo(3L);
+    }
+
+    @Test
+    void 내_댓글_조회에_댓글_공감_수와_현재_사용자_여부를_함께_반환한다() {
+        long authorId = insertUser();
+        long viewerId = insertUser();
+        long feedId = insertFeed(authorId, false);
+        long projectId = insertProject(authorId, "APPROVED", false);
+        long feedCommentId = insertFeedComment(feedId, authorId, "피드 댓글", BASE_TIME, false);
+        long projectCommentId = insertProjectComment(
+                projectId,
+                authorId,
+                "프로젝트 댓글",
+                BASE_TIME.plusSeconds(60),
+                false
+        );
+        jdbcTemplate.update(
+                "INSERT INTO feed_comment_reactions (comment_id, user_id, reaction_type) VALUES (?, ?, 'AGREE'), (?, ?, 'AGREE')",
+                feedCommentId, viewerId, feedCommentId, authorId
+        );
+        jdbcTemplate.update(
+                "INSERT INTO project_comment_reactions (comment_id, user_id, reaction_type) VALUES (?, ?, 'AGREE')",
+                projectCommentId, authorId
+        );
+
+        UserCommentPage comments = userCommentQueryRepository.findAllByAuthorId(
+                authorId,
+                viewerId,
+                null,
+                20
+        );
+
+        UserCommentItem feedComment = comments.items().stream()
+                .filter(comment -> comment.commentId() == feedCommentId)
+                .findFirst()
+                .orElseThrow();
+        UserCommentItem projectComment = comments.items().stream()
+                .filter(comment -> comment.commentId() == projectCommentId)
+                .findFirst()
+                .orElseThrow();
+        assertThat(feedComment.agreeCount()).isEqualTo(2L);
+        assertThat(feedComment.agreedByMe()).isTrue();
+        assertThat(projectComment.agreeCount()).isEqualTo(1L);
+        assertThat(projectComment.agreedByMe()).isFalse();
     }
 
     private long insertUser() {

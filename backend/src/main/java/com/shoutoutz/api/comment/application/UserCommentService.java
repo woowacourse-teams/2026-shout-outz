@@ -2,6 +2,7 @@ package com.shoutoutz.api.comment.application;
 
 import com.shoutoutz.api.comment.application.dto.UserCommentCursor;
 import com.shoutoutz.api.comment.application.dto.UserCommentItem;
+import com.shoutoutz.api.comment.application.dto.UserCommentPage;
 import com.shoutoutz.api.comment.application.dto.UserCommentResult;
 import com.shoutoutz.api.comment.presentation.dto.request.UserCommentFindRequest;
 import java.util.List;
@@ -21,26 +22,38 @@ public class UserCommentService {
     public UserCommentResult findAll(long userId, UserCommentFindRequest request) {
         UserCommentCursor cursor = cursorCodec.decode(request.cursor());
         int size = request.resolvedSize();
-        List<UserCommentItem> comments = userCommentQueryRepository.findAllByAuthorId(
+        UserCommentPage page = userCommentQueryRepository.findAllByAuthorId(
                 userId,
                 cursor,
-                size + 1
+                size
         );
-        return createResult(comments, size);
+        return createResult(page);
     }
 
-    private UserCommentResult createResult(List<UserCommentItem> comments, int size) {
-        if (comments.size() <= size) {
-            return new UserCommentResult(comments, null, false);
+    public UserCommentResult findAll(long userId, Long viewerId, UserCommentFindRequest request) {
+        UserCommentCursor cursor = cursorCodec.decode(request.cursor());
+        int size = request.resolvedSize();
+        UserCommentPage page = userCommentQueryRepository.findAllByAuthorId(
+                userId,
+                viewerId,
+                cursor,
+                size
+        );
+        return createResult(page);
+    }
+
+    private UserCommentResult createResult(UserCommentPage page) {
+        if (!page.hasNext()) {
+            return new UserCommentResult(page.items(), null, false, page.totalCount());
         }
 
-        List<UserCommentItem> items = List.copyOf(comments.subList(0, size));
+        List<UserCommentItem> items = page.items();
         UserCommentItem lastItem = items.getLast();
         String nextCursor = cursorCodec.encode(new UserCommentCursor(
                 lastItem.createdAt(),
                 lastItem.type(),
                 lastItem.commentId()
         ));
-        return new UserCommentResult(items, nextCursor, true);
+        return new UserCommentResult(items, nextCursor, true, page.totalCount());
     }
 }

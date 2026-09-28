@@ -74,6 +74,7 @@ class UserProjectHttpApiTest {
                 .willReturn(new UserProjectResult(
                         List.of(project()),
                         true,
+                        3L,
                         Map.of(
                                 12L, URI.create("https://cdn.example.com/thumbnail"),
                                 21L, URI.create("https://cdn.example.com/avatar-21")
@@ -95,11 +96,11 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.data[0].members[0].avatarUrl")
                         .value("https://cdn.example.com/avatar-21"))
                 .andExpect(jsonPath("$.data[0].members[0].avatarImageId").value(21L))
-                .andExpect(jsonPath("$.data[0].members[0].userId").doesNotExist())
+                .andExpect(jsonPath("$.data[0].members[0].userId").value(7L))
                 .andExpect(jsonPath("$.meta.nextCursor").value(ProjectCursorCodec.encode(
                         ProjectCursor.latest(CREATED_AT, 100L))))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
-                .andExpect(jsonPath("$.meta.totalCount").doesNotExist())
+                .andExpect(jsonPath("$.meta.totalCount").value(3))
                 .andDo(document(
                         "user-project-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -130,12 +131,13 @@ class UserProjectHttpApiTest {
     @DisplayName("파라미터를 생략하면 기본 조회 조건을 사용한다.")
     void usesDefaultParameters() throws Exception {
         given(projectService.findAllByUser("zzaekkii", new UserProjectFindRequest(null, null)))
-                .willReturn(new UserProjectResult(List.of(), false));
+                .willReturn(new UserProjectResult(List.of(), false, 0L, Map.of()));
 
         mockMvc.perform(get("/api/v1/users/{handle}/projects", "zzaekkii"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isEmpty())
-                .andExpect(jsonPath("$.meta.hasNext").value(false));
+                .andExpect(jsonPath("$.meta.hasNext").value(false))
+                .andExpect(jsonPath("$.meta.totalCount").value(0));
 
         verify(projectService).findAllByUser("zzaekkii", new UserProjectFindRequest(null, null));
     }
@@ -225,12 +227,19 @@ class UserProjectHttpApiTest {
                         .description("GitHub star 수. 동기화 전이면 null이다.").optional(),
                 fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"),
                 fieldWithPath("data[].commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"),
+                fieldWithPath("data[].bookmarkCount").type(NUMBER).description("북마크 수"),
+                fieldWithPath("data[].likedByMe").type(BOOLEAN)
+                        .description("요청자의 좋아요 여부. 비로그인이면 false다."),
+                fieldWithPath("data[].bookmarkedByMe").type(BOOLEAN)
+                        .description("요청자의 북마크 여부. 비로그인이면 false다."),
                 fieldWithPath("data[].techTags").type(ARRAY).description("기술 스택"),
                 fieldWithPath("data[].techTags[].id").type(NUMBER).description("기술 스택 ID"),
                 fieldWithPath("data[].techTags[].displayName").type(STRING).description("기술 스택 이름"),
                 fieldWithPath("data[].members").type(ARRAY).description("프로젝트 팀원"),
+                fieldWithPath("data[].members[].userId").type(NUMBER).description("사용자 ID. 이관 팀원은 null이다.").optional(),
                 fieldWithPath("data[].members[].handle").type(STRING).description("사용자 handle").optional(),
                 fieldWithPath("data[].members[].displayName").type(STRING).description("표시 이름"),
+                fieldWithPath("data[].members[].userType").type(STRING).description("사용자 유형").optional(),
                 fieldWithPath("data[].members[].cohort").type(NUMBER).description("기수").optional(),
                 new EnumFields(Track.class).withPath("data[].members[].track").description("트랙").optional(),
                 fieldWithPath("data[].members[].avatarImageId").type(NUMBER).description("프로필 이미지 미디어 ID").optional(),
@@ -241,7 +250,9 @@ class UserProjectHttpApiTest {
                         .description("이관 팀원의 GitHub 프로필 URL").optional(),
                 fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
                 fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서").optional(),
-                fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부")
+                fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"),
+                fieldWithPath("meta.totalCount").type(NUMBER)
+                        .description("커서와 size에 무관한 사용자의 전체 공개 참여 프로젝트 수")
         );
     }
 

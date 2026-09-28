@@ -78,7 +78,8 @@ public class ProjectCommentRepositoryImpl implements ProjectCommentRepository, P
                 .limit(size)
                 .map(ProjectCommentMapper::toDomain)
                 .toList();
-        return new ProjectCommentPage(roots, hasNext);
+        long totalCount = projectCommentJpaRepository.countByProjectIdAndDeletedAtIsNull(projectId);
+        return new ProjectCommentPage(roots, hasNext, totalCount);
     }
 
     @Override

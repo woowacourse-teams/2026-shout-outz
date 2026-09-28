@@ -1,5 +1,6 @@
 package com.shoutoutz.api.verification.presentation.dto.response;
 
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestItem;
 import com.shoutoutz.api.verification.domain.VerificationRequestStatus;
@@ -8,7 +9,7 @@ import java.util.List;
 
 public record AdminVerificationRequestFindAllResponse(
         List<Item> items,
-        String nextCursor
+        SliceMetaResponse meta
 ) {
 
     public AdminVerificationRequestFindAllResponse {
@@ -17,11 +18,11 @@ public record AdminVerificationRequestFindAllResponse(
 
     public static AdminVerificationRequestFindAllResponse from(
             List<AdminVerificationRequestItem> items,
-            String nextCursor
+            SliceMetaResponse meta
     ) {
         return new AdminVerificationRequestFindAllResponse(
                 items.stream().map(Item::from).toList(),
-                nextCursor
+                meta
         );
     }
 

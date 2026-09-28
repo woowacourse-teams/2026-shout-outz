@@ -54,6 +54,7 @@ class UserProjectListRepositoryIntegrationTest {
 
         assertThat(ids(result)).containsExactly(registered, archived);
         assertThat(result.hasNext()).isFalse();
+        assertThat(result.totalCount()).isEqualTo(2L);
         assertThat(result.projects()).allSatisfy(project -> {
             assertThat(project.teamName()).isEqualTo("팀");
             assertThat(project.serviceStatus()).isEqualTo(ServiceStatus.OPERATING);
@@ -80,8 +81,29 @@ class UserProjectListRepositoryIntegrationTest {
 
         assertThat(ids(firstResult)).containsExactly(first, third);
         assertThat(firstResult.hasNext()).isTrue();
+        assertThat(firstResult.totalCount()).isEqualTo(3L);
         assertThat(ids(secondResult)).containsExactly(second);
         assertThat(secondResult.hasNext()).isFalse();
+        assertThat(secondResult.totalCount()).isEqualTo(3L);
+    }
+
+    @Test
+    @DisplayName("사용자 프로젝트 목록도 현재 사용자의 좋아요와 북마크 여부를 조회한다.")
+    void readsViewerReactionState() {
+        long userId = saveUser();
+        long projectId = saveMemberProject(userId, BASE_TIME);
+        jdbcTemplate.update(
+                "INSERT INTO project_reactions (project_id, user_id, reaction_type) VALUES (?, ?, 'LIKE'), (?, ?, 'BOOKMARK')",
+                projectId, userId, projectId, userId
+        );
+
+        UserProjectResult result = userProjectQueryRepository.findAllByUserId(userId, userId, null, 20);
+        UserProjectItem project = result.projects().getFirst();
+
+        assertThat(project.likeCount()).isEqualTo(1L);
+        assertThat(project.bookmarkCount()).isEqualTo(1L);
+        assertThat(project.likedByMe()).isTrue();
+        assertThat(project.bookmarkedByMe()).isTrue();
     }
 
     private long saveMemberProject(long userId, Instant createdAt) {
