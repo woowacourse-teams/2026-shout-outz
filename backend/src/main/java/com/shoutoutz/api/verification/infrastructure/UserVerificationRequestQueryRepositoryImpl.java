@@ -76,7 +76,7 @@ public class UserVerificationRequestQueryRepositoryImpl
 
     @Override
     public long countAll(VerificationRequestStatus status) {
-        Long count = jdbcTemplate.queryForObject(
+        return jdbcTemplate.queryForObject(
                 """
                         SELECT COUNT(*)
                         FROM user_verification_requests
@@ -85,6 +85,5 @@ public class UserVerificationRequestQueryRepositoryImpl
                 new MapSqlParameterSource("status", status.name()),
                 Long.class
         );
-        return count == null ? 0L : count;
     }
 }

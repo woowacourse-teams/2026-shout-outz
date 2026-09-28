@@ -314,7 +314,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 parameters,
                 ProjectListJdbcRepository::mapUserProject
         );
-        Long totalCount = jdbcTemplate.queryForObject(
+        long totalCount = jdbcTemplate.queryForObject(
                 "WITH filtered AS (" + filteredProjectsSql + ") SELECT COUNT(*) FROM filtered",
                 parameters,
                 Long.class
@@ -327,7 +327,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
         return new UserProjectResult(
                 withUserProjectDetails(projects),
                 hasNext,
-                totalCount == null ? 0L : totalCount,
+                totalCount,
                 Map.of()
         );
     }

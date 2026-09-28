@@ -138,7 +138,7 @@ public class UserCommentQueryRepositoryImpl implements UserCommentQueryRepositor
 
     @Override
     public long countAllByAuthorId(long authorId) {
-        Long count = jdbcTemplate.queryForObject(
+        return jdbcTemplate.queryForObject(
                 """
                         SELECT
                             (
@@ -161,6 +161,5 @@ public class UserCommentQueryRepositoryImpl implements UserCommentQueryRepositor
                 new MapSqlParameterSource("authorId", authorId),
                 Long.class
         );
-        return count == null ? 0L : count;
     }
 }

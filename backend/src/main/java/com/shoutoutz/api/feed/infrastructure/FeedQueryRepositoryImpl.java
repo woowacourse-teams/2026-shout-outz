@@ -181,13 +181,12 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
             appendKeywordParameters(parameters, keyword);
         }
         appendCategoryFilter(sql, parameters, categoryId);
-        Long count = jdbcTemplate.queryForObject(sql.toString(), parameters, Long.class);
-        return count == null ? 0L : count;
+        return jdbcTemplate.queryForObject(sql.toString(), parameters, Long.class);
     }
 
     @Override
     public long countAllByAuthorId(long authorId) {
-        Long count = jdbcTemplate.queryForObject(
+        return jdbcTemplate.queryForObject(
                 """
                         SELECT COUNT(*)
                         FROM feeds p
@@ -197,7 +196,6 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                 Map.of("authorId", authorId),
                 Long.class
         );
-        return count == null ? 0L : count;
     }
 
     @Override

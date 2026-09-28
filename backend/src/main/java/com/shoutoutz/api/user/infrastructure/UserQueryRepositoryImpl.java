@@ -133,7 +133,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
     @Override
     public long countWoowaMember(String keyword) {
         String escapedKeyword = escapeLikePattern(keyword);
-        Long count = jdbcTemplate.queryForObject(
+        return jdbcTemplate.queryForObject(
                 """
                         SELECT COUNT(*)
                         FROM users u
@@ -151,7 +151,6 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                 ),
                 Long.class
         );
-        return count == null ? 0L : count;
     }
 
     private Track toTrack(String value) {
