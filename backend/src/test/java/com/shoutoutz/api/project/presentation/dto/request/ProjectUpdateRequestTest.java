@@ -91,6 +91,52 @@ class ProjectUpdateRequestTest {
                 .containsExactly("title");
     }
 
+    @Test
+    void 배포_URL_없이_운영_중이면_거절한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("").replace("\"https://loop.team\"", "null"),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("serviceStatusValid");
+    }
+
+    @Test
+    void 배포_URL이_공백뿐이고_운영_중이면_거절한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("").replace("\"https://loop.team\"", "\"   \""),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("serviceStatusValid");
+    }
+
+    @Test
+    void 배포_URL_없이_종료_상태면_허용한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("")
+                        .replace("\"https://loop.team\"", "null")
+                        .replace("\"OPERATING\"", "\"CLOSED\""),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(validator.validate(request)).isEmpty();
+    }
+
+    @Test
+    void 배포_URL이_있으면_종료_상태도_허용한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("").replace("\"OPERATING\"", "\"CLOSED\""),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(validator.validate(request)).isEmpty();
+    }
+
     private static String baseJson(String thumbnailField) {
         return """
                 {

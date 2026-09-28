@@ -8,6 +8,7 @@ import com.shoutoutz.api.common.util.DataResolveUtil;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.ServiceStatus;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -134,6 +135,16 @@ public final class ProjectUpdateRequest {
     @JsonIgnore
     public boolean isThumbnailImageIdProvided() {
         return thumbnailImageIdProvided;
+    }
+
+    /**
+     * 배포 URL 이 없으면 운영 중일 수 없다. 도메인도 같은 규칙을 내부 불변식으로 검사하지만,
+     * 사용자 입력은 API 레이어에서 400으로 거른다. 오류 응답의 field 는 serviceStatusValid 다.
+     */
+    @JsonIgnore
+    @AssertTrue(message = "deploymentUrl이 없으면 serviceStatus를 OPERATING으로 둘 수 없습니다.")
+    public boolean isServiceStatusValid() {
+        return deploymentUrl != null || serviceStatus != ServiceStatus.OPERATING;
     }
 
     public String githubRepositoryUrl() {
