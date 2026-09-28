@@ -38,7 +38,7 @@ describe('validateProjectForm', () => {
       });
 
       expect(Object.keys(errors).sort()).toEqual(
-        ['cohort', 'githubRepositoryUrl', 'members', 'tagline', 'techTags', 'title'].sort(),
+        ['cohort', 'githubRepositoryUrl', 'tagline', 'techTags', 'title'].sort(),
       );
     });
 
@@ -82,7 +82,7 @@ describe('validateProjectForm', () => {
 
 describe('toProjectCreateRequest', () => {
   it('폼 값을 등록 요청 본문으로 바꾼다', () => {
-    expect(toProjectCreateRequest(FILLED)).toEqual({
+    expect(toProjectCreateRequest(FILLED, 'woojin')).toEqual({
       title: '루프 (Loop)',
       teamName: '루프팀',
       tagline: '스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구',
@@ -92,21 +92,23 @@ describe('toProjectCreateRequest', () => {
       deploymentUrl: 'https://loop.team',
       descriptionMd: '## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.',
       techTagIds: [1, 2],
-      memberHandles: ['dhyepark', 'zzaekkii'],
+      memberHandles: ['woojin', 'dhyepark', 'zzaekkii'],
     });
   });
 
   it('비어 있는 배포 URL은 null로 보낸다', () => {
-    expect(toProjectCreateRequest({ ...FILLED, deploymentUrl: '' }).deploymentUrl).toBeNull();
+    expect(
+      toProjectCreateRequest({ ...FILLED, deploymentUrl: '' }, 'woojin').deploymentUrl,
+    ).toBeNull();
   });
 
   it('앞뒤 공백은 잘라서 보낸다', () => {
-    expect(toProjectCreateRequest({ ...FILLED, title: '  루프 (Loop)  ' }).title).toBe(
+    expect(toProjectCreateRequest({ ...FILLED, title: '  루프 (Loop)  ' }, 'woojin').title).toBe(
       '루프 (Loop)',
     );
   });
 
   it('검증을 통과하지 않은 값이 오면 던진다', () => {
-    expect(() => toProjectCreateRequest({ ...FILLED, cohort: null })).toThrow();
+    expect(() => toProjectCreateRequest({ ...FILLED, cohort: null }, 'woojin')).toThrow();
   });
 });

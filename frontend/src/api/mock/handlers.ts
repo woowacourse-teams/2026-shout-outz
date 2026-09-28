@@ -111,8 +111,7 @@ export const handlers = [
 
   http.put('/api/v1/projects/:projectId', async ({ params, request }) => {
     const projectId = Number(params.projectId);
-    const project = projects[projectId - 1];
-    if (!project) return new HttpResponse(null, { status: 404 });
+    if (!projects[projectId - 1]) return new HttpResponse(null, { status: 404 });
 
     const update = (await request.json()) as ProjectUpdateRequest;
     const knownMembers = projects.flatMap((item) => item.members.map(toProjectMember));
@@ -139,7 +138,7 @@ export const handlers = [
         const tag = getTechTags().find((item) => item.id === id);
         return tag ? [tag] : [];
       }),
-      members: [toProjectMember(project.members[0]!), ...members],
+      members,
     });
 
     return HttpResponse.json({

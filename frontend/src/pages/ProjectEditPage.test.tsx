@@ -35,5 +35,5 @@ it('수정 시 작성자를 맨 앞에 고정하고 추가 팀원이 없어도 �
   await user.click(screen.getByRole('button', { name: '팀원 추가하기' }));
   await user.click(screen.getByRole('button', { name: '프로젝트 수정하기' }));
 
-  await waitFor(() => expect(body).toEqual(expect.objectContaining({ memberHandles: [] })));
+  await waitFor(() => expect(body).toEqual(expect.objectContaining({ memberHandles: ['woojin'] })));
 });

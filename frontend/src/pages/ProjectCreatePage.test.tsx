@@ -142,7 +142,7 @@ describe('ProjectCreatePage', () => {
         deploymentUrl: FORM.deploymentUrl,
         descriptionMd: FORM.descriptionMd,
         techTagIds: [1],
-        memberHandles: ['zzaekkii'],
+        memberHandles: ['woojin', 'zzaekkii'],
       }),
     );
   });
@@ -157,7 +157,7 @@ describe('ProjectCreatePage', () => {
       await submit(user);
 
       expect(await screen.findByText('등록이 완료됐어요.')).toBeInTheDocument();
-      expect(received.body).toEqual(expect.objectContaining({ memberHandles: [] }));
+      expect(received.body).toEqual(expect.objectContaining({ memberHandles: ['woojin'] }));
       expect(screen.getByRole('link', { name: '프로젝트 목록으로' })).toHaveAttribute(
         'href',
         '/projects',

@@ -49,8 +49,11 @@ export function validateProjectForm(values: ProjectFormValues): ProjectFormError
   return errors;
 }
 
-/** 검증을 통과한 폼 값을 등록 요청 본문으로 바꾼다. 비어 있는 선택 입력은 null로 보낸다. */
-export function toProjectCreateRequest(values: ProjectFormValues): ProjectCreateRequest {
+/** 작성자를 첫 팀원으로 포함해 등록 요청 본문으로 바꾼다. 비어 있는 선택 입력은 null로 보낸다. */
+export function toProjectCreateRequest(
+  values: ProjectFormValues,
+  authorHandle: string,
+): ProjectCreateRequest {
   if (values.cohort === null) {
     throw new Error('기수를 고르지 않은 폼 값은 등록 요청으로 바꿀 수 없습니다.');
   }
@@ -65,12 +68,20 @@ export function toProjectCreateRequest(values: ProjectFormValues): ProjectCreate
     deploymentUrl: values.deploymentUrl.trim() || null,
     descriptionMd: values.descriptionMd.trim(),
     techTagIds: values.techTags.map((tag) => tag.id),
-    memberHandles: values.members.map((member) => member.handle),
+    memberHandles: [
+      authorHandle,
+      ...values.members
+        .filter((member) => member.handle !== authorHandle)
+        .map((member) => member.handle),
+    ],
   };
 }
 
-export function toProjectUpdateRequest(values: ProjectFormValues): ProjectUpdateRequest {
-  const request = toProjectCreateRequest(values);
+export function toProjectUpdateRequest(
+  values: ProjectFormValues,
+  authorHandle: string,
+): ProjectUpdateRequest {
+  const request = toProjectCreateRequest(values, authorHandle);
   return {
     ...request,
     serviceStatus: values.deploymentUrl.trim() ? (values.serviceStatus ?? 'CLOSED') : 'CLOSED',

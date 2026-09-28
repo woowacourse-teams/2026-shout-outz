@@ -203,7 +203,7 @@ export function ProjectForm({
     }
 
     if (editing) {
-      updateProject.mutate(toProjectUpdateRequest(values), {
+      updateProject.mutate(toProjectUpdateRequest(values, author.handle), {
         onSuccess: async (result) => {
           await Promise.all([
             queryClient.invalidateQueries({
@@ -218,7 +218,7 @@ export function ProjectForm({
       return;
     }
 
-    createProject.mutate(toProjectCreateRequest(values), {
+    createProject.mutate(toProjectCreateRequest(values, author.handle), {
       onSuccess: () =>
         analytics.track({
           name: 'project_create_submitted',
