@@ -10,6 +10,7 @@ import { ReviewActions } from '@/components/admin/ReviewActions';
 import { ReviewStatusTab } from '@/components/admin/ReviewStatusTab';
 import { REVIEW_STATUS_LABELS } from '@/constants/admin';
 import type { AdminProject, AdminProjectStatus } from '@/types/admin';
+import { toProjectSlugParam } from '@/utils/project';
 
 /**
  * 프로젝트 등록 심사.
@@ -77,8 +78,8 @@ function ProjectRow({ item }: { item: AdminProject }) {
         <div className="flex flex-wrap items-center gap-2">
           {/* 승인 전 프로젝트 상세는 등록자만 볼 수 있어, 관리자 조회가 열리기 전까지는 404일 수 있다. */}
           <Link
-            to="/projects/$id"
-            params={{ id: String(item.id) }}
+            to="/projects/$slug"
+            params={{ slug: toProjectSlugParam(item.slug) }}
             className="font-bold hover:underline"
           >
             {item.title}

@@ -32,6 +32,17 @@ const MAX_LENGTHS = {
   descriptionMd: 100_000,
 } as const;
 
+/**
+ * 프로젝트 상세 URL의 경로 조각.
+ *
+ * 서버가 `GET /api/v1/projects/@{slug}`로 받으므로 화면 주소도 `@`를 붙여 같은 모양으로 둔다.
+ * 라우터(1.170.29)는 `{@{$slug}}` 같은 접두사 세그먼트를 지원하지 않아 `@`를 파라미터 값에 담는다.
+ */
+export const toProjectSlugParam = (slug: string) => `@${slug}`;
+
+/** URL 파라미터에서 순수 slug를 꺼낸다. `@`가 없는 주소로 들어와도 같은 프로젝트를 찾게 둔다. */
+export const toProjectSlug = (param: string) => param.replace(/^@/, '');
+
 const isHttpUrl = (value: string) => {
   try {
     const { protocol } = new URL(value);

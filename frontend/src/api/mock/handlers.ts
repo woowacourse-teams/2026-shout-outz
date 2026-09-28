@@ -137,8 +137,9 @@ export const handlers = [
       },
     });
   }),
-  http.get('/api/v1/projects/:projectId', ({ params }) => {
-    const index = projects.findIndex((_, index) => String(index + 1) === params.projectId);
+  // 실서버는 상세를 slug로만 받는다. 숫자 id로는 405다.
+  http.get('/api/v1/projects/@:slug', ({ params }) => {
+    const index = projects.findIndex((project) => project.id === params.slug);
     const project = projects[index];
     if (!project) return new HttpResponse(null, { status: 404 });
     return HttpResponse.json({

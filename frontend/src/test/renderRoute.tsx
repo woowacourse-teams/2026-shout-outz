@@ -6,6 +6,7 @@ import { setupServer } from 'msw/node';
 import { handlers } from '@/api/mock/handlers';
 import { ModalProvider } from '@/components/ModalProvider';
 import { routeTree } from '@/routeTree.gen';
+import { PATH_PARAMS_ALLOWED_CHARACTERS } from '@/constants/router';
 
 /**
  * 네트워크가 포함된 라우트 테스트의 공통 환경.
@@ -41,6 +42,7 @@ export function renderRoute(entry: string) {
   });
   const router = createRouter({
     routeTree,
+    pathParamsAllowedCharacters: [...PATH_PARAMS_ALLOWED_CHARACTERS],
     history: createMemoryHistory({ initialEntries: [entry] }),
     scrollRestoration: false,
   });

@@ -7,8 +7,8 @@ import { getButtonStyles } from '@/components/Button';
 import { MarkdownContent } from '@/components/MarkdownContent';
 import { ProjectNotApprovedError } from '@/errors/project';
 
-export function ProjectDetailContent({ projectId }: { projectId: string }) {
-  const { data: project } = useSuspenseQuery(projectDetailQueryOptions(projectId));
+export function ProjectDetailContent({ slug }: { slug: string }) {
+  const { data: project } = useSuspenseQuery(projectDetailQueryOptions(slug));
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
 
   if (project.approvalStatus !== 'APPROVED') {
