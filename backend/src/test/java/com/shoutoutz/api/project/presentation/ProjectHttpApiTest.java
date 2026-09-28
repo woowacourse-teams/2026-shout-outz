@@ -134,7 +134,7 @@ class ProjectHttpApiTest {
             + "승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 조회할 수 있으며, "
             + "볼 수 없는 프로젝트는 존재 여부를 숨기기 위해 없는 프로젝트와 같은 404를 반환한다. "
             + "editable은 요청자가 등록자 본인인지를 나타내며, 수정·삭제 버튼 노출에 쓴다. "
-            + "프로젝트 ID가 숫자가 아니면 400을 반환한다.";
+            + "slug 형식에 맞지 않는 값도 없는 프로젝트와 같은 404를 반환한다. 이후 수정·리액션·댓글 등은 응답의 id로 요청한다.";
     private static final String FILTER_OPTIONS_SUMMARY = "프로젝트 필터 옵션 조회";
     private static final String FILTER_OPTIONS_DESCRIPTION = "필터 모달에 보여줄 기수 및 기술 스택 목록과, "
             + "각 항목을 골랐을 때 나오는 프로젝트 수를 조회한다. 로그인하지 않아도 조회할 수 있다. "
@@ -655,9 +655,9 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("비로그인 사용자도 프로젝트를 상세 조회할 수 있고, 200과 상세 정보를 반환한다.")
     void findsProjectDetail() throws Exception {
-        given(projectService.findDetail(100L, null)).willReturn(projectDetailResponse());
+        given(projectService.findDetail("loop", null)).willReturn(projectDetailResponse());
 
-        mockMvc.perform(get("/api/v1/projects/{projectId}", 100L))
+        mockMvc.perform(get("/api/v1/projects/@{slug}", "loop"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data.id").value(100))
@@ -677,7 +677,7 @@ class ProjectHttpApiTest {
                                 .summary(DETAIL_SUMMARY)
                                 .description(DETAIL_DESCRIPTION)
                                 .pathParameters(
-                                        parameterWithName("projectId").description("조회할 프로젝트 ID")
+                                        parameterWithName("slug").description("조회할 프로젝트 slug. 경로에서는 앞에 @를 붙인다.")
                                 )
                                 .responseSchema(Schema.schema("ProjectFindDetailSuccessResponse"))
                                 .responseFields(
@@ -769,42 +769,31 @@ class ProjectHttpApiTest {
                                 .build())
                 ));
 
-        verify(projectService).findDetail(100L, null);
+        verify(projectService).findDetail("loop", null);
     }
 
     @Test
     @DisplayName("로그인한 경우, 로그인 사용자 ID로 상세 조회한다.")
     void findsProjectDetailWithLoginUser() throws Exception {
-        given(projectService.findDetail(100L, 7L)).willReturn(projectDetailResponse());
+        given(projectService.findDetail("loop", 7L)).willReturn(projectDetailResponse());
 
-        mockMvc.perform(get("/api/v1/projects/{projectId}", 100L)
+        mockMvc.perform(get("/api/v1/projects/@{slug}", "loop")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER)))
                 .andExpect(status().isOk());
 
-        verify(projectService).findDetail(100L, 7L);
+        verify(projectService).findDetail("loop", 7L);
     }
 
     @Test
     @DisplayName("없거나 볼 수 없는 프로젝트인 경우, 404를 반환한다.")
     void rejectsMissingProjectDetail() throws Exception {
-        given(projectService.findDetail(100L, null))
+        given(projectService.findDetail("loop", null))
                 .willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
 
-        mockMvc.perform(get("/api/v1/projects/{projectId}", 100L))
+        mockMvc.perform(get("/api/v1/projects/@{slug}", "loop"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("PROJECT_NOT_FOUND"))
                 .andDo(document("project-find-detail-not-found", resource(detailErrorResource())));
-    }
-
-    @Test
-    @DisplayName("프로젝트 ID가 숫자가 아닌 경우, 400을 반환하고 서비스를 호출하지 않는다.")
-    void rejectsNonNumericProjectId() throws Exception {
-        mockMvc.perform(get("/api/v1/projects/{projectId}", "moamoa"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-                .andDo(document("project-find-detail-invalid-id", resource(detailErrorResource())));
-
-        verifyNoInteractions(projectService);
     }
 
     @Test
@@ -1046,7 +1035,7 @@ class ProjectHttpApiTest {
                 .summary(DETAIL_SUMMARY)
                 .description(DETAIL_DESCRIPTION)
                 .pathParameters(
-                        parameterWithName("projectId").description("조회할 프로젝트 ID")
+                        parameterWithName("slug").description("조회할 프로젝트 slug. 경로에서는 앞에 @를 붙인다.")
                 )
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())

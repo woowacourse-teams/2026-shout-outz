@@ -109,8 +109,8 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     }
 
     @Override
-    public Optional<ProjectDetail> findDetailById(long projectId, Long viewerId) {
-        return projectDetailJdbcRepository.findDetailById(projectId, viewerId);
+    public Optional<ProjectDetail> findDetailBySlug(Slug slug, Long viewerId) {
+        return projectDetailJdbcRepository.findDetailBySlug(slug, viewerId);
     }
 
     /**
