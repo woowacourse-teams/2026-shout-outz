@@ -81,6 +81,15 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     }
 
     @Override
+    public boolean transitionApprovalStatus(
+            long projectId,
+            ApprovalStatus fromStatus,
+            ApprovalStatus toStatus
+    ) {
+        return projectJpaRepository.transitionApprovalStatus(projectId, fromStatus, toStatus) == 1;
+    }
+
+    @Override
     public List<Long> findTechTagIds(long projectId) {
         return projectTagJpaRepository.findAllByIdProjectIdOrderByDisplayOrder(projectId).stream()
                 .map(tag -> tag.getId().getTechTagId())
@@ -111,6 +120,11 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     @Override
     public Optional<ProjectDetail> findDetailBySlug(Slug slug, Long viewerId) {
         return projectDetailJdbcRepository.findDetailBySlug(slug, viewerId);
+    }
+
+    @Override
+    public Optional<ProjectDetail> findDetailById(long projectId, Long viewerId) {
+        return projectDetailJdbcRepository.findDetailById(projectId, viewerId);
     }
 
     /**

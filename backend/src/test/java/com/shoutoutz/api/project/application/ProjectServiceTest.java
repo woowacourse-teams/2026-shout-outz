@@ -32,6 +32,8 @@ import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.DeletionType;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
+import com.shoutoutz.api.project.domain.ProjectApprovalHistory;
+import com.shoutoutz.api.project.domain.ProjectApprovalHistoryRepository;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectDeletion;
 import com.shoutoutz.api.project.domain.ProjectDeletionRepository;
@@ -134,6 +136,9 @@ class ProjectServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private ProjectApprovalHistoryRepository projectApprovalHistoryRepository;
+
+    @Mock
     private ProjectDeletionRepository projectDeletionRepository;
 
     @Mock
@@ -152,6 +157,7 @@ class ProjectServiceTest {
                 mediaMetadataRepository,
                 userProfileRepository,
                 userRepository,
+                projectApprovalHistoryRepository,
                 projectDeletionRepository,
                 userProjectQueryRepository,
                 mediaUrlResolver,
@@ -276,6 +282,13 @@ class ProjectServiceTest {
         assertThat(projectCaptor.getValue().getRegisteredBy()).isEqualTo(REGISTERED_BY);
         assertThat(projectCaptor.getValue().getServiceStatus()).isEqualTo(ServiceStatus.OPERATING);
         assertThat(memberIdsCaptor.getValue()).containsExactly(MEMBER_ID);
+
+        ArgumentCaptor<ProjectApprovalHistory> historyCaptor =
+                ArgumentCaptor.forClass(ProjectApprovalHistory.class);
+        verify(projectApprovalHistoryRepository).save(historyCaptor.capture());
+        assertThat(historyCaptor.getValue().getProjectId()).isEqualTo(100L);
+        assertThat(historyCaptor.getValue().getFromStatus()).isNull();
+        assertThat(historyCaptor.getValue().getToStatus()).isEqualTo(ApprovalStatus.PENDING);
     }
 
     @Test
@@ -1124,6 +1137,14 @@ class ProjectServiceTest {
         verify(projectRepository).update(projectCaptor.capture(), eq(TECH_TAG_IDS), memberIdsCaptor.capture());
         assertThat(projectCaptor.getValue().getSlug()).isEqualTo(rejected.getSlug());
         assertThat(memberIdsCaptor.getValue()).containsExactly(REGISTERED_BY, MEMBER_ID);
+
+        ArgumentCaptor<ProjectApprovalHistory> historyCaptor =
+                ArgumentCaptor.forClass(ProjectApprovalHistory.class);
+        verify(projectApprovalHistoryRepository).save(historyCaptor.capture());
+        assertThat(historyCaptor.getValue().getProjectId()).isEqualTo(PROJECT_ID);
+        assertThat(historyCaptor.getValue().getChangedBy()).isEqualTo(REGISTERED_BY);
+        assertThat(historyCaptor.getValue().getFromStatus()).isEqualTo(ApprovalStatus.REJECTED);
+        assertThat(historyCaptor.getValue().getToStatus()).isEqualTo(ApprovalStatus.PENDING);
     }
 
     @Test
