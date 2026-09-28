@@ -35,19 +35,29 @@ class UserProfileCountsRepositoryIntegrationTest {
     @DisplayName("삭제되지 않은 참여 프로젝트와 작성 피드 개수를 조회한다")
     void countByUserId() {
         User user = userRepository.save(User.initialize("counts-user"));
-        long activeProjectId = saveProject(null);
-        long deletedProjectId = saveProject(Instant.now());
+        long activeProjectId = saveProject("APPROVED", null);
+        long deletedProjectId = saveProject("APPROVED", Instant.now());
+        long pendingProjectId = saveProject("PENDING", null);
+        long rejectedProjectId = saveProject("REJECTED", null);
         saveProjectMember(activeProjectId, user.getId());
         saveProjectMember(deletedProjectId, user.getId());
+        saveProjectMember(pendingProjectId, user.getId());
+        saveProjectMember(rejectedProjectId, user.getId());
         saveFeed(user.getId(), null);
         saveFeed(user.getId(), Instant.now());
 
-        UserProfileCounts counts = userQueryRepository.countByUserId(user.getId());
+        UserProfileCounts counts = userQueryRepository.countByUserId(user.getId(), false);
+        UserProfileCounts selfCounts = userQueryRepository.countByUserId(user.getId(), true);
 
         assertThat(counts).isEqualTo(new UserProfileCounts(1L, 1L));
+        assertThat(selfCounts).isEqualTo(new UserProfileCounts(2L, 1L));
     }
 
     private long saveProject(Instant deletedAt) {
+        return saveProject("APPROVED", deletedAt);
+    }
+
+    private long saveProject(String approvalStatus, Instant deletedAt) {
         String suffix = UUID.randomUUID().toString();
         return jdbcTemplate.queryForObject(
                 """
@@ -55,7 +65,7 @@ class UserProfileCountsRepositoryIntegrationTest {
                             cohort, team_name, slug, title, tagline, github_repository_url,
                             service_status, approval_status, deleted_at
                         )
-                        VALUES (?, ?, ?, ?, ?, ?, 'OPERATING', 'APPROVED', ?)
+                        VALUES (?, ?, ?, ?, ?, ?, 'OPERATING', ?, ?)
                         RETURNING id
                         """,
                 Long.class,
@@ -65,6 +75,7 @@ class UserProfileCountsRepositoryIntegrationTest {
                 "개수 테스트 프로젝트",
                 "개수 테스트용 한 줄 소개",
                 "https://github.com/woowacourse-teams/counts-" + suffix,
+                approvalStatus,
                 deletedAt == null ? null : Timestamp.from(deletedAt)
         );
     }

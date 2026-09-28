@@ -660,6 +660,64 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("본인 프로젝트 조회일 때 승인 대기 프로젝트 포함 여부를 조회 저장소에 전달한다.")
+    void includesPendingProjectsWhenViewingOwnProjects() {
+        User user = user(REGISTERED_BY, MEMBER_HANDLE, UserStatus.ACTIVE);
+        when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.of(user));
+        when(userProjectQueryRepository.findAllByUserId(
+                REGISTERED_BY,
+                REGISTERED_BY,
+                true,
+                null,
+                20
+        )).thenReturn(new UserProjectResult(List.of(), false, 0L, Map.of()));
+
+        UserProjectResult response = projectService.findAllByUser(
+                MEMBER_HANDLE,
+                new UserProjectFindRequest(20, null),
+                REGISTERED_BY
+        );
+
+        assertThat(response.projects()).isEmpty();
+        verify(userProjectQueryRepository).findAllByUserId(
+                REGISTERED_BY,
+                REGISTERED_BY,
+                true,
+                null,
+                20
+        );
+    }
+
+    @Test
+    @DisplayName("다른 사용자의 프로젝트 조회일 때 승인 대기 프로젝트를 제외하도록 조회 저장소에 전달한다.")
+    void excludesPendingProjectsWhenViewingOtherUserProjects() {
+        User user = user(REGISTERED_BY, MEMBER_HANDLE, UserStatus.ACTIVE);
+        when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.of(user));
+        when(userProjectQueryRepository.findAllByUserId(
+                REGISTERED_BY,
+                OTHER_USER_ID,
+                false,
+                null,
+                20
+        )).thenReturn(new UserProjectResult(List.of(), false, 0L, Map.of()));
+
+        UserProjectResult response = projectService.findAllByUser(
+                MEMBER_HANDLE,
+                new UserProjectFindRequest(20, null),
+                OTHER_USER_ID
+        );
+
+        assertThat(response.projects()).isEmpty();
+        verify(userProjectQueryRepository).findAllByUserId(
+                REGISTERED_BY,
+                OTHER_USER_ID,
+                false,
+                null,
+                20
+        );
+    }
+
+    @Test
     @DisplayName("탈퇴한 사용자의 프로젝트 목록은 공개하지 않는다.")
     void returnsEmptyProjectsForDeletedUser() {
         when(userRepository.findByHandle(MEMBER_HANDLE))
