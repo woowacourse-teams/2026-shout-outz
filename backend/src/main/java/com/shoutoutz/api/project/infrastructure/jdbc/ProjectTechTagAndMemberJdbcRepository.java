@@ -4,6 +4,7 @@ import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.user.domain.profile.Track;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -63,6 +64,7 @@ public class ProjectTechTagAndMemberJdbcRepository {
                     u.handle,
                     u.deleted_at,
                     COALESCE(up.display_name, u.handle) AS display_name,
+                    up.user_type,
                     up.cohort,
                     up.track,
                     up.avatar_image_id
@@ -102,6 +104,7 @@ public class ProjectTechTagAndMemberJdbcRepository {
                     u.handle,
                     u.deleted_at,
                     COALESCE(up.display_name, u.handle) AS display_name,
+                    up.user_type,
                     up.cohort,
                     up.track,
                     up.avatar_image_id
@@ -137,12 +140,18 @@ public class ProjectTechTagAndMemberJdbcRepository {
         if (resultSet.getObject("deleted_at") != null) {
             return ProjectMemberProfile.withdrawn(userId, handle);
         }
+        UserType userType = toUserType(resultSet.getString("user_type"));
         return ProjectMemberProfile.user(
                 userId,
                 handle,
                 resultSet.getString("display_name"),
-                toCohort(resultSet.getObject("cohort", Integer.class)),
-                toTrack(resultSet.getString("track")),
+                userType,
+                userType == UserType.WOOWACOURSE_CREW
+                        ? toCohort(resultSet.getObject("cohort", Integer.class))
+                        : null,
+                userType == UserType.WOOWACOURSE_CREW
+                        ? toTrack(resultSet.getString("track"))
+                        : null,
                 resultSet.getObject("avatar_image_id", Long.class)
         );
     }
@@ -159,5 +168,12 @@ public class ProjectTechTagAndMemberJdbcRepository {
             return null;
         }
         return Track.from(value);
+    }
+
+    private static UserType toUserType(String value) {
+        if (value == null) {
+            return null;
+        }
+        return UserType.valueOf(value);
     }
 }

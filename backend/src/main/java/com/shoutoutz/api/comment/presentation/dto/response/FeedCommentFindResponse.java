@@ -1,5 +1,6 @@
 package com.shoutoutz.api.comment.presentation.dto.response;
 
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.List;
 
@@ -44,9 +45,20 @@ public record FeedCommentFindResponse(
     public record Author(
             Long userId,
             String displayName,
+            UserType userType,
+            String track,
+            Short cohort,
             Long avatarImageId,
             String avatarUrl
     ) {
+        public Author(
+                Long userId,
+                String displayName,
+                Long avatarImageId,
+                String avatarUrl
+        ) {
+            this(userId, displayName, null, null, null, avatarImageId, avatarUrl);
+        }
     }
 
     public record Meta(

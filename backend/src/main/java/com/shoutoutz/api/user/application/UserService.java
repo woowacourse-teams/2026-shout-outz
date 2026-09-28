@@ -21,6 +21,7 @@ import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
@@ -66,6 +67,7 @@ public class UserService {
         UserProfile savedProfile = userProfileRepository.save(updatedProfile);
 
         return new UserProfileUpdateResponse(
+                user.getId(),
                 user.getHandle().value(),
                 savedProfile.getDisplayName().value(),
                 savedProfile.getUserType(),
@@ -192,6 +194,7 @@ public class UserService {
             UserProfileCounts counts
     ) {
         return new UserProfileResponse(
+                user.getId(),
                 user.getHandle().value(),
                 profile.getDisplayName().value(),
                 profile.getUserType(),
@@ -207,6 +210,9 @@ public class UserService {
     }
 
     private String trackValue(UserProfile profile) {
+        if (profile.getUserType() != UserType.WOOWACOURSE_CREW) {
+            return null;
+        }
         Track track = profile.getTrack();
         if (track == null) {
             return null;
@@ -215,6 +221,9 @@ public class UserService {
     }
 
     private Short cohortValue(UserProfile profile) {
+        if (profile.getUserType() != UserType.WOOWACOURSE_CREW) {
+            return null;
+        }
         Cohort cohort = profile.getCohort();
         if (cohort == null) {
             return null;
@@ -239,6 +248,7 @@ public class UserService {
      */
     private UserProfileResponse createDeletedProfileResponse(User user) {
         return new UserProfileResponse(
+                user.getId(),
                 user.getHandle().value(),
                 DELETED_USER_DISPLAY_NAME,
                 null,

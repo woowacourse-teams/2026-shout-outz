@@ -24,11 +24,14 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.net.URI;
 import java.util.ArrayList;
@@ -109,6 +112,9 @@ public class ProjectCommentService {
                 new ProjectCommentCreateResponse.Author(
                         author.getUserId(),
                         author.getDisplayName().value(),
+                        author.getUserType(),
+                        trackValue(author),
+                        cohortValue(author),
                         toUrl(mediaUrlResolver.resolve(author.getAvatarImageId()))
                 ),
                 savedComment.getParentId(),
@@ -200,6 +206,9 @@ public class ProjectCommentService {
                 new ProjectCommentUpdateResponse.Author(
                         author.getUserId(),
                         author.getDisplayName().value(),
+                        author.getUserType(),
+                        trackValue(author),
+                        cohortValue(author),
                         toUrl(mediaUrlResolver.resolve(author.getAvatarImageId()))
                 ),
                 comment.getParentId(),
@@ -262,6 +271,22 @@ public class ProjectCommentService {
                 .orElseThrow(() -> new EntityNotFoundException(UserProfileErrorCode.USER_PROFILE_NOT_FOUND));
     }
 
+    private String trackValue(UserProfile profile) {
+        if (profile.getUserType() != UserType.WOOWACOURSE_CREW || profile.getTrack() == null) {
+            return null;
+        }
+        Track track = profile.getTrack();
+        return track.getValue();
+    }
+
+    private Short cohortValue(UserProfile profile) {
+        if (profile.getUserType() != UserType.WOOWACOURSE_CREW || profile.getCohort() == null) {
+            return null;
+        }
+        Cohort cohort = profile.getCohort();
+        return (short) cohort.getValue();
+    }
+
     private ProjectCommentFindResponse.Comment toFindResponse(
             ProjectComment comment,
             Long loginUserId,
@@ -282,6 +307,9 @@ public class ProjectCommentService {
                 new ProjectCommentFindResponse.Author(
                         author.getUserId(),
                         author.getDisplayName().value(),
+                        author.getUserType(),
+                        trackValue(author),
+                        cohortValue(author),
                         author.getAvatarImageId(),
                         toUrl(findUrl(avatarUrls, author.getAvatarImageId()))
                 ),

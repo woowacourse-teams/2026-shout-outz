@@ -62,6 +62,7 @@ import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagRespons
 import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.Track;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
@@ -400,8 +401,10 @@ class ProjectHttpApiTest {
                         6, 12L, "https://cdn.example.com/thumbnail", 128, 184L, 14L,
                         List.of(new ProjectTechTagResponse(1L, "React"), new ProjectTechTagResponse(2L, "Spring")),
                         List.of(
-                                new ProjectMemberProfileResponse("dhyepark", "박다혜", 6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
-                                new ProjectMemberProfileResponse("zzaekkii", "김도현", 6, "FRONTEND", null, null, null, null)
+                                new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", UserType.WOOWACOURSE_CREW,
+                                        6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
+                                new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", UserType.WOOWACOURSE_CREW,
+                                        6, "FRONTEND", null, null, null, null)
                         ))),
                 new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
         ));
@@ -482,14 +485,20 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data[].techTags[].displayName").type(STRING).description("기술 스택 이름"),
                                         fieldWithPath("data[].members").type(ARRAY)
                                                 .description("팀원 전체 목록. 상세 조회의 members와 같은 규칙이며, 등록 순서대로 정렬한다."),
+                                        fieldWithPath("data[].members[].userId").type(NUMBER)
+                                                .description("사용자 ID. 가입하지 않은 이관 팀원은 null이다.")
+                                                .optional(),
                                         fieldWithPath("data[].members[].handle").type(STRING)
                                                 .description("프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.")
                                                 .optional(),
                                         fieldWithPath("data[].members[].displayName").type(STRING)
                                                 .description("표시 이름. 탈퇴한 팀원은 '탈퇴한 사용자', "
                                                         + "가입하지 않은 이관 팀원은 GitHub 이름(없으면 GitHub 아이디)이다."),
+                                        fieldWithPath("data[].members[].userType").type(STRING)
+                                                .description("사용자 유형. 가입하지 않은 이관 팀원과 탈퇴한 팀원은 null이다.")
+                                                .optional(),
                                         fieldWithPath("data[].members[].cohort").type(NUMBER)
-                                                .description("기수. 가입하지 않은 이관 팀원은 프로젝트 기수다.")
+                                                .description("기수. 크루가 아닌 팀원과 이관 팀원은 null이다.")
                                                 .optional(),
                                         new EnumFields(Track.class).withPath("data[].members[].track")
                                                 .description("트랙")
@@ -723,14 +732,20 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data.techTags[].displayName").type(STRING).description("기술 스택 이름"),
                                         fieldWithPath("data.members").type(ARRAY)
                                                 .description("팀원 목록. 저장된 순서대로 반환한다."),
+                                        fieldWithPath("data.members[].userId").type(NUMBER)
+                                                .description("사용자 ID. 가입하지 않은 이관 팀원은 null이다.")
+                                                .optional(),
                                         fieldWithPath("data.members[].handle").type(STRING)
                                                 .description("프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.")
                                                 .optional(),
                                         fieldWithPath("data.members[].displayName").type(STRING)
                                                 .description("표시 이름. 탈퇴한 팀원은 '탈퇴한 사용자', "
                                                         + "가입하지 않은 이관 팀원은 GitHub 이름(없으면 GitHub 아이디)이다."),
+                                        fieldWithPath("data.members[].userType").type(STRING)
+                                                .description("사용자 유형. 가입하지 않은 이관 팀원과 탈퇴한 팀원은 null이다.")
+                                                .optional(),
                                         fieldWithPath("data.members[].cohort").type(NUMBER)
-                                                .description("기수. 가입하지 않은 이관 팀원은 프로젝트 기수다.")
+                                                .description("기수. 크루가 아닌 팀원과 이관 팀원은 null이다.")
                                                 .optional(),
                                         new EnumFields(Track.class).withPath("data.members[].track")
                                                 .description("트랙")
@@ -1070,8 +1085,10 @@ class ProjectHttpApiTest {
                         new ProjectTechTagResponse(2L, "TypeScript")
                 ),
                 List.of(
-                        new ProjectMemberProfileResponse("dhyepark", "박다혜", 6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
-                        new ProjectMemberProfileResponse("zzaekkii", "김도현", 6, "FRONTEND", null, null, null, null)
+                        new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", UserType.WOOWACOURSE_CREW,
+                                6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
+                        new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", UserType.WOOWACOURSE_CREW,
+                                6, "FRONTEND", null, null, null, null)
                 ),
                 Instant.parse("2026-08-09T02:30:00Z"),
                 Instant.parse("2026-08-09T03:00:00Z")
