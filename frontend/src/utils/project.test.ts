@@ -15,8 +15,8 @@ const FILLED: ProjectFormValues = {
     { id: 2, displayName: 'TypeScript' },
   ],
   members: [
-    { handle: 'dhyepark', displayName: '두리', userType: 'WOOWACOURSE_CREW' },
-    { handle: 'zzaekkii', displayName: '재키', userType: 'WOOWACOURSE_CREW' },
+    { userId: 1, handle: 'dhyepark', displayName: '두리', userType: 'WOOWACOURSE_CREW' },
+    { userId: 2, handle: 'zzaekkii', displayName: '재키', userType: 'WOOWACOURSE_CREW' },
   ],
 };
 

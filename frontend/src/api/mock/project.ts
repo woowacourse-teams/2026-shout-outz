@@ -15,12 +15,17 @@ const TECH_TAGS: TechTag[] = [
   { id: 4, displayName: 'Redis' },
 ];
 
+/** handle로 고정된 userId를 만든다. mock끼리 같은 사람이 같은 번호를 갖게만 하면 된다. */
+const userIdOf = (handle: string) =>
+  [...handle].reduce((id, char) => (id * 31 + char.charCodeAt(0)) % 100_000, 7);
+
 const crew = (
   handle: string,
   displayName: string,
   track: Track,
   cohort: number,
 ): CrewSearchItem => ({
+  userId: userIdOf(handle),
   handle,
   displayName,
   userType: 'WOOWACOURSE_CREW',

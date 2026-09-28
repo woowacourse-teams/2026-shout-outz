@@ -40,7 +40,7 @@ function VerificationList({ status }: { status: AdminVerificationStatus }) {
   const { data, hasNextPage, fetchNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
     adminVerificationsQuery(status),
   );
-  const items = data.pages.flatMap((page) => page.items);
+  const items = data.pages.flatMap((page) => page.data);
 
   if (items.length === 0) {
     return (

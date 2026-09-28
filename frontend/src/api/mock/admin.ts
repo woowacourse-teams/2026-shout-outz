@@ -70,12 +70,13 @@ const decided = (requestId: number, status: string) => ({
 export const adminHandlers = [
   http.get('/api/v1/admin/verification-requests', ({ request }) => {
     const status = new URL(request.url).searchParams.get('status') ?? 'PENDING';
+    const items = verificationRequests.filter((item) => item.status === status);
+
+    // 목록은 data에 배열로, 커서는 meta에 담긴다.
     return HttpResponse.json({
       status: 'success',
-      data: {
-        items: verificationRequests.filter((item) => item.status === status),
-        nextCursor: null,
-      },
+      data: items,
+      meta: { nextCursor: null, hasNext: false, totalCount: items.length },
     });
   }),
 

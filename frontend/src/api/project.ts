@@ -73,7 +73,7 @@ export async function searchCrews(keyword: string): Promise<CrewSearchItem[]> {
   });
   if (!body) throw new Error(`크루 검색 응답이 비어 있습니다: ${USER_SEARCH_PATH}`);
 
-  return body.data.items;
+  return body.data;
 }
 
 export const crewSearchQueryOptions = (keyword: string) =>

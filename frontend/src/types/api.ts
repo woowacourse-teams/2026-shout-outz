@@ -64,7 +64,7 @@ export type SessionData = Data<AuthSessionSuccessResponse>;
 
 export type UserProfileData = Data<UserProfileSuccessResponse>;
 export type UserProfileSummaryData = Data<UserProfileSummarySuccessResponse>;
-export type UserSearchItem = Item<Data<UserSearchSuccessResponse>['items']>;
+export type UserSearchItem = Item<Data<UserSearchSuccessResponse>>;
 
 export type VerificationRequestData = Data<UserVerificationRequestSuccessResponse>;
 export type VerificationRequestBody = UserVerificationRequestCreateRequest;
@@ -107,6 +107,6 @@ export type EventCreateBody = EventCreateRequest;
 // ── 관리자 ──────────────────────────────────────────────────────────────────
 
 export type AdminVerificationListData = Data<AdminVerificationRequestFindAllSuccessResponse>;
-export type AdminVerificationItem = Item<AdminVerificationListData['items']>;
+export type AdminVerificationItem = Item<AdminVerificationListData>;
 export type AdminHomeBannerItem = Item<Data<HomeBannerAdminFindAllSuccessResponse>>;
 export type HomeBannerUpsertBody = HomeBannerUpsertRequest;
