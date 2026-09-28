@@ -481,7 +481,7 @@ class NewsHttpApiTest {
                                                 .description("다음 페이지 존재 여부"),
                                         fieldWithPath("meta.totalCount")
                                                 .type(NUMBER)
-                                                .description("조회 조건을 만족하는 전체 소식 수")
+                                                .description("커서와 size를 제외한 유형·이벤트 상태 조건을 만족하는 전체 소식 수")
                                 )
                                 .build())
                 ));

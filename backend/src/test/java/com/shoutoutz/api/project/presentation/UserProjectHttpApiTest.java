@@ -136,7 +136,8 @@ class UserProjectHttpApiTest {
         mockMvc.perform(get("/api/v1/users/{handle}/projects", "zzaekkii"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isEmpty())
-                .andExpect(jsonPath("$.meta.hasNext").value(false));
+                .andExpect(jsonPath("$.meta.hasNext").value(false))
+                .andExpect(jsonPath("$.meta.totalCount").value(0));
 
         verify(projectService).findAllByUser("zzaekkii", new UserProjectFindRequest(null, null));
     }
@@ -248,7 +249,8 @@ class UserProjectHttpApiTest {
                 fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
                 fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서").optional(),
                 fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"),
-                fieldWithPath("meta.totalCount").type(NUMBER).description("사용자가 참여한 전체 프로젝트 수")
+                fieldWithPath("meta.totalCount").type(NUMBER)
+                        .description("커서와 size에 무관한 사용자의 전체 공개 참여 프로젝트 수")
         );
     }
 

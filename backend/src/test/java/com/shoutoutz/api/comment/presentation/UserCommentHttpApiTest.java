@@ -134,7 +134,7 @@ class UserCommentHttpApiTest {
                                         fieldWithPath("meta.hasNext").type(BOOLEAN)
                                                 .description("다음 페이지 존재 여부"),
                                         fieldWithPath("meta.totalCount").type(NUMBER)
-                                                .description("조회 가능한 전체 작성 댓글 수")
+                                                .description("커서와 size에 무관한 조회 가능한 전체 작성 댓글 수")
                                 )
                                 .build())
                 ));

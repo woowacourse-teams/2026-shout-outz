@@ -187,13 +187,15 @@ class FeedCommentHttpApiTest {
                                                 .description("댓글 공감 수"),
                                         fieldWithPath("data[].agreedByMe").type(BOOLEAN)
                                                 .description("현재 사용자의 공감 여부. 비로그인이면 false"),
+                                        fieldWithPath("meta").type(OBJECT)
+                                                .description("페이지네이션 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 cursor")
                                                 .optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN)
                                                 .description("다음 페이지 존재 여부"),
                                         fieldWithPath("meta.totalCount").type(NUMBER)
-                                                .description("삭제되지 않은 일반 댓글과 답글의 전체 수")
+                                                .description("커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수")
                                 )
                                 .build())
                 ));

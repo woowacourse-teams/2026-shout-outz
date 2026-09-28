@@ -160,7 +160,7 @@ class AdminVerificationRequestHttpApiTest {
                                         fieldWithPath("meta.hasNext").type(BOOLEAN)
                                                 .description("다음 페이지 존재 여부"),
                                         fieldWithPath("meta.totalCount").type(NUMBER)
-                                                .description("상태 조건을 만족하는 전체 인증 신청 수")
+                                                .description("커서와 size를 제외한 상태 조건을 만족하는 전체 인증 신청 수")
                                 )
                                 .build())
                 ));

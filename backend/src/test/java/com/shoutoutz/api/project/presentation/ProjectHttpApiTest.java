@@ -425,7 +425,7 @@ class ProjectHttpApiTest {
                                                 .optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"),
                                         fieldWithPath("meta.totalCount").type(NUMBER)
-                                                .description("검색어와 필터가 적용된 프로젝트 수")
+                                                .description("커서와 size를 제외한 검색어와 필터 조건을 만족하는 전체 프로젝트 수")
                                 )
                                 .build())
                 ));

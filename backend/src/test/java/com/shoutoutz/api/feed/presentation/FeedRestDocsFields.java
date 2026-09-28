@@ -91,6 +91,23 @@ final class FeedRestDocsFields {
     }
 
     static List<FieldDescriptor> feedListResponseFields(String description) {
+        return feedListResponseFields(
+                description,
+                "커서와 size를 제외한 조회 조건을 만족하는 전체 피드 수"
+        );
+    }
+
+    static List<FieldDescriptor> userFeedListResponseFields(String description) {
+        return feedListResponseFields(
+                description,
+                "커서와 size에 무관한 해당 사용자의 전체 공개 피드 수"
+        );
+    }
+
+    private static List<FieldDescriptor> feedListResponseFields(
+            String description,
+            String totalCountDescription
+    ) {
         List<FieldDescriptor> fields = new ArrayList<>();
         fields.add(fieldWithPath("status").type(STRING).description("응답 상태"));
         fields.add(fieldWithPath("data").type(ARRAY).description(description));
@@ -98,11 +115,8 @@ final class FeedRestDocsFields {
         fields.add(fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"));
         fields.add(fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서").optional());
         fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"));
-        fields.add(fieldWithPath("meta.totalCount").type(NUMBER).description("조회 조건을 만족하는 전체 피드 수"));
+        fields.add(fieldWithPath("meta.totalCount").type(NUMBER)
+                .description(totalCountDescription));
         return fields;
-    }
-
-    static List<FieldDescriptor> userFeedListResponseFields(String description) {
-        return feedListResponseFields(description);
     }
 }
