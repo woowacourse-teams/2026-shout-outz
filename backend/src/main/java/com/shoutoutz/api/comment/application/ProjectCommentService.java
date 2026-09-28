@@ -24,6 +24,7 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.project.domain.ProjectRepository;
@@ -141,7 +142,7 @@ public class ProjectCommentService {
                 request.sort(),
                 request.size()
         );
-        List<Long> rootIds = page.comments().stream()
+        List<Long> rootIds = page.items().stream()
                 .map(ProjectComment::getId)
                 .toList();
 
@@ -158,7 +159,7 @@ public class ProjectCommentService {
         Map<Long, UserProfile> authors = new HashMap<>();
         List<ProjectComment> orderedComments = new ArrayList<>();
 
-        for (ProjectComment root : page.comments()) {
+        for (ProjectComment root : page.items()) {
             authors.computeIfAbsent(root.getAuthorId(), this::findAuthor);
             orderedComments.add(root);
             for (ProjectComment reply : repliesByParentId.getOrDefault(root.getId(), List.of())) {
@@ -174,12 +175,17 @@ public class ProjectCommentService {
                 .toList();
 
         // 4. meta 정보: 다음 커서 정보 제공
-        String nextCursor = page.hasNext() && !page.comments().isEmpty()
-                ? ProjectCommentCursorCodec.encode(toCursor(page.comments().getLast(), request.sort()))
-                : null;
+        String nextCursor = null;
+        if (page.hasNext() && !page.items().isEmpty()) {
+            nextCursor = ProjectCommentCursorCodec.encode(toCursor(page.items().getLast(), request.sort()));
+        }
         return new ProjectCommentFindResponse(
                 comments,
-                new ProjectCommentFindResponse.Meta(nextCursor, page.hasNext() && !comments.isEmpty())
+                new SliceMetaResponse(
+                        nextCursor,
+                        page.hasNext() && !comments.isEmpty(),
+                        page.totalCount()
+                )
         );
     }
 

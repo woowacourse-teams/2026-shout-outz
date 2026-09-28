@@ -6,6 +6,7 @@ import com.shoutoutz.api.feed.application.FeedQueryRepository;
 import com.shoutoutz.api.feed.application.dto.FeedCursor;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.FeedMediaReference;
+import com.shoutoutz.api.feed.application.dto.FeedPage;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
@@ -100,27 +101,27 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
     }
 
     @Override
-    public List<FeedItem> findAll(
+    public FeedPage findAll(
             FeedSort sort,
             Long categoryId,
             String keyword,
             FeedCursor cursor,
-            int limit
+            int size
     ) {
-        return findAll(sort, categoryId, keyword, null, cursor, limit);
+        return findAll(sort, categoryId, keyword, null, cursor, size);
     }
 
     @Override
-    public List<FeedItem> findAll(
+    public FeedPage findAll(
             FeedSort sort,
             Long categoryId,
             String keyword,
             Long viewerId,
             FeedCursor cursor,
-            int limit
+            int size
     ) {
         StringBuilder sql = createFindAllQuery(sort);
-        MapSqlParameterSource parameters = new MapSqlParameterSource("limit", limit)
+        MapSqlParameterSource parameters = new MapSqlParameterSource("limit", size + 1)
                 .addValue("viewerId", viewerId, Types.BIGINT);
         appendKeywordParameters(parameters, keyword);
         appendCategoryFilter(sql, parameters, categoryId);
@@ -132,26 +133,27 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                 parameters,
                 (resultSet, rowNumber) -> toBaseRow(resultSet)
         );
-        return assembleItems(rows);
+        List<FeedItem> items = assembleItems(rows);
+        return createPage(items, size, countAll(categoryId, keyword));
     }
 
     @Override
-    public List<FeedItem> findAllByAuthorId(long authorId, FeedCursor cursor, int limit) {
-        return findAllByAuthorId(authorId, null, cursor, limit);
+    public FeedPage findAllByAuthorId(long authorId, FeedCursor cursor, int size) {
+        return findAllByAuthorId(authorId, null, cursor, size);
     }
 
     @Override
-    public List<FeedItem> findAllByAuthorId(
+    public FeedPage findAllByAuthorId(
             long authorId,
             Long viewerId,
             FeedCursor cursor,
-            int limit
+            int size
     ) {
         StringBuilder sql = createUserFeedQuery();
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("authorId", authorId)
                 .addValue("viewerId", viewerId, Types.BIGINT)
-                .addValue("limit", limit);
+                .addValue("limit", size + 1);
         sql.append("  AND p.author_id = :authorId\n");
         appendLatestCursorAndOrder(sql, parameters, cursor);
         sql.append("LIMIT :limit");
@@ -161,7 +163,48 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                 parameters,
                 (resultSet, rowNumber) -> toBaseRow(resultSet)
         );
-        return assembleItems(rows);
+        List<FeedItem> items = assembleItems(rows);
+        return createPage(items, size, countAllByAuthorId(authorId));
+    }
+
+    private long countAll(Long categoryId, String keyword) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT COUNT(*)
+                FROM feeds p
+                WHERE p.deleted_at IS NULL
+                """);
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        if (keyword != null) {
+            sql.append("""
+                      AND (
+                          lower(p.title) LIKE lower(:containsPattern) ESCAPE '\\'
+                          OR lower(p.content) LIKE lower(:containsPattern) ESCAPE '\\'
+                      )
+                    """);
+            appendKeywordParameters(parameters, keyword);
+        }
+        appendCategoryFilter(sql, parameters, categoryId);
+        return jdbcTemplate.queryForObject(sql.toString(), parameters, Long.class);
+    }
+
+    private long countAllByAuthorId(long authorId) {
+        return jdbcTemplate.queryForObject(
+                """
+                        SELECT COUNT(*)
+                        FROM feeds p
+                        WHERE p.deleted_at IS NULL
+                          AND p.author_id = :authorId
+                        """,
+                Map.of("authorId", authorId),
+                Long.class
+        );
+    }
+
+    private FeedPage createPage(List<FeedItem> items, int size, long totalCount) {
+        if (items.size() <= size) {
+            return new FeedPage(items, false, totalCount);
+        }
+        return new FeedPage(items.subList(0, size), true, totalCount);
     }
 
     @Override

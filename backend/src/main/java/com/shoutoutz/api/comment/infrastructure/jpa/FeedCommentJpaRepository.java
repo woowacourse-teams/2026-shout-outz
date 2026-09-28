@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface FeedCommentJpaRepository extends JpaRepository<FeedCommentEntity, Long> {
 
+    long countByFeedIdAndDeletedAtIsNull(long feedId);
+
     @Query("""
             SELECT comment
             FROM FeedCommentEntity comment

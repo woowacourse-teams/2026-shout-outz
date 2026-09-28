@@ -4,6 +4,7 @@ import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.verification.application.AdminVerificationRequestQueryRepository;
 import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestCursor;
 import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestItem;
+import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestPage;
 import com.shoutoutz.api.verification.domain.VerificationRequestStatus;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -21,10 +22,10 @@ public class UserVerificationRequestQueryRepositoryImpl
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Override
-    public List<AdminVerificationRequestItem> findAll(
+    public AdminVerificationRequestPage findAll(
             VerificationRequestStatus status,
             AdminVerificationRequestCursor cursor,
-            int limit
+            int size
     ) {
         StringBuilder sql = new StringBuilder("""
                 SELECT
@@ -43,7 +44,7 @@ public class UserVerificationRequestQueryRepositoryImpl
                 """);
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("status", status.name())
-                .addValue("limit", limit);
+                .addValue("limit", size + 1);
 
         if (cursor != null) {
             sql.append("AND (r.requested_at, r.id) < (:cursorRequestedAt, :cursorRequestId)\n");
@@ -57,7 +58,7 @@ public class UserVerificationRequestQueryRepositoryImpl
         sql.append("ORDER BY r.requested_at DESC, r.id DESC\n");
         sql.append("LIMIT :limit");
 
-        return jdbcTemplate.query(
+        List<AdminVerificationRequestItem> items = jdbcTemplate.query(
                 sql.toString(),
                 parameters,
                 (resultSet, rowNumber) -> new AdminVerificationRequestItem(
@@ -72,5 +73,29 @@ public class UserVerificationRequestQueryRepositoryImpl
                         resultSet.getObject("requested_at", OffsetDateTime.class).toInstant()
                 )
         );
+        return createPage(items, size, countAll(status));
+    }
+
+    private long countAll(VerificationRequestStatus status) {
+        return jdbcTemplate.queryForObject(
+                """
+                        SELECT COUNT(*)
+                        FROM user_verification_requests
+                        WHERE status = :status
+                        """,
+                new MapSqlParameterSource("status", status.name()),
+                Long.class
+        );
+    }
+
+    private AdminVerificationRequestPage createPage(
+            List<AdminVerificationRequestItem> items,
+            int size,
+            long totalCount
+    ) {
+        if (items.size() <= size) {
+            return new AdminVerificationRequestPage(items, false, totalCount);
+        }
+        return new AdminVerificationRequestPage(items.subList(0, size), true, totalCount);
     }
 }

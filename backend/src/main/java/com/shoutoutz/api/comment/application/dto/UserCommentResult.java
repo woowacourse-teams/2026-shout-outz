@@ -5,7 +5,8 @@ import java.util.List;
 public record UserCommentResult(
         List<UserCommentItem> comments,
         String nextCursor,
-        boolean hasNext
+        boolean hasNext,
+        long totalCount
 ) {
 
     public UserCommentResult {

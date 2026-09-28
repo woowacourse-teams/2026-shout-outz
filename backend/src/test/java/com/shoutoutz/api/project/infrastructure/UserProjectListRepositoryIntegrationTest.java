@@ -54,6 +54,7 @@ class UserProjectListRepositoryIntegrationTest {
 
         assertThat(ids(result)).containsExactly(registered, archived);
         assertThat(result.hasNext()).isFalse();
+        assertThat(result.totalCount()).isEqualTo(2L);
         assertThat(result.projects()).allSatisfy(project -> {
             assertThat(project.teamName()).isEqualTo("팀");
             assertThat(project.serviceStatus()).isEqualTo(ServiceStatus.OPERATING);
@@ -80,8 +81,10 @@ class UserProjectListRepositoryIntegrationTest {
 
         assertThat(ids(firstResult)).containsExactly(first, third);
         assertThat(firstResult.hasNext()).isTrue();
+        assertThat(firstResult.totalCount()).isEqualTo(3L);
         assertThat(ids(secondResult)).containsExactly(second);
         assertThat(secondResult.hasNext()).isFalse();
+        assertThat(secondResult.totalCount()).isEqualTo(3L);
     }
 
     @Test

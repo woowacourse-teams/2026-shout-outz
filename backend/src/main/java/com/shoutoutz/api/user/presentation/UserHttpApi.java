@@ -3,6 +3,7 @@ package com.shoutoutz.api.user.presentation;
 import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.user.application.UserService;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
@@ -13,6 +14,7 @@ import com.shoutoutz.api.user.presentation.dto.response.UserProfileUpdateRespons
 import com.shoutoutz.api.user.presentation.dto.response.UserSearchResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -69,7 +71,7 @@ public class UserHttpApi {
      * 로그인 없이 사용할 수 있는 우테코 사용자 공개 검색.
      */
     @GetMapping("/search")
-    public ResponseEntity<SuccessResponse<UserSearchResponse>> searchWoowaMember(
+    public ResponseEntity<SuccessResponse<List<UserSearchResponse.Item>>> searchWoowaMember(
             @Valid @ModelAttribute UserSearchRequest request
     ) {
         UserSearchResult result = userService.searchWoowaMember(
@@ -77,8 +79,12 @@ public class UserHttpApi {
                 request.cursor(),
                 request.resolvedSize()
         );
-        UserSearchResponse response = UserSearchResponse.from(result);
-        UserSearchResponse.Meta meta = UserSearchResponse.Meta.from(result);
+        List<UserSearchResponse.Item> response = UserSearchResponse.from(result).items();
+        SliceMetaResponse meta = new SliceMetaResponse(
+                result.nextCursor(),
+                result.hasNext(),
+                result.totalCount()
+        );
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));
     }

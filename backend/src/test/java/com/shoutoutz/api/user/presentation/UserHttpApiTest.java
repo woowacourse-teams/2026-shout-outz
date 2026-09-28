@@ -561,6 +561,7 @@ class UserHttpApiTest {
                         ),
                         "eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0",
                         true,
+                        6L,
                         Map.of(21L, URI.create("https://cdn.example.com/media/21/display"))
                 ));
 
@@ -568,22 +569,23 @@ class UserHttpApiTest {
                         .queryParam("keyword", "재키"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.items[0].handle").value("zzaekkii"))
-                .andExpect(jsonPath("$.data.items[0].displayName").value("재키"))
-                .andExpect(jsonPath("$.data.items[0].userType").value("WOOWACOURSE_CREW"))
-                .andExpect(jsonPath("$.data.items[0].track").value("BACKEND"))
-                .andExpect(jsonPath("$.data.items[0].cohort").value(8))
-                .andExpect(jsonPath("$.data.items[0].avatarImageId").value(21L))
-                .andExpect(jsonPath("$.data.items[0].avatarUrl")
+                .andExpect(jsonPath("$.data[0].handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data[0].displayName").value("재키"))
+                .andExpect(jsonPath("$.data[0].userType").value("WOOWACOURSE_CREW"))
+                .andExpect(jsonPath("$.data[0].track").value("BACKEND"))
+                .andExpect(jsonPath("$.data[0].cohort").value(8))
+                .andExpect(jsonPath("$.data[0].avatarImageId").value(21L))
+                .andExpect(jsonPath("$.data[0].avatarUrl")
                         .value("https://cdn.example.com/media/21/display"))
-                .andExpect(jsonPath("$.data.items[1].handle").value("coach-jack"))
-                .andExpect(jsonPath("$.data.items[1].userType").value("WOOWACOURSE_COACH"))
-                .andExpect(jsonPath("$.data.items[1].track").isEmpty())
-                .andExpect(jsonPath("$.data.items[1].cohort").isEmpty())
+                .andExpect(jsonPath("$.data[1].handle").value("coach-jack"))
+                .andExpect(jsonPath("$.data[1].userType").value("WOOWACOURSE_COACH"))
+                .andExpect(jsonPath("$.data[1].track").isEmpty())
+                .andExpect(jsonPath("$.data[1].cohort").isEmpty())
                 .andExpect(jsonPath("$.meta.nextCursor").value(
                         "eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0"
                 ))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andExpect(jsonPath("$.meta.totalCount").value(6))
                 .andDo(document(
                         "user-search-get",
                         resource(ResourceSnippetParameters.builder()
@@ -602,25 +604,26 @@ class UserHttpApiTest {
                                 .responseSchema(Schema.schema("UserSearchSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
-                                        fieldWithPath("data").type(OBJECT).description("검색 결과"),
-                                        fieldWithPath("data.items").type(ARRAY).description("검색된 크루와 코치"),
-                                        fieldWithPath("data.items[].userId").type(NUMBER).description("사용자 ID"),
-                                        fieldWithPath("data.items[].handle").type(STRING).description("사용자 handle"),
-                                        fieldWithPath("data.items[].displayName").type(STRING).description("표시 이름"),
-                                        new EnumFields(UserType.class).withPath("data.items[].userType").description("사용자 유형"),
-                                        new EnumFields(Track.class).withPath("data.items[].track")
+                                        fieldWithPath("data").type(ARRAY).description("검색된 크루와 코치"),
+                                        fieldWithPath("data[].userId").type(NUMBER).description("사용자 ID"),
+                                        fieldWithPath("data[].handle").type(STRING).description("사용자 handle"),
+                                        fieldWithPath("data[].displayName").type(STRING).description("표시 이름"),
+                                        new EnumFields(UserType.class).withPath("data[].userType").description("사용자 유형"),
+                                        new EnumFields(Track.class).withPath("data[].track")
                                                 .description("우테코 트랙").optional(),
-                                        fieldWithPath("data.items[].cohort").type(NUMBER)
+                                        fieldWithPath("data[].cohort").type(NUMBER)
                                                 .description("우테코 기수").optional(),
-                                        fieldWithPath("data.items[].avatarImageId").type(NUMBER)
+                                        fieldWithPath("data[].avatarImageId").type(NUMBER)
                                                 .description("프로필 이미지 미디어 ID").optional(),
-                                        fieldWithPath("data.items[].avatarUrl").type(STRING)
+                                        fieldWithPath("data[].avatarUrl").type(STRING)
                                                 .description("프로필 이미지 공개 URL").optional(),
                                         fieldWithPath("meta").type(OBJECT).description("페이지 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 커서").optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN)
-                                                .description("다음 페이지 존재 여부")
+                                                .description("다음 페이지 존재 여부"),
+                                        fieldWithPath("meta.totalCount").type(NUMBER)
+                                                .description("커서와 size를 제외한 검색 조건을 만족하는 전체 사용자 수")
                                 )
                                 .build())
                 ));

@@ -74,6 +74,7 @@ class UserProjectHttpApiTest {
                 .willReturn(new UserProjectResult(
                         List.of(project()),
                         true,
+                        3L,
                         Map.of(
                                 12L, URI.create("https://cdn.example.com/thumbnail"),
                                 21L, URI.create("https://cdn.example.com/avatar-21")
@@ -99,7 +100,7 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.meta.nextCursor").value(ProjectCursorCodec.encode(
                         ProjectCursor.latest(CREATED_AT, 100L))))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
-                .andExpect(jsonPath("$.meta.totalCount").doesNotExist())
+                .andExpect(jsonPath("$.meta.totalCount").value(3))
                 .andDo(document(
                         "user-project-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -130,12 +131,13 @@ class UserProjectHttpApiTest {
     @DisplayName("파라미터를 생략하면 기본 조회 조건을 사용한다.")
     void usesDefaultParameters() throws Exception {
         given(projectService.findAllByUser("zzaekkii", new UserProjectFindRequest(null, null)))
-                .willReturn(new UserProjectResult(List.of(), false));
+                .willReturn(new UserProjectResult(List.of(), false, 0L, Map.of()));
 
         mockMvc.perform(get("/api/v1/users/{handle}/projects", "zzaekkii"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isEmpty())
-                .andExpect(jsonPath("$.meta.hasNext").value(false));
+                .andExpect(jsonPath("$.meta.hasNext").value(false))
+                .andExpect(jsonPath("$.meta.totalCount").value(0));
 
         verify(projectService).findAllByUser("zzaekkii", new UserProjectFindRequest(null, null));
     }
@@ -248,7 +250,9 @@ class UserProjectHttpApiTest {
                         .description("이관 팀원의 GitHub 프로필 URL").optional(),
                 fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
                 fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서").optional(),
-                fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부")
+                fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"),
+                fieldWithPath("meta.totalCount").type(NUMBER)
+                        .description("커서와 size에 무관한 사용자의 전체 공개 참여 프로젝트 수")
         );
     }
 

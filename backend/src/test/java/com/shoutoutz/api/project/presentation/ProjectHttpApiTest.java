@@ -35,6 +35,7 @@ import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.DeletedProject;
@@ -406,7 +407,7 @@ class ProjectHttpApiTest {
                                 new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", UserType.WOOWACOURSE_CREW,
                                         6, "FRONTEND", null, null, null, null)
                         ))),
-                new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
+                new SliceMetaResponse("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
         ));
 
         mockMvc.perform(get("/api/v1/projects")
@@ -521,7 +522,7 @@ class ProjectHttpApiTest {
                                                 .optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"),
                                         fieldWithPath("meta.totalCount").type(NUMBER)
-                                                .description("검색어와 필터가 적용된 프로젝트 수")
+                                                .description("커서와 size를 제외한 검색어와 필터 조건을 만족하는 전체 프로젝트 수")
                                 )
                                 .build())
                 ));
@@ -533,7 +534,7 @@ class ProjectHttpApiTest {
     @DisplayName("파라미터를 보내지 않으면 모두 입력하지 않은 값으로 조회한다.")
     void findsProjectsWithoutParameters() throws Exception {
         given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(
-                new ProjectFindAllResponse(List.of(), new ProjectFindAllResponse.Meta(null, false, 0L)));
+                new ProjectFindAllResponse(List.of(), new SliceMetaResponse(null, false, 0L)));
 
         mockMvc.perform(get("/api/v1/projects"))
                 .andExpect(status().isOk())
