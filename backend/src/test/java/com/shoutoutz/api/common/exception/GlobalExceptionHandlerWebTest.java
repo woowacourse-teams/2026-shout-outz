@@ -122,12 +122,24 @@ class GlobalExceptionHandlerWebTest {
     }
 
     @Test
-    @DisplayName("지원하지 않는 HTTP 메서드는 405 상태와 Allow 헤더를 보존한다")
+    @DisplayName("지원하지 않는 HTTP 메서드는 405 상태와 Allow 헤더를 보존하고, 요청 방식 오류 코드로 응답한다")
     void preservesMethodNotAllowedStatusAndAllowHeader() throws Exception {
         mockMvc.perform(get("/test/validation"))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(header().string("Allow", org.hamcrest.Matchers.containsString("POST")))
-                .andExpect(jsonPath("$.code").value(CommonErrorCode.VALIDATION_FAILED.name()));
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.METHOD_NOT_ALLOWED.name()))
+                .andExpect(jsonPath("$.message").value(CommonErrorCode.METHOD_NOT_ALLOWED.getMessage()));
+    }
+
+    @Test
+    @DisplayName("지원하지 않는 Content-Type은 415 상태와 요청 형식 오류 코드로 응답한다")
+    void respondsUnsupportedMediaTypeWithItsErrorCode() throws Exception {
+        mockMvc.perform(post("/test/validation")
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .content("email"))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.UNSUPPORTED_MEDIA_TYPE.name()))
+                .andExpect(jsonPath("$.message").value(CommonErrorCode.UNSUPPORTED_MEDIA_TYPE.getMessage()));
     }
 
     private static Stream<Arguments> customExceptionCases() {
