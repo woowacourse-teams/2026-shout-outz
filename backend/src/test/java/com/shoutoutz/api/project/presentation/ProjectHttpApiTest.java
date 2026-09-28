@@ -2,6 +2,7 @@ package com.shoutoutz.api.project.presentation;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -44,6 +45,7 @@ import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
+import com.shoutoutz.api.project.domain.exception.InvalidSlugException;
 import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
@@ -68,6 +70,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -86,22 +89,27 @@ class ProjectHttpApiTest {
     private static final String AUTHENTICATED_SESSION_ATTRIBUTE = AuthenticatedSession.class.getName();
     private static final String SUMMARY = "프로젝트 등록";
     private static final String DESCRIPTION = "로그인한 우아한테크코스 크루 또는 코치를 등록자로 프로젝트를 등록한다. "
-            + "slug는 GitHub 리포지토리 이름에서 앞 연도를 떼고 소문자로 만든다. "
+            + "slug는 GitHub 리포지토리 이름을 소문자로 바꾸고, 영문자와 숫자가 아닌 문자가 이어진 구간을 하이픈 하나로 바꾼 뒤 "
+            + "앞 연도와 앞뒤 하이픈을 떼서 만든다 (예: 2026-my_app -> my-app). "
+            + "문자열 값은 앞뒤 공백을 자르고, 공백만 있으면 입력하지 않은 것으로 본다 (descriptionMd 제외). "
             + "운영 상태는 deploymentUrl이 있으면 OPERATING, 없으면 CLOSED로 저장한다. "
             + "팀원은 등록자를 첫 번째로 두고 memberHandles 순서대로 저장한다. "
             + "본문 이미지는 descriptionMd에 ![설명](media://{mediaId}) 형식으로 넣는다. "
-            + "요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
-            + "크루나 코치가 아니면 403, 이미 등록된 리포지토리이거나 리포지토리 이름이 같아 slug가 겹치면 409를 반환한다.";
+            + "요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나 리포지토리 이름으로 slug를 만들 수 없으면 400, "
+            + "로그인하지 않았으면 401, 크루나 코치가 아니면 403, "
+            + "이미 등록된 리포지토리이거나 리포지토리 이름이 같거나 앞 연도나 특수문자만 달라 slug가 겹치면 409를 반환한다.";
     private static final String UPDATE_SUMMARY = "프로젝트 수정";
     private static final String UPDATE_DESCRIPTION = "작성자가 프로젝트 정보를 수정한다. 대부분의 필드는 전체 교체 방식이며, "
-            + "비우는 값은 null로 보낸다. thumbnailImageId는 생략하면 기존 이미지를 유지하고, "
+            + "비우는 값은 null로 보낸다. 문자열 값은 앞뒤 공백을 자르고, 공백만 있으면 보내지 않은 것으로 본다 (descriptionMd 제외). "
+            + "thumbnailImageId는 생략하면 기존 이미지를 유지하고, "
             + "새 ID를 보내면 교체하며, null을 명시하면 제거한다. "
             + "descriptionMd는 저장 시 media://{mediaId} 형식으로 정규화하며, 상세 조회 응답의 CDN URL은 기존 프로젝트 미디어와 "
             + "매칭되는 경우에만 본문 이미지 참조로 복원한다. 매칭되지 않는 외부 이미지 URL은 허용하지 않는다. "
             + "techTagIds와 memberHandles도 전체 목록을 순서대로 보낸다. "
             + "반려된 프로젝트를 수정하면 재심사 요청으로 처리되어 approvalStatus가 PENDING으로 바뀌고, "
             + "그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. "
-            + "요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
+            + "요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나, "
+            + "deploymentUrl 없이 serviceStatus를 OPERATING으로 보내면 400, 로그인하지 않았으면 401, "
             + "없거나 삭제됐거나 다른 사람의 프로젝트면 404, 이미 등록된 리포지토리로 바꾸면 409를 반환한다.";
     private static final String FIND_ALL_SUMMARY = "프로젝트 목록 조회";
     private static final String FIND_ALL_DESCRIPTION = "승인된 프로젝트 목록을 검색어, 기수, 기술 스택으로 걸러 정렬 기준대로 조회한다. "
@@ -167,17 +175,18 @@ class ProjectHttpApiTest {
                                 .requestSchema(Schema.schema("ProjectCreateRequest"))
                                 .responseSchema(Schema.schema("ProjectCreateSuccessResponse"))
                                 .requestFields(
-                                        fieldWithPath("title").type(STRING).description("프로젝트 이름 (100자 이하)"),
-                                        fieldWithPath("teamName").type(STRING).description("팀 이름 (50자 이하)"),
-                                        fieldWithPath("tagline").type(STRING).description("한 줄 소개 (200자 이하)"),
+                                        fieldWithPath("title").type(STRING).description("프로젝트 이름. 앞뒤 공백을 자른 뒤 100자 이하 (유니코드 코드 포인트 기준)"),
+                                        fieldWithPath("teamName").type(STRING).description("팀 이름. 앞뒤 공백을 자른 뒤 50자 이하 (유니코드 코드 포인트 기준)"),
+                                        fieldWithPath("tagline").type(STRING).description("한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준)"),
                                         fieldWithPath("cohort").type(NUMBER).description("우아한테크코스 기수 (1~8)"),
                                         fieldWithPath("thumbnailImageId").type(NUMBER)
                                                 .description("본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID")
                                                 .optional(),
                                         fieldWithPath("githubRepositoryUrl").type(STRING)
-                                                .description("https://github.com/{owner}/{repo} 형식. 리포지토리 이름으로 slug를 만든다."),
+                                                .description("https://github.com/{owner}/{repo} 형식 (2,048자 이하). 끝의 .git이나 /는 허용하지만, "
+                                                        + "/tree/main처럼 경로가 더 붙으면 400이다. 리포지토리 이름으로 slug를 만든다."),
                                         fieldWithPath("deploymentUrl").type(STRING)
-                                                .description("서비스 배포 URL (http/https). 빈 문자열은 입력하지 않은 것으로 본다.")
+                                                .description("서비스 배포 URL (http/https). 빈 문자열이나 공백만 있으면 입력하지 않은 것으로 본다.")
                                                 .optional(),
                                         fieldWithPath("descriptionMd").type(STRING)
                                                 .description("프로젝트 설명 마크다운 (100,000자 이하). "
@@ -190,7 +199,8 @@ class ProjectHttpApiTest {
                                         fieldWithPath("memberHandles").type(ARRAY)
                                                 .description("등록자를 제외한 팀원 handle 목록 (1명 이상). "
                                                         + "활동 중인 우아한테크코스 크루 또는 코치여야 하며, "
-                                                        + "대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다.")
+                                                        + "대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다. "
+                                                        + "각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다.")
                                                 .attributes(key("itemsType").value("string"))
                                 )
                                 .responseFields(
@@ -219,6 +229,81 @@ class ProjectHttpApiTest {
                 .andDo(document("project-create-invalid", resource(errorResource())));
 
         verifyNoInteractions(projectService);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("constraintViolationCases")
+    @DisplayName("요청값이 필드 제약을 어기면, 400과 어긴 필드 및 메시지를 반환하고, 서비스를 호출하지 않는다.")
+    void rejectsConstraintViolation(
+            String documentName,
+            String target,
+            String replacement,
+            String field,
+            String message
+    ) throws Exception {
+        mockMvc.perform(post("/api/v1/projects")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRequestJson().replace(target, replacement)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details.length()").value(1))
+                .andExpect(jsonPath("$.details[0].field").value(field))
+                .andExpect(jsonPath("$.details[0].message").value(message))
+                .andDo(document(documentName, resource(errorResource())));
+
+        verifyNoInteractions(projectService);
+    }
+
+    /**
+     * 제약 종류별로 대표 예시 하나씩 문서화한다. 같은 제약은 ProjectCreateRequest 와 ProjectUpdateRequest 가 같다.
+     */
+    private static Stream<Arguments> constraintViolationCases() {
+        return Stream.of(
+                Arguments.of("project-create-invalid-title-length",
+                        "\"루프 (Loop)\"", "\"" + "가".repeat(101) + "\"",
+                        "title", "title은 100자를 초과할 수 없습니다."),
+                Arguments.of("project-create-invalid-blank-title",
+                        "\"루프 (Loop)\"", "\"   \"",
+                        "title", "title은 필수입니다."),
+                Arguments.of("project-create-invalid-github-repository-url",
+                        "\"https://github.com/woowacourse-teams/2026-loop\"",
+                        "\"https://github.com/woowacourse-teams/2026-loop/tree/main\"",
+                        "githubRepositoryUrl", "githubRepositoryUrl은 https://github.com/{owner}/{repo} 형식이어야 합니다."),
+                Arguments.of("project-create-invalid-deployment-url",
+                        "\"https://loop.team\"", "\"loop.team\"",
+                        "deploymentUrl", "deploymentUrl은 http 또는 https URL 형식이어야 합니다."),
+                Arguments.of("project-create-invalid-blank-member-handle",
+                        "\"sangjun121\"", "\"   \"",
+                        "memberHandles", "memberHandles에 빈 값을 넣을 수 없습니다.")
+        );
+    }
+
+    @Test
+    @DisplayName("문자열 값의 앞뒤 공백을 잘라 검증하고 서비스에 넘긴다.")
+    void stripsStringFieldsBeforeRegistration() throws Exception {
+        given(projectService.create(anyLong(), any(ProjectCreateRequest.class)))
+                .willReturn(new ProjectCreateResponse(100L, "loop"));
+        String paddedRequestJson = validRequestJson()
+                .replace("\"루프 (Loop)\"", "\"  루프 (Loop)  \"")
+                .replace("\"https://github.com/woowacourse-teams/2026-loop\"",
+                        "\" https://github.com/woowacourse-teams/2026-loop \"")
+                .replace("\"https://loop.team\"", "\" https://loop.team \"")
+                .replace("\"zzaekkii\"", "\" zzaekkii \"");
+
+        mockMvc.perform(post("/api/v1/projects")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(paddedRequestJson))
+                .andExpect(status().isCreated());
+
+        ArgumentCaptor<ProjectCreateRequest> captor = ArgumentCaptor.forClass(ProjectCreateRequest.class);
+        verify(projectService).create(eq(7L), captor.capture());
+        ProjectCreateRequest request = captor.getValue();
+        assertThat(request.title()).isEqualTo("루프 (Loop)");
+        assertThat(request.githubRepositoryUrl()).isEqualTo("https://github.com/woowacourse-teams/2026-loop");
+        assertThat(request.deploymentUrl()).isEqualTo("https://loop.team");
+        assertThat(request.memberHandles()).containsExactly("zzaekkii", "sangjun121");
     }
 
     @Test
@@ -266,7 +351,7 @@ class ProjectHttpApiTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidRegistrationCases")
-    @DisplayName("기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않은 경우, 400과 원인 에러 코드를 반환한다.")
+    @DisplayName("기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나 slug를 만들 수 없는 경우, 400과 원인 에러 코드를 반환한다.")
     void rejectsInvalidRegistration(
             String documentName,
             RuntimeException exception,
@@ -299,7 +384,10 @@ class ProjectHttpApiTest {
                         ProjectErrorCode.PROJECT_INVALID_DESCRIPTION_MEDIA),
                 Arguments.of("project-create-invalid-member",
                         new InvalidProjectMemberException(ProjectErrorCode.PROJECT_INVALID_MEMBER),
-                        ProjectErrorCode.PROJECT_INVALID_MEMBER)
+                        ProjectErrorCode.PROJECT_INVALID_MEMBER),
+                Arguments.of("project-create-invalid-slug",
+                        new InvalidSlugException(),
+                        ProjectErrorCode.PROJECT_INVALID_SLUG)
         );
     }
 
@@ -1046,20 +1134,21 @@ class ProjectHttpApiTest {
                                 .requestSchema(Schema.schema("ProjectUpdateRequest"))
                                 .responseSchema(Schema.schema("ProjectUpdateSuccessResponse"))
                                 .requestFields(
-                                        fieldWithPath("title").type(STRING).description("프로젝트 이름 (100자 이하)"),
-                                        fieldWithPath("teamName").type(STRING).description("팀 이름 (50자 이하)"),
-                                        fieldWithPath("tagline").type(STRING).description("한 줄 소개 (200자 이하)"),
+                                        fieldWithPath("title").type(STRING).description("프로젝트 이름. 앞뒤 공백을 자른 뒤 100자 이하 (유니코드 코드 포인트 기준)"),
+                                        fieldWithPath("teamName").type(STRING).description("팀 이름. 앞뒤 공백을 자른 뒤 50자 이하 (유니코드 코드 포인트 기준)"),
+                                        fieldWithPath("tagline").type(STRING).description("한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준)"),
                                         fieldWithPath("cohort").type(NUMBER).description("우아한테크코스 기수 (1~8)"),
                                         fieldWithPath("thumbnailImageId").type(NUMBER)
                                                 .description("본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. "
                                                         + "필드를 생략하면 기존 썸네일을 유지하고, null을 보내면 제거한다.")
                                                 .optional(),
                                         fieldWithPath("githubRepositoryUrl").type(STRING)
-                                                .description("https://github.com/{owner}/{repo} 형식. 바꿀 수 있지만 "
+                                                .description("https://github.com/{owner}/{repo} 형식 (2,048자 이하). 끝의 .git이나 /는 허용하지만, "
+                                                        + "/tree/main처럼 경로가 더 붙으면 400이다. 바꿀 수 있지만 "
                                                         + "다른 프로젝트가 등록한 리포지토리로는 바꿀 수 없다. "
                                                         + "slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다."),
                                         fieldWithPath("deploymentUrl").type(STRING)
-                                                .description("서비스 배포 URL (http/https). 비우려면 null로 보낸다.")
+                                                .description("서비스 배포 URL (http/https). 비우려면 null로 보낸다. 빈 문자열이나 공백만 있어도 비운 것으로 본다.")
                                                 .optional(),
                                         fieldWithPath("descriptionMd").type(STRING)
                                                 .description("프로젝트 설명 마크다운 (100,000자 이하). "
@@ -1067,7 +1156,8 @@ class ProjectHttpApiTest {
                                                         + "상세 조회 응답의 CDN URL을 그대로 보내도 기존 본문 이미지 참조를 유지한다.")
                                                 .optional(),
                                         new EnumFields(ServiceStatus.class).withPath("serviceStatus")
-                                                .description("서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있다."),
+                                                .description("서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, "
+                                                        + "어기면 400을 반환한다. 이때 오류 응답의 details.field는 serviceStatusValid다."),
                                         fieldWithPath("techTagIds").type(ARRAY)
                                                 .description("기술 스택 ID 전체 목록. 통째로 교체하며 배열 순서가 표시 순서가 된다. "
                                                         + "이미 달려 있던 태그는 비활성화됐어도 그대로 둘 수 있다.")
@@ -1075,7 +1165,8 @@ class ProjectHttpApiTest {
                                         fieldWithPath("memberHandles").type(ARRAY)
                                                 .description("작성자를 제외한 팀원 handle 전체 목록 (1명 이상). "
                                                         + "통째로 교체하며 배열 순서가 표시 순서가 된다. "
-                                                        + "이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다.")
+                                                        + "이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다. "
+                                                        + "각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다.")
                                                 .attributes(key("itemsType").value("string"))
                                 )
                                 .responseFields(
@@ -1102,6 +1193,24 @@ class ProjectHttpApiTest {
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.details[0].field").value("serviceStatus"))
                 .andDo(document("project-update-invalid", resource(updateErrorResource())));
+
+        verifyNoInteractions(projectService);
+    }
+
+    @Test
+    @DisplayName("배포 URL 없이 운영 중으로 수정하는 경우, 400과 serviceStatusValid 필드 오류를 반환하고, 서비스를 호출하지 않는다.")
+    void rejectsOperatingWithoutDeploymentUrl() throws Exception {
+        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUpdateRequestJson().replace("\"https://loop.team\"", "null")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details.length()").value(1))
+                .andExpect(jsonPath("$.details[0].field").value("serviceStatusValid"))
+                .andExpect(jsonPath("$.details[0].message")
+                        .value("deploymentUrl이 없으면 serviceStatus를 OPERATING으로 둘 수 없습니다."))
+                .andDo(document("project-update-invalid-service-status", resource(updateErrorResource())));
 
         verifyNoInteractions(projectService);
     }
