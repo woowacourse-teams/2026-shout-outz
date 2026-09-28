@@ -25,6 +25,11 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
 
     @Override
     public UserProfileCounts countByUserId(long userId) {
+        return countByUserId(userId, false);
+    }
+
+    @Override
+    public UserProfileCounts countByUserId(long userId, boolean includePending) {
         String sql = """
                 SELECT
                     (
@@ -33,6 +38,10 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                         JOIN projects p ON p.id = pm.project_id
                         WHERE pm.user_id = :userId
                           AND p.deleted_at IS NULL
+                          AND (
+                              p.approval_status = 'APPROVED'
+                              OR (:includePending = TRUE AND p.approval_status = 'PENDING')
+                          )
                     ) AS projects,
                     (
                         SELECT COUNT(*)
@@ -44,7 +53,9 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
 
         return jdbcTemplate.queryForObject(
                 sql,
-                new MapSqlParameterSource("userId", userId),
+                new MapSqlParameterSource()
+                        .addValue("userId", userId)
+                        .addValue("includePending", includePending),
                 (resultSet, rowNumber) -> new UserProfileCounts(
                         resultSet.getLong("projects"),
                         resultSet.getLong("feeds")

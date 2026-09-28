@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
@@ -56,7 +57,8 @@ class UserProjectHttpApiTest {
     private static final Instant CREATED_AT = Instant.parse("2026-09-16T00:00:00Z");
 
     private static final String SUMMARY = "사용자 프로젝트 목록 조회";
-    private static final String DESCRIPTION = "handle로 사용자가 참여한 승인 프로젝트를 최신순으로 조회한다. "
+    private static final String DESCRIPTION = "handle로 사용자가 참여한 프로젝트를 최신순으로 조회한다. 본인 조회는 승인 대기 프로젝트를 포함하고, "
+            + "타인 또는 비로그인 조회는 승인된 프로젝트만 포함한다. "
             + "현재 프로젝트 팀원과 가입 계정에 매칭된 이관 프로젝트 팀원을 모두 포함한다. "
             + "탈퇴한 사용자는 빈 목록을 반환하고, 정지된 사용자는 기존 프로젝트를 공개한다. "
             + "로그인하지 않아도 조회할 수 있으며, 응답의 meta.nextCursor를 다음 요청에 그대로 전달한다.";
@@ -109,6 +111,11 @@ class UserProjectHttpApiTest {
                                 .description(DESCRIPTION)
                                 .pathParameters(
                                         parameterWithName("handle").description("조회할 사용자의 handle")
+                                )
+                                .requestHeaders(
+                                        headerWithName("Cookie")
+                                                .description("로그인 상태면 본인 프로젝트 조회에 사용하는 JSESSIONID")
+                                                .optional()
                                 )
                                 .queryParameters(
                                         parameterWithName("size")
@@ -252,7 +259,7 @@ class UserProjectHttpApiTest {
                 fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서").optional(),
                 fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"),
                 fieldWithPath("meta.totalCount").type(NUMBER)
-                        .description("커서와 size에 무관한 사용자의 전체 공개 참여 프로젝트 수")
+                        .description("커서와 size에 무관한 조회 가능한 전체 참여 프로젝트 수. 본인 조회는 승인 대기 프로젝트를 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함")
         );
     }
 

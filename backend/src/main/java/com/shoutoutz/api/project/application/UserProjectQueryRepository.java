@@ -16,4 +16,12 @@ public interface UserProjectQueryRepository {
             ProjectCursor cursor,
             int size
     );
+
+    UserProjectResult findAllByUserId(
+            long userId,
+            Long viewerId,
+            boolean includePending,
+            ProjectCursor cursor,
+            int size
+    );
 }

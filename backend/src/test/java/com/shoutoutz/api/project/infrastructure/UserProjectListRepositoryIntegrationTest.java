@@ -65,6 +65,38 @@ class UserProjectListRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("승인 대기 프로젝트는 본인 조회에서만 포함한다.")
+    void includesPendingProjectsOnlyForSelfView() {
+        long userId = saveUser();
+        long approved = saveProject("APPROVED", userId, BASE_TIME, false);
+        saveProjectMember(approved, userId);
+        long pending = saveProject("PENDING", userId, BASE_TIME.plus(1, ChronoUnit.HOURS), false);
+        saveProjectMember(pending, userId);
+        long rejected = saveProject("REJECTED", userId, BASE_TIME.plus(2, ChronoUnit.HOURS), false);
+        saveProjectMember(rejected, userId);
+
+        UserProjectResult publicResult = userProjectQueryRepository.findAllByUserId(userId, null, 20);
+        UserProjectResult otherViewerResult = userProjectQueryRepository.findAllByUserId(
+                userId,
+                userId + 1,
+                false,
+                null,
+                20
+        );
+        UserProjectResult selfResult = userProjectQueryRepository.findAllByUserId(
+                userId,
+                userId,
+                true,
+                null,
+                20
+        );
+
+        assertThat(ids(publicResult)).containsExactly(approved);
+        assertThat(ids(otherViewerResult)).containsExactly(approved);
+        assertThat(ids(selfResult)).containsExactly(pending, approved);
+    }
+
+    @Test
     @DisplayName("최신순 커서로 다음 목록을 조회해도 중복이나 누락이 없다.")
     void paginatesWithoutDuplicatesOrOmissions() {
         long userId = saveUser();
