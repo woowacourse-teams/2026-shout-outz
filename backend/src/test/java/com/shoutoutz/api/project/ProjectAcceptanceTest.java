@@ -252,6 +252,16 @@ class ProjectAcceptanceTest {
     }
 
     @Test
+    @DisplayName("slug 형식에 맞지 않는 주소로 상세 조회하면, 없는 프로젝트와 같은 404를 반환한다.")
+    void rejectsMalformedSlugAsNotFound() {
+        Response response = RestAssured.given().port(port)
+                .when().get(PROJECTS_PATH + "/@{slug}", "Loop");
+
+        assertThat(response.statusCode()).as(response.asString()).isEqualTo(404);
+        assertThat(response.jsonPath().getString("code")).isEqualTo("PROJECT_NOT_FOUND");
+    }
+
+    @Test
     @DisplayName("비로그인 사용자가 CSRF 토큰 없이 조회를 기록하면, 방문자 쿠키를 발급받고, 같은 쿠키로 다시 기록해도 조회수는 한 번만 오른다.")
     void recordsViewOncePerVisitorPerDay() {
         LoginSession author = signup("WOOWACOURSE_CREW");
