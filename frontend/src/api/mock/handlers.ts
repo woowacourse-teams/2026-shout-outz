@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 
+import { adminHandlers } from '@/api/mock/admin';
 import { getFeedList } from '@/api/mock/feed';
 import { getNewsDetail, getNewsList } from '@/api/mock/news';
 import { getCohorts, getTechTags, searchCrewList } from '@/api/mock/project';
@@ -347,4 +348,6 @@ export const handlers = [
 
     return HttpResponse.json({ status: 'success', data: news });
   }),
+
+  ...adminHandlers,
 ];

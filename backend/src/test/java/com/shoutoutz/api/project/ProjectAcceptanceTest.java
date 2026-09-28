@@ -11,6 +11,7 @@ import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.visitor.application.VisitorKeyHasher;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -51,14 +52,19 @@ class ProjectAcceptanceTest {
     private VisitorKeyHasher visitorKeyHasher;
 
     @Test
-    @DisplayName("로그인한 사용자가 프로젝트를 등록하면 프로젝트, 기술 태그, 등록자부터 이어지는 팀원이 함께 저장된다.")
+    @DisplayName("요청에 포함한 프로젝트 멤버가 프로젝트, 기술 태그와 함께 요청 순서대로 저장된다.")
     void registersProject() {
         LoginSession author = signup("WOOWACOURSE_CREW");
         LoginSession teammate = signup("WOOWACOURSE_CREW");
         List<Long> techTagIds = techTagIds("spring-boot", "java", "react");
         String repositoryName = uniqueRepositoryName();
 
-        Response response = registerProject(author, repositoryName, techTagIds, List.of(teammate.handle()));
+        Response response = registerProject(
+                author,
+                repositoryName,
+                techTagIds,
+                List.of(author.handle(), teammate.handle())
+        );
 
         assertThat(response.statusCode()).isEqualTo(201);
         assertThat(response.jsonPath().getString("status")).isEqualTo("success");
@@ -208,7 +214,7 @@ class ProjectAcceptanceTest {
     }
 
     @Test
-    @DisplayName("등록자는 승인 대기 중인 본인 프로젝트를 상세 조회할 수 있고, 기술 스택과 등록자부터 이어지는 팀원이 등록 순서대로 조회된다.")
+    @DisplayName("등록자는 승인 대기 중인 본인 프로젝트를 상세 조회할 수 있고, 요청한 팀원이 등록 순서대로 조회된다.")
     void findsOwnPendingProjectDetail() {
         LoginSession author = signup("WOOWACOURSE_CREW");
         LoginSession teammate = signup("WOOWACOURSE_CREW");
@@ -633,7 +639,7 @@ class ProjectAcceptanceTest {
                 .cookie("JSESSIONID", author.sessionId())
                 .header("X-CSRF-Token", author.csrfToken())
                 .contentType("application/json")
-                .body(body)
+                .body(includeRegistrant(author.handle(), body))
                 .when()
                 .put(PROJECTS_PATH + "/" + projectId);
     }
@@ -653,9 +659,22 @@ class ProjectAcceptanceTest {
                 .cookie("JSESSIONID", author.sessionId())
                 .header("X-CSRF-Token", author.csrfToken())
                 .contentType("application/json")
-                .body(body)
+                .body(includeRegistrant(author.handle(), body))
                 .when()
                 .post(PROJECTS_PATH);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> includeRegistrant(String registrantHandle, Map<String, Object> body) {
+        Map<String, Object> requestBody = new HashMap<>(body);
+        List<String> memberHandles = (List<String>) requestBody.get("memberHandles");
+        if (!memberHandles.contains(registrantHandle)) {
+            List<String> membersWithRegistrant = new ArrayList<>(memberHandles.size() + 1);
+            membersWithRegistrant.add(registrantHandle);
+            membersWithRegistrant.addAll(memberHandles);
+            requestBody.put("memberHandles", membersWithRegistrant);
+        }
+        return requestBody;
     }
 
     private static Map<String, Object> requestBody(

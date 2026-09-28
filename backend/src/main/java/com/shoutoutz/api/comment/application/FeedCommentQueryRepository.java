@@ -25,4 +25,5 @@ public interface FeedCommentQueryRepository {
      * 대댓글 조회용
      */
     List<FeedComment> findReplies(long feedId, List<Long> parentIds);
+
 }

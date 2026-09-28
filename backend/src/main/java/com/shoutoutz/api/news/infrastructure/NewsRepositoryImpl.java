@@ -86,7 +86,15 @@ public class NewsRepositoryImpl implements NewsRepository, NewsQueryRepository {
         List<NewsSummary> pageSummaries = hasNext
                 ? summaries.subList(0, size)
                 : summaries;
-        return new NewsPage(pageSummaries, hasNext);
+        long totalCount;
+        if (eventStatus != null) {
+            totalCount = newsJpaRepository.countAllForListByEventStatus(eventStatus.name(), now);
+        } else if (type != null) {
+            totalCount = newsJpaRepository.countByDeletedAtIsNullAndType(type);
+        } else {
+            totalCount = newsJpaRepository.countByDeletedAtIsNull();
+        }
+        return new NewsPage(pageSummaries, hasNext, totalCount);
     }
 
     @Override

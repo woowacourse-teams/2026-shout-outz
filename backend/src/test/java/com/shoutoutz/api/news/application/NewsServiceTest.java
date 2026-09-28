@@ -276,7 +276,7 @@ class NewsServiceTest {
         );
         when(clock.instant()).thenReturn(PUBLISHED_AT);
         when(newsQueryRepository.findAll(null, null, PUBLISHED_AT, null, 1))
-                .thenReturn(new NewsPage(List.of(event), true));
+                .thenReturn(new NewsPage(List.of(event), true, 5L));
         when(newsReactionRepository.findCountsByNewsIds(List.of(102L), null))
                 .thenReturn(Map.of(102L, new NewsReactionCounts(7L, true)));
 
@@ -314,7 +314,7 @@ class NewsServiceTest {
         );
         when(clock.instant()).thenReturn(PUBLISHED_AT);
         when(newsQueryRepository.findAll(NewsType.NOTICE, null, PUBLISHED_AT, null, 20))
-                .thenReturn(new NewsPage(List.of(notice), false));
+                .thenReturn(new NewsPage(List.of(notice), false, 1L));
 
         NewsFindAllResponse response = newsService.findAll(
                 new NewsFindAllRequest("NOTICE", null, "LATEST", 20, null)

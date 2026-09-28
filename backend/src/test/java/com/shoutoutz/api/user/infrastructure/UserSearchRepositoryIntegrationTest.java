@@ -10,6 +10,7 @@ import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.application.UserQueryRepository;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
+import com.shoutoutz.api.user.application.dto.UserSearchPage;
 import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.domain.profile.Track;
@@ -59,13 +60,13 @@ class UserSearchRepositoryIntegrationTest {
         saveProfile(banned.getId(), "Jack Banned", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
-        List<UserSearchItem> result = userQueryRepository.searchWoowaMember(
+        UserSearchPage result = userQueryRepository.searchWoowaMember(
                 "jack",
                 null,
                 10
         );
 
-        assertThat(result).extracting(UserSearchItem::handle)
+        assertThat(result.items()).extracting(UserSearchItem::handle)
                 .containsExactly(
                         exactlyMatched.getHandle().value(),
                         coach.getHandle().value(),
@@ -73,8 +74,9 @@ class UserSearchRepositoryIntegrationTest {
                         prefixMatched.getHandle().value(),
                         containsMatched.getHandle().value()
                 );
-        assertThat(result).extracting(UserSearchItem::relevanceRank)
+        assertThat(result.items()).extracting(UserSearchItem::relevanceRank)
                 .containsExactly(0, 1, 1, 1, 2);
+        assertThat(result.totalCount()).isEqualTo(5L);
     }
 
     @Test
@@ -88,26 +90,27 @@ class UserSearchRepositoryIntegrationTest {
         saveProfile(second.getId(), "나 크루", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
-        List<UserSearchItem> firstSlice = userQueryRepository.searchWoowaMember(
+        UserSearchPage firstSlice = userQueryRepository.searchWoowaMember(
                 "jack",
                 null,
                 10
         );
-        UserSearchItem cursorItem = firstSlice.getFirst();
+        UserSearchItem cursorItem = firstSlice.items().getFirst();
         UserSearchCursor cursor = new UserSearchCursor(
                 cursorItem.relevanceRank(),
                 cursorItem.displayName(),
                 cursorItem.handle()
         );
 
-        List<UserSearchItem> result = userQueryRepository.searchWoowaMember(
+        UserSearchPage result = userQueryRepository.searchWoowaMember(
                 "jack",
                 cursor,
                 10
         );
 
-        assertThat(result).extracting(UserSearchItem::handle)
-                .containsExactly(firstSlice.getLast().handle());
+        assertThat(result.items()).extracting(UserSearchItem::handle)
+                .containsExactly(firstSlice.items().getLast().handle());
+        assertThat(result.totalCount()).isEqualTo(2L);
     }
 
     @Test
@@ -121,13 +124,13 @@ class UserSearchRepositoryIntegrationTest {
         saveProfile(unmatched.getId(), "일반 크루", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
-        List<UserSearchItem> result = userQueryRepository.searchWoowaMember(
+        UserSearchPage result = userQueryRepository.searchWoowaMember(
                 "%",
                 null,
                 10
         );
 
-        assertThat(result).extracting(UserSearchItem::handle)
+        assertThat(result.items()).extracting(UserSearchItem::handle)
                 .containsExactly(matched.getHandle().value());
     }
 

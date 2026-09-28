@@ -49,7 +49,11 @@ public class UserFeedHttpApi {
                 result.items(),
                 result.mediaUrls()
         );
-        SliceMetaResponse meta = new SliceMetaResponse(result.nextCursor(), result.hasNext());
+        SliceMetaResponse meta = new SliceMetaResponse(
+                result.nextCursor(),
+                result.hasNext(),
+                result.totalCount()
+        );
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));
     }

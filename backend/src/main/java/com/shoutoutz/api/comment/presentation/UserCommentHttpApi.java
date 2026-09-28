@@ -34,7 +34,11 @@ public class UserCommentHttpApi {
     ) {
         UserCommentResult result = userCommentService.findAll(authenticatedUser.userId(), request);
         List<UserCommentResponse> response = UserCommentResponse.from(result.comments());
-        SliceMetaResponse meta = new SliceMetaResponse(result.nextCursor(), result.hasNext());
+        SliceMetaResponse meta = new SliceMetaResponse(
+                result.nextCursor(),
+                result.hasNext(),
+                result.totalCount()
+        );
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));
     }

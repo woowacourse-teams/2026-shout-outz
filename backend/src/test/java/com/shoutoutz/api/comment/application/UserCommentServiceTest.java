@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.comment.application.dto.UserCommentCursor;
 import com.shoutoutz.api.comment.application.dto.UserCommentItem;
+import com.shoutoutz.api.comment.application.dto.UserCommentPage;
 import com.shoutoutz.api.comment.application.dto.UserCommentResult;
 import com.shoutoutz.api.comment.application.dto.UserCommentType;
 import com.shoutoutz.api.comment.presentation.dto.request.UserCommentFindRequest;
@@ -33,7 +34,7 @@ class UserCommentServiceTest {
     }
 
     @Test
-    void 한_건을_더_조회해_다음_페이지_커서를_만든다() {
+    void 다음_페이지가_있으면_커서를_만든다() {
         UserCommentCursor cursor = new UserCommentCursor(
                 Instant.parse("2026-09-16T03:00:00Z"),
                 UserCommentType.FEED,
@@ -44,8 +45,8 @@ class UserCommentServiceTest {
                 comment(2L, UserCommentType.FEED, "2026-09-16T01:00:00Z"),
                 comment(1L, UserCommentType.FEED, "2026-09-16T00:00:00Z")
         );
-        when(userCommentQueryRepository.findAllByAuthorId(1L, cursor, 3))
-                .thenReturn(queried);
+        when(userCommentQueryRepository.findAllByAuthorId(1L, cursor, 2))
+                .thenReturn(new UserCommentPage(queried.subList(0, 2), true, 5L));
 
         UserCommentResult result = userCommentService.findAll(
                 1L,
@@ -54,18 +55,23 @@ class UserCommentServiceTest {
 
         assertThat(result.comments()).containsExactly(queried.get(0), queried.get(1));
         assertThat(result.hasNext()).isTrue();
+        assertThat(result.totalCount()).isEqualTo(5L);
         assertThat(cursorCodec.decode(result.nextCursor())).isEqualTo(new UserCommentCursor(
                 queried.get(1).createdAt(),
                 queried.get(1).type(),
                 queried.get(1).commentId()
         ));
-        verify(userCommentQueryRepository).findAllByAuthorId(1L, cursor, 3);
+        verify(userCommentQueryRepository).findAllByAuthorId(1L, cursor, 2);
     }
 
     @Test
     void 다음_페이지가_없으면_커서를_반환하지_않는다() {
-        when(userCommentQueryRepository.findAllByAuthorId(1L, null, 21))
-                .thenReturn(List.of(comment(1L, UserCommentType.FEED, "2026-09-16T00:00:00Z")));
+        when(userCommentQueryRepository.findAllByAuthorId(1L, null, 20))
+                .thenReturn(new UserCommentPage(
+                        List.of(comment(1L, UserCommentType.FEED, "2026-09-16T00:00:00Z")),
+                        false,
+                        1L
+                ));
 
         UserCommentResult result = userCommentService.findAll(
                 1L,

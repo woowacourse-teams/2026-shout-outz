@@ -44,7 +44,11 @@ public class FeedHttpApi {
                 ? feedService.findAllFeed(request)
                 : feedService.findAllFeed(request, viewerId);
         List<FeedResponse> response = FeedResponse.from(result.items(), result.mediaUrls());
-        SliceMetaResponse meta = new SliceMetaResponse(result.nextCursor(), result.hasNext());
+        SliceMetaResponse meta = new SliceMetaResponse(
+                result.nextCursor(),
+                result.hasNext(),
+                result.totalCount()
+        );
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));
     }

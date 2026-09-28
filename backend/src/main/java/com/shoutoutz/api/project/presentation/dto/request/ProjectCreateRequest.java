@@ -1,5 +1,6 @@
 package com.shoutoutz.api.project.presentation.dto.request;
 
+import com.shoutoutz.api.common.util.DataResolveUtil;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import jakarta.validation.constraints.NotBlank;
@@ -49,11 +50,16 @@ public record ProjectCreateRequest(
 ) {
 
     /**
-     * 배포 URL 입력칸을 비워 보내면 입력하지 않은 것으로 보고 null 로 둔다.
+     * 검증 전에 문자열의 앞뒤 공백을 자르고, 비어 있으면 null 로 둔다.
+     * 배포 URL 입력칸을 비워 보내면 입력하지 않은 것으로 본다.
+     * descriptionMd 는 마크다운이라 앞 공백에 의미가 있어 정제하지 않는다.
      */
     public ProjectCreateRequest {
-        if (deploymentUrl != null && deploymentUrl.isBlank()) {
-            deploymentUrl = null;
-        }
+        title = DataResolveUtil.sanitizeString(title);
+        teamName = DataResolveUtil.sanitizeString(teamName);
+        tagline = DataResolveUtil.sanitizeString(tagline);
+        githubRepositoryUrl = DataResolveUtil.sanitizeString(githubRepositoryUrl);
+        deploymentUrl = DataResolveUtil.sanitizeString(deploymentUrl);
+        memberHandles = DataResolveUtil.sanitizeStrings(memberHandles);
     }
 }

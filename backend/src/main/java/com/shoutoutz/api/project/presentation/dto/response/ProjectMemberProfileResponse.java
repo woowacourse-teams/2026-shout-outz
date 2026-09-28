@@ -3,6 +3,7 @@ package com.shoutoutz.api.project.presentation.dto.response;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.domain.profile.Track;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.net.URI;
 import java.util.Map;
 
@@ -12,8 +13,10 @@ import java.util.Map;
  * 가입한 사용자는 avatarUrl, 가입하지 않은 이관 팀원은 githubAvatarUrl과 githubProfileUrl을 가진다.
  */
 public record ProjectMemberProfileResponse(
+        Long userId,
         String handle,
         String displayName,
+        UserType userType,
         Integer cohort,
         String track,
         Long avatarImageId,
@@ -22,15 +25,41 @@ public record ProjectMemberProfileResponse(
         String githubProfileUrl
 ) {
 
+    public ProjectMemberProfileResponse(
+            String handle,
+            String displayName,
+            Integer cohort,
+            String track,
+            Long avatarImageId,
+            String avatarUrl,
+            String githubAvatarUrl,
+            String githubProfileUrl
+    ) {
+        this(
+                null,
+                handle,
+                displayName,
+                UserType.WOOWACOURSE_CREW,
+                cohort,
+                track,
+                avatarImageId,
+                avatarUrl,
+                githubAvatarUrl,
+                githubProfileUrl
+        );
+    }
+
     public static ProjectMemberProfileResponse from(
             ProjectMemberProfile member,
             Map<Long, URI> mediaUrls
     ) {
         return new ProjectMemberProfileResponse(
+                member.userId(),
                 member.handle(),
                 member.displayName(),
-                cohortValue(member.cohort()),
-                trackValue(member.track()),
+                member.userType(),
+                cohortValue(member.userType(), member.cohort()),
+                trackValue(member.userType(), member.track()),
                 member.avatarImageId(),
                 toUrl(mediaUrls, member.avatarImageId()),
                 member.githubAvatarUrl(),
@@ -46,15 +75,15 @@ public record ProjectMemberProfileResponse(
         return url == null ? null : url.toString();
     }
 
-    private static Integer cohortValue(Cohort cohort) {
-        if (cohort == null) {
+    private static Integer cohortValue(UserType userType, Cohort cohort) {
+        if (userType != UserType.WOOWACOURSE_CREW || cohort == null) {
             return null;
         }
         return cohort.getValue();
     }
 
-    private static String trackValue(Track track) {
-        if (track == null) {
+    private static String trackValue(UserType userType, Track track) {
+        if (userType != UserType.WOOWACOURSE_CREW || track == null) {
             return null;
         }
         return track.getValue();

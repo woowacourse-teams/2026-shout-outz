@@ -25,8 +25,32 @@ class SlugTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"2026-my_project", "2026-app.v2", "2026-", "2026--loop"})
-    @DisplayName("slug 규칙을 통과하지 못하는 리포지토리 이름은 400 예외를 던진다.")
+    @CsvSource({
+            "2026-my_project, my-project",
+            "2026-app.v2, app-v2",
+            "foo.js, foo-js",
+            "My__App., my-app",
+            "2026--loop, loop",
+            "_app-, app"
+    })
+    @DisplayName("slug에 쓸 수 없는 문자가 이어진 구간은 하이픈 하나로 바꾸고 앞뒤 하이픈은 뗀다.")
+    void replacesDisallowedCharactersWithHyphen(String repositoryName, String expected) {
+        assertThat(Slug.from(repositoryName).value()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "2026_app, app",
+            "2026.app, app"
+    })
+    @DisplayName("연도 뒤 구분자가 하이픈이 아니어도 연도 접두사를 뗀다.")
+    void removesYearPrefixWithOtherSeparator(String repositoryName, String expected) {
+        assertThat(Slug.from(repositoryName).value()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"2026-", "___", "2026-..."})
+    @DisplayName("변환한 결과가 비어 있으면 400 예외를 던진다.")
     void rejectsRepositoryNameThatCannotBecomeSlug(String repositoryName) {
         assertThatThrownBy(() -> Slug.from(repositoryName))
                 .isInstanceOfSatisfying(InvalidSlugException.class,

@@ -1,5 +1,7 @@
 package com.shoutoutz.api.common.util;
 
+import java.util.List;
+
 public final class DataResolveUtil {
     private DataResolveUtil() {}
 
@@ -12,6 +14,21 @@ public final class DataResolveUtil {
     public static String sanitizeString(String string) {
         String sanitizedString = string != null ? string.trim() : null;
         return emptyToNull(sanitizedString);
+    }
+
+    /**
+     * 문자열 목록의 각 요소를 정제한다. 목록 자체가 null 이면 null 을 돌려준다.
+     *
+     * @param strings
+     * @return null Or 각 요소를 정제한 목록 (정제 결과가 빈 요소는 null)
+     */
+    public static List<String> sanitizeStrings(List<String> strings) {
+        if (strings == null) {
+            return null;
+        }
+        return strings.stream()
+                .map(DataResolveUtil::sanitizeString)
+                .toList();
     }
 
     /**

@@ -63,6 +63,7 @@ class UserFeedHttpApiTest {
                         List.of(feed()),
                         "next-cursor",
                         true,
+                        7L,
                         Map.of(
                                 20L, URI.create("https://cdn.example.com/media/20/display"),
                                 30L, URI.create("https://cdn.example.com/media/30/display")
@@ -87,6 +88,7 @@ class UserFeedHttpApiTest {
                 .andExpect(jsonPath("$.data[0].commentCount").value(3))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andExpect(jsonPath("$.meta.totalCount").value(7))
                 .andDo(document(
                         "user-feed-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -117,13 +119,14 @@ class UserFeedHttpApiTest {
     @DisplayName("파라미터를 생략하면 기본 조회 조건을 사용한다")
     void usesDefaultParameters() throws Exception {
         given(feedService.findAllByUser("zzaekkii", new UserFeedFindRequest(null, null)))
-                .willReturn(new FeedFindAllResult(List.of(), null, false));
+                .willReturn(new FeedFindAllResult(List.of(), null, false, 0L, Map.of()));
 
         mockMvc.perform(get("/api/v1/users/{handle}/feeds", "zzaekkii"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andExpect(jsonPath("$.meta.nextCursor").doesNotExist())
-                .andExpect(jsonPath("$.meta.hasNext").value(false));
+                .andExpect(jsonPath("$.meta.hasNext").value(false))
+                .andExpect(jsonPath("$.meta.totalCount").value(0));
 
         verify(feedService).findAllByUser("zzaekkii", new UserFeedFindRequest(null, null));
     }
@@ -181,6 +184,7 @@ class UserFeedHttpApiTest {
                 "사용자 피드 제목",
                 "사용자 피드 본문",
                 new FeedItem.Author(
+                        1L,
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,

@@ -35,6 +35,7 @@ import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.ValidationFailedException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.news.application.NewsService;
 import com.shoutoutz.api.news.domain.enums.EventStatus;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
@@ -182,6 +183,21 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.author.name")
                                                 .type(STRING)
                                                 .description("작성자 이름"),
+                                        fieldWithPath("data.author.displayName")
+                                                .type(STRING)
+                                                .description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType")
+                                                .type(STRING)
+                                                .description("작성자 유형")
+                                                .optional(),
+                                        fieldWithPath("data.author.track")
+                                                .type(STRING)
+                                                .description("작성자 트랙")
+                                                .optional(),
+                                        fieldWithPath("data.author.cohort")
+                                                .type(NUMBER)
+                                                .description("작성자 기수")
+                                                .optional(),
                                         fieldWithPath("data.publishedAt")
                                                 .type(STRING)
                                                 .description("게시 시각"),
@@ -310,6 +326,10 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.author").type(OBJECT).description("이벤트 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.name").type(STRING).description("작성자 이름"),
+                                        fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
+                                        fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
+                                        fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
                                         fieldWithPath("data.publishedAt").type(STRING).description("게시 시각"),
                                         new EnumFields(EventStatus.class).withPath("data.eventStatus").description("이벤트 상태"),
                                         fieldWithPath("data.eventStartAt").type(STRING).description("이벤트 시작 시각"),
@@ -380,7 +400,7 @@ class NewsHttpApiTest {
                         false,
                         null
                 )),
-                new NewsFindAllResponse.Meta(null, false)
+                new SliceMetaResponse(null, false, 1L)
         );
         given(newsService.findAll(any(NewsFindAllRequest.class))).willReturn(result);
 
@@ -398,6 +418,7 @@ class NewsHttpApiTest {
                 .andExpect(jsonPath("$.data[0].likedByMe").value(false))
                 .andExpect(jsonPath("$.meta.nextCursor").value(nullValue()))
                 .andExpect(jsonPath("$.meta.hasNext").value(false))
+                .andExpect(jsonPath("$.meta.totalCount").value(1))
                 .andDo(document(
                         "news-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -476,7 +497,10 @@ class NewsHttpApiTest {
                                                 .optional(),
                                         fieldWithPath("meta.hasNext")
                                                 .type(BOOLEAN)
-                                                .description("다음 페이지 존재 여부")
+                                                .description("다음 페이지 존재 여부"),
+                                        fieldWithPath("meta.totalCount")
+                                                .type(NUMBER)
+                                                .description("커서와 size를 제외한 유형·이벤트 상태 조건을 만족하는 전체 소식 수")
                                 )
                                 .build())
                 ));
@@ -589,6 +613,21 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.author.name")
                                                 .type(STRING)
                                                 .description("작성자 이름"),
+                                        fieldWithPath("data.author.displayName")
+                                                .type(STRING)
+                                                .description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType")
+                                                .type(STRING)
+                                                .description("작성자 유형")
+                                                .optional(),
+                                        fieldWithPath("data.author.track")
+                                                .type(STRING)
+                                                .description("작성자 트랙")
+                                                .optional(),
+                                        fieldWithPath("data.author.cohort")
+                                                .type(NUMBER)
+                                                .description("작성자 기수")
+                                                .optional(),
                                         fieldWithPath("data.publishedAt")
                                                 .type(STRING)
                                                 .description("게시 시각"),
@@ -739,7 +778,7 @@ class NewsHttpApiTest {
     void usesDefaultNewsListQueryValues() throws Exception {
         NewsFindAllResponse result = new NewsFindAllResponse(
                 List.of(),
-                new NewsFindAllResponse.Meta(null, false)
+                new SliceMetaResponse(null, false, 0L)
         );
         given(newsService.findAll(any(NewsFindAllRequest.class))).willReturn(result);
 
@@ -1184,6 +1223,10 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.author").type(OBJECT).description("작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.name").type(STRING).description("작성자 이름"),
+                                        fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
+                                        fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
+                                        fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
                                         fieldWithPath("data.publishedAt").type(STRING).description("게시 시각"),
                                         fieldWithPath("data.eventStatus").type(STRING)
                                                 .description("이벤트 상태. 공지는 null").optional(),

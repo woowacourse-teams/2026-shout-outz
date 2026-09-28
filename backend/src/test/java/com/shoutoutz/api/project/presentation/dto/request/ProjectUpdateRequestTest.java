@@ -2,12 +2,15 @@ package com.shoutoutz.api.project.presentation.dto.request;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 class ProjectUpdateRequestTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
     @Test
     void thumbnailImageId를_생략하면_미전달로_구분한다() throws Exception {
@@ -37,6 +40,101 @@ class ProjectUpdateRequestTest {
 
         assertThat(request.isThumbnailImageIdProvided()).isTrue();
         assertThat(request.thumbnailImageId()).isEqualTo(12L);
+    }
+
+    @Test
+    void 문자열_필드의_앞뒤_공백을_자른다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue("""
+                {
+                  "title": "  루프 (Loop)  ",
+                  "teamName": " 루프팀 ",
+                  "tagline": "\\t바뀐 한 줄 소개\\n",
+                  "cohort": 6,
+                  "githubRepositoryUrl": " https://github.com/woowacourse-teams/2026-loop ",
+                  "deploymentUrl": " https://loop.team ",
+                  "descriptionMd": "    indented code",
+                  "serviceStatus": "OPERATING",
+                  "techTagIds": [1, 2],
+                  "memberHandles": [" dahye ", "zzaekkii"]
+                }
+                """, ProjectUpdateRequest.class);
+
+        assertThat(request.title()).isEqualTo("루프 (Loop)");
+        assertThat(request.teamName()).isEqualTo("루프팀");
+        assertThat(request.tagline()).isEqualTo("바뀐 한 줄 소개");
+        assertThat(request.githubRepositoryUrl()).isEqualTo("https://github.com/woowacourse-teams/2026-loop");
+        assertThat(request.deploymentUrl()).isEqualTo("https://loop.team");
+        assertThat(request.memberHandles()).containsExactly("dahye", "zzaekkii");
+        assertThat(request.descriptionMd()).isEqualTo("    indented code");
+        assertThat(validator.validate(request)).isEmpty();
+    }
+
+    @Test
+    void 공백만_있는_배포_URL은_null로_둔다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("").replace("\"https://loop.team\"", "\"   \""),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(request.deploymentUrl()).isNull();
+    }
+
+    @Test
+    void 공백만_있는_제목은_거절한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("").replace("\"루프 (Loop)\"", "\"   \""),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("title");
+    }
+
+    @Test
+    void 배포_URL_없이_운영_중이면_거절한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("").replace("\"https://loop.team\"", "null"),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("serviceStatusValid");
+    }
+
+    @Test
+    void 배포_URL이_공백뿐이고_운영_중이면_거절한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("").replace("\"https://loop.team\"", "\"   \""),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("serviceStatusValid");
+    }
+
+    @Test
+    void 배포_URL_없이_종료_상태면_허용한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("")
+                        .replace("\"https://loop.team\"", "null")
+                        .replace("\"OPERATING\"", "\"CLOSED\""),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(validator.validate(request)).isEmpty();
+    }
+
+    @Test
+    void 배포_URL이_있으면_종료_상태도_허용한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("").replace("\"OPERATING\"", "\"CLOSED\""),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(validator.validate(request)).isEmpty();
     }
 
     private static String baseJson(String thumbnailField) {

@@ -181,7 +181,7 @@ class FeedCommentServiceTest {
                 null,
                 FeedCommentSort.LATEST,
                 5
-        )).thenReturn(new FeedCommentPage(List.of(root, deletedRoot), false));
+        )).thenReturn(new FeedCommentPage(List.of(root, deletedRoot), false, 2L));
         when(feedCommentQueryRepository.findReplies(FEED_ID, List.of(COMMENT_ID, 503L)))
                 .thenReturn(List.of(reply));
         givenAuthor(AUTHOR_ID, "작성자", 10L);
@@ -217,7 +217,7 @@ class FeedCommentServiceTest {
                 null,
                 FeedCommentSort.LATEST,
                 5
-        )).thenReturn(new FeedCommentPage(List.of(ownComment, otherComment), false));
+        )).thenReturn(new FeedCommentPage(List.of(ownComment, otherComment), false, 2L));
         when(feedCommentQueryRepository.findReplies(FEED_ID, List.of(COMMENT_ID, 502L)))
                 .thenReturn(List.of());
         when(feedCommentReactionRepository.findByCommentIds(List.of(COMMENT_ID, 502L), AUTHOR_ID))
@@ -252,7 +252,7 @@ class FeedCommentServiceTest {
                 null,
                 FeedCommentSort.OLDEST,
                 1
-        )).thenReturn(new FeedCommentPage(List.of(root), true));
+        )).thenReturn(new FeedCommentPage(List.of(root), true, 2L));
         when(feedCommentQueryRepository.findReplies(FEED_ID, List.of(COMMENT_ID)))
                 .thenReturn(List.of());
         givenAuthor();

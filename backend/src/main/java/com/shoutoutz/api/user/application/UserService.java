@@ -13,6 +13,7 @@ import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.application.dto.UserProfileCounts;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
+import com.shoutoutz.api.user.application.dto.UserSearchPage;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
@@ -21,6 +22,7 @@ import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileResponse;
 import com.shoutoutz.api.user.presentation.dto.response.UserProfileSummaryResponse;
@@ -66,6 +68,7 @@ public class UserService {
         UserProfile savedProfile = userProfileRepository.save(updatedProfile);
 
         return new UserProfileUpdateResponse(
+                user.getId(),
                 user.getHandle().value(),
                 savedProfile.getDisplayName().value(),
                 savedProfile.getUserType(),
@@ -122,29 +125,31 @@ public class UserService {
     ) {
         UserSearchCursor decodedCursor = userSearchCursorCodec.decode(cursor);
 
-        List<UserSearchItem> searchedItems = userQueryRepository.searchWoowaMember(
+        UserSearchPage page = userQueryRepository.searchWoowaMember(
                 keyword,
                 decodedCursor,
-                size + 1
+                size
         );
 
-        return createSearchResult(searchedItems, size);
+        return createSearchResult(page);
     }
 
     /**
-     * 요청한 크기보다 한 건 더 조회한 결과를 이용한 다음 페이지 정보 생성.
+     * 조회 페이지의 다음 페이지 여부로 커서를 생성한다.
      */
-    private UserSearchResult createSearchResult(
-            List<UserSearchItem> searchedItems,
-            int size
-    ) {
-        if (searchedItems.size() <= size) {
-            List<UserSearchItem> items = List.copyOf(searchedItems);
-            return new UserSearchResult(items, null, false, resolveAvatarUrls(items));
+    private UserSearchResult createSearchResult(UserSearchPage page) {
+        List<UserSearchItem> items = page.items();
+        if (!page.hasNext()) {
+            return new UserSearchResult(items, null, false, page.totalCount(), resolveAvatarUrls(items));
         }
 
-        List<UserSearchItem> items = List.copyOf(searchedItems.subList(0, size));
-        return new UserSearchResult(items, encodeCursor(items.getLast()), true, resolveAvatarUrls(items));
+        return new UserSearchResult(
+                items,
+                encodeCursor(items.getLast()),
+                true,
+                page.totalCount(),
+                resolveAvatarUrls(items)
+        );
     }
 
     private String encodeCursor(UserSearchItem item) {
@@ -192,6 +197,7 @@ public class UserService {
             UserProfileCounts counts
     ) {
         return new UserProfileResponse(
+                user.getId(),
                 user.getHandle().value(),
                 profile.getDisplayName().value(),
                 profile.getUserType(),
@@ -207,6 +213,9 @@ public class UserService {
     }
 
     private String trackValue(UserProfile profile) {
+        if (profile.getUserType() != UserType.WOOWACOURSE_CREW) {
+            return null;
+        }
         Track track = profile.getTrack();
         if (track == null) {
             return null;
@@ -215,6 +224,9 @@ public class UserService {
     }
 
     private Short cohortValue(UserProfile profile) {
+        if (profile.getUserType() != UserType.WOOWACOURSE_CREW) {
+            return null;
+        }
         Cohort cohort = profile.getCohort();
         if (cohort == null) {
             return null;
@@ -239,6 +251,7 @@ public class UserService {
      */
     private UserProfileResponse createDeletedProfileResponse(User user) {
         return new UserProfileResponse(
+                user.getId(),
                 user.getHandle().value(),
                 DELETED_USER_DISPLAY_NAME,
                 null,

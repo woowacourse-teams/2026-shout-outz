@@ -27,6 +27,7 @@ final class FeedRestDocsFields {
                 fieldWithPath("title").type(STRING).description("피드 제목"),
                 fieldWithPath("content").type(STRING).description("Markdown 본문"),
                 fieldWithPath("author").type(OBJECT).description("현재 작성자 프로필"),
+                fieldWithPath("author.userId").type(NUMBER).description("작성자 ID"),
                 fieldWithPath("author.handle").type(STRING).description("작성자 핸들"),
                 fieldWithPath("author.displayName").type(STRING).description("작성자 이름"),
                 new EnumFields(UserType.class).withPath("author.userType").description("작성자 유형"),
@@ -70,6 +71,7 @@ final class FeedRestDocsFields {
                 fieldWithPath("title").type(STRING).description("피드 제목"),
                 fieldWithPath("content").type(STRING).description("Markdown 본문"),
                 fieldWithPath("author").type(OBJECT).description("현재 작성자 프로필"),
+                fieldWithPath("author.userId").type(NUMBER).description("작성자 ID"),
                 fieldWithPath("author.handle").type(STRING).description("작성자 핸들"),
                 fieldWithPath("author.displayName").type(STRING).description("작성자 이름"),
                 new EnumFields(UserType.class).withPath("author.userType").description("작성자 유형"),
@@ -91,6 +93,23 @@ final class FeedRestDocsFields {
     }
 
     static List<FieldDescriptor> feedListResponseFields(String description) {
+        return feedListResponseFields(
+                description,
+                "커서와 size를 제외한 조회 조건을 만족하는 전체 피드 수"
+        );
+    }
+
+    static List<FieldDescriptor> userFeedListResponseFields(String description) {
+        return feedListResponseFields(
+                description,
+                "커서와 size에 무관한 해당 사용자의 전체 공개 피드 수"
+        );
+    }
+
+    private static List<FieldDescriptor> feedListResponseFields(
+            String description,
+            String totalCountDescription
+    ) {
         List<FieldDescriptor> fields = new ArrayList<>();
         fields.add(fieldWithPath("status").type(STRING).description("응답 상태"));
         fields.add(fieldWithPath("data").type(ARRAY).description(description));
@@ -98,10 +117,8 @@ final class FeedRestDocsFields {
         fields.add(fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"));
         fields.add(fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서").optional());
         fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"));
+        fields.add(fieldWithPath("meta.totalCount").type(NUMBER)
+                .description(totalCountDescription));
         return fields;
-    }
-
-    static List<FieldDescriptor> userFeedListResponseFields(String description) {
-        return feedListResponseFields(description);
     }
 }
