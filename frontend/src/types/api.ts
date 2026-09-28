@@ -10,15 +10,20 @@
  * 스키마에 없는 응답(홈 통계, 미디어 업로드 등)은 `docs/api-types.md`에 따로 적어 두었다.
  */
 import type {
+  AdminVerificationRequestFindAllSuccessResponse,
   AuthSessionSuccessResponse,
   CohortFindAllSuccessResponse,
   FeedCommentFindAllSuccessResponse,
   FeedFindAllSuccessResponse,
   FeedFindSuccessResponse,
+  EventCreateRequest,
+  HomeBannerAdminFindAllSuccessResponse,
   HomeBannerFindAllSuccessResponse,
+  HomeBannerUpsertRequest,
   HomeStatisticsSuccessResponse,
   NewsFindAllSuccessResponse,
   NewsFindDetailSuccessResponse,
+  NoticeCreateRequest,
   ProjectCreateRequest as GeneratedProjectCreateRequest,
   ProjectCreateSuccessResponse,
   ProjectFilterOptionsSuccessResponse,
@@ -95,3 +100,13 @@ export type HomeBannerItem = Item<Data<HomeBannerFindAllSuccessResponse>>;
 
 export type NewsListItemData = Item<Data<NewsFindAllSuccessResponse>>;
 export type NewsDetailData = Data<NewsFindDetailSuccessResponse>;
+
+export type NoticeCreateBody = NoticeCreateRequest;
+export type EventCreateBody = EventCreateRequest;
+
+// ── 관리자 ──────────────────────────────────────────────────────────────────
+
+export type AdminVerificationListData = Data<AdminVerificationRequestFindAllSuccessResponse>;
+export type AdminVerificationItem = Item<AdminVerificationListData['items']>;
+export type AdminHomeBannerItem = Item<Data<HomeBannerAdminFindAllSuccessResponse>>;
+export type HomeBannerUpsertBody = HomeBannerUpsertRequest;

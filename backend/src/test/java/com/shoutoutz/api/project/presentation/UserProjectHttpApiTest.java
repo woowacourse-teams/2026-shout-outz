@@ -96,7 +96,7 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.data[0].members[0].avatarUrl")
                         .value("https://cdn.example.com/avatar-21"))
                 .andExpect(jsonPath("$.data[0].members[0].avatarImageId").value(21L))
-                .andExpect(jsonPath("$.data[0].members[0].userId").doesNotExist())
+                .andExpect(jsonPath("$.data[0].members[0].userId").value(7L))
                 .andExpect(jsonPath("$.meta.nextCursor").value(ProjectCursorCodec.encode(
                         ProjectCursor.latest(CREATED_AT, 100L))))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
@@ -236,8 +236,10 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].techTags[].id").type(NUMBER).description("기술 스택 ID"),
                 fieldWithPath("data[].techTags[].displayName").type(STRING).description("기술 스택 이름"),
                 fieldWithPath("data[].members").type(ARRAY).description("프로젝트 팀원"),
+                fieldWithPath("data[].members[].userId").type(NUMBER).description("사용자 ID. 이관 팀원은 null이다.").optional(),
                 fieldWithPath("data[].members[].handle").type(STRING).description("사용자 handle").optional(),
                 fieldWithPath("data[].members[].displayName").type(STRING).description("표시 이름"),
+                fieldWithPath("data[].members[].userType").type(STRING).description("사용자 유형").optional(),
                 fieldWithPath("data[].members[].cohort").type(NUMBER).description("기수").optional(),
                 new EnumFields(Track.class).withPath("data[].members[].track").description("트랙").optional(),
                 fieldWithPath("data[].members[].avatarImageId").type(NUMBER).description("프로필 이미지 미디어 ID").optional(),

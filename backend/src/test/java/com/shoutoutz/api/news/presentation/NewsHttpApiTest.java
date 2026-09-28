@@ -183,6 +183,21 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.author.name")
                                                 .type(STRING)
                                                 .description("작성자 이름"),
+                                        fieldWithPath("data.author.displayName")
+                                                .type(STRING)
+                                                .description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType")
+                                                .type(STRING)
+                                                .description("작성자 유형")
+                                                .optional(),
+                                        fieldWithPath("data.author.track")
+                                                .type(STRING)
+                                                .description("작성자 트랙")
+                                                .optional(),
+                                        fieldWithPath("data.author.cohort")
+                                                .type(NUMBER)
+                                                .description("작성자 기수")
+                                                .optional(),
                                         fieldWithPath("data.publishedAt")
                                                 .type(STRING)
                                                 .description("게시 시각"),
@@ -311,6 +326,10 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.author").type(OBJECT).description("이벤트 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.name").type(STRING).description("작성자 이름"),
+                                        fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
+                                        fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
+                                        fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
                                         fieldWithPath("data.publishedAt").type(STRING).description("게시 시각"),
                                         new EnumFields(EventStatus.class).withPath("data.eventStatus").description("이벤트 상태"),
                                         fieldWithPath("data.eventStartAt").type(STRING).description("이벤트 시작 시각"),
@@ -594,6 +613,21 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.author.name")
                                                 .type(STRING)
                                                 .description("작성자 이름"),
+                                        fieldWithPath("data.author.displayName")
+                                                .type(STRING)
+                                                .description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType")
+                                                .type(STRING)
+                                                .description("작성자 유형")
+                                                .optional(),
+                                        fieldWithPath("data.author.track")
+                                                .type(STRING)
+                                                .description("작성자 트랙")
+                                                .optional(),
+                                        fieldWithPath("data.author.cohort")
+                                                .type(NUMBER)
+                                                .description("작성자 기수")
+                                                .optional(),
                                         fieldWithPath("data.publishedAt")
                                                 .type(STRING)
                                                 .description("게시 시각"),
@@ -1189,6 +1223,10 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.author").type(OBJECT).description("작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.name").type(STRING).description("작성자 이름"),
+                                        fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
+                                        fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
+                                        fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
                                         fieldWithPath("data.publishedAt").type(STRING).description("게시 시각"),
                                         fieldWithPath("data.eventStatus").type(STRING)
                                                 .description("이벤트 상태. 공지는 null").optional(),

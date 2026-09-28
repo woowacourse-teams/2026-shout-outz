@@ -145,6 +145,7 @@ class UserHttpApiTest {
     void getMyProfile() throws Exception {
         given(userService.getMyProfile(1L))
                 .willReturn(new UserProfileResponse(
+                        1L,
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
@@ -166,7 +167,7 @@ class UserHttpApiTest {
                         ))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.userId").doesNotExist())
+                .andExpect(jsonPath("$.data.userId").value(1L))
                 .andExpect(jsonPath("$.data.handle").value("zzaekkii"))
                 .andExpect(jsonPath("$.data.displayName").value("재키"))
                 .andExpect(jsonPath("$.data.userType").value("WOOWACOURSE_CREW"))
@@ -195,6 +196,7 @@ class UserHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("사용자 프로필"),
+                                        fieldWithPath("data.userId").type(NUMBER).description("사용자 ID"),
                                         fieldWithPath("data.handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
                                         new EnumFields(UserType.class).withPath("data.userType").description("사용자 유형"),
@@ -247,6 +249,7 @@ class UserHttpApiTest {
                 org.mockito.ArgumentMatchers.eq(1L),
                 org.mockito.ArgumentMatchers.any(UserProfileUpdateRequest.class)
         )).willReturn(new UserProfileUpdateResponse(
+                        1L,
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
@@ -277,7 +280,7 @@ class UserHttpApiTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.userId").doesNotExist())
+                .andExpect(jsonPath("$.data.userId").value(1L))
                 .andExpect(jsonPath("$.data.handle").value("zzaekkii"))
                 .andExpect(jsonPath("$.data.displayName").value("재키"))
                 .andExpect(jsonPath("$.data.userType").value("WOOWACOURSE_CREW"))
@@ -315,6 +318,7 @@ class UserHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("수정된 사용자 프로필"),
+                                        fieldWithPath("data.userId").type(NUMBER).description("사용자 ID"),
                                         fieldWithPath("data.handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
                                         new EnumFields(UserType.class).withPath("data.userType").description("사용자 유형"),
@@ -458,6 +462,7 @@ class UserHttpApiTest {
     void getPublicProfile() throws Exception {
         given(userService.getPublicProfile("zzaekkii"))
                 .willReturn(new UserProfileResponse(
+                        1L,
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
@@ -474,7 +479,7 @@ class UserHttpApiTest {
         mockMvc.perform(get("/api/v1/users/{handle}", "zzaekkii"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.userId").doesNotExist())
+                .andExpect(jsonPath("$.data.userId").value(1L))
                 .andExpect(jsonPath("$.data.handle").value("zzaekkii"))
                 .andExpect(jsonPath("$.data.displayName").value("재키"))
                 .andExpect(jsonPath("$.data.userType").value("WOOWACOURSE_CREW"))
@@ -502,6 +507,7 @@ class UserHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("사용자 공개 프로필"),
+                                        fieldWithPath("data.userId").type(NUMBER).description("사용자 ID"),
                                         fieldWithPath("data.handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
                                         new EnumFields(UserType.class).withPath("data.userType").description("사용자 유형"),
@@ -533,6 +539,7 @@ class UserHttpApiTest {
                 .willReturn(new UserSearchResult(
                         List.of(
                                 new UserSearchItem(
+                                        1L,
                                         "zzaekkii",
                                         "재키",
                                         UserType.WOOWACOURSE_CREW,
@@ -542,6 +549,7 @@ class UserHttpApiTest {
                                         0
                                 ),
                                 new UserSearchItem(
+                                        2L,
                                         "coach-jack",
                                         "재키 코치",
                                         UserType.WOOWACOURSE_COACH,
@@ -597,6 +605,7 @@ class UserHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(ARRAY).description("검색된 크루와 코치"),
+                                        fieldWithPath("data[].userId").type(NUMBER).description("사용자 ID"),
                                         fieldWithPath("data[].handle").type(STRING).description("사용자 handle"),
                                         fieldWithPath("data[].displayName").type(STRING).description("표시 이름"),
                                         new EnumFields(UserType.class).withPath("data[].userType").description("사용자 유형"),

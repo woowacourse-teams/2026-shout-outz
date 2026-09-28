@@ -766,6 +766,7 @@ class FeedHttpApiTest {
                 "피드 제목",
                 "본문입니다.",
                 new FeedItem.Author(
+                        USER_ID,
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,

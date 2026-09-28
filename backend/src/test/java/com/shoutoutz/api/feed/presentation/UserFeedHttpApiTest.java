@@ -184,6 +184,7 @@ class UserFeedHttpApiTest {
                 "사용자 피드 제목",
                 "사용자 피드 본문",
                 new FeedItem.Author(
+                        1L,
                         "zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,

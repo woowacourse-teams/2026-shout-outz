@@ -61,6 +61,7 @@ import com.shoutoutz.api.project.presentation.dto.response.ProjectTechTagRespons
 import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.Track;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
@@ -89,7 +90,7 @@ class ProjectHttpApiTest {
     private static final String DESCRIPTION = "로그인한 우아한테크코스 크루 또는 코치를 등록자로 프로젝트를 등록한다. "
             + "slug는 GitHub 리포지토리 이름에서 앞 연도를 떼고 소문자로 만든다. "
             + "운영 상태는 deploymentUrl이 있으면 OPERATING, 없으면 CLOSED로 저장한다. "
-            + "팀원은 등록자를 첫 번째로 두고 memberHandles 순서대로 저장한다. "
+            + "팀원은 memberHandles로 받은 순서대로 저장한다. "
             + "본문 이미지는 descriptionMd에 ![설명](media://{mediaId}) 형식으로 넣는다. "
             + "요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
             + "크루나 코치가 아니면 403, 이미 등록된 리포지토리이거나 리포지토리 이름이 같아 slug가 겹치면 409를 반환한다.";
@@ -189,7 +190,7 @@ class ProjectHttpApiTest {
                                                 .description("선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다.")
                                                 .attributes(key("itemsType").value("number")),
                                         fieldWithPath("memberHandles").type(ARRAY)
-                                                .description("등록자를 제외한 팀원 handle 목록 (1명 이상). "
+                                                .description("팀원 handle 목록 (1명 이상). 등록자를 포함할 수 있으며, "
                                                         + "활동 중인 우아한테크코스 크루 또는 코치여야 하며, "
                                                         + "대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다.")
                                                 .attributes(key("itemsType").value("string"))
@@ -313,8 +314,10 @@ class ProjectHttpApiTest {
                         6, 12L, "https://cdn.example.com/thumbnail", 128, 184L, 14L,
                         List.of(new ProjectTechTagResponse(1L, "React"), new ProjectTechTagResponse(2L, "Spring")),
                         List.of(
-                                new ProjectMemberProfileResponse("dhyepark", "박다혜", 6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
-                                new ProjectMemberProfileResponse("zzaekkii", "김도현", 6, "FRONTEND", null, null, null, null)
+                                new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", UserType.WOOWACOURSE_CREW,
+                                        6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
+                                new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", UserType.WOOWACOURSE_CREW,
+                                        6, "FRONTEND", null, null, null, null)
                         ))),
                 new SliceMetaResponse("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
         ));
@@ -395,14 +398,20 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data[].techTags[].displayName").type(STRING).description("기술 스택 이름"),
                                         fieldWithPath("data[].members").type(ARRAY)
                                                 .description("팀원 전체 목록. 상세 조회의 members와 같은 규칙이며, 등록 순서대로 정렬한다."),
+                                        fieldWithPath("data[].members[].userId").type(NUMBER)
+                                                .description("사용자 ID. 가입하지 않은 이관 팀원은 null이다.")
+                                                .optional(),
                                         fieldWithPath("data[].members[].handle").type(STRING)
                                                 .description("프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.")
                                                 .optional(),
                                         fieldWithPath("data[].members[].displayName").type(STRING)
                                                 .description("표시 이름. 탈퇴한 팀원은 '탈퇴한 사용자', "
                                                         + "가입하지 않은 이관 팀원은 GitHub 이름(없으면 GitHub 아이디)이다."),
+                                        fieldWithPath("data[].members[].userType").type(STRING)
+                                                .description("사용자 유형. 가입하지 않은 이관 팀원과 탈퇴한 팀원은 null이다.")
+                                                .optional(),
                                         fieldWithPath("data[].members[].cohort").type(NUMBER)
-                                                .description("기수. 가입하지 않은 이관 팀원은 프로젝트 기수다.")
+                                                .description("기수. 크루가 아닌 팀원과 이관 팀원은 null이다.")
                                                 .optional(),
                                         new EnumFields(Track.class).withPath("data[].members[].track")
                                                 .description("트랙")
@@ -635,15 +644,21 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data.techTags[].id").type(NUMBER).description("기술 스택 ID"),
                                         fieldWithPath("data.techTags[].displayName").type(STRING).description("기술 스택 이름"),
                                         fieldWithPath("data.members").type(ARRAY)
-                                                .description("팀원 목록. 신규 프로젝트는 등록 순서대로이며 등록자가 첫 번째다."),
+                                                .description("팀원 목록. 저장된 순서대로 반환한다."),
+                                        fieldWithPath("data.members[].userId").type(NUMBER)
+                                                .description("사용자 ID. 가입하지 않은 이관 팀원은 null이다.")
+                                                .optional(),
                                         fieldWithPath("data.members[].handle").type(STRING)
                                                 .description("프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.")
                                                 .optional(),
                                         fieldWithPath("data.members[].displayName").type(STRING)
                                                 .description("표시 이름. 탈퇴한 팀원은 '탈퇴한 사용자', "
                                                         + "가입하지 않은 이관 팀원은 GitHub 이름(없으면 GitHub 아이디)이다."),
+                                        fieldWithPath("data.members[].userType").type(STRING)
+                                                .description("사용자 유형. 가입하지 않은 이관 팀원과 탈퇴한 팀원은 null이다.")
+                                                .optional(),
                                         fieldWithPath("data.members[].cohort").type(NUMBER)
-                                                .description("기수. 가입하지 않은 이관 팀원은 프로젝트 기수다.")
+                                                .description("기수. 크루가 아닌 팀원과 이관 팀원은 null이다.")
                                                 .optional(),
                                         new EnumFields(Track.class).withPath("data.members[].track")
                                                 .description("트랙")
@@ -983,8 +998,10 @@ class ProjectHttpApiTest {
                         new ProjectTechTagResponse(2L, "TypeScript")
                 ),
                 List.of(
-                        new ProjectMemberProfileResponse("dhyepark", "박다혜", 6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
-                        new ProjectMemberProfileResponse("zzaekkii", "김도현", 6, "FRONTEND", null, null, null, null)
+                        new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", UserType.WOOWACOURSE_CREW,
+                                6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
+                        new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", UserType.WOOWACOURSE_CREW,
+                                6, "FRONTEND", null, null, null, null)
                 ),
                 Instant.parse("2026-08-09T02:30:00Z"),
                 Instant.parse("2026-08-09T03:00:00Z")
@@ -1074,7 +1091,7 @@ class ProjectHttpApiTest {
                                                         + "이미 달려 있던 태그는 비활성화됐어도 그대로 둘 수 있다.")
                                                 .attributes(key("itemsType").value("number")),
                                         fieldWithPath("memberHandles").type(ARRAY)
-                                                .description("작성자를 제외한 팀원 handle 전체 목록 (1명 이상). "
+                                                .description("팀원 handle 전체 목록 (1명 이상). 등록자를 포함할 수 있으며, "
                                                         + "통째로 교체하며 배열 순서가 표시 순서가 된다. "
                                                         + "이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다.")
                                                 .attributes(key("itemsType").value("string"))
@@ -1163,7 +1180,7 @@ class ProjectHttpApiTest {
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
                   "serviceStatus": "OPERATING",
                   "techTagIds": [1, 2, 3],
-                  "memberHandles": ["zzaekkii", "sangjun121"]
+                  "memberHandles": ["dhyepark", "zzaekkii", "sangjun121"]
                 }
                 """;
     }
@@ -1180,7 +1197,7 @@ class ProjectHttpApiTest {
                   "deploymentUrl": "https://loop.team",
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)",
                   "techTagIds": [1, 2, 3],
-                  "memberHandles": ["zzaekkii", "sangjun121"]
+                  "memberHandles": ["dhyepark", "zzaekkii", "sangjun121"]
                 }
                 """;
     }
