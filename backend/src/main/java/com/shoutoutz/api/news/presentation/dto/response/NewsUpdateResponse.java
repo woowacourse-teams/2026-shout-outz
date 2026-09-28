@@ -31,6 +31,15 @@ public record NewsUpdateResponse(
     }
 
     public static NewsUpdateResponse from(News news, Instant now, UserProfile authorProfile) {
+        return from(news, now, authorProfile, null);
+    }
+
+    public static NewsUpdateResponse from(
+            News news,
+            Instant now,
+            UserProfile authorProfile,
+            String handle
+    ) {
         EventStatus eventStatus = news.getType() == NewsType.EVENT
                 ? news.eventStatusAt(now)
                 : null;
@@ -47,6 +56,7 @@ public record NewsUpdateResponse(
                 new Author(
                         news.getAuthorId(),
                         news.getAuthorName(),
+                        handle,
                         displayName,
                         userType,
                         trackValue(authorProfile),
@@ -65,13 +75,22 @@ public record NewsUpdateResponse(
     public record Author(
             long userId,
             String name,
+            String handle,
             String displayName,
             UserType userType,
             String track,
             Short cohort
     ) {
+        public Author(long userId, String name, String handle) {
+            this(userId, name, handle, name, null, null, null);
+        }
+
         public Author(long userId, String name) {
-            this(userId, name, name, null, null, null);
+            this(userId, name, null, name, null, null, null);
+        }
+
+        public Author(long userId, String name, String displayName, UserType userType, String track, Short cohort) {
+            this(userId, name, null, displayName, userType, track, cohort);
         }
     }
 

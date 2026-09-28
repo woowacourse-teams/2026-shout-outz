@@ -38,7 +38,7 @@ class OAuthAccountRepositoryIntegrationTest {
     @Test
     @DisplayName("OAuth 계정을 저장하고 Provider와 Provider 계정 ID로 조회한다")
     void savesAndFindsOAuthAccountByProviderIdentity() {
-        User user = userRepository.save(User.initialize("sangjun-oauth"));
+        User user = userRepository.save(User.initialize("@sangjun-oauth"));
         OAuthAccount account = OAuthAccount.initialize(
                 user.getId(),
                 OAuthProvider.GITHUB,
@@ -78,8 +78,8 @@ class OAuthAccountRepositoryIntegrationTest {
     @Test
     @DisplayName("같은 Provider 계정은 여러 사용자에게 연결할 수 없다")
     void rejectsDuplicateProviderIdentity() {
-        User dahye = userRepository.save(User.initialize("dahye-oauth"));
-        User sangjun = userRepository.save(User.initialize("sangjun-oauth"));
+        User dahye = userRepository.save(User.initialize("@dahye-oauth"));
+        User sangjun = userRepository.save(User.initialize("@sangjun-oauth"));
         oauthAccountRepository.save(OAuthAccount.initialize(
                 dahye.getId(),
                 OAuthProvider.GITHUB,

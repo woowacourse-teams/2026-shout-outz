@@ -52,7 +52,7 @@ class ProjectReactionRepositoryIntegrationTest {
         return jdbcTemplate.queryForObject(
                 "INSERT INTO users (handle) VALUES (?) RETURNING id",
                 Long.class,
-                "project_reaction_" + token
+                "@project_reaction_" + token
         );
     }
 

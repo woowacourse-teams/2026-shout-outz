@@ -24,7 +24,7 @@ class UserSearchCursorCodecTest {
                 {
                   "relevanceRank": 0,
                   "displayName": "",
-                  "handle": "valid-handle"
+                  "handle": "@valid-handle"
                 }
                 """;
         String encodedCursor = Base64.getUrlEncoder()

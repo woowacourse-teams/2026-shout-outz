@@ -77,7 +77,7 @@ class UserHttpApiTest {
     void getMyProfileSummary() throws Exception {
         given(userService.getMyProfileSummary(1L))
                 .willReturn(new UserProfileSummaryResponse(
-                        "zzaekkii",
+                        "@zzaekkii",
                         "재키",
                         21L,
                         "https://cdn.example.com/media/21/display"
@@ -92,7 +92,7 @@ class UserHttpApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data.userId").doesNotExist())
-                .andExpect(jsonPath("$.data.handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data.handle").value("@zzaekkii"))
                 .andExpect(jsonPath("$.data.displayName").value("재키"))
                 .andExpect(jsonPath("$.data.avatarImageId").value(21L))
                 .andExpect(jsonPath("$.data.avatarUrl")
@@ -147,7 +147,7 @@ class UserHttpApiTest {
         given(userService.getMyProfile(1L))
                 .willReturn(new UserProfileResponse(
                         1L,
-                        "zzaekkii",
+                        "@zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
                         "BACKEND",
@@ -169,7 +169,7 @@ class UserHttpApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data.userId").value(1L))
-                .andExpect(jsonPath("$.data.handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data.handle").value("@zzaekkii"))
                 .andExpect(jsonPath("$.data.displayName").value("재키"))
                 .andExpect(jsonPath("$.data.userType").value("WOOWACOURSE_CREW"))
                 .andExpect(jsonPath("$.data.track").value("BACKEND"))
@@ -251,7 +251,7 @@ class UserHttpApiTest {
                 org.mockito.ArgumentMatchers.any(UserProfileUpdateRequest.class)
         )).willReturn(new UserProfileUpdateResponse(
                         1L,
-                        "zzaekkii",
+                        "@zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
                         "BACKEND",
@@ -282,7 +282,7 @@ class UserHttpApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data.userId").value(1L))
-                .andExpect(jsonPath("$.data.handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data.handle").value("@zzaekkii"))
                 .andExpect(jsonPath("$.data.displayName").value("재키"))
                 .andExpect(jsonPath("$.data.userType").value("WOOWACOURSE_CREW"))
                 .andExpect(jsonPath("$.data.track").value("BACKEND"))
@@ -461,10 +461,10 @@ class UserHttpApiTest {
     @Test
     @DisplayName("handle로 사용자 공개 프로필을 조회한다")
     void getPublicProfile() throws Exception {
-        given(userService.getPublicProfile("zzaekkii", null))
+        given(userService.getPublicProfile("@zzaekkii", null))
                 .willReturn(new UserProfileResponse(
                         1L,
-                        "zzaekkii",
+                        "@zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
                         "BACKEND",
@@ -477,11 +477,11 @@ class UserHttpApiTest {
                         new UserProfileResponse.Counts(2L, 18L)
                 ));
 
-        mockMvc.perform(get("/api/v1/users/{handle}", "zzaekkii"))
+        mockMvc.perform(get("/api/v1/users/{handle}", "@zzaekkii"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data.userId").value(1L))
-                .andExpect(jsonPath("$.data.handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data.handle").value("@zzaekkii"))
                 .andExpect(jsonPath("$.data.displayName").value("재키"))
                 .andExpect(jsonPath("$.data.userType").value("WOOWACOURSE_CREW"))
                 .andExpect(jsonPath("$.data.track").value("BACKEND"))
@@ -502,7 +502,7 @@ class UserHttpApiTest {
                                 .summary("사용자 공개 프로필 조회")
                                 .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다. 본인 조회는 승인 대기 프로젝트를 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함한다.")
                                 .pathParameters(
-                                        parameterWithName("handle").description("조회할 사용자의 handle")
+                                        parameterWithName("handle").description("@[A-Za-z0-9_-]{2,30} 형식의 조회 대상 사용자 handle")
                                 )
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
@@ -541,10 +541,10 @@ class UserHttpApiTest {
     @Test
     @DisplayName("로그인한 본인의 handle로 프로필을 조회한다")
     void getOwnPublicProfile() throws Exception {
-        given(userService.getPublicProfile("zzaekkii", 1L))
+        given(userService.getPublicProfile("@zzaekkii", 1L))
                 .willReturn(new UserProfileResponse(
                         1L,
-                        "zzaekkii",
+                        "@zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
                         "BACKEND",
@@ -557,7 +557,7 @@ class UserHttpApiTest {
                         new UserProfileResponse.Counts(3L, 18L)
                 ));
 
-        mockMvc.perform(get("/api/v1/users/{handle}", "zzaekkii")
+        mockMvc.perform(get("/api/v1/users/{handle}", "@zzaekkii")
                         .requestAttr(
                                 AuthenticatedSession.class.getName(),
                                 new AuthenticatedSession(1L, UserRole.USER)
@@ -565,7 +565,7 @@ class UserHttpApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.counts.projects").value(3));
 
-        verify(userService).getPublicProfile("zzaekkii", 1L);
+        verify(userService).getPublicProfile("@zzaekkii", 1L);
     }
 
     @Test
@@ -576,7 +576,7 @@ class UserHttpApiTest {
                         List.of(
                                 new UserSearchItem(
                                         1L,
-                                        "zzaekkii",
+                                        "@zzaekkii",
                                         "재키",
                                         UserType.WOOWACOURSE_CREW,
                                         Track.BACKEND,
@@ -586,7 +586,7 @@ class UserHttpApiTest {
                                 ),
                                 new UserSearchItem(
                                         2L,
-                                        "coach-jack",
+                                        "@coach-jack",
                                         "재키 코치",
                                         UserType.WOOWACOURSE_COACH,
                                         null,
@@ -605,7 +605,7 @@ class UserHttpApiTest {
                         .queryParam("keyword", "재키"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data[0].handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data[0].handle").value("@zzaekkii"))
                 .andExpect(jsonPath("$.data[0].displayName").value("재키"))
                 .andExpect(jsonPath("$.data[0].userType").value("WOOWACOURSE_CREW"))
                 .andExpect(jsonPath("$.data[0].track").value("BACKEND"))
@@ -613,7 +613,7 @@ class UserHttpApiTest {
                 .andExpect(jsonPath("$.data[0].avatarImageId").value(21L))
                 .andExpect(jsonPath("$.data[0].avatarUrl")
                         .value("https://cdn.example.com/media/21/display"))
-                .andExpect(jsonPath("$.data[1].handle").value("coach-jack"))
+                .andExpect(jsonPath("$.data[1].handle").value("@coach-jack"))
                 .andExpect(jsonPath("$.data[1].userType").value("WOOWACOURSE_COACH"))
                 .andExpect(jsonPath("$.data[1].track").isEmpty())
                 .andExpect(jsonPath("$.data[1].cohort").isEmpty())
@@ -753,7 +753,7 @@ class UserHttpApiTest {
                                 .summary("사용자 공개 프로필 조회")
                                 .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다. 본인 조회는 승인 대기 프로젝트를 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함한다.")
                                 .pathParameters(
-                                        parameterWithName("handle").description("조회할 사용자의 handle")
+                                        parameterWithName("handle").description("@[A-Za-z0-9_-]{2,30} 형식의 조회 대상 사용자 handle")
                                 )
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
@@ -771,10 +771,10 @@ class UserHttpApiTest {
     @Test
     @DisplayName("존재하지 않는 handle로 공개 프로필을 조회할 수 없다")
     void rejectNotFoundPublicProfileHandle() throws Exception {
-        given(userService.getPublicProfile("missing-user", null))
+        given(userService.getPublicProfile("@missing-user", null))
                 .willThrow(new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
 
-        mockMvc.perform(get("/api/v1/users/{handle}", "missing-user"))
+        mockMvc.perform(get("/api/v1/users/{handle}", "@missing-user"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value("error"))
                 .andExpect(jsonPath("$.code").value("USER_NOT_FOUND"))
@@ -785,7 +785,7 @@ class UserHttpApiTest {
                                 .summary("사용자 공개 프로필 조회")
                                 .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다. 본인 조회는 승인 대기 프로젝트를 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함한다.")
                                 .pathParameters(
-                                        parameterWithName("handle").description("조회할 사용자의 handle")
+                                        parameterWithName("handle").description("@[A-Za-z0-9_-]{2,30} 형식의 조회 대상 사용자 handle")
                                 )
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)

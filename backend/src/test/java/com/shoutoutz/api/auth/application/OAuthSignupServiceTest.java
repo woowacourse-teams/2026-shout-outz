@@ -15,6 +15,7 @@ import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
+import com.shoutoutz.api.project.application.ArchivedProjectMemberMatchService;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -36,6 +37,8 @@ class OAuthSignupServiceTest {
             mock(UserProfileRepository.class);
     private final OAuthAccountRepository oauthAccountRepository =
             mock(OAuthAccountRepository.class);
+    private final ArchivedProjectMemberMatchService archivedProjectMemberMatchService =
+            mock(ArchivedProjectMemberMatchService.class);
 
     private OAuthSignupService oauthSignupService;
 
@@ -44,7 +47,8 @@ class OAuthSignupServiceTest {
         oauthSignupService = new OAuthSignupService(
                 userRepository,
                 userProfileRepository,
-                oauthAccountRepository
+                oauthAccountRepository,
+                archivedProjectMemberMatchService
         );
     }
 
@@ -56,7 +60,7 @@ class OAuthSignupServiceTest {
                 OAuthProvider.GITHUB,
                 "12345678"
         )).willReturn(Optional.empty());
-        given(userRepository.findByHandle("sangjun")).willReturn(Optional.empty());
+        given(userRepository.findByHandle("@sangjun")).willReturn(Optional.empty());
         given(userRepository.save(any(User.class))).willReturn(savedUser());
 
         OAuthSignupResult result = oauthSignupService.signup(command);
@@ -70,6 +74,7 @@ class OAuthSignupServiceTest {
         verify(userRepository).save(userCaptor.capture());
         verify(userProfileRepository).save(profileCaptor.capture());
         verify(oauthAccountRepository).save(accountCaptor.capture());
+        verify(archivedProjectMemberMatchService).matchGithubAccount(1L, "12345678");
 
         User user = userCaptor.getValue();
         UserProfile profile = profileCaptor.getValue();
@@ -118,7 +123,7 @@ class OAuthSignupServiceTest {
                 OAuthProvider.GITHUB,
                 "12345678"
         )).willReturn(Optional.empty());
-        given(userRepository.findByHandle("sangjun")).willReturn(Optional.of(savedUser()));
+        given(userRepository.findByHandle("@sangjun")).willReturn(Optional.of(savedUser()));
 
         assertThatThrownBy(() -> oauthSignupService.signup(command))
                 .isInstanceOf(DuplicateEntityException.class)
@@ -132,7 +137,7 @@ class OAuthSignupServiceTest {
 
     private OAuthSignupCommand signupCommand() {
         return new OAuthSignupCommand(
-                "sangjun",
+                "@sangjun",
                 "상준",
                 new OAuthIdentity(
                         OAuthProvider.GITHUB,
@@ -146,7 +151,7 @@ class OAuthSignupServiceTest {
     private User savedUser() {
         return User.builder()
                 .id(1L)
-                .handle("sangjun")
+                .handle("@sangjun")
                 .status(UserStatus.ACTIVE)
                 .role(UserRole.USER)
                 .build();

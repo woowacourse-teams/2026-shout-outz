@@ -68,7 +68,7 @@ class AdminVerificationRequestDecisionHttpApiTest {
                 .willReturn(new AdminVerificationRequestApproveResponse(
                         REQUEST_ID,
                         VerificationRequestStatus.APPROVED,
-                        new AdminVerificationRequestDecisionActor(ADMIN_ID, "admin"),
+                        new AdminVerificationRequestDecisionActor(ADMIN_ID, "@admin"),
                         DECIDED_AT
                 ));
 
@@ -80,7 +80,7 @@ class AdminVerificationRequestDecisionHttpApiTest {
                 .andExpect(jsonPath("$.data.requestId").value(REQUEST_ID))
                 .andExpect(jsonPath("$.data.status").value("APPROVED"))
                 .andExpect(jsonPath("$.data.decidedBy.userId").value(ADMIN_ID))
-                .andExpect(jsonPath("$.data.decidedBy.handle").value("admin"))
+                .andExpect(jsonPath("$.data.decidedBy.handle").value("@admin"))
                 .andExpect(jsonPath("$.data.decidedAt").value("2026-09-16T03:10:00Z"))
                 .andDo(document(
                         "admin-verification-request-approve",
@@ -129,7 +129,7 @@ class AdminVerificationRequestDecisionHttpApiTest {
                         REQUEST_ID,
                         VerificationRequestStatus.REJECTED,
                         reason,
-                        new AdminVerificationRequestDecisionActor(ADMIN_ID, "admin"),
+                        new AdminVerificationRequestDecisionActor(ADMIN_ID, "@admin"),
                         DECIDED_AT
                 ));
 
@@ -148,7 +148,7 @@ class AdminVerificationRequestDecisionHttpApiTest {
                 .andExpect(jsonPath("$.data.status").value("REJECTED"))
                 .andExpect(jsonPath("$.data.reason").value(reason))
                 .andExpect(jsonPath("$.data.decidedBy.userId").value(ADMIN_ID))
-                .andExpect(jsonPath("$.data.decidedBy.handle").value("admin"))
+                .andExpect(jsonPath("$.data.decidedBy.handle").value("@admin"))
                 .andExpect(jsonPath("$.data.decidedAt").value("2026-09-16T03:10:00Z"))
                 .andDo(document(
                         "admin-verification-request-reject",

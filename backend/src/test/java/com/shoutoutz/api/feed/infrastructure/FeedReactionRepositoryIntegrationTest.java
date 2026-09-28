@@ -68,7 +68,7 @@ class FeedReactionRepositoryIntegrationTest {
         return jdbcTemplate.queryForObject(
                 "INSERT INTO users (handle) VALUES (?) RETURNING id",
                 Long.class,
-                "reaction_" + token
+                "@reaction_" + token
         );
     }
 }

@@ -55,7 +55,7 @@ class ProjectUpdateRequestTest {
                   "descriptionMd": "    indented code",
                   "serviceStatus": "OPERATING",
                   "techTagIds": [1, 2],
-                  "memberHandles": [" dahye ", "zzaekkii"]
+                  "memberHandles": [" @dahye ", "@zzaekkii"]
                 }
                 """, ProjectUpdateRequest.class);
 
@@ -64,7 +64,7 @@ class ProjectUpdateRequestTest {
         assertThat(request.tagline()).isEqualTo("바뀐 한 줄 소개");
         assertThat(request.githubRepositoryUrl()).isEqualTo("https://github.com/woowacourse-teams/2026-loop");
         assertThat(request.deploymentUrl()).isEqualTo("https://loop.team");
-        assertThat(request.memberHandles()).containsExactly("dahye", "zzaekkii");
+        assertThat(request.memberHandles()).containsExactly("@dahye", "@zzaekkii");
         assertThat(request.descriptionMd()).isEqualTo("    indented code");
         assertThat(validator.validate(request)).isEmpty();
     }
@@ -89,6 +89,18 @@ class ProjectUpdateRequestTest {
         assertThat(validator.validate(request))
                 .extracting(violation -> violation.getPropertyPath().toString())
                 .containsExactly("title");
+    }
+
+    @Test
+    void 골뱅이_접두사가_없는_팀원_핸들은_거절한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("").replace("\"@zzaekkii\"", "\"zzaekkii\""),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("memberHandles[0].<list element>");
     }
 
     @Test
@@ -150,7 +162,7 @@ class ProjectUpdateRequestTest {
                   "descriptionMd": "## 문제",
                   "serviceStatus": "OPERATING",
                   "techTagIds": [1, 2],
-                  "memberHandles": ["zzaekkii"]
+                  "memberHandles": ["@zzaekkii"]
                 }
                 """.formatted(thumbnailField);
     }

@@ -86,7 +86,7 @@ class UserProfileUpdateServiceTest {
 
         UserProfileUpdateResponse result = userService.updateMyProfile(1L, request);
 
-        assertThat(result.handle()).isEqualTo("zzaekkii");
+        assertThat(result.handle()).isEqualTo("@zzaekkii");
         assertThat(result.displayName()).isEqualTo("새 이름");
         assertThat(result.avatarUrl()).isEqualTo("https://cdn.example.com/media/21/display");
         assertThat(result.bio()).isEqualTo("백엔드 개발자입니다.");
@@ -170,7 +170,7 @@ class UserProfileUpdateServiceTest {
     private User user() {
         return User.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(UserStatus.ACTIVE)
                 .role(UserRole.USER)
                 .build();

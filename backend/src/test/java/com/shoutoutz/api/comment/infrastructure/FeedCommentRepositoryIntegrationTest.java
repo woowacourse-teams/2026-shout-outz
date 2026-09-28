@@ -44,7 +44,7 @@ class FeedCommentRepositoryIntegrationTest {
     @Test
     @DisplayName("피드 댓글을 feed_comments에 저장하고 feedId와 생성 시각을 매핑한다")
     void savesAndFindsFeedComment() {
-        User author = userRepository.save(User.initialize("feed-comment-" + uniqueSuffix()));
+        User author = userRepository.save(User.initialize("@feed-comment-" + uniqueSuffix()));
         Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 제목", "피드 본문", NOW));
 
         FeedComment saved = feedCommentRepository.save(
@@ -65,7 +65,7 @@ class FeedCommentRepositoryIntegrationTest {
     @Test
     @DisplayName("같은 피드의 부모 댓글을 참조하는 대댓글을 저장한다")
     void savesReplyWithParentId() {
-        User author = userRepository.save(User.initialize("feed-reply-" + uniqueSuffix()));
+        User author = userRepository.save(User.initialize("@feed-reply-" + uniqueSuffix()));
         Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 제목", "피드 본문", NOW));
         FeedComment root = feedCommentRepository.save(
                 FeedComment.create(feed.getId(), author.getId(), null, "루트 댓글")
@@ -83,7 +83,7 @@ class FeedCommentRepositoryIntegrationTest {
     @Test
     @DisplayName("기존 피드 댓글의 내용을 수정하고 생성 시각은 유지한다")
     void updatesFeedComment() {
-        User author = userRepository.save(User.initialize("feed-update-" + uniqueSuffix()));
+        User author = userRepository.save(User.initialize("@feed-update-" + uniqueSuffix()));
         Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 제목", "피드 본문", NOW));
 
         FeedComment saved = feedCommentRepository.save(
@@ -102,7 +102,7 @@ class FeedCommentRepositoryIntegrationTest {
     @Test
     @DisplayName("피드 댓글을 soft delete하면 삭제·수정 시각을 갱신한다")
     void softDeletesFeedComment() {
-        User author = userRepository.save(User.initialize("feed-delete-" + uniqueSuffix()));
+        User author = userRepository.save(User.initialize("@feed-delete-" + uniqueSuffix()));
         Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 제목", "피드 본문", NOW));
 
         FeedComment saved = feedCommentRepository.save(
@@ -122,7 +122,7 @@ class FeedCommentRepositoryIntegrationTest {
     @Test
     @DisplayName("루트 댓글을 정렬 기준과 크기에 따라 조회하고 대댓글을 부모 ID로 조회한다")
     void findsRootPageAndReplies() {
-        User author = userRepository.save(User.initialize("feed-list-" + uniqueSuffix()));
+        User author = userRepository.save(User.initialize("@feed-list-" + uniqueSuffix()));
         Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 제목", "피드 본문", NOW));
         FeedComment firstRoot = feedCommentRepository.save(
                 FeedComment.create(feed.getId(), author.getId(), null, "첫 번째 루트")

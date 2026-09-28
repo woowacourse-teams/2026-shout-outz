@@ -67,7 +67,7 @@ class NewsReactionRepositoryIntegrationTest {
         return jdbcTemplate.queryForObject(
                 "INSERT INTO users (handle) VALUES (?) RETURNING id",
                 Long.class,
-                "news_reaction_" + token
+                "@news_reaction_" + token
         );
     }
 

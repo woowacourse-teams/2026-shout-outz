@@ -206,7 +206,7 @@ class ProjectDetailRepositoryIntegrationTest {
     }
 
     private User saveUser(String prefix) {
-        return userRepository.save(User.initialize(prefix + "-" + UUID.randomUUID().toString().substring(0, 8)));
+        return userRepository.save(User.initialize("@" + prefix + "-" + UUID.randomUUID().toString().substring(0, 8)));
     }
 
     private void withdraw(long userId) {

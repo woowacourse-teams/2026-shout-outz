@@ -280,7 +280,7 @@ class FeedServiceCommandTest {
     private void givenWriter(UserStatus userStatus, UserType userType) {
         User user = User.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(userStatus)
                 .role(UserRole.USER)
                 .build();
@@ -324,7 +324,7 @@ class FeedServiceCommandTest {
                 "제목",
                 "본문",
                 new FeedItem.Author(
-                        "zzaekkii",
+                        "@zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
                         Track.BACKEND,
