@@ -834,7 +834,16 @@ class ProjectServiceTest {
         assertThat(response.editable()).isFalse();
         assertThat(response.techTags()).containsExactly(new ProjectTechTagResponse(1L, "React"));
         assertThat(response.members()).containsExactly(new ProjectMemberProfileResponse(
-                "dhyepark", "박다혜", 6, "BACKEND", 101L, null, null, null
+                REGISTERED_BY,
+                "dhyepark",
+                "박다혜",
+                UserType.WOOWACOURSE_CREW,
+                6,
+                "BACKEND",
+                101L,
+                null,
+                null,
+                null
         ));
     }
 

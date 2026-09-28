@@ -78,6 +78,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                                0 AS relevance_rank,
                                p.created_at,
                                p.updated_at,
+                               u.id AS user_id,
                                u.handle,
                                up.display_name,
                                up.user_type,
@@ -241,6 +242,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                            0 AS relevance_rank,
                            p.created_at,
                            p.updated_at,
+                           u.id AS user_id,
                            u.handle,
                            up.display_name,
                            up.user_type,
@@ -286,6 +288,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                            0 AS relevance_rank,
                            p.created_at,
                            p.updated_at,
+                           u.id AS user_id,
                            u.handle,
                            up.display_name,
                            up.user_type,
@@ -348,6 +351,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                                END AS relevance_rank,
                                p.created_at,
                                p.updated_at,
+                               u.id AS user_id,
                                u.handle,
                                up.display_name,
                                up.user_type,
@@ -410,6 +414,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                        0 AS relevance_rank,
                        p.created_at,
                        p.updated_at,
+                       u.id AS user_id,
                        u.handle,
                        up.display_name,
                        up.user_type,
@@ -645,16 +650,20 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
     }
 
     private FeedBaseRow toBaseRow(ResultSet resultSet) throws SQLException {
+        UserType userType = UserType.valueOf(resultSet.getString("user_type"));
+        Track track = toTrack(resultSet.getString("track"));
+        Cohort cohort = toCohort(resultSet.getObject("cohort", Short.class));
         return new FeedBaseRow(
                 resultSet.getLong("id"),
                 resultSet.getString("title"),
                 resultSet.getString("content"),
                 new FeedItem.Author(
+                        resultSet.getObject("user_id", Long.class),
                         resultSet.getString("handle"),
                         resultSet.getString("display_name"),
-                        UserType.valueOf(resultSet.getString("user_type")),
-                        toTrack(resultSet.getString("track")),
-                        toCohort(resultSet.getObject("cohort", Short.class)),
+                        userType,
+                        userType == UserType.WOOWACOURSE_CREW ? track : null,
+                        userType == UserType.WOOWACOURSE_CREW ? cohort : null,
                         resultSet.getObject("avatar_image_id", Long.class)
                 ),
                 resultSet.getLong("like_count"),
