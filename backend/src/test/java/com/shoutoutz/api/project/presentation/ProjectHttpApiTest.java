@@ -88,7 +88,7 @@ class ProjectHttpApiTest {
     private static final String DESCRIPTION = "로그인한 우아한테크코스 크루 또는 코치를 등록자로 프로젝트를 등록한다. "
             + "slug는 GitHub 리포지토리 이름에서 앞 연도를 떼고 소문자로 만든다. "
             + "운영 상태는 deploymentUrl이 있으면 OPERATING, 없으면 CLOSED로 저장한다. "
-            + "팀원은 등록자를 첫 번째로 두고 memberHandles 순서대로 저장한다. "
+            + "팀원은 memberHandles로 받은 순서대로 저장한다. "
             + "본문 이미지는 descriptionMd에 ![설명](media://{mediaId}) 형식으로 넣는다. "
             + "요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않으면 400, 로그인하지 않았으면 401, "
             + "크루나 코치가 아니면 403, 이미 등록된 리포지토리이거나 리포지토리 이름이 같아 slug가 겹치면 409를 반환한다.";
@@ -188,7 +188,7 @@ class ProjectHttpApiTest {
                                                 .description("선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다.")
                                                 .attributes(key("itemsType").value("number")),
                                         fieldWithPath("memberHandles").type(ARRAY)
-                                                .description("등록자를 제외한 팀원 handle 목록 (1명 이상). "
+                                                .description("팀원 handle 목록 (1명 이상). 등록자를 포함할 수 있으며, "
                                                         + "활동 중인 우아한테크코스 크루 또는 코치여야 하며, "
                                                         + "대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다.")
                                                 .attributes(key("itemsType").value("string"))
@@ -634,7 +634,7 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data.techTags[].id").type(NUMBER).description("기술 스택 ID"),
                                         fieldWithPath("data.techTags[].displayName").type(STRING).description("기술 스택 이름"),
                                         fieldWithPath("data.members").type(ARRAY)
-                                                .description("팀원 목록. 신규 프로젝트는 등록 순서대로이며 등록자가 첫 번째다."),
+                                                .description("팀원 목록. 저장된 순서대로 반환한다."),
                                         fieldWithPath("data.members[].handle").type(STRING)
                                                 .description("프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.")
                                                 .optional(),
@@ -1073,7 +1073,7 @@ class ProjectHttpApiTest {
                                                         + "이미 달려 있던 태그는 비활성화됐어도 그대로 둘 수 있다.")
                                                 .attributes(key("itemsType").value("number")),
                                         fieldWithPath("memberHandles").type(ARRAY)
-                                                .description("작성자를 제외한 팀원 handle 전체 목록 (1명 이상). "
+                                                .description("팀원 handle 전체 목록 (1명 이상). 등록자를 포함할 수 있으며, "
                                                         + "통째로 교체하며 배열 순서가 표시 순서가 된다. "
                                                         + "이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다.")
                                                 .attributes(key("itemsType").value("string"))
@@ -1162,7 +1162,7 @@ class ProjectHttpApiTest {
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
                   "serviceStatus": "OPERATING",
                   "techTagIds": [1, 2, 3],
-                  "memberHandles": ["zzaekkii", "sangjun121"]
+                  "memberHandles": ["dhyepark", "zzaekkii", "sangjun121"]
                 }
                 """;
     }
@@ -1179,7 +1179,7 @@ class ProjectHttpApiTest {
                   "deploymentUrl": "https://loop.team",
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)",
                   "techTagIds": [1, 2, 3],
-                  "memberHandles": ["zzaekkii", "sangjun121"]
+                  "memberHandles": ["dhyepark", "zzaekkii", "sangjun121"]
                 }
                 """;
     }

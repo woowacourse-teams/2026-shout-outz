@@ -19,7 +19,6 @@ import org.hibernate.validator.constraints.CodePointLength;
  * 대부분의 필드는 전체 교체 방식이며, 비우는 값은 null 로 보낸다.
  * slug는 등록 시점 값으로 고정이라 받지 않는다.
  * techTagIds와 memberHandles도 전체 교체이며, 목록 순서가 그대로 노출 순서가 된다.
- * memberHandles 에는 등록 요청과 같이 작성자 본인을 넣지 않는다.
  *
  * <p>thumbnailImageId는 필드의 존재 여부에 따라 다음처럼 처리한다.</p>
  * <ul>

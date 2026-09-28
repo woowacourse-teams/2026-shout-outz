@@ -32,7 +32,7 @@ public interface ProjectRepository {
     List<Long> findTechTagIds(long projectId);
 
     /**
-     * 프로젝트의 팀원 id 를 저장된 순서대로 조회한다. 등록자가 0번이다.
+     * 프로젝트의 팀원 id 를 저장된 순서대로 조회한다.
      */
     List<Long> findMemberIds(long projectId);
 
