@@ -154,9 +154,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(response);
     }
 
+    /**
+     * 405(요청 방식), 415(요청 형식)는 입력값 문제가 아니므로 상태에 맞는 코드를 따로 쓴다.
+     * 따로 분류하지 않은 4xx는 대부분 요청값 문제이므로 VALIDATION_FAILED로 응답한다.
+     */
     private ErrorCode resolveErrorCode(HttpStatusCode statusCode) {
         if (statusCode.value() == HttpStatus.NOT_FOUND.value()) {
             return CommonErrorCode.RESOURCE_NOT_FOUND;
+        }
+        if (statusCode.value() == HttpStatus.METHOD_NOT_ALLOWED.value()) {
+            return CommonErrorCode.METHOD_NOT_ALLOWED;
+        }
+        if (statusCode.value() == HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()) {
+            return CommonErrorCode.UNSUPPORTED_MEDIA_TYPE;
         }
         if (statusCode.is5xxServerError()) {
             return CommonErrorCode.INTERNAL_SERVER_ERROR;

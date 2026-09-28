@@ -51,6 +51,7 @@ import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
+import com.shoutoutz.api.project.domain.exception.InvalidSlugException;
 import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
@@ -198,8 +199,8 @@ public class ProjectService {
     }
 
     /**
-     * 사용자가 참여한 승인 프로젝트를 최신순으로 조회한다.
-     * 탈퇴한 사용자의 프로젝트는 공개하지 않는다.
+     * 사용자가 참여한 프로젝트를 최신순으로 조회한다.
+     * 본인 조회일 때만 승인 대기 프로젝트를 포함하고, 탈퇴한 사용자의 프로젝트는 공개하지 않는다.
      */
     @Transactional(readOnly = true)
     public UserProjectResult findAllByUser(String handle, UserProjectFindRequest request) {
@@ -227,6 +228,7 @@ public class ProjectService {
                 : userProjectQueryRepository.findAllByUserId(
                         user.getId(),
                         viewerId,
+                        Objects.equals(user.getId(), viewerId),
                         request.resolvedCursor(),
                         request.resolvedSize()
                 );
@@ -254,10 +256,12 @@ public class ProjectService {
 
     /**
      * 승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 조회할 수 있다.
+     * slug 형식에 맞지 않는 값은 그런 프로젝트가 없는 것과 같으므로 404로 응답한다.
      */
     @Transactional(readOnly = true)
-    public ProjectDetailResponse findDetail(long projectId, Long loginUserId) {
-        ProjectDetail detail = projectRepository.findDetailById(projectId, loginUserId)
+    public ProjectDetailResponse findDetail(String slug, Long loginUserId) {
+        ProjectDetail detail = toSlug(slug)
+                .flatMap(value -> projectRepository.findDetailBySlug(value, loginUserId))
                 .filter(project -> project.isVisibleTo(loginUserId))
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
         Map<Long, URI> mediaUrls = resolveProjectMediaUrls(detail);
@@ -274,6 +278,14 @@ public class ProjectService {
                 descriptionMd,
                 loginUserId
         );
+    }
+
+    private Optional<Slug> toSlug(String slug) {
+        try {
+            return Optional.of(new Slug(slug));
+        } catch (InvalidSlugException e) {
+            return Optional.empty();
+        }
     }
 
     private Map<Long, URI> resolveProjectMediaUrls(List<ProjectSummary> projects) {
