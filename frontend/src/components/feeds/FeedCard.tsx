@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { IconMessageCircle } from '@tabler/icons-react';
 import type { Feed } from '@/apis/feed';
-import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Image } from '@/components/Image';
+import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { FeedLikeButton } from '@/components/feeds/FeedLikeButton';
 import { FeedMarkdown } from '@/components/feeds/FeedMarkdown';
 import { LinkPreview } from '@/components/feeds/LinkPreview';
@@ -13,8 +13,6 @@ import { ShareButton } from '@/components/feeds/ShareButton';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { Comments } from '@/components/feed-comments/Comments';
 import { findFirstUrl } from '@/utils/feed';
-import { formatCrewName } from '@/utils/user';
-import { formatRelativeTime } from '@/utils/date';
 import { analytics, type FeedSurface } from '@/utils/analytics';
 
 export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }) {
@@ -28,17 +26,7 @@ export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }
     <article className="min-w-0 border-b border-gray-100 py-6 first:pt-4 md:py-7">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-2">
-            <Avatar size="md" alt={`${feed.author.displayName} 프로필`} />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-gray-900">
-                {formatCrewName(feed.author.displayName, feed.author.cohort, feed.author.track)}
-              </p>
-              <time className="text-sm text-gray-400" dateTime={feed.createdAt}>
-                {formatRelativeTime(feed.createdAt)}
-              </time>
-            </div>
-          </div>
+          <FeedAuthor author={feed.author} createdAt={feed.createdAt} />
         </div>
         <AsyncBoundary>
           <FeedMenu feedId={feed.feedId} authorHandle={feed.author.handle} />

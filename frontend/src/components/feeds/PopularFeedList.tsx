@@ -1,10 +1,9 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { feedsQuery } from '@/apis/feed';
-import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
+import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { toPlainText } from '@/utils/markdown';
-import { formatCrewName } from '@/utils/user';
 
 export function PopularFeedList() {
   const { data } = useSuspenseInfiniteQuery(feedsQuery('POPULAR', undefined, 3));
@@ -35,10 +34,7 @@ export function PopularFeedList() {
                   </p>
                 )}
                 <div className="mt-3 flex min-w-0 items-center gap-2">
-                  <Avatar size="sm" alt={`${feed.author.displayName} 프로필`} />
-                  <p className="truncate text-xs font-medium text-gray-500">
-                    {formatCrewName(feed.author.displayName, feed.author.cohort, feed.author.track)}
-                  </p>
+                  <FeedAuthor author={feed.author} avatarSize="sm" />
                 </div>
               </Link>
             </li>
