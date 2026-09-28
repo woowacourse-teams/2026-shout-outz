@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import com.shoutoutz.api.common.util.DataResolveUtil;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.ServiceStatus;
@@ -20,6 +21,7 @@ import org.hibernate.validator.constraints.CodePointLength;
  * slug는 등록 시점 값으로 고정이라 받지 않는다.
  * techTagIds와 memberHandles도 전체 교체이며, 목록 순서가 그대로 노출 순서가 된다.
  * memberHandles 에는 등록 요청과 같이 작성자 본인을 넣지 않는다.
+ * 문자열은 검증 전에 앞뒤 공백을 자르고, 비어 있으면 null 로 둔다. descriptionMd 는 마크다운이라 정제하지 않는다.
  *
  * <p>thumbnailImageId는 필드의 존재 여부에 따라 다음처럼 처리한다.</p>
  * <ul>
@@ -95,18 +97,18 @@ public final class ProjectUpdateRequest {
             List<Long> techTagIds,
             List<String> memberHandles
     ) {
-        this.title = title;
-        this.teamName = teamName;
-        this.tagline = tagline;
+        this.title = DataResolveUtil.sanitizeString(title);
+        this.teamName = DataResolveUtil.sanitizeString(teamName);
+        this.tagline = DataResolveUtil.sanitizeString(tagline);
         this.cohort = cohort;
         this.thumbnailImageId = thumbnailImageId;
         this.thumbnailImageIdProvided = true;
-        this.githubRepositoryUrl = githubRepositoryUrl;
-        this.deploymentUrl = normalizeDeploymentUrl(deploymentUrl);
+        this.githubRepositoryUrl = DataResolveUtil.sanitizeString(githubRepositoryUrl);
+        this.deploymentUrl = DataResolveUtil.sanitizeString(deploymentUrl);
         this.descriptionMd = descriptionMd;
         this.serviceStatus = serviceStatus;
         this.techTagIds = techTagIds;
-        this.memberHandles = memberHandles;
+        this.memberHandles = DataResolveUtil.sanitizeStrings(memberHandles);
     }
 
     public String title() {
@@ -159,15 +161,15 @@ public final class ProjectUpdateRequest {
     }
 
     public void setTitle(String title) {
-        this.title = title;
+        this.title = DataResolveUtil.sanitizeString(title);
     }
 
     public void setTeamName(String teamName) {
-        this.teamName = teamName;
+        this.teamName = DataResolveUtil.sanitizeString(teamName);
     }
 
     public void setTagline(String tagline) {
-        this.tagline = tagline;
+        this.tagline = DataResolveUtil.sanitizeString(tagline);
     }
 
     public void setCohort(Integer cohort) {
@@ -181,11 +183,11 @@ public final class ProjectUpdateRequest {
     }
 
     public void setGithubRepositoryUrl(String githubRepositoryUrl) {
-        this.githubRepositoryUrl = githubRepositoryUrl;
+        this.githubRepositoryUrl = DataResolveUtil.sanitizeString(githubRepositoryUrl);
     }
 
     public void setDeploymentUrl(String deploymentUrl) {
-        this.deploymentUrl = normalizeDeploymentUrl(deploymentUrl);
+        this.deploymentUrl = DataResolveUtil.sanitizeString(deploymentUrl);
     }
 
     public void setDescriptionMd(String descriptionMd) {
@@ -201,13 +203,6 @@ public final class ProjectUpdateRequest {
     }
 
     public void setMemberHandles(List<String> memberHandles) {
-        this.memberHandles = memberHandles;
-    }
-
-    private static String normalizeDeploymentUrl(String deploymentUrl) {
-        if (deploymentUrl != null && deploymentUrl.isBlank()) {
-            return null;
-        }
-        return deploymentUrl;
+        this.memberHandles = DataResolveUtil.sanitizeStrings(memberHandles);
     }
 }
