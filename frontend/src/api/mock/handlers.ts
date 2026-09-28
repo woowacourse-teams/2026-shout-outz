@@ -16,6 +16,7 @@ const toProjectMember = (member: (typeof projects)[number]['members'][number]) =
   userId: member.userId,
   handle: member.userId === 1 ? 'woojin' : `crew${member.userId}`,
   displayName: member.displayName,
+  userType: 'WOOWACOURSE_CREW' as const,
   cohort: member.cohort,
   track: member.track === 'BE' ? 'BACKEND' : 'FRONTEND',
   avatarUrl: member.avatarUrl,
@@ -274,7 +275,7 @@ export const handlers = [
   http.get('/api/v1/users/me/summary', () =>
     HttpResponse.json({
       status: 'success',
-      data: { userId: 10, handle: 'woojin', displayName: '정우진', avatarUrl: null },
+      data: { userId: 1, handle: 'woojin', displayName: '정우진', avatarUrl: null },
     }),
   ),
 

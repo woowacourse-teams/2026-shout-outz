@@ -16,6 +16,7 @@ import { DEFAULT_PROFILE_TAB } from '@/constants/user';
 import { type ProfileTab } from '@/types/user';
 import { sessionQuery } from '@/apis/session';
 import { myProfileSummaryQuery } from '@/apis/user';
+import { verificationRequestQuery } from '@/apis/verification';
 import { getButtonStyles } from '@/components/Button';
 import { analytics } from '@/utils/analytics';
 
@@ -52,15 +53,15 @@ export function UserProfilePage() {
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 pt-6 pb-12 md:gap-8 md:pt-10 md:pb-20">
         <ProfileHeader
           displayName={profile.displayName}
+          userType={profile.userType}
           cohort={profile.cohort}
           track={profile.track}
           bio={profile.bio}
           githubProfileUrl={profile.githubProfileUrl}
           blogUrl={profile.blogUrl}
           avatarUrl={profile.avatarUrl}
+          actions={<MyProfileActions handle={handle} />}
         />
-
-        <MyProfileActions handle={handle} />
 
         <ProfileTabs
           value={currentTab}
@@ -84,11 +85,18 @@ function MyProfileActions({ handle }: { handle: string }) {
     ...myProfileSummaryQuery(session.data?.userId ?? 0),
     enabled: authenticated,
   });
+  const isMyProfile = me.data?.handle === handle;
+  const verification = useQuery({
+    ...verificationRequestQuery,
+    enabled: isMyProfile,
+  });
 
-  if (me.data?.handle !== handle) return null;
+  if (!isMyProfile || verification.isPending || verification.data?.status === 'APPROVED') {
+    return null;
+  }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="shrink-0">
       <Link to="/mypage/verification" className={getButtonStyles({ variant: 'outline' })}>
         구성원 인증
       </Link>
@@ -108,16 +116,30 @@ function ProjectTab({ handle }: { handle: string }) {
         <ul className="grid grid-cols-1 gap-x-5 gap-y-8 md:grid-cols-2">
           {projects.map((project) => (
             <li key={project.id} className="min-w-0">
-              <ProjectCard
-                title={project.title}
-                tagline={project.tagline}
-                cohort={project.cohort}
-                likeCount={project.likeCount}
-                commentCount={project.commentCount}
-                techTags={project.techTags}
-                thumbnailUrl={project.thumbnailUrl}
-                members={project.members}
-              />
+              <Link
+                to="/projects/$id"
+                params={{ id: String(project.id) }}
+                className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
+                onClick={() => {
+                  analytics.track({ name: 'card_clicked', target: 'project', surface: 'profile' });
+                  analytics.track({
+                    name: 'project_detail_opened',
+                    projectId: project.id,
+                    from: 'profile',
+                  });
+                }}
+              >
+                <ProjectCard
+                  title={project.title}
+                  tagline={project.tagline}
+                  cohort={project.cohort}
+                  likeCount={project.likeCount}
+                  commentCount={project.commentCount}
+                  techTags={project.techTags}
+                  thumbnailUrl={project.thumbnailUrl}
+                  members={project.members}
+                />
+              </Link>
             </li>
           ))}
         </ul>

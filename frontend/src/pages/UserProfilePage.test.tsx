@@ -21,7 +21,7 @@ describe('UserProfilePage', () => {
     renderRoute('/users/woojin');
 
     expect(await screen.findByRole('heading', { name: '정우진' })).toBeInTheDocument();
-    expect(screen.getByText('6기 백엔드')).toBeInTheDocument();
+    expect(screen.getByText('8기 백엔드')).toBeInTheDocument();
     expect(
       screen.getByText('대규모 트래픽 분산 처리와 데이터 정합성에 집착하는 백엔드 개발자입니다.'),
     ).toBeInTheDocument();
@@ -29,10 +29,7 @@ describe('UserProfilePage', () => {
       'href',
       'https://github.com/woojin-dev',
     );
-    expect(await screen.findByRole('link', { name: '구성원 인증' })).toHaveAttribute(
-      'href',
-      '/mypage/verification',
-    );
+    expect(screen.queryByRole('link', { name: '구성원 인증' })).not.toBeInTheDocument();
   });
 
   describe('탭', () => {

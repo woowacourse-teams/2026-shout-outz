@@ -8,7 +8,7 @@ const PROFILE: UserProfile = {
   displayName: '정우진',
   userType: 'WOOWACOURSE_CREW',
   track: 'BACKEND',
-  cohort: 6,
+  cohort: 8,
   bio: '대규모 트래픽 분산 처리와 데이터 정합성에 집착하는 백엔드 개발자입니다.',
   avatarUrl: null,
   githubProfileUrl: 'https://github.com/woojin-dev',
@@ -21,11 +21,13 @@ const crewMember = (
   handle: string,
   displayName: string,
   track: 'BACKEND' | 'FRONTEND' | 'ANDROID',
+  cohort = 6,
 ) => ({
   userId,
   handle,
   displayName,
-  cohort: 6,
+  cohort,
+  userType: 'WOOWACOURSE_CREW' as const,
   track,
   avatarUrl: null,
   githubAvatarUrl: null,
@@ -46,7 +48,7 @@ const PROJECTS: ProjectSummary[] = [
       { id: 1, displayName: 'React' },
       { id: 3, displayName: 'Spring Boot' },
     ],
-    members: [crewMember(10, 'woojin', '정우진', 'BACKEND')],
+    members: [crewMember(10, 'woojin', '정우진', 'BACKEND', 8)],
   },
   {
     id: 2,
@@ -59,7 +61,7 @@ const PROJECTS: ProjectSummary[] = [
     commentCount: 5,
     techTags: [{ id: 2, displayName: 'TypeScript' }],
     members: [
-      crewMember(10, 'woojin', '정우진', 'BACKEND'),
+      crewMember(10, 'woojin', '정우진', 'BACKEND', 8),
       crewMember(11, 'dohyun', '김도현', 'FRONTEND'),
     ],
   },
@@ -70,7 +72,7 @@ const feedAuthor = {
   displayName: '정우진',
   userType: 'WOOWACOURSE_CREW',
   track: 'BACKEND',
-  cohort: 6,
+  cohort: 8,
   avatarUrl: null,
 } satisfies FeedAuthor;
 

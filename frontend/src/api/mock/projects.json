@@ -1,7 +1,7 @@
 [
   {
     "id": "dropit",
-    "cohort": 6,
+    "cohort": 8,
     "teamName": "Dropit 팀",
     "serviceStatus": "OPERATING",
     "deploymentUrl": "https://example.com/dropit",
@@ -9,9 +9,9 @@
     "likeCount": 84,
     "bookmarkCount": 28,
     "members": [
-      { "userId": 1, "displayName": "정우진", "cohort": 6, "track": "BE", "avatarUrl": null },
-      { "userId": 4, "displayName": "두리", "cohort": 6, "track": "FE", "avatarUrl": null },
-      { "userId": 5, "displayName": "재키", "cohort": 6, "track": "BE", "avatarUrl": null }
+      { "userId": 1, "displayName": "정우진", "cohort": 8, "track": "BE", "avatarUrl": null },
+      { "userId": 4, "displayName": "두리", "cohort": 8, "track": "FE", "avatarUrl": null },
+      { "userId": 5, "displayName": "재키", "cohort": 8, "track": "BE", "avatarUrl": null }
     ],
     "descriptionMd": "## 프로젝트 소개\n\n작은 서비스를 모아보고 바로 실행할 수 있는 아카이빙 서비스입니다.\n\n### 주요 기능\n\n- 프로젝트 탐색\n- 제작자와 기술 스택 소개\n\n<details><summary>구현 내용</summary>\n\nReact와 TanStack Router를 사용합니다.\n\n</details>\n\n| 영역 | 기술 |\n| --- | --- |\n| 화면 | React |\n| 데이터 | TanStack Query |",
     "name": "Dropit",
@@ -33,7 +33,8 @@
     "likeCount": 12,
     "bookmarkCount": 3,
     "members": [
-      { "userId": 2, "displayName": "고제성", "cohort": 6, "track": "FE", "avatarUrl": null }
+      { "userId": 2, "displayName": "고제성", "cohort": 6, "track": "FE", "avatarUrl": null },
+      { "userId": 6, "displayName": "황호익", "cohort": 6, "track": "BE", "avatarUrl": null }
     ],
     "name": "Shout-outz",
     "tagline": "팀원에게 감사와 응원을 남기는 서비스",

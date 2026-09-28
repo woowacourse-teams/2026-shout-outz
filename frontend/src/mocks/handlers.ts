@@ -24,7 +24,7 @@ export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
   createdAt: new Date(Date.UTC(2026, 8, 14, 9 - index)).toISOString(),
   updatedAt: new Date(Date.UTC(2026, 8, 14, 9 - index)).toISOString(),
 }));
-export function createFeedHandlers() {
+export function createFeedHandlers({ includeProfile = true }: { includeProfile?: boolean } = {}) {
   let sequence = 100;
   const feeds = [...mockFeeds];
   const comments = new Map<number, FeedComment[]>();
@@ -34,7 +34,13 @@ export function createFeedHandlers() {
         {
           id: id * 10,
           content: '경험을 공유해 주셔서 감사합니다!',
-          author: { userId: 1, displayName: '개발용 사용자', avatarUrl: null },
+          author: {
+            userId: 1,
+            displayName: '개발용 사용자',
+            userType: 'WOOWACOURSE_CREW',
+            cohort: 8,
+            avatarUrl: null,
+          },
           parentId: null,
           createdAt: '2026-09-14T00:00:00Z',
           updatedAt: '2026-09-14T00:00:00Z',
@@ -67,18 +73,22 @@ export function createFeedHandlers() {
         ],
       }),
     ),
-    http.get('/api/v1/users/me', () =>
-      HttpResponse.json({
-        status: 'success',
-        data: {
-          ...mockFeeds[0]!.author,
-          bio: null,
-          githubProfileUrl: null,
-          blogUrl: null,
-          counts: { projects: 0, feeds: 1 },
-        },
-      }),
-    ),
+    ...(includeProfile
+      ? [
+          http.get('/api/v1/users/me', () =>
+            HttpResponse.json({
+              status: 'success',
+              data: {
+                ...mockFeeds[0]!.author,
+                bio: null,
+                githubProfileUrl: null,
+                blogUrl: null,
+                counts: { projects: 0, feeds: 1 },
+              },
+            }),
+          ),
+        ]
+      : []),
     http.post('/api/v1/feeds', async ({ request }) => {
       const body = (await request.json()) as {
         title: string;
@@ -115,12 +125,16 @@ export function createFeedHandlers() {
       feeds.unshift(feed);
       return HttpResponse.json({ status: 'success', data: feed }, { status: 201 });
     }),
-    http.get('/api/v1/users/me/summary', () =>
-      HttpResponse.json({
-        status: 'success',
-        data: { handle: 'crew0', displayName: '정우진', avatarUrl: null },
-      }),
-    ),
+    ...(includeProfile
+      ? [
+          http.get('/api/v1/users/me/summary', () =>
+            HttpResponse.json({
+              status: 'success',
+              data: { handle: 'crew0', displayName: '정우진', avatarUrl: null },
+            }),
+          ),
+        ]
+      : []),
     http.put('/api/v1/feeds/:feedId', async ({ params, request }) => {
       const index = feeds.findIndex((feed) => feed.feedId === Number(params.feedId));
       const existing = feeds[index];
@@ -259,7 +273,13 @@ export function createFeedHandlers() {
       const item: FeedComment = {
         id: sequence++,
         content: body.content,
-        author: { userId: 1, displayName: '개발용 사용자', avatarUrl: null },
+        author: {
+          userId: 1,
+          displayName: '개발용 사용자',
+          userType: 'WOOWACOURSE_CREW',
+          cohort: 8,
+          avatarUrl: null,
+        },
         parentId: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
