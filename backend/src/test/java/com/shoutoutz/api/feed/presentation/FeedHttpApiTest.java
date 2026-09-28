@@ -529,17 +529,17 @@ class FeedHttpApiTest {
     }
 
     @Test
-    @DisplayName("크루나 코치가 아니면 피드 작성 요청에 403을 반환한다")
+    @DisplayName("피드 작성 권한이 없으면 403을 반환한다")
     void rejectForbiddenWriter() throws Exception {
         given(feedService.saveFeed(eq(USER_ID), any(FeedSaveRequest.class)))
-                .willThrow(new ForbiddenException(FeedErrorCode.FEED_WRITER_TYPE_FORBIDDEN));
+                .willThrow(new ForbiddenException(FeedErrorCode.FEED_WRITER_FORBIDDEN));
 
         mockMvc.perform(post("/api/v1/feeds")
                         .with(authenticated())
                         .contentType(MediaType.APPLICATION_JSON)
                 .content(validCreateRequest()))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("FEED_WRITER_TYPE_FORBIDDEN"))
+                .andExpect(jsonPath("$.code").value("FEED_WRITER_FORBIDDEN"))
                 .andDo(document(
                         "feed-save-forbidden",
                         resource(createErrorResponse(

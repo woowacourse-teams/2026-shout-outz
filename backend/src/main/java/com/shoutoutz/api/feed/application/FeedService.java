@@ -29,9 +29,7 @@ import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserStatus;
-import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
-import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -47,11 +45,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class FeedService {
-
-    private static final Set<UserType> WRITER_TYPES = Set.of(
-            UserType.WOOWACOURSE_CREW,
-            UserType.WOOWACOURSE_COACH
-    );
 
     private final FeedRepository feedRepository;
     private final CategoryRepository categoryRepository;
@@ -242,21 +235,16 @@ public class FeedService {
     private void validateWriter(long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ForbiddenException(
-                        FeedErrorCode.FEED_WRITER_TYPE_FORBIDDEN
+                        FeedErrorCode.FEED_WRITER_FORBIDDEN
                 ));
-        UserProfile profile = userProfileRepository.findByUserId(userId)
+        userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new ForbiddenException(
-                        FeedErrorCode.FEED_WRITER_TYPE_FORBIDDEN
+                        FeedErrorCode.FEED_WRITER_FORBIDDEN
                 ));
 
-        if (!isWriter(user, profile)) {
-            throw new ForbiddenException(FeedErrorCode.FEED_WRITER_TYPE_FORBIDDEN);
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new ForbiddenException(FeedErrorCode.FEED_WRITER_FORBIDDEN);
         }
-    }
-
-    private boolean isWriter(User user, UserProfile profile) {
-        return user.getStatus() == UserStatus.ACTIVE
-                && WRITER_TYPES.contains(profile.getUserType());
     }
 
     /**
