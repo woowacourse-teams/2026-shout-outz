@@ -7,8 +7,7 @@ import {
   userProjectsInfiniteQueryOptions,
 } from '@/api/user';
 import { FeedCard } from '@/components/feeds/FeedCard';
-import { Footer } from '@/components/Footer';
-import { AppGnb } from '@/components/AppGnb';
+import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { ProfileHeader } from '@/components/users/ProfileHeader';
 import { ProfileTabs } from '@/components/users/ProfileTabs';
 import { ProjectCard } from '@/components/projects/ProjectCard';
@@ -46,35 +45,31 @@ export function UserProfilePage() {
   };
 
   return (
-    <div className="bg-background flex min-h-dvh flex-col text-gray-900">
+    <>
       <title>{`${profile.displayName} | shout-outz`}</title>
-      <AppGnb />
+      <ProfileHeader
+        displayName={profile.displayName}
+        userType={profile.userType}
+        cohort={profile.cohort}
+        track={profile.track}
+        bio={profile.bio}
+        githubProfileUrl={profile.githubProfileUrl}
+        blogUrl={profile.blogUrl}
+        avatarUrl={profile.avatarUrl}
+        actions={<MyProfileActions handle={handle} />}
+      />
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 pt-6 pb-12 md:gap-8 md:pt-10 md:pb-20">
-        <ProfileHeader
-          displayName={profile.displayName}
-          userType={profile.userType}
-          cohort={profile.cohort}
-          track={profile.track}
-          bio={profile.bio}
-          githubProfileUrl={profile.githubProfileUrl}
-          blogUrl={profile.blogUrl}
-          avatarUrl={profile.avatarUrl}
-          actions={<MyProfileActions handle={handle} />}
-        />
+      <ProfileTabs
+        value={currentTab}
+        projectCount={profile.counts.projects}
+        feedCount={profile.counts.feeds}
+        onChange={changeTab}
+      />
 
-        <ProfileTabs
-          value={currentTab}
-          projectCount={profile.counts.projects}
-          feedCount={profile.counts.feeds}
-          onChange={changeTab}
-        />
-
+      <AsyncBoundary key={currentTab}>
         {currentTab === 'projects' ? <ProjectTab handle={handle} /> : <FeedTab handle={handle} />}
-      </main>
-
-      <Footer />
-    </div>
+      </AsyncBoundary>
+    </>
   );
 }
 
