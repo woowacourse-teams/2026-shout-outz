@@ -113,6 +113,11 @@ public class ProjectRepositoryImpl implements ProjectRepository {
         return projectDetailJdbcRepository.findDetailById(projectId, viewerId);
     }
 
+    @Override
+    public Optional<ProjectDetail> findDetailBySlug(Slug slug, Long viewerId) {
+        return projectDetailJdbcRepository.findDetailBySlug(slug, viewerId);
+    }
+
     /**
      * 승인 상태가 Approval이며 삭제되지 않은 프로젝트인지 확인
      */

@@ -8,6 +8,7 @@ import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.ServiceStatus;
+import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -83,6 +84,41 @@ class ProjectDetailRepositoryIntegrationTest {
 
         assertThat(projectRepository.findDetailById(deletedProjectId, null)).isEmpty();
         assertThat(projectRepository.findDetailById(-1L, null)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("slug로 프로젝트 기본 정보와 기술 스택, 팀원을 조회한다.")
+    void findsDetailBySlug() {
+        User registrant = saveUser("slug");
+        saveCrewProfile(registrant.getId(), "정우진", 6, "BACKEND", null);
+        long projectId = saveProject(registrant.getId(), "APPROVED");
+        long react = saveTechTag("React");
+        saveProjectTag(projectId, react, 0);
+        saveProjectMember(projectId, registrant.getId(), 0);
+        String slug = findSlug(projectId);
+
+        ProjectDetail detail = projectRepository.findDetailBySlug(new Slug(slug), null).orElseThrow();
+
+        assertThat(detail.id()).isEqualTo(projectId);
+        assertThat(detail.slug()).isEqualTo(slug);
+        assertThat(detail.techTags())
+                .extracting(ProjectTechTag::id)
+                .containsExactly(react);
+        assertThat(detail.members()).containsExactly(
+                ProjectMemberProfile.user(registrant.getId(), registrant.getHandle().value(), "정우진",
+                        Cohort.COHORT_6, Track.BACKEND, null)
+        );
+    }
+
+    @Test
+    @DisplayName("없거나 삭제된 프로젝트의 slug로는 조회되지 않는다.")
+    void returnsEmptyWhenSlugMissingOrDeleted() {
+        User registrant = saveUser("slug-deleted");
+        long deletedProjectId = saveProject(registrant.getId(), "APPROVED");
+        jdbcTemplate.update("UPDATE projects SET deleted_at = now() WHERE id = ?", deletedProjectId);
+
+        assertThat(projectRepository.findDetailBySlug(new Slug(findSlug(deletedProjectId)), null)).isEmpty();
+        assertThat(projectRepository.findDetailBySlug(new Slug("missing-" + UUID.randomUUID()), null)).isEmpty();
     }
 
     @Test
@@ -237,6 +273,10 @@ class ProjectDetailRepositoryIntegrationTest {
                 "https://github.com/woowacourse-teams/detail-" + suffix,
                 approvalStatus
         );
+    }
+
+    private String findSlug(long projectId) {
+        return jdbcTemplate.queryForObject("SELECT slug FROM projects WHERE id = ?", String.class, projectId);
     }
 
     private long saveTechTag(String displayName) {
