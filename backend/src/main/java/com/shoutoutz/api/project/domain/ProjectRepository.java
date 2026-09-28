@@ -27,6 +27,16 @@ public interface ProjectRepository {
     Optional<Project> findActiveById(long projectId);
 
     /**
+     * 예상한 승인 상태일 때만 프로젝트 승인 상태를 바꾼다.
+     * 동시 심사 요청 중 하나만 성공하도록 데이터베이스에서 상태 조건을 함께 검사한다.
+     */
+    boolean transitionApprovalStatus(
+            long projectId,
+            ApprovalStatus fromStatus,
+            ApprovalStatus toStatus
+    );
+
+    /**
      * 프로젝트에 달린 기술 스택 id 를 저장된 순서대로 조회한다.
      */
     List<Long> findTechTagIds(long projectId);
@@ -49,6 +59,11 @@ public interface ProjectRepository {
      * @param viewerId 요청한 사용자 ID. 비로그인이면 null이며, 이때 likedByMe와 bookmarkedByMe는 false다.
      */
     Optional<ProjectDetail> findDetailBySlug(Slug slug, Long viewerId);
+
+    /**
+     * 관리자용 프로젝트 상세 조회. 승인 상태와 무관하게 삭제되지 않은 프로젝트를 찾는다.
+     */
+    Optional<ProjectDetail> findDetailById(long projectId, Long viewerId);
 
     /**
      * 승인되고 삭제되지 않은 프로젝트 목록을 조건에 맞게 한 페이지 조회한다.

@@ -266,7 +266,11 @@ async function fetchContributorProfiles(client, contributors) {
     if (isBotContributor(contributor)) continue
 
     const { data: user } = await client.getJson(`/users/${encodeURIComponent(contributor.login)}`)
+    if (!Number.isInteger(user.id) || user.id <= 0) {
+      throw new Error(`GitHub 사용자 ${contributor.login}의 id가 없습니다.`)
+    }
     profiles.push({
+      githubAccountId: String(user.id),
       login: user.login,
       name: user.name ?? null,
       bio: user.bio ?? null,

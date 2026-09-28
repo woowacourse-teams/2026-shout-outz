@@ -86,6 +86,35 @@ class ProjectRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("승인 상태 전이는 예상한 상태의 활성 프로젝트에서만 성공한다")
+    void transitionsApprovalStatusOnlyFromExpectedActiveStatus() {
+        Long registeredBy = userRepository.save(User.initialize("@transition")).getId();
+        Project pending = projectRepository.save(
+                project(registeredBy, uniqueRepositoryName()),
+                List.of(),
+                List.of()
+        );
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(projectRepository.transitionApprovalStatus(
+                pending.getId(),
+                ApprovalStatus.PENDING,
+                ApprovalStatus.APPROVED
+        )).isTrue();
+        assertThat(projectRepository.transitionApprovalStatus(
+                pending.getId(),
+                ApprovalStatus.PENDING,
+                ApprovalStatus.REJECTED
+        )).isFalse();
+        entityManager.clear();
+        assertThat(projectRepository.findActiveById(pending.getId()))
+                .get()
+                .extracting(Project::getApprovalStatus)
+                .isEqualTo(ApprovalStatus.APPROVED);
+    }
+
+    @Test
     @DisplayName("등록자 본인의 프로젝트는 심사 중이어도 삭제되고 이력에 남길 정보를 돌려준다")
     void softDeletesOwnPendingProject() {
         Long registeredBy = userRepository.save(User.initialize("@owner")).getId();

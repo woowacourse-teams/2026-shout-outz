@@ -30,6 +30,8 @@ import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.DescriptionMediaReferences;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
+import com.shoutoutz.api.project.domain.ProjectApprovalHistory;
+import com.shoutoutz.api.project.domain.ProjectApprovalHistoryRepository;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectDeletion;
@@ -95,6 +97,7 @@ public class ProjectService {
     private final MediaMetadataRepository mediaMetadataRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
+    private final ProjectApprovalHistoryRepository projectApprovalHistoryRepository;
     private final ProjectDeletionRepository projectDeletionRepository;
     private final UserProjectQueryRepository userProjectQueryRepository;
     private final MediaUrlResolver mediaUrlResolver;
@@ -126,6 +129,9 @@ public class ProjectService {
         ProjectMembers members = ProjectMembers.of(memberIds);
 
         Project savedProject = projectRepository.save(project, request.techTagIds(), members.getUserIds());
+        projectApprovalHistoryRepository.save(
+                ProjectApprovalHistory.initial(savedProject.getId(), clock.instant())
+        );
         return new ProjectCreateResponse(savedProject.getId(), savedProject.getSlug().value());
     }
 
@@ -163,6 +169,12 @@ public class ProjectService {
         ProjectMembers members = ProjectMembers.of(memberIds);
 
         Project savedProject = projectRepository.update(updated, request.techTagIds(), members.getUserIds());
+        if (project.getApprovalStatus() == ApprovalStatus.REJECTED
+                && savedProject.getApprovalStatus() == ApprovalStatus.PENDING) {
+            projectApprovalHistoryRepository.save(
+                    ProjectApprovalHistory.resubmission(projectId, loginUserId, clock.instant())
+            );
+        }
         return ProjectUpdateResponse.from(savedProject);
     }
 
