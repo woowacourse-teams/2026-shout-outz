@@ -50,10 +50,9 @@ public enum ProjectErrorCode implements ErrorCode {
     /**
      * 프로젝트 팀원 에러 코드
      */
-    PROJECT_MEMBER_REQUIRED("팀 프로젝트만 등록할 수 있습니다. 등록자 외 팀원을 한 명 이상 입력해주세요."),
+    PROJECT_MEMBER_REQUIRED("팀 프로젝트만 등록할 수 있습니다. 팀원을 한 명 이상 입력해주세요."),
     PROJECT_DUPLICATE_MEMBER("팀원 목록에 중복된 사용자가 있습니다."),
     PROJECT_INVALID_MEMBER("팀원으로 추가할 수 없는 사용자가 포함되어 있습니다. 활동 중인 우아한테크코스 크루나 코치만 팀원이 될 수 있습니다."),
-    PROJECT_MEMBER_INCLUDES_REGISTRANT("등록자 본인은 팀원 목록에 넣지 않아도 됩니다."),
 
     /**
      * 프로젝트 썸네일 에러 코드

@@ -49,7 +49,7 @@ public class ProjectTechTagAndMemberJdbcRepository {
     }
 
     /**
-     * 새로 등록된 프로젝트의 팀원을 등록 순서대로 조회한다. 등록 시 등록자가 첫 번째로 저장된다.
+     * 프로젝트의 팀원을 저장 순서대로 조회한다.
      * 탈퇴 30일이 지나 프로필이 삭제된 팀원도 목록에서 빠지지 않도록, 프로필은 LEFT JOIN 한다.
      */
     public Map<Long, List<ProjectMemberProfile>> findMembers(Collection<Long> projectIds) {
