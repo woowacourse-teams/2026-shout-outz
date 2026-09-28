@@ -30,8 +30,8 @@ public enum ProjectErrorCode implements ErrorCode {
     /**
      * 프로젝트 식별자 (Slug) 에러 코드
      */
-    PROJECT_INVALID_SLUG("리포지토리 이름으로 프로젝트 주소를 만들 수 없습니다. 소문자와 숫자, 하이픈만 사용할 수 있습니다."),
-    PROJECT_DUPLICATE_SLUG("이미 사용 중인 프로젝트 주소입니다. 리포지토리 이름이 같은 프로젝트가 있는지 확인해주세요."),
+    PROJECT_INVALID_SLUG("리포지토리 이름으로 프로젝트 주소를 만들 수 없습니다. 이름에 영문자나 숫자가 있어야 하고, 주소는 100자를 넘을 수 없습니다."),
+    PROJECT_DUPLICATE_SLUG("이미 사용 중인 프로젝트 주소입니다. 리포지토리 이름이 같거나 앞 연도나 특수문자만 다른 프로젝트가 있는지 확인해주세요."),
 
     /**
      * 프로젝트 링크 에러 코드

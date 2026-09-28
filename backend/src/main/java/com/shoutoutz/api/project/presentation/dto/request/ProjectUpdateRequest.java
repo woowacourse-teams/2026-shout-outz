@@ -4,9 +4,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import com.shoutoutz.api.common.util.DataResolveUtil;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.ServiceStatus;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -19,6 +21,7 @@ import org.hibernate.validator.constraints.CodePointLength;
  * 대부분의 필드는 전체 교체 방식이며, 비우는 값은 null 로 보낸다.
  * slug는 등록 시점 값으로 고정이라 받지 않는다.
  * techTagIds와 memberHandles도 전체 교체이며, 목록 순서가 그대로 노출 순서가 된다.
+ * 문자열은 검증 전에 앞뒤 공백을 자르고, 비어 있으면 null 로 둔다. descriptionMd 는 마크다운이라 정제하지 않는다.
  *
  * <p>thumbnailImageId는 필드의 존재 여부에 따라 다음처럼 처리한다.</p>
  * <ul>
@@ -94,18 +97,18 @@ public final class ProjectUpdateRequest {
             List<Long> techTagIds,
             List<String> memberHandles
     ) {
-        this.title = title;
-        this.teamName = teamName;
-        this.tagline = tagline;
+        this.title = DataResolveUtil.sanitizeString(title);
+        this.teamName = DataResolveUtil.sanitizeString(teamName);
+        this.tagline = DataResolveUtil.sanitizeString(tagline);
         this.cohort = cohort;
         this.thumbnailImageId = thumbnailImageId;
         this.thumbnailImageIdProvided = true;
-        this.githubRepositoryUrl = githubRepositoryUrl;
-        this.deploymentUrl = normalizeDeploymentUrl(deploymentUrl);
+        this.githubRepositoryUrl = DataResolveUtil.sanitizeString(githubRepositoryUrl);
+        this.deploymentUrl = DataResolveUtil.sanitizeString(deploymentUrl);
         this.descriptionMd = descriptionMd;
         this.serviceStatus = serviceStatus;
         this.techTagIds = techTagIds;
-        this.memberHandles = memberHandles;
+        this.memberHandles = DataResolveUtil.sanitizeStrings(memberHandles);
     }
 
     public String title() {
@@ -133,6 +136,16 @@ public final class ProjectUpdateRequest {
         return thumbnailImageIdProvided;
     }
 
+    /**
+     * 배포 URL 이 없으면 운영 중일 수 없다. 도메인도 같은 규칙을 내부 불변식으로 검사하지만,
+     * 사용자 입력은 API 레이어에서 400으로 거른다. 오류 응답의 field 는 serviceStatusValid 다.
+     */
+    @JsonIgnore
+    @AssertTrue(message = "deploymentUrl이 없으면 serviceStatus를 OPERATING으로 둘 수 없습니다.")
+    public boolean isServiceStatusValid() {
+        return deploymentUrl != null || serviceStatus != ServiceStatus.OPERATING;
+    }
+
     public String githubRepositoryUrl() {
         return githubRepositoryUrl;
     }
@@ -158,15 +171,15 @@ public final class ProjectUpdateRequest {
     }
 
     public void setTitle(String title) {
-        this.title = title;
+        this.title = DataResolveUtil.sanitizeString(title);
     }
 
     public void setTeamName(String teamName) {
-        this.teamName = teamName;
+        this.teamName = DataResolveUtil.sanitizeString(teamName);
     }
 
     public void setTagline(String tagline) {
-        this.tagline = tagline;
+        this.tagline = DataResolveUtil.sanitizeString(tagline);
     }
 
     public void setCohort(Integer cohort) {
@@ -180,11 +193,11 @@ public final class ProjectUpdateRequest {
     }
 
     public void setGithubRepositoryUrl(String githubRepositoryUrl) {
-        this.githubRepositoryUrl = githubRepositoryUrl;
+        this.githubRepositoryUrl = DataResolveUtil.sanitizeString(githubRepositoryUrl);
     }
 
     public void setDeploymentUrl(String deploymentUrl) {
-        this.deploymentUrl = normalizeDeploymentUrl(deploymentUrl);
+        this.deploymentUrl = DataResolveUtil.sanitizeString(deploymentUrl);
     }
 
     public void setDescriptionMd(String descriptionMd) {
@@ -200,13 +213,6 @@ public final class ProjectUpdateRequest {
     }
 
     public void setMemberHandles(List<String> memberHandles) {
-        this.memberHandles = memberHandles;
-    }
-
-    private static String normalizeDeploymentUrl(String deploymentUrl) {
-        if (deploymentUrl != null && deploymentUrl.isBlank()) {
-            return null;
-        }
-        return deploymentUrl;
+        this.memberHandles = DataResolveUtil.sanitizeStrings(memberHandles);
     }
 }
