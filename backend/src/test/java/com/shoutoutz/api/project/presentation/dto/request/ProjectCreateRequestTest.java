@@ -42,7 +42,7 @@ class ProjectCreateRequestTest {
                 " https://loop.team ",
                 "설명",
                 List.of(1L),
-                List.of(" dahye ", "teammate")
+                List.of(" @dahye ", "@teammate")
         );
 
         assertThat(request.title()).isEqualTo("루프");
@@ -50,7 +50,7 @@ class ProjectCreateRequestTest {
         assertThat(request.tagline()).isEqualTo("회고와 액션 아이템을 잇는 협업 도구");
         assertThat(request.githubRepositoryUrl()).isEqualTo("https://github.com/woowacourse-teams/2026-loop");
         assertThat(request.deploymentUrl()).isEqualTo("https://loop.team");
-        assertThat(request.memberHandles()).containsExactly("dahye", "teammate");
+        assertThat(request.memberHandles()).containsExactly("@dahye", "@teammate");
         assertThat(validator.validate(request)).isEmpty();
     }
 
@@ -61,7 +61,7 @@ class ProjectCreateRequestTest {
                 "루프", "루프팀", "소개", 8, null,
                 "https://github.com/woowacourse-teams/2026-loop", null,
                 "    indented code\n",
-                List.of(1L), List.of("teammate")
+                List.of(1L), List.of("@teammate")
         );
 
         assertThat(request.descriptionMd()).isEqualTo("    indented code\n");
@@ -73,7 +73,7 @@ class ProjectCreateRequestTest {
         ProjectCreateRequest request = new ProjectCreateRequest(
                 " " + "가".repeat(100) + " ", "루프팀", "소개", 8, null,
                 "https://github.com/woowacourse-teams/2026-loop", null, "설명",
-                List.of(1L), List.of("teammate")
+                List.of(1L), List.of("@teammate")
         );
 
         assertThat(validator.validate(request)).isEmpty();
@@ -85,12 +85,26 @@ class ProjectCreateRequestTest {
         ProjectCreateRequest request = new ProjectCreateRequest(
                 "루프", "루프팀", "소개", 8, null,
                 "https://github.com/woowacourse-teams/2026-loop", null, "설명",
-                List.of(1L), List.of("teammate", "   ")
+                List.of(1L), List.of("@teammate", "   ")
         );
 
         assertThat(validator.validate(request))
                 .extracting(violation -> violation.getPropertyPath().toString())
                 .containsExactly("memberHandles[1].<list element>");
+    }
+
+    @Test
+    @DisplayName("@ 접두사가 없는 팀원 핸들은 거절한다.")
+    void rejectsMemberHandleWithoutAtPrefix() {
+        ProjectCreateRequest request = new ProjectCreateRequest(
+                "루프", "루프팀", "소개", 8, null,
+                "https://github.com/woowacourse-teams/2026-loop", null, "설명",
+                List.of(1L), List.of("teammate")
+        );
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("memberHandles[0].<list element>");
     }
 
     private static ProjectCreateRequest request(String deploymentUrl) {
@@ -104,7 +118,7 @@ class ProjectCreateRequestTest {
                 deploymentUrl,
                 "설명",
                 List.of(1L),
-                List.of("teammate")
+                List.of("@teammate")
         );
     }
 }

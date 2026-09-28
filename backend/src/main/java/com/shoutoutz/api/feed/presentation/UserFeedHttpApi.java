@@ -1,5 +1,7 @@
 package com.shoutoutz.api.feed.presentation;
 
+import static com.shoutoutz.api.user.domain.account.Handle.FORMAT_REGEX;
+
 import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
@@ -35,7 +37,7 @@ public class UserFeedHttpApi {
     public ResponseEntity<SuccessResponse<List<UserFeedResponse>>> findAll(
             @LoginUser(required = false) AuthenticatedUser loginUser,
             @Pattern(
-                    regexp = "^[A-Za-z0-9_-]{2,30}$",
+                    regexp = FORMAT_REGEX,
                     message = "handle 형식이 올바르지 않습니다."
             )
             @PathVariable String handle,

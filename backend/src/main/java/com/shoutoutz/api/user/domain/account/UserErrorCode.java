@@ -11,6 +11,7 @@ public enum UserErrorCode implements ErrorCode {
     USER_NOT_FOUND("사용자를 찾을 수 없습니다."),
     HANDLE_ALREADY_EXISTS("이미 사용 중인 handle입니다."),
     USER_HANDLE_REQUIRED("사용자 handle은 필수입니다."),
+    USER_HANDLE_INVALID_FORMAT("사용자 handle 형식이 올바르지 않습니다."),
     USER_STATUS_REQUIRED("사용자 상태는 필수입니다."),
     USER_ROLE_REQUIRED("사용자 권한은 필수입니다."),
     USER_DELETION_STATE_INVALID("탈퇴 상태와 탈퇴 시각은 함께 존재해야 합니다."),

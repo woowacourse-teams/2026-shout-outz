@@ -1,8 +1,12 @@
 package com.shoutoutz.api.user.domain.account;
 
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 public record Handle(String value) {
+
+    public static final String FORMAT_REGEX = "^@[A-Za-z0-9_-]{2,30}$";
+    static final Pattern FORMAT_PATTERN = Pattern.compile(FORMAT_REGEX);
 
     public Handle {
         UserValidator.validateHandle(value);

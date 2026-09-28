@@ -275,7 +275,7 @@ class AuthApiDocumentationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "handle": "zzaekkii",
+                                  "handle": "@zzaekkii",
                                   "displayName": "재키"
                                 }
                                 """))
@@ -367,7 +367,7 @@ class AuthApiDocumentationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "handle": "zzaekkii",
+                                  "handle": "@zzaekkii",
                                   "displayName": "재키"
                                 }
                                 """))
@@ -412,7 +412,7 @@ class AuthApiDocumentationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "handle": "zzaekkii",
+                                  "handle": "@zzaekkii",
                                   "displayName": "재키"
                                 }
                                 """))

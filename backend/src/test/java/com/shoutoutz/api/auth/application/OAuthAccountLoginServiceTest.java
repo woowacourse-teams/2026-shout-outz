@@ -94,7 +94,7 @@ class OAuthAccountLoginServiceTest {
         OAuthAccount account = oauthAccount(identity, 1L);
         User bannedUser = User.builder()
                 .id(1L)
-                .handle("sangjun")
+                .handle("@sangjun")
                 .status(UserStatus.BANNED)
                 .role(UserRole.USER)
                 .build();
@@ -127,7 +127,7 @@ class OAuthAccountLoginServiceTest {
     private User activeUser(Long id) {
         return User.builder()
                 .id(id)
-                .handle("sangjun")
+                .handle("@sangjun")
                 .status(UserStatus.ACTIVE)
                 .role(UserRole.USER)
                 .build();

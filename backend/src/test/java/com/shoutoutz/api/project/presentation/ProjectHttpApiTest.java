@@ -276,7 +276,7 @@ class ProjectHttpApiTest {
                         "\"https://loop.team\"", "\"loop.team\"",
                         "deploymentUrl", "deploymentUrl은 http 또는 https URL 형식이어야 합니다."),
                 Arguments.of("project-create-invalid-blank-member-handle",
-                        "\"sangjun121\"", "\"   \"",
+                        "\"@sangjun121\"", "\"   \"",
                         "memberHandles", "memberHandles에 빈 값을 넣을 수 없습니다.")
         );
     }
@@ -305,7 +305,7 @@ class ProjectHttpApiTest {
         assertThat(request.title()).isEqualTo("루프 (Loop)");
         assertThat(request.githubRepositoryUrl()).isEqualTo("https://github.com/woowacourse-teams/2026-loop");
         assertThat(request.deploymentUrl()).isEqualTo("https://loop.team");
-        assertThat(request.memberHandles()).containsExactly("dhyepark", "zzaekkii", "sangjun121");
+        assertThat(request.memberHandles()).containsExactly("@dhyepark", "@zzaekkii", "@sangjun121");
     }
 
     @Test
@@ -402,9 +402,9 @@ class ProjectHttpApiTest {
                         6, 12L, "https://cdn.example.com/thumbnail", 128, 184L, 14L,
                         List.of(new ProjectTechTagResponse(1L, "React"), new ProjectTechTagResponse(2L, "Spring")),
                         List.of(
-                                new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", UserType.WOOWACOURSE_CREW,
+                                new ProjectMemberProfileResponse(7L, "@dhyepark", "박다혜", UserType.WOOWACOURSE_CREW,
                                         6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
-                                new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", UserType.WOOWACOURSE_CREW,
+                                new ProjectMemberProfileResponse(8L, "@zzaekkii", "김도현", UserType.WOOWACOURSE_CREW,
                                         6, "FRONTEND", null, null, null, null)
                         ))),
                 new SliceMetaResponse("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
@@ -423,7 +423,7 @@ class ProjectHttpApiTest {
                 .andExpect(jsonPath("$.data[0].starCount").value(128))
                 .andExpect(jsonPath("$.data[0].likeCount").value(184))
                 .andExpect(jsonPath("$.data[0].techTags[0].displayName").value("React"))
-                .andExpect(jsonPath("$.data[0].members[0].handle").value("dhyepark"))
+                .andExpect(jsonPath("$.data[0].members[0].handle").value("@dhyepark"))
                 .andExpect(jsonPath("$.data[0].members[0].avatarImageId").value(101L))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
                 .andExpect(jsonPath("$.meta.totalCount").value(48))
@@ -667,7 +667,7 @@ class ProjectHttpApiTest {
                 .andExpect(jsonPath("$.data.rejectReason").value(nullValue()))
                 .andExpect(jsonPath("$.data.likedByMe").value(false))
                 .andExpect(jsonPath("$.data.techTags[0].displayName").value("React"))
-                .andExpect(jsonPath("$.data.members[0].handle").value("dhyepark"))
+                .andExpect(jsonPath("$.data.members[0].handle").value("@dhyepark"))
                 .andExpect(jsonPath("$.data.members[0].avatarImageId").value(101L))
                 .andExpect(jsonPath("$.data.members[0].githubAvatarUrl").value(nullValue()))
                 .andDo(document(
@@ -1086,9 +1086,9 @@ class ProjectHttpApiTest {
                         new ProjectTechTagResponse(2L, "TypeScript")
                 ),
                 List.of(
-                        new ProjectMemberProfileResponse(7L, "dhyepark", "박다혜", UserType.WOOWACOURSE_CREW,
+                        new ProjectMemberProfileResponse(7L, "@dhyepark", "박다혜", UserType.WOOWACOURSE_CREW,
                                 6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
-                        new ProjectMemberProfileResponse(8L, "zzaekkii", "김도현", UserType.WOOWACOURSE_CREW,
+                        new ProjectMemberProfileResponse(8L, "@zzaekkii", "김도현", UserType.WOOWACOURSE_CREW,
                                 6, "FRONTEND", null, null, null, null)
                 ),
                 Instant.parse("2026-08-09T02:30:00Z"),
@@ -1289,7 +1289,7 @@ class ProjectHttpApiTest {
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
                   "serviceStatus": "OPERATING",
                   "techTagIds": [1, 2, 3],
-                  "memberHandles": ["dhyepark", "zzaekkii", "sangjun121"]
+                  "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                 }
                 """;
     }
@@ -1306,7 +1306,7 @@ class ProjectHttpApiTest {
                   "deploymentUrl": "https://loop.team",
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)",
                   "techTagIds": [1, 2, 3],
-                  "memberHandles": ["dhyepark", "zzaekkii", "sangjun121"]
+                  "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                 }
                 """;
     }

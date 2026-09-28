@@ -34,7 +34,7 @@ class UserProfileCountsRepositoryIntegrationTest {
     @Test
     @DisplayName("삭제되지 않은 참여 프로젝트와 작성 피드 개수를 조회한다")
     void countByUserId() {
-        User user = userRepository.save(User.initialize("counts-user"));
+        User user = userRepository.save(User.initialize("@counts-user"));
         long activeProjectId = saveProject("APPROVED", null);
         long deletedProjectId = saveProject("APPROVED", Instant.now());
         long pendingProjectId = saveProject("PENDING", null);

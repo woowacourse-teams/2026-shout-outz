@@ -72,7 +72,7 @@ class UserProjectHttpApiTest {
     @Test
     @DisplayName("로그인하지 않아도 사용자가 참여한 프로젝트를 조회한다.")
     void findsUserProjects() throws Exception {
-        given(projectService.findAllByUser("zzaekkii", new UserProjectFindRequest(20, null)))
+        given(projectService.findAllByUser("@zzaekkii", new UserProjectFindRequest(20, null)))
                 .willReturn(new UserProjectResult(
                         List.of(project()),
                         true,
@@ -83,7 +83,7 @@ class UserProjectHttpApiTest {
                         )
                 ));
 
-        mockMvc.perform(get("/api/v1/users/{handle}/projects", "zzaekkii")
+        mockMvc.perform(get("/api/v1/users/{handle}/projects", "@zzaekkii")
                         .queryParam("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
@@ -94,7 +94,7 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.data[0].thumbnailImageId").value(12L))
                 .andExpect(jsonPath("$.data[0].starCount").value(128))
                 .andExpect(jsonPath("$.data[0].techTags[0].displayName").value("Spring"))
-                .andExpect(jsonPath("$.data[0].members[0].handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data[0].members[0].handle").value("@zzaekkii"))
                 .andExpect(jsonPath("$.data[0].members[0].avatarUrl")
                         .value("https://cdn.example.com/avatar-21"))
                 .andExpect(jsonPath("$.data[0].members[0].avatarImageId").value(21L))
@@ -131,22 +131,22 @@ class UserProjectHttpApiTest {
                                 .build())
                 ));
 
-        verify(projectService).findAllByUser("zzaekkii", new UserProjectFindRequest(20, null));
+        verify(projectService).findAllByUser("@zzaekkii", new UserProjectFindRequest(20, null));
     }
 
     @Test
     @DisplayName("파라미터를 생략하면 기본 조회 조건을 사용한다.")
     void usesDefaultParameters() throws Exception {
-        given(projectService.findAllByUser("zzaekkii", new UserProjectFindRequest(null, null)))
+        given(projectService.findAllByUser("@zzaekkii", new UserProjectFindRequest(null, null)))
                 .willReturn(new UserProjectResult(List.of(), false, 0L, Map.of()));
 
-        mockMvc.perform(get("/api/v1/users/{handle}/projects", "zzaekkii"))
+        mockMvc.perform(get("/api/v1/users/{handle}/projects", "@zzaekkii"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andExpect(jsonPath("$.meta.hasNext").value(false))
                 .andExpect(jsonPath("$.meta.totalCount").value(0));
 
-        verify(projectService).findAllByUser("zzaekkii", new UserProjectFindRequest(null, null));
+        verify(projectService).findAllByUser("@zzaekkii", new UserProjectFindRequest(null, null));
     }
 
     @Test
@@ -162,7 +162,7 @@ class UserProjectHttpApiTest {
     @Test
     @DisplayName("조회 개수가 범위를 벗어나면 조회할 수 없다.")
     void rejectsInvalidSize() throws Exception {
-        mockMvc.perform(get("/api/v1/users/{handle}/projects", "zzaekkii")
+        mockMvc.perform(get("/api/v1/users/{handle}/projects", "@zzaekkii")
                         .queryParam("size", "51"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
@@ -173,10 +173,10 @@ class UserProjectHttpApiTest {
     @Test
     @DisplayName("커서가 올바르지 않으면 조회할 수 없다.")
     void rejectsInvalidCursor() throws Exception {
-        given(projectService.findAllByUser("zzaekkii", new UserProjectFindRequest(null, "broken")))
+        given(projectService.findAllByUser("@zzaekkii", new UserProjectFindRequest(null, "broken")))
                 .willThrow(new InvalidProjectCursorException());
 
-        mockMvc.perform(get("/api/v1/users/{handle}/projects", "zzaekkii")
+        mockMvc.perform(get("/api/v1/users/{handle}/projects", "@zzaekkii")
                         .queryParam("cursor", "broken"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("PROJECT_INVALID_CURSOR"))
@@ -186,10 +186,10 @@ class UserProjectHttpApiTest {
     @Test
     @DisplayName("존재하지 않는 사용자의 프로젝트는 조회할 수 없다.")
     void rejectsUnknownUser() throws Exception {
-        given(projectService.findAllByUser("missing-user", new UserProjectFindRequest(null, null)))
+        given(projectService.findAllByUser("@missing-user", new UserProjectFindRequest(null, null)))
                 .willThrow(new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
 
-        mockMvc.perform(get("/api/v1/users/{handle}/projects", "missing-user"))
+        mockMvc.perform(get("/api/v1/users/{handle}/projects", "@missing-user"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("USER_NOT_FOUND"))
                 .andDo(document("user-project-find-all-not-found", resource(errorResource())));
@@ -211,7 +211,7 @@ class UserProjectHttpApiTest {
                 14L,
                 List.of(new ProjectTechTag(1L, "Spring")),
                 List.of(ProjectMemberProfile.user(
-                        7L, "zzaekkii", "재키", Cohort.COHORT_6, Track.BACKEND, 21L
+                        7L, "@zzaekkii", "재키", Cohort.COHORT_6, Track.BACKEND, 21L
                 )),
                 CREATED_AT
         );

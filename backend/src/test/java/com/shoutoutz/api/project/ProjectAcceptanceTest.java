@@ -133,7 +133,7 @@ class ProjectAcceptanceTest {
         LoginSession author = signup("WOOWACOURSE_CREW");
         String repositoryName = uniqueRepositoryName();
 
-        Response response = registerProject(author, repositoryName, techTagIds("java"), List.of("no-such-user"));
+        Response response = registerProject(author, repositoryName, techTagIds("java"), List.of("@no-such-user"));
 
         assertThat(response.statusCode()).isEqualTo(400);
         assertThat(response.jsonPath().getString("code")).isEqualTo("PROJECT_INVALID_MEMBER");
@@ -148,7 +148,7 @@ class ProjectAcceptanceTest {
     void rejectsUnknownDescriptionMedia() {
         LoginSession author = signup("WOOWACOURSE_CREW");
         String repositoryName = uniqueRepositoryName();
-        Map<String, Object> body = new HashMap<>(requestBody(repositoryName, techTagIds("java"), List.of("teammate")));
+        Map<String, Object> body = new HashMap<>(requestBody(repositoryName, techTagIds("java"), List.of("@teammate")));
         body.put("descriptionMd", "## 화면\n![목록](media://999999999)");
 
         Response response = registerProject(author, body);
@@ -167,7 +167,7 @@ class ProjectAcceptanceTest {
         LoginSession author = signup("GENERAL");
         String repositoryName = uniqueRepositoryName();
 
-        Response response = registerProject(author, repositoryName, techTagIds("java"), List.of("teammate"));
+        Response response = registerProject(author, repositoryName, techTagIds("java"), List.of("@teammate"));
 
         assertThat(response.statusCode()).isEqualTo(403);
         assertThat(response.jsonPath().getString("code")).isEqualTo("PROJECT_REGISTRATION_FORBIDDEN");
@@ -187,7 +187,7 @@ class ProjectAcceptanceTest {
                 .port(port)
                 .cookie("JSESSIONID", author.sessionId())
                 .contentType("application/json")
-                .body(requestBody(repositoryName, techTagIds("java"), List.of("teammate")))
+                .body(requestBody(repositoryName, techTagIds("java"), List.of("@teammate")))
                 .when()
                 .post(PROJECTS_PATH);
 
@@ -205,7 +205,7 @@ class ProjectAcceptanceTest {
         Response response = RestAssured.given()
                 .port(port)
                 .contentType("application/json")
-                .body(requestBody(uniqueRepositoryName(), techTagIds("java"), List.of("teammate")))
+                .body(requestBody(uniqueRepositoryName(), techTagIds("java"), List.of("@teammate")))
                 .when()
                 .post(PROJECTS_PATH);
 
@@ -749,7 +749,7 @@ class ProjectAcceptanceTest {
                 .when()
                 .get("/api/v1/auth/session")
                 .jsonPath().getString("data.csrfToken");
-        String handle = "crew-" + UUID.randomUUID().toString().substring(0, 8);
+        String handle = "@crew-" + UUID.randomUUID().toString().substring(0, 8);
 
         Response signup = RestAssured.given()
                 .port(port)

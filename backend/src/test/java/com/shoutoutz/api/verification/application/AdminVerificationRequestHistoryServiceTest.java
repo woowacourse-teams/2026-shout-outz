@@ -94,7 +94,7 @@ class AdminVerificationRequestHistoryServiceTest {
             assertThat(item.fromStatus()).isEqualTo(VerificationRequestStatus.PENDING);
             assertThat(item.toStatus()).isEqualTo(VerificationRequestStatus.REJECTED);
             assertThat(item.changedBy().userId()).isEqualTo(ADMIN_ID);
-            assertThat(item.changedBy().handle()).isEqualTo("admin");
+            assertThat(item.changedBy().handle()).isEqualTo("@admin");
             assertThat(item.reason()).isEqualTo("Slack 프로필의 기수 정보와 일치하지 않습니다.");
             assertThat(item.changedAt()).isEqualTo(DECIDED_AT);
         });
@@ -151,7 +151,7 @@ class AdminVerificationRequestHistoryServiceTest {
     private User admin() {
         return User.builder()
                 .id(ADMIN_ID)
-                .handle("admin")
+                .handle("@admin")
                 .status(UserStatus.ACTIVE)
                 .role(UserRole.ADMIN)
                 .build();

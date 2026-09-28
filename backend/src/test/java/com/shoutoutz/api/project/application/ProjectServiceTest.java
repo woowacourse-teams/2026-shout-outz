@@ -108,7 +108,7 @@ class ProjectServiceTest {
     private static final long MEMBER_ID = 8L;
     private static final long OTHER_USER_ID = 9L;
     private static final long PROJECT_ID = 100L;
-    private static final String MEMBER_HANDLE = "zzaekkii";
+    private static final String MEMBER_HANDLE = "@zzaekkii";
     private static final String DESCRIPTION = "## 문제";
     private static final long THUMBNAIL_ID = 12L;
     private static final List<Long> TECH_TAG_IDS = List.of(1L, 2L);
@@ -281,11 +281,11 @@ class ProjectServiceTest {
     void acceptsRegistrantAsMemberAndKeepsRequestOrder() {
         givenValidProjectExceptMembers();
         givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
-        givenMember("dhyepark", REGISTERED_BY, UserType.WOOWACOURSE_CREW);
+        givenMember("@dhyepark", REGISTERED_BY, UserType.WOOWACOURSE_CREW);
         when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
                 .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
 
-        projectService.create(REGISTERED_BY, request(List.of(MEMBER_HANDLE, "dhyepark")));
+        projectService.create(REGISTERED_BY, request(List.of(MEMBER_HANDLE, "@dhyepark")));
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Long>> memberIdsCaptor = ArgumentCaptor.forClass(List.class);
@@ -450,11 +450,11 @@ class ProjectServiceTest {
     void keepsMemberOrderAndAcceptsCoach() {
         givenValidProjectExceptMembers();
         givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
-        givenMember("coach-jack", 9L, UserType.WOOWACOURSE_COACH);
+        givenMember("@coach-jack", 9L, UserType.WOOWACOURSE_COACH);
         when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
                 .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
 
-        projectService.create(REGISTERED_BY, request(List.of("coach-jack", MEMBER_HANDLE)));
+        projectService.create(REGISTERED_BY, request(List.of("@coach-jack", MEMBER_HANDLE)));
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<Long>> memberIdsCaptor = ArgumentCaptor.forClass(List.class);
@@ -467,9 +467,9 @@ class ProjectServiceTest {
     void rejectsDuplicateMemberIgnoringCase() {
         givenValidProjectExceptMembers();
         givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
-        givenMemberAccount("ZzaeKKii", MEMBER_ID, UserStatus.ACTIVE);
+        givenMemberAccount("@ZzaeKKii", MEMBER_ID, UserStatus.ACTIVE);
 
-        assertInvalidMember(List.of(MEMBER_HANDLE, "ZzaeKKii"), ProjectErrorCode.PROJECT_DUPLICATE_MEMBER);
+        assertInvalidMember(List.of(MEMBER_HANDLE, "@ZzaeKKii"), ProjectErrorCode.PROJECT_DUPLICATE_MEMBER);
     }
 
     @Test
@@ -894,7 +894,7 @@ class ProjectServiceTest {
         assertThat(response.techTags()).containsExactly(new ProjectTechTagResponse(1L, "React"));
         assertThat(response.members()).containsExactly(new ProjectMemberProfileResponse(
                 REGISTERED_BY,
-                "dhyepark",
+                "@dhyepark",
                 "박다혜",
                 UserType.WOOWACOURSE_CREW,
                 6,
@@ -1000,7 +1000,7 @@ class ProjectServiceTest {
                 List.of(new ProjectTechTag(1L, "React")),
                 List.of(ProjectMemberProfile.user(
                         REGISTERED_BY,
-                        "dhyepark",
+                        "@dhyepark",
                         "박다혜",
                         Cohort.COHORT_6,
                         Track.BACKEND,
@@ -1094,7 +1094,7 @@ class ProjectServiceTest {
         Project rejected = existingProject(ApprovalStatus.REJECTED);
         givenOwnedProject(rejected);
         givenMemberAccount(MEMBER_HANDLE, MEMBER_ID, UserStatus.ACTIVE);
-        givenMember("dhyepark", REGISTERED_BY, UserType.WOOWACOURSE_CREW);
+        givenMember("@dhyepark", REGISTERED_BY, UserType.WOOWACOURSE_CREW);
         when(userProfileRepository.findByUserId(MEMBER_ID))
                 .thenReturn(Optional.of(profile(MEMBER_ID, UserType.WOOWACOURSE_CREW)));
         when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
@@ -1270,7 +1270,7 @@ class ProjectServiceTest {
     void keepsWithdrawnMemberAlreadyOnProject() {
         givenOwnedProject(existingProject(ApprovalStatus.APPROVED));
         givenMemberAccount(MEMBER_HANDLE, MEMBER_ID, UserStatus.DELETED);
-        givenMemberAccount("dhyepark", REGISTERED_BY, UserStatus.ACTIVE);
+        givenMemberAccount("@dhyepark", REGISTERED_BY, UserStatus.ACTIVE);
         when(projectRepository.findMemberIds(PROJECT_ID)).thenReturn(List.of(REGISTERED_BY, MEMBER_ID));
         when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
         when(projectRepository.update(any(Project.class), eq(TECH_TAG_IDS), anyList()))
@@ -1286,7 +1286,7 @@ class ProjectServiceTest {
     void rejectsWithdrawnMemberNewlyAdded() {
         givenOwnedProject(existingProject(ApprovalStatus.APPROVED));
         givenMemberAccount(MEMBER_HANDLE, MEMBER_ID, UserStatus.DELETED);
-        givenMemberAccount("dhyepark", REGISTERED_BY, UserStatus.ACTIVE);
+        givenMemberAccount("@dhyepark", REGISTERED_BY, UserStatus.ACTIVE);
         when(projectRepository.findMemberIds(PROJECT_ID)).thenReturn(List.of(REGISTERED_BY));
         when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
 
@@ -1300,7 +1300,7 @@ class ProjectServiceTest {
     void keepsInactiveTechTagAlreadyOnProject() {
         givenOwnedProject(existingProject(ApprovalStatus.APPROVED));
         givenMemberAccount(MEMBER_HANDLE, MEMBER_ID, UserStatus.ACTIVE);
-        givenMember("dhyepark", REGISTERED_BY, UserType.WOOWACOURSE_CREW);
+        givenMember("@dhyepark", REGISTERED_BY, UserType.WOOWACOURSE_CREW);
         when(userProfileRepository.findByUserId(MEMBER_ID))
                 .thenReturn(Optional.of(profile(MEMBER_ID, UserType.WOOWACOURSE_CREW)));
         when(projectRepository.findTechTagIds(PROJECT_ID)).thenReturn(List.of(1L));
@@ -1336,7 +1336,7 @@ class ProjectServiceTest {
     private void givenValidProjectUpdate(Project project) {
         givenOwnedProject(project);
         givenMemberAccount(MEMBER_HANDLE, MEMBER_ID, UserStatus.ACTIVE);
-        givenMember("dhyepark", REGISTERED_BY, UserType.WOOWACOURSE_CREW);
+        givenMember("@dhyepark", REGISTERED_BY, UserType.WOOWACOURSE_CREW);
         when(userProfileRepository.findByUserId(MEMBER_ID))
                 .thenReturn(Optional.of(profile(MEMBER_ID, UserType.WOOWACOURSE_CREW)));
         when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
@@ -1389,7 +1389,7 @@ class ProjectServiceTest {
                 DESCRIPTION,
                 ServiceStatus.OPERATING,
                 TECH_TAG_IDS,
-                List.of("dhyepark", MEMBER_HANDLE)
+                List.of("@dhyepark", MEMBER_HANDLE)
         );
     }
 
@@ -1405,7 +1405,7 @@ class ProjectServiceTest {
                 descriptionMd,
                 ServiceStatus.OPERATING,
                 TECH_TAG_IDS,
-                List.of("dhyepark", MEMBER_HANDLE)
+                List.of("@dhyepark", MEMBER_HANDLE)
         );
     }
 
@@ -1420,7 +1420,7 @@ class ProjectServiceTest {
         request.setDescriptionMd(DESCRIPTION);
         request.setServiceStatus(ServiceStatus.OPERATING);
         request.setTechTagIds(TECH_TAG_IDS);
-        request.setMemberHandles(List.of("dhyepark", MEMBER_HANDLE));
+        request.setMemberHandles(List.of("@dhyepark", MEMBER_HANDLE));
         return request;
     }
 
@@ -1436,7 +1436,7 @@ class ProjectServiceTest {
                 DESCRIPTION,
                 serviceStatus,
                 TECH_TAG_IDS,
-                List.of("dhyepark", MEMBER_HANDLE)
+                List.of("@dhyepark", MEMBER_HANDLE)
         );
     }
 

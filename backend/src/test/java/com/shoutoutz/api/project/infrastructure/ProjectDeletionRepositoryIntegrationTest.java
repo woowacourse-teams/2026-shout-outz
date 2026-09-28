@@ -42,7 +42,7 @@ class ProjectDeletionRepositoryIntegrationTest {
     @Test
     @DisplayName("사용자 삭제 이력을 저장하면 삭제 시점 정보와 복구 기한이 그대로 기록된다")
     void savesSelfDeleteHistory() {
-        long deletedBy = userRepository.save(User.initialize("deleter")).getId();
+        long deletedBy = userRepository.save(User.initialize("@deleter")).getId();
         ProjectDeletion deletion = ProjectDeletion.selfDelete(project(1L, "2026-moamoa"), deletedBy, DELETED_AT);
 
         ProjectDeletion saved = projectDeletionRepository.save(deletion);
@@ -65,7 +65,7 @@ class ProjectDeletionRepositoryIntegrationTest {
     @Test
     @DisplayName("복구한 뒤 다시 삭제하면 기존 이력을 두고 새 이력이 쌓인다")
     void savesNewHistoryForEachDeletion() {
-        long userId = userRepository.save(User.initialize("redeleter")).getId();
+        long userId = userRepository.save(User.initialize("@redeleter")).getId();
         long projectId = 2L;
         ProjectDeletion first = projectDeletionRepository.save(
                 ProjectDeletion.selfDelete(project(projectId, "2026-first"), userId, DELETED_AT)
@@ -89,7 +89,7 @@ class ProjectDeletionRepositoryIntegrationTest {
     @Test
     @DisplayName("미복구 이력에 복구 주체와 시각을 남기고, 이미 복구된 이력은 다시 수정하지 않는다")
     void restoresPendingDeletionOnlyOnce() {
-        long userId = userRepository.save(User.initialize("restorer")).getId();
+        long userId = userRepository.save(User.initialize("@restorer")).getId();
         ProjectDeletion deletion = projectDeletionRepository.save(
                 ProjectDeletion.selfDelete(project(3L, "2026-restore"), userId, DELETED_AT)
         );
