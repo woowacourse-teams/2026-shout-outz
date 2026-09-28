@@ -87,6 +87,21 @@ const selectCrews = async (user: User, keyword: string, names: string[]) => {
 };
 
 describe('ProjectCreatePage', () => {
+  it('작성자를 첫 번째 팀원으로 고정하고 선택 화면에서도 제거하지 못하게 한다', async () => {
+    const user = userEvent.setup();
+    renderRoute('/projects/new');
+
+    const members = await screen.findByRole('list', { name: '선택한 참여 팀원' });
+    expect(within(members).getAllByRole('listitem')[0]).toHaveTextContent('정우진 (작성자)');
+
+    await user.click(screen.getByRole('button', { name: '참여 팀원 추가' }));
+    await user.type(screen.getByRole('searchbox', { name: '크루 검색' }), '정우진');
+
+    const results = await screen.findByRole('list', { name: '크루 검색 결과' });
+    expect(within(results).getByRole('checkbox', { name: /정우진/ })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: '정우진 선택 해제' })).not.toBeInTheDocument();
+  });
+
   // FIXME ProjectCreatePage의 자격 검사를 확인용으로 열어둬서 잠시 끔. 가드를 되돌리면 같이 켤 것.
   it.skip('구성원 인증을 받지 않은 사용자는 등록 폼 대신 인증 신청 안내를 본다', async () => {
     server.use(

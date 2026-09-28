@@ -24,6 +24,7 @@ import type {
   ProjectFilterOptionsSuccessResponse,
   ProjectFindAllSuccessResponse,
   ProjectFindDetailSuccessResponse,
+  ProjectUpdateRequest as GeneratedProjectUpdateRequest,
   TechTagFindAllSuccessResponse,
   UserFeedFindAllSuccessResponse,
   UserProfileSuccessResponse,
@@ -79,6 +80,7 @@ export type FeedCommentData = Item<Data<FeedCommentFindAllSuccessResponse>>;
 // ── 프로젝트 ────────────────────────────────────────────────────────────────
 
 export type ProjectCreateBody = GeneratedProjectCreateRequest;
+export type ProjectUpdateRequest = GeneratedProjectUpdateRequest;
 export type ProjectCreatedData = Data<ProjectCreateSuccessResponse>;
 export type ProjectListItemData = Item<Data<ProjectFindAllSuccessResponse>>;
 export type ProjectListMetaData = Meta<ProjectFindAllSuccessResponse>;

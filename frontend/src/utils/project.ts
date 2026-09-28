@@ -2,6 +2,7 @@ import {
   type ProjectCreateRequest,
   type ProjectFormErrors,
   type ProjectFormValues,
+  type ProjectUpdateRequest,
 } from '@/types/project';
 
 const GITHUB_HOST = 'github.com';
@@ -69,5 +70,13 @@ export function toProjectCreateRequest(values: ProjectFormValues): ProjectCreate
     descriptionMd: values.descriptionMd.trim(),
     techTagIds: values.techTags.map((tag) => tag.id),
     memberHandles: values.members.map((member) => member.handle),
+  };
+}
+
+export function toProjectUpdateRequest(values: ProjectFormValues): ProjectUpdateRequest {
+  const request = toProjectCreateRequest(values);
+  return {
+    ...request,
+    serviceStatus: values.deploymentUrl.trim() ? (values.serviceStatus ?? 'CLOSED') : 'CLOSED',
   };
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { projectDetailQueryOptions } from '@/api/project-detail';
 import { Avatar } from '@/components/Avatar';
@@ -60,6 +61,15 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
             {project.tagline}
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
+            {project.editable && (
+              <Link
+                to="/projects/$id/edit"
+                params={{ id: String(project.id) }}
+                className={getButtonStyles({ variant: 'outline', size: 'lg' })}
+              >
+                프로젝트 수정
+              </Link>
+            )}
             {links.map((link) => (
               <a
                 key={link.label}

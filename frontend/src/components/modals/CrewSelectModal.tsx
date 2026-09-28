@@ -14,26 +14,31 @@ import { cn } from '@/utils/cn';
 import { formatCrewRole } from '@/utils/user';
 
 export interface CrewSelectModalProps {
+  author?: CrewSearchItem;
   initial: CrewSearchItem[];
   onApply: (crews: CrewSearchItem[]) => void;
   onClose: () => void;
 }
 
-export function CrewSelectModal({ initial, onApply, onClose }: CrewSelectModalProps) {
+export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelectModalProps) {
   const [keyword, setKeyword] = useState('');
-  const [selected, setSelected] = useState<CrewSearchItem[]>(initial);
+  const [selected, setSelected] = useState<CrewSearchItem[]>(() =>
+    author ? initial.filter((crew) => crew.handle !== author.handle) : initial,
+  );
   const trimmed = keyword.trim();
   const { data: crews = [], isFetching } = useQuery({
     ...crewSearchQueryOptions(trimmed),
     enabled: trimmed.length > 0,
   });
 
-  const toggle = (crew: CrewSearchItem) =>
+  const toggle = (crew: CrewSearchItem) => {
+    if (crew.handle === author?.handle) return;
     setSelected((current) =>
       current.some((item) => item.handle === crew.handle)
         ? current.filter((item) => item.handle !== crew.handle)
         : [...current, crew],
     );
+  };
 
   return (
     <SelectionModal
@@ -58,6 +63,14 @@ export function CrewSelectModal({ initial, onApply, onClose }: CrewSelectModalPr
         autoFocus
       />
 
+      {author && (
+        <div className="flex items-center gap-2 rounded-xl bg-gray-50 p-3 text-sm font-semibold text-gray-900">
+          <Avatar size="sm" src={author.avatarUrl ?? undefined} alt="" />
+          <span>{author.displayName}</span>
+          <span className="text-primary-600 text-xs">작성자 · 항상 포함</span>
+        </div>
+      )}
+
       <SelectedCollector
         label="선택된 팀원"
         items={selected}
@@ -79,6 +92,7 @@ export function CrewSelectModal({ initial, onApply, onClose }: CrewSelectModalPr
       ) : (
         <ul aria-label="크루 검색 결과" className="flex flex-col gap-2">
           {crews.map((crew) => {
+            const isAuthor = crew.handle === author?.handle;
             const isSelected = selected.some((item) => item.handle === crew.handle);
             const role = formatCrewRole(crew.cohort, crew.track);
 
@@ -87,11 +101,14 @@ export function CrewSelectModal({ initial, onApply, onClose }: CrewSelectModalPr
                 <button
                   type="button"
                   role="checkbox"
-                  aria-checked={isSelected}
+                  aria-checked={isAuthor || isSelected}
+                  disabled={isAuthor}
                   onClick={() => toggle(crew)}
                   className={cn(
                     'focus-visible:outline-primary-600 flex w-full cursor-pointer items-center gap-3 rounded-2xl px-4 py-3 text-left focus-visible:outline-2 md:rounded-lg md:py-2.5',
-                    isSelected ? 'bg-primary-50' : 'bg-gray-50 hover:bg-gray-100 md:bg-transparent',
+                    isAuthor || isSelected
+                      ? 'bg-primary-50'
+                      : 'bg-gray-50 hover:bg-gray-100 md:bg-transparent',
                   )}
                 >
                   <Avatar size="sm" src={crew.avatarUrl ?? undefined} alt="" />
@@ -112,7 +129,9 @@ export function CrewSelectModal({ initial, onApply, onClose }: CrewSelectModalPr
                     aria-hidden="true"
                     className={cn(
                       'ml-auto flex size-5.5 shrink-0 items-center justify-center rounded-full text-xs font-bold',
-                      isSelected ? 'bg-primary-600 text-white' : 'bg-white text-transparent',
+                      isAuthor || isSelected
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-white text-transparent',
                     )}
                   >
                     ✓
