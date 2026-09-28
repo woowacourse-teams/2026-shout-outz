@@ -198,8 +198,8 @@ public class ProjectService {
     }
 
     /**
-     * 사용자가 참여한 승인 프로젝트를 최신순으로 조회한다.
-     * 탈퇴한 사용자의 프로젝트는 공개하지 않는다.
+     * 사용자가 참여한 프로젝트를 최신순으로 조회한다.
+     * 본인 조회일 때만 승인 대기 프로젝트를 포함하고, 탈퇴한 사용자의 프로젝트는 공개하지 않는다.
      */
     @Transactional(readOnly = true)
     public UserProjectResult findAllByUser(String handle, UserProjectFindRequest request) {
@@ -227,6 +227,7 @@ public class ProjectService {
                 : userProjectQueryRepository.findAllByUserId(
                         user.getId(),
                         viewerId,
+                        Objects.equals(user.getId(), viewerId),
                         request.resolvedCursor(),
                         request.resolvedSize()
                 );

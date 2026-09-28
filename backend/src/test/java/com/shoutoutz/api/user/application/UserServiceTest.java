@@ -151,7 +151,7 @@ class UserServiceTest {
         UserProfileCounts counts = new UserProfileCounts(2L, 18L);
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
-        given(userQueryRepository.countByUserId(1L)).willReturn(counts);
+        given(userQueryRepository.countByUserId(1L, true)).willReturn(counts);
         given(mediaUrlResolver.resolve(21L))
                 .willReturn(URI.create("https://cdn.example.com/media/21/display"));
 
@@ -187,13 +187,38 @@ class UserServiceTest {
         UserProfileCounts counts = new UserProfileCounts(2L, 18L);
         given(userRepository.findByHandle("zzaekkii")).willReturn(Optional.of(user));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
-        given(userQueryRepository.countByUserId(1L)).willReturn(counts);
+        given(userQueryRepository.countByUserId(1L, false)).willReturn(counts);
 
         UserProfileResponse result = userService.getPublicProfile("zzaekkii");
 
         assertThat(result.handle()).isEqualTo("zzaekkii");
         assertThat(result.displayName()).isEqualTo("재키");
         assertThat(result.counts()).isEqualTo(new UserProfileResponse.Counts(2L, 18L));
+    }
+
+    @Test
+    @DisplayName("본인의 공개 프로필을 handle로 조회하면 승인 대기 프로젝트 개수를 포함한다")
+    void getOwnPublicProfileIncludesPendingProjects() {
+        User user = User.builder()
+                .id(1L)
+                .handle("zzaekkii")
+                .status(UserStatus.ACTIVE)
+                .role(UserRole.USER)
+                .build();
+        UserProfile profile = UserProfile.builder()
+                .userId(1L)
+                .displayName("재키")
+                .userType(UserType.GENERAL)
+                .build();
+        UserProfileCounts counts = new UserProfileCounts(3L, 18L);
+        given(userRepository.findByHandle("zzaekkii")).willReturn(Optional.of(user));
+        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
+        given(userQueryRepository.countByUserId(1L, true)).willReturn(counts);
+
+        UserProfileResponse result = userService.getPublicProfile("zzaekkii", 1L);
+
+        assertThat(result.counts()).isEqualTo(new UserProfileResponse.Counts(3L, 18L));
+        then(userQueryRepository).should().countByUserId(1L, true);
     }
 
     @Test
@@ -221,7 +246,7 @@ class UserServiceTest {
         assertThat(result.blogUrl()).isNull();
         assertThat(result.counts()).isEqualTo(new UserProfileResponse.Counts(0L, 0L));
         then(userProfileRepository).should(never()).findByUserId(1L);
-        then(userQueryRepository).should(never()).countByUserId(1L);
+        then(userQueryRepository).should(never()).countByUserId(1L, false);
     }
 
     @Test

@@ -5,6 +5,7 @@ import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithNam
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static com.epages.restdocs.apispec.SimpleType.INTEGER;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
@@ -187,7 +188,7 @@ class UserHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("마이페이지 조회")
-                                .description("로그인한 사용자의 프로필과 프로젝트 및 피드 개수를 조회한다.")
+                                .description("로그인한 사용자의 프로필과 승인 대기·승인 프로젝트 및 피드 개수를 조회한다.")
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
                                                 .description("인증된 사용자의 JSESSIONID")
@@ -213,7 +214,7 @@ class UserHttpApiTest {
                                                 .description("블로그 URL").optional(),
                                         fieldWithPath("data.counts").type(OBJECT).description("프로필 항목 개수"),
                                         fieldWithPath("data.counts.projects").type(NUMBER)
-                                                .description("삭제되지 않은 참여 프로젝트 개수"),
+                                                .description("삭제되지 않은 승인 대기·승인 참여 프로젝트 개수"),
                                         fieldWithPath("data.counts.feeds").type(NUMBER)
                                                 .description("삭제되지 않은 작성 피드 개수")
                                 )
@@ -233,7 +234,7 @@ class UserHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("마이페이지 조회")
-                                .description("로그인한 사용자의 프로필과 프로젝트 및 피드 개수를 조회한다.")
+                                .description("로그인한 사용자의 프로필과 승인 대기·승인 프로젝트 및 피드 개수를 조회한다.")
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -460,7 +461,7 @@ class UserHttpApiTest {
     @Test
     @DisplayName("handle로 사용자 공개 프로필을 조회한다")
     void getPublicProfile() throws Exception {
-        given(userService.getPublicProfile("zzaekkii"))
+        given(userService.getPublicProfile("zzaekkii", null))
                 .willReturn(new UserProfileResponse(
                         1L,
                         "zzaekkii",
@@ -499,7 +500,7 @@ class UserHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("사용자 공개 프로필 조회")
-                                .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다.")
+                                .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다. 본인 조회는 승인 대기 프로젝트를 포함한다.")
                                 .pathParameters(
                                         parameterWithName("handle").description("조회할 사용자의 handle")
                                 )
@@ -524,12 +525,42 @@ class UserHttpApiTest {
                                                 .description("블로그 URL").optional(),
                                         fieldWithPath("data.counts").type(OBJECT).description("프로필 항목 개수"),
                                         fieldWithPath("data.counts.projects").type(NUMBER)
-                                                .description("삭제되지 않은 참여 프로젝트 개수"),
+                                                .description("삭제되지 않은 프로젝트 개수. 본인 조회는 승인 대기 프로젝트를 포함하고, 그 외에는 승인된 프로젝트만 포함"),
                                         fieldWithPath("data.counts.feeds").type(NUMBER)
                                                 .description("삭제되지 않은 작성 피드 개수")
                                 )
                                 .build())
                 ));
+    }
+
+    @Test
+    @DisplayName("로그인한 본인의 handle로 프로필을 조회한다")
+    void getOwnPublicProfile() throws Exception {
+        given(userService.getPublicProfile("zzaekkii", 1L))
+                .willReturn(new UserProfileResponse(
+                        1L,
+                        "zzaekkii",
+                        "재키",
+                        UserType.WOOWACOURSE_CREW,
+                        "BACKEND",
+                        (short) 8,
+                        "백엔드 개발자입니다.",
+                        21L,
+                        "https://cdn.example.com/media/21/display",
+                        "https://github.com/zzaekkii",
+                        "https://zzaekkii.dev",
+                        new UserProfileResponse.Counts(3L, 18L)
+                ));
+
+        mockMvc.perform(get("/api/v1/users/{handle}", "zzaekkii")
+                        .requestAttr(
+                                AuthenticatedSession.class.getName(),
+                                new AuthenticatedSession(1L, UserRole.USER)
+                        ))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.counts.projects").value(3));
+
+        verify(userService).getPublicProfile("zzaekkii", 1L);
     }
 
     @Test
@@ -712,7 +743,7 @@ class UserHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("사용자 공개 프로필 조회")
-                                .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다.")
+                                .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다. 본인 조회는 승인 대기 프로젝트를 포함한다.")
                                 .pathParameters(
                                         parameterWithName("handle").description("조회할 사용자의 handle")
                                 )
@@ -727,7 +758,7 @@ class UserHttpApiTest {
     @Test
     @DisplayName("존재하지 않는 handle로 공개 프로필을 조회할 수 없다")
     void rejectNotFoundPublicProfileHandle() throws Exception {
-        given(userService.getPublicProfile("missing-user"))
+        given(userService.getPublicProfile("missing-user", null))
                 .willThrow(new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
 
         mockMvc.perform(get("/api/v1/users/{handle}", "missing-user"))
@@ -739,7 +770,7 @@ class UserHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("User")
                                 .summary("사용자 공개 프로필 조회")
-                                .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다.")
+                                .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다. 본인 조회는 승인 대기 프로젝트를 포함한다.")
                                 .pathParameters(
                                         parameterWithName("handle").description("조회할 사용자의 handle")
                                 )

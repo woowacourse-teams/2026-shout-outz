@@ -136,8 +136,11 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                       AND r.reaction_type = 'BOOKMARK'
                 ) AS bookmarked_by_me
             FROM projects p
-            WHERE p.approval_status = 'APPROVED'
-              AND p.deleted_at IS NULL
+            WHERE p.deleted_at IS NULL
+              AND (
+                  p.approval_status = 'APPROVED'
+                  OR (:includePending = TRUE AND p.approval_status = 'PENDING')
+              )
             """;
 
     private static final String COHORTS_CONDITION = """
@@ -265,7 +268,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
      */
     @Override
     public UserProjectResult findAllByUserId(long userId, ProjectCursor cursor, int size) {
-        return findAllByUserId(userId, null, cursor, size);
+        return findAllByUserId(userId, null, false, cursor, size);
     }
 
     @Override
@@ -275,9 +278,21 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
             ProjectCursor cursor,
             int size
     ) {
+        return findAllByUserId(userId, viewerId, false, cursor, size);
+    }
+
+    @Override
+    public UserProjectResult findAllByUserId(
+            long userId,
+            Long viewerId,
+            boolean includePending,
+            ProjectCursor cursor,
+            int size
+    ) {
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("userId", userId)
                 .addValue("viewerId", viewerId, Types.BIGINT)
+                .addValue("includePending", includePending)
                 .addValue("limit", size + 1);
         StringBuilder sql = new StringBuilder("WITH filtered AS (")
                 .append(USER_PROJECTS_SQL)

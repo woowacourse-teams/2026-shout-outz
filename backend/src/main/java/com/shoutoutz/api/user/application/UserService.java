@@ -97,13 +97,18 @@ public class UserService {
     public UserProfileResponse getMyProfile(long userId) {
         User user = findUser(userId);
         UserProfile profile = findProfile(userId);
-        UserProfileCounts counts = userQueryRepository.countByUserId(userId);
+        UserProfileCounts counts = userQueryRepository.countByUserId(userId, true);
 
         return createProfileResponse(user, profile, counts);
     }
 
     @Transactional(readOnly = true)
     public UserProfileResponse getPublicProfile(String handle) {
+        return getPublicProfile(handle, null);
+    }
+
+    @Transactional(readOnly = true)
+    public UserProfileResponse getPublicProfile(String handle, Long viewerId) {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
 
@@ -112,7 +117,10 @@ public class UserService {
         }
 
         UserProfile profile = findProfile(user.getId());
-        UserProfileCounts counts = userQueryRepository.countByUserId(user.getId());
+        UserProfileCounts counts = userQueryRepository.countByUserId(
+                user.getId(),
+                Objects.equals(user.getId(), viewerId)
+        );
         return createProfileResponse(user, profile, counts);
     }
 
