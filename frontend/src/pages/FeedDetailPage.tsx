@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { IconHeart, IconMessageCircle } from '@tabler/icons-react';
+import { IconMessageCircle } from '@tabler/icons-react';
 import { feedQuery } from '@/apis/feed';
 import { Button } from '@/components/Button';
 import { Footer } from '@/components/Footer';
@@ -7,6 +7,7 @@ import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { FeedContent } from '@/components/feeds/FeedContent';
 import { FeedAuthor } from '@/components/feeds/FeedAuthor';
+import { FeedLikeButton } from '@/components/feeds/FeedLikeButton';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { ShareButton } from '@/components/feeds/ShareButton';
 import { PopularFeedList } from '@/components/feeds/PopularFeedList';
@@ -54,9 +55,11 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
       </div>
       <FeedContent feed={feed} titleAs="h2" />
       <div className="mt-5 flex items-center gap-2">
-        <Button variant="ghost" size="sm" className="gap-1 px-2" aria-label="좋아요" disabled>
-          <IconHeart className="size-4" aria-hidden="true" />
-        </Button>
+        <FeedLikeButton
+          feedId={feed.feedId}
+          likeCount={feed.likeCount}
+          likedByMe={feed.likedByMe}
+        />
         <Button
           variant="ghost"
           size="sm"
@@ -65,6 +68,7 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
           onClick={() => document.getElementById('feed-comments')?.scrollIntoView()}
         >
           <IconMessageCircle className="size-4" aria-hidden="true" />
+          <span aria-label="댓글 수">{feed.commentCount ?? 0}</span>
         </Button>
         <ShareButton url={window.location.href} className="ml-auto px-2" />
       </div>

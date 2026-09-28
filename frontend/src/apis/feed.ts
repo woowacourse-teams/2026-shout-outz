@@ -8,18 +8,18 @@ import type {
   FeedUpdateSuccessResponse,
 } from '@/api/generated/schema';
 import type { CursorMeta } from '@/types/api';
-import type { FeedSort } from '@/types/feed';
+import type { Feed, FeedListItem, FeedSort } from '@/types/feed';
 
 export type { Feed, FeedSort } from '@/types/feed';
 
-export async function fetchFeed(feedId: number, signal?: AbortSignal) {
+export async function fetchFeed(feedId: number, signal?: AbortSignal): Promise<Feed> {
   const response = await httpClient<FeedFindSuccessResponse>(`/api/v1/feeds/${feedId}`, {
     method: 'get',
     signal,
   });
 
   if (!response) throw new Error('피드 응답이 비어 있습니다.');
-  return response.data;
+  return response.data as Feed;
 }
 
 export function feedQuery(feedId: number) {
@@ -110,7 +110,7 @@ export async function fetchFeeds({ sort, categoryId, cursor, size, signal }: Fet
   });
 
   if (!response) throw new Error('피드 응답이 비어 있습니다.');
-  return response;
+  return { ...response, data: response.data as FeedListItem[] };
 }
 
 export function feedsQuery(sort: FeedSort, categoryId?: number, size = 20) {

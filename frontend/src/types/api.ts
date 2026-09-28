@@ -52,6 +52,14 @@ export type Item<T> = T extends readonly (infer E)[] ? E : never;
 /** 병합된 API가 내려주지만 아직 생성 타입에 없는 팀원 유형을 화면 타입에 반영한다. */
 type WithProjectMemberType<T extends { members: unknown[] }> = Omit<T, 'members'> & {
   members: (Item<T['members']> & { userType?: UserType | null })[];
+  likedByMe?: boolean;
+};
+
+/** 피드 응답에 서버가 제공하지만 생성 타입에서 빠진 반응·개수 필드. */
+type WithFeedReactionState<T> = T & {
+  likeCount?: number;
+  likedByMe?: boolean;
+  commentCount?: number;
 };
 
 /** 커서 페이지네이션 meta. 목록 응답이 공통으로 쓴다. */
@@ -82,14 +90,19 @@ export type TechTagItem = Item<Data<TechTagFindAllSuccessResponse>['items']>;
 
 // ── 피드 ────────────────────────────────────────────────────────────────────
 
-export type FeedData = Data<FeedFindSuccessResponse>;
-export type FeedListItemData = Item<Data<FeedFindAllSuccessResponse>>;
-export type UserFeedListItemData = Item<Data<UserFeedFindAllSuccessResponse>>;
+export type FeedData = WithFeedReactionState<Data<FeedFindSuccessResponse>>;
+export type FeedListItemData = WithFeedReactionState<Item<Data<FeedFindAllSuccessResponse>>>;
+export type UserFeedListItemData = WithFeedReactionState<
+  Item<Data<UserFeedFindAllSuccessResponse>>
+>;
 type GeneratedFeedComment = Item<Data<FeedCommentFindAllSuccessResponse>>;
 export type FeedCommentData = Omit<GeneratedFeedComment, 'author'> & {
+  agreeCount?: number;
+  agreedByMe?: boolean;
   author: GeneratedFeedComment['author'] & {
     userType?: UserType | null;
     cohort?: number | null;
+    track?: Track | null;
   };
 };
 

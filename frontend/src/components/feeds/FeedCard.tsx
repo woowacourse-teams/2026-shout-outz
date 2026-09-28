@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { IconHeart, IconMessageCircle } from '@tabler/icons-react';
+import { IconMessageCircle } from '@tabler/icons-react';
 import type { Feed } from '@/apis/feed';
 import { Button } from '@/components/Button';
 import { FeedAuthor } from '@/components/feeds/FeedAuthor';
+import { FeedLikeButton } from '@/components/feeds/FeedLikeButton';
 import { FeedContent } from '@/components/feeds/FeedContent';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { ShareButton } from '@/components/feeds/ShareButton';
@@ -33,9 +34,11 @@ export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }
       </div>
       <FeedContent feed={feed} />
       <div className="mt-5 flex items-center gap-2 text-sm text-gray-500">
-        <Button variant="ghost" size="sm" className="gap-1 px-2" aria-label="좋아요" disabled>
-          <IconHeart className="size-4" aria-hidden="true" />
-        </Button>
+        <FeedLikeButton
+          feedId={feed.feedId}
+          likeCount={feed.likeCount}
+          likedByMe={feed.likedByMe}
+        />
         <Button
           variant="ghost"
           size="sm"
@@ -46,6 +49,7 @@ export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }
           onClick={() => setOpen(!open)}
         >
           <IconMessageCircle className="size-4" aria-hidden="true" />
+          <span aria-label="댓글 수">{feed.commentCount ?? 0}</span>
         </Button>
         <span className="ml-auto">
           <ShareButton
