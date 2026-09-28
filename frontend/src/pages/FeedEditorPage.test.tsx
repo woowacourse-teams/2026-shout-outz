@@ -104,7 +104,7 @@ test('실패하면 서버 메시지와 입력 내용을 유지한다', async () 
   expect(onSaved).not.toHaveBeenCalled();
 });
 
-test('Unicode 500자까지 허용하고 초과하면 등록을 막는다', async () => {
+test('Unicode 5000자까지 허용하고 초과하면 등록을 막는다', async () => {
   const user = userEvent.setup();
   show();
   const input = await screen.findByRole('textbox', { name: '피드 내용' });
@@ -112,10 +112,10 @@ test('Unicode 500자까지 허용하고 초과하면 등록을 막는다', async
   await user.click(screen.getByRole('option', { name: '백엔드' }));
   await fillTitle(user);
   await user.click(input);
-  await user.paste('😀'.repeat(500));
+  await user.paste('😀'.repeat(5000));
   expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeEnabled();
   await user.paste('가');
-  expect(screen.getByRole('alert')).toHaveTextContent('본문은 500자 이하로 입력해 주세요.');
+  expect(screen.getByRole('alert')).toHaveTextContent('본문은 5000자 이하로 입력해 주세요.');
   expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeDisabled();
 });
 
