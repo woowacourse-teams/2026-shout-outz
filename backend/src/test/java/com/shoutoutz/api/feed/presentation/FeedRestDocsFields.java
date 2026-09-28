@@ -98,6 +98,7 @@ final class FeedRestDocsFields {
         fields.add(fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"));
         fields.add(fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서").optional());
         fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"));
+        fields.add(fieldWithPath("meta.totalCount").type(NUMBER).description("조회 조건을 만족하는 전체 피드 수"));
         return fields;
     }
 

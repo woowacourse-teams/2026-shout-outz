@@ -103,6 +103,7 @@ class FeedRepositoryIntegrationTest {
         assertThat(feedQueryRepository.findAll(FeedSort.LATEST, categoryId, null, null, 10))
                 .extracting(FeedItem::feedId)
                 .containsExactly(latest.getId(), middle.getId(), oldest.getId());
+        assertThat(feedQueryRepository.countAll(categoryId, null)).isEqualTo(3L);
         assertThat(feedQueryRepository.findById(deleted.getId())).isEmpty();
 
         FeedItem detail = feedQueryRepository.findById(oldest.getId()).orElseThrow();
@@ -285,6 +286,7 @@ class FeedRepositoryIntegrationTest {
                 );
         assertThat(firstPage).extracting(FeedItem::relevanceRank).containsExactly(0, 1);
         assertThat(secondPage).extracting(FeedItem::relevanceRank).containsExactly(1, 2, 3);
+        assertThat(feedQueryRepository.countAll(categoryId, "우테코")).isEqualTo(5L);
     }
 
     @Test
@@ -374,6 +376,7 @@ class FeedRepositoryIntegrationTest {
         assertThat(firstPage.getFirst().likeCount()).isEqualTo(1L);
         assertThat(firstPage.getFirst().commentCount()).isEqualTo(1L);
         assertThat(secondPage).extracting(FeedItem::feedId).containsExactly(oldest.getId());
+        assertThat(feedQueryRepository.countAllByAuthorId(authorId)).isEqualTo(3L);
     }
 
     private Feed saveFeed(long authorId, String content, Instant createdAt, long categoryId, long... mediaIds) {

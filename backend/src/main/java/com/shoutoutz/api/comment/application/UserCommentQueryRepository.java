@@ -12,4 +12,6 @@ public interface UserCommentQueryRepository {
     List<UserCommentItem> findAllByAuthorId(long authorId, UserCommentCursor cursor, int limit);
 
     List<UserCommentItem> findAllByAuthorId(long authorId, Long viewerId, UserCommentCursor cursor, int limit);
+
+    long countAllByAuthorId(long authorId);
 }

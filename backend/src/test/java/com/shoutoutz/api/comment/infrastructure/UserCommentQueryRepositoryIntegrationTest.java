@@ -77,6 +77,7 @@ class UserCommentQueryRepositoryIntegrationTest {
                 .containsExactly(feedId, projectId);
         assertThat(secondPage).extracting(UserCommentItem::commentId)
                 .containsExactly(olderFeedCommentId);
+        assertThat(userCommentQueryRepository.countAllByAuthorId(authorId)).isEqualTo(3L);
     }
 
     @Test

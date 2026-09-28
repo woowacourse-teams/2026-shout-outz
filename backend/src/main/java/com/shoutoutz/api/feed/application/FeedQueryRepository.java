@@ -42,6 +42,10 @@ public interface FeedQueryRepository {
             int limit
     );
 
+    long countAll(Long categoryId, String keyword);
+
+    long countAllByAuthorId(long authorId);
+
     List<String> findTitleSuggestions(String keyword, int limit);
 
     List<FeedMediaReference> findAllMediaByIds(List<Long> mediaIds);

@@ -73,4 +73,18 @@ public class UserVerificationRequestQueryRepositoryImpl
                 )
         );
     }
+
+    @Override
+    public long countAll(VerificationRequestStatus status) {
+        Long count = jdbcTemplate.queryForObject(
+                """
+                        SELECT COUNT(*)
+                        FROM user_verification_requests
+                        WHERE status = :status
+                        """,
+                new MapSqlParameterSource("status", status.name()),
+                Long.class
+        );
+        return count == null ? 0L : count;
+    }
 }

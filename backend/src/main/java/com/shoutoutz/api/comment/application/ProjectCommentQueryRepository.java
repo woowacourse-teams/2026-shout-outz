@@ -25,4 +25,6 @@ public interface ProjectCommentQueryRepository {
      * 대댓글 조회용
      */
     List<ProjectComment> findReplies(long projectId, List<Long> parentIds);
+
+    long countAllByProjectId(long projectId);
 }

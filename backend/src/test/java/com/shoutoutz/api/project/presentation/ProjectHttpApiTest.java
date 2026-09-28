@@ -34,6 +34,7 @@ import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.DeletedProject;
@@ -315,7 +316,7 @@ class ProjectHttpApiTest {
                                 new ProjectMemberProfileResponse("dhyepark", "박다혜", 6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
                                 new ProjectMemberProfileResponse("zzaekkii", "김도현", 6, "FRONTEND", null, null, null, null)
                         ))),
-                new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
+                new SliceMetaResponse("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
         ));
 
         mockMvc.perform(get("/api/v1/projects")
@@ -436,7 +437,7 @@ class ProjectHttpApiTest {
     @DisplayName("파라미터를 보내지 않으면 모두 입력하지 않은 값으로 조회한다.")
     void findsProjectsWithoutParameters() throws Exception {
         given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(
-                new ProjectFindAllResponse(List.of(), new ProjectFindAllResponse.Meta(null, false, 0L)));
+                new ProjectFindAllResponse(List.of(), new SliceMetaResponse(null, false, 0L)));
 
         mockMvc.perform(get("/api/v1/projects"))
                 .andExpect(status().isOk())

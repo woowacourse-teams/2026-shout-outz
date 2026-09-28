@@ -111,7 +111,7 @@ class FeedCommentHttpApiTest {
                                 true
                         )
                 ),
-                new SliceMetaResponse("next-cursor", true)
+                new SliceMetaResponse("next-cursor", true, 2L)
         ));
 
         mockMvc.perform(get("/api/v1/feeds/{feedId}/comments", 100L)
@@ -131,6 +131,7 @@ class FeedCommentHttpApiTest {
                 .andExpect(jsonPath("$.data[2].deleted").value(true))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andExpect(jsonPath("$.meta.totalCount").value(2))
                 .andDo(document(
                         "feed-comment-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -190,7 +191,9 @@ class FeedCommentHttpApiTest {
                                                 .description("다음 페이지 cursor")
                                                 .optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN)
-                                                .description("다음 페이지 존재 여부")
+                                                .description("다음 페이지 존재 여부"),
+                                        fieldWithPath("meta.totalCount").type(NUMBER)
+                                                .description("삭제되지 않은 일반 댓글과 답글의 전체 수")
                                 )
                                 .build())
                 ));
@@ -222,7 +225,7 @@ class FeedCommentHttpApiTest {
                         false,
                         false
                 )),
-                new SliceMetaResponse(null, false)
+                new SliceMetaResponse(null, false, 1L)
         ));
 
         mockMvc.perform(get("/api/v1/feeds/{feedId}/comments", 100L)

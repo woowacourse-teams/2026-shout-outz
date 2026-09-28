@@ -128,7 +128,7 @@ public class UserService {
                 size + 1
         );
 
-        return createSearchResult(searchedItems, size);
+        return createSearchResult(searchedItems, size, userQueryRepository.countWoowaMember(keyword));
     }
 
     /**
@@ -136,15 +136,22 @@ public class UserService {
      */
     private UserSearchResult createSearchResult(
             List<UserSearchItem> searchedItems,
-            int size
+            int size,
+            long totalCount
     ) {
         if (searchedItems.size() <= size) {
             List<UserSearchItem> items = List.copyOf(searchedItems);
-            return new UserSearchResult(items, null, false, resolveAvatarUrls(items));
+            return new UserSearchResult(items, null, false, totalCount, resolveAvatarUrls(items));
         }
 
         List<UserSearchItem> items = List.copyOf(searchedItems.subList(0, size));
-        return new UserSearchResult(items, encodeCursor(items.getLast()), true, resolveAvatarUrls(items));
+        return new UserSearchResult(
+                items,
+                encodeCursor(items.getLast()),
+                true,
+                totalCount,
+                resolveAvatarUrls(items)
+        );
     }
 
     private String encodeCursor(UserSearchItem item) {

@@ -17,4 +17,6 @@ public interface UserQueryRepository {
             UserSearchCursor cursor,
             int limit
     );
+
+    long countWoowaMember(String keyword);
 }

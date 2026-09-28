@@ -116,7 +116,8 @@ public class FeedService {
                         cursor,
                         size + 1
                 );
-        return createSlice(feedsWithExtraItem, size, sort);
+        long totalCount = feedQueryRepository.countAll(request.categoryId(), request.keyword());
+        return createSlice(feedsWithExtraItem, size, sort, totalCount);
     }
 
     @Transactional(readOnly = true)
@@ -145,7 +146,7 @@ public class FeedService {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
         if (user.isDeleted()) {
-            return new FeedFindAllResult(List.of(), null, false);
+            return new FeedFindAllResult(List.of(), null, false, 0L, Map.of());
         }
 
         FeedSort sort = FeedSort.LATEST;
@@ -159,7 +160,8 @@ public class FeedService {
                         cursor,
                         size + 1
                 );
-        return createSlice(feedsWithExtraItem, size, sort);
+        long totalCount = feedQueryRepository.countAllByAuthorId(user.getId());
+        return createSlice(feedsWithExtraItem, size, sort, totalCount);
     }
 
     @Transactional
@@ -190,11 +192,12 @@ public class FeedService {
     private FeedFindAllResult createSlice(
             List<FeedItem> feedsWithExtraItem,
             int size,
-            FeedSort sort
+            FeedSort sort,
+            long totalCount
     ) {
         if (feedsWithExtraItem.size() <= size) {
             List<FeedItem> items = List.copyOf(feedsWithExtraItem);
-            return new FeedFindAllResult(items, null, false, resolveMediaUrls(items));
+            return new FeedFindAllResult(items, null, false, totalCount, resolveMediaUrls(items));
         }
 
         List<FeedItem> items = List.copyOf(feedsWithExtraItem.subList(0, size));
@@ -208,7 +211,7 @@ public class FeedService {
                         lastItem.feedId()
                 )
         );
-        return new FeedFindAllResult(items, nextCursor, true, resolveMediaUrls(items));
+        return new FeedFindAllResult(items, nextCursor, true, totalCount, resolveMediaUrls(items));
     }
 
     private FeedResponse toQueryResponse(FeedItem item) {

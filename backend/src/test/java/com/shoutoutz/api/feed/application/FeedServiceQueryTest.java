@@ -115,11 +115,13 @@ class FeedServiceQueryTest {
         );
         when(feedQueryRepository.findAll(FeedSort.LATEST, 1L, null, cursor, 3))
                 .thenReturn(queried);
+        when(feedQueryRepository.countAll(1L, null)).thenReturn(8L);
 
         FeedFindAllResult result = feedService.findAllFeed(request);
 
         assertThat(result.items()).containsExactly(queried.get(0), queried.get(1));
         assertThat(result.hasNext()).isTrue();
+        assertThat(result.totalCount()).isEqualTo(8L);
         assertThat(cursorCodec.decode(result.nextCursor(), FeedSort.LATEST))
                 .isEqualTo(new FeedCursor(
                         FeedSort.LATEST,
@@ -249,6 +251,7 @@ class FeedServiceQueryTest {
                 .thenReturn(Optional.of(user(UserStatus.ACTIVE)));
         when(feedQueryRepository.findAllByAuthorId(1L, cursor, 3))
                 .thenReturn(queried);
+        when(feedQueryRepository.countAllByAuthorId(1L)).thenReturn(3L);
 
         FeedFindAllResult result = feedService.findAllByUser(
                 "zzaekkii",
@@ -257,6 +260,7 @@ class FeedServiceQueryTest {
 
         assertThat(result.items()).containsExactly(queried.get(0), queried.get(1));
         assertThat(result.hasNext()).isTrue();
+        assertThat(result.totalCount()).isEqualTo(3L);
         assertThat(cursorCodec.decode(result.nextCursor(), FeedSort.LATEST))
                 .isEqualTo(new FeedCursor(
                         FeedSort.LATEST,
@@ -281,6 +285,7 @@ class FeedServiceQueryTest {
         assertThat(result.items()).isEmpty();
         assertThat(result.nextCursor()).isNull();
         assertThat(result.hasNext()).isFalse();
+        assertThat(result.totalCount()).isZero();
         verifyNoInteractions(feedQueryRepository);
     }
 

@@ -1,6 +1,7 @@
 package com.shoutoutz.api.verification.application;
 
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestCursor;
 import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestItem;
@@ -41,7 +42,11 @@ public class AdminVerificationRequestService {
                 ? List.copyOf(fetched.subList(0, size))
                 : List.copyOf(fetched);
         String nextCursor = hasNext ? cursorCodec.encode(items.getLast().toCursor()) : null;
-        return AdminVerificationRequestFindAllResponse.from(items, nextCursor);
+        long totalCount = queryRepository.countAll(status);
+        return AdminVerificationRequestFindAllResponse.from(
+                items,
+                new SliceMetaResponse(nextCursor, hasNext, totalCount)
+        );
     }
 
     private void validateAdmin(UserRole role) {

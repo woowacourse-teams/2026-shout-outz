@@ -26,7 +26,7 @@ public class UserCommentService {
                 cursor,
                 size + 1
         );
-        return createResult(comments, size);
+        return createResult(comments, size, userCommentQueryRepository.countAllByAuthorId(userId));
     }
 
     public UserCommentResult findAll(long userId, Long viewerId, UserCommentFindRequest request) {
@@ -38,12 +38,12 @@ public class UserCommentService {
                 cursor,
                 size + 1
         );
-        return createResult(comments, size);
+        return createResult(comments, size, userCommentQueryRepository.countAllByAuthorId(userId));
     }
 
-    private UserCommentResult createResult(List<UserCommentItem> comments, int size) {
+    private UserCommentResult createResult(List<UserCommentItem> comments, int size, long totalCount) {
         if (comments.size() <= size) {
-            return new UserCommentResult(comments, null, false);
+            return new UserCommentResult(comments, null, false, totalCount);
         }
 
         List<UserCommentItem> items = List.copyOf(comments.subList(0, size));
@@ -53,6 +53,6 @@ public class UserCommentService {
                 lastItem.type(),
                 lastItem.commentId()
         ));
-        return new UserCommentResult(items, nextCursor, true);
+        return new UserCommentResult(items, nextCursor, true, totalCount);
     }
 }

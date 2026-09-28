@@ -234,6 +234,7 @@ class UserServiceTest {
         );
         given(userQueryRepository.searchWoowaMember("재", null, 3))
                 .willReturn(searchedItems);
+        given(userQueryRepository.countWoowaMember("재")).willReturn(7L);
 
         UserSearchResult result = userService.searchWoowaMember("재", null, 2);
 
@@ -241,6 +242,7 @@ class UserServiceTest {
         assertThat(userSearchCursorCodec.decode(result.nextCursor()))
                 .isEqualTo(new UserSearchCursor(2, "호이", "hoi"));
         assertThat(result.hasNext()).isTrue();
+        assertThat(result.totalCount()).isEqualTo(7L);
     }
 
     @Test

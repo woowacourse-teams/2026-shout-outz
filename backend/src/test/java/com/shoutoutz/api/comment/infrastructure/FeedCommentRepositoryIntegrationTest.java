@@ -169,6 +169,7 @@ class FeedCommentRepositoryIntegrationTest {
                 feed.getId(),
                 List.of(firstRoot.getId())
         )).extracting(FeedComment::getId).containsExactly(reply.getId());
+        assertThat(feedCommentQueryRepository.countAllByFeedId(feed.getId())).isEqualTo(3L);
     }
 
     private static String uniqueSuffix() {

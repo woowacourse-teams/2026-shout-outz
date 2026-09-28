@@ -82,6 +82,7 @@ class FeedHttpApiTest {
                         List.of(feed),
                         "next-cursor",
                         true,
+                        12L,
                         mediaUrls()
                 ));
 
@@ -96,6 +97,7 @@ class FeedHttpApiTest {
                 .andExpect(jsonPath("$.data[0].media[0].mediaId").value(21L))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andExpect(jsonPath("$.meta.totalCount").value(12))
                 .andDo(document(
                         "feed-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -131,7 +133,7 @@ class FeedHttpApiTest {
     @DisplayName("존재하지 않는 카테고리 ID로 조회하면 빈 목록을 반환한다")
     void findAllFeedByMissingCategoryId() throws Exception {
         given(feedService.findAllFeed(any(FeedFindAllRequest.class)))
-                .willReturn(new FeedFindAllResult(List.of(), null, false));
+                .willReturn(new FeedFindAllResult(List.of(), null, false, 0L, Map.of()));
 
         mockMvc.perform(get("/api/v1/feeds").queryParam("categoryId", "0"))
                 .andExpect(status().isOk())

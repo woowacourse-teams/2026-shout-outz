@@ -75,6 +75,7 @@ class UserSearchRepositoryIntegrationTest {
                 );
         assertThat(result).extracting(UserSearchItem::relevanceRank)
                 .containsExactly(0, 1, 1, 1, 2);
+        assertThat(userQueryRepository.countWoowaMember("jack")).isEqualTo(5L);
     }
 
     @Test

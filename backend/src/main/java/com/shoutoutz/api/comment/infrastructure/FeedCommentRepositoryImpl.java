@@ -88,6 +88,11 @@ public class FeedCommentRepositoryImpl implements FeedCommentRepository, FeedCom
                 .toList();
     }
 
+    @Override
+    public long countAllByFeedId(long feedId) {
+        return feedCommentJpaRepository.countByFeedIdAndDeletedAtIsNull(feedId);
+    }
+
     private FeedComment update(FeedComment comment) {
         FeedCommentEntity entity = feedCommentJpaRepository.findById(comment.getId())
                 .orElseThrow(() -> new EntityNotFoundException(COMMENT_NOT_FOUND));

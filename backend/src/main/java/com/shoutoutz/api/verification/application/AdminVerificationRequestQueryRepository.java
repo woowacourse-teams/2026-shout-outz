@@ -12,4 +12,6 @@ public interface AdminVerificationRequestQueryRepository {
             AdminVerificationRequestCursor cursor,
             int limit
     );
+
+    long countAll(VerificationRequestStatus status);
 }

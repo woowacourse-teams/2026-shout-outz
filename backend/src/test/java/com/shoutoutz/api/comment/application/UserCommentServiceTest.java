@@ -46,6 +46,7 @@ class UserCommentServiceTest {
         );
         when(userCommentQueryRepository.findAllByAuthorId(1L, cursor, 3))
                 .thenReturn(queried);
+        when(userCommentQueryRepository.countAllByAuthorId(1L)).thenReturn(5L);
 
         UserCommentResult result = userCommentService.findAll(
                 1L,
@@ -54,6 +55,7 @@ class UserCommentServiceTest {
 
         assertThat(result.comments()).containsExactly(queried.get(0), queried.get(1));
         assertThat(result.hasNext()).isTrue();
+        assertThat(result.totalCount()).isEqualTo(5L);
         assertThat(cursorCodec.decode(result.nextCursor())).isEqualTo(new UserCommentCursor(
                 queried.get(1).createdAt(),
                 queried.get(1).type(),

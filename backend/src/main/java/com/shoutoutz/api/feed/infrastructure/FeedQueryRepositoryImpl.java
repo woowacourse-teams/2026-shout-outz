@@ -164,6 +164,43 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
     }
 
     @Override
+    public long countAll(Long categoryId, String keyword) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT COUNT(*)
+                FROM feeds p
+                WHERE p.deleted_at IS NULL
+                """);
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        if (keyword != null) {
+            sql.append("""
+                      AND (
+                          lower(p.title) LIKE lower(:containsPattern) ESCAPE '\\'
+                          OR lower(p.content) LIKE lower(:containsPattern) ESCAPE '\\'
+                      )
+                    """);
+            appendKeywordParameters(parameters, keyword);
+        }
+        appendCategoryFilter(sql, parameters, categoryId);
+        Long count = jdbcTemplate.queryForObject(sql.toString(), parameters, Long.class);
+        return count == null ? 0L : count;
+    }
+
+    @Override
+    public long countAllByAuthorId(long authorId) {
+        Long count = jdbcTemplate.queryForObject(
+                """
+                        SELECT COUNT(*)
+                        FROM feeds p
+                        WHERE p.deleted_at IS NULL
+                          AND p.author_id = :authorId
+                        """,
+                Map.of("authorId", authorId),
+                Long.class
+        );
+        return count == null ? 0L : count;
+    }
+
+    @Override
     public List<String> findTitleSuggestions(String keyword, int limit) {
         String escapedKeyword = escapeLikePattern(keyword);
         return jdbcTemplate.queryForList(

@@ -65,6 +65,7 @@ class AdminVerificationRequestServiceTest {
                 null,
                 3
         )).willReturn(List.of(first, second, extra));
+        given(queryRepository.countAll(VerificationRequestStatus.PENDING)).willReturn(3L);
 
         AdminVerificationRequestFindAllResponse response = service.findAll(
                 UserRole.ADMIN,
@@ -73,7 +74,8 @@ class AdminVerificationRequestServiceTest {
 
         assertThat(response.items()).hasSize(2);
         assertThat(response.items().getFirst().requestId()).isEqualTo(101L);
-        assertThat(response.nextCursor()).isEqualTo(cursorCodec.encode(second.toCursor()));
+        assertThat(response.meta().nextCursor()).isEqualTo(cursorCodec.encode(second.toCursor()));
+        assertThat(response.meta().totalCount()).isEqualTo(3L);
         verify(queryRepository).findAll(VerificationRequestStatus.PENDING, null, 3);
     }
 
@@ -93,6 +95,7 @@ class AdminVerificationRequestServiceTest {
         );
         given(queryRepository.findAll(VerificationRequestStatus.REJECTED, cursor, 2))
                 .willReturn(List.of(item));
+        given(queryRepository.countAll(VerificationRequestStatus.REJECTED)).willReturn(1L);
 
         AdminVerificationRequestFindAllResponse response = service.findAll(
                 UserRole.ADMIN,
@@ -101,7 +104,8 @@ class AdminVerificationRequestServiceTest {
 
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().getFirst().status()).isEqualTo(VerificationRequestStatus.REJECTED);
-        assertThat(response.nextCursor()).isNull();
+        assertThat(response.meta().nextCursor()).isNull();
+        assertThat(response.meta().totalCount()).isEqualTo(1L);
         verify(queryRepository).findAll(VerificationRequestStatus.REJECTED, cursor, 2);
     }
 

@@ -135,4 +135,32 @@ public class UserCommentQueryRepositoryImpl implements UserCommentQueryRepositor
                 )
         );
     }
+
+    @Override
+    public long countAllByAuthorId(long authorId) {
+        Long count = jdbcTemplate.queryForObject(
+                """
+                        SELECT
+                            (
+                                SELECT COUNT(*)
+                                FROM feed_comments fc
+                                JOIN feeds f ON f.id = fc.feed_id
+                                WHERE fc.author_id = :authorId
+                                  AND fc.deleted_at IS NULL
+                                  AND f.deleted_at IS NULL
+                            ) + (
+                                SELECT COUNT(*)
+                                FROM project_comments pc
+                                JOIN projects p ON p.id = pc.project_id
+                                WHERE pc.author_id = :authorId
+                                  AND pc.deleted_at IS NULL
+                                  AND p.deleted_at IS NULL
+                                  AND p.approval_status = 'APPROVED'
+                            )
+                        """,
+                new MapSqlParameterSource("authorId", authorId),
+                Long.class
+        );
+        return count == null ? 0L : count;
+    }
 }

@@ -101,7 +101,7 @@ class ProjectCommentHttpApiTest {
                                 false
                         )
                 ),
-                new SliceMetaResponse("next-cursor", true)
+                new SliceMetaResponse("next-cursor", true, 2L)
         ));
 
         mockMvc.perform(get("/api/v1/projects/{projectId}/comments", 100L)
@@ -119,6 +119,7 @@ class ProjectCommentHttpApiTest {
                 .andExpect(jsonPath("$.data[1].parentId").value(501))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andExpect(jsonPath("$.meta.totalCount").value(2))
                 .andDo(document(
                         "project-comment-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -178,7 +179,9 @@ class ProjectCommentHttpApiTest {
                                                 .description("다음 페이지 cursor")
                                                 .optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN)
-                                                .description("다음 페이지 존재 여부")
+                                                .description("다음 페이지 존재 여부"),
+                                        fieldWithPath("meta.totalCount").type(NUMBER)
+                                                .description("삭제되지 않은 일반 댓글과 답글의 전체 수")
                                 )
                                 .build())
                 ));
@@ -210,7 +213,7 @@ class ProjectCommentHttpApiTest {
                         false,
                         false
                 )),
-                new SliceMetaResponse(null, false)
+                new SliceMetaResponse(null, false, 1L)
         ));
 
         mockMvc.perform(get("/api/v1/projects/{projectId}/comments", 100L)
@@ -246,7 +249,7 @@ class ProjectCommentHttpApiTest {
                         false,
                         true
                 )),
-                new SliceMetaResponse(null, false)
+                new SliceMetaResponse(null, false, 1L)
         ));
 
         mockMvc.perform(get("/api/v1/projects/{projectId}/comments", 100L))

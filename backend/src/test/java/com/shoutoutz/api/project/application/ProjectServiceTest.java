@@ -627,7 +627,7 @@ class ProjectServiceTest {
         UserProjectItem project = userProjectItem(9L, 3L, NOW.minusSeconds(60));
         when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.of(user));
         when(userProjectQueryRepository.findAllByUserId(REGISTERED_BY, cursor, 20))
-                .thenReturn(new UserProjectResult(List.of(project), true));
+                .thenReturn(new UserProjectResult(List.of(project), true, 4L, Map.of()));
         when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL))
                 .thenReturn(Map.of(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail")));
         when(mediaUrlResolver.resolveAll(Set.of(21L), MediaVariant.DISPLAY))
@@ -640,6 +640,7 @@ class ProjectServiceTest {
 
         assertThat(response.projects()).extracting(UserProjectItem::id).containsExactly(9L);
         assertThat(response.hasNext()).isTrue();
+        assertThat(response.totalCount()).isEqualTo(4L);
         assertThat(response.nextCursor()).isEqualTo(ProjectCursor.latest(NOW.minusSeconds(60), 9L));
         assertThat(response.mediaUrls())
                 .containsEntry(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail"))

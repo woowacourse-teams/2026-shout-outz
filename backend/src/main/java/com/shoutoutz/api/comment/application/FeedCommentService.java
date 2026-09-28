@@ -178,9 +178,14 @@ public class FeedCommentService {
         String nextCursor = page.hasNext() && !page.comments().isEmpty()
                 ? FeedCommentCursorCodec.encode(toCursor(page.comments().getLast(), request.sort()))
                 : null;
+        long totalCount = feedCommentQueryRepository.countAllByFeedId(feedId);
         return new FeedCommentFindResponse(
                 comments,
-                new SliceMetaResponse(nextCursor, page.hasNext() && !comments.isEmpty())
+                new SliceMetaResponse(
+                        nextCursor,
+                        page.hasNext() && !comments.isEmpty(),
+                        totalCount
+                )
         );
     }
 

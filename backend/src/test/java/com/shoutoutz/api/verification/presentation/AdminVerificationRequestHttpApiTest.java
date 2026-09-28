@@ -10,6 +10,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
+import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
@@ -23,6 +24,7 @@ import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.Track;
@@ -75,7 +77,7 @@ class AdminVerificationRequestHttpApiTest {
                         VerificationRequestStatus.PENDING,
                         requestedAt
                 )),
-                "next-cursor"
+                new SliceMetaResponse("next-cursor", true, 12L)
         ));
 
         mockMvc.perform(get("/api/v1/admin/verification-requests")
@@ -86,17 +88,19 @@ class AdminVerificationRequestHttpApiTest {
                         .queryParam("cursor", "cursor"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.items[0].requestId").value(101))
-                .andExpect(jsonPath("$.data.items[0].applicant.userId").value(42))
-                .andExpect(jsonPath("$.data.items[0].applicant.handle").value("charles"))
-                .andExpect(jsonPath("$.data.items[0].userType").value("WOOWACOURSE_CREW"))
-                .andExpect(jsonPath("$.data.items[0].nickname").value("샤를"))
-                .andExpect(jsonPath("$.data.items[0].cohort").value(8))
-                .andExpect(jsonPath("$.data.items[0].track").value("BACKEND"))
-                .andExpect(jsonPath("$.data.items[0].status").value("PENDING"))
-                .andExpect(jsonPath("$.data.items[0].requestedAt")
+                .andExpect(jsonPath("$.data[0].requestId").value(101))
+                .andExpect(jsonPath("$.data[0].applicant.userId").value(42))
+                .andExpect(jsonPath("$.data[0].applicant.handle").value("charles"))
+                .andExpect(jsonPath("$.data[0].userType").value("WOOWACOURSE_CREW"))
+                .andExpect(jsonPath("$.data[0].nickname").value("샤를"))
+                .andExpect(jsonPath("$.data[0].cohort").value(8))
+                .andExpect(jsonPath("$.data[0].track").value("BACKEND"))
+                .andExpect(jsonPath("$.data[0].status").value("PENDING"))
+                .andExpect(jsonPath("$.data[0].requestedAt")
                         .value("2026-09-16T02:30:00Z"))
-                .andExpect(jsonPath("$.data.nextCursor").value("next-cursor"))
+                .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
+                .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andExpect(jsonPath("$.meta.totalCount").value(12))
                 .andDo(document(
                         "admin-verification-request-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -126,34 +130,37 @@ class AdminVerificationRequestHttpApiTest {
                                 .responseSchema(Schema.schema("AdminVerificationRequestFindAllSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
-                                        fieldWithPath("data").type(OBJECT).description("인증 신청 목록"),
-                                        fieldWithPath("data.items").type(ARRAY)
-                                                .description("조건에 맞는 인증 신청 목록"),
-                                        fieldWithPath("data.items[].requestId").type(NUMBER)
+                                        fieldWithPath("data").type(ARRAY).description("인증 신청 목록"),
+                                        fieldWithPath("data[].requestId").type(NUMBER)
                                                 .description("인증 신청 ID"),
-                                        fieldWithPath("data.items[].applicant").type(OBJECT)
+                                        fieldWithPath("data[].applicant").type(OBJECT)
                                                 .description("신청자 식별 정보"),
-                                        fieldWithPath("data.items[].applicant.userId").type(NUMBER)
+                                        fieldWithPath("data[].applicant.userId").type(NUMBER)
                                                 .description("신청자 사용자 ID"),
-                                        fieldWithPath("data.items[].applicant.handle").type(STRING)
+                                        fieldWithPath("data[].applicant.handle").type(STRING)
                                                 .description("신청자 handle"),
-                                        new EnumFields(UserType.class).withPath("data.items[].userType")
+                                        new EnumFields(UserType.class).withPath("data[].userType")
                                                 .description("신청 유형"),
-                                        fieldWithPath("data.items[].nickname").type(STRING)
+                                        fieldWithPath("data[].nickname").type(STRING)
                                                 .description("신청 닉네임"),
-                                        fieldWithPath("data.items[].cohort").type(NUMBER)
+                                        fieldWithPath("data[].cohort").type(NUMBER)
                                                 .description("신청 기수. 코치 신청은 null")
                                                 .optional(),
-                                        new EnumFields(Track.class).withPath("data.items[].track")
+                                        new EnumFields(Track.class).withPath("data[].track")
                                                 .description("신청 트랙. 코치 신청은 null")
                                                 .optional(),
-                                        new EnumFields(VerificationRequestStatus.class).withPath("data.items[].status")
+                                        new EnumFields(VerificationRequestStatus.class).withPath("data[].status")
                                                 .description("현재 신청 상태"),
-                                        fieldWithPath("data.items[].requestedAt").type(STRING)
+                                        fieldWithPath("data[].requestedAt").type(STRING)
                                                 .description("신청 시각(ISO-8601)"),
-                                        fieldWithPath("data.nextCursor").type(STRING)
+                                        fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
+                                        fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 커서. 다음 페이지가 없으면 null")
-                                                .optional()
+                                                .optional(),
+                                        fieldWithPath("meta.hasNext").type(BOOLEAN)
+                                                .description("다음 페이지 존재 여부"),
+                                        fieldWithPath("meta.totalCount").type(NUMBER)
+                                                .description("상태 조건을 만족하는 전체 인증 신청 수")
                                 )
                                 .build())
                 ));

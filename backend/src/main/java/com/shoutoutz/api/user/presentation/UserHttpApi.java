@@ -79,7 +79,11 @@ public class UserHttpApi {
                 request.resolvedSize()
         );
         UserSearchResponse response = UserSearchResponse.from(result);
-        SliceMetaResponse meta = new SliceMetaResponse(result.nextCursor(), result.hasNext());
+        SliceMetaResponse meta = new SliceMetaResponse(
+                result.nextCursor(),
+                result.hasNext(),
+                result.totalCount()
+        );
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));
     }

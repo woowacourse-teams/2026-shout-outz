@@ -130,6 +130,30 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
         );
     }
 
+    @Override
+    public long countWoowaMember(String keyword) {
+        String escapedKeyword = escapeLikePattern(keyword);
+        Long count = jdbcTemplate.queryForObject(
+                """
+                        SELECT COUNT(*)
+                        FROM users u
+                        JOIN user_profiles up ON up.user_id = u.id
+                        WHERE u.status = 'ACTIVE'
+                          AND up.user_type IN ('WOOWACOURSE_CREW', 'WOOWACOURSE_COACH')
+                          AND (
+                              lower(u.handle) LIKE lower(:containsPattern) ESCAPE '\\'
+                              OR lower(up.display_name) LIKE lower(:containsPattern) ESCAPE '\\'
+                          )
+                        """,
+                new MapSqlParameterSource(
+                        "containsPattern",
+                        "%" + escapedKeyword + "%"
+                ),
+                Long.class
+        );
+        return count == null ? 0L : count;
+    }
+
     private Track toTrack(String value) {
         if (value == null) {
             return null;

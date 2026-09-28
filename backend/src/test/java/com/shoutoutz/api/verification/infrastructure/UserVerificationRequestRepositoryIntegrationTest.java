@@ -255,6 +255,7 @@ class UserVerificationRequestRepositoryIntegrationTest {
             assertThat(item.userId()).isEqualTo(olderUser.getId());
             assertThat(item.nickname()).isEqualTo("이전 신청");
         });
+        assertThat(adminQueryRepository.countAll(VerificationRequestStatus.PENDING)).isEqualTo(2L);
     }
 
     private UserVerificationRequest request(long userId, String nickname) {

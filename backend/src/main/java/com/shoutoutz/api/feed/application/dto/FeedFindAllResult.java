@@ -8,12 +8,9 @@ public record FeedFindAllResult(
         List<FeedItem> items,
         String nextCursor,
         boolean hasNext,
+        long totalCount,
         Map<Long, URI> mediaUrls
 ) {
-
-    public FeedFindAllResult(List<FeedItem> items, String nextCursor, boolean hasNext) {
-        this(items, nextCursor, hasNext, Map.of());
-    }
 
     public FeedFindAllResult {
         items = items == null ? List.of() : List.copyOf(items);

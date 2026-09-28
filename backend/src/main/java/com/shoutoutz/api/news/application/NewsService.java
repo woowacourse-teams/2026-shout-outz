@@ -199,7 +199,10 @@ public class NewsService {
         String nextCursor = hasNext ? NewsCursorCodec.encode(lastCursor(page.items())) : null;
 
         //반환
-        return new NewsFindAllResponse(items, new SliceMetaResponse(nextCursor, hasNext));
+        return new NewsFindAllResponse(
+                items,
+                new SliceMetaResponse(nextCursor, hasNext, page.totalCount())
+        );
     }
 
     @Transactional(readOnly = true)

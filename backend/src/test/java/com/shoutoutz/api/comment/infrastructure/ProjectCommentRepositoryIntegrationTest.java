@@ -186,6 +186,7 @@ class ProjectCommentRepositoryIntegrationTest {
                 project.getId(),
                 List.of(firstRoot.getId())
         )).extracting(ProjectComment::getId).containsExactly(reply.getId());
+        assertThat(projectCommentQueryRepository.countAllByProjectId(project.getId())).isEqualTo(3L);
     }
 
     private static Project project(Long registeredBy) {

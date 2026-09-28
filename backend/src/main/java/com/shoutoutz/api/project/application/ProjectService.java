@@ -215,7 +215,7 @@ public class ProjectService {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND));
         if (user.isDeleted()) {
-            return new UserProjectResult(List.of(), false);
+            return new UserProjectResult(List.of(), false, 0L, Map.of());
         }
 
         UserProjectResult result = viewerId == null
@@ -233,6 +233,7 @@ public class ProjectService {
         return new UserProjectResult(
                 result.projects(),
                 result.hasNext(),
+                result.totalCount(),
                 resolveUserProjectMediaUrls(result.projects())
         );
     }

@@ -172,9 +172,14 @@ public class ProjectCommentService {
         String nextCursor = page.hasNext() && !page.comments().isEmpty()
                 ? ProjectCommentCursorCodec.encode(toCursor(page.comments().getLast(), request.sort()))
                 : null;
+        long totalCount = projectCommentQueryRepository.countAllByProjectId(projectId);
         return new ProjectCommentFindResponse(
                 comments,
-                new SliceMetaResponse(nextCursor, page.hasNext() && !comments.isEmpty())
+                new SliceMetaResponse(
+                        nextCursor,
+                        page.hasNext() && !comments.isEmpty(),
+                        totalCount
+                )
         );
     }
 

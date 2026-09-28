@@ -91,6 +91,11 @@ public class ProjectCommentRepositoryImpl implements ProjectCommentRepository, P
                 .toList();
     }
 
+    @Override
+    public long countAllByProjectId(long projectId) {
+        return projectCommentJpaRepository.countByProjectIdAndDeletedAtIsNull(projectId);
+    }
+
     private ProjectComment update(ProjectComment comment) {
         ProjectCommentEntity entity = projectCommentJpaRepository.findById(comment.getId())
                 .orElseThrow(() -> new EntityNotFoundException(COMMENT_NOT_FOUND));

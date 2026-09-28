@@ -553,6 +553,7 @@ class UserHttpApiTest {
                         ),
                         "eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0",
                         true,
+                        6L,
                         Map.of(21L, URI.create("https://cdn.example.com/media/21/display"))
                 ));
 
@@ -576,6 +577,7 @@ class UserHttpApiTest {
                         "eyJyZWxldmFuY2VSYW5rIjowLCJkaXNwbGF5TmFtZSI6IuyerO2CpCIsImhhbmRsZSI6Inp6YWVra2lpIn0"
                 ))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andExpect(jsonPath("$.meta.totalCount").value(6))
                 .andDo(document(
                         "user-search-get",
                         resource(ResourceSnippetParameters.builder()
@@ -611,7 +613,9 @@ class UserHttpApiTest {
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 커서").optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN)
-                                                .description("다음 페이지 존재 여부")
+                                                .description("다음 페이지 존재 여부"),
+                                        fieldWithPath("meta.totalCount").type(NUMBER)
+                                                .description("검색 조건을 만족하는 전체 사용자 수")
                                 )
                                 .build())
                 ));

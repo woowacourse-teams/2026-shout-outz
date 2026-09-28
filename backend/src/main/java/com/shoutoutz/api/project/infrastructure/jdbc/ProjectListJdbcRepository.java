@@ -279,23 +279,25 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 .addValue("userId", userId)
                 .addValue("viewerId", viewerId, Types.BIGINT)
                 .addValue("limit", size + 1);
+        String filteredProjectsSql = USER_PROJECTS_SQL + """
+                  AND (
+                      EXISTS (
+                          SELECT 1
+                          FROM project_members pm
+                          WHERE pm.project_id = p.id
+                            AND pm.user_id = :userId
+                      )
+                      OR EXISTS (
+                          SELECT 1
+                          FROM woowa_archived_project_members am
+                          WHERE am.project_id = p.id
+                            AND am.matched_user_id = :userId
+                      )
+                  )
+                """;
         StringBuilder sql = new StringBuilder("WITH filtered AS (")
-                .append(USER_PROJECTS_SQL)
+                .append(filteredProjectsSql)
                 .append("""
-                          AND (
-                              EXISTS (
-                                  SELECT 1
-                                  FROM project_members pm
-                                  WHERE pm.project_id = p.id
-                                    AND pm.user_id = :userId
-                              )
-                              OR EXISTS (
-                                  SELECT 1
-                                  FROM woowa_archived_project_members am
-                                  WHERE am.project_id = p.id
-                                    AND am.matched_user_id = :userId
-                              )
-                          )
                         )
                         SELECT *
                         FROM filtered
@@ -312,12 +314,22 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 parameters,
                 ProjectListJdbcRepository::mapUserProject
         );
+        Long totalCount = jdbcTemplate.queryForObject(
+                "WITH filtered AS (" + filteredProjectsSql + ") SELECT COUNT(*) FROM filtered",
+                parameters,
+                Long.class
+        );
         boolean hasNext = fetched.size() > size;
         List<UserProjectItem> projects = fetched;
         if (hasNext) {
             projects = fetched.subList(0, size);
         }
-        return new UserProjectResult(withUserProjectDetails(projects), hasNext);
+        return new UserProjectResult(
+                withUserProjectDetails(projects),
+                hasNext,
+                totalCount == null ? 0L : totalCount,
+                Map.of()
+        );
     }
 
     /**
