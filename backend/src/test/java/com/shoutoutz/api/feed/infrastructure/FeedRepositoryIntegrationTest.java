@@ -406,7 +406,7 @@ class FeedRepositoryIntegrationTest {
         Long userId = jdbcTemplate.queryForObject(
                 "INSERT INTO users (handle) VALUES (?) RETURNING id",
                 Long.class,
-                "feed_" + token
+                "@feed_" + token
         );
         jdbcTemplate.update(
                 "INSERT INTO user_profiles (user_id, display_name, user_type, track, cohort) VALUES (?, ?, ?, ?, ?)",

@@ -43,7 +43,7 @@ class HomeStatisticsQueryRepositoryIntegrationTest {
     @DisplayName("홈 통계는 명세의 상태 조건과 이벤트 경계 시각을 적용한다")
     void findsHomeStatistics() {
         HomeStatisticsCounts before = homeStatisticsQueryRepository.find(NOW);
-        User user = userRepository.save(User.initialize("home-statistics-user"));
+        User user = userRepository.save(User.initialize("@home-statistics-user"));
         saveProject("approved-active", "APPROVED", null);
         saveProject("pending-active", "PENDING", null);
         saveProject("approved-deleted", "APPROVED", NOW);

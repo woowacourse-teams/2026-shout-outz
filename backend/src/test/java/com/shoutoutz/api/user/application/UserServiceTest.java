@@ -79,7 +79,7 @@ class UserServiceTest {
     void getMyProfileSummary() {
         User user = User.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(UserStatus.ACTIVE)
                 .role(UserRole.USER)
                 .build();
@@ -97,7 +97,7 @@ class UserServiceTest {
         UserProfileSummaryResponse result = userService.getMyProfileSummary(1L);
 
         assertThat(result).isEqualTo(new UserProfileSummaryResponse(
-                "zzaekkii",
+                "@zzaekkii",
                 "재키",
                 21L,
                 "https://cdn.example.com/media/21/display"
@@ -118,7 +118,7 @@ class UserServiceTest {
     void failWhenUserProfileDoesNotExist() {
         User user = User.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(UserStatus.ACTIVE)
                 .role(UserRole.USER)
                 .build();
@@ -134,7 +134,7 @@ class UserServiceTest {
     void getMyProfile() {
         User user = User.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(UserStatus.ACTIVE)
                 .role(UserRole.USER)
                 .build();
@@ -158,7 +158,7 @@ class UserServiceTest {
 
         UserProfileResponse result = userService.getMyProfile(1L);
 
-        assertThat(result.handle()).isEqualTo("zzaekkii");
+        assertThat(result.handle()).isEqualTo("@zzaekkii");
         assertThat(result.displayName()).isEqualTo("재키");
         assertThat(result.userType()).isEqualTo(UserType.WOOWACOURSE_CREW);
         assertThat(result.track()).isEqualTo("BACKEND");
@@ -176,7 +176,7 @@ class UserServiceTest {
     void getPublicProfile() {
         User user = User.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(UserStatus.BANNED)
                 .role(UserRole.USER)
                 .build();
@@ -186,13 +186,13 @@ class UserServiceTest {
                 .userType(UserType.GENERAL)
                 .build();
         UserProfileCounts counts = new UserProfileCounts(2L, 18L);
-        given(userRepository.findByHandle("zzaekkii")).willReturn(Optional.of(user));
+        given(userRepository.findByHandle("@zzaekkii")).willReturn(Optional.of(user));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
         given(userQueryRepository.countByUserId(1L, false)).willReturn(counts);
 
-        UserProfileResponse result = userService.getPublicProfile("zzaekkii");
+        UserProfileResponse result = userService.getPublicProfile("@zzaekkii");
 
-        assertThat(result.handle()).isEqualTo("zzaekkii");
+        assertThat(result.handle()).isEqualTo("@zzaekkii");
         assertThat(result.displayName()).isEqualTo("재키");
         assertThat(result.counts()).isEqualTo(new UserProfileResponse.Counts(2L, 18L));
     }
@@ -202,7 +202,7 @@ class UserServiceTest {
     void getOwnPublicProfileIncludesPendingProjects() {
         User user = User.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(UserStatus.ACTIVE)
                 .role(UserRole.USER)
                 .build();
@@ -212,11 +212,11 @@ class UserServiceTest {
                 .userType(UserType.GENERAL)
                 .build();
         UserProfileCounts counts = new UserProfileCounts(3L, 18L);
-        given(userRepository.findByHandle("zzaekkii")).willReturn(Optional.of(user));
+        given(userRepository.findByHandle("@zzaekkii")).willReturn(Optional.of(user));
         given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
         given(userQueryRepository.countByUserId(1L, true)).willReturn(counts);
 
-        UserProfileResponse result = userService.getPublicProfile("zzaekkii", 1L);
+        UserProfileResponse result = userService.getPublicProfile("@zzaekkii", 1L);
 
         assertThat(result.counts()).isEqualTo(new UserProfileResponse.Counts(3L, 18L));
         then(userQueryRepository).should().countByUserId(1L, true);
@@ -227,14 +227,14 @@ class UserServiceTest {
     void getDeletedUserPublicProfile() {
         User user = User.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(UserStatus.DELETED)
                 .role(UserRole.USER)
                 .deletedAt(Instant.now())
                 .build();
-        given(userRepository.findByHandle("zzaekkii")).willReturn(Optional.of(user));
+        given(userRepository.findByHandle("@zzaekkii")).willReturn(Optional.of(user));
 
-        UserProfileResponse result = userService.getPublicProfile("zzaekkii");
+        UserProfileResponse result = userService.getPublicProfile("@zzaekkii");
 
         assertThat(result.displayName()).isEqualTo("탈퇴한 사용자");
         assertThat(result.userType()).isNull();
@@ -254,9 +254,9 @@ class UserServiceTest {
     @DisplayName("우테코 사용자를 검색하고 다음 커서를 생성한다")
     void searchWoowaMember() {
         List<UserSearchItem> searchedItems = List.of(
-                searchItem("dahye", "다혜", 2),
-                searchItem("hoi", "호이", 2),
-                searchItem("charles", "샤를", 2)
+                searchItem("@dahye", "다혜", 2),
+                searchItem("@hoi", "호이", 2),
+                searchItem("@charles", "샤를", 2)
         );
         given(userQueryRepository.searchWoowaMember("재", null, 2))
                 .willReturn(new UserSearchPage(searchedItems.subList(0, 2), true, 7L));
@@ -265,7 +265,7 @@ class UserServiceTest {
 
         assertThat(result.items()).containsExactly(searchedItems.get(0), searchedItems.get(1));
         assertThat(userSearchCursorCodec.decode(result.nextCursor()))
-                .isEqualTo(new UserSearchCursor(2, "호이", "hoi"));
+                .isEqualTo(new UserSearchCursor(2, "호이", "@hoi"));
         assertThat(result.hasNext()).isTrue();
         assertThat(result.totalCount()).isEqualTo(7L);
     }
@@ -273,7 +273,7 @@ class UserServiceTest {
     @Test
     @DisplayName("커서를 해석해 다음 우테코 사용자를 검색한다")
     void searchWoowaMemberWithCursor() {
-        UserSearchCursor cursor = new UserSearchCursor(1, "재키", "zzaekkii");
+        UserSearchCursor cursor = new UserSearchCursor(1, "재키", "@zzaekkii");
         given(userQueryRepository.searchWoowaMember("재키", cursor, 20))
                 .willReturn(new UserSearchPage(List.of(), false, 0L));
 

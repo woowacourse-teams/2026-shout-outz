@@ -767,7 +767,7 @@ class FeedHttpApiTest {
                 "본문입니다.",
                 new FeedItem.Author(
                         USER_ID,
-                        "zzaekkii",
+                        "@zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
                         Track.BACKEND,

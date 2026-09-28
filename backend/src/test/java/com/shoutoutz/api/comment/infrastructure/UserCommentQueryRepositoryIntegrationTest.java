@@ -127,7 +127,7 @@ class UserCommentQueryRepositoryIntegrationTest {
     }
 
     private long insertUser() {
-        String handle = "comment_" + token();
+        String handle = "@comment_" + token();
         return jdbcTemplate.queryForObject(
                 "INSERT INTO users (handle) VALUES (?) RETURNING id",
                 Long.class,

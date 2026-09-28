@@ -56,7 +56,7 @@ class OAuthSignupServiceTest {
                 OAuthProvider.GITHUB,
                 "12345678"
         )).willReturn(Optional.empty());
-        given(userRepository.findByHandle("sangjun")).willReturn(Optional.empty());
+        given(userRepository.findByHandle("@sangjun")).willReturn(Optional.empty());
         given(userRepository.save(any(User.class))).willReturn(savedUser());
 
         OAuthSignupResult result = oauthSignupService.signup(command);
@@ -118,7 +118,7 @@ class OAuthSignupServiceTest {
                 OAuthProvider.GITHUB,
                 "12345678"
         )).willReturn(Optional.empty());
-        given(userRepository.findByHandle("sangjun")).willReturn(Optional.of(savedUser()));
+        given(userRepository.findByHandle("@sangjun")).willReturn(Optional.of(savedUser()));
 
         assertThatThrownBy(() -> oauthSignupService.signup(command))
                 .isInstanceOf(DuplicateEntityException.class)
@@ -132,7 +132,7 @@ class OAuthSignupServiceTest {
 
     private OAuthSignupCommand signupCommand() {
         return new OAuthSignupCommand(
-                "sangjun",
+                "@sangjun",
                 "상준",
                 new OAuthIdentity(
                         OAuthProvider.GITHUB,
@@ -146,7 +146,7 @@ class OAuthSignupServiceTest {
     private User savedUser() {
         return User.builder()
                 .id(1L)
-                .handle("sangjun")
+                .handle("@sangjun")
                 .status(UserStatus.ACTIVE)
                 .role(UserRole.USER)
                 .build();

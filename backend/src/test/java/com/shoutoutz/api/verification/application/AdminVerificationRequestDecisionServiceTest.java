@@ -95,7 +95,7 @@ class AdminVerificationRequestDecisionServiceTest {
         assertThat(response.requestId()).isEqualTo(REQUEST_ID);
         assertThat(response.status()).isEqualTo(VerificationRequestStatus.APPROVED);
         assertThat(response.decidedBy().userId()).isEqualTo(ADMIN_ID);
-        assertThat(response.decidedBy().handle()).isEqualTo("admin");
+        assertThat(response.decidedBy().handle()).isEqualTo("@admin");
         assertThat(response.decidedAt()).isEqualTo(NOW);
 
         ArgumentCaptor<UserVerificationRequest> requestCaptor =
@@ -180,7 +180,7 @@ class AdminVerificationRequestDecisionServiceTest {
         assertThat(response.status()).isEqualTo(VerificationRequestStatus.REJECTED);
         assertThat(response.reason()).isEqualTo(reason);
         assertThat(response.decidedBy().userId()).isEqualTo(ADMIN_ID);
-        assertThat(response.decidedBy().handle()).isEqualTo("admin");
+        assertThat(response.decidedBy().handle()).isEqualTo("@admin");
         assertThat(response.decidedAt()).isEqualTo(NOW);
 
         ArgumentCaptor<UserVerificationRequest> requestCaptor =
@@ -318,7 +318,7 @@ class AdminVerificationRequestDecisionServiceTest {
     private User admin() {
         return User.builder()
                 .id(ADMIN_ID)
-                .handle("admin")
+                .handle("@admin")
                 .status(UserStatus.ACTIVE)
                 .role(UserRole.ADMIN)
                 .build();

@@ -150,7 +150,7 @@ class UserProjectListRepositoryIntegrationTest {
     }
 
     private long saveUser() {
-        String handle = "member-" + token;
+        String handle = "@member-" + token;
         long userId = jdbcTemplate.queryForObject(
                 "INSERT INTO users (handle, status, role) VALUES (?, 'ACTIVE', 'USER') RETURNING id",
                 Long.class,

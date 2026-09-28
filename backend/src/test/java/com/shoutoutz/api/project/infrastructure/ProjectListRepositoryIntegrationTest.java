@@ -419,7 +419,7 @@ class ProjectListRepositoryIntegrationTest {
     }
 
     private User saveUser(String prefix) {
-        return userRepository.save(User.initialize(prefix + "-" + UUID.randomUUID().toString().substring(0, 8)));
+        return userRepository.save(User.initialize("@" + prefix + "-" + UUID.randomUUID().toString().substring(0, 8)));
     }
 
     private long saveCrew(String displayName, boolean withdrawn) {

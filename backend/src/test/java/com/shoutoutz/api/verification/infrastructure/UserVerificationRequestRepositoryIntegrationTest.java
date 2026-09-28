@@ -272,6 +272,6 @@ class UserVerificationRequestRepositoryIntegrationTest {
     }
 
     private String uniqueHandle() {
-        return "verify-" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
+        return "@verify-" + UUID.randomUUID().toString().replace("-", "").substring(0, 20);
     }
 }

@@ -37,7 +37,7 @@ class NewsQueryRepositoryIntegrationTest {
     @Test
     @DisplayName("상세 조회 시 엔티티를 도메인으로 변환하지 않고 NewsDetail projection으로 조회한다")
     void findsDetailWithProjection() {
-        User user = userRepository.save(User.initialize("news-detail-projection"));
+        User user = userRepository.save(User.initialize("@news-detail-projection"));
         NewsEntity entity = newsJpaRepository.saveAndFlush(event(user.getId(), PUBLISHED_AT));
 
         NewsDetail detail = newsQueryRepository.findDetailById(entity.getId(), false).orElseThrow();
@@ -59,7 +59,7 @@ class NewsQueryRepositoryIntegrationTest {
     @Test
     @DisplayName("상세 조회 시 projection 결과에 이전·다음 소식을 조립한다")
     void findsDetailWithAdjacentNews() {
-        User user = userRepository.save(User.initialize("news-detail-navigation"));
+        User user = userRepository.save(User.initialize("@news-detail-navigation"));
         NewsEntity previous = newsJpaRepository.save(event(
                 user.getId(),
                 PUBLISHED_AT.minusSeconds(60)
@@ -80,7 +80,7 @@ class NewsQueryRepositoryIntegrationTest {
     @Test
     @DisplayName("삭제된 소식은 상세·목록·이전/다음 조회에서 제외한다")
     void excludesDeletedNewsFromQueries() {
-        User user = userRepository.save(User.initialize("news-deleted-query"));
+        User user = userRepository.save(User.initialize("@news-deleted-query"));
         NewsEntity previous = newsJpaRepository.save(event(
                 user.getId(), PUBLISHED_AT.minusSeconds(60)
         ));
@@ -103,7 +103,7 @@ class NewsQueryRepositoryIntegrationTest {
     @Test
     @DisplayName("유형과 이벤트 상태 필터를 실제 조회 조건에 반영한다")
     void appliesTypeAndEventStatusFilters() {
-        User user = userRepository.save(User.initialize("news-filter-query"));
+        User user = userRepository.save(User.initialize("@news-filter-query"));
         NewsEntity notice = newsJpaRepository.save(notice(user.getId(), PUBLISHED_AT));
         NewsEntity ongoing = newsJpaRepository.save(event(user.getId(), PUBLISHED_AT));
         NewsEntity upcoming = newsJpaRepository.save(event(

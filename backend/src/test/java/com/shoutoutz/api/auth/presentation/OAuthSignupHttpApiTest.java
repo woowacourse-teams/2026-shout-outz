@@ -99,7 +99,7 @@ class OAuthSignupHttpApiTest {
 
     private OAuthSignupRequest signupRequest() {
         return new OAuthSignupRequest(
-                "sangjun",
+                "@sangjun",
                 "상준"
         );
     }

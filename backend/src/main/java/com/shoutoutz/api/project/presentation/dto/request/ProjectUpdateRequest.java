@@ -1,5 +1,7 @@
 package com.shoutoutz.api.project.presentation.dto.request;
 
+import static com.shoutoutz.api.user.domain.account.Handle.HANDLE_FORMAT_REGEX;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
@@ -71,7 +73,10 @@ public final class ProjectUpdateRequest {
     private List<@NotNull(message = "techTagIds에 null을 넣을 수 없습니다.") Long> techTagIds;
 
     @NotEmpty(message = "memberHandles는 1개 이상이어야 합니다.")
-    private List<@NotBlank(message = "memberHandles에 빈 값을 넣을 수 없습니다.") String> memberHandles;
+    private List<
+            @NotBlank(message = "memberHandles에 빈 값을 넣을 수 없습니다.")
+            @Pattern(regexp = HANDLE_FORMAT_REGEX, message = "memberHandles 형식이 올바르지 않습니다.")
+            String> memberHandles;
 
     /**
      * Jackson이 JSON 필드 생략과 명시적 null을 구분할 수 있도록 사용하는 기본 생성자.
