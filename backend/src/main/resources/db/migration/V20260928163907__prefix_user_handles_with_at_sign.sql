@@ -5,4 +5,5 @@ ALTER TABLE users
     ALTER COLUMN handle TYPE VARCHAR(31);
 
 UPDATE users
-SET handle = '@' || handle;
+SET handle = '@' || handle
+WHERE handle NOT LIKE '@%';
