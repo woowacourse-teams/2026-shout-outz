@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { IconHeart, IconMessageCircle, IconShare } from '@tabler/icons-react';
+import { IconHeart, IconMessageCircle } from '@tabler/icons-react';
 import type { Feed } from '@/apis/feed';
 import { Button } from '@/components/Button';
 import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { FeedContent } from '@/components/feeds/FeedContent';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
+import { ShareButton } from '@/components/feeds/ShareButton';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { Comments } from '@/components/feed-comments/Comments';
 import { analytics, type FeedSurface } from '@/utils/analytics';
@@ -47,19 +48,10 @@ export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }
           <IconMessageCircle className="size-4" aria-hidden="true" />
         </Button>
         <span className="ml-auto">
-          <Button
-            variant="ghost"
-            size="sm"
+          <ShareButton
+            url={new URL(`/feeds/${feed.feedId}`, window.location.origin).href}
             className="px-2"
-            aria-label="공유"
-            onClick={() =>
-              void navigator.clipboard?.writeText(
-                new URL(`/feeds/${feed.feedId}`, window.location.origin).href,
-              )
-            }
-          >
-            <IconShare className="size-4" aria-hidden="true" />
-          </Button>
+          />
         </span>
       </div>
       {open && (

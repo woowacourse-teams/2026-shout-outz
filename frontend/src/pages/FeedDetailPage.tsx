@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { IconHeart, IconMessageCircle, IconShare } from '@tabler/icons-react';
+import { IconHeart, IconMessageCircle } from '@tabler/icons-react';
 import { feedQuery } from '@/apis/feed';
 import { Button } from '@/components/Button';
 import { Footer } from '@/components/Footer';
@@ -8,6 +8,7 @@ import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { FeedContent } from '@/components/feeds/FeedContent';
 import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
+import { ShareButton } from '@/components/feeds/ShareButton';
 import { PopularFeedList } from '@/components/feeds/PopularFeedList';
 import { Comments } from '@/components/feed-comments/Comments';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -65,15 +66,7 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
         >
           <IconMessageCircle className="size-4" aria-hidden="true" />
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="ml-auto px-2"
-          aria-label="공유"
-          onClick={() => void navigator.clipboard?.writeText(window.location.href)}
-        >
-          <IconShare className="size-4" aria-hidden="true" />
-        </Button>
+        <ShareButton url={window.location.href} className="ml-auto px-2" />
       </div>
       <section id="feed-comments" aria-label="피드 댓글" className="mt-5">
         <Comments feedId={feed.feedId} />
