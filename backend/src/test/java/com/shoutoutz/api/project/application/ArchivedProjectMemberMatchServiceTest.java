@@ -3,8 +3,8 @@ package com.shoutoutz.api.project.application;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +33,6 @@ class ArchivedProjectMemberMatchServiceTest {
         service.matchGithubAccount(0L, "12345678");
         service.matchGithubAccount(7L, " ");
 
-        verify(jdbcTemplate, never()).update(anyString(), org.mockito.ArgumentMatchers.any());
+        verifyNoInteractions(jdbcTemplate);
     }
 }

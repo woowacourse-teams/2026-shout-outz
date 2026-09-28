@@ -35,6 +35,8 @@ import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -74,6 +76,9 @@ class ProjectCommentServiceTest {
     private UserProfileRepository userProfileRepository;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private MediaUrlResolver mediaUrlResolver;
 
     @Mock
@@ -89,7 +94,8 @@ class ProjectCommentServiceTest {
                 projectCommentQueryRepository,
                 userProfileRepository,
                 mediaUrlResolver,
-                projectCommentReactionRepository
+                projectCommentReactionRepository,
+                userRepository
         );
         lenient().when(mediaUrlResolver.resolve(10L))
                 .thenReturn(URI.create("https://cdn.example.com/media/10/display"));
@@ -112,6 +118,7 @@ class ProjectCommentServiceTest {
         assertThat(result.id()).isEqualTo(501L);
         assertThat(result.content()).isEqualTo("좋은 프로젝트네요.");
         assertThat(result.author().userId()).isEqualTo(AUTHOR_ID);
+        assertThat(result.author().handle()).isEqualTo("@author7");
         assertThat(result.author().displayName()).isEqualTo("샤라웃 운영팀");
         assertThat(result.author().avatarUrl())
                 .isEqualTo("https://cdn.example.com/media/10/display");
@@ -702,6 +709,7 @@ class ProjectCommentServiceTest {
                         .avatarImageId(avatarImageId)
                         .build()
         ));
+        when(userRepository.findById(authorId)).thenReturn(Optional.of(User.initialize("@author" + authorId)));
     }
 
     private ProjectComment rootComment() {

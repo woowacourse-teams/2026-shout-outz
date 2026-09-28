@@ -20,6 +20,7 @@ import com.shoutoutz.api.news.domain.NewsRepository;
 import com.shoutoutz.api.news.domain.NewsReactionCounts;
 import com.shoutoutz.api.news.domain.NewsReactionRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
@@ -54,6 +55,7 @@ public class NewsService {
     private final Clock clock;
     private final NewsReactionRepository newsReactionRepository;
     private final UserProfileRepository userProfileRepository;
+    private final UserRepository userRepository;
 
     @Autowired
     public NewsService(
@@ -61,13 +63,15 @@ public class NewsService {
             NewsQueryRepository newsQueryRepository,
             Clock clock,
             NewsReactionRepository newsReactionRepository,
-            UserProfileRepository userProfileRepository
+            UserProfileRepository userProfileRepository,
+            UserRepository userRepository
     ) {
         this.newsRepository = newsRepository;
         this.newsQueryRepository = newsQueryRepository;
         this.clock = clock;
         this.newsReactionRepository = newsReactionRepository;
         this.userProfileRepository = userProfileRepository;
+        this.userRepository = userRepository;
     }
 
     public NewsService(
@@ -76,7 +80,17 @@ public class NewsService {
             Clock clock,
             NewsReactionRepository newsReactionRepository
     ) {
-        this(newsRepository, newsQueryRepository, clock, newsReactionRepository, null);
+        this(newsRepository, newsQueryRepository, clock, newsReactionRepository, null, null);
+    }
+
+    public NewsService(
+            NewsRepository newsRepository,
+            NewsQueryRepository newsQueryRepository,
+            Clock clock,
+            NewsReactionRepository newsReactionRepository,
+            UserProfileRepository userProfileRepository
+    ) {
+        this(newsRepository, newsQueryRepository, clock, newsReactionRepository, userProfileRepository, null);
     }
 
     @Transactional
@@ -170,7 +184,12 @@ public class NewsService {
                 toCta(request.cta())
         );
         News saved = newsRepository.update(updated);
-        return NewsUpdateResponse.from(saved, clock.instant(), findAuthorProfile(saved.getAuthorId()));
+        return NewsUpdateResponse.from(
+                saved,
+                clock.instant(),
+                findAuthorProfile(saved.getAuthorId()),
+                handleValue(saved.getAuthorId())
+        );
     }
 
     @Transactional
@@ -288,6 +307,7 @@ public class NewsService {
         return new NoticeCreateResponse.Author(
                 news.getAuthorId(),
                 news.getAuthorName(),
+                handleValue(news.getAuthorId()),
                 displayName(profile, news.getAuthorName()),
                 userType(profile),
                 trackValue(profile),
@@ -300,6 +320,7 @@ public class NewsService {
         return new EventCreateResponse.Author(
                 news.getAuthorId(),
                 news.getAuthorName(),
+                handleValue(news.getAuthorId()),
                 displayName(profile, news.getAuthorName()),
                 userType(profile),
                 trackValue(profile),
@@ -312,6 +333,7 @@ public class NewsService {
         return new NewsFindResponse.Author(
                 detail.authorId(),
                 detail.authorName(),
+                handleValue(detail.authorId()),
                 displayName(profile, detail.authorName()),
                 userType(profile),
                 trackValue(profile),
@@ -324,6 +346,15 @@ public class NewsService {
             return null;
         }
         return userProfileRepository.findByUserId(authorId).orElse(null);
+    }
+
+    private String handleValue(long userId) {
+        if (userRepository == null) {
+            return null;
+        }
+        return userRepository.findById(userId)
+                .map(user -> user.getHandle().value())
+                .orElse(null);
     }
 
     private String displayName(UserProfile profile, String fallback) {

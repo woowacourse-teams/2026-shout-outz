@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"type\",\"\
-                    message\":\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\"\
-                    :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\"\
+                    ,\"message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1054,9 +1054,9 @@ paths:
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"}]}"
+                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1144,9 +1144,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -1582,12 +1582,12 @@ paths:
                   value: "{\"status\":\"success\",\"data\":{\"id\":107,\"type\":\"\
                     EVENT\",\"title\":\"프로젝트 아카이빙 챌린지\",\"summary\":\"팀 프로젝트를 등록하고\
                     \ 피드백을 받아보세요.\",\"body\":\"프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.\"\
-                    ,\"author\":{\"userId\":1,\"name\":\"샤라웃 운영팀\",\"displayName\"\
-                    :\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"cohort\":null},\"\
-                    publishedAt\":\"2026-09-05T00:00:00Z\",\"eventStatus\":\"ONGOING\"\
-                    ,\"eventStartAt\":\"2026-09-01T00:00:00Z\",\"eventEndAt\":\"2026-09-30T23:59:59Z\"\
-                    ,\"isPinned\":false,\"pinOrder\":null,\"cta\":{\"label\":\"프로젝\
-                    트 등록하기\",\"url\":\"/projects/3001\"}}}"
+                    ,\"author\":{\"userId\":1,\"name\":\"샤라웃 운영팀\",\"handle\":\"@admin\"\
+                    ,\"displayName\":\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"\
+                    cohort\":null},\"publishedAt\":\"2026-09-05T00:00:00Z\",\"eventStatus\"\
+                    :\"ONGOING\",\"eventStartAt\":\"2026-09-01T00:00:00Z\",\"eventEndAt\"\
+                    :\"2026-09-30T23:59:59Z\",\"isPinned\":false,\"pinOrder\":null,\"\
+                    cta\":{\"label\":\"프로젝트 등록하기\",\"url\":\"/projects/3001\"}}}"
         "400":
           description: "400"
           content:
@@ -1598,9 +1598,9 @@ paths:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
-                    eventStartAt은 필수입니다.\"}]}"
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -1732,10 +1732,10 @@ paths:
                   value: "{\"status\":\"success\",\"data\":{\"id\":106,\"type\":\"\
                     NOTICE\",\"title\":\"데모데이 안내\",\"summary\":\"데모데이 일정을 안내합니다.\"\
                     ,\"body\":\"2026년 9월 12일에 데모데이를 진행합니다.\",\"author\":{\"userId\"\
-                    :1,\"name\":\"샤라웃 운영팀\",\"displayName\":\"샤라웃 운영팀\",\"userType\"\
-                    :null,\"track\":null,\"cohort\":null},\"publishedAt\":\"2026-09-05T00:00:00Z\"\
-                    ,\"isPinned\":false,\"pinOrder\":null,\"cta\":{\"label\":\"일정\
-                    \ 확인\",\"url\":\"example.com\"}}}"
+                    :1,\"name\":\"샤라웃 운영팀\",\"handle\":\"@admin\",\"displayName\"\
+                    :\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"cohort\":null},\"\
+                    publishedAt\":\"2026-09-05T00:00:00Z\",\"isPinned\":false,\"pinOrder\"\
+                    :null,\"cta\":{\"label\":\"일정 확인\",\"url\":\"example.com\"}}}"
         "400":
           description: "400"
           content:
@@ -1816,15 +1816,15 @@ paths:
                   value: "{\"status\":\"success\",\"data\":{\"id\":102,\"type\":\"\
                     EVENT\",\"title\":\"프로젝트 아카이빙 챌린지\",\"body\":\"팀 프로젝트를 등록하고 동료\
                     \ 크루들의 피드백을 받아보세요.\",\"author\":{\"userId\":1,\"name\":\"샤라웃 운\
-                    영팀\",\"displayName\":\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"\
-                    cohort\":null},\"publishedAt\":\"2026-08-25T00:00:00Z\",\"eventStatus\"\
-                    :\"ONGOING\",\"eventStartAt\":\"2026-08-20T00:00:00Z\",\"eventEndAt\"\
-                    :\"2026-09-20T14:59:59Z\",\"isPinned\":false,\"pinOrder\":null,\"\
-                    likeCount\":0,\"likedByMe\":false,\"cta\":{\"label\":\"프로젝트 등록\
-                    하기\",\"url\":\"/projects/3001\"},\"previous\":{\"id\":101,\"title\"\
-                    :\"우아한테크코스 6기 최종 프로젝트 데모데이 안내\",\"publishedAt\":\"2026-08-24T00:00:00Z\"\
-                    },\"next\":{\"id\":103,\"title\":\"다음 소식\",\"publishedAt\":\"\
-                    2026-08-26T00:00:00Z\"}}}"
+                    영팀\",\"handle\":\"@admin\",\"displayName\":\"샤라웃 운영팀\",\"userType\"\
+                    :null,\"track\":null,\"cohort\":null},\"publishedAt\":\"2026-08-25T00:00:00Z\"\
+                    ,\"eventStatus\":\"ONGOING\",\"eventStartAt\":\"2026-08-20T00:00:00Z\"\
+                    ,\"eventEndAt\":\"2026-09-20T14:59:59Z\",\"isPinned\":false,\"\
+                    pinOrder\":null,\"likeCount\":0,\"likedByMe\":false,\"cta\":{\"\
+                    label\":\"프로젝트 등록하기\",\"url\":\"/projects/3001\"},\"previous\"\
+                    :{\"id\":101,\"title\":\"우아한테크코스 6기 최종 프로젝트 데모데이 안내\",\"publishedAt\"\
+                    :\"2026-08-24T00:00:00Z\"},\"next\":{\"id\":103,\"title\":\"다음\
+                    \ 소식\",\"publishedAt\":\"2026-08-26T00:00:00Z\"}}}"
         "404":
           description: "404"
           content:
@@ -1876,11 +1876,11 @@ paths:
                 news-update:
                   value: "{\"status\":\"success\",\"data\":{\"id\":106,\"type\":\"\
                     NOTICE\",\"title\":\"수정된 공지\",\"summary\":\"수정된 요약\",\"body\"\
-                    :\"수정된 본문\",\"author\":{\"userId\":1,\"name\":\"샤라웃 운영팀\",\"displayName\"\
-                    :\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"cohort\":null},\"\
-                    publishedAt\":\"2026-09-05T00:00:00Z\",\"eventStatus\":null,\"\
-                    eventStartAt\":null,\"eventEndAt\":null,\"isPinned\":false,\"\
-                    pinOrder\":null,\"cta\":null}}"
+                    :\"수정된 본문\",\"author\":{\"userId\":1,\"name\":\"샤라웃 운영팀\",\"handle\"\
+                    :\"@admin\",\"displayName\":\"샤라웃 운영팀\",\"userType\":null,\"track\"\
+                    :null,\"cohort\":null},\"publishedAt\":\"2026-09-05T00:00:00Z\"\
+                    ,\"eventStatus\":null,\"eventStartAt\":null,\"eventEndAt\":null,\"\
+                    isPinned\":false,\"pinOrder\":null,\"cta\":null}}"
     delete:
       tags:
       - News
@@ -2776,21 +2776,22 @@ paths:
               examples:
                 feed-comment-find-all:
                   value: "{\"status\":\"success\",\"data\":[{\"id\":501,\"content\"\
-                    :\"좋은 피드네요.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃 운\
-                    영팀\",\"userType\":null,\"track\":null,\"cohort\":null,\"avatarImageId\"\
-                    :10,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    :\"좋은 피드네요.\",\"author\":{\"userId\":7,\"handle\":\"@author7\"\
+                    ,\"displayName\":\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"\
+                    cohort\":null,\"avatarImageId\":10,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:00:00Z\",\"editable\":false,\"edited\"\
                     :false,\"deleted\":false,\"agreeCount\":0,\"agreedByMe\":false},{\"\
                     id\":502,\"content\":\"저도 그렇게 생각합니다.\",\"author\":{\"userId\"\
-                    :8,\"displayName\":\"재키\",\"userType\":null,\"track\":null,\"\
-                    cohort\":null,\"avatarImageId\":11,\"avatarUrl\":\"https://cdn.example.com/media/11/display\"\
-                    },\"parentId\":501,\"createdAt\":\"2026-09-14T00:05:00Z\",\"updatedAt\"\
-                    :\"2026-09-14T00:05:00Z\",\"editable\":false,\"edited\":false,\"\
-                    deleted\":false,\"agreeCount\":0,\"agreedByMe\":false},{\"id\"\
-                    :503,\"content\":null,\"author\":{\"userId\":9,\"displayName\"\
-                    :\"이전 작성자\",\"userType\":null,\"track\":null,\"cohort\":null,\"\
-                    avatarImageId\":12,\"avatarUrl\":\"https://cdn.example.com/media/12/display\"\
+                    :8,\"handle\":\"@author8\",\"displayName\":\"재키\",\"userType\"\
+                    :null,\"track\":null,\"cohort\":null,\"avatarImageId\":11,\"avatarUrl\"\
+                    :\"https://cdn.example.com/media/11/display\"},\"parentId\":501,\"\
+                    createdAt\":\"2026-09-14T00:05:00Z\",\"updatedAt\":\"2026-09-14T00:05:00Z\"\
+                    ,\"editable\":false,\"edited\":false,\"deleted\":false,\"agreeCount\"\
+                    :0,\"agreedByMe\":false},{\"id\":503,\"content\":null,\"author\"\
+                    :{\"userId\":9,\"handle\":\"@author9\",\"displayName\":\"이전 작성\
+                    자\",\"userType\":null,\"track\":null,\"cohort\":null,\"avatarImageId\"\
+                    :12,\"avatarUrl\":\"https://cdn.example.com/media/12/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:10:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:10:00Z\",\"editable\":false,\"edited\"\
                     :false,\"deleted\":true,\"agreeCount\":0,\"agreedByMe\":false}],\"\
@@ -2837,11 +2838,11 @@ paths:
               examples:
                 feed-comment-create:
                   value: "{\"status\":\"success\",\"data\":{\"id\":501,\"content\"\
-                    :\"좋은 피드네요.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃 운\
-                    영팀\",\"userType\":null,\"track\":null,\"cohort\":null,\"avatarUrl\"\
-                    :\"https://cdn.example.com/media/10/display\"},\"parentId\":null,\"\
-                    createdAt\":\"2026-09-14T00:00:00Z\",\"updatedAt\":\"2026-09-14T00:00:00Z\"\
-                    ,\"editable\":true}}"
+                    :\"좋은 피드네요.\",\"author\":{\"userId\":7,\"handle\":\"@author7\"\
+                    ,\"displayName\":\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"\
+                    cohort\":null,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
+                    updatedAt\":\"2026-09-14T00:00:00Z\",\"editable\":true}}"
   /api/v1/projects/{projectId}/comments:
     get:
       tags:
@@ -2885,20 +2886,20 @@ paths:
               examples:
                 project-comment-find-all:
                   value: "{\"status\":\"success\",\"data\":[{\"id\":501,\"content\"\
-                    :\"좋은 프로젝트네요.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃\
-                    \ 운영팀\",\"userType\":null,\"track\":null,\"cohort\":null,\"avatarImageId\"\
-                    :10,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    :\"좋은 프로젝트네요.\",\"author\":{\"userId\":7,\"handle\":\"@author7\"\
+                    ,\"displayName\":\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"\
+                    cohort\":null,\"avatarImageId\":10,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:00:00Z\",\"editable\":false,\"edited\"\
                     :false,\"deleted\":false,\"agreeCount\":0,\"agreedByMe\":false},{\"\
                     id\":502,\"content\":\"저도 그렇게 생각합니다.\",\"author\":{\"userId\"\
-                    :8,\"displayName\":\"재키\",\"userType\":null,\"track\":null,\"\
-                    cohort\":null,\"avatarImageId\":11,\"avatarUrl\":\"https://cdn.example.com/media/11/display\"\
-                    },\"parentId\":501,\"createdAt\":\"2026-09-14T00:05:00Z\",\"updatedAt\"\
-                    :\"2026-09-14T00:05:00Z\",\"editable\":false,\"edited\":false,\"\
-                    deleted\":false,\"agreeCount\":0,\"agreedByMe\":false}],\"meta\"\
-                    :{\"nextCursor\":\"next-cursor\",\"hasNext\":true,\"totalCount\"\
-                    :2}}"
+                    :8,\"handle\":\"@author8\",\"displayName\":\"재키\",\"userType\"\
+                    :null,\"track\":null,\"cohort\":null,\"avatarImageId\":11,\"avatarUrl\"\
+                    :\"https://cdn.example.com/media/11/display\"},\"parentId\":501,\"\
+                    createdAt\":\"2026-09-14T00:05:00Z\",\"updatedAt\":\"2026-09-14T00:05:00Z\"\
+                    ,\"editable\":false,\"edited\":false,\"deleted\":false,\"agreeCount\"\
+                    :0,\"agreedByMe\":false}],\"meta\":{\"nextCursor\":\"next-cursor\"\
+                    ,\"hasNext\":true,\"totalCount\":2}}"
     post:
       tags:
       - Project Comment
@@ -2958,11 +2959,11 @@ paths:
               examples:
                 project-comment-create:
                   value: "{\"status\":\"success\",\"data\":{\"id\":501,\"content\"\
-                    :\"좋은 프로젝트네요.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃\
-                    \ 운영팀\",\"userType\":null,\"track\":null,\"cohort\":null,\"avatarUrl\"\
-                    :\"https://cdn.example.com/media/10/display\"},\"parentId\":null,\"\
-                    createdAt\":\"2026-09-14T00:00:00Z\",\"updatedAt\":\"2026-09-14T00:00:00Z\"\
-                    ,\"editable\":true}}"
+                    :\"좋은 프로젝트네요.\",\"author\":{\"userId\":7,\"handle\":\"@author7\"\
+                    ,\"displayName\":\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"\
+                    cohort\":null,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
+                    updatedAt\":\"2026-09-14T00:00:00Z\",\"editable\":true}}"
         "400":
           description: "400"
           content:
@@ -3297,9 +3298,9 @@ paths:
               examples:
                 user-verification-request-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"nickname\"\
-                    ,\"message\":\"nickname은 필수입니다.\"},{\"field\":\"cohort\",\"message\"\
-                    :\"cohort는 양의 정수여야 합니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
+                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"}]}"
         "201":
           description: "201"
           content:
@@ -3868,11 +3869,12 @@ paths:
               examples:
                 feed-comment-update:
                   value: "{\"status\":\"success\",\"data\":{\"id\":501,\"content\"\
-                    :\"수정된 댓글입니다.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃\
-                    \ 운영팀\",\"userType\":null,\"track\":null,\"cohort\":null,\"avatarUrl\"\
-                    :\"https://cdn.example.com/media/10/display\"},\"parentId\":null,\"\
-                    createdAt\":\"2026-09-14T00:00:00Z\",\"updatedAt\":\"2026-09-14T00:30:00Z\"\
-                    ,\"editable\":true,\"edited\":true}}"
+                    :\"수정된 댓글입니다.\",\"author\":{\"userId\":7,\"handle\":\"@author7\"\
+                    ,\"displayName\":\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"\
+                    cohort\":null,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
+                    updatedAt\":\"2026-09-14T00:30:00Z\",\"editable\":true,\"edited\"\
+                    :true}}"
   /api/v1/feeds/{feedId}/reactions/{type}:
     put:
       tags:
@@ -4164,11 +4166,12 @@ paths:
               examples:
                 project-comment-update:
                   value: "{\"status\":\"success\",\"data\":{\"id\":501,\"content\"\
-                    :\"수정된 댓글입니다.\",\"author\":{\"userId\":7,\"displayName\":\"샤라웃\
-                    \ 운영팀\",\"userType\":null,\"track\":null,\"cohort\":null,\"avatarUrl\"\
-                    :\"https://cdn.example.com/media/10/display\"},\"parentId\":null,\"\
-                    createdAt\":\"2026-09-14T00:00:00Z\",\"updatedAt\":\"2026-09-14T00:30:00Z\"\
-                    ,\"editable\":true,\"edited\":true}}"
+                    :\"수정된 댓글입니다.\",\"author\":{\"userId\":7,\"handle\":\"@author7\"\
+                    ,\"displayName\":\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"\
+                    cohort\":null,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
+                    },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
+                    updatedAt\":\"2026-09-14T00:30:00Z\",\"editable\":true,\"edited\"\
+                    :true}}"
   /api/v1/projects/{projectId}/reactions/{type}:
     put:
       tags:
@@ -4739,115 +4742,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedCommentFindAllSuccessResponse:
-      title: FeedCommentFindAllSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 피드 댓글 목록
-          items:
-            required:
-            - agreeCount
-            - agreedByMe
-            - author
-            - createdAt
-            - deleted
-            - editable
-            - edited
-            - id
-            - updatedAt
-            type: object
-            properties:
-              createdAt:
-                type: string
-                description: 생성 시각 (UTC ISO-8601)
-              deleted:
-                type: boolean
-                description: 댓글이 삭제되었는지 여부
-              agreedByMe:
-                type: boolean
-                description: 현재 사용자의 공감 여부. 비로그인이면 false
-              edited:
-                type: boolean
-                description: 댓글 내용이 수정된 적이 있는지 여부
-              agreeCount:
-                type: number
-                description: 댓글 공감 수
-              editable:
-                type: boolean
-                description: 현재 사용자가 수정할 수 있는지 여부
-              author:
-                required:
-                - displayName
-                - userId
-                type: object
-                properties:
-                  avatarImageId:
-                    type: number
-                    description: 작성자 프로필 이미지 미디어 ID
-                    nullable: true
-                  avatarUrl:
-                    type: string
-                    description: 작성자 프로필 이미지 공개 URL
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 작성자 표시 이름
-                  cohort:
-                    type: number
-                    description: 작성자 기수
-                    nullable: true
-                  userType:
-                    type: string
-                    description: 작성자 유형
-                    nullable: true
-                  track:
-                    type: string
-                    description: 작성자 트랙
-                    nullable: true
-                  userId:
-                    type: number
-                    description: 작성자 ID
-                description: 댓글 작성자
-              id:
-                type: number
-                description: 댓글 ID
-              parentId:
-                type: number
-                description: 부모 루트 댓글 ID
-                nullable: true
-              content:
-                type: string
-                description: 댓글 내용. 삭제된 댓글은 null
-                nullable: true
-              updatedAt:
-                type: string
-                description: 수정 시각 (UTC ISO-8601)
-        meta:
-          required:
-          - hasNext
-          - totalCount
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 cursor
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-            totalCount:
-              type: number
-              description: 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수
-          description: 페이지네이션 정보
-        status:
-          type: string
-          description: 응답 상태
     ProjectCommentDeleteSuccessResponse:
       title: ProjectCommentDeleteSuccessResponse
       required:
@@ -4868,6 +4762,79 @@ components:
               type: number
               description: 삭제된 댓글 ID
           description: 삭제된 댓글
+        status:
+          type: string
+          description: 응답 상태
+    FeedCommentCreateSuccessResponse:
+      title: FeedCommentCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - content
+          - createdAt
+          - editable
+          - id
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 생성 시각 (UTC ISO-8601)
+            editable:
+              type: boolean
+              description: 현재 사용자가 수정할 수 있는지 여부
+            author:
+              required:
+              - displayName
+              - userId
+              type: object
+              properties:
+                avatarUrl:
+                  type: string
+                  description: 작성자 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 handle
+                  nullable: true
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  nullable: true
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 댓글 작성자
+            id:
+              type: number
+              description: 댓글 ID
+            parentId:
+              type: number
+              description: 부모 댓글 ID
+              nullable: true
+            content:
+              type: string
+              description: 저장된 댓글 내용
+            updatedAt:
+              type: string
+              description: 수정 시각 (UTC ISO-8601)
+          description: 생성된 댓글
         status:
           type: string
           description: 응답 상태
@@ -5060,79 +5027,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedCommentUpdateSuccessResponse:
-      title: FeedCommentUpdateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - content
-          - createdAt
-          - editable
-          - edited
-          - id
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: 생성 시각 (UTC ISO-8601)
-            edited:
-              type: boolean
-              description: 댓글 내용이 수정된 적이 있는지 여부
-            editable:
-              type: boolean
-              description: 현재 사용자가 수정할 수 있는지 여부
-            author:
-              required:
-              - displayName
-              - userId
-              type: object
-              properties:
-                avatarUrl:
-                  type: string
-                  description: 작성자 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                cohort:
-                  type: number
-                  description: 작성자 기수
-                  nullable: true
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  nullable: true
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 댓글 작성자
-            id:
-              type: number
-              description: 댓글 ID
-            parentId:
-              type: number
-              description: 부모 댓글 ID
-              nullable: true
-            content:
-              type: string
-              description: 저장된 댓글 내용
-            updatedAt:
-              type: string
-              description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
-          description: 수정된 댓글
-        status:
-          type: string
-          description: 응답 상태
     FeedSaveSuccessResponse:
       title: FeedSaveSuccessResponse
       required:
@@ -5250,6 +5144,119 @@ components:
               type: string
               description: ISO-8601 수정 시각
           description: 피드
+        status:
+          type: string
+          description: 응답 상태
+    EventCreateSuccessResponse:
+      title: EventCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - eventEndAt
+          - eventStartAt
+          - eventStatus
+          - id
+          - isPinned
+          - publishedAt
+          - summary
+          - title
+          - type
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 이벤트 요약
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - displayName
+              - name
+              - userId
+              type: object
+              properties:
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                name:
+                  type: string
+                  description: 작성자 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 handle
+                  nullable: true
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  nullable: true
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 이벤트 작성자
+            pinOrder:
+              type: number
+              description: 고정 순서
+              nullable: true
+            body:
+              type: string
+              description: 이벤트 본문
+            title:
+              type: string
+              description: 이벤트 제목
+            type:
+              type: string
+              description: 소식 유형. 이벤트 등록이므로 항상 EVENT다.
+              enum:
+              - NOTICE
+              - EVENT
+            eventEndAt:
+              type: string
+              description: 이벤트 종료 시각
+            cta:
+              required:
+              - label
+              - url
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                url:
+                  type: string
+                  description: CTA URL
+              description: 이벤트 CTA
+            eventStartAt:
+              type: string
+              description: 이벤트 시작 시각
+            eventStatus:
+              type: string
+              description: 이벤트 상태
+              enum:
+              - UPCOMING
+              - ONGOING
+              - ENDED
+            id:
+              type: number
+              description: 이벤트 ID
+          description: 생성된 이벤트
         status:
           type: string
           description: 응답 상태
@@ -5408,183 +5415,6 @@ components:
         mediaId:
           type: number
           description: READY HOME_BANNER 미디어 ID
-    ProjectCommentUpdateSuccessResponse:
-      title: ProjectCommentUpdateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - content
-          - createdAt
-          - editable
-          - edited
-          - id
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: 생성 시각 (UTC ISO-8601)
-            edited:
-              type: boolean
-              description: 댓글 내용이 수정된 적이 있는지 여부
-            editable:
-              type: boolean
-              description: 현재 사용자가 수정할 수 있는지 여부
-            author:
-              required:
-              - displayName
-              - userId
-              type: object
-              properties:
-                avatarUrl:
-                  type: string
-                  description: 작성자 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                cohort:
-                  type: number
-                  description: 작성자 기수
-                  nullable: true
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  nullable: true
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 댓글 작성자
-            id:
-              type: number
-              description: 댓글 ID
-            parentId:
-              type: number
-              description: 부모 댓글 ID
-              nullable: true
-            content:
-              type: string
-              description: 저장된 댓글 내용
-            updatedAt:
-              type: string
-              description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
-          description: 수정된 댓글
-        status:
-          type: string
-          description: 응답 상태
-    NewsUpdateSuccessResponse:
-      title: NewsUpdateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - body
-          - id
-          - isPinned
-          - publishedAt
-          - summary
-          - title
-          - type
-          type: object
-          properties:
-            summary:
-              type: string
-              description: 소식 요약
-            isPinned:
-              type: boolean
-              description: 고정 여부
-            publishedAt:
-              type: string
-              description: 게시 시각
-            author:
-              required:
-              - displayName
-              - name
-              - userId
-              type: object
-              properties:
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                name:
-                  type: string
-                  description: 작성자 이름
-                cohort:
-                  type: number
-                  description: 작성자 기수
-                  nullable: true
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  nullable: true
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 작성자
-            pinOrder:
-              type: number
-              description: 고정 순서
-              nullable: true
-            body:
-              type: string
-              description: 소식 본문
-            title:
-              type: string
-              description: 소식 제목
-            type:
-              type: string
-              description: 소식 유형
-              enum:
-              - NOTICE
-              - EVENT
-            eventEndAt:
-              type: string
-              description: 이벤트 종료 시각
-              nullable: true
-            cta:
-              type: object
-              properties:
-                label:
-                  type: string
-                  description: CTA 라벨
-                  nullable: true
-                url:
-                  type: string
-                  description: CTA URL
-                  nullable: true
-              description: CTA
-            eventStartAt:
-              type: string
-              description: 이벤트 시작 시각
-              nullable: true
-            eventStatus:
-              type: string
-              description: 이벤트 상태. 공지는 null
-              nullable: true
-            id:
-              type: number
-              description: 소식 ID
-          description: 수정된 소식
-        status:
-          type: string
-          description: 응답 상태
     ProjectCommentUpdateRequest:
       title: ProjectCommentUpdateRequest
       required:
@@ -5594,222 +5424,6 @@ components:
         content:
           type: string
           description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
-    FeedCommentCreateSuccessResponse:
-      title: FeedCommentCreateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - content
-          - createdAt
-          - editable
-          - id
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: 생성 시각 (UTC ISO-8601)
-            editable:
-              type: boolean
-              description: 현재 사용자가 수정할 수 있는지 여부
-            author:
-              required:
-              - displayName
-              - userId
-              type: object
-              properties:
-                avatarUrl:
-                  type: string
-                  description: 작성자 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                cohort:
-                  type: number
-                  description: 작성자 기수
-                  nullable: true
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  nullable: true
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 댓글 작성자
-            id:
-              type: number
-              description: 댓글 ID
-            parentId:
-              type: number
-              description: 부모 댓글 ID
-              nullable: true
-            content:
-              type: string
-              description: 저장된 댓글 내용
-            updatedAt:
-              type: string
-              description: 수정 시각 (UTC ISO-8601)
-          description: 생성된 댓글
-        status:
-          type: string
-          description: 응답 상태
-    NewsFindDetailSuccessResponse:
-      title: NewsFindDetailSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - body
-          - id
-          - isPinned
-          - likeCount
-          - likedByMe
-          - publishedAt
-          - title
-          - type
-          type: object
-          properties:
-            next:
-              required:
-              - id
-              - publishedAt
-              - title
-              type: object
-              properties:
-                publishedAt:
-                  type: string
-                  description: 다음 소식 게시 시각
-                id:
-                  type: number
-                  description: 다음 소식 ID
-                title:
-                  type: string
-                  description: 다음 소식 제목
-              description: 다음 소식. 없으면 null
-            previous:
-              required:
-              - id
-              - publishedAt
-              - title
-              type: object
-              properties:
-                publishedAt:
-                  type: string
-                  description: 이전 소식 게시 시각
-                id:
-                  type: number
-                  description: 이전 소식 ID
-                title:
-                  type: string
-                  description: 이전 소식 제목
-              description: 이전 소식. 없으면 null
-            isPinned:
-              type: boolean
-              description: 고정 여부
-            publishedAt:
-              type: string
-              description: 게시 시각
-            author:
-              required:
-              - displayName
-              - name
-              - userId
-              type: object
-              properties:
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                name:
-                  type: string
-                  description: 작성자 이름
-                cohort:
-                  type: number
-                  description: 작성자 기수
-                  nullable: true
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  nullable: true
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 소식 작성자
-            likeCount:
-              type: number
-              description: 좋아요 수
-            pinOrder:
-              type: number
-              description: 고정 순서. 고정되지 않은 경우 null
-              nullable: true
-            body:
-              type: string
-              description: 소식 본문
-            title:
-              type: string
-              description: 소식 제목
-            type:
-              type: string
-              description: 소식 유형
-              enum:
-              - NOTICE
-              - EVENT
-            eventEndAt:
-              type: string
-              description: 이벤트 종료 시각. 공지인 경우 null
-              nullable: true
-            cta:
-              required:
-              - label
-              - url
-              type: object
-              properties:
-                label:
-                  type: string
-                  description: CTA 라벨
-                url:
-                  type: string
-                  description: CTA URL
-              description: 소식 CTA
-            likedByMe:
-              type: boolean
-              description: 현재 사용자의 좋아요 여부
-            eventStartAt:
-              type: string
-              description: 이벤트 시작 시각. 공지인 경우 null
-              nullable: true
-            eventStatus:
-              type: string
-              description: 이벤트 상태. 공지인 경우 null
-              nullable: true
-              enum:
-              - UPCOMING
-              - ONGOING
-              - ENDED
-            id:
-              type: number
-              description: 소식 ID
-          description: 소식 상세
-        status:
-          type: string
-          description: 응답 상태
     FeedFindAllSuccessResponse:
       title: FeedFindAllSuccessResponse
       required:
@@ -5975,6 +5589,114 @@ components:
               type: number
               description: 커서와 size를 제외한 조회 조건을 만족하는 전체 피드 수
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    NewsUpdateSuccessResponse:
+      title: NewsUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - id
+          - isPinned
+          - publishedAt
+          - summary
+          - title
+          - type
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 소식 요약
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - displayName
+              - name
+              - userId
+              type: object
+              properties:
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                name:
+                  type: string
+                  description: 작성자 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 handle
+                  nullable: true
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  nullable: true
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 작성자
+            pinOrder:
+              type: number
+              description: 고정 순서
+              nullable: true
+            body:
+              type: string
+              description: 소식 본문
+            title:
+              type: string
+              description: 소식 제목
+            type:
+              type: string
+              description: 소식 유형
+              enum:
+              - NOTICE
+              - EVENT
+            eventEndAt:
+              type: string
+              description: 이벤트 종료 시각
+              nullable: true
+            cta:
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                  nullable: true
+                url:
+                  type: string
+                  description: CTA URL
+                  nullable: true
+              description: CTA
+            eventStartAt:
+              type: string
+              description: 이벤트 시작 시각
+              nullable: true
+            eventStatus:
+              type: string
+              description: 이벤트 상태. 공지는 null
+              nullable: true
+            id:
+              type: number
+              description: 소식 ID
+          description: 수정된 소식
         status:
           type: string
           description: 응답 상태
@@ -6486,6 +6208,103 @@ components:
         status:
           type: string
           description: 응답 상태
+    NoticeCreateSuccessResponse:
+      title: NoticeCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - id
+          - isPinned
+          - publishedAt
+          - summary
+          - title
+          - type
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 공지 요약
+            cta:
+              required:
+              - label
+              - url
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                url:
+                  type: string
+                  description: CTA URL
+              description: 공지 CTA
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - displayName
+              - name
+              - userId
+              type: object
+              properties:
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                name:
+                  type: string
+                  description: 작성자 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 handle
+                  nullable: true
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  nullable: true
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 공지 작성자
+            id:
+              type: number
+              description: 공지 ID
+            pinOrder:
+              type: number
+              description: 고정 순서
+              nullable: true
+            body:
+              type: string
+              description: 공지 본문
+            title:
+              type: string
+              description: 공지 제목
+            type:
+              type: string
+              description: 소식 유형. 공지 등록이므로 항상 NOTICE다.
+              enum:
+              - NOTICE
+              - EVENT
+          description: 생성된 공지
+        status:
+          type: string
+          description: 응답 상태
     UserVerificationRequestCreateSuccessResponse:
       title: UserVerificationRequestCreateSuccessResponse
       required:
@@ -6569,6 +6388,83 @@ components:
                     type: number
                     description: 기술 스택 ID
           description: 기술 스택 목록
+        status:
+          type: string
+          description: 응답 상태
+    FeedCommentUpdateSuccessResponse:
+      title: FeedCommentUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - content
+          - createdAt
+          - editable
+          - edited
+          - id
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 생성 시각 (UTC ISO-8601)
+            edited:
+              type: boolean
+              description: 댓글 내용이 수정된 적이 있는지 여부
+            editable:
+              type: boolean
+              description: 현재 사용자가 수정할 수 있는지 여부
+            author:
+              required:
+              - displayName
+              - userId
+              type: object
+              properties:
+                avatarUrl:
+                  type: string
+                  description: 작성자 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 handle
+                  nullable: true
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  nullable: true
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 댓글 작성자
+            id:
+              type: number
+              description: 댓글 ID
+            parentId:
+              type: number
+              description: 부모 댓글 ID
+              nullable: true
+            content:
+              type: string
+              description: 저장된 댓글 내용
+            updatedAt:
+              type: string
+              description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
+          description: 수정된 댓글
         status:
           type: string
           description: 응답 상태
@@ -6658,224 +6554,6 @@ components:
               type: number
               description: 커서와 size를 제외한 상태 조건을 만족하는 전체 인증 신청 수
           description: 페이지네이션 정보
-        status:
-          type: string
-          description: 응답 상태
-    ProjectCommentFindAllSuccessResponse:
-      title: ProjectCommentFindAllSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 프로젝트 댓글 목록
-          items:
-            required:
-            - agreeCount
-            - agreedByMe
-            - author
-            - createdAt
-            - deleted
-            - editable
-            - edited
-            - id
-            - updatedAt
-            type: object
-            properties:
-              createdAt:
-                type: string
-                description: 생성 시각 (UTC ISO-8601)
-              deleted:
-                type: boolean
-                description: 댓글이 삭제되었는지 여부
-              agreedByMe:
-                type: boolean
-                description: 현재 사용자의 공감 여부. 비로그인이면 false
-              edited:
-                type: boolean
-                description: 댓글 내용이 수정된 적이 있는지 여부
-              agreeCount:
-                type: number
-                description: 댓글 공감 수
-              editable:
-                type: boolean
-                description: 현재 사용자가 수정할 수 있는지 여부
-              author:
-                required:
-                - displayName
-                - userId
-                type: object
-                properties:
-                  avatarImageId:
-                    type: number
-                    description: 작성자 프로필 이미지 미디어 ID
-                    nullable: true
-                  avatarUrl:
-                    type: string
-                    description: 작성자 프로필 이미지 공개 URL
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 작성자 표시 이름
-                  cohort:
-                    type: number
-                    description: 작성자 기수
-                    nullable: true
-                  userType:
-                    type: string
-                    description: 작성자 유형
-                    nullable: true
-                  track:
-                    type: string
-                    description: 작성자 트랙
-                    nullable: true
-                  userId:
-                    type: number
-                    description: 작성자 ID
-                description: 댓글 작성자
-              id:
-                type: number
-                description: 댓글 ID
-              parentId:
-                type: number
-                description: 부모 루트 댓글 ID
-                nullable: true
-              content:
-                type: string
-                description: 댓글 내용. 삭제된 댓글은 null
-                nullable: true
-              updatedAt:
-                type: string
-                description: 수정 시각 (UTC ISO-8601)
-        meta:
-          required:
-          - hasNext
-          - totalCount
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 cursor
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-            totalCount:
-              type: number
-              description: 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수
-          description: 페이지네이션 정보
-        status:
-          type: string
-          description: 응답 상태
-    EventCreateSuccessResponse:
-      title: EventCreateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - body
-          - eventEndAt
-          - eventStartAt
-          - eventStatus
-          - id
-          - isPinned
-          - publishedAt
-          - summary
-          - title
-          - type
-          type: object
-          properties:
-            summary:
-              type: string
-              description: 이벤트 요약
-            isPinned:
-              type: boolean
-              description: 고정 여부
-            publishedAt:
-              type: string
-              description: 게시 시각
-            author:
-              required:
-              - displayName
-              - name
-              - userId
-              type: object
-              properties:
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                name:
-                  type: string
-                  description: 작성자 이름
-                cohort:
-                  type: number
-                  description: 작성자 기수
-                  nullable: true
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  nullable: true
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 이벤트 작성자
-            pinOrder:
-              type: number
-              description: 고정 순서
-              nullable: true
-            body:
-              type: string
-              description: 이벤트 본문
-            title:
-              type: string
-              description: 이벤트 제목
-            type:
-              type: string
-              description: 소식 유형. 이벤트 등록이므로 항상 EVENT다.
-              enum:
-              - NOTICE
-              - EVENT
-            eventEndAt:
-              type: string
-              description: 이벤트 종료 시각
-            cta:
-              required:
-              - label
-              - url
-              type: object
-              properties:
-                label:
-                  type: string
-                  description: CTA 라벨
-                url:
-                  type: string
-                  description: CTA URL
-              description: 이벤트 CTA
-            eventStartAt:
-              type: string
-              description: 이벤트 시작 시각
-            eventStatus:
-              type: string
-              description: 이벤트 상태
-              enum:
-              - UPCOMING
-              - ONGOING
-              - ENDED
-            id:
-              type: number
-              description: 이벤트 ID
-          description: 생성된 이벤트
         status:
           type: string
           description: 응답 상태
@@ -7071,6 +6749,119 @@ components:
               type: string
               description: 반응 타입(LIKE 또는 BOOKMARK)
           description: 피드 반응 변경 결과
+        status:
+          type: string
+          description: 응답 상태
+    ProjectCommentFindAllSuccessResponse:
+      title: ProjectCommentFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 프로젝트 댓글 목록
+          items:
+            required:
+            - agreeCount
+            - agreedByMe
+            - author
+            - createdAt
+            - deleted
+            - editable
+            - edited
+            - id
+            - updatedAt
+            type: object
+            properties:
+              createdAt:
+                type: string
+                description: 생성 시각 (UTC ISO-8601)
+              deleted:
+                type: boolean
+                description: 댓글이 삭제되었는지 여부
+              agreedByMe:
+                type: boolean
+                description: 현재 사용자의 공감 여부. 비로그인이면 false
+              edited:
+                type: boolean
+                description: 댓글 내용이 수정된 적이 있는지 여부
+              agreeCount:
+                type: number
+                description: 댓글 공감 수
+              editable:
+                type: boolean
+                description: 현재 사용자가 수정할 수 있는지 여부
+              author:
+                required:
+                - displayName
+                - userId
+                type: object
+                properties:
+                  avatarImageId:
+                    type: number
+                    description: 작성자 프로필 이미지 미디어 ID
+                    nullable: true
+                  avatarUrl:
+                    type: string
+                    description: 작성자 프로필 이미지 공개 URL
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 작성자 표시 이름
+                  cohort:
+                    type: number
+                    description: 작성자 기수
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 작성자 handle
+                    nullable: true
+                  userType:
+                    type: string
+                    description: 작성자 유형
+                    nullable: true
+                  track:
+                    type: string
+                    description: 작성자 트랙
+                    nullable: true
+                  userId:
+                    type: number
+                    description: 작성자 ID
+                description: 댓글 작성자
+              id:
+                type: number
+                description: 댓글 ID
+              parentId:
+                type: number
+                description: 부모 루트 댓글 ID
+                nullable: true
+              content:
+                type: string
+                description: 댓글 내용. 삭제된 댓글은 null
+                nullable: true
+              updatedAt:
+                type: string
+                description: 수정 시각 (UTC ISO-8601)
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 cursor
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수
+          description: 페이지네이션 정보
         status:
           type: string
           description: 응답 상태
@@ -7976,88 +7767,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    ProjectCommentCreateSuccessResponse:
-      title: ProjectCommentCreateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - content
-          - createdAt
-          - editable
-          - id
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: 생성 시각 (UTC ISO-8601)
-            editable:
-              type: boolean
-              description: 현재 사용자가 수정할 수 있는지 여부
-            author:
-              required:
-              - displayName
-              - userId
-              type: object
-              properties:
-                avatarUrl:
-                  type: string
-                  description: 작성자 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                cohort:
-                  type: number
-                  description: 작성자 기수
-                  nullable: true
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  nullable: true
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 댓글 작성자
-            id:
-              type: number
-              description: 댓글 ID
-            parentId:
-              type: number
-              description: 부모 댓글 ID
-              nullable: true
-            content:
-              type: string
-              description: 저장된 댓글 내용
-            updatedAt:
-              type: string
-              description: 수정 시각 (UTC ISO-8601)
-          description: 생성된 댓글
-        status:
-          type: string
-          description: 응답 상태
-    OAuthSignupRequest:
-      title: OAuthSignupRequest
-      required:
-      - displayName
-      - handle
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 프로필 표시 이름
-        handle:
-          type: string
-          description: "@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"
     ProjectCommentCreateRequest:
       title: ProjectCommentCreateRequest
       required:
@@ -8071,99 +7780,19 @@ components:
         content:
           type: string
           description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
-    NoticeCreateSuccessResponse:
-      title: NoticeCreateSuccessResponse
+    OAuthSignupRequest:
+      title: OAuthSignupRequest
       required:
-      - data
-      - status
+      - displayName
+      - handle
       type: object
       properties:
-        data:
-          required:
-          - author
-          - body
-          - id
-          - isPinned
-          - publishedAt
-          - summary
-          - title
-          - type
-          type: object
-          properties:
-            summary:
-              type: string
-              description: 공지 요약
-            cta:
-              required:
-              - label
-              - url
-              type: object
-              properties:
-                label:
-                  type: string
-                  description: CTA 라벨
-                url:
-                  type: string
-                  description: CTA URL
-              description: 공지 CTA
-            isPinned:
-              type: boolean
-              description: 고정 여부
-            publishedAt:
-              type: string
-              description: 게시 시각
-            author:
-              required:
-              - displayName
-              - name
-              - userId
-              type: object
-              properties:
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                name:
-                  type: string
-                  description: 작성자 이름
-                cohort:
-                  type: number
-                  description: 작성자 기수
-                  nullable: true
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  nullable: true
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 공지 작성자
-            id:
-              type: number
-              description: 공지 ID
-            pinOrder:
-              type: number
-              description: 고정 순서
-              nullable: true
-            body:
-              type: string
-              description: 공지 본문
-            title:
-              type: string
-              description: 공지 제목
-            type:
-              type: string
-              description: 소식 유형. 공지 등록이므로 항상 NOTICE다.
-              enum:
-              - NOTICE
-              - EVENT
-          description: 생성된 공지
-        status:
+        displayName:
           type: string
-          description: 응답 상태
+          description: 프로필 표시 이름
+        handle:
+          type: string
+          description: "@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"
     ProjectRestoreSuccessResponse:
       title: ProjectRestoreSuccessResponse
       required:
@@ -8316,6 +7945,119 @@ components:
               type: string
               description: ISO-8601 수정 시각
           description: 피드
+        status:
+          type: string
+          description: 응답 상태
+    FeedCommentFindAllSuccessResponse:
+      title: FeedCommentFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 피드 댓글 목록
+          items:
+            required:
+            - agreeCount
+            - agreedByMe
+            - author
+            - createdAt
+            - deleted
+            - editable
+            - edited
+            - id
+            - updatedAt
+            type: object
+            properties:
+              createdAt:
+                type: string
+                description: 생성 시각 (UTC ISO-8601)
+              deleted:
+                type: boolean
+                description: 댓글이 삭제되었는지 여부
+              agreedByMe:
+                type: boolean
+                description: 현재 사용자의 공감 여부. 비로그인이면 false
+              edited:
+                type: boolean
+                description: 댓글 내용이 수정된 적이 있는지 여부
+              agreeCount:
+                type: number
+                description: 댓글 공감 수
+              editable:
+                type: boolean
+                description: 현재 사용자가 수정할 수 있는지 여부
+              author:
+                required:
+                - displayName
+                - userId
+                type: object
+                properties:
+                  avatarImageId:
+                    type: number
+                    description: 작성자 프로필 이미지 미디어 ID
+                    nullable: true
+                  avatarUrl:
+                    type: string
+                    description: 작성자 프로필 이미지 공개 URL
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 작성자 표시 이름
+                  cohort:
+                    type: number
+                    description: 작성자 기수
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 작성자 handle
+                    nullable: true
+                  userType:
+                    type: string
+                    description: 작성자 유형
+                    nullable: true
+                  track:
+                    type: string
+                    description: 작성자 트랙
+                    nullable: true
+                  userId:
+                    type: number
+                    description: 작성자 ID
+                description: 댓글 작성자
+              id:
+                type: number
+                description: 댓글 ID
+              parentId:
+                type: number
+                description: 부모 루트 댓글 ID
+                nullable: true
+              content:
+                type: string
+                description: 댓글 내용. 삭제된 댓글은 null
+                nullable: true
+              updatedAt:
+                type: string
+                description: 수정 시각 (UTC ISO-8601)
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 cursor
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수
+          description: 페이지네이션 정보
         status:
           type: string
           description: 응답 상태
@@ -8710,6 +8452,230 @@ components:
         status:
           type: string
           description: 응답 상태
+    NewsFindDetailSuccessResponse:
+      title: NewsFindDetailSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - body
+          - id
+          - isPinned
+          - likeCount
+          - likedByMe
+          - publishedAt
+          - title
+          - type
+          type: object
+          properties:
+            next:
+              required:
+              - id
+              - publishedAt
+              - title
+              type: object
+              properties:
+                publishedAt:
+                  type: string
+                  description: 다음 소식 게시 시각
+                id:
+                  type: number
+                  description: 다음 소식 ID
+                title:
+                  type: string
+                  description: 다음 소식 제목
+              description: 다음 소식. 없으면 null
+            previous:
+              required:
+              - id
+              - publishedAt
+              - title
+              type: object
+              properties:
+                publishedAt:
+                  type: string
+                  description: 이전 소식 게시 시각
+                id:
+                  type: number
+                  description: 이전 소식 ID
+                title:
+                  type: string
+                  description: 이전 소식 제목
+              description: 이전 소식. 없으면 null
+            isPinned:
+              type: boolean
+              description: 고정 여부
+            publishedAt:
+              type: string
+              description: 게시 시각
+            author:
+              required:
+              - displayName
+              - name
+              - userId
+              type: object
+              properties:
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                name:
+                  type: string
+                  description: 작성자 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 handle
+                  nullable: true
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  nullable: true
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 소식 작성자
+            likeCount:
+              type: number
+              description: 좋아요 수
+            pinOrder:
+              type: number
+              description: 고정 순서. 고정되지 않은 경우 null
+              nullable: true
+            body:
+              type: string
+              description: 소식 본문
+            title:
+              type: string
+              description: 소식 제목
+            type:
+              type: string
+              description: 소식 유형
+              enum:
+              - NOTICE
+              - EVENT
+            eventEndAt:
+              type: string
+              description: 이벤트 종료 시각. 공지인 경우 null
+              nullable: true
+            cta:
+              required:
+              - label
+              - url
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: CTA 라벨
+                url:
+                  type: string
+                  description: CTA URL
+              description: 소식 CTA
+            likedByMe:
+              type: boolean
+              description: 현재 사용자의 좋아요 여부
+            eventStartAt:
+              type: string
+              description: 이벤트 시작 시각. 공지인 경우 null
+              nullable: true
+            eventStatus:
+              type: string
+              description: 이벤트 상태. 공지인 경우 null
+              nullable: true
+              enum:
+              - UPCOMING
+              - ONGOING
+              - ENDED
+            id:
+              type: number
+              description: 소식 ID
+          description: 소식 상세
+        status:
+          type: string
+          description: 응답 상태
+    ProjectCommentCreateSuccessResponse:
+      title: ProjectCommentCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - content
+          - createdAt
+          - editable
+          - id
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 생성 시각 (UTC ISO-8601)
+            editable:
+              type: boolean
+              description: 현재 사용자가 수정할 수 있는지 여부
+            author:
+              required:
+              - displayName
+              - userId
+              type: object
+              properties:
+                avatarUrl:
+                  type: string
+                  description: 작성자 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 handle
+                  nullable: true
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  nullable: true
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 댓글 작성자
+            id:
+              type: number
+              description: 댓글 ID
+            parentId:
+              type: number
+              description: 부모 댓글 ID
+              nullable: true
+            content:
+              type: string
+              description: 저장된 댓글 내용
+            updatedAt:
+              type: string
+              description: 수정 시각 (UTC ISO-8601)
+          description: 생성된 댓글
+        status:
+          type: string
+          description: 응답 상태
     ProjectFindAllSuccessResponse:
       title: ProjectFindAllSuccessResponse
       required:
@@ -9028,6 +8994,83 @@ components:
         title:
           type: string
           description: 프로젝트 이름. 앞뒤 공백을 자른 뒤 100자 이하 (유니코드 코드 포인트 기준)
+    ProjectCommentUpdateSuccessResponse:
+      title: ProjectCommentUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - content
+          - createdAt
+          - editable
+          - edited
+          - id
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 생성 시각 (UTC ISO-8601)
+            edited:
+              type: boolean
+              description: 댓글 내용이 수정된 적이 있는지 여부
+            editable:
+              type: boolean
+              description: 현재 사용자가 수정할 수 있는지 여부
+            author:
+              required:
+              - displayName
+              - userId
+              type: object
+              properties:
+                avatarUrl:
+                  type: string
+                  description: 작성자 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 handle
+                  nullable: true
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  nullable: true
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 댓글 작성자
+            id:
+              type: number
+              description: 댓글 ID
+            parentId:
+              type: number
+              description: 부모 댓글 ID
+              nullable: true
+            content:
+              type: string
+              description: 저장된 댓글 내용
+            updatedAt:
+              type: string
+              description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
+          description: 수정된 댓글
+        status:
+          type: string
+          description: 응답 상태
     ProjectCommentReactionSuccessResponse:
       title: ProjectCommentReactionSuccessResponse
       required:

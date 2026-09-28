@@ -28,6 +28,7 @@ import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
@@ -58,10 +59,10 @@ public class FeedCommentService {
     private final FeedCommentRepository feedCommentRepository;
     private final FeedCommentQueryRepository feedCommentQueryRepository;
     private final UserProfileRepository userProfileRepository;
+    private final UserRepository userRepository;
     private final MediaUrlResolver mediaUrlResolver;
     private final FeedCommentReactionRepository feedCommentReactionRepository;
 
-    @Autowired
     public FeedCommentService(
             FeedRepository feedRepository,
             FeedCommentRepository feedCommentRepository,
@@ -70,10 +71,32 @@ public class FeedCommentService {
             MediaUrlResolver mediaUrlResolver,
             FeedCommentReactionRepository feedCommentReactionRepository
     ) {
+        this(
+                feedRepository,
+                feedCommentRepository,
+                feedCommentQueryRepository,
+                userProfileRepository,
+                mediaUrlResolver,
+                feedCommentReactionRepository,
+                null
+        );
+    }
+
+    @Autowired
+    public FeedCommentService(
+            FeedRepository feedRepository,
+            FeedCommentRepository feedCommentRepository,
+            FeedCommentQueryRepository feedCommentQueryRepository,
+            UserProfileRepository userProfileRepository,
+            MediaUrlResolver mediaUrlResolver,
+            FeedCommentReactionRepository feedCommentReactionRepository,
+            UserRepository userRepository
+    ) {
         this.feedRepository = feedRepository;
         this.feedCommentRepository = feedCommentRepository;
         this.feedCommentQueryRepository = feedCommentQueryRepository;
         this.userProfileRepository = userProfileRepository;
+        this.userRepository = userRepository;
         this.mediaUrlResolver = mediaUrlResolver;
         this.feedCommentReactionRepository = feedCommentReactionRepository;
     }
@@ -91,6 +114,7 @@ public class FeedCommentService {
                 feedCommentQueryRepository,
                 userProfileRepository,
                 mediaUrlResolver,
+                null,
                 null
         );
     }
@@ -118,6 +142,7 @@ public class FeedCommentService {
                 savedComment.getContent(),
                 new FeedCommentCreateResponse.Author(
                         author.getUserId(),
+                        handleValue(author.getUserId()),
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
@@ -175,9 +200,10 @@ public class FeedCommentService {
         }
 
         Map<Long, URI> avatarUrls = resolveAvatarUrls(authors.values());
+        Map<Long, String> handles = resolveHandles(authors.keySet());
         Map<Long, FeedCommentReactionCounts> reactionCounts = findReactionCounts(orderedComments, loginUserId);
         List<FeedCommentFindResponse.Comment> comments = orderedComments.stream()
-                .map(comment -> toFindResponse(comment, loginUserId, authors, avatarUrls, reactionCounts))
+                .map(comment -> toFindResponse(comment, loginUserId, authors, handles, avatarUrls, reactionCounts))
                 .toList();
 
         // 4. meta 정보: 다음 커서 정보 제공
@@ -216,6 +242,7 @@ public class FeedCommentService {
                 comment.getContent(),
                 new FeedCommentUpdateResponse.Author(
                         author.getUserId(),
+                        handleValue(author.getUserId()),
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
@@ -289,6 +316,23 @@ public class FeedCommentService {
         return (short) cohort.getValue();
     }
 
+    private String handleValue(long userId) {
+        if (userRepository == null) {
+            return null;
+        }
+        return userRepository.findById(userId)
+                .map(user -> user.getHandle().value())
+                .orElse(null);
+    }
+
+    private Map<Long, String> resolveHandles(Iterable<Long> userIds) {
+        Map<Long, String> handles = new HashMap<>();
+        for (Long userId : userIds) {
+            handles.put(userId, handleValue(userId));
+        }
+        return handles;
+    }
+
     private FeedComment findComment(long feedId, long commentId) {
         FeedComment comment = feedCommentRepository.findById(commentId)
                 .orElseThrow(() -> new EntityNotFoundException(COMMENT_NOT_FOUND));
@@ -308,6 +352,7 @@ public class FeedCommentService {
             FeedComment comment,
             Long loginUserId,
             Map<Long, UserProfile> authors,
+            Map<Long, String> handles,
             Map<Long, URI> avatarUrls,
             Map<Long, FeedCommentReactionCounts> reactionCounts
     ) {
@@ -323,6 +368,7 @@ public class FeedCommentService {
                 comment.isDeleted() ? null : comment.getContent(),
                 new FeedCommentFindResponse.Author(
                         author.getUserId(),
+                        handles.get(author.getUserId()),
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),

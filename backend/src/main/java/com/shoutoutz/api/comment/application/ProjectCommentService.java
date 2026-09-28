@@ -28,6 +28,7 @@ import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
@@ -52,10 +53,10 @@ public class ProjectCommentService {
     private final ProjectCommentRepository projectCommentRepository;
     private final ProjectCommentQueryRepository projectCommentQueryRepository;
     private final UserProfileRepository userProfileRepository;
+    private final UserRepository userRepository;
     private final MediaUrlResolver mediaUrlResolver;
     private final ProjectCommentReactionRepository projectCommentReactionRepository;
 
-    @Autowired
     public ProjectCommentService(
             ProjectRepository projectRepository,
             ProjectCommentRepository projectCommentRepository,
@@ -64,10 +65,32 @@ public class ProjectCommentService {
             MediaUrlResolver mediaUrlResolver,
             ProjectCommentReactionRepository projectCommentReactionRepository
     ) {
+        this(
+                projectRepository,
+                projectCommentRepository,
+                projectCommentQueryRepository,
+                userProfileRepository,
+                mediaUrlResolver,
+                projectCommentReactionRepository,
+                null
+        );
+    }
+
+    @Autowired
+    public ProjectCommentService(
+            ProjectRepository projectRepository,
+            ProjectCommentRepository projectCommentRepository,
+            ProjectCommentQueryRepository projectCommentQueryRepository,
+            UserProfileRepository userProfileRepository,
+            MediaUrlResolver mediaUrlResolver,
+            ProjectCommentReactionRepository projectCommentReactionRepository,
+            UserRepository userRepository
+    ) {
         this.projectRepository = projectRepository;
         this.projectCommentRepository = projectCommentRepository;
         this.projectCommentQueryRepository = projectCommentQueryRepository;
         this.userProfileRepository = userProfileRepository;
+        this.userRepository = userRepository;
         this.mediaUrlResolver = mediaUrlResolver;
         this.projectCommentReactionRepository = projectCommentReactionRepository;
     }
@@ -85,6 +108,7 @@ public class ProjectCommentService {
                 projectCommentQueryRepository,
                 userProfileRepository,
                 mediaUrlResolver,
+                null,
                 null
         );
     }
@@ -112,6 +136,7 @@ public class ProjectCommentService {
                 savedComment.getContent(),
                 new ProjectCommentCreateResponse.Author(
                         author.getUserId(),
+                        handleValue(author.getUserId()),
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
@@ -169,9 +194,10 @@ public class ProjectCommentService {
         }
 
         Map<Long, URI> avatarUrls = resolveAvatarUrls(authors.values());
+        Map<Long, String> handles = resolveHandles(authors.keySet());
         Map<Long, ProjectCommentReactionCounts> reactionCounts = findReactionCounts(orderedComments, loginUserId);
         List<ProjectCommentFindResponse.Comment> comments = orderedComments.stream()
-                .map(comment -> toFindResponse(comment, loginUserId, authors, avatarUrls, reactionCounts))
+                .map(comment -> toFindResponse(comment, loginUserId, authors, handles, avatarUrls, reactionCounts))
                 .toList();
 
         // 4. meta 정보: 다음 커서 정보 제공
@@ -211,6 +237,7 @@ public class ProjectCommentService {
                 comment.getContent(),
                 new ProjectCommentUpdateResponse.Author(
                         author.getUserId(),
+                        handleValue(author.getUserId()),
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
@@ -293,10 +320,28 @@ public class ProjectCommentService {
         return (short) cohort.getValue();
     }
 
+    private String handleValue(long userId) {
+        if (userRepository == null) {
+            return null;
+        }
+        return userRepository.findById(userId)
+                .map(user -> user.getHandle().value())
+                .orElse(null);
+    }
+
+    private Map<Long, String> resolveHandles(Iterable<Long> userIds) {
+        Map<Long, String> handles = new HashMap<>();
+        for (Long userId : userIds) {
+            handles.put(userId, handleValue(userId));
+        }
+        return handles;
+    }
+
     private ProjectCommentFindResponse.Comment toFindResponse(
             ProjectComment comment,
             Long loginUserId,
             Map<Long, UserProfile> authors,
+            Map<Long, String> handles,
             Map<Long, URI> avatarUrls,
             Map<Long, ProjectCommentReactionCounts> reactionCounts
     ) {
@@ -312,6 +357,7 @@ public class ProjectCommentService {
                 comment.isDeleted() ? null : comment.getContent(),
                 new ProjectCommentFindResponse.Author(
                         author.getUserId(),
+                        handles.get(author.getUserId()),
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),

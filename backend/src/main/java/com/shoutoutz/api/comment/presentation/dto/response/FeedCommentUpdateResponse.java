@@ -16,14 +16,19 @@ public record FeedCommentUpdateResponse(
 
     public record Author(
             Long userId,
+            String handle,
             String displayName,
             UserType userType,
             String track,
             Short cohort,
             String avatarUrl
     ) {
+        public Author(Long userId, String handle, String displayName, String avatarUrl) {
+            this(userId, handle, displayName, null, null, null, avatarUrl);
+        }
+
         public Author(Long userId, String displayName, String avatarUrl) {
-            this(userId, displayName, null, null, null, avatarUrl);
+            this(userId, null, displayName, null, null, null, avatarUrl);
         }
     }
 }

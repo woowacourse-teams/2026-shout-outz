@@ -30,7 +30,9 @@ import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
 import com.shoutoutz.api.news.presentation.dto.response.NewsFindAllResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NewsFindResponse;
 import com.shoutoutz.api.news.presentation.dto.response.NewsUpdateResponse;
+import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.account.UserRepository;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
@@ -63,11 +65,21 @@ class NewsServiceTest {
     @Mock
     private NewsReactionRepository newsReactionRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     private NewsService newsService;
 
     @BeforeEach
     void setUp() {
-        newsService = new NewsService(newsRepository, newsQueryRepository, clock, newsReactionRepository);
+        newsService = new NewsService(
+                newsRepository,
+                newsQueryRepository,
+                clock,
+                newsReactionRepository,
+                null,
+                userRepository
+        );
     }
 
     @Test
@@ -358,6 +370,7 @@ class NewsServiceTest {
         when(clock.instant()).thenReturn(PUBLISHED_AT);
         when(newsReactionRepository.findCountsByNewsId(102L, null))
                 .thenReturn(new NewsReactionCounts(11L, true));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(User.initialize("@admin")));
 
         NewsFindResponse response = newsService.findDetail(
                 new NewsFindRequest(102L, true)
@@ -367,6 +380,7 @@ class NewsServiceTest {
         assertThat(response.type()).isEqualTo(NewsType.EVENT);
         assertThat(response.body()).isEqualTo(detail.body());
         assertThat(response.author().userId()).isEqualTo(1L);
+        assertThat(response.author().handle()).isEqualTo("@admin");
         assertThat(response.author().name()).isEqualTo("샤라웃 운영팀");
         assertThat(response.eventStatus()).isEqualTo(EventStatus.ONGOING);
         assertThat(response.likeCount()).isEqualTo(11L);
