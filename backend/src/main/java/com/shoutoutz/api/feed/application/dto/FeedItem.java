@@ -58,6 +58,7 @@ public record FeedItem(
     }
 
     public record Author(
+            Long userId,
             String handle,
             String displayName,
             UserType userType,
@@ -65,6 +66,17 @@ public record FeedItem(
             Cohort cohort,
             Long avatarImageId
     ) {
+
+        public Author(
+                String handle,
+                String displayName,
+                UserType userType,
+                Track track,
+                Cohort cohort,
+                Long avatarImageId
+        ) {
+            this(null, handle, displayName, userType, track, cohort, avatarImageId);
+        }
     }
 
     public record Category(

@@ -59,6 +59,7 @@ public record FeedResponse(
     }
 
     public record Author(
+            Long userId,
             String handle,
             String displayName,
             UserType userType,
@@ -67,27 +68,40 @@ public record FeedResponse(
             Long avatarImageId,
             String avatarUrl
     ) {
+        public Author(
+                String handle,
+                String displayName,
+                UserType userType,
+                String track,
+                Short cohort,
+                Long avatarImageId,
+                String avatarUrl
+        ) {
+            this(null, handle, displayName, userType, track, cohort, avatarImageId, avatarUrl);
+        }
+
         private static Author from(FeedItem.Author author, Map<Long, URI> mediaUrls) {
             return new Author(
+                    author.userId(),
                     author.handle(),
                     author.displayName(),
                     author.userType(),
-                    trackValue(author.track()),
-                    cohortValue(author.cohort()),
+                    trackValue(author.userType(), author.track()),
+                    cohortValue(author.userType(), author.cohort()),
                     author.avatarImageId(),
                     toUrl(findUrl(mediaUrls, author.avatarImageId()))
             );
         }
 
-        private static String trackValue(Track track) {
-            if (track == null) {
+        private static String trackValue(UserType userType, Track track) {
+            if (userType != UserType.WOOWACOURSE_CREW || track == null) {
                 return null;
             }
             return track.getValue();
         }
 
-        private static Short cohortValue(Cohort cohort) {
-            if (cohort == null) {
+        private static Short cohortValue(UserType userType, Cohort cohort) {
+            if (userType != UserType.WOOWACOURSE_CREW || cohort == null) {
                 return null;
             }
             return (short) cohort.getValue();

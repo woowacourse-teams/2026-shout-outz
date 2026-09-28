@@ -6,6 +6,7 @@ import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.common.exception.custom.ValidationFailedException;
 import com.shoutoutz.api.common.response.ErrorResponse;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.news.application.dto.NewsCursor;
 import com.shoutoutz.api.news.application.dto.NewsDetail;
 import com.shoutoutz.api.news.application.dto.NewsPage;
@@ -18,6 +19,10 @@ import com.shoutoutz.api.news.domain.NewsRepository;
 import com.shoutoutz.api.news.domain.NewsReactionCounts;
 import com.shoutoutz.api.news.domain.NewsReactionRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.profile.Track;
+import com.shoutoutz.api.user.domain.profile.UserProfile;
+import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.news.domain.enums.EventStatus;
 import com.shoutoutz.api.news.domain.enums.NewsType;
 import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
@@ -36,18 +41,42 @@ import java.time.Instant;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 public class NewsService {
 
     private final NewsRepository newsRepository;
     private final NewsQueryRepository newsQueryRepository;
     private final Clock clock;
     private final NewsReactionRepository newsReactionRepository;
+    private final UserProfileRepository userProfileRepository;
+
+    @Autowired
+    public NewsService(
+            NewsRepository newsRepository,
+            NewsQueryRepository newsQueryRepository,
+            Clock clock,
+            NewsReactionRepository newsReactionRepository,
+            UserProfileRepository userProfileRepository
+    ) {
+        this.newsRepository = newsRepository;
+        this.newsQueryRepository = newsQueryRepository;
+        this.clock = clock;
+        this.newsReactionRepository = newsReactionRepository;
+        this.userProfileRepository = userProfileRepository;
+    }
+
+    public NewsService(
+            NewsRepository newsRepository,
+            NewsQueryRepository newsQueryRepository,
+            Clock clock,
+            NewsReactionRepository newsReactionRepository
+    ) {
+        this(newsRepository, newsQueryRepository, clock, newsReactionRepository, null);
+    }
 
     @Transactional
     public NoticeCreateResponse createNotice(
@@ -74,7 +103,7 @@ public class NewsService {
                 savedNotice.getTitle(),
                 savedNotice.getSummary(),
                 savedNotice.getBody(),
-                new NoticeCreateResponse.Author(savedNotice.getAuthorId(), savedNotice.getAuthorName()),
+                noticeAuthor(savedNotice),
                 savedNotice.getPublishedAt(),
                 savedNotice.isPinned(),
                 savedNotice.getPinOrder(),
@@ -111,7 +140,7 @@ public class NewsService {
                 savedEvent.getTitle(),
                 savedEvent.getSummary(),
                 savedEvent.getBody(),
-                new EventCreateResponse.Author(savedEvent.getAuthorId(), savedEvent.getAuthorName()),
+                eventAuthor(savedEvent),
                 savedEvent.getPublishedAt(),
                 savedEvent.eventStatusAt(now),
                 savedEvent.getEventStartAt(),
@@ -140,7 +169,7 @@ public class NewsService {
                 toCta(request.cta())
         );
         News saved = newsRepository.update(updated);
-        return NewsUpdateResponse.from(saved, clock.instant());
+        return NewsUpdateResponse.from(saved, clock.instant(), findAuthorProfile(saved.getAuthorId()));
     }
 
     @Transactional
@@ -229,7 +258,7 @@ public class NewsService {
                 newsDetail.type(),
                 newsDetail.title(),
                 newsDetail.body(),
-                new NewsFindResponse.Author(newsDetail.authorId(), newsDetail.authorName()),
+                detailAuthor(newsDetail),
                 newsDetail.publishedAt(),
                 eventStatus,
                 newsDetail.eventStartAt(),
@@ -248,6 +277,75 @@ public class NewsService {
         if (role != UserRole.ADMIN) {
             throw new ForbiddenException(NewsErrorCode.NEWS_ADMIN_FORBIDDEN);
         }
+    }
+
+    private NoticeCreateResponse.Author noticeAuthor(News news) {
+        UserProfile profile = findAuthorProfile(news.getAuthorId());
+        return new NoticeCreateResponse.Author(
+                news.getAuthorId(),
+                news.getAuthorName(),
+                displayName(profile, news.getAuthorName()),
+                userType(profile),
+                trackValue(profile),
+                cohortValue(profile)
+        );
+    }
+
+    private EventCreateResponse.Author eventAuthor(News news) {
+        UserProfile profile = findAuthorProfile(news.getAuthorId());
+        return new EventCreateResponse.Author(
+                news.getAuthorId(),
+                news.getAuthorName(),
+                displayName(profile, news.getAuthorName()),
+                userType(profile),
+                trackValue(profile),
+                cohortValue(profile)
+        );
+    }
+
+    private NewsFindResponse.Author detailAuthor(NewsDetail detail) {
+        UserProfile profile = findAuthorProfile(detail.authorId());
+        return new NewsFindResponse.Author(
+                detail.authorId(),
+                detail.authorName(),
+                displayName(profile, detail.authorName()),
+                userType(profile),
+                trackValue(profile),
+                cohortValue(profile)
+        );
+    }
+
+    private UserProfile findAuthorProfile(long authorId) {
+        if (userProfileRepository == null) {
+            return null;
+        }
+        return userProfileRepository.findByUserId(authorId).orElse(null);
+    }
+
+    private String displayName(UserProfile profile, String fallback) {
+        return profile == null ? fallback : profile.getDisplayName().value();
+    }
+
+    private UserType userType(UserProfile profile) {
+        return profile == null ? null : profile.getUserType();
+    }
+
+    private String trackValue(UserProfile profile) {
+        if (profile == null || profile.getUserType() != UserType.WOOWACOURSE_CREW
+                || profile.getTrack() == null) {
+            return null;
+        }
+        Track track = profile.getTrack();
+        return track.getValue();
+    }
+
+    private Short cohortValue(UserProfile profile) {
+        if (profile == null || profile.getUserType() != UserType.WOOWACOURSE_CREW
+                || profile.getCohort() == null) {
+            return null;
+        }
+        Cohort cohort = profile.getCohort();
+        return (short) cohort.getValue();
     }
 
     private void validateNewsId(long newsId) {

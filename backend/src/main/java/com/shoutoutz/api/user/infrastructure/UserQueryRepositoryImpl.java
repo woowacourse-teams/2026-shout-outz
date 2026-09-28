@@ -61,6 +61,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
         String sql = """
                 WITH ranked_woowa_users AS (
                     SELECT
+                        u.id AS user_id,
                         u.handle,
                         up.display_name,
                         up.user_type,
@@ -119,6 +120,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                 sql,
                 parameters,
                 (resultSet, rowNumber) -> new UserSearchItem(
+                        resultSet.getObject("user_id", Long.class),
                         resultSet.getString("handle"),
                         resultSet.getString("display_name"),
                         UserType.valueOf(resultSet.getString("user_type")),

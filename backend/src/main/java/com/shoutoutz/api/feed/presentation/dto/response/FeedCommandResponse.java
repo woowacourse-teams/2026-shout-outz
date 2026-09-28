@@ -36,6 +36,7 @@ public record FeedCommandResponse(
     }
 
     public record Author(
+            Long userId,
             String handle,
             String displayName,
             UserType userType,
@@ -43,23 +44,35 @@ public record FeedCommandResponse(
             Short cohort,
             String avatarUrl
     ) {
+        public Author(
+                String handle,
+                String displayName,
+                UserType userType,
+                String track,
+                Short cohort,
+                String avatarUrl
+        ) {
+            this(null, handle, displayName, userType, track, cohort, avatarUrl);
+        }
+
         private static Author from(FeedItem.Author author, Map<Long, URI> mediaUrls) {
             return new Author(
+                    author.userId(),
                     author.handle(),
                     author.displayName(),
                     author.userType(),
-                    trackValue(author.track()),
-                    cohortValue(author.cohort()),
+                    trackValue(author.userType(), author.track()),
+                    cohortValue(author.userType(), author.cohort()),
                     toUrl(findUrl(mediaUrls, author.avatarImageId()))
             );
         }
 
-        private static String trackValue(Track track) {
-            return track == null ? null : track.getValue();
+        private static String trackValue(UserType userType, Track track) {
+            return userType == UserType.WOOWACOURSE_CREW && track != null ? track.getValue() : null;
         }
 
-        private static Short cohortValue(Cohort cohort) {
-            return cohort == null ? null : (short) cohort.getValue();
+        private static Short cohortValue(UserType userType, Cohort cohort) {
+            return userType == UserType.WOOWACOURSE_CREW && cohort != null ? (short) cohort.getValue() : null;
         }
     }
 

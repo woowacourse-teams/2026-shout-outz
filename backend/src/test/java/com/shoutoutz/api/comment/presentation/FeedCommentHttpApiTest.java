@@ -162,6 +162,9 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data[].author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data[].author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data[].author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data[].author.userType").type(STRING).description("작성자 유형").optional(),
+                                        fieldWithPath("data[].author.track").type(STRING).description("작성자 트랙").optional(),
+                                        fieldWithPath("data[].author.cohort").type(NUMBER).description("작성자 기수").optional(),
                                         fieldWithPath("data[].author.avatarImageId").type(NUMBER)
                                                 .description("작성자 프로필 이미지 미디어 ID")
                                                 .optional(),
@@ -317,6 +320,9 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
+                                        fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
+                                        fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
                                         fieldWithPath("data.author.avatarUrl").type(STRING)
                                                 .description("작성자 프로필 이미지 공개 URL")
                                                 .optional(),
@@ -405,6 +411,9 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
+                                        fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
+                                        fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
                                         fieldWithPath("data.author.avatarUrl").type(STRING)
                                                 .description("작성자 프로필 이미지 공개 URL")
                                                 .optional(),
