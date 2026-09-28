@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
@@ -75,6 +76,7 @@ class UserProjectHttpApiTest {
                 .willReturn(new UserProjectResult(
                         List.of(project()),
                         true,
+                        3L,
                         Map.of(
                                 12L, URI.create("https://cdn.example.com/thumbnail"),
                                 21L, URI.create("https://cdn.example.com/avatar-21")
@@ -100,7 +102,7 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.meta.nextCursor").value(ProjectCursorCodec.encode(
                         ProjectCursor.latest(CREATED_AT, 100L))))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
-                .andExpect(jsonPath("$.meta.totalCount").doesNotExist())
+                .andExpect(jsonPath("$.meta.totalCount").value(3))
                 .andDo(document(
                         "user-project-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -109,6 +111,11 @@ class UserProjectHttpApiTest {
                                 .description(DESCRIPTION)
                                 .pathParameters(
                                         parameterWithName("handle").description("조회할 사용자의 handle")
+                                )
+                                .requestHeaders(
+                                        headerWithName("Cookie")
+                                                .description("로그인 상태면 본인 프로젝트 조회에 사용하는 JSESSIONID")
+                                                .optional()
                                 )
                                 .queryParameters(
                                         parameterWithName("size")
@@ -131,12 +138,13 @@ class UserProjectHttpApiTest {
     @DisplayName("파라미터를 생략하면 기본 조회 조건을 사용한다.")
     void usesDefaultParameters() throws Exception {
         given(projectService.findAllByUser("zzaekkii", new UserProjectFindRequest(null, null)))
-                .willReturn(new UserProjectResult(List.of(), false));
+                .willReturn(new UserProjectResult(List.of(), false, 0L, Map.of()));
 
         mockMvc.perform(get("/api/v1/users/{handle}/projects", "zzaekkii"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isEmpty())
-                .andExpect(jsonPath("$.meta.hasNext").value(false));
+                .andExpect(jsonPath("$.meta.hasNext").value(false))
+                .andExpect(jsonPath("$.meta.totalCount").value(0));
 
         verify(projectService).findAllByUser("zzaekkii", new UserProjectFindRequest(null, null));
     }
@@ -249,7 +257,9 @@ class UserProjectHttpApiTest {
                         .description("이관 팀원의 GitHub 프로필 URL").optional(),
                 fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
                 fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서").optional(),
-                fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부")
+                fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"),
+                fieldWithPath("meta.totalCount").type(NUMBER)
+                        .description("커서와 size에 무관한 조회 가능한 전체 참여 프로젝트 수. 본인 조회는 승인 대기 프로젝트를 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함")
         );
     }
 

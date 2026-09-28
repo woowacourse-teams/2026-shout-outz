@@ -51,7 +51,11 @@ public class UserProjectHttpApi {
                 result.projects(),
                 result.mediaUrls()
         );
-        SliceMetaResponse meta = new SliceMetaResponse(encodeNextCursor(result.nextCursor()), result.hasNext());
+        SliceMetaResponse meta = new SliceMetaResponse(
+                encodeNextCursor(result.nextCursor()),
+                result.hasNext(),
+                result.totalCount()
+        );
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));
     }

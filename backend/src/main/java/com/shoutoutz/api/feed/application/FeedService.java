@@ -10,6 +10,7 @@ import com.shoutoutz.api.feed.application.dto.FeedCursor;
 import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.FeedMediaReference;
+import com.shoutoutz.api.feed.application.dto.FeedPage;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
@@ -100,23 +101,26 @@ public class FeedService {
         FeedSort sort = request.resolvedSort();
         FeedCursor cursor = feedCursorCodec.decode(request.cursor(), sort);
         int size = request.resolvedSize();
-        List<FeedItem> feedsWithExtraItem = viewerId == null
-                ? feedQueryRepository.findAll(
+        FeedPage page;
+        if (viewerId == null) {
+            page = feedQueryRepository.findAll(
                         sort,
                         request.categoryId(),
                         request.keyword(),
                         cursor,
-                        size + 1
-                )
-                : feedQueryRepository.findAll(
+                        size
+                );
+        } else {
+            page = feedQueryRepository.findAll(
                         sort,
                         request.categoryId(),
                         request.keyword(),
                         viewerId,
                         cursor,
-                        size + 1
+                        size
                 );
-        return createSlice(feedsWithExtraItem, size, sort);
+        }
+        return createSlice(page, sort);
     }
 
     @Transactional(readOnly = true)
@@ -145,21 +149,24 @@ public class FeedService {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
         if (user.isDeleted()) {
-            return new FeedFindAllResult(List.of(), null, false);
+            return new FeedFindAllResult(List.of(), null, false, 0L, Map.of());
         }
 
         FeedSort sort = FeedSort.LATEST;
         FeedCursor cursor = feedCursorCodec.decode(request.cursor(), sort);
         int size = request.resolvedSize();
-        List<FeedItem> feedsWithExtraItem = viewerId == null
-                ? feedQueryRepository.findAllByAuthorId(user.getId(), cursor, size + 1)
-                : feedQueryRepository.findAllByAuthorId(
+        FeedPage page;
+        if (viewerId == null) {
+            page = feedQueryRepository.findAllByAuthorId(user.getId(), cursor, size);
+        } else {
+            page = feedQueryRepository.findAllByAuthorId(
                         user.getId(),
                         viewerId,
                         cursor,
-                        size + 1
+                        size
                 );
-        return createSlice(feedsWithExtraItem, size, sort);
+        }
+        return createSlice(page, sort);
     }
 
     @Transactional
@@ -185,19 +192,17 @@ public class FeedService {
     }
 
     /**
-     * 요청 크기보다 한 건 더 조회한 결과로 다음 Slice 존재 여부와 커서 계산
+     * 조회 페이지의 다음 Slice 존재 여부로 커서를 계산한다.
      */
     private FeedFindAllResult createSlice(
-            List<FeedItem> feedsWithExtraItem,
-            int size,
+            FeedPage page,
             FeedSort sort
     ) {
-        if (feedsWithExtraItem.size() <= size) {
-            List<FeedItem> items = List.copyOf(feedsWithExtraItem);
-            return new FeedFindAllResult(items, null, false, resolveMediaUrls(items));
+        List<FeedItem> items = page.items();
+        if (!page.hasNext()) {
+            return new FeedFindAllResult(items, null, false, page.totalCount(), resolveMediaUrls(items));
         }
 
-        List<FeedItem> items = List.copyOf(feedsWithExtraItem.subList(0, size));
         FeedItem lastItem = items.getLast();
         String nextCursor = feedCursorCodec.encode(
                 new FeedCursor(
@@ -208,7 +213,7 @@ public class FeedService {
                         lastItem.feedId()
                 )
         );
-        return new FeedFindAllResult(items, nextCursor, true, resolveMediaUrls(items));
+        return new FeedFindAllResult(items, nextCursor, true, page.totalCount(), resolveMediaUrls(items));
     }
 
     private FeedResponse toQueryResponse(FeedItem item) {

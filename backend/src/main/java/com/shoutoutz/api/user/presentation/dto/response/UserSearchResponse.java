@@ -78,14 +78,4 @@ public record UserSearchResponse(
             return avatarImageId == null ? null : avatarUrls.get(avatarImageId);
         }
     }
-
-    public record Meta(
-            String nextCursor,
-            boolean hasNext
-    ) {
-
-        public static Meta from(UserSearchResult result) {
-            return new Meta(result.nextCursor(), result.hasNext());
-        }
-    }
 }

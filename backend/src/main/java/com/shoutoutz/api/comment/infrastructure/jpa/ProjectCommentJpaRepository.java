@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface ProjectCommentJpaRepository extends JpaRepository<ProjectCommentEntity, Long> {
 
+    long countByProjectIdAndDeletedAtIsNull(long projectId);
+
     @Query("""
             SELECT comment
             FROM ProjectCommentEntity comment

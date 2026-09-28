@@ -179,7 +179,7 @@ class ProjectCommentServiceTest {
                 null,
                 ProjectCommentSort.LATEST,
                 5
-        )).thenReturn(new ProjectCommentPage(List.of(root, deletedRoot), false));
+        )).thenReturn(new ProjectCommentPage(List.of(root, deletedRoot), false, 2L));
         when(projectCommentQueryRepository.findReplies(PROJECT_ID, List.of(COMMENT_ID, 503L)))
                 .thenReturn(List.of(reply));
         givenAuthor(AUTHOR_ID, "작성자", 10L);
@@ -215,7 +215,7 @@ class ProjectCommentServiceTest {
                 null,
                 ProjectCommentSort.LATEST,
                 5
-        )).thenReturn(new ProjectCommentPage(List.of(ownComment, otherComment), false));
+        )).thenReturn(new ProjectCommentPage(List.of(ownComment, otherComment), false, 2L));
         when(projectCommentQueryRepository.findReplies(PROJECT_ID, List.of(COMMENT_ID, 502L)))
                 .thenReturn(List.of());
         when(projectCommentReactionRepository.findByCommentIds(List.of(COMMENT_ID, 502L), AUTHOR_ID))
@@ -250,7 +250,7 @@ class ProjectCommentServiceTest {
                 null,
                 ProjectCommentSort.OLDEST,
                 1
-        )).thenReturn(new ProjectCommentPage(List.of(root), true));
+        )).thenReturn(new ProjectCommentPage(List.of(root), true, 2L));
         when(projectCommentQueryRepository.findReplies(PROJECT_ID, List.of(COMMENT_ID)))
                 .thenReturn(List.of());
         givenAuthor();

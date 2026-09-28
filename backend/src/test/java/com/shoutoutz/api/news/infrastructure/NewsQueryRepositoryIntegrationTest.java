@@ -118,6 +118,8 @@ class NewsQueryRepositoryIntegrationTest {
         assertThat(noticePage.items()).extracting("id").containsExactly(notice.getId());
         assertThat(ongoingPage.items()).extracting("id").containsExactly(ongoing.getId());
         assertThat(ongoingPage.items()).extracting("id").doesNotContain(upcoming.getId());
+        assertThat(noticePage.totalCount()).isEqualTo(1L);
+        assertThat(ongoingPage.totalCount()).isEqualTo(1L);
     }
 
     private NewsEntity event(Long authorId, Instant publishedAt) {

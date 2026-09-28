@@ -13,6 +13,7 @@ import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.user.application.dto.UserProfileCounts;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
+import com.shoutoutz.api.user.application.dto.UserSearchPage;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.User;
@@ -257,8 +258,8 @@ class UserServiceTest {
                 searchItem("hoi", "호이", 2),
                 searchItem("charles", "샤를", 2)
         );
-        given(userQueryRepository.searchWoowaMember("재", null, 3))
-                .willReturn(searchedItems);
+        given(userQueryRepository.searchWoowaMember("재", null, 2))
+                .willReturn(new UserSearchPage(searchedItems.subList(0, 2), true, 7L));
 
         UserSearchResult result = userService.searchWoowaMember("재", null, 2);
 
@@ -266,14 +267,15 @@ class UserServiceTest {
         assertThat(userSearchCursorCodec.decode(result.nextCursor()))
                 .isEqualTo(new UserSearchCursor(2, "호이", "hoi"));
         assertThat(result.hasNext()).isTrue();
+        assertThat(result.totalCount()).isEqualTo(7L);
     }
 
     @Test
     @DisplayName("커서를 해석해 다음 우테코 사용자를 검색한다")
     void searchWoowaMemberWithCursor() {
         UserSearchCursor cursor = new UserSearchCursor(1, "재키", "zzaekkii");
-        given(userQueryRepository.searchWoowaMember("재키", cursor, 21))
-                .willReturn(List.of());
+        given(userQueryRepository.searchWoowaMember("재키", cursor, 20))
+                .willReturn(new UserSearchPage(List.of(), false, 0L));
 
         UserSearchResult result = userService.searchWoowaMember(
                 "재키",

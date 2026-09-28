@@ -7,6 +7,7 @@ import com.shoutoutz.api.verification.application.AdminVerificationRequestServic
 import com.shoutoutz.api.verification.presentation.dto.request.AdminVerificationRequestFindAllRequest;
 import com.shoutoutz.api.verification.presentation.dto.response.AdminVerificationRequestFindAllResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,7 +23,7 @@ public class AdminVerificationRequestHttpApi {
     private final AdminVerificationRequestService adminVerificationRequestService;
 
     @GetMapping
-    public ResponseEntity<SuccessResponse<AdminVerificationRequestFindAllResponse>> findAll(
+    public ResponseEntity<SuccessResponse<List<AdminVerificationRequestFindAllResponse.Item>>> findAll(
             @LoginUser AuthenticatedUser loginUser,
             @Valid @ModelAttribute AdminVerificationRequestFindAllRequest request
     ) {
@@ -30,6 +31,6 @@ public class AdminVerificationRequestHttpApi {
                 loginUser.role(),
                 request
         );
-        return ResponseEntity.ok(SuccessResponse.success(response));
+        return ResponseEntity.ok(SuccessResponse.success(response.items(), response.meta()));
     }
 }

@@ -38,6 +38,7 @@ import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentUpdateResp
 import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Instant;
@@ -110,7 +111,7 @@ class FeedCommentHttpApiTest {
                                 true
                         )
                 ),
-                new FeedCommentFindResponse.Meta("next-cursor", true)
+                new SliceMetaResponse("next-cursor", true, 2L)
         ));
 
         mockMvc.perform(get("/api/v1/feeds/{feedId}/comments", 100L)
@@ -130,6 +131,7 @@ class FeedCommentHttpApiTest {
                 .andExpect(jsonPath("$.data[2].deleted").value(true))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andExpect(jsonPath("$.meta.totalCount").value(2))
                 .andDo(document(
                         "feed-comment-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -188,11 +190,15 @@ class FeedCommentHttpApiTest {
                                                 .description("댓글 공감 수"),
                                         fieldWithPath("data[].agreedByMe").type(BOOLEAN)
                                                 .description("현재 사용자의 공감 여부. 비로그인이면 false"),
+                                        fieldWithPath("meta").type(OBJECT)
+                                                .description("페이지네이션 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 cursor")
                                                 .optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN)
-                                                .description("다음 페이지 존재 여부")
+                                                .description("다음 페이지 존재 여부"),
+                                        fieldWithPath("meta.totalCount").type(NUMBER)
+                                                .description("커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수")
                                 )
                                 .build())
                 ));
@@ -224,7 +230,7 @@ class FeedCommentHttpApiTest {
                         false,
                         false
                 )),
-                new FeedCommentFindResponse.Meta(null, false)
+                new SliceMetaResponse(null, false, 1L)
         ));
 
         mockMvc.perform(get("/api/v1/feeds/{feedId}/comments", 100L)

@@ -1,12 +1,13 @@
 package com.shoutoutz.api.comment.presentation.dto.response;
 
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.List;
 
 public record FeedCommentFindResponse(
         List<Comment> comments,
-        Meta meta
+        SliceMetaResponse meta
 ) {
 
     public FeedCommentFindResponse {
@@ -59,11 +60,5 @@ public record FeedCommentFindResponse(
         ) {
             this(userId, displayName, null, null, null, avatarImageId, avatarUrl);
         }
-    }
-
-    public record Meta(
-            String nextCursor,
-            boolean hasNext
-    ) {
     }
 }

@@ -1,5 +1,6 @@
 package com.shoutoutz.api.news.presentation.dto.response;
 
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.news.domain.enums.EventStatus;
 import com.shoutoutz.api.news.domain.enums.NewsType;
 import java.time.Instant;
@@ -11,7 +12,7 @@ import java.util.List;
  * <p>목록에서는 상세 본문이나 CTA를 제외하고 명세에 정의된 요약 정보만
  * 반환한다.</p>
  */
-public record NewsFindAllResponse(List<Item> items, Meta meta) {
+public record NewsFindAllResponse(List<Item> items, SliceMetaResponse meta) {
 
     public NewsFindAllResponse {
         items = List.copyOf(items);
@@ -59,8 +60,5 @@ public record NewsFindAllResponse(List<Item> items, Meta meta) {
                     false
             );
         }
-    }
-
-    public record Meta(String nextCursor, boolean hasNext) {
     }
 }
