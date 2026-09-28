@@ -110,7 +110,7 @@ class UserProjectHttpApiTest {
                                 .summary(SUMMARY)
                                 .description(DESCRIPTION)
                                 .pathParameters(
-                                        parameterWithName("handle").description("조회할 사용자의 handle")
+                                        parameterWithName("handle").description("@[A-Za-z0-9_-]{2,30} 형식의 조회 대상 사용자 handle")
                                 )
                                 .requestHeaders(
                                         headerWithName("Cookie")
@@ -269,7 +269,7 @@ class UserProjectHttpApiTest {
                 .summary(SUMMARY)
                 .description(DESCRIPTION)
                 .pathParameters(
-                        parameterWithName("handle").description("조회할 사용자의 handle")
+                        parameterWithName("handle").description("@[A-Za-z0-9_-]{2,30} 형식의 조회 대상 사용자 handle")
                 )
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())

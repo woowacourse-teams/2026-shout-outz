@@ -199,7 +199,7 @@ class ProjectHttpApiTest {
                                                 .description("선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다.")
                                                 .attributes(key("itemsType").value("number")),
                                         fieldWithPath("memberHandles").type(ARRAY)
-                                                .description("팀원 handle 목록 (1명 이상). 등록자를 포함할 수 있으며, "
+                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 팀원 handle 목록 (1명 이상). 등록자를 포함할 수 있으며, "
                                                         + "활동 중인 우아한테크코스 크루 또는 코치여야 하며, "
                                                         + "대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다. "
                                                         + "각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다.")

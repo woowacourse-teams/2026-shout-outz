@@ -299,7 +299,7 @@ class AuthApiDocumentationTest {
                                 .requestSchema(Schema.schema("OAuthSignupRequest"))
                                 .requestFields(
                                         fieldWithPath("handle").type(STRING)
-                                                .description("영구 공개 핸들"),
+                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"),
                                         fieldWithPath("displayName").type(STRING)
                                                 .description("프로필 표시 이름")
                                 )
@@ -343,7 +343,7 @@ class AuthApiDocumentationTest {
                                 .requestSchema(Schema.schema("OAuthSignupRequest"))
                                 .requestFields(
                                         fieldWithPath("handle").type(STRING)
-                                                .description("영구 공개 핸들"),
+                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"),
                                         fieldWithPath("displayName").type(STRING)
                                                 .description("프로필 표시 이름")
                                 )
@@ -391,7 +391,7 @@ class AuthApiDocumentationTest {
                                 .requestSchema(Schema.schema("OAuthSignupRequest"))
                                 .requestFields(
                                         fieldWithPath("handle").type(STRING)
-                                                .description("영구 공개 핸들"),
+                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"),
                                         fieldWithPath("displayName").type(STRING)
                                                 .description("프로필 표시 이름")
                                 )
@@ -436,7 +436,7 @@ class AuthApiDocumentationTest {
                                 .requestSchema(Schema.schema("OAuthSignupRequest"))
                                 .requestFields(
                                         fieldWithPath("handle").type(STRING)
-                                                .description("영구 공개 핸들"),
+                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"),
                                         fieldWithPath("displayName").type(STRING)
                                                 .description("프로필 표시 이름")
                                 )

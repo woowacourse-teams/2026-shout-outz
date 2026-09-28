@@ -502,7 +502,7 @@ class UserHttpApiTest {
                                 .summary("사용자 공개 프로필 조회")
                                 .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다. 본인 조회는 승인 대기 프로젝트를 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함한다.")
                                 .pathParameters(
-                                        parameterWithName("handle").description("조회할 사용자의 handle")
+                                        parameterWithName("handle").description("@[A-Za-z0-9_-]{2,30} 형식의 조회 대상 사용자 handle")
                                 )
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
@@ -586,7 +586,7 @@ class UserHttpApiTest {
                                 ),
                                 new UserSearchItem(
                                         2L,
-                                        "coach-jack",
+                                        "@coach-jack",
                                         "재키 코치",
                                         UserType.WOOWACOURSE_COACH,
                                         null,
@@ -613,7 +613,7 @@ class UserHttpApiTest {
                 .andExpect(jsonPath("$.data[0].avatarImageId").value(21L))
                 .andExpect(jsonPath("$.data[0].avatarUrl")
                         .value("https://cdn.example.com/media/21/display"))
-                .andExpect(jsonPath("$.data[1].handle").value("coach-jack"))
+                .andExpect(jsonPath("$.data[1].handle").value("@coach-jack"))
                 .andExpect(jsonPath("$.data[1].userType").value("WOOWACOURSE_COACH"))
                 .andExpect(jsonPath("$.data[1].track").isEmpty())
                 .andExpect(jsonPath("$.data[1].cohort").isEmpty())
@@ -753,7 +753,7 @@ class UserHttpApiTest {
                                 .summary("사용자 공개 프로필 조회")
                                 .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다. 본인 조회는 승인 대기 프로젝트를 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함한다.")
                                 .pathParameters(
-                                        parameterWithName("handle").description("조회할 사용자의 handle")
+                                        parameterWithName("handle").description("@[A-Za-z0-9_-]{2,30} 형식의 조회 대상 사용자 handle")
                                 )
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
@@ -785,7 +785,7 @@ class UserHttpApiTest {
                                 .summary("사용자 공개 프로필 조회")
                                 .description("handle로 사용자의 공개 프로필과 프로젝트 및 피드 개수를 조회한다. 본인 조회는 승인 대기 프로젝트를 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함한다.")
                                 .pathParameters(
-                                        parameterWithName("handle").description("조회할 사용자의 handle")
+                                        parameterWithName("handle").description("@[A-Za-z0-9_-]{2,30} 형식의 조회 대상 사용자 handle")
                                 )
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
