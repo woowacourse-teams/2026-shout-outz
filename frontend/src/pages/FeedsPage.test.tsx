@@ -110,13 +110,16 @@ test('피드 링크와 공유 주소가 상세 페이지를 가리킨다', async
   const feed = mockFeeds[0]!;
   const detailPath = `/feeds/${feed.feedId}`;
   const user = userEvent.setup();
+  const share = jest.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'share', { configurable: true, value: share });
   show(<FeedList sort="LATEST" />);
   const first = (await screen.findAllByRole('article'))[0]!;
   expect(within(first).getByRole('link', { name: feed.title })).toHaveAttribute('href', detailPath);
   await user.click(within(first).getByRole('button', { name: '공유' }));
-  expect(await navigator.clipboard.readText()).toBe(
-    new URL(detailPath, window.location.origin).href,
-  );
+  expect(share).toHaveBeenCalledWith({
+    title: document.title,
+    url: new URL(detailPath, window.location.origin).href,
+  });
 });
 test('인기 피드는 제목과 본문 미리보기를 함께 보여준다', async () => {
   // 목 핸들러는 인기순을 최신순의 역순으로 준다.

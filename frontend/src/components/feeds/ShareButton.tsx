@@ -7,23 +7,23 @@ import { useModal } from '@/hooks/useModal';
 export function ShareButton({ url, className }: { url: string; className?: string }) {
   const { open } = useModal();
 
-  const showResult = (success: boolean) => {
+  const showFailure = () => {
     void open<void>((close) => (
-      <ShareResultModal success={success} onClose={() => close()} />
+      <ShareResultModal onClose={() => close()} />
     ));
   };
 
-  const copyLink = async () => {
-    if (!navigator.clipboard?.writeText) {
-      showResult(false);
+  const share = async () => {
+    if (!navigator.share) {
+      showFailure();
       return;
     }
 
     try {
-      await navigator.clipboard.writeText(url);
-      showResult(true);
-    } catch {
-      showResult(false);
+      await navigator.share({ title: document.title, url });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      showFailure();
     }
   };
 
@@ -33,7 +33,7 @@ export function ShareButton({ url, className }: { url: string; className?: strin
       size="sm"
       className={className}
       aria-label="공유"
-      onClick={() => void copyLink()}
+      onClick={() => void share()}
     >
       <IconShare className="size-4" aria-hidden="true" />
     </Button>
