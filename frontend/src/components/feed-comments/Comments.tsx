@@ -1,4 +1,5 @@
 import { Component, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { Link } from '@tanstack/react-router';
 import {
   QueryErrorResetBoundary,
   useMutation,
@@ -324,23 +325,40 @@ function CommentItem({
     }
   };
 
+  const authorDetails = (
+    <>
+      <Avatar size="sm" src={item.author.avatarUrl ?? undefined} alt="" />
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="group-hover:text-primary-600 truncate text-sm font-semibold text-gray-900">
+            {item.author.displayName}
+          </span>
+          <CrewStatusBadge
+            userType={item.author.userType}
+            cohort={item.author.cohort}
+            size="xs"
+          />
+        </div>
+        {crewInfo && <p className="mt-0.5 text-sm text-gray-500">{crewInfo}</p>}
+      </div>
+    </>
+  );
+
   return (
     <li className="min-w-0 py-4 first:pt-0 last:pb-0">
       <div className="flex min-w-0 items-center gap-3">
-        <Avatar size="sm" src={item.author.avatarUrl ?? undefined} alt="" />
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <span className="truncate text-sm font-semibold text-gray-900">
-              {item.author.displayName}
-            </span>
-            <CrewStatusBadge
-              userType={item.author.userType}
-              cohort={item.author.cohort}
-              size="xs"
-            />
-          </div>
-          {crewInfo && <p className="mt-0.5 text-sm text-gray-500">{crewInfo}</p>}
-        </div>
+        {item.author.handle ? (
+          <Link
+            to="/users/$handle"
+            params={{ handle: item.author.handle }}
+            aria-label={`${item.author.displayName} 프로필 보기`}
+            className="group focus-visible:outline-primary-600 flex min-w-0 flex-1 items-center gap-3 rounded-sm focus-visible:outline-2"
+          >
+            {authorDetails}
+          </Link>
+        ) : (
+          <div className="flex min-w-0 flex-1 items-center gap-3">{authorDetails}</div>
+        )}
         <time dateTime={item.createdAt} className="shrink-0 text-sm text-gray-500">
           {formatRelativeTime(item.createdAt)}
           {item.edited ? ' · 수정됨' : ''}

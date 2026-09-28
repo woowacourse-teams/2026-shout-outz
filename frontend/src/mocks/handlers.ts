@@ -39,6 +39,7 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
           content: '경험을 공유해 주셔서 감사합니다!',
           author: {
             userId: 1,
+            handle: 'woojin',
             displayName: '개발용 사용자',
             userType: 'WOOWACOURSE_CREW',
             cohort: 8,
@@ -334,6 +335,7 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
         content: body.content,
         author: {
           userId: 1,
+          handle: 'woojin',
           displayName: '개발용 사용자',
           userType: 'WOOWACOURSE_CREW',
           cohort: 8,

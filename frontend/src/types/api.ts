@@ -100,6 +100,7 @@ export type FeedCommentData = Omit<GeneratedFeedComment, 'author'> & {
   agreeCount?: number;
   agreedByMe?: boolean;
   author: GeneratedFeedComment['author'] & {
+    handle?: string | null;
     userType?: UserType | null;
     cohort?: number | null;
     track?: Track | null;

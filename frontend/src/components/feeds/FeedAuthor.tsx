@@ -1,4 +1,5 @@
 import type { Feed } from '@/apis/feed';
+import { Link } from '@tanstack/react-router';
 import { Avatar } from '@/components/Avatar';
 import type { AvatarSize } from '@/components/Avatar';
 import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
@@ -31,11 +32,18 @@ export function FeedAuthor({
   const role = formatAuthorRole(author);
 
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <Link
+      to="/users/$handle"
+      params={{ handle: author.handle }}
+      aria-label={`${author.displayName} 프로필 보기`}
+      className="group focus-visible:outline-primary-600 flex min-w-0 items-center gap-2 rounded-sm focus-visible:outline-2"
+    >
       <Avatar size={avatarSize} src={author.avatarUrl ?? undefined} alt="" />
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-semibold text-gray-900">{author.displayName}</span>
+          <span className="group-hover:text-primary-600 truncate text-sm font-semibold text-gray-900">
+            {author.displayName}
+          </span>
           <CrewStatusBadge userType={author.userType} cohort={author.cohort} />
         </div>
         {(role || createdAt) && (
@@ -52,6 +60,6 @@ export function FeedAuthor({
           </div>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
