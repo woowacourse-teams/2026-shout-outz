@@ -18,10 +18,48 @@ public record NewsDetail(
         Instant eventEndAt,
         boolean pinned,
         Integer pinOrder,
+        long likeCount,
+        boolean likedByMe,
         Cta cta,
         Navigation previous,
         Navigation next
 ) {
+
+    public NewsDetail(
+            long id,
+            NewsType type,
+            String title,
+            String body,
+            long authorId,
+            String authorName,
+            Instant publishedAt,
+            Instant eventStartAt,
+            Instant eventEndAt,
+            boolean pinned,
+            Integer pinOrder,
+            Cta cta,
+            Navigation previous,
+            Navigation next
+    ) {
+        this(
+                id,
+                type,
+                title,
+                body,
+                authorId,
+                authorName,
+                publishedAt,
+                eventStartAt,
+                eventEndAt,
+                pinned,
+                pinOrder,
+                0L,
+                false,
+                cta,
+                previous,
+                next
+        );
+    }
 
     /**
      * 상세 조회 projection을 위한 생성자.
@@ -55,6 +93,8 @@ public record NewsDetail(
                 eventEndAt,
                 pinned,
                 pinOrder,
+                0L,
+                false,
                 Cta.from(ctaLabel, ctaUrl),
                 null,
                 null
@@ -87,6 +127,8 @@ public record NewsDetail(
                 eventEndAt,
                 pinned,
                 pinOrder,
+                likeCount,
+                likedByMe,
                 cta,
                 previous,
                 next

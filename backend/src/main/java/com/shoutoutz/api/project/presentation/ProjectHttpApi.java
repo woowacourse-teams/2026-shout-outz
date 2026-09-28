@@ -61,9 +61,13 @@ public class ProjectHttpApi {
 
     @GetMapping
     public ResponseEntity<SuccessResponse<List<ProjectFindAllResponse.Item>>> findAll(
+            @LoginUser(required = false) AuthenticatedUser loginUser,
             @Valid @ModelAttribute ProjectFindAllRequest request
     ) {
-        ProjectFindAllResponse response = projectService.findAll(request);
+        Long viewerId = AuthenticatedUser.userIdOrNull(loginUser);
+        ProjectFindAllResponse response = viewerId == null
+                ? projectService.findAll(request)
+                : projectService.findAll(request, viewerId);
         return ResponseEntity.ok(SuccessResponse.success(response.items(), response.meta()));
     }
 

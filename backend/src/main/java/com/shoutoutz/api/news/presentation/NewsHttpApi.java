@@ -67,14 +67,18 @@ public class NewsHttpApi {
 
     @GetMapping
     public ResponseEntity<SuccessResponse<List<NewsFindAllResponse.Item>>> findAll(
+            @LoginUser(required = false) AuthenticatedUser loginUser,
             @RequestParam(defaultValue = "ALL") String type,
             @RequestParam(required = false) String eventStatus,
             @RequestParam(defaultValue = "LATEST") String sort,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String cursor
     ) {
-        NewsFindAllResponse response = newsService.findAll(
-                new NewsFindAllRequest(type, eventStatus, sort, size, cursor));
+        NewsFindAllRequest request = new NewsFindAllRequest(type, eventStatus, sort, size, cursor);
+        Long viewerId = AuthenticatedUser.userIdOrNull(loginUser);
+        NewsFindAllResponse response = viewerId == null
+                ? newsService.findAll(request)
+                : newsService.findAll(request, viewerId);
         return ResponseEntity.ok(SuccessResponse.success(response.items(), response.meta()));
     }
 
@@ -83,11 +87,15 @@ public class NewsHttpApi {
      */
     @GetMapping("/{newsId}")
     public ResponseEntity<SuccessResponse<NewsFindResponse>> findDetail(
+            @LoginUser(required = false) AuthenticatedUser loginUser,
             @PathVariable long newsId,
             @RequestParam(defaultValue = "true") boolean navigation
     ) {
         NewsFindRequest request = new NewsFindRequest(newsId, navigation);
-        NewsFindResponse response = newsService.findDetail(request);
+        Long viewerId = AuthenticatedUser.userIdOrNull(loginUser);
+        NewsFindResponse response = viewerId == null
+                ? newsService.findDetail(request)
+                : newsService.findDetail(request, viewerId);
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
 

@@ -2,8 +2,10 @@ package com.shoutoutz.api.news.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.shoutoutz.api.news.domain.NewsReactionCounts;
 import com.shoutoutz.api.news.domain.NewsReactionRepository;
 import com.shoutoutz.api.news.domain.NewsReactionType;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +43,23 @@ class NewsReactionRepositoryIntegrationTest {
                 .isFalse();
 
         assertThat(newsReactionRepository.countByNewsId(newsId)).isEqualTo(1L);
+    }
+
+    @Test
+    void 소식_반응_개수와_현재_사용자의_좋아요_여부를_조회한다() {
+        long firstUserId = insertUser();
+        long secondUserId = insertUser();
+        long newsId = insertNews(firstUserId);
+
+        newsReactionRepository.add(newsId, firstUserId, NewsReactionType.LIKE);
+        newsReactionRepository.add(newsId, secondUserId, NewsReactionType.LIKE);
+
+        assertThat(newsReactionRepository.findCountsByNewsId(newsId, firstUserId))
+                .isEqualTo(new NewsReactionCounts(2L, true));
+        assertThat(newsReactionRepository.findCountsByNewsId(newsId, null))
+                .isEqualTo(new NewsReactionCounts(2L, false));
+        assertThat(newsReactionRepository.findCountsByNewsIds(List.of(newsId), secondUserId))
+                .containsEntry(newsId, new NewsReactionCounts(2L, true));
     }
 
     private long insertUser() {

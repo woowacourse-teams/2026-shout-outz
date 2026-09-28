@@ -18,6 +18,8 @@ import com.shoutoutz.api.comment.application.dto.FeedCommentCursor;
 import com.shoutoutz.api.comment.application.dto.FeedCommentPage;
 import com.shoutoutz.api.comment.domain.FeedComment;
 import com.shoutoutz.api.comment.domain.FeedCommentRepository;
+import com.shoutoutz.api.comment.domain.FeedCommentReactionCounts;
+import com.shoutoutz.api.comment.domain.FeedCommentReactionRepository;
 import com.shoutoutz.api.comment.domain.FeedCommentSort;
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentCreateRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentFindRequest;
@@ -40,6 +42,7 @@ import com.shoutoutz.api.user.domain.profile.UserType;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -74,6 +77,9 @@ class FeedCommentServiceTest {
     @Mock
     private MediaUrlResolver mediaUrlResolver;
 
+    @Mock
+    private FeedCommentReactionRepository feedCommentReactionRepository;
+
     private FeedCommentService feedCommentService;
 
     @BeforeEach
@@ -83,7 +89,8 @@ class FeedCommentServiceTest {
                 feedCommentRepository,
                 feedCommentQueryRepository,
                 userProfileRepository,
-                mediaUrlResolver
+                mediaUrlResolver,
+                feedCommentReactionRepository
         );
         lenient().when(mediaUrlResolver.resolve(10L))
                 .thenReturn(URI.create("https://cdn.example.com/media/10/display"));
@@ -213,6 +220,11 @@ class FeedCommentServiceTest {
         )).thenReturn(new FeedCommentPage(List.of(ownComment, otherComment), false));
         when(feedCommentQueryRepository.findReplies(FEED_ID, List.of(COMMENT_ID, 502L)))
                 .thenReturn(List.of());
+        when(feedCommentReactionRepository.findByCommentIds(List.of(COMMENT_ID, 502L), AUTHOR_ID))
+                .thenReturn(Map.of(
+                        COMMENT_ID, new FeedCommentReactionCounts(4L, true),
+                        502L, new FeedCommentReactionCounts(2L, false)
+                ));
         givenAuthor(AUTHOR_ID, "내 이름", 10L);
         givenAuthor(AUTHOR_ID + 1, "다른 이름", 11L);
 
@@ -223,6 +235,10 @@ class FeedCommentServiceTest {
         );
 
         assertThat(result.comments()).extracting(Comment::editable)
+                .containsExactly(true, false);
+        assertThat(result.comments()).extracting(Comment::agreeCount)
+                .containsExactly(4L, 2L);
+        assertThat(result.comments()).extracting(Comment::agreedByMe)
                 .containsExactly(true, false);
     }
 

@@ -383,6 +383,11 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"),
                                         fieldWithPath("data[].commentCount").type(NUMBER)
                                                 .description("삭제되지 않은 댓글 수 (대댓글 포함)"),
+                                        fieldWithPath("data[].bookmarkCount").type(NUMBER).description("북마크 수"),
+                                        fieldWithPath("data[].likedByMe").type(BOOLEAN)
+                                                .description("요청자의 좋아요 여부. 비로그인이면 false다."),
+                                        fieldWithPath("data[].bookmarkedByMe").type(BOOLEAN)
+                                                .description("요청자의 북마크 여부. 비로그인이면 false다."),
                                         fieldWithPath("data[].techTags").type(ARRAY)
                                                 .description("기술 스택 전체 목록. 등록 순서대로 정렬하며, 카드에 몇 개까지 보여줄지는 화면에서 정한다."),
                                         fieldWithPath("data[].techTags[].id").type(NUMBER).description("기술 스택 ID"),

@@ -11,7 +11,9 @@ public record UserCommentResponse(
         long targetId,
         String content,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        long agreeCount,
+        boolean agreedByMe
 ) {
 
     public static List<UserCommentResponse> from(List<UserCommentItem> comments) {
@@ -27,7 +29,9 @@ public record UserCommentResponse(
                 comment.targetId(),
                 comment.content(),
                 comment.createdAt(),
-                comment.updatedAt()
+                comment.updatedAt(),
+                comment.agreeCount(),
+                comment.agreedByMe()
         );
     }
 }

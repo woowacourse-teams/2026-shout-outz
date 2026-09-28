@@ -10,6 +10,8 @@ import com.shoutoutz.api.comment.application.dto.FeedCommentPage;
 import com.shoutoutz.api.comment.domain.CommentErrorCode;
 import com.shoutoutz.api.comment.domain.FeedComment;
 import com.shoutoutz.api.comment.domain.FeedCommentRepository;
+import com.shoutoutz.api.comment.domain.FeedCommentReactionCounts;
+import com.shoutoutz.api.comment.domain.FeedCommentReactionRepository;
 import com.shoutoutz.api.comment.domain.FeedCommentSort;
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentCreateRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.FeedCommentFindRequest;
@@ -35,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,7 +48,6 @@ import org.springframework.transaction.annotation.Transactional;
  * FeedRepository를 사용한다. API의 식별자는 feedId로 노출한다.
  */
 @Service
-@RequiredArgsConstructor
 public class FeedCommentService {
 
     private final FeedRepository feedRepository;
@@ -54,6 +55,41 @@ public class FeedCommentService {
     private final FeedCommentQueryRepository feedCommentQueryRepository;
     private final UserProfileRepository userProfileRepository;
     private final MediaUrlResolver mediaUrlResolver;
+    private final FeedCommentReactionRepository feedCommentReactionRepository;
+
+    @Autowired
+    public FeedCommentService(
+            FeedRepository feedRepository,
+            FeedCommentRepository feedCommentRepository,
+            FeedCommentQueryRepository feedCommentQueryRepository,
+            UserProfileRepository userProfileRepository,
+            MediaUrlResolver mediaUrlResolver,
+            FeedCommentReactionRepository feedCommentReactionRepository
+    ) {
+        this.feedRepository = feedRepository;
+        this.feedCommentRepository = feedCommentRepository;
+        this.feedCommentQueryRepository = feedCommentQueryRepository;
+        this.userProfileRepository = userProfileRepository;
+        this.mediaUrlResolver = mediaUrlResolver;
+        this.feedCommentReactionRepository = feedCommentReactionRepository;
+    }
+
+    public FeedCommentService(
+            FeedRepository feedRepository,
+            FeedCommentRepository feedCommentRepository,
+            FeedCommentQueryRepository feedCommentQueryRepository,
+            UserProfileRepository userProfileRepository,
+            MediaUrlResolver mediaUrlResolver
+    ) {
+        this(
+                feedRepository,
+                feedCommentRepository,
+                feedCommentQueryRepository,
+                userProfileRepository,
+                mediaUrlResolver,
+                null
+        );
+    }
 
     @Transactional
     public FeedCommentCreateResponse create(
@@ -132,8 +168,9 @@ public class FeedCommentService {
         }
 
         Map<Long, URI> avatarUrls = resolveAvatarUrls(authors.values());
+        Map<Long, FeedCommentReactionCounts> reactionCounts = findReactionCounts(orderedComments, loginUserId);
         List<FeedCommentFindResponse.Comment> comments = orderedComments.stream()
-                .map(comment -> toFindResponse(comment, loginUserId, authors, avatarUrls))
+                .map(comment -> toFindResponse(comment, loginUserId, authors, avatarUrls, reactionCounts))
                 .toList();
 
         // 4. meta 정보: 다음 커서 정보 제공
@@ -240,12 +277,16 @@ public class FeedCommentService {
             FeedComment comment,
             Long loginUserId,
             Map<Long, UserProfile> authors,
-            Map<Long, URI> avatarUrls
+            Map<Long, URI> avatarUrls,
+            Map<Long, FeedCommentReactionCounts> reactionCounts
     ) {
         UserProfile author = authors.computeIfAbsent(comment.getAuthorId(), this::findAuthor);
         // 삭제된 댓글이 아니며, 작성자가 본인인 경우 수정 가능
         boolean editable = !comment.isDeleted()
                 && Objects.equals(comment.getAuthorId(), loginUserId);
+        FeedCommentReactionCounts counts = comment.isDeleted()
+                ? new FeedCommentReactionCounts(0L, false)
+                : reactionCounts.getOrDefault(comment.getId(), new FeedCommentReactionCounts(0L, false));
         return new FeedCommentFindResponse.Comment(
                 comment.getId(),
                 comment.isDeleted() ? null : comment.getContent(),
@@ -260,8 +301,24 @@ public class FeedCommentService {
                 comment.getUpdatedAt(),
                 editable,
                 comment.isEdited(),
-                comment.isDeleted()
+                comment.isDeleted(),
+                counts.agreeCount(),
+                counts.agreedByMe()
         );
+    }
+
+    private Map<Long, FeedCommentReactionCounts> findReactionCounts(
+            List<FeedComment> comments,
+            Long loginUserId
+    ) {
+        if (comments.isEmpty() || feedCommentReactionRepository == null) {
+            return Map.of();
+        }
+        Map<Long, FeedCommentReactionCounts> counts = feedCommentReactionRepository.findByCommentIds(
+                comments.stream().map(FeedComment::getId).toList(),
+                loginUserId
+        );
+        return counts == null ? Map.of() : counts;
     }
 
     private FeedCommentCursor toCursor(FeedComment comment, FeedCommentSort sort) {

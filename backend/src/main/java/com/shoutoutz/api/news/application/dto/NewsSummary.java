@@ -18,6 +18,34 @@ public record NewsSummary(
         Instant eventStartAt,
         Instant eventEndAt,
         boolean pinned,
-        Integer pinOrder
+        Integer pinOrder,
+        long likeCount,
+        boolean likedByMe
 ) {
+
+    public NewsSummary(
+            Long id,
+            NewsType type,
+            String title,
+            String summary,
+            Instant publishedAt,
+            Instant eventStartAt,
+            Instant eventEndAt,
+            boolean pinned,
+            Integer pinOrder
+    ) {
+        this(
+                id,
+                type,
+                title,
+                summary,
+                publishedAt,
+                eventStartAt,
+                eventEndAt,
+                pinned,
+                pinOrder,
+                0L,
+                false
+        );
+    }
 }

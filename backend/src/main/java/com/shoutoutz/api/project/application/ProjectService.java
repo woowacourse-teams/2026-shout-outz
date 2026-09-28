@@ -171,15 +171,23 @@ public class ProjectService {
      */
     @Transactional(readOnly = true)
     public ProjectFindAllResponse findAll(ProjectFindAllRequest request) {
+        return findAll(request, null);
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectFindAllResponse findAll(ProjectFindAllRequest request, Long viewerId) {
         ProjectSort sort = request.resolvedSort();
-        ProjectPage page = projectRepository.findAll(new ProjectSearchCondition(
+        ProjectSearchCondition condition = new ProjectSearchCondition(
                 request.keyword(),
                 request.resolvedCohorts(),
                 request.resolvedTechTagIds(),
                 sort,
                 request.resolvedSize(),
                 request.resolvedCursor()
-        ));
+        );
+        ProjectPage page = viewerId == null
+                ? projectRepository.findAll(condition)
+                : projectRepository.findAll(condition, viewerId);
         ProjectCursor nextCursor = page.nextCursor(sort);
         Map<Long, URI> mediaUrls = resolveProjectMediaUrls(page.items());
         return ProjectFindAllResponse.of(
@@ -195,17 +203,33 @@ public class ProjectService {
      */
     @Transactional(readOnly = true)
     public UserProjectResult findAllByUser(String handle, UserProjectFindRequest request) {
+        return findAllByUser(handle, request, null);
+    }
+
+    @Transactional(readOnly = true)
+    public UserProjectResult findAllByUser(
+            String handle,
+            UserProjectFindRequest request,
+            Long viewerId
+    ) {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND));
         if (user.isDeleted()) {
             return new UserProjectResult(List.of(), false);
         }
 
-        UserProjectResult result = userProjectQueryRepository.findAllByUserId(
-                user.getId(),
-                request.resolvedCursor(),
-                request.resolvedSize()
-        );
+        UserProjectResult result = viewerId == null
+                ? userProjectQueryRepository.findAllByUserId(
+                        user.getId(),
+                        request.resolvedCursor(),
+                        request.resolvedSize()
+                )
+                : userProjectQueryRepository.findAllByUserId(
+                        user.getId(),
+                        viewerId,
+                        request.resolvedCursor(),
+                        request.resolvedSize()
+                );
         return new UserProjectResult(
                 result.projects(),
                 result.hasNext(),

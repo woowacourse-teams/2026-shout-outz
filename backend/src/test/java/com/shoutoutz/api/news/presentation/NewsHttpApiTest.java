@@ -394,6 +394,8 @@ class NewsHttpApiTest {
                 .andExpect(jsonPath("$.data[0].type").value("EVENT"))
                 .andExpect(jsonPath("$.data[0].eventStatus").value("ONGOING"))
                 .andExpect(jsonPath("$.data[0].isPinned").value(false))
+                .andExpect(jsonPath("$.data[0].likeCount").value(0))
+                .andExpect(jsonPath("$.data[0].likedByMe").value(false))
                 .andExpect(jsonPath("$.meta.nextCursor").value(nullValue()))
                 .andExpect(jsonPath("$.meta.hasNext").value(false))
                 .andDo(document(
@@ -459,6 +461,12 @@ class NewsHttpApiTest {
                                                 .type(NUMBER)
                                                 .description("고정 순서. 고정되지 않은 경우 null")
                                                 .optional(),
+                                        fieldWithPath("data[].likeCount")
+                                                .type(NUMBER)
+                                                .description("좋아요 수"),
+                                        fieldWithPath("data[].likedByMe")
+                                                .type(BOOLEAN)
+                                                .description("현재 사용자의 좋아요 여부"),
                                         fieldWithPath("meta")
                                                 .type(OBJECT)
                                                 .description("페이지네이션 정보"),
@@ -530,6 +538,8 @@ class NewsHttpApiTest {
                 .andExpect(jsonPath("$.data.eventStatus").value("ONGOING"))
                 .andExpect(jsonPath("$.data.isPinned").value(false))
                 .andExpect(jsonPath("$.data.pinOrder").value(nullValue()))
+                .andExpect(jsonPath("$.data.likeCount").value(0))
+                .andExpect(jsonPath("$.data.likedByMe").value(false))
                 .andExpect(jsonPath("$.data.cta.label").value("프로젝트 등록하기"))
                 .andExpect(jsonPath("$.data.cta.url").value("/projects/3001"))
                 .andExpect(jsonPath("$.data.previous.id").value(101))
@@ -600,6 +610,12 @@ class NewsHttpApiTest {
                                                 .type(NUMBER)
                                                 .description("고정 순서. 고정되지 않은 경우 null")
                                                 .optional(),
+                                        fieldWithPath("data.likeCount")
+                                                .type(NUMBER)
+                                                .description("좋아요 수"),
+                                        fieldWithPath("data.likedByMe")
+                                                .type(BOOLEAN)
+                                                .description("현재 사용자의 좋아요 여부"),
                                         fieldWithPath("data.cta")
                                                 .type(OBJECT)
                                                 .description("소식 CTA")

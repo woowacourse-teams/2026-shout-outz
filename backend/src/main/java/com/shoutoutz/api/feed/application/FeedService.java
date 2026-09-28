@@ -86,17 +86,36 @@ public class FeedService {
     }
 
     @Transactional(readOnly = true)
+    public FeedResponse findFeed(long feedId, Long viewerId) {
+        return toQueryResponse(findFeedItem(feedId, viewerId));
+    }
+
+    @Transactional(readOnly = true)
     public FeedFindAllResult findAllFeed(FeedFindAllRequest request) {
+        return findAllFeed(request, null);
+    }
+
+    @Transactional(readOnly = true)
+    public FeedFindAllResult findAllFeed(FeedFindAllRequest request, Long viewerId) {
         FeedSort sort = request.resolvedSort();
         FeedCursor cursor = feedCursorCodec.decode(request.cursor(), sort);
         int size = request.resolvedSize();
-        List<FeedItem> feedsWithExtraItem = feedQueryRepository.findAll(
-                sort,
-                request.categoryId(),
-                request.keyword(),
-                cursor,
-                size + 1
-        );
+        List<FeedItem> feedsWithExtraItem = viewerId == null
+                ? feedQueryRepository.findAll(
+                        sort,
+                        request.categoryId(),
+                        request.keyword(),
+                        cursor,
+                        size + 1
+                )
+                : feedQueryRepository.findAll(
+                        sort,
+                        request.categoryId(),
+                        request.keyword(),
+                        viewerId,
+                        cursor,
+                        size + 1
+                );
         return createSlice(feedsWithExtraItem, size, sort);
     }
 
@@ -114,6 +133,15 @@ public class FeedService {
      */
     @Transactional(readOnly = true)
     public FeedFindAllResult findAllByUser(String handle, UserFeedFindRequest request) {
+        return findAllByUser(handle, request, null);
+    }
+
+    @Transactional(readOnly = true)
+    public FeedFindAllResult findAllByUser(
+            String handle,
+            UserFeedFindRequest request,
+            Long viewerId
+    ) {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
         if (user.isDeleted()) {
@@ -123,11 +151,14 @@ public class FeedService {
         FeedSort sort = FeedSort.LATEST;
         FeedCursor cursor = feedCursorCodec.decode(request.cursor(), sort);
         int size = request.resolvedSize();
-        List<FeedItem> feedsWithExtraItem = feedQueryRepository.findAllByAuthorId(
-                user.getId(),
-                cursor,
-                size + 1
-        );
+        List<FeedItem> feedsWithExtraItem = viewerId == null
+                ? feedQueryRepository.findAllByAuthorId(user.getId(), cursor, size + 1)
+                : feedQueryRepository.findAllByAuthorId(
+                        user.getId(),
+                        viewerId,
+                        cursor,
+                        size + 1
+                );
         return createSlice(feedsWithExtraItem, size, sort);
     }
 
@@ -263,6 +294,13 @@ public class FeedService {
 
     private FeedItem findFeedItem(long feedId) {
         return feedQueryRepository.findById(feedId)
+                .orElseThrow(() -> new NotFoundException(FeedErrorCode.FEED_NOT_FOUND));
+    }
+
+    private FeedItem findFeedItem(long feedId, Long viewerId) {
+        return (viewerId == null
+                ? feedQueryRepository.findById(feedId)
+                : feedQueryRepository.findById(feedId, viewerId))
                 .orElseThrow(() -> new NotFoundException(FeedErrorCode.FEED_NOT_FOUND));
     }
 

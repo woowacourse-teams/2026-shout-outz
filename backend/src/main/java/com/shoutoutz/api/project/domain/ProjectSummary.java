@@ -19,10 +19,48 @@ public record ProjectSummary(
         Integer starCount,
         long likeCount,
         long commentCount,
+        long bookmarkCount,
+        boolean likedByMe,
+        boolean bookmarkedByMe,
         List<ProjectTechTag> techTags,
         List<ProjectMemberProfile> members,
         Instant createdAt
 ) {
+
+    public ProjectSummary(
+            long id,
+            String slug,
+            String title,
+            String tagline,
+            int cohort,
+            Long thumbnailMediaId,
+            Long registeredBy,
+            Integer starCount,
+            long likeCount,
+            long commentCount,
+            List<ProjectTechTag> techTags,
+            List<ProjectMemberProfile> members,
+            Instant createdAt
+    ) {
+        this(
+                id,
+                slug,
+                title,
+                tagline,
+                cohort,
+                thumbnailMediaId,
+                registeredBy,
+                starCount,
+                likeCount,
+                commentCount,
+                0L,
+                false,
+                false,
+                techTags,
+                members,
+                createdAt
+        );
+    }
 
     public boolean isArchived() {
         return registeredBy == null;
@@ -51,6 +89,9 @@ public record ProjectSummary(
                 starCount,
                 likeCount,
                 commentCount,
+                bookmarkCount,
+                likedByMe,
+                bookmarkedByMe,
                 List.copyOf(techTags),
                 List.copyOf(members),
                 createdAt

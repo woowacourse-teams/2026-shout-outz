@@ -25,6 +25,9 @@ public record UserProjectResponse(
         Integer starCount,
         long likeCount,
         long commentCount,
+        long bookmarkCount,
+        boolean likedByMe,
+        boolean bookmarkedByMe,
         List<ProjectTechTagResponse> techTags,
         List<Member> members
 ) {
@@ -55,6 +58,9 @@ public record UserProjectResponse(
                 project.starCount(),
                 project.likeCount(),
                 project.commentCount(),
+                project.bookmarkCount(),
+                project.likedByMe(),
+                project.bookmarkedByMe(),
                 project.techTags().stream().map(ProjectTechTagResponse::from).toList(),
                 project.members().stream().map(member -> Member.from(member, mediaUrls)).toList()
         );

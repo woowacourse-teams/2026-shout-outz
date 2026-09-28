@@ -15,6 +15,8 @@ import com.shoutoutz.api.news.domain.NewsCta;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
 import com.shoutoutz.api.news.domain.NewsEventPeriod;
 import com.shoutoutz.api.news.domain.NewsRepository;
+import com.shoutoutz.api.news.domain.NewsReactionCounts;
+import com.shoutoutz.api.news.domain.NewsReactionRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.news.domain.enums.EventStatus;
 import com.shoutoutz.api.news.domain.enums.NewsType;
@@ -33,6 +35,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +47,7 @@ public class NewsService {
     private final NewsRepository newsRepository;
     private final NewsQueryRepository newsQueryRepository;
     private final Clock clock;
+    private final NewsReactionRepository newsReactionRepository;
 
     @Transactional
     public NoticeCreateResponse createNotice(
@@ -155,6 +159,11 @@ public class NewsService {
      */
     @Transactional(readOnly = true)
     public NewsFindAllResponse findAll(NewsFindAllRequest request) {
+        return findAll(request, null);
+    }
+
+    @Transactional(readOnly = true)
+    public NewsFindAllResponse findAll(NewsFindAllRequest request, Long viewerId) {
         Instant now = clock.instant();
         NewsPage page = newsQueryRepository.findAll(
                 request.getNewsType(),
@@ -163,11 +172,25 @@ public class NewsService {
                 request.getCursor(),
                 request.getSize()
         );
+        Map<Long, NewsReactionCounts> fetchedReactionCounts = newsReactionRepository.findCountsByNewsIds(
+                page.items().stream().map(NewsSummary::id).toList(),
+                viewerId
+        );
+        Map<Long, NewsReactionCounts> reactionCounts = fetchedReactionCounts == null
+                ? Map.of()
+                : fetchedReactionCounts;
 
         // data 응답부
         List<NewsFindAllResponse.Item> items =
                 page.items().stream()
-                        .map(summary -> toResponses(summary, now))
+                        .map(summary -> toResponses(
+                                summary,
+                                now,
+                                reactionCounts.getOrDefault(
+                                        summary.id(),
+                                        new NewsReactionCounts(summary.likeCount(), summary.likedByMe())
+                                )
+                        ))
                         .toList();
 
         // meta 응답부
@@ -180,9 +203,22 @@ public class NewsService {
 
     @Transactional(readOnly = true)
     public NewsFindResponse findDetail(NewsFindRequest request) {
+        return findDetail(request, null);
+    }
+
+    @Transactional(readOnly = true)
+    public NewsFindResponse findDetail(NewsFindRequest request, Long viewerId) {
         // 조회
         NewsDetail newsDetail = newsQueryRepository.findDetailById(request.newsId(), request.navigation())
                 .orElseThrow(() -> new EntityNotFoundException(NewsErrorCode.NEWS_NOT_FOUND));
+
+        NewsReactionCounts reactionCounts = newsReactionRepository.findCountsByNewsId(
+                newsDetail.id(),
+                viewerId
+        );
+        if (reactionCounts == null) {
+            reactionCounts = new NewsReactionCounts(newsDetail.likeCount(), newsDetail.likedByMe());
+        }
 
         // 이벤트인 경우, 상태 생성
         EventStatus eventStatus = newsDetail.type() == NewsType.EVENT ? getEventStatus(newsDetail) : null;
@@ -200,6 +236,8 @@ public class NewsService {
                 newsDetail.eventEndAt(),
                 newsDetail.pinned(),
                 newsDetail.pinOrder(),
+                reactionCounts.likeCount(),
+                reactionCounts.likedByMe(),
                 toDetailCta(newsDetail.cta()),
                 toNavigation(newsDetail.previous()),
                 toNavigation(newsDetail.next())
@@ -278,7 +316,7 @@ public class NewsService {
      * 전체 목록 조회 유스케이스 헬퍼메서드
      */
     private NewsFindAllResponse.Item toResponses
-            (NewsSummary summary, Instant now) {
+            (NewsSummary summary, Instant now, NewsReactionCounts reactionCounts) {
         EventStatus eventStatus = summary.type() == NewsType.EVENT
                 ? EventStatus.from(now, summary.eventStartAt(), summary.eventEndAt())
                 : null;
@@ -292,7 +330,9 @@ public class NewsService {
                 summary.eventStartAt(),
                 summary.eventEndAt(),
                 summary.pinned(),
-                summary.pinOrder()
+                summary.pinOrder(),
+                reactionCounts.likeCount(),
+                reactionCounts.likedByMe()
         );
     }
 

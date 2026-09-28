@@ -19,10 +19,48 @@ public record NewsFindResponse(
         Instant eventEndAt,
         boolean isPinned,
         Integer pinOrder,
+        long likeCount,
+        boolean likedByMe,
         Cta cta,
         Navigation previous,
         Navigation next
 ) {
+
+    public NewsFindResponse(
+            long id,
+            NewsType type,
+            String title,
+            String body,
+            Author author,
+            Instant publishedAt,
+            EventStatus eventStatus,
+            Instant eventStartAt,
+            Instant eventEndAt,
+            boolean isPinned,
+            Integer pinOrder,
+            Cta cta,
+            Navigation previous,
+            Navigation next
+    ) {
+        this(
+                id,
+                type,
+                title,
+                body,
+                author,
+                publishedAt,
+                eventStatus,
+                eventStartAt,
+                eventEndAt,
+                isPinned,
+                pinOrder,
+                0L,
+                false,
+                cta,
+                previous,
+                next
+        );
+    }
 
     public record Author(long userId, String name) {
     }

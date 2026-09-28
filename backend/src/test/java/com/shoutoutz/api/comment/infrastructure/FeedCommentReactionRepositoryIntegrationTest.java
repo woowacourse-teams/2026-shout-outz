@@ -8,6 +8,7 @@ import com.shoutoutz.api.comment.domain.FeedCommentReactionType;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,10 @@ class FeedCommentReactionRepositoryIntegrationTest {
 
         assertThat(feedCommentReactionRepository.countByCommentId(commentId))
                 .isEqualTo(new FeedCommentReactionCounts(2L));
+        assertThat(feedCommentReactionRepository.findByCommentIds(List.of(commentId), firstUserId))
+                .containsEntry(commentId, new FeedCommentReactionCounts(2L, true));
+        assertThat(feedCommentReactionRepository.findByCommentIds(List.of(commentId), null))
+                .containsEntry(commentId, new FeedCommentReactionCounts(2L, false));
 
         assertThat(feedCommentReactionRepository.remove(commentId, firstUserId, FeedCommentReactionType.AGREE))
                 .isTrue();

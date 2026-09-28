@@ -132,6 +132,11 @@ public class ProjectRepositoryImpl implements ProjectRepository {
         return projectListJdbcRepository.findAll(condition);
     }
 
+    @Override
+    public ProjectPage findAll(ProjectSearchCondition condition, Long viewerId) {
+        return projectListJdbcRepository.findAll(condition, viewerId);
+    }
+
     /**
      * 목록 조회와 같은 조건으로 세야 하므로, 목록 JDBC 조회에 맡긴다.
      */

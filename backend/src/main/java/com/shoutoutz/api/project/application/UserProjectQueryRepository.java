@@ -9,4 +9,11 @@ import com.shoutoutz.api.project.domain.ProjectCursor;
 public interface UserProjectQueryRepository {
 
     UserProjectResult findAllByUserId(long userId, ProjectCursor cursor, int size);
+
+    UserProjectResult findAllByUserId(
+            long userId,
+            Long viewerId,
+            ProjectCursor cursor,
+            int size
+    );
 }

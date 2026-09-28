@@ -219,6 +219,29 @@ class ProjectListRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("프로젝트 목록은 좋아요와 북마크 수와 현재 사용자의 반응 여부를 조회한다.")
+    void readsReactionCountsAndViewerState() {
+        long projectId = saveProject("APPROVED", 6, BASE_TIME);
+        long viewerId = saveUser("viewer").getId();
+        long otherId = saveUser("other").getId();
+        jdbcTemplate.update(
+                "INSERT INTO project_reactions (project_id, user_id, reaction_type) VALUES (?, ?, 'LIKE'), (?, ?, 'LIKE'), (?, ?, 'BOOKMARK')",
+                projectId, viewerId, projectId, otherId, projectId, viewerId
+        );
+
+        ProjectSummary summary = projectRepository.findAll(condition(token), viewerId).items().getFirst();
+
+        assertThat(summary.likeCount()).isEqualTo(2L);
+        assertThat(summary.bookmarkCount()).isEqualTo(1L);
+        assertThat(summary.likedByMe()).isTrue();
+        assertThat(summary.bookmarkedByMe()).isTrue();
+
+        ProjectSummary anonymous = projectRepository.findAll(condition(token)).items().getFirst();
+        assertThat(anonymous.likedByMe()).isFalse();
+        assertThat(anonymous.bookmarkedByMe()).isFalse();
+    }
+
+    @Test
     @DisplayName("GitHub 스타 수를 조회하고, 아직 동기화하지 않은 프로젝트는 null 로 둔다.")
     void readsStarCount() {
         long synced = saveProject("APPROVED", 6, BASE_TIME.plusSeconds(1));
