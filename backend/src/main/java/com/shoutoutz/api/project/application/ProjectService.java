@@ -122,7 +122,7 @@ public class ProjectService {
         List<Long> memberIds = request.memberHandles().stream()
                 .map(this::resolveMemberId)
                 .toList();
-        ProjectMembers members = ProjectMembers.of(registeredBy, memberIds);
+        ProjectMembers members = ProjectMembers.of(memberIds);
 
         Project savedProject = projectRepository.save(project, request.techTagIds(), members.getUserIds());
         return new ProjectCreateResponse(savedProject.getId(), savedProject.getSlug().value());
@@ -159,7 +159,7 @@ public class ProjectService {
         }
         validateDescriptionMedia(descriptionMd, loginUserId);
         List<Long> memberIds = resolveMemberIds(request.memberHandles(), projectRepository.findMemberIds(projectId));
-        ProjectMembers members = ProjectMembers.of(project.getRegisteredBy(), memberIds);
+        ProjectMembers members = ProjectMembers.of(memberIds);
 
         Project savedProject = projectRepository.update(updated, request.techTagIds(), members.getUserIds());
         return ProjectUpdateResponse.from(savedProject);
