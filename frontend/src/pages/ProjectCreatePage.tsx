@@ -224,7 +224,7 @@ export function ProjectForm({
           name: 'project_create_submitted',
           cohort: values.cohort!,
           techTagCount: values.techTags.length,
-          memberCount: values.members.length,
+          memberCount: values.members.length + 1,
           hasThumbnail: values.thumbnailImageId !== null,
           hasDeploymentUrl: values.deploymentUrl.trim() !== '',
         }),
@@ -382,9 +382,9 @@ export function ProjectForm({
               </div>
 
               <div className="flex flex-col gap-2">
-                <p className="text-sm font-medium text-gray-900">참여 팀원 *</p>
+                <p className="text-sm font-medium text-gray-900">참여 팀원</p>
                 <p className="text-xs text-gray-500">
-                  작성자는 자동으로 포함됩니다. 함께한 팀원을 1명 이상 선택해 주세요.
+                  작성자는 자동으로 포함됩니다. 함께한 팀원이 있다면 추가해 주세요.
                 </p>
                 <MemberField
                   author={author}

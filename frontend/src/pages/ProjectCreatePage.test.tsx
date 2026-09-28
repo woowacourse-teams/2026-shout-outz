@@ -44,7 +44,7 @@ const captureCreateRequest = () => {
   return received;
 };
 
-const fillRequiredFields = async (user: User) => {
+const fillRequiredFields = async (user: User, includeCrew = true) => {
   // 기수 목록을 불러오는 동안에는 폼 대신 로딩 문구가 떠 있다.
   await user.type(await screen.findByRole('textbox', { name: /프로젝트 이름/ }), FORM.title);
   await user.type(screen.getByRole('textbox', { name: /한 줄 소개/ }), FORM.tagline);
@@ -58,7 +58,7 @@ const fillRequiredFields = async (user: User) => {
   );
 
   await selectTechTags(user, ['React']);
-  await selectCrews(user, '재키', ['재키']);
+  if (includeCrew) await selectCrews(user, '재키', ['재키']);
 };
 
 /** 기술 스택 시트를 열어 이름으로 고르고 적용한다. */
@@ -148,14 +148,16 @@ describe('ProjectCreatePage', () => {
   });
 
   describe('등록 성공', () => {
-    it('완료 안내와 프로젝트 목록으로 가는 버튼을 보여준다', async () => {
+    it('작성자 한 명만 있어도 등록 요청을 보내고 목 응답을 표시한다', async () => {
       const user = userEvent.setup();
+      const received = captureCreateRequest();
       renderRoute('/projects/new');
 
-      await fillRequiredFields(user);
+      await fillRequiredFields(user, false);
       await submit(user);
 
       expect(await screen.findByText('등록이 완료됐어요.')).toBeInTheDocument();
+      expect(received.body).toEqual(expect.objectContaining({ memberHandles: [] }));
       expect(screen.getByRole('link', { name: '프로젝트 목록으로' })).toHaveAttribute(
         'href',
         '/projects',
@@ -178,7 +180,6 @@ describe('ProjectCreatePage', () => {
       expect(screen.getByText('우테코 기수를 선택해 주세요.')).toBeInTheDocument();
       expect(screen.getByText('GitHub 레포지토리 URL을 입력해 주세요.')).toBeInTheDocument();
       expect(screen.getByText('기술 스택을 1개 이상 선택해 주세요.')).toBeInTheDocument();
-      expect(screen.getByText('참여 팀원을 1명 이상 선택해 주세요.')).toBeInTheDocument();
       expect(received.body).toBeUndefined();
     });
 

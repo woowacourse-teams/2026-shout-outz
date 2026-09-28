@@ -23,8 +23,8 @@ const isGithubRepositoryUrl = (value: string) =>
  * 폼 값을 검사해 필드별 오류 문구를 돌려준다. 오류가 없으면 빈 객체다.
  *
  * 필수 여부는 디자인의 `*` 표시를 따른다.
- * - 필수: 프로젝트 이름, 한 줄 소개, 기수, GitHub 레포지토리 URL, 기술 스택, 참여 팀원
- * - 선택: 팀 이름, 상세 설명, 서비스 배포 URL, 썸네일
+ * - 필수: 프로젝트 이름, 한 줄 소개, 기수, GitHub 레포지토리 URL, 기술 스택
+ * - 선택: 팀 이름, 상세 설명, 서비스 배포 URL, 썸네일, 작성자 외 참여 팀원
  */
 export function validateProjectForm(values: ProjectFormValues): ProjectFormErrors {
   const errors: ProjectFormErrors = {};
@@ -33,10 +33,6 @@ export function validateProjectForm(values: ProjectFormValues): ProjectFormError
   if (!values.tagline.trim()) errors.tagline = '한 줄 소개를 입력해 주세요.';
   if (values.cohort === null) errors.cohort = '우테코 기수를 선택해 주세요.';
   if (values.techTags.length === 0) errors.techTags = '기술 스택을 1개 이상 선택해 주세요.';
-  if (values.members.length === 0) {
-    errors.members = '참여 팀원을 1명 이상 선택해 주세요.';
-  }
-
   const githubRepositoryUrl = values.githubRepositoryUrl.trim();
   if (!githubRepositoryUrl) {
     errors.githubRepositoryUrl = 'GitHub 레포지토리 URL을 입력해 주세요.';

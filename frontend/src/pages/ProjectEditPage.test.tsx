@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { renderRoute, server } from '@/test/renderRoute';
 
-it('수정 시 작성자를 맨 앞에 고정하고 추가 팀원만 전송한다', async () => {
+it('수정 시 작성자를 맨 앞에 고정하고 추가 팀원이 없어도 요청한다', async () => {
   const user = userEvent.setup();
   let body: unknown;
   server.use(
@@ -34,16 +34,6 @@ it('수정 시 작성자를 맨 앞에 고정하고 추가 팀원만 전송한�
   expect(screen.getByText('작성자 · 항상 포함')).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '팀원 추가하기' }));
   await user.click(screen.getByRole('button', { name: '프로젝트 수정하기' }));
-  expect(screen.getByText('참여 팀원을 1명 이상 선택해 주세요.')).toBeInTheDocument();
 
-  await user.click(screen.getByRole('button', { name: '참여 팀원 추가' }));
-  await user.type(screen.getByRole('searchbox', { name: '크루 검색' }), '재키');
-  const results = await screen.findByRole('list', { name: '크루 검색 결과' });
-  await user.click(within(results).getByRole('checkbox', { name: /재키/ }));
-  await user.click(screen.getByRole('button', { name: '1명 팀원 추가하기' }));
-  await user.click(screen.getByRole('button', { name: '프로젝트 수정하기' }));
-
-  await waitFor(() =>
-    expect(body).toEqual(expect.objectContaining({ memberHandles: ['zzaekkii'] })),
-  );
+  await waitFor(() => expect(body).toEqual(expect.objectContaining({ memberHandles: [] })));
 });
