@@ -109,35 +109,43 @@ function ProjectTab({ handle }: { handle: string }) {
         <p className="py-16 text-center text-sm text-gray-500">등록한 프로젝트가 없습니다.</p>
       ) : (
         <ul className="grid grid-cols-1 gap-x-5 gap-y-8 md:grid-cols-2">
-          {projects.map((project) => (
-            <li key={project.id} className="min-w-0">
-              <Link
-                to="/projects/$id"
-                params={{ id: String(project.id) }}
-                className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
-                onClick={() => {
-                  analytics.track({ name: 'card_clicked', target: 'project', surface: 'profile' });
-                  analytics.track({
-                    name: 'project_detail_opened',
-                    projectId: project.id,
-                    from: 'profile',
-                  });
-                }}
-              >
-                <ProjectCard
-                  title={project.title}
-                  tagline={project.tagline}
-                  cohort={project.cohort}
-                  likeCount={project.likeCount}
-                  likedByMe={project.likedByMe}
-                  commentCount={project.commentCount}
-                  techTags={project.techTags}
-                  thumbnailUrl={project.thumbnailUrl}
-                  members={project.members}
-                />
-              </Link>
-            </li>
-          ))}
+          {projects.map((project) => {
+            const card = (
+              <ProjectCard
+                title={project.title}
+                tagline={project.tagline}
+                cohort={project.cohort}
+                approvalStatus={project.approvalStatus}
+                rejectReason={project.rejectReason}
+                likeCount={project.likeCount}
+                likedByMe={project.likedByMe}
+                commentCount={project.commentCount}
+                techTags={project.techTags}
+                thumbnailUrl={project.thumbnailUrl}
+                members={project.members}
+              />
+            );
+
+            return (
+              <li key={project.id} className="min-w-0">
+                <Link
+                  to="/projects/$id"
+                  params={{ id: String(project.id) }}
+                  className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
+                  onClick={() => {
+                    analytics.track({ name: 'card_clicked', target: 'project', surface: 'profile' });
+                    analytics.track({
+                      name: 'project_detail_opened',
+                      projectId: project.id,
+                      from: 'profile',
+                    });
+                  }}
+                >
+                  {card}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
       {query.hasNextPage && (

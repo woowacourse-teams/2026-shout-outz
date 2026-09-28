@@ -14,7 +14,7 @@ const PROFILE: UserProfile = {
   avatarUrl: null,
   githubProfileUrl: 'https://github.com/woojin-dev',
   blogUrl: 'https://woojin.log',
-  counts: { projects: 2, feeds: 18 },
+  counts: { projects: 3, feeds: 18 },
 };
 
 const crewMember = (
@@ -38,6 +38,7 @@ const crewMember = (
 const PROJECTS: ProjectSummary[] = [
   {
     id: 1,
+    approvalStatus: 'APPROVED',
     slug: 'moamoa',
     title: '모아모아 (MoaMoa)',
     tagline: '사진 한 장으로 영수증 내역을 자동 분리하고 맞춤 정산하는 웹 서비스',
@@ -53,6 +54,7 @@ const PROJECTS: ProjectSummary[] = [
   },
   {
     id: 2,
+    approvalStatus: 'PENDING',
     slug: 'dropit',
     title: '드랍잇 (Dropit)',
     tagline: '팀 회고를 한곳에 모아 공유하는 협업 도구',
@@ -64,6 +66,23 @@ const PROJECTS: ProjectSummary[] = [
     members: [
       crewMember(10, 'woojin', '정우진', 'BACKEND', 8),
       crewMember(11, 'dohyun', '김도현', 'FRONTEND'),
+    ],
+  },
+  {
+    id: 3,
+    approvalStatus: 'REJECTED',
+    rejectReason: '프로젝트 소개에 해결하려는 문제와 핵심 기능을 구체적으로 적어 주세요.',
+    slug: 'study-mate',
+    title: '스터디 메이트',
+    tagline: '함께 공부할 크루를 찾고 학습 기록을 나누는 서비스',
+    cohort: 7,
+    thumbnailUrl: null,
+    likeCount: 0,
+    commentCount: 0,
+    techTags: [{ id: 1, displayName: 'React' }],
+    members: [
+      crewMember(10, 'woojin', '정우진', 'BACKEND', 8),
+      crewMember(12, 'jimin', '이지민', 'FRONTEND', 7),
     ],
   },
 ];

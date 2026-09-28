@@ -53,6 +53,8 @@ export type Item<T> = T extends readonly (infer E)[] ? E : never;
 type WithProjectMemberType<T extends { members: unknown[] }> = Omit<T, 'members'> & {
   members: (Item<T['members']> & { userType?: UserType | null })[];
   likedByMe?: boolean;
+  approvalStatus?: ProjectApprovalStatus;
+  rejectReason?: string | null;
 };
 
 /** 피드 응답에 서버가 제공하지만 생성 타입에서 빠진 반응·개수 필드. */
@@ -69,6 +71,7 @@ export type CursorMeta = Meta<FeedFindAllSuccessResponse>;
 
 export type Track = NonNullable<Data<UserProfileSuccessResponse>['track']>;
 export type UserType = Data<UserProfileSuccessResponse>['userType'];
+export type ProjectApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 // ── 세션 ────────────────────────────────────────────────────────────────────
 

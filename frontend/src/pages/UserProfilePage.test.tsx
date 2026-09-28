@@ -36,7 +36,7 @@ describe('UserProfilePage', () => {
     it('탭 이름에 프로필의 개수를 함께 보여준다', async () => {
       renderRoute('/users/woojin');
 
-      expect(await screen.findByRole('tab', { name: '프로젝트 (2)' })).toBeInTheDocument();
+      expect(await screen.findByRole('tab', { name: '프로젝트 (3)' })).toBeInTheDocument();
       expect(tabNamed('피드 (18)')).toBeInTheDocument();
     });
 
@@ -45,9 +45,17 @@ describe('UserProfilePage', () => {
 
       const projects = await findProjects();
 
-      expect(projects).toHaveLength(2);
+      expect(projects).toHaveLength(3);
       expect(projects[0]).toHaveTextContent('모아모아 (MoaMoa)');
-      expect(tabNamed('프로젝트 (2)')).toHaveAttribute('aria-selected', 'true');
+      expect(projects[2]).toHaveTextContent('스터디 메이트');
+      expect(projects[2]!.closest('a')).toHaveAttribute('href', '/projects/3');
+      expect(tabNamed('프로젝트 (3)')).toHaveAttribute('aria-selected', 'true');
+
+      expect(within(projects[2]!).getByRole('status')).toHaveTextContent('승인 반려');
+      expect(projects[2]).toHaveTextContent(
+        '프로젝트 소개에 해결하려는 문제와 핵심 기능을 구체적으로 적어 주세요.',
+      );
+      expect(projects[2]).not.toHaveTextContent('반려 사유:');
     });
 
     it('tab으로 들어오면 그 탭을 보여준다', async () => {
@@ -63,8 +71,8 @@ describe('UserProfilePage', () => {
     it('모르는 tab은 무시하고 프로젝트 탭으로 되돌린다', async () => {
       renderRoute('/users/woojin?tab=GARBAGE');
 
-      expect(await findProjects()).toHaveLength(2);
-      expect(tabNamed('프로젝트 (2)')).toHaveAttribute('aria-selected', 'true');
+      expect(await findProjects()).toHaveLength(3);
+      expect(tabNamed('프로젝트 (3)')).toHaveAttribute('aria-selected', 'true');
     });
 
     it('탭을 고르면 URL에 남아 공유와 뒤로가기가 가능하다', async () => {
