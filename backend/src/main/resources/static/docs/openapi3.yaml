@@ -99,10 +99,10 @@ paths:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
-                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
-                    ,\"message\":\"type은 필수입니다.\"}]}"
+                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\":\"displayName은\
+                    \ 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"displayOrder는\
+                    \ 0 이상이어야 합니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1052,10 +1052,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1596,9 +1596,9 @@ paths:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
-                    eventStartAt은 필수입니다.\"}]}"
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -1903,6 +1903,65 @@ paths:
                 news-delete:
                   value: "{\"status\":\"success\",\"data\":{\"id\":106,\"deletedAt\"\
                     :\"2026-09-19T12:00:00Z\"}}"
+  /api/v1/projects/@{slug}:
+    get:
+      tags:
+      - Project
+      summary: 프로젝트 상세 조회
+      description: "프로젝트 상세 화면에 필요한 기본 정보, 상세 설명, 팀원, 기술 스택, 외부 링크, 리액션 및 댓글 수를 조회\
+        한다. 로그인하지 않아도 조회할 수 있다. 승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 조회할 수 있으며, 볼 수 없\
+        는 프로젝트는 존재 여부를 숨기기 위해 없는 프로젝트와 같은 404를 반환한다. editable은 요청자가 등록자 본인인지를 나타내며\
+        , 수정·삭제 버튼 노출에 쓴다. slug 형식에 맞지 않는 값도 없는 프로젝트와 같은 404를 반환한다. 이후 수정·리액션·댓글 등\
+        은 응답의 id로 요청한다."
+      operationId: project-find-detail
+      parameters:
+      - name: slug
+        in: path
+        description: 조회할 프로젝트 slug. 경로에서는 앞에 @를 붙인다.
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-find-detail-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_NOT_FOUND\",\"\
+                    message\":\"프로젝트를 찾을 수 없습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectFindDetailSuccessResponse"
+              examples:
+                project-find-detail:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":100,\"slug\":\"\
+                    loop\",\"title\":\"루프 (Loop)\",\"teamName\":\"루프팀\",\"tagline\"\
+                    :\"스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구\",\"cohort\":6,\"thumbnailImageId\"\
+                    :12,\"imageUrl\":\"https://cdn.example.com/thumbnail\",\"descriptionMd\"\
+                    :\"## 문제\\n![회고 화면](https://cdn.example.com/description-21)\"\
+                    ,\"descriptionMedia\":[{\"mediaId\":21,\"url\":\"https://cdn.example.com/description-21\"\
+                    }],\"githubRepositoryUrl\":\"https://github.com/woowacourse-teams/2026-loop\"\
+                    ,\"deploymentUrl\":\"https://loop.team\",\"serviceStatus\":\"\
+                    OPERATING\",\"approvalStatus\":\"APPROVED\",\"rejectReason\":null,\"\
+                    viewCount\":831,\"starCount\":128,\"likeCount\":84,\"bookmarkCount\"\
+                    :28,\"likedByMe\":false,\"bookmarkedByMe\":false,\"editable\"\
+                    :false,\"commentCount\":18,\"techTags\":[{\"id\":1,\"displayName\"\
+                    :\"React\"},{\"id\":2,\"displayName\":\"TypeScript\"}],\"members\"\
+                    :[{\"userId\":7,\"handle\":\"dhyepark\",\"displayName\":\"박다혜\"\
+                    ,\"userType\":\"WOOWACOURSE_CREW\",\"cohort\":6,\"track\":\"BACKEND\"\
+                    ,\"avatarImageId\":101,\"avatarUrl\":\"https://cdn.example.com/avatar-101\"\
+                    ,\"githubAvatarUrl\":null,\"githubProfileUrl\":null},{\"userId\"\
+                    :8,\"handle\":\"zzaekkii\",\"displayName\":\"김도현\",\"userType\"\
+                    :\"WOOWACOURSE_CREW\",\"cohort\":6,\"track\":\"FRONTEND\",\"avatarImageId\"\
+                    :null,\"avatarUrl\":null,\"githubAvatarUrl\":null,\"githubProfileUrl\"\
+                    :null}],\"createdAt\":\"2026-08-09T02:30:00Z\",\"updatedAt\":\"\
+                    2026-08-09T03:00:00Z\"}}"
   /api/v1/projects/filters:
     get:
       tags:
@@ -1962,73 +2021,6 @@ paths:
                     React\",\"projectCount\":48},{\"id\":1,\"displayName\":\"Spring\
                     \ Boot\",\"projectCount\":51}],\"matchedProjectCount\":8}}"
   /api/v1/projects/{projectId}:
-    get:
-      tags:
-      - Project
-      summary: 프로젝트 상세 조회
-      description: "프로젝트 상세 화면에 필요한 기본 정보, 상세 설명, 팀원, 기술 스택, 외부 링크, 리액션 및 댓글 수를 조회\
-        한다. 로그인하지 않아도 조회할 수 있다. 승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 조회할 수 있으며, 볼 수 없\
-        는 프로젝트는 존재 여부를 숨기기 위해 없는 프로젝트와 같은 404를 반환한다. editable은 요청자가 등록자 본인인지를 나타내며\
-        , 수정·삭제 버튼 노출에 쓴다. 프로젝트 ID가 숫자가 아니면 400을 반환한다."
-      operationId: project-find-detail
-      parameters:
-      - name: projectId
-        in: path
-        description: 조회할 프로젝트 ID
-        required: true
-        schema:
-          type: string
-      responses:
-        "404":
-          description: "404"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                project-find-detail-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"PROJECT_NOT_FOUND\",\"\
-                    message\":\"프로젝트를 찾을 수 없습니다.\"}"
-        "400":
-          description: "400"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                project-find-detail-invalid-id:
-                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\"}"
-        "200":
-          description: "200"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProjectFindDetailSuccessResponse"
-              examples:
-                project-find-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":100,\"slug\":\"\
-                    loop\",\"title\":\"루프 (Loop)\",\"teamName\":\"루프팀\",\"tagline\"\
-                    :\"스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구\",\"cohort\":6,\"thumbnailImageId\"\
-                    :12,\"imageUrl\":\"https://cdn.example.com/thumbnail\",\"descriptionMd\"\
-                    :\"## 문제\\n![회고 화면](https://cdn.example.com/description-21)\"\
-                    ,\"descriptionMedia\":[{\"mediaId\":21,\"url\":\"https://cdn.example.com/description-21\"\
-                    }],\"githubRepositoryUrl\":\"https://github.com/woowacourse-teams/2026-loop\"\
-                    ,\"deploymentUrl\":\"https://loop.team\",\"serviceStatus\":\"\
-                    OPERATING\",\"approvalStatus\":\"APPROVED\",\"rejectReason\":null,\"\
-                    viewCount\":831,\"starCount\":128,\"likeCount\":84,\"bookmarkCount\"\
-                    :28,\"likedByMe\":false,\"bookmarkedByMe\":false,\"editable\"\
-                    :false,\"commentCount\":18,\"techTags\":[{\"id\":1,\"displayName\"\
-                    :\"React\"},{\"id\":2,\"displayName\":\"TypeScript\"}],\"members\"\
-                    :[{\"userId\":7,\"handle\":\"dhyepark\",\"displayName\":\"박다혜\"\
-                    ,\"userType\":\"WOOWACOURSE_CREW\",\"cohort\":6,\"track\":\"BACKEND\"\
-                    ,\"avatarImageId\":101,\"avatarUrl\":\"https://cdn.example.com/avatar-101\"\
-                    ,\"githubAvatarUrl\":null,\"githubProfileUrl\":null},{\"userId\"\
-                    :8,\"handle\":\"zzaekkii\",\"displayName\":\"김도현\",\"userType\"\
-                    :\"WOOWACOURSE_CREW\",\"cohort\":6,\"track\":\"FRONTEND\",\"avatarImageId\"\
-                    :null,\"avatarUrl\":null,\"githubAvatarUrl\":null,\"githubProfileUrl\"\
-                    :null}],\"createdAt\":\"2026-08-09T02:30:00Z\",\"updatedAt\":\"\
-                    2026-08-09T03:00:00Z\"}}"
     put:
       tags:
       - Project
@@ -6192,6 +6184,107 @@ components:
         status:
           type: string
           description: 응답 상태
+    HomeBannerFindAllSuccessResponse:
+      title: HomeBannerFindAllSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 활성 홈 배너 목록
+          items:
+            required:
+            - bannerId
+            - destinationType
+            - imageUrl
+            - mediaId
+            type: object
+            properties:
+              targetId:
+                type: number
+                description: 대상 리소스 ID
+                nullable: true
+              bannerId:
+                type: number
+                description: 배너 ID
+              imageUrl:
+                type: string
+                description: 표시용 이미지 URL
+              linkUrl:
+                type: string
+                description: 내부 경로 또는 외부 HTTPS URL
+                nullable: true
+              destinationType:
+                type: string
+                description: 이동 방식
+                enum:
+                - TARGET
+                - URL
+              linkType:
+                type: string
+                description: URL 유형
+                nullable: true
+                enum:
+                - INTERNAL_PATH
+                - EXTERNAL_URL
+              targetType:
+                type: string
+                description: 대상 리소스 유형
+                nullable: true
+                enum:
+                - NEWS
+                - PROJECT
+                - FEED
+              mediaId:
+                type: number
+                description: 배너 이미지 미디어 ID
+        status:
+          type: string
+          description: 응답 상태
+    EventCreateRequest:
+      title: EventCreateRequest
+      required:
+      - authorName
+      - body
+      - eventEndAt
+      - eventStartAt
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 이벤트 요약
+        cta:
+          required:
+          - label
+          - url
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+            url:
+              type: string
+              description: CTA URL
+          description: 이벤트 CTA
+        eventStartAt:
+          type: string
+          description: 이벤트 시작 시각
+        authorName:
+          type: string
+          description: 이벤트 작성자 이름
+        body:
+          type: string
+          description: 이벤트 본문
+        title:
+          type: string
+          description: 이벤트 제목
+        eventEndAt:
+          type: string
+          description: 이벤트 종료 시각
     ProjectFindDetailSuccessResponse:
       title: ProjectFindDetailSuccessResponse
       required:
@@ -6396,107 +6489,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    HomeBannerFindAllSuccessResponse:
-      title: HomeBannerFindAllSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 활성 홈 배너 목록
-          items:
-            required:
-            - bannerId
-            - destinationType
-            - imageUrl
-            - mediaId
-            type: object
-            properties:
-              targetId:
-                type: number
-                description: 대상 리소스 ID
-                nullable: true
-              bannerId:
-                type: number
-                description: 배너 ID
-              imageUrl:
-                type: string
-                description: 표시용 이미지 URL
-              linkUrl:
-                type: string
-                description: 내부 경로 또는 외부 HTTPS URL
-                nullable: true
-              destinationType:
-                type: string
-                description: 이동 방식
-                enum:
-                - TARGET
-                - URL
-              linkType:
-                type: string
-                description: URL 유형
-                nullable: true
-                enum:
-                - INTERNAL_PATH
-                - EXTERNAL_URL
-              targetType:
-                type: string
-                description: 대상 리소스 유형
-                nullable: true
-                enum:
-                - NEWS
-                - PROJECT
-                - FEED
-              mediaId:
-                type: number
-                description: 배너 이미지 미디어 ID
-        status:
-          type: string
-          description: 응답 상태
-    EventCreateRequest:
-      title: EventCreateRequest
-      required:
-      - authorName
-      - body
-      - eventEndAt
-      - eventStartAt
-      - summary
-      - title
-      type: object
-      properties:
-        summary:
-          type: string
-          description: 이벤트 요약
-        cta:
-          required:
-          - label
-          - url
-          type: object
-          properties:
-            label:
-              type: string
-              description: CTA 라벨
-            url:
-              type: string
-              description: CTA URL
-          description: 이벤트 CTA
-        eventStartAt:
-          type: string
-          description: 이벤트 시작 시각
-        authorName:
-          type: string
-          description: 이벤트 작성자 이름
-        body:
-          type: string
-          description: 이벤트 본문
-        title:
-          type: string
-          description: 이벤트 제목
-        eventEndAt:
-          type: string
-          description: 이벤트 종료 시각
     OAuthSignupSuccessResponse:
       title: OAuthSignupSuccessResponse
       required:
@@ -7387,6 +7379,30 @@ components:
         status:
           type: string
           description: 응답 상태
+    CategorySaveRequest:
+      title: CategorySaveRequest
+      required:
+      - displayName
+      - displayOrder
+      - slug
+      - type
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 고유 표시 이름
+        displayOrder:
+          type: number
+          description: 0 이상 32767 이하 표시 순서
+        type:
+          type: string
+          description: 카테고리 유형
+          enum:
+          - GENERAL
+          - EVENT
+        slug:
+          type: string
+          description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
     ProjectFilterOptionsSuccessResponse:
       title: ProjectFilterOptionsSuccessResponse
       required:
@@ -7449,30 +7465,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    CategorySaveRequest:
-      title: CategorySaveRequest
-      required:
-      - displayName
-      - displayOrder
-      - slug
-      - type
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 고유 표시 이름
-        displayOrder:
-          type: number
-          description: 0 이상 32767 이하 표시 순서
-        type:
-          type: string
-          description: 카테고리 유형
-          enum:
-          - GENERAL
-          - EVENT
-        slug:
-          type: string
-          description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
     NewsUpdateRequest:
       title: NewsUpdateRequest
       required:

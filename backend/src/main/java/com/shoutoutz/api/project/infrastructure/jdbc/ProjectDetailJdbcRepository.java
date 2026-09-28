@@ -4,6 +4,7 @@ import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ServiceStatus;
+import com.shoutoutz.api.project.domain.Slug;
 import java.sql.Types;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -25,13 +26,17 @@ public class ProjectDetailJdbcRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final ProjectTechTagAndMemberJdbcRepository techTagAndMemberJdbcRepository;
 
-    public Optional<ProjectDetail> findDetailById(long projectId, Long viewerId) {
-        return findProject(projectId, viewerId)
-                .map(project -> project.withTechTagsAndMembers(
-                        techTagAndMemberJdbcRepository.findTechTags(List.of(projectId))
-                                .getOrDefault(projectId, List.of()),
-                        findMembers(project).getOrDefault(projectId, List.of())
-                ));
+    public Optional<ProjectDetail> findDetailBySlug(Slug slug, Long viewerId) {
+        return findProject(slug, viewerId)
+                .map(this::withTechTagsAndMembers);
+    }
+
+    private ProjectDetail withTechTagsAndMembers(ProjectDetail project) {
+        long projectId = project.id();
+        return project.withTechTagsAndMembers(
+                techTagAndMemberJdbcRepository.findTechTags(List.of(projectId)).getOrDefault(projectId, List.of()),
+                findMembers(project).getOrDefault(projectId, List.of())
+        );
     }
 
     private Map<Long, List<ProjectMemberProfile>> findMembers(ProjectDetail project) {
@@ -47,7 +52,7 @@ public class ProjectDetailJdbcRepository {
      * 댓글 수는 삭제된 댓글을 제외하고, 대댓글을 포함한다.
      * 비로그인이면 viewerId가 null이라, user_id 비교가 거짓이 되어, likedByMe와 bookmarkedByMe는 false다.
      */
-    private Optional<ProjectDetail> findProject(long projectId, Long viewerId) {
+    private Optional<ProjectDetail> findProject(Slug slug, Long viewerId) {
         String sql = """
                 SELECT
                     p.id,
@@ -110,11 +115,11 @@ public class ProjectDetailJdbcRepository {
                           AND r.reaction_type = 'BOOKMARK'
                     ) AS bookmarked_by_me
                 FROM projects p
-                WHERE p.id = :projectId
+                WHERE p.slug = :slug
                   AND p.deleted_at IS NULL
                 """;
         MapSqlParameterSource parameters = new MapSqlParameterSource()
-                .addValue("projectId", projectId)
+                .addValue("slug", slug.value())
                 .addValue("viewerId", viewerId, Types.BIGINT);
 
         return jdbcTemplate.query(sql, parameters, (resultSet, rowNumber) -> new ProjectDetail(
