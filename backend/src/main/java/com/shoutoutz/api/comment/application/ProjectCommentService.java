@@ -24,6 +24,7 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
@@ -173,7 +174,7 @@ public class ProjectCommentService {
                 : null;
         return new ProjectCommentFindResponse(
                 comments,
-                new ProjectCommentFindResponse.Meta(nextCursor, page.hasNext() && !comments.isEmpty())
+                new SliceMetaResponse(nextCursor, page.hasNext() && !comments.isEmpty())
         );
     }
 

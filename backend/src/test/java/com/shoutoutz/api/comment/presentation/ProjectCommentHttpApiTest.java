@@ -40,6 +40,7 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Instant;
@@ -100,7 +101,7 @@ class ProjectCommentHttpApiTest {
                                 false
                         )
                 ),
-                new ProjectCommentFindResponse.Meta("next-cursor", true)
+                new SliceMetaResponse("next-cursor", true)
         ));
 
         mockMvc.perform(get("/api/v1/projects/{projectId}/comments", 100L)
@@ -209,7 +210,7 @@ class ProjectCommentHttpApiTest {
                         false,
                         false
                 )),
-                new ProjectCommentFindResponse.Meta(null, false)
+                new SliceMetaResponse(null, false)
         ));
 
         mockMvc.perform(get("/api/v1/projects/{projectId}/comments", 100L)
@@ -245,7 +246,7 @@ class ProjectCommentHttpApiTest {
                         false,
                         true
                 )),
-                new ProjectCommentFindResponse.Meta(null, false)
+                new SliceMetaResponse(null, false)
         ));
 
         mockMvc.perform(get("/api/v1/projects/{projectId}/comments", 100L))

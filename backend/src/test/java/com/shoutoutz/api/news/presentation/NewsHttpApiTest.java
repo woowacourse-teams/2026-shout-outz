@@ -35,6 +35,7 @@ import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.ValidationFailedException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.news.application.NewsService;
 import com.shoutoutz.api.news.domain.enums.EventStatus;
 import com.shoutoutz.api.news.domain.NewsErrorCode;
@@ -380,7 +381,7 @@ class NewsHttpApiTest {
                         false,
                         null
                 )),
-                new NewsFindAllResponse.Meta(null, false)
+                new SliceMetaResponse(null, false)
         );
         given(newsService.findAll(any(NewsFindAllRequest.class))).willReturn(result);
 
@@ -739,7 +740,7 @@ class NewsHttpApiTest {
     void usesDefaultNewsListQueryValues() throws Exception {
         NewsFindAllResponse result = new NewsFindAllResponse(
                 List.of(),
-                new NewsFindAllResponse.Meta(null, false)
+                new SliceMetaResponse(null, false)
         );
         given(newsService.findAll(any(NewsFindAllRequest.class))).willReturn(result);
 

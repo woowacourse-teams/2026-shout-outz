@@ -3,6 +3,7 @@ package com.shoutoutz.api.user.presentation;
 import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.user.application.UserService;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.presentation.dto.request.UserProfileUpdateRequest;
@@ -78,7 +79,7 @@ public class UserHttpApi {
                 request.resolvedSize()
         );
         UserSearchResponse response = UserSearchResponse.from(result);
-        UserSearchResponse.Meta meta = UserSearchResponse.Meta.from(result);
+        SliceMetaResponse meta = new SliceMetaResponse(result.nextCursor(), result.hasNext());
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));
     }

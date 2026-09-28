@@ -24,6 +24,7 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
@@ -179,7 +180,7 @@ public class FeedCommentService {
                 : null;
         return new FeedCommentFindResponse(
                 comments,
-                new FeedCommentFindResponse.Meta(nextCursor, page.hasNext() && !comments.isEmpty())
+                new SliceMetaResponse(nextCursor, page.hasNext() && !comments.isEmpty())
         );
     }
 

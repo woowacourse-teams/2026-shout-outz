@@ -6,6 +6,7 @@ import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.common.exception.custom.ValidationFailedException;
 import com.shoutoutz.api.common.response.ErrorResponse;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.news.application.dto.NewsCursor;
 import com.shoutoutz.api.news.application.dto.NewsDetail;
 import com.shoutoutz.api.news.application.dto.NewsPage;
@@ -198,7 +199,7 @@ public class NewsService {
         String nextCursor = hasNext ? NewsCursorCodec.encode(lastCursor(page.items())) : null;
 
         //반환
-        return new NewsFindAllResponse(items, new NewsFindAllResponse.Meta(nextCursor, hasNext));
+        return new NewsFindAllResponse(items, new SliceMetaResponse(nextCursor, hasNext));
     }
 
     @Transactional(readOnly = true)

@@ -1,11 +1,12 @@
 package com.shoutoutz.api.comment.presentation.dto.response;
 
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import java.time.Instant;
 import java.util.List;
 
 public record ProjectCommentFindResponse(
         List<Comment> comments,
-        Meta meta
+        SliceMetaResponse meta
 ) {
 
     public ProjectCommentFindResponse {
@@ -46,12 +47,6 @@ public record ProjectCommentFindResponse(
             String displayName,
             Long avatarImageId,
             String avatarUrl
-    ) {
-    }
-
-    public record Meta(
-            String nextCursor,
-            boolean hasNext
     ) {
     }
 }

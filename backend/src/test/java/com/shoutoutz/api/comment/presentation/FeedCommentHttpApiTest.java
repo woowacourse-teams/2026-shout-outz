@@ -38,6 +38,7 @@ import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentUpdateResp
 import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Instant;
@@ -110,7 +111,7 @@ class FeedCommentHttpApiTest {
                                 true
                         )
                 ),
-                new FeedCommentFindResponse.Meta("next-cursor", true)
+                new SliceMetaResponse("next-cursor", true)
         ));
 
         mockMvc.perform(get("/api/v1/feeds/{feedId}/comments", 100L)
@@ -221,7 +222,7 @@ class FeedCommentHttpApiTest {
                         false,
                         false
                 )),
-                new FeedCommentFindResponse.Meta(null, false)
+                new SliceMetaResponse(null, false)
         ));
 
         mockMvc.perform(get("/api/v1/feeds/{feedId}/comments", 100L)
