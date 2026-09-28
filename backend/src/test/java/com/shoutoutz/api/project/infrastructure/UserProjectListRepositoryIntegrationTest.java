@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.shoutoutz.api.project.application.UserProjectQueryRepository;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.application.dto.UserProjectItem;
+import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -58,6 +59,7 @@ class UserProjectListRepositoryIntegrationTest {
         assertThat(result.projects()).allSatisfy(project -> {
             assertThat(project.teamName()).isEqualTo("팀");
             assertThat(project.serviceStatus()).isEqualTo(ServiceStatus.OPERATING);
+            assertThat(project.approvalStatus()).isEqualTo(ApprovalStatus.APPROVED);
             assertThat(project.starCount()).isEqualTo(128);
             assertThat(project.techTags()).isNotNull();
             assertThat(project.members()).isNotNull();
@@ -94,6 +96,9 @@ class UserProjectListRepositoryIntegrationTest {
         assertThat(ids(publicResult)).containsExactly(approved);
         assertThat(ids(otherViewerResult)).containsExactly(approved);
         assertThat(ids(selfResult)).containsExactly(pending, approved);
+        assertThat(selfResult.projects())
+                .extracting(UserProjectItem::approvalStatus)
+                .containsExactly(ApprovalStatus.PENDING, ApprovalStatus.APPROVED);
     }
 
     @Test

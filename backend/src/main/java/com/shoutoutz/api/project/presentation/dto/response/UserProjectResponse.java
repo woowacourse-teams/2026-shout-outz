@@ -2,6 +2,7 @@ package com.shoutoutz.api.project.presentation.dto.response;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.project.application.dto.UserProjectItem;
+import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.user.domain.profile.Track;
@@ -21,6 +22,7 @@ public record UserProjectResponse(
         String tagline,
         int cohort,
         ServiceStatus serviceStatus,
+        ApprovalStatus approvalStatus,
         Long thumbnailImageId,
         String thumbnailUrl,
         Integer starCount,
@@ -54,6 +56,7 @@ public record UserProjectResponse(
                 project.tagline(),
                 project.cohort(),
                 project.serviceStatus(),
+                project.approvalStatus(),
                 project.thumbnailMediaId(),
                 toUrl(mediaUrls, project.thumbnailMediaId()),
                 project.starCount(),

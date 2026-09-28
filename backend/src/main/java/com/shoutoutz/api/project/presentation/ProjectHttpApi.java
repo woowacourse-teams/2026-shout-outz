@@ -83,14 +83,15 @@ public class ProjectHttpApi {
 
     /**
      * 비로그인도 조회할 수 있다. 로그인한 경우에는 본인 프로젝트 조회 권한과 리액션 여부 판단에 사용한다.
+     * slug 앞에 @를 붙여, /filters 같은 고정 경로와 slug가 겹치지 않게 한다.
      */
-    @GetMapping("/{projectId}")
+    @GetMapping("/@{slug}")
     public ResponseEntity<SuccessResponse<ProjectDetailResponse>> findDetail(
             @LoginUser(required = false) AuthenticatedUser loginUser,
-            @PathVariable long projectId
+            @PathVariable String slug
     ) {
         ProjectDetailResponse response = projectService.findDetail(
-                projectId,
+                slug,
                 AuthenticatedUser.userIdOrNull(loginUser)
         );
         return ResponseEntity.ok(SuccessResponse.success(response));
