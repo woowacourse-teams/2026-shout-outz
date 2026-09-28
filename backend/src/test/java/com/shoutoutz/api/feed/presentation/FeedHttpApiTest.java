@@ -216,7 +216,7 @@ class FeedHttpApiTest {
     }
 
     @Test
-    @DisplayName("크루 또는 코치가 피드를 작성한다")
+    @DisplayName("로그인 사용자가 피드를 작성한다")
     void saveFeed() throws Exception {
         given(feedService.saveFeed(eq(USER_ID), any(FeedSaveRequest.class)))
                 .willReturn(commandResponse());
@@ -241,7 +241,7 @@ class FeedHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Feed")
                                 .summary("피드 작성")
-                                .description("크루 또는 코치가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다.")
+                                .description("로그인 사용자가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다.")
                                 .requestSchema(Schema.schema("FeedSaveRequest"))
                                 .responseSchema(Schema.schema("FeedSaveSuccessResponse"))
                                 .requestFields(
@@ -359,7 +359,7 @@ class FeedHttpApiTest {
                         "feed-save-unauthorized",
                         resource(createErrorResponse(
                                 "피드 작성",
-                                "크루 또는 코치가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다."
+                                "로그인 사용자가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다."
                         ))
                 ));
 
@@ -382,7 +382,7 @@ class FeedHttpApiTest {
                         "feed-save-invalid",
                         resource(createErrorResponse(
                                 "피드 작성",
-                                "크루 또는 코치가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다."
+                                "로그인 사용자가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다."
                         ))
                 ));
         mockMvc.perform(post("/api/v1/feeds")
@@ -544,7 +544,7 @@ class FeedHttpApiTest {
                         "feed-save-forbidden",
                         resource(createErrorResponse(
                                 "피드 작성",
-                                "크루 또는 코치가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다."
+                                "로그인 사용자가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다."
                         ))
                 ));
     }
