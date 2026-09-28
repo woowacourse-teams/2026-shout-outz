@@ -7,6 +7,7 @@ import { Badge } from '@/components/Badge';
 import { getButtonStyles } from '@/components/Button';
 import { MarkdownContent } from '@/components/MarkdownContent';
 import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
+import { ProjectLikeButton } from '@/components/projects/ProjectLikeButton';
 import { ProjectNotApprovedError } from '@/errors/project';
 
 export function ProjectDetailContent({ projectId }: { projectId: string }) {
@@ -53,24 +54,26 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
           )}
         </div>
         <div className="min-w-0 self-center lg:col-span-2">
-          <p className="text-primary-600 text-sm font-semibold">
-            우아한테크코스 {project.cohort}기 ·{' '}
-            {project.serviceStatus === 'OPERATING' ? '운영 중' : project.serviceStatus}
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-primary-600 text-sm font-semibold">
+              우아한테크코스 {project.cohort}기 ·{' '}
+              {project.serviceStatus === 'OPERATING' ? '운영 중' : project.serviceStatus}
+            </p>
+            {project.editable && (
+              <Link
+                to="/projects/$id/edit"
+                params={{ id: String(project.id) }}
+                className={getButtonStyles({ variant: 'outline', size: 'sm' })}
+              >
+                프로젝트 수정
+              </Link>
+            )}
+          </div>
           <h1 className="mt-3 text-3xl font-bold break-words">{project.title}</h1>
           <p className="mt-4 text-base leading-relaxed break-words text-gray-600">
             {project.tagline}
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            {project.editable && (
-              <Link
-                to="/projects/$id/edit"
-                params={{ id: String(project.id) }}
-                className={getButtonStyles({ variant: 'outline', size: 'lg' })}
-              >
-                프로젝트 수정
-              </Link>
-            )}
             {links.map((link) => (
               <a
                 key={link.label}
@@ -82,6 +85,11 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
                 {link.label}
               </a>
             ))}
+            <ProjectLikeButton
+              projectId={project.id}
+              likeCount={project.likeCount}
+              likedByMe={project.likedByMe}
+            />
           </div>
         </div>
       </section>

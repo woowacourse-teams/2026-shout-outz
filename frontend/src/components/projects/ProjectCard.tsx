@@ -1,5 +1,6 @@
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
+import { IconHeart, IconHeartFilled, IconMessageCircle } from '@tabler/icons-react';
 import { type ProjectTechTag } from '@/types/project';
 
 /**
@@ -14,6 +15,7 @@ export interface ProjectCardProps {
   tagline: string;
   cohort?: number | null;
   likeCount: number;
+  likedByMe?: boolean;
   commentCount: number;
   techTags: ProjectTechTag[];
   thumbnailUrl?: string | null;
@@ -26,6 +28,7 @@ export function ProjectCard({
   tagline,
   cohort,
   likeCount,
+  likedByMe = false,
   commentCount,
   techTags,
   thumbnailUrl,
@@ -80,11 +83,16 @@ export function ProjectCard({
 
         <p className="flex items-center gap-3 text-xs text-gray-500">
           <span>
-            <span aria-hidden="true">♥ </span>
+            {likedByMe ? (
+              <IconHeartFilled className="text-primary-600 inline size-3.5" aria-hidden="true" />
+            ) : (
+              <IconHeart className="inline size-3.5" aria-hidden="true" />
+            )}{' '}
             <span aria-label="좋아요 수">{likeCount}</span>
           </span>
           <span>
-            댓글 <span aria-label="댓글 수">{commentCount}</span>
+            <IconMessageCircle className="inline size-3.5" aria-hidden="true" />{' '}
+            <span aria-label="댓글 수">{commentCount}</span>
           </span>
         </p>
       </div>

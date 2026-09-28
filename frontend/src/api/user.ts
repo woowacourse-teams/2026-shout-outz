@@ -42,7 +42,10 @@ async function fetchUserProjectsPage(handle: string, cursor?: string, signal?: A
   });
   if (!body) throw new Error(`프로필 프로젝트 응답이 비어 있습니다: ${path}`);
 
-  return { data: body.data, meta: body.meta ?? { nextCursor: null, hasNext: false } };
+  return {
+    data: body.data as UserProjectListItem[],
+    meta: body.meta ?? { nextCursor: null, hasNext: false },
+  };
 }
 
 export const userProjectsQueryOptions = (handle: string) =>

@@ -1,6 +1,7 @@
 import { type ProjectSummary } from '@/types/project';
 import { type Feed, type FeedAuthor } from '@/types/feed';
 import { type UserProfile } from '@/types/user';
+import { getMockProjectReaction } from '@/api/mock/reactions';
 
 /** 실제 서버가 준비되기 전까지 MSW 핸들러가 내려줄 프로필 데이터. 백엔드가 뜨면 이 파일은 사라진다. */
 const PROFILE: UserProfile = {
@@ -104,7 +105,12 @@ export function getUserProfile(handle: string): UserProfile | undefined {
 }
 
 export function getUserProjects(handle: string): ProjectSummary[] {
-  return handle === PROFILE.handle ? PROJECTS : [];
+  return handle === PROFILE.handle
+    ? PROJECTS.map((project) => ({
+        ...project,
+        ...getMockProjectReaction(project.id, project.likeCount),
+      }))
+    : [];
 }
 
 export function getUserFeeds(handle: string): Feed[] {

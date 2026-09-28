@@ -6,6 +6,7 @@ import { getNewsDetail, getNewsList } from '@/api/mock/news';
 import { getCohorts, getTechTags, searchCrewList } from '@/api/mock/project';
 import projects from '@/api/mock/projects.json';
 import { getUserFeeds, getUserProfile, getUserProjects } from '@/api/mock/user';
+import { getMockProjectReaction, setMockProjectLike } from '@/api/mock/reactions';
 import { isNewsFilter } from '@/types/news';
 import type { ProjectUpdateRequest } from '@/types/project';
 
@@ -210,9 +211,8 @@ export const handlers = [
         rejectReason: null,
         viewCount: 0,
         starCount: 0,
-        likeCount: project.likeCount,
+        ...getMockProjectReaction(index + 1, project.likeCount),
         bookmarkCount: project.bookmarkCount,
-        likedByMe: false,
         bookmarkedByMe: false,
         commentCount: 0,
         techTags: project.techTags.map((displayName, index) => ({ id: index + 1, displayName })),
@@ -220,6 +220,38 @@ export const handlers = [
         createdAt: '2026-08-09T11:30:00+09:00',
         updatedAt: '2026-08-09T11:30:00+09:00',
         ...updatedProjects.get(index + 1),
+      },
+    });
+  }),
+  http.put('/api/v1/projects/:projectId/reactions/LIKE', ({ params }) => {
+    const projectId = Number(params.projectId);
+    const project = projects[projectId - 1];
+    if (!project) return new HttpResponse(null, { status: 404 });
+    const reaction = setMockProjectLike(projectId, project.likeCount, true);
+    return HttpResponse.json({
+      status: 'success',
+      data: {
+        projectId,
+        type: 'LIKE',
+        active: true,
+        ...reaction,
+        bookmarkCount: project.bookmarkCount,
+      },
+    });
+  }),
+  http.delete('/api/v1/projects/:projectId/reactions/LIKE', ({ params }) => {
+    const projectId = Number(params.projectId);
+    const project = projects[projectId - 1];
+    if (!project) return new HttpResponse(null, { status: 404 });
+    const reaction = setMockProjectLike(projectId, project.likeCount, false);
+    return HttpResponse.json({
+      status: 'success',
+      data: {
+        projectId,
+        type: 'LIKE',
+        active: false,
+        ...reaction,
+        bookmarkCount: project.bookmarkCount,
       },
     });
   }),
@@ -234,7 +266,7 @@ export const handlers = [
         tagline,
         cohort,
         thumbnailUrl: null,
-        likeCount,
+        ...getMockProjectReaction(index + 1, likeCount),
         commentCount: 0,
         techTags: techTags.map((displayName, tagIndex) => ({ id: tagIndex + 1, displayName })),
         members: members.map(toProjectMember),
