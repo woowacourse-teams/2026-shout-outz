@@ -1,17 +1,14 @@
 package com.shoutoutz.api.verification.application;
 
 import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestCursor;
-import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestItem;
+import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestPage;
 import com.shoutoutz.api.verification.domain.VerificationRequestStatus;
-import java.util.List;
 
 public interface AdminVerificationRequestQueryRepository {
 
-    List<AdminVerificationRequestItem> findAll(
+    AdminVerificationRequestPage findAll(
             VerificationRequestStatus status,
             AdminVerificationRequestCursor cursor,
-            int limit
+            int size
     );
-
-    long countAll(VerificationRequestStatus status);
 }

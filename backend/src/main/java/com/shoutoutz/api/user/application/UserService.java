@@ -13,6 +13,7 @@ import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.application.dto.UserProfileCounts;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
+import com.shoutoutz.api.user.application.dto.UserSearchPage;
 import com.shoutoutz.api.user.application.dto.UserSearchResult;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
@@ -122,34 +123,29 @@ public class UserService {
     ) {
         UserSearchCursor decodedCursor = userSearchCursorCodec.decode(cursor);
 
-        List<UserSearchItem> searchedItems = userQueryRepository.searchWoowaMember(
+        UserSearchPage page = userQueryRepository.searchWoowaMember(
                 keyword,
                 decodedCursor,
-                size + 1
+                size
         );
 
-        return createSearchResult(searchedItems, size, userQueryRepository.countWoowaMember(keyword));
+        return createSearchResult(page);
     }
 
     /**
-     * 요청한 크기보다 한 건 더 조회한 결과를 이용한 다음 페이지 정보 생성.
+     * 조회 페이지의 다음 페이지 여부로 커서를 생성한다.
      */
-    private UserSearchResult createSearchResult(
-            List<UserSearchItem> searchedItems,
-            int size,
-            long totalCount
-    ) {
-        if (searchedItems.size() <= size) {
-            List<UserSearchItem> items = List.copyOf(searchedItems);
-            return new UserSearchResult(items, null, false, totalCount, resolveAvatarUrls(items));
+    private UserSearchResult createSearchResult(UserSearchPage page) {
+        List<UserSearchItem> items = page.items();
+        if (!page.hasNext()) {
+            return new UserSearchResult(items, null, false, page.totalCount(), resolveAvatarUrls(items));
         }
 
-        List<UserSearchItem> items = List.copyOf(searchedItems.subList(0, size));
         return new UserSearchResult(
                 items,
                 encodeCursor(items.getLast()),
                 true,
-                totalCount,
+                page.totalCount(),
                 resolveAvatarUrls(items)
         );
     }

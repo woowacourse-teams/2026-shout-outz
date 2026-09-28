@@ -12,6 +12,7 @@ import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestCursor;
 import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestItem;
+import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestPage;
 import com.shoutoutz.api.verification.domain.UserVerificationErrorCode;
 import com.shoutoutz.api.verification.domain.VerificationRequestStatus;
 import com.shoutoutz.api.verification.presentation.dto.request.AdminVerificationRequestFindAllRequest;
@@ -55,17 +56,11 @@ class AdminVerificationRequestServiceTest {
                 LATEST_REQUESTED_AT.minusSeconds(60),
                 VerificationRequestStatus.PENDING
         );
-        AdminVerificationRequestItem extra = item(
-                99L,
-                LATEST_REQUESTED_AT.minusSeconds(120),
-                VerificationRequestStatus.PENDING
-        );
         given(queryRepository.findAll(
                 VerificationRequestStatus.PENDING,
                 null,
-                3
-        )).willReturn(List.of(first, second, extra));
-        given(queryRepository.countAll(VerificationRequestStatus.PENDING)).willReturn(3L);
+                2
+        )).willReturn(new AdminVerificationRequestPage(List.of(first, second), true, 3L));
 
         AdminVerificationRequestFindAllResponse response = service.findAll(
                 UserRole.ADMIN,
@@ -76,7 +71,7 @@ class AdminVerificationRequestServiceTest {
         assertThat(response.items().getFirst().requestId()).isEqualTo(101L);
         assertThat(response.meta().nextCursor()).isEqualTo(cursorCodec.encode(second.toCursor()));
         assertThat(response.meta().totalCount()).isEqualTo(3L);
-        verify(queryRepository).findAll(VerificationRequestStatus.PENDING, null, 3);
+        verify(queryRepository).findAll(VerificationRequestStatus.PENDING, null, 2);
     }
 
     @Test
@@ -93,9 +88,8 @@ class AdminVerificationRequestServiceTest {
                 LATEST_REQUESTED_AT.minusSeconds(60),
                 VerificationRequestStatus.REJECTED
         );
-        given(queryRepository.findAll(VerificationRequestStatus.REJECTED, cursor, 2))
-                .willReturn(List.of(item));
-        given(queryRepository.countAll(VerificationRequestStatus.REJECTED)).willReturn(1L);
+        given(queryRepository.findAll(VerificationRequestStatus.REJECTED, cursor, 1))
+                .willReturn(new AdminVerificationRequestPage(List.of(item), false, 1L));
 
         AdminVerificationRequestFindAllResponse response = service.findAll(
                 UserRole.ADMIN,
@@ -106,7 +100,7 @@ class AdminVerificationRequestServiceTest {
         assertThat(response.items().getFirst().status()).isEqualTo(VerificationRequestStatus.REJECTED);
         assertThat(response.meta().nextCursor()).isNull();
         assertThat(response.meta().totalCount()).isEqualTo(1L);
-        verify(queryRepository).findAll(VerificationRequestStatus.REJECTED, cursor, 2);
+        verify(queryRepository).findAll(VerificationRequestStatus.REJECTED, cursor, 1);
     }
 
     @Test

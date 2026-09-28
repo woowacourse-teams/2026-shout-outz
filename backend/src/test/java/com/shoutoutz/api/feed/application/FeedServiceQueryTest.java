@@ -14,6 +14,7 @@ import com.shoutoutz.api.common.exception.custom.NotFoundException;
 import com.shoutoutz.api.feed.application.dto.FeedCursor;
 import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
+import com.shoutoutz.api.feed.application.dto.FeedPage;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
@@ -93,7 +94,7 @@ class FeedServiceQueryTest {
     }
 
     @Test
-    void size보다_한_건_더_조회해_다음_슬라이스_커서를_만든다() {
+    void 다음_슬라이스가_있으면_커서를_만든다() {
         FeedCursor cursor = new FeedCursor(
                 FeedSort.LATEST,
                 0,
@@ -113,9 +114,8 @@ class FeedServiceQueryTest {
                 feed(2L, "2026-09-10T00:00:00Z"),
                 feed(1L, "2026-09-09T00:00:00Z")
         );
-        when(feedQueryRepository.findAll(FeedSort.LATEST, 1L, null, cursor, 3))
-                .thenReturn(queried);
-        when(feedQueryRepository.countAll(1L, null)).thenReturn(8L);
+        when(feedQueryRepository.findAll(FeedSort.LATEST, 1L, null, cursor, 2))
+                .thenReturn(new FeedPage(queried.subList(0, 2), true, 8L));
 
         FeedFindAllResult result = feedService.findAllFeed(request);
 
@@ -130,14 +130,14 @@ class FeedServiceQueryTest {
                         queried.get(1).createdAt(),
                         2L
                 ));
-        verify(feedQueryRepository).findAll(FeedSort.LATEST, 1L, null, cursor, 3);
+        verify(feedQueryRepository).findAll(FeedSort.LATEST, 1L, null, cursor, 2);
     }
 
     @Test
     void 다음_슬라이스가_없으면_커서를_반환하지_않는다() {
         FeedFindAllRequest request = new FeedFindAllRequest(null, null, null, null, 2);
-        when(feedQueryRepository.findAll(FeedSort.LATEST, null, null, null, 3))
-                .thenReturn(List.of(feed(1L, "2026-09-11T00:00:00Z")));
+        when(feedQueryRepository.findAll(FeedSort.LATEST, null, null, null, 2))
+                .thenReturn(new FeedPage(List.of(feed(1L, "2026-09-11T00:00:00Z")), false, 1L));
 
         FeedFindAllResult result = feedService.findAllFeed(request);
 
@@ -158,13 +158,13 @@ class FeedServiceQueryTest {
                 feed(2L, "2026-09-10T00:00:00Z", 5L),
                 feed(1L, "2026-09-09T00:00:00Z", 3L)
         );
-        when(feedQueryRepository.findAll(FeedSort.POPULAR, null, null, null, 3))
-                .thenReturn(queried);
+        when(feedQueryRepository.findAll(FeedSort.POPULAR, null, null, null, 2))
+                .thenReturn(new FeedPage(queried, false, 2L));
 
         FeedFindAllResult result = feedService.findAllFeed(request);
 
         assertThat(result.items()).containsExactlyElementsOf(queried);
-        verify(feedQueryRepository).findAll(FeedSort.POPULAR, null, null, null, 3);
+        verify(feedQueryRepository).findAll(FeedSort.POPULAR, null, null, null, 2);
     }
 
     @Test
@@ -182,8 +182,8 @@ class FeedServiceQueryTest {
                 1L,
                 "검색어",
                 null,
-                3
-        )).thenReturn(queried);
+                2
+        )).thenReturn(new FeedPage(queried, false, 1L));
 
         FeedFindAllResult result = feedService.findAllFeed(request);
 
@@ -193,7 +193,7 @@ class FeedServiceQueryTest {
                 1L,
                 "검색어",
                 null,
-                3
+                2
         );
     }
 
@@ -249,9 +249,8 @@ class FeedServiceQueryTest {
         );
         when(userRepository.findByHandle("zzaekkii"))
                 .thenReturn(Optional.of(user(UserStatus.ACTIVE)));
-        when(feedQueryRepository.findAllByAuthorId(1L, cursor, 3))
-                .thenReturn(queried);
-        when(feedQueryRepository.countAllByAuthorId(1L)).thenReturn(3L);
+        when(feedQueryRepository.findAllByAuthorId(1L, cursor, 2))
+                .thenReturn(new FeedPage(queried.subList(0, 2), true, 3L));
 
         FeedFindAllResult result = feedService.findAllByUser(
                 "zzaekkii",
@@ -269,7 +268,7 @@ class FeedServiceQueryTest {
                         queried.get(1).createdAt(),
                         queried.get(1).feedId()
                 ));
-        verify(feedQueryRepository).findAllByAuthorId(1L, cursor, 3);
+        verify(feedQueryRepository).findAllByAuthorId(1L, cursor, 2);
     }
 
     @Test
@@ -293,8 +292,8 @@ class FeedServiceQueryTest {
     void 정지된_사용자의_기존_피드는_공개한다() {
         when(userRepository.findByHandle("zzaekkii"))
                 .thenReturn(Optional.of(user(UserStatus.BANNED)));
-        when(feedQueryRepository.findAllByAuthorId(1L, null, 21))
-                .thenReturn(List.of(feed(1L, "2026-09-11T00:00:00Z")));
+        when(feedQueryRepository.findAllByAuthorId(1L, null, 20))
+                .thenReturn(new FeedPage(List.of(feed(1L, "2026-09-11T00:00:00Z")), false, 1L));
 
         FeedFindAllResult result = feedService.findAllByUser(
                 "zzaekkii",
@@ -302,7 +301,7 @@ class FeedServiceQueryTest {
         );
 
         assertThat(result.items()).hasSize(1);
-        verify(feedQueryRepository).findAllByAuthorId(1L, null, 21);
+        verify(feedQueryRepository).findAllByAuthorId(1L, null, 20);
     }
 
     @Test

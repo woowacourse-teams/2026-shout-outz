@@ -7,6 +7,7 @@ import com.shoutoutz.api.feed.application.FeedQueryRepository;
 import com.shoutoutz.api.feed.application.dto.FeedCursor;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.FeedMediaReference;
+import com.shoutoutz.api.feed.application.dto.FeedPage;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
@@ -77,14 +78,14 @@ class FeedRepositoryIntegrationTest {
         Feed deleted = saveFeed(authorId, "삭제", base.plus(1, ChronoUnit.HOURS), categoryId);
         feedRepository.update(deleted.delete(base.plus(2, ChronoUnit.HOURS)));
 
-        List<FeedItem> firstSlice = feedQueryRepository.findAll(
+        FeedPage firstSlice = feedQueryRepository.findAll(
                 FeedSort.LATEST,
                 null,
                 null,
                 null,
                 2
         );
-        List<FeedItem> secondSlice = feedQueryRepository.findAll(
+        FeedPage secondSlice = feedQueryRepository.findAll(
                 FeedSort.LATEST,
                 null,
                 null,
@@ -92,18 +93,19 @@ class FeedRepositoryIntegrationTest {
                         FeedSort.LATEST,
                         0,
                         0L,
-                        firstSlice.get(1).createdAt(),
-                        firstSlice.get(1).feedId()
+                        firstSlice.items().get(1).createdAt(),
+                        firstSlice.items().get(1).feedId()
                 ),
                 2
         );
-        assertThat(firstSlice).extracting(FeedItem::feedId)
+        assertThat(firstSlice.items()).extracting(FeedItem::feedId)
                 .containsExactly(latest.getId(), middle.getId());
-        assertThat(secondSlice).extracting(FeedItem::feedId).containsExactly(oldest.getId());
-        assertThat(feedQueryRepository.findAll(FeedSort.LATEST, categoryId, null, null, 10))
+        assertThat(firstSlice.totalCount()).isEqualTo(3L);
+        assertThat(secondSlice.items()).extracting(FeedItem::feedId).containsExactly(oldest.getId());
+        assertThat(secondSlice.totalCount()).isEqualTo(3L);
+        assertThat(feedQueryRepository.findAll(FeedSort.LATEST, categoryId, null, null, 10).items())
                 .extracting(FeedItem::feedId)
                 .containsExactly(latest.getId(), middle.getId(), oldest.getId());
-        assertThat(feedQueryRepository.countAll(categoryId, null)).isEqualTo(3L);
         assertThat(feedQueryRepository.findById(deleted.getId())).isEmpty();
 
         FeedItem detail = feedQueryRepository.findById(oldest.getId()).orElseThrow();
@@ -130,15 +132,15 @@ class FeedRepositoryIntegrationTest {
         insertLike(latestPopular.getId(), firstUserId);
         insertLike(latestPopular.getId(), secondUserId);
 
-        List<FeedItem> firstSlice = feedQueryRepository.findAll(
+        FeedPage firstSlice = feedQueryRepository.findAll(
                 FeedSort.POPULAR,
                 null,
                 null,
                 null,
                 1
         );
-        FeedItem firstItem = firstSlice.getFirst();
-        List<FeedItem> secondSlice = feedQueryRepository.findAll(
+        FeedItem firstItem = firstSlice.items().getFirst();
+        FeedPage secondSlice = feedQueryRepository.findAll(
                 FeedSort.POPULAR,
                 null,
                 null,
@@ -152,10 +154,10 @@ class FeedRepositoryIntegrationTest {
                 10
         );
 
-        assertThat(firstSlice).extracting(FeedItem::feedId)
+        assertThat(firstSlice.items()).extracting(FeedItem::feedId)
                 .containsExactly(latestPopular.getId());
         assertThat(firstItem.likeCount()).isEqualTo(2L);
-        assertThat(secondSlice).extracting(FeedItem::feedId)
+        assertThat(secondSlice.items()).extracting(FeedItem::feedId)
                 .containsExactly(olderPopular.getId(), noLike.getId());
     }
 
@@ -179,13 +181,13 @@ class FeedRepositoryIntegrationTest {
                 viewerId,
                 null,
                 10
-        ).stream().filter(item -> item.feedId() == feed.getId()).findFirst().orElseThrow();
+        ).items().stream().filter(item -> item.feedId() == feed.getId()).findFirst().orElseThrow();
         FeedItem userFeedItem = feedQueryRepository.findAllByAuthorId(
                 authorId,
                 viewerId,
                 null,
                 10
-        ).stream().filter(item -> item.feedId() == feed.getId()).findFirst().orElseThrow();
+        ).items().stream().filter(item -> item.feedId() == feed.getId()).findFirst().orElseThrow();
 
         assertThat(detail.likeCount()).isEqualTo(2L);
         assertThat(detail.bookmarkCount()).isEqualTo(1L);
@@ -254,15 +256,15 @@ class FeedRepositoryIntegrationTest {
         );
         feedRepository.update(deleted.delete(base.plus(8, ChronoUnit.HOURS)));
 
-        List<FeedItem> firstPage = feedQueryRepository.findAll(
+        FeedPage firstPage = feedQueryRepository.findAll(
                 FeedSort.RELEVANCE,
                 categoryId,
                 "우테코",
                 null,
                 2
         );
-        FeedItem lastItem = firstPage.getLast();
-        List<FeedItem> secondPage = feedQueryRepository.findAll(
+        FeedItem lastItem = firstPage.items().getLast();
+        FeedPage secondPage = feedQueryRepository.findAll(
                 FeedSort.RELEVANCE,
                 categoryId,
                 "우테코",
@@ -276,17 +278,18 @@ class FeedRepositoryIntegrationTest {
                 10
         );
 
-        assertThat(firstPage).extracting(FeedItem::feedId)
+        assertThat(firstPage.items()).extracting(FeedItem::feedId)
                 .containsExactly(exact.getId(), latestPrefix.getId());
-        assertThat(secondPage).extracting(FeedItem::feedId)
+        assertThat(secondPage.items()).extracting(FeedItem::feedId)
                 .containsExactly(
                         olderPrefix.getId(),
                         titleContains.getId(),
                         contentContains.getId()
                 );
-        assertThat(firstPage).extracting(FeedItem::relevanceRank).containsExactly(0, 1);
-        assertThat(secondPage).extracting(FeedItem::relevanceRank).containsExactly(1, 2, 3);
-        assertThat(feedQueryRepository.countAll(categoryId, "우테코")).isEqualTo(5L);
+        assertThat(firstPage.items()).extracting(FeedItem::relevanceRank).containsExactly(0, 1);
+        assertThat(secondPage.items()).extracting(FeedItem::relevanceRank).containsExactly(1, 2, 3);
+        assertThat(firstPage.totalCount()).isEqualTo(5L);
+        assertThat(secondPage.totalCount()).isEqualTo(5L);
     }
 
     @Test
@@ -301,13 +304,13 @@ class FeedRepositoryIntegrationTest {
 
         assertThat(feedQueryRepository.findAll(
                 FeedSort.RELEVANCE, categoryId, "%", null, 10
-        )).extracting(FeedItem::feedId).containsExactly(percent.getId());
+        ).items()).extracting(FeedItem::feedId).containsExactly(percent.getId());
         assertThat(feedQueryRepository.findAll(
                 FeedSort.RELEVANCE, categoryId, "_", null, 10
-        )).extracting(FeedItem::feedId).containsExactly(underscore.getId());
+        ).items()).extracting(FeedItem::feedId).containsExactly(underscore.getId());
         assertThat(feedQueryRepository.findAll(
                 FeedSort.RELEVANCE, categoryId, "\\", null, 10
-        )).extracting(FeedItem::feedId).containsExactly(backslash.getId());
+        ).items()).extracting(FeedItem::feedId).containsExactly(backslash.getId());
     }
 
     @Test
@@ -363,20 +366,21 @@ class FeedRepositoryIntegrationTest {
         insertComment(latest.getId(), otherId, false);
         insertComment(latest.getId(), otherId, true);
 
-        List<FeedItem> firstPage = feedQueryRepository.findAllByAuthorId(authorId, null, 2);
-        FeedItem lastItem = firstPage.getLast();
-        List<FeedItem> secondPage = feedQueryRepository.findAllByAuthorId(
+        FeedPage firstPage = feedQueryRepository.findAllByAuthorId(authorId, null, 2);
+        FeedItem lastItem = firstPage.items().getLast();
+        FeedPage secondPage = feedQueryRepository.findAllByAuthorId(
                 authorId,
                 new FeedCursor(FeedSort.LATEST, 0, 0L, lastItem.createdAt(), lastItem.feedId()),
                 2
         );
 
-        assertThat(firstPage).extracting(FeedItem::feedId)
+        assertThat(firstPage.items()).extracting(FeedItem::feedId)
                 .containsExactly(latest.getId(), middle.getId());
-        assertThat(firstPage.getFirst().likeCount()).isEqualTo(1L);
-        assertThat(firstPage.getFirst().commentCount()).isEqualTo(1L);
-        assertThat(secondPage).extracting(FeedItem::feedId).containsExactly(oldest.getId());
-        assertThat(feedQueryRepository.countAllByAuthorId(authorId)).isEqualTo(3L);
+        assertThat(firstPage.items().getFirst().likeCount()).isEqualTo(1L);
+        assertThat(firstPage.items().getFirst().commentCount()).isEqualTo(1L);
+        assertThat(secondPage.items()).extracting(FeedItem::feedId).containsExactly(oldest.getId());
+        assertThat(firstPage.totalCount()).isEqualTo(3L);
+        assertThat(secondPage.totalCount()).isEqualTo(3L);
     }
 
     private Feed saveFeed(long authorId, String content, Instant createdAt, long categoryId, long... mediaIds) {

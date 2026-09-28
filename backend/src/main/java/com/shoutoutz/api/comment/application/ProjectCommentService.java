@@ -136,7 +136,7 @@ public class ProjectCommentService {
                 request.sort(),
                 request.size()
         );
-        List<Long> rootIds = page.comments().stream()
+        List<Long> rootIds = page.items().stream()
                 .map(ProjectComment::getId)
                 .toList();
 
@@ -153,7 +153,7 @@ public class ProjectCommentService {
         Map<Long, UserProfile> authors = new HashMap<>();
         List<ProjectComment> orderedComments = new ArrayList<>();
 
-        for (ProjectComment root : page.comments()) {
+        for (ProjectComment root : page.items()) {
             authors.computeIfAbsent(root.getAuthorId(), this::findAuthor);
             orderedComments.add(root);
             for (ProjectComment reply : repliesByParentId.getOrDefault(root.getId(), List.of())) {
@@ -169,16 +169,16 @@ public class ProjectCommentService {
                 .toList();
 
         // 4. meta 정보: 다음 커서 정보 제공
-        String nextCursor = page.hasNext() && !page.comments().isEmpty()
-                ? ProjectCommentCursorCodec.encode(toCursor(page.comments().getLast(), request.sort()))
-                : null;
-        long totalCount = projectCommentQueryRepository.countAllByProjectId(projectId);
+        String nextCursor = null;
+        if (page.hasNext() && !page.items().isEmpty()) {
+            nextCursor = ProjectCommentCursorCodec.encode(toCursor(page.items().getLast(), request.sort()));
+        }
         return new ProjectCommentFindResponse(
                 comments,
                 new SliceMetaResponse(
                         nextCursor,
                         page.hasNext() && !comments.isEmpty(),
-                        totalCount
+                        page.totalCount()
                 )
         );
     }

@@ -9,6 +9,7 @@ import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.verification.application.AdminVerificationRequestQueryRepository;
 import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestCursor;
 import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestItem;
+import com.shoutoutz.api.verification.application.dto.AdminVerificationRequestPage;
 import com.shoutoutz.api.verification.domain.UserVerificationRequest;
 import com.shoutoutz.api.verification.domain.UserVerificationRequestHistory;
 import com.shoutoutz.api.verification.domain.UserVerificationRequestHistoryRepository;
@@ -231,18 +232,18 @@ class UserVerificationRequestRepositoryIntegrationTest {
         ));
         entityManager.flush();
 
-        List<AdminVerificationRequestItem> firstPage = adminQueryRepository.findAll(
+        AdminVerificationRequestPage firstPage = adminQueryRepository.findAll(
                 VerificationRequestStatus.PENDING,
                 null,
                 1
         );
-        List<AdminVerificationRequestItem> secondPage = adminQueryRepository.findAll(
+        AdminVerificationRequestPage secondPage = adminQueryRepository.findAll(
                 VerificationRequestStatus.PENDING,
                 new AdminVerificationRequestCursor(newerRequest.getRequestedAt(), newerRequest.getId()),
                 1
         );
 
-        assertThat(firstPage).singleElement().satisfies(item -> {
+        assertThat(firstPage.items()).singleElement().satisfies(item -> {
             assertThat(item.requestId()).isEqualTo(newerRequest.getId());
             assertThat(item.userId()).isEqualTo(newerUser.getId());
             assertThat(item.handle()).isEqualTo(newerUser.getHandle().value());
@@ -250,12 +251,13 @@ class UserVerificationRequestRepositoryIntegrationTest {
             assertThat(item.cohort()).isNull();
             assertThat(item.track()).isNull();
         });
-        assertThat(secondPage).singleElement().satisfies(item -> {
+        assertThat(secondPage.items()).singleElement().satisfies(item -> {
             assertThat(item.requestId()).isEqualTo(olderRequest.getId());
             assertThat(item.userId()).isEqualTo(olderUser.getId());
             assertThat(item.nickname()).isEqualTo("이전 신청");
         });
-        assertThat(adminQueryRepository.countAll(VerificationRequestStatus.PENDING)).isEqualTo(2L);
+        assertThat(firstPage.totalCount()).isEqualTo(2L);
+        assertThat(secondPage.totalCount()).isEqualTo(2L);
     }
 
     private UserVerificationRequest request(long userId, String nickname) {

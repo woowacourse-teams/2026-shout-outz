@@ -26,5 +26,4 @@ public interface ProjectCommentQueryRepository {
      */
     List<ProjectComment> findReplies(long projectId, List<Long> parentIds);
 
-    long countAllByProjectId(long projectId);
 }

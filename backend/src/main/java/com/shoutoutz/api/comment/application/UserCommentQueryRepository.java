@@ -1,17 +1,14 @@
 package com.shoutoutz.api.comment.application;
 
 import com.shoutoutz.api.comment.application.dto.UserCommentCursor;
-import com.shoutoutz.api.comment.application.dto.UserCommentItem;
-import java.util.List;
+import com.shoutoutz.api.comment.application.dto.UserCommentPage;
 
 /**
  * 사용자가 작성한 댓글 통합 조회 포트.
  */
 public interface UserCommentQueryRepository {
 
-    List<UserCommentItem> findAllByAuthorId(long authorId, UserCommentCursor cursor, int limit);
+    UserCommentPage findAllByAuthorId(long authorId, UserCommentCursor cursor, int size);
 
-    List<UserCommentItem> findAllByAuthorId(long authorId, Long viewerId, UserCommentCursor cursor, int limit);
-
-    long countAllByAuthorId(long authorId);
+    UserCommentPage findAllByAuthorId(long authorId, Long viewerId, UserCommentCursor cursor, int size);
 }

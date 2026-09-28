@@ -142,7 +142,7 @@ public class FeedCommentService {
                 request.sort(),
                 request.size()
         );
-        List<Long> rootIds = page.comments().stream()
+        List<Long> rootIds = page.items().stream()
                 .map(FeedComment::getId)
                 .toList();
 
@@ -159,7 +159,7 @@ public class FeedCommentService {
         Map<Long, UserProfile> authors = new HashMap<>();
         List<FeedComment> orderedComments = new ArrayList<>();
 
-        for (FeedComment root : page.comments()) {
+        for (FeedComment root : page.items()) {
             authors.computeIfAbsent(root.getAuthorId(), this::findAuthor);
             orderedComments.add(root);
             for (FeedComment reply : repliesByParentId.getOrDefault(root.getId(), List.of())) {
@@ -175,16 +175,16 @@ public class FeedCommentService {
                 .toList();
 
         // 4. meta 정보: 다음 커서 정보 제공
-        String nextCursor = page.hasNext() && !page.comments().isEmpty()
-                ? FeedCommentCursorCodec.encode(toCursor(page.comments().getLast(), request.sort()))
-                : null;
-        long totalCount = feedCommentQueryRepository.countAllByFeedId(feedId);
+        String nextCursor = null;
+        if (page.hasNext() && !page.items().isEmpty()) {
+            nextCursor = FeedCommentCursorCodec.encode(toCursor(page.items().getLast(), request.sort()));
+        }
         return new FeedCommentFindResponse(
                 comments,
                 new SliceMetaResponse(
                         nextCursor,
                         page.hasNext() && !comments.isEmpty(),
-                        totalCount
+                        page.totalCount()
                 )
         );
     }

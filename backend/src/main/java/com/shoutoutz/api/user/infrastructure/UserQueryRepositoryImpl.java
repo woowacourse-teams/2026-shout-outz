@@ -5,6 +5,7 @@ import com.shoutoutz.api.user.application.UserQueryRepository;
 import com.shoutoutz.api.user.application.dto.UserProfileCounts;
 import com.shoutoutz.api.user.application.dto.UserSearchCursor;
 import com.shoutoutz.api.user.application.dto.UserSearchItem;
+import com.shoutoutz.api.user.application.dto.UserSearchPage;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.domain.profile.Track;
 import java.util.List;
@@ -52,10 +53,10 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
     }
 
     @Override
-    public List<UserSearchItem> searchWoowaMember(
+    public UserSearchPage searchWoowaMember(
             String keyword,
             UserSearchCursor cursor,
-            int limit
+            int size
     ) {
         String escapedKeyword = escapeLikePattern(keyword);
         String sql = """
@@ -90,7 +91,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                 .addValue("keyword", keyword)
                 .addValue("prefixPattern", escapedKeyword + "%")
                 .addValue("containsPattern", "%" + escapedKeyword + "%")
-                .addValue("limit", limit);
+                .addValue("limit", size + 1);
 
         if (cursor != null) {
             sql += """
@@ -115,7 +116,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                 LIMIT :limit
                 """;
 
-        return jdbcTemplate.query(
+        List<UserSearchItem> items = jdbcTemplate.query(
                 sql,
                 parameters,
                 (resultSet, rowNumber) -> new UserSearchItem(
@@ -128,10 +129,10 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                         resultSet.getInt("relevance_rank")
                 )
         );
+        return createSearchPage(items, size, countWoowaMember(keyword));
     }
 
-    @Override
-    public long countWoowaMember(String keyword) {
+    private long countWoowaMember(String keyword) {
         String escapedKeyword = escapeLikePattern(keyword);
         return jdbcTemplate.queryForObject(
                 """
@@ -151,6 +152,13 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                 ),
                 Long.class
         );
+    }
+
+    private UserSearchPage createSearchPage(List<UserSearchItem> items, int size, long totalCount) {
+        if (items.size() <= size) {
+            return new UserSearchPage(items, false, totalCount);
+        }
+        return new UserSearchPage(items.subList(0, size), true, totalCount);
     }
 
     private Track toTrack(String value) {

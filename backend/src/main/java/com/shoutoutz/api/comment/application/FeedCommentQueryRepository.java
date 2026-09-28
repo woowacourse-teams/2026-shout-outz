@@ -26,5 +26,4 @@ public interface FeedCommentQueryRepository {
      */
     List<FeedComment> findReplies(long feedId, List<Long> parentIds);
 
-    long countAllByFeedId(long feedId);
 }

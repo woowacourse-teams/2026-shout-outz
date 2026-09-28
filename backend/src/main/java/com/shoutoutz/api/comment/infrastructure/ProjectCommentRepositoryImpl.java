@@ -78,7 +78,8 @@ public class ProjectCommentRepositoryImpl implements ProjectCommentRepository, P
                 .limit(size)
                 .map(ProjectCommentMapper::toDomain)
                 .toList();
-        return new ProjectCommentPage(roots, hasNext);
+        long totalCount = projectCommentJpaRepository.countByProjectIdAndDeletedAtIsNull(projectId);
+        return new ProjectCommentPage(roots, hasNext, totalCount);
     }
 
     @Override
@@ -89,11 +90,6 @@ public class ProjectCommentRepositoryImpl implements ProjectCommentRepository, P
         return projectCommentJpaRepository.findReplies(projectId, parentIds).stream()
                 .map(ProjectCommentMapper::toDomain)
                 .toList();
-    }
-
-    @Override
-    public long countAllByProjectId(long projectId) {
-        return projectCommentJpaRepository.countByProjectIdAndDeletedAtIsNull(projectId);
     }
 
     private ProjectComment update(ProjectComment comment) {

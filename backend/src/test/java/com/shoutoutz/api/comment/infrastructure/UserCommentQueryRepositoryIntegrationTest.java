@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.shoutoutz.api.comment.application.UserCommentQueryRepository;
 import com.shoutoutz.api.comment.application.dto.UserCommentCursor;
 import com.shoutoutz.api.comment.application.dto.UserCommentItem;
+import com.shoutoutz.api.comment.application.dto.UserCommentPage;
 import com.shoutoutz.api.comment.application.dto.UserCommentType;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -61,23 +62,24 @@ class UserCommentQueryRepositoryIntegrationTest {
         insertProjectComment(pendingProjectId, authorId, "미승인 프로젝트 댓글", BASE_TIME.plusSeconds(270), false);
         insertProjectComment(deletedProjectId, authorId, "삭제된 프로젝트 댓글", BASE_TIME.plusSeconds(260), false);
 
-        List<UserCommentItem> firstPage = userCommentQueryRepository.findAllByAuthorId(authorId, null, 2);
-        UserCommentItem lastItem = firstPage.getLast();
-        List<UserCommentItem> secondPage = userCommentQueryRepository.findAllByAuthorId(
+        UserCommentPage firstPage = userCommentQueryRepository.findAllByAuthorId(authorId, null, 2);
+        UserCommentItem lastItem = firstPage.items().getLast();
+        UserCommentPage secondPage = userCommentQueryRepository.findAllByAuthorId(
                 authorId,
                 new UserCommentCursor(lastItem.createdAt(), lastItem.type(), lastItem.commentId()),
                 2
         );
 
-        assertThat(firstPage).extracting(UserCommentItem::commentId)
+        assertThat(firstPage.items()).extracting(UserCommentItem::commentId)
                 .containsExactly(latestFeedCommentId, projectCommentId);
-        assertThat(firstPage).extracting(UserCommentItem::type)
+        assertThat(firstPage.items()).extracting(UserCommentItem::type)
                 .containsExactly(UserCommentType.FEED, UserCommentType.PROJECT);
-        assertThat(firstPage).extracting(UserCommentItem::targetId)
+        assertThat(firstPage.items()).extracting(UserCommentItem::targetId)
                 .containsExactly(feedId, projectId);
-        assertThat(secondPage).extracting(UserCommentItem::commentId)
+        assertThat(secondPage.items()).extracting(UserCommentItem::commentId)
                 .containsExactly(olderFeedCommentId);
-        assertThat(userCommentQueryRepository.countAllByAuthorId(authorId)).isEqualTo(3L);
+        assertThat(firstPage.totalCount()).isEqualTo(3L);
+        assertThat(secondPage.totalCount()).isEqualTo(3L);
     }
 
     @Test
@@ -103,18 +105,18 @@ class UserCommentQueryRepositoryIntegrationTest {
                 projectCommentId, authorId
         );
 
-        List<UserCommentItem> comments = userCommentQueryRepository.findAllByAuthorId(
+        UserCommentPage comments = userCommentQueryRepository.findAllByAuthorId(
                 authorId,
                 viewerId,
                 null,
                 20
         );
 
-        UserCommentItem feedComment = comments.stream()
+        UserCommentItem feedComment = comments.items().stream()
                 .filter(comment -> comment.commentId() == feedCommentId)
                 .findFirst()
                 .orElseThrow();
-        UserCommentItem projectComment = comments.stream()
+        UserCommentItem projectComment = comments.items().stream()
                 .filter(comment -> comment.commentId() == projectCommentId)
                 .findFirst()
                 .orElseThrow();

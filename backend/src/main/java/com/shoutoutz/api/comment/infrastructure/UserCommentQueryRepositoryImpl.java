@@ -3,6 +3,7 @@ package com.shoutoutz.api.comment.infrastructure;
 import com.shoutoutz.api.comment.application.UserCommentQueryRepository;
 import com.shoutoutz.api.comment.application.dto.UserCommentCursor;
 import com.shoutoutz.api.comment.application.dto.UserCommentItem;
+import com.shoutoutz.api.comment.application.dto.UserCommentPage;
 import com.shoutoutz.api.comment.application.dto.UserCommentType;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -19,20 +20,20 @@ public class UserCommentQueryRepositoryImpl implements UserCommentQueryRepositor
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Override
-    public List<UserCommentItem> findAllByAuthorId(
+    public UserCommentPage findAllByAuthorId(
             long authorId,
             UserCommentCursor cursor,
-            int limit
+            int size
     ) {
-        return findAllByAuthorId(authorId, authorId, cursor, limit);
+        return findAllByAuthorId(authorId, authorId, cursor, size);
     }
 
     @Override
-    public List<UserCommentItem> findAllByAuthorId(
+    public UserCommentPage findAllByAuthorId(
             long authorId,
             Long viewerId,
             UserCommentCursor cursor,
-            int limit
+            int size
     ) {
         StringBuilder sql = new StringBuilder("""
                 SELECT comment_id,
@@ -103,7 +104,7 @@ public class UserCommentQueryRepositoryImpl implements UserCommentQueryRepositor
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("authorId", authorId)
                 .addValue("viewerId", viewerId, Types.BIGINT)
-                .addValue("limit", limit);
+                .addValue("limit", size + 1);
 
         if (cursor != null) {
             sql.append("""
@@ -120,7 +121,7 @@ public class UserCommentQueryRepositoryImpl implements UserCommentQueryRepositor
                 LIMIT :limit
                 """);
 
-        return jdbcTemplate.query(
+        List<UserCommentItem> items = jdbcTemplate.query(
                 sql.toString(),
                 parameters,
                 (resultSet, rowNumber) -> new UserCommentItem(
@@ -134,10 +135,10 @@ public class UserCommentQueryRepositoryImpl implements UserCommentQueryRepositor
                         resultSet.getBoolean("agreed_by_me")
                 )
         );
+        return createPage(items, size, countAllByAuthorId(authorId));
     }
 
-    @Override
-    public long countAllByAuthorId(long authorId) {
+    private long countAllByAuthorId(long authorId) {
         return jdbcTemplate.queryForObject(
                 """
                         SELECT
@@ -161,5 +162,12 @@ public class UserCommentQueryRepositoryImpl implements UserCommentQueryRepositor
                 new MapSqlParameterSource("authorId", authorId),
                 Long.class
         );
+    }
+
+    private UserCommentPage createPage(List<UserCommentItem> items, int size, long totalCount) {
+        if (items.size() <= size) {
+            return new UserCommentPage(items, false, totalCount);
+        }
+        return new UserCommentPage(items.subList(0, size), true, totalCount);
     }
 }

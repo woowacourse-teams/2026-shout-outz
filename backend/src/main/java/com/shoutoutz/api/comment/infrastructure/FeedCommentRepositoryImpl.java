@@ -75,7 +75,8 @@ public class FeedCommentRepositoryImpl implements FeedCommentRepository, FeedCom
                 .limit(size)
                 .map(FeedCommentMapper::toDomain)
                 .toList();
-        return new FeedCommentPage(roots, hasNext);
+        long totalCount = feedCommentJpaRepository.countByFeedIdAndDeletedAtIsNull(feedId);
+        return new FeedCommentPage(roots, hasNext, totalCount);
     }
 
     @Override
@@ -86,11 +87,6 @@ public class FeedCommentRepositoryImpl implements FeedCommentRepository, FeedCom
         return feedCommentJpaRepository.findReplies(feedId, parentIds).stream()
                 .map(FeedCommentMapper::toDomain)
                 .toList();
-    }
-
-    @Override
-    public long countAllByFeedId(long feedId) {
-        return feedCommentJpaRepository.countByFeedIdAndDeletedAtIsNull(feedId);
     }
 
     private FeedComment update(FeedComment comment) {
