@@ -44,7 +44,7 @@ export interface SaveFeedInput extends Omit<FeedSaveRequest, 'categoryIds' | 'me
 
 /** 제목·본문 길이 한도. 서버 제약과 같은 값을 화면에서도 미리 막는다. */
 export const FEED_TITLE_MAX = 100;
-export const FEED_CONTENT_MAX = 500;
+export const FEED_CONTENT_MAX = 5000;
 
 export async function createFeed(input: SaveFeedInput) {
   const response = await httpClient<FeedSaveSuccessResponse>('/api/v1/feeds', {
