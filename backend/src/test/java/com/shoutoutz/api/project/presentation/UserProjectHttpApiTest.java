@@ -89,7 +89,8 @@ class UserProjectHttpApiTest {
                         .queryParam("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data[0].id").value(100))
+                .andExpect(jsonPath("$.data[0].slug").value("loop"))
+                .andExpect(jsonPath("$.data[0].id").doesNotExist())
                 .andExpect(jsonPath("$.data[0].title").value("루프"))
                 .andExpect(jsonPath("$.data[0].approvalStatus").value("APPROVED"))
                 .andExpect(jsonPath("$.data[0].rejectReason").value(nullValue()))
@@ -258,7 +259,6 @@ class UserProjectHttpApiTest {
         return List.of(
                 fieldWithPath("status").type(STRING).description("응답 상태"),
                 fieldWithPath("data").type(ARRAY).description("사용자가 참여한 프로젝트 목록"),
-                fieldWithPath("data[].id").type(NUMBER).description("프로젝트 ID"),
                 fieldWithPath("data[].slug").type(STRING).description("프로젝트 slug"),
                 fieldWithPath("data[].title").type(STRING).description("프로젝트 이름"),
                 fieldWithPath("data[].teamName").type(STRING).description("팀 이름"),

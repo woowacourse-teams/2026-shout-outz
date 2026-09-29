@@ -49,13 +49,13 @@ public class ProjectHttpApi {
     /**
      * 작성자만 수정할 수 있다. 반려된 프로젝트를 수정하면 재심사 요청으로 처리한다.
      */
-    @PutMapping("/{projectId}")
+    @PutMapping("/@{slug}")
     public ResponseEntity<SuccessResponse<ProjectUpdateResponse>> update(
             @LoginUser AuthenticatedUser loginUser,
-            @PathVariable long projectId,
+            @PathVariable String slug,
             @Valid @RequestBody ProjectUpdateRequest request
     ) {
-        ProjectUpdateResponse response = projectService.update(projectId, loginUser.userId(), request);
+        ProjectUpdateResponse response = projectService.update(slug, loginUser.userId(), request);
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
 
@@ -100,13 +100,13 @@ public class ProjectHttpApi {
     /**
      * 등록자 본인만 삭제할 수 있다. 심사 중인 프로젝트도 삭제할 수 있다.
      */
-    @DeleteMapping("/{projectId}")
+    @DeleteMapping("/@{slug}")
     public ResponseEntity<SuccessResponse<ProjectDeleteResponse>> delete(
             @LoginUser AuthenticatedUser loginUser,
-            @PathVariable long projectId
+            @PathVariable String slug
     ) {
         ProjectDeleteResponse response = ProjectDeleteResponse.from(
-                projectService.delete(projectId, loginUser.userId())
+                projectService.delete(slug, loginUser.userId())
         );
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
@@ -114,13 +114,13 @@ public class ProjectHttpApi {
     /**
      * 등록자 본인만 복구 기한 안에 복구할 수 있다. 승인 상태는 삭제 이전 값을 그대로 유지한다.
      */
-    @PostMapping("/{projectId}/restore")
+    @PostMapping("/@{slug}/restore")
     public ResponseEntity<SuccessResponse<ProjectRestoreResponse>> restore(
             @LoginUser AuthenticatedUser loginUser,
-            @PathVariable long projectId
+            @PathVariable String slug
     ) {
         ProjectRestoreResponse response = ProjectRestoreResponse.from(
-                projectService.restore(projectId, loginUser.userId())
+                projectService.restore(slug, loginUser.userId())
         );
         return ResponseEntity.ok(SuccessResponse.success(response));
     }

@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -112,6 +113,7 @@ class ProjectServiceTest {
     private static final long MEMBER_ID = 8L;
     private static final long OTHER_USER_ID = 9L;
     private static final long PROJECT_ID = 100L;
+    private static final String SLUG = "loop";
     private static final String MEMBER_HANDLE = "@zzaekkii";
     private static final String DESCRIPTION = "## 문제";
     private static final long THUMBNAIL_ID = 12L;
@@ -122,6 +124,9 @@ class ProjectServiceTest {
 
     @Mock
     private ProjectRepository projectRepository;
+
+    @Mock
+    private ProjectSlugResolver projectSlugResolver;
 
     @Mock
     private TechTagRepository techTagRepository;
@@ -153,6 +158,7 @@ class ProjectServiceTest {
     void setUp() {
         projectService = new ProjectService(
                 projectRepository,
+                projectSlugResolver,
                 techTagRepository,
                 mediaMetadataRepository,
                 userProfileRepository,
@@ -163,22 +169,23 @@ class ProjectServiceTest {
                 mediaUrlResolver,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
+        lenient().when(projectSlugResolver.resolveId(SLUG)).thenReturn(PROJECT_ID);
     }
 
     @Test
     @DisplayName("프로젝트를 삭제하면 같은 시각으로 삭제하고 복구 기한이 담긴 삭제 이력을 남긴다.")
     void deleteSoftDeletesProjectAndSavesDeletionHistory() {
-        DeletedProject deletedProject = new DeletedProject(1L, "2026-moamoa", "모아모아");
-        when(projectRepository.softDelete(1L, REGISTERED_BY, NOW)).thenReturn(Optional.of(deletedProject));
+        DeletedProject deletedProject = new DeletedProject(PROJECT_ID, "moamoa", "모아모아");
+        when(projectRepository.softDelete(PROJECT_ID, REGISTERED_BY, NOW)).thenReturn(Optional.of(deletedProject));
         when(projectDeletionRepository.save(any(ProjectDeletion.class))).thenAnswer(answer -> answer.getArgument(0));
 
-        ProjectDeletion deletion = projectService.delete(1L, REGISTERED_BY);
+        ProjectDeletion deletion = projectService.delete(SLUG, REGISTERED_BY);
 
         ArgumentCaptor<ProjectDeletion> captor = ArgumentCaptor.forClass(ProjectDeletion.class);
         verify(projectDeletionRepository).save(captor.capture());
         ProjectDeletion saved = captor.getValue();
-        assertThat(saved.getProjectId()).isEqualTo(1L);
-        assertThat(saved.getProjectSlug()).isEqualTo("2026-moamoa");
+        assertThat(saved.getProjectId()).isEqualTo(PROJECT_ID);
+        assertThat(saved.getProjectSlug()).isEqualTo("moamoa");
         assertThat(saved.getProjectTitle()).isEqualTo("모아모아");
         assertThat(saved.getDeletedBy()).isEqualTo(REGISTERED_BY);
         assertThat(saved.getDeletionType()).isEqualTo(DeletionType.SELF_DELETE);
@@ -190,9 +197,9 @@ class ProjectServiceTest {
     @Test
     @DisplayName("삭제할 프로젝트가 없으면 삭제 이력을 남기지 않고 프로젝트를 찾을 수 없다고 응답한다.")
     void deleteThrowsNotFoundWhenNothingDeleted() {
-        when(projectRepository.softDelete(1L, REGISTERED_BY, NOW)).thenReturn(Optional.empty());
+        when(projectRepository.softDelete(PROJECT_ID, REGISTERED_BY, NOW)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> projectService.delete(1L, REGISTERED_BY))
+        assertThatThrownBy(() -> projectService.delete(SLUG, REGISTERED_BY))
                 .isInstanceOfSatisfying(EntityNotFoundException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
         verifyNoInteractions(projectDeletionRepository);
@@ -202,12 +209,12 @@ class ProjectServiceTest {
     @DisplayName("복구 기한 안에 복구하면 프로젝트를 되살리고 삭제 이력에 복구 사실을 남긴다.")
     void restoreRestoresProjectAndMarksDeletionRestored() {
         RestorableProject restorable = new RestorableProject(5L, NOW.plusSeconds(1));
-        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.of(restorable));
-        when(projectRepository.restore(1L, NOW)).thenReturn(Optional.of(ApprovalStatus.APPROVED));
+        when(projectRepository.findRestorable(PROJECT_ID, REGISTERED_BY)).thenReturn(Optional.of(restorable));
+        when(projectRepository.restore(PROJECT_ID, NOW)).thenReturn(Optional.of(ApprovalStatus.APPROVED));
 
-        RestoredProject restored = projectService.restore(1L, REGISTERED_BY);
+        RestoredProject restored = projectService.restore(SLUG, REGISTERED_BY);
 
-        assertThat(restored).isEqualTo(new RestoredProject(1L, ApprovalStatus.APPROVED, NOW));
+        assertThat(restored).isEqualTo(new RestoredProject(SLUG, ApprovalStatus.APPROVED, NOW));
         verify(projectDeletionRepository).markRestored(5L, REGISTERED_BY, NOW);
     }
 
@@ -215,19 +222,19 @@ class ProjectServiceTest {
     @DisplayName("복구 기한과 같은 시각에는 복구할 수 있다.")
     void restoreSucceedsAtRestoreDeadline() {
         RestorableProject restorable = new RestorableProject(5L, NOW);
-        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.of(restorable));
-        when(projectRepository.restore(1L, NOW)).thenReturn(Optional.of(ApprovalStatus.PENDING));
+        when(projectRepository.findRestorable(PROJECT_ID, REGISTERED_BY)).thenReturn(Optional.of(restorable));
+        when(projectRepository.restore(PROJECT_ID, NOW)).thenReturn(Optional.of(ApprovalStatus.PENDING));
 
-        assertThat(projectService.restore(1L, REGISTERED_BY).approvalStatus()).isEqualTo(ApprovalStatus.PENDING);
+        assertThat(projectService.restore(SLUG, REGISTERED_BY).approvalStatus()).isEqualTo(ApprovalStatus.PENDING);
     }
 
     @Test
     @DisplayName("복구 기한이 지나면 아무것도 바꾸지 않고 복구할 수 없다고 응답한다.")
     void restoreThrowsConflictAfterRestoreDeadline() {
         RestorableProject restorable = new RestorableProject(5L, NOW.minusSeconds(1));
-        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.of(restorable));
+        when(projectRepository.findRestorable(PROJECT_ID, REGISTERED_BY)).thenReturn(Optional.of(restorable));
 
-        assertThatThrownBy(() -> projectService.restore(1L, REGISTERED_BY))
+        assertThatThrownBy(() -> projectService.restore(SLUG, REGISTERED_BY))
                 .isInstanceOfSatisfying(ConflictException.class, error ->
                         assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_RESTORE_DEADLINE_EXPIRED));
         verify(projectRepository, never()).restore(anyLong(), any());
@@ -237,9 +244,9 @@ class ProjectServiceTest {
     @Test
     @DisplayName("복구할 프로젝트가 없으면 프로젝트를 찾을 수 없다고 응답한다.")
     void restoreThrowsNotFoundWhenNoRestorableProject() {
-        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.empty());
+        when(projectRepository.findRestorable(PROJECT_ID, REGISTERED_BY)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> projectService.restore(1L, REGISTERED_BY))
+        assertThatThrownBy(() -> projectService.restore(SLUG, REGISTERED_BY))
                 .isInstanceOfSatisfying(EntityNotFoundException.class, error ->
                         assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
         verifyNoInteractions(projectDeletionRepository);
@@ -249,10 +256,10 @@ class ProjectServiceTest {
     @DisplayName("조회한 뒤 다른 요청이 먼저 복구해 버리면 이력을 남기지 않고 프로젝트를 찾을 수 없다고 응답한다.")
     void restoreThrowsNotFoundWhenAlreadyRestoredByAnotherRequest() {
         RestorableProject restorable = new RestorableProject(5L, NOW.plusSeconds(1));
-        when(projectRepository.findRestorable(1L, REGISTERED_BY)).thenReturn(Optional.of(restorable));
-        when(projectRepository.restore(1L, NOW)).thenReturn(Optional.empty());
+        when(projectRepository.findRestorable(PROJECT_ID, REGISTERED_BY)).thenReturn(Optional.of(restorable));
+        when(projectRepository.restore(PROJECT_ID, NOW)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> projectService.restore(1L, REGISTERED_BY))
+        assertThatThrownBy(() -> projectService.restore(SLUG, REGISTERED_BY))
                 .isInstanceOfSatisfying(EntityNotFoundException.class, error ->
                         assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
         verifyNoInteractions(projectDeletionRepository);
@@ -272,7 +279,6 @@ class ProjectServiceTest {
 
         ProjectCreateResponse result = projectService.create(REGISTERED_BY, request(6, THUMBNAIL_ID, TECH_TAG_IDS));
 
-        assertThat(result.projectId()).isEqualTo(100L);
         assertThat(result.slug()).isEqualTo("loop");
 
         ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
@@ -441,7 +447,7 @@ class ProjectServiceTest {
 
         ProjectCreateResponse result = projectService.create(REGISTERED_BY, request(6, null, TECH_TAG_IDS));
 
-        assertThat(result.projectId()).isEqualTo(100L);
+        assertThat(result.slug()).isEqualTo("loop");
     }
 
     @Test
@@ -613,7 +619,7 @@ class ProjectServiceTest {
         ProjectFindAllResponse response = projectService.findAll(
                 new ProjectFindAllRequest(null, null, null, "POPULAR", 2, null));
 
-        assertThat(response.items()).extracting(ProjectFindAllResponse.Item::id).containsExactly(10L, 9L);
+        assertThat(response.items()).extracting(ProjectFindAllResponse.Item::slug).containsExactly("loop-10", "loop-9");
         assertThat(response.meta().hasNext()).isTrue();
         assertThat(response.meta().totalCount()).isEqualTo(48);
         assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.POPULAR))
@@ -905,7 +911,7 @@ class ProjectServiceTest {
 
         ProjectDetailResponse response = projectService.findDetail("loop", null);
 
-        assertThat(response.id()).isEqualTo(100L);
+        assertThat(response.slug()).isEqualTo("loop");
         assertThat(response.editable()).isFalse();
         assertThat(response.techTags()).containsExactly(new ProjectTechTagResponse(1L, "React"));
         assertThat(response.members()).containsExactly(new ProjectMemberProfileResponse(
@@ -1126,9 +1132,9 @@ class ProjectServiceTest {
         when(projectRepository.update(any(Project.class), eq(TECH_TAG_IDS), anyList()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ProjectUpdateResponse result = projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest());
+        ProjectUpdateResponse result = projectService.update(SLUG, REGISTERED_BY, updateRequest());
 
-        assertThat(result.projectId()).isEqualTo(PROJECT_ID);
+        assertThat(result.slug()).isEqualTo(SLUG);
         assertThat(result.approvalStatus()).isEqualTo(ApprovalStatus.PENDING);
 
         ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
@@ -1153,7 +1159,7 @@ class ProjectServiceTest {
         Project existing = existingProject(ApprovalStatus.APPROVED, THUMBNAIL_ID);
         givenValidProjectUpdate(existing);
 
-        projectService.update(PROJECT_ID, REGISTERED_BY, updateRequestWithoutThumbnail());
+        projectService.update(SLUG, REGISTERED_BY, updateRequestWithoutThumbnail());
 
         ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
         verify(projectRepository).update(projectCaptor.capture(), eq(TECH_TAG_IDS), anyList());
@@ -1167,7 +1173,7 @@ class ProjectServiceTest {
         Project existing = existingProject(ApprovalStatus.APPROVED, THUMBNAIL_ID);
         givenValidProjectUpdate(existing);
 
-        projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest());
+        projectService.update(SLUG, REGISTERED_BY, updateRequest());
 
         ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
         verify(projectRepository).update(projectCaptor.capture(), eq(TECH_TAG_IDS), anyList());
@@ -1189,7 +1195,7 @@ class ProjectServiceTest {
                         MediaStatus.READY
                 )));
 
-        projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest(newThumbnailId));
+        projectService.update(SLUG, REGISTERED_BY, updateRequest(newThumbnailId));
 
         ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
         verify(projectRepository).update(projectCaptor.capture(), eq(TECH_TAG_IDS), anyList());
@@ -1222,7 +1228,7 @@ class ProjectServiceTest {
                 )));
 
         projectService.update(
-                PROJECT_ID,
+                SLUG,
                 REGISTERED_BY,
                 updateRequestWithDescription("![화면](" + descriptionUrl + ")")
         );
@@ -1252,7 +1258,7 @@ class ProjectServiceTest {
         when(mediaUrlResolver.containsUnsupportedDescriptionImageReference(descriptionMd)).thenReturn(true);
 
         assertThatThrownBy(() -> projectService.update(
-                PROJECT_ID,
+                SLUG,
                 REGISTERED_BY,
                 updateRequestWithDescription(descriptionMd)
         )).isInstanceOfSatisfying(
@@ -1269,7 +1275,7 @@ class ProjectServiceTest {
     void rejectsUpdateOfMissingProject() {
         when(projectRepository.findActiveById(PROJECT_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest()))
+        assertThatThrownBy(() -> projectService.update(SLUG, REGISTERED_BY, updateRequest()))
                 .isInstanceOfSatisfying(EntityNotFoundException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
     }
@@ -1279,7 +1285,7 @@ class ProjectServiceTest {
     void rejectsUpdateByNonRegistrant() {
         givenOwnedProject(existingProject(ApprovalStatus.APPROVED));
 
-        assertThatThrownBy(() -> projectService.update(PROJECT_ID, OTHER_USER_ID, updateRequest()))
+        assertThatThrownBy(() -> projectService.update(SLUG, OTHER_USER_ID, updateRequest()))
                 .isInstanceOfSatisfying(EntityNotFoundException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
 
@@ -1293,7 +1299,7 @@ class ProjectServiceTest {
         when(projectRepository.existsByGithubRepositoryUrlExcluding(GITHUB_REPOSITORY_URL, PROJECT_ID))
                 .thenReturn(true);
 
-        assertThatThrownBy(() -> projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest()))
+        assertThatThrownBy(() -> projectService.update(SLUG, REGISTERED_BY, updateRequest()))
                 .isInstanceOfSatisfying(DuplicateEntityException.class, error -> assertThat(error.getErrorCode())
                         .isEqualTo(ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY));
     }
@@ -1309,7 +1315,7 @@ class ProjectServiceTest {
         when(projectRepository.update(any(Project.class), eq(TECH_TAG_IDS), anyList()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest());
+        projectService.update(SLUG, REGISTERED_BY, updateRequest());
 
         verify(userProfileRepository, never()).findByUserId(MEMBER_ID);
     }
@@ -1323,7 +1329,7 @@ class ProjectServiceTest {
         when(projectRepository.findMemberIds(PROJECT_ID)).thenReturn(List.of(REGISTERED_BY));
         when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
 
-        assertThatThrownBy(() -> projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest()))
+        assertThatThrownBy(() -> projectService.update(SLUG, REGISTERED_BY, updateRequest()))
                 .isInstanceOfSatisfying(InvalidProjectMemberException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_INVALID_MEMBER));
     }
@@ -1341,7 +1347,7 @@ class ProjectServiceTest {
         when(projectRepository.update(any(Project.class), eq(TECH_TAG_IDS), anyList()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        projectService.update(PROJECT_ID, REGISTERED_BY, updateRequest());
+        projectService.update(SLUG, REGISTERED_BY, updateRequest());
 
         verify(techTagRepository).findAllActiveByIds(List.of(2L));
     }
@@ -1352,7 +1358,7 @@ class ProjectServiceTest {
         givenOwnedProject(existingProject(ApprovalStatus.APPROVED));
 
         assertThatThrownBy(() -> projectService.update(
-                PROJECT_ID,
+                SLUG,
                 REGISTERED_BY,
                 updateRequest(null, ServiceStatus.OPERATING)
         ))

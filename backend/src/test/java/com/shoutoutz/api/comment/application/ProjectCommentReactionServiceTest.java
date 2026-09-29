@@ -2,6 +2,7 @@ package com.shoutoutz.api.comment.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -17,6 +18,7 @@ import com.shoutoutz.api.comment.domain.ProjectCommentRepository;
 import com.shoutoutz.api.comment.presentation.dto.response.ProjectCommentReactionResponse;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.project.application.ProjectSlugResolver;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
@@ -38,11 +40,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ProjectCommentReactionServiceTest {
 
     private static final long PROJECT_ID = 100L;
+    private static final String SLUG = "loop";
     private static final long COMMENT_ID = 501L;
     private static final long USER_ID = 1L;
 
     @Mock
     private ProjectRepository projectRepository;
+
+    @Mock
+    private ProjectSlugResolver projectSlugResolver;
 
     @Mock
     private ProjectCommentRepository projectCommentRepository;
@@ -56,9 +62,11 @@ class ProjectCommentReactionServiceTest {
     void setUp() {
         projectCommentReactionService = new ProjectCommentReactionService(
                 projectRepository,
+                projectSlugResolver,
                 projectCommentRepository,
                 projectCommentReactionRepository
         );
+        lenient().when(projectSlugResolver.resolveId(SLUG)).thenReturn(PROJECT_ID);
     }
 
     @Test
@@ -68,14 +76,14 @@ class ProjectCommentReactionServiceTest {
         givenCounts(7L);
 
         ProjectCommentReactionResponse response = projectCommentReactionService.add(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 USER_ID,
                 "AGREE"
         );
 
         assertThat(response).isEqualTo(new ProjectCommentReactionResponse(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 ProjectCommentReactionType.AGREE,
                 true,
@@ -90,7 +98,7 @@ class ProjectCommentReactionServiceTest {
         givenProject(ApprovalStatus.PENDING);
 
         assertThatThrownBy(() -> projectCommentReactionService.add(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 USER_ID,
                 "AGREE"
@@ -110,14 +118,14 @@ class ProjectCommentReactionServiceTest {
                 .thenReturn(true);
 
         ProjectCommentReactionResponse response = projectCommentReactionService.remove(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 USER_ID,
                 "AGREE"
         );
 
         assertThat(response).isEqualTo(new ProjectCommentReactionResponse(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 ProjectCommentReactionType.AGREE,
                 false,
@@ -135,7 +143,7 @@ class ProjectCommentReactionServiceTest {
                 .thenReturn(false);
 
         assertThatThrownBy(() -> projectCommentReactionService.remove(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 USER_ID,
                 "AGREE"
@@ -154,7 +162,7 @@ class ProjectCommentReactionServiceTest {
         givenComment(PROJECT_ID + 1, false);
 
         assertThatThrownBy(() -> projectCommentReactionService.add(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 USER_ID,
                 "AGREE"
@@ -171,7 +179,7 @@ class ProjectCommentReactionServiceTest {
         givenComment(PROJECT_ID, true);
 
         assertThatThrownBy(() -> projectCommentReactionService.remove(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 USER_ID,
                 "AGREE"
@@ -185,7 +193,7 @@ class ProjectCommentReactionServiceTest {
     @Test
     void 지원하지_않는_반응_타입은_400_오류로_처리한다() {
         assertThatThrownBy(() -> projectCommentReactionService.add(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 USER_ID,
                 "LIKE"
@@ -193,6 +201,7 @@ class ProjectCommentReactionServiceTest {
                 .isInstanceOf(InvalidInputException.class)
                 .hasFieldOrPropertyWithValue("errorCode", CommentErrorCode.REACTION_TYPE_INVALID);
 
+        verifyNoInteractions(projectSlugResolver);
         verify(projectRepository, never()).findActiveById(PROJECT_ID);
         verifyNoInteractions(projectCommentRepository, projectCommentReactionRepository);
     }

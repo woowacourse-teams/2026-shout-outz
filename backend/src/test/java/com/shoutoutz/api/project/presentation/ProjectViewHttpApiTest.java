@@ -51,7 +51,7 @@ class ProjectViewHttpApiTest {
             + "방문자는 서버가 발급한 VISITOR_ID 쿠키로 구분하므로 쿠키를 함께 보내도록 호출한다(credentials: include). "
             + "쿠키가 없거나 형식이 잘못되면 이 응답에서 새로 발급한다. "
             + "로그인하지 않아도 기록하며, CSRF 토큰은 로그인 상태에서만 필요하다. "
-            + "없거나 삭제됐거나 승인되지 않은 프로젝트면 404를 반환한다. 이 API가 실패해도 상세 페이지 표시에는 영향이 없도록 무시한다.";
+            + "없거나 형식이 틀린 slug이거나, 삭제됐거나 승인되지 않은 프로젝트면 404를 반환한다. 이 API가 실패해도 상세 페이지 표시에는 영향이 없도록 무시한다.";
 
     @Autowired
     private MockMvc mockMvc;
@@ -62,9 +62,9 @@ class ProjectViewHttpApiTest {
     @Test
     @DisplayName("프로젝트 조회를 기록하면 200과 이번 조회를 반영한 조회수를 반환한다.")
     void recordsView() throws Exception {
-        given(projectViewService.record(100L, VISITOR_KEY)).willReturn(new ProjectViewRecordResponse(129));
+        given(projectViewService.record("loop", VISITOR_KEY)).willReturn(new ProjectViewRecordResponse(129));
 
-        mockMvc.perform(post("/api/v1/projects/{projectId}/views", 100L)
+        mockMvc.perform(post("/api/v1/projects/@{slug}/views", "loop")
                         .requestAttr(VISITOR_KEY_ATTRIBUTE, VISITOR_KEY)
                         .header(HttpHeaders.COOKIE, "VISITOR_ID=3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b"))
                 .andExpect(status().isOk())
@@ -77,7 +77,7 @@ class ProjectViewHttpApiTest {
                                 .summary(SUMMARY)
                                 .description(DESCRIPTION)
                                 .pathParameters(
-                                        parameterWithName("projectId").description("조회한 프로젝트 ID")
+                                        parameterWithName("slug").description("조회한 프로젝트 slug. 경로에서는 앞에 @를 붙인다.")
                                 )
                                 .requestHeaders(
                                         headerWithName(HttpHeaders.COOKIE)
@@ -98,12 +98,12 @@ class ProjectViewHttpApiTest {
     }
 
     @Test
-    @DisplayName("없거나 삭제됐거나 승인되지 않은 프로젝트이면, 404를 반환한다.")
+    @DisplayName("없거나 형식이 틀린 slug이거나, 삭제됐거나 승인되지 않은 프로젝트이면, 404를 반환한다.")
     void rejectsNotViewableProject() throws Exception {
         willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND))
-                .given(projectViewService).record(eq(100L), any());
+                .given(projectViewService).record(eq("loop"), any());
 
-        mockMvc.perform(post("/api/v1/projects/{projectId}/views", 100L)
+        mockMvc.perform(post("/api/v1/projects/@{slug}/views", "loop")
                         .requestAttr(VISITOR_KEY_ATTRIBUTE, VISITOR_KEY))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("PROJECT_NOT_FOUND"))
@@ -114,7 +114,7 @@ class ProjectViewHttpApiTest {
                                 .summary(SUMMARY)
                                 .description(DESCRIPTION)
                                 .pathParameters(
-                                        parameterWithName("projectId").description("조회한 프로젝트 ID")
+                                        parameterWithName("slug").description("조회한 프로젝트 slug. 경로에서는 앞에 @를 붙인다.")
                                 )
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())

@@ -40,10 +40,11 @@ public record AdminProjectDetailResponse(
 
     public static AdminProjectDetailResponse from(
             ProjectDetailResponse detail,
+            long id,
             Long registeredBy
     ) {
         return new AdminProjectDetailResponse(
-                detail.id(),
+                id,
                 registeredBy,
                 detail.slug(),
                 detail.title(),

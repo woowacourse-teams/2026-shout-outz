@@ -53,7 +53,6 @@ import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
-import com.shoutoutz.api.project.domain.exception.InvalidSlugException;
 import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
@@ -93,6 +92,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final ProjectSlugResolver projectSlugResolver;
     private final TechTagRepository techTagRepository;
     private final MediaMetadataRepository mediaMetadataRepository;
     private final UserProfileRepository userProfileRepository;
@@ -132,7 +132,7 @@ public class ProjectService {
         projectApprovalHistoryRepository.save(
                 ProjectApprovalHistory.initial(savedProject.getId(), clock.instant())
         );
-        return new ProjectCreateResponse(savedProject.getId(), savedProject.getSlug().value());
+        return new ProjectCreateResponse(savedProject.getSlug().value());
     }
 
     /**
@@ -141,7 +141,8 @@ public class ProjectService {
      * 기술 스택과 팀원은 받은 목록으로 통째로 바꾼다.
      */
     @Transactional
-    public ProjectUpdateResponse update(long projectId, long loginUserId, ProjectUpdateRequest request) {
+    public ProjectUpdateResponse update(String slug, long loginUserId, ProjectUpdateRequest request) {
+        long projectId = projectSlugResolver.resolveId(slug);
         Project project = findOwnedProject(projectId, loginUserId);
         Long thumbnailMediaId = request.isThumbnailImageIdProvided()
                 ? request.thumbnailImageId()
@@ -272,7 +273,7 @@ public class ProjectService {
      */
     @Transactional(readOnly = true)
     public ProjectDetailResponse findDetail(String slug, Long loginUserId) {
-        ProjectDetail detail = toSlug(slug)
+        ProjectDetail detail = Slug.parse(slug)
                 .flatMap(value -> projectRepository.findDetailBySlug(value, loginUserId))
                 .filter(project -> project.isVisibleTo(loginUserId))
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
@@ -290,14 +291,6 @@ public class ProjectService {
                 descriptionMd,
                 loginUserId
         );
-    }
-
-    private Optional<Slug> toSlug(String slug) {
-        try {
-            return Optional.of(new Slug(slug));
-        } catch (InvalidSlugException e) {
-            return Optional.empty();
-        }
     }
 
     private Map<Long, URI> resolveProjectMediaUrls(List<ProjectSummary> projects) {
@@ -369,7 +362,8 @@ public class ProjectService {
      * 프로젝트 삭제와 이력 기록은 같은 시각을 쓰고 한 트랜잭션으로 처리한다.
      */
     @Transactional
-    public ProjectDeletion delete(long projectId, long registeredBy) {
+    public ProjectDeletion delete(String slug, long registeredBy) {
+        long projectId = projectSlugResolver.resolveId(slug);
         Instant deletedAt = clock.instant();
         DeletedProject deletedProject = projectRepository.softDelete(projectId, registeredBy, deletedAt)
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
@@ -381,7 +375,8 @@ public class ProjectService {
      * 프로젝트 복구와 이력 기록은 같은 시각을 쓰고 한 트랜잭션으로 처리한다.
      */
     @Transactional
-    public RestoredProject restore(long projectId, long registeredBy) {
+    public RestoredProject restore(String slug, long registeredBy) {
+        long projectId = projectSlugResolver.resolveId(slug);
         Instant restoredAt = clock.instant();
         RestorableProject restorable = projectRepository.findRestorable(projectId, registeredBy)
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
@@ -391,7 +386,7 @@ public class ProjectService {
         ApprovalStatus approvalStatus = projectRepository.restore(projectId, restoredAt)
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
         projectDeletionRepository.markRestored(restorable.deletionId(), registeredBy, restoredAt);
-        return new RestoredProject(projectId, approvalStatus, restoredAt);
+        return new RestoredProject(slug, approvalStatus, restoredAt);
     }
 
     /**

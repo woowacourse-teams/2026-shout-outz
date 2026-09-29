@@ -4,6 +4,7 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static com.epages.restdocs.apispec.SimpleType.INTEGER;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -49,7 +50,8 @@ class UserCommentHttpApiTest {
 
     private static final String SUMMARY = "내 댓글 목록 조회";
     private static final String DESCRIPTION = "로그인한 사용자가 작성한 피드와 프로젝트 댓글을 최신순으로 조회한다. "
-            + "삭제되지 않은 공개 대상의 댓글만 반환하며, type과 targetId로 이동할 대상을 구분한다. "
+            + "삭제되지 않은 공개 대상의 댓글만 반환한다. 이동할 대상은 type에 따라 "
+            + "피드 댓글이면 feedId, 프로젝트 댓글이면 projectSlug로 찾고, 해당하지 않는 쪽은 null이다. "
             + "응답의 meta.nextCursor를 다음 요청에 그대로 전달한다.";
 
     @Autowired
@@ -65,8 +67,8 @@ class UserCommentHttpApiTest {
         given(userCommentService.findAll(1L, request))
                 .willReturn(new UserCommentResult(
                         List.of(
-                                comment(11L, UserCommentType.FEED, 101L),
-                                comment(12L, UserCommentType.PROJECT, 202L)
+                                comment(11L, UserCommentType.FEED, 101L, null),
+                                comment(12L, UserCommentType.PROJECT, null, "loop")
                         ),
                         "next-cursor",
                         true,
@@ -86,11 +88,14 @@ class UserCommentHttpApiTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[0].commentId").value(11))
                 .andExpect(jsonPath("$.data[0].type").value("FEED"))
-                .andExpect(jsonPath("$.data[0].targetId").value(101))
+                .andExpect(jsonPath("$.data[0].feedId").value(101))
+                .andExpect(jsonPath("$.data[0].projectSlug").value(nullValue()))
                 .andExpect(jsonPath("$.data[0].content").value("내가 작성한 댓글"))
                 .andExpect(jsonPath("$.data[0].createdAt").value("2026-09-16T00:00:00Z"))
                 .andExpect(jsonPath("$.data[0].updatedAt").value("2026-09-16T00:05:00Z"))
                 .andExpect(jsonPath("$.data[1].type").value("PROJECT"))
+                .andExpect(jsonPath("$.data[1].feedId").value(nullValue()))
+                .andExpect(jsonPath("$.data[1].projectSlug").value("loop"))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
                 .andExpect(jsonPath("$.meta.totalCount").value(4))
@@ -120,8 +125,12 @@ class UserCommentHttpApiTest {
                                         fieldWithPath("data[].commentId").type(NUMBER).description("댓글 ID"),
                                         new EnumFields(UserCommentType.class).withPath("data[].type")
                                                 .description("댓글 대상 종류"),
-                                        fieldWithPath("data[].targetId").type(NUMBER)
-                                                .description("이동할 피드 또는 프로젝트 ID"),
+                                        fieldWithPath("data[].feedId").type(NUMBER)
+                                                .description("피드 댓글이면 이동할 피드 ID. 프로젝트 댓글이면 null")
+                                                .optional(),
+                                        fieldWithPath("data[].projectSlug").type(STRING)
+                                                .description("프로젝트 댓글이면 이동할 프로젝트 slug. 피드 댓글이면 null")
+                                                .optional(),
                                         fieldWithPath("data[].content").type(STRING).description("댓글 내용"),
                                         fieldWithPath("data[].createdAt").type(STRING).description("댓글 작성 시각"),
                                         fieldWithPath("data[].updatedAt").type(STRING).description("댓글 최종 수정 시각"),
@@ -215,11 +224,12 @@ class UserCommentHttpApiTest {
                 .andExpect(jsonPath("$.code").value("INVALID_COMMENT_CURSOR"));
     }
 
-    private UserCommentItem comment(long commentId, UserCommentType type, long targetId) {
+    private UserCommentItem comment(long commentId, UserCommentType type, Long feedId, String projectSlug) {
         return new UserCommentItem(
                 commentId,
                 type,
-                targetId,
+                feedId,
+                projectSlug,
                 "내가 작성한 댓글",
                 Instant.parse("2026-09-16T00:00:00Z"),
                 Instant.parse("2026-09-16T00:05:00Z")

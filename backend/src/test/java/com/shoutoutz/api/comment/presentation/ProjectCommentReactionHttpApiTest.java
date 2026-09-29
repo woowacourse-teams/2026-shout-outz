@@ -42,7 +42,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class ProjectCommentReactionHttpApiTest {
 
     private static final long USER_ID = 1L;
-    private static final long PROJECT_ID = 100L;
+    private static final String SLUG = "loop";
     private static final long COMMENT_ID = 501L;
     private static final String AUTHENTICATED_SESSION_ATTRIBUTE = AuthenticatedSession.class.getName();
 
@@ -54,9 +54,9 @@ class ProjectCommentReactionHttpApiTest {
 
     @Test
     void 프로젝트_댓글에_공감을_추가한다() throws Exception {
-        given(projectCommentReactionService.add(PROJECT_ID, COMMENT_ID, USER_ID, "AGREE"))
+        given(projectCommentReactionService.add(SLUG, COMMENT_ID, USER_ID, "AGREE"))
                 .willReturn(new ProjectCommentReactionResponse(
-                        PROJECT_ID,
+                        SLUG,
                         COMMENT_ID,
                         ProjectCommentReactionType.AGREE,
                         true,
@@ -64,8 +64,8 @@ class ProjectCommentReactionHttpApiTest {
                 ));
 
         mockMvc.perform(put(
-                                "/api/v1/projects/{projectId}/comments/{commentId}/reactions/{type}",
-                                PROJECT_ID,
+                                "/api/v1/projects/@{slug}/comments/{commentId}/reactions/{type}",
+                                SLUG,
                                 COMMENT_ID,
                                 "AGREE"
                         )
@@ -76,7 +76,7 @@ class ProjectCommentReactionHttpApiTest {
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.projectId").value(PROJECT_ID))
+                .andExpect(jsonPath("$.data.slug").value(SLUG))
                 .andExpect(jsonPath("$.data.commentId").value(COMMENT_ID))
                 .andExpect(jsonPath("$.data.type").value("AGREE"))
                 .andExpect(jsonPath("$.data.active").value(true))
@@ -88,7 +88,7 @@ class ProjectCommentReactionHttpApiTest {
                                 .summary("프로젝트 댓글 반응 추가")
                                 .description("승인 완료되고 삭제되지 않은 프로젝트 댓글에 현재 로그인 사용자의 AGREE 반응을 추가한다. 이미 존재하는 반응이면 현재 상태를 반환한다.")
                                 .pathParameters(
-                                        parameterWithName("projectId").type(INTEGER).description("프로젝트 ID"),
+                                        parameterWithName("slug").description("프로젝트 slug. 경로에서는 앞에 @를 붙인다."),
                                         parameterWithName("commentId").type(INTEGER).description("댓글 ID"),
                                         parameterWithName("type").description("반응 타입(현재 AGREE)")
                                 )
@@ -100,14 +100,14 @@ class ProjectCommentReactionHttpApiTest {
                                 .build())
                 ));
 
-        verify(projectCommentReactionService).add(PROJECT_ID, COMMENT_ID, USER_ID, "AGREE");
+        verify(projectCommentReactionService).add(SLUG, COMMENT_ID, USER_ID, "AGREE");
     }
 
     @Test
     void 프로젝트_댓글의_공감을_제거한다() throws Exception {
-        given(projectCommentReactionService.remove(PROJECT_ID, COMMENT_ID, USER_ID, "AGREE"))
+        given(projectCommentReactionService.remove(SLUG, COMMENT_ID, USER_ID, "AGREE"))
                 .willReturn(new ProjectCommentReactionResponse(
-                        PROJECT_ID,
+                        SLUG,
                         COMMENT_ID,
                         ProjectCommentReactionType.AGREE,
                         false,
@@ -115,8 +115,8 @@ class ProjectCommentReactionHttpApiTest {
                 ));
 
         mockMvc.perform(delete(
-                                "/api/v1/projects/{projectId}/comments/{commentId}/reactions/{type}",
-                                PROJECT_ID,
+                                "/api/v1/projects/@{slug}/comments/{commentId}/reactions/{type}",
+                                SLUG,
                                 COMMENT_ID,
                                 "AGREE"
                         )
@@ -126,7 +126,7 @@ class ProjectCommentReactionHttpApiTest {
                         )
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.projectId").value(PROJECT_ID))
+                .andExpect(jsonPath("$.data.slug").value(SLUG))
                 .andExpect(jsonPath("$.data.commentId").value(COMMENT_ID))
                 .andExpect(jsonPath("$.data.type").value("AGREE"))
                 .andExpect(jsonPath("$.data.active").value(false))
@@ -138,7 +138,7 @@ class ProjectCommentReactionHttpApiTest {
                                 .summary("프로젝트 댓글 반응 제거")
                                 .description("삭제되지 않은 프로젝트 댓글에서 현재 로그인 사용자의 AGREE 반응을 제거한다. 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
-                                        parameterWithName("projectId").type(INTEGER).description("프로젝트 ID"),
+                                        parameterWithName("slug").description("프로젝트 slug. 경로에서는 앞에 @를 붙인다."),
                                         parameterWithName("commentId").type(INTEGER).description("댓글 ID"),
                                         parameterWithName("type").description("반응 타입(현재 AGREE)")
                                 )
@@ -150,17 +150,17 @@ class ProjectCommentReactionHttpApiTest {
                                 .build())
                 ));
 
-        verify(projectCommentReactionService).remove(PROJECT_ID, COMMENT_ID, USER_ID, "AGREE");
+        verify(projectCommentReactionService).remove(SLUG, COMMENT_ID, USER_ID, "AGREE");
     }
 
     @Test
     void 프로젝트_댓글에_반응이_없으면_삭제할_때_404를_반환한다() throws Exception {
         willThrow(new EntityNotFoundException(CommentErrorCode.REACTION_NOT_FOUND))
-                .given(projectCommentReactionService).remove(PROJECT_ID, COMMENT_ID, USER_ID, "AGREE");
+                .given(projectCommentReactionService).remove(SLUG, COMMENT_ID, USER_ID, "AGREE");
 
         mockMvc.perform(delete(
-                                "/api/v1/projects/{projectId}/comments/{commentId}/reactions/{type}",
-                                PROJECT_ID,
+                                "/api/v1/projects/@{slug}/comments/{commentId}/reactions/{type}",
+                                SLUG,
                                 COMMENT_ID,
                                 "AGREE"
                         )
@@ -180,7 +180,7 @@ class ProjectCommentReactionHttpApiTest {
                                 .summary("프로젝트 댓글 반응 제거")
                                 .description("현재 로그인 사용자의 해당 프로젝트 댓글 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
-                                        parameterWithName("projectId").type(INTEGER).description("프로젝트 ID"),
+                                        parameterWithName("slug").description("프로젝트 slug. 경로에서는 앞에 @를 붙인다."),
                                         parameterWithName("commentId").type(INTEGER).description("댓글 ID"),
                                         parameterWithName("type").description("반응 타입(현재 AGREE)")
                                 )
@@ -192,17 +192,17 @@ class ProjectCommentReactionHttpApiTest {
                                 .build())
                 ));
 
-        verify(projectCommentReactionService).remove(PROJECT_ID, COMMENT_ID, USER_ID, "AGREE");
+        verify(projectCommentReactionService).remove(SLUG, COMMENT_ID, USER_ID, "AGREE");
     }
 
     @Test
     void 지원하지_않는_반응_타입은_400을_반환한다() throws Exception {
         willThrow(new InvalidInputException(CommentErrorCode.REACTION_TYPE_INVALID))
-                .given(projectCommentReactionService).add(PROJECT_ID, COMMENT_ID, USER_ID, "LIKE");
+                .given(projectCommentReactionService).add(SLUG, COMMENT_ID, USER_ID, "LIKE");
 
         mockMvc.perform(put(
-                                "/api/v1/projects/{projectId}/comments/{commentId}/reactions/{type}",
-                                PROJECT_ID,
+                                "/api/v1/projects/@{slug}/comments/{commentId}/reactions/{type}",
+                                SLUG,
                                 COMMENT_ID,
                                 "LIKE"
                         )
@@ -218,8 +218,8 @@ class ProjectCommentReactionHttpApiTest {
     @Test
     void 로그인하지_않으면_댓글_반응을_변경할_수_없다() throws Exception {
         mockMvc.perform(put(
-                        "/api/v1/projects/{projectId}/comments/{commentId}/reactions/{type}",
-                        PROJECT_ID,
+                        "/api/v1/projects/@{slug}/comments/{commentId}/reactions/{type}",
+                        SLUG,
                         COMMENT_ID,
                         "AGREE"
                 ))
@@ -232,7 +232,7 @@ class ProjectCommentReactionHttpApiTest {
         return new org.springframework.restdocs.payload.FieldDescriptor[]{
                 fieldWithPath("status").type(STRING).description("응답 상태"),
                 fieldWithPath("data").type(OBJECT).description("프로젝트 댓글 반응 변경 결과"),
-                fieldWithPath("data.projectId").type(NUMBER).description("프로젝트 ID"),
+                fieldWithPath("data.slug").type(STRING).description("프로젝트 slug"),
                 fieldWithPath("data.commentId").type(NUMBER).description("댓글 ID"),
                 fieldWithPath("data.type").type(STRING).description("반응 타입(현재 AGREE)"),
                 fieldWithPath("data.active").type(BOOLEAN).description("요청한 반응의 활성 상태"),

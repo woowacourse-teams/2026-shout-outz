@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/projects/{projectId}/comments")
+@RequestMapping("/api/v1/projects/@{slug}/comments")
 @RequiredArgsConstructor
 public class ProjectCommentHttpApi {
 
@@ -35,14 +35,14 @@ public class ProjectCommentHttpApi {
 
     @GetMapping
     public ResponseEntity<SuccessResponse<List<ProjectCommentFindResponse.Comment>>> findAll(
-            @PathVariable long projectId,
+            @PathVariable String slug,
             @LoginUser(required = false) AuthenticatedUser loginUser,
             @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "5") int size,
             @RequestParam(defaultValue = "LATEST") String sort
     ) {
         ProjectCommentFindResponse response = projectCommentService.findAll(
-                projectId,
+                slug,
                 new ProjectCommentFindRequest(cursor, size, sort),
                 loginUser == null ? null : loginUser.userId()
         );
@@ -51,12 +51,12 @@ public class ProjectCommentHttpApi {
 
     @PostMapping
     public ResponseEntity<SuccessResponse<ProjectCommentCreateResponse>> create(
-            @PathVariable long projectId,
+            @PathVariable String slug,
             @LoginUser AuthenticatedUser loginUser,
             @Valid @RequestBody ProjectCommentCreateRequest request
     ) {
         ProjectCommentCreateResponse response = projectCommentService.create(
-                projectId,
+                slug,
                 loginUser.userId(),
                 request
         );
@@ -65,13 +65,13 @@ public class ProjectCommentHttpApi {
 
     @PatchMapping("/{commentId}")
     public ResponseEntity<SuccessResponse<ProjectCommentUpdateResponse>> update(
-            @PathVariable long projectId,
+            @PathVariable String slug,
             @PathVariable long commentId,
             @LoginUser AuthenticatedUser loginUser,
             @Valid @RequestBody ProjectCommentUpdateRequest request
     ) {
         ProjectCommentUpdateResponse response = projectCommentService.update(
-                projectId,
+                slug,
                 commentId,
                 loginUser.userId(),
                 request
@@ -81,12 +81,12 @@ public class ProjectCommentHttpApi {
 
     @DeleteMapping("/{commentId}")
     public ResponseEntity<SuccessResponse<ProjectCommentDeleteResponse>> delete(
-            @PathVariable long projectId,
+            @PathVariable String slug,
             @PathVariable long commentId,
             @LoginUser AuthenticatedUser loginUser
     ) {
         ProjectCommentDeleteResponse response = projectCommentService.delete(
-                projectId,
+                slug,
                 commentId,
                 loginUser.userId()
         );

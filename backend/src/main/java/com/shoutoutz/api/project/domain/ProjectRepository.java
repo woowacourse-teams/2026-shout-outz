@@ -11,6 +11,12 @@ public interface ProjectRepository {
     boolean existsBySlug(Slug slug);
 
     /**
+     * slug 로 프로젝트 id 를 찾는다. 삭제 여부와 승인 상태는 보지 않는다.
+     * 삭제된 프로젝트도 slug 를 계속 차지하므로 결과는 최대 한 건이고, 복구할 프로젝트도 이 메서드로 찾는다.
+     */
+    Optional<Long> findIdBySlug(Slug slug);
+
+    /**
      * 같은 리포지토리를 가리키는 프로젝트가 이미 있는지 확인한다.
      * GithubRepositoryUrl이 표기를 정규화해서 갖고 있으므로, 값 비교만으로 같은 리포지토리를 찾는다.
      */

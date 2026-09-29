@@ -74,8 +74,12 @@ class UserCommentQueryRepositoryIntegrationTest {
                 .containsExactly(latestFeedCommentId, projectCommentId);
         assertThat(firstPage.items()).extracting(UserCommentItem::type)
                 .containsExactly(UserCommentType.FEED, UserCommentType.PROJECT);
-        assertThat(firstPage.items()).extracting(UserCommentItem::targetId)
-                .containsExactly(feedId, projectId);
+        String projectSlug = jdbcTemplate.queryForObject(
+                "SELECT slug FROM projects WHERE id = ?", String.class, projectId);
+        assertThat(firstPage.items()).extracting(UserCommentItem::feedId)
+                .containsExactly(feedId, null);
+        assertThat(firstPage.items()).extracting(UserCommentItem::projectSlug)
+                .containsExactly(null, projectSlug);
         assertThat(secondPage.items()).extracting(UserCommentItem::commentId)
                 .containsExactly(olderFeedCommentId);
         assertThat(firstPage.totalCount()).isEqualTo(3L);
