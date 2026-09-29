@@ -295,7 +295,9 @@ class HomeBannerAdminHttpApiTest {
                 new EnumFields(BannerTargetType.class).withPath(path + ".targetType")
                         .description("대상 리소스 유형").optional(),
                 fieldWithPath(path + ".targetId").type(NUMBER)
-                        .description("대상 리소스 ID").optional(),
+                        .description("대상 리소스 ID. 대상이 뉴스·피드일 때만 값이 있다.").optional(),
+                fieldWithPath(path + ".targetSlug").type(STRING)
+                        .description("대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다.").optional(),
                 new EnumFields(BannerLinkType.class).withPath(path + ".linkType")
                         .description("URL 유형").optional(),
                 fieldWithPath(path + ".linkUrl").type(STRING)
@@ -341,7 +343,8 @@ class HomeBannerAdminHttpApiTest {
                 URI.create("https://cdn.example.com/banner"),
                 "TARGET",
                 "PROJECT",
-                20L,
+                null,
+                "loop",
                 null,
                 null,
                 0,

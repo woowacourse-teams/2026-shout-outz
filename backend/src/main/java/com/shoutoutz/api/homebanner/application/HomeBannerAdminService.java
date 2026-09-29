@@ -105,7 +105,8 @@ public class HomeBannerAdminService {
                 imageUrl,
                 banner.getDestinationType().name(),
                 enumName(banner.getTargetType()),
-                banner.getTargetId(),
+                targetIdOf(banner),
+                banner.getTargetSlug(),
                 enumName(banner.getLinkType()),
                 banner.getLinkUrl(),
                 banner.getDisplayOrder(),
@@ -122,6 +123,13 @@ public class HomeBannerAdminService {
 
     private BannerLinkType linkTypeOf(String value) {
         return value == null ? null : BannerLinkType.valueOf(value);
+    }
+
+    /**
+     * 프로젝트는 slug로 가리키므로 ID를 내려주지 않는다. 뉴스·피드는 slug가 없어 ID를 내려준다.
+     */
+    private Long targetIdOf(HomeBanner banner) {
+        return banner.getTargetType() == BannerTargetType.PROJECT ? null : banner.getTargetId();
     }
 
     private String enumName(Enum<?> value) {

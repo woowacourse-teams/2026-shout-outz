@@ -9,6 +9,7 @@ public record HomeBannerResponse(
         String destinationType,
         String targetType,
         Long targetId,
+        String targetSlug,
         String linkType,
         String linkUrl
 ) {

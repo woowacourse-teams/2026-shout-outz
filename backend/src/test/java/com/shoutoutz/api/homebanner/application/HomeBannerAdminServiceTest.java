@@ -62,6 +62,8 @@ class HomeBannerAdminServiceTest {
 
         assertThat(response.bannerId()).isEqualTo(100L);
         assertThat(response.imageUrl()).hasToString("https://cdn.example.com/banner");
+        assertThat(response.targetId()).isNull();
+        assertThat(response.targetSlug()).isEqualTo("loop");
         verify(targetValidator).validate(BannerTargetType.PROJECT, 20L);
     }
 
