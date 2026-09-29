@@ -27,6 +27,7 @@ import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.project.application.ProjectSlugResolver;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
@@ -50,6 +51,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectCommentService {
 
     private final ProjectRepository projectRepository;
+    private final ProjectSlugResolver projectSlugResolver;
     private final ProjectCommentRepository projectCommentRepository;
     private final ProjectCommentQueryRepository projectCommentQueryRepository;
     private final UserProfileRepository userProfileRepository;
@@ -59,6 +61,7 @@ public class ProjectCommentService {
 
     public ProjectCommentService(
             ProjectRepository projectRepository,
+            ProjectSlugResolver projectSlugResolver,
             ProjectCommentRepository projectCommentRepository,
             ProjectCommentQueryRepository projectCommentQueryRepository,
             UserProfileRepository userProfileRepository,
@@ -67,6 +70,7 @@ public class ProjectCommentService {
     ) {
         this(
                 projectRepository,
+                projectSlugResolver,
                 projectCommentRepository,
                 projectCommentQueryRepository,
                 userProfileRepository,
@@ -79,6 +83,7 @@ public class ProjectCommentService {
     @Autowired
     public ProjectCommentService(
             ProjectRepository projectRepository,
+            ProjectSlugResolver projectSlugResolver,
             ProjectCommentRepository projectCommentRepository,
             ProjectCommentQueryRepository projectCommentQueryRepository,
             UserProfileRepository userProfileRepository,
@@ -87,6 +92,7 @@ public class ProjectCommentService {
             UserRepository userRepository
     ) {
         this.projectRepository = projectRepository;
+        this.projectSlugResolver = projectSlugResolver;
         this.projectCommentRepository = projectCommentRepository;
         this.projectCommentQueryRepository = projectCommentQueryRepository;
         this.userProfileRepository = userProfileRepository;
@@ -97,6 +103,7 @@ public class ProjectCommentService {
 
     public ProjectCommentService(
             ProjectRepository projectRepository,
+            ProjectSlugResolver projectSlugResolver,
             ProjectCommentRepository projectCommentRepository,
             ProjectCommentQueryRepository projectCommentQueryRepository,
             UserProfileRepository userProfileRepository,
@@ -104,6 +111,7 @@ public class ProjectCommentService {
     ) {
         this(
                 projectRepository,
+                projectSlugResolver,
                 projectCommentRepository,
                 projectCommentQueryRepository,
                 userProfileRepository,
@@ -115,10 +123,11 @@ public class ProjectCommentService {
 
     @Transactional
     public ProjectCommentCreateResponse create(
-            long projectId,
+            String slug,
             long authorId,
             ProjectCommentCreateRequest request
     ) {
+        long projectId = projectSlugResolver.resolveId(slug);
         validatePublicProject(projectId);
         ProjectComment parent = findParent(projectId, request.parentId());
         UserProfile author = findAuthor(authorId);
@@ -152,10 +161,11 @@ public class ProjectCommentService {
 
     @Transactional(readOnly = true)
     public ProjectCommentFindResponse findAll(
-            long projectId,
+            String slug,
             ProjectCommentFindRequest request,
             Long loginUserId
     ) {
+        long projectId = projectSlugResolver.resolveId(slug);
         validatePublicProject(projectId);
         ProjectCommentCursor cursor = ProjectCommentCursorCodec.decode(request.cursor());
         validateCursorSort(cursor, request.sort());
@@ -217,11 +227,12 @@ public class ProjectCommentService {
 
     @Transactional
     public ProjectCommentUpdateResponse update(
-            long projectId,
+            String slug,
             long commentId,
             long authorId,
             ProjectCommentUpdateRequest request
     ) {
+        long projectId = projectSlugResolver.resolveId(slug);
         validatePublicProject(projectId);
         ProjectComment comment = findComment(projectId, commentId);
         validateAuthor(comment, authorId);
@@ -254,10 +265,11 @@ public class ProjectCommentService {
 
     @Transactional
     public ProjectCommentDeleteResponse delete(
-            long projectId,
+            String slug,
             long commentId,
             long authorId
     ) {
+        long projectId = projectSlugResolver.resolveId(slug);
         validatePublicProject(projectId);
         ProjectComment comment = findComment(projectId, commentId);
         validateAuthor(comment, authorId);
