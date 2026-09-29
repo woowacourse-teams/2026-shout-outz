@@ -210,5 +210,50 @@ describe('ProjectCreatePage', () => {
       expect(await screen.findByText('프로젝트 등록에 실패했습니다.')).toBeInTheDocument();
       expect(screen.getByRole('textbox', { name: /프로젝트 이름/ })).toHaveValue(FORM.title);
     });
+
+    it('서버가 짚어 준 필드에 오류를 붙인다', async () => {
+      server.use(
+        http.post('/api/v1/projects', () =>
+          HttpResponse.json(
+            {
+              status: 'error',
+              code: 'VALIDATION_FAILED',
+              message: '입력값이 올바르지 않습니다.',
+              details: [{ field: 'githubRepositoryUrl', message: '이미 등록된 레포지토리입니다.' }],
+            },
+            { status: 400 },
+          ),
+        ),
+      );
+      const user = userEvent.setup();
+      renderRoute('/projects/new');
+
+      await fillRequiredFields(user);
+      await submit(user);
+
+      expect(await screen.findByText('이미 등록된 레포지토리입니다.')).toBeInTheDocument();
+    });
+
+    it('details 없이 코드만 오면 표에 적힌 입력칸에 붙인다', async () => {
+      server.use(
+        http.post('/api/v1/projects', () =>
+          HttpResponse.json(
+            {
+              status: 'error',
+              code: 'PROJECT_DUPLICATE_SLUG',
+              message: '같은 주소의 프로젝트가 이미 있습니다.',
+            },
+            { status: 400 },
+          ),
+        ),
+      );
+      const user = userEvent.setup();
+      renderRoute('/projects/new');
+
+      await fillRequiredFields(user);
+      await submit(user);
+
+      expect(await screen.findByText('같은 주소의 프로젝트가 이미 있습니다.')).toBeInTheDocument();
+    });
   });
 });

@@ -1,5 +1,4 @@
 import { IconCircleCheckFilled } from '@tabler/icons-react';
-import type { UserType } from '@/types/user';
 
 const CURRENT_COHORT = Number(process.env.CURRENT_COHORT);
 
@@ -8,7 +7,8 @@ export function CrewStatusBadge({
   cohort,
   size = 'sm',
 }: {
-  userType?: UserType | null;
+  /** 응답마다 문자열이나 열거값으로 달라 넓게 받는다. 크루 여부만 비교한다. */
+  userType?: string | null;
   cohort?: number | null;
   size?: 'xs' | 'sm';
 }) {

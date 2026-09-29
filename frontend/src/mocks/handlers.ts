@@ -12,6 +12,7 @@ export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
     '프로젝트에서 가장 기억에 남는 트러블슈팅은 무엇인가요?',
   ][index % 3]!,
   author: {
+    userId: index + 1,
     handle: `crew${index}`,
     displayName: ['정우진', '김도현', '이지민'][index % 3]!,
     userType: 'WOOWACOURSE_CREW',
@@ -21,6 +22,11 @@ export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
   },
   categories: [{ categoryId: 1, slug: 'backend', displayName: '개발 이야기', type: 'GENERAL' }],
   media: [],
+  likeCount: 0,
+  likedByMe: false,
+  bookmarkCount: 0,
+  bookmarkedByMe: false,
+  commentCount: 0,
   createdAt: new Date(Date.UTC(2026, 8, 14, 9 - index)).toISOString(),
   updatedAt: new Date(Date.UTC(2026, 8, 14, 9 - index)).toISOString(),
 }));

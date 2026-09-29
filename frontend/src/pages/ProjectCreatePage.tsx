@@ -23,6 +23,7 @@ import {
 } from '@/types/project';
 import {
   toProjectCreateRequest,
+  toProjectFormErrors,
   toProjectUpdateRequest,
   validateProjectForm,
 } from '@/utils/project';
@@ -57,12 +58,16 @@ function toFormValues(project: ProjectDetail, authorHandle: string): ProjectForm
     descriptionMd: project.descriptionMd ?? '',
     techTags: project.techTags,
     members: project.members.flatMap((member) =>
-      member.handle && member.handle !== authorHandle
+      member.handle && member.userId != null && member.handle !== authorHandle
         ? [
             {
+              userId: member.userId,
               handle: member.handle,
               displayName: member.displayName,
-              userType: member.userType ?? 'GENERAL',
+              userType:
+                member.userType === 'WOOWACOURSE_CREW' || member.userType === 'WOOWACOURSE_COACH'
+                  ? member.userType
+                  : 'GENERAL',
               cohort: member.cohort,
               track: member.track,
               avatarUrl: member.avatarUrl,
@@ -225,8 +230,16 @@ export function ProjectForm({
           hasThumbnail: values.thumbnailImageId !== null,
           hasDeploymentUrl: values.deploymentUrl.trim() !== '',
         }),
-      onError: () =>
-        analytics.track({ name: 'project_create_failed', reason: 'SERVER', invalidFields: [] }),
+      onError: (error) => {
+        // 서버가 짚어 준 칸이 있으면 그 칸에 붙인다. 없으면 폼 아래 공통 문구만 남는다.
+        const serverErrors = toProjectFormErrors(error);
+        setErrors(serverErrors);
+        analytics.track({
+          name: 'project_create_failed',
+          reason: 'SERVER',
+          invalidFields: Object.keys(serverErrors),
+        });
+      },
     });
   };
 

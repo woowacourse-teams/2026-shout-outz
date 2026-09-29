@@ -48,7 +48,7 @@ describe('UserProfilePage', () => {
       expect(projects).toHaveLength(3);
       expect(projects[0]).toHaveTextContent('모아모아 (MoaMoa)');
       expect(projects[2]).toHaveTextContent('스터디 메이트');
-      expect(projects[2]!.closest('a')).toHaveAttribute('href', '/projects/3');
+      expect(projects[2]!.closest('a')).toHaveAttribute('href', '/projects/@study-mate');
       expect(tabNamed('프로젝트 (3)')).toHaveAttribute('aria-selected', 'true');
 
       expect(within(projects[2]!).getByRole('status')).toHaveTextContent('승인 반려');

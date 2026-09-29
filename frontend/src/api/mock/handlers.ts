@@ -94,10 +94,13 @@ export const handlers = [
   http.get('/api/v1/users/search', ({ request }) => {
     const keyword = new URL(request.url).searchParams.get('keyword') ?? '';
 
+    const items = searchCrewList(keyword);
+
+    // 실서버는 data를 배열로 직접 준다. items 래퍼를 쓰면 mock만 통과하고 실서버에서 깨진다.
     return HttpResponse.json({
       status: 'success',
-      data: { items: searchCrewList(keyword) },
-      meta: { nextCursor: null, hasNext: false },
+      data: items,
+      meta: { nextCursor: null, hasNext: false, totalCount: items.length },
     });
   }),
 
@@ -188,8 +191,9 @@ export const handlers = [
       },
     });
   }),
-  http.get('/api/v1/projects/:projectId', ({ params }) => {
-    const index = projects.findIndex((_, index) => String(index + 1) === params.projectId);
+  // 실서버는 상세를 slug로만 받는다. 숫자 id로는 405다.
+  http.get('/api/v1/projects/@:slug', ({ params }) => {
+    const index = projects.findIndex((project) => project.id === params.slug);
     const project = projects[index];
     if (!project) return new HttpResponse(null, { status: 404 });
     return HttpResponse.json({
