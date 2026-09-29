@@ -108,7 +108,7 @@ class ProjectAcceptanceTest {
     }
 
     @Test
-    @DisplayName("다른 리포지토리라도 이름이 같아 주소가 겹치면 409를 반환한다.")
+    @DisplayName("다른 리포지토리라도 연도 접두사만 달라 주소가 겹치면 409를 반환한다.")
     void rejectsDuplicateSlug() {
         LoginSession author = signup("WOOWACOURSE_CREW");
         LoginSession teammate = signup("WOOWACOURSE_CREW");
@@ -118,7 +118,7 @@ class ProjectAcceptanceTest {
         assertThat(registerProject(author, repositoryName, techTagIds, memberHandles).statusCode()).isEqualTo(201);
 
         Response duplicated = registerProject(author, requestBodyWithUrl(
-                "https://github.com/another-owner/" + repositoryName,
+                "https://github.com/woowacourse-teams/2025-" + repositoryName.substring("2026-".length()),
                 techTagIds,
                 memberHandles
         ));

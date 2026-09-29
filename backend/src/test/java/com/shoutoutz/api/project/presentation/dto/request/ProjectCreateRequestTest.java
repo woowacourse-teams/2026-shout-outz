@@ -107,6 +107,35 @@ class ProjectCreateRequestTest {
                 .containsExactly("memberHandles[0].<list element>");
     }
 
+    @Test
+    @DisplayName("리포지토리 이름 뒤에 경로, 쿼리, 앵커가 붙은 GitHub URL을 허용한다.")
+    void acceptsGithubUrlWithTrailingPath() {
+        ProjectCreateRequest request = requestWithGithubUrl(
+                "https://github.com/woowacourse-teams/2026-loop/tree/main?tab=readme#readme");
+
+        assertThat(validator.validate(request)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "https://github.com/dhyepark/2026-loop",
+            "https://github.com/woowacourse-teams"
+    })
+    @DisplayName("woowacourse-teams 리포지토리가 아닌 GitHub URL은 거절한다.")
+    void rejectsGithubUrlOutsideWoowacourseTeams(String githubRepositoryUrl) {
+        assertThat(validator.validate(requestWithGithubUrl(githubRepositoryUrl)))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("githubRepositoryUrl");
+    }
+
+    private static ProjectCreateRequest requestWithGithubUrl(String githubRepositoryUrl) {
+        return new ProjectCreateRequest(
+                "루프", "루프팀", "소개", 8, null,
+                githubRepositoryUrl, null, "설명",
+                List.of(1L), List.of("@teammate")
+        );
+    }
+
     private static ProjectCreateRequest request(String deploymentUrl) {
         return new ProjectCreateRequest(
                 "루프",
