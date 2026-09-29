@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 
 import { adminHandlers } from '@/api/mock/admin';
+import { homeBanners } from '@/api/mock/home';
 import { getFeedList } from '@/api/mock/feed';
 import { getNewsDetail, getNewsList } from '@/api/mock/news';
 import { getCohorts, getTechTags, searchCrewList } from '@/api/mock/project';
@@ -378,17 +379,7 @@ export const handlers = [
   http.get('/api/v1/home/banners', () =>
     HttpResponse.json({
       status: 'success',
-      data: [
-        {
-          bannerId: 100,
-          imageUrl: 'https://cdn.example.com/banners/loop.webp',
-          destinationType: 'URL',
-          targetType: null,
-          targetId: null,
-          linkType: 'INTERNAL_PATH',
-          linkUrl: '/projects/@dropit',
-        },
-      ],
+      data: homeBanners,
     }),
   ),
 

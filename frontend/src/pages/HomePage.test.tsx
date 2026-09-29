@@ -7,6 +7,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
 import { renderRoute, server } from '@/test/renderRoute';
+import { homeBanners } from '@/api/mock/home';
 
 // httpClient(ky)가 5xx GET을 두 번 재시도한 뒤에 실패하므로 오류 화면은 기본 대기 시간보다 늦게 뜬다.
 const ERROR_TIMEOUT = { timeout: 3000 };
@@ -50,16 +51,19 @@ describe('HomePage', () => {
   });
 
   describe('홈 배너', () => {
-    it('맨 앞 배너를 대상 리소스로 가는 링크로 보여준다', async () => {
+    it('배너가 하나면 조작 버튼 없이 링크를 보여준다', async () => {
+      server.use(
+        http.get('/api/v1/home/banners', () =>
+          HttpResponse.json({ status: 'success', data: homeBanners.slice(0, 1) }),
+        ),
+      );
       renderRoute('/');
 
       const banner = await screen.findByRole('link', { name: '홈 배너' });
 
-      expect(banner).toHaveAttribute('href', '/projects/1');
-      expect(within(banner).getByRole('img')).toHaveAttribute(
-        'src',
-        'https://cdn.example.com/banners/loop.webp',
-      );
+      expect(banner).toHaveAttribute('href', '/projects/@dropit');
+      expect(screen.queryByRole('button', { name: '다음 배너' })).not.toBeInTheDocument();
+      expect(within(banner).getByRole('img')).toHaveAttribute('src', homeBanners[0]!.imageUrl);
     });
 
     it('활성 배너가 없으면 배너 자리를 비운다', async () => {
