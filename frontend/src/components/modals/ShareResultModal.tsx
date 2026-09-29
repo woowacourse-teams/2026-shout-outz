@@ -3,11 +3,7 @@ import { IconCircleXFilled } from '@tabler/icons-react';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
 
-export function ShareResultModal({
-  onClose,
-}: {
-  onClose: () => void;
-}) {
+export function ShareResultModal({ onClose }: { onClose: () => void }) {
   return (
     <Modal onClose={onClose} className="md:w-110">
       <div className="flex flex-col items-center gap-3 px-6 py-8 text-center">

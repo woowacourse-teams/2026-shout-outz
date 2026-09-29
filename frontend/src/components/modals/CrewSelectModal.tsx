@@ -66,7 +66,7 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
 
       {author && (
         <div className="flex items-center gap-2 rounded-xl bg-gray-50 p-3 text-sm font-semibold text-gray-900">
-          <Avatar size="sm" src={author.avatarUrl ?? undefined} alt="" />
+          <Avatar size="sm" src={author.avatarUrl} name={author.displayName} alt="" />
           <span>{author.displayName}</span>
           <CrewStatusBadge userType={author.userType} cohort={author.cohort} />
           <span className="text-primary-600 text-xs">작성자 · 항상 포함</span>
@@ -113,7 +113,7 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
                       : 'bg-gray-50 hover:bg-gray-100 md:bg-transparent',
                   )}
                 >
-                  <Avatar size="sm" src={crew.avatarUrl ?? undefined} alt="" />
+                  <Avatar size="sm" src={crew.avatarUrl} name={crew.displayName} alt="" />
                   <span className="flex min-w-0 flex-col">
                     <span className="flex min-w-0 items-center gap-1.5">
                       <span

@@ -146,7 +146,7 @@ function ProjectMemberProfile({
 }) {
   const profile = (
     <>
-      <Avatar src={member.avatarUrl ?? undefined} alt="" />
+      <Avatar src={member.avatarUrl} name={member.displayName} alt="" />
       <div className="min-w-0 text-sm">
         <p className="flex items-center gap-1.5 font-semibold break-words">
           <span>

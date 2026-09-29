@@ -126,3 +126,69 @@ describe('UserProfilePage', () => {
     expect(screen.queryByRole('heading', { name: '정우진' })).not.toBeInTheDocument();
   });
 });
+
+describe('프로필 사진', () => {
+  const pickFile = async (user: ReturnType<typeof userEvent.setup>, label: string) => {
+    const file = new File(['x'], 'me.png', { type: 'image/png' });
+    // 버튼은 숨겨진 file input을 대신 눌러 주는 것이라, 테스트는 input에 직접 올린다.
+    const input = screen.getByLabelText(label);
+    await user.upload(input, file);
+  };
+
+  it('내 프로필에서는 사진을 바로 올릴 수 있다', async () => {
+    const user = userEvent.setup();
+    let body: unknown;
+    server.use(
+      http.put('/api/v1/users/me', async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({
+          status: 'success',
+          data: { handle: 'woojin', displayName: '정우진', userType: 'WOOWACOURSE_CREW' },
+        });
+      }),
+    );
+
+    renderRoute('/users/woojin');
+    await screen.findByRole('button', { name: '프로필 사진 추가' });
+
+    await pickFile(user, '프로필 사진 추가');
+
+    // 올린 mediaId를 avatarImageId로 싣고, 나머지 값은 그대로 다시 보낸다.
+    await waitFor(() => expect(body).toHaveProperty('avatarImageId', 12));
+    expect(body).toHaveProperty('displayName', '정우진');
+    expect(body).toHaveProperty('bio');
+  });
+
+  it('남의 프로필에는 사진 버튼이 없다', async () => {
+    // 보는 사람과 프로필 주인이 다른 상황을 만든다.
+    server.use(
+      http.get('/api/v1/users/me/summary', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: { userId: 99, handle: 'someone', displayName: '남', avatarUrl: null },
+        }),
+      ),
+    );
+
+    renderRoute('/users/woojin');
+
+    await screen.findByRole('heading', { name: '정우진' });
+
+    expect(screen.queryByRole('button', { name: /프로필 사진|사진 변경/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '구성원 인증' })).not.toBeInTheDocument();
+  });
+
+  it('저장에 실패하면 알린다', async () => {
+    const user = userEvent.setup();
+    server.use(http.put('/api/v1/users/me', () => new HttpResponse(null, { status: 500 })));
+
+    renderRoute('/users/woojin');
+    await screen.findByRole('button', { name: '프로필 사진 추가' });
+
+    await pickFile(user, '프로필 사진 추가');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '프로필 사진을 저장하지 못했습니다.',
+    );
+  });
+});

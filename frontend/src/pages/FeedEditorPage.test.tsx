@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 type User = ReturnType<typeof userEvent.setup>;
@@ -65,7 +65,11 @@ test('실제 작성자를 표시하고 등록한 피드를 상세와 목록에�
   const input = await screen.findByRole('textbox', { name: '피드 내용' });
   await user.click(screen.getByRole('combobox', { name: '카테고리' }));
   await user.click(screen.getByRole('option', { name: '백엔드' }));
-  expect(screen.getByText('정우진 · 6기 백엔드')).toBeInTheDocument();
+  // 작성자 표기가 한 문자열에서 이름 + 역할 분리로 바뀌었다(FeedAuthor).
+  // 헤더에도 내 이름이 있으므로 폼의 작성자 블록으로 범위를 좁힌다.
+  const author = screen.getByRole('link', { name: '정우진 프로필 보기' });
+  expect(within(author).getByText('정우진')).toBeInTheDocument();
+  expect(within(author).getByText('BE 6기 크루')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeDisabled();
   await fillTitle(user, '새 피드 제목');
   await user.type(input, '새로운 기술 이야기');

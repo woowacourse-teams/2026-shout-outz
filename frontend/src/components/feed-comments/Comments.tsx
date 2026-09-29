@@ -327,17 +327,13 @@ function CommentItem({
 
   const authorDetails = (
     <>
-      <Avatar size="sm" src={item.author.avatarUrl ?? undefined} alt="" />
+      <Avatar size="sm" src={item.author.avatarUrl} name={item.author.displayName} alt="" />
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-1.5">
           <span className="group-hover:text-primary-600 truncate text-sm font-semibold text-gray-900">
             {item.author.displayName}
           </span>
-          <CrewStatusBadge
-            userType={item.author.userType}
-            cohort={item.author.cohort}
-            size="xs"
-          />
+          <CrewStatusBadge userType={item.author.userType} cohort={item.author.cohort} size="xs" />
         </div>
         {crewInfo && <p className="mt-0.5 text-sm text-gray-500">{crewInfo}</p>}
       </div>

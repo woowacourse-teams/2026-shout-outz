@@ -8,9 +8,7 @@ export function ShareButton({ url, className }: { url: string; className?: strin
   const { open } = useModal();
 
   const showFailure = () => {
-    void open<void>((close) => (
-      <ShareResultModal onClose={() => close()} />
-    ));
+    void open<void>((close) => <ShareResultModal onClose={() => close()} />);
   };
 
   const share = async () => {

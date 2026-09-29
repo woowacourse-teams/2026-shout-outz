@@ -2,7 +2,7 @@
  * @jest-environment ./jest.network-environment.js
  * @jest-environment-options {"customExportConditions":["node","node-addons"]}
  */
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { delay, http, HttpResponse } from 'msw';
 
@@ -95,6 +95,52 @@ describe('AuthActions', () => {
   it('로그인한 사용자의 이름을 내 프로필로 연결한다', async () => {
     renderRoute('/');
 
-    expect(await screen.findByRole('link', { name: '정우진' })).toHaveAttribute('href', '/users');
+    // handle을 알고 있으므로 `/users` 리다이렉트를 거치지 않고 바로 간다.
+    expect(await screen.findByRole('link', { name: '정우진' })).toHaveAttribute(
+      'href',
+      '/users/woojin',
+    );
+  });
+
+  it('누구인지 알기 전에는 프로필 링크를 내지 않는다', async () => {
+    server.use(
+      http.get('/api/v1/users/me/summary', async () => {
+        await delay('infinite');
+        return new HttpResponse(null);
+      }),
+    );
+
+    renderRoute('/');
+    // 로그아웃 버튼이 떴다는 건 인증 분기까지 렌더가 끝났다는 뜻이다.
+    await screen.findByRole('button', { name: '로그아웃' });
+
+    expect(screen.queryByRole('link', { name: /프로필|정우진|로그인/ })).not.toBeInTheDocument();
+  });
+
+  it('요약 조회에 실패해도 프로필 링크를 내지 않는다', async () => {
+    server.use(http.get('/api/v1/users/me/summary', () => new HttpResponse(null, { status: 500 })));
+
+    renderRoute('/');
+    await screen.findByRole('button', { name: '로그아웃' });
+
+    await waitFor(() =>
+      expect(screen.queryByRole('link', { name: /프로필|정우진|로그인/ })).not.toBeInTheDocument(),
+    );
+  });
+
+  it('프로필 링크에 아바타를 함께 보여준다', async () => {
+    renderRoute('/');
+
+    // mock의 avatarUrl이 null이라 이름 첫 글자로 만든 기본 프로필이 나온다.
+    const link = await screen.findByRole('link', { name: '정우진' });
+    expect(within(link).getByText('정')).toBeInTheDocument();
+  });
+
+  it('아바타 옆 이름은 좁은 화면에서도 DOM에 남는다', async () => {
+    renderRoute('/');
+
+    // sr-only로 감출 뿐이라 링크의 접근성 이름은 화면 너비와 무관하게 유지된다.
+    const link = await screen.findByRole('link', { name: '정우진' });
+    expect(within(link).getByText('정우진')).toHaveClass('sr-only');
   });
 });

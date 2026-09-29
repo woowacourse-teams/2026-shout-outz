@@ -2,6 +2,8 @@ import { Suspense, useState } from 'react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 
 import { sessionQuery, signupMutation } from '@/apis/session';
+import { updateMyProfile } from '@/apis/user';
+import { AvatarPicker } from '@/components/users/AvatarPicker';
 import { AppGnb } from '@/components/AppGnb';
 import { Button, getButtonStyles } from '@/components/Button';
 import { Field } from '@/components/Field';
@@ -83,6 +85,7 @@ function SignupForm({ onComplete }: SignupPageProps) {
   const mutation = useMutation(signupMutation);
   const [handle, setHandle] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [avatarImageId, setAvatarImageId] = useState<number | null>(null);
   const [errors, setErrors] = useState<SignupErrors>({});
 
   function validate() {
@@ -102,9 +105,23 @@ function SignupForm({ onComplete }: SignupPageProps) {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
+    const name = displayName.trim();
+
     try {
-      await mutation.mutateAsync({ handle, displayName: displayName.trim() });
+      await mutation.mutateAsync({ handle, displayName: name });
       analytics.track({ name: 'signup_submitted' });
+
+      // 가입 요청에는 프로필 이미지 자리가 없어서, 계정이 생긴 뒤에 한 번 더 저장한다.
+      // 사진을 고르지 않았으면 부르지 않고, 이름에서 만든 기본 프로필이 그대로 남는다.
+      // 여기서 실패해도 가입 자체는 끝난 것이라 막지 않고 넘어간다(프로필에서 다시 올릴 수 있다).
+      if (avatarImageId !== null) {
+        try {
+          await updateMyProfile({ displayName: name, avatarImageId });
+        } catch {
+          // 프로필 사진만 못 저장한 것이므로 가입 흐름을 멈추지 않는다.
+        }
+      }
+
       await queryClient.fetchQuery(sessionQuery);
       onComplete();
     } catch (error) {
@@ -132,6 +149,12 @@ function SignupForm({ onComplete }: SignupPageProps) {
           void submit();
         }}
       >
+        <AvatarPicker
+          name={displayName}
+          onChange={setAvatarImageId}
+          label="프로필 사진 추가"
+          disabled={mutation.isPending}
+        />
         <Field label="아이디" error={errors.handle}>
           {(id) => (
             <Input

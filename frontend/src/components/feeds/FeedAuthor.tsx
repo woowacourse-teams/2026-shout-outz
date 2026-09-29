@@ -38,7 +38,8 @@ export function FeedAuthor({
       aria-label={`${author.displayName} 프로필 보기`}
       className="group focus-visible:outline-primary-600 flex min-w-0 items-center gap-2 rounded-sm focus-visible:outline-2"
     >
-      <Avatar size={avatarSize} src={author.avatarUrl ?? undefined} alt="" />
+      {/* 이름이 바로 옆에 있으므로 아바타는 장식이다. 사진이 없으면 이름 첫 글자로 그린다. */}
+      <Avatar size={avatarSize} src={author.avatarUrl} name={author.displayName} alt="" />
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="group-hover:text-primary-600 truncate text-sm font-semibold text-gray-900">

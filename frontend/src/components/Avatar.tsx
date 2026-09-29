@@ -1,6 +1,6 @@
 import { useState, type ComponentProps } from 'react';
-
 import { cn } from '@/utils/cn';
+import { AVATAR_TONE_CLASSES, getAvatarInitial, getAvatarTone } from '@/utils/avatar';
 
 /**
  * 지름 단계.
@@ -13,19 +13,17 @@ import { cn } from '@/utils/cn';
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg';
 
 /**
- * 원형 이미지 박스만 담당한다. 표시할 이미지는 호출부가 `src`로 넘긴다.
+ * 원형 이미지 박스.
  *
- * 항상 `<div>`를 렌더하고, 보여줄 이미지가 있을 때만 그 안에 `<img>`를 둔다.
- * `src`가 비어 있거나 로드에 실패하면 `<img>`를 렌더하지 않아 `primary-50` 배경의 빈 원만 남는다.
+ * `src`가 있고 로드에 성공하면 이미지 렌더링
+ * 아닌 경우, `name`의 첫 글자를 이름에서 뽑은 색 위에 보여줌(기본 프로필)
+ *
  */
 export interface AvatarProps extends Omit<ComponentProps<'div'>, 'children'> {
   /** @default 'md' */
   size?: AvatarSize;
-  src?: string;
-  /**
-   * 옆에 이름이 함께 노출되면 빈 문자열을 넘겨 중복 낭독을 막는다.
-   * 아바타만 단독으로 쓰이면 이름을 넣는다.
-   */
+  src?: string | null;
+  name?: string;
   alt: string;
   /** 내부 `<img>`에 전달되는 값 */
   loading?: ComponentProps<'img'>['loading'];
@@ -40,26 +38,48 @@ const SIZE_CLASSES: Record<AvatarSize, string> = {
   lg: 'size-13',
 };
 
-export function Avatar({ size = 'md', src, alt, loading, className, ...props }: AvatarProps) {
+const INITIAL_SIZE_CLASSES: Record<AvatarSize, string> = {
+  xs: 'text-[0.625rem]',
+  sm: 'text-xs',
+  md: 'text-sm',
+  lg: 'text-xl',
+};
+
+export function Avatar({ size = 'md', src, name, alt, loading, className, ...props }: AvatarProps) {
   const [failedSrc, setFailedSrc] = useState<string>();
-  const showImage = Boolean(src) && src !== failedSrc;
+
+  const imageSrc = src && src !== failedSrc ? src : undefined;
+  const showImage = imageSrc !== undefined;
+  const initial = name ? getAvatarInitial(name) : '';
+  const showInitial = !showImage && initial !== '';
+
+  const imageRole = !showImage && alt ? ({ role: 'img', 'aria-label': alt } as const) : undefined;
 
   return (
     <div
-      className={cn(BASE, SIZE_CLASSES[size], className)}
-      role={!showImage && alt ? 'img' : undefined}
-      aria-label={showImage ? undefined : alt || undefined}
+      className={cn(
+        BASE,
+        SIZE_CLASSES[size],
+        showInitial && [
+          'flex items-center justify-center font-bold',
+          INITIAL_SIZE_CLASSES[size],
+          AVATAR_TONE_CLASSES[getAvatarTone(name ?? '')],
+        ],
+        className,
+      )}
+      {...imageRole}
       {...props}
     >
       {showImage && (
         <img
-          src={src}
+          src={imageSrc}
           alt={alt}
           loading={loading}
-          onError={() => setFailedSrc(src)}
+          onError={() => setFailedSrc(imageSrc)}
           className="size-full object-cover"
         />
       )}
+      {showInitial && <span aria-hidden="true">{initial}</span>}
     </div>
   );
 }

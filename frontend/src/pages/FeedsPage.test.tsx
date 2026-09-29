@@ -127,7 +127,10 @@ test('인기 피드는 제목과 본문 미리보기를 함께 보여준다', as
   show(<PopularFeedList />);
   const firstItem = within(await screen.findByRole('list')).getAllByRole('listitem')[0]!;
 
-  expect(within(firstItem).getByRole('link')).toHaveAttribute('href', `/feeds/${feed.feedId}`);
+  // 항목에 링크가 둘이다. 제목·본문은 피드 상세로, 작성자는 프로필로 간다.
+  const [detailLink, authorLink] = within(firstItem).getAllByRole('link');
+  expect(detailLink).toHaveAttribute('href', `/feeds/${feed.feedId}`);
+  expect(authorLink).toHaveAttribute('href', `/users/${feed.author.handle}`);
   expect(firstItem).toHaveTextContent(feed.title);
   expect(firstItem).toHaveTextContent(feed.content);
 });

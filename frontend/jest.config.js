@@ -50,6 +50,9 @@ export default {
   testEnvironmentOptions: { customExportConditions: ['node', 'node-addons'] },
   // 모달을 열고 검색해 고르는 흐름은 기본 5초로는 빠듯하다.
   testTimeout: 15_000,
+  // jsdom + MSW + userEvent 스위트는 워커당 부하가 커서, 기본값(CPU-1)으로는 서로 밀려
+  // 실행할 때마다 다른 스위트가 시간 초과로 떨어진다. 절반만 써서 각 워커에 여유를 준다.
+  maxWorkers: '50%',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
