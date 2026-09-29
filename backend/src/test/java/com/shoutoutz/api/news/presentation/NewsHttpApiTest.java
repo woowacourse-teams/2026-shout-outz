@@ -96,7 +96,7 @@ class NewsHttpApiTest {
                 "데모데이 안내",
                 "데모데이 일정을 안내합니다.",
                 "2026년 9월 12일에 데모데이를 진행합니다.",
-                new NoticeCreateResponse.Author(1L, "샤라웃 운영팀"),
+                new NoticeCreateResponse.Author(1L, "샤라웃 운영팀", "@admin"),
                 Instant.parse("2026-09-05T00:00:00Z"),
                 false,
                 null,
@@ -116,6 +116,7 @@ class NewsHttpApiTest {
                 .andExpect(jsonPath("$.data.id").value(106))
                 .andExpect(jsonPath("$.data.type").value("NOTICE"))
                 .andExpect(jsonPath("$.data.author.userId").value(1))
+                .andExpect(jsonPath("$.data.author.handle").value("@admin"))
                 .andExpect(jsonPath("$.data.author.name").value("샤라웃 운영팀"))
                 .andExpect(jsonPath("$.data.isPinned").value(false))
                 .andExpect(jsonPath("$.data.pinOrder").value(nullValue()))
@@ -180,6 +181,10 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.author.userId")
                                                 .type(NUMBER)
                                                 .description("작성자 ID"),
+                                        fieldWithPath("data.author.handle")
+                                                .type(STRING)
+                                                .description("작성자 handle")
+                                                .optional(),
                                         fieldWithPath("data.author.name")
                                                 .type(STRING)
                                                 .description("작성자 이름"),
@@ -235,7 +240,7 @@ class NewsHttpApiTest {
                 "서비스 점검 안내",
                 "점검 일정을 안내합니다.",
                 "2026년 9월 10일에 점검을 진행합니다.",
-                new NoticeCreateResponse.Author(1L, "샤라웃 운영팀"),
+                new NoticeCreateResponse.Author(1L, "샤라웃 운영팀", "@admin"),
                 Instant.parse("2026-09-05T00:00:00Z"),
                 false,
                 null,
@@ -267,7 +272,7 @@ class NewsHttpApiTest {
                 "프로젝트 아카이빙 챌린지",
                 "팀 프로젝트를 등록하고 피드백을 받아보세요.",
                 "프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.",
-                new EventCreateResponse.Author(1L, "샤라웃 운영팀"),
+                new EventCreateResponse.Author(1L, "샤라웃 운영팀", "@admin"),
                 Instant.parse("2026-09-05T00:00:00Z"),
                 EventStatus.ONGOING,
                 Instant.parse("2026-09-01T00:00:00Z"),
@@ -325,6 +330,7 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.body").type(STRING).description("이벤트 본문"),
                                         fieldWithPath("data.author").type(OBJECT).description("이벤트 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
+                                        fieldWithPath("data.author.handle").type(STRING).description("작성자 handle").optional(),
                                         fieldWithPath("data.author.name").type(STRING).description("작성자 이름"),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
                                         fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
@@ -356,7 +362,7 @@ class NewsHttpApiTest {
                 "서비스 이벤트",
                 "이벤트 요약",
                 "이벤트 본문",
-                new EventCreateResponse.Author(1L, "샤라웃 운영팀"),
+                new EventCreateResponse.Author(1L, "샤라웃 운영팀", "@admin"),
                 Instant.parse("2026-09-05T00:00:00Z"),
                 EventStatus.UPCOMING,
                 Instant.parse("2026-10-01T00:00:00Z"),
@@ -527,7 +533,7 @@ class NewsHttpApiTest {
                 NewsType.EVENT,
                 "프로젝트 아카이빙 챌린지",
                 "팀 프로젝트를 등록하고 동료 크루들의 피드백을 받아보세요.",
-                new NewsFindResponse.Author(1L, "샤라웃 운영팀"),
+                new NewsFindResponse.Author(1L, "샤라웃 운영팀", "@admin"),
                 Instant.parse("2026-08-25T00:00:00Z"),
                 EventStatus.ONGOING,
                 Instant.parse("2026-08-20T00:00:00Z"),
@@ -558,6 +564,7 @@ class NewsHttpApiTest {
                 .andExpect(jsonPath("$.data.body")
                         .value("팀 프로젝트를 등록하고 동료 크루들의 피드백을 받아보세요."))
                 .andExpect(jsonPath("$.data.author.userId").value(1))
+                .andExpect(jsonPath("$.data.author.handle").value("@admin"))
                 .andExpect(jsonPath("$.data.author.name").value("샤라웃 운영팀"))
                 .andExpect(jsonPath("$.data.eventStatus").value("ONGOING"))
                 .andExpect(jsonPath("$.data.isPinned").value(false))
@@ -610,6 +617,10 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.author.userId")
                                                 .type(NUMBER)
                                                 .description("작성자 ID"),
+                                        fieldWithPath("data.author.handle")
+                                                .type(STRING)
+                                                .description("작성자 handle")
+                                                .optional(),
                                         fieldWithPath("data.author.name")
                                                 .type(STRING)
                                                 .description("작성자 이름"),
@@ -706,7 +717,7 @@ class NewsHttpApiTest {
                 NewsType.NOTICE,
                 "공지",
                 "공지 본문",
-                new NewsFindResponse.Author(1L, "샤라웃 운영팀"),
+                new NewsFindResponse.Author(1L, "샤라웃 운영팀", "@admin"),
                 Instant.parse("2026-08-25T00:00:00Z"),
                 null,
                 null,
@@ -1156,7 +1167,7 @@ class NewsHttpApiTest {
                 "수정된 공지",
                 "수정된 요약",
                 "수정된 본문",
-                new NewsUpdateResponse.Author(1L, "샤라웃 운영팀"),
+                new NewsUpdateResponse.Author(1L, "샤라웃 운영팀", "@admin"),
                 Instant.parse("2026-09-05T00:00:00Z"),
                 null,
                 null,
@@ -1222,6 +1233,7 @@ class NewsHttpApiTest {
                                         fieldWithPath("data.body").type(STRING).description("소식 본문"),
                                         fieldWithPath("data.author").type(OBJECT).description("작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
+                                        fieldWithPath("data.author.handle").type(STRING).description("작성자 handle").optional(),
                                         fieldWithPath("data.author.name").type(STRING).description("작성자 이름"),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
                                         fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),

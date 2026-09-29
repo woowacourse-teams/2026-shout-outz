@@ -6,10 +6,26 @@ import { getNewsDetail, getNewsList } from '@/api/mock/news';
 import { getCohorts, getTechTags, searchCrewList } from '@/api/mock/project';
 import projects from '@/api/mock/projects.json';
 import { getUserFeeds, getUserProfile, getUserProjects } from '@/api/mock/user';
+import { getMockProjectReaction, setMockProjectLike } from '@/api/mock/reactions';
 import { isNewsFilter } from '@/types/news';
+import type { ProjectUpdateRequest } from '@/types/project';
 
 /** 미디어 업로드 시작이 내려주는 presigned PUT URL의 목 주소 */
 export const MOCK_STORAGE_ORIGIN = 'https://storage.test';
+
+const toProjectMember = (member: (typeof projects)[number]['members'][number]) => ({
+  userId: member.userId,
+  handle: member.userId === 1 ? 'woojin' : `crew${member.userId}`,
+  displayName: member.displayName,
+  userType: 'WOOWACOURSE_CREW' as const,
+  cohort: member.cohort,
+  track: member.track === 'BE' ? 'BACKEND' : 'FRONTEND',
+  avatarUrl: member.avatarUrl,
+  githubAvatarUrl: null,
+  githubProfileUrl: null,
+});
+
+const updatedProjects = new Map<number, Record<string, unknown>>();
 
 export const handlers = [
   http.get('/api/v1/auth/session', () =>
@@ -98,6 +114,44 @@ export const handlers = [
     ),
   ),
 
+  http.put('/api/v1/projects/:projectId', async ({ params, request }) => {
+    const projectId = Number(params.projectId);
+    if (!projects[projectId - 1]) return new HttpResponse(null, { status: 404 });
+
+    const update = (await request.json()) as ProjectUpdateRequest;
+    const knownMembers = projects.flatMap((item) => item.members.map(toProjectMember));
+    const members = update.memberHandles
+      .map((handle) => {
+        const known = knownMembers.find((member) => member.handle === handle);
+        if (known) return known;
+        const crew = searchCrewList(handle).find((item) => item.handle === handle);
+        return crew ? { ...crew, githubAvatarUrl: null, githubProfileUrl: null } : undefined;
+      })
+      .filter((member) => member !== undefined);
+
+    updatedProjects.set(projectId, {
+      title: update.title,
+      teamName: update.teamName,
+      tagline: update.tagline,
+      cohort: update.cohort,
+      thumbnailImageId: update.thumbnailImageId ?? null,
+      githubRepositoryUrl: update.githubRepositoryUrl,
+      deploymentUrl: update.deploymentUrl,
+      descriptionMd: update.descriptionMd,
+      serviceStatus: update.serviceStatus,
+      techTags: update.techTagIds.flatMap((id) => {
+        const tag = getTechTags().find((item) => item.id === id);
+        return tag ? [tag] : [];
+      }),
+      members,
+    });
+
+    return HttpResponse.json({
+      status: 'success',
+      data: { projectId, approvalStatus: 'APPROVED' },
+    });
+  }),
+
   // 미디어 API는 다른 API와 달리 {status, data} 봉투 없이 그대로 내려준다.
   http.post('/api/v1/media/uploads', () =>
     HttpResponse.json(
@@ -157,18 +211,51 @@ export const handlers = [
         deploymentUrl: project.deploymentUrl,
         serviceStatus: project.serviceStatus,
         approvalStatus: 'APPROVED',
+        editable: index === 0,
         rejectReason: null,
         viewCount: 0,
         starCount: 0,
-        likeCount: project.likeCount,
+        ...getMockProjectReaction(index + 1, project.likeCount),
         bookmarkCount: project.bookmarkCount,
-        likedByMe: false,
         bookmarkedByMe: false,
         commentCount: 0,
         techTags: project.techTags.map((displayName, index) => ({ id: index + 1, displayName })),
-        members: project.members,
+        members: project.members.map(toProjectMember),
         createdAt: '2026-08-09T11:30:00+09:00',
         updatedAt: '2026-08-09T11:30:00+09:00',
+        ...updatedProjects.get(index + 1),
+      },
+    });
+  }),
+  http.put('/api/v1/projects/:projectId/reactions/LIKE', ({ params }) => {
+    const projectId = Number(params.projectId);
+    const project = projects[projectId - 1];
+    if (!project) return new HttpResponse(null, { status: 404 });
+    const reaction = setMockProjectLike(projectId, project.likeCount, true);
+    return HttpResponse.json({
+      status: 'success',
+      data: {
+        projectId,
+        type: 'LIKE',
+        active: true,
+        ...reaction,
+        bookmarkCount: project.bookmarkCount,
+      },
+    });
+  }),
+  http.delete('/api/v1/projects/:projectId/reactions/LIKE', ({ params }) => {
+    const projectId = Number(params.projectId);
+    const project = projects[projectId - 1];
+    if (!project) return new HttpResponse(null, { status: 404 });
+    const reaction = setMockProjectLike(projectId, project.likeCount, false);
+    return HttpResponse.json({
+      status: 'success',
+      data: {
+        projectId,
+        type: 'LIKE',
+        active: false,
+        ...reaction,
+        bookmarkCount: project.bookmarkCount,
       },
     });
   }),
@@ -183,19 +270,11 @@ export const handlers = [
         tagline,
         cohort,
         thumbnailUrl: null,
-        likeCount,
+        ...getMockProjectReaction(index + 1, likeCount),
         commentCount: 0,
         techTags: techTags.map((displayName, tagIndex) => ({ id: tagIndex + 1, displayName })),
-        members: members.map((member) => ({
-          userId: member.userId,
-          handle: `crew${member.userId}`,
-          displayName: member.displayName,
-          cohort: member.cohort,
-          track: member.track === 'BE' ? 'BACKEND' : 'FRONTEND',
-          avatarUrl: null,
-          githubAvatarUrl: null,
-          githubProfileUrl: null,
-        })),
+        members: members.map(toProjectMember),
+        ...updatedProjects.get(index + 1),
       })),
       meta: { nextCursor: null, hasNext: false, totalCount: projects.length },
     }),
@@ -232,8 +311,12 @@ export const handlers = [
   http.get('/api/v1/users/me/summary', () =>
     HttpResponse.json({
       status: 'success',
-      data: { userId: 10, handle: 'woojin', displayName: '정우진', avatarUrl: null },
+      data: { userId: 1, handle: 'woojin', displayName: '정우진', avatarUrl: null },
     }),
+  ),
+
+  http.get('/api/v1/users/me', () =>
+    HttpResponse.json({ status: 'success', data: getUserProfile('woojin') }),
   ),
 
   http.get('/api/v1/users/:handle', ({ params }) => {

@@ -2,6 +2,7 @@ package com.shoutoutz.api.project.presentation.dto.response;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.project.application.dto.UserProjectItem;
+import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.user.domain.profile.Track;
@@ -14,13 +15,14 @@ import java.util.Map;
  * 사용자 페이지의 프로젝트 카드 응답.
  */
 public record UserProjectResponse(
-        long id,
         String slug,
         String title,
         String teamName,
         String tagline,
         int cohort,
         ServiceStatus serviceStatus,
+        ApprovalStatus approvalStatus,
+        String rejectReason,
         Long thumbnailImageId,
         String thumbnailUrl,
         Integer starCount,
@@ -47,13 +49,14 @@ public record UserProjectResponse(
             Map<Long, URI> mediaUrls
     ) {
         return new UserProjectResponse(
-                project.id(),
                 project.slug(),
                 project.title(),
                 project.teamName(),
                 project.tagline(),
                 project.cohort(),
                 project.serviceStatus(),
+                project.approvalStatus(),
+                project.rejectReason(),
                 project.thumbnailMediaId(),
                 toUrl(mediaUrls, project.thumbnailMediaId()),
                 project.starCount(),

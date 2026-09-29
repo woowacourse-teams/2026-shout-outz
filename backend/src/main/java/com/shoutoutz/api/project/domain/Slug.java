@@ -2,6 +2,7 @@ package com.shoutoutz.api.project.domain;
 
 import com.shoutoutz.api.project.domain.exception.InvalidSlugException;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 public record Slug(String value) {
@@ -15,6 +16,18 @@ public record Slug(String value) {
     public Slug {
         if (value == null || value.length() > MAX_LENGTH || !PATTERN.matcher(value).matches()) {
             throw new InvalidSlugException();
+        }
+    }
+
+    /**
+     * 주소로 받은 값을 slug 로 읽는다. 형식에 맞지 않으면 빈 값이다.
+     * 형식이 틀린 slug 는 예외 대신 빈 값으로 돌려, 404로 처리하게 한다.
+     */
+    public static Optional<Slug> parse(String value) {
+        try {
+            return Optional.of(new Slug(value));
+        } catch (InvalidSlugException e) {
+            return Optional.empty();
         }
     }
 

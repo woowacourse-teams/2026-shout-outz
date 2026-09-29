@@ -4,6 +4,8 @@ import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
 import com.shoutoutz.api.auth.domain.OAuthAccount;
 import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
+import com.shoutoutz.api.auth.domain.OAuthProvider;
+import com.shoutoutz.api.project.application.ArchivedProjectMemberMatchService;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import java.time.Instant;
@@ -17,6 +19,7 @@ public class OAuthAccountLoginService {
 
     private final OAuthAccountRepository oauthAccountRepository;
     private final UserRepository userRepository;
+    private final ArchivedProjectMemberMatchService archivedProjectMemberMatchService;
 
     @Transactional
     public OAuthLoginCallbackResult completeLogin(
@@ -43,6 +46,12 @@ public class OAuthAccountLoginService {
 
         userRepository.save(loggedInUser);
         oauthAccountRepository.save(loggedInAccount);
+        if (identity.provider() == OAuthProvider.GITHUB) {
+            archivedProjectMemberMatchService.matchGithubAccount(
+                    loggedInUser.getId(),
+                    identity.providerAccountId()
+            );
+        }
 
         return OAuthLoginCallbackResult.authenticated(
                 loggedInUser.getId(),

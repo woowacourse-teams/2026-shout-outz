@@ -26,6 +26,7 @@ public class ProjectViewService {
      */
     private static final ZoneId VIEW_DATE_ZONE = ZoneId.of("Asia/Seoul");
 
+    private final ProjectSlugResolver projectSlugResolver;
     private final ProjectViewRepository projectViewRepository;
     private final Clock clock;
 
@@ -34,7 +35,8 @@ public class ProjectViewService {
      * 같은 날 이미 기록된 조회는 예외 없이 넘어가고, 현재 조회수를 돌려준다.
      */
     @Transactional
-    public ProjectViewRecordResponse record(long projectId, VisitorKey visitorKey) {
+    public ProjectViewRecordResponse record(String slug, VisitorKey visitorKey) {
+        long projectId = projectSlugResolver.resolveId(slug);
         if (!projectViewRepository.existsViewableProject(projectId)) {
             throw new EntityNotFoundException(PROJECT_NOT_FOUND);
         }

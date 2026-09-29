@@ -100,7 +100,7 @@ class HomeBannerRepositoryIntegrationTest {
     }
 
     private long insertAdmin() {
-        String handle = "admin-" + UUID.randomUUID().toString().substring(0, 12);
+        String handle = "@admin-" + UUID.randomUUID().toString().substring(0, 12);
         return jdbcTemplate.queryForObject(
                 "INSERT INTO users (handle, role) VALUES (?, 'ADMIN') RETURNING id",
                 Long.class,

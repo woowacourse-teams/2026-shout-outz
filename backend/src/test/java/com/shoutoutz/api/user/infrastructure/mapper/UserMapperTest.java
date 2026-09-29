@@ -16,12 +16,12 @@ class UserMapperTest {
     @Test
     @DisplayName("사용자 도메인을 엔티티로 변환한다")
     void mapsDomainToEntity() {
-        User user = User.initialize("zzaekkii");
+        User user = User.initialize("@zzaekkii");
 
         UserEntity entity = UserMapper.toEntity(user);
 
         assertThat(entity.getId()).isNull();
-        assertThat(entity.getHandle()).isEqualTo("zzaekkii");
+        assertThat(entity.getHandle()).isEqualTo("@zzaekkii");
         assertThat(entity.getStatus()).isEqualTo(UserStatus.ACTIVE);
         assertThat(entity.getRole()).isEqualTo(UserRole.USER);
         assertThat(entity.getLastLoginAt()).isNull();
@@ -36,7 +36,7 @@ class UserMapperTest {
         Instant purgedAt = Instant.parse("2026-09-30T00:00:00Z");
         UserEntity entity = UserEntity.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(UserStatus.DELETED)
                 .role(UserRole.USER)
                 .lastLoginAt(Instant.parse("2026-08-30T00:00:00Z"))
@@ -47,7 +47,7 @@ class UserMapperTest {
         User user = UserMapper.toDomain(entity);
 
         assertThat(user.getId()).isEqualTo(1L);
-        assertThat(user.getHandle()).isEqualTo(new Handle("zzaekkii"));
+        assertThat(user.getHandle()).isEqualTo(new Handle("@zzaekkii"));
         assertThat(user.getStatus()).isEqualTo(UserStatus.DELETED);
         assertThat(user.getRole()).isEqualTo(UserRole.USER);
         assertThat(user.getLastLoginAt()).isEqualTo(Instant.parse("2026-08-30T00:00:00Z"));

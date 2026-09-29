@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/projects/{projectId}/comments/{commentId}/reactions")
+@RequestMapping("/api/v1/projects/@{slug}/comments/{commentId}/reactions")
 @RequiredArgsConstructor
 public class ProjectCommentReactionHttpApi {
 
@@ -22,13 +22,13 @@ public class ProjectCommentReactionHttpApi {
 
     @PutMapping("/{type}")
     public ResponseEntity<SuccessResponse<ProjectCommentReactionResponse>> add(
-            @PathVariable long projectId,
+            @PathVariable String slug,
             @PathVariable long commentId,
             @PathVariable String type,
             @LoginUser AuthenticatedUser user
     ) {
         ProjectCommentReactionResponse response = projectCommentReactionService.add(
-                projectId,
+                slug,
                 commentId,
                 user.userId(),
                 type
@@ -38,13 +38,13 @@ public class ProjectCommentReactionHttpApi {
 
     @DeleteMapping("/{type}")
     public ResponseEntity<SuccessResponse<ProjectCommentReactionResponse>> remove(
-            @PathVariable long projectId,
+            @PathVariable String slug,
             @PathVariable long commentId,
             @PathVariable String type,
             @LoginUser AuthenticatedUser user
     ) {
         ProjectCommentReactionResponse response = projectCommentReactionService.remove(
-                projectId,
+                slug,
                 commentId,
                 user.userId(),
                 type

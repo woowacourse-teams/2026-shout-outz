@@ -5,7 +5,9 @@ import com.shoutoutz.api.auth.application.command.OAuthSignupResult;
 import com.shoutoutz.api.auth.domain.OAuthAccount;
 import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
+import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
+import com.shoutoutz.api.project.application.ArchivedProjectMemberMatchService;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -23,6 +25,7 @@ public class OAuthSignupService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final OAuthAccountRepository oauthAccountRepository;
+    private final ArchivedProjectMemberMatchService archivedProjectMemberMatchService;
 
     @Transactional
     public OAuthSignupResult signup(OAuthSignupCommand command) {
@@ -51,6 +54,12 @@ public class OAuthSignupService {
 
         userProfileRepository.save(userProfile);
         oauthAccountRepository.save(oauthAccount);
+        if (identity.provider() == OAuthProvider.GITHUB) {
+            archivedProjectMemberMatchService.matchGithubAccount(
+                    savedUser.getId(),
+                    identity.providerAccountId()
+            );
+        }
 
         return new OAuthSignupResult(savedUser.getId(), savedUser.getRole());
     }

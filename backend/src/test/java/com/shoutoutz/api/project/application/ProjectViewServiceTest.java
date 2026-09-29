@@ -29,10 +29,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ProjectViewServiceTest {
 
     private static final long PROJECT_ID = 1L;
+    private static final String SLUG = "loop";
     private static final VisitorKey VISITOR = new VisitorKey("a".repeat(64));
 
     @Mock
     private ProjectViewRepository projectViewRepository;
+
+    @Mock
+    private ProjectSlugResolver projectSlugResolver;
 
     @Test
     @DisplayName("조회할 수 있는 프로젝트면 현재 시각과 한국 날짜로 조회를 기록하고, 기록 후 조회수를 반환한다")
@@ -42,7 +46,7 @@ class ProjectViewServiceTest {
         given(projectViewRepository.record(PROJECT_ID, VISITOR, LocalDate.parse("2026-09-18"), now))
                 .willReturn(129L);
 
-        ProjectViewRecordResponse response = service(now).record(PROJECT_ID, VISITOR);
+        ProjectViewRecordResponse response = service(now).record(SLUG, VISITOR);
 
         assertThat(response).isEqualTo(new ProjectViewRecordResponse(129));
     }
@@ -58,7 +62,7 @@ class ProjectViewServiceTest {
         Instant now = Instant.parse(nowText);
         given(projectViewRepository.existsViewableProject(PROJECT_ID)).willReturn(true);
 
-        service(now).record(PROJECT_ID, VISITOR);
+        service(now).record(SLUG, VISITOR);
 
         verify(projectViewRepository).record(PROJECT_ID, VISITOR, LocalDate.parse(expectedDate), now);
     }
@@ -71,7 +75,7 @@ class ProjectViewServiceTest {
         given(projectViewRepository.record(PROJECT_ID, VISITOR, LocalDate.parse("2026-09-18"), now))
                 .willReturn(128L);
 
-        ProjectViewRecordResponse response = service(now).record(PROJECT_ID, VISITOR);
+        ProjectViewRecordResponse response = service(now).record(SLUG, VISITOR);
 
         assertThat(response.viewCount()).isEqualTo(128);
     }
@@ -82,13 +86,14 @@ class ProjectViewServiceTest {
         given(projectViewRepository.existsViewableProject(PROJECT_ID)).willReturn(false);
         ProjectViewService service = service(Instant.parse("2026-09-18T01:00:00Z"));
 
-        assertThatThrownBy(() -> service.record(PROJECT_ID, VISITOR))
+        assertThatThrownBy(() -> service.record(SLUG, VISITOR))
                 .isInstanceOfSatisfying(EntityNotFoundException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND));
         verify(projectViewRepository, never()).record(anyLong(), any(), any(), any());
     }
 
     private ProjectViewService service(Instant now) {
-        return new ProjectViewService(projectViewRepository, Clock.fixed(now, ZoneOffset.UTC));
+        given(projectSlugResolver.resolveId(SLUG)).willReturn(PROJECT_ID);
+        return new ProjectViewService(projectSlugResolver, projectViewRepository, Clock.fixed(now, ZoneOffset.UTC));
     }
 }

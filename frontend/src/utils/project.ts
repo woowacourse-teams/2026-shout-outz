@@ -2,6 +2,7 @@ import {
   type ProjectCreateRequest,
   type ProjectFormErrors,
   type ProjectFormValues,
+  type ProjectUpdateRequest,
 } from '@/types/project';
 import { isApiResponseError } from '@/utils/error';
 
@@ -55,9 +56,9 @@ const isHttpUrl = (value: string) => {
 /**
  * 폼 값을 검사해 필드별 오류 문구를 돌려준다. 오류가 없으면 빈 객체다.
  *
- * 규칙은 `docs/프로젝트등록폼규칙.md`를 따른다. 필수 여부도 디자인의 `*` 표시가 아니라 문서 기준이다.
- * - 필수: 프로젝트 이름, 팀 이름, 한 줄 소개, 기수, GitHub 레포지토리 URL, 기술 스택, 참여 팀원
- * - 선택: 상세 설명, 서비스 배포 URL, 썸네일
+ * 필수 여부는 디자인의 `*` 표시를 따른다.
+ * - 필수: 프로젝트 이름, 한 줄 소개, 기수, GitHub 레포지토리 URL, 기술 스택
+ * - 선택: 팀 이름, 상세 설명, 서비스 배포 URL, 썸네일, 작성자 외 참여 팀원
  */
 export function validateProjectForm(values: ProjectFormValues): ProjectFormErrors {
   const errors: ProjectFormErrors = {};
@@ -70,9 +71,7 @@ export function validateProjectForm(values: ProjectFormValues): ProjectFormError
   }
 
   const teamName = values.teamName.trim();
-  if (!teamName) {
-    errors.teamName = '팀 이름을 입력해 주세요.';
-  } else if (countCodePoints(teamName) > MAX_LENGTHS.teamName) {
+  if (countCodePoints(teamName) > MAX_LENGTHS.teamName) {
     errors.teamName = `팀 이름은 ${MAX_LENGTHS.teamName}자까지 입력할 수 있습니다.`;
   }
 
@@ -85,8 +84,6 @@ export function validateProjectForm(values: ProjectFormValues): ProjectFormError
 
   if (values.cohort === null) errors.cohort = '우테코 기수를 선택해 주세요.';
   if (values.techTags.length === 0) errors.techTags = '기술 스택을 1개 이상 선택해 주세요.';
-  if (values.members.length === 0) errors.members = '참여 팀원을 1명 이상 선택해 주세요.';
-
   const githubRepositoryUrl = values.githubRepositoryUrl.trim();
   if (!githubRepositoryUrl) {
     errors.githubRepositoryUrl = 'GitHub 레포지토리 URL을 입력해 주세요.';
@@ -112,8 +109,11 @@ export function validateProjectForm(values: ProjectFormValues): ProjectFormError
   return errors;
 }
 
-/** 검증을 통과한 폼 값을 등록 요청 본문으로 바꾼다. 비어 있는 선택 입력은 null로 보낸다. */
-export function toProjectCreateRequest(values: ProjectFormValues): ProjectCreateRequest {
+/** 작성자를 첫 팀원으로 포함해 등록 요청 본문으로 바꾼다. 비어 있는 선택 입력은 null로 보낸다. */
+export function toProjectCreateRequest(
+  values: ProjectFormValues,
+  authorHandle: string,
+): ProjectCreateRequest {
   if (values.cohort === null) {
     throw new Error('기수를 고르지 않은 폼 값은 등록 요청으로 바꿀 수 없습니다.');
   }
@@ -129,7 +129,23 @@ export function toProjectCreateRequest(values: ProjectFormValues): ProjectCreate
     // 서버가 자르지 않는 필드다. 여기서 자르면 코드블록 들여쓰기처럼 의미 있는 공백이 사라진다.
     descriptionMd: values.descriptionMd,
     techTagIds: values.techTags.map((tag) => tag.id),
-    memberHandles: values.members.map((member) => member.handle),
+    memberHandles: [
+      authorHandle,
+      ...values.members
+        .filter((member) => member.handle !== authorHandle)
+        .map((member) => member.handle),
+    ],
+  };
+}
+
+export function toProjectUpdateRequest(
+  values: ProjectFormValues,
+  authorHandle: string,
+): ProjectUpdateRequest {
+  const request = toProjectCreateRequest(values, authorHandle);
+  return {
+    ...request,
+    serviceStatus: values.deploymentUrl.trim() ? (values.serviceStatus ?? 'CLOSED') : 'CLOSED',
   };
 }
 
@@ -172,6 +188,7 @@ const FORM_FIELDS: Record<keyof ProjectFormValues, true> = {
   descriptionMd: true,
   techTags: true,
   members: true,
+  serviceStatus: true,
 };
 
 /**

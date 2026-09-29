@@ -1,18 +1,18 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { IconHeart, IconMessageCircle, IconShare } from '@tabler/icons-react';
+import { IconMessageCircle } from '@tabler/icons-react';
 import { feedQuery } from '@/apis/feed';
-import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { FeedDetailBody } from '@/components/feeds/FeedDetailBody';
+import { FeedAuthor } from '@/components/feeds/FeedAuthor';
+import { FeedLikeButton } from '@/components/feeds/FeedLikeButton';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
+import { ShareButton } from '@/components/feeds/ShareButton';
 import { PopularFeedList } from '@/components/feeds/PopularFeedList';
 import { Comments } from '@/components/feed-comments/Comments';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { formatCrewName } from '@/utils/user';
-import { formatRelativeTime } from '@/utils/date';
 
 const DESKTOP_MEDIA_QUERY = '(min-width: 64rem)';
 
@@ -48,26 +48,18 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
     <article className="min-w-0">
       <title>{`${feed.author.displayName}의 피드 | shout-outz`}</title>
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <Avatar size="md" alt={`${feed.author.displayName} 프로필`} />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-gray-900">
-              {formatCrewName(feed.author.displayName, feed.author.cohort, feed.author.track)}
-            </p>
-            <time dateTime={feed.createdAt} className="text-sm text-gray-500">
-              {formatRelativeTime(feed.createdAt)}
-            </time>
-          </div>
-        </div>
+        <FeedAuthor author={feed.author} createdAt={feed.createdAt} />
         <AsyncBoundary>
           <FeedMenu feedId={feed.feedId} authorHandle={feed.author.handle} />
         </AsyncBoundary>
       </div>
       <FeedDetailBody feed={feed} />
       <div className="mt-5 flex items-center gap-2">
-        <Button variant="ghost" size="sm" className="gap-1 px-2" aria-label="좋아요" disabled>
-          <IconHeart className="size-4" aria-hidden="true" />
-        </Button>
+        <FeedLikeButton
+          feedId={feed.feedId}
+          likeCount={feed.likeCount}
+          likedByMe={feed.likedByMe}
+        />
         <Button
           variant="ghost"
           size="sm"
@@ -76,16 +68,9 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
           onClick={() => document.getElementById('feed-comments')?.scrollIntoView()}
         >
           <IconMessageCircle className="size-4" aria-hidden="true" />
+          <span aria-label="댓글 수">{feed.commentCount ?? 0}</span>
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="ml-auto px-2"
-          aria-label="공유"
-          onClick={() => void navigator.clipboard?.writeText(window.location.href)}
-        >
-          <IconShare className="size-4" aria-hidden="true" />
-        </Button>
+        <ShareButton url={window.location.href} className="ml-auto px-2" />
       </div>
       <section id="feed-comments" aria-label="피드 댓글" className="mt-5">
         <Comments feedId={feed.feedId} />

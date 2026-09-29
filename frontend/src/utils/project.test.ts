@@ -30,7 +30,6 @@ describe('validateProjectForm', () => {
       const errors = validateProjectForm({
         ...FILLED,
         title: '',
-        teamName: '',
         tagline: '',
         cohort: null,
         githubRepositoryUrl: '',
@@ -39,15 +38,7 @@ describe('validateProjectForm', () => {
       });
 
       expect(Object.keys(errors).sort()).toEqual(
-        [
-          'cohort',
-          'githubRepositoryUrl',
-          'members',
-          'tagline',
-          'teamName',
-          'techTags',
-          'title',
-        ].sort(),
+        ['cohort', 'githubRepositoryUrl', 'tagline', 'techTags', 'title'].sort(),
       );
     });
 
@@ -57,20 +48,16 @@ describe('validateProjectForm', () => {
   });
 
   describe('선택 입력', () => {
-    it('상세 설명, 배포 URL, 썸네일은 비어 있어도 된다', () => {
+    it('팀 이름, 상세 설명, 배포 URL, 썸네일은 비어 있어도 된다', () => {
       expect(
         validateProjectForm({
           ...FILLED,
+          teamName: '',
           descriptionMd: '',
           deploymentUrl: '',
           thumbnailImageId: null,
         }),
       ).toEqual({});
-    });
-
-    // 문서 기준으로 팀 이름은 등록·수정 모두 필수다. 예전에는 프론트만 선택으로 두고 있었다.
-    it('팀 이름은 비면 서버가 400을 주므로 여기서 막는다', () => {
-      expect(validateProjectForm({ ...FILLED, teamName: '   ' })).toHaveProperty('teamName');
     });
   });
 
@@ -95,7 +82,7 @@ describe('validateProjectForm', () => {
 
 describe('toProjectCreateRequest', () => {
   it('폼 값을 등록 요청 본문으로 바꾼다', () => {
-    expect(toProjectCreateRequest(FILLED)).toEqual({
+    expect(toProjectCreateRequest(FILLED, 'woojin')).toEqual({
       title: '루프 (Loop)',
       teamName: '루프팀',
       tagline: '스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구',
@@ -105,22 +92,24 @@ describe('toProjectCreateRequest', () => {
       deploymentUrl: 'https://loop.team',
       descriptionMd: '## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.',
       techTagIds: [1, 2],
-      memberHandles: ['dhyepark', 'zzaekkii'],
+      memberHandles: ['woojin', 'dhyepark', 'zzaekkii'],
     });
   });
 
   it('비어 있는 배포 URL은 null로 보낸다', () => {
-    expect(toProjectCreateRequest({ ...FILLED, deploymentUrl: '' }).deploymentUrl).toBeNull();
+    expect(
+      toProjectCreateRequest({ ...FILLED, deploymentUrl: '' }, 'woojin').deploymentUrl,
+    ).toBeNull();
   });
 
   it('앞뒤 공백은 잘라서 보낸다', () => {
-    expect(toProjectCreateRequest({ ...FILLED, title: '  루프 (Loop)  ' }).title).toBe(
+    expect(toProjectCreateRequest({ ...FILLED, title: '  루프 (Loop)  ' }, 'woojin').title).toBe(
       '루프 (Loop)',
     );
   });
 
   it('검증을 통과하지 않은 값이 오면 던진다', () => {
-    expect(() => toProjectCreateRequest({ ...FILLED, cohort: null })).toThrow();
+    expect(() => toProjectCreateRequest({ ...FILLED, cohort: null }, 'woojin')).toThrow();
   });
 
   // 서버가 앞뒤 공백을 자르는 대상에서 descriptionMd만 빠져 있다.
@@ -128,7 +117,9 @@ describe('toProjectCreateRequest', () => {
   it('상세 설명은 앞뒤 공백을 자르지 않고 그대로 보낸다', () => {
     const descriptionMd = '    코드블록으로 시작하는 본문\n';
 
-    expect(toProjectCreateRequest({ ...FILLED, descriptionMd }).descriptionMd).toBe(descriptionMd);
+    expect(toProjectCreateRequest({ ...FILLED, descriptionMd }, 'woojin').descriptionMd).toBe(
+      descriptionMd,
+    );
   });
 });
 

@@ -15,10 +15,10 @@ class HandleTest {
     @ParameterizedTest
     @DisplayName("핸들을 생성한다")
     @ValueSource(strings = {
-            "ab",
-            "DaHye",
-            "user-name_01",
-            "abcdefghijklmnopqrstuvwxyz1234"
+            "@ab",
+            "@DaHye",
+            "@user-name_01",
+            "@abcdefghijklmnopqrstuvwxyz1234"
     })
     void createsValidHandle(String value) {
         Handle handle = new Handle(value);
@@ -37,11 +37,28 @@ class HandleTest {
                 );
     }
 
+    @ParameterizedTest
+    @DisplayName("@ 접두사나 핸들 형식이 올바르지 않으면 생성할 수 없다")
+    @ValueSource(strings = {
+            "ab",
+            "@a",
+            "@잘못된핸들",
+            "@user handle",
+            "@user@handle",
+            "@abcdefghijklmnopqrstuvwxyz12345"
+    })
+    void rejectsInvalidHandleFormat(String value) {
+        assertThatThrownBy(() -> new Handle(value))
+                .isInstanceOfSatisfying(DomainValidationException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(UserErrorCode.USER_HANDLE_INVALID_FORMAT)
+                );
+    }
+
     @Test
     @DisplayName("핸들은 대소문자를 구분하지 않고 동일성을 판단한다")
     void comparesHandleIgnoringCase() {
-        Handle lowerCaseHandle = new Handle("dahye");
-        Handle mixedCaseHandle = new Handle("DaHye");
+        Handle lowerCaseHandle = new Handle("@dahye");
+        Handle mixedCaseHandle = new Handle("@DaHye");
 
         assertThat(lowerCaseHandle).isEqualTo(mixedCaseHandle);
         assertThat(lowerCaseHandle.hashCode()).isEqualTo(mixedCaseHandle.hashCode());

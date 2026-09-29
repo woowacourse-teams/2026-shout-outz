@@ -4,12 +4,14 @@ import {
   type CrewSearchItem,
   type ProjectCreated,
   type ProjectCreateRequest,
+  type ProjectUpdateRequest,
   type TechTag,
 } from '@/types/project';
 import { httpClient } from '@/utils/client';
 import type {
   CohortFindAllSuccessResponse,
   ProjectCreateSuccessResponse,
+  ProjectUpdateSuccessResponse,
   TechTagFindAllSuccessResponse,
   UserSearchSuccessResponse,
 } from '@/api/generated/schema';
@@ -32,6 +34,20 @@ export async function createProject(request: ProjectCreateRequest): Promise<Proj
 export const createProjectMutationOptions = mutationOptions({
   mutationFn: createProject,
 });
+
+export async function updateProject(projectId: number, request: ProjectUpdateRequest) {
+  const body = await httpClient<ProjectUpdateSuccessResponse>(`${PROJECTS_PATH}/${projectId}`, {
+    method: 'put',
+    json: request,
+  });
+  if (!body) throw new Error(`프로젝트 수정 응답이 비어 있습니다: ${PROJECTS_PATH}/${projectId}`);
+  return body.data;
+}
+
+export const updateProjectMutationOptions = (projectId: number) =>
+  mutationOptions({
+    mutationFn: (request: ProjectUpdateRequest) => updateProject(projectId, request),
+  });
 
 export async function fetchCohorts(): Promise<CohortOption[]> {
   const body = await httpClient<CohortFindAllSuccessResponse>(COHORTS_PATH, {

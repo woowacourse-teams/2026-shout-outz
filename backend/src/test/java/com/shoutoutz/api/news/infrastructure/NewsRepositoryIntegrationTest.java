@@ -41,7 +41,7 @@ class NewsRepositoryIntegrationTest {
     @Test
     @DisplayName("소식 수정은 편집 가능 필드만 바꾸고 핀 상태와 불변 필드를 보존한다")
     void updatesOnlyEditableFields() {
-        User user = userRepository.save(User.initialize("news-update-repository"));
+        User user = userRepository.save(User.initialize("@news-update-repository"));
         NewsEntity entity = newsJpaRepository.saveAndFlush(event(user.getId()));
 
         News current = newsRepository.findActiveById(entity.getId()).orElseThrow();
@@ -76,7 +76,7 @@ class NewsRepositoryIntegrationTest {
     @Test
     @DisplayName("소식을 원자적으로 소프트 삭제하고 활성 조회에서 제외한다")
     void softDeletesNews() {
-        User user = userRepository.save(User.initialize("news-delete-repository"));
+        User user = userRepository.save(User.initialize("@news-delete-repository"));
         NewsEntity entity = newsJpaRepository.saveAndFlush(notice(user.getId()));
         Instant deletedAt = Instant.parse("2026-09-19T12:00:00Z");
 

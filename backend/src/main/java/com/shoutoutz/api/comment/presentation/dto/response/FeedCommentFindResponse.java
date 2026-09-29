@@ -45,6 +45,7 @@ public record FeedCommentFindResponse(
 
     public record Author(
             Long userId,
+            String handle,
             String displayName,
             UserType userType,
             String track,
@@ -52,13 +53,17 @@ public record FeedCommentFindResponse(
             Long avatarImageId,
             String avatarUrl
     ) {
+        public Author(Long userId, String handle, String displayName, Long avatarImageId, String avatarUrl) {
+            this(userId, handle, displayName, null, null, null, avatarImageId, avatarUrl);
+        }
+
         public Author(
                 Long userId,
                 String displayName,
                 Long avatarImageId,
                 String avatarUrl
         ) {
-            this(userId, displayName, null, null, null, avatarImageId, avatarUrl);
+            this(userId, null, displayName, null, null, null, avatarImageId, avatarUrl);
         }
     }
 }

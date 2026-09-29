@@ -69,7 +69,7 @@ class AdminVerificationRequestHttpApiTest {
         )).willReturn(new AdminVerificationRequestFindAllResponse(
                 List.of(new AdminVerificationRequestFindAllResponse.Item(
                         101L,
-                        new AdminVerificationRequestFindAllResponse.Applicant(42L, "charles"),
+                        new AdminVerificationRequestFindAllResponse.Applicant(42L, "@charles"),
                         UserType.WOOWACOURSE_CREW,
                         "샤를",
                         8,
@@ -90,7 +90,7 @@ class AdminVerificationRequestHttpApiTest {
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data[0].requestId").value(101))
                 .andExpect(jsonPath("$.data[0].applicant.userId").value(42))
-                .andExpect(jsonPath("$.data[0].applicant.handle").value("charles"))
+                .andExpect(jsonPath("$.data[0].applicant.handle").value("@charles"))
                 .andExpect(jsonPath("$.data[0].userType").value("WOOWACOURSE_CREW"))
                 .andExpect(jsonPath("$.data[0].nickname").value("샤를"))
                 .andExpect(jsonPath("$.data[0].cohort").value(8))

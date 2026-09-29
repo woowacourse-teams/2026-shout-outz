@@ -8,7 +8,8 @@ import java.util.List;
 public record UserCommentResponse(
         long commentId,
         UserCommentType type,
-        long targetId,
+        Long feedId,
+        String projectSlug,
         String content,
         Instant createdAt,
         Instant updatedAt,
@@ -26,7 +27,8 @@ public record UserCommentResponse(
         return new UserCommentResponse(
                 comment.commentId(),
                 comment.type(),
-                comment.targetId(),
+                comment.feedId(),
+                comment.projectSlug(),
                 comment.content(),
                 comment.createdAt(),
                 comment.updatedAt(),

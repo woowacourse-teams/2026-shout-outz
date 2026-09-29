@@ -1,8 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 
-import { cohortsQueryOptions, createProjectMutationOptions } from '@/api/project';
+import {
+  cohortsQueryOptions,
+  createProjectMutationOptions,
+  updateProjectMutationOptions,
+} from '@/api/project';
 import { Button, getButtonStyles } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { Footer } from '@/components/Footer';
@@ -12,9 +16,19 @@ import { MemberField } from '@/components/projects/MemberField';
 import { Select } from '@/components/Select';
 import { TechTagField } from '@/components/projects/TechTagField';
 import { ThumbnailField } from '@/components/projects/ThumbnailField';
-import { type ProjectFormErrors, type ProjectFormValues } from '@/types/project';
-import { toProjectCreateRequest, toProjectFormErrors, validateProjectForm } from '@/utils/project';
+import {
+  type ProjectDetail,
+  type ProjectFormErrors,
+  type ProjectFormValues,
+} from '@/types/project';
+import {
+  toProjectCreateRequest,
+  toProjectFormErrors,
+  toProjectUpdateRequest,
+  validateProjectForm,
+} from '@/utils/project';
 import { sessionQuery } from '@/apis/session';
+import { myProfileQuery } from '@/apis/user';
 import { verificationRequestQuery } from '@/apis/verification';
 import { getGithubLoginUrl } from '@/utils/auth';
 import { analytics, toPathPattern } from '@/utils/analytics';
@@ -31,6 +45,39 @@ const EMPTY_FORM: ProjectFormValues = {
   techTags: [],
   members: [],
 };
+
+function toFormValues(project: ProjectDetail, authorHandle: string): ProjectFormValues {
+  return {
+    title: project.title,
+    teamName: project.teamName,
+    tagline: project.tagline,
+    cohort: project.cohort,
+    thumbnailImageId: project.thumbnailImageId ?? null,
+    githubRepositoryUrl: project.githubRepositoryUrl,
+    deploymentUrl: project.deploymentUrl ?? '',
+    descriptionMd: project.descriptionMd ?? '',
+    techTags: project.techTags,
+    members: project.members.flatMap((member) =>
+      member.handle && member.userId != null && member.handle !== authorHandle
+        ? [
+            {
+              userId: member.userId,
+              handle: member.handle,
+              displayName: member.displayName,
+              userType:
+                member.userType === 'WOOWACOURSE_CREW' || member.userType === 'WOOWACOURSE_COACH'
+                  ? member.userType
+                  : 'GENERAL',
+              cohort: member.cohort,
+              track: member.track,
+              avatarUrl: member.avatarUrl,
+            },
+          ]
+        : [],
+    ),
+    serviceStatus: project.serviceStatus,
+  };
+}
 
 /**
  * 프로젝트 등록 페이지.
@@ -79,10 +126,14 @@ export function ProjectCreatePage() {
       />
     );
   }
-  return <VerifiedProjectCreatePage />;
+  if (session.userId == null) {
+    return <ProjectCreateGuard title="로그인이 필요해요." description="다시 로그인해 주세요." />;
+  }
+
+  return <VerifiedProjectCreatePage userId={session.userId} />;
 }
 
-function VerifiedProjectCreatePage() {
+function VerifiedProjectCreatePage({ userId }: { userId: number }) {
   const { data: verification } = useSuspenseQuery(verificationRequestQuery);
 
   if (verification?.status !== 'APPROVED') {
@@ -107,14 +158,28 @@ function VerifiedProjectCreatePage() {
     );
   }
 
-  return <ProjectCreateForm />;
+  return <ProjectForm userId={userId} />;
 }
 
-function ProjectCreateForm() {
+export function ProjectForm({
+  userId,
+  initialProject,
+  onSaved,
+}: {
+  userId: number;
+  initialProject?: ProjectDetail;
+  onSaved?: (approvalStatus: 'APPROVED' | 'PENDING' | 'REJECTED') => void;
+}) {
   const { data: cohorts } = useSuspenseQuery(cohortsQueryOptions());
-  const [values, setValues] = useState<ProjectFormValues>(EMPTY_FORM);
+  const { data: author } = useSuspenseQuery(myProfileQuery(userId));
+  const [values, setValues] = useState<ProjectFormValues>(() =>
+    initialProject ? toFormValues(initialProject, author.handle) : EMPTY_FORM,
+  );
   const [errors, setErrors] = useState<ProjectFormErrors>({});
   const createProject = useMutation(createProjectMutationOptions);
+  const updateProject = useMutation(updateProjectMutationOptions(initialProject?.id ?? 0));
+  const queryClient = useQueryClient();
+  const editing = initialProject !== undefined;
 
   const setField = <Key extends keyof ProjectFormValues>(
     field: Key,
@@ -122,28 +187,46 @@ function ProjectCreateForm() {
   ) => setValues((current) => ({ ...current, [field]: value }));
 
   useEffect(() => {
-    analytics.track({ name: 'project_create_started', from: document.referrer });
-  }, []);
+    if (!editing) analytics.track({ name: 'project_create_started', from: document.referrer });
+  }, [editing]);
 
   const submit = () => {
     const nextErrors = validateProjectForm(values);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-      analytics.track({
-        name: 'project_create_failed',
-        reason: 'VALIDATION',
-        invalidFields: Object.keys(nextErrors),
+      if (!editing) {
+        analytics.track({
+          name: 'project_create_failed',
+          reason: 'VALIDATION',
+          invalidFields: Object.keys(nextErrors),
+        });
+      }
+      return;
+    }
+
+    if (editing) {
+      updateProject.mutate(toProjectUpdateRequest(values, author.handle), {
+        onSuccess: async (result) => {
+          await Promise.all([
+            queryClient.invalidateQueries({
+              queryKey: ['project-detail', String(initialProject.id)],
+            }),
+            queryClient.invalidateQueries({ queryKey: ['project-list'] }),
+            queryClient.invalidateQueries({ queryKey: ['users'] }),
+          ]);
+          onSaved?.(result.approvalStatus);
+        },
       });
       return;
     }
 
-    createProject.mutate(toProjectCreateRequest(values), {
+    createProject.mutate(toProjectCreateRequest(values, author.handle), {
       onSuccess: () =>
         analytics.track({
           name: 'project_create_submitted',
           cohort: values.cohort!,
           techTagCount: values.techTags.length,
-          memberCount: values.members.length,
+          memberCount: values.members.length + 1,
           hasThumbnail: values.thumbnailImageId !== null,
           hasDeploymentUrl: values.deploymentUrl.trim() !== '',
         }),
@@ -162,7 +245,7 @@ function ProjectCreateForm() {
 
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>프로젝트 등록 | shout-outz</title>
+      <title>{`프로젝트 ${editing ? '수정' : '등록'} | shout-outz`}</title>
       <AppGnb />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-12 md:pt-10 md:pb-20">
@@ -171,7 +254,9 @@ function ProjectCreateForm() {
         ) : (
           <>
             <header className="flex flex-col gap-2">
-              <h1 className="text-xl font-bold md:text-2xl">프로젝트 등록</h1>
+              <h1 className="text-xl font-bold md:text-2xl">
+                프로젝트 {editing ? '수정' : '등록'}
+              </h1>
               <p className="text-sm leading-relaxed text-gray-500">
                 우아한테크코스 크루들과 함께 제작한 멋진 프로젝트를 아카이브에 등록해 보세요.
               </p>
@@ -190,18 +275,18 @@ function ProjectCreateForm() {
                     id={id}
                     value={values.title}
                     onChange={(event) => setField('title', event.target.value)}
-                    placeholder="루프 (Loop)"
+                    placeholder="shout-outz"
                   />
                 )}
               </Field>
 
-              <Field label="팀 이름 *" error={errors.teamName}>
+              <Field label="팀 이름" error={errors.teamName}>
                 {(id) => (
                   <Input
                     id={id}
                     value={values.teamName}
                     onChange={(event) => setField('teamName', event.target.value)}
-                    placeholder="루프팀"
+                    placeholder="shout-outz"
                   />
                 )}
               </Field>
@@ -248,7 +333,7 @@ function ProjectCreateForm() {
                     id={id}
                     value={values.githubRepositoryUrl}
                     onChange={(event) => setField('githubRepositoryUrl', event.target.value)}
-                    placeholder="https://github.com/woowacourse-teams/2026-loop"
+                    placeholder="https://github.com/woowacourse-teams/2026-shout-outz"
                   />
                 )}
               </Field>
@@ -263,6 +348,26 @@ function ProjectCreateForm() {
                   />
                 )}
               </Field>
+
+              {editing && (
+                <Field label="서비스 운영 상태">
+                  {() => (
+                    <Select
+                      aria-label="서비스 운영 상태"
+                      value={
+                        values.deploymentUrl.trim() ? (values.serviceStatus ?? 'CLOSED') : 'CLOSED'
+                      }
+                      disabled={!values.deploymentUrl.trim()}
+                      onValueChange={(value) =>
+                        setField('serviceStatus', value as 'OPERATING' | 'CLOSED')
+                      }
+                    >
+                      <Select.Item value="OPERATING">운영 중</Select.Item>
+                      <Select.Item value="CLOSED">운영 종료</Select.Item>
+                    </Select>
+                  )}
+                </Field>
+              )}
 
               <Field label="상세 설명" error={errors.descriptionMd}>
                 {(id) => (
@@ -287,22 +392,30 @@ function ProjectCreateForm() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <p className="text-sm font-medium text-gray-900">참여 팀원 *</p>
+                <p className="text-sm font-medium text-gray-900">참여 팀원</p>
+                <p className="text-xs text-gray-500">
+                  작성자는 자동으로 포함됩니다. 함께한 팀원이 있다면 추가해 주세요.
+                </p>
                 <MemberField
+                  author={author}
                   value={values.members}
                   onChange={(members) => setField('members', members)}
                   error={errors.members}
                 />
               </div>
 
-              {createProject.isError && (
+              {(createProject.isError || updateProject.isError) && (
                 <p role="alert" className="text-sm text-red-600">
-                  프로젝트 등록에 실패했습니다.
+                  프로젝트 {editing ? '수정' : '등록'}에 실패했습니다.
                 </p>
               )}
 
-              <Button type="submit" size="lg" disabled={createProject.isPending}>
-                프로젝트 등록하기
+              <Button
+                type="submit"
+                size="lg"
+                disabled={createProject.isPending || updateProject.isPending}
+              >
+                프로젝트 {editing ? '수정하기' : '등록하기'}
               </Button>
             </form>
           </>

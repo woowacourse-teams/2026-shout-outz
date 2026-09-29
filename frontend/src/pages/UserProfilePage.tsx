@@ -7,8 +7,7 @@ import {
   userProjectsInfiniteQueryOptions,
 } from '@/api/user';
 import { FeedCard } from '@/components/feeds/FeedCard';
-import { Footer } from '@/components/Footer';
-import { AppGnb } from '@/components/AppGnb';
+import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { ProfileHeader } from '@/components/users/ProfileHeader';
 import { ProfileTabs } from '@/components/users/ProfileTabs';
 import { ProjectCard } from '@/components/projects/ProjectCard';
@@ -16,8 +15,10 @@ import { DEFAULT_PROFILE_TAB } from '@/constants/user';
 import { type ProfileTab } from '@/types/user';
 import { sessionQuery } from '@/apis/session';
 import { myProfileSummaryQuery } from '@/apis/user';
+import { verificationRequestQuery } from '@/apis/verification';
 import { getButtonStyles } from '@/components/Button';
 import { analytics } from '@/utils/analytics';
+import { toProjectSlugParam } from '@/utils/project';
 
 const route = getRouteApi('/users/$handle');
 
@@ -45,35 +46,31 @@ export function UserProfilePage() {
   };
 
   return (
-    <div className="bg-background flex min-h-dvh flex-col text-gray-900">
+    <>
       <title>{`${profile.displayName} | shout-outz`}</title>
-      <AppGnb />
+      <ProfileHeader
+        displayName={profile.displayName}
+        userType={profile.userType}
+        cohort={profile.cohort}
+        track={profile.track}
+        bio={profile.bio}
+        githubProfileUrl={profile.githubProfileUrl}
+        blogUrl={profile.blogUrl}
+        avatarUrl={profile.avatarUrl}
+        actions={<MyProfileActions handle={handle} />}
+      />
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 pt-6 pb-12 md:gap-8 md:pt-10 md:pb-20">
-        <ProfileHeader
-          displayName={profile.displayName}
-          cohort={profile.cohort}
-          track={profile.track}
-          bio={profile.bio}
-          githubProfileUrl={profile.githubProfileUrl}
-          blogUrl={profile.blogUrl}
-          avatarUrl={profile.avatarUrl}
-        />
+      <ProfileTabs
+        value={currentTab}
+        projectCount={profile.counts.projects}
+        feedCount={profile.counts.feeds}
+        onChange={changeTab}
+      />
 
-        <MyProfileActions handle={handle} />
-
-        <ProfileTabs
-          value={currentTab}
-          projectCount={profile.counts.projects}
-          feedCount={profile.counts.feeds}
-          onChange={changeTab}
-        />
-
+      <AsyncBoundary key={currentTab}>
         {currentTab === 'projects' ? <ProjectTab handle={handle} /> : <FeedTab handle={handle} />}
-      </main>
-
-      <Footer />
-    </div>
+      </AsyncBoundary>
+    </>
   );
 }
 
@@ -84,11 +81,18 @@ function MyProfileActions({ handle }: { handle: string }) {
     ...myProfileSummaryQuery(session.data?.userId ?? 0),
     enabled: authenticated,
   });
+  const isMyProfile = me.data?.handle === handle;
+  const verification = useQuery({
+    ...verificationRequestQuery,
+    enabled: isMyProfile,
+  });
 
-  if (me.data?.handle !== handle) return null;
+  if (!isMyProfile || verification.isPending || verification.data?.status === 'APPROVED') {
+    return null;
+  }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="shrink-0">
       <Link to="/mypage/verification" className={getButtonStyles({ variant: 'outline' })}>
         구성원 인증
       </Link>
@@ -106,20 +110,47 @@ function ProjectTab({ handle }: { handle: string }) {
         <p className="py-16 text-center text-sm text-gray-500">등록한 프로젝트가 없습니다.</p>
       ) : (
         <ul className="grid grid-cols-1 gap-x-5 gap-y-8 md:grid-cols-2">
-          {projects.map((project) => (
-            <li key={project.id} className="min-w-0">
+          {projects.map((project) => {
+            const card = (
               <ProjectCard
                 title={project.title}
                 tagline={project.tagline}
                 cohort={project.cohort}
+                approvalStatus={project.approvalStatus}
+                rejectReason={project.rejectReason}
                 likeCount={project.likeCount}
+                likedByMe={project.likedByMe}
                 commentCount={project.commentCount}
                 techTags={project.techTags}
                 thumbnailUrl={project.thumbnailUrl}
                 members={project.members}
               />
-            </li>
-          ))}
+            );
+
+            return (
+              <li key={project.id} className="min-w-0">
+                <Link
+                  to="/projects/$slug"
+                  params={{ slug: toProjectSlugParam(project.slug) }}
+                  className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
+                  onClick={() => {
+                    analytics.track({
+                      name: 'card_clicked',
+                      target: 'project',
+                      surface: 'profile',
+                    });
+                    analytics.track({
+                      name: 'project_detail_opened',
+                      projectId: project.id,
+                      from: 'profile',
+                    });
+                  }}
+                >
+                  {card}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
       {query.hasNextPage && (

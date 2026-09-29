@@ -3,9 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 
 import { logoutMutation, sessionQuery } from '@/apis/session';
-import { myProfileSummaryQuery } from '@/apis/user';
+import { myProfileQuery, myProfileSummaryQuery } from '@/apis/user';
 import { AuthSheet } from '@/components/auth/AuthSheet';
 import { Button } from '@/components/Button';
+import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
 import { useModal } from '@/hooks/useModal';
 import { getApiErrorMessage } from '@/utils/error';
 
@@ -17,6 +18,10 @@ export function AuthActions() {
   const authenticated = session.data?.status === 'AUTHENTICATED' && session.data.userId !== null;
   const profile = useQuery({
     ...myProfileSummaryQuery(session.data?.userId ?? 0),
+    enabled: authenticated,
+  });
+  const fullProfile = useQuery({
+    ...myProfileQuery(session.data?.userId ?? 0),
     enabled: authenticated,
   });
   const logout = useMutation({
@@ -40,9 +45,15 @@ export function AuthActions() {
         {authenticated && (
           <Link
             to="/users"
-            className="hidden text-sm font-medium text-gray-700 hover:text-gray-900 sm:inline"
+            className="hidden items-center gap-1 text-sm font-medium text-gray-700 hover:text-gray-900 sm:inline-flex"
           >
             {profile.data?.displayName ?? '로그인됨'}
+            {fullProfile.data && (
+              <CrewStatusBadge
+                userType={fullProfile.data.userType}
+                cohort={fullProfile.data.cohort}
+              />
+            )}
           </Link>
         )}
         <Button

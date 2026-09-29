@@ -34,7 +34,10 @@ import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.project.application.ProjectSlugResolver;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -55,6 +58,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ProjectCommentServiceTest {
 
     private static final long PROJECT_ID = 100L;
+    private static final String SLUG = "loop";
     private static final long AUTHOR_ID = 7L;
     private static final long PARENT_ID = 301L;
     private static final long COMMENT_ID = 501L;
@@ -65,6 +69,9 @@ class ProjectCommentServiceTest {
     private ProjectRepository projectRepository;
 
     @Mock
+    private ProjectSlugResolver projectSlugResolver;
+
+    @Mock
     private ProjectCommentRepository projectCommentRepository;
 
     @Mock
@@ -72,6 +79,9 @@ class ProjectCommentServiceTest {
 
     @Mock
     private UserProfileRepository userProfileRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private MediaUrlResolver mediaUrlResolver;
@@ -85,12 +95,15 @@ class ProjectCommentServiceTest {
     void setUp() {
         projectCommentService = new ProjectCommentService(
                 projectRepository,
+                projectSlugResolver,
                 projectCommentRepository,
                 projectCommentQueryRepository,
                 userProfileRepository,
                 mediaUrlResolver,
-                projectCommentReactionRepository
+                projectCommentReactionRepository,
+                userRepository
         );
+        lenient().when(projectSlugResolver.resolveId(SLUG)).thenReturn(PROJECT_ID);
         lenient().when(mediaUrlResolver.resolve(10L))
                 .thenReturn(URI.create("https://cdn.example.com/media/10/display"));
     }
@@ -104,7 +117,7 @@ class ProjectCommentServiceTest {
                 .thenReturn(savedComment(null));
 
         ProjectCommentCreateResponse result = projectCommentService.create(
-                PROJECT_ID,
+                SLUG,
                 AUTHOR_ID,
                 new ProjectCommentCreateRequest("  좋은 프로젝트네요.  ", null)
         );
@@ -112,6 +125,7 @@ class ProjectCommentServiceTest {
         assertThat(result.id()).isEqualTo(501L);
         assertThat(result.content()).isEqualTo("좋은 프로젝트네요.");
         assertThat(result.author().userId()).isEqualTo(AUTHOR_ID);
+        assertThat(result.author().handle()).isEqualTo("@author7");
         assertThat(result.author().displayName()).isEqualTo("샤라웃 운영팀");
         assertThat(result.author().avatarUrl())
                 .isEqualTo("https://cdn.example.com/media/10/display");
@@ -138,7 +152,7 @@ class ProjectCommentServiceTest {
                 .thenReturn(savedComment(PARENT_ID));
 
         ProjectCommentCreateResponse result = projectCommentService.create(
-                PROJECT_ID,
+                SLUG,
                 AUTHOR_ID,
                 new ProjectCommentCreateRequest("답글입니다.", PARENT_ID)
         );
@@ -186,7 +200,7 @@ class ProjectCommentServiceTest {
         givenAuthor(AUTHOR_ID + 1, "답글 작성자", 11L);
 
         ProjectCommentFindResponse result = projectCommentService.findAll(
-                PROJECT_ID,
+                SLUG,
                 new ProjectCommentFindRequest(null, 5, "LATEST"),
                 null
         );
@@ -227,7 +241,7 @@ class ProjectCommentServiceTest {
         givenAuthor(AUTHOR_ID + 1, "다른 이름", 11L);
 
         ProjectCommentFindResponse result = projectCommentService.findAll(
-                PROJECT_ID,
+                SLUG,
                 new ProjectCommentFindRequest(null, 5, "LATEST"),
                 AUTHOR_ID
         );
@@ -256,7 +270,7 @@ class ProjectCommentServiceTest {
         givenAuthor();
 
         ProjectCommentFindResponse result = projectCommentService.findAll(
-                PROJECT_ID,
+                SLUG,
                 new ProjectCommentFindRequest(null, 1, "OLDEST"),
                 null
         );
@@ -275,7 +289,7 @@ class ProjectCommentServiceTest {
         );
 
         assertThatThrownBy(() -> projectCommentService.findAll(
-                PROJECT_ID,
+                SLUG,
                 new ProjectCommentFindRequest(cursor, 5, "OLDEST"),
                 null
         )).isInstanceOfSatisfying(InvalidInputException.class,
@@ -292,7 +306,7 @@ class ProjectCommentServiceTest {
         when(projectRepository.existsPublicById(PROJECT_ID)).thenReturn(false);
 
         assertThatThrownBy(() -> projectCommentService.findAll(
-                PROJECT_ID,
+                SLUG,
                 new ProjectCommentFindRequest(null, 5, "LATEST"),
                 null
         )).isInstanceOfSatisfying(EntityNotFoundException.class,
@@ -307,7 +321,7 @@ class ProjectCommentServiceTest {
         when(projectRepository.existsPublicById(PROJECT_ID)).thenReturn(false);
 
         assertThatThrownBy(() -> projectCommentService.create(
-                PROJECT_ID,
+                SLUG,
                 AUTHOR_ID,
                 new ProjectCommentCreateRequest("댓글", null)
         )).isInstanceOfSatisfying(EntityNotFoundException.class,
@@ -334,7 +348,7 @@ class ProjectCommentServiceTest {
         ));
 
         assertThatThrownBy(() -> projectCommentService.create(
-                PROJECT_ID,
+                SLUG,
                 AUTHOR_ID,
                 new ProjectCommentCreateRequest("답글", PARENT_ID)
         )).isInstanceOfSatisfying(EntityNotFoundException.class,
@@ -362,7 +376,7 @@ class ProjectCommentServiceTest {
         ));
 
         assertThatThrownBy(() -> projectCommentService.create(
-                PROJECT_ID,
+                SLUG,
                 AUTHOR_ID,
                 new ProjectCommentCreateRequest("답글", PARENT_ID)
         )).isInstanceOfSatisfying(EntityNotFoundException.class,
@@ -390,7 +404,7 @@ class ProjectCommentServiceTest {
         ));
 
         assertThatThrownBy(() -> projectCommentService.create(
-                PROJECT_ID,
+                SLUG,
                 AUTHOR_ID,
                 new ProjectCommentCreateRequest("답글", PARENT_ID)
         )).isInstanceOfSatisfying(BadRequestException.class,
@@ -423,7 +437,7 @@ class ProjectCommentServiceTest {
         ));
 
         ProjectCommentUpdateResponse result = projectCommentService.update(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 AUTHOR_ID,
                 new ProjectCommentUpdateRequest("  수정된 댓글  ")
@@ -465,7 +479,7 @@ class ProjectCommentServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         ProjectCommentDeleteResponse result = projectCommentService.delete(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 AUTHOR_ID
         );
@@ -495,7 +509,7 @@ class ProjectCommentServiceTest {
         givenAuthor();
 
         ProjectCommentUpdateResponse result = projectCommentService.update(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 AUTHOR_ID,
                 new ProjectCommentUpdateRequest("  기존 댓글  ")
@@ -514,7 +528,7 @@ class ProjectCommentServiceTest {
         when(projectRepository.existsPublicById(PROJECT_ID)).thenReturn(false);
 
         assertThatThrownBy(() -> projectCommentService.update(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 AUTHOR_ID,
                 new ProjectCommentUpdateRequest("수정된 댓글")
@@ -539,7 +553,7 @@ class ProjectCommentServiceTest {
         )));
 
         assertThatThrownBy(() -> projectCommentService.update(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 AUTHOR_ID,
                 new ProjectCommentUpdateRequest("수정된 댓글")
@@ -564,7 +578,7 @@ class ProjectCommentServiceTest {
         )));
 
         assertThatThrownBy(() -> projectCommentService.update(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 AUTHOR_ID,
                 new ProjectCommentUpdateRequest("수정된 댓글")
@@ -589,7 +603,7 @@ class ProjectCommentServiceTest {
         )));
 
         assertThatThrownBy(() -> projectCommentService.update(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 AUTHOR_ID,
                 new ProjectCommentUpdateRequest("수정된 댓글")
@@ -606,7 +620,7 @@ class ProjectCommentServiceTest {
         when(projectRepository.existsPublicById(PROJECT_ID)).thenReturn(false);
 
         assertThatThrownBy(() -> projectCommentService.delete(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 AUTHOR_ID
         )).isInstanceOfSatisfying(EntityNotFoundException.class,
@@ -629,7 +643,7 @@ class ProjectCommentServiceTest {
         )));
 
         assertThatThrownBy(() -> projectCommentService.delete(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 AUTHOR_ID
         )).isInstanceOfSatisfying(EntityNotFoundException.class,
@@ -653,7 +667,7 @@ class ProjectCommentServiceTest {
         )));
 
         assertThatThrownBy(() -> projectCommentService.delete(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 AUTHOR_ID
         )).isInstanceOfSatisfying(EntityNotFoundException.class,
@@ -676,7 +690,7 @@ class ProjectCommentServiceTest {
         )));
 
         assertThatThrownBy(() -> projectCommentService.delete(
-                PROJECT_ID,
+                SLUG,
                 COMMENT_ID,
                 AUTHOR_ID
         )).isInstanceOfSatisfying(ForbiddenException.class,
@@ -702,6 +716,7 @@ class ProjectCommentServiceTest {
                         .avatarImageId(avatarImageId)
                         .build()
         ));
+        when(userRepository.findById(authorId)).thenReturn(Optional.of(User.initialize("@author" + authorId)));
     }
 
     private ProjectComment rootComment() {

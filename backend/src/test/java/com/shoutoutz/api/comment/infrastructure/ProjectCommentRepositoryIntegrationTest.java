@@ -46,7 +46,7 @@ class ProjectCommentRepositoryIntegrationTest {
     @Test
     @DisplayName("프로젝트 댓글을 저장하고 생성·수정 시각과 함께 조회한다")
     void savesAndFindsProjectComment() {
-        User author = userRepository.save(User.initialize("comment-repo-" + uniqueSuffix()));
+        User author = userRepository.save(User.initialize("@comment-repo-" + uniqueSuffix()));
         Project project = projectRepository.save(
                 project(author.getId()),
                 List.of(),
@@ -71,7 +71,7 @@ class ProjectCommentRepositoryIntegrationTest {
     @Test
     @DisplayName("기존 프로젝트 댓글의 내용을 수정하고 생성 시각은 유지한다")
     void updatesProjectComment() {
-        User author = userRepository.save(User.initialize("comment-update-" + uniqueSuffix()));
+        User author = userRepository.save(User.initialize("@comment-update-" + uniqueSuffix()));
         Project project = projectRepository.save(
                 project(author.getId()),
                 List.of(),
@@ -94,7 +94,7 @@ class ProjectCommentRepositoryIntegrationTest {
     @Test
     @DisplayName("프로젝트 댓글을 soft delete하면 삭제·수정 시각을 갱신하고 기존 대댓글을 보존한다")
     void softDeletesProjectComment() {
-        User author = userRepository.save(User.initialize("comment-delete-" + uniqueSuffix()));
+        User author = userRepository.save(User.initialize("@comment-delete-" + uniqueSuffix()));
         Project project = projectRepository.save(
                 project(author.getId()),
                 List.of(),
@@ -134,7 +134,7 @@ class ProjectCommentRepositoryIntegrationTest {
     @Test
     @DisplayName("루트 댓글을 정렬 기준과 크기에 따라 조회하고 대댓글을 부모 ID로 조회한다")
     void findsRootPageAndReplies() {
-        User author = userRepository.save(User.initialize("comment-list-" + uniqueSuffix()));
+        User author = userRepository.save(User.initialize("@comment-list-" + uniqueSuffix()));
         Project project = projectRepository.save(
                 project(author.getId()),
                 List.of(),

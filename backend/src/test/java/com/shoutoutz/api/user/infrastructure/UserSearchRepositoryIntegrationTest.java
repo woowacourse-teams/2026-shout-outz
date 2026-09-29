@@ -44,19 +44,19 @@ class UserSearchRepositoryIntegrationTest {
     @Test
     @DisplayName("본인을 포함해 이름이나 handle이 일치하는 ACTIVE 크루와 코치를 관련도순으로 검색한다")
     void searchWoowaMember() {
-        User requester = saveUser("jack-requester", UserStatus.ACTIVE);
+        User requester = saveUser("@jack-requester", UserStatus.ACTIVE);
         saveProfile(requester.getId(), "Jack Owner", UserType.WOOWACOURSE_CREW);
-        User exactlyMatched = saveUser("dahye", UserStatus.ACTIVE);
+        User exactlyMatched = saveUser("@dahye", UserStatus.ACTIVE);
         saveProfile(exactlyMatched.getId(), "Jack", UserType.WOOWACOURSE_CREW);
-        User prefixMatched = saveUser("jack-dev", UserStatus.ACTIVE);
+        User prefixMatched = saveUser("@jack-dev", UserStatus.ACTIVE);
         saveProfile(prefixMatched.getId(), "Jack Zebra", UserType.WOOWACOURSE_CREW);
-        User coach = saveUser("coach-jack", UserStatus.ACTIVE);
+        User coach = saveUser("@coach-jack", UserStatus.ACTIVE);
         saveProfile(coach.getId(), "Jack Coach", UserType.WOOWACOURSE_COACH);
-        User containsMatched = saveUser("my-jack-dev", UserStatus.ACTIVE);
+        User containsMatched = saveUser("@my-jack-dev", UserStatus.ACTIVE);
         saveProfile(containsMatched.getId(), "다른 크루", UserType.WOOWACOURSE_CREW);
-        User general = saveUser("jack-general", UserStatus.ACTIVE);
+        User general = saveUser("@jack-general", UserStatus.ACTIVE);
         saveProfile(general.getId(), "Jack General", UserType.GENERAL);
-        User banned = saveUser("jack-banned", UserStatus.BANNED);
+        User banned = saveUser("@jack-banned", UserStatus.BANNED);
         saveProfile(banned.getId(), "Jack Banned", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
@@ -82,11 +82,11 @@ class UserSearchRepositoryIntegrationTest {
     @Test
     @DisplayName("커서의 정렬 키 다음에 위치한 우테코 사용자만 검색한다")
     void searchWoowaMemberAfterCursor() {
-        User requester = saveUser("cursor-requester", UserStatus.ACTIVE);
+        User requester = saveUser("@cursor-requester", UserStatus.ACTIVE);
         saveProfile(requester.getId(), "요청자", UserType.WOOWACOURSE_CREW);
-        User first = saveUser("cursor-jack-one", UserStatus.ACTIVE);
+        User first = saveUser("@cursor-jack-one", UserStatus.ACTIVE);
         saveProfile(first.getId(), "가 크루", UserType.WOOWACOURSE_CREW);
-        User second = saveUser("cursor-jack-two", UserStatus.ACTIVE);
+        User second = saveUser("@cursor-jack-two", UserStatus.ACTIVE);
         saveProfile(second.getId(), "나 크루", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 
@@ -116,11 +116,11 @@ class UserSearchRepositoryIntegrationTest {
     @Test
     @DisplayName("LIKE 와일드카드를 일반 검색 문자로 취급한다")
     void escapeLikeWildcard() {
-        User requester = saveUser("wildcard-requester", UserStatus.ACTIVE);
+        User requester = saveUser("@wildcard-requester", UserStatus.ACTIVE);
         saveProfile(requester.getId(), "요청자", UserType.WOOWACOURSE_CREW);
-        User matched = saveUser("wildcard-matched", UserStatus.ACTIVE);
+        User matched = saveUser("@wildcard-matched", UserStatus.ACTIVE);
         saveProfile(matched.getId(), "성장률 100%", UserType.WOOWACOURSE_CREW);
-        User unmatched = saveUser("wildcard-unmatched", UserStatus.ACTIVE);
+        User unmatched = saveUser("@wildcard-unmatched", UserStatus.ACTIVE);
         saveProfile(unmatched.getId(), "일반 크루", UserType.WOOWACOURSE_CREW);
         userProfileJpaRepository.flush();
 

@@ -3,7 +3,7 @@ package com.shoutoutz.api.comment.presentation.dto.response;
 import com.shoutoutz.api.comment.domain.ProjectCommentReactionType;
 
 public record ProjectCommentReactionResponse(
-        long projectId,
+        String slug,
         long commentId,
         ProjectCommentReactionType type,
         boolean active,

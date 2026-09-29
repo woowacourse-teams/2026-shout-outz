@@ -14,6 +14,7 @@ import com.shoutoutz.api.project.domain.ProjectDeletionRepository;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ServiceStatus;
+import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectJpaRepository;
@@ -62,7 +63,7 @@ class ProjectRepositoryIntegrationTest {
     @Test
     @DisplayName("사전 검사를 거치지 않은 같은 slug 저장이 UNIQUE 제약에 걸리면 slug 중복 예외로 변환한다")
     void convertsSlugUniqueViolationToDuplicateSlugException() {
-        Long registeredBy = userRepository.save(User.initialize("slugrace")).getId();
+        Long registeredBy = userRepository.save(User.initialize("@slugrace")).getId();
         String repositoryName = "2026-race-" + UUID.randomUUID().toString().substring(0, 8);
         projectRepository.save(project(registeredBy, repositoryName), List.of(), List.of());
 
@@ -86,9 +87,38 @@ class ProjectRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("승인 상태 전이는 예상한 상태의 활성 프로젝트에서만 성공한다")
+    void transitionsApprovalStatusOnlyFromExpectedActiveStatus() {
+        Long registeredBy = userRepository.save(User.initialize("@transition")).getId();
+        Project pending = projectRepository.save(
+                project(registeredBy, uniqueRepositoryName()),
+                List.of(),
+                List.of()
+        );
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(projectRepository.transitionApprovalStatus(
+                pending.getId(),
+                ApprovalStatus.PENDING,
+                ApprovalStatus.APPROVED
+        )).isTrue();
+        assertThat(projectRepository.transitionApprovalStatus(
+                pending.getId(),
+                ApprovalStatus.PENDING,
+                ApprovalStatus.REJECTED
+        )).isFalse();
+        entityManager.clear();
+        assertThat(projectRepository.findActiveById(pending.getId()))
+                .get()
+                .extracting(Project::getApprovalStatus)
+                .isEqualTo(ApprovalStatus.APPROVED);
+    }
+
+    @Test
     @DisplayName("등록자 본인의 프로젝트는 심사 중이어도 삭제되고 이력에 남길 정보를 돌려준다")
     void softDeletesOwnPendingProject() {
-        Long registeredBy = userRepository.save(User.initialize("owner")).getId();
+        Long registeredBy = userRepository.save(User.initialize("@owner")).getId();
         ProjectEntity pending = projectJpaRepository.save(
                 projectEntity(ApprovalStatus.PENDING, null, registeredBy)
         );
@@ -108,8 +138,8 @@ class ProjectRepositoryIntegrationTest {
     @Test
     @DisplayName("이미 삭제된 프로젝트와 다른 사용자의 프로젝트는 삭제되지 않는다")
     void doesNotSoftDeleteDeletedProjectOrOtherUsersProject() {
-        Long registeredBy = userRepository.save(User.initialize("owner2")).getId();
-        Long otherUser = userRepository.save(User.initialize("other")).getId();
+        Long registeredBy = userRepository.save(User.initialize("@owner2")).getId();
+        Long otherUser = userRepository.save(User.initialize("@other")).getId();
         ProjectEntity project = projectJpaRepository.save(
                 projectEntity(ApprovalStatus.APPROVED, null, registeredBy)
         );
@@ -128,7 +158,7 @@ class ProjectRepositoryIntegrationTest {
     @Test
     @DisplayName("등록자 본인의 삭제된 프로젝트는 미복구 이력, 복구 기한과 함께 조회된다")
     void findsRestorableProjectWithPendingDeletion() {
-        Long registeredBy = userRepository.save(User.initialize("restorer")).getId();
+        Long registeredBy = userRepository.save(User.initialize("@restorer")).getId();
         ProjectEntity project = projectJpaRepository.save(
                 projectEntity(ApprovalStatus.APPROVED, null, registeredBy)
         );
@@ -151,8 +181,8 @@ class ProjectRepositoryIntegrationTest {
     @Test
     @DisplayName("삭제되지 않은 프로젝트와 다른 사용자의 삭제된 프로젝트는 복구 대상으로 조회되지 않는다")
     void doesNotFindNotDeletedProjectOrOtherUsersProject() {
-        Long registeredBy = userRepository.save(User.initialize("restorer2")).getId();
-        Long otherUser = userRepository.save(User.initialize("other2")).getId();
+        Long registeredBy = userRepository.save(User.initialize("@restorer2")).getId();
+        Long otherUser = userRepository.save(User.initialize("@other2")).getId();
         ProjectEntity notDeleted = projectJpaRepository.save(
                 projectEntity(ApprovalStatus.APPROVED, null, registeredBy)
         );
@@ -173,7 +203,7 @@ class ProjectRepositoryIntegrationTest {
     @Test
     @DisplayName("삭제된 프로젝트를 복구하면 승인 상태를 돌려주고 삭제 시각이 지워지며, 이미 복구된 프로젝트는 빈 값이다")
     void restoresDeletedProjectOnlyOnce() {
-        Long registeredBy = userRepository.save(User.initialize("restorer3")).getId();
+        Long registeredBy = userRepository.save(User.initialize("@restorer3")).getId();
         ProjectEntity project = projectJpaRepository.save(
                 projectEntity(ApprovalStatus.APPROVED, null, registeredBy)
         );
@@ -190,7 +220,7 @@ class ProjectRepositoryIntegrationTest {
     @Test
     @DisplayName("수정해도 조회수와 스타 수, 등록 시각은 그대로 남는다")
     void keepsCountersOnUpdate() {
-        Long registeredBy = userRepository.save(User.initialize("counter")).getId();
+        Long registeredBy = userRepository.save(User.initialize("@counter")).getId();
         Project saved = projectRepository.save(project(registeredBy, uniqueRepositoryName()), List.of(), List.of());
         entityManager.flush();
         entityManager.clear();
@@ -218,8 +248,8 @@ class ProjectRepositoryIntegrationTest {
     @Test
     @DisplayName("수정하면 기술 스택과 팀원을 받은 목록으로 통째로 바꾸고, 목록 순서를 노출 순서로 저장한다")
     void replacesTechTagsAndMembersOnUpdate() {
-        Long registeredBy = userRepository.save(User.initialize("replace")).getId();
-        Long teammate = userRepository.save(User.initialize("replaceteam")).getId();
+        Long registeredBy = userRepository.save(User.initialize("@replace")).getId();
+        Long teammate = userRepository.save(User.initialize("@replaceteam")).getId();
         List<Long> techTagIds = techTagIds();
         Project saved = projectRepository.save(
                 project(registeredBy, uniqueRepositoryName()),
@@ -242,6 +272,21 @@ class ProjectRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("slug 로 찾는 id 는 승인 상태와 삭제 여부를 보지 않고, 없는 slug 는 빈 값이다")
+    void findsIdBySlugRegardlessOfApprovalAndDeletion() {
+        List<ProjectEntity> projects = projectJpaRepository.saveAll(List.of(
+                projectEntity(ApprovalStatus.APPROVED, null),
+                projectEntity(ApprovalStatus.PENDING, null),
+                projectEntity(ApprovalStatus.APPROVED, Instant.parse("2026-09-14T00:00:00Z"))
+        ));
+
+        projects.forEach(project -> assertThat(projectRepository.findIdBySlug(new Slug(project.getSlug())))
+                .contains(project.getId()));
+        assertThat(projectRepository.findIdBySlug(new Slug("no-such-" + UUID.randomUUID().toString().substring(0, 8))))
+                .isEmpty();
+    }
+
+    @Test
     @DisplayName("삭제된 프로젝트는 조회되지 않는다")
     void doesNotFindDeletedProject() {
         ProjectEntity deleted = projectJpaRepository.save(
@@ -255,7 +300,7 @@ class ProjectRepositoryIntegrationTest {
     @Test
     @DisplayName("다른 프로젝트가 쓰는 리포지토리로 바꾸면 중복 예외로 변환한다")
     void convertsRepositoryUniqueViolationOnUpdate() {
-        Long registeredBy = userRepository.save(User.initialize("dupupdate")).getId();
+        Long registeredBy = userRepository.save(User.initialize("@dupupdate")).getId();
         Project mine = projectRepository.save(project(registeredBy, uniqueRepositoryName()), List.of(), List.of());
         Project other = projectRepository.save(project(registeredBy, uniqueRepositoryName()), List.of(), List.of());
 

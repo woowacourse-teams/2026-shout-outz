@@ -1,6 +1,7 @@
 import { type ProjectSummary } from '@/types/project';
 import { type Feed, type FeedAuthor } from '@/types/feed';
 import { type UserProfile } from '@/types/user';
+import { getMockProjectReaction } from '@/api/mock/reactions';
 
 /** 실제 서버가 준비되기 전까지 MSW 핸들러가 내려줄 프로필 데이터. 백엔드가 뜨면 이 파일은 사라진다. */
 const PROFILE: UserProfile = {
@@ -9,12 +10,12 @@ const PROFILE: UserProfile = {
   displayName: '정우진',
   userType: 'WOOWACOURSE_CREW',
   track: 'BACKEND',
-  cohort: 6,
+  cohort: 8,
   bio: '대규모 트래픽 분산 처리와 데이터 정합성에 집착하는 백엔드 개발자입니다.',
   avatarUrl: null,
   githubProfileUrl: 'https://github.com/woojin-dev',
   blogUrl: 'https://woojin.log',
-  counts: { projects: 2, feeds: 18 },
+  counts: { projects: 3, feeds: 18 },
 };
 
 const crewMember = (
@@ -22,11 +23,13 @@ const crewMember = (
   handle: string,
   displayName: string,
   track: 'BACKEND' | 'FRONTEND' | 'ANDROID',
+  cohort = 6,
 ) => ({
   userId,
   handle,
   displayName,
-  cohort: 6,
+  cohort,
+  userType: 'WOOWACOURSE_CREW' as const,
   track,
   avatarUrl: null,
   githubAvatarUrl: null,
@@ -36,6 +39,7 @@ const crewMember = (
 const PROJECTS: ProjectSummary[] = [
   {
     id: 1,
+    approvalStatus: 'APPROVED',
     slug: 'moamoa',
     title: '모아모아 (MoaMoa)',
     tagline: '사진 한 장으로 영수증 내역을 자동 분리하고 맞춤 정산하는 웹 서비스',
@@ -50,10 +54,11 @@ const PROJECTS: ProjectSummary[] = [
       { id: 1, displayName: 'React' },
       { id: 3, displayName: 'Spring Boot' },
     ],
-    members: [crewMember(10, 'woojin', '정우진', 'BACKEND')],
+    members: [crewMember(10, 'woojin', '정우진', 'BACKEND', 8)],
   },
   {
     id: 2,
+    approvalStatus: 'PENDING',
     slug: 'dropit',
     title: '드랍잇 (Dropit)',
     tagline: '팀 회고를 한곳에 모아 공유하는 협업 도구',
@@ -66,8 +71,28 @@ const PROJECTS: ProjectSummary[] = [
     commentCount: 5,
     techTags: [{ id: 2, displayName: 'TypeScript' }],
     members: [
-      crewMember(10, 'woojin', '정우진', 'BACKEND'),
+      crewMember(10, 'woojin', '정우진', 'BACKEND', 8),
       crewMember(11, 'dohyun', '김도현', 'FRONTEND'),
+    ],
+  },
+  {
+    id: 3,
+    approvalStatus: 'REJECTED',
+    rejectReason: '프로젝트 소개에 해결하려는 문제와 핵심 기능을 구체적으로 적어 주세요.',
+    slug: 'study-mate',
+    title: '스터디 메이트',
+    tagline: '함께 공부할 크루를 찾고 학습 기록을 나누는 서비스',
+    cohort: 7,
+    thumbnailUrl: null,
+    likeCount: 0,
+    likedByMe: false,
+    bookmarkCount: 0,
+    bookmarkedByMe: false,
+    commentCount: 0,
+    techTags: [{ id: 1, displayName: 'React' }],
+    members: [
+      crewMember(10, 'woojin', '정우진', 'BACKEND', 8),
+      crewMember(12, 'jimin', '이지민', 'FRONTEND', 7),
     ],
   },
 ];
@@ -77,7 +102,7 @@ const feedAuthor = {
   displayName: '정우진',
   userType: 'WOOWACOURSE_CREW',
   track: 'BACKEND',
-  cohort: 6,
+  cohort: 8,
   avatarUrl: null,
   userId: 10,
 } satisfies FeedAuthor;
@@ -120,7 +145,12 @@ export function getUserProfile(handle: string): UserProfile | undefined {
 }
 
 export function getUserProjects(handle: string): ProjectSummary[] {
-  return handle === PROFILE.handle ? PROJECTS : [];
+  return handle === PROFILE.handle
+    ? PROJECTS.map((project) => ({
+        ...project,
+        ...getMockProjectReaction(project.id, project.likeCount),
+      }))
+    : [];
 }
 
 export function getUserFeeds(handle: string): Feed[] {

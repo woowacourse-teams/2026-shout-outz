@@ -52,7 +52,7 @@ class UserProfileRepositoryIntegrationTest {
     @Test
     @DisplayName("사용자 프로필을 저장하고 사용자 ID로 조회한다")
     void savesAndFindsUserProfileByUserId() {
-        User savedUser = userRepository.save(User.initialize("zzaekkii-profile"));
+        User savedUser = userRepository.save(User.initialize("@zzaekkii-profile"));
         UserProfile profile = UserProfile.initialize(savedUser.getId(), "재키");
 
         UserProfile savedProfile = userProfileRepository.save(profile);
@@ -69,7 +69,7 @@ class UserProfileRepositoryIntegrationTest {
     @Test
     @DisplayName("기존 사용자 프로필의 수정 정보를 저장한다")
     void updatesUserProfile() {
-        User savedUser = userRepository.save(User.initialize("zzaekkii-profile-update"));
+        User savedUser = userRepository.save(User.initialize("@zzaekkii-profile-update"));
         UserProfile profile = userProfileRepository.save(
                 UserProfile.initialize(savedUser.getId(), "재키")
         );
@@ -92,7 +92,7 @@ class UserProfileRepositoryIntegrationTest {
     @Test
     @DisplayName("프로필의 선택 정보를 null로 수정하면 기존 값을 제거한다")
     void clearsOptionalUserProfileFields() {
-        User savedUser = userRepository.save(User.initialize("zzaekkii-profile-clear"));
+        User savedUser = userRepository.save(User.initialize("@zzaekkii-profile-clear"));
         Instant now = Instant.now();
         MediaMetadata avatar = mediaMetadataRepository.save(MediaMetadata.initialize(
                 MediaPurpose.USER_AVATAR,
@@ -137,7 +137,7 @@ class UserProfileRepositoryIntegrationTest {
     @Test
     @DisplayName("데이터베이스는 우아한테크코스 코치의 기수를 허용하지 않는다")
     void rejectsCohortForWoowacourseCoachAtDatabase() {
-        User savedUser = userRepository.save(User.initialize("sangjun-coach"));
+        User savedUser = userRepository.save(User.initialize("@sangjun-coach"));
         UserProfileEntity profileEntity = UserProfileEntity.builder()
                 .userId(savedUser.getId())
                 .displayName("상준")
@@ -153,7 +153,7 @@ class UserProfileRepositoryIntegrationTest {
     @Test
     @DisplayName("데이터베이스는 200자를 초과하는 한 줄 소개를 허용하지 않는다")
     void rejectsBioLongerThanTwoHundredCharactersAtDatabase() {
-        User savedUser = userRepository.save(User.initialize("long-bio-user"));
+        User savedUser = userRepository.save(User.initialize("@long-bio-user"));
         UserProfileEntity profileEntity = UserProfileEntity.builder()
                 .userId(savedUser.getId())
                 .displayName("재키")
@@ -168,7 +168,7 @@ class UserProfileRepositoryIntegrationTest {
     @Test
     @DisplayName("데이터베이스는 정의되지 않은 트랙을 허용하지 않는다")
     void rejectsUndefinedTrackAtDatabase() {
-        User savedUser = userRepository.save(User.initialize("invalid-track-user"));
+        User savedUser = userRepository.save(User.initialize("@invalid-track-user"));
 
         assertThatThrownBy(() -> jdbcTemplate.update(
                 """

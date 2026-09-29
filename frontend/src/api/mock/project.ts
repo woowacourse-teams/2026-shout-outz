@@ -35,6 +35,7 @@ const crew = (
 });
 
 const CREWS: CrewSearchItem[] = [
+  crew('woojin', '정우진', 'BACKEND', 8),
   crew('zzaekkii', '재키', 'BACKEND', 8),
   crew('dhyepark', '두리', 'FRONTEND', 8),
   crew('hoik', '황호익', 'BACKEND', 6),

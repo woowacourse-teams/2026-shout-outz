@@ -49,6 +49,7 @@ export function ProjectList({ filter, onResetFilter }: ProjectListProps) {
                 tagline={project.tagline}
                 cohort={project.cohort}
                 likeCount={project.likeCount}
+                likedByMe={project.likedByMe}
                 commentCount={project.commentCount}
                 techTags={project.techTags}
                 thumbnailUrl={project.thumbnailUrl}

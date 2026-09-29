@@ -87,11 +87,8 @@ class FeedServiceCommandTest {
     }
 
     @ParameterizedTest
-    @EnumSource(
-            value = UserType.class,
-            names = {"WOOWACOURSE_CREW", "WOOWACOURSE_COACH"}
-    )
-    void 크루나_코치는_카테고리와_READY_미디어를_연결해_피드를_작성한다(
+    @EnumSource(UserType.class)
+    void 활성_사용자는_카테고리와_READY_미디어를_연결해_피드를_작성한다(
             UserType userType
     ) {
         FeedSaveRequest request = request();
@@ -118,16 +115,6 @@ class FeedServiceCommandTest {
         assertThat(result.feedId()).isEqualTo(item.feedId());
         verify(feedRepository).saveCategories(10L, List.of(1L, 2L, 3L));
         verify(feedRepository).saveMedia(10L, List.of(20L));
-    }
-
-    @Test
-    void 일반_사용자는_피드를_작성할_수_없다() {
-        givenWriter(UserType.GENERAL);
-
-        assertThatThrownBy(() -> feedService.saveFeed(1L, request()))
-                .isInstanceOf(ForbiddenException.class);
-
-        verify(feedRepository, never()).save(any());
     }
 
     @Test
@@ -293,7 +280,7 @@ class FeedServiceCommandTest {
     private void givenWriter(UserStatus userStatus, UserType userType) {
         User user = User.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(userStatus)
                 .role(UserRole.USER)
                 .build();
@@ -337,7 +324,7 @@ class FeedServiceCommandTest {
                 "제목",
                 "본문",
                 new FeedItem.Author(
-                        "zzaekkii",
+                        "@zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
                         Track.BACKEND,

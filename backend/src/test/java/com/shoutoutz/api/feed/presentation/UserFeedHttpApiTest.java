@@ -58,7 +58,7 @@ class UserFeedHttpApiTest {
     @Test
     @DisplayName("로그인하지 않아도 사용자가 작성한 피드를 조회한다")
     void findsUserFeeds() throws Exception {
-        given(feedService.findAllByUser("zzaekkii", new UserFeedFindRequest("current-cursor", 20)))
+        given(feedService.findAllByUser("@zzaekkii", new UserFeedFindRequest("current-cursor", 20)))
                 .willReturn(new FeedFindAllResult(
                         List.of(feed()),
                         "next-cursor",
@@ -70,13 +70,13 @@ class UserFeedHttpApiTest {
                         )
                 ));
 
-        mockMvc.perform(get("/api/v1/users/{handle}/feeds", "zzaekkii")
+        mockMvc.perform(get("/api/v1/users/{handle}/feeds", "@zzaekkii")
                         .queryParam("cursor", "current-cursor")
                         .queryParam("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data[0].feedId").value(10))
-                .andExpect(jsonPath("$.data[0].author.handle").value("zzaekkii"))
+                .andExpect(jsonPath("$.data[0].author.handle").value("@zzaekkii"))
                 .andExpect(jsonPath("$.data[0].author.avatarImageId").value(20L))
                 .andExpect(jsonPath("$.data[0].author.avatarUrl")
                         .value("https://cdn.example.com/media/20/display"))
@@ -96,7 +96,7 @@ class UserFeedHttpApiTest {
                                 .summary(SUMMARY)
                                 .description(DESCRIPTION)
                                 .pathParameters(
-                                        parameterWithName("handle").description("조회할 사용자의 handle")
+                                        parameterWithName("handle").description("@[A-Za-z0-9_-]{2,30} 형식의 조회 대상 사용자 handle")
                                 )
                                 .queryParameters(
                                         parameterWithName("cursor")
@@ -112,23 +112,23 @@ class UserFeedHttpApiTest {
                                 .build())
                 ));
 
-        verify(feedService).findAllByUser("zzaekkii", new UserFeedFindRequest("current-cursor", 20));
+        verify(feedService).findAllByUser("@zzaekkii", new UserFeedFindRequest("current-cursor", 20));
     }
 
     @Test
     @DisplayName("파라미터를 생략하면 기본 조회 조건을 사용한다")
     void usesDefaultParameters() throws Exception {
-        given(feedService.findAllByUser("zzaekkii", new UserFeedFindRequest(null, null)))
+        given(feedService.findAllByUser("@zzaekkii", new UserFeedFindRequest(null, null)))
                 .willReturn(new FeedFindAllResult(List.of(), null, false, 0L, Map.of()));
 
-        mockMvc.perform(get("/api/v1/users/{handle}/feeds", "zzaekkii"))
+        mockMvc.perform(get("/api/v1/users/{handle}/feeds", "@zzaekkii"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andExpect(jsonPath("$.meta.nextCursor").doesNotExist())
                 .andExpect(jsonPath("$.meta.hasNext").value(false))
                 .andExpect(jsonPath("$.meta.totalCount").value(0));
 
-        verify(feedService).findAllByUser("zzaekkii", new UserFeedFindRequest(null, null));
+        verify(feedService).findAllByUser("@zzaekkii", new UserFeedFindRequest(null, null));
     }
 
     @Test
@@ -144,7 +144,7 @@ class UserFeedHttpApiTest {
     @Test
     @DisplayName("조회 개수가 범위를 벗어나면 조회할 수 없다")
     void rejectsInvalidSize() throws Exception {
-        mockMvc.perform(get("/api/v1/users/{handle}/feeds", "zzaekkii")
+        mockMvc.perform(get("/api/v1/users/{handle}/feeds", "@zzaekkii")
                         .queryParam("size", "51"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
@@ -155,10 +155,10 @@ class UserFeedHttpApiTest {
     @Test
     @DisplayName("커서가 올바르지 않으면 조회할 수 없다")
     void rejectsInvalidCursor() throws Exception {
-        given(feedService.findAllByUser("zzaekkii", new UserFeedFindRequest("broken", null)))
+        given(feedService.findAllByUser("@zzaekkii", new UserFeedFindRequest("broken", null)))
                 .willThrow(new BadRequestException(FeedErrorCode.FEED_CURSOR_INVALID));
 
-        mockMvc.perform(get("/api/v1/users/{handle}/feeds", "zzaekkii")
+        mockMvc.perform(get("/api/v1/users/{handle}/feeds", "@zzaekkii")
                         .queryParam("cursor", "broken"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("FEED_CURSOR_INVALID"))
@@ -168,10 +168,10 @@ class UserFeedHttpApiTest {
     @Test
     @DisplayName("존재하지 않는 사용자의 피드는 조회할 수 없다")
     void rejectsUnknownUser() throws Exception {
-        given(feedService.findAllByUser("missing-user", new UserFeedFindRequest(null, null)))
+        given(feedService.findAllByUser("@missing-user", new UserFeedFindRequest(null, null)))
                 .willThrow(new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
 
-        mockMvc.perform(get("/api/v1/users/{handle}/feeds", "missing-user"))
+        mockMvc.perform(get("/api/v1/users/{handle}/feeds", "@missing-user"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("USER_NOT_FOUND"))
                 .andDo(document("user-feed-find-all-not-found", resource(errorResource())));
@@ -185,7 +185,7 @@ class UserFeedHttpApiTest {
                 "사용자 피드 본문",
                 new FeedItem.Author(
                         1L,
-                        "zzaekkii",
+                        "@zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
                         Track.BACKEND,
@@ -208,7 +208,7 @@ class UserFeedHttpApiTest {
                 .summary(SUMMARY)
                 .description(DESCRIPTION)
                 .pathParameters(
-                        parameterWithName("handle").description("조회할 사용자의 handle")
+                        parameterWithName("handle").description("@[A-Za-z0-9_-]{2,30} 형식의 조회 대상 사용자 handle")
                 )
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())

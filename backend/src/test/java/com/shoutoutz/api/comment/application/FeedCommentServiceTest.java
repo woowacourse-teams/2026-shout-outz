@@ -36,6 +36,8 @@ import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -75,6 +77,9 @@ class FeedCommentServiceTest {
     private UserProfileRepository userProfileRepository;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private MediaUrlResolver mediaUrlResolver;
 
     @Mock
@@ -90,7 +95,8 @@ class FeedCommentServiceTest {
                 feedCommentQueryRepository,
                 userProfileRepository,
                 mediaUrlResolver,
-                feedCommentReactionRepository
+                feedCommentReactionRepository,
+                userRepository
         );
         lenient().when(mediaUrlResolver.resolve(10L))
                 .thenReturn(URI.create("https://cdn.example.com/media/10/display"));
@@ -113,6 +119,7 @@ class FeedCommentServiceTest {
         assertThat(result.id()).isEqualTo(501L);
         assertThat(result.content()).isEqualTo("좋은 피드네요.");
         assertThat(result.author().userId()).isEqualTo(AUTHOR_ID);
+        assertThat(result.author().handle()).isEqualTo("@author7");
         assertThat(result.author().displayName()).isEqualTo("샤라웃 운영팀");
         assertThat(result.author().avatarUrl())
                 .isEqualTo("https://cdn.example.com/media/10/display");
@@ -706,6 +713,7 @@ class FeedCommentServiceTest {
                         .avatarImageId(avatarImageId)
                         .build()
         ));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(User.initialize("@author" + userId)));
     }
 
     private FeedComment rootComment() {

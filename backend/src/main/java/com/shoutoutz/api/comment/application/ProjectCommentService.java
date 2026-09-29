@@ -27,7 +27,9 @@ import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.project.application.ProjectSlugResolver;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
@@ -49,31 +51,59 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectCommentService {
 
     private final ProjectRepository projectRepository;
+    private final ProjectSlugResolver projectSlugResolver;
     private final ProjectCommentRepository projectCommentRepository;
     private final ProjectCommentQueryRepository projectCommentQueryRepository;
     private final UserProfileRepository userProfileRepository;
+    private final UserRepository userRepository;
     private final MediaUrlResolver mediaUrlResolver;
     private final ProjectCommentReactionRepository projectCommentReactionRepository;
 
-    @Autowired
     public ProjectCommentService(
             ProjectRepository projectRepository,
+            ProjectSlugResolver projectSlugResolver,
             ProjectCommentRepository projectCommentRepository,
             ProjectCommentQueryRepository projectCommentQueryRepository,
             UserProfileRepository userProfileRepository,
             MediaUrlResolver mediaUrlResolver,
             ProjectCommentReactionRepository projectCommentReactionRepository
     ) {
+        this(
+                projectRepository,
+                projectSlugResolver,
+                projectCommentRepository,
+                projectCommentQueryRepository,
+                userProfileRepository,
+                mediaUrlResolver,
+                projectCommentReactionRepository,
+                null
+        );
+    }
+
+    @Autowired
+    public ProjectCommentService(
+            ProjectRepository projectRepository,
+            ProjectSlugResolver projectSlugResolver,
+            ProjectCommentRepository projectCommentRepository,
+            ProjectCommentQueryRepository projectCommentQueryRepository,
+            UserProfileRepository userProfileRepository,
+            MediaUrlResolver mediaUrlResolver,
+            ProjectCommentReactionRepository projectCommentReactionRepository,
+            UserRepository userRepository
+    ) {
         this.projectRepository = projectRepository;
+        this.projectSlugResolver = projectSlugResolver;
         this.projectCommentRepository = projectCommentRepository;
         this.projectCommentQueryRepository = projectCommentQueryRepository;
         this.userProfileRepository = userProfileRepository;
+        this.userRepository = userRepository;
         this.mediaUrlResolver = mediaUrlResolver;
         this.projectCommentReactionRepository = projectCommentReactionRepository;
     }
 
     public ProjectCommentService(
             ProjectRepository projectRepository,
+            ProjectSlugResolver projectSlugResolver,
             ProjectCommentRepository projectCommentRepository,
             ProjectCommentQueryRepository projectCommentQueryRepository,
             UserProfileRepository userProfileRepository,
@@ -81,20 +111,23 @@ public class ProjectCommentService {
     ) {
         this(
                 projectRepository,
+                projectSlugResolver,
                 projectCommentRepository,
                 projectCommentQueryRepository,
                 userProfileRepository,
                 mediaUrlResolver,
+                null,
                 null
         );
     }
 
     @Transactional
     public ProjectCommentCreateResponse create(
-            long projectId,
+            String slug,
             long authorId,
             ProjectCommentCreateRequest request
     ) {
+        long projectId = projectSlugResolver.resolveId(slug);
         validatePublicProject(projectId);
         ProjectComment parent = findParent(projectId, request.parentId());
         UserProfile author = findAuthor(authorId);
@@ -112,6 +145,7 @@ public class ProjectCommentService {
                 savedComment.getContent(),
                 new ProjectCommentCreateResponse.Author(
                         author.getUserId(),
+                        handleValue(author.getUserId()),
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
@@ -127,10 +161,11 @@ public class ProjectCommentService {
 
     @Transactional(readOnly = true)
     public ProjectCommentFindResponse findAll(
-            long projectId,
+            String slug,
             ProjectCommentFindRequest request,
             Long loginUserId
     ) {
+        long projectId = projectSlugResolver.resolveId(slug);
         validatePublicProject(projectId);
         ProjectCommentCursor cursor = ProjectCommentCursorCodec.decode(request.cursor());
         validateCursorSort(cursor, request.sort());
@@ -169,9 +204,10 @@ public class ProjectCommentService {
         }
 
         Map<Long, URI> avatarUrls = resolveAvatarUrls(authors.values());
+        Map<Long, String> handles = resolveHandles(authors.keySet());
         Map<Long, ProjectCommentReactionCounts> reactionCounts = findReactionCounts(orderedComments, loginUserId);
         List<ProjectCommentFindResponse.Comment> comments = orderedComments.stream()
-                .map(comment -> toFindResponse(comment, loginUserId, authors, avatarUrls, reactionCounts))
+                .map(comment -> toFindResponse(comment, loginUserId, authors, handles, avatarUrls, reactionCounts))
                 .toList();
 
         // 4. meta 정보: 다음 커서 정보 제공
@@ -191,11 +227,12 @@ public class ProjectCommentService {
 
     @Transactional
     public ProjectCommentUpdateResponse update(
-            long projectId,
+            String slug,
             long commentId,
             long authorId,
             ProjectCommentUpdateRequest request
     ) {
+        long projectId = projectSlugResolver.resolveId(slug);
         validatePublicProject(projectId);
         ProjectComment comment = findComment(projectId, commentId);
         validateAuthor(comment, authorId);
@@ -211,6 +248,7 @@ public class ProjectCommentService {
                 comment.getContent(),
                 new ProjectCommentUpdateResponse.Author(
                         author.getUserId(),
+                        handleValue(author.getUserId()),
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
@@ -227,10 +265,11 @@ public class ProjectCommentService {
 
     @Transactional
     public ProjectCommentDeleteResponse delete(
-            long projectId,
+            String slug,
             long commentId,
             long authorId
     ) {
+        long projectId = projectSlugResolver.resolveId(slug);
         validatePublicProject(projectId);
         ProjectComment comment = findComment(projectId, commentId);
         validateAuthor(comment, authorId);
@@ -293,10 +332,28 @@ public class ProjectCommentService {
         return (short) cohort.getValue();
     }
 
+    private String handleValue(long userId) {
+        if (userRepository == null) {
+            return null;
+        }
+        return userRepository.findById(userId)
+                .map(user -> user.getHandle().value())
+                .orElse(null);
+    }
+
+    private Map<Long, String> resolveHandles(Iterable<Long> userIds) {
+        Map<Long, String> handles = new HashMap<>();
+        for (Long userId : userIds) {
+            handles.put(userId, handleValue(userId));
+        }
+        return handles;
+    }
+
     private ProjectCommentFindResponse.Comment toFindResponse(
             ProjectComment comment,
             Long loginUserId,
             Map<Long, UserProfile> authors,
+            Map<Long, String> handles,
             Map<Long, URI> avatarUrls,
             Map<Long, ProjectCommentReactionCounts> reactionCounts
     ) {
@@ -312,6 +369,7 @@ public class ProjectCommentService {
                 comment.isDeleted() ? null : comment.getContent(),
                 new ProjectCommentFindResponse.Author(
                         author.getUserId(),
+                        handles.get(author.getUserId()),
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),

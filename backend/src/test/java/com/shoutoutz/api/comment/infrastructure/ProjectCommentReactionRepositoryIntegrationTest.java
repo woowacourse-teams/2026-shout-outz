@@ -57,7 +57,7 @@ class ProjectCommentReactionRepositoryIntegrationTest {
         return jdbcTemplate.queryForObject(
                 "INSERT INTO users (handle) VALUES (?) RETURNING id",
                 Long.class,
-                "comment_react_" + token
+                "@comment_react_" + token
         );
     }
 

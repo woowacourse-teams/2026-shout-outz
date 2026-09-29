@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { IconHeart, IconMessageCircle, IconShare } from '@tabler/icons-react';
+import { IconMessageCircle } from '@tabler/icons-react';
 import type { Feed } from '@/apis/feed';
-import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Image } from '@/components/Image';
+import { FeedAuthor } from '@/components/feeds/FeedAuthor';
+import { FeedLikeButton } from '@/components/feeds/FeedLikeButton';
 import { FeedMarkdown } from '@/components/feeds/FeedMarkdown';
 import { LinkPreview } from '@/components/feeds/LinkPreview';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
+import { ShareButton } from '@/components/feeds/ShareButton';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { Comments } from '@/components/feed-comments/Comments';
 import { findFirstUrl } from '@/utils/feed';
-import { formatCrewName } from '@/utils/user';
-import { formatRelativeTime } from '@/utils/date';
 import { analytics, type FeedSurface } from '@/utils/analytics';
 
 export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }) {
@@ -21,21 +21,12 @@ export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }
     (a, b) => a.displayOrder - b.displayOrder,
   );
   const firstUrl = findFirstUrl(feed.content);
+
   return (
     <article className="min-w-0 border-b border-gray-100 py-6 first:pt-4 md:py-7">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-2">
-            <Avatar size="md" alt={`${feed.author.displayName} 프로필`} />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-gray-900">
-                {formatCrewName(feed.author.displayName, feed.author.cohort, feed.author.track)}
-              </p>
-              <time className="text-sm text-gray-400" dateTime={feed.createdAt}>
-                {formatRelativeTime(feed.createdAt)}
-              </time>
-            </div>
-          </div>
+          <FeedAuthor author={feed.author} createdAt={feed.createdAt} />
         </div>
         <AsyncBoundary>
           <FeedMenu feedId={feed.feedId} authorHandle={feed.author.handle} />
@@ -81,9 +72,11 @@ export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }
         )}
       </div>
       <div className="mt-5 flex items-center gap-2 text-sm text-gray-500">
-        <Button variant="ghost" size="sm" className="gap-1 px-2" aria-label="좋아요" disabled>
-          <IconHeart className="size-4" aria-hidden="true" />
-        </Button>
+        <FeedLikeButton
+          feedId={feed.feedId}
+          likeCount={feed.likeCount}
+          likedByMe={feed.likedByMe}
+        />
         <Button
           variant="ghost"
           size="sm"
@@ -94,21 +87,13 @@ export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }
           onClick={() => setOpen(!open)}
         >
           <IconMessageCircle className="size-4" aria-hidden="true" />
+          <span aria-label="댓글 수">{feed.commentCount ?? 0}</span>
         </Button>
         <span className="ml-auto">
-          <Button
-            variant="ghost"
-            size="sm"
+          <ShareButton
+            url={new URL(`/feeds/${feed.feedId}`, window.location.origin).href}
             className="px-2"
-            aria-label="공유"
-            onClick={() =>
-              void navigator.clipboard?.writeText(
-                new URL(`/feeds/${feed.feedId}`, window.location.origin).href,
-              )
-            }
-          >
-            <IconShare className="size-4" aria-hidden="true" />
-          </Button>
+          />
         </span>
       </div>
       {open && (

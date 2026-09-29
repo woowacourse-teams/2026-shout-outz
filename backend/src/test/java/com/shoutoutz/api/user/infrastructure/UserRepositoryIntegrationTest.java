@@ -32,14 +32,14 @@ class UserRepositoryIntegrationTest {
     @Test
     @DisplayName("사용자를 저장하고 ID로 조회한다")
     void savesAndFindsUserById() {
-        User savedUser = userRepository.save(User.initialize("zzaekkii"));
+        User savedUser = userRepository.save(User.initialize("@zzaekkii"));
 
         User foundUser = userRepository.findById(savedUser.getId()).orElseThrow();
         UserEntity savedEntity = userJpaRepository.findById(savedUser.getId()).orElseThrow();
 
         assertThat(savedUser.getId()).isNotNull();
         assertThat(foundUser.getId()).isEqualTo(savedUser.getId());
-        assertThat(foundUser.getHandle()).isEqualTo(new Handle("zzaekkii"));
+        assertThat(foundUser.getHandle()).isEqualTo(new Handle("@zzaekkii"));
         assertThat(foundUser.getStatus()).isEqualTo(UserStatus.ACTIVE);
         assertThat(foundUser.getRole()).isEqualTo(UserRole.USER);
         assertThat(savedEntity.getCreatedAt()).isNotNull();
@@ -55,9 +55,9 @@ class UserRepositoryIntegrationTest {
     @Test
     @DisplayName("핸들은 대소문자를 구분하지 않고 유일해야 한다")
     void rejectsDuplicateHandleIgnoringCase() {
-        userRepository.save(User.initialize("dahye"));
+        userRepository.save(User.initialize("@dahye"));
 
-        assertThatThrownBy(() -> userRepository.save(User.initialize("DaHye")))
+        assertThatThrownBy(() -> userRepository.save(User.initialize("@DaHye")))
                 .isInstanceOf(DuplicateEntityException.class)
                 .extracting(exception -> ((DuplicateEntityException) exception).getErrorCode())
                 .isEqualTo(UserErrorCode.HANDLE_ALREADY_EXISTS);
@@ -66,11 +66,11 @@ class UserRepositoryIntegrationTest {
     @Test
     @DisplayName("핸들은 대소문자를 구분하지 않고 조회한다")
     void findsUserByHandleIgnoringCase() {
-        User savedUser = userRepository.save(User.initialize("zzaekkii-handle"));
+        User savedUser = userRepository.save(User.initialize("@zzaekkii-handle"));
 
-        User foundUser = userRepository.findByHandle("Zzaekkii-Handle").orElseThrow();
+        User foundUser = userRepository.findByHandle("@Zzaekkii-Handle").orElseThrow();
 
         assertThat(foundUser.getId()).isEqualTo(savedUser.getId());
-        assertThat(foundUser.getHandle()).isEqualTo(new Handle("zzaekkii-handle"));
+        assertThat(foundUser.getHandle()).isEqualTo(new Handle("@zzaekkii-handle"));
     }
 }

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/projects/{projectId}/reactions")
+@RequestMapping("/api/v1/projects/@{slug}/reactions")
 @RequiredArgsConstructor
 public class ProjectReactionHttpApi {
 
@@ -22,21 +22,21 @@ public class ProjectReactionHttpApi {
 
     @PutMapping("/{type}")
     public ResponseEntity<SuccessResponse<ProjectReactionResponse>> add(
-            @PathVariable long projectId,
+            @PathVariable String slug,
             @PathVariable String type,
             @LoginUser AuthenticatedUser user
     ) {
-        ProjectReactionResponse response = projectReactionService.add(projectId, user.userId(), type);
+        ProjectReactionResponse response = projectReactionService.add(slug, user.userId(), type);
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
 
     @DeleteMapping("/{type}")
     public ResponseEntity<SuccessResponse<ProjectReactionResponse>> remove(
-            @PathVariable long projectId,
+            @PathVariable String slug,
             @PathVariable String type,
             @LoginUser AuthenticatedUser user
     ) {
-        ProjectReactionResponse response = projectReactionService.remove(projectId, user.userId(), type);
+        ProjectReactionResponse response = projectReactionService.remove(slug, user.userId(), type);
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
 }

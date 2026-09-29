@@ -35,16 +35,24 @@ class Boundary extends Component<
   }
 }
 
-export function AsyncBoundary({ children }: { children: ReactNode }) {
+export function AsyncBoundary({
+  children,
+  fallback,
+}: {
+  children: ReactNode;
+  fallback?: ReactNode;
+}) {
   return (
     <QueryErrorResetBoundary>
       {({ reset }) => (
         <Boundary reset={reset}>
           <Suspense
             fallback={
-              <p role="status" className="p-6 text-gray-500">
-                불러오는 중…
-              </p>
+              fallback ?? (
+                <p role="status" className="p-6 text-gray-500">
+                  불러오는 중…
+                </p>
+              )
             }
           >
             {children}

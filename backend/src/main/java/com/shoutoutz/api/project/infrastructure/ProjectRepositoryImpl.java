@@ -66,6 +66,11 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     }
 
     @Override
+    public Optional<Long> findIdBySlug(Slug slug) {
+        return projectJpaRepository.findIdBySlug(slug.value());
+    }
+
+    @Override
     public boolean existsByGithubRepositoryUrl(GithubRepositoryUrl githubRepositoryUrl) {
         return projectJpaRepository.existsByGithubRepositoryUrl(githubRepositoryUrl.value());
     }
@@ -78,6 +83,15 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     @Override
     public Optional<Project> findActiveById(long projectId) {
         return projectJpaRepository.findByIdAndDeletedAtIsNull(projectId).map(ProjectMapper::toDomain);
+    }
+
+    @Override
+    public boolean transitionApprovalStatus(
+            long projectId,
+            ApprovalStatus fromStatus,
+            ApprovalStatus toStatus
+    ) {
+        return projectJpaRepository.transitionApprovalStatus(projectId, fromStatus, toStatus) == 1;
     }
 
     @Override
@@ -106,6 +120,11 @@ public class ProjectRepositoryImpl implements ProjectRepository {
         replaceTechTags(project.getId(), techTagIds);
         replaceMembers(project.getId(), memberIds);
         return ProjectMapper.toDomain(entity);
+    }
+
+    @Override
+    public Optional<ProjectDetail> findDetailBySlug(Slug slug, Long viewerId) {
+        return projectDetailJdbcRepository.findDetailBySlug(slug, viewerId);
     }
 
     @Override

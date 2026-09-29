@@ -141,7 +141,7 @@ class AdminVerificationRequestServiceTest {
         return new AdminVerificationRequestItem(
                 requestId,
                 42L,
-                "charles",
+                "@charles",
                 UserType.WOOWACOURSE_CREW,
                 "샤를",
                 8,
