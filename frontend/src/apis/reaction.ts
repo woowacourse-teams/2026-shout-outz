@@ -38,9 +38,9 @@ export async function setFeedCommentAgree(feedId: number, commentId: number, act
   return response.data;
 }
 
-export async function setProjectLike(projectId: number, active: boolean) {
+export async function setProjectLike(slug: string, active: boolean) {
   const response = await httpClient<ReactionEnvelope<ProjectLikeResult>>(
-    `/api/v1/projects/${projectId}/reactions/LIKE`,
+    `/api/v1/projects/@${slug}/reactions/LIKE`,
     { method: active ? 'put' : 'delete' },
   );
   if (!response) throw new Error('프로젝트 좋아요 응답이 비어 있습니다.');

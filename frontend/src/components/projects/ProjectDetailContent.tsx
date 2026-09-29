@@ -10,6 +10,7 @@ import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
 import { ProjectLikeButton } from '@/components/projects/ProjectLikeButton';
 import { ProjectNotApprovedError } from '@/errors/project';
 import type { ProjectDetail } from '@/types/project';
+import { toProjectSlugParam } from '@/utils/project';
 
 export function ProjectDetailContent({ slug }: { slug: string }) {
   const { data: project } = useSuspenseQuery(projectDetailQueryOptions(slug));
@@ -62,8 +63,8 @@ export function ProjectDetailContent({ slug }: { slug: string }) {
             </p>
             {project.editable && (
               <Link
-                to="/projects/$id/edit"
-                params={{ id: String(project.id) }}
+                to="/projects/$slug/edit"
+                params={{ slug: toProjectSlugParam(project.slug) }}
                 className={getButtonStyles({ variant: 'outline', size: 'sm' })}
               >
                 프로젝트 수정
@@ -87,7 +88,7 @@ export function ProjectDetailContent({ slug }: { slug: string }) {
               </a>
             ))}
             <ProjectLikeButton
-              projectId={project.id}
+              slug={project.slug}
               likeCount={project.likeCount}
               likedByMe={project.likedByMe}
             />
