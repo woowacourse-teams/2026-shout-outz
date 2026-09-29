@@ -181,7 +181,7 @@ function ProjectTab({ handle }: { handle: string }) {
             );
 
             return (
-              <li key={project.id} className="min-w-0">
+              <li key={project.slug} className="min-w-0">
                 <Link
                   to="/projects/$slug"
                   params={{ slug: toProjectSlugParam(project.slug) }}
@@ -194,7 +194,7 @@ function ProjectTab({ handle }: { handle: string }) {
                     });
                     analytics.track({
                       name: 'project_detail_opened',
-                      projectId: project.id,
+                      slug: project.slug,
                       from: 'profile',
                     });
                   }}

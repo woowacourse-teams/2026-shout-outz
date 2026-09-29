@@ -120,10 +120,15 @@ describe('UserProfilePage', () => {
   });
 
   it('없는 사람이면 서버가 404를 주고 에러 화면을 보여준다', async () => {
-    renderRoute('/users/nobody');
+    const error = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      renderRoute('/users/nobody');
 
-    expect(await screen.findByText('프로필을 불러오지 못했습니다.')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: '정우진' })).not.toBeInTheDocument();
+      expect(await screen.findByText('프로필을 불러오지 못했습니다.')).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: '정우진' })).not.toBeInTheDocument();
+    } finally {
+      error.mockRestore();
+    }
   });
 });
 
