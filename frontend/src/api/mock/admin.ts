@@ -31,6 +31,7 @@ const banners = [
     destinationType: 'URL',
     targetType: null,
     targetId: null,
+    targetSlug: null,
     linkType: 'INTERNAL_PATH',
     linkUrl: '/projects/@dropit',
     displayOrder: 0,

@@ -385,6 +385,7 @@ export const handlers = [
           destinationType: 'URL',
           targetType: null,
           targetId: null,
+          targetSlug: null,
           linkType: 'INTERNAL_PATH',
           linkUrl: '/projects/@dropit',
         },
