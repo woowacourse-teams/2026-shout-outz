@@ -1113,9 +1113,9 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
                     message\":\"handle은 필수입니다.\"}]}"
         "409":
           description: "409"
@@ -1204,9 +1204,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -1666,10 +1666,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
-                    eventStartAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -3486,9 +3486,9 @@ paths:
               examples:
                 user-verification-request-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
-                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
-                    ,\"message\":\"nickname은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"},{\"field\":\"cohort\",\"message\"\
+                    :\"cohort는 양의 정수여야 합니다.\"}]}"
         "201":
           description: "201"
           content:
@@ -3839,6 +3839,61 @@ paths:
                     :[{\"historyId\":1,\"fromStatus\":null,\"toStatus\":\"PENDING\"\
                     ,\"changedBy\":null,\"reason\":null,\"changedAt\":\"2026-09-20T00:00:00Z\"\
                     }]}}"
+  /api/v1/admin/projects/{projectId}/migration:
+    patch:
+      tags:
+      - Admin Project Migration
+      summary: 이관 프로젝트 데이터 보정
+      description: "관리자가 등록자 없는 프로젝트의 projects 컬럼과 기술 태그를 한 요청으로 수정한다. 생략한 필드는 유지하\
+        며, techTagIds는 보내면 전체 교체한다. 팀원 테이블은 수정하지 않는다. 임시 API다."
+      operationId: admin-project-migration-update
+      parameters:
+      - name: projectId
+        in: path
+        description: 이관 프로젝트 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: Cookie
+        in: header
+        description: 관리자 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminProjectMigrationUpdateRequest"
+            examples:
+              admin-project-migration-update:
+                value: |
+                  {
+                    "title": "수정된 프로젝트",
+                    "descriptionMd": "![화면](https://github.com/user-attachments/assets/example)",
+                    "techTagIds": [3, 1]
+                  }
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProjectMigrationUpdateSuccessResponse"
+              examples:
+                admin-project-migration-update:
+                  value: "{\"status\":\"success\",\"data\":{\"projectId\":100,\"updatedFields\"\
+                    :[\"title\",\"descriptionMd\",\"techTagIds\"],\"updatedAt\":\"\
+                    2026-09-30T00:00:00Z\"}}"
   /api/v1/admin/projects/{projectId}/reject:
     post:
       tags:
@@ -5235,6 +5290,35 @@ components:
         status:
           type: string
           description: 응답 상태
+    AdminProjectMigrationUpdateSuccessResponse:
+      title: AdminProjectMigrationUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - projectId
+          - updatedAt
+          - updatedFields
+          type: object
+          properties:
+            updatedFields:
+              type: array
+              description: 수정한 필드명 목록
+              items:
+                type: string
+            projectId:
+              type: number
+              description: 프로젝트 ID
+            updatedAt:
+              type: string
+              description: 수정 시각
+          description: 수정 결과
+        status:
+          type: string
+          description: 응답 상태
     ProjectCreateRequest:
       title: ProjectCreateRequest
       required:
@@ -6036,6 +6120,87 @@ components:
         status:
           type: string
           description: 응답 상태
+    AdminProjectMigrationUpdateRequest:
+      title: AdminProjectMigrationUpdateRequest
+      type: object
+      properties:
+        approvalStatus:
+          type: string
+          description: 승인 상태
+          nullable: true
+          enum:
+          - PENDING
+          - APPROVED
+          - REJECTED
+        teamName:
+          type: string
+          description: 팀 이름
+          nullable: true
+        deploymentUrl:
+          type: string
+          description: 배포 URL. null 허용
+          nullable: true
+        cohort:
+          type: number
+          description: 기수(1~8)
+          nullable: true
+        title:
+          type: string
+          description: 프로젝트 이름
+          nullable: true
+        createdAt:
+          type: string
+          description: 생성 시각. ISO 날짜·시각 또는 YYYY-MM-DD
+          nullable: true
+        thumbnailImageId:
+          type: number
+          description: 썸네일 미디어 ID. null 허용
+          nullable: true
+        starCount:
+          type: number
+          description: GitHub 스타 수. null 허용
+          nullable: true
+        techTagIds:
+          type: array
+          description: 기술 태그 ID 전체 목록. 빈 배열이면 모두 제거. 생략하면 유지
+          nullable: true
+          items:
+            type: number
+        serviceStatus:
+          type: string
+          description: 서비스 상태
+          nullable: true
+          enum:
+          - OPERATING
+          - CLOSED
+        githubRepositoryUrl:
+          type: string
+          description: GitHub 저장소 URL
+          nullable: true
+        descriptionMd:
+          type: string
+          description: 마크다운 본문. null 허용
+          nullable: true
+        starSyncedAt:
+          type: string
+          description: 스타 동기화 시각. ISO 날짜·시각 또는 YYYY-MM-DD. null 허용
+          nullable: true
+        tagline:
+          type: string
+          description: 한 줄 소개
+          nullable: true
+        viewCount:
+          type: number
+          description: 조회수
+          nullable: true
+        slug:
+          type: string
+          description: 프로젝트 slug
+          nullable: true
+        updatedAt:
+          type: string
+          description: 수정 시각. ISO 날짜·시각 또는 YYYY-MM-DD
+          nullable: true
     ProjectCreateSuccessResponse:
       title: ProjectCreateSuccessResponse
       required:
@@ -6375,6 +6540,61 @@ components:
         status:
           type: string
           description: 응답 상태
+    UserVerificationRequestCreateSuccessResponse:
+      title: UserVerificationRequestCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - nickname
+          - requestId
+          - requestedAt
+          - status
+          - userType
+          type: object
+          properties:
+            requestedAt:
+              type: string
+              description: 신청 시각(ISO-8601)
+            requestId:
+              type: number
+              description: 인증 신청 ID
+            nickname:
+              type: string
+              description: 신청 닉네임
+            cohort:
+              type: number
+              description: 신청 기수
+              nullable: true
+            userType:
+              type: string
+              description: 신청 유형
+              enum:
+              - GENERAL
+              - WOOWACOURSE_CREW
+              - WOOWACOURSE_COACH
+            track:
+              type: string
+              description: 신청 트랙
+              nullable: true
+              enum:
+              - BACKEND
+              - ANDROID
+              - FRONTEND
+            status:
+              type: string
+              description: 신청 상태
+              enum:
+              - PENDING
+              - APPROVED
+              - REJECTED
+          description: 생성된 인증 신청
+        status:
+          type: string
+          description: 응답 상태
     NoticeCreateSuccessResponse:
       title: NoticeCreateSuccessResponse
       required:
@@ -6469,61 +6689,6 @@ components:
               - NOTICE
               - EVENT
           description: 생성된 공지
-        status:
-          type: string
-          description: 응답 상태
-    UserVerificationRequestCreateSuccessResponse:
-      title: UserVerificationRequestCreateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - nickname
-          - requestId
-          - requestedAt
-          - status
-          - userType
-          type: object
-          properties:
-            requestedAt:
-              type: string
-              description: 신청 시각(ISO-8601)
-            requestId:
-              type: number
-              description: 인증 신청 ID
-            nickname:
-              type: string
-              description: 신청 닉네임
-            cohort:
-              type: number
-              description: 신청 기수
-              nullable: true
-            userType:
-              type: string
-              description: 신청 유형
-              enum:
-              - GENERAL
-              - WOOWACOURSE_CREW
-              - WOOWACOURSE_COACH
-            track:
-              type: string
-              description: 신청 트랙
-              nullable: true
-              enum:
-              - BACKEND
-              - ANDROID
-              - FRONTEND
-            status:
-              type: string
-              description: 신청 상태
-              enum:
-              - PENDING
-              - APPROVED
-              - REJECTED
-          description: 생성된 인증 신청
         status:
           type: string
           description: 응답 상태
