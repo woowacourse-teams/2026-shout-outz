@@ -109,6 +109,42 @@ test('관리자 프로젝트 목록을 표시하고 ID 기반 승인 API를 호�
   await waitFor(() => expect(approvedId).toBe('300'));
 });
 
+test('관리자 프로젝트 목록의 다음 페이지를 커서로 조회한다', async () => {
+  const user = userEvent.setup();
+  signInAs('ADMIN');
+  const requestedCursors: (string | null)[] = [];
+  server.use(
+    http.get('/api/v1/admin/projects', ({ request }) => {
+      const cursor = new URL(request.url).searchParams.get('cursor');
+      requestedCursors.push(cursor);
+      return HttpResponse.json({
+        status: 'success',
+        data: [
+          {
+            id: cursor ? 302 : 300,
+            slug: cursor ? 'next' : 'loop',
+            title: cursor ? '다음 프로젝트' : '루프',
+            tagline: '프로젝트 소개',
+            cohort: 8,
+            members: [],
+            approvalStatus: 'PENDING',
+            rejectReason: null,
+          },
+        ],
+        meta: { nextCursor: cursor ? null : 'next-page', hasNext: !cursor, totalCount: 2 },
+      });
+    }),
+  );
+
+  renderRoute('/admin?tab=projects');
+  expect(await screen.findByRole('button', { name: '루프 상세 보기' })).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '더 보기' }));
+  expect(
+    await screen.findByRole('button', { name: '다음 프로젝트 상세 보기' }),
+  ).toBeInTheDocument();
+  expect(requestedCursors).toEqual([null, 'next-page']);
+});
+
 test('관리자가 공지를 등록한다', async () => {
   const user = userEvent.setup();
   signInAs('ADMIN');
