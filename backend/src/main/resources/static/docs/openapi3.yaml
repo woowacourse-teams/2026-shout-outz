@@ -2907,6 +2907,84 @@ paths:
                     cohort\":null,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:00:00Z\",\"editable\":true}}"
+  /api/v1/media/{mediaId}/status:
+    get:
+      tags:
+      - Media
+      summary: 미디어 처리 상태 조회
+      description: 업로더가 미디어의 현재 처리 상태를 조회한다. FAILED도 조회 성공으로 응답한다.
+      operationId: media-status-get
+      parameters:
+      - name: mediaId
+        in: path
+        description: 조회할 미디어 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: Cookie
+        in: header
+        description: 인증된 사용자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=session-id
+      responses:
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                media-status-get-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                media-status-get-resource_not_found:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_NOT_FOUND\",\"\
+                    message\":\"자원을 찾을 수 없습니다.\"}"
+        "200":
+          description: "200"
+          headers:
+            Cache-Control:
+              description: 상태 응답 캐시 방지 (no-store)
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaStatusSuccessResponse"
+              examples:
+                media-status-get:
+                  value: "{\"status\":\"success\",\"data\":{\"mediaId\":10,\"status\"\
+                    :\"PROCESSING\"}}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                media-status-get-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"FORBIDDEN\",\"message\"\
+                    :\"접근 권한이 없습니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                media-status-get-validation_failed:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\"}"
   /api/v1/projects/@{slug}/comments:
     get:
       tags:
@@ -7318,6 +7396,35 @@ components:
         status:
           type: string
           description: 응답 상태
+    MediaStatusSuccessResponse:
+      title: MediaStatusSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - mediaId
+          - status
+          type: object
+          properties:
+            mediaId:
+              type: number
+              description: 미디어 ID
+            status:
+              type: string
+              description: 미디어 상태
+              enum:
+              - PENDING_UPLOAD
+              - PROCESSING
+              - READY
+              - FAILED
+              - EXPIRED
+          description: 미디어 처리 상태
+        status:
+          type: string
+          description: 응답 상태 (success)
     HomeBannerDeleteSuccessResponse:
       title: HomeBannerDeleteSuccessResponse
       required:
