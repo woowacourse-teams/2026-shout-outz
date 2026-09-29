@@ -5,6 +5,7 @@ import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -112,7 +113,7 @@ class ProjectHttpApiTest {
             + "그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. "
             + "요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나, "
             + "deploymentUrl 없이 serviceStatus를 OPERATING으로 보내면 400, 로그인하지 않았으면 401, "
-            + "없거나 삭제됐거나 다른 사람의 프로젝트면 404, 이미 등록된 리포지토리로 바꾸면 409를 반환한다.";
+            + "없거나 형식이 틀린 slug이거나, 삭제됐거나 다른 사람의 프로젝트면 404, 이미 등록된 리포지토리로 바꾸면 409를 반환한다.";
     private static final String FIND_ALL_SUMMARY = "프로젝트 목록 조회";
     private static final String FIND_ALL_DESCRIPTION = "승인된 프로젝트 목록을 검색어, 기수, 기술 스택으로 걸러 정렬 기준대로 조회한다. "
             + "로그인하지 않아도 조회할 수 있다. 커서 기반으로, 첫 요청은 cursor를 생략하고 "
@@ -122,11 +123,11 @@ class ProjectHttpApiTest {
     private static final String DELETE_SUMMARY = "프로젝트 삭제";
     private static final String DELETE_DESCRIPTION = "등록자 본인이 자신의 프로젝트를 삭제한다. 심사 중인 프로젝트도 삭제할 수 있다. "
             + "삭제된 프로젝트는 목록과 상세에서 보이지 않으며, 응답의 restoreDeadlineAt 까지 복구할 수 있다. "
-            + "로그인하지 않았으면 401, 없는 프로젝트이거나 등록자가 아니거나 이미 삭제된 프로젝트이면 404를 반환한다.";
+            + "로그인하지 않았으면 401, 없거나 형식이 틀린 slug이거나, 등록자가 아니거나 이미 삭제된 프로젝트이면 404를 반환한다.";
     private static final String RESTORE_SUMMARY = "프로젝트 복구";
     private static final String RESTORE_DESCRIPTION = "등록자 본인이 삭제한 자신의 프로젝트를 복구 기한 안에 되살린다. "
             + "승인 상태는 삭제 이전 값을 그대로 유지한다. "
-            + "로그인하지 않았으면 401, 없는 프로젝트이거나 등록자가 아니거나 삭제되지 않은 프로젝트이면 404, "
+            + "로그인하지 않았으면 401, 없거나 형식이 틀린 slug이거나, 등록자가 아니거나 삭제되지 않은 프로젝트이면 404, "
             + "복구 기한이 지났으면 409를 반환한다. 복구 기한이 지난 프로젝트는 이후 영구 삭제되어 복구할 수 없다.";
     private static final String DETAIL_SUMMARY = "프로젝트 상세 조회";
     private static final String DETAIL_DESCRIPTION = "프로젝트 상세 화면에 필요한 기본 정보, 상세 설명, 팀원, 기술 스택, 외부 링크, "
@@ -842,14 +843,14 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("등록자가 자신의 프로젝트를 삭제하면 200과 삭제 시각, 복구 기한을 반환한다.")
     void deletesProject() throws Exception {
-        given(projectService.delete(100L, 7L)).willReturn(projectDeletion());
+        given(projectService.delete("loop", 7L)).willReturn(projectDeletion());
 
-        mockMvc.perform(delete("/api/v1/projects/{projectId}", 100L)
+        mockMvc.perform(delete("/api/v1/projects/@{slug}", "loop")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.id").value(100))
+                .andExpect(jsonPath("$.data.slug").value("loop"))
                 .andExpect(jsonPath("$.data.deletedAt").value("2026-09-06T13:30:00Z"))
                 .andExpect(jsonPath("$.data.restoreDeadlineAt").value("2026-10-06T13:30:00Z"))
                 .andDo(document(
@@ -859,7 +860,7 @@ class ProjectHttpApiTest {
                                 .summary(DELETE_SUMMARY)
                                 .description(DELETE_DESCRIPTION)
                                 .pathParameters(
-                                        parameterWithName("projectId").description("삭제할 프로젝트 ID")
+                                        parameterWithName("slug").description("삭제할 프로젝트 slug. 경로에서는 앞에 @를 붙인다.")
                                 )
                                 .requestHeaders(
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
@@ -868,7 +869,7 @@ class ProjectHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("삭제 결과"),
-                                        fieldWithPath("data.id").type(NUMBER).description("삭제한 프로젝트 ID"),
+                                        fieldWithPath("data.slug").type(STRING).description("삭제한 프로젝트 slug"),
                                         fieldWithPath("data.deletedAt").type(STRING).description("삭제 시각 (UTC)"),
                                         fieldWithPath("data.restoreDeadlineAt").type(STRING)
                                                 .description("복구 기한 (UTC). 이 시각까지 복구할 수 있다."),
@@ -881,10 +882,10 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("없는 프로젝트이거나 등록자가 아니거나 이미 삭제된 프로젝트이면, 404를 반환한다.")
     void rejectsDeletingNotOwnedOrAlreadyDeletedProject() throws Exception {
-        given(projectService.delete(100L, 7L))
+        given(projectService.delete("loop", 7L))
                 .willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
 
-        mockMvc.perform(delete("/api/v1/projects/{projectId}", 100L)
+        mockMvc.perform(delete("/api/v1/projects/@{slug}", "loop")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isNotFound())
@@ -895,7 +896,7 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("로그인하지 않고 프로젝트 삭제를 요청하는 경우, 401을 반환하고 서비스를 호출하지 않는다.")
     void rejectsUnauthenticatedDeletion() throws Exception {
-        mockMvc.perform(delete("/api/v1/projects/{projectId}", 100L)
+        mockMvc.perform(delete("/api/v1/projects/@{slug}", "loop")
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
@@ -910,7 +911,7 @@ class ProjectHttpApiTest {
                 .summary(DELETE_SUMMARY)
                 .description(DELETE_DESCRIPTION)
                 .pathParameters(
-                        parameterWithName("projectId").description("삭제할 프로젝트 ID")
+                        parameterWithName("slug").description("삭제할 프로젝트 slug. 경로에서는 앞에 @를 붙인다.")
                 )
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())
@@ -928,16 +929,16 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("등록자가 복구 기한 안에 자신의 프로젝트를 복구하면 200과 승인 상태, 복구 시각을 반환한다.")
     void restoresProject() throws Exception {
-        given(projectService.restore(100L, 7L)).willReturn(
-                new RestoredProject(100L, ApprovalStatus.APPROVED, Instant.parse("2026-09-10T05:20:00Z"))
+        given(projectService.restore("loop", 7L)).willReturn(
+                new RestoredProject("loop", ApprovalStatus.APPROVED, Instant.parse("2026-09-10T05:20:00Z"))
         );
 
-        mockMvc.perform(post("/api/v1/projects/{projectId}/restore", 100L)
+        mockMvc.perform(post("/api/v1/projects/@{slug}/restore", "loop")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.id").value(100))
+                .andExpect(jsonPath("$.data.slug").value("loop"))
                 .andExpect(jsonPath("$.data.approvalStatus").value("APPROVED"))
                 .andExpect(jsonPath("$.data.restoredAt").value("2026-09-10T05:20:00Z"))
                 .andDo(document(
@@ -947,7 +948,7 @@ class ProjectHttpApiTest {
                                 .summary(RESTORE_SUMMARY)
                                 .description(RESTORE_DESCRIPTION)
                                 .pathParameters(
-                                        parameterWithName("projectId").description("복구할 프로젝트 ID")
+                                        parameterWithName("slug").description("복구할 프로젝트 slug. 경로에서는 앞에 @를 붙인다.")
                                 )
                                 .requestHeaders(
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
@@ -956,7 +957,7 @@ class ProjectHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("복구 결과"),
-                                        fieldWithPath("data.id").type(NUMBER).description("복구한 프로젝트 ID"),
+                                        fieldWithPath("data.slug").type(STRING).description("복구한 프로젝트 slug"),
                                         new EnumFields(ApprovalStatus.class).withPath("data.approvalStatus")
                                                 .description("승인 상태. 삭제 이전 값을 그대로 유지한다."),
                                         fieldWithPath("data.restoredAt").type(STRING).description("복구 시각 (UTC)"),
@@ -969,10 +970,10 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("없는 프로젝트이거나 등록자가 아니거나 삭제되지 않은 프로젝트이면, 404를 반환한다.")
     void rejectsRestoringNotDeletedOrNotOwnedProject() throws Exception {
-        given(projectService.restore(100L, 7L))
+        given(projectService.restore("loop", 7L))
                 .willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
 
-        mockMvc.perform(post("/api/v1/projects/{projectId}/restore", 100L)
+        mockMvc.perform(post("/api/v1/projects/@{slug}/restore", "loop")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isNotFound())
@@ -983,10 +984,10 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("복구 기한이 지난 프로젝트를 복구하려 하면, 409를 반환한다.")
     void rejectsRestoringAfterDeadline() throws Exception {
-        given(projectService.restore(100L, 7L))
+        given(projectService.restore("loop", 7L))
                 .willThrow(new ConflictException(ProjectErrorCode.PROJECT_RESTORE_DEADLINE_EXPIRED));
 
-        mockMvc.perform(post("/api/v1/projects/{projectId}/restore", 100L)
+        mockMvc.perform(post("/api/v1/projects/@{slug}/restore", "loop")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isConflict())
@@ -997,7 +998,7 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("로그인하지 않고 프로젝트 복구를 요청하는 경우, 401을 반환하고 서비스를 호출하지 않는다.")
     void rejectsUnauthenticatedRestore() throws Exception {
-        mockMvc.perform(post("/api/v1/projects/{projectId}/restore", 100L)
+        mockMvc.perform(post("/api/v1/projects/@{slug}/restore", "loop")
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
@@ -1012,7 +1013,7 @@ class ProjectHttpApiTest {
                 .summary(RESTORE_SUMMARY)
                 .description(RESTORE_DESCRIPTION)
                 .pathParameters(
-                        parameterWithName("projectId").description("복구할 프로젝트 ID")
+                        parameterWithName("slug").description("복구할 프로젝트 slug. 경로에서는 앞에 @를 붙인다.")
                 )
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())
@@ -1105,7 +1106,7 @@ class ProjectHttpApiTest {
                 .tag("Project")
                 .summary(UPDATE_SUMMARY)
                 .description(UPDATE_DESCRIPTION)
-                .pathParameters(parameterWithName("projectId").description("수정할 프로젝트 ID"))
+                .pathParameters(parameterWithName("slug").description("수정할 프로젝트 slug. 경로에서는 앞에 @를 붙인다."))
                 .requestSchema(Schema.schema("ProjectUpdateRequest"))
                 .responseSchema(Schema.schema("ErrorResponse"))
                 .responseFields(RestDocsFields.errorResponse())
@@ -1116,17 +1117,17 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("작성자가 프로젝트를 수정하면 바뀐 승인 상태와 함께 200을 반환한다.")
     void updatesProject() throws Exception {
-        given(projectService.update(anyLong(), anyLong(), any(ProjectUpdateRequest.class)))
-                .willReturn(new ProjectUpdateResponse(100L, ApprovalStatus.PENDING));
+        given(projectService.update(anyString(), anyLong(), any(ProjectUpdateRequest.class)))
+                .willReturn(new ProjectUpdateResponse("loop", ApprovalStatus.PENDING));
 
-        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+        mockMvc.perform(put("/api/v1/projects/@{slug}", "loop")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateRequestJson()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.projectId").value(100))
+                .andExpect(jsonPath("$.data.slug").value("loop"))
                 .andExpect(jsonPath("$.data.approvalStatus").value("PENDING"))
                 .andDo(document(
                         "project-update",
@@ -1134,7 +1135,7 @@ class ProjectHttpApiTest {
                                 .tag("Project")
                                 .summary(UPDATE_SUMMARY)
                                 .description(UPDATE_DESCRIPTION)
-                                .pathParameters(parameterWithName("projectId").description("수정할 프로젝트 ID"))
+                                .pathParameters(parameterWithName("slug").description("수정할 프로젝트 slug. 경로에서는 앞에 @를 붙인다."))
                                 .requestHeaders(
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
                                 )
@@ -1179,20 +1180,20 @@ class ProjectHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("수정 결과"),
-                                        fieldWithPath("data.projectId").type(NUMBER).description("수정한 프로젝트 ID"),
+                                        fieldWithPath("data.slug").type(STRING).description("수정한 프로젝트 slug"),
                                         new EnumFields(ApprovalStatus.class).withPath("data.approvalStatus")
                                                 .description("수정 후 승인 상태. PENDING 또는 APPROVED이며 REJECTED는 오지 않는다.")
                                 )
                                 .build())
                 ));
 
-        verify(projectService).update(eq(100L), eq(7L), any(ProjectUpdateRequest.class));
+        verify(projectService).update(eq("loop"), eq(7L), any(ProjectUpdateRequest.class));
     }
 
     @Test
     @DisplayName("프로젝트 수정 요청에 필수값이 없는 경우, 400과 필드 오류를 반환하고, 서비스를 호출하지 않는다.")
     void rejectsInvalidUpdateRequest() throws Exception {
-        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+        mockMvc.perform(put("/api/v1/projects/@{slug}", "loop")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateRequestJson().replace("\"serviceStatus\": \"OPERATING\",", "")))
@@ -1207,7 +1208,7 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("배포 URL 없이 운영 중으로 수정하는 경우, 400과 serviceStatusValid 필드 오류를 반환하고, 서비스를 호출하지 않는다.")
     void rejectsOperatingWithoutDeploymentUrl() throws Exception {
-        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+        mockMvc.perform(put("/api/v1/projects/@{slug}", "loop")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateRequestJson().replace("\"https://loop.team\"", "null")))
@@ -1225,7 +1226,7 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("로그인하지 않고 프로젝트 수정을 요청하는 경우, 요청값 검증보다 먼저 401을 반환한다.")
     void rejectsUnauthenticatedUpdate() throws Exception {
-        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+        mockMvc.perform(put("/api/v1/projects/@{slug}", "loop")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateRequestJson()))
                 .andExpect(status().isUnauthorized())
@@ -1238,10 +1239,10 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("없거나 삭제됐거나 다른 사람의 프로젝트를 수정하면, 존재 여부를 숨기고 404를 반환한다.")
     void rejectsUpdateOfInaccessibleProject() throws Exception {
-        given(projectService.update(anyLong(), anyLong(), any(ProjectUpdateRequest.class)))
+        given(projectService.update(anyString(), anyLong(), any(ProjectUpdateRequest.class)))
                 .willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
 
-        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+        mockMvc.perform(put("/api/v1/projects/@{slug}", "loop")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateRequestJson()))
@@ -1253,10 +1254,10 @@ class ProjectHttpApiTest {
     @Test
     @DisplayName("다른 프로젝트가 등록한 리포지토리로 바꾸면, 409를 반환한다.")
     void rejectsUpdateToDuplicateRepository() throws Exception {
-        given(projectService.update(anyLong(), anyLong(), any(ProjectUpdateRequest.class)))
+        given(projectService.update(anyString(), anyLong(), any(ProjectUpdateRequest.class)))
                 .willThrow(new DuplicateEntityException(ProjectErrorCode.PROJECT_DUPLICATE_GITHUB_REPOSITORY));
 
-        mockMvc.perform(put("/api/v1/projects/{projectId}", 100L)
+        mockMvc.perform(put("/api/v1/projects/@{slug}", "loop")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateRequestJson()))

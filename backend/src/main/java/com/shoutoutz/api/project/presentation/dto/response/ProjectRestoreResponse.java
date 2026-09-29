@@ -5,14 +5,14 @@ import com.shoutoutz.api.project.domain.RestoredProject;
 import java.time.Instant;
 
 public record ProjectRestoreResponse(
-        Long id,
+        String slug,
         ApprovalStatus approvalStatus,
         Instant restoredAt
 ) {
 
     public static ProjectRestoreResponse from(RestoredProject restored) {
         return new ProjectRestoreResponse(
-                restored.id(),
+                restored.slug(),
                 restored.approvalStatus(),
                 restored.restoredAt()
         );
