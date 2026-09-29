@@ -109,7 +109,10 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.data[0].members[0].cohort").value(6))
                 .andExpect(jsonPath("$.data[0].members[0].avatarUrl")
                         .value("https://cdn.example.com/avatar-21"))
-                .andExpect(jsonPath("$.data[0].members[0].avatarImageId").value(21L))
+                .andExpect(jsonPath("$.data[0].members[1].avatarUrl")
+                        .value("https://avatars.githubusercontent.com/u/1"))
+                .andExpect(jsonPath("$.data[0].members[1].githubProfileUrl")
+                        .value("https://github.com/archived-crew"))
                 .andExpect(jsonPath("$.data[0].members[0].userId").value(7L))
                 .andExpect(jsonPath("$.meta.nextCursor").value(ProjectCursorCodec.encode(
                         ProjectCursor.latest(CREATED_AT, 100L))))
@@ -230,9 +233,15 @@ class UserProjectHttpApiTest {
                 false,
                 false,
                 List.of(new ProjectTechTag(1L, "Spring")),
-                List.of(ProjectMemberProfile.user(
-                        7L, "@zzaekkii", "재키", Cohort.COHORT_6, Track.BACKEND, 21L
-                )),
+                List.of(
+                        ProjectMemberProfile.user(7L, "@zzaekkii", "재키", Cohort.COHORT_6, Track.BACKEND, 21L),
+                        ProjectMemberProfile.archived(
+                                "Archived Crew",
+                                6,
+                                "https://avatars.githubusercontent.com/u/1",
+                                "https://github.com/archived-crew"
+                        )
+                ),
                 CREATED_AT
         );
     }
@@ -271,10 +280,10 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].members[].userType").type(STRING).description("사용자 유형").optional(),
                 fieldWithPath("data[].members[].cohort").type(NUMBER).description("기수").optional(),
                 new EnumFields(Track.class).withPath("data[].members[].track").description("트랙").optional(),
-                fieldWithPath("data[].members[].avatarImageId").type(NUMBER).description("프로필 이미지 미디어 ID").optional(),
-                fieldWithPath("data[].members[].avatarUrl").type(STRING).description("CloudFront에서 제공하는 공개 프로필 이미지 URL").optional(),
-                fieldWithPath("data[].members[].githubAvatarUrl").type(STRING)
-                        .description("이관 팀원의 GitHub 프로필 이미지 URL").optional(),
+                fieldWithPath("data[].members[].avatarUrl").type(STRING)
+                        .description("프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, "
+                                + "가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL이다.")
+                        .optional(),
                 fieldWithPath("data[].members[].githubProfileUrl").type(STRING)
                         .description("이관 팀원의 GitHub 프로필 URL").optional(),
                 fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
