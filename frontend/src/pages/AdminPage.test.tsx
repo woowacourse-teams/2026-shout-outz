@@ -168,3 +168,47 @@ test('관리자가 등록된 홈 배너를 보고 숨길 수 있다', async () =
 
   expect(updateBody).toEqual(expect.objectContaining({ mediaId: 10, active: false }));
 });
+
+test('프로젝트 배너는 slug 경로로 보이고, 수정할 때 targetSlug로 보낸다', async () => {
+  const user = userEvent.setup();
+  signInAs('ADMIN');
+  let updateBody: unknown;
+  server.use(
+    http.get('/api/v1/admin/home/banners', () =>
+      HttpResponse.json({
+        status: 'success',
+        data: [
+          {
+            bannerId: 2,
+            mediaId: 11,
+            imageUrl: 'https://placehold.co/1200x400',
+            destinationType: 'TARGET',
+            targetType: 'PROJECT',
+            targetId: null,
+            targetSlug: 'loop',
+            linkType: null,
+            linkUrl: null,
+            displayOrder: 0,
+            active: true,
+            createdBy: 7,
+            createdAt: '2026-09-16T00:00:00Z',
+            updatedAt: '2026-09-16T00:00:00Z',
+          },
+        ],
+      }),
+    ),
+    http.put('/api/v1/admin/home/banners/:bannerId', async ({ request }) => {
+      updateBody = await request.json();
+      return HttpResponse.json({ status: 'success', data: updateBody });
+    }),
+  );
+
+  renderRoute('/admin?tab=banners');
+  const list = await screen.findByRole('list');
+  expect(within(list).getByText('/projects/@loop')).toBeInTheDocument();
+  await user.click(within(list).getByRole('button', { name: '숨기기' }));
+
+  expect(updateBody).toEqual(
+    expect.objectContaining({ targetType: 'PROJECT', targetId: null, targetSlug: 'loop' }),
+  );
+});

@@ -19,6 +19,7 @@ import { ThumbnailField } from '@/components/projects/ThumbnailField';
 import type { AdminHomeBanner, HomeBannerUpsertBody } from '@/types/admin';
 import { getApiErrorMessage } from '@/utils/error';
 import { resolveHomeBannerLink } from '@/utils/home-banner';
+import { toProjectSlug } from '@/utils/project';
 
 type DestinationType = HomeBannerUpsertBody['destinationType'];
 type TargetType = NonNullable<HomeBannerUpsertBody['targetType']>;
@@ -36,6 +37,7 @@ const toUpsertBody = (banner: AdminHomeBanner): HomeBannerUpsertBody => ({
   destinationType: banner.destinationType,
   targetType: banner.targetType ?? null,
   targetId: banner.targetId ?? null,
+  targetSlug: banner.targetSlug ?? null,
   linkType: banner.linkType ?? null,
   linkUrl: banner.linkUrl ?? null,
   displayOrder: banner.displayOrder,
@@ -99,11 +101,7 @@ function BannerRow({ banner }: { banner: AdminHomeBanner }) {
           <span className="text-xs text-gray-500">순서 {banner.displayOrder}</span>
         </div>
         <p className="truncate text-sm text-gray-600">
-          {link
-            ? link.href
-            : banner.destinationType === 'TARGET' && banner.targetType === 'PROJECT'
-              ? '프로젝트 ID 링크는 사용할 수 없습니다. /projects/@slug 주소로 새 배너를 등록해 주세요.'
-              : '이동할 곳이 올바르지 않습니다'}
+          {link ? link.href : '이동할 곳이 올바르지 않습니다'}
         </p>
         {error != null && (
           <p role="alert" className="text-xs text-red-600">
@@ -154,6 +152,7 @@ interface BannerFormValues {
   destinationType: DestinationType;
   targetType: TargetType;
   targetId: string;
+  targetSlug: string;
   linkType: LinkType;
   linkUrl: string;
   displayOrder: string;
@@ -165,6 +164,7 @@ const EMPTY_FORM: BannerFormValues = {
   destinationType: 'URL',
   targetType: 'NEWS',
   targetId: '',
+  targetSlug: '',
   linkType: 'INTERNAL_PATH',
   linkUrl: '',
   displayOrder: '0',
@@ -174,10 +174,18 @@ const EMPTY_FORM: BannerFormValues = {
 function validate(values: BannerFormValues) {
   const errors: Partial<Record<keyof BannerFormValues, string>> = {};
   if (values.mediaId === null) errors.mediaId = '배너 이미지를 올려 주세요.';
-  // 요청 타입에서 targetId는 선택(null 허용)이다. 비워 두면 null로 보내고, 숫자가 아닌 값만 막는다.
-  const targetId = values.targetId.trim();
-  if (values.destinationType === 'TARGET' && targetId && !/^\d+$/.test(targetId)) {
-    errors.targetId = '대상 ID는 숫자로 입력해 주세요.';
+  if (values.destinationType === 'TARGET') {
+    if (values.targetType === 'PROJECT') {
+      if (!toProjectSlug(values.targetSlug.trim())) {
+        errors.targetSlug = '프로젝트 slug를 입력해 주세요.';
+      }
+    } else {
+      // 요청 타입에서 targetId는 선택(null 허용)이다. 비워 두면 null로 보내고, 숫자가 아닌 값만 막는다.
+      const targetId = values.targetId.trim();
+      if (targetId && !/^\d+$/.test(targetId)) {
+        errors.targetId = '대상 ID는 숫자로 입력해 주세요.';
+      }
+    }
   }
   if (values.destinationType === 'URL') {
     const url = values.linkUrl.trim();
@@ -196,11 +204,15 @@ function validate(values: BannerFormValues) {
 
 function toCreateBody(values: BannerFormValues): HomeBannerUpsertBody {
   const target = values.destinationType === 'TARGET';
+  // 서버는 프로젝트를 slug로, 소식·피드를 ID로 받는다. 다른 쪽 필드는 null이어야 400이 나지 않는다.
+  const project = target && values.targetType === 'PROJECT';
   return {
     mediaId: values.mediaId!,
     destinationType: values.destinationType,
     targetType: target ? values.targetType : null,
-    targetId: target && values.targetId.trim() ? Number(values.targetId) : null,
+    targetId: target && !project && values.targetId.trim() ? Number(values.targetId) : null,
+    // 서버는 `@` 없는 이름만 받아, 주소에서 복사해 온 `@loop`도 `loop`로 보낸다.
+    targetSlug: project ? toProjectSlug(values.targetSlug.trim()) : null,
     linkType: target ? null : values.linkType,
     linkUrl: target ? null : values.linkUrl.trim(),
     displayOrder: Number(values.displayOrder),
@@ -272,28 +284,40 @@ function BannerCreateForm() {
                   value={values.targetType}
                   onValueChange={(value) => setField('targetType', value as TargetType)}
                 >
-                  {Object.entries(TARGET_TYPE_LABELS)
-                    .filter(([value]) => value !== 'PROJECT')
-                    .map(([value, label]) => (
-                      <Select.Item key={value} value={value}>
-                        {label}
-                      </Select.Item>
-                    ))}
+                  {Object.entries(TARGET_TYPE_LABELS).map(([value, label]) => (
+                    <Select.Item key={value} value={value}>
+                      {label}
+                    </Select.Item>
+                  ))}
                 </Select>
               )}
             </Field>
-            <Field label="대상 ID" error={errors.targetId}>
-              {(id) => (
-                <Input
-                  id={id}
-                  inputMode="numeric"
-                  value={values.targetId}
-                  onChange={(event) => setField('targetId', event.target.value)}
-                  placeholder="예: 20"
-                  aria-invalid={Boolean(errors.targetId)}
-                />
-              )}
-            </Field>
+            {values.targetType === 'PROJECT' ? (
+              <Field label="프로젝트 slug *" error={errors.targetSlug}>
+                {(id) => (
+                  <Input
+                    id={id}
+                    value={values.targetSlug}
+                    onChange={(event) => setField('targetSlug', event.target.value)}
+                    placeholder="예: loop"
+                    aria-invalid={Boolean(errors.targetSlug)}
+                  />
+                )}
+              </Field>
+            ) : (
+              <Field label="대상 ID" error={errors.targetId}>
+                {(id) => (
+                  <Input
+                    id={id}
+                    inputMode="numeric"
+                    value={values.targetId}
+                    onChange={(event) => setField('targetId', event.target.value)}
+                    placeholder="예: 20"
+                    aria-invalid={Boolean(errors.targetId)}
+                  />
+                )}
+              </Field>
+            )}
           </div>
         ) : (
           <div className="grid gap-5 md:grid-cols-2">
