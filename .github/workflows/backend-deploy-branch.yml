@@ -1,0 +1,57 @@
+name: Sync Backend Deploy Branch
+
+# 백엔드 변경이 있을 때만 배포 브랜치를 옮긴다.
+# CodePipeline은 deploy/* 브랜치를 보고 배포하므로, 프론트엔드만 바뀐 머지는 배포되지 않는다.
+#
+# develop → deploy/dev
+# main    → deploy/prod
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - backend/**
+      - appspec.yml
+      - buildspec.yml
+  # 코드 변경 없이 재배포가 필요할 때 사용한다. (예: 서버 환경 변수 변경)
+  workflow_dispatch:
+
+concurrency:
+  # 연달아 머지되어도 순서대로 하나씩 옮겨, 예전 커밋이 나중에 반영되지 않게 한다.
+  group: backend-deploy-branch-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Move deploy branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          case "$SOURCE_BRANCH" in
+            develop) TARGET_BRANCH="deploy/dev" ;;
+            main)    TARGET_BRANCH="deploy/prod" ;;
+            *) echo "::error::지원하지 않는 소스 브랜치: $SOURCE_BRANCH"; exit 1 ;;
+          esac
+
+          # 배포 브랜치는 항상 소스 브랜치와 같은 커밋을 가리키도록 덮어쓴다.
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$TARGET_BRANCH" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/$TARGET_BRANCH" \
+              -f sha="$GITHUB_SHA" -F force=true >/dev/null
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f ref="refs/heads/$TARGET_BRANCH" -f sha="$GITHUB_SHA" >/dev/null
+          fi
+
+          echo "$TARGET_BRANCH → ${GITHUB_SHA::7}"
