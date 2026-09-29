@@ -1,11 +1,15 @@
 import { useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { projectDetailQueryOptions } from '@/api/project-detail';
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { getButtonStyles } from '@/components/Button';
 import { MarkdownContent } from '@/components/MarkdownContent';
+import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
+import { ProjectLikeButton } from '@/components/projects/ProjectLikeButton';
 import { ProjectNotApprovedError } from '@/errors/project';
+import type { ProjectDetail } from '@/types/project';
 
 export function ProjectDetailContent({ projectId }: { projectId: string }) {
   const { data: project } = useSuspenseQuery(projectDetailQueryOptions(projectId));
@@ -51,10 +55,21 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
           )}
         </div>
         <div className="min-w-0 self-center lg:col-span-2">
-          <p className="text-primary-600 text-sm font-semibold">
-            우아한테크코스 {project.cohort}기 ·{' '}
-            {project.serviceStatus === 'OPERATING' ? '운영 중' : project.serviceStatus}
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-primary-600 text-sm font-semibold">
+              우아한테크코스 {project.cohort}기 ·{' '}
+              {project.serviceStatus === 'OPERATING' ? '운영 중' : project.serviceStatus}
+            </p>
+            {project.editable && (
+              <Link
+                to="/projects/$id/edit"
+                params={{ id: String(project.id) }}
+                className={getButtonStyles({ variant: 'outline', size: 'sm' })}
+              >
+                프로젝트 수정
+              </Link>
+            )}
+          </div>
           <h1 className="mt-3 text-3xl font-bold break-words">{project.title}</h1>
           <p className="mt-4 text-base leading-relaxed break-words text-gray-600">
             {project.tagline}
@@ -71,6 +86,11 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
                 {link.label}
               </a>
             ))}
+            <ProjectLikeButton
+              projectId={project.id}
+              likeCount={project.likeCount}
+              likedByMe={project.likedByMe}
+            />
           </div>
         </div>
       </section>
@@ -86,24 +106,11 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
             {project.members.length ? (
               <ul className="mt-4 space-y-3">
                 {project.members.map((member, index) => (
-                  <li
+                  <ProjectMemberProfile
                     key={member.handle ?? `${member.displayName}-${index}`}
-                    className="flex items-center gap-3"
-                  >
-                    <Avatar src={member.avatarUrl ?? undefined} alt="" />
-                    <p className="text-sm font-semibold break-words">
-                      {member.displayName}
-                      {index === 0 ? ' (작성자)' : ''}
-                      {member.cohort !== null && ` · ${member.cohort}기`}{' '}
-                      {(
-                        {
-                          ANDROID: '안드로이드',
-                          BACKEND: '백엔드',
-                          FRONTEND: '프론트엔드',
-                        } as Record<string, string>
-                      )[member.track ?? ''] ?? member.track}
-                    </p>
-                  </li>
+                    member={member}
+                    isAuthor={index === 0}
+                  />
                 ))}
               </ul>
             ) : (
@@ -127,5 +134,57 @@ export function ProjectDetailContent({ projectId }: { projectId: string }) {
         </aside>
       </div>
     </>
+  );
+}
+
+function ProjectMemberProfile({
+  member,
+  isAuthor,
+}: {
+  member: ProjectDetail['members'][number];
+  isAuthor: boolean;
+}) {
+  const profile = (
+    <>
+      <Avatar src={member.avatarUrl ?? undefined} alt="" />
+      <div className="min-w-0 text-sm">
+        <p className="flex items-center gap-1.5 font-semibold break-words">
+          <span>
+            {member.displayName}
+            {isAuthor ? ' (작성자)' : ''}
+          </span>
+          <CrewStatusBadge userType={member.userType} cohort={member.cohort} />
+        </p>
+        <p className="text-gray-500">
+          {member.cohort != null && `${member.cohort}기 `}
+          {(
+            {
+              ANDROID: '안드로이드',
+              BACKEND: '백엔드',
+              FRONTEND: '프론트엔드',
+            } as Record<string, string>
+          )[member.track ?? ''] ?? member.track}
+        </p>
+      </div>
+    </>
+  );
+  const className =
+    'flex items-center gap-3 rounded-sm focus-visible:outline-primary-600 focus-visible:outline-2';
+
+  return (
+    <li className="min-w-0">
+      {member.handle ? (
+        <Link
+          to="/users/$handle"
+          params={{ handle: member.handle }}
+          aria-label={`${member.displayName} 프로필 보기`}
+          className={`${className} group`}
+        >
+          {profile}
+        </Link>
+      ) : (
+        <div className={className}>{profile}</div>
+      )}
+    </li>
   );
 }

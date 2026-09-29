@@ -7,6 +7,7 @@ import type {
   ProjectFilterOptionsData,
   ProjectListItemData,
   ProjectListMetaData,
+  ProjectUpdateRequest as GeneratedProjectUpdateRequest,
   TechTagItem,
   UserProjectListItemData,
   UserSearchItem,
@@ -14,6 +15,7 @@ import type {
 
 /** POST /api/v1/projects 요청 본문 */
 export type ProjectCreateRequest = ProjectCreateBody;
+export type ProjectUpdateRequest = GeneratedProjectUpdateRequest;
 
 /** 등록 응답은 `{ projectId, slug }`다. 승인 상태와 생성 시각은 내려오지 않는다. */
 export type ProjectCreated = ProjectCreatedData;
@@ -42,6 +44,7 @@ export interface ProjectFormValues {
   techTags: TechTag[];
   /** 제출에는 handle만 쓰지만, 칩에 이름을 보여줘야 해서 고른 크루를 통째로 들고 있는다 */
   members: CrewSearchItem[];
+  serviceStatus?: 'OPERATING' | 'CLOSED';
 }
 
 export type ProjectFormErrors = Partial<Record<keyof ProjectFormValues, string>>;

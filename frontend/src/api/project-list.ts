@@ -45,7 +45,7 @@ export async function fetchProjectListPage(
   }
 
   return {
-    projects: response.data,
+    projects: response.data as ProjectSummary[],
     meta: response.meta ?? { ...EMPTY_META, totalCount: response.data.length },
   };
 }
