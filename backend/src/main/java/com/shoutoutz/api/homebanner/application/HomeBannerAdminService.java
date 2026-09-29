@@ -42,13 +42,13 @@ public class HomeBannerAdminService {
         validateAdmin(role);
         URI imageUrl = imageService.createImageUrl(request.mediaId());
         BannerTargetType targetType = targetTypeOf(request.targetType());
-        targetValidator.validate(targetType, request.targetId());
+        Long targetId = targetValidator.resolveTargetId(targetType, request.targetId(), request.targetSlug());
 
         HomeBanner saved = homeBannerRepository.save(HomeBanner.create(
                 request.mediaId(),
                 BannerDestinationType.valueOf(request.destinationType()),
                 targetType,
-                request.targetId(),
+                targetId,
                 linkTypeOf(request.linkType()),
                 request.linkUrl(),
                 request.displayOrder(),
@@ -68,13 +68,13 @@ public class HomeBannerAdminService {
         HomeBanner banner = findBanner(bannerId);
         URI imageUrl = imageService.createImageUrl(request.mediaId());
         BannerTargetType targetType = targetTypeOf(request.targetType());
-        targetValidator.validate(targetType, request.targetId());
+        Long targetId = targetValidator.resolveTargetId(targetType, request.targetId(), request.targetSlug());
 
         HomeBanner updated = banner.update(
                 request.mediaId(),
                 BannerDestinationType.valueOf(request.destinationType()),
                 targetType,
-                request.targetId(),
+                targetId,
                 linkTypeOf(request.linkType()),
                 request.linkUrl(),
                 request.displayOrder(),
