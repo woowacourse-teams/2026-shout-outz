@@ -113,6 +113,8 @@ class ProjectHttpApiTest {
             + "techTagIds와 memberHandles도 전체 목록을 순서대로 보낸다. "
             + "반려된 프로젝트를 수정하면 재심사 요청으로 처리되어 approvalStatus가 PENDING으로 바뀌고, "
             + "그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. "
+            + "githubRepositoryUrl은 woowacourse-teams 조직의 리포지토리만 받으며, "
+            + "리포지토리 이름 뒤의 경로, 쿼리, 앵커는 버리고 https://github.com/woowacourse-teams/{repo} 형태로 저장한다. "
             + "요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나, "
             + "deploymentUrl 없이 serviceStatus를 OPERATING으로 보내면 400, 로그인하지 않았으면 401, "
             + "없거나 형식이 틀린 slug이거나, 삭제됐거나 다른 사람의 프로젝트면 404, 이미 등록된 리포지토리로 바꾸면 409를 반환한다.";
@@ -274,7 +276,7 @@ class ProjectHttpApiTest {
                         "title", "title은 필수입니다."),
                 Arguments.of("project-create-invalid-github-repository-url",
                         "\"https://github.com/woowacourse-teams/2026-loop\"",
-                        "\"https://github.com/dhyepark/2026-loop\"",
+                        "\"https://github.com/other-org/2026-loop\"",
                         "githubRepositoryUrl",
                         "githubRepositoryUrl은 https://github.com/woowacourse-teams/{repo} 형식이어야 합니다."),
                 Arguments.of("project-create-invalid-deployment-url",

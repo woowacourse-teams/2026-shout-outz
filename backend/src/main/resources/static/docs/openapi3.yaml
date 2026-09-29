@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
-                    ,\"message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
+                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\":\"displayName은\
+                    \ 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"displayOrder는\
+                    \ 0 이상이어야 합니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -704,7 +704,7 @@ paths:
                     "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                     "cohort": 6,
                     "thumbnailImageId": 12,
-                    "githubRepositoryUrl": "https://github.com/dhyepark/2026-loop",
+                    "githubRepositoryUrl": "https://github.com/other-org/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "techTagIds": [1, 2, 3],
@@ -1652,10 +1652,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
+                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -2029,10 +2029,11 @@ paths:
         \ media://{mediaId} 형식으로 정규화하며, 상세 조회 응답의 CDN URL은 기존 프로젝트 미디어와 매칭되는 경우에만\
         \ 본문 이미지 참조로 복원한다. 매칭되지 않는 외부 이미지 URL은 허용하지 않는다. techTagIds와 memberHandles도\
         \ 전체 목록을 순서대로 보낸다. 반려된 프로젝트를 수정하면 재심사 요청으로 처리되어 approvalStatus가 PENDING으로\
-        \ 바뀌고, 그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. 요청값과 기술 스택, 썸네일, 본\
-        문 이미지, 팀원이 유효하지 않거나, deploymentUrl 없이 serviceStatus를 OPERATING으로 보내면 400,\
-        \ 로그인하지 않았으면 401, 없거나 형식이 틀린 slug이거나, 삭제됐거나 다른 사람의 프로젝트면 404, 이미 등록된 리포지토리\
-        로 바꾸면 409를 반환한다."
+        \ 바뀌고, 그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. githubRepositoryUrl은\
+        \ woowacourse-teams 조직의 리포지토리만 받으며, 리포지토리 이름 뒤의 경로, 쿼리, 앵커는 버리고 https://github.com/woowacourse-teams/{repo}\
+        \ 형태로 저장한다. 요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나, deploymentUrl 없이 serviceStatus를\
+        \ OPERATING으로 보내면 400, 로그인하지 않았으면 401, 없거나 형식이 틀린 slug이거나, 삭제됐거나 다른 사람의 프로\
+        젝트면 404, 이미 등록된 리포지토리로 바꾸면 409를 반환한다."
       operationId: project-update
       parameters:
       - name: slug
@@ -3364,9 +3365,9 @@ paths:
               examples:
                 user-verification-request-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"nickname\"\
-                    ,\"message\":\"nickname은 필수입니다.\"},{\"field\":\"cohort\",\"message\"\
-                    :\"cohort는 양의 정수여야 합니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
+                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"}]}"
         "201":
           description: "201"
           content:
@@ -6769,61 +6770,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    UserVerificationRequestCreateSuccessResponse:
-      title: UserVerificationRequestCreateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - nickname
-          - requestId
-          - requestedAt
-          - status
-          - userType
-          type: object
-          properties:
-            requestedAt:
-              type: string
-              description: 신청 시각(ISO-8601)
-            requestId:
-              type: number
-              description: 인증 신청 ID
-            nickname:
-              type: string
-              description: 신청 닉네임
-            cohort:
-              type: number
-              description: 신청 기수
-              nullable: true
-            userType:
-              type: string
-              description: 신청 유형
-              enum:
-              - GENERAL
-              - WOOWACOURSE_CREW
-              - WOOWACOURSE_COACH
-            track:
-              type: string
-              description: 신청 트랙
-              nullable: true
-              enum:
-              - BACKEND
-              - ANDROID
-              - FRONTEND
-            status:
-              type: string
-              description: 신청 상태
-              enum:
-              - PENDING
-              - APPROVED
-              - REJECTED
-          description: 생성된 인증 신청
-        status:
-          type: string
-          description: 응답 상태
     NoticeCreateSuccessResponse:
       title: NoticeCreateSuccessResponse
       required:
@@ -6918,6 +6864,61 @@ components:
               - NOTICE
               - EVENT
           description: 생성된 공지
+        status:
+          type: string
+          description: 응답 상태
+    UserVerificationRequestCreateSuccessResponse:
+      title: UserVerificationRequestCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - nickname
+          - requestId
+          - requestedAt
+          - status
+          - userType
+          type: object
+          properties:
+            requestedAt:
+              type: string
+              description: 신청 시각(ISO-8601)
+            requestId:
+              type: number
+              description: 인증 신청 ID
+            nickname:
+              type: string
+              description: 신청 닉네임
+            cohort:
+              type: number
+              description: 신청 기수
+              nullable: true
+            userType:
+              type: string
+              description: 신청 유형
+              enum:
+              - GENERAL
+              - WOOWACOURSE_CREW
+              - WOOWACOURSE_COACH
+            track:
+              type: string
+              description: 신청 트랙
+              nullable: true
+              enum:
+              - BACKEND
+              - ANDROID
+              - FRONTEND
+            status:
+              type: string
+              description: 신청 상태
+              enum:
+              - PENDING
+              - APPROVED
+              - REJECTED
+          description: 생성된 인증 신청
         status:
           type: string
           description: 응답 상태
@@ -8087,6 +8088,30 @@ components:
         status:
           type: string
           description: 응답 상태
+    CategorySaveRequest:
+      title: CategorySaveRequest
+      required:
+      - displayName
+      - displayOrder
+      - slug
+      - type
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 고유 표시 이름
+        displayOrder:
+          type: number
+          description: 0 이상 32767 이하 표시 순서
+        type:
+          type: string
+          description: 카테고리 유형
+          enum:
+          - GENERAL
+          - EVENT
+        slug:
+          type: string
+          description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
     ProjectFilterOptionsSuccessResponse:
       title: ProjectFilterOptionsSuccessResponse
       required:
@@ -8149,30 +8174,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    CategorySaveRequest:
-      title: CategorySaveRequest
-      required:
-      - displayName
-      - displayOrder
-      - slug
-      - type
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 고유 표시 이름
-        displayOrder:
-          type: number
-          description: 0 이상 32767 이하 표시 순서
-        type:
-          type: string
-          description: 카테고리 유형
-          enum:
-          - GENERAL
-          - EVENT
-        slug:
-          type: string
-          description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
     NewsUpdateRequest:
       title: NewsUpdateRequest
       required:
