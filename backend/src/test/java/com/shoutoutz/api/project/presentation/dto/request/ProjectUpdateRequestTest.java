@@ -149,6 +149,31 @@ class ProjectUpdateRequestTest {
         assertThat(validator.validate(request)).isEmpty();
     }
 
+    @Test
+    void 리포지토리_이름_뒤에_경로와_쿼리가_붙은_GitHub_URL을_허용한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("").replace(
+                        "\"https://github.com/woowacourse-teams/2026-loop\"",
+                        "\"https://github.com/woowacourse-teams/2026-loop/tree/main?tab=readme\""
+                ),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(validator.validate(request)).isEmpty();
+    }
+
+    @Test
+    void woowacourse_teams가_아닌_owner의_GitHub_URL은_거절한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("").replace("woowacourse-teams/2026-loop", "dhyepark/2026-loop"),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("githubRepositoryUrl");
+    }
+
     private static String baseJson(String thumbnailField) {
         return """
                 {

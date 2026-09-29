@@ -20,9 +20,13 @@ class GithubRepositoryUrlTest {
             "https://github.com/woowacourse-teams/2026-loop.git",
             "https://github.com/woowacourse-teams/2026-loop/",
             "https://www.github.com/woowacourse-teams/2026-loop",
-            "https://github.com/Woowacourse-Teams/2026-Loop"
+            "https://github.com/Woowacourse-Teams/2026-Loop",
+            "https://github.com/woowacourse-teams/2026-loop/tree/main",
+            "https://github.com/woowacourse-teams/2026-loop?tab=readme-ov-file",
+            "https://github.com/woowacourse-teams/2026-loop#readme",
+            "https://github.com/woowacourse-teams/2026-loop.git/tree/main"
     })
-    @DisplayName("GitHub 리포지토리 URL에서 .git과 끝 슬래시를 뺀 리포지토리 이름을 추출한다.")
+    @DisplayName("GitHub 리포지토리 URL에서 .git과 뒤에 붙은 경로, 쿼리, 앵커를 뺀 리포지토리 이름을 추출한다.")
     void extractsRepositoryName(String url) {
         assertThat(new GithubRepositoryUrl(url).getRepositoryName()).isEqualTo("2026-loop");
     }
@@ -34,7 +38,10 @@ class GithubRepositoryUrlTest {
             "https://github.com/woowacourse-teams/2026-loop.git",
             "https://github.com/woowacourse-teams/2026-loop/",
             "https://github.com/Woowacourse-Teams/2026-Loop",
-            "https://www.github.com/WOOWACOURSE-TEAMS/2026-LOOP.git/"
+            "https://www.github.com/WOOWACOURSE-TEAMS/2026-LOOP.git/",
+            "https://github.com/woowacourse-teams/2026-loop/tree/main?tab=readme#readme",
+            "https://github.com/woowacourse-teams/2026-loop/issues",
+            "https://github.com/woowacourse-teams/2026-loop.git/tree/main#readme"
     })
     @DisplayName("같은 리포지토리를 가리키는 표기는 모두 하나의 값으로 정규화한다.")
     void normalizesToCanonicalForm(String url) {
@@ -55,12 +62,36 @@ class GithubRepositoryUrlTest {
             "   ",
             "https://naver.com",
             "https://github.com/woowacourse-teams",
-            "https://github.com/woowacourse-teams/2026-loop/issues",
+            "https://github.com/woowacourse-teams/",
+            "https://github.com/woowacourse-teams?tab=repositories",
             "http://github.com/woowacourse-teams/2026-loop",
             "ftp://github.com/woowacourse-teams/2026-loop"
     })
     @DisplayName("리포지토리 이름을 뽑을 수 없는 URL은 도메인 예외를 던진다.")
     void rejectsInvalidUrl(String url) {
+        assertThatThrownBy(() -> new GithubRepositoryUrl(url))
+                .isInstanceOfSatisfying(DomainValidationException.class,
+                        error -> assertThat(error.getErrorCode())
+                                .isEqualTo(ProjectErrorCode.PROJECT_INVALID_GITHUB_REPOSITORY_URL));
+    }
+
+    @Test
+    @DisplayName("이름에 .git 이 들어가도 끝에 붙은 접미사가 아니면 이름의 일부로 본다.")
+    void keepsDotGitInsideRepositoryName() {
+        GithubRepositoryUrl url = new GithubRepositoryUrl("https://github.com/woowacourse-teams/2026-loop.github.io");
+
+        assertThat(url.getRepositoryName()).isEqualTo("2026-loop.github.io");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "https://github.com/woowacourse/2026-loop",
+            "https://github.com/dhyepark/2026-loop",
+            "https://github.com/woowacourse-teams-fork/2026-loop",
+            "https://github.com/my-woowacourse-teams/2026-loop"
+    })
+    @DisplayName("woowacourse-teams 가 아닌 owner 의 리포지토리는 도메인 예외를 던진다.")
+    void rejectsOtherOwner(String url) {
         assertThatThrownBy(() -> new GithubRepositoryUrl(url))
                 .isInstanceOfSatisfying(DomainValidationException.class,
                         error -> assertThat(error.getErrorCode())

@@ -11,10 +11,11 @@ import java.util.regex.Pattern;
 
 /**
  * GitHub 리포지토리 URL
+ * 우아한테크코스 프로젝트만 등록하도록 owner 는 woowacourse-teams 만 허용한다. 대소문자는 구분하지 않는다.
  * slug 를 만드는 재료이므로, 리포지토리 이름을 뽑을 수 있는 형식인지 검증한다.
- * www. 과 .git 접미사, 끝 슬래시는 허용하고 이름에서 제외한다.
- * 같은 리포지토리를 다르게 적은 값이 서로 다른 값으로 남으면 중복 등록을 막을 수 없으므로,
- * 검증을 통과한 값은 https://github.com/{owner}/{repo} 형태의 소문자로 정규화해서 갖는다.
+ * www. 과 이름 뒤에 붙은 .git, 끝 슬래시, 경로(/tree/main), 쿼리(?tab=readme), 앵커(#readme)는 허용하고 버린다.
+ * 같은 리포지토리를 다르게 적은 값이 서로 다른 값으로 남으면 중복 등록을 막을 수 없고, 깊은 경로는 브랜치나 파일이 사라지면 깨지므로,
+ * 검증을 통과한 값은 https://github.com/woowacourse-teams/{repo} 형태의 소문자로 정규화해서 갖는다.
  */
 public record GithubRepositoryUrl(String value) {
 
@@ -22,7 +23,7 @@ public record GithubRepositoryUrl(String value) {
      * 요청 DTO 의 @Pattern 에서도 같은 규칙을 쓰도록 공개한다.
      */
     public static final String REGEX =
-            "^https://(?:www\\.)?github\\.com/([A-Za-z0-9._-]+)/([A-Za-z0-9._-]+?)(?:\\.git)?/?$";
+            "^https://(?:www\\.)?github\\.com/((?i:woowacourse-teams))/([A-Za-z0-9._-]+?)(?:\\.git)?(?:[/?#].*)?$";
     private static final Pattern PATTERN = Pattern.compile(REGEX);
     private static final int OWNER_GROUP = 1;
     private static final int REPOSITORY_NAME_GROUP = 2;
@@ -49,6 +50,7 @@ public record GithubRepositoryUrl(String value) {
 
     /**
      * 'https://www.github.com/Woowacourse-Teams/2026-Loop.git/' -> 'https://github.com/woowacourse-teams/2026-loop'
+     * 'https://github.com/woowacourse-teams/2026-loop/tree/main?tab=readme#readme' -> 'https://github.com/woowacourse-teams/2026-loop'
      * GitHub 은 owner 와 리포지토리 이름의 대소문자를 구분하지 않으므로, 소문자로 모아도 같은 리포지토리를 가리킨다.
      */
     private static String normalize(String value) {
