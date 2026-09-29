@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"type\",\"\
-                    message\":\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\"\
-                    :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug 형식이\
+                    \ 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1108,10 +1108,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"}]}"
+                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1510,8 +1510,12 @@ paths:
                 home-banner-find-all:
                   value: "{\"status\":\"success\",\"data\":[{\"bannerId\":100,\"mediaId\"\
                     :10,\"imageUrl\":\"https://cdn.example.com/banner\",\"destinationType\"\
-                    :\"URL\",\"targetType\":null,\"targetId\":null,\"linkType\":\"\
-                    EXTERNAL_URL\",\"linkUrl\":\"https://example.com/promotion\"}]}"
+                    :\"URL\",\"targetType\":null,\"targetId\":null,\"targetSlug\"\
+                    :null,\"linkType\":\"EXTERNAL_URL\",\"linkUrl\":\"https://example.com/promotion\"\
+                    },{\"bannerId\":101,\"mediaId\":11,\"imageUrl\":\"https://cdn.example.com/banner-project\"\
+                    ,\"destinationType\":\"TARGET\",\"targetType\":\"PROJECT\",\"\
+                    targetId\":null,\"targetSlug\":\"loop\",\"linkType\":null,\"linkUrl\"\
+                    :null}]}"
   /api/v1/home/statistics:
     get:
       tags:
@@ -1652,10 +1656,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
+                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
+                    eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -2650,10 +2654,10 @@ paths:
                 admin-home-banner-find-all:
                   value: "{\"status\":\"success\",\"data\":[{\"bannerId\":100,\"mediaId\"\
                     :10,\"imageUrl\":\"https://cdn.example.com/banner\",\"destinationType\"\
-                    :\"TARGET\",\"targetType\":\"PROJECT\",\"targetId\":20,\"linkType\"\
-                    :null,\"linkUrl\":null,\"displayOrder\":0,\"active\":true,\"createdBy\"\
-                    :1,\"createdAt\":\"2026-09-17T00:00:00Z\",\"updatedAt\":\"2026-09-17T00:00:00Z\"\
-                    }]}"
+                    :\"TARGET\",\"targetType\":\"PROJECT\",\"targetId\":null,\"targetSlug\"\
+                    :\"loop\",\"linkType\":null,\"linkUrl\":null,\"displayOrder\"\
+                    :0,\"active\":true,\"createdBy\":1,\"createdAt\":\"2026-09-17T00:00:00Z\"\
+                    ,\"updatedAt\":\"2026-09-17T00:00:00Z\"}]}"
     post:
       tags:
       - Home Banner Admin
@@ -2687,9 +2691,9 @@ paths:
                     "mediaId": 10,
                     "destinationType": "TARGET",
                     "targetType": "PROJECT",
-                    "targetId": 20,
+                    "targetSlug": "loop",
                     "linkType": "INTERNAL_PATH",
-                    "linkUrl": "/projects/20",
+                    "linkUrl": "/projects/@loop",
                     "displayOrder": 0,
                     "active": true
                   }
@@ -2699,7 +2703,8 @@ paths:
                     "mediaId": 10,
                     "destinationType": "TARGET",
                     "targetType": "PROJECT",
-                    "targetId": 20,
+                    "targetId": null,
+                    "targetSlug": "loop",
                     "linkType": null,
                     "linkUrl": null,
                     "displayOrder": 0,
@@ -2727,10 +2732,10 @@ paths:
                 admin-home-banner-save:
                   value: "{\"status\":\"success\",\"data\":{\"bannerId\":100,\"mediaId\"\
                     :10,\"imageUrl\":\"https://cdn.example.com/banner\",\"destinationType\"\
-                    :\"TARGET\",\"targetType\":\"PROJECT\",\"targetId\":20,\"linkType\"\
-                    :null,\"linkUrl\":null,\"displayOrder\":0,\"active\":true,\"createdBy\"\
-                    :1,\"createdAt\":\"2026-09-17T00:00:00Z\",\"updatedAt\":\"2026-09-17T00:00:00Z\"\
-                    }}"
+                    :\"TARGET\",\"targetType\":\"PROJECT\",\"targetId\":null,\"targetSlug\"\
+                    :\"loop\",\"linkType\":null,\"linkUrl\":null,\"displayOrder\"\
+                    :0,\"active\":true,\"createdBy\":1,\"createdAt\":\"2026-09-17T00:00:00Z\"\
+                    ,\"updatedAt\":\"2026-09-17T00:00:00Z\"}}"
   /api/v1/admin/projects/{projectId}:
     get:
       tags:
@@ -3583,7 +3588,8 @@ paths:
                     "mediaId": 10,
                     "destinationType": "TARGET",
                     "targetType": "PROJECT",
-                    "targetId": 20,
+                    "targetId": null,
+                    "targetSlug": "loop",
                     "linkType": null,
                     "linkUrl": null,
                     "displayOrder": 0,
@@ -3600,10 +3606,10 @@ paths:
                 admin-home-banner-update:
                   value: "{\"status\":\"success\",\"data\":{\"bannerId\":100,\"mediaId\"\
                     :10,\"imageUrl\":\"https://cdn.example.com/banner\",\"destinationType\"\
-                    :\"TARGET\",\"targetType\":\"PROJECT\",\"targetId\":20,\"linkType\"\
-                    :null,\"linkUrl\":null,\"displayOrder\":0,\"active\":true,\"createdBy\"\
-                    :1,\"createdAt\":\"2026-09-17T00:00:00Z\",\"updatedAt\":\"2026-09-17T00:00:00Z\"\
-                    }}"
+                    :\"TARGET\",\"targetType\":\"PROJECT\",\"targetId\":null,\"targetSlug\"\
+                    :\"loop\",\"linkType\":null,\"linkUrl\":null,\"displayOrder\"\
+                    :0,\"active\":true,\"createdBy\":1,\"createdAt\":\"2026-09-17T00:00:00Z\"\
+                    ,\"updatedAt\":\"2026-09-17T00:00:00Z\"}}"
     delete:
       tags:
       - Home Banner Admin
@@ -5452,85 +5458,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    HomeBannerAdminFindAllSuccessResponse:
-      title: HomeBannerAdminFindAllSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 홈 배너 데이터
-          items:
-            required:
-            - active
-            - bannerId
-            - createdAt
-            - createdBy
-            - destinationType
-            - displayOrder
-            - imageUrl
-            - mediaId
-            - updatedAt
-            type: object
-            properties:
-              targetId:
-                type: number
-                description: 대상 리소스 ID
-                nullable: true
-              bannerId:
-                type: number
-                description: 배너 ID
-              displayOrder:
-                type: number
-                description: 표시 순서
-              active:
-                type: boolean
-                description: 활성 여부
-              targetType:
-                type: string
-                description: 대상 리소스 유형
-                nullable: true
-                enum:
-                - NEWS
-                - PROJECT
-                - FEED
-              mediaId:
-                type: number
-                description: 미디어 ID
-              createdAt:
-                type: string
-                description: 생성 시각
-              createdBy:
-                type: number
-                description: 등록 관리자 ID
-              imageUrl:
-                type: string
-                description: 표시용 이미지 URL
-              linkUrl:
-                type: string
-                description: 내부 경로 또는 외부 HTTPS URL
-                nullable: true
-              destinationType:
-                type: string
-                description: 이동 방식
-                enum:
-                - TARGET
-                - URL
-              linkType:
-                type: string
-                description: URL 유형
-                nullable: true
-                enum:
-                - INTERNAL_PATH
-                - EXTERNAL_URL
-              updatedAt:
-                type: string
-                description: 수정 시각
-        status:
-          type: string
-          description: 응답 상태
     UserVerificationRequestCreateRequest:
       title: UserVerificationRequestCreateRequest
       required:
@@ -5560,53 +5487,6 @@ components:
           - BACKEND
           - ANDROID
           - FRONTEND
-    HomeBannerUpsertRequest:
-      title: HomeBannerUpsertRequest
-      required:
-      - active
-      - destinationType
-      - displayOrder
-      - mediaId
-      type: object
-      properties:
-        targetId:
-          type: number
-          description: 대상 리소스 ID
-          nullable: true
-        displayOrder:
-          type: number
-          description: 0 이상 표시 순서
-        linkUrl:
-          type: string
-          description: 내부 경로 또는 외부 HTTPS URL
-          nullable: true
-        active:
-          type: boolean
-          description: 즉시 노출 여부
-        destinationType:
-          type: string
-          description: 이동 방식
-          enum:
-          - TARGET
-          - URL
-        linkType:
-          type: string
-          description: URL 유형
-          nullable: true
-          enum:
-          - INTERNAL_PATH
-          - EXTERNAL_URL
-        targetType:
-          type: string
-          description: 대상 리소스 유형
-          nullable: true
-          enum:
-          - NEWS
-          - PROJECT
-          - FEED
-        mediaId:
-          type: number
-          description: READY HOME_BANNER 미디어 ID
     ProjectCommentUpdateRequest:
       title: ProjectCommentUpdateRequest
       required:
@@ -6116,83 +5996,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    HomeBannerAdminSaveSuccessResponse:
-      title: HomeBannerAdminSaveSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - active
-          - bannerId
-          - createdAt
-          - createdBy
-          - destinationType
-          - displayOrder
-          - imageUrl
-          - mediaId
-          - updatedAt
-          type: object
-          properties:
-            targetId:
-              type: number
-              description: 대상 리소스 ID
-              nullable: true
-            bannerId:
-              type: number
-              description: 배너 ID
-            displayOrder:
-              type: number
-              description: 표시 순서
-            active:
-              type: boolean
-              description: 활성 여부
-            targetType:
-              type: string
-              description: 대상 리소스 유형
-              nullable: true
-              enum:
-              - NEWS
-              - PROJECT
-              - FEED
-            mediaId:
-              type: number
-              description: 미디어 ID
-            createdAt:
-              type: string
-              description: 생성 시각
-            createdBy:
-              type: number
-              description: 등록 관리자 ID
-            imageUrl:
-              type: string
-              description: 표시용 이미지 URL
-            linkUrl:
-              type: string
-              description: 내부 경로 또는 외부 HTTPS URL
-              nullable: true
-            destinationType:
-              type: string
-              description: 이동 방식
-              enum:
-              - TARGET
-              - URL
-            linkType:
-              type: string
-              description: URL 유형
-              nullable: true
-              enum:
-              - INTERNAL_PATH
-              - EXTERNAL_URL
-            updatedAt:
-              type: string
-              description: 수정 시각
-          description: 홈 배너 데이터
-        status:
-          type: string
-          description: 응답 상태
     ProjectCreateSuccessResponse:
       title: ProjectCreateSuccessResponse
       required:
@@ -6478,65 +6281,6 @@ components:
         eventEndAt:
           type: string
           description: 이벤트 종료 시각
-    HomeBannerFindAllSuccessResponse:
-      title: HomeBannerFindAllSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 활성 홈 배너 목록
-          items:
-            required:
-            - bannerId
-            - destinationType
-            - imageUrl
-            - mediaId
-            type: object
-            properties:
-              targetId:
-                type: number
-                description: 대상 리소스 ID
-                nullable: true
-              bannerId:
-                type: number
-                description: 배너 ID
-              imageUrl:
-                type: string
-                description: 표시용 이미지 URL
-              linkUrl:
-                type: string
-                description: 내부 경로 또는 외부 HTTPS URL
-                nullable: true
-              destinationType:
-                type: string
-                description: 이동 방식
-                enum:
-                - TARGET
-                - URL
-              linkType:
-                type: string
-                description: URL 유형
-                nullable: true
-                enum:
-                - INTERNAL_PATH
-                - EXTERNAL_URL
-              targetType:
-                type: string
-                description: 대상 리소스 유형
-                nullable: true
-                enum:
-                - NEWS
-                - PROJECT
-                - FEED
-              mediaId:
-                type: number
-                description: 배너 이미지 미디어 ID
-        status:
-          type: string
-          description: 응답 상태
     ProjectRestoreSuccessResponse:
       title: ProjectRestoreSuccessResponse
       required:
@@ -6940,6 +6684,57 @@ components:
         status:
           type: string
           description: 응답 상태
+    HomeBannerUpsertRequest:
+      title: HomeBannerUpsertRequest
+      required:
+      - active
+      - destinationType
+      - displayOrder
+      - mediaId
+      type: object
+      properties:
+        targetId:
+          type: number
+          description: 대상 소식·피드 ID. 대상이 소식·피드일 때만 넣는다.
+          nullable: true
+        displayOrder:
+          type: number
+          description: 0 이상 표시 순서
+        linkUrl:
+          type: string
+          description: 내부 경로 또는 외부 HTTPS URL
+          nullable: true
+        active:
+          type: boolean
+          description: 즉시 노출 여부
+        destinationType:
+          type: string
+          description: 이동 방식
+          enum:
+          - TARGET
+          - URL
+        linkType:
+          type: string
+          description: URL 유형
+          nullable: true
+          enum:
+          - INTERNAL_PATH
+          - EXTERNAL_URL
+        targetType:
+          type: string
+          description: 대상 리소스 유형
+          nullable: true
+          enum:
+          - NEWS
+          - PROJECT
+          - FEED
+        targetSlug:
+          type: string
+          description: 대상 프로젝트 slug. 대상이 프로젝트일 때만 넣는다.
+          nullable: true
+        mediaId:
+          type: number
+          description: READY HOME_BANNER 미디어 ID
     HomeStatisticsSuccessResponse:
       title: HomeStatisticsSuccessResponse
       required:
@@ -7519,83 +7314,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    HomeBannerAdminUpdateSuccessResponse:
-      title: HomeBannerAdminUpdateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - active
-          - bannerId
-          - createdAt
-          - createdBy
-          - destinationType
-          - displayOrder
-          - imageUrl
-          - mediaId
-          - updatedAt
-          type: object
-          properties:
-            targetId:
-              type: number
-              description: 대상 리소스 ID
-              nullable: true
-            bannerId:
-              type: number
-              description: 배너 ID
-            displayOrder:
-              type: number
-              description: 표시 순서
-            active:
-              type: boolean
-              description: 활성 여부
-            targetType:
-              type: string
-              description: 대상 리소스 유형
-              nullable: true
-              enum:
-              - NEWS
-              - PROJECT
-              - FEED
-            mediaId:
-              type: number
-              description: 미디어 ID
-            createdAt:
-              type: string
-              description: 생성 시각
-            createdBy:
-              type: number
-              description: 등록 관리자 ID
-            imageUrl:
-              type: string
-              description: 표시용 이미지 URL
-            linkUrl:
-              type: string
-              description: 내부 경로 또는 외부 HTTPS URL
-              nullable: true
-            destinationType:
-              type: string
-              description: 이동 방식
-              enum:
-              - TARGET
-              - URL
-            linkType:
-              type: string
-              description: URL 유형
-              nullable: true
-              enum:
-              - INTERNAL_PATH
-              - EXTERNAL_URL
-            updatedAt:
-              type: string
-              description: 수정 시각
-          description: 홈 배너 데이터
-        status:
-          type: string
-          description: 응답 상태
     CategorySaveSuccessResponse:
       title: CategorySaveSuccessResponse
       required:
@@ -7651,6 +7369,89 @@ components:
         content:
           type: string
           description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
+    HomeBannerAdminFindAllSuccessResponse:
+      title: HomeBannerAdminFindAllSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 홈 배너 데이터
+          items:
+            required:
+            - active
+            - bannerId
+            - createdAt
+            - createdBy
+            - destinationType
+            - displayOrder
+            - imageUrl
+            - mediaId
+            - updatedAt
+            type: object
+            properties:
+              targetId:
+                type: number
+                description: 대상 리소스 ID. 대상이 뉴스·피드일 때만 값이 있다.
+                nullable: true
+              bannerId:
+                type: number
+                description: 배너 ID
+              displayOrder:
+                type: number
+                description: 표시 순서
+              active:
+                type: boolean
+                description: 활성 여부
+              targetType:
+                type: string
+                description: 대상 리소스 유형
+                nullable: true
+                enum:
+                - NEWS
+                - PROJECT
+                - FEED
+              mediaId:
+                type: number
+                description: 미디어 ID
+              createdAt:
+                type: string
+                description: 생성 시각
+              createdBy:
+                type: number
+                description: 등록 관리자 ID
+              imageUrl:
+                type: string
+                description: 표시용 이미지 URL
+              linkUrl:
+                type: string
+                description: 내부 경로 또는 외부 HTTPS URL
+                nullable: true
+              destinationType:
+                type: string
+                description: 이동 방식
+                enum:
+                - TARGET
+                - URL
+              linkType:
+                type: string
+                description: URL 유형
+                nullable: true
+                enum:
+                - INTERNAL_PATH
+                - EXTERNAL_URL
+              targetSlug:
+                type: string
+                description: 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다.
+                nullable: true
+              updatedAt:
+                type: string
+                description: 수정 시각
+        status:
+          type: string
+          description: 응답 상태
     UserProfileUpdateRequest:
       title: UserProfileUpdateRequest
       required:
@@ -7676,6 +7477,87 @@ components:
           type: string
           description: 한 줄 소개
           nullable: true
+    HomeBannerAdminUpdateSuccessResponse:
+      title: HomeBannerAdminUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - bannerId
+          - createdAt
+          - createdBy
+          - destinationType
+          - displayOrder
+          - imageUrl
+          - mediaId
+          - updatedAt
+          type: object
+          properties:
+            targetId:
+              type: number
+              description: 대상 리소스 ID. 대상이 뉴스·피드일 때만 값이 있다.
+              nullable: true
+            bannerId:
+              type: number
+              description: 배너 ID
+            displayOrder:
+              type: number
+              description: 표시 순서
+            active:
+              type: boolean
+              description: 활성 여부
+            targetType:
+              type: string
+              description: 대상 리소스 유형
+              nullable: true
+              enum:
+              - NEWS
+              - PROJECT
+              - FEED
+            mediaId:
+              type: number
+              description: 미디어 ID
+            createdAt:
+              type: string
+              description: 생성 시각
+            createdBy:
+              type: number
+              description: 등록 관리자 ID
+            imageUrl:
+              type: string
+              description: 표시용 이미지 URL
+            linkUrl:
+              type: string
+              description: 내부 경로 또는 외부 HTTPS URL
+              nullable: true
+            destinationType:
+              type: string
+              description: 이동 방식
+              enum:
+              - TARGET
+              - URL
+            linkType:
+              type: string
+              description: URL 유형
+              nullable: true
+              enum:
+              - INTERNAL_PATH
+              - EXTERNAL_URL
+            targetSlug:
+              type: string
+              description: 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다.
+              nullable: true
+            updatedAt:
+              type: string
+              description: 수정 시각
+          description: 홈 배너 데이터
+        status:
+          type: string
+          description: 응답 상태
     NewsDeleteSuccessResponse:
       title: NewsDeleteSuccessResponse
       required:
@@ -7700,6 +7582,87 @@ components:
           type: object
           description: 메타 정보
           nullable: true
+        status:
+          type: string
+          description: 응답 상태
+    HomeBannerAdminSaveSuccessResponse:
+      title: HomeBannerAdminSaveSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - bannerId
+          - createdAt
+          - createdBy
+          - destinationType
+          - displayOrder
+          - imageUrl
+          - mediaId
+          - updatedAt
+          type: object
+          properties:
+            targetId:
+              type: number
+              description: 대상 리소스 ID. 대상이 뉴스·피드일 때만 값이 있다.
+              nullable: true
+            bannerId:
+              type: number
+              description: 배너 ID
+            displayOrder:
+              type: number
+              description: 표시 순서
+            active:
+              type: boolean
+              description: 활성 여부
+            targetType:
+              type: string
+              description: 대상 리소스 유형
+              nullable: true
+              enum:
+              - NEWS
+              - PROJECT
+              - FEED
+            mediaId:
+              type: number
+              description: 미디어 ID
+            createdAt:
+              type: string
+              description: 생성 시각
+            createdBy:
+              type: number
+              description: 등록 관리자 ID
+            imageUrl:
+              type: string
+              description: 표시용 이미지 URL
+            linkUrl:
+              type: string
+              description: 내부 경로 또는 외부 HTTPS URL
+              nullable: true
+            destinationType:
+              type: string
+              description: 이동 방식
+              enum:
+              - TARGET
+              - URL
+            linkType:
+              type: string
+              description: URL 유형
+              nullable: true
+              enum:
+              - INTERNAL_PATH
+              - EXTERNAL_URL
+            targetSlug:
+              type: string
+              description: 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다.
+              nullable: true
+            updatedAt:
+              type: string
+              description: 수정 시각
+          description: 홈 배너 데이터
         status:
           type: string
           description: 응답 상태
@@ -8157,19 +8120,69 @@ components:
         status:
           type: string
           description: 응답 상태
-    ProjectCommentCreateRequest:
-      title: ProjectCommentCreateRequest
+    HomeBannerFindAllSuccessResponse:
+      title: HomeBannerFindAllSuccessResponse
       required:
-      - content
+      - data
+      - status
       type: object
       properties:
-        parentId:
-          type: number
-          description: 같은 프로젝트의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글
-          nullable: true
-        content:
+        data:
+          type: array
+          description: 활성 홈 배너 목록
+          items:
+            required:
+            - bannerId
+            - destinationType
+            - imageUrl
+            - mediaId
+            type: object
+            properties:
+              targetId:
+                type: number
+                description: 대상 리소스 ID. 대상이 뉴스·피드일 때만 값이 있다.
+                nullable: true
+              bannerId:
+                type: number
+                description: 배너 ID
+              imageUrl:
+                type: string
+                description: 표시용 이미지 URL
+              linkUrl:
+                type: string
+                description: 내부 경로 또는 외부 HTTPS URL
+                nullable: true
+              destinationType:
+                type: string
+                description: 이동 방식
+                enum:
+                - TARGET
+                - URL
+              linkType:
+                type: string
+                description: URL 유형
+                nullable: true
+                enum:
+                - INTERNAL_PATH
+                - EXTERNAL_URL
+              targetType:
+                type: string
+                description: 대상 리소스 유형
+                nullable: true
+                enum:
+                - NEWS
+                - PROJECT
+                - FEED
+              targetSlug:
+                type: string
+                description: 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다.
+                nullable: true
+              mediaId:
+                type: number
+                description: 배너 이미지 미디어 ID
+        status:
           type: string
-          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
+          description: 응답 상태
     OAuthSignupRequest:
       title: OAuthSignupRequest
       required:
@@ -8183,6 +8196,19 @@ components:
         handle:
           type: string
           description: "@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"
+    ProjectCommentCreateRequest:
+      title: ProjectCommentCreateRequest
+      required:
+      - content
+      type: object
+      properties:
+        parentId:
+          type: number
+          description: 같은 프로젝트의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글
+          nullable: true
+        content:
+          type: string
+          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
     FeedUpdateSuccessResponse:
       title: FeedUpdateSuccessResponse
       required:

@@ -18,6 +18,10 @@ public final class HomeBanner {
     private final BannerDestinationType destinationType;
     private final BannerTargetType targetType;
     private final Long targetId;
+    /**
+     * 대상이 프로젝트일 때 조회 시점에 채우는 프로젝트 slug. 저장하지 않는다.
+     */
+    private final String targetSlug;
     private final BannerLinkType linkType;
     private final String linkUrl;
     private final int displayOrder;
@@ -32,6 +36,7 @@ public final class HomeBanner {
             BannerDestinationType destinationType,
             BannerTargetType targetType,
             Long targetId,
+            String targetSlug,
             BannerLinkType linkType,
             String linkUrl,
             int displayOrder,
@@ -45,6 +50,7 @@ public final class HomeBanner {
         this.destinationType = Objects.requireNonNull(destinationType, "이동 방식은 필수입니다.");
         this.targetType = targetType;
         this.targetId = targetId;
+        this.targetSlug = targetSlug;
         this.linkType = linkType;
         this.linkUrl = normalizeLinkUrl(linkUrl);
         this.displayOrder = validateDisplayOrder(displayOrder);
@@ -72,6 +78,7 @@ public final class HomeBanner {
                 destinationType,
                 targetType,
                 targetId,
+                null,
                 linkType,
                 linkUrl,
                 displayOrder,
@@ -88,6 +95,7 @@ public final class HomeBanner {
             BannerDestinationType destinationType,
             BannerTargetType targetType,
             Long targetId,
+            String targetSlug,
             BannerLinkType linkType,
             String linkUrl,
             int displayOrder,
@@ -104,6 +112,7 @@ public final class HomeBanner {
                 destinationType,
                 targetType,
                 targetId,
+                targetSlug,
                 linkType,
                 linkUrl,
                 displayOrder,
@@ -114,6 +123,9 @@ public final class HomeBanner {
         );
     }
 
+    /**
+     * 대상이 바뀔 수 있으므로 targetSlug는 비운다. 저장 후 다시 조회한 값에 채워진다.
+     */
     public HomeBanner update(
             long mediaId,
             BannerDestinationType destinationType,
@@ -130,6 +142,7 @@ public final class HomeBanner {
                 destinationType,
                 targetType,
                 targetId,
+                null,
                 linkType,
                 linkUrl,
                 displayOrder,

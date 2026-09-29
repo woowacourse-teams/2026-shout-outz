@@ -10,6 +10,7 @@ public record HomeBannerAdminResponse(
         String destinationType,
         String targetType,
         Long targetId,
+        String targetSlug,
         String linkType,
         String linkUrl,
         int displayOrder,

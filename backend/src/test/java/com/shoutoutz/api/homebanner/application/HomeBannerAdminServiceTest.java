@@ -22,6 +22,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -54,6 +55,7 @@ class HomeBannerAdminServiceTest {
     void 관리자가_배너를_등록한다() {
         HomeBannerUpsertRequest request = request();
         HomeBanner saved = savedBanner();
+        when(targetValidator.resolveTargetId(BannerTargetType.PROJECT, null, "loop")).thenReturn(20L);
         when(homeBannerRepository.save(any(HomeBanner.class))).thenReturn(saved);
         when(imageService.createImageUrl(10L))
                 .thenReturn(URI.create("https://cdn.example.com/banner"));
@@ -62,7 +64,11 @@ class HomeBannerAdminServiceTest {
 
         assertThat(response.bannerId()).isEqualTo(100L);
         assertThat(response.imageUrl()).hasToString("https://cdn.example.com/banner");
-        verify(targetValidator).validate(BannerTargetType.PROJECT, 20L);
+        assertThat(response.targetId()).isNull();
+        assertThat(response.targetSlug()).isEqualTo("loop");
+        ArgumentCaptor<HomeBanner> captor = ArgumentCaptor.forClass(HomeBanner.class);
+        verify(homeBannerRepository).save(captor.capture());
+        assertThat(captor.getValue().getTargetId()).isEqualTo(20L);
     }
 
     @Test
@@ -83,13 +89,16 @@ class HomeBannerAdminServiceTest {
         HomeBanner banner = savedBanner();
         when(homeBannerRepository.findById(100L)).thenReturn(Optional.of(banner));
         when(homeBannerRepository.update(any(HomeBanner.class))).thenReturn(Optional.of(banner));
+        when(targetValidator.resolveTargetId(BannerTargetType.PROJECT, null, "loop")).thenReturn(20L);
         when(imageService.createImageUrl(10L))
                 .thenReturn(URI.create("https://cdn.example.com/banner"));
 
         var response = service.update(100L, UserRole.ADMIN, request());
 
         assertThat(response.bannerId()).isEqualTo(100L);
-        verify(targetValidator).validate(BannerTargetType.PROJECT, 20L);
+        ArgumentCaptor<HomeBanner> captor = ArgumentCaptor.forClass(HomeBanner.class);
+        verify(homeBannerRepository).update(captor.capture());
+        assertThat(captor.getValue().getTargetId()).isEqualTo(20L);
     }
 
     @Test
@@ -133,7 +142,8 @@ class HomeBannerAdminServiceTest {
                 10L,
                 "TARGET",
                 "PROJECT",
-                20L,
+                null,
+                "loop",
                 null,
                 null,
                 0,
@@ -148,6 +158,7 @@ class HomeBannerAdminServiceTest {
                 BannerDestinationType.TARGET,
                 BannerTargetType.PROJECT,
                 20L,
+                "loop",
                 null,
                 null,
                 0,

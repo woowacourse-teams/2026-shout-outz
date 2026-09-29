@@ -2,6 +2,7 @@ package com.shoutoutz.api.homebanner.presentation;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
@@ -48,8 +49,20 @@ class HomeBannerHttpApiTest {
                         "URL",
                         null,
                         null,
+                        null,
                         "EXTERNAL_URL",
                         "https://example.com/promotion"
+                ),
+                new HomeBannerResponse(
+                        101L,
+                        11L,
+                        URI.create("https://cdn.example.com/banner-project"),
+                        "TARGET",
+                        "PROJECT",
+                        null,
+                        "loop",
+                        null,
+                        null
                 )
         ));
 
@@ -58,6 +71,8 @@ class HomeBannerHttpApiTest {
                 .andExpect(jsonPath("$.data[0].bannerId").value(100L))
                 .andExpect(jsonPath("$.data[0].mediaId").value(10L))
                 .andExpect(jsonPath("$.data[0].destinationType").value("URL"))
+                .andExpect(jsonPath("$.data[1].targetId").value(nullValue()))
+                .andExpect(jsonPath("$.data[1].targetSlug").value("loop"))
                 .andDo(document(
                         "home-banner-find-all",
                         resource(ResourceSnippetParameters.builder()
@@ -77,7 +92,11 @@ class HomeBannerHttpApiTest {
                                         new EnumFields(BannerTargetType.class).withPath("data[].targetType")
                                                 .description("대상 리소스 유형").optional(),
                                         fieldWithPath("data[].targetId").type(NUMBER)
-                                                .description("대상 리소스 ID").optional(),
+                                                .description("대상 리소스 ID. 대상이 뉴스·피드일 때만 값이 있다.")
+                                                .optional(),
+                                        fieldWithPath("data[].targetSlug").type(STRING)
+                                                .description("대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다.")
+                                                .optional(),
                                         new EnumFields(BannerLinkType.class).withPath("data[].linkType")
                                                 .description("URL 유형").optional(),
                                         fieldWithPath("data[].linkUrl").type(STRING)
