@@ -411,8 +411,8 @@ class ProjectHttpApiTest {
                         List.of(
                                 new ProjectMemberProfileResponse(7L, "@dhyepark", "박다혜", UserType.WOOWACOURSE_CREW,
                                         6, "BACKEND", "https://cdn.example.com/avatar-101", null),
-                                new ProjectMemberProfileResponse(8L, "@zzaekkii", "김도현", UserType.WOOWACOURSE_CREW,
-                                        6, "FRONTEND", null, null)
+                                new ProjectMemberProfileResponse(null, null, "Archived Crew", null, null, null,
+                                        "https://avatars.githubusercontent.com/u/1", "https://github.com/archived-crew")
                         ))),
                 new SliceMetaResponse("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
         ));
@@ -1071,8 +1071,8 @@ class ProjectHttpApiTest {
                 List.of(
                         new ProjectMemberProfileResponse(7L, "@dhyepark", "박다혜", UserType.WOOWACOURSE_CREW,
                                 6, "BACKEND", "https://cdn.example.com/avatar-101", null),
-                        new ProjectMemberProfileResponse(8L, "@zzaekkii", "김도현", UserType.WOOWACOURSE_CREW,
-                                6, "FRONTEND", null, null)
+                        new ProjectMemberProfileResponse(null, null, "Archived Crew", null, null, null,
+                                "https://avatars.githubusercontent.com/u/1", "https://github.com/archived-crew")
                 ),
                 Instant.parse("2026-08-09T02:30:00Z"),
                 Instant.parse("2026-08-09T03:00:00Z")
