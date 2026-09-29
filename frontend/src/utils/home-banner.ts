@@ -32,6 +32,8 @@ const isHttpUrl = (url: string) => /^https?:\/\//i.test(url);
  */
 export function resolveHomeBannerLink(banner: HomeBanner): HomeBannerLink | null {
   if (banner.destinationType === 'TARGET') {
+    // 공개 프로젝트 API는 ID를 slug로 변환할 수 없다.
+    if (banner.targetType === 'PROJECT') return null;
     const segment = banner.targetType ? TARGET_SEGMENTS[banner.targetType] : undefined;
     if (!segment || banner.targetId == null) return null;
 

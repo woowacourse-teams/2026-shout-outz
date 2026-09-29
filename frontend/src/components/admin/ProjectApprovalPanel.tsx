@@ -1,10 +1,21 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseInfiniteQuery,
+} from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 
-import { adminProjectsQuery, approveProjectMutation, rejectProjectMutation } from '@/apis/admin';
+import {
+  adminProjectDetailQuery,
+  adminProjectsQuery,
+  approveProjectMutation,
+  rejectProjectMutation,
+} from '@/apis/admin';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { MarkdownContent } from '@/components/MarkdownContent';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { ReviewActions } from '@/components/admin/ReviewActions';
 import { ReviewStatusTab } from '@/components/admin/ReviewStatusTab';
@@ -12,12 +23,7 @@ import { REVIEW_STATUS_LABELS } from '@/constants/admin';
 import type { AdminProject, AdminProjectStatus } from '@/types/admin';
 import { toProjectSlugParam } from '@/utils/project';
 
-/**
- * 프로젝트 등록 심사.
- *
- * TODO 관리자 프로젝트 심사 API가 명세에 없다. `src/apis/admin.ts`의 가정한 주소로 요청하므로
- * 서버가 붙기 전까지는 목록을 불러오지 못한다.
- */
+/** 프로젝트 등록 심사. */
 export function ProjectApprovalPanel() {
   const [status, setStatus] = useState<AdminProjectStatus>('PENDING');
 
@@ -68,6 +74,8 @@ function ProjectList({ status }: { status: AdminProjectStatus }) {
 
 function ProjectRow({ item }: { item: AdminProject }) {
   const client = useQueryClient();
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const detail = useQuery({ ...adminProjectDetailQuery(item.id), enabled: detailsOpen });
   const onSuccess = () => client.invalidateQueries({ queryKey: ['admin', 'projects'] });
   const approve = useMutation({ ...approveProjectMutation, onSuccess });
   const reject = useMutation({ ...rejectProjectMutation, onSuccess });
@@ -76,14 +84,14 @@ function ProjectRow({ item }: { item: AdminProject }) {
     <li className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
-          {/* 승인 전 프로젝트 상세는 등록자만 볼 수 있어, 관리자 조회가 열리기 전까지는 404일 수 있다. */}
-          <Link
-            to="/projects/$slug"
-            params={{ slug: toProjectSlugParam(item.slug) }}
-            className="font-bold hover:underline"
+          <button
+            type="button"
+            aria-expanded={detailsOpen}
+            onClick={() => setDetailsOpen((open) => !open)}
+            className="cursor-pointer font-bold hover:underline"
           >
-            {item.title}
-          </Link>
+            {item.title} 상세 보기
+          </button>
           <Badge tone="primary">{item.cohort}기</Badge>
         </div>
         <p className="truncate text-sm text-gray-600">{item.tagline}</p>
@@ -92,6 +100,34 @@ function ProjectRow({ item }: { item: AdminProject }) {
         </p>
         {item.rejectReason && (
           <p className="text-xs text-red-600">반려 사유: {item.rejectReason}</p>
+        )}
+        {detailsOpen && (
+          <div className="mt-3 space-y-2 border-t border-gray-200 pt-3 text-sm">
+            {detail.isPending && <p>프로젝트 상세를 불러오는 중…</p>}
+            {detail.isError && <p role="alert">프로젝트 상세를 불러오지 못했습니다.</p>}
+            {detail.data && (
+              <>
+                <MarkdownContent>{detail.data.descriptionMd ?? ''}</MarkdownContent>
+                <a
+                  href={detail.data.githubRepositoryUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  GitHub 저장소
+                </a>
+                {item.approvalStatus === 'APPROVED' && (
+                  <Link
+                    to="/projects/$slug"
+                    params={{ slug: toProjectSlugParam(item.slug) }}
+                    className="ml-3 underline"
+                  >
+                    공개 페이지
+                  </Link>
+                )}
+              </>
+            )}
+          </div>
         )}
       </div>
       {item.approvalStatus === 'PENDING' && (

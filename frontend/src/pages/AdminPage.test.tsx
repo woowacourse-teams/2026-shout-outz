@@ -2,7 +2,7 @@
  * @jest-environment ./jest.network-environment.js
  * @jest-environment-options {"customExportConditions":["node","node-addons"]}
  */
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { renderRoute, server } from '@/test/renderRoute';
@@ -82,6 +82,33 @@ test('반려 사유를 적어야 인증 신청을 반려할 수 있다', async (
   expect(rejectBody).toEqual({ reason: '닉네임 확인 불가' });
 });
 
+test('관리자 프로젝트 목록을 표시하고 ID 기반 승인 API를 호출한다', async () => {
+  const user = userEvent.setup();
+  signInAs('ADMIN');
+  let approvedId: string | undefined;
+  server.use(
+    http.post('/api/v1/admin/projects/:projectId/approve', ({ params }) => {
+      approvedId = String(params.projectId);
+      return HttpResponse.json({
+        status: 'success',
+        data: {
+          projectId: Number(params.projectId),
+          approvalStatus: 'APPROVED',
+          decidedAt: '2026-09-20T00:00:00Z',
+          decidedBy: { userId: 7, handle: 'admin' },
+        },
+      });
+    }),
+  );
+
+  renderRoute('/admin?tab=projects');
+  await user.click(await screen.findByRole('button', { name: '루프 (Loop) 상세 보기' }));
+  expect(await screen.findByText(/팀 회고와 액션 아이템을 공유합니다/)).toBeInTheDocument();
+  await user.click(await screen.findByRole('button', { name: '루프 (Loop) 승인' }));
+
+  await waitFor(() => expect(approvedId).toBe('300'));
+});
+
 test('관리자가 공지를 등록한다', async () => {
   const user = userEvent.setup();
   signInAs('ADMIN');
@@ -136,7 +163,7 @@ test('관리자가 등록된 홈 배너를 보고 숨길 수 있다', async () =
 
   renderRoute('/admin?tab=banners');
   const list = await screen.findByRole('list');
-  expect(within(list).getByText('/projects/20')).toBeInTheDocument();
+  expect(within(list).getByText('/projects/@dropit')).toBeInTheDocument();
   await user.click(within(list).getByRole('button', { name: '숨기기' }));
 
   expect(updateBody).toEqual(expect.objectContaining({ mediaId: 10, active: false }));

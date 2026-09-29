@@ -5,13 +5,12 @@ import {
   type ProjectCreated,
   type ProjectCreateRequest,
   type ProjectUpdateRequest,
+  type ProjectUpdated,
   type TechTag,
 } from '@/types/project';
-import { httpClient } from '@/utils/client';
+import { httpClient, type ApiSuccessBody } from '@/utils/client';
 import type {
   CohortFindAllSuccessResponse,
-  ProjectCreateSuccessResponse,
-  ProjectUpdateSuccessResponse,
   TechTagFindAllSuccessResponse,
   UserSearchSuccessResponse,
 } from '@/api/generated/schema';
@@ -22,7 +21,7 @@ const TECH_TAGS_PATH = '/api/v1/tech-tags';
 const USER_SEARCH_PATH = '/api/v1/users/search';
 
 export async function createProject(request: ProjectCreateRequest): Promise<ProjectCreated> {
-  const body = await httpClient<ProjectCreateSuccessResponse>(PROJECTS_PATH, {
+  const body = await httpClient<ApiSuccessBody<ProjectCreated>>(PROJECTS_PATH, {
     method: 'post',
     json: request,
   });
@@ -35,18 +34,19 @@ export const createProjectMutationOptions = mutationOptions({
   mutationFn: createProject,
 });
 
-export async function updateProject(projectId: number, request: ProjectUpdateRequest) {
-  const body = await httpClient<ProjectUpdateSuccessResponse>(`${PROJECTS_PATH}/${projectId}`, {
+export async function updateProject(slug: string, request: ProjectUpdateRequest) {
+  const path = `${PROJECTS_PATH}/@${slug}`;
+  const body = await httpClient<ApiSuccessBody<ProjectUpdated>>(path, {
     method: 'put',
     json: request,
   });
-  if (!body) throw new Error(`프로젝트 수정 응답이 비어 있습니다: ${PROJECTS_PATH}/${projectId}`);
+  if (!body) throw new Error(`프로젝트 수정 응답이 비어 있습니다: ${path}`);
   return body.data;
 }
 
-export const updateProjectMutationOptions = (projectId: number) =>
+export const updateProjectMutationOptions = (slug: string) =>
   mutationOptions({
-    mutationFn: (request: ProjectUpdateRequest) => updateProject(projectId, request),
+    mutationFn: (request: ProjectUpdateRequest) => updateProject(slug, request),
   });
 
 export async function fetchCohorts(): Promise<CohortOption[]> {

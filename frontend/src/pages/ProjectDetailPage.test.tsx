@@ -2,7 +2,7 @@
  * @jest-environment ./jest.network-environment.js
  * @jest-environment-options {"customExportConditions":["node","node-addons"]}
  */
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -44,6 +44,10 @@ test('상세 직접 진입 시 API 정보와 공통 레이아웃을 표시한다
   expect(await screen.findByRole('heading', { level: 1, name: 'Dropit' })).toBeInTheDocument();
   expect(screen.getByText(/정우진 \(작성자\)/)).toBeInTheDocument();
   expect(screen.getByText('React', { selector: 'span' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: '프로젝트 수정' })).toHaveAttribute(
+    'href',
+    '/projects/@dropit/edit',
+  );
   expect(screen.getByRole('link', { name: '서비스 바로가기 ↗' })).toHaveAttribute(
     'rel',
     'noopener noreferrer',
@@ -64,6 +68,36 @@ test('목록 카드를 누르면 slug 주소의 상세 페이지로 이동한다
   expect(firstLink).toHaveAttribute('href', '/projects/@dropit');
   await userEvent.click(firstLink);
   expect(await screen.findByRole('heading', { level: 1, name: 'Dropit' })).toBeInTheDocument();
+});
+
+test('프로젝트 좋아요가 slug API를 호출하고 상세 화면에 반영된다', async () => {
+  const original = await (await fetch('http://localhost/api/v1/projects/@dropit')).json();
+  let liked = false;
+  let requested = false;
+  server.use(
+    http.get('/api/v1/projects/@dropit', () =>
+      HttpResponse.json({
+        ...original,
+        data: { ...original.data, likeCount: liked ? 85 : 84, likedByMe: liked },
+      }),
+    ),
+    http.put('/api/v1/projects/@dropit/reactions/LIKE', () => {
+      requested = true;
+      liked = true;
+      return HttpResponse.json({
+        status: 'success',
+        data: { slug: 'dropit', type: 'LIKE', active: true, likeCount: 85, bookmarkCount: 28 },
+      });
+    }),
+  );
+
+  renderPage();
+  await userEvent.click(await screen.findByRole('button', { name: '프로젝트 좋아요' }));
+
+  await waitFor(() => expect(requested).toBe(true));
+  expect(await screen.findByRole('button', { name: '프로젝트 좋아요 취소' })).toHaveTextContent(
+    '85',
+  );
 });
 
 test('승인되지 않은 프로젝트는 공개하지 않는다', async () => {

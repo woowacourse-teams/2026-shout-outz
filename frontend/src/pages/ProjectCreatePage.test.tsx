@@ -34,7 +34,7 @@ const captureCreateRequest = () => {
       return HttpResponse.json(
         {
           status: 'success',
-          data: { id: 101, approvalStatus: 'PENDING', createdAt: '2026-09-16T10:00:00+09:00' },
+          data: { slug: '2026-loop' },
         },
         { status: 201 },
       );

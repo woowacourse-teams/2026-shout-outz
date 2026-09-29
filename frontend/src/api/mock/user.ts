@@ -39,7 +39,6 @@ const crewMember = (
 
 const PROJECTS: ProjectSummary[] = [
   {
-    id: 1,
     approvalStatus: 'APPROVED',
     slug: 'moamoa',
     title: '모아모아 (MoaMoa)',
@@ -58,7 +57,6 @@ const PROJECTS: ProjectSummary[] = [
     members: [crewMember(10, 'woojin', '정우진', 'BACKEND', 8)],
   },
   {
-    id: 2,
     approvalStatus: 'PENDING',
     slug: 'dropit',
     title: '드랍잇 (Dropit)',
@@ -77,7 +75,6 @@ const PROJECTS: ProjectSummary[] = [
     ],
   },
   {
-    id: 3,
     approvalStatus: 'REJECTED',
     rejectReason: '프로젝트 소개에 해결하려는 문제와 핵심 기능을 구체적으로 적어 주세요.',
     slug: 'study-mate',
@@ -156,7 +153,7 @@ export function getUserProjects(handle: string): ProjectSummary[] {
   return PROFILE_HANDLES.has(handle)
     ? PROJECTS.map((project) => ({
         ...project,
-        ...getMockProjectReaction(project.id, project.likeCount),
+        ...getMockProjectReaction(project.slug, project.likeCount),
       }))
     : [];
 }

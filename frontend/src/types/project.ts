@@ -8,6 +8,7 @@ import type {
   ProjectListItemData,
   ProjectListMetaData,
   ProjectUpdateRequest as GeneratedProjectUpdateRequest,
+  ProjectUpdatedData,
   TechTagItem,
   UserProjectListItemData,
   UserSearchItem,
@@ -17,8 +18,9 @@ import type {
 export type ProjectCreateRequest = ProjectCreateBody;
 export type ProjectUpdateRequest = GeneratedProjectUpdateRequest;
 
-/** 등록 응답은 `{ projectId, slug }`다. 승인 상태와 생성 시각은 내려오지 않는다. */
+/** 등록 응답은 `{ slug }`다. */
 export type ProjectCreated = ProjectCreatedData;
+export type ProjectUpdated = ProjectUpdatedData;
 
 export type CohortOption = CohortItem;
 export type TechTag = TechTagItem;
@@ -86,5 +88,5 @@ export type ProjectFilterOptions = ProjectFilterOptionsData;
 export type ProjectFilterCohort = Item<ProjectFilterOptions['cohorts']>;
 export type ProjectFilterTechTag = Item<ProjectFilterOptions['techTags']>;
 
-/** 상세 응답. `GET /api/v1/projects/{projectId}` */
+/** 상세 응답. `GET /api/v1/projects/@{slug}` */
 export type ProjectDetail = ProjectDetailData;

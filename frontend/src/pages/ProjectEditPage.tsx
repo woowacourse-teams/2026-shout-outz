@@ -4,10 +4,10 @@ import { sessionQuery } from '@/apis/session';
 import { ProjectForm } from '@/pages/ProjectCreatePage';
 
 export function ProjectEditPage({
-  projectId,
+  slug,
   onSaved,
 }: {
-  projectId: string;
+  slug: string;
   onSaved: (approvalStatus: 'APPROVED' | 'PENDING' | 'REJECTED') => void;
 }) {
   const { data: session } = useSuspenseQuery(sessionQuery);
@@ -17,22 +17,22 @@ export function ProjectEditPage({
   }
 
   return (
-    <AuthenticatedProjectEdit projectId={projectId} userId={session.userId} onSaved={onSaved} />
+    <AuthenticatedProjectEdit slug={slug} userId={session.userId} onSaved={onSaved} />
   );
 }
 
 function AuthenticatedProjectEdit({
-  projectId,
+  slug,
   userId,
   onSaved,
 }: {
-  projectId: string;
+  slug: string;
   userId: number;
   onSaved: (approvalStatus: 'APPROVED' | 'PENDING' | 'REJECTED') => void;
 }) {
   const { data: project } = useSuspenseQuery({
-    ...projectDetailQueryOptions(projectId),
-    queryKey: ['project-detail', projectId, String(userId)],
+    ...projectDetailQueryOptions(slug),
+    queryKey: ['project-detail', slug, String(userId)],
     staleTime: 0,
   });
 
@@ -41,6 +41,6 @@ function AuthenticatedProjectEdit({
   }
 
   return (
-    <ProjectForm key={project.id} userId={userId} initialProject={project} onSaved={onSaved} />
+    <ProjectForm key={project.slug} userId={userId} initialProject={project} onSaved={onSaved} />
   );
 }

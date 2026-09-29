@@ -99,7 +99,11 @@ function BannerRow({ banner }: { banner: AdminHomeBanner }) {
           <span className="text-xs text-gray-500">순서 {banner.displayOrder}</span>
         </div>
         <p className="truncate text-sm text-gray-600">
-          {link ? link.href : '이동할 곳이 올바르지 않습니다'}
+          {link
+            ? link.href
+            : banner.destinationType === 'TARGET' && banner.targetType === 'PROJECT'
+              ? '프로젝트 ID 링크는 사용할 수 없습니다. /projects/@slug 주소로 새 배너를 등록해 주세요.'
+              : '이동할 곳이 올바르지 않습니다'}
         </p>
         {error != null && (
           <p role="alert" className="text-xs text-red-600">
@@ -158,8 +162,8 @@ interface BannerFormValues {
 
 const EMPTY_FORM: BannerFormValues = {
   mediaId: null,
-  destinationType: 'TARGET',
-  targetType: 'PROJECT',
+  destinationType: 'URL',
+  targetType: 'NEWS',
   targetId: '',
   linkType: 'INTERNAL_PATH',
   linkUrl: '',
@@ -268,11 +272,13 @@ function BannerCreateForm() {
                   value={values.targetType}
                   onValueChange={(value) => setField('targetType', value as TargetType)}
                 >
-                  {Object.entries(TARGET_TYPE_LABELS).map(([value, label]) => (
-                    <Select.Item key={value} value={value}>
-                      {label}
-                    </Select.Item>
-                  ))}
+                  {Object.entries(TARGET_TYPE_LABELS)
+                    .filter(([value]) => value !== 'PROJECT')
+                    .map(([value, label]) => (
+                      <Select.Item key={value} value={value}>
+                        {label}
+                      </Select.Item>
+                    ))}
                 </Select>
               )}
             </Field>
@@ -309,7 +315,9 @@ function BannerCreateForm() {
                   id={id}
                   value={values.linkUrl}
                   onChange={(event) => setField('linkUrl', event.target.value)}
-                  placeholder={values.linkType === 'INTERNAL_PATH' ? '/news/7' : 'https://…'}
+                  placeholder={
+                    values.linkType === 'INTERNAL_PATH' ? '/projects/@slug' : 'https://…'
+                  }
                   aria-invalid={Boolean(errors.linkUrl)}
                 />
               )}
