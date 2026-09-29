@@ -41,7 +41,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class ProjectReactionHttpApiTest {
 
     private static final long USER_ID = 1L;
-    private static final long PROJECT_ID = 100L;
+    private static final String SLUG = "loop";
     private static final String AUTHENTICATED_SESSION_ATTRIBUTE = AuthenticatedSession.class.getName();
 
     @Autowired
@@ -52,10 +52,10 @@ class ProjectReactionHttpApiTest {
 
     @Test
     void 프로젝트_좋아요를_추가한다() throws Exception {
-        given(projectReactionService.add(PROJECT_ID, USER_ID, "LIKE"))
-                .willReturn(new ProjectReactionResponse(PROJECT_ID, ProjectReactionType.LIKE, true, 84L, 28L));
+        given(projectReactionService.add(SLUG, USER_ID, "LIKE"))
+                .willReturn(new ProjectReactionResponse(SLUG, ProjectReactionType.LIKE, true, 84L, 28L));
 
-        mockMvc.perform(put("/api/v1/projects/{projectId}/reactions/{type}", PROJECT_ID, "LIKE")
+        mockMvc.perform(put("/api/v1/projects/@{slug}/reactions/{type}", SLUG, "LIKE")
                         .requestAttr(
                                 AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(USER_ID, UserRole.USER)
@@ -63,7 +63,7 @@ class ProjectReactionHttpApiTest {
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.projectId").value(PROJECT_ID))
+                .andExpect(jsonPath("$.data.slug").value(SLUG))
                 .andExpect(jsonPath("$.data.type").value("LIKE"))
                 .andExpect(jsonPath("$.data.active").value(true))
                 .andExpect(jsonPath("$.data.likeCount").value(84))
@@ -75,7 +75,7 @@ class ProjectReactionHttpApiTest {
                                 .summary("프로젝트 반응 추가")
                                 .description("승인 완료되고 삭제되지 않은 프로젝트에 현재 로그인 사용자의 좋아요 또는 북마크를 추가한다.")
                                 .pathParameters(
-                                        parameterWithName("projectId").description("프로젝트 ID"),
+                                        parameterWithName("slug").description("프로젝트 slug. 경로에서는 앞에 @를 붙인다."),
                                         parameterWithName("type").description("반응 타입(LIKE 또는 BOOKMARK)")
                                 )
                                 .requestHeaders(
@@ -86,28 +86,28 @@ class ProjectReactionHttpApiTest {
                                 .build())
                 ));
 
-        verify(projectReactionService).add(PROJECT_ID, USER_ID, "LIKE");
+        verify(projectReactionService).add(SLUG, USER_ID, "LIKE");
     }
 
     @Test
     void 프로젝트_북마크를_제거한다() throws Exception {
-        given(projectReactionService.remove(PROJECT_ID, USER_ID, "BOOKMARK"))
+        given(projectReactionService.remove(SLUG, USER_ID, "BOOKMARK"))
                 .willReturn(new ProjectReactionResponse(
-                        PROJECT_ID,
+                        SLUG,
                         ProjectReactionType.BOOKMARK,
                         false,
                         83L,
                         27L
                 ));
 
-        mockMvc.perform(delete("/api/v1/projects/{projectId}/reactions/{type}", PROJECT_ID, "BOOKMARK")
+        mockMvc.perform(delete("/api/v1/projects/@{slug}/reactions/{type}", SLUG, "BOOKMARK")
                         .requestAttr(
                                 AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(USER_ID, UserRole.USER)
                         )
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.projectId").value(PROJECT_ID))
+                .andExpect(jsonPath("$.data.slug").value(SLUG))
                 .andExpect(jsonPath("$.data.type").value("BOOKMARK"))
                 .andExpect(jsonPath("$.data.active").value(false))
                 .andExpect(jsonPath("$.data.likeCount").value(83))
@@ -119,7 +119,7 @@ class ProjectReactionHttpApiTest {
                                 .summary("프로젝트 반응 제거")
                                 .description("삭제되지 않은 프로젝트에서 현재 로그인 사용자의 좋아요 또는 북마크를 제거한다. 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다. 승인 상태와 무관하게 처리한다.")
                                 .pathParameters(
-                                        parameterWithName("projectId").description("프로젝트 ID"),
+                                        parameterWithName("slug").description("프로젝트 slug. 경로에서는 앞에 @를 붙인다."),
                                         parameterWithName("type").description("반응 타입(LIKE 또는 BOOKMARK)")
                                 )
                                 .requestHeaders(
@@ -130,15 +130,15 @@ class ProjectReactionHttpApiTest {
                                 .build())
                 ));
 
-        verify(projectReactionService).remove(PROJECT_ID, USER_ID, "BOOKMARK");
+        verify(projectReactionService).remove(SLUG, USER_ID, "BOOKMARK");
     }
 
     @Test
     void 프로젝트에_반응이_없으면_삭제할_때_404를_반환한다() throws Exception {
         willThrow(new EntityNotFoundException(ProjectErrorCode.REACTION_NOT_FOUND))
-                .given(projectReactionService).remove(PROJECT_ID, USER_ID, "BOOKMARK");
+                .given(projectReactionService).remove(SLUG, USER_ID, "BOOKMARK");
 
-        mockMvc.perform(delete("/api/v1/projects/{projectId}/reactions/{type}", PROJECT_ID, "BOOKMARK")
+        mockMvc.perform(delete("/api/v1/projects/@{slug}/reactions/{type}", SLUG, "BOOKMARK")
                         .requestAttr(
                                 AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(USER_ID, UserRole.USER)
@@ -155,7 +155,7 @@ class ProjectReactionHttpApiTest {
                                 .summary("프로젝트 반응 제거")
                                 .description("현재 로그인 사용자의 해당 프로젝트 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
-                                        parameterWithName("projectId").description("프로젝트 ID"),
+                                        parameterWithName("slug").description("프로젝트 slug. 경로에서는 앞에 @를 붙인다."),
                                         parameterWithName("type").description("반응 타입(LIKE 또는 BOOKMARK)")
                                 )
                                 .requestHeaders(
@@ -166,15 +166,15 @@ class ProjectReactionHttpApiTest {
                                 .build())
                 ));
 
-        verify(projectReactionService).remove(PROJECT_ID, USER_ID, "BOOKMARK");
+        verify(projectReactionService).remove(SLUG, USER_ID, "BOOKMARK");
     }
 
     @Test
     void 지원하지_않는_반응_타입은_400을_반환한다() throws Exception {
         willThrow(new InvalidInputException(ProjectErrorCode.REACTION_TYPE_INVALID))
-                .given(projectReactionService).add(PROJECT_ID, USER_ID, "AGREE");
+                .given(projectReactionService).add(SLUG, USER_ID, "AGREE");
 
-        mockMvc.perform(put("/api/v1/projects/{projectId}/reactions/{type}", PROJECT_ID, "AGREE")
+        mockMvc.perform(put("/api/v1/projects/@{slug}/reactions/{type}", SLUG, "AGREE")
                         .requestAttr(
                                 AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(USER_ID, UserRole.USER)
@@ -186,7 +186,7 @@ class ProjectReactionHttpApiTest {
 
     @Test
     void 로그인하지_않으면_반응을_변경할_수_없다() throws Exception {
-        mockMvc.perform(put("/api/v1/projects/{projectId}/reactions/{type}", PROJECT_ID, "LIKE"))
+        mockMvc.perform(put("/api/v1/projects/@{slug}/reactions/{type}", SLUG, "LIKE"))
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(projectReactionService);
@@ -196,7 +196,7 @@ class ProjectReactionHttpApiTest {
         return new org.springframework.restdocs.payload.FieldDescriptor[]{
                 fieldWithPath("status").type(STRING).description("응답 상태"),
                 fieldWithPath("data").type(OBJECT).description("프로젝트 반응 변경 결과"),
-                fieldWithPath("data.projectId").type(NUMBER).description("프로젝트 ID"),
+                fieldWithPath("data.slug").type(STRING).description("프로젝트 slug"),
                 fieldWithPath("data.type").type(STRING).description("반응 타입(LIKE 또는 BOOKMARK)"),
                 fieldWithPath("data.active").type(BOOLEAN).description("요청한 반응의 활성 상태"),
                 fieldWithPath("data.likeCount").type(NUMBER).description("프로젝트 좋아요 수"),

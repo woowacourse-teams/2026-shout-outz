@@ -505,11 +505,12 @@ class ProjectAcceptanceTest {
      * 세션 쿠키와 CSRF 토큰 없이 비로그인으로 요청한다.
      */
     private Response recordView(String visitorId, long projectId) {
+        String slug = jdbcTemplate.queryForObject("SELECT slug FROM projects WHERE id = ?", String.class, projectId);
         var request = RestAssured.given().port(port);
         if (visitorId != null) {
             request.cookie(VISITOR_COOKIE_NAME, visitorId);
         }
-        return request.when().post(PROJECTS_PATH + "/{projectId}/views", projectId);
+        return request.when().post(PROJECTS_PATH + "/@{slug}/views", slug);
     }
 
     /**

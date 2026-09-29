@@ -2,6 +2,7 @@ package com.shoutoutz.api.project.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -34,10 +35,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ProjectReactionServiceTest {
 
     private static final long PROJECT_ID = 100L;
+    private static final String SLUG = "loop";
     private static final long USER_ID = 1L;
 
     @Mock
     private ProjectRepository projectRepository;
+
+    @Mock
+    private ProjectSlugResolver projectSlugResolver;
 
     @Mock
     private ProjectReactionRepository projectReactionRepository;
@@ -46,7 +51,8 @@ class ProjectReactionServiceTest {
 
     @BeforeEach
     void setUp() {
-        projectReactionService = new ProjectReactionService(projectRepository, projectReactionRepository);
+        projectReactionService = new ProjectReactionService(projectRepository, projectSlugResolver, projectReactionRepository);
+        lenient().when(projectSlugResolver.resolveId(SLUG)).thenReturn(PROJECT_ID);
     }
 
     @Test
@@ -54,10 +60,10 @@ class ProjectReactionServiceTest {
         givenProject(ApprovalStatus.APPROVED);
         givenCounts(84L, 28L);
 
-        ProjectReactionResponse response = projectReactionService.add(PROJECT_ID, USER_ID, "LIKE");
+        ProjectReactionResponse response = projectReactionService.add(SLUG, USER_ID, "LIKE");
 
         assertThat(response).isEqualTo(
-                new ProjectReactionResponse(PROJECT_ID, ProjectReactionType.LIKE, true, 84L, 28L)
+                new ProjectReactionResponse(SLUG, ProjectReactionType.LIKE, true, 84L, 28L)
         );
         verify(projectReactionRepository).add(PROJECT_ID, USER_ID, ProjectReactionType.LIKE);
     }
@@ -70,13 +76,13 @@ class ProjectReactionServiceTest {
                 .thenReturn(true);
 
         ProjectReactionResponse response = projectReactionService.remove(
-                PROJECT_ID,
+                SLUG,
                 USER_ID,
                 "BOOKMARK"
         );
 
         assertThat(response).isEqualTo(
-                new ProjectReactionResponse(PROJECT_ID, ProjectReactionType.BOOKMARK, false, 83L, 27L)
+                new ProjectReactionResponse(SLUG, ProjectReactionType.BOOKMARK, false, 83L, 27L)
         );
         verify(projectReactionRepository).remove(PROJECT_ID, USER_ID, ProjectReactionType.BOOKMARK);
     }
@@ -87,7 +93,7 @@ class ProjectReactionServiceTest {
         when(projectReactionRepository.remove(PROJECT_ID, USER_ID, ProjectReactionType.LIKE))
                 .thenReturn(false);
 
-        assertThatThrownBy(() -> projectReactionService.remove(PROJECT_ID, USER_ID, "LIKE"))
+        assertThatThrownBy(() -> projectReactionService.remove(SLUG, USER_ID, "LIKE"))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ProjectErrorCode.REACTION_NOT_FOUND);
 
@@ -99,7 +105,7 @@ class ProjectReactionServiceTest {
     void 승인되지_않은_프로젝트에는_새로운_반응을_추가할_수_없다() {
         givenProject(ApprovalStatus.PENDING);
 
-        assertThatThrownBy(() -> projectReactionService.add(PROJECT_ID, USER_ID, "LIKE"))
+        assertThatThrownBy(() -> projectReactionService.add(SLUG, USER_ID, "LIKE"))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ProjectErrorCode.PROJECT_NOT_FOUND);
 
@@ -108,7 +114,7 @@ class ProjectReactionServiceTest {
 
     @Test
     void 존재하지_않거나_삭제된_프로젝트는_반응할_수_없다() {
-        assertThatThrownBy(() -> projectReactionService.remove(PROJECT_ID, USER_ID, "LIKE"))
+        assertThatThrownBy(() -> projectReactionService.remove(SLUG, USER_ID, "LIKE"))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ProjectErrorCode.PROJECT_NOT_FOUND);
 
@@ -117,10 +123,11 @@ class ProjectReactionServiceTest {
 
     @Test
     void 지원하지_않는_반응_타입은_400_오류로_처리한다() {
-        assertThatThrownBy(() -> projectReactionService.add(PROJECT_ID, USER_ID, "AGREE"))
+        assertThatThrownBy(() -> projectReactionService.add(SLUG, USER_ID, "AGREE"))
                 .isInstanceOf(InvalidInputException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ProjectErrorCode.REACTION_TYPE_INVALID);
 
+        verifyNoInteractions(projectSlugResolver);
         verify(projectRepository, never()).findActiveById(PROJECT_ID);
         verifyNoInteractions(projectReactionRepository);
     }

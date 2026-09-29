@@ -20,29 +20,32 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectReactionService {
 
     private final ProjectRepository projectRepository;
+    private final ProjectSlugResolver projectSlugResolver;
     private final ProjectReactionRepository projectReactionRepository;
 
     @Transactional
-    public ProjectReactionResponse add(long projectId, long userId, String type) {
+    public ProjectReactionResponse add(String slug, long userId, String type) {
         ProjectReactionType reactionType = ProjectReactionType.from(type);
+        long projectId = projectSlugResolver.resolveId(slug);
         Project project = findActiveProject(projectId);
         if (project.getApprovalStatus() != ApprovalStatus.APPROVED) {
             throw new EntityNotFoundException(PROJECT_NOT_FOUND);
         }
 
         projectReactionRepository.add(projectId, userId, reactionType);
-        return response(projectId, reactionType, true);
+        return response(projectId, slug, reactionType, true);
     }
 
     @Transactional
-    public ProjectReactionResponse remove(long projectId, long userId, String type) {
+    public ProjectReactionResponse remove(String slug, long userId, String type) {
         ProjectReactionType reactionType = ProjectReactionType.from(type);
+        long projectId = projectSlugResolver.resolveId(slug);
         findActiveProject(projectId);
 
         if (!projectReactionRepository.remove(projectId, userId, reactionType)) {
             throw new EntityNotFoundException(ProjectErrorCode.REACTION_NOT_FOUND);
         }
-        return response(projectId, reactionType, false);
+        return response(projectId, slug, reactionType, false);
     }
 
     private Project findActiveProject(long projectId) {
@@ -50,10 +53,10 @@ public class ProjectReactionService {
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
     }
 
-    private ProjectReactionResponse response(long projectId, ProjectReactionType type, boolean active) {
+    private ProjectReactionResponse response(long projectId, String slug, ProjectReactionType type, boolean active) {
         ProjectReactionCounts counts = projectReactionRepository.countByProjectId(projectId);
         return new ProjectReactionResponse(
-                projectId,
+                slug,
                 type,
                 active,
                 counts.likeCount(),
