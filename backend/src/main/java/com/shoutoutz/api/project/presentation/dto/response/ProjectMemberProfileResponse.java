@@ -61,11 +61,14 @@ public record ProjectMemberProfileResponse(
     }
 
     /**
-     * 가입하지 않은 이관 팀원은 서비스 프로필 이미지가 없으므로 GitHub 프로필 이미지로 대신한다.
+     * 가입하지 않은 이관 팀원은 GitHub 프로필 이미지를 보여준다.
+     * 가입한 사용자는 프로필 이미지를 정하지 않았으면 null이고, 기본 이미지는 클라이언트가 보여준다.
      */
     private static String avatarUrl(ProjectMemberProfile member, Map<Long, URI> mediaUrls) {
-        String avatarUrl = toUrl(mediaUrls, member.avatarImageId());
-        return avatarUrl == null ? member.githubAvatarUrl() : avatarUrl;
+        if (member.userId() == null) {
+            return member.githubAvatarUrl();
+        }
+        return toUrl(mediaUrls, member.avatarImageId());
     }
 
     private static String toUrl(Map<Long, URI> mediaUrls, Long mediaId) {

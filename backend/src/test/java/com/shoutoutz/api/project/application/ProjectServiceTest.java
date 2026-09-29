@@ -968,6 +968,27 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("가입한 팀원이 프로필 이미지를 정하지 않았으면 GitHub 프로필 이미지가 있어도 avatarUrl은 null이다.")
+    void returnsNullAvatarUrlForUserWithoutAvatar() {
+        ProjectDetail detail = projectDetail(ApprovalStatus.APPROVED, DESCRIPTION, List.of(new ProjectMemberProfile(
+                REGISTERED_BY,
+                "@dhyepark",
+                "박다혜",
+                UserType.WOOWACOURSE_CREW,
+                Cohort.COHORT_6,
+                Track.BACKEND,
+                null,
+                "https://avatars.githubusercontent.com/u/1",
+                null
+        )));
+        when(projectRepository.findDetailBySlug(new Slug("loop"), null)).thenReturn(Optional.of(detail));
+
+        ProjectDetailResponse response = projectService.findDetail("loop", null);
+
+        assertThat(response.members().getFirst().avatarUrl()).isNull();
+    }
+
+    @Test
     @DisplayName("승인되지 않은 프로젝트도 등록자 본인은 상세 조회할 수 있다.")
     void findsUnapprovedProjectDetailForRegistrant() {
         when(projectRepository.findDetailBySlug(new Slug("loop"), REGISTERED_BY))
