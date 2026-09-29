@@ -36,32 +36,36 @@ export interface AdminVerificationRequestApproveSuccessResponse {
 export interface AdminVerificationRequestFindAllSuccessResponse {
   /** 인증 신청 목록 */
   data: {
-    /** 조건에 맞는 인증 신청 목록 */
-    items: {
-      /** 신청자 식별 정보 */
-      applicant: {
-        /** 신청자 handle */
-        handle: string;
-        /** 신청자 사용자 ID */
-        userId: number;
-      };
-      /** 신청 기수. 코치 신청은 null */
-      cohort?: number | null;
-      /** 신청 닉네임 */
-      nickname: string;
-      /** 인증 신청 ID */
-      requestId: number;
-      /** 신청 시각(ISO-8601) */
-      requestedAt: string;
-      /** 현재 신청 상태 */
-      status: "PENDING" | "APPROVED" | "REJECTED";
-      /** 신청 트랙. 코치 신청은 null */
-      track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
-      /** 신청 유형 */
-      userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
-    }[];
+    /** 신청자 식별 정보 */
+    applicant: {
+      /** 신청자 handle */
+      handle: string;
+      /** 신청자 사용자 ID */
+      userId: number;
+    };
+    /** 신청 기수. 코치 신청은 null */
+    cohort?: number | null;
+    /** 신청 닉네임 */
+    nickname: string;
+    /** 인증 신청 ID */
+    requestId: number;
+    /** 신청 시각(ISO-8601) */
+    requestedAt: string;
+    /** 현재 신청 상태 */
+    status: "PENDING" | "APPROVED" | "REJECTED";
+    /** 신청 트랙. 코치 신청은 null */
+    track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
+    /** 신청 유형 */
+    userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
+  }[];
+  /** 페이지네이션 정보 */
+  meta: {
+    /** 다음 페이지 존재 여부 */
+    hasNext: boolean;
     /** 다음 페이지 커서. 다음 페이지가 없으면 null */
     nextCursor?: string | null;
+    /** 커서와 size를 제외한 상태 조건을 만족하는 전체 인증 신청 수 */
+    totalCount: number;
   };
   /** 응답 상태 */
   status: string;
@@ -288,10 +292,18 @@ export interface EventCreateSuccessResponse {
   data: {
     /** 이벤트 작성자 */
     author: {
+      /** 작성자 기수 */
+      cohort?: number | null;
+      /** 작성자 표시 이름 */
+      displayName: string;
       /** 작성자 이름 */
       name: string;
+      /** 작성자 트랙 */
+      track?: string | null;
       /** 작성자 ID */
       userId: number;
+      /** 작성자 유형 */
+      userType?: string | null;
     };
     /** 이벤트 본문 */
     body: string;
@@ -343,10 +355,16 @@ export interface FeedCommentCreateSuccessResponse {
     author: {
       /** 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
+      /** 작성자 기수 */
+      cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 트랙 */
+      track?: string | null;
       /** 작성자 ID */
       userId: number;
+      /** 작성자 유형 */
+      userType?: string | null;
     };
     /** 저장된 댓글 내용 */
     content: string;
@@ -382,16 +400,26 @@ export interface FeedCommentDeleteSuccessResponse {
 export interface FeedCommentFindAllSuccessResponse {
   /** 피드 댓글 목록 */
   data: {
+    /** 댓글 공감 수 */
+    agreeCount: number;
+    /** 현재 사용자의 공감 여부. 비로그인이면 false */
+    agreedByMe: boolean;
     /** 댓글 작성자 */
     author: {
       /** 작성자 프로필 이미지 미디어 ID */
       avatarImageId?: number | null;
       /** 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
+      /** 작성자 기수 */
+      cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 트랙 */
+      track?: string | null;
       /** 작성자 ID */
       userId: number;
+      /** 작성자 유형 */
+      userType?: string | null;
     };
     /** 댓글 내용. 삭제된 댓글은 null */
     content?: string | null;
@@ -410,11 +438,33 @@ export interface FeedCommentFindAllSuccessResponse {
     /** 수정 시각 (UTC ISO-8601) */
     updatedAt: string;
   }[];
-  meta?: {
+  /** 페이지네이션 정보 */
+  meta: {
     /** 다음 페이지 존재 여부 */
     hasNext: boolean;
     /** 다음 페이지 cursor */
     nextCursor?: string | null;
+    /** 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수 */
+    totalCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** FeedCommentReactionSuccessResponse */
+export interface FeedCommentReactionSuccessResponse {
+  /** 피드 댓글 반응 변경 결과 */
+  data: {
+    /** 요청한 반응의 활성 상태 */
+    active: boolean;
+    /** 댓글 공감 수 */
+    agreeCount: number;
+    /** 댓글 ID */
+    commentId: number;
+    /** 피드 ID */
+    feedId: number;
+    /** 반응 타입(현재 AGREE) */
+    type: string;
   };
   /** 응답 상태 */
   status: string;
@@ -434,10 +484,16 @@ export interface FeedCommentUpdateSuccessResponse {
     author: {
       /** 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
+      /** 작성자 기수 */
+      cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 트랙 */
+      track?: string | null;
       /** 작성자 ID */
       userId: number;
+      /** 작성자 유형 */
+      userType?: string | null;
     };
     /** 저장된 댓글 내용 */
     content: string;
@@ -476,9 +532,15 @@ export interface FeedFindAllSuccessResponse {
       handle: string;
       /** 작성자 트랙 */
       track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
+      /** 작성자 ID */
+      userId: number;
       /** 작성자 유형 */
       userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
     };
+    /** 북마크 수 */
+    bookmarkCount: number;
+    /** 요청자의 북마크 여부. 비로그인이면 false */
+    bookmarkedByMe: boolean;
     /** 카테고리 목록 */
     categories: {
       /** 카테고리 ID */
@@ -490,12 +552,18 @@ export interface FeedFindAllSuccessResponse {
       /** 카테고리 유형 */
       type: "GENERAL" | "EVENT";
     }[];
+    /** 삭제되지 않은 댓글 수 */
+    commentCount: number;
     /** Markdown 본문 */
     content: string;
     /** ISO-8601 생성 시각 */
     createdAt: string;
     /** 피드 ID */
     feedId: number;
+    /** 좋아요 수 */
+    likeCount: number;
+    /** 요청자의 좋아요 여부. 비로그인이면 false */
+    likedByMe: boolean;
     /** 본문 미디어 목록 */
     media: {
       /** 미디어 표시 순서 */
@@ -516,6 +584,8 @@ export interface FeedFindAllSuccessResponse {
     hasNext: boolean;
     /** 다음 페이지 커서 */
     nextCursor?: string | null;
+    /** 커서와 size를 제외한 조회 조건을 만족하는 전체 피드 수 */
+    totalCount: number;
   };
   /** 응답 상태 */
   status: string;
@@ -539,9 +609,15 @@ export interface FeedFindSuccessResponse {
       handle: string;
       /** 작성자 트랙 */
       track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
+      /** 작성자 ID */
+      userId: number;
       /** 작성자 유형 */
       userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
     };
+    /** 북마크 수 */
+    bookmarkCount: number;
+    /** 요청자의 북마크 여부. 비로그인이면 false */
+    bookmarkedByMe: boolean;
     /** 카테고리 목록 */
     categories: {
       /** 카테고리 ID */
@@ -553,12 +629,18 @@ export interface FeedFindSuccessResponse {
       /** 카테고리 유형 */
       type: "GENERAL" | "EVENT";
     }[];
+    /** 삭제되지 않은 댓글 수 */
+    commentCount: number;
     /** Markdown 본문 */
     content: string;
     /** ISO-8601 생성 시각 */
     createdAt: string;
     /** 피드 ID */
     feedId: number;
+    /** 좋아요 수 */
+    likeCount: number;
+    /** 요청자의 좋아요 여부. 비로그인이면 false */
+    likedByMe: boolean;
     /** 본문 미디어 목록 */
     media: {
       /** 미디어 표시 순서 */
@@ -577,11 +659,30 @@ export interface FeedFindSuccessResponse {
   status: string;
 }
 
+/** FeedReactionSuccessResponse */
+export interface FeedReactionSuccessResponse {
+  /** 피드 반응 변경 결과 */
+  data: {
+    /** 요청한 반응의 활성 상태 */
+    active: boolean;
+    /** 피드 북마크 수 */
+    bookmarkCount: number;
+    /** 피드 ID */
+    feedId: number;
+    /** 피드 좋아요 수 */
+    likeCount: number;
+    /** 반응 타입(LIKE 또는 BOOKMARK) */
+    type: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
 /** FeedSaveRequest */
 export interface FeedSaveRequest {
   /** 활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가) */
   categoryIds: (object | boolean | string | number)[];
-  /** Markdown 본문(공백 제외 1자 이상, Unicode 최대 500자) */
+  /** Markdown 본문(공백 제외 1자 이상, Unicode 최대 5,000자) */
   content: string;
   /** 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록 */
   mediaIds: (object | boolean | string | number)[];
@@ -605,6 +706,8 @@ export interface FeedSaveSuccessResponse {
       handle: string;
       /** 작성자 트랙 */
       track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
+      /** 작성자 ID */
+      userId: number;
       /** 작성자 유형 */
       userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
     };
@@ -653,7 +756,7 @@ export interface FeedTitleSuggestionsSuccessResponse {
 export interface FeedUpdateRequest {
   /** 변경할 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음) */
   categoryIds: (object | boolean | string | number)[];
-  /** 변경할 Markdown 본문 */
+  /** 변경할 Markdown 본문(공백 제외 1자 이상, Unicode 최대 5,000자) */
   content: string;
   /** 변경할 본문 미디어 ID 목록 */
   mediaIds: (object | boolean | string | number)[];
@@ -677,6 +780,8 @@ export interface FeedUpdateSuccessResponse {
       handle: string;
       /** 작성자 트랙 */
       track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
+      /** 작성자 ID */
+      userId: number;
       /** 작성자 유형 */
       userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
     };
@@ -920,6 +1025,10 @@ export interface NewsFindAllSuccessResponse {
     id: number;
     /** 고정 여부 */
     isPinned: boolean;
+    /** 좋아요 수 */
+    likeCount: number;
+    /** 현재 사용자의 좋아요 여부 */
+    likedByMe: boolean;
     /** 고정 순서. 고정되지 않은 경우 null */
     pinOrder?: number | null;
     /** 게시 시각 */
@@ -937,6 +1046,8 @@ export interface NewsFindAllSuccessResponse {
     hasNext: boolean;
     /** 다음 페이지 커서. 다음 페이지가 없으면 null */
     nextCursor?: string | null;
+    /** 커서와 size를 제외한 유형·이벤트 상태 조건을 만족하는 전체 소식 수 */
+    totalCount: number;
   };
   /** 응답 상태 */
   status: string;
@@ -948,10 +1059,18 @@ export interface NewsFindDetailSuccessResponse {
   data: {
     /** 소식 작성자 */
     author: {
+      /** 작성자 기수 */
+      cohort?: number | null;
+      /** 작성자 표시 이름 */
+      displayName: string;
       /** 작성자 이름 */
       name: string;
+      /** 작성자 트랙 */
+      track?: string | null;
       /** 작성자 ID */
       userId: number;
+      /** 작성자 유형 */
+      userType?: string | null;
     };
     /** 소식 본문 */
     body: string;
@@ -972,6 +1091,10 @@ export interface NewsFindDetailSuccessResponse {
     id: number;
     /** 고정 여부 */
     isPinned: boolean;
+    /** 좋아요 수 */
+    likeCount: number;
+    /** 현재 사용자의 좋아요 여부 */
+    likedByMe: boolean;
     /** 다음 소식. 없으면 null */
     next?: {
       /** 다음 소식 ID */
@@ -998,6 +1121,23 @@ export interface NewsFindDetailSuccessResponse {
     title: string;
     /** 소식 유형 */
     type: "NOTICE" | "EVENT";
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** NewsReactionSuccessResponse */
+export interface NewsReactionSuccessResponse {
+  /** 소식 반응 변경 결과 */
+  data: {
+    /** 요청한 반응의 활성 상태 */
+    active: boolean;
+    /** 소식 좋아요 수 */
+    likeCount: number;
+    /** 소식 ID */
+    newsId: number;
+    /** 반응 타입. 현재 LIKE만 지원하며 향후 확장할 수 있다. */
+    type: string;
   };
   /** 응답 상태 */
   status: string;
@@ -1032,10 +1172,18 @@ export interface NewsUpdateSuccessResponse {
   data: {
     /** 작성자 */
     author: {
+      /** 작성자 기수 */
+      cohort?: number | null;
+      /** 작성자 표시 이름 */
+      displayName: string;
       /** 작성자 이름 */
       name: string;
+      /** 작성자 트랙 */
+      track?: string | null;
       /** 작성자 ID */
       userId: number;
+      /** 작성자 유형 */
+      userType?: string | null;
     };
     /** 소식 본문 */
     body: string;
@@ -1096,10 +1244,18 @@ export interface NoticeCreateSuccessResponse {
   data: {
     /** 공지 작성자 */
     author: {
+      /** 작성자 기수 */
+      cohort?: number | null;
+      /** 작성자 표시 이름 */
+      displayName: string;
       /** 작성자 이름 */
       name: string;
+      /** 작성자 트랙 */
+      track?: string | null;
       /** 작성자 ID */
       userId: number;
+      /** 작성자 유형 */
+      userType?: string | null;
     };
     /** 공지 본문 */
     body: string;
@@ -1164,10 +1320,16 @@ export interface ProjectCommentCreateSuccessResponse {
     author: {
       /** 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
+      /** 작성자 기수 */
+      cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 트랙 */
+      track?: string | null;
       /** 작성자 ID */
       userId: number;
+      /** 작성자 유형 */
+      userType?: string | null;
     };
     /** 저장된 댓글 내용 */
     content: string;
@@ -1203,16 +1365,26 @@ export interface ProjectCommentDeleteSuccessResponse {
 export interface ProjectCommentFindAllSuccessResponse {
   /** 프로젝트 댓글 목록 */
   data: {
+    /** 댓글 공감 수 */
+    agreeCount: number;
+    /** 현재 사용자의 공감 여부. 비로그인이면 false */
+    agreedByMe: boolean;
     /** 댓글 작성자 */
     author: {
       /** 작성자 프로필 이미지 미디어 ID */
       avatarImageId?: number | null;
       /** 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
+      /** 작성자 기수 */
+      cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 트랙 */
+      track?: string | null;
       /** 작성자 ID */
       userId: number;
+      /** 작성자 유형 */
+      userType?: string | null;
     };
     /** 댓글 내용. 삭제된 댓글은 null */
     content?: string | null;
@@ -1231,11 +1403,33 @@ export interface ProjectCommentFindAllSuccessResponse {
     /** 수정 시각 (UTC ISO-8601) */
     updatedAt: string;
   }[];
-  meta?: {
+  /** 페이지네이션 정보 */
+  meta: {
     /** 다음 페이지 존재 여부 */
     hasNext: boolean;
     /** 다음 페이지 cursor */
     nextCursor?: string | null;
+    /** 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수 */
+    totalCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** ProjectCommentReactionSuccessResponse */
+export interface ProjectCommentReactionSuccessResponse {
+  /** 프로젝트 댓글 반응 변경 결과 */
+  data: {
+    /** 요청한 반응의 활성 상태 */
+    active: boolean;
+    /** 댓글 공감 수 */
+    agreeCount: number;
+    /** 댓글 ID */
+    commentId: number;
+    /** 프로젝트 ID */
+    projectId: number;
+    /** 반응 타입(현재 AGREE) */
+    type: string;
   };
   /** 응답 상태 */
   status: string;
@@ -1255,10 +1449,16 @@ export interface ProjectCommentUpdateSuccessResponse {
     author: {
       /** 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
+      /** 작성자 기수 */
+      cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 트랙 */
+      track?: string | null;
       /** 작성자 ID */
       userId: number;
+      /** 작성자 유형 */
+      userType?: string | null;
     };
     /** 저장된 댓글 내용 */
     content: string;
@@ -1283,23 +1483,23 @@ export interface ProjectCommentUpdateSuccessResponse {
 export interface ProjectCreateRequest {
   /** 우아한테크코스 기수 (1~8) */
   cohort: number;
-  /** 서비스 배포 URL (http/https). 빈 문자열은 입력하지 않은 것으로 본다. */
+  /** 서비스 배포 URL (http/https). 빈 문자열이나 공백만 있으면 입력하지 않은 것으로 본다. */
   deploymentUrl?: string | null;
   /** 프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId}) 형식으로 넣으며, 본인이 업로드한 PROJECT_DESCRIPTION 용도의 처리 완료 이미지만 쓸 수 있다. */
   descriptionMd?: string | null;
-  /** https://github.com/{owner}/{repo} 형식. 리포지토리 이름으로 slug를 만든다. */
+  /** https://github.com/{owner}/{repo} 형식 (2,048자 이하). 끝의 .git이나 /는 허용하지만, /tree/main처럼 경로가 더 붙으면 400이다. 리포지토리 이름으로 slug를 만든다. */
   githubRepositoryUrl: string;
-  /** 등록자를 제외한 팀원 handle 목록 (1명 이상). 활동 중인 우아한테크코스 크루 또는 코치여야 하며, 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다. */
+  /** 팀원 handle 목록 (1명 이상). 등록자를 포함할 수 있으며, 활동 중인 우아한테크코스 크루 또는 코치여야 하며, 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다. */
   memberHandles: string[];
-  /** 한 줄 소개 (200자 이하) */
+  /** 한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준) */
   tagline: string;
-  /** 팀 이름 (50자 이하) */
+  /** 팀 이름. 앞뒤 공백을 자른 뒤 50자 이하 (유니코드 코드 포인트 기준) */
   teamName: string;
   /** 선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다. */
   techTagIds: number[];
   /** 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID */
   thumbnailImageId?: number | null;
-  /** 프로젝트 이름 (100자 이하) */
+  /** 프로젝트 이름. 앞뒤 공백을 자른 뒤 100자 이하 (유니코드 코드 포인트 기준) */
   title: string;
 }
 
@@ -1366,6 +1566,10 @@ export interface ProjectFilterOptionsSuccessResponse {
 export interface ProjectFindAllSuccessResponse {
   /** 프로젝트 목록 */
   data: {
+    /** 북마크 수 */
+    bookmarkCount: number;
+    /** 요청자의 북마크 여부. 비로그인이면 false다. */
+    bookmarkedByMe: boolean;
     /** 우아한테크코스 기수 */
     cohort: number;
     /** 삭제되지 않은 댓글 수 (대댓글 포함) */
@@ -1374,13 +1578,15 @@ export interface ProjectFindAllSuccessResponse {
     id: number;
     /** 좋아요 수 */
     likeCount: number;
+    /** 요청자의 좋아요 여부. 비로그인이면 false다. */
+    likedByMe: boolean;
     /** 팀원 전체 목록. 상세 조회의 members와 같은 규칙이며, 등록 순서대로 정렬한다. */
     members: {
       /** 프로필 이미지 미디어 ID */
       avatarImageId?: number | null;
       /** CloudFront에서 제공하는 공개 프로필 이미지 URL */
       avatarUrl?: string | null;
-      /** 기수. 가입하지 않은 이관 팀원은 프로젝트 기수다. */
+      /** 기수. 크루가 아닌 팀원과 이관 팀원은 null이다. */
       cohort?: number | null;
       /** 표시 이름. 탈퇴한 팀원은 '탈퇴한 사용자', 가입하지 않은 이관 팀원은 GitHub 이름(없으면 GitHub 아이디)이다. */
       displayName: string;
@@ -1392,6 +1598,10 @@ export interface ProjectFindAllSuccessResponse {
       handle?: string | null;
       /** 트랙 */
       track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
+      /** 사용자 ID. 가입하지 않은 이관 팀원은 null이다. */
+      userId?: number | null;
+      /** 사용자 유형. 가입하지 않은 이관 팀원과 탈퇴한 팀원은 null이다. */
+      userType?: string | null;
     }[];
     /** 프로젝트 주소로 쓰이는 slug */
     slug: string;
@@ -1419,7 +1629,7 @@ export interface ProjectFindAllSuccessResponse {
     hasNext: boolean;
     /** 다음 페이지 조회에 쓸 커서. 다음 페이지가 없으면 null */
     nextCursor?: string | null;
-    /** 검색어와 필터가 적용된 프로젝트 수 */
+    /** 커서와 size를 제외한 검색어와 필터 조건을 만족하는 전체 프로젝트 수 */
     totalCount: number;
   };
   /** 응답 상태 */
@@ -1465,13 +1675,13 @@ export interface ProjectFindDetailSuccessResponse {
     likeCount: number;
     /** 요청자의 좋아요 여부. 비로그인이면 false다. */
     likedByMe: boolean;
-    /** 팀원 목록. 신규 프로젝트는 등록 순서대로이며 등록자가 첫 번째다. */
+    /** 팀원 목록. 저장된 순서대로 반환한다. */
     members: {
       /** 프로필 이미지 미디어 ID */
       avatarImageId?: number | null;
       /** CloudFront에서 제공하는 공개 프로필 이미지 URL */
       avatarUrl?: string | null;
-      /** 기수. 가입하지 않은 이관 팀원은 프로젝트 기수다. */
+      /** 기수. 크루가 아닌 팀원과 이관 팀원은 null이다. */
       cohort?: number | null;
       /** 표시 이름. 탈퇴한 팀원은 '탈퇴한 사용자', 가입하지 않은 이관 팀원은 GitHub 이름(없으면 GitHub 아이디)이다. */
       displayName: string;
@@ -1483,6 +1693,10 @@ export interface ProjectFindDetailSuccessResponse {
       handle?: string | null;
       /** 트랙 */
       track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
+      /** 사용자 ID. 가입하지 않은 이관 팀원은 null이다. */
+      userId?: number | null;
+      /** 사용자 유형. 가입하지 않은 이관 팀원과 탈퇴한 팀원은 null이다. */
+      userType?: string | null;
     }[];
     /** 반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다. */
     rejectReason?: string | null;
@@ -1516,6 +1730,25 @@ export interface ProjectFindDetailSuccessResponse {
   status: string;
 }
 
+/** ProjectReactionSuccessResponse */
+export interface ProjectReactionSuccessResponse {
+  /** 프로젝트 반응 변경 결과 */
+  data: {
+    /** 요청한 반응의 활성 상태 */
+    active: boolean;
+    /** 프로젝트 북마크 수 */
+    bookmarkCount: number;
+    /** 프로젝트 좋아요 수 */
+    likeCount: number;
+    /** 프로젝트 ID */
+    projectId: number;
+    /** 반응 타입(LIKE 또는 BOOKMARK) */
+    type: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
 /** ProjectRestoreSuccessResponse */
 export interface ProjectRestoreSuccessResponse {
   /** 복구 결과 */
@@ -1537,25 +1770,25 @@ export interface ProjectRestoreSuccessResponse {
 export interface ProjectUpdateRequest {
   /** 우아한테크코스 기수 (1~8) */
   cohort: number;
-  /** 서비스 배포 URL (http/https). 비우려면 null로 보낸다. */
+  /** 서비스 배포 URL (http/https). 비우려면 null로 보낸다. 빈 문자열이나 공백만 있어도 비운 것으로 본다. */
   deploymentUrl?: string | null;
   /** 프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId}) 형식으로 넣으며, 상세 조회 응답의 CDN URL을 그대로 보내도 기존 본문 이미지 참조를 유지한다. */
   descriptionMd?: string | null;
-  /** https://github.com/{owner}/{repo} 형식. 바꿀 수 있지만 다른 프로젝트가 등록한 리포지토리로는 바꿀 수 없다. slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다. */
+  /** https://github.com/{owner}/{repo} 형식 (2,048자 이하). 끝의 .git이나 /는 허용하지만, /tree/main처럼 경로가 더 붙으면 400이다. 바꿀 수 있지만 다른 프로젝트가 등록한 리포지토리로는 바꿀 수 없다. slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다. */
   githubRepositoryUrl: string;
-  /** 작성자를 제외한 팀원 handle 전체 목록 (1명 이상). 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다. */
+  /** 팀원 handle 전체 목록 (1명 이상). 등록자를 포함할 수 있으며, 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다. */
   memberHandles: string[];
-  /** 서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있다. */
+  /** 서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반환한다. 이때 오류 응답의 details.field는 serviceStatusValid다. */
   serviceStatus: "OPERATING" | "CLOSED";
-  /** 한 줄 소개 (200자 이하) */
+  /** 한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준) */
   tagline: string;
-  /** 팀 이름 (50자 이하) */
+  /** 팀 이름. 앞뒤 공백을 자른 뒤 50자 이하 (유니코드 코드 포인트 기준) */
   teamName: string;
   /** 기술 스택 ID 전체 목록. 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 달려 있던 태그는 비활성화됐어도 그대로 둘 수 있다. */
   techTagIds: number[];
   /** 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. 필드를 생략하면 기존 썸네일을 유지하고, null을 보내면 제거한다. */
   thumbnailImageId?: number | null;
-  /** 프로젝트 이름 (100자 이하) */
+  /** 프로젝트 이름. 앞뒤 공백을 자른 뒤 100자 이하 (유니코드 코드 포인트 기준) */
   title: string;
 }
 
@@ -1605,6 +1838,10 @@ export interface TechTagFindAllSuccessResponse {
 export interface UserCommentFindAllSuccessResponse {
   /** 내가 작성한 댓글 목록 */
   data: {
+    /** 댓글 공감 수 */
+    agreeCount: number;
+    /** 현재 사용자의 공감 여부 */
+    agreedByMe: boolean;
     /** 댓글 ID */
     commentId: number;
     /** 댓글 내용 */
@@ -1624,6 +1861,8 @@ export interface UserCommentFindAllSuccessResponse {
     hasNext: boolean;
     /** 다음 페이지 조회용 커서 */
     nextCursor?: string | null;
+    /** 커서와 size에 무관한 조회 가능한 전체 작성 댓글 수 */
+    totalCount: number;
   };
   /** 응답 상태 */
   status: string;
@@ -1647,9 +1886,15 @@ export interface UserFeedFindAllSuccessResponse {
       handle: string;
       /** 작성자 트랙 */
       track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
+      /** 작성자 ID */
+      userId: number;
       /** 작성자 유형 */
       userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
     };
+    /** 북마크 수 */
+    bookmarkCount: number;
+    /** 요청자의 북마크 여부. 비로그인이면 false */
+    bookmarkedByMe: boolean;
     /** 카테고리 목록 */
     categories: {
       /** 카테고리 ID */
@@ -1671,6 +1916,8 @@ export interface UserFeedFindAllSuccessResponse {
     feedId: number;
     /** 좋아요 수 */
     likeCount: number;
+    /** 요청자의 좋아요 여부. 비로그인이면 false */
+    likedByMe: boolean;
     /** 본문 미디어 목록 */
     media: {
       /** 미디어 표시 순서 */
@@ -1691,6 +1938,8 @@ export interface UserFeedFindAllSuccessResponse {
     hasNext: boolean;
     /** 다음 페이지 커서 */
     nextCursor?: string | null;
+    /** 커서와 size에 무관한 해당 사용자의 전체 공개 피드 수 */
+    totalCount: number;
   };
   /** 응답 상태 */
   status: string;
@@ -1725,6 +1974,8 @@ export interface UserProfileSuccessResponse {
     handle: string;
     /** 우테코 트랙 */
     track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
+    /** 사용자 ID */
+    userId: number;
     /** 사용자 유형 */
     userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
   };
@@ -1783,6 +2034,8 @@ export interface UserProfileUpdateSuccessResponse {
     handle: string;
     /** 우테코 트랙 */
     track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
+    /** 사용자 ID */
+    userId: number;
     /** 사용자 유형 */
     userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
   };
@@ -1794,6 +2047,12 @@ export interface UserProfileUpdateSuccessResponse {
 export interface UserProjectFindAllSuccessResponse {
   /** 사용자가 참여한 프로젝트 목록 */
   data: {
+    /** 심사 상태 */
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+    /** 북마크 수 */
+    bookmarkCount: number;
+    /** 요청자의 북마크 여부. 비로그인이면 false다. */
+    bookmarkedByMe: boolean;
     /** 우아한테크코스 기수 */
     cohort: number;
     /** 삭제되지 않은 댓글 수 */
@@ -1802,6 +2061,8 @@ export interface UserProjectFindAllSuccessResponse {
     id: number;
     /** 좋아요 수 */
     likeCount: number;
+    /** 요청자의 좋아요 여부. 비로그인이면 false다. */
+    likedByMe: boolean;
     /** 프로젝트 팀원 */
     members: {
       /** 프로필 이미지 미디어 ID */
@@ -1820,6 +2081,10 @@ export interface UserProjectFindAllSuccessResponse {
       handle?: string | null;
       /** 트랙 */
       track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
+      /** 사용자 ID. 이관 팀원은 null이다. */
+      userId?: number | null;
+      /** 사용자 유형 */
+      userType?: string | null;
     }[];
     /** 운영 상태 */
     serviceStatus: "OPERATING" | "CLOSED";
@@ -1851,6 +2116,8 @@ export interface UserProjectFindAllSuccessResponse {
     hasNext: boolean;
     /** 다음 페이지 커서 */
     nextCursor?: string | null;
+    /** 커서와 size에 무관한 조회 가능한 전체 참여 프로젝트 수. 본인 조회는 승인 대기 프로젝트를 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함 */
+    totalCount: number;
   };
   /** 응답 상태 */
   status: string;
@@ -1858,32 +2125,33 @@ export interface UserProjectFindAllSuccessResponse {
 
 /** UserSearchSuccessResponse */
 export interface UserSearchSuccessResponse {
-  /** 검색 결과 */
+  /** 검색된 크루와 코치 */
   data: {
-    /** 검색된 크루와 코치 */
-    items: {
-      /** 프로필 이미지 미디어 ID */
-      avatarImageId?: number | null;
-      /** 프로필 이미지 공개 URL */
-      avatarUrl?: string | null;
-      /** 우테코 기수 */
-      cohort?: number | null;
-      /** 표시 이름 */
-      displayName: string;
-      /** 사용자 handle */
-      handle: string;
-      /** 우테코 트랙 */
-      track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
-      /** 사용자 유형 */
-      userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
-    }[];
-  };
+    /** 프로필 이미지 미디어 ID */
+    avatarImageId?: number | null;
+    /** 프로필 이미지 공개 URL */
+    avatarUrl?: string | null;
+    /** 우테코 기수 */
+    cohort?: number | null;
+    /** 표시 이름 */
+    displayName: string;
+    /** 사용자 handle */
+    handle: string;
+    /** 우테코 트랙 */
+    track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
+    /** 사용자 ID */
+    userId: number;
+    /** 사용자 유형 */
+    userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
+  }[];
   /** 페이지 정보 */
   meta: {
     /** 다음 페이지 존재 여부 */
     hasNext: boolean;
     /** 다음 페이지 커서 */
     nextCursor?: string | null;
+    /** 커서와 size를 제외한 검색 조건을 만족하는 전체 사용자 수 */
+    totalCount: number;
   };
   /** 응답 상태 */
   status: string;

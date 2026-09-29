@@ -13,10 +13,10 @@ class UserTest {
     @Test
     @DisplayName("사용자를 초기화하면 기본 상태와 권한을 가진다")
     void initializesUserWithDefaultStatusAndRole() {
-        User user = User.initialize("zzaekkii");
+        User user = User.initialize("@zzaekkii");
 
         assertThat(user.getId()).isNull();
-        assertThat(user.getHandle()).isEqualTo(new Handle("zzaekkii"));
+        assertThat(user.getHandle()).isEqualTo(new Handle("@zzaekkii"));
         assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
         assertThat(user.getRole()).isEqualTo(UserRole.USER);
         assertThat(user.getLastLoginAt()).isNull();
@@ -38,7 +38,7 @@ class UserTest {
     void requiresDeletedStatusAndDeletedAtTogether() {
         assertThatThrownBy(() -> User.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(UserStatus.DELETED)
                 .role(UserRole.USER)
                 .build())
@@ -48,7 +48,7 @@ class UserTest {
 
         assertThatThrownBy(() -> User.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(UserStatus.ACTIVE)
                 .role(UserRole.USER)
                 .deletedAt(Instant.now())
@@ -63,14 +63,14 @@ class UserTest {
     void checksWhetherUserIsDeleted() {
         User deletedUser = User.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(UserStatus.DELETED)
                 .role(UserRole.USER)
                 .deletedAt(Instant.now())
                 .build();
 
         assertThat(deletedUser.isDeleted()).isTrue();
-        assertThat(User.initialize("active-user").isDeleted()).isFalse();
+        assertThat(User.initialize("@active-user").isDeleted()).isFalse();
     }
 
     @Test
@@ -79,7 +79,7 @@ class UserTest {
         Instant loginAt = Instant.parse("2026-09-03T00:00:00Z");
         User user = User.builder()
                 .id(1L)
-                .handle("sangjun")
+                .handle("@sangjun")
                 .status(UserStatus.ACTIVE)
                 .role(UserRole.USER)
                 .build();
@@ -96,7 +96,7 @@ class UserTest {
         Instant loginAt = Instant.parse("2026-09-03T00:00:00Z");
         User deletedUser = User.builder()
                 .id(1L)
-                .handle("sangjun")
+                .handle("@sangjun")
                 .status(UserStatus.DELETED)
                 .role(UserRole.USER)
                 .deletedAt(Instant.parse("2026-09-02T00:00:00Z"))
@@ -114,7 +114,7 @@ class UserTest {
     void rejectsBannedUserLogin() {
         User bannedUser = User.builder()
                 .id(1L)
-                .handle("sangjun")
+                .handle("@sangjun")
                 .status(UserStatus.BANNED)
                 .role(UserRole.USER)
                 .build();
@@ -130,7 +130,7 @@ class UserTest {
     void rejectsPurgedUserLogin() {
         User purgedUser = User.builder()
                 .id(1L)
-                .handle("sangjun")
+                .handle("@sangjun")
                 .status(UserStatus.DELETED)
                 .role(UserRole.USER)
                 .deletedAt(Instant.parse("2026-08-01T00:00:00Z"))

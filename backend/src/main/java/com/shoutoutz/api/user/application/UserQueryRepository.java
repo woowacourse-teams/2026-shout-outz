@@ -11,6 +11,8 @@ public interface UserQueryRepository {
 
     UserProfileCounts countByUserId(long userId);
 
+    UserProfileCounts countByUserId(long userId, boolean includePending);
+
     UserSearchPage searchWoowaMember(
             String keyword,
             UserSearchCursor cursor,

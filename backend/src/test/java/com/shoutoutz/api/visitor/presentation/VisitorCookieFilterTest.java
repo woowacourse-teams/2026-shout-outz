@@ -161,6 +161,6 @@ class VisitorCookieFilterTest {
     }
 
     private MockHttpServletRequest apiRequest(String method) {
-        return new MockHttpServletRequest(method, "/api/v1/projects/1/views");
+        return new MockHttpServletRequest(method, "/api/v1/projects/@loop/views");
     }
 }

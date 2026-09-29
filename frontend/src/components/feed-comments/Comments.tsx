@@ -1,4 +1,5 @@
-import { Component, Suspense, useState, type ReactNode } from 'react';
+import { Component, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { Link } from '@tanstack/react-router';
 import {
   QueryErrorResetBoundary,
   useMutation,
@@ -15,11 +16,15 @@ import {
 import { sessionQuery } from '@/apis/session';
 import { Button } from '@/components/Button';
 import { Avatar } from '@/components/Avatar';
+import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { formatRelativeTime } from '@/utils/date';
 import { getApiErrorMessage } from '@/utils/error';
 import { getGithubLoginUrl } from '@/utils/auth';
 import { analytics, toPathPattern } from '@/utils/analytics';
+import { IconThumbUp, IconThumbUpFilled } from '@tabler/icons-react';
+import { setFeedCommentAgree } from '@/apis/reaction';
+import { useRequireAuthentication } from '@/hooks/useRequireAuthentication';
 
 export function Comments({ feedId }: { feedId: number }) {
   return (
@@ -135,6 +140,10 @@ function CommentList({
         { queryKey: ['feed-comments', feedId] },
         { throwOnError: true },
       );
+      if (input.method === 'post' || input.method === 'delete') {
+        void client.invalidateQueries({ queryKey: ['feed', feedId] });
+        void client.invalidateQueries({ queryKey: ['feeds'] });
+      }
       setRefreshError(null);
     } catch (error) {
       setRefreshError(error);
@@ -223,6 +232,8 @@ function CommentList({
               !item.deleted && sessionReady && viewer === item.author.userId && item.editable
             }
             canDelete={!item.deleted && sessionReady && viewer === item.author.userId}
+            canReact={sessionReady}
+            feedId={feedId}
             pending={mutation.isPending}
             change={change}
           />
@@ -255,41 +266,106 @@ function CommentItem({
   item,
   canEdit,
   canDelete,
+  canReact,
+  feedId,
   pending,
   change,
 }: {
   item: FeedComment;
   canEdit: boolean;
   canDelete: boolean;
+  canReact: boolean;
+  feedId: number;
   pending: boolean;
   change: (input: CommentChange, done: () => void) => Promise<void>;
 }) {
+  const client = useQueryClient();
+  const { requireAuthentication } = useRequireAuthentication();
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [draft, setDraft] = useState(item.content ?? '');
+  const [agreeCount, setAgreeCount] = useState(item.agreeCount ?? 0);
+  const [agreed, setAgreed] = useState(item.agreedByMe ?? false);
+  const trackLabels: Record<string, string> = {
+    ANDROID: 'AN',
+    BACKEND: 'BE',
+    FRONTEND: 'FE',
+  };
+  const trackLabel = item.author.track ? trackLabels[item.author.track] : undefined;
+  const crewInfo = [
+    trackLabel,
+    item.author.cohort == null ? null : `${item.author.cohort}기`,
+    item.author.userType === 'WOOWACOURSE_CREW' ? '크루' : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const agreeMutation = useMutation({
+    mutationFn: (active: boolean) => setFeedCommentAgree(feedId, item.id, active),
+  });
+
+  useEffect(() => {
+    setAgreeCount(item.agreeCount ?? 0);
+    setAgreed(item.agreedByMe ?? false);
+  }, [item.agreeCount, item.agreedByMe]);
+
+  const toggleAgree = async () => {
+    if (!requireAuthentication() || !canReact || agreeMutation.isPending) return;
+    const previous = { agreeCount, agreed };
+    const next = !agreed;
+    setAgreed(next);
+    setAgreeCount(Math.max(0, agreeCount + (next ? 1 : -1)));
+    try {
+      const result = await agreeMutation.mutateAsync(next);
+      setAgreeCount(result.agreeCount);
+      setAgreed(result.active);
+      void client.invalidateQueries({ queryKey: ['feed-comments', feedId] });
+    } catch {
+      setAgreeCount(previous.agreeCount);
+      setAgreed(previous.agreed);
+    }
+  };
+
+  const authorDetails = (
+    <>
+      <Avatar size="sm" src={item.author.avatarUrl} name={item.author.displayName} alt="" />
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="group-hover:text-primary-600 truncate text-sm font-semibold text-gray-900">
+            {item.author.displayName}
+          </span>
+          <CrewStatusBadge userType={item.author.userType} cohort={item.author.cohort} size="xs" />
+        </div>
+        {crewInfo && <p className="mt-0.5 text-sm text-gray-500">{crewInfo}</p>}
+      </div>
+    </>
+  );
+
   return (
     <li className="min-w-0 py-4 first:pt-0 last:pb-0">
-      <div className="mb-2 flex min-w-0 items-center gap-2">
-        <Avatar
-          size="xs"
-          src={item.author.avatarUrl}
-          name={item.author.displayName}
-          alt=""
-        />
-        <span className="min-w-0 truncate text-sm font-semibold text-gray-900">
-          {item.author.displayName}
-        </span>
+      <div className="flex min-w-0 items-center gap-3">
+        {item.author.handle ? (
+          <Link
+            to="/users/$handle"
+            params={{ handle: item.author.handle }}
+            aria-label={`${item.author.displayName} 프로필 보기`}
+            className="group focus-visible:outline-primary-600 flex min-w-0 flex-1 items-center gap-3 rounded-sm focus-visible:outline-2"
+          >
+            {authorDetails}
+          </Link>
+        ) : (
+          <div className="flex min-w-0 flex-1 items-center gap-3">{authorDetails}</div>
+        )}
         <time dateTime={item.createdAt} className="shrink-0 text-sm text-gray-500">
           {formatRelativeTime(item.createdAt)}
           {item.edited ? ' · 수정됨' : ''}
         </time>
       </div>
       {item.parentId !== null && (
-        <p className="mb-1 text-xs text-gray-500">댓글 #{item.parentId}에 대한 답글</p>
+        <p className="mt-3 text-xs text-gray-500">댓글 #{item.parentId}에 대한 답글</p>
       )}
       {editing && canEdit ? (
         <form
-          className="space-y-2"
+          className="mt-3 space-y-2"
           onSubmit={(e) => {
             e.preventDefault();
             if (draft.trim() && !pending)
@@ -316,11 +392,29 @@ function CommentItem({
           </Button>
         </form>
       ) : (
-        <p className="text-sm leading-6 break-words whitespace-pre-wrap text-gray-600">
+        <p className="mt-4 text-sm leading-6 break-words whitespace-pre-wrap text-gray-700">
           {item.deleted ? '삭제된 댓글입니다.' : item.content}
         </p>
       )}
-      <div className="mt-1 flex gap-1">
+      <div className="mt-3 flex items-center gap-1">
+        {!item.deleted && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className={`gap-1 px-2 ${agreed ? 'text-primary-600' : ''}`}
+            aria-label={agreed ? '공감 취소' : '공감'}
+            aria-pressed={agreed}
+            disabled={agreeMutation.isPending}
+            onClick={() => void toggleAgree()}
+          >
+            {agreed ? (
+              <IconThumbUpFilled className="size-4" aria-hidden="true" />
+            ) : (
+              <IconThumbUp className="size-4" aria-hidden="true" />
+            )}
+            <span aria-label="공감 수">{agreeCount}</span>
+          </Button>
+        )}
         {canEdit && !editing && (
           <Button
             size="sm"
@@ -356,6 +450,11 @@ function CommentItem({
             취소
           </Button>
         </div>
+      )}
+      {agreeMutation.isError && (
+        <p role="alert" className="text-xs text-red-600">
+          {getApiErrorMessage(agreeMutation.error)}
+        </p>
       )}
     </li>
   );

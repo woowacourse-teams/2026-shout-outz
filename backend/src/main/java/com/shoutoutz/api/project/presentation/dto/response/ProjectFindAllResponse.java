@@ -29,7 +29,6 @@ public record ProjectFindAllResponse(List<Item> items, SliceMetaResponse meta) {
      * starCount 는 GitHub 스타 수를 아직 동기화하지 않은 프로젝트면 null 이다.
      */
     public record Item(
-            long id,
             String slug,
             String title,
             String tagline,
@@ -47,7 +46,6 @@ public record ProjectFindAllResponse(List<Item> items, SliceMetaResponse meta) {
     ) {
 
         public Item(
-                long id,
                 String slug,
                 String title,
                 String tagline,
@@ -61,7 +59,6 @@ public record ProjectFindAllResponse(List<Item> items, SliceMetaResponse meta) {
                 List<ProjectMemberProfileResponse> members
         ) {
             this(
-                    id,
                     slug,
                     title,
                     tagline,
@@ -81,7 +78,6 @@ public record ProjectFindAllResponse(List<Item> items, SliceMetaResponse meta) {
 
         public static Item from(ProjectSummary summary, Map<Long, URI> mediaUrls) {
             return new Item(
-                    summary.id(),
                     summary.slug(),
                     summary.title(),
                     summary.tagline(),

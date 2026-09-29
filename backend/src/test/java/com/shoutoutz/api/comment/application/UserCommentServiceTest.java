@@ -85,6 +85,14 @@ class UserCommentServiceTest {
 
     private UserCommentItem comment(long id, UserCommentType type, String createdAt) {
         Instant instant = Instant.parse(createdAt);
-        return new UserCommentItem(id, type, 100L + id, "댓글 " + id, instant, instant);
+        return new UserCommentItem(
+                id,
+                type,
+                type == UserCommentType.FEED ? 100L + id : null,
+                type == UserCommentType.PROJECT ? "project-" + id : null,
+                "댓글 " + id,
+                instant,
+                instant
+        );
     }
 }

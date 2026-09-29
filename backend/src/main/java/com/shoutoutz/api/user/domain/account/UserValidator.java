@@ -2,7 +2,9 @@ package com.shoutoutz.api.user.domain.account;
 
 import static com.shoutoutz.api.common.validator.DomainValidator.validateNotNull;
 import static com.shoutoutz.api.common.validator.DomainValidator.validateNotNullOrBlank;
+import static com.shoutoutz.api.common.validator.DomainValidator.validatePattern;
 import static com.shoutoutz.api.user.domain.account.UserErrorCode.USER_DELETION_STATE_INVALID;
+import static com.shoutoutz.api.user.domain.account.UserErrorCode.USER_HANDLE_INVALID_FORMAT;
 import static com.shoutoutz.api.user.domain.account.UserErrorCode.USER_HANDLE_REQUIRED;
 import static com.shoutoutz.api.user.domain.account.UserErrorCode.USER_LOGIN_AT_REQUIRED;
 import static com.shoutoutz.api.user.domain.account.UserErrorCode.USER_LOGIN_BANNED;
@@ -32,6 +34,7 @@ final class UserValidator {
 
     static void validateHandle(String handle) {
         validateNotNullOrBlank(handle, USER_HANDLE_REQUIRED);
+        validatePattern(handle, Handle.FORMAT_PATTERN, USER_HANDLE_INVALID_FORMAT);
     }
 
     static void validateLogin(UserStatus status, Instant purgedAt, Instant loginAt) {

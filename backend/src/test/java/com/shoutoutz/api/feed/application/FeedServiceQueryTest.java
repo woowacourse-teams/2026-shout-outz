@@ -247,13 +247,13 @@ class FeedServiceQueryTest {
                 feed(2L, "2026-09-10T00:00:00Z"),
                 feed(1L, "2026-09-09T00:00:00Z")
         );
-        when(userRepository.findByHandle("zzaekkii"))
+        when(userRepository.findByHandle("@zzaekkii"))
                 .thenReturn(Optional.of(user(UserStatus.ACTIVE)));
         when(feedQueryRepository.findAllByAuthorId(1L, cursor, 2))
                 .thenReturn(new FeedPage(queried.subList(0, 2), true, 3L));
 
         FeedFindAllResult result = feedService.findAllByUser(
-                "zzaekkii",
+                "@zzaekkii",
                 new UserFeedFindRequest(cursorCodec.encode(cursor), 2)
         );
 
@@ -273,11 +273,11 @@ class FeedServiceQueryTest {
 
     @Test
     void 탈퇴한_사용자의_피드는_공개하지_않는다() {
-        when(userRepository.findByHandle("zzaekkii"))
+        when(userRepository.findByHandle("@zzaekkii"))
                 .thenReturn(Optional.of(user(UserStatus.DELETED)));
 
         FeedFindAllResult result = feedService.findAllByUser(
-                "zzaekkii",
+                "@zzaekkii",
                 new UserFeedFindRequest(null, null)
         );
 
@@ -290,13 +290,13 @@ class FeedServiceQueryTest {
 
     @Test
     void 정지된_사용자의_기존_피드는_공개한다() {
-        when(userRepository.findByHandle("zzaekkii"))
+        when(userRepository.findByHandle("@zzaekkii"))
                 .thenReturn(Optional.of(user(UserStatus.BANNED)));
         when(feedQueryRepository.findAllByAuthorId(1L, null, 20))
                 .thenReturn(new FeedPage(List.of(feed(1L, "2026-09-11T00:00:00Z")), false, 1L));
 
         FeedFindAllResult result = feedService.findAllByUser(
-                "zzaekkii",
+                "@zzaekkii",
                 new UserFeedFindRequest(null, null)
         );
 
@@ -306,10 +306,10 @@ class FeedServiceQueryTest {
 
     @Test
     void 존재하지_않는_사용자의_피드는_조회할_수_없다() {
-        when(userRepository.findByHandle("missing-user")).thenReturn(Optional.empty());
+        when(userRepository.findByHandle("@missing-user")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> feedService.findAllByUser(
-                "missing-user",
+                "@missing-user",
                 new UserFeedFindRequest(null, null)
         )).isInstanceOfSatisfying(EntityNotFoundException.class,
                 error -> assertThat(error.getErrorCode()).isEqualTo(UserErrorCode.USER_NOT_FOUND));
@@ -328,7 +328,7 @@ class FeedServiceQueryTest {
                 "제목 " + id,
                 "본문 " + id,
                 new FeedItem.Author(
-                        "zzaekkii",
+                        "@zzaekkii",
                         "재키",
                         UserType.WOOWACOURSE_CREW,
                         Track.BACKEND,
@@ -352,7 +352,7 @@ class FeedServiceQueryTest {
         }
         return User.builder()
                 .id(1L)
-                .handle("zzaekkii")
+                .handle("@zzaekkii")
                 .status(status)
                 .role(UserRole.USER)
                 .deletedAt(deletedAt)

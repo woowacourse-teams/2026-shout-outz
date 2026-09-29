@@ -41,7 +41,7 @@ class OAuthSignupServiceIntegrationTest {
         long oauthAccountCount = oauthAccountJpaRepository.count();
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         OAuthSignupCommand invalidCommand = new OAuthSignupCommand(
-                "dahye-" + suffix,
+                "@dahye-" + suffix,
                 " ",
                 new OAuthIdentity(OAuthProvider.GITHUB, suffix, null)
         );

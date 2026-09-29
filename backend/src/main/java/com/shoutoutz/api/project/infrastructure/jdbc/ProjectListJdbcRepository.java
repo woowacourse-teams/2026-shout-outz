@@ -4,6 +4,7 @@ import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.project.application.UserProjectQueryRepository;
 import com.shoutoutz.api.project.application.dto.UserProjectItem;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
+import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectFilterCondition;
 import com.shoutoutz.api.project.domain.ProjectFilterOptions;
@@ -99,6 +100,17 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 p.tagline,
                 p.cohort,
                 p.service_status,
+                p.approval_status,
+                CASE
+                    WHEN p.approval_status = 'REJECTED' THEN (
+                        SELECT h.reason
+                        FROM project_approval_histories h
+                        WHERE h.project_id = p.id
+                          AND h.to_status = 'REJECTED'
+                        ORDER BY h.changed_at DESC, h.id DESC
+                        LIMIT 1
+                    )
+                END AS reject_reason,
                 p.thumbnail_media_id,
                 p.registered_by,
                 p.star_count,
@@ -136,8 +148,11 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                       AND r.reaction_type = 'BOOKMARK'
                 ) AS bookmarked_by_me
             FROM projects p
-            WHERE p.approval_status = 'APPROVED'
-              AND p.deleted_at IS NULL
+            WHERE p.deleted_at IS NULL
+              AND (
+                  p.approval_status = 'APPROVED'
+                  OR (:includePending = TRUE AND p.approval_status = 'PENDING')
+              )
             """;
 
     private static final String COHORTS_CONDITION = """
@@ -265,7 +280,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
      */
     @Override
     public UserProjectResult findAllByUserId(long userId, ProjectCursor cursor, int size) {
-        return findAllByUserId(userId, null, cursor, size);
+        return findAllByUserId(userId, null, false, cursor, size);
     }
 
     @Override
@@ -275,9 +290,21 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
             ProjectCursor cursor,
             int size
     ) {
+        return findAllByUserId(userId, viewerId, false, cursor, size);
+    }
+
+    @Override
+    public UserProjectResult findAllByUserId(
+            long userId,
+            Long viewerId,
+            boolean includePending,
+            ProjectCursor cursor,
+            int size
+    ) {
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("userId", userId)
                 .addValue("viewerId", viewerId, Types.BIGINT)
+                .addValue("includePending", includePending)
                 .addValue("limit", size + 1);
         String filteredProjectsSql = USER_PROJECTS_SQL + """
                   AND (
@@ -524,6 +551,8 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 resultSet.getString("tagline"),
                 resultSet.getInt("cohort"),
                 ServiceStatus.valueOf(resultSet.getString("service_status")),
+                ApprovalStatus.valueOf(resultSet.getString("approval_status")),
+                resultSet.getString("reject_reason"),
                 resultSet.getObject("thumbnail_media_id", Long.class),
                 resultSet.getObject("registered_by", Long.class),
                 resultSet.getObject("star_count", Integer.class),

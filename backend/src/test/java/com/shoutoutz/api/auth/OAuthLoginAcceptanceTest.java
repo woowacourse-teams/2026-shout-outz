@@ -316,7 +316,7 @@ class OAuthLoginAcceptanceTest {
                 .port(port)
                 .contentType("application/json")
                 .body(Map.of(
-                        "handle", "sangjun",
+                        "handle", "@sangjun",
                         "displayName", "상준"
                 ))
                 .when()
@@ -465,7 +465,7 @@ class OAuthLoginAcceptanceTest {
                 .when()
                 .get(AUTH_SESSION_PATH);
         String csrfToken = pendingSessionResponse.jsonPath().getString("data.csrfToken");
-        String handle = "sangjun-" + UUID.randomUUID().toString().substring(0, 8);
+        String handle = "@sangjun-" + UUID.randomUUID().toString().substring(0, 8);
 
         Response signupResponse = RestAssured.given()
                 .port(port)

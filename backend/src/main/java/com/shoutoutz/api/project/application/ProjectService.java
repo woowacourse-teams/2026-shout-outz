@@ -30,6 +30,8 @@ import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.DescriptionMediaReferences;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
+import com.shoutoutz.api.project.domain.ProjectApprovalHistory;
+import com.shoutoutz.api.project.domain.ProjectApprovalHistoryRepository;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectDeletion;
@@ -90,10 +92,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final ProjectSlugResolver projectSlugResolver;
     private final TechTagRepository techTagRepository;
     private final MediaMetadataRepository mediaMetadataRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
+    private final ProjectApprovalHistoryRepository projectApprovalHistoryRepository;
     private final ProjectDeletionRepository projectDeletionRepository;
     private final UserProjectQueryRepository userProjectQueryRepository;
     private final MediaUrlResolver mediaUrlResolver;
@@ -125,7 +129,10 @@ public class ProjectService {
         ProjectMembers members = ProjectMembers.of(memberIds);
 
         Project savedProject = projectRepository.save(project, request.techTagIds(), members.getUserIds());
-        return new ProjectCreateResponse(savedProject.getId(), savedProject.getSlug().value());
+        projectApprovalHistoryRepository.save(
+                ProjectApprovalHistory.initial(savedProject.getId(), clock.instant())
+        );
+        return new ProjectCreateResponse(savedProject.getSlug().value());
     }
 
     /**
@@ -134,7 +141,8 @@ public class ProjectService {
      * 기술 스택과 팀원은 받은 목록으로 통째로 바꾼다.
      */
     @Transactional
-    public ProjectUpdateResponse update(long projectId, long loginUserId, ProjectUpdateRequest request) {
+    public ProjectUpdateResponse update(String slug, long loginUserId, ProjectUpdateRequest request) {
+        long projectId = projectSlugResolver.resolveId(slug);
         Project project = findOwnedProject(projectId, loginUserId);
         Long thumbnailMediaId = request.isThumbnailImageIdProvided()
                 ? request.thumbnailImageId()
@@ -162,6 +170,12 @@ public class ProjectService {
         ProjectMembers members = ProjectMembers.of(memberIds);
 
         Project savedProject = projectRepository.update(updated, request.techTagIds(), members.getUserIds());
+        if (project.getApprovalStatus() == ApprovalStatus.REJECTED
+                && savedProject.getApprovalStatus() == ApprovalStatus.PENDING) {
+            projectApprovalHistoryRepository.save(
+                    ProjectApprovalHistory.resubmission(projectId, loginUserId, clock.instant())
+            );
+        }
         return ProjectUpdateResponse.from(savedProject);
     }
 
@@ -198,8 +212,8 @@ public class ProjectService {
     }
 
     /**
-     * 사용자가 참여한 승인 프로젝트를 최신순으로 조회한다.
-     * 탈퇴한 사용자의 프로젝트는 공개하지 않는다.
+     * 사용자가 참여한 프로젝트를 최신순으로 조회한다.
+     * 본인 조회일 때만 승인 대기 프로젝트를 포함하고, 탈퇴한 사용자의 프로젝트는 공개하지 않는다.
      */
     @Transactional(readOnly = true)
     public UserProjectResult findAllByUser(String handle, UserProjectFindRequest request) {
@@ -227,6 +241,7 @@ public class ProjectService {
                 : userProjectQueryRepository.findAllByUserId(
                         user.getId(),
                         viewerId,
+                        Objects.equals(user.getId(), viewerId),
                         request.resolvedCursor(),
                         request.resolvedSize()
                 );
@@ -254,10 +269,12 @@ public class ProjectService {
 
     /**
      * 승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 조회할 수 있다.
+     * slug 형식에 맞지 않는 값은 그런 프로젝트가 없는 것과 같으므로 404로 응답한다.
      */
     @Transactional(readOnly = true)
-    public ProjectDetailResponse findDetail(long projectId, Long loginUserId) {
-        ProjectDetail detail = projectRepository.findDetailById(projectId, loginUserId)
+    public ProjectDetailResponse findDetail(String slug, Long loginUserId) {
+        ProjectDetail detail = Slug.parse(slug)
+                .flatMap(value -> projectRepository.findDetailBySlug(value, loginUserId))
                 .filter(project -> project.isVisibleTo(loginUserId))
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
         Map<Long, URI> mediaUrls = resolveProjectMediaUrls(detail);
@@ -345,7 +362,8 @@ public class ProjectService {
      * 프로젝트 삭제와 이력 기록은 같은 시각을 쓰고 한 트랜잭션으로 처리한다.
      */
     @Transactional
-    public ProjectDeletion delete(long projectId, long registeredBy) {
+    public ProjectDeletion delete(String slug, long registeredBy) {
+        long projectId = projectSlugResolver.resolveId(slug);
         Instant deletedAt = clock.instant();
         DeletedProject deletedProject = projectRepository.softDelete(projectId, registeredBy, deletedAt)
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
@@ -357,7 +375,8 @@ public class ProjectService {
      * 프로젝트 복구와 이력 기록은 같은 시각을 쓰고 한 트랜잭션으로 처리한다.
      */
     @Transactional
-    public RestoredProject restore(long projectId, long registeredBy) {
+    public RestoredProject restore(String slug, long registeredBy) {
+        long projectId = projectSlugResolver.resolveId(slug);
         Instant restoredAt = clock.instant();
         RestorableProject restorable = projectRepository.findRestorable(projectId, registeredBy)
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
@@ -367,7 +386,7 @@ public class ProjectService {
         ApprovalStatus approvalStatus = projectRepository.restore(projectId, restoredAt)
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
         projectDeletionRepository.markRestored(restorable.deletionId(), registeredBy, restoredAt);
-        return new RestoredProject(projectId, approvalStatus, restoredAt);
+        return new RestoredProject(slug, approvalStatus, restoredAt);
     }
 
     /**

@@ -1,5 +1,7 @@
 package com.shoutoutz.api.project.presentation.dto.request;
 
+import static com.shoutoutz.api.user.domain.account.Handle.HANDLE_FORMAT_REGEX;
+
 import com.shoutoutz.api.common.util.DataResolveUtil;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
@@ -46,7 +48,10 @@ public record ProjectCreateRequest(
         List<@NotNull(message = "techTagIds에 null을 넣을 수 없습니다.") Long> techTagIds,
 
         @NotEmpty(message = "memberHandles는 1개 이상이어야 합니다.")
-        List<@NotBlank(message = "memberHandles에 빈 값을 넣을 수 없습니다.") String> memberHandles
+        List<
+                @NotBlank(message = "memberHandles에 빈 값을 넣을 수 없습니다.")
+                @Pattern(regexp = HANDLE_FORMAT_REGEX, message = "memberHandles 형식이 올바르지 않습니다.")
+                String> memberHandles
 ) {
 
     /**

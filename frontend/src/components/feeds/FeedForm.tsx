@@ -11,9 +11,8 @@ import {
 import { myProfileQuery } from '@/apis/user';
 import { categoriesQuery } from '@/apis/category';
 import { Select } from '@/components/Select';
-import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
-import { formatCrewName } from '@/utils/user';
+import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { getApiErrorMessage } from '@/utils/error';
 import { analytics } from '@/utils/analytics';
 
@@ -107,10 +106,7 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
       }}
     >
       <div className="flex items-center gap-2 md:gap-3">
-        <Avatar size="sm" src={profile.avatarUrl} name={profile.displayName} alt="" />
-        <p className="text-sm font-semibold text-gray-900">
-          {formatCrewName(profile.displayName, profile.cohort, profile.track)}
-        </p>
+        <FeedAuthor author={profile} avatarSize="sm" />
       </div>
       <div className="space-y-2">
         <label htmlFor="feed-category" className="text-sm font-medium text-gray-900">

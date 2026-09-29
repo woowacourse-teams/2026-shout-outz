@@ -70,7 +70,7 @@ class AdminVerificationRequestHistoryHttpApiTest {
                                         202L,
                                         VerificationRequestStatus.PENDING,
                                         VerificationRequestStatus.REJECTED,
-                                        new AdminVerificationRequestDecisionActor(ADMIN_ID, "admin"),
+                                        new AdminVerificationRequestDecisionActor(ADMIN_ID, "@admin"),
                                         "Slack 프로필의 기수 정보와 일치하지 않습니다.",
                                         Instant.parse("2026-09-16T03:00:00Z")
                                 ),
@@ -98,7 +98,7 @@ class AdminVerificationRequestHistoryHttpApiTest {
                 .andExpect(jsonPath("$.data.items[0].fromStatus").value("PENDING"))
                 .andExpect(jsonPath("$.data.items[0].toStatus").value("REJECTED"))
                 .andExpect(jsonPath("$.data.items[0].changedBy.userId").value(ADMIN_ID))
-                .andExpect(jsonPath("$.data.items[0].changedBy.handle").value("admin"))
+                .andExpect(jsonPath("$.data.items[0].changedBy.handle").value("@admin"))
                 .andExpect(jsonPath("$.data.items[0].reason")
                         .value("Slack 프로필의 기수 정보와 일치하지 않습니다."))
                 .andExpect(jsonPath("$.data.items[0].changedAt")

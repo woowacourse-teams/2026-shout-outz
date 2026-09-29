@@ -13,6 +13,15 @@ public enum ProjectErrorCode implements ErrorCode {
     PROJECT_NOT_FOUND("프로젝트를 찾을 수 없습니다."),
 
     /**
+     * 프로젝트 승인 심사 에러 코드
+     */
+    PROJECT_APPROVAL_ADMIN_FORBIDDEN("관리자만 프로젝트 심사를 관리할 수 있습니다."),
+    PROJECT_APPROVAL_NOT_PENDING("승인 대기 중인 프로젝트만 심사할 수 있습니다."),
+    PROJECT_APPROVAL_ADMIN_CURSOR_INVALID(
+            "프로젝트 심사 목록 조회 커서가 올바르지 않습니다. 커서 없이 다시 조회해주세요."
+    ),
+
+    /**
      * 프로젝트 목록 조회 에러 코드
      */
     PROJECT_INVALID_CURSOR("프로젝트 목록 조회 커서가 올바르지 않습니다. 커서 없이 처음부터 다시 조회해주세요."),

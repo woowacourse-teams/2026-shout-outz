@@ -13,19 +13,19 @@ import {
   userProjectsInfiniteQueryOptions,
 } from '@/api/user';
 import { FeedCard } from '@/components/feeds/FeedCard';
-import { Footer } from '@/components/Footer';
-import { AppGnb } from '@/components/AppGnb';
+import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { ProfileHeader } from '@/components/users/ProfileHeader';
 import { ProfileTabs } from '@/components/users/ProfileTabs';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { DEFAULT_PROFILE_TAB } from '@/constants/user';
-import { type ProfileTab } from '@/types/user';
+import { type ProfileTab, type UserProfile } from '@/types/user';
 import { sessionQuery } from '@/apis/session';
 import { myProfileSummaryQuery, updateMyProfileMutation } from '@/apis/user';
-import { AvatarUploadButton } from '@/components/users/AvatarUploadButton';
-import { type UserProfile } from '@/types/user';
+import { verificationRequestQuery } from '@/apis/verification';
 import { Button, getButtonStyles } from '@/components/Button';
+import { AvatarUploadButton } from '@/components/users/AvatarUploadButton';
 import { analytics } from '@/utils/analytics';
+import { toProjectSlugParam } from '@/utils/project';
 
 const route = getRouteApi('/users/$handle');
 
@@ -53,44 +53,34 @@ export function UserProfilePage() {
   };
 
   return (
-    <div className="bg-background flex min-h-dvh flex-col text-gray-900">
+    <>
       <title>{`${profile.displayName} | shout-outz`}</title>
-      <AppGnb />
+      <ProfileHeader
+        displayName={profile.displayName}
+        userType={profile.userType}
+        cohort={profile.cohort}
+        track={profile.track}
+        bio={profile.bio}
+        githubProfileUrl={profile.githubProfileUrl}
+        blogUrl={profile.blogUrl}
+        avatarUrl={profile.avatarUrl}
+        actions={<MyProfileActions profile={profile} />}
+      />
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 pt-6 pb-12 md:gap-8 md:pt-10 md:pb-20">
-        <ProfileHeader
-          displayName={profile.displayName}
-          cohort={profile.cohort}
-          track={profile.track}
-          bio={profile.bio}
-          githubProfileUrl={profile.githubProfileUrl}
-          blogUrl={profile.blogUrl}
-          avatarUrl={profile.avatarUrl}
-        />
+      <ProfileTabs
+        value={currentTab}
+        projectCount={profile.counts.projects}
+        feedCount={profile.counts.feeds}
+        onChange={changeTab}
+      />
 
-        <MyProfileActions profile={profile} />
-
-        <ProfileTabs
-          value={currentTab}
-          projectCount={profile.counts.projects}
-          feedCount={profile.counts.feeds}
-          onChange={changeTab}
-        />
-
+      <AsyncBoundary key={currentTab}>
         {currentTab === 'projects' ? <ProjectTab handle={handle} /> : <FeedTab handle={handle} />}
-      </main>
-
-      <Footer />
-    </div>
+      </AsyncBoundary>
+    </>
   );
 }
 
-/**
- * 내 프로필에서만 보이는 줄.
- *
- * 프로필 사진은 여기서 바로 바꾼다. 수정 화면을 따로 두지 않고, 고르는 즉시 올려 저장한다.
- * `PUT /api/v1/users/me`는 전체 교체라 지금 값을 그대로 같이 실어 보낸다.
- */
 function MyProfileActions({ profile }: { profile: UserProfile }) {
   const client = useQueryClient();
   const session = useQuery({ ...sessionQuery, enabled: typeof window !== 'undefined' });
@@ -99,6 +89,8 @@ function MyProfileActions({ profile }: { profile: UserProfile }) {
     ...myProfileSummaryQuery(session.data?.userId ?? 0),
     enabled: authenticated,
   });
+  const isMyProfile = me.data?.handle === profile.handle;
+  const verification = useQuery({ ...verificationRequestQuery, enabled: isMyProfile });
   const update = useMutation({
     ...updateMyProfileMutation,
     onSuccess: async () => {
@@ -110,8 +102,9 @@ function MyProfileActions({ profile }: { profile: UserProfile }) {
     },
   });
 
-  if (me.data?.handle !== profile.handle) return null;
+  if (!isMyProfile) return null;
 
+  // 프로필 수정은 전체 교체라, 사진만 바꿔도 나머지 필드를 그대로 다시 보낸다.
   const saveAvatar = (avatarImageId: number | null) =>
     update.mutate({
       displayName: profile.displayName,
@@ -121,8 +114,11 @@ function MyProfileActions({ profile }: { profile: UserProfile }) {
       avatarImageId,
     });
 
+  // 인증이 끝났으면 인증 링크만 감춘다. 사진 버튼은 남는다.
+  const showVerification = !verification.isPending && verification.data?.status !== 'APPROVED';
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex shrink-0 flex-wrap items-center gap-2">
       <AvatarUploadButton
         label={profile.avatarUrl ? '사진 변경' : '프로필 사진 추가'}
         disabled={update.isPending}
@@ -138,13 +134,15 @@ function MyProfileActions({ profile }: { profile: UserProfile }) {
           기본 이미지로
         </Button>
       )}
-      {/* 같은 줄의 사진 버튼들과 높이를 맞춘다. getButtonStyles의 기본 size는 md다. */}
-      <Link
-        to="/mypage/verification"
-        className={getButtonStyles({ variant: 'outline', size: 'sm' })}
-      >
-        구성원 인증
-      </Link>
+      {showVerification && (
+        // 같은 줄의 사진 버튼들과 높이를 맞춘다. getButtonStyles의 기본 size는 md다.
+        <Link
+          to="/mypage/verification"
+          className={getButtonStyles({ variant: 'outline', size: 'sm' })}
+        >
+          구성원 인증
+        </Link>
+      )}
       {update.isPending && <span className="text-xs text-gray-500">저장 중…</span>}
       {update.isError && (
         <span role="alert" className="text-xs text-red-600">
@@ -165,20 +163,47 @@ function ProjectTab({ handle }: { handle: string }) {
         <p className="py-16 text-center text-sm text-gray-500">등록한 프로젝트가 없습니다.</p>
       ) : (
         <ul className="grid grid-cols-1 gap-x-5 gap-y-8 md:grid-cols-2">
-          {projects.map((project) => (
-            <li key={project.id} className="min-w-0">
+          {projects.map((project) => {
+            const card = (
               <ProjectCard
                 title={project.title}
                 tagline={project.tagline}
                 cohort={project.cohort}
+                approvalStatus={project.approvalStatus}
+                rejectReason={project.rejectReason}
                 likeCount={project.likeCount}
+                likedByMe={project.likedByMe}
                 commentCount={project.commentCount}
                 techTags={project.techTags}
                 thumbnailUrl={project.thumbnailUrl}
                 members={project.members}
               />
-            </li>
-          ))}
+            );
+
+            return (
+              <li key={project.id} className="min-w-0">
+                <Link
+                  to="/projects/$slug"
+                  params={{ slug: toProjectSlugParam(project.slug) }}
+                  className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
+                  onClick={() => {
+                    analytics.track({
+                      name: 'card_clicked',
+                      target: 'project',
+                      surface: 'profile',
+                    });
+                    analytics.track({
+                      name: 'project_detail_opened',
+                      projectId: project.id,
+                      from: 'profile',
+                    });
+                  }}
+                >
+                  {card}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
       {query.hasNextPage && (

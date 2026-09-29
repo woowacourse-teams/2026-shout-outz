@@ -13,7 +13,7 @@ export function Footer() {
         <div>
           <p className="text-lg font-bold">shout-outz</p>
           <p className="mt-3 text-sm leading-relaxed text-gray-500">
-            우아한테크코스 아카이빙 &amp; 소셜 플랫폼
+            IT 취준생을 위한, 취업 커뮤니티
           </p>
         </div>
         <nav aria-label="서비스 바로가기">

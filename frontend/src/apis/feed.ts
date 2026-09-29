@@ -8,18 +8,18 @@ import type {
   FeedUpdateSuccessResponse,
 } from '@/api/generated/schema';
 import type { CursorMeta } from '@/types/api';
-import type { FeedSort } from '@/types/feed';
+import type { Feed, FeedListItem, FeedSort } from '@/types/feed';
 
 export type { Feed, FeedSort } from '@/types/feed';
 
-export async function fetchFeed(feedId: number, signal?: AbortSignal) {
+export async function fetchFeed(feedId: number, signal?: AbortSignal): Promise<Feed> {
   const response = await httpClient<FeedFindSuccessResponse>(`/api/v1/feeds/${feedId}`, {
     method: 'get',
     signal,
   });
 
   if (!response) throw new Error('피드 응답이 비어 있습니다.');
-  return response.data;
+  return response.data as Feed;
 }
 
 export function feedQuery(feedId: number) {
@@ -44,7 +44,7 @@ export interface SaveFeedInput extends Omit<FeedSaveRequest, 'categoryIds' | 'me
 
 /** 제목·본문 길이 한도. 서버 제약과 같은 값을 화면에서도 미리 막는다. */
 export const FEED_TITLE_MAX = 100;
-export const FEED_CONTENT_MAX = 500;
+export const FEED_CONTENT_MAX = 5000;
 
 export async function createFeed(input: SaveFeedInput) {
   const response = await httpClient<FeedSaveSuccessResponse>('/api/v1/feeds', {
@@ -110,7 +110,7 @@ export async function fetchFeeds({ sort, categoryId, cursor, size, signal }: Fet
   });
 
   if (!response) throw new Error('피드 응답이 비어 있습니다.');
-  return response;
+  return { ...response, data: response.data as FeedListItem[] };
 }
 
 export function feedsQuery(sort: FeedSort, categoryId?: number, size = 20) {

@@ -3,6 +3,7 @@ package com.shoutoutz.api.project.application.dto;
 import com.shoutoutz.api.project.domain.ProjectCursor;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
+import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import java.time.Instant;
 import java.util.List;
@@ -18,6 +19,8 @@ public record UserProjectItem(
         String tagline,
         int cohort,
         ServiceStatus serviceStatus,
+        ApprovalStatus approvalStatus,
+        String rejectReason,
         Long thumbnailMediaId,
         Long registeredBy,
         Integer starCount,
@@ -39,6 +42,7 @@ public record UserProjectItem(
             String tagline,
             int cohort,
             ServiceStatus serviceStatus,
+            ApprovalStatus approvalStatus,
             Long thumbnailMediaId,
             Long registeredBy,
             Integer starCount,
@@ -56,6 +60,8 @@ public record UserProjectItem(
                 tagline,
                 cohort,
                 serviceStatus,
+                approvalStatus,
+                null,
                 thumbnailMediaId,
                 registeredBy,
                 starCount,
@@ -64,6 +70,51 @@ public record UserProjectItem(
                 0L,
                 false,
                 false,
+                techTags,
+                members,
+                createdAt
+        );
+    }
+
+    public UserProjectItem(
+            long id,
+            String slug,
+            String title,
+            String teamName,
+            String tagline,
+            int cohort,
+            ServiceStatus serviceStatus,
+            ApprovalStatus approvalStatus,
+            Long thumbnailMediaId,
+            Long registeredBy,
+            Integer starCount,
+            long likeCount,
+            long commentCount,
+            long bookmarkCount,
+            boolean likedByMe,
+            boolean bookmarkedByMe,
+            List<ProjectTechTag> techTags,
+            List<ProjectMemberProfile> members,
+            Instant createdAt
+    ) {
+        this(
+                id,
+                slug,
+                title,
+                teamName,
+                tagline,
+                cohort,
+                serviceStatus,
+                approvalStatus,
+                null,
+                thumbnailMediaId,
+                registeredBy,
+                starCount,
+                likeCount,
+                commentCount,
+                bookmarkCount,
+                likedByMe,
+                bookmarkedByMe,
                 techTags,
                 members,
                 createdAt
@@ -90,6 +141,8 @@ public record UserProjectItem(
                 tagline,
                 cohort,
                 serviceStatus,
+                approvalStatus,
+                rejectReason,
                 thumbnailMediaId,
                 registeredBy,
                 starCount,

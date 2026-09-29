@@ -32,11 +32,17 @@ export GITHUB_TOKEN=ghp_xxx    # VITE_ 접두사를 쓰면 안 된다. 번들에
 node scripts/generate-prev-crew.mjs
 
 # 2. 전체 SQL 을 만든다.
-python3 scripts/generate-archived-projects.py scripts/prev-crew.json > scripts/archived-projects.sql
+#    --idempotent 를 붙이면 이미 같은 프로젝트/멤버가 있는 행은 건너뛴다.
+#    일반 프로젝트와 slug/리포지토리 URL이 충돌하면 SQL 전체가 실패한다.
+python3 scripts/generate-archived-projects.py scripts/prev-crew.json --idempotent > scripts/archived-projects.sql
 
 # 3. 넣고 지운다.
-psql -U shoutoutz -d shoutoutz -f scripts/archived-projects.sql
+psql -U shoutoutz -d shoutoutz -v ON_ERROR_STOP=1 -f scripts/archived-projects.sql
 rm scripts/archived-projects.sql
+
+# 4. Import 후 이미 가입한 GitHub 회원을 아카이브 참여자와 연결한다.
+psql -U shoutoutz -d shoutoutz -v ON_ERROR_STOP=1 \
+  -f scripts/match-archived-members.sql
 ```
 
 ### 다시 채우고 싶을 때
@@ -80,10 +86,11 @@ vi scripts/overrides.json
 
 # 4. 추가할 저장소만 잘라 SQL 을 만든다.
 jq '[.[] | select(.repo == "2021-abcd")]' scripts/prev-crew.json \
-  | python3 scripts/generate-archived-projects.py /dev/stdin > scripts/archived-2021-abcd.sql
+  | python3 scripts/generate-archived-projects.py /dev/stdin --idempotent > scripts/archived-2021-abcd.sql
 
 # 5. 로컬 -> dev -> prod 순으로 같은 파일을 실행한다.
-psql -U shoutoutz -d shoutoutz -f scripts/archived-2021-abcd.sql
+psql -U shoutoutz -d shoutoutz -v ON_ERROR_STOP=1 \
+  -f scripts/archived-2021-abcd.sql
 
 # 6. 다 끝나면 지운다.
 rm scripts/archived-2021-abcd.sql
@@ -97,6 +104,42 @@ rm scripts/archived-2021-abcd.sql
 A 의 전체 SQL 을 만들 때 같은 경고가 나오면 그때는 실제 오타다.
 
 다른 팀원은 파일을 받을 필요 없이, `git pull` 후 2번과 4~6번을 각자 돌리면 된다.
+
+## 운영 서버에 반영할 때
+
+운영 DB에 로컬 DB 전체를 덤프하지 않는다. 로컬에는 테스트 데이터가 섞일 수 있고,
+프로젝트의 `id`를 그대로 옮기면 운영 DB의 참조와 충돌한다. GitHub URL을 기준으로
+생성한 아카이브 SQL만 운영 DB에 실행한다.
+
+```bash
+# backend/ 에서 실행
+python3 scripts/generate-archived-projects.py scripts/prev-crew.json --idempotent \
+  > scripts/archived-projects.sql
+
+# 운영 접속 서버로 세 파일을 전달한다.
+scp scripts/archived-projects.sql \
+    scripts/match-archived-members.sql \
+    scripts/import-archived-projects.sql \
+    deploy@production-host:/srv/shoutoutz/scripts/
+```
+
+운영 DB 백업을 먼저 만든 뒤, 운영 서버에서 아래 실행 파일 하나만 실행한다.
+`archived-projects.sql`은 프로젝트를 GitHub URL로 찾고, 멤버는 그 프로젝트 ID를
+다시 조회하므로 로컬 프로젝트 ID를 운영에 복사하지 않는다.
+
+```bash
+pg_dump -h "$PROD_DB_HOST" -U "$PROD_DB_USER" -d "$PROD_DB_NAME" \
+  --format=custom --file="shoutoutz-before-archive-$(date +%Y%m%d%H%M%S).dump"
+
+cd /srv/shoutoutz/scripts
+psql -h "$PROD_DB_HOST" -U "$PROD_DB_USER" -d "$PROD_DB_NAME" \
+  -v ON_ERROR_STOP=1 -f import-archived-projects.sql
+```
+
+운영에서 `TRUNCATE`, `DROP SCHEMA`, 기존 프로젝트 `DELETE`는 실행하지 않는다.
+실행 후에는 아래 확인 쿼리로 63개 프로젝트와 417명 멤버가 들어갔는지 확인한다.
+`matched_user_id`가 0이어도 회원가입 전이면 정상이며, 실제 GitHub ID가 일치하는
+회원이 로그인하거나 백필 SQL이 다시 실행될 때 연결된다.
 
 ## C. 이미 들어간 값을 고칠 때
 
@@ -115,8 +158,10 @@ psql -U shoutoutz -d shoutoutz \
 
 1번을 빠뜨리면 다음에 A 로 로컬 DB 를 다시 채울 때 옛날 값으로 돌아간다.
 
-`overrides.json` 이 덮어쓸 수 있는 값은 `thumbnail_url`, `team_name`,
-`service_status`, `approval_status`, `deployment_url` 다섯이다. readme 나 star 처럼
+`overrides.json` 이 덮어쓸 수 있는 값은 `thumbnail_source_url`, `team_name`,
+`service_status`, `approval_status`, `deployment_url` 다섯이다. `thumbnail_source_url`은
+나중에 S3 미디어 Import에서 사용할 원본 URL이며, 현재 아카이브 SQL에는 썸네일 미디어 ID를
+넣지 않아 `projects.thumbnail_media_id`는 NULL로 들어간다. readme 나 star 처럼
 GitHub 에서 오는 값은 수집으로 갱신되므로 여기에 적지 않는다.
 키는 slug(저장소 이름에서 연도 접두사를 뗀 것)를 쓴다.
 
@@ -148,6 +193,32 @@ overrides.json        GitHub 이 모르는 값 (사람이 관리)          |    
 | `overrides.json` | O | |
 | `prev-crew.json` | **X** | 남긴다 |
 | `archived-*.sql` | **X** | 쓰고 지운다 |
+
+`prev-crew.json`의 멤버에는 `githubAccountId`가 있으면 그 값을 사용한다. 예전 파일처럼
+해당 값이 없으면 avatar URL의 `/u/{id}`를 fallback으로 사용한다. 새로 수집한 파일에서는
+GitHub API의 숫자 ID를 직접 보존하는 것을 권장한다.
+
+## Import 후 확인할 항목
+
+```sql
+SELECT COUNT(*) FROM projects WHERE registered_by IS NULL;
+SELECT COUNT(*) FROM woowa_archived_project_members;
+SELECT COUNT(*)
+FROM projects
+WHERE registered_by IS NULL
+  AND approval_status <> 'APPROVED';
+
+SELECT p.slug, COUNT(am.id) AS member_count
+FROM projects p
+LEFT JOIN woowa_archived_project_members am ON am.project_id = p.id
+WHERE p.registered_by IS NULL
+GROUP BY p.id, p.slug
+ORDER BY p.id;
+```
+
+아카이브 프로젝트는 `registered_by IS NULL`이므로 일반 프로젝트 등록 API가 아니라 이
+배치 Import 경로를 사용한다. 회원가입/로그인 시에는 GitHub 숫자 ID가 일치하는 멤버를
+`matched_user_id`에 연결하고 `project_members`에도 추가한다.
 
 
 `.gitignore` 에는 이렇게 들어 있다. 이름을 무엇으로 짓든 `archived-` 로 시작하면

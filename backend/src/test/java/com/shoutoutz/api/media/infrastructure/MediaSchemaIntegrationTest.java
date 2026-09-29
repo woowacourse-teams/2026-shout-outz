@@ -30,7 +30,7 @@ class MediaSchemaIntegrationTest {
 
     @Test
     void 홈_배너_미디어_목적을_저장할_수_있다() {
-        jdbcTemplate.update("INSERT INTO users (handle, role) VALUES ('banner-admin', 'ADMIN')");
+        jdbcTemplate.update("INSERT INTO users (handle, role) VALUES ('@banner-admin', 'ADMIN')");
 
         int inserted = jdbcTemplate.update("""
                 INSERT INTO media_metadata (

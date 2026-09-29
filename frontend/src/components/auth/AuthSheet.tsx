@@ -1,4 +1,4 @@
-import { IconBrandGithub } from '@tabler/icons-react';
+import { IconBrandGithub, IconX } from '@tabler/icons-react';
 
 import { Modal } from '@/components/Modal';
 import { Button, getButtonStyles } from '@/components/Button';
@@ -11,10 +11,20 @@ export interface AuthSheetProps {
 
 export function AuthSheet({ onClose }: AuthSheetProps) {
   return (
-    <Modal onClose={onClose} className="md:w-110">
+    <Modal onClose={onClose} className="relative md:w-110">
       <div aria-hidden="true" className="flex justify-center pt-4 pb-1 md:hidden">
         <span className="h-1 w-9 rounded-full bg-gray-300" />
       </div>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        aria-label="닫기"
+        onClick={onClose}
+        className="absolute top-4 right-4 size-7.5 rounded-full bg-gray-100 p-0 md:bg-transparent"
+      >
+        <IconX className="size-4" aria-hidden="true" />
+      </Button>
 
       <div className="flex flex-col items-center gap-4 px-7 pt-5 pb-8 text-center md:px-10 md:pt-8">
         <span

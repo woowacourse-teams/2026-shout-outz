@@ -12,6 +12,7 @@ export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
     '프로젝트에서 가장 기억에 남는 트러블슈팅은 무엇인가요?',
   ][index % 3]!,
   author: {
+    userId: index + 1,
     handle: `crew${index}`,
     displayName: ['정우진', '김도현', '이지민'][index % 3]!,
     userType: 'WOOWACOURSE_CREW',
@@ -21,29 +22,65 @@ export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
   },
   categories: [{ categoryId: 1, slug: 'backend', displayName: '개발 이야기', type: 'GENERAL' }],
   media: [],
+  likeCount: 0,
+  likedByMe: false,
+  bookmarkCount: 0,
+  bookmarkedByMe: false,
+  commentCount: 0,
   createdAt: new Date(Date.UTC(2026, 8, 14, 9 - index)).toISOString(),
   updatedAt: new Date(Date.UTC(2026, 8, 14, 9 - index)).toISOString(),
 }));
-export function createFeedHandlers() {
+export function createFeedHandlers({ includeProfile = true }: { includeProfile?: boolean } = {}) {
   let sequence = 100;
   const feeds = [...mockFeeds];
   const comments = new Map<number, FeedComment[]>();
+  const feedLikes = new Map(
+    feeds.map((feed) => [feed.feedId, { likeCount: 12, likedByMe: false }]),
+  );
   const getComments = (id: number) => {
     if (!comments.has(id))
       comments.set(id, [
         {
           id: id * 10,
           content: '경험을 공유해 주셔서 감사합니다!',
-          author: { userId: 1, displayName: '개발용 사용자', avatarUrl: null },
+          author: {
+            userId: 1,
+            handle: 'woojin',
+            displayName: '개발용 사용자',
+            userType: 'WOOWACOURSE_CREW',
+            cohort: 8,
+            track: 'BACKEND',
+            avatarUrl: null,
+          },
           parentId: null,
           createdAt: '2026-09-14T00:00:00Z',
           updatedAt: '2026-09-14T00:00:00Z',
           editable: true,
           edited: false,
           deleted: false,
+          agreeCount: 2,
+          agreedByMe: false,
         },
       ]);
     return comments.get(id)!;
+  };
+  const withFeedState = (feed: Feed) => ({
+    ...feed,
+    ...feedLikes.get(feed.feedId),
+    commentCount: getComments(feed.feedId).filter((comment) => !comment.deleted).length,
+  });
+  const setCommentReaction = (feedId: number, commentId: number, active: boolean) => {
+    const comment = getComments(feedId).find((item) => item.id === commentId);
+    if (!comment) return HttpResponse.json({ status: 'error' }, { status: 404 });
+    const wasActive = comment.agreedByMe ?? false;
+    if (wasActive !== active) {
+      comment.agreedByMe = active;
+      comment.agreeCount = Math.max(0, (comment.agreeCount ?? 0) + (active ? 1 : -1));
+    }
+    return HttpResponse.json({
+      status: 'success',
+      data: { commentId, type: 'AGREE', active, agreeCount: comment.agreeCount ?? 0 },
+    });
   };
   return [
     http.get('/api/v1/categories', () =>
@@ -67,18 +104,22 @@ export function createFeedHandlers() {
         ],
       }),
     ),
-    http.get('/api/v1/users/me', () =>
-      HttpResponse.json({
-        status: 'success',
-        data: {
-          ...mockFeeds[0]!.author,
-          bio: null,
-          githubProfileUrl: null,
-          blogUrl: null,
-          counts: { projects: 0, feeds: 1 },
-        },
-      }),
-    ),
+    ...(includeProfile
+      ? [
+          http.get('/api/v1/users/me', () =>
+            HttpResponse.json({
+              status: 'success',
+              data: {
+                ...mockFeeds[0]!.author,
+                bio: null,
+                githubProfileUrl: null,
+                blogUrl: null,
+                counts: { projects: 0, feeds: 1 },
+              },
+            }),
+          ),
+        ]
+      : []),
     http.post('/api/v1/feeds', async ({ request }) => {
       const body = (await request.json()) as {
         title: string;
@@ -113,14 +154,19 @@ export function createFeedHandlers() {
         updatedAt: new Date().toISOString(),
       };
       feeds.unshift(feed);
-      return HttpResponse.json({ status: 'success', data: feed }, { status: 201 });
+      feedLikes.set(feed.feedId, { likeCount: 0, likedByMe: false });
+      return HttpResponse.json({ status: 'success', data: withFeedState(feed) }, { status: 201 });
     }),
-    http.get('/api/v1/users/me/summary', () =>
-      HttpResponse.json({
-        status: 'success',
-        data: { handle: 'crew0', displayName: '정우진', avatarUrl: null },
-      }),
-    ),
+    ...(includeProfile
+      ? [
+          http.get('/api/v1/users/me/summary', () =>
+            HttpResponse.json({
+              status: 'success',
+              data: { handle: 'crew0', displayName: '정우진', avatarUrl: null },
+            }),
+          ),
+        ]
+      : []),
     http.put('/api/v1/feeds/:feedId', async ({ params, request }) => {
       const index = feeds.findIndex((feed) => feed.feedId === Number(params.feedId));
       const existing = feeds[index];
@@ -183,7 +229,7 @@ export function createFeedHandlers() {
         updatedAt: new Date().toISOString(),
       };
       feeds[index] = feed;
-      return HttpResponse.json({ status: 'success', data: feed });
+      return HttpResponse.json({ status: 'success', data: withFeedState(feed) });
     }),
     http.delete('/api/v1/feeds/:feedId', ({ params }) => {
       const index = feeds.findIndex((feed) => feed.feedId === Number(params.feedId));
@@ -204,10 +250,38 @@ export function createFeedHandlers() {
       feeds.splice(index, 1);
       return new HttpResponse(null, { status: 204 });
     }),
+    http.put('/api/v1/feeds/:feedId/reactions/LIKE', ({ params }) => {
+      const feedId = Number(params.feedId);
+      const feed = feeds.find((item) => item.feedId === feedId);
+      if (!feed) return HttpResponse.json({ status: 'error' }, { status: 404 });
+      const state = feedLikes.get(feedId) ?? { likeCount: 0, likedByMe: false };
+      if (!state.likedByMe) {
+        state.likedByMe = true;
+        state.likeCount += 1;
+      }
+      feedLikes.set(feedId, state);
+      return HttpResponse.json({
+        status: 'success',
+        data: { feedId, type: 'LIKE', active: true, likeCount: state.likeCount, bookmarkCount: 0 },
+      });
+    }),
+    http.delete('/api/v1/feeds/:feedId/reactions/LIKE', ({ params }) => {
+      const feedId = Number(params.feedId);
+      const state = feedLikes.get(feedId) ?? { likeCount: 0, likedByMe: false };
+      if (state.likedByMe) {
+        state.likedByMe = false;
+        state.likeCount = Math.max(0, state.likeCount - 1);
+      }
+      feedLikes.set(feedId, state);
+      return HttpResponse.json({
+        status: 'success',
+        data: { feedId, type: 'LIKE', active: false, likeCount: state.likeCount, bookmarkCount: 0 },
+      });
+    }),
     http.get('/api/v1/feeds/:feedId', ({ params }) => {
       const feed = feeds.find((item) => item.feedId === Number(params.feedId));
       return feed
-        ? HttpResponse.json({ status: 'success', data: feed })
+        ? HttpResponse.json({ status: 'success', data: withFeedState(feed) })
         : HttpResponse.json(
             { status: 'error', code: 'FEED_NOT_FOUND', message: '피드를 찾을 수 없습니다.' },
             { status: 404 },
@@ -225,7 +299,7 @@ export function createFeedHandlers() {
       const end = offset + Math.min(Number(url.searchParams.get('size') ?? 20), 3);
       return HttpResponse.json({
         status: 'success',
-        data: data.slice(offset, end),
+        data: data.slice(offset, end).map(withFeedState),
         meta: { nextCursor: end < data.length ? String(end) : null, hasNext: end < data.length },
       });
     }),
@@ -249,6 +323,12 @@ export function createFeedHandlers() {
         meta: { nextCursor: end < items.length ? String(end) : null, hasNext: end < items.length },
       });
     }),
+    http.put('/api/v1/feeds/:feedId/comments/:commentId/reactions/AGREE', ({ params }) =>
+      setCommentReaction(Number(params.feedId), Number(params.commentId), true),
+    ),
+    http.delete('/api/v1/feeds/:feedId/comments/:commentId/reactions/AGREE', ({ params }) =>
+      setCommentReaction(Number(params.feedId), Number(params.commentId), false),
+    ),
     http.post('/api/v1/feeds/:feedId/comments', async ({ params, request }) => {
       const body = (await request.json()) as { content: string };
       if (!body.content?.trim())
@@ -259,13 +339,23 @@ export function createFeedHandlers() {
       const item: FeedComment = {
         id: sequence++,
         content: body.content,
-        author: { userId: 1, displayName: '개발용 사용자', avatarUrl: null },
+        author: {
+          userId: 1,
+          handle: 'woojin',
+          displayName: '개발용 사용자',
+          userType: 'WOOWACOURSE_CREW',
+          cohort: 8,
+          track: 'BACKEND',
+          avatarUrl: null,
+        },
         parentId: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         editable: true,
         edited: false,
         deleted: false,
+        agreeCount: 0,
+        agreedByMe: false,
       };
       getComments(Number(params.feedId)).push(item);
       return HttpResponse.json({ status: 'success', data: item }, { status: 201 });

@@ -22,12 +22,12 @@ public class ProjectViewHttpApi {
     /**
      * 로그인하지 않아도 기록한다. 같은 날 다시 조회해도 200과 현재 조회수를 준다.
      */
-    @PostMapping("/{projectId}/views")
+    @PostMapping("/@{slug}/views")
     public ResponseEntity<SuccessResponse<ProjectViewRecordResponse>> record(
-            @PathVariable long projectId,
+            @PathVariable String slug,
             @Visitor VisitorKey visitorKey
     ) {
-        ProjectViewRecordResponse response = projectViewService.record(projectId, visitorKey);
+        ProjectViewRecordResponse response = projectViewService.record(slug, visitorKey);
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
 }

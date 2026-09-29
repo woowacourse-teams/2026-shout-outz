@@ -1,22 +1,25 @@
+import type { ReactNode } from 'react';
+
 import { Avatar } from '@/components/Avatar';
-import { Badge } from '@/components/Badge';
+import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
+import type { UserType } from '@/types/user';
 import { formatCrewRole } from '@/utils/user';
 
 /**
  * 프로필 상단. 아바타 자리, 이름, 소속 배지, 소개, GitHub·블로그 링크를 보여준다.
  *
- * 디자인의 "프로필 수정" 버튼은 본인 프로필에서만 필요해 이번 공개 프로필에는 두지 않는다.
- *
  * 선택 필드는 서버가 값을 아예 빼고 주기도 해서 undefined까지 받는다.
  */
 export interface ProfileHeaderProps {
   displayName: string;
+  userType?: UserType;
   cohort?: number | null;
   track?: string | null;
   bio?: string | null;
   githubProfileUrl?: string | null;
   blogUrl?: string | null;
   avatarUrl?: string | null;
+  actions?: ReactNode;
 }
 
 const LINK_STYLE =
@@ -24,27 +27,33 @@ const LINK_STYLE =
 
 export function ProfileHeader({
   displayName,
+  userType,
   cohort,
   track,
   bio,
   githubProfileUrl,
   blogUrl,
   avatarUrl,
+  actions,
 }: ProfileHeaderProps) {
   const role = formatCrewRole(cohort, track);
 
   return (
     <header className="flex flex-col gap-4">
-      <div className="flex items-center gap-4">
-        <Avatar size="lg" src={avatarUrl} name={displayName} alt="" />
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <h1 className="text-xl font-bold break-words text-gray-900 md:text-2xl">{displayName}</h1>
-          {role && (
-            <Badge tone="primary" className="w-fit">
-              {role}
-            </Badge>
-          )}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
+          <Avatar size="lg" src={avatarUrl} name={displayName} alt="" />
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-xl font-bold break-words text-gray-900 md:text-2xl">
+                {displayName}
+              </h1>
+              {userType && <CrewStatusBadge userType={userType} cohort={cohort} />}
+            </div>
+            {role && <p className="text-sm text-gray-500">{role}</p>}
+          </div>
         </div>
+        {actions}
       </div>
 
       {bio && <p className="text-sm leading-relaxed break-words text-gray-600">{bio}</p>}

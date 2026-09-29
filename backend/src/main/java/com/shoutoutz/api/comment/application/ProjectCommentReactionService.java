@@ -10,6 +10,7 @@ import com.shoutoutz.api.comment.domain.ProjectCommentReactionRepository;
 import com.shoutoutz.api.comment.domain.ProjectCommentReactionType;
 import com.shoutoutz.api.comment.domain.ProjectCommentRepository;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.project.application.ProjectSlugResolver;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectRepository;
@@ -23,17 +24,19 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectCommentReactionService {
 
     private final ProjectRepository projectRepository;
+    private final ProjectSlugResolver projectSlugResolver;
     private final ProjectCommentRepository projectCommentRepository;
     private final ProjectCommentReactionRepository projectCommentReactionRepository;
 
     @Transactional
     public ProjectCommentReactionResponse add(
-            long projectId,
+            String slug,
             long commentId,
             long userId,
             String type
     ) {
         ProjectCommentReactionType reactionType = ProjectCommentReactionType.from(type);
+        long projectId = projectSlugResolver.resolveId(slug);
         Project project = findActiveProject(projectId);
         if (project.getApprovalStatus() != ApprovalStatus.APPROVED) {
             throw new EntityNotFoundException(PROJECT_NOT_FOUND);
@@ -41,24 +44,25 @@ public class ProjectCommentReactionService {
 
         findActiveComment(projectId, commentId);
         projectCommentReactionRepository.add(commentId, userId, reactionType);
-        return response(projectId, commentId, reactionType, true);
+        return response(slug, commentId, reactionType, true);
     }
 
     @Transactional
     public ProjectCommentReactionResponse remove(
-            long projectId,
+            String slug,
             long commentId,
             long userId,
             String type
     ) {
         ProjectCommentReactionType reactionType = ProjectCommentReactionType.from(type);
+        long projectId = projectSlugResolver.resolveId(slug);
         findActiveProject(projectId);
         findActiveComment(projectId, commentId);
 
         if (!projectCommentReactionRepository.remove(commentId, userId, reactionType)) {
             throw new EntityNotFoundException(REACTION_NOT_FOUND);
         }
-        return response(projectId, commentId, reactionType, false);
+        return response(slug, commentId, reactionType, false);
     }
 
     private Project findActiveProject(long projectId) {
@@ -74,14 +78,14 @@ public class ProjectCommentReactionService {
     }
 
     private ProjectCommentReactionResponse response(
-            long projectId,
+            String slug,
             long commentId,
             ProjectCommentReactionType type,
             boolean active
     ) {
         ProjectCommentReactionCounts counts = projectCommentReactionRepository.countByCommentId(commentId);
         return new ProjectCommentReactionResponse(
-                projectId,
+                slug,
                 commentId,
                 type,
                 active,

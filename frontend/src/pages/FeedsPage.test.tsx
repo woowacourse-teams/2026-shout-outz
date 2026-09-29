@@ -7,7 +7,8 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { FeedList } from '@/components/feeds/FeedList';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
-import { findFirstUrl } from '@/components/feeds/FeedContent';
+import { PopularFeedList } from '@/components/feeds/PopularFeedList';
+import { findFirstUrl } from '@/utils/feed';
 import { Comments } from '@/components/feed-comments/Comments';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { createFeedHandlers, mockFeeds } from '@/mocks/handlers';
@@ -109,15 +110,71 @@ test('피드 링크와 공유 주소가 상세 페이지를 가리킨다', async
   const feed = mockFeeds[0]!;
   const detailPath = `/feeds/${feed.feedId}`;
   const user = userEvent.setup();
+  const share = jest.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'share', { configurable: true, value: share });
   show(<FeedList sort="LATEST" />);
   const first = (await screen.findAllByRole('article'))[0]!;
-  expect(
-    within(first).getByRole('link', { name: new RegExp(feed.author.displayName) }),
-  ).toHaveAttribute('href', detailPath);
+  expect(within(first).getByRole('link', { name: feed.title })).toHaveAttribute('href', detailPath);
   await user.click(within(first).getByRole('button', { name: '공유' }));
-  expect(await navigator.clipboard.readText()).toBe(
-    new URL(detailPath, window.location.origin).href,
+  expect(share).toHaveBeenCalledWith({
+    title: document.title,
+    url: new URL(detailPath, window.location.origin).href,
+  });
+});
+test('인기 피드는 제목과 본문 미리보기를 함께 보여준다', async () => {
+  // 목 핸들러는 인기순을 최신순의 역순으로 준다.
+  const feed = mockFeeds.at(-1)!;
+  show(<PopularFeedList />);
+  const firstItem = within(await screen.findByRole('list')).getAllByRole('listitem')[0]!;
+
+  expect(within(firstItem).getByRole('link')).toHaveAttribute('href', `/feeds/${feed.feedId}`);
+  expect(firstItem).toHaveTextContent(feed.title);
+  expect(firstItem).toHaveTextContent(feed.content);
+});
+test('카드는 첫 이미지와 남은 장수만 보여준다', async () => {
+  server.use(
+    http.get('/api/v1/feeds', () =>
+      HttpResponse.json({
+        status: 'success',
+        data: [
+          {
+            ...mockFeeds[0]!,
+            content: '## 회고\n\n**캐시** 무효화를 `Redis`로 풀었다.',
+            media: [1, 2, 3].map((order) => ({
+              mediaId: order,
+              displayOrder: order,
+              url: `https://cdn.test/${order}.png`,
+            })),
+          },
+        ],
+        meta: { hasNext: false, nextCursor: null },
+      }),
+    ),
   );
+  show(<FeedList sort="LATEST" />);
+  const card = await screen.findByRole('article');
+
+  expect(card).toHaveTextContent('캐시 무효화를 Redis로 풀었다.');
+  expect(within(card).getAllByRole('img', { name: '피드 첨부 이미지' })).toHaveLength(1);
+  expect(card).toHaveTextContent('이미지 +2장 더 있음');
+});
+test('카드는 본문의 코드 블록을 빼고 보여준다', async () => {
+  server.use(
+    http.get('/api/v1/feeds', () =>
+      HttpResponse.json({
+        status: 'success',
+        data: [
+          { ...mockFeeds[0]!, content: '설정은 이렇게 했다.\n\n```ts\nconst retry = 3;\n```' },
+        ],
+        meta: { hasNext: false, nextCursor: null },
+      }),
+    ),
+  );
+  show(<FeedList sort="LATEST" />);
+  const card = await screen.findByRole('article');
+
+  expect(card).toHaveTextContent('설정은 이렇게 했다.');
+  expect(card).not.toHaveTextContent('const retry = 3;');
 });
 test('본문의 첫 번째 링크를 미리보기로 표시한다', async () => {
   const previewUrl = findFirstUrl(mockFeeds[0]!.content);

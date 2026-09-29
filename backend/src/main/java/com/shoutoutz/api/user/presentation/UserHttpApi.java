@@ -1,5 +1,7 @@
 package com.shoutoutz.api.user.presentation;
 
+import static com.shoutoutz.api.user.domain.account.Handle.HANDLE_FORMAT_REGEX;
+
 import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
@@ -91,13 +93,17 @@ public class UserHttpApi {
 
     @GetMapping("/{handle}")
     public ResponseEntity<SuccessResponse<UserProfileResponse>> getPublicProfile(
+            @LoginUser(required = false) AuthenticatedUser loginUser,
             @Pattern(
-                    regexp = "^[A-Za-z0-9_-]{2,30}$",
+                    regexp = HANDLE_FORMAT_REGEX,
                     message = "handle 형식이 올바르지 않습니다."
             )
             @PathVariable String handle
     ) {
-        UserProfileResponse response = userService.getPublicProfile(handle);
+        UserProfileResponse response = userService.getPublicProfile(
+                handle,
+                AuthenticatedUser.userIdOrNull(loginUser)
+        );
 
         return ResponseEntity.ok(SuccessResponse.success(response));
     }

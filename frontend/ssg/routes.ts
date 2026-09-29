@@ -1,5 +1,6 @@
 import { routeTree } from '@/routeTree.gen';
 import { createMemoryHistory, createRouter, type AnyRoute } from '@tanstack/react-router';
+import { PATH_PARAMS_ALLOWED_CHARACTERS } from '@/constants/router';
 
 function normalizePrerenderPath(pathname: string): string {
   return pathname === '/' ? pathname : pathname.replace(/\/+$/, '');
@@ -21,6 +22,7 @@ export interface PrerenderRouteCollection {
 export async function collectPrerenderRoutes(): Promise<PrerenderRouteCollection> {
   const router = createRouter({
     routeTree,
+    pathParamsAllowedCharacters: [...PATH_PARAMS_ALLOWED_CHARACTERS],
     history: createMemoryHistory({ initialEntries: ['/'] }),
   });
   const routes = new Set<string>();

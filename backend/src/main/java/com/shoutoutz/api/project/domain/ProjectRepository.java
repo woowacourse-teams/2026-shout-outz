@@ -11,6 +11,12 @@ public interface ProjectRepository {
     boolean existsBySlug(Slug slug);
 
     /**
+     * slug 로 프로젝트 id 를 찾는다. 삭제 여부와 승인 상태는 보지 않는다.
+     * 삭제된 프로젝트도 slug 를 계속 차지하므로 결과는 최대 한 건이고, 복구할 프로젝트도 이 메서드로 찾는다.
+     */
+    Optional<Long> findIdBySlug(Slug slug);
+
+    /**
      * 같은 리포지토리를 가리키는 프로젝트가 이미 있는지 확인한다.
      * GithubRepositoryUrl이 표기를 정규화해서 갖고 있으므로, 값 비교만으로 같은 리포지토리를 찾는다.
      */
@@ -25,6 +31,16 @@ public interface ProjectRepository {
      * 삭제되지 않은 프로젝트를 한 건 조회한다. 승인 상태와 무관하게 찾는다.
      */
     Optional<Project> findActiveById(long projectId);
+
+    /**
+     * 예상한 승인 상태일 때만 프로젝트 승인 상태를 바꾼다.
+     * 동시 심사 요청 중 하나만 성공하도록 데이터베이스에서 상태 조건을 함께 검사한다.
+     */
+    boolean transitionApprovalStatus(
+            long projectId,
+            ApprovalStatus fromStatus,
+            ApprovalStatus toStatus
+    );
 
     /**
      * 프로젝트에 달린 기술 스택 id 를 저장된 순서대로 조회한다.
@@ -45,8 +61,13 @@ public interface ProjectRepository {
     boolean existsPublicById(long projectId);
   
     /**
-     * 삭제되지 않은 프로젝트의 상세 정보를 조회
+     * slug로 삭제되지 않은 프로젝트의 상세 정보를 조회
      * @param viewerId 요청한 사용자 ID. 비로그인이면 null이며, 이때 likedByMe와 bookmarkedByMe는 false다.
+     */
+    Optional<ProjectDetail> findDetailBySlug(Slug slug, Long viewerId);
+
+    /**
+     * 관리자용 프로젝트 상세 조회. 승인 상태와 무관하게 삭제되지 않은 프로젝트를 찾는다.
      */
     Optional<ProjectDetail> findDetailById(long projectId, Long viewerId);
 

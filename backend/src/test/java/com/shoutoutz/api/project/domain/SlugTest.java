@@ -64,4 +64,24 @@ class SlugTest {
                 .isInstanceOfSatisfying(InvalidSlugException.class,
                         error -> assertThat(error.getErrorCode()).isEqualTo(ProjectErrorCode.PROJECT_INVALID_SLUG));
     }
+
+    @Test
+    @DisplayName("형식에 맞는 값은 slug로 읽는다.")
+    void parsesValidSlug() {
+        assertThat(Slug.parse("my-app")).contains(new Slug("my-app"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"My-App", "my_app", "my--app", "-app", "", "1 2"})
+    @DisplayName("형식에 맞지 않는 값은 예외 없이 빈 값으로 읽는다.")
+    void parsesMalformedSlugAsEmpty(String value) {
+        assertThat(Slug.parse(value)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("null과 100자를 넘는 값도 빈 값으로 읽는다.")
+    void parsesNullAndTooLongSlugAsEmpty() {
+        assertThat(Slug.parse(null)).isEmpty();
+        assertThat(Slug.parse("a".repeat(101))).isEmpty();
+    }
 }

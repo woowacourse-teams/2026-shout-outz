@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { countProjectFilters } from '@/constants/project';
 import { type ProjectFilter } from '@/types/project';
+import { toProjectSlugParam } from '@/utils/project';
 import { analytics } from '@/utils/analytics';
 
 export interface ProjectListProps {
@@ -31,8 +32,8 @@ export function ProjectList({ filter, onResetFilter }: ProjectListProps) {
         {projects.map((project) => (
           <li key={project.id} className="min-w-0">
             <Link
-              to="/projects/$id"
-              params={{ id: String(project.id) }}
+              to="/projects/$slug"
+              params={{ slug: toProjectSlugParam(project.slug) }}
               className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
               onClick={() => {
                 analytics.track({ name: 'card_clicked', target: 'project', surface: 'projects' });
@@ -48,6 +49,7 @@ export function ProjectList({ filter, onResetFilter }: ProjectListProps) {
                 tagline={project.tagline}
                 cohort={project.cohort}
                 likeCount={project.likeCount}
+                likedByMe={project.likedByMe}
                 commentCount={project.commentCount}
                 techTags={project.techTags}
                 thumbnailUrl={project.thumbnailUrl}
