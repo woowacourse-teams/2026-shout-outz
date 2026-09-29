@@ -183,7 +183,11 @@ function ProjectTab({ handle }: { handle: string }) {
             return (
               <li key={project.slug} className="min-w-0">
                 <Link
-                  to="/projects/$slug"
+                  to={
+                    project.approvalStatus === 'APPROVED'
+                      ? '/projects/$slug'
+                      : '/projects/$slug/edit'
+                  }
                   params={{ slug: toProjectSlugParam(project.slug) }}
                   className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
                   onClick={() => {
@@ -192,11 +196,13 @@ function ProjectTab({ handle }: { handle: string }) {
                       target: 'project',
                       surface: 'profile',
                     });
-                    analytics.track({
-                      name: 'project_detail_opened',
-                      slug: project.slug,
-                      from: 'profile',
-                    });
+                    if (project.approvalStatus === 'APPROVED') {
+                      analytics.track({
+                        name: 'project_detail_opened',
+                        slug: project.slug,
+                        from: 'profile',
+                      });
+                    }
                   }}
                 >
                   {card}
