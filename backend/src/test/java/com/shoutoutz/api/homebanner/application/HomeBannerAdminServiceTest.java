@@ -148,6 +148,7 @@ class HomeBannerAdminServiceTest {
                 BannerDestinationType.TARGET,
                 BannerTargetType.PROJECT,
                 20L,
+                "loop",
                 null,
                 null,
                 0,

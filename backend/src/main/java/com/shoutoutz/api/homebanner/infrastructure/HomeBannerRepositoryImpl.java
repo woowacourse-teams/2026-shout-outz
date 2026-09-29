@@ -19,8 +19,13 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class HomeBannerRepositoryImpl implements HomeBannerRepository {
 
+    /**
+     * 대상이 프로젝트면 프로젝트 slug를 함께 읽는다. 삭제·승인 여부와 관계없이 가리키는 프로젝트의 slug를 돌려준다.
+     */
     private static final String COLUMNS = """
             id, media_id, destination_type, target_type, target_id,
+            (SELECT p.slug FROM projects p
+             WHERE home_banners.target_type = 'PROJECT' AND p.id = home_banners.target_id) AS target_slug,
             link_type, link_url, display_order, active, created_by, created_at, updated_at
             """;
 
@@ -137,6 +142,7 @@ public class HomeBannerRepositoryImpl implements HomeBannerRepository {
                 BannerDestinationType.valueOf(resultSet.getString("destination_type")),
                 enumOrNull(BannerTargetType.class, resultSet.getString("target_type")),
                 resultSet.getObject("target_id", Long.class),
+                resultSet.getString("target_slug"),
                 enumOrNull(BannerLinkType.class, resultSet.getString("link_type")),
                 resultSet.getString("link_url"),
                 resultSet.getInt("display_order"),

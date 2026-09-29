@@ -30,11 +30,15 @@ class HomeBannerRepositoryIntegrationTest {
 
     private long adminId;
     private long mediaId;
+    private long projectId;
+    private String projectSlug;
 
     @BeforeEach
     void setUp() {
         adminId = insertAdmin();
         mediaId = insertReadyMedia(adminId);
+        projectSlug = "banner-" + UUID.randomUUID().toString().substring(0, 12);
+        projectId = insertProject(adminId, projectSlug);
     }
 
     @Test
@@ -49,6 +53,35 @@ class HomeBannerRepositoryIntegrationTest {
     }
 
     @Test
+    void 프로젝트_배너는_저장_결과와_조회_결과에_프로젝트_slug를_함께_담는다() {
+        HomeBanner saved = homeBannerRepository.save(targetBanner(0, true));
+
+        assertThat(saved.getTargetSlug()).isEqualTo(projectSlug);
+        assertThat(homeBannerRepository.findById(saved.getId()).orElseThrow().getTargetSlug()).isEqualTo(projectSlug);
+        assertThat(homeBannerRepository.findAll()).extracting(HomeBanner::getTargetSlug).containsOnly(projectSlug);
+        assertThat(homeBannerRepository.findAllActive()).extracting(HomeBanner::getTargetSlug)
+                .containsOnly(projectSlug);
+    }
+
+    @Test
+    void 뉴스_배너는_같은_ID의_프로젝트가_있어도_slug를_담지_않는다() {
+        HomeBanner saved = homeBannerRepository.save(HomeBanner.create(
+                mediaId,
+                BannerDestinationType.TARGET,
+                BannerTargetType.NEWS,
+                projectId,
+                null,
+                null,
+                0,
+                true,
+                adminId
+        ));
+
+        assertThat(saved.getTargetSlug()).isNull();
+        assertThat(homeBannerRepository.findById(saved.getId()).orElseThrow().getTargetSlug()).isNull();
+    }
+
+    @Test
     void 활성_배너를_표시_순서와_ID순으로_전체_조회한다() {
         HomeBanner first = homeBannerRepository.save(targetBanner(1, true));
         HomeBanner second = homeBannerRepository.save(targetBanner(1, true));
@@ -59,6 +92,28 @@ class HomeBannerRepositoryIntegrationTest {
 
         assertThat(banners).extracting(HomeBanner::getId)
                 .containsExactly(first.getId(), second.getId(), third.getId());
+    }
+
+    @Test
+    void 대상_프로젝트를_바꿔_수정하면_바뀐_프로젝트의_slug를_돌려준다() {
+        String otherSlug = "banner-" + UUID.randomUUID().toString().substring(0, 12);
+        long otherProjectId = insertProject(adminId, otherSlug);
+        HomeBanner saved = homeBannerRepository.save(targetBanner(0, true));
+        HomeBanner changed = saved.update(
+                mediaId,
+                BannerDestinationType.TARGET,
+                BannerTargetType.PROJECT,
+                otherProjectId,
+                null,
+                null,
+                0,
+                true
+        );
+
+        HomeBanner updated = homeBannerRepository.update(changed).orElseThrow();
+
+        assertThat(updated.getTargetId()).isEqualTo(otherProjectId);
+        assertThat(updated.getTargetSlug()).isEqualTo(otherSlug);
     }
 
     @Test
@@ -79,6 +134,7 @@ class HomeBannerRepositoryIntegrationTest {
         boolean deleted = homeBannerRepository.deleteById(saved.getId());
 
         assertThat(updated.getDestinationType()).isEqualTo(BannerDestinationType.URL);
+        assertThat(updated.getTargetSlug()).isNull();
         assertThat(updated.getDisplayOrder()).isEqualTo(3);
         assertThat(updated.isActive()).isFalse();
         assertThat(deleted).isTrue();
@@ -90,7 +146,7 @@ class HomeBannerRepositoryIntegrationTest {
                 mediaId,
                 BannerDestinationType.TARGET,
                 BannerTargetType.PROJECT,
-                10L,
+                projectId,
                 null,
                 null,
                 displayOrder,
@@ -105,6 +161,22 @@ class HomeBannerRepositoryIntegrationTest {
                 "INSERT INTO users (handle, role) VALUES (?, 'ADMIN') RETURNING id",
                 Long.class,
                 handle
+        );
+    }
+
+    private long insertProject(long registeredBy, String slug) {
+        return jdbcTemplate.queryForObject(
+                """
+                        INSERT INTO projects (
+                            cohort, registered_by, team_name, slug, title, tagline,
+                            service_status, approval_status, github_repository_url
+                        ) VALUES (8, ?, '테스트 팀', ?, '테스트 프로젝트', '프로젝트 소개', 'CLOSED', 'APPROVED', ?)
+                        RETURNING id
+                        """,
+                Long.class,
+                registeredBy,
+                slug,
+                "https://github.com/test/" + slug
         );
     }
 
