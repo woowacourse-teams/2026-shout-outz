@@ -6,6 +6,20 @@ Object.assign(globalThis, { TextEncoder, TextDecoder });
 
 process.env.API_ORIGIN = 'http://localhost';
 
+// jsdom에는 matchMedia가 없어 기본적으로 미디어 조건이 일치하지 않는 환경을 제공한다.
+if (typeof window.matchMedia !== 'function') {
+  window.matchMedia = (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => true,
+  });
+}
+
 // jsdom은 Blob URL을 구현하지 않는다. 이미지 미리보기를 쓰는 화면을 위해 최소한으로 채운다.
 if (typeof URL.createObjectURL !== 'function') {
   URL.createObjectURL = () => 'blob:mock';
