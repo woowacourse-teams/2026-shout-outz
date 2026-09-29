@@ -41,10 +41,21 @@ describe('getAvatarTone', () => {
     }
   });
 
-  it('이름이 다르면 색도 갈린다', () => {
-    const names = ['정우진', '김도현', '이지민', '황호익', '박성호', '최민서'];
+  it('한글 이름도 네 색을 모두 쓴다', () => {
+    // 코드포인트를 더하기만 하면 한글에서 두 색으로 뭉쳤다. 한글 음절은
+    // 0xAC00 + 초성*588 + 중성*28 + 종성이고 세 값이 모두 4의 배수라,
+    // 4로 나눈 나머지에 종성만 남기 때문이다. "갈리기만 하면 된다"로는 이걸 못 잡는다.
+    const names = ['정우진', '김도현', '이지민', '황호익', '박성호', '최민서', '고제성', '한소희'];
     const tones = new Set(names.map(getAvatarTone));
 
-    expect(tones.size).toBeGreaterThan(1);
+    expect(tones.size).toBe(AVATAR_TONES.length);
+  });
+
+  it('종성만 다른 이름도 같은 색으로 몰리지 않는다', () => {
+    // 가·간·갈·감·개·고·구는 코드포인트를 4로 나눈 나머지가 모두 0이다.
+    const names = ['가', '간', '갈', '감', '개', '고', '구'];
+    const tones = new Set(names.map(getAvatarTone));
+
+    expect(tones.size).toBeGreaterThan(2);
   });
 });

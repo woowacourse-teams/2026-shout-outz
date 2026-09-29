@@ -26,16 +26,23 @@ export const AVATAR_TONE_CLASSES: Record<AvatarTone, string> = {
 /**
  * 이름을 색 하나로 접는다.
  *
- * 코드 포인트를 훑어 더하는 것뿐이라 한글·영문·이모지를 가리지 않는다. 고르게 흩어지는 것보다
- * 같은 이름이 늘 같은 색으로 나오는 것이 중요해서 단순하게 둔다.
+ * 코드 포인트 단위로 훑어 한글·영문·이모지를 가리지 않는다. 같은 이름은 어디서 보든 늘 같은
+ * 색이어야 하므로 난수를 쓰지 않는다.
  */
 export function getAvatarTone(name: string): AvatarTone {
   let hash = 0;
   for (const char of name.trim()) {
-    hash = (hash + (char.codePointAt(0) ?? 0)) % AVATAR_TONES.length;
+    hash = (Math.imul(hash, 31) + (char.codePointAt(0) ?? 0)) | 0;
   }
 
-  return AVATAR_TONES[hash] ?? AVATAR_TONES[0];
+  // 여기서 상위 비트를 하위로 접지 않으면 한글 이름의 색이 뭉친다.
+  // 한글 음절은 0xAC00 + 초성*588 + 중성*28 + 종성인데 세 값이 모두 4의 배수라,
+  // 4로 나눈 나머지에는 종성만 남고 초성·중성이 통째로 사라진다.
+  hash ^= hash >>> 15;
+  hash = Math.imul(hash, 0x2545f491);
+  hash ^= hash >>> 13;
+
+  return AVATAR_TONES[(hash >>> 0) % AVATAR_TONES.length] ?? AVATAR_TONES[0];
 }
 
 /**
