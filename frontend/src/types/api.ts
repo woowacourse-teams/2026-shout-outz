@@ -1,13 +1,13 @@
 /**
- * 서버 응답/요청 타입의 단일 출처.
+ * 서버 응답/요청 타입의 공통 진입점.
  *
  * `src/api/generated/schema.ts`는 `npm run generate:api`가 서버의 openapi3.yaml로 만든 파일이다.
- * 손으로 고치지 않으며, 화면 코드가 쓰는 이름은 전부 이 파일에서 그 스키마를 깎아 만든다.
+ * 손으로 고치지 않는다. 현재 백엔드 DTO와 생성 타입이 다른 프로젝트 응답은 아래에서
+ * DTO에 맞게 덮어쓴다.
  *
  * 생성된 타입은 `XxxSuccessResponse`라는 봉투(`{ status, data, meta }`) 모양이라 그대로 쓰기 불편하다.
  * 아래 `Data`/`Meta`/`Item`으로 봉투를 벗겨 화면이 다루는 알맹이만 이름 붙인다.
  *
- * 스키마에 없는 응답(홈 통계, 미디어 업로드 등)은 `docs/api-types.md`에 따로 적어 두었다.
  */
 import type {
   AdminVerificationRequestFindAllSuccessResponse,
@@ -25,7 +25,6 @@ import type {
   NewsFindDetailSuccessResponse,
   NoticeCreateRequest,
   ProjectCreateRequest as GeneratedProjectCreateRequest,
-  ProjectCreateSuccessResponse,
   ProjectFilterOptionsSuccessResponse,
   ProjectFindAllSuccessResponse,
   ProjectFindDetailSuccessResponse,
@@ -111,13 +110,26 @@ export type FeedCommentData = Omit<GeneratedFeedComment, 'author'> & {
 
 export type ProjectCreateBody = GeneratedProjectCreateRequest;
 export type ProjectUpdateRequest = GeneratedProjectUpdateRequest;
-export type ProjectCreatedData = Data<ProjectCreateSuccessResponse>;
-export type ProjectListItemData = WithProjectMemberType<Item<Data<ProjectFindAllSuccessResponse>>>;
-export type ProjectListMetaData = Meta<ProjectFindAllSuccessResponse>;
-export type UserProjectListItemData = WithProjectMemberType<
-  Item<Data<UserProjectFindAllSuccessResponse>>
+/** ProjectCreateResponse.java: 등록 응답은 slug만 제공한다. */
+export type ProjectCreatedData = { slug: string };
+/** ProjectUpdateResponse.java: 수정 결과에는 slug와 승인 상태가 있다. */
+export type ProjectUpdatedData = { slug: string; approvalStatus: ProjectApprovalStatus };
+/** ProjectFindAllResponse.Item.java: 일반 목록에는 프로젝트 ID가 없다. */
+export type ProjectListItemData = Omit<
+  WithProjectMemberType<Item<Data<ProjectFindAllSuccessResponse>>>,
+  'id'
 >;
-export type ProjectDetailData = WithProjectMemberType<Data<ProjectFindDetailSuccessResponse>>;
+export type ProjectListMetaData = Meta<ProjectFindAllSuccessResponse>;
+/** UserProjectResponse.java: 프로필 목록은 slug와 반려 사유를 제공한다. */
+export type UserProjectListItemData = Omit<
+  WithProjectMemberType<Item<Data<UserProjectFindAllSuccessResponse>>>,
+  'id'
+> & { rejectReason: string | null };
+/** ProjectDetailResponse.java: 상세 응답에도 프로젝트 ID가 없다. */
+export type ProjectDetailData = Omit<
+  WithProjectMemberType<Data<ProjectFindDetailSuccessResponse>>,
+  'id'
+>;
 export type ProjectFilterOptionsData = Data<ProjectFilterOptionsSuccessResponse>;
 
 // ── 홈 ──────────────────────────────────────────────────────────────────────

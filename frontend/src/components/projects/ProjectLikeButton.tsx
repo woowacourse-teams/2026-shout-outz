@@ -7,11 +7,11 @@ import { Button } from '@/components/Button';
 import { useRequireAuthentication } from '@/hooks/useRequireAuthentication';
 
 export function ProjectLikeButton({
-  projectId,
+  slug,
   likeCount,
   likedByMe,
 }: {
-  projectId: number;
+  slug: string;
   likeCount: number;
   likedByMe: boolean;
 }) {
@@ -20,7 +20,7 @@ export function ProjectLikeButton({
   const [count, setCount] = useState(likeCount);
   const [liked, setLiked] = useState(likedByMe);
   const mutation = useMutation({
-    mutationFn: (active: boolean) => setProjectLike(projectId, active),
+    mutationFn: (active: boolean) => setProjectLike(slug, active),
   });
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export function ProjectLikeButton({
       const result = await mutation.mutateAsync(next);
       setCount(result.likeCount);
       setLiked(result.active);
-      void client.invalidateQueries({ queryKey: ['project-detail', String(projectId)] });
+      void client.invalidateQueries({ queryKey: ['project-detail', slug] });
       void client.invalidateQueries({ queryKey: ['project-list'] });
       void client.invalidateQueries({ queryKey: ['users'] });
     } catch {

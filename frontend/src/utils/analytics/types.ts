@@ -27,7 +27,7 @@ export type AnalyticsEvent =
       hasDeploymentUrl: boolean;
     }
   | { name: 'project_create_failed'; reason: string; invalidFields: string[] }
-  | { name: 'project_detail_opened'; projectId: number; from: string }
+  | { name: 'project_detail_opened'; slug: string; from: string }
   | { name: 'project_search_performed'; keywordLength: number; resultCount: number }
   // 소식·프로필
   | { name: 'news_filter_changed'; type: string }

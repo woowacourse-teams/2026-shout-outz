@@ -6,6 +6,7 @@ import type {
   EventCreateBody,
   HomeBannerUpsertBody,
   NoticeCreateBody,
+  ProjectApprovalStatus,
   ProjectDetailData,
   ProjectListItemData,
 } from '@/types/api';
@@ -28,11 +29,31 @@ export type { HomeBannerUpsertBody };
 export type { NoticeCreateBody, EventCreateBody };
 
 /**
- * 승인 대기 프로젝트 한 건.
- *
- * TODO 관리자 프로젝트 심사 API가 명세에 없다. 목록 항목에 상세의 승인 상태를 붙인 모양으로 가정했다.
- * 명세가 올라오면 생성 타입에서 파생하도록 바꾼다.
+ * AdminProjectFindAllResponse.Item.java.
+ * 관리자 심사 목록은 일반 목록과 달리 숫자 ID를 유지한다.
  */
-export type AdminProject = ProjectListItemData &
-  Pick<ProjectDetailData, 'approvalStatus' | 'rejectReason'>;
+export type AdminProject = Pick<
+  ProjectListItemData,
+  'slug' | 'title' | 'tagline' | 'cohort' | 'members'
+> & {
+  id: number;
+  approvalStatus: ProjectApprovalStatus;
+  rejectReason: string | null;
+};
 export type AdminProjectStatus = AdminProject['approvalStatus'];
+
+/** AdminProjectDetailResponse.java에서 심사 화면이 사용하는 필드. */
+export type AdminProjectDetail = Pick<
+  ProjectDetailData,
+  'descriptionMd' | 'githubRepositoryUrl' | 'slug'
+> & { id: number };
+
+/** AdminProjectApproveResponse.java와 AdminProjectRejectResponse.java. */
+export interface AdminProjectDecision {
+  projectId: number;
+  approvalStatus: ProjectApprovalStatus;
+  decidedBy: { userId: number; handle: string };
+  decidedAt: string;
+}
+
+export type AdminProjectRejection = AdminProjectDecision & { reason: string };

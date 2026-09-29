@@ -177,7 +177,7 @@ export function ProjectForm({
   );
   const [errors, setErrors] = useState<ProjectFormErrors>({});
   const createProject = useMutation(createProjectMutationOptions);
-  const updateProject = useMutation(updateProjectMutationOptions(initialProject?.id ?? 0));
+  const updateProject = useMutation(updateProjectMutationOptions(initialProject?.slug ?? ''));
   const queryClient = useQueryClient();
   const editing = initialProject !== undefined;
 
@@ -209,7 +209,7 @@ export function ProjectForm({
         onSuccess: async (result) => {
           await Promise.all([
             queryClient.invalidateQueries({
-              queryKey: ['project-detail', String(initialProject.id)],
+              queryKey: ['project-detail', initialProject.slug],
             }),
             queryClient.invalidateQueries({ queryKey: ['project-list'] }),
             queryClient.invalidateQueries({ queryKey: ['users'] }),

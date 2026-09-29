@@ -13,12 +13,19 @@ describe('resolveHomeBannerLink', () => {
   describe('destinationType이 TARGET이면 대상 리소스의 상세 경로로 간다', () => {
     it.each([
       ['NEWS', '/news/7'],
-      ['PROJECT', '/projects/7'],
       ['FEED', '/feeds/7'],
     ] as const)('%s는 %s', (targetType, href) => {
       expect(
         resolveHomeBannerLink(banner({ destinationType: 'TARGET', targetType, targetId: 7 })),
       ).toEqual({ kind: 'internal', href });
+    });
+
+    it('프로젝트 ID는 slug 주소로 바꿀 수 없어 링크를 만들지 않는다', () => {
+      expect(
+        resolveHomeBannerLink(
+          banner({ destinationType: 'TARGET', targetType: 'PROJECT', targetId: 7 }),
+        ),
+      ).toBeNull();
     });
 
     it('대상 유형이나 ID가 비면 이동하지 않는다', () => {
