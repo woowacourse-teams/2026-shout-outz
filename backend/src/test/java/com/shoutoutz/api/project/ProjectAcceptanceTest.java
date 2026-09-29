@@ -88,6 +88,26 @@ class ProjectAcceptanceTest {
     }
 
     @Test
+    @DisplayName("리포지토리 이름 뒤에 경로, 쿼리, 앵커가 붙은 GitHub URL로 등록하면 리포지토리 주소만 남겨 저장한다.")
+    void registersProjectWithNormalizedGithubUrl() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession teammate = signup("WOOWACOURSE_CREW");
+        String repositoryName = uniqueRepositoryName();
+
+        Response response = registerProject(author, requestBodyWithUrl(
+                "https://github.com/Woowacourse-Teams/" + repositoryName + "/tree/main?tab=readme#readme",
+                techTagIds("java"),
+                List.of(teammate.handle())
+        ));
+
+        assertThat(response.statusCode()).as(response.asString()).isEqualTo(201);
+        assertThat(response.jsonPath().getString("data.slug")).isEqualTo(repositoryName.substring("2026-".length()));
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT github_repository_url FROM projects WHERE id = ?", String.class, projectIdOf(response)))
+                .isEqualTo("https://github.com/woowacourse-teams/" + repositoryName);
+    }
+
+    @Test
     @DisplayName("표기만 다를 뿐 이미 등록된 리포지토리를 다시 등록하면 409를 반환한다.")
     void rejectsDuplicateRepository() {
         LoginSession author = signup("WOOWACOURSE_CREW");

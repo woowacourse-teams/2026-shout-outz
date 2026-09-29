@@ -98,9 +98,11 @@ class ProjectHttpApiTest {
             + "운영 상태는 deploymentUrl이 있으면 OPERATING, 없으면 CLOSED로 저장한다. "
             + "팀원은 memberHandles로 받은 순서대로 저장한다. "
             + "본문 이미지는 descriptionMd에 ![설명](media://{mediaId}) 형식으로 넣는다. "
+            + "githubRepositoryUrl은 woowacourse-teams 조직의 리포지토리만 받으며, "
+            + "리포지토리 이름 뒤의 경로, 쿼리, 앵커는 버리고 https://github.com/woowacourse-teams/{repo} 형태로 저장한다. "
             + "요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나 리포지토리 이름으로 slug를 만들 수 없으면 400, "
             + "로그인하지 않았으면 401, 크루나 코치가 아니면 403, "
-            + "이미 등록된 리포지토리이거나 리포지토리 이름이 같거나 앞 연도나 특수문자만 달라 slug가 겹치면 409를 반환한다.";
+            + "이미 등록된 리포지토리이거나 앞 연도나 특수문자만 달라 slug가 겹치면 409를 반환한다.";
     private static final String UPDATE_SUMMARY = "프로젝트 수정";
     private static final String UPDATE_DESCRIPTION = "작성자가 프로젝트 정보를 수정한다. 대부분의 필드는 전체 교체 방식이며, "
             + "비우는 값은 null로 보낸다. 문자열 값은 앞뒤 공백을 자르고, 공백만 있으면 보내지 않은 것으로 본다 (descriptionMd 제외). "
@@ -186,8 +188,10 @@ class ProjectHttpApiTest {
                                                 .description("본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID")
                                                 .optional(),
                                         fieldWithPath("githubRepositoryUrl").type(STRING)
-                                                .description("https://github.com/{owner}/{repo} 형식 (2,048자 이하). 끝의 .git이나 /는 허용하지만, "
-                                                        + "/tree/main처럼 경로가 더 붙으면 400이다. 리포지토리 이름으로 slug를 만든다."),
+                                                .description("https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하). "
+                                                        + "다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, "
+                                                        + "경로(/tree/main), 쿼리(?tab=readme), 앵커(#readme)는 허용하고 버린 뒤 저장한다. "
+                                                        + "리포지토리 이름으로 slug를 만든다."),
                                         fieldWithPath("deploymentUrl").type(STRING)
                                                 .description("서비스 배포 URL (http/https). 빈 문자열이나 공백만 있으면 입력하지 않은 것으로 본다.")
                                                 .optional(),
@@ -1150,8 +1154,9 @@ class ProjectHttpApiTest {
                                                         + "필드를 생략하면 기존 썸네일을 유지하고, null을 보내면 제거한다.")
                                                 .optional(),
                                         fieldWithPath("githubRepositoryUrl").type(STRING)
-                                                .description("https://github.com/{owner}/{repo} 형식 (2,048자 이하). 끝의 .git이나 /는 허용하지만, "
-                                                        + "/tree/main처럼 경로가 더 붙으면 400이다. 바꿀 수 있지만 "
+                                                .description("https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하). "
+                                                        + "다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, "
+                                                        + "경로(/tree/main), 쿼리(?tab=readme), 앵커(#readme)는 허용하고 버린 뒤 저장한다. 바꿀 수 있지만 "
                                                         + "다른 프로젝트가 등록한 리포지토리로는 바꿀 수 없다. "
                                                         + "slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다."),
                                         fieldWithPath("deploymentUrl").type(STRING)
