@@ -59,6 +59,9 @@ class FeedServiceQueryTest {
     @Mock
     private MediaUrlResolver mediaUrlResolver;
 
+    @Mock
+    private FeedLinkPreviewService linkPreviewService;
+
     private FeedCursorCodec cursorCodec;
     private FeedService feedService;
 
@@ -73,6 +76,7 @@ class FeedServiceQueryTest {
                 userProfileRepository,
                 cursorCodec,
                 mediaUrlResolver,
+                linkPreviewService,
                 java.time.Clock.systemUTC()
         );
     }
