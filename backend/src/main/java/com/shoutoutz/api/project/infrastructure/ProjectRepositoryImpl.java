@@ -66,6 +66,11 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     }
 
     @Override
+    public Optional<Long> findIdBySlug(Slug slug) {
+        return projectJpaRepository.findIdBySlug(slug.value());
+    }
+
+    @Override
     public boolean existsByGithubRepositoryUrl(GithubRepositoryUrl githubRepositoryUrl) {
         return projectJpaRepository.existsByGithubRepositoryUrl(githubRepositoryUrl.value());
     }

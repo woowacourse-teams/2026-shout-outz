@@ -53,7 +53,6 @@ import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
-import com.shoutoutz.api.project.domain.exception.InvalidSlugException;
 import com.shoutoutz.api.project.domain.exception.InvalidTechTagException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
@@ -272,7 +271,7 @@ public class ProjectService {
      */
     @Transactional(readOnly = true)
     public ProjectDetailResponse findDetail(String slug, Long loginUserId) {
-        ProjectDetail detail = toSlug(slug)
+        ProjectDetail detail = Slug.parse(slug)
                 .flatMap(value -> projectRepository.findDetailBySlug(value, loginUserId))
                 .filter(project -> project.isVisibleTo(loginUserId))
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
@@ -290,14 +289,6 @@ public class ProjectService {
                 descriptionMd,
                 loginUserId
         );
-    }
-
-    private Optional<Slug> toSlug(String slug) {
-        try {
-            return Optional.of(new Slug(slug));
-        } catch (InvalidSlugException e) {
-            return Optional.empty();
-        }
     }
 
     private Map<Long, URI> resolveProjectMediaUrls(List<ProjectSummary> projects) {

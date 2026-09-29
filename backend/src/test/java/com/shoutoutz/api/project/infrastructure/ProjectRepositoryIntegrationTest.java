@@ -14,6 +14,7 @@ import com.shoutoutz.api.project.domain.ProjectDeletionRepository;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ServiceStatus;
+import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.project.infrastructure.jpa.ProjectJpaRepository;
@@ -268,6 +269,21 @@ class ProjectRepositoryIntegrationTest {
                 .containsExactly(techTagIds.get(2), techTagIds.get(0));
         assertThat(projectRepository.findMemberIds(saved.getId()))
                 .containsExactly(teammate, registeredBy);
+    }
+
+    @Test
+    @DisplayName("slug 로 찾는 id 는 승인 상태와 삭제 여부를 보지 않고, 없는 slug 는 빈 값이다")
+    void findsIdBySlugRegardlessOfApprovalAndDeletion() {
+        List<ProjectEntity> projects = projectJpaRepository.saveAll(List.of(
+                projectEntity(ApprovalStatus.APPROVED, null),
+                projectEntity(ApprovalStatus.PENDING, null),
+                projectEntity(ApprovalStatus.APPROVED, Instant.parse("2026-09-14T00:00:00Z"))
+        ));
+
+        projects.forEach(project -> assertThat(projectRepository.findIdBySlug(new Slug(project.getSlug())))
+                .contains(project.getId()));
+        assertThat(projectRepository.findIdBySlug(new Slug("no-such-" + UUID.randomUUID().toString().substring(0, 8))))
+                .isEmpty();
     }
 
     @Test

@@ -18,6 +18,9 @@ public interface ProjectJpaRepository extends JpaRepository<ProjectEntity, Long>
 
     Optional<ProjectEntity> findByIdAndDeletedAtIsNull(long id);
 
+    @Query("SELECT p.id FROM ProjectEntity p WHERE p.slug = :slug")
+    Optional<Long> findIdBySlug(@Param("slug") String slug);
+
     boolean existsByIdAndApprovalStatusAndDeletedAtIsNull(long id, ApprovalStatus approvalStatus);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
