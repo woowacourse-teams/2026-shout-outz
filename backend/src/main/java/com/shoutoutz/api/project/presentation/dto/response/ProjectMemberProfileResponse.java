@@ -10,7 +10,8 @@ import java.util.Map;
 /**
  * 프로젝트 팀원 응답 객체
  * 상세 조회와 목록 조회 응답이 함께 쓴다.
- * 가입한 사용자는 avatarUrl, 가입하지 않은 이관 팀원은 githubAvatarUrl과 githubProfileUrl을 가진다.
+ * 가입한 사용자는 프로필 이미지 URL을, 가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL을 avatarUrl로 내려준다.
+ * 이관 팀원은 githubProfileUrl도 함께 가진다.
  */
 public record ProjectMemberProfileResponse(
         Long userId,
@@ -19,9 +20,7 @@ public record ProjectMemberProfileResponse(
         UserType userType,
         Integer cohort,
         String track,
-        Long avatarImageId,
         String avatarUrl,
-        String githubAvatarUrl,
         String githubProfileUrl
 ) {
 
@@ -30,9 +29,7 @@ public record ProjectMemberProfileResponse(
             String displayName,
             Integer cohort,
             String track,
-            Long avatarImageId,
             String avatarUrl,
-            String githubAvatarUrl,
             String githubProfileUrl
     ) {
         this(
@@ -42,9 +39,7 @@ public record ProjectMemberProfileResponse(
                 UserType.WOOWACOURSE_CREW,
                 cohort,
                 track,
-                avatarImageId,
                 avatarUrl,
-                githubAvatarUrl,
                 githubProfileUrl
         );
     }
@@ -60,11 +55,17 @@ public record ProjectMemberProfileResponse(
                 member.userType(),
                 cohortValue(member.userType(), member.cohort()),
                 trackValue(member.userType(), member.track()),
-                member.avatarImageId(),
-                toUrl(mediaUrls, member.avatarImageId()),
-                member.githubAvatarUrl(),
+                avatarUrl(member, mediaUrls),
                 member.githubProfileUrl()
         );
+    }
+
+    /**
+     * 가입하지 않은 이관 팀원은 서비스 프로필 이미지가 없으므로 GitHub 프로필 이미지로 대신한다.
+     */
+    private static String avatarUrl(ProjectMemberProfile member, Map<Long, URI> mediaUrls) {
+        String avatarUrl = toUrl(mediaUrls, member.avatarImageId());
+        return avatarUrl == null ? member.githubAvatarUrl() : avatarUrl;
     }
 
     private static String toUrl(Map<Long, URI> mediaUrls, Long mediaId) {

@@ -410,9 +410,9 @@ class ProjectHttpApiTest {
                         List.of(new ProjectTechTagResponse(1L, "React"), new ProjectTechTagResponse(2L, "Spring")),
                         List.of(
                                 new ProjectMemberProfileResponse(7L, "@dhyepark", "박다혜", UserType.WOOWACOURSE_CREW,
-                                        6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
+                                        6, "BACKEND", "https://cdn.example.com/avatar-101", null),
                                 new ProjectMemberProfileResponse(8L, "@zzaekkii", "김도현", UserType.WOOWACOURSE_CREW,
-                                        6, "FRONTEND", null, null, null, null)
+                                        6, "FRONTEND", null, null)
                         ))),
                 new SliceMetaResponse("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
         ));
@@ -432,7 +432,7 @@ class ProjectHttpApiTest {
                 .andExpect(jsonPath("$.data[0].likeCount").value(184))
                 .andExpect(jsonPath("$.data[0].techTags[0].displayName").value("React"))
                 .andExpect(jsonPath("$.data[0].members[0].handle").value("@dhyepark"))
-                .andExpect(jsonPath("$.data[0].members[0].avatarImageId").value(101L))
+                .andExpect(jsonPath("$.data[0].members[0].avatarUrl").value("https://cdn.example.com/avatar-101"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
                 .andExpect(jsonPath("$.meta.totalCount").value(48))
                 .andDo(document(
@@ -511,14 +511,8 @@ class ProjectHttpApiTest {
                                         new EnumFields(Track.class).withPath("data[].members[].track")
                                                 .description("트랙")
                                                 .optional(),
-                                        fieldWithPath("data[].members[].avatarImageId").type(NUMBER)
-                                                .description("프로필 이미지 미디어 ID")
-                                                .optional(),
                                         fieldWithPath("data[].members[].avatarUrl").type(STRING)
-                                                .description("CloudFront에서 제공하는 공개 프로필 이미지 URL")
-                                                .optional(),
-                                        fieldWithPath("data[].members[].githubAvatarUrl").type(STRING)
-                                                .description("GitHub 프로필 이미지 URL. 가입하지 않은 이관 팀원만 값이 있다.")
+                                                .description("프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, 가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL이다.")
                                                 .optional(),
                                         fieldWithPath("data[].members[].githubProfileUrl").type(STRING)
                                                 .description("GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다.")
@@ -676,8 +670,8 @@ class ProjectHttpApiTest {
                 .andExpect(jsonPath("$.data.likedByMe").value(false))
                 .andExpect(jsonPath("$.data.techTags[0].displayName").value("React"))
                 .andExpect(jsonPath("$.data.members[0].handle").value("@dhyepark"))
-                .andExpect(jsonPath("$.data.members[0].avatarImageId").value(101L))
-                .andExpect(jsonPath("$.data.members[0].githubAvatarUrl").value(nullValue()))
+                .andExpect(jsonPath("$.data.members[0].avatarUrl").value("https://cdn.example.com/avatar-101"))
+                .andExpect(jsonPath("$.data.members[0].githubAvatarUrl").doesNotExist())
                 .andDo(document(
                         "project-find-detail",
                         resource(ResourceSnippetParameters.builder()
@@ -758,14 +752,8 @@ class ProjectHttpApiTest {
                                         new EnumFields(Track.class).withPath("data.members[].track")
                                                 .description("트랙")
                                                 .optional(),
-                                        fieldWithPath("data.members[].avatarImageId").type(NUMBER)
-                                                .description("프로필 이미지 미디어 ID")
-                                                .optional(),
                                         fieldWithPath("data.members[].avatarUrl").type(STRING)
-                                                .description("CloudFront에서 제공하는 공개 프로필 이미지 URL")
-                                                .optional(),
-                                        fieldWithPath("data.members[].githubAvatarUrl").type(STRING)
-                                                .description("GitHub 프로필 이미지 URL. 가입하지 않은 이관 팀원만 값이 있다.")
+                                                .description("프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, 가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL이다.")
                                                 .optional(),
                                         fieldWithPath("data.members[].githubProfileUrl").type(STRING)
                                                 .description("GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다.")
@@ -1082,9 +1070,9 @@ class ProjectHttpApiTest {
                 ),
                 List.of(
                         new ProjectMemberProfileResponse(7L, "@dhyepark", "박다혜", UserType.WOOWACOURSE_CREW,
-                                6, "BACKEND", 101L, "https://cdn.example.com/avatar-101", null, null),
+                                6, "BACKEND", "https://cdn.example.com/avatar-101", null),
                         new ProjectMemberProfileResponse(8L, "@zzaekkii", "김도현", UserType.WOOWACOURSE_CREW,
-                                6, "FRONTEND", null, null, null, null)
+                                6, "FRONTEND", null, null)
                 ),
                 Instant.parse("2026-08-09T02:30:00Z"),
                 Instant.parse("2026-08-09T03:00:00Z")
