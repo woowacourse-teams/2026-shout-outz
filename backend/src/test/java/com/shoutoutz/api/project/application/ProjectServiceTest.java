@@ -680,8 +680,8 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("본인 프로젝트 조회일 때 승인 대기 프로젝트 포함 여부를 조회 저장소에 전달한다.")
-    void includesPendingProjectsWhenViewingOwnProjects() {
+    @DisplayName("본인 프로젝트 조회일 때 모든 승인 상태 포함 여부를 조회 저장소에 전달한다.")
+    void includesAllApprovalStatusesWhenViewingOwnProjects() {
         User user = user(REGISTERED_BY, MEMBER_HANDLE, UserStatus.ACTIVE);
         when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.of(user));
         when(userProjectQueryRepository.findAllByUserId(
@@ -709,8 +709,8 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("다른 사용자의 프로젝트 조회일 때 승인 대기 프로젝트를 제외하도록 조회 저장소에 전달한다.")
-    void excludesPendingProjectsWhenViewingOtherUserProjects() {
+    @DisplayName("다른 사용자의 프로젝트 조회일 때 미승인 프로젝트를 제외하도록 조회 저장소에 전달한다.")
+    void excludesUnapprovedProjectsWhenViewingOtherUserProjects() {
         User user = user(REGISTERED_BY, MEMBER_HANDLE, UserStatus.ACTIVE);
         when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.of(user));
         when(userProjectQueryRepository.findAllByUserId(
