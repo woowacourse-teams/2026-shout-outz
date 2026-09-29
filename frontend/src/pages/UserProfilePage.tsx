@@ -18,6 +18,7 @@ import { myProfileSummaryQuery } from '@/apis/user';
 import { verificationRequestQuery } from '@/apis/verification';
 import { getButtonStyles } from '@/components/Button';
 import { analytics } from '@/utils/analytics';
+import { toProjectSlugParam } from '@/utils/project';
 
 const route = getRouteApi('/users/$handle');
 
@@ -129,11 +130,15 @@ function ProjectTab({ handle }: { handle: string }) {
             return (
               <li key={project.id} className="min-w-0">
                 <Link
-                  to="/projects/$id"
-                  params={{ id: String(project.id) }}
+                  to="/projects/$slug"
+                  params={{ slug: toProjectSlugParam(project.slug) }}
                   className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
                   onClick={() => {
-                    analytics.track({ name: 'card_clicked', target: 'project', surface: 'profile' });
+                    analytics.track({
+                      name: 'card_clicked',
+                      target: 'project',
+                      surface: 'profile',
+                    });
                     analytics.track({
                       name: 'project_detail_opened',
                       projectId: project.id,

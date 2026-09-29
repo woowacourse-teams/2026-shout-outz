@@ -5,6 +5,7 @@ import { getMockProjectReaction } from '@/api/mock/reactions';
 
 /** 실제 서버가 준비되기 전까지 MSW 핸들러가 내려줄 프로필 데이터. 백엔드가 뜨면 이 파일은 사라진다. */
 const PROFILE: UserProfile = {
+  userId: 10,
   handle: 'woojin',
   displayName: '정우진',
   userType: 'WOOWACOURSE_CREW',
@@ -45,6 +46,9 @@ const PROJECTS: ProjectSummary[] = [
     cohort: 6,
     thumbnailUrl: null,
     likeCount: 184,
+    likedByMe: false,
+    bookmarkCount: 0,
+    bookmarkedByMe: false,
     commentCount: 14,
     techTags: [
       { id: 1, displayName: 'React' },
@@ -61,6 +65,9 @@ const PROJECTS: ProjectSummary[] = [
     cohort: 6,
     thumbnailUrl: null,
     likeCount: 32,
+    likedByMe: false,
+    bookmarkCount: 0,
+    bookmarkedByMe: false,
     commentCount: 5,
     techTags: [{ id: 2, displayName: 'TypeScript' }],
     members: [
@@ -78,6 +85,9 @@ const PROJECTS: ProjectSummary[] = [
     cohort: 7,
     thumbnailUrl: null,
     likeCount: 0,
+    likedByMe: false,
+    bookmarkCount: 0,
+    bookmarkedByMe: false,
     commentCount: 0,
     techTags: [{ id: 1, displayName: 'React' }],
     members: [
@@ -94,6 +104,7 @@ const feedAuthor = {
   track: 'BACKEND',
   cohort: 8,
   avatarUrl: null,
+  userId: 10,
 } satisfies FeedAuthor;
 
 const FEEDS: Feed[] = [
@@ -104,6 +115,11 @@ const FEEDS: Feed[] = [
     author: feedAuthor,
     categories: [{ categoryId: 1, slug: 'backend', displayName: '백엔드', type: 'GENERAL' }],
     media: [],
+    likeCount: 0,
+    likedByMe: false,
+    bookmarkCount: 0,
+    bookmarkedByMe: false,
+    commentCount: 0,
     createdAt: '2026-08-27T12:45:00+09:00',
     updatedAt: '2026-08-27T12:45:00+09:00',
   },
@@ -114,6 +130,11 @@ const FEEDS: Feed[] = [
     author: feedAuthor,
     categories: [],
     media: [],
+    likeCount: 0,
+    likedByMe: false,
+    bookmarkCount: 0,
+    bookmarkedByMe: false,
+    commentCount: 0,
     createdAt: '2026-08-24T09:00:00+09:00',
     updatedAt: '2026-08-24T09:00:00+09:00',
   },

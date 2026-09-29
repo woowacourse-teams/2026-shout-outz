@@ -5,6 +5,7 @@ import { ModalProvider } from '@/components/ModalProvider';
 import { type CrewSearchItem } from '@/types/project';
 
 const crew = (handle: string, displayName: string): CrewSearchItem => ({
+  userId: handle.length,
   handle,
   displayName,
   userType: 'WOOWACOURSE_CREW',

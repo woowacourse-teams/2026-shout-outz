@@ -20,7 +20,7 @@ import { Route as MypageVerificationRouteImport } from './routes/mypage/verifica
 import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as NewsNewsIdRouteImport } from './routes/news/$newsId'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
-import { Route as ProjectsIdRouteImport } from './routes/projects/$id'
+import { Route as ProjectsSlugRouteImport } from './routes/projects/$slug'
 import { Route as ProjectsNewRouteImport } from './routes/projects/new'
 import { Route as UsersIndexRouteImport } from './routes/users/index'
 import { Route as UsersHandleRouteImport } from './routes/users/$handle'
@@ -82,9 +82,9 @@ const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   path: '/projects/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProjectsIdRoute = ProjectsIdRouteImport.update({
-  id: '/projects/$id',
-  path: '/projects/$id',
+const ProjectsSlugRoute = ProjectsSlugRouteImport.update({
+  id: '/projects/$slug',
+  path: '/projects/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsNewRoute = ProjectsNewRouteImport.update({
@@ -122,7 +122,7 @@ export interface FileRoutesByFullPath {
   '/feeds/new': typeof FeedsNewRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
-  '/projects/$id': typeof ProjectsIdRoute
+  '/projects/$slug': typeof ProjectsSlugRoute
   '/projects/new': typeof ProjectsNewRoute
   '/users/$handle': typeof UsersHandleRoute
   '/feeds/': typeof FeedsIndexRoute
@@ -141,7 +141,7 @@ export interface FileRoutesByTo {
   '/feeds/new': typeof FeedsNewRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
-  '/projects/$id': typeof ProjectsIdRoute
+  '/projects/$slug': typeof ProjectsSlugRoute
   '/projects/new': typeof ProjectsNewRoute
   '/users/$handle': typeof UsersHandleRoute
   '/feeds': typeof FeedsIndexRoute
@@ -161,7 +161,7 @@ export interface FileRoutesById {
   '/feeds/new': typeof FeedsNewRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
-  '/projects/$id': typeof ProjectsIdRoute
+  '/projects/$slug': typeof ProjectsSlugRoute
   '/projects/new': typeof ProjectsNewRoute
   '/users/$handle': typeof UsersHandleRoute
   '/feeds/': typeof FeedsIndexRoute
@@ -182,7 +182,7 @@ export interface FileRouteTypes {
     | '/feeds/new'
     | '/mypage/verification'
     | '/news/$newsId'
-    | '/projects/$id'
+    | '/projects/$slug'
     | '/projects/new'
     | '/users/$handle'
     | '/feeds/'
@@ -201,7 +201,7 @@ export interface FileRouteTypes {
     | '/feeds/new'
     | '/mypage/verification'
     | '/news/$newsId'
-    | '/projects/$id'
+    | '/projects/$slug'
     | '/projects/new'
     | '/users/$handle'
     | '/feeds'
@@ -220,7 +220,7 @@ export interface FileRouteTypes {
     | '/feeds/new'
     | '/mypage/verification'
     | '/news/$newsId'
-    | '/projects/$id'
+    | '/projects/$slug'
     | '/projects/new'
     | '/users/$handle'
     | '/feeds/'
@@ -240,7 +240,7 @@ export interface RootRouteChildren {
   FeedsNewRoute: typeof FeedsNewRoute
   MypageVerificationRoute: typeof MypageVerificationRoute
   NewsNewsIdRoute: typeof NewsNewsIdRoute
-  ProjectsIdRoute: typeof ProjectsIdRoute
+  ProjectsSlugRoute: typeof ProjectsSlugRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   UsersHandleRoute: typeof UsersHandleRoute
   FeedsIndexRoute: typeof FeedsIndexRoute
@@ -330,11 +330,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/projects/$id': {
-      id: '/projects/$id'
-      path: '/projects/$id'
-      fullPath: '/projects/$id'
-      preLoaderRoute: typeof ProjectsIdRouteImport
+    '/projects/$slug': {
+      id: '/projects/$slug'
+      path: '/projects/$slug'
+      fullPath: '/projects/$slug'
+      preLoaderRoute: typeof ProjectsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects/new': {
@@ -384,7 +384,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeedsNewRoute: FeedsNewRoute,
   MypageVerificationRoute: MypageVerificationRoute,
   NewsNewsIdRoute: NewsNewsIdRoute,
-  ProjectsIdRoute: ProjectsIdRoute,
+  ProjectsSlugRoute: ProjectsSlugRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   UsersHandleRoute: UsersHandleRoute,
   FeedsIndexRoute: FeedsIndexRoute,

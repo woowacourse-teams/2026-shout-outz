@@ -12,6 +12,7 @@ import { handlers } from '@/api/mock/handlers';
 import { ModalProvider } from '@/components/ModalProvider';
 import { MarkdownContent } from '@/components/MarkdownContent';
 import { routeTree } from '@/routeTree.gen';
+import { PATH_PARAMS_ALLOWED_CHARACTERS } from '@/constants/router';
 
 const server = setupServer(...handlers);
 beforeAll(() => {
@@ -21,10 +22,11 @@ beforeAll(() => {
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-function renderPage(path = '/projects/1') {
+function renderPage(path = '/projects/@dropit') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   const router = createRouter({
     routeTree,
+    pathParamsAllowedCharacters: [...PATH_PARAMS_ALLOWED_CHARACTERS],
     history: createMemoryHistory({ initialEntries: [path] }),
     scrollRestoration: false,
   });
@@ -54,20 +56,20 @@ test('상세 직접 진입 시 API 정보와 공통 레이아웃을 표시한다
   expect(screen.queryByLabelText('프로젝트 반응')).not.toBeInTheDocument();
 });
 
-test('목록 카드를 누르면 숫자 ID의 상세 페이지로 이동한다', async () => {
+test('목록 카드를 누르면 slug 주소의 상세 페이지로 이동한다', async () => {
   renderPage('/projects');
   const list = await screen.findByRole('list', { name: '프로젝트 목록' });
   const firstLink = within(list).getAllByRole('link')[0];
   if (!firstLink) throw new Error('프로젝트 상세 링크를 찾을 수 없습니다.');
-  expect(firstLink).toHaveAttribute('href', '/projects/1');
+  expect(firstLink).toHaveAttribute('href', '/projects/@dropit');
   await userEvent.click(firstLink);
   expect(await screen.findByRole('heading', { level: 1, name: 'Dropit' })).toBeInTheDocument();
 });
 
 test('승인되지 않은 프로젝트는 공개하지 않는다', async () => {
-  const data = await (await fetch('http://localhost/api/v1/projects/1')).json();
+  const data = await (await fetch('http://localhost/api/v1/projects/@dropit')).json();
   server.use(
-    http.get('/api/v1/projects/1', () =>
+    http.get('/api/v1/projects/@dropit', () =>
       HttpResponse.json({
         ...data,
         data: {
@@ -89,9 +91,9 @@ test('승인되지 않은 프로젝트는 공개하지 않는다', async () => {
 });
 
 test('빈 멤버·태그·본문을 안내하고 누락된 링크를 숨긴다', async () => {
-  const data = await (await fetch('http://localhost/api/v1/projects/1')).json();
+  const data = await (await fetch('http://localhost/api/v1/projects/@dropit')).json();
   server.use(
-    http.get('/api/v1/projects/1', () =>
+    http.get('/api/v1/projects/@dropit', () =>
       HttpResponse.json({
         ...data,
         data: {
@@ -113,7 +115,7 @@ test('빈 멤버·태그·본문을 안내하고 누락된 링크를 숨긴다',
   expect(screen.queryByRole('link', { name: /GitHub 저장소/ })).not.toBeInTheDocument();
 });
 
-test.each(['/projects/999', '/projects/not-an-id'])(
+test.each(['/projects/@없는-프로젝트', '/projects/@1', '/projects/not-an-id'])(
   '%s는 404 안내와 레이아웃을 표시한다',
   async (path) => {
     const error = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -132,7 +134,9 @@ test.each(['/projects/999', '/projects/not-an-id'])(
 
 test('실패 후 다시 시도하면 상세 정보를 표시한다', async () => {
   server.use(
-    http.get('/api/v1/projects/1', () => new HttpResponse(null, { status: 500 }), { once: true }),
+    http.get('/api/v1/projects/@dropit', () => new HttpResponse(null, { status: 500 }), {
+      once: true,
+    }),
   );
   const error = jest.spyOn(console, 'error').mockImplementation(() => {});
   try {

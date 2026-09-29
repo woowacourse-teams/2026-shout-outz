@@ -51,7 +51,7 @@ export type Item<T> = T extends readonly (infer E)[] ? E : never;
 
 /** 병합된 API가 내려주지만 아직 생성 타입에 없는 팀원 유형을 화면 타입에 반영한다. */
 type WithProjectMemberType<T extends { members: unknown[] }> = Omit<T, 'members'> & {
-  members: (Item<T['members']> & { userType?: UserType | null })[];
+  members: Item<T['members']>[];
   likedByMe?: boolean;
   approvalStatus?: ProjectApprovalStatus;
   rejectReason?: string | null;
@@ -81,7 +81,7 @@ export type SessionData = Data<AuthSessionSuccessResponse>;
 
 export type UserProfileData = Data<UserProfileSuccessResponse>;
 export type UserProfileSummaryData = Data<UserProfileSummarySuccessResponse>;
-export type UserSearchItem = Item<Data<UserSearchSuccessResponse>['items']>;
+export type UserSearchItem = Item<Data<UserSearchSuccessResponse>>;
 
 export type VerificationRequestData = Data<UserVerificationRequestSuccessResponse>;
 export type VerificationRequestBody = UserVerificationRequestCreateRequest;
@@ -104,9 +104,6 @@ export type FeedCommentData = Omit<GeneratedFeedComment, 'author'> & {
   agreedByMe?: boolean;
   author: GeneratedFeedComment['author'] & {
     handle?: string | null;
-    userType?: UserType | null;
-    cohort?: number | null;
-    track?: Track | null;
   };
 };
 
@@ -139,6 +136,6 @@ export type EventCreateBody = EventCreateRequest;
 // ── 관리자 ──────────────────────────────────────────────────────────────────
 
 export type AdminVerificationListData = Data<AdminVerificationRequestFindAllSuccessResponse>;
-export type AdminVerificationItem = Item<AdminVerificationListData['items']>;
+export type AdminVerificationItem = Item<AdminVerificationListData>;
 export type AdminHomeBannerItem = Item<Data<HomeBannerAdminFindAllSuccessResponse>>;
 export type HomeBannerUpsertBody = HomeBannerUpsertRequest;

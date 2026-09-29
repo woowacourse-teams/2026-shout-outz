@@ -40,7 +40,8 @@ export async function fetchAdminVerifications(status: AdminVerificationStatus, c
     searchParams: { status, ...(cursor ? { cursor } : {}) },
   });
   if (!body) throw new Error(`인증 신청 목록 응답이 비어 있습니다: ${VERIFICATION_PATH}`);
-  return body.data;
+  // 목록은 data, 커서는 meta에 있다. 피드 목록과 같은 모양이라 응답을 통째로 넘긴다.
+  return body;
 }
 
 export const adminVerificationsQuery = (status: AdminVerificationStatus) =>
@@ -48,7 +49,7 @@ export const adminVerificationsQuery = (status: AdminVerificationStatus) =>
     queryKey: adminQueryKeys.verifications(status),
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) => fetchAdminVerifications(status, pageParam),
-    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    getNextPageParam: (last) => last.meta.nextCursor ?? undefined,
   });
 
 export async function approveVerification(requestId: number) {

@@ -1,12 +1,17 @@
 import { type Feed, type FeedAuthor, type FeedSort } from '@/types/feed';
 
 /** 실제 서버가 준비되기 전까지 MSW 핸들러가 내려줄 피드 데이터. 백엔드가 뜨면 이 파일은 사라진다. */
+/** handle로 고정된 userId를 만든다. mock끼리 같은 사람이 같은 번호를 갖게만 하면 된다. */
+const userIdOf = (handle: string) =>
+  [...handle].reduce((id, char) => (id * 31 + char.charCodeAt(0)) % 100_000, 7);
+
 const crew = (
   handle: string,
   displayName: string,
   track: 'BACKEND' | 'FRONTEND',
   cohort: number,
 ): FeedAuthor => ({
+  userId: userIdOf(handle),
   handle,
   displayName,
   userType: 'WOOWACOURSE_CREW',
@@ -22,6 +27,11 @@ const feed = (feedId: number, author: FeedAuthor, content: string, createdAt: st
   author,
   categories: [],
   media: [],
+  likeCount: 0,
+  likedByMe: false,
+  bookmarkCount: 0,
+  bookmarkedByMe: false,
+  commentCount: 0,
   createdAt,
   updatedAt: createdAt,
 });
@@ -55,6 +65,7 @@ const FEEDS: Feed[] = [
   feed(
     5,
     {
+      userId: userIdOf('minjun'),
       handle: 'minjun',
       displayName: '최민준',
       userType: 'GENERAL',

@@ -16,7 +16,7 @@ function ProjectEditRoute() {
         projectId={id}
         onSaved={(approvalStatus) => {
           if (approvalStatus === 'APPROVED') {
-            void navigate({ to: '/projects/$id', params: { id } });
+            void navigate({ to: '/projects/$slug', params: { slug: id } });
           } else {
             void navigate({ to: '/projects' });
           }
