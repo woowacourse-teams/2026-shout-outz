@@ -629,7 +629,6 @@ class ProjectServiceTest {
         assertThat(response.items().getFirst().thumbnailImageId()).isEqualTo(THUMBNAIL_ID);
         assertThat(response.items().getFirst().members().getFirst().avatarUrl())
                 .isEqualTo("https://cdn.example.com/avatar-21");
-        assertThat(response.items().getFirst().members().getFirst().avatarImageId()).isEqualTo(21L);
         verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL);
         verify(mediaUrlResolver).resolveAll(Set.of(21L), MediaVariant.DISPLAY);
     }
@@ -921,15 +920,13 @@ class ProjectServiceTest {
                 UserType.WOOWACOURSE_CREW,
                 6,
                 "BACKEND",
-                101L,
-                null,
                 null,
                 null
         ));
     }
 
     @Test
-    @DisplayName("프로젝트 상세 조회에서 썸네일, 팀원 아바타와 본문 이미지의 ID와 URL을 함께 반환한다.")
+    @DisplayName("프로젝트 상세 조회에서 썸네일과 본문 이미지의 ID와 URL, 팀원 아바타 URL을 반환한다.")
     void returnsMediaIdsAndUrlsInProjectDetail() {
         long descriptionMediaId = 21L;
         String storedDescription = "![화면](media://" + descriptionMediaId + ")";
@@ -953,8 +950,42 @@ class ProjectServiceTest {
         assertThat(response.descriptionMedia()).containsExactly(
                 new ProjectDetailResponse.DescriptionMedia(descriptionMediaId, descriptionUrl)
         );
-        assertThat(response.members().getFirst().avatarImageId()).isEqualTo(101L);
         assertThat(response.members().getFirst().avatarUrl()).isEqualTo("https://cdn.example.com/avatar-101");
+    }
+
+    @Test
+    @DisplayName("가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL을 avatarUrl로 반환한다.")
+    void returnsGithubAvatarUrlAsAvatarUrlForArchivedMember() {
+        String githubAvatarUrl = "https://avatars.githubusercontent.com/u/1";
+        ProjectDetail detail = projectDetail(ApprovalStatus.APPROVED, DESCRIPTION, List.of(
+                ProjectMemberProfile.archived("Archived Crew", 6, githubAvatarUrl, "https://github.com/archived-crew")
+        ));
+        when(projectRepository.findDetailBySlug(new Slug("loop"), null)).thenReturn(Optional.of(detail));
+
+        ProjectDetailResponse response = projectService.findDetail("loop", null);
+
+        assertThat(response.members().getFirst().avatarUrl()).isEqualTo(githubAvatarUrl);
+    }
+
+    @Test
+    @DisplayName("가입한 팀원이 프로필 이미지를 정하지 않았으면 GitHub 프로필 이미지가 있어도 avatarUrl은 null이다.")
+    void returnsNullAvatarUrlForUserWithoutAvatar() {
+        ProjectDetail detail = projectDetail(ApprovalStatus.APPROVED, DESCRIPTION, List.of(new ProjectMemberProfile(
+                REGISTERED_BY,
+                "@dhyepark",
+                "박다혜",
+                UserType.WOOWACOURSE_CREW,
+                Cohort.COHORT_6,
+                Track.BACKEND,
+                null,
+                "https://avatars.githubusercontent.com/u/1",
+                null
+        )));
+        when(projectRepository.findDetailBySlug(new Slug("loop"), null)).thenReturn(Optional.of(detail));
+
+        ProjectDetailResponse response = projectService.findDetail("loop", null);
+
+        assertThat(response.members().getFirst().avatarUrl()).isNull();
     }
 
     @Test
@@ -1006,6 +1037,21 @@ class ProjectServiceTest {
     }
 
     private static ProjectDetail projectDetail(ApprovalStatus approvalStatus, String descriptionMd) {
+        return projectDetail(approvalStatus, descriptionMd, List.of(ProjectMemberProfile.user(
+                REGISTERED_BY,
+                "@dhyepark",
+                "박다혜",
+                Cohort.COHORT_6,
+                Track.BACKEND,
+                101L
+        )));
+    }
+
+    private static ProjectDetail projectDetail(
+            ApprovalStatus approvalStatus,
+            String descriptionMd,
+            List<ProjectMemberProfile> members
+    ) {
         return new ProjectDetail(
                 100L,
                 "loop",
@@ -1029,14 +1075,7 @@ class ProjectServiceTest {
                 false,
                 0,
                 List.of(new ProjectTechTag(1L, "React")),
-                List.of(ProjectMemberProfile.user(
-                        REGISTERED_BY,
-                        "@dhyepark",
-                        "박다혜",
-                        Cohort.COHORT_6,
-                        Track.BACKEND,
-                        101L
-                )),
+                members,
                 NOW,
                 NOW
         );
