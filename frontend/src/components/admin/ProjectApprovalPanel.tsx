@@ -75,10 +75,19 @@ function ProjectList({ status }: { status: AdminProjectStatus }) {
 function ProjectRow({ item }: { item: AdminProject }) {
   const client = useQueryClient();
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const detailId = `admin-project-detail-${item.id}`;
   const detail = useQuery({ ...adminProjectDetailQuery(item.id), enabled: detailsOpen });
-  const onSuccess = () => client.invalidateQueries({ queryKey: ['admin', 'projects'] });
-  const approve = useMutation({ ...approveProjectMutation, onSuccess });
-  const reject = useMutation({ ...rejectProjectMutation, onSuccess });
+  const onDecisionSuccess = () => {
+    void client.invalidateQueries({ queryKey: ['admin', 'projects'] });
+  };
+  const onApproveSuccess = () => {
+    onDecisionSuccess();
+    void client.invalidateQueries({ queryKey: ['project-list'] });
+    void client.invalidateQueries({ queryKey: ['home', 'statistics'] });
+    void client.invalidateQueries({ queryKey: ['users'] });
+  };
+  const approve = useMutation({ ...approveProjectMutation, onSuccess: onApproveSuccess });
+  const reject = useMutation({ ...rejectProjectMutation, onSuccess: onDecisionSuccess });
 
   return (
     <li className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
@@ -87,8 +96,9 @@ function ProjectRow({ item }: { item: AdminProject }) {
           <button
             type="button"
             aria-expanded={detailsOpen}
+            aria-controls={detailId}
             onClick={() => setDetailsOpen((open) => !open)}
-            className="cursor-pointer font-bold hover:underline"
+            className="focus-visible:outline-primary-600 cursor-pointer rounded-sm font-bold hover:underline focus-visible:outline-2"
           >
             {item.title} 상세 보기
           </button>
@@ -101,34 +111,46 @@ function ProjectRow({ item }: { item: AdminProject }) {
         {item.rejectReason && (
           <p className="text-xs text-red-600">반려 사유: {item.rejectReason}</p>
         )}
-        {detailsOpen && (
-          <div className="mt-3 space-y-2 border-t border-gray-200 pt-3 text-sm">
-            {detail.isPending && <p>프로젝트 상세를 불러오는 중…</p>}
-            {detail.isError && <p role="alert">프로젝트 상세를 불러오지 못했습니다.</p>}
-            {detail.data && (
-              <>
-                <MarkdownContent>{detail.data.descriptionMd ?? ''}</MarkdownContent>
-                <a
-                  href={detail.data.githubRepositoryUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  GitHub 저장소
-                </a>
-                {item.approvalStatus === 'APPROVED' && (
-                  <Link
-                    to="/projects/$slug"
-                    params={{ slug: toProjectSlugParam(item.slug) }}
-                    className="ml-3 underline"
+        <div id={detailId} hidden={!detailsOpen}>
+          {detailsOpen && (
+            <div className="mt-3 space-y-2 border-t border-gray-200 pt-3 text-sm">
+              {detail.isPending && <p>프로젝트 상세를 불러오는 중…</p>}
+              {detail.isError && <p role="alert">프로젝트 상세를 불러오지 못했습니다.</p>}
+              {detail.data && (
+                <>
+                  <MarkdownContent>{detail.data.descriptionMd ?? ''}</MarkdownContent>
+                  <a
+                    href={detail.data.githubRepositoryUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
                   >
-                    공개 페이지
-                  </Link>
-                )}
-              </>
-            )}
-          </div>
-        )}
+                    GitHub 저장소
+                  </a>
+                  {detail.data.deploymentUrl && (
+                    <a
+                      href={detail.data.deploymentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-3 underline"
+                    >
+                      서비스 바로가기
+                    </a>
+                  )}
+                  {item.approvalStatus === 'APPROVED' && (
+                    <Link
+                      to="/projects/$slug"
+                      params={{ slug: toProjectSlugParam(item.slug) }}
+                      className="ml-3 underline"
+                    >
+                      공개 페이지
+                    </Link>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       {item.approvalStatus === 'PENDING' && (
         <ReviewActions

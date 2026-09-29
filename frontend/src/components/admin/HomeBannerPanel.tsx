@@ -74,7 +74,10 @@ function BannerList() {
 
 function BannerRow({ banner }: { banner: AdminHomeBanner }) {
   const client = useQueryClient();
-  const onSuccess = () => client.invalidateQueries({ queryKey: adminQueryKeys.banners });
+  const onSuccess = () => {
+    void client.invalidateQueries({ queryKey: adminQueryKeys.banners });
+    void client.invalidateQueries({ queryKey: ['home', 'banners'] });
+  };
   const update = useMutation({ ...updateBannerMutation, onSuccess });
   const remove = useMutation({ ...deleteBannerMutation, onSuccess });
   const [confirmingDelete, setConfirmingDelete] = useState(false);
