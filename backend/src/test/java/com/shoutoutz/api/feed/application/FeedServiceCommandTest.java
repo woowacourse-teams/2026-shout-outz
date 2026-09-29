@@ -70,6 +70,9 @@ class FeedServiceCommandTest {
     @Mock
     private MediaUrlResolver mediaUrlResolver;
 
+    @Mock
+    private FeedLinkPreviewService linkPreviewService;
+
     private FeedService feedService;
 
     @BeforeEach
@@ -82,6 +85,7 @@ class FeedServiceCommandTest {
                 userProfileRepository,
                 new FeedCursorCodec(),
                 mediaUrlResolver,
+                linkPreviewService,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }

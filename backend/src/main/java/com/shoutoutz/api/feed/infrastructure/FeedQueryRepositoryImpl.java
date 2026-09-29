@@ -3,11 +3,13 @@ package com.shoutoutz.api.feed.infrastructure;
 import com.shoutoutz.api.category.domain.CategoryType;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.application.FeedQueryRepository;
+import com.shoutoutz.api.feed.application.FeedLinkPreviewRepository;
 import com.shoutoutz.api.feed.application.dto.FeedCursor;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.FeedMediaReference;
 import com.shoutoutz.api.feed.application.dto.FeedPage;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
+import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -31,6 +33,7 @@ import org.springframework.stereotype.Repository;
 public class FeedQueryRepositoryImpl implements FeedQueryRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final FeedLinkPreviewRepository linkPreviewRepository;
 
     @Override
     public Optional<FeedItem> findById(long feedId) {
@@ -627,10 +630,12 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         List<Long> feedIds = rows.stream().map(FeedBaseRow::feedId).toList();
         Map<Long, List<FeedItem.Category>> categories = loadCategories(feedIds);
         Map<Long, List<FeedItem.Media>> media = loadMedia(feedIds);
+        Map<Long, LinkPreview> previews = linkPreviewRepository.findByFeedIds(feedIds);
         return rows.stream()
                 .map(row -> row.toItem(
                         categories.getOrDefault(row.feedId(), List.of()),
-                        media.getOrDefault(row.feedId(), List.of())
+                        media.getOrDefault(row.feedId(), List.of()),
+                        previews.get(row.feedId())
                 ))
                 .toList();
     }
@@ -750,7 +755,8 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
     ) {
         private FeedItem toItem(
                 List<FeedItem.Category> categories,
-                List<FeedItem.Media> media
+                List<FeedItem.Media> media,
+                LinkPreview linkPreview
         ) {
             return new FeedItem(
                     feedId,
@@ -766,7 +772,8 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                     bookmarkedByMe,
                     relevanceRank,
                     createdAt,
-                    updatedAt
+                    updatedAt,
+                    linkPreview
             );
         }
     }

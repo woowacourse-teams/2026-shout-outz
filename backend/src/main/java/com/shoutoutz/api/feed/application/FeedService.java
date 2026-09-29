@@ -53,6 +53,7 @@ public class FeedService {
     private final UserProfileRepository userProfileRepository;
     private final FeedCursorCodec feedCursorCodec;
     private final MediaUrlResolver mediaUrlResolver;
+    private final FeedLinkPreviewService linkPreviewService;
     private final Clock clock;
 
     @Transactional
@@ -70,6 +71,7 @@ public class FeedService {
         ));
         feedRepository.saveCategories(savedFeed.getId(), request.categoryIds());
         feedRepository.saveMedia(savedFeed.getId(), request.mediaIds());
+        linkPreviewService.sync(savedFeed.getId(), request.content());
 
         return toCommandResponse(findFeedItem(savedFeed.getId()));
     }
@@ -175,6 +177,7 @@ public class FeedService {
         ));
         feedRepository.saveCategories(feedId, request.categoryIds());
         feedRepository.saveMedia(feedId, request.mediaIds());
+        linkPreviewService.sync(feedId, request.content());
         return toCommandResponse(findFeedItem(updatedFeed.getId()));
     }
 
@@ -182,6 +185,7 @@ public class FeedService {
     public void deleteFeed(long feedId, long userId) {
         Feed feed = findOwnedFeed(feedId, userId);
         feedRepository.update(feed.delete(clock.instant()));
+        linkPreviewService.unlink(feedId);
     }
 
     /**
