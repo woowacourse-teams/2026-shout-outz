@@ -155,7 +155,7 @@ class ProjectHttpApiTest {
     @DisplayName("로그인 사용자를 등록자로 프로젝트를 등록하고 201을 반환한다.")
     void createsProject() throws Exception {
         given(projectService.create(anyLong(), any(ProjectCreateRequest.class)))
-                .willReturn(new ProjectCreateResponse(100L, "loop"));
+                .willReturn(new ProjectCreateResponse("loop"));
 
         mockMvc.perform(post("/api/v1/projects")
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
@@ -164,8 +164,8 @@ class ProjectHttpApiTest {
                         .content(validRequestJson()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.projectId").value(100))
                 .andExpect(jsonPath("$.data.slug").value("loop"))
+                .andExpect(jsonPath("$.data.projectId").doesNotExist())
                 .andDo(document(
                         "project-create",
                         resource(ResourceSnippetParameters.builder()
@@ -209,7 +209,6 @@ class ProjectHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("등록된 프로젝트"),
-                                        fieldWithPath("data.projectId").type(NUMBER).description("등록된 프로젝트 ID"),
                                         fieldWithPath("data.slug").type(STRING).description("프로젝트 주소로 쓰이는 slug")
                                 )
                                 .build())
@@ -286,7 +285,7 @@ class ProjectHttpApiTest {
     @DisplayName("문자열 값의 앞뒤 공백을 잘라 검증하고 서비스에 넘긴다.")
     void stripsStringFieldsBeforeRegistration() throws Exception {
         given(projectService.create(anyLong(), any(ProjectCreateRequest.class)))
-                .willReturn(new ProjectCreateResponse(100L, "loop"));
+                .willReturn(new ProjectCreateResponse("loop"));
         String paddedRequestJson = validRequestJson()
                 .replace("\"루프 (Loop)\"", "\"  루프 (Loop)  \"")
                 .replace("\"https://github.com/woowacourse-teams/2026-loop\"",
@@ -399,7 +398,7 @@ class ProjectHttpApiTest {
     void findsProjects() throws Exception {
         given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(new ProjectFindAllResponse(
                 List.of(new ProjectFindAllResponse.Item(
-                        100L, "loop", "루프 (Loop)", "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                        "loop", "루프 (Loop)", "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                         6, 12L, "https://cdn.example.com/thumbnail", 128, 184L, 14L,
                         List.of(new ProjectTechTagResponse(1L, "React"), new ProjectTechTagResponse(2L, "Spring")),
                         List.of(
@@ -419,7 +418,8 @@ class ProjectHttpApiTest {
                         .queryParam("size", "8"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data[0].id").value(100))
+                .andExpect(jsonPath("$.data[0].slug").value("loop"))
+                .andExpect(jsonPath("$.data[0].id").doesNotExist())
                 .andExpect(jsonPath("$.data[0].thumbnailImageId").value(12L))
                 .andExpect(jsonPath("$.data[0].starCount").value(128))
                 .andExpect(jsonPath("$.data[0].likeCount").value(184))
@@ -459,7 +459,6 @@ class ProjectHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(ARRAY).description("프로젝트 목록"),
-                                        fieldWithPath("data[].id").type(NUMBER).description("프로젝트 ID"),
                                         fieldWithPath("data[].slug").type(STRING).description("프로젝트 주소로 쓰이는 slug"),
                                         fieldWithPath("data[].title").type(STRING).description("프로젝트 이름"),
                                         fieldWithPath("data[].tagline").type(STRING).description("한 줄 소개"),
@@ -661,7 +660,8 @@ class ProjectHttpApiTest {
         mockMvc.perform(get("/api/v1/projects/@{slug}", "loop"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.id").value(100))
+                .andExpect(jsonPath("$.data.slug").value("loop"))
+                .andExpect(jsonPath("$.data.id").doesNotExist())
                 .andExpect(jsonPath("$.data.thumbnailImageId").value(12L))
                 .andExpect(jsonPath("$.data.descriptionMedia[0].mediaId").value(21L))
                 .andExpect(jsonPath("$.data.editable").value(false))
@@ -684,7 +684,6 @@ class ProjectHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("프로젝트 상세"),
-                                        fieldWithPath("data.id").type(NUMBER).description("프로젝트 ID"),
                                         fieldWithPath("data.slug").type(STRING).description("프로젝트 주소로 쓰이는 slug"),
                                         fieldWithPath("data.title").type(STRING).description("프로젝트 이름"),
                                         fieldWithPath("data.teamName").type(STRING).description("팀 이름"),
@@ -1045,7 +1044,6 @@ class ProjectHttpApiTest {
 
     private static ProjectDetailResponse projectDetailResponse() {
         return new ProjectDetailResponse(
-                100L,
                 "loop",
                 "루프 (Loop)",
                 "루프팀",

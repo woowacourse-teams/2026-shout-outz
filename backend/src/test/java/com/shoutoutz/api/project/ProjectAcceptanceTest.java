@@ -68,7 +68,7 @@ class ProjectAcceptanceTest {
 
         assertThat(response.statusCode()).isEqualTo(201);
         assertThat(response.jsonPath().getString("status")).isEqualTo("success");
-        long projectId = response.jsonPath().getLong("data.projectId");
+        long projectId = projectIdOf(response);
         assertThat(response.jsonPath().getString("data.slug")).isEqualTo(repositoryName.substring("2026-".length()));
 
         Map<String, Object> project = jdbcTemplate.queryForMap(
@@ -225,7 +225,8 @@ class ProjectAcceptanceTest {
 
         assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
         assertThat(response.jsonPath().getString("status")).isEqualTo("success");
-        assertThat(response.jsonPath().getLong("data.id")).isEqualTo(projectId);
+        assertThat(response.jsonPath().getString("data.slug")).isEqualTo(slugOf(projectId));
+        assertThat(response.jsonPath().getMap("data")).doesNotContainKey("id");
         assertThat(response.jsonPath().getString("data.approvalStatus")).isEqualTo("PENDING");
         assertThat(response.jsonPath().getBoolean("data.editable")).isTrue();
         assertThat(response.jsonPath().getBoolean("data.likedByMe")).isFalse();
@@ -324,15 +325,16 @@ class ProjectAcceptanceTest {
         Response byCohort = findAll(Map.of("keyword", token, "cohorts", "7"));
 
         assertThat(all.statusCode()).as(all.asString()).isEqualTo(200);
-        assertThat(all.jsonPath().getList("data.id", Long.class)).containsExactly(javaProject, reactJavaProject);
+        assertThat(all.jsonPath().getList("data.slug", String.class))
+                .containsExactly(slugOf(javaProject), slugOf(reactJavaProject));
         assertThat(all.jsonPath().getLong("meta.totalCount")).isEqualTo(2);
         assertThat(all.jsonPath().getBoolean("meta.hasNext")).isFalse();
         assertThat(all.jsonPath().getString("meta.nextCursor")).isNull();
         assertThat(all.jsonPath().getList("data[1].techTags.id", Long.class)).containsExactlyElementsOf(reactAndJava);
         assertThat(all.jsonPath().getList("data[1].members.handle", String.class))
                 .containsExactly(author.handle(), teammate.handle());
-        assertThat(byTechTags.jsonPath().getList("data.id", Long.class)).containsExactly(reactJavaProject);
-        assertThat(byCohort.jsonPath().getList("data.id", Long.class)).containsExactly(javaProject);
+        assertThat(byTechTags.jsonPath().getList("data.slug", String.class)).containsExactly(slugOf(reactJavaProject));
+        assertThat(byCohort.jsonPath().getList("data.slug", String.class)).containsExactly(slugOf(javaProject));
     }
 
     @Test
@@ -350,11 +352,12 @@ class ProjectAcceptanceTest {
         Response lastPage = findAll(Map.of(
                 "keyword", token, "size", 2, "cursor", firstPage.jsonPath().getString("meta.nextCursor")));
 
-        assertThat(firstPage.jsonPath().getList("data.id", Long.class)).containsExactly(newest, middle);
+        assertThat(firstPage.jsonPath().getList("data.slug", String.class))
+                .containsExactly(slugOf(newest), slugOf(middle));
         assertThat(firstPage.jsonPath().getBoolean("meta.hasNext")).isTrue();
         assertThat(firstPage.jsonPath().getLong("meta.totalCount")).isEqualTo(3);
         assertThat(lastPage.statusCode()).as(lastPage.asString()).isEqualTo(200);
-        assertThat(lastPage.jsonPath().getList("data.id", Long.class)).containsExactly(oldest);
+        assertThat(lastPage.jsonPath().getList("data.slug", String.class)).containsExactly(slugOf(oldest));
         assertThat(lastPage.jsonPath().getBoolean("meta.hasNext")).isFalse();
         assertThat(lastPage.jsonPath().getString("meta.nextCursor")).isNull();
         assertThat(lastPage.jsonPath().getLong("meta.totalCount")).isEqualTo(3);
@@ -385,7 +388,7 @@ class ProjectAcceptanceTest {
         Response response = findUserProjects(teammate.handle());
 
         assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
-        assertThat(response.jsonPath().getList("data.id", Long.class)).containsExactly(approved);
+        assertThat(response.jsonPath().getList("data.slug", String.class)).containsExactly(slugOf(approved));
         assertThat(response.jsonPath().getBoolean("meta.hasNext")).isFalse();
         assertThat(response.jsonPath().getString("meta.nextCursor")).isNull();
     }
@@ -444,7 +447,7 @@ class ProjectAcceptanceTest {
         body.put("cohort", cohort);
         Response response = registerProject(author, body);
         assertThat(response.statusCode()).as(response.asString()).isEqualTo(201);
-        return response.jsonPath().getLong("data.projectId");
+        return projectIdOf(response);
     }
 
     /**
@@ -490,7 +493,19 @@ class ProjectAcceptanceTest {
     private long registerPendingProject(LoginSession author, LoginSession teammate, List<Long> techTagIds) {
         Response response = registerProject(author, uniqueRepositoryName(), techTagIds, List.of(teammate.handle()));
         assertThat(response.statusCode()).as(response.asString()).isEqualTo(201);
-        return response.jsonPath().getLong("data.projectId");
+        return projectIdOf(response);
+    }
+
+    /**
+     * 등록 응답에는 slug만 있으므로, slug로 등록된 프로젝트의 id를 찾는다. 승인 처리처럼 DB를 직접 다룰 때 쓴다.
+     */
+    private long projectIdOf(Response registered) {
+        return jdbcTemplate.queryForObject(
+                "SELECT id FROM projects WHERE slug = ?", Long.class, registered.jsonPath().getString("data.slug"));
+    }
+
+    private String slugOf(long projectId) {
+        return jdbcTemplate.queryForObject("SELECT slug FROM projects WHERE id = ?", String.class, projectId);
     }
 
     /**
@@ -505,7 +520,7 @@ class ProjectAcceptanceTest {
      * 세션 쿠키와 CSRF 토큰 없이 비로그인으로 요청한다.
      */
     private Response recordView(String visitorId, long projectId) {
-        String slug = jdbcTemplate.queryForObject("SELECT slug FROM projects WHERE id = ?", String.class, projectId);
+        String slug = slugOf(projectId);
         var request = RestAssured.given().port(port);
         if (visitorId != null) {
             request.cookie(VISITOR_COOKIE_NAME, visitorId);
@@ -518,7 +533,7 @@ class ProjectAcceptanceTest {
      * 상세 조회는 slug 로 하므로, 등록한 프로젝트의 slug 를 찾아 주소를 만든다.
      */
     private Response findDetail(LoginSession viewer, long projectId) {
-        String slug = jdbcTemplate.queryForObject("SELECT slug FROM projects WHERE id = ?", String.class, projectId);
+        String slug = slugOf(projectId);
         var request = RestAssured.given().port(port);
         if (viewer != null) {
             request.cookie("JSESSIONID", viewer.sessionId());
@@ -535,10 +550,9 @@ class ProjectAcceptanceTest {
         LoginSession newTeammate = signup("WOOWACOURSE_CREW");
         List<Long> techTagIds = techTagIds("spring-boot", "java", "react");
         String repositoryName = uniqueRepositoryName();
-        long projectId = registerProject(author, repositoryName, techTagIds.subList(0, 2), List.of(teammate.handle()))
-                .jsonPath()
-                .getLong("data.projectId");
-        String slug = jdbcTemplate.queryForObject("SELECT slug FROM projects WHERE id = ?", String.class, projectId);
+        long projectId = projectIdOf(
+                registerProject(author, repositoryName, techTagIds.subList(0, 2), List.of(teammate.handle())));
+        String slug = slugOf(projectId);
         reject(projectId);
 
         Map<String, Object> body = updateRequestBody(
@@ -581,9 +595,8 @@ class ProjectAcceptanceTest {
         LoginSession author = signup("WOOWACOURSE_CREW");
         LoginSession teammate = signup("WOOWACOURSE_CREW");
         List<Long> techTagIds = techTagIds("java");
-        long projectId = registerProject(author, uniqueRepositoryName(), techTagIds, List.of(teammate.handle()))
-                .jsonPath()
-                .getLong("data.projectId");
+        long projectId = projectIdOf(
+                registerProject(author, uniqueRepositoryName(), techTagIds, List.of(teammate.handle())));
         jdbcTemplate.update("UPDATE projects SET approval_status = 'APPROVED' WHERE id = ?", projectId);
 
         Response response = updateProject(author, projectId, updateRequestBody(
@@ -603,9 +616,8 @@ class ProjectAcceptanceTest {
         LoginSession teammate = signup("WOOWACOURSE_CREW");
         LoginSession stranger = signup("WOOWACOURSE_CREW");
         List<Long> techTagIds = techTagIds("java");
-        long projectId = registerProject(author, uniqueRepositoryName(), techTagIds, List.of(teammate.handle()))
-                .jsonPath()
-                .getLong("data.projectId");
+        long projectId = projectIdOf(
+                registerProject(author, uniqueRepositoryName(), techTagIds, List.of(teammate.handle())));
 
         Response response = updateProject(stranger, projectId, updateRequestBody(
                 "https://github.com/woowacourse-teams/" + uniqueRepositoryName(),
@@ -650,7 +662,7 @@ class ProjectAcceptanceTest {
      * 수정은 slug 로 하므로, 등록한 프로젝트의 slug 를 찾아 주소를 만든다.
      */
     private Response updateProject(LoginSession author, long projectId, Map<String, Object> body) {
-        String slug = jdbcTemplate.queryForObject("SELECT slug FROM projects WHERE id = ?", String.class, projectId);
+        String slug = slugOf(projectId);
         return RestAssured.given()
                 .port(port)
                 .cookie("JSESSIONID", author.sessionId())

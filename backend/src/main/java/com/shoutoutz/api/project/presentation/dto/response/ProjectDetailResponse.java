@@ -13,7 +13,6 @@ import java.util.Map;
  * 프로젝트 상세 조회 응답 객체
  */
 public record ProjectDetailResponse(
-        long id,
         String slug,
         String title,
         String teamName,
@@ -49,7 +48,6 @@ public record ProjectDetailResponse(
             Long viewerId
     ) {
         return new ProjectDetailResponse(
-                detail.id(),
                 detail.slug(),
                 detail.title(),
                 detail.teamName(),

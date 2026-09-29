@@ -279,7 +279,6 @@ class ProjectServiceTest {
 
         ProjectCreateResponse result = projectService.create(REGISTERED_BY, request(6, THUMBNAIL_ID, TECH_TAG_IDS));
 
-        assertThat(result.projectId()).isEqualTo(100L);
         assertThat(result.slug()).isEqualTo("loop");
 
         ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
@@ -448,7 +447,7 @@ class ProjectServiceTest {
 
         ProjectCreateResponse result = projectService.create(REGISTERED_BY, request(6, null, TECH_TAG_IDS));
 
-        assertThat(result.projectId()).isEqualTo(100L);
+        assertThat(result.slug()).isEqualTo("loop");
     }
 
     @Test
@@ -620,7 +619,7 @@ class ProjectServiceTest {
         ProjectFindAllResponse response = projectService.findAll(
                 new ProjectFindAllRequest(null, null, null, "POPULAR", 2, null));
 
-        assertThat(response.items()).extracting(ProjectFindAllResponse.Item::id).containsExactly(10L, 9L);
+        assertThat(response.items()).extracting(ProjectFindAllResponse.Item::slug).containsExactly("loop-10", "loop-9");
         assertThat(response.meta().hasNext()).isTrue();
         assertThat(response.meta().totalCount()).isEqualTo(48);
         assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.POPULAR))
@@ -912,7 +911,7 @@ class ProjectServiceTest {
 
         ProjectDetailResponse response = projectService.findDetail("loop", null);
 
-        assertThat(response.id()).isEqualTo(100L);
+        assertThat(response.slug()).isEqualTo("loop");
         assertThat(response.editable()).isFalse();
         assertThat(response.techTags()).containsExactly(new ProjectTechTagResponse(1L, "React"));
         assertThat(response.members()).containsExactly(new ProjectMemberProfileResponse(

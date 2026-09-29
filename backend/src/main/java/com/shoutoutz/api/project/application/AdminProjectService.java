@@ -101,7 +101,7 @@ public class AdminProjectService {
                 descriptionMd,
                 null
         );
-        return AdminProjectDetailResponse.from(projectDetail, detail.registeredBy());
+        return AdminProjectDetailResponse.from(projectDetail, detail.id(), detail.registeredBy());
     }
 
     @Transactional

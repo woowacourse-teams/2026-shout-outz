@@ -132,7 +132,7 @@ public class ProjectService {
         projectApprovalHistoryRepository.save(
                 ProjectApprovalHistory.initial(savedProject.getId(), clock.instant())
         );
-        return new ProjectCreateResponse(savedProject.getId(), savedProject.getSlug().value());
+        return new ProjectCreateResponse(savedProject.getSlug().value());
     }
 
     /**

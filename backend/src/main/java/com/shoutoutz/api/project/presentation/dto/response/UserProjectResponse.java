@@ -15,7 +15,6 @@ import java.util.Map;
  * 사용자 페이지의 프로젝트 카드 응답.
  */
 public record UserProjectResponse(
-        long id,
         String slug,
         String title,
         String teamName,
@@ -50,7 +49,6 @@ public record UserProjectResponse(
             Map<Long, URI> mediaUrls
     ) {
         return new UserProjectResponse(
-                project.id(),
                 project.slug(),
                 project.title(),
                 project.teamName(),
