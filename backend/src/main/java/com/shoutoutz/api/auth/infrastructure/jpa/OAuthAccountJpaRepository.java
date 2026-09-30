@@ -6,6 +6,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface OAuthAccountJpaRepository extends JpaRepository<OAuthAccountEntity, Long> {
 
+    Optional<OAuthAccountEntity> findByUserIdAndProvider(
+            long userId,
+            OAuthProvider provider
+    );
+
     Optional<OAuthAccountEntity> findByProviderAndProviderAccountId(
             OAuthProvider provider,
             String providerAccountId

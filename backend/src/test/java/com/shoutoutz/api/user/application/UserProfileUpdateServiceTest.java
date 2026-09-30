@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
@@ -55,6 +56,9 @@ class UserProfileUpdateServiceTest {
     @Mock
     private MediaUrlResolver mediaUrlResolver;
 
+    @Mock
+    private OAuthAccountRepository oauthAccountRepository;
+
     private UserService userService;
 
     @BeforeEach
@@ -65,7 +69,8 @@ class UserProfileUpdateServiceTest {
                 userQueryRepository,
                 userSearchCursorCodec,
                 mediaMetadataRepository,
-                mediaUrlResolver
+                mediaUrlResolver,
+                oauthAccountRepository
         );
     }
 
