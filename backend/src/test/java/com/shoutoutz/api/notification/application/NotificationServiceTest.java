@@ -9,12 +9,14 @@ import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.notification.application.dto.NotificationItem;
 import com.shoutoutz.api.notification.application.dto.NotificationPage;
 import com.shoutoutz.api.notification.domain.NotificationRepository;
 import com.shoutoutz.api.notification.domain.NotificationType;
 import com.shoutoutz.api.notification.presentation.dto.response.NotificationFindAllResponse;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -41,6 +43,9 @@ class NotificationServiceTest {
     @Mock
     private MediaUrlResolver mediaUrlResolver;
 
+    @Mock
+    private OAuthAccountRepository oauthAccountRepository;
+
     private NotificationService notificationService;
 
     @BeforeEach
@@ -49,7 +54,7 @@ class NotificationServiceTest {
                 notificationRepository,
                 notificationQueryRepository,
                 new NotificationCursorCodec(),
-                mediaUrlResolver
+                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository)
         );
     }
 

@@ -3,7 +3,6 @@ package com.shoutoutz.api.notification.application;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
-import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.notification.application.dto.NotificationCursor;
 import com.shoutoutz.api.notification.application.dto.NotificationItem;
 import com.shoutoutz.api.notification.application.dto.NotificationPage;
@@ -12,12 +11,9 @@ import com.shoutoutz.api.notification.domain.NotificationRepository;
 import com.shoutoutz.api.notification.presentation.dto.response.NotificationFindAllResponse;
 import com.shoutoutz.api.notification.presentation.dto.response.NotificationReadResponse;
 import com.shoutoutz.api.notification.presentation.dto.response.NotificationResponse;
-import java.net.URI;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +28,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationQueryRepository notificationQueryRepository;
     private final NotificationCursorCodec notificationCursorCodec;
-    private final MediaUrlResolver mediaUrlResolver;
+    private final UserAvatarUrlResolver userAvatarUrlResolver;
 
     @Transactional(readOnly = true)
     public NotificationFindAllResponse findAll(
@@ -52,7 +48,7 @@ public class NotificationService {
             );
         }
 
-        Map<Long, URI> avatarUrls = resolveAvatarUrls(page.items());
+        Map<Long, String> avatarUrls = resolveAvatarUrls(page.items());
         List<NotificationResponse> items = page.items().stream()
                 .map(item -> toResponse(item, avatarUrls))
                 .toList();
@@ -95,18 +91,18 @@ public class NotificationService {
         }
     }
 
-    private Map<Long, URI> resolveAvatarUrls(List<NotificationItem> items) {
-        Set<Long> avatarImageIds = items.stream()
-                .map(NotificationItem::actorAvatarImageId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        Map<Long, URI> urls = mediaUrlResolver.resolveAll(avatarImageIds);
-        return urls == null ? Map.of() : urls;
+    private Map<Long, String> resolveAvatarUrls(List<NotificationItem> items) {
+        return userAvatarUrlResolver.resolveAll(items.stream()
+                .map(item -> new UserAvatarUrlResolver.AvatarReference(
+                        item.actorId(),
+                        item.actorAvatarImageId()
+                ))
+                .toList());
     }
 
     private NotificationResponse toResponse(
             NotificationItem item,
-            Map<Long, URI> avatarUrls
+            Map<Long, String> avatarUrls
     ) {
         NotificationResponse.Actor actor = item.actorId() == null
                 ? null
@@ -114,9 +110,7 @@ public class NotificationService {
                         item.actorId(),
                         item.actorHandle(),
                         item.actorDisplayName(),
-                        toUrl(item.actorAvatarImageId() == null
-                                ? null
-                                : avatarUrls.get(item.actorAvatarImageId()))
+                        avatarUrls.get(item.actorId())
                 );
         return new NotificationResponse(
                 item.notificationId(),
@@ -131,7 +125,4 @@ public class NotificationService {
         );
     }
 
-    private String toUrl(URI url) {
-        return url == null ? null : url.toString();
-    }
 }

@@ -35,14 +35,23 @@ public record UserProjectResponse(
             List<UserProjectItem> projects,
             Map<Long, URI> mediaUrls
     ) {
+        return from(projects, mediaUrls, Map.of());
+    }
+
+    public static List<UserProjectResponse> from(
+            List<UserProjectItem> projects,
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls
+    ) {
         return projects.stream()
-                .map(project -> from(project, mediaUrls))
+                .map(project -> from(project, mediaUrls, userAvatarUrls))
                 .toList();
     }
 
     private static UserProjectResponse from(
             UserProjectItem project,
-            Map<Long, URI> mediaUrls
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls
     ) {
         return new UserProjectResponse(
                 project.slug(),
@@ -63,7 +72,11 @@ public record UserProjectResponse(
                 project.bookmarkedByMe(),
                 project.techTags().stream().map(ProjectTechTagResponse::from).toList(),
                 project.members().stream()
-                        .map(member -> ProjectMemberProfileResponse.from(member, mediaUrls))
+                        .map(member -> ProjectMemberProfileResponse.from(
+                                member,
+                                mediaUrls,
+                                userAvatarUrls
+                        ))
                         .toList()
         );
     }

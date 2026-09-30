@@ -33,11 +33,13 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.project.application.ProjectSlugResolver;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -87,6 +89,9 @@ class ProjectCommentServiceTest {
     private MediaUrlResolver mediaUrlResolver;
 
     @Mock
+    private OAuthAccountRepository oauthAccountRepository;
+
+    @Mock
     private ProjectCommentReactionRepository projectCommentReactionRepository;
 
     private ProjectCommentService projectCommentService;
@@ -99,7 +104,7 @@ class ProjectCommentServiceTest {
                 projectCommentRepository,
                 projectCommentQueryRepository,
                 userProfileRepository,
-                mediaUrlResolver,
+                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
                 projectCommentReactionRepository,
                 userRepository
         );

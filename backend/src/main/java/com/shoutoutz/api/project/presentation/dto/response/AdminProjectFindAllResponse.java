@@ -23,8 +23,19 @@ public record AdminProjectFindAllResponse(
             SliceMetaResponse meta,
             Map<Long, URI> mediaUrls
     ) {
+        return from(items, meta, mediaUrls, Map.of());
+    }
+
+    public static AdminProjectFindAllResponse from(
+            List<AdminProjectItem> items,
+            SliceMetaResponse meta,
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls
+    ) {
         return new AdminProjectFindAllResponse(
-                items.stream().map(item -> Item.from(item, mediaUrls)).toList(),
+                items.stream()
+                        .map(item -> Item.from(item, mediaUrls, userAvatarUrls))
+                        .toList(),
                 meta
         );
     }
@@ -54,7 +65,11 @@ public record AdminProjectFindAllResponse(
             Instant updatedAt
     ) {
 
-        private static Item from(AdminProjectItem item, Map<Long, URI> mediaUrls) {
+        private static Item from(
+                AdminProjectItem item,
+                Map<Long, URI> mediaUrls,
+                Map<Long, String> userAvatarUrls
+        ) {
             return new Item(
                     item.projectId(),
                     item.slug(),
@@ -76,7 +91,11 @@ public record AdminProjectFindAllResponse(
                     item.registeredBy(),
                     item.techTags().stream().map(ProjectTechTagResponse::from).toList(),
                     item.members().stream()
-                            .map(member -> ProjectMemberProfileResponse.from(member, mediaUrls))
+                            .map(member -> ProjectMemberProfileResponse.from(
+                                    member,
+                                    mediaUrls,
+                                    userAvatarUrls
+                            ))
                             .toList(),
                     item.createdAt(),
                     item.updatedAt()

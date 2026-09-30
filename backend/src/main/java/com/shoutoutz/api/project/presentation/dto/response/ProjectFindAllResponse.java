@@ -18,8 +18,19 @@ public record ProjectFindAllResponse(List<Item> items, SliceMetaResponse meta) {
             String nextCursor,
             Map<Long, URI> mediaUrls
     ) {
+        return of(page, nextCursor, mediaUrls, Map.of());
+    }
+
+    public static ProjectFindAllResponse of(
+            ProjectPage page,
+            String nextCursor,
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls
+    ) {
         return new ProjectFindAllResponse(
-                page.items().stream().map(item -> Item.from(item, mediaUrls)).toList(),
+                page.items().stream()
+                        .map(item -> Item.from(item, mediaUrls, userAvatarUrls))
+                        .toList(),
                 new SliceMetaResponse(nextCursor, page.hasNext(), page.totalCount())
         );
     }
@@ -77,6 +88,14 @@ public record ProjectFindAllResponse(List<Item> items, SliceMetaResponse meta) {
         }
 
         public static Item from(ProjectSummary summary, Map<Long, URI> mediaUrls) {
+            return from(summary, mediaUrls, Map.of());
+        }
+
+        public static Item from(
+                ProjectSummary summary,
+                Map<Long, URI> mediaUrls,
+                Map<Long, String> userAvatarUrls
+        ) {
             return new Item(
                     summary.slug(),
                     summary.title(),
@@ -92,7 +111,11 @@ public record ProjectFindAllResponse(List<Item> items, SliceMetaResponse meta) {
                     summary.bookmarkedByMe(),
                     summary.techTags().stream().map(ProjectTechTagResponse::from).toList(),
                     summary.members().stream()
-                            .map(member -> ProjectMemberProfileResponse.from(member, mediaUrls))
+                            .map(member -> ProjectMemberProfileResponse.from(
+                                    member,
+                                    mediaUrls,
+                                    userAvatarUrls
+                            ))
                             .toList()
             );
         }

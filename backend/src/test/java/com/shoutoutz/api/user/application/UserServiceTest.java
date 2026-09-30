@@ -77,7 +77,7 @@ class UserServiceTest {
                 userSearchCursorCodec,
                 mediaMetadataRepository,
                 mediaUrlResolver,
-                oauthAccountRepository
+                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository)
         );
     }
 

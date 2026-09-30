@@ -10,6 +10,7 @@ import com.shoutoutz.api.auth.infrastructure.jpa.OAuthAccountEntity;
 import com.shoutoutz.api.auth.infrastructure.jpa.OAuthAccountJpaRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
+import java.util.List;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -95,6 +96,35 @@ class OAuthAccountRepositoryIntegrationTest {
         assertThat(foundAccount.getUserId()).isEqualTo(user.getId());
         assertThat(foundAccount.getProviderAvatarUrl())
                 .isEqualTo("https://avatars.githubusercontent.com/u/12345678");
+    }
+
+    @Test
+    @DisplayName("여러 사용자와 Provider로 연결된 OAuth 계정을 한 번에 조회한다")
+    void findsOAuthAccountsByUsersAndProvider() {
+        User dahye = userRepository.save(User.initialize("@dahye-avatar"));
+        User sangjun = userRepository.save(User.initialize("@sangjun-avatar-batch"));
+        oauthAccountRepository.save(OAuthAccount.initialize(
+                dahye.getId(),
+                OAuthProvider.GITHUB,
+                "12345678",
+                "https://avatars.githubusercontent.com/u/12345678",
+                AUTHENTICATED_AT
+        ));
+        oauthAccountRepository.save(OAuthAccount.initialize(
+                sangjun.getId(),
+                OAuthProvider.GITHUB,
+                "87654321",
+                "https://avatars.githubusercontent.com/u/87654321",
+                AUTHENTICATED_AT
+        ));
+
+        List<OAuthAccount> accounts = oauthAccountRepository.findAllByUserIdsAndProvider(
+                List.of(dahye.getId(), sangjun.getId()),
+                OAuthProvider.GITHUB
+        );
+
+        assertThat(accounts).extracting(OAuthAccount::getUserId)
+                .containsExactlyInAnyOrder(dahye.getId(), sangjun.getId());
     }
 
     @Test

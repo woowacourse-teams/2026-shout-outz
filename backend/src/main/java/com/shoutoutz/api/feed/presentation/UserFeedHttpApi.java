@@ -49,7 +49,8 @@ public class UserFeedHttpApi {
                 : feedService.findAllByUser(handle, request, viewerId);
         List<UserFeedResponse> response = UserFeedResponse.from(
                 result.items(),
-                result.mediaUrls()
+                result.mediaUrls(),
+                result.userAvatarUrls()
         );
         SliceMetaResponse meta = new SliceMetaResponse(
                 result.nextCursor(),

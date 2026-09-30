@@ -70,7 +70,7 @@ class UserProfileUpdateServiceTest {
                 userSearchCursorCodec,
                 mediaMetadataRepository,
                 mediaUrlResolver,
-                oauthAccountRepository
+                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository)
         );
     }
 

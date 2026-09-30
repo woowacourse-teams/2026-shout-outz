@@ -282,7 +282,7 @@ class UserProjectHttpApiTest {
                 new EnumFields(Track.class).withPath("data[].members[].track").description("트랙").optional(),
                 fieldWithPath("data[].members[].avatarUrl").type(STRING)
                         .description("프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, "
-                                + "가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL이다.")
+                                + "없으면 연결된 GitHub 프로필 이미지 URL, 가입하지 않은 이관 팀원은 저장된 GitHub 프로필 이미지 URL이다.")
                         .optional(),
                 fieldWithPath("data[].members[].githubProfileUrl").type(STRING)
                         .description("이관 팀원의 GitHub 프로필 URL").optional(),

@@ -35,14 +35,23 @@ public record FeedResponse(
     }
 
     public static FeedResponse from(FeedItem feed, Map<Long, URI> mediaUrls) {
+        return from(feed, mediaUrls, Map.of());
+    }
+
+    public static FeedResponse from(
+            FeedItem feed,
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls
+    ) {
         Map<Long, URI> urls = mediaUrls == null ? Map.of() : mediaUrls;
+        Map<Long, String> fallbackUrls = userAvatarUrls == null ? Map.of() : userAvatarUrls;
         return new FeedResponse(
                 feed.feedId(),
                 feed.feedType(),
                 feed.title(),
                 feed.content(),
                 feed.isAnonymous(),
-                Author.from(feed.author(), urls),
+                Author.from(feed.author(), urls, fallbackUrls),
                 feed.categories().stream().map(Category::from).toList(),
                 feed.media().stream().map(media -> Media.from(media, urls)).toList(),
                 feed.linkPreview(),
@@ -61,8 +70,16 @@ public record FeedResponse(
     }
 
     public static List<FeedResponse> from(List<FeedItem> feeds, Map<Long, URI> mediaUrls) {
+        return from(feeds, mediaUrls, Map.of());
+    }
+
+    public static List<FeedResponse> from(
+            List<FeedItem> feeds,
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls
+    ) {
         return feeds.stream()
-                .map(feed -> from(feed, mediaUrls))
+                .map(feed -> from(feed, mediaUrls, userAvatarUrls))
                 .toList();
     }
 
@@ -88,7 +105,11 @@ public record FeedResponse(
             this(null, handle, displayName, userType, track, cohort, avatarImageId, avatarUrl);
         }
 
-        private static Author from(FeedItem.Author author, Map<Long, URI> mediaUrls) {
+        private static Author from(
+                FeedItem.Author author,
+                Map<Long, URI> mediaUrls,
+                Map<Long, String> userAvatarUrls
+        ) {
             return new Author(
                     author.userId(),
                     author.handle(),
@@ -97,8 +118,20 @@ public record FeedResponse(
                     trackValue(author.userType(), author.track()),
                     cohortValue(author.userType(), author.cohort()),
                     author.avatarImageId(),
-                    toUrl(findUrl(mediaUrls, author.avatarImageId()))
+                    avatarUrl(author, mediaUrls, userAvatarUrls)
             );
+        }
+
+        private static String avatarUrl(
+                FeedItem.Author author,
+                Map<Long, URI> mediaUrls,
+                Map<Long, String> userAvatarUrls
+        ) {
+            URI mediaUrl = findUrl(mediaUrls, author.avatarImageId());
+            if (mediaUrl != null) {
+                return mediaUrl.toString();
+            }
+            return author.userId() == null ? null : userAvatarUrls.get(author.userId());
         }
 
         private static String trackValue(UserType userType, Track track) {

@@ -47,6 +47,16 @@ public record ProjectDetailResponse(
             String descriptionMd,
             Long viewerId
     ) {
+        return from(detail, mediaUrls, Map.of(), descriptionMd, viewerId);
+    }
+
+    public static ProjectDetailResponse from(
+            ProjectDetail detail,
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls,
+            String descriptionMd,
+            Long viewerId
+    ) {
         return new ProjectDetailResponse(
                 detail.slug(),
                 detail.title(),
@@ -72,7 +82,11 @@ public record ProjectDetailResponse(
                 detail.commentCount(),
                 detail.techTags().stream().map(ProjectTechTagResponse::from).toList(),
                 detail.members().stream()
-                        .map(member -> ProjectMemberProfileResponse.from(member, mediaUrls))
+                        .map(member -> ProjectMemberProfileResponse.from(
+                                member,
+                                mediaUrls,
+                                userAvatarUrls
+                        ))
                         .toList(),
                 detail.createdAt(),
                 detail.updatedAt()

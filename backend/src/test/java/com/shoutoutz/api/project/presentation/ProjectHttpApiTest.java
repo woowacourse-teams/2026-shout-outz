@@ -514,7 +514,7 @@ class ProjectHttpApiTest {
                                                 .description("트랙")
                                                 .optional(),
                                         fieldWithPath("data[].members[].avatarUrl").type(STRING)
-                                                .description("프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, 가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL이다.")
+                                                .description("프로필 이미지 URL. 가입한 팀원은 CloudFront 공개 이미지 URL을 우선하고, 없으면 연결된 GitHub 프로필 이미지 URL을 사용하며, 가입하지 않은 이관 팀원은 저장된 GitHub 프로필 이미지 URL을 사용한다.")
                                                 .optional(),
                                         fieldWithPath("data[].members[].githubProfileUrl").type(STRING)
                                                 .description("GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다.")
@@ -755,7 +755,7 @@ class ProjectHttpApiTest {
                                                 .description("트랙")
                                                 .optional(),
                                         fieldWithPath("data.members[].avatarUrl").type(STRING)
-                                                .description("프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, 가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL이다.")
+                                                .description("프로필 이미지 URL. 가입한 팀원은 CloudFront 공개 이미지 URL을 우선하고, 없으면 연결된 GitHub 프로필 이미지 URL을 사용하며, 가입하지 않은 이관 팀원은 저장된 GitHub 프로필 이미지 URL을 사용한다.")
                                                 .optional(),
                                         fieldWithPath("data.members[].githubProfileUrl").type(STRING)
                                                 .description("GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다.")

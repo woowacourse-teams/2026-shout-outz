@@ -27,14 +27,23 @@ public record FeedCommandResponse(
 ) {
 
     public static FeedCommandResponse from(FeedItem feed, Map<Long, URI> mediaUrls) {
+        return from(feed, mediaUrls, Map.of());
+    }
+
+    public static FeedCommandResponse from(
+            FeedItem feed,
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls
+    ) {
         Map<Long, URI> urls = mediaUrls == null ? Map.of() : mediaUrls;
+        Map<Long, String> fallbackUrls = userAvatarUrls == null ? Map.of() : userAvatarUrls;
         return new FeedCommandResponse(
                 feed.feedId(),
                 feed.feedType(),
                 feed.title(),
                 feed.content(),
                 feed.isAnonymous(),
-                Author.from(feed.author(), urls),
+                Author.from(feed.author(), urls, fallbackUrls),
                 feed.categories().stream().map(Category::from).toList(),
                 feed.media().stream().map(media -> Media.from(media, urls)).toList(),
                 feed.linkPreview(),
@@ -63,7 +72,11 @@ public record FeedCommandResponse(
             this(null, handle, displayName, userType, track, cohort, avatarUrl);
         }
 
-        private static Author from(FeedItem.Author author, Map<Long, URI> mediaUrls) {
+        private static Author from(
+                FeedItem.Author author,
+                Map<Long, URI> mediaUrls,
+                Map<Long, String> userAvatarUrls
+        ) {
             return new Author(
                     author.userId(),
                     author.handle(),
@@ -71,8 +84,20 @@ public record FeedCommandResponse(
                     author.userType(),
                     trackValue(author.userType(), author.track()),
                     cohortValue(author.userType(), author.cohort()),
-                    toUrl(findUrl(mediaUrls, author.avatarImageId()))
+                    avatarUrl(author, mediaUrls, userAvatarUrls)
             );
+        }
+
+        private static String avatarUrl(
+                FeedItem.Author author,
+                Map<Long, URI> mediaUrls,
+                Map<Long, String> userAvatarUrls
+        ) {
+            URI mediaUrl = findUrl(mediaUrls, author.avatarImageId());
+            if (mediaUrl != null) {
+                return mediaUrl.toString();
+            }
+            return author.userId() == null ? null : userAvatarUrls.get(author.userId());
         }
 
         private static String trackValue(UserType userType, Track track) {

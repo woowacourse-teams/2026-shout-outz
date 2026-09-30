@@ -27,8 +27,8 @@ import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.domain.FeedRepository;
-import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.notification.application.NotificationService;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
@@ -36,7 +36,6 @@ import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -61,7 +60,7 @@ public class FeedCommentService {
     private final FeedCommentQueryRepository feedCommentQueryRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
-    private final MediaUrlResolver mediaUrlResolver;
+    private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final FeedCommentReactionRepository feedCommentReactionRepository;
     private final NotificationService notificationService;
 
@@ -70,7 +69,7 @@ public class FeedCommentService {
             FeedCommentRepository feedCommentRepository,
             FeedCommentQueryRepository feedCommentQueryRepository,
             UserProfileRepository userProfileRepository,
-            MediaUrlResolver mediaUrlResolver,
+            UserAvatarUrlResolver userAvatarUrlResolver,
             FeedCommentReactionRepository feedCommentReactionRepository
     ) {
         this(
@@ -78,7 +77,7 @@ public class FeedCommentService {
                 feedCommentRepository,
                 feedCommentQueryRepository,
                 userProfileRepository,
-                mediaUrlResolver,
+                userAvatarUrlResolver,
                 feedCommentReactionRepository,
                 null,
                 null
@@ -91,7 +90,7 @@ public class FeedCommentService {
             FeedCommentRepository feedCommentRepository,
             FeedCommentQueryRepository feedCommentQueryRepository,
             UserProfileRepository userProfileRepository,
-            MediaUrlResolver mediaUrlResolver,
+            UserAvatarUrlResolver userAvatarUrlResolver,
             FeedCommentReactionRepository feedCommentReactionRepository,
             UserRepository userRepository,
             NotificationService notificationService
@@ -101,7 +100,7 @@ public class FeedCommentService {
         this.feedCommentQueryRepository = feedCommentQueryRepository;
         this.userProfileRepository = userProfileRepository;
         this.userRepository = userRepository;
-        this.mediaUrlResolver = mediaUrlResolver;
+        this.userAvatarUrlResolver = userAvatarUrlResolver;
         this.feedCommentReactionRepository = feedCommentReactionRepository;
         this.notificationService = notificationService;
     }
@@ -111,7 +110,7 @@ public class FeedCommentService {
             FeedCommentRepository feedCommentRepository,
             FeedCommentQueryRepository feedCommentQueryRepository,
             UserProfileRepository userProfileRepository,
-            MediaUrlResolver mediaUrlResolver,
+            UserAvatarUrlResolver userAvatarUrlResolver,
             FeedCommentReactionRepository feedCommentReactionRepository,
             UserRepository userRepository
     ) {
@@ -120,7 +119,7 @@ public class FeedCommentService {
                 feedCommentRepository,
                 feedCommentQueryRepository,
                 userProfileRepository,
-                mediaUrlResolver,
+                userAvatarUrlResolver,
                 feedCommentReactionRepository,
                 userRepository,
                 null
@@ -132,14 +131,14 @@ public class FeedCommentService {
             FeedCommentRepository feedCommentRepository,
             FeedCommentQueryRepository feedCommentQueryRepository,
             UserProfileRepository userProfileRepository,
-            MediaUrlResolver mediaUrlResolver
+            UserAvatarUrlResolver userAvatarUrlResolver
     ) {
         this(
                 feedRepository,
                 feedCommentRepository,
                 feedCommentQueryRepository,
                 userProfileRepository,
-                mediaUrlResolver,
+                userAvatarUrlResolver,
                 null,
                 null,
                 null
@@ -182,7 +181,10 @@ public class FeedCommentService {
                         author.getUserType(),
                         trackValue(author),
                         cohortValue(author),
-                        toUrl(mediaUrlResolver.resolve(author.getAvatarImageId()))
+                        userAvatarUrlResolver.resolve(
+                                author.getUserId(),
+                                author.getAvatarImageId()
+                        )
                 ),
                 savedComment.getParentId(),
                 savedComment.getCreatedAt(),
@@ -235,7 +237,7 @@ public class FeedCommentService {
             }
         }
 
-        Map<Long, URI> avatarUrls = resolveAvatarUrls(authors.values());
+        Map<Long, String> avatarUrls = resolveAvatarUrls(authors.values());
         Map<Long, String> handles = resolveHandles(authors.keySet());
         Map<Long, FeedCommentReactionCounts> reactionCounts = findReactionCounts(orderedComments, loginUserId);
         List<FeedCommentFindResponse.Comment> comments = orderedComments.stream()
@@ -283,7 +285,10 @@ public class FeedCommentService {
                         author.getUserType(),
                         trackValue(author),
                         cohortValue(author),
-                        toUrl(mediaUrlResolver.resolve(author.getAvatarImageId()))
+                        userAvatarUrlResolver.resolve(
+                                author.getUserId(),
+                                author.getAvatarImageId()
+                        )
                 ),
                 comment.getParentId(),
                 comment.getCreatedAt(),
@@ -390,7 +395,7 @@ public class FeedCommentService {
             Long loginUserId,
             Map<Long, UserProfile> authors,
             Map<Long, String> handles,
-            Map<Long, URI> avatarUrls,
+            Map<Long, String> avatarUrls,
             Map<Long, FeedCommentReactionCounts> reactionCounts
     ) {
         UserProfile author = authors.computeIfAbsent(comment.getAuthorId(), this::findAuthor);
@@ -414,7 +419,7 @@ public class FeedCommentService {
                                 trackValue(author),
                                 cohortValue(author),
                                 author.getAvatarImageId(),
-                                toUrl(findUrl(avatarUrls, author.getAvatarImageId()))
+                                avatarUrls.get(author.getUserId())
                         )
                         : new FeedCommentFindResponse.Author(
                                 null,
@@ -465,22 +470,14 @@ public class FeedCommentService {
         }
     }
 
-    private Map<Long, URI> resolveAvatarUrls(Iterable<UserProfile> authors) {
-        List<Long> avatarImageIds = new ArrayList<>();
+    private Map<Long, String> resolveAvatarUrls(Iterable<UserProfile> authors) {
+        List<UserAvatarUrlResolver.AvatarReference> references = new ArrayList<>();
         for (UserProfile author : authors) {
-            if (author.getAvatarImageId() != null) {
-                avatarImageIds.add(author.getAvatarImageId());
-            }
+            references.add(new UserAvatarUrlResolver.AvatarReference(
+                    author.getUserId(),
+                    author.getAvatarImageId()
+            ));
         }
-        Map<Long, URI> urls = mediaUrlResolver.resolveAll(avatarImageIds);
-        return urls == null ? Map.of() : urls;
-    }
-
-    private static URI findUrl(Map<Long, URI> urls, Long mediaId) {
-        return mediaId == null ? null : urls.get(mediaId);
-    }
-
-    private static String toUrl(URI url) {
-        return url == null ? null : url.toString();
+        return userAvatarUrlResolver.resolveAll(references);
     }
 }
