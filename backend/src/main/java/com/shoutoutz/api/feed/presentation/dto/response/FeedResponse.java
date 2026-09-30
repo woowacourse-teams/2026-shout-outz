@@ -3,6 +3,7 @@ package com.shoutoutz.api.feed.presentation.dto.response;
 import com.shoutoutz.api.category.domain.CategoryType;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
+import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.net.URI;
@@ -17,6 +18,7 @@ public record FeedResponse(
         Author author,
         List<Category> categories,
         List<Media> media,
+        LinkPreview linkPreview,
         long likeCount,
         long bookmarkCount,
         boolean likedByMe,
@@ -38,6 +40,7 @@ public record FeedResponse(
                 Author.from(feed.author(), urls),
                 feed.categories().stream().map(Category::from).toList(),
                 feed.media().stream().map(media -> Media.from(media, urls)).toList(),
+                feed.linkPreview(),
                 feed.likeCount(),
                 feed.bookmarkCount(),
                 feed.likedByMe(),

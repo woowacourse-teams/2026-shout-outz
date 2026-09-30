@@ -45,7 +45,7 @@ export type AdminProjectStatus = AdminProject['approvalStatus'];
 /** AdminProjectDetailResponse.java에서 심사 화면이 사용하는 필드. */
 export type AdminProjectDetail = Pick<
   ProjectDetailData,
-  'descriptionMd' | 'githubRepositoryUrl' | 'slug'
+  'descriptionMd' | 'githubRepositoryUrl' | 'deploymentUrl' | 'slug'
 > & { id: number };
 
 /** AdminProjectApproveResponse.java와 AdminProjectRejectResponse.java. */

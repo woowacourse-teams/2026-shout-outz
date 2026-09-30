@@ -100,13 +100,21 @@ class ProjectDetailRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("없거나 삭제된 프로젝트의 slug로는 조회되지 않는다.")
-    void returnsEmptyWhenSlugMissingOrDeleted() {
+    @DisplayName("삭제된 프로젝트는 등록자 본인만 조회하고, 다른 사용자에게는 숨긴다.")
+    void findsDeletedProjectOnlyForRegistrant() {
         User registrant = saveUser("slug-deleted");
+        User outsider = saveUser("slug-deleted-outsider");
         long deletedProjectId = saveProject(registrant.getId(), "APPROVED");
         jdbcTemplate.update("UPDATE projects SET deleted_at = now() WHERE id = ?", deletedProjectId);
 
         assertThat(projectRepository.findDetailBySlug(slugOf(deletedProjectId), null)).isEmpty();
+        assertThat(projectRepository.findDetailBySlug(slugOf(deletedProjectId), outsider.getId())).isEmpty();
+        ProjectDetail ownerView = projectRepository.findDetailBySlug(
+                slugOf(deletedProjectId),
+                registrant.getId()
+        ).orElseThrow();
+        assertThat(ownerView.id()).isEqualTo(deletedProjectId);
+        assertThat(ownerView.registeredBy()).isEqualTo(registrant.getId());
         assertThat(projectRepository.findDetailBySlug(new Slug("missing-" + UUID.randomUUID()), null)).isEmpty();
     }
 

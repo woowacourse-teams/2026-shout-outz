@@ -20,10 +20,23 @@ describe('resolveHomeBannerLink', () => {
       ).toEqual({ kind: 'internal', href });
     });
 
-    it('프로젝트 ID는 slug 주소로 바꿀 수 없어 링크를 만들지 않는다', () => {
+    it('프로젝트는 targetSlug로 /projects/@slug에 간다', () => {
       expect(
         resolveHomeBannerLink(
-          banner({ destinationType: 'TARGET', targetType: 'PROJECT', targetId: 7 }),
+          banner({ destinationType: 'TARGET', targetType: 'PROJECT', targetSlug: 'loop' }),
+        ),
+      ).toEqual({ kind: 'internal', href: '/projects/@loop' });
+    });
+
+    it('프로젝트에 targetSlug가 없으면 targetId가 있어도 이동하지 않는다', () => {
+      expect(
+        resolveHomeBannerLink(
+          banner({
+            destinationType: 'TARGET',
+            targetType: 'PROJECT',
+            targetId: 7,
+            targetSlug: null,
+          }),
         ),
       ).toBeNull();
     });

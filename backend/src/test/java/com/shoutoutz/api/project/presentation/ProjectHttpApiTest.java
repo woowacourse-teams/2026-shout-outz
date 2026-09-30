@@ -126,7 +126,8 @@ class ProjectHttpApiTest {
             + "요청 형식이 올바르지 않거나, 정의되지 않은 기수이거나, 커서가 올바르지 않으면 400을 반환한다.";
     private static final String DELETE_SUMMARY = "프로젝트 삭제";
     private static final String DELETE_DESCRIPTION = "등록자 본인이 자신의 프로젝트를 삭제한다. 심사 중인 프로젝트도 삭제할 수 있다. "
-            + "삭제된 프로젝트는 목록과 상세에서 보이지 않으며, 응답의 restoreDeadlineAt 까지 복구할 수 있다. "
+            + "삭제된 프로젝트는 목록과 상세에서 다른 사용자에게 보이지 않으며, 등록자 본인은 상세에서 확인할 수 있다. "
+            + "응답의 restoreDeadlineAt 까지 복구할 수 있다. "
             + "로그인하지 않았으면 401, 없거나 형식이 틀린 slug이거나, 등록자가 아니거나 이미 삭제된 프로젝트이면 404를 반환한다.";
     private static final String RESTORE_SUMMARY = "프로젝트 복구";
     private static final String RESTORE_DESCRIPTION = "등록자 본인이 삭제한 자신의 프로젝트를 복구 기한 안에 되살린다. "
@@ -137,6 +138,7 @@ class ProjectHttpApiTest {
     private static final String DETAIL_DESCRIPTION = "프로젝트 상세 화면에 필요한 기본 정보, 상세 설명, 팀원, 기술 스택, 외부 링크, "
             + "리액션 및 댓글 수를 조회한다. 로그인하지 않아도 조회할 수 있다. "
             + "승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 조회할 수 있으며, "
+            + "삭제된 프로젝트는 등록자 본인만 조회할 수 있다. "
             + "볼 수 없는 프로젝트는 존재 여부를 숨기기 위해 없는 프로젝트와 같은 404를 반환한다. "
             + "editable은 요청자가 등록자 본인인지를 나타내며, 수정·삭제 버튼 노출에 쓴다. "
             + "slug 형식에 맞지 않는 값도 없는 프로젝트와 같은 404를 반환한다. 이후 수정·리액션·댓글 등은 응답의 id로 요청한다.";

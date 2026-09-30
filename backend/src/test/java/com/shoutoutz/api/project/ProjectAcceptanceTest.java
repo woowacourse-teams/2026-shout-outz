@@ -256,6 +256,25 @@ class ProjectAcceptanceTest {
     }
 
     @Test
+    @DisplayName("등록자는 삭제된 본인 프로젝트를 상세 조회할 수 있고, 다른 사용자에게는 404를 반환한다.")
+    void findsOwnDeletedProjectDetail() {
+        LoginSession author = signup("WOOWACOURSE_CREW");
+        LoginSession outsider = signup("GENERAL");
+        long projectId = registerPendingProject(author, author, techTagIds("java"));
+        jdbcTemplate.update("UPDATE projects SET deleted_at = now() WHERE id = ?", projectId);
+
+        Response ownerResponse = findDetail(author, projectId);
+        Response outsiderResponse = findDetail(outsider, projectId);
+        Response anonymousResponse = findDetail(null, projectId);
+
+        assertThat(ownerResponse.statusCode()).as(ownerResponse.asString()).isEqualTo(200);
+        assertThat(ownerResponse.jsonPath().getString("data.approvalStatus")).isEqualTo("PENDING");
+        assertThat(ownerResponse.jsonPath().getBoolean("data.editable")).isTrue();
+        assertThat(outsiderResponse.statusCode()).isEqualTo(404);
+        assertThat(anonymousResponse.statusCode()).isEqualTo(404);
+    }
+
+    @Test
     @DisplayName("승인 대기 중인 프로젝트를 등록자가 아닌 사용자나 비로그인 사용자가 조회하면, 존재 여부를 숨기고 404를 반환한다.")
     void hidesPendingProjectFromOthers() {
         LoginSession author = signup("WOOWACOURSE_CREW");

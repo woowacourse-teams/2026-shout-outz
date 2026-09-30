@@ -5,6 +5,9 @@ spring:
     password: localdev
     driver-class-name: org.postgresql.Driver
 
+link-preview:
+  enabled: false
+
 github:
   oauth:
     client-id: test-client-id

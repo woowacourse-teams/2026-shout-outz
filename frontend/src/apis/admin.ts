@@ -97,7 +97,9 @@ export async function fetchAdminProjects(status: AdminProjectStatus, cursor?: st
     searchParams: { status, ...(cursor ? { cursor } : {}) },
   });
   if (!body) throw new Error(`프로젝트 심사 목록 응답이 비어 있습니다: ${PROJECT_PATH}`);
-  if (!body.meta) throw new Error(`프로젝트 심사 목록 메타 정보가 비어 있습니다: ${PROJECT_PATH}`);
+  if (!Array.isArray(body.data) || !body.meta || !('nextCursor' in body.meta)) {
+    throw new Error(`프로젝트 심사 목록 응답 형식이 올바르지 않습니다: ${PROJECT_PATH}`);
+  }
   return { items: body.data, meta: body.meta };
 }
 

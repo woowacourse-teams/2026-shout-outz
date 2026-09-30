@@ -1,6 +1,7 @@
 package com.shoutoutz.api.feed.presentation.dto.response;
 
 import com.shoutoutz.api.feed.application.dto.FeedItem;
+import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -16,6 +17,7 @@ public record UserFeedResponse(
         FeedResponse.Author author,
         List<FeedResponse.Category> categories,
         List<FeedResponse.Media> media,
+        LinkPreview linkPreview,
         long likeCount,
         long bookmarkCount,
         boolean likedByMe,
@@ -43,6 +45,7 @@ public record UserFeedResponse(
                 response.author(),
                 response.categories(),
                 response.media(),
+                response.linkPreview(),
                 response.likeCount(),
                 response.bookmarkCount(),
                 response.likedByMe(),
