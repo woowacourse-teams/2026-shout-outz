@@ -22,6 +22,7 @@ final class FeedValidator {
     static void validate(
             Long id,
             Long authorId,
+            FeedType type,
             String title,
             String content,
             Instant createdAt,
@@ -33,6 +34,7 @@ final class FeedValidator {
         }
         validateNotNull(authorId, FEED_INVALID_STATE);
         validateLongMinSize(authorId, 1, FEED_INVALID_STATE);
+        validateNotNull(type, FEED_INVALID_STATE);
         validateNotNullOrBlank(title, FEED_INVALID_STATE);
         validateMaxLength(title, MAX_TITLE_LENGTH, FEED_INVALID_STATE);
         validateNotNullOrBlank(content, FEED_INVALID_STATE);

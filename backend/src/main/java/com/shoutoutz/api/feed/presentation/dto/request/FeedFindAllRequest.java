@@ -4,6 +4,7 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.util.DataResolveUtil;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
+import com.shoutoutz.api.feed.domain.FeedType;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.hibernate.validator.constraints.CodePointLength;
@@ -20,7 +21,9 @@ public record FeedFindAllRequest(
 
         @Min(value = 1, message = "size는 1 이상이어야 합니다.")
         @Max(value = 100, message = "size는 100 이하여야 합니다.")
-        Integer size
+        Integer size,
+
+        FeedType type
 ) {
 
     private static final int DEFAULT_SIZE = 20;
@@ -28,6 +31,16 @@ public record FeedFindAllRequest(
     public FeedFindAllRequest {
         keyword = DataResolveUtil.sanitizeString(keyword);
         cursor = DataResolveUtil.sanitizeString(cursor);
+    }
+
+    public FeedFindAllRequest(
+            FeedSort sort,
+            Long categoryId,
+            String keyword,
+            String cursor,
+            Integer size
+    ) {
+        this(sort, categoryId, keyword, cursor, size, null);
     }
 
     public int resolvedSize() {

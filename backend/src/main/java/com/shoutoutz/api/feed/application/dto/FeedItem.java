@@ -2,6 +2,7 @@ package com.shoutoutz.api.feed.application.dto;
 
 import com.shoutoutz.api.category.domain.CategoryType;
 import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
@@ -12,6 +13,7 @@ import java.util.List;
  */
 public record FeedItem(
         long feedId,
+        FeedType feedType,
         String title,
         String content,
         boolean isAnonymous,
@@ -45,8 +47,31 @@ public record FeedItem(
             Instant updatedAt,
             LinkPreview linkPreview
     ) {
-        this(feedId, title, content, false, author, categories, media, likeCount, commentCount,
+        this(feedId, FeedType.POST, title, content, false, author, categories, media, likeCount, commentCount,
                 bookmarkCount, likedByMe, bookmarkedByMe, relevanceRank, createdAt, updatedAt, linkPreview);
+    }
+
+    public FeedItem(
+            long feedId,
+            String title,
+            String content,
+            boolean isAnonymous,
+            Author author,
+            List<Category> categories,
+            List<Media> media,
+            long likeCount,
+            long commentCount,
+            long bookmarkCount,
+            boolean likedByMe,
+            boolean bookmarkedByMe,
+            int relevanceRank,
+            Instant createdAt,
+            Instant updatedAt,
+            LinkPreview linkPreview
+    ) {
+        this(feedId, FeedType.POST, title, content, isAnonymous, author, categories, media,
+                likeCount, commentCount, bookmarkCount, likedByMe, bookmarkedByMe,
+                relevanceRank, createdAt, updatedAt, linkPreview);
     }
 
     public FeedItem(

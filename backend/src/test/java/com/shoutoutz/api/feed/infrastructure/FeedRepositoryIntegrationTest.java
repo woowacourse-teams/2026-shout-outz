@@ -11,6 +11,7 @@ import com.shoutoutz.api.feed.application.dto.FeedPage;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
+import com.shoutoutz.api.feed.domain.FeedType;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -40,6 +41,52 @@ class FeedRepositoryIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Test
+    void 피드_타입으로_질문과_포스트를_분리해_조회한다() {
+        long authorId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+
+        Feed post = saveFeed(authorId, "일반 포스트", base, categoryId);
+        Feed question = feedRepository.save(Feed.create(
+                authorId,
+                FeedType.QUESTION,
+                "질문",
+                "질문 본문",
+                false,
+                base.plus(1, ChronoUnit.HOURS)
+        ));
+        feedRepository.saveCategories(question.getId(), List.of(categoryId));
+
+        FeedPage questionPage = feedQueryRepository.findAll(
+                FeedSort.LATEST,
+                null,
+                null,
+                FeedType.QUESTION,
+                null,
+                10
+        );
+        FeedPage postPage = feedQueryRepository.findAll(
+                FeedSort.LATEST,
+                null,
+                null,
+                FeedType.POST,
+                null,
+                10
+        );
+
+        assertThat(questionPage.items()).extracting(FeedItem::feedId)
+                .containsExactly(question.getId());
+        assertThat(questionPage.items()).extracting(FeedItem::feedType)
+                .containsOnly(FeedType.QUESTION);
+        assertThat(questionPage.totalCount()).isEqualTo(1L);
+        assertThat(postPage.items()).extracting(FeedItem::feedId)
+                .containsExactly(post.getId());
+        assertThat(postPage.items()).extracting(FeedItem::feedType)
+                .containsOnly(FeedType.POST);
+        assertThat(postPage.totalCount()).isEqualTo(1L);
+    }
 
     @Test
     void 피드_검증에_필요한_미디어_데이터를_조회한다() {

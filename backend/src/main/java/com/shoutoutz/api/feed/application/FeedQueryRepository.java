@@ -5,6 +5,7 @@ import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.FeedMediaReference;
 import com.shoutoutz.api.feed.application.dto.FeedPage;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
+import com.shoutoutz.api.feed.domain.FeedType;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +22,25 @@ public interface FeedQueryRepository {
             FeedSort sort,
             Long categoryId,
             String keyword,
+            FeedType type,
+            FeedCursor cursor,
+            int size
+    );
+
+    FeedPage findAll(
+            FeedSort sort,
+            Long categoryId,
+            String keyword,
+            FeedCursor cursor,
+            int size
+    );
+
+    FeedPage findAll(
+            FeedSort sort,
+            Long categoryId,
+            String keyword,
+            FeedType type,
+            Long viewerId,
             FeedCursor cursor,
             int size
     );
@@ -34,7 +54,22 @@ public interface FeedQueryRepository {
             int size
     );
 
+    FeedPage findAllByAuthorId(
+            long authorId,
+            FeedType type,
+            FeedCursor cursor,
+            int size
+    );
+
     FeedPage findAllByAuthorId(long authorId, FeedCursor cursor, int size);
+
+    FeedPage findAllByAuthorId(
+            long authorId,
+            FeedType type,
+            Long viewerId,
+            FeedCursor cursor,
+            int size
+    );
 
     FeedPage findAllByAuthorId(
             long authorId,

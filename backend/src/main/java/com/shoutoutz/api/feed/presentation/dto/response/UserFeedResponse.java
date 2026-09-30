@@ -2,6 +2,7 @@ package com.shoutoutz.api.feed.presentation.dto.response;
 
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.LinkPreview;
+import com.shoutoutz.api.feed.domain.FeedType;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.Map;
  */
 public record UserFeedResponse(
         long feedId,
+        FeedType feedType,
         String title,
         String content,
         boolean isAnonymous,
@@ -41,6 +43,7 @@ public record UserFeedResponse(
         FeedResponse response = FeedResponse.from(feed, mediaUrls);
         return new UserFeedResponse(
                 response.feedId(),
+                response.feedType(),
                 response.title(),
                 response.content(),
                 response.isAnonymous(),

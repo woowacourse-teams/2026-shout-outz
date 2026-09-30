@@ -110,6 +110,9 @@ class FeedHttpApiTest {
                                         parameterWithName("sort")
                                                 .description("LATEST, POPULAR, WAITING 또는 RELEVANCE. 검색어가 없으면 기본 LATEST, 있으면 기본 RELEVANCE")
                                                 .optional(),
+                                        parameterWithName("type")
+                                                .description("QUESTION 또는 POST. 생략하면 전체 유형 조회")
+                                                .optional(),
                                         parameterWithName("categoryId")
                                                 .type(INTEGER)
                                                 .description("카테고리 ID")
@@ -259,7 +262,10 @@ class FeedHttpApiTest {
                                         fieldWithPath("categoryIds").type(ARRAY)
                                                 .description("활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"),
                                         fieldWithPath("mediaIds").type(ARRAY)
-                                                .description("작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록")
+                                                .description("작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록"),
+                                        fieldWithPath("feedType").type(STRING)
+                                                .description("피드 유형(QUESTION 또는 POST). 생략하면 POST")
+                                                .optional()
                                 )
                                 .responseFields(commandSuccessResponseFields("data."))
                                 .build())

@@ -65,6 +65,7 @@ public class FeedService {
         Instant now = clock.instant();
         Feed savedFeed = feedRepository.save(Feed.create(
                 userId,
+                request.feedType(),
                 request.title(),
                 request.content(),
                 request.isAnonymous(),
@@ -101,22 +102,41 @@ public class FeedService {
         int size = request.resolvedSize();
         FeedPage page;
         if (viewerId == null) {
-            page = feedQueryRepository.findAll(
-                        sort,
-                        request.categoryId(),
-                        request.keyword(),
-                        cursor,
-                        size
-                );
+            page = request.type() == null
+                    ? feedQueryRepository.findAll(
+                            sort,
+                            request.categoryId(),
+                            request.keyword(),
+                            cursor,
+                            size
+                    )
+                    : feedQueryRepository.findAll(
+                            sort,
+                            request.categoryId(),
+                            request.keyword(),
+                            request.type(),
+                            cursor,
+                            size
+                    );
         } else {
-            page = feedQueryRepository.findAll(
-                        sort,
-                        request.categoryId(),
-                        request.keyword(),
-                        viewerId,
-                        cursor,
-                        size
-                );
+            page = request.type() == null
+                    ? feedQueryRepository.findAll(
+                            sort,
+                            request.categoryId(),
+                            request.keyword(),
+                            viewerId,
+                            cursor,
+                            size
+                    )
+                    : feedQueryRepository.findAll(
+                            sort,
+                            request.categoryId(),
+                            request.keyword(),
+                            request.type(),
+                            viewerId,
+                            cursor,
+                            size
+                    );
         }
         return createSlice(page, sort);
     }
@@ -155,14 +175,24 @@ public class FeedService {
         int size = request.resolvedSize();
         FeedPage page;
         if (viewerId == null) {
-            page = feedQueryRepository.findAllByAuthorId(user.getId(), cursor, size);
+            page = request.type() == null
+                    ? feedQueryRepository.findAllByAuthorId(user.getId(), cursor, size)
+                    : feedQueryRepository.findAllByAuthorId(user.getId(), request.type(), cursor, size);
         } else {
-            page = feedQueryRepository.findAllByAuthorId(
-                        user.getId(),
-                        viewerId,
-                        cursor,
-                        size
-                );
+            page = request.type() == null
+                    ? feedQueryRepository.findAllByAuthorId(
+                            user.getId(),
+                            viewerId,
+                            cursor,
+                            size
+                    )
+                    : feedQueryRepository.findAllByAuthorId(
+                            user.getId(),
+                            request.type(),
+                            viewerId,
+                            cursor,
+                            size
+                    );
         }
         return createSlice(page, sort);
     }
