@@ -326,7 +326,7 @@ public class ProjectService {
     private Map<Long, URI> resolveProjectListMediaUrls(Set<Long> thumbnailIds, Set<Long> avatarIds) {
         Map<Long, URI> mediaUrls = new HashMap<>();
         if (!thumbnailIds.isEmpty()) {
-            mediaUrls.putAll(mediaUrlResolver.resolveAll(thumbnailIds, MediaVariant.THUMBNAIL));
+            mediaUrls.putAll(mediaUrlResolver.resolveAll(thumbnailIds, MediaVariant.DISPLAY));
         }
         if (!avatarIds.isEmpty()) {
             mediaUrls.putAll(mediaUrlResolver.resolveAll(avatarIds, MediaVariant.DISPLAY));

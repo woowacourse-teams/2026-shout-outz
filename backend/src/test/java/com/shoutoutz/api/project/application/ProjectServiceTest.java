@@ -611,8 +611,8 @@ class ProjectServiceTest {
         ProjectSummary last = summary(9L, 3L, NOW.minusSeconds(60));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(first, last), true, 48));
-        when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL))
-                .thenReturn(Map.of(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail")));
+        when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.DISPLAY))
+                .thenReturn(Map.of(THUMBNAIL_ID, URI.create("https://cdn.example.com/display")));
         when(mediaUrlResolver.resolveAll(Set.of(21L), MediaVariant.DISPLAY))
                 .thenReturn(Map.of(21L, URI.create("https://cdn.example.com/avatar-21")));
 
@@ -625,11 +625,11 @@ class ProjectServiceTest {
         assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.POPULAR))
                 .isEqualTo(ProjectCursor.popular(3L, NOW.minusSeconds(60), 9L));
         assertThat(response.items().getFirst().thumbnailUrl())
-                .isEqualTo("https://cdn.example.com/thumbnail");
+                .isEqualTo("https://cdn.example.com/display");
         assertThat(response.items().getFirst().thumbnailImageId()).isEqualTo(THUMBNAIL_ID);
         assertThat(response.items().getFirst().members().getFirst().avatarUrl())
                 .isEqualTo("https://cdn.example.com/avatar-21");
-        verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL);
+        verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.DISPLAY);
         verify(mediaUrlResolver).resolveAll(Set.of(21L), MediaVariant.DISPLAY);
     }
 
@@ -656,8 +656,8 @@ class ProjectServiceTest {
         when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.of(user));
         when(userProjectQueryRepository.findAllByUserId(REGISTERED_BY, cursor, 20))
                 .thenReturn(new UserProjectResult(List.of(project), true, 4L, Map.of()));
-        when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL))
-                .thenReturn(Map.of(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail")));
+        when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.DISPLAY))
+                .thenReturn(Map.of(THUMBNAIL_ID, URI.create("https://cdn.example.com/display")));
         when(mediaUrlResolver.resolveAll(Set.of(21L), MediaVariant.DISPLAY))
                 .thenReturn(Map.of(21L, URI.create("https://cdn.example.com/avatar-21")));
 
@@ -671,11 +671,11 @@ class ProjectServiceTest {
         assertThat(response.totalCount()).isEqualTo(4L);
         assertThat(response.nextCursor()).isEqualTo(ProjectCursor.latest(NOW.minusSeconds(60), 9L));
         assertThat(response.mediaUrls())
-                .containsEntry(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail"))
+                .containsEntry(THUMBNAIL_ID, URI.create("https://cdn.example.com/display"))
                 .containsEntry(21L, URI.create("https://cdn.example.com/avatar-21"))
                 .hasSize(2);
         verify(userProjectQueryRepository).findAllByUserId(REGISTERED_BY, cursor, 20);
-        verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL);
+        verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.DISPLAY);
         verify(mediaUrlResolver).resolveAll(Set.of(21L), MediaVariant.DISPLAY);
     }
 

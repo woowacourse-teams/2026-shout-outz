@@ -83,7 +83,7 @@ class UserProjectHttpApiTest {
                         true,
                         3L,
                         Map.of(
-                                12L, URI.create("https://cdn.example.com/thumbnail"),
+                                12L, URI.create("https://cdn.example.com/display"),
                                 21L, URI.create("https://cdn.example.com/avatar-21")
                         )
                 ));
@@ -98,7 +98,7 @@ class UserProjectHttpApiTest {
                 .andExpect(jsonPath("$.data[0].approvalStatus").value("APPROVED"))
                 .andExpect(jsonPath("$.data[0].rejectReason").value(nullValue()))
                 .andExpect(jsonPath("$.data[0].thumbnailUrl")
-                        .value("https://cdn.example.com/thumbnail"))
+                        .value("https://cdn.example.com/display"))
                 .andExpect(jsonPath("$.data[0].thumbnailImageId").value(12L))
                 .andExpect(jsonPath("$.data[0].starCount").value(128))
                 .andExpect(jsonPath("$.data[0].techTags[0].displayName").value("Spring"))
@@ -132,7 +132,7 @@ class UserProjectHttpApiTest {
                         false,
                         1L,
                         Map.of(
-                                12L, URI.create("https://cdn.example.com/thumbnail"),
+                                12L, URI.create("https://cdn.example.com/display"),
                                 21L, URI.create("https://cdn.example.com/avatar-21")
                         )
                 ));
@@ -260,7 +260,8 @@ class UserProjectHttpApiTest {
                 fieldWithPath("data[].rejectReason").type(STRING)
                         .description("반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다.").optional(),
                 fieldWithPath("data[].thumbnailImageId").type(NUMBER).description("프로젝트 썸네일 이미지 ID").optional(),
-                fieldWithPath("data[].thumbnailUrl").type(STRING).description("CloudFront에서 제공하는 공개 썸네일 URL").optional(),
+                fieldWithPath("data[].thumbnailUrl").type(STRING)
+                        .description("CloudFront에서 제공하는 프로젝트 카드용 공개 이미지 URL").optional(),
                 fieldWithPath("data[].starCount").type(NUMBER)
                         .description("GitHub star 수. 동기화 전이면 null이다.").optional(),
                 fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"),
