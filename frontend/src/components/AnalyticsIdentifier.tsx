@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import * as Sentry from '@sentry/react';
 
 import { sessionQuery } from '@/apis/session';
 import { myProfileSummaryQuery } from '@/apis/user';
@@ -19,11 +20,13 @@ export function AnalyticsIdentifier() {
   useEffect(() => {
     if (userId === null) {
       analytics.identify(null);
+      Sentry.setUser(null);
       return;
     }
     if (!profile) return;
 
     analytics.identify({ userId, handle: profile.handle });
+    Sentry.setUser({ id: String(userId), username: profile.handle });
   }, [userId, profile]);
 
   return null;

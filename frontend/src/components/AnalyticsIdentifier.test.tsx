@@ -5,10 +5,16 @@
 import { render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
+import * as Sentry from '@sentry/react';
 
 import { AnalyticsIdentifier } from '@/components/AnalyticsIdentifier';
 import { server } from '@/test/renderRoute';
 import { analytics } from '@/utils/analytics';
+
+jest.mock('@sentry/react', () => ({
+  ...jest.requireActual('@sentry/react'),
+  setUser: jest.fn(),
+}));
 
 const renderIdentifier = () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
@@ -39,9 +45,11 @@ const loggedIn = () => {
 
 describe('AnalyticsIdentifier', () => {
   let identify: jest.SpiedFunction<typeof analytics.identify>;
+  const setUser = jest.mocked(Sentry.setUser);
 
   beforeEach(() => {
     identify = jest.spyOn(analytics, 'identify').mockImplementation(() => {});
+    setUser.mockClear();
   });
 
   afterEach(() => {
@@ -53,12 +61,14 @@ describe('AnalyticsIdentifier', () => {
     renderIdentifier();
 
     await waitFor(() => expect(identify).toHaveBeenCalledWith({ userId: 10, handle: 'woojin' }));
+    expect(setUser).toHaveBeenCalledWith({ id: '10', username: 'woojin' });
   });
 
   it('로그인하지 않았으면 비워서 알린다', async () => {
     renderIdentifier();
 
     await waitFor(() => expect(identify).toHaveBeenCalledWith(null));
+    expect(setUser).toHaveBeenCalledWith(null);
   });
 
   it('화면을 그리지 않는다', () => {
