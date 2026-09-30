@@ -1,4 +1,5 @@
 import { Suspense, useState } from 'react';
+import * as Sentry from '@sentry/react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 
 import { sessionQuery, signupMutation } from '@/apis/session';
@@ -117,7 +118,8 @@ function SignupForm({ onComplete }: SignupPageProps) {
       if (avatarImageId !== null) {
         try {
           await updateMyProfile({ displayName: name, avatarImageId });
-        } catch {
+        } catch (error) {
+          Sentry.captureException(error);
           // 프로필 사진만 못 저장한 것이므로 가입 흐름을 멈추지 않는다.
         }
       }

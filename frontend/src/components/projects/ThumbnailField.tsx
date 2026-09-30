@@ -1,4 +1,5 @@
 import { useId, useState, type ChangeEvent } from 'react';
+import * as Sentry from '@sentry/react';
 import { uploadProjectThumbnail } from '@/api/media';
 
 /**
@@ -36,7 +37,8 @@ export function ThumbnailField({
     setFailed(false);
     try {
       onChange(await uploadFile(file));
-    } catch {
+    } catch (error) {
+      Sentry.captureException(error);
       setFailed(true);
     } finally {
       setUploading(false);

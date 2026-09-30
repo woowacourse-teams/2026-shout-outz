@@ -1,4 +1,5 @@
 import { useId, useRef, useState, type ChangeEvent } from 'react';
+import * as Sentry from '@sentry/react';
 
 import { MediaNotReadyError, uploadAvatar, waitUntilReady } from '@/api/media';
 import { Button } from '@/components/Button';
@@ -43,6 +44,7 @@ export function AvatarUploadButton({
       if (error instanceof MediaNotReadyError) {
         setPendingMediaId(error.mediaId);
       } else {
+        Sentry.captureException(error);
         setFailed(true);
       }
       return false;

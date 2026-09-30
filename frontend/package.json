@@ -72,6 +72,7 @@
     "webpack-manifest-plugin": "^6.0.1"
   },
   "dependencies": {
+    "@sentry/react": "^11.1.0",
     "@swc/helpers": "^0.5.23",
     "@tabler/icons-react": "^3.46.0",
     "@tanstack/react-query": "^5.101.4",
