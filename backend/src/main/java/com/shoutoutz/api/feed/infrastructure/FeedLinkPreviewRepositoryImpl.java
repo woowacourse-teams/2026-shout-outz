@@ -6,6 +6,7 @@ import com.shoutoutz.api.feed.application.FeedLinkPreviewRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HexFormat;
@@ -116,9 +117,9 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                 )
                 RETURNING c.id, c.url, c.attempts
                 """, new MapSqlParameterSource()
-                        .addValue("now", now)
-                        .addValue("staleBefore", staleBefore)
-                        .addValue("leaseUntil", leaseUntil),
+                        .addValue("now", Timestamp.from(now))
+                        .addValue("staleBefore", Timestamp.from(staleBefore))
+                        .addValue("leaseUntil", Timestamp.from(leaseUntil)),
                 (rs, rowNum) -> new FetchJob(
                         rs.getLong("id"), rs.getString("url"), rs.getInt("attempts")));
         return claimed.stream().findFirst();
@@ -139,7 +140,7 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                         .addValue("description", metadata.description())
                         .addValue("imageUrl", metadata.imageUrl())
                         .addValue("siteName", metadata.siteName())
-                        .addValue("now", now));
+                        .addValue("now", Timestamp.from(now)));
     }
 
     @Override
@@ -151,7 +152,7 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                 """, new MapSqlParameterSource()
                         .addValue("id", job.id())
                         .addValue("attempts", job.attempts())
-                        .addValue("nextAttemptAt", nextAttemptAt));
+                        .addValue("nextAttemptAt", Timestamp.from(nextAttemptAt)));
     }
 
     /** 기존 피드를 작은 단위로 훑는다. 호출자의 트랜잭션에서 피드 행을 잠근다. */
@@ -179,7 +180,7 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                     OR (c.status IN ('PENDING', 'FAILED') AND c.next_attempt_at < :cutoff)
                     OR (c.status = 'PROCESSING' AND c.lease_until < :cutoff)
                 )
-                """, Map.of("cutoff", cutoff));
+                """, Map.of("cutoff", Timestamp.from(cutoff)));
     }
 
     private String sha256(String value) {
