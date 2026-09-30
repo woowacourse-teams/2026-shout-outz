@@ -8,6 +8,7 @@ import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import java.net.URI;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,8 +26,14 @@ public class OAuthLoginHttpApi {
     private final AuthSessionManager authSessionManager;
 
     @GetMapping("/oauth2/authorization/github")
-    public ResponseEntity<Void> authorizeGitHub(HttpSession session) {
-        OAuthLoginStartResult result = oauthLoginService.startGitHubLogin();
+    public ResponseEntity<Void> authorizeGitHub(
+            @RequestParam(name = "returnTo", required = false) URI returnTo,
+            HttpSession session
+    ) {
+        URI completionUri = properties.resolveCompletionUri(returnTo);
+        OAuthLoginStartResult result = returnTo == null
+                ? oauthLoginService.startGitHubLogin()
+                : oauthLoginService.startGitHubLogin(completionUri);
         authSessionAccessor.saveLoginAttempt(session, result.attempt());
 
         return ResponseEntity.status(HttpStatus.FOUND)
@@ -62,7 +69,7 @@ public class OAuthLoginHttpApi {
             authSessionAccessor.savePendingIdentity(signupPendingSession, result.identity());
         }
 
-        return redirectToCompletion();
+        return redirectToCompletion(attempt.completionUri());
     }
 
     @GetMapping(
@@ -77,12 +84,15 @@ public class OAuthLoginHttpApi {
         OAuthLoginAttempt attempt = authSessionAccessor.consumeLoginAttempt(session, state);
         oauthLoginService.validateGitHubCallback(state, attempt);
 
-        return redirectToCompletion();
+        return redirectToCompletion(attempt.completionUri());
     }
 
-    private ResponseEntity<Void> redirectToCompletion() {
+    private ResponseEntity<Void> redirectToCompletion(URI completionUri) {
+        URI resolvedCompletionUri = completionUri == null
+                ? properties.completionUri()
+                : properties.resolveCompletionUri(completionUri);
         return ResponseEntity.status(HttpStatus.FOUND)
-                .location(properties.completionUri())
+                .location(resolvedCompletionUri)
                 .build();
     }
 }

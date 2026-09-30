@@ -19,7 +19,11 @@ public class OAuthLoginService {
     private final OAuthAccountLoginService oauthAccountLoginService;
 
     public OAuthLoginStartResult startGitHubLogin() {
-        OAuthLoginAttempt attempt = OAuthLoginAttempt.create();
+        return startGitHubLogin(null);
+    }
+
+    public OAuthLoginStartResult startGitHubLogin(URI completionUri) {
+        OAuthLoginAttempt attempt = OAuthLoginAttempt.create(completionUri);
         URI authorizationUri = githubOAuthAuthorizationPort.generateAuthorizationUri(
                 attempt.state(),
                 attempt.codeChallenge()

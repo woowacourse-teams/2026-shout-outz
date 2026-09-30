@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import com.shoutoutz.api.auth.application.OAuthLoginService;
 import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
 import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
+import com.shoutoutz.api.auth.application.command.OAuthLoginStartResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
@@ -18,6 +19,7 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.net.URI;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -26,16 +28,58 @@ import org.springframework.http.ResponseEntity;
 
 class OAuthLoginHttpApiTest {
 
+    private static final URI DEFAULT_COMPLETION_URI =
+            URI.create("http://localhost:3000/oauth/callback");
+    private static final URI VERCEL_COMPLETION_URI =
+            URI.create("https://wooteco-career-qa.vercel.app");
     private final OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
     private final AuthSessionAccessor authSessionAccessor = new AuthSessionAccessor();
     private final AuthSessionManager authSessionManager =
             new AuthSessionManager(authSessionAccessor);
     private final OAuthLoginHttpApi oauthLoginHttpApi = new OAuthLoginHttpApi(
             oauthLoginService,
-            new OAuthLoginProperties(URI.create("http://localhost:3000/oauth/callback")),
+            new OAuthLoginProperties(
+                    DEFAULT_COMPLETION_URI,
+                    List.of(DEFAULT_COMPLETION_URI, VERCEL_COMPLETION_URI)
+            ),
             authSessionAccessor,
             authSessionManager
     );
+
+    @Test
+    @DisplayName("허용된 returnTo가 있으면 해당 프론트엔드로 이동할 OAuth 시도를 저장한다")
+    void startsLoginWithAllowedCompletionUri() {
+        MockHttpSession session = new MockHttpSession();
+        OAuthLoginAttempt attempt = loginAttempt(VERCEL_COMPLETION_URI);
+        given(oauthLoginService.startGitHubLogin(VERCEL_COMPLETION_URI))
+                .willReturn(new OAuthLoginStartResult(
+                        URI.create("https://github.com/login/oauth/authorize?client_id=client-id"),
+                        attempt
+                ));
+
+        ResponseEntity<Void> response =
+                oauthLoginHttpApi.authorizeGitHub(VERCEL_COMPLETION_URI, session);
+
+        assertThat(response.getHeaders().getLocation())
+                .isEqualTo(URI.create("https://github.com/login/oauth/authorize?client_id=client-id"));
+        assertThat(authSessionAccessor.consumeLoginAttempt(session, "state").completionUri())
+                .isEqualTo(VERCEL_COMPLETION_URI);
+    }
+
+    @Test
+    @DisplayName("허용되지 않은 returnTo는 OAuth 로그인을 시작하지 않는다")
+    void rejectsUnallowedCompletionUri() {
+        URI maliciousCompletionUri = URI.create("https://evil.example.com");
+
+        assertThatThrownBy(() -> oauthLoginHttpApi.authorizeGitHub(
+                maliciousCompletionUri,
+                new MockHttpSession()
+        ))
+                .isInstanceOf(BadRequestException.class)
+                .satisfies(exception -> assertThat(
+                        ((BadRequestException) exception).getErrorCode().name()
+                ).isEqualTo("OAUTH_COMPLETION_URI_NOT_ALLOWED"));
+    }
 
     @Test
     @DisplayName("기존 사용자 로그인에 성공하면 Session ID를 회전하고 인증 정보를 저장한다")
@@ -154,6 +198,15 @@ class OAuthLoginHttpApiTest {
                 "state",
                 "code-verifier",
                 Instant.parse("2026-09-03T00:00:00Z")
+        );
+    }
+
+    private OAuthLoginAttempt loginAttempt(URI completionUri) {
+        return new OAuthLoginAttempt(
+                "state",
+                "code-verifier",
+                Instant.parse("2026-09-03T00:00:00Z"),
+                completionUri
         );
     }
 }
