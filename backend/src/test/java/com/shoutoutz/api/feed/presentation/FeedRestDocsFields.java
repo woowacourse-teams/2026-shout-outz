@@ -10,6 +10,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWit
 
 import com.epages.restdocs.apispec.EnumFields;
 import com.shoutoutz.api.category.domain.CategoryType;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ final class FeedRestDocsFields {
     static List<FieldDescriptor> feedFields(String prefix) {
         return applyPathPrefix(prefix, List.of(
                 fieldWithPath("feedId").type(NUMBER).description("피드 ID"),
+                new EnumFields(FeedType.class).withPath("feedType").description("피드 유형"),
                 fieldWithPath("title").type(STRING).description("피드 제목"),
                 fieldWithPath("content").type(STRING).description("Markdown 본문"),
                 fieldWithPath("isAnonymous").type(BOOLEAN).description("작성자 정보를 익명으로 공개할지 여부"),
@@ -75,6 +77,7 @@ final class FeedRestDocsFields {
         fields.add(fieldWithPath("data").type(OBJECT).description("피드"));
         fields.addAll(applyPathPrefix(prefix, List.of(
                 fieldWithPath("feedId").type(NUMBER).description("피드 ID"),
+                new EnumFields(FeedType.class).withPath("feedType").description("피드 유형"),
                 fieldWithPath("title").type(STRING).description("피드 제목"),
                 fieldWithPath("content").type(STRING).description("Markdown 본문"),
                 fieldWithPath("isAnonymous").type(BOOLEAN).description("작성자 정보를 익명으로 공개할지 여부"),

@@ -4,6 +4,7 @@ import com.shoutoutz.api.category.domain.CategoryType;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.LinkPreview;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.net.URI;
@@ -13,6 +14,7 @@ import java.util.Map;
 
 public record FeedCommandResponse(
         long feedId,
+        FeedType feedType,
         String title,
         String content,
         boolean isAnonymous,
@@ -28,6 +30,7 @@ public record FeedCommandResponse(
         Map<Long, URI> urls = mediaUrls == null ? Map.of() : mediaUrls;
         return new FeedCommandResponse(
                 feed.feedId(),
+                feed.feedType(),
                 feed.title(),
                 feed.content(),
                 feed.isAnonymous(),
