@@ -61,7 +61,8 @@ public interface ProjectRepository {
     boolean existsPublicById(long projectId);
   
     /**
-     * slug로 삭제되지 않은 프로젝트의 상세 정보를 조회
+     * slug로 프로젝트 상세 정보를 조회한다. 삭제되지 않은 프로젝트는 모두 조회하고,
+     * 삭제된 프로젝트는 등록자 본인(viewerId)일 때만 조회한다.
      * @param viewerId 요청한 사용자 ID. 비로그인이면 null이며, 이때 likedByMe와 bookmarkedByMe는 false다.
      */
     Optional<ProjectDetail> findDetailBySlug(Slug slug, Long viewerId);

@@ -60,7 +60,7 @@ public class ProjectDetailJdbcRepository {
     private Optional<ProjectDetail> findProject(Slug slug, Long viewerId) {
         String sql = detailSelectSql() + """
                 WHERE p.slug = :slug
-                  AND p.deleted_at IS NULL
+                  AND (p.deleted_at IS NULL OR p.registered_by = :viewerId)
                 """;
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("slug", slug.value())
