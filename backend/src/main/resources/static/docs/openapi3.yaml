@@ -99,10 +99,10 @@ paths:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\"\
+                    ,\"message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug 형식이\
-                    \ 올바르지 않습니다.\"}]}"
+                    :\"type은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -392,6 +392,43 @@ paths:
                     :\"2026-09-20T14:59:59Z\",\"isPinned\":false,\"pinOrder\":null,\"\
                     likeCount\":0,\"likedByMe\":false}],\"meta\":{\"nextCursor\":null,\"\
                     hasNext\":false,\"totalCount\":1}}"
+  /api/v1/notifications:
+    get:
+      tags:
+      - Notification
+      summary: 알림 목록 조회
+      description: 현재 로그인 사용자의 알림을 최신순으로 조회한다.
+      operationId: notification-list
+      parameters:
+      - name: cursor
+        in: query
+        description: 다음 페이지 조회용 커서. 첫 요청은 생략
+        required: false
+        schema:
+          type: string
+      - name: size
+        in: query
+        description: "조회 개수. 기본값 20, 1~50"
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationListSuccessResponse"
+              examples:
+                notification-list:
+                  value: "{\"status\":\"success\",\"data\":[{\"notificationId\":100,\"\
+                    notificationType\":\"QUESTION_ACTIVITY\",\"message\":\"새로운 답변이\
+                    \ 달렸어요.\",\"feedId\":10,\"feedTitle\":\"질문 제목\",\"commentId\"\
+                    :20,\"actor\":{\"userId\":30,\"handle\":\"@actor\",\"displayName\"\
+                    :\"작성자\",\"avatarUrl\":null},\"isRead\":false,\"createdAt\":\"\
+                    2026-09-30T00:00:00Z\"}],\"meta\":{\"nextCursor\":null,\"hasNext\"\
+                    :false,\"totalCount\":1}}"
   /api/v1/projects:
     get:
       tags:
@@ -1113,10 +1150,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1204,9 +1241,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -1666,10 +1703,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
-                    eventStartAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -1974,6 +2011,33 @@ paths:
                 news-delete:
                   value: "{\"status\":\"success\",\"data\":{\"id\":106,\"deletedAt\"\
                     :\"2026-09-19T12:00:00Z\"}}"
+  /api/v1/notifications/read-all:
+    patch:
+      tags:
+      - Notification
+      summary: 전체 알림 읽음 처리
+      description: 현재 로그인 사용자의 모든 알림을 읽음 상태로 변경한다.
+      operationId: notification-read-all
+      responses:
+        "204":
+          description: "204"
+  /api/v1/notifications/unread-count:
+    get:
+      tags:
+      - Notification
+      summary: 읽지 않은 알림 수 조회
+      description: 현재 로그인 사용자의 읽지 않은 알림 수를 조회한다.
+      operationId: notification-unread-count
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationUnreadCountSuccessResponse"
+              examples:
+                notification-unread-count:
+                  value: "{\"status\":\"success\",\"data\":{\"unreadCount\":3}}"
   /api/v1/projects/@{slug}:
     get:
       tags:
@@ -2502,9 +2566,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -3029,6 +3093,32 @@ paths:
                 media-status-get-validation_failed:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\"}"
+  /api/v1/notifications/{notificationId}/read:
+    patch:
+      tags:
+      - Notification
+      summary: 알림 읽음 처리
+      description: 현재 로그인 사용자의 특정 알림을 읽음 상태로 변경한다.
+      operationId: notification-read
+      parameters:
+      - name: notificationId
+        in: path
+        description: 알림 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationReadSuccessResponse"
+              examples:
+                notification-read:
+                  value: "{\"status\":\"success\",\"data\":{\"notificationId\":100,\"\
+                    isRead\":true}}"
   /api/v1/projects/@{slug}/comments:
     get:
       tags:
@@ -5382,6 +5472,25 @@ components:
         title:
           type: string
           description: 프로젝트 이름. 앞뒤 공백을 자른 뒤 100자 이하 (유니코드 코드 포인트 기준)
+    NotificationUnreadCountSuccessResponse:
+      title: NotificationUnreadCountSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - unreadCount
+          type: object
+          properties:
+            unreadCount:
+              type: number
+              description: 읽지 않은 알림 수
+          description: 읽지 않은 알림 수
+        status:
+          type: string
+          description: 응답 상태
     ProjectCommentDeleteSuccessResponse:
       title: ProjectCommentDeleteSuccessResponse
       required:
@@ -6422,6 +6531,29 @@ components:
         status:
           type: string
           description: 응답 상태
+    NotificationReadSuccessResponse:
+      title: NotificationReadSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - isRead
+          - notificationId
+          type: object
+          properties:
+            isRead:
+              type: boolean
+              description: 읽음 상태
+            notificationId:
+              type: number
+              description: 알림 ID
+          description: 읽음 처리 결과
+        status:
+          type: string
+          description: 응답 상태
     UserProfileSummarySuccessResponse:
       title: UserProfileSummarySuccessResponse
       required:
@@ -6949,37 +7081,6 @@ components:
         mediaId:
           type: number
           description: READY HOME_BANNER 미디어 ID
-    HomeStatisticsSuccessResponse:
-      title: HomeStatisticsSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - currentCohort
-          - feedCount
-          - ongoingEventCount
-          - projectCount
-          type: object
-          properties:
-            projectCount:
-              type: number
-              description: 승인되었고 삭제되지 않은 프로젝트 수
-            currentCohort:
-              type: number
-              description: 전체 기수 개수
-            feedCount:
-              type: number
-              description: 삭제되지 않은 피드 수
-            ongoingEventCount:
-              type: number
-              description: 조회 시각에 진행 중인 삭제되지 않은 이벤트 수
-          description: 홈 통계
-        status:
-          type: string
-          description: 응답 상태
     UserProfileUpdateSuccessResponse:
       title: UserProfileUpdateSuccessResponse
       required:
@@ -7040,6 +7141,37 @@ components:
               type: number
               description: 사용자 ID
           description: 수정된 사용자 프로필
+        status:
+          type: string
+          description: 응답 상태
+    HomeStatisticsSuccessResponse:
+      title: HomeStatisticsSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - currentCohort
+          - feedCount
+          - ongoingEventCount
+          - projectCount
+          type: object
+          properties:
+            projectCount:
+              type: number
+              description: 승인되었고 삭제되지 않은 프로젝트 수
+            currentCohort:
+              type: number
+              description: 전체 기수 개수
+            feedCount:
+              type: number
+              description: 삭제되지 않은 피드 수
+            ongoingEventCount:
+              type: number
+              description: 조회 시각에 진행 중인 삭제되지 않은 이벤트 수
+          description: 홈 통계
         status:
           type: string
           description: 응답 상태
@@ -7320,6 +7452,93 @@ components:
               type: string
               description: 반응 타입(LIKE 또는 BOOKMARK)
           description: 피드 반응 변경 결과
+        status:
+          type: string
+          description: 응답 상태
+    NotificationListSuccessResponse:
+      title: NotificationListSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 알림 목록
+          items:
+            required:
+            - createdAt
+            - isRead
+            - message
+            - notificationId
+            - notificationType
+            type: object
+            properties:
+              actor:
+                type: object
+                properties:
+                  avatarUrl:
+                    type: string
+                    description: 사용자 아바타 URL
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 사용자 표시 이름
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 사용자 handle
+                    nullable: true
+                  userId:
+                    type: number
+                    description: 사용자 ID
+                    nullable: true
+                description: 알림을 발생시킨 사용자
+              createdAt:
+                type: string
+                description: 알림 생성 시각
+              feedId:
+                type: number
+                description: 대상 피드 ID
+                nullable: true
+              isRead:
+                type: boolean
+                description: 읽음 상태
+              commentId:
+                type: number
+                description: 대상 댓글 ID
+                nullable: true
+              notificationId:
+                type: number
+                description: 알림 ID
+              notificationType:
+                type: string
+                description: 알림 타입
+              feedTitle:
+                type: string
+                description: 대상 피드 제목
+                nullable: true
+              message:
+                type: string
+                description: 알림 메시지
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: 전체 알림 수
+          description: 페이지 정보
         status:
           type: string
           description: 응답 상태

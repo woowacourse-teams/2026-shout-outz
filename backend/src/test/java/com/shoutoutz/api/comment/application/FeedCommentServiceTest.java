@@ -36,6 +36,7 @@ import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.notification.application.NotificationService;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
@@ -85,6 +86,9 @@ class FeedCommentServiceTest {
     @Mock
     private FeedCommentReactionRepository feedCommentReactionRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
     private FeedCommentService feedCommentService;
 
     @BeforeEach
@@ -96,7 +100,8 @@ class FeedCommentServiceTest {
                 userProfileRepository,
                 mediaUrlResolver,
                 feedCommentReactionRepository,
-                userRepository
+                userRepository,
+                notificationService
         );
         lenient().when(mediaUrlResolver.resolve(10L))
                 .thenReturn(URI.create("https://cdn.example.com/media/10/display"));
@@ -134,6 +139,7 @@ class FeedCommentServiceTest {
         assertThat(captor.getValue().getAuthorId()).isEqualTo(AUTHOR_ID);
         assertThat(captor.getValue().getContent()).isEqualTo("좋은 피드네요.");
         assertThat(captor.getValue().getParentId()).isNull();
+        verify(notificationService).createForFeedComment(FEED_ID, COMMENT_ID, AUTHOR_ID);
     }
 
     @Test
