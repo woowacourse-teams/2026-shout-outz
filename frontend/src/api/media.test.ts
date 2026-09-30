@@ -4,7 +4,7 @@
  */
 import { http, HttpResponse } from 'msw';
 
-import { uploadAvatar } from '@/api/media';
+import { uploadAvatar, waitUntilReady } from '@/api/media';
 import { server } from '@/test/renderRoute';
 
 const MEDIA_ID = 7;
@@ -60,10 +60,35 @@ describe('uploadAvatar', () => {
     expect(polls.count).toBe(1);
   });
 
-  it('처리 완료를 기다리기 전에는 저장에 쓸 mediaId를 내주지 않는다', async () => {
-    // PROCESSING만 계속 오면 예산을 다 쓰고 포기한다. 무한히 매달리지 않는다.
+  it('끝내 안 끝나면 mediaId를 담은 오류로 끊는다', async () => {
+    // PROCESSING만 계속 오면 예산을 다 쓰고 멈춘다. 무한히 매달리지 않는다.
     mockUpload(['PROCESSING']);
 
-    await expect(uploadAvatar(file())).rejects.toThrow('이미지 처리가 끝나지 않았습니다.');
+    // 업로드는 이미 끝났으므로, 호출부가 파일을 다시 올리지 않고 이어받을 수 있어야 한다.
+    await expect(uploadAvatar(file(), { timeoutMs: 400 })).rejects.toMatchObject({
+      name: 'MediaNotReadyError',
+      mediaId: MEDIA_ID,
+    });
+  });
+
+  it('오래 걸리면 기다리는 도중에 알린다', async () => {
+    mockUpload(['PROCESSING']);
+    const onSlow = jest.fn();
+
+    await expect(
+      uploadAvatar(file(), { timeoutMs: 600, slowNoticeMs: 100, onSlow }),
+    ).rejects.toThrow();
+
+    // 한 번만 알린다. 폴링마다 화면이 깜빡이면 안 된다.
+    expect(onSlow).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('waitUntilReady', () => {
+  it('업로드 없이 상태만 이어서 확인한다', async () => {
+    const polls = mockUpload(['PROCESSING', 'READY']);
+
+    await expect(waitUntilReady(MEDIA_ID)).resolves.toBeUndefined();
+    expect(polls.count).toBe(2);
   });
 });

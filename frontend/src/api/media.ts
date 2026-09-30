@@ -39,10 +39,49 @@ interface MediaUploadTicket {
  * 1번의 targetId를 null로 보낸다(백엔드와 합의됨).
  */
 
-/** 상태를 물어보는 간격. 다 쓰면 포기한다. 합이 약 9초다. */
-const STATUS_POLL_DELAYS_MS = [200, 300, 500, 800, 1200, 2000, 2000, 2000];
+/**
+ * 서버가 밝힌 이미지 처리 시간은 최대 1분이다. 지연을 감안해 조금 더 잡는다.
+ *
+ * 처리 동시성이 2라 대기 시간이 내 이미지 크기가 아니라 앞사람들의 큐 길이에 좌우된다.
+ */
+const READY_TIMEOUT_MS = 70_000;
+
+/** 이만큼 지나면 오래 걸리고 있다고 알린다. 기다리는 것은 계속한다. */
+const SLOW_NOTICE_MS = 10_000;
+
+const MIN_POLL_DELAY_MS = 200;
+const MAX_POLL_DELAY_MS = 3_000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * 기다리다 끊긴 경우. 업로드는 끝났고 서버가 아직 처리 중이다.
+ *
+ * `mediaId`를 들고 있으므로 파일을 다시 올리지 않고 `waitUntilReady`만 다시 부르면 된다.
+ */
+export class MediaNotReadyError extends Error {
+  constructor(readonly mediaId: number) {
+    super('이미지 처리가 아직 끝나지 않았습니다.');
+    this.name = 'MediaNotReadyError';
+  }
+}
+
+/** 더 기다려도 바뀌지 않는 상태로 끝난 경우. */
+export class MediaProcessingFailedError extends Error {
+  constructor(readonly status: 'FAILED' | 'EXPIRED') {
+    super(`이미지 처리에 실패했습니다: ${status}`);
+    this.name = 'MediaProcessingFailedError';
+  }
+}
+
+export interface WaitUntilReadyOptions {
+  /** 오래 걸릴 때 한 번 불린다. 화면이 안내 문구로 바꿀 수 있게 한다. */
+  onSlow?: () => void;
+  /** @default 70_000 */
+  timeoutMs?: number;
+  /** @default 10_000 */
+  slowNoticeMs?: number;
+}
 
 /**
  * 이미지 처리가 끝날 때까지 기다린다.
@@ -50,30 +89,47 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * `complete`는 처리를 큐에 넣고 바로 응답한다(서버가 별도 스레드 풀에서 돌린다). 그래서 응답이
  * 왔다고 쓸 수 있는 게 아니고, 이 상태로 프로필을 저장하면 `AVATAR_IMAGE_NOT_READY`로 거절된다.
  *
- * 저장 요청을 반복하는 대신 상태만 물어본다. 실패한 저장은 전체 프로필 교체 PUT이라 무겁고,
+ * 저장을 반복하는 대신 상태만 물어본다. 실패한 저장은 전체 프로필 교체 PUT이라 무겁고,
  * 무엇보다 `FAILED`와 "아직 처리 중"을 구분하지 못한다.
  */
-async function waitUntilReady(mediaId: number): Promise<void> {
+export async function waitUntilReady(
+  mediaId: number,
+  {
+    onSlow,
+    timeoutMs = READY_TIMEOUT_MS,
+    slowNoticeMs = SLOW_NOTICE_MS,
+  }: WaitUntilReadyOptions = {},
+): Promise<void> {
   const path = `${MEDIA_PATH}/${mediaId}/status`;
+  const startedAt = Date.now();
+  let notified = false;
+  let delayMs = MIN_POLL_DELAY_MS;
 
-  for (let attempt = 0; ; attempt += 1) {
+  for (;;) {
     const body = await kyInstance.get(path).json<MediaStatusSuccessResponse>();
     const { status } = body.data;
 
     if (status === 'READY') return;
-    // 처리가 끝나 버린 상태들. 더 기다려도 바뀌지 않는다.
-    if (status === 'FAILED' || status === 'EXPIRED') {
-      throw new Error(`이미지 처리에 실패했습니다: ${status}`);
+    if (status === 'FAILED' || status === 'EXPIRED') throw new MediaProcessingFailedError(status);
+
+    const elapsedMs = Date.now() - startedAt;
+    if (elapsedMs >= timeoutMs) throw new MediaNotReadyError(mediaId);
+
+    if (!notified && elapsedMs >= slowNoticeMs) {
+      notified = true;
+      onSlow?.();
     }
 
-    const delayMs = STATUS_POLL_DELAYS_MS[attempt];
-    if (delayMs === undefined) throw new Error('이미지 처리가 끝나지 않았습니다.');
-
     await sleep(delayMs);
+    delayMs = Math.min(delayMs * 2, MAX_POLL_DELAY_MS);
   }
 }
 
-export async function uploadMedia(file: File, purpose: MediaPurpose): Promise<number> {
+export async function uploadMedia(
+  file: File,
+  purpose: MediaPurpose,
+  options?: WaitUntilReadyOptions,
+): Promise<number> {
   const ticket = await kyInstance
     .post(`${MEDIA_PATH}/uploads`, {
       json: {
@@ -93,7 +149,7 @@ export async function uploadMedia(file: File, purpose: MediaPurpose): Promise<nu
   });
 
   await kyInstance.post(`${MEDIA_PATH}/${ticket.mediaId}/complete`);
-  await waitUntilReady(ticket.mediaId);
+  await waitUntilReady(ticket.mediaId, options);
 
   return ticket.mediaId;
 }
@@ -102,4 +158,5 @@ export const uploadProjectThumbnail = (file: File) => uploadMedia(file, 'PROJECT
 
 export const uploadHomeBannerImage = (file: File) => uploadMedia(file, 'HOME_BANNER');
 
-export const uploadAvatar = (file: File) => uploadMedia(file, 'USER_AVATAR');
+export const uploadAvatar = (file: File, options?: WaitUntilReadyOptions) =>
+  uploadMedia(file, 'USER_AVATAR', options);
