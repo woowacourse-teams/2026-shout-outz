@@ -67,13 +67,16 @@ public class FeedService {
                 userId,
                 request.title(),
                 request.content(),
+                request.isAnonymous(),
                 now
         ));
         feedRepository.saveCategories(savedFeed.getId(), request.categoryIds());
         feedRepository.saveMedia(savedFeed.getId(), request.mediaIds());
         linkPreviewService.sync(savedFeed.getId(), request.content());
 
-        return toCommandResponse(findFeedItem(savedFeed.getId()));
+        return toCommandResponse(request.isAnonymous()
+                ? findFeedItem(savedFeed.getId(), userId)
+                : findFeedItem(savedFeed.getId()));
     }
 
     @Transactional(readOnly = true)
@@ -173,12 +176,15 @@ public class FeedService {
         Feed updatedFeed = feedRepository.update(feed.update(
                 request.title(),
                 request.content(),
+                request.isAnonymous() == null ? feed.isAnonymous() : request.isAnonymous(),
                 clock.instant()
         ));
         feedRepository.saveCategories(feedId, request.categoryIds());
         feedRepository.saveMedia(feedId, request.mediaIds());
         linkPreviewService.sync(feedId, request.content());
-        return toCommandResponse(findFeedItem(updatedFeed.getId()));
+        return toCommandResponse(updatedFeed.isAnonymous()
+                ? findFeedItem(updatedFeed.getId(), userId)
+                : findFeedItem(updatedFeed.getId()));
     }
 
     @Transactional

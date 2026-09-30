@@ -40,6 +40,9 @@ public class FeedCommentEntity extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(name = "is_anonymous", nullable = false)
+    private boolean anonymous;
+
     @Column(name = "deleted_at")
     private Instant deletedAt;
 

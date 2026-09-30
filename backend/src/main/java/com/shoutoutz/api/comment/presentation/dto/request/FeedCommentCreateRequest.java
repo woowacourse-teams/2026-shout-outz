@@ -10,10 +10,17 @@ public record FeedCommentCreateRequest(
         String content,
 
         @Positive(message = "parentId는 0보다 커야 합니다.")
-        Long parentId
+        Long parentId,
+
+        Boolean isAnonymous
 ) {
+
+    public FeedCommentCreateRequest(String content, Long parentId) {
+        this(content, parentId, false);
+    }
 
     public FeedCommentCreateRequest {
         content = content == null ? null : content.strip();
+        isAnonymous = Boolean.TRUE.equals(isAnonymous);
     }
 }

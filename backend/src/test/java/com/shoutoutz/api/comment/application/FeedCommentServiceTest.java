@@ -219,6 +219,44 @@ class FeedCommentServiceTest {
     }
 
     @Test
+    @DisplayName("익명 댓글은 작성자가 아닌 사용자에게 작성자 정보를 노출하지 않는다.")
+    void masksAnonymousCommentAuthorForAnotherViewer() {
+        givenActiveFeed();
+        FeedComment anonymousComment = FeedComment.reconstitute(
+                COMMENT_ID,
+                FEED_ID,
+                AUTHOR_ID,
+                null,
+                "익명 댓글",
+                true,
+                NOW,
+                NOW,
+                null
+        );
+        when(feedCommentQueryRepository.findRootCommentsPage(
+                FEED_ID,
+                null,
+                FeedCommentSort.LATEST,
+                5
+        )).thenReturn(new FeedCommentPage(List.of(anonymousComment), false, 1L));
+        when(feedCommentQueryRepository.findReplies(FEED_ID, List.of(COMMENT_ID)))
+                .thenReturn(List.of());
+        givenAuthor();
+
+        FeedCommentFindResponse result = feedCommentService.findAll(
+                FEED_ID,
+                new FeedCommentFindRequest(null, 5, "LATEST"),
+                null
+        );
+
+        Comment comment = result.comments().getFirst();
+        assertThat(comment.isAnonymous()).isTrue();
+        assertThat(comment.author().userId()).isNull();
+        assertThat(comment.author().displayName()).isNull();
+        assertThat(comment.author().avatarUrl()).isNull();
+    }
+
+    @Test
     @DisplayName("로그인 사용자는 본인 댓글만 수정 가능 상태로 조회한다.")
     void marksOnlyLoggedInUsersCommentsAsEditable() {
         givenActiveFeed();

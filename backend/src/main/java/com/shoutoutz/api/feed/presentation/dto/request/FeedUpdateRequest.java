@@ -22,6 +22,16 @@ public record FeedUpdateRequest(
 
         @NotNull(message = "mediaIds는 필수입니다.")
         @UniqueElements(message = "mediaIds에는 중복된 ID를 포함할 수 없습니다.")
-        List<@NotNull Long> mediaIds
+        List<@NotNull Long> mediaIds,
+
+        Boolean isAnonymous
 ) {
+    public FeedUpdateRequest(
+            String title,
+            String content,
+            List<Long> categoryIds,
+            List<Long> mediaIds
+    ) {
+        this(title, content, categoryIds, mediaIds, null);
+    }
 }

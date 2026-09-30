@@ -23,14 +23,15 @@ public class FeedRepositoryImpl implements FeedRepository {
     public Feed save(Feed feed) {
         return jdbcTemplate.queryForObject(
                 """
-                        INSERT INTO feeds (author_id, title, content, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?)
-                        RETURNING id, author_id, title, content, created_at, updated_at, deleted_at
+                        INSERT INTO feeds (author_id, title, content, is_anonymous, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        RETURNING id, author_id, title, content, is_anonymous, created_at, updated_at, deleted_at
                         """,
                 feedRowMapper(),
                 feed.getAuthorId(),
                 feed.getTitle(),
                 feed.getContent(),
+                feed.isAnonymous(),
                 Timestamp.from(feed.getCreatedAt()),
                 Timestamp.from(feed.getUpdatedAt())
         );
@@ -41,13 +42,14 @@ public class FeedRepositoryImpl implements FeedRepository {
         return jdbcTemplate.queryForObject(
                 """
                         UPDATE feeds
-                        SET title = ?, content = ?, updated_at = ?, deleted_at = ?
+                        SET title = ?, content = ?, is_anonymous = ?, updated_at = ?, deleted_at = ?
                         WHERE id = ?
-                        RETURNING id, author_id, title, content, created_at, updated_at, deleted_at
+                        RETURNING id, author_id, title, content, is_anonymous, created_at, updated_at, deleted_at
                         """,
                 feedRowMapper(),
                 feed.getTitle(),
                 feed.getContent(),
+                feed.isAnonymous(),
                 Timestamp.from(feed.getUpdatedAt()),
                 toTimestamp(feed.getDeletedAt()),
                 feed.getId()
@@ -58,7 +60,7 @@ public class FeedRepositoryImpl implements FeedRepository {
     public Optional<Feed> findActiveById(long feedId) {
         return jdbcTemplate.query(
                         """
-                                SELECT id, author_id, title, content, created_at, updated_at, deleted_at
+                                SELECT id, author_id, title, content, is_anonymous, created_at, updated_at, deleted_at
                                 FROM feeds
                                 WHERE id = ?
                                   AND deleted_at IS NULL
@@ -102,6 +104,7 @@ public class FeedRepositoryImpl implements FeedRepository {
                 resultSet.getLong("author_id"),
                 resultSet.getString("title"),
                 resultSet.getString("content"),
+                resultSet.getBoolean("is_anonymous"),
                 resultSet.getTimestamp("created_at").toInstant(),
                 resultSet.getTimestamp("updated_at").toInstant(),
                 toInstant(resultSet, "deleted_at")

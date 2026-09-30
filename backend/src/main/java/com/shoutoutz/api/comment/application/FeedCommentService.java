@@ -160,7 +160,8 @@ public class FeedCommentService {
                 feedId,
                 authorId,
                 parent == null ? null : parent.getId(),
-                request.content()
+                request.content(),
+                request.isAnonymous()
         );
         FeedComment savedComment = feedCommentRepository.save(comment);
         if (notificationService != null) {
@@ -186,7 +187,8 @@ public class FeedCommentService {
                 savedComment.getParentId(),
                 savedComment.getCreatedAt(),
                 savedComment.getUpdatedAt(),
-                true
+                true,
+                savedComment.isAnonymous()
         );
     }
 
@@ -287,7 +289,8 @@ public class FeedCommentService {
                 comment.getCreatedAt(),
                 comment.getUpdatedAt(),
                 true,
-                comment.isEdited()
+                comment.isEdited(),
+                comment.isAnonymous()
         );
     }
 
@@ -394,22 +397,35 @@ public class FeedCommentService {
         // 삭제된 댓글이 아니며, 작성자가 본인인 경우 수정 가능
         boolean editable = !comment.isDeleted()
                 && Objects.equals(comment.getAuthorId(), loginUserId);
+        boolean authorVisible = !comment.isAnonymous()
+                || Objects.equals(comment.getAuthorId(), loginUserId);
         FeedCommentReactionCounts counts = comment.isDeleted()
                 ? new FeedCommentReactionCounts(0L, false)
                 : reactionCounts.getOrDefault(comment.getId(), new FeedCommentReactionCounts(0L, false));
         return new FeedCommentFindResponse.Comment(
                 comment.getId(),
                 comment.isDeleted() ? null : comment.getContent(),
-                new FeedCommentFindResponse.Author(
-                        author.getUserId(),
-                        handles.get(author.getUserId()),
-                        author.getDisplayName().value(),
-                        author.getUserType(),
-                        trackValue(author),
-                        cohortValue(author),
-                        author.getAvatarImageId(),
-                        toUrl(findUrl(avatarUrls, author.getAvatarImageId()))
-                ),
+                authorVisible
+                        ? new FeedCommentFindResponse.Author(
+                                author.getUserId(),
+                                handles.get(author.getUserId()),
+                                author.getDisplayName().value(),
+                                author.getUserType(),
+                                trackValue(author),
+                                cohortValue(author),
+                                author.getAvatarImageId(),
+                                toUrl(findUrl(avatarUrls, author.getAvatarImageId()))
+                        )
+                        : new FeedCommentFindResponse.Author(
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null
+                        ),
                 comment.getParentId(),
                 comment.getCreatedAt(),
                 comment.getUpdatedAt(),
@@ -417,7 +433,8 @@ public class FeedCommentService {
                 comment.isEdited(),
                 comment.isDeleted(),
                 counts.agreeCount(),
-                counts.agreedByMe()
+                counts.agreedByMe(),
+                comment.isAnonymous()
         );
     }
 

@@ -57,6 +57,7 @@ class FeedCommentRepositoryIntegrationTest {
         assertThat(found.getAuthorId()).isEqualTo(author.getId());
         assertThat(found.getParentId()).isNull();
         assertThat(found.getContent()).isEqualTo("댓글 내용");
+        assertThat(found.isAnonymous()).isFalse();
         assertThat(found.getCreatedAt()).isNotNull();
         assertThat(found.getUpdatedAt()).isNotNull();
         assertThat(found.isDeleted()).isFalse();
@@ -78,6 +79,21 @@ class FeedCommentRepositoryIntegrationTest {
         FeedComment found = feedCommentRepository.findById(reply.getId()).orElseThrow();
         assertThat(found.getFeedId()).isEqualTo(feed.getId());
         assertThat(found.getParentId()).isEqualTo(root.getId());
+    }
+
+    @Test
+    @DisplayName("피드 댓글의 익명 여부를 저장하고 조회한다")
+    void savesAnonymousFlag() {
+        User author = userRepository.save(User.initialize("@feed-anonymous-" + uniqueSuffix()));
+        Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 제목", "피드 본문", NOW));
+
+        FeedComment saved = feedCommentRepository.save(
+                FeedComment.create(feed.getId(), author.getId(), null, "익명 댓글", true)
+        );
+
+        FeedComment found = feedCommentRepository.findById(saved.getId()).orElseThrow();
+
+        assertThat(found.isAnonymous()).isTrue();
     }
 
     @Test

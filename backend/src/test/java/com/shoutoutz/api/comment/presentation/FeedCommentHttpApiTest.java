@@ -162,6 +162,8 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data[].content").type(STRING)
                                                 .description("댓글 내용. 삭제된 댓글은 null")
                                                 .optional(),
+                                        fieldWithPath("data[].isAnonymous").type(BOOLEAN)
+                                                .description("작성자 정보를 익명으로 공개할지 여부"),
                                         fieldWithPath("data[].author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data[].author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data[].author.handle").type(STRING).description("작성자 handle").optional(),
@@ -316,6 +318,9 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("content")
                                                 .type(STRING)
                                                 .description("앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"),
+                                        fieldWithPath("isAnonymous").type(BOOLEAN)
+                                                .description("작성자 정보를 익명으로 공개할지 여부")
+                                                .optional(),
                                         fieldWithPath("parentId")
                                                 .type(NUMBER)
                                                 .description("같은 피드의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글")
@@ -326,6 +331,8 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("생성된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("댓글 ID"),
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
+                                        fieldWithPath("data.isAnonymous").type(BOOLEAN)
+                                                .description("작성자 정보를 익명으로 공개할지 여부"),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.handle").type(STRING).description("작성자 handle").optional(),
@@ -418,6 +425,8 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("수정된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("댓글 ID"),
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
+                                        fieldWithPath("data.isAnonymous").type(BOOLEAN)
+                                                .description("작성자 정보를 익명으로 공개할지 여부"),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.handle").type(STRING).description("작성자 handle").optional(),
