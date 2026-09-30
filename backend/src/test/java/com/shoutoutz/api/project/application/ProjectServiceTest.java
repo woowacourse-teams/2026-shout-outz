@@ -16,6 +16,9 @@ import static org.mockito.Mockito.when;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.cohort.domain.CohortErrorCode;
 import com.shoutoutz.api.cohort.domain.InvalidCohortException;
+import com.shoutoutz.api.auth.domain.OAuthAccount;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
+import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
@@ -83,6 +86,7 @@ import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -152,6 +156,9 @@ class ProjectServiceTest {
     @Mock
     private MediaUrlResolver mediaUrlResolver;
 
+    @Mock
+    private OAuthAccountRepository oauthAccountRepository;
+
     private ProjectService projectService;
 
     @BeforeEach
@@ -167,6 +174,7 @@ class ProjectServiceTest {
                 projectDeletionRepository,
                 userProjectQueryRepository,
                 mediaUrlResolver,
+                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
         lenient().when(projectSlugResolver.resolveId(SLUG)).thenReturn(PROJECT_ID);
@@ -968,8 +976,9 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("가입한 팀원이 프로필 이미지를 정하지 않았으면 GitHub 프로필 이미지가 있어도 avatarUrl은 null이다.")
-    void returnsNullAvatarUrlForUserWithoutAvatar() {
+    @DisplayName("가입한 팀원이 프로필 이미지를 정하지 않으면 GitHub 프로필 이미지를 기본값으로 반환한다.")
+    void returnsGithubAvatarUrlForUserWithoutAvatar() {
+        String githubAvatarUrl = "https://avatars.githubusercontent.com/u/1";
         ProjectDetail detail = projectDetail(ApprovalStatus.APPROVED, DESCRIPTION, List.of(new ProjectMemberProfile(
                 REGISTERED_BY,
                 "@dhyepark",
@@ -982,10 +991,20 @@ class ProjectServiceTest {
                 null
         )));
         when(projectRepository.findDetailBySlug(new Slug("loop"), null)).thenReturn(Optional.of(detail));
+        when(oauthAccountRepository.findAllByUserIdsAndProvider(
+                Set.of(REGISTERED_BY),
+                OAuthProvider.GITHUB
+        )).thenReturn(List.of(OAuthAccount.builder()
+                .id(10L)
+                .userId(REGISTERED_BY)
+                .provider(OAuthProvider.GITHUB)
+                .providerAccountId("12345678")
+                .providerAvatarUrl(githubAvatarUrl)
+                .build()));
 
         ProjectDetailResponse response = projectService.findDetail("loop", null);
 
-        assertThat(response.members().getFirst().avatarUrl()).isNull();
+        assertThat(response.members().getFirst().avatarUrl()).isEqualTo(githubAvatarUrl);
     }
 
     @Test

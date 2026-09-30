@@ -10,7 +10,8 @@ import java.util.Map;
 /**
  * 프로젝트 팀원 응답 객체
  * 상세 조회와 목록 조회 응답이 함께 쓴다.
- * 가입한 사용자는 프로필 이미지 URL을, 가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL을 avatarUrl로 내려준다.
+ * 가입한 사용자는 직접 업로드한 이미지가 없으면 GitHub 프로필 이미지 URL을 기본값으로 사용하고,
+ * 가입하지 않은 이관 팀원은 저장된 GitHub 프로필 이미지 URL을 내려준다.
  * 이관 팀원은 githubProfileUrl도 함께 가진다.
  */
 public record ProjectMemberProfileResponse(
@@ -48,6 +49,14 @@ public record ProjectMemberProfileResponse(
             ProjectMemberProfile member,
             Map<Long, URI> mediaUrls
     ) {
+        return from(member, mediaUrls, Map.of());
+    }
+
+    public static ProjectMemberProfileResponse from(
+            ProjectMemberProfile member,
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls
+    ) {
         return new ProjectMemberProfileResponse(
                 member.userId(),
                 member.handle(),
@@ -55,20 +64,31 @@ public record ProjectMemberProfileResponse(
                 member.userType(),
                 cohortValue(member.userType(), member.cohort()),
                 trackValue(member.userType(), member.track()),
-                avatarUrl(member, mediaUrls),
+                avatarUrl(member, mediaUrls, userAvatarUrls),
                 member.githubProfileUrl()
         );
     }
 
     /**
-     * 가입하지 않은 이관 팀원은 GitHub 프로필 이미지를 보여준다.
-     * 가입한 사용자는 프로필 이미지를 정하지 않았으면 null이고, 기본 이미지는 클라이언트가 보여준다.
+     * 가입하지 않은 이관 팀원은 저장된 GitHub 프로필 이미지를 보여준다.
+     * 가입한 사용자는 직접 업로드한 이미지가 없으면 OAuth 계정의 GitHub 이미지를 보여준다.
      */
-    private static String avatarUrl(ProjectMemberProfile member, Map<Long, URI> mediaUrls) {
+    private static String avatarUrl(
+            ProjectMemberProfile member,
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls
+    ) {
         if (member.userId() == null) {
             return member.githubAvatarUrl();
         }
-        return toUrl(mediaUrls, member.avatarImageId());
+        if (member.userType() == null) {
+            return null;
+        }
+        String mediaUrl = toUrl(mediaUrls, member.avatarImageId());
+        if (mediaUrl != null) {
+            return mediaUrl;
+        }
+        return userAvatarUrls == null ? null : userAvatarUrls.get(member.userId());
     }
 
     private static String toUrl(Map<Long, URI> mediaUrls, Long mediaId) {

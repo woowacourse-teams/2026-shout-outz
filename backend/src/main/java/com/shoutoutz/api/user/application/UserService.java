@@ -4,8 +4,6 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
-import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
-import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
@@ -50,7 +48,7 @@ public class UserService {
     private final UserSearchCursorCodec userSearchCursorCodec;
     private final MediaMetadataRepository mediaMetadataRepository;
     private final MediaUrlResolver mediaUrlResolver;
-    private final OAuthAccountRepository oauthAccountRepository;
+    private final UserAvatarUrlResolver userAvatarUrlResolver;
 
     @Transactional
     public UserProfileUpdateResponse updateMyProfile(
@@ -151,7 +149,14 @@ public class UserService {
     private UserSearchResult createSearchResult(UserSearchPage page) {
         List<UserSearchItem> items = page.items();
         if (!page.hasNext()) {
-            return new UserSearchResult(items, null, false, page.totalCount(), resolveAvatarUrls(items));
+            return new UserSearchResult(
+                    items,
+                    null,
+                    false,
+                    page.totalCount(),
+                    resolveAvatarUrls(items),
+                    resolveUserAvatarUrls(items)
+            );
         }
 
         return new UserSearchResult(
@@ -159,7 +164,8 @@ public class UserService {
                 encodeCursor(items.getLast()),
                 true,
                 page.totalCount(),
-                resolveAvatarUrls(items)
+                resolveAvatarUrls(items),
+                resolveUserAvatarUrls(items)
         );
     }
 
@@ -253,6 +259,15 @@ public class UserService {
         return urls == null ? Map.of() : urls;
     }
 
+    private Map<Long, String> resolveUserAvatarUrls(List<UserSearchItem> items) {
+        return userAvatarUrlResolver.resolveAll(items.stream()
+                .map(item -> new UserAvatarUrlResolver.AvatarReference(
+                        item.userId(),
+                        item.avatarImageId()
+                ))
+                .toList());
+    }
+
     private String toUrl(java.net.URI url) {
         return url == null ? null : url.toString();
     }
@@ -265,13 +280,7 @@ public class UserService {
      * 외부 GitHub URL을 이 필드에 저장하지 않는다.</p>
      */
     private String resolveAvatarUrl(long userId, Long avatarImageId) {
-        String mediaUrl = toUrl(mediaUrlResolver.resolve(avatarImageId));
-        if (mediaUrl != null) {
-            return mediaUrl;
-        }
-        return oauthAccountRepository.findByUserIdAndProvider(userId, OAuthProvider.GITHUB)
-                .map(account -> account.getProviderAvatarUrl())
-                .orElse(null);
+        return userAvatarUrlResolver.resolve(userId, avatarImageId);
     }
 
     /**

@@ -25,6 +25,7 @@ import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -53,6 +54,7 @@ public class FeedService {
     private final UserProfileRepository userProfileRepository;
     private final FeedCursorCodec feedCursorCodec;
     private final MediaUrlResolver mediaUrlResolver;
+    private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final FeedLinkPreviewService linkPreviewService;
     private final Clock clock;
 
@@ -167,7 +169,7 @@ public class FeedService {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
         if (user.isDeleted()) {
-            return new FeedFindAllResult(List.of(), null, false, 0L, Map.of());
+            return new FeedFindAllResult(List.of(), null, false, 0L, Map.of(), Map.of());
         }
 
         FeedSort sort = FeedSort.LATEST;
@@ -232,8 +234,17 @@ public class FeedService {
             FeedSort sort
     ) {
         List<FeedItem> items = page.items();
+        Map<Long, java.net.URI> mediaUrls = resolveMediaUrls(items);
+        Map<Long, String> userAvatarUrls = resolveUserAvatarUrls(items);
         if (!page.hasNext()) {
-            return new FeedFindAllResult(items, null, false, page.totalCount(), resolveMediaUrls(items));
+            return new FeedFindAllResult(
+                    items,
+                    null,
+                    false,
+                    page.totalCount(),
+                    mediaUrls,
+                    userAvatarUrls
+            );
         }
 
         FeedItem lastItem = items.getLast();
@@ -246,15 +257,30 @@ public class FeedService {
                         lastItem.feedId()
                 )
         );
-        return new FeedFindAllResult(items, nextCursor, true, page.totalCount(), resolveMediaUrls(items));
+        return new FeedFindAllResult(
+                items,
+                nextCursor,
+                true,
+                page.totalCount(),
+                mediaUrls,
+                userAvatarUrls
+        );
     }
 
     private FeedResponse toQueryResponse(FeedItem item) {
-        return FeedResponse.from(item, resolveMediaUrls(List.of(item)));
+        return FeedResponse.from(
+                item,
+                resolveMediaUrls(List.of(item)),
+                resolveUserAvatarUrls(List.of(item))
+        );
     }
 
     private FeedCommandResponse toCommandResponse(FeedItem item) {
-        return FeedCommandResponse.from(item, resolveMediaUrls(List.of(item)));
+        return FeedCommandResponse.from(
+                item,
+                resolveMediaUrls(List.of(item)),
+                resolveUserAvatarUrls(List.of(item))
+        );
     }
 
     private Map<Long, java.net.URI> resolveMediaUrls(List<FeedItem> items) {
@@ -267,6 +293,15 @@ public class FeedService {
                 .collect(java.util.stream.Collectors.toSet());
         Map<Long, java.net.URI> urls = mediaUrlResolver.resolveAll(mediaIds);
         return urls == null ? Map.of() : urls;
+    }
+
+    private Map<Long, String> resolveUserAvatarUrls(List<FeedItem> items) {
+        return userAvatarUrlResolver.resolveAll(items.stream()
+                .map(item -> new UserAvatarUrlResolver.AvatarReference(
+                        item.author().userId(),
+                        item.author().avatarImageId()
+                ))
+                .toList());
     }
 
     /**

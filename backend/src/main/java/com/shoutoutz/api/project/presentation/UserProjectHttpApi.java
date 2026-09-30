@@ -51,7 +51,8 @@ public class UserProjectHttpApi {
                 : projectService.findAllByUser(handle, request, viewerId);
         List<UserProjectResponse> response = UserProjectResponse.from(
                 result.projects(),
-                result.mediaUrls()
+                result.mediaUrls(),
+                result.userAvatarUrls()
         );
         SliceMetaResponse meta = new SliceMetaResponse(
                 encodeNextCursor(result.nextCursor()),

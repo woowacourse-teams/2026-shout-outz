@@ -229,7 +229,9 @@ class NotificationHttpApiTest {
                 fieldWithPath("data[].actor.displayName")
                         .type(JsonFieldType.STRING).description("사용자 표시 이름").optional(),
                 fieldWithPath("data[].actor.avatarUrl")
-                        .type(JsonFieldType.STRING).description("사용자 아바타 URL").optional(),
+                        .type(JsonFieldType.STRING)
+                        .description("직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 사용자 아바타 URL")
+                        .optional(),
                 fieldWithPath("data[].isRead")
                         .type(JsonFieldType.BOOLEAN).description("읽음 상태"),
                 fieldWithPath("data[].createdAt")

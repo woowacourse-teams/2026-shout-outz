@@ -15,6 +15,7 @@ import com.shoutoutz.api.category.domain.CategoryType;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
@@ -29,6 +30,7 @@ import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
@@ -71,6 +73,9 @@ class FeedServiceCommandTest {
     private MediaUrlResolver mediaUrlResolver;
 
     @Mock
+    private OAuthAccountRepository oauthAccountRepository;
+
+    @Mock
     private FeedLinkPreviewService linkPreviewService;
 
     private FeedService feedService;
@@ -85,6 +90,7 @@ class FeedServiceCommandTest {
                 userProfileRepository,
                 new FeedCursorCodec(),
                 mediaUrlResolver,
+                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
                 linkPreviewService,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );

@@ -1,6 +1,8 @@
 package com.shoutoutz.api.auth.infrastructure.jpa;
 
 import com.shoutoutz.api.auth.domain.OAuthProvider;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -8,6 +10,11 @@ public interface OAuthAccountJpaRepository extends JpaRepository<OAuthAccountEnt
 
     Optional<OAuthAccountEntity> findByUserIdAndProvider(
             long userId,
+            OAuthProvider provider
+    );
+
+    List<OAuthAccountEntity> findAllByUserIdInAndProvider(
+            Collection<Long> userIds,
             OAuthProvider provider
     );
 
