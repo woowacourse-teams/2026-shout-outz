@@ -2,8 +2,6 @@ import { Suspense, useState } from 'react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 
 import { sessionQuery, signupMutation } from '@/apis/session';
-import { updateMyProfile } from '@/apis/user';
-import { AvatarPicker } from '@/components/users/AvatarPicker';
 import { AppGnb } from '@/components/AppGnb';
 import { Button, getButtonStyles } from '@/components/Button';
 import { Field } from '@/components/Field';
@@ -83,19 +81,20 @@ function SignupContent({ onComplete }: SignupPageProps) {
 function SignupForm({ onComplete }: SignupPageProps) {
   const queryClient = useQueryClient();
   const mutation = useMutation(signupMutation);
-  const [handle, setHandle] = useState('');
+  // 입력칸에는 @ 뒤의 이름만 둔다. @는 칸 앞에 고정으로 보여 주고, 서버에 보낼 때 붙인다.
+  const [handleName, setHandleName] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [avatarImageId, setAvatarImageId] = useState<number | null>(null);
   const [errors, setErrors] = useState<SignupErrors>({});
 
   function validate() {
     const next: SignupErrors = {};
-    if (!/^[A-Za-z0-9_-]{2,30}$/.test(handle)) {
+    // 서버 `Handle.HANDLE_FORMAT_REGEX`(`^@[A-Za-z0-9_-]{2,30}$`)에서 @ 뒤 부분과 같은 규칙.
+    if (!/^[A-Za-z0-9_-]{2,30}$/.test(handleName)) {
       next.handle = '2~30자의 영문, 숫자, 밑줄, 하이픈으로 입력해 주세요.';
     }
-    if (!displayName.trim()) next.displayName = '표시 이름을 입력해 주세요.';
+    if (!displayName.trim()) next.displayName = '닉네임을 입력해 주세요.';
     else if (Array.from(displayName).length > 50) {
-      next.displayName = '표시 이름은 50자 이하로 입력해 주세요.';
+      next.displayName = '닉네임은 50자 이하로 입력해 주세요.';
     }
     return next;
   }
@@ -105,23 +104,9 @@ function SignupForm({ onComplete }: SignupPageProps) {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    const name = displayName.trim();
-
     try {
-      await mutation.mutateAsync({ handle, displayName: name });
+      await mutation.mutateAsync({ handle: `@${handleName}`, displayName: displayName.trim() });
       analytics.track({ name: 'signup_submitted' });
-
-      // 가입 요청에는 프로필 이미지 자리가 없어서, 계정이 생긴 뒤에 한 번 더 저장한다.
-      // 사진을 고르지 않았으면 부르지 않고, 이름에서 만든 기본 프로필이 그대로 남는다.
-      // 여기서 실패해도 가입 자체는 끝난 것이라 막지 않고 넘어간다(프로필에서 다시 올릴 수 있다).
-      if (avatarImageId !== null) {
-        try {
-          await updateMyProfile({ displayName: name, avatarImageId });
-        } catch {
-          // 프로필 사진만 못 저장한 것이므로 가입 흐름을 멈추지 않는다.
-        }
-      }
-
       await queryClient.fetchQuery(sessionQuery);
       onComplete();
     } catch (error) {
@@ -149,33 +134,37 @@ function SignupForm({ onComplete }: SignupPageProps) {
           void submit();
         }}
       >
-        <AvatarPicker
-          name={displayName}
-          onChange={setAvatarImageId}
-          label="프로필 사진 추가"
-          disabled={mutation.isPending}
-        />
-        <Field label="아이디" error={errors.handle}>
+        <Field label="핸들" error={errors.handle}>
           {(id) => (
-            <Input
-              id={id}
-              value={handle}
-              onChange={(event) => setHandle(event.target.value)}
-              placeholder="shoutoutz_user"
-              autoComplete="username"
-              aria-invalid={Boolean(errors.handle)}
-              disabled={mutation.isPending}
-            />
+            <div className="relative">
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-gray-500"
+              >
+                @
+              </span>
+              <Input
+                id={id}
+                value={handleName}
+                // @를 붙여 붙여넣어도 고정된 @와 겹치지 않게 앞의 @는 뗀다.
+                onChange={(event) => setHandleName(event.target.value.replace(/^@+/, ''))}
+                placeholder="woowa_crew"
+                autoComplete="username"
+                aria-invalid={Boolean(errors.handle)}
+                disabled={mutation.isPending}
+                className="pl-8"
+              />
+            </div>
           )}
         </Field>
-        <Field label="표시 이름" error={errors.displayName}>
+        <Field label="닉네임" error={errors.displayName}>
           {(id) => (
             <Input
               id={id}
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
-              placeholder="샤라웃"
-              autoComplete="name"
+              placeholder="코딩하는 곰돌이"
+              autoComplete="nickname"
               aria-invalid={Boolean(errors.displayName)}
               disabled={mutation.isPending}
             />
