@@ -7,7 +7,7 @@ import { AppGnb } from '@/components/AppGnb';
 import { getButtonStyles } from '@/components/Button';
 import { Footer } from '@/components/Footer';
 import { Tab } from '@/components/Tab';
-import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { CrewApprovalPanel } from '@/components/admin/CrewApprovalPanel';
 import { HomeBannerPanel } from '@/components/admin/HomeBannerPanel';
 import { NewsCreatePanel } from '@/components/admin/NewsCreatePanel';

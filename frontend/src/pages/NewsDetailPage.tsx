@@ -5,9 +5,11 @@ import { NewsCategoryBadge } from '@/components/NewsCategoryBadge';
 import { NewsNavRow } from '@/components/NewsNavRow';
 import { AppGnb } from '@/components/AppGnb';
 import { Footer } from '@/components/Footer';
-import { NewsDetailBoundary } from '@/components/news/NewsDetailBoundary';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
+import { Button } from '@/components/Button';
 import { newsDetailQueryOptions } from '@/api/news';
 import { formatDotDate } from '@/utils/date';
+import { isHTTPError } from 'ky';
 
 const route = getRouteApi('/news/$newsId');
 
@@ -18,9 +20,34 @@ export function NewsDetailPage() {
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <AppGnb aria-label="주요 헤더" />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 pt-6 pb-12 md:gap-7 md:pt-10 md:pb-20">
-        <NewsDetailBoundary key={newsId}>
+        <AsyncBoundary
+          key={newsId}
+          fallback={
+            <p role="status" className="py-16 text-center text-sm text-gray-500">
+              소식을 불러오는 중…
+            </p>
+          }
+          errorFallback={(error, reset) => {
+            const unavailable = isHTTPError(error) && error.response.status === 404;
+            return (
+              <div role="alert" className="space-y-4 py-16 text-center">
+                <title>소식 조회 오류 | shout-outz</title>
+                <h1 className="text-xl font-bold">
+                  {unavailable
+                    ? '소식이 없거나 접근할 수 없습니다.'
+                    : '소식을 불러오지 못했습니다.'}
+                </h1>
+                {!unavailable && (
+                  <Button variant="outline" onClick={reset}>
+                    다시 시도
+                  </Button>
+                )}
+              </div>
+            );
+          }}
+        >
           <NewsDetail newsId={Number(newsId)} />
-        </NewsDetailBoundary>
+        </AsyncBoundary>
       </main>
       <Footer />
     </div>

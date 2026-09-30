@@ -1,6 +1,6 @@
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
-import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { HomeBannerSection } from '@/components/home/HomeBannerSection';
 import { HomeEventSection } from '@/components/home/HomeEventSection';
 import { HomeFeedSection } from '@/components/home/HomeFeedSection';

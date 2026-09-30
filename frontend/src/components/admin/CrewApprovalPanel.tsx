@@ -8,7 +8,7 @@ import {
 } from '@/apis/admin';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
-import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { ReviewActions } from '@/components/admin/ReviewActions';
 import { ReviewStatusTab } from '@/components/admin/ReviewStatusTab';
 import { REVIEW_STATUS_LABELS } from '@/constants/admin';

@@ -126,7 +126,7 @@ describe('UserProfilePage', () => {
     try {
       renderRoute('/users/nobody');
 
-      expect(await screen.findByText('프로필을 불러오지 못했습니다.')).toBeInTheDocument();
+      expect(await screen.findByText('화면을 불러오지 못했습니다.')).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: '정우진' })).not.toBeInTheDocument();
     } finally {
       error.mockRestore();
