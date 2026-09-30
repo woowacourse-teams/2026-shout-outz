@@ -205,9 +205,9 @@ class HomeBannerAdminHttpApiTest {
                                   "mediaId": 10,
                                   "destinationType": "TARGET",
                                   "targetType": "PROJECT",
-                                  "targetId": 20,
+                                  "targetSlug": "loop",
                                   "linkType": "INTERNAL_PATH",
-                                  "linkUrl": "/projects/20",
+                                  "linkUrl": "/projects/@loop",
                                   "displayOrder": 0,
                                   "active": true
                                 }
@@ -265,7 +265,10 @@ class HomeBannerAdminHttpApiTest {
                         .description("이동 방식"),
                 new EnumFields(BannerTargetType.class).withPath("targetType")
                         .description("대상 리소스 유형").optional(),
-                fieldWithPath("targetId").type(NUMBER).description("대상 리소스 ID").optional(),
+                fieldWithPath("targetId").type(NUMBER)
+                        .description("대상 소식·피드 ID. 대상이 소식·피드일 때만 넣는다.").optional(),
+                fieldWithPath("targetSlug").type(STRING)
+                        .description("대상 프로젝트 slug. 대상이 프로젝트일 때만 넣는다.").optional(),
                 new EnumFields(BannerLinkType.class).withPath("linkType")
                         .description("URL 유형").optional(),
                 fieldWithPath("linkUrl").type(STRING)
@@ -295,7 +298,9 @@ class HomeBannerAdminHttpApiTest {
                 new EnumFields(BannerTargetType.class).withPath(path + ".targetType")
                         .description("대상 리소스 유형").optional(),
                 fieldWithPath(path + ".targetId").type(NUMBER)
-                        .description("대상 리소스 ID").optional(),
+                        .description("대상 리소스 ID. 대상이 뉴스·피드일 때만 값이 있다.").optional(),
+                fieldWithPath(path + ".targetSlug").type(STRING)
+                        .description("대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다.").optional(),
                 new EnumFields(BannerLinkType.class).withPath(path + ".linkType")
                         .description("URL 유형").optional(),
                 fieldWithPath(path + ".linkUrl").type(STRING)
@@ -324,7 +329,8 @@ class HomeBannerAdminHttpApiTest {
                   "mediaId": 10,
                   "destinationType": "TARGET",
                   "targetType": "PROJECT",
-                  "targetId": 20,
+                  "targetId": null,
+                  "targetSlug": "loop",
                   "linkType": null,
                   "linkUrl": null,
                   "displayOrder": 0,
@@ -341,7 +347,8 @@ class HomeBannerAdminHttpApiTest {
                 URI.create("https://cdn.example.com/banner"),
                 "TARGET",
                 "PROJECT",
-                20L,
+                null,
+                "loop",
                 null,
                 null,
                 0,

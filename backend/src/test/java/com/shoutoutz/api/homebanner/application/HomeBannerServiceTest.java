@@ -46,17 +46,39 @@ class HomeBannerServiceTest {
         assertThat(response.getFirst().bannerId()).isEqualTo(100L);
         assertThat(response.getFirst().mediaId()).isEqualTo(10L);
         assertThat(response.getFirst().imageUrl()).hasToString("https://cdn.example.com/banner");
+        assertThat(response.getFirst().targetType()).isEqualTo("PROJECT");
+        assertThat(response.getFirst().targetId()).isNull();
+        assertThat(response.getFirst().targetSlug()).isEqualTo("loop");
         verify(homeBannerRepository).findAllActive();
     }
 
+    @Test
+    void 뉴스_배너는_대상_ID를_그대로_주고_slug는_주지_않는다() {
+        HomeBanner banner = banner(BannerTargetType.NEWS, 30L, null);
+        when(homeBannerRepository.findAllActive()).thenReturn(List.of(banner));
+        when(imageService.createImageUrl(10L))
+                .thenReturn(URI.create("https://cdn.example.com/banner"));
+
+        var response = service.findAll();
+
+        assertThat(response.getFirst().targetType()).isEqualTo("NEWS");
+        assertThat(response.getFirst().targetId()).isEqualTo(30L);
+        assertThat(response.getFirst().targetSlug()).isNull();
+    }
+
     private HomeBanner banner() {
+        return banner(BannerTargetType.PROJECT, 20L, "loop");
+    }
+
+    private HomeBanner banner(BannerTargetType targetType, long targetId, String targetSlug) {
         Instant now = Instant.parse("2026-09-17T00:00:00Z");
         return HomeBanner.reconstitute(
                 100L,
                 10L,
                 BannerDestinationType.TARGET,
-                BannerTargetType.PROJECT,
-                20L,
+                targetType,
+                targetId,
+                targetSlug,
                 null,
                 null,
                 0,

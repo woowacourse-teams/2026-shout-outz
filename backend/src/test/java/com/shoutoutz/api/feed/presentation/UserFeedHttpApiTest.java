@@ -22,6 +22,7 @@ import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.feed.application.FeedService;
 import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
+import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
 import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
@@ -182,7 +183,7 @@ class UserFeedHttpApiTest {
         return new FeedItem(
                 10L,
                 "사용자 피드 제목",
-                "사용자 피드 본문",
+                "사용자 피드 본문 https://example.com/article",
                 new FeedItem.Author(
                         1L,
                         "@zzaekkii",
@@ -196,9 +197,13 @@ class UserFeedHttpApiTest {
                 List.of(new FeedItem.Media(30L, 0)),
                 5L,
                 3L,
+                0L,
+                false,
+                false,
                 0,
                 now,
-                now
+                now,
+                new LinkPreview("https://example.com/article", "글 제목", null, null, "Example")
         );
     }
 

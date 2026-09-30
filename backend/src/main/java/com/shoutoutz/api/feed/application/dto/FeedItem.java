@@ -24,8 +24,29 @@ public record FeedItem(
         boolean bookmarkedByMe,
         int relevanceRank,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        LinkPreview linkPreview
 ) {
+    public FeedItem(
+            long feedId,
+            String title,
+            String content,
+            Author author,
+            List<Category> categories,
+            List<Media> media,
+            long likeCount,
+            long commentCount,
+            long bookmarkCount,
+            boolean likedByMe,
+            boolean bookmarkedByMe,
+            int relevanceRank,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        this(feedId, title, content, author, categories, media, likeCount, commentCount,
+                bookmarkCount, likedByMe, bookmarkedByMe, relevanceRank, createdAt, updatedAt, null);
+    }
+
     public FeedItem(
             long feedId,
             String title,
@@ -53,7 +74,8 @@ public record FeedItem(
                 false,
                 relevanceRank,
                 createdAt,
-                updatedAt
+                updatedAt,
+                null
         );
     }
 

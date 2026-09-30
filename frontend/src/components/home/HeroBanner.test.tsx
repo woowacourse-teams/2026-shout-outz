@@ -10,7 +10,7 @@ import {
 import { HeroBanner } from '@/components/home/HeroBanner';
 import { type HomeBanner } from '@/types/home';
 
-const ROUTE_PATHS = ['/', '/projects/$id', '/news/$newsId', '/feeds/$feedId'];
+const ROUTE_PATHS = ['/', '/projects/$slug', '/news/$newsId', '/feeds/$feedId'];
 
 const banner = (overrides: Partial<HomeBanner> = {}): HomeBanner => ({
   bannerId: 100,
@@ -60,11 +60,11 @@ describe('HeroBanner', () => {
   });
 
   it('INTERNAL_PATH면 새 탭을 열지 않는 내부 링크다', async () => {
-    await renderBanner(banner({ linkType: 'INTERNAL_PATH', linkUrl: '/projects/3001' }));
+    await renderBanner(banner({ linkType: 'INTERNAL_PATH', linkUrl: '/projects/@dropit' }));
 
     const link = screen.getByRole('link', { name: '홈 배너' });
 
-    expect(link).toHaveAttribute('href', '/projects/3001');
+    expect(link).toHaveAttribute('href', '/projects/@dropit');
     expect(link).not.toHaveAttribute('target');
   });
 

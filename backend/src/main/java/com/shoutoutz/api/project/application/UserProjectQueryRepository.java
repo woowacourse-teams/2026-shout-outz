@@ -20,7 +20,7 @@ public interface UserProjectQueryRepository {
     UserProjectResult findAllByUserId(
             long userId,
             Long viewerId,
-            boolean includePending,
+            boolean includeAllApprovalStatuses,
             ProjectCursor cursor,
             int size
     );

@@ -67,8 +67,8 @@ class UserProjectListRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("승인 대기 프로젝트는 본인 조회에서만 포함한다.")
-    void includesPendingProjectsOnlyForSelfView() {
+    @DisplayName("승인 대기와 반려 프로젝트는 본인 조회에서만 포함한다.")
+    void includesAllApprovalStatusesOnlyForSelfView() {
         long userId = saveUser();
         long approved = saveProject("APPROVED", userId, BASE_TIME, false);
         saveProjectMember(approved, userId);
@@ -95,10 +95,13 @@ class UserProjectListRepositoryIntegrationTest {
 
         assertThat(ids(publicResult)).containsExactly(approved);
         assertThat(ids(otherViewerResult)).containsExactly(approved);
-        assertThat(ids(selfResult)).containsExactly(pending, approved);
+        assertThat(ids(selfResult)).containsExactly(rejected, pending, approved);
         assertThat(selfResult.projects())
                 .extracting(UserProjectItem::approvalStatus)
-                .containsExactly(ApprovalStatus.PENDING, ApprovalStatus.APPROVED);
+                .containsExactly(ApprovalStatus.REJECTED, ApprovalStatus.PENDING, ApprovalStatus.APPROVED);
+        assertThat(publicResult.totalCount()).isEqualTo(1L);
+        assertThat(otherViewerResult.totalCount()).isEqualTo(1L);
+        assertThat(selfResult.totalCount()).isEqualTo(3L);
     }
 
     @Test

@@ -13,16 +13,19 @@ import type {
 } from '@/api/generated/schema';
 import type {
   AdminProject,
+  AdminProjectDecision,
+  AdminProjectDetail,
+  AdminProjectRejection,
   AdminProjectStatus,
   AdminVerificationStatus,
   EventCreateBody,
   HomeBannerUpsertBody,
   NoticeCreateBody,
 } from '@/types/admin';
+import type { ProjectListMeta } from '@/types/project';
 
 const VERIFICATION_PATH = '/api/v1/admin/verification-requests';
 const BANNER_PATH = '/api/v1/admin/home/banners';
-// TODO 관리자 프로젝트 심사 API가 명세에 없다. 인증 신청 심사와 같은 모양으로 가정한 주소다.
 const PROJECT_PATH = '/api/v1/admin/projects';
 
 export const adminQueryKeys = {
@@ -86,20 +89,18 @@ export const rejectVerificationMutation = mutationOptions({
   retry: false,
 });
 
-// ── 프로젝트 심사 (명세 없음, 가정) ──────────────────────────────────────────
-
-interface AdminProjectPage {
-  items: AdminProject[];
-  nextCursor?: string | null;
-}
+// ── 프로젝트 심사 ──────────────────────────────────────────────────────────
 
 export async function fetchAdminProjects(status: AdminProjectStatus, cursor?: string) {
-  const body = await httpClient<ApiSuccessBody<AdminProjectPage>>(PROJECT_PATH, {
+  const body = await httpClient<ApiSuccessBody<AdminProject[], ProjectListMeta>>(PROJECT_PATH, {
     method: 'get',
     searchParams: { status, ...(cursor ? { cursor } : {}) },
   });
   if (!body) throw new Error(`프로젝트 심사 목록 응답이 비어 있습니다: ${PROJECT_PATH}`);
-  return body.data;
+  if (!Array.isArray(body.data) || !body.meta || !('nextCursor' in body.meta)) {
+    throw new Error(`프로젝트 심사 목록 응답 형식이 올바르지 않습니다: ${PROJECT_PATH}`);
+  }
+  return { items: body.data, meta: body.meta };
 }
 
 export const adminProjectsQuery = (status: AdminProjectStatus) =>
@@ -107,11 +108,29 @@ export const adminProjectsQuery = (status: AdminProjectStatus) =>
     queryKey: adminQueryKeys.projects(status),
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) => fetchAdminProjects(status, pageParam),
-    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    getNextPageParam: (last) => last.meta.nextCursor ?? undefined,
+  });
+
+export async function fetchAdminProjectDetail(projectId: number) {
+  const path = `${PROJECT_PATH}/${projectId}`;
+  const body = await httpClient<ApiSuccessBody<AdminProjectDetail>>(path, { method: 'get' });
+  if (!body) throw new Error(`프로젝트 심사 상세 응답이 비어 있습니다: ${path}`);
+  return body.data;
+}
+
+export const adminProjectDetailQuery = (projectId: number) =>
+  queryOptions({
+    queryKey: ['admin', 'projects', projectId],
+    queryFn: () => fetchAdminProjectDetail(projectId),
   });
 
 export async function approveProject(projectId: number) {
-  await httpClient(`${PROJECT_PATH}/${projectId}/approve`, { method: 'post' });
+  const body = await httpClient<ApiSuccessBody<AdminProjectDecision>>(
+    `${PROJECT_PATH}/${projectId}/approve`,
+    { method: 'post' },
+  );
+  if (!body) throw new Error('프로젝트 승인 결과를 확인하지 못했습니다.');
+  return body.data;
 }
 
 export const approveProjectMutation = mutationOptions({
@@ -120,7 +139,12 @@ export const approveProjectMutation = mutationOptions({
 });
 
 export async function rejectProject({ projectId, reason }: { projectId: number; reason: string }) {
-  await httpClient(`${PROJECT_PATH}/${projectId}/reject`, { method: 'post', json: { reason } });
+  const body = await httpClient<ApiSuccessBody<AdminProjectRejection>>(
+    `${PROJECT_PATH}/${projectId}/reject`,
+    { method: 'post', json: { reason } },
+  );
+  if (!body) throw new Error('프로젝트 반려 결과를 확인하지 못했습니다.');
+  return body.data;
 }
 
 export const rejectProjectMutation = mutationOptions({

@@ -42,13 +42,13 @@ public class HomeBannerAdminService {
         validateAdmin(role);
         URI imageUrl = imageService.createImageUrl(request.mediaId());
         BannerTargetType targetType = targetTypeOf(request.targetType());
-        targetValidator.validate(targetType, request.targetId());
+        Long targetId = targetValidator.resolveTargetId(targetType, request.targetId(), request.targetSlug());
 
         HomeBanner saved = homeBannerRepository.save(HomeBanner.create(
                 request.mediaId(),
                 BannerDestinationType.valueOf(request.destinationType()),
                 targetType,
-                request.targetId(),
+                targetId,
                 linkTypeOf(request.linkType()),
                 request.linkUrl(),
                 request.displayOrder(),
@@ -68,13 +68,13 @@ public class HomeBannerAdminService {
         HomeBanner banner = findBanner(bannerId);
         URI imageUrl = imageService.createImageUrl(request.mediaId());
         BannerTargetType targetType = targetTypeOf(request.targetType());
-        targetValidator.validate(targetType, request.targetId());
+        Long targetId = targetValidator.resolveTargetId(targetType, request.targetId(), request.targetSlug());
 
         HomeBanner updated = banner.update(
                 request.mediaId(),
                 BannerDestinationType.valueOf(request.destinationType()),
                 targetType,
-                request.targetId(),
+                targetId,
                 linkTypeOf(request.linkType()),
                 request.linkUrl(),
                 request.displayOrder(),
@@ -105,7 +105,8 @@ public class HomeBannerAdminService {
                 imageUrl,
                 banner.getDestinationType().name(),
                 enumName(banner.getTargetType()),
-                banner.getTargetId(),
+                targetIdOf(banner),
+                banner.getTargetSlug(),
                 enumName(banner.getLinkType()),
                 banner.getLinkUrl(),
                 banner.getDisplayOrder(),
@@ -122,6 +123,13 @@ public class HomeBannerAdminService {
 
     private BannerLinkType linkTypeOf(String value) {
         return value == null ? null : BannerLinkType.valueOf(value);
+    }
+
+    /**
+     * 프로젝트는 slug로 가리키므로 ID를 내려주지 않는다. 뉴스·피드는 slug가 없어 ID를 내려준다.
+     */
+    private Long targetIdOf(HomeBanner banner) {
+        return banner.getTargetType() == BannerTargetType.PROJECT ? null : banner.getTargetId();
     }
 
     private String enumName(Enum<?> value) {

@@ -28,11 +28,12 @@ const banners = [
     bannerId: 1,
     mediaId: 10,
     imageUrl: 'https://placehold.co/1200x400',
-    destinationType: 'TARGET',
-    targetType: 'PROJECT',
-    targetId: 20,
-    linkType: null,
-    linkUrl: null,
+    destinationType: 'URL',
+    targetType: null,
+    targetId: null,
+    targetSlug: null,
+    linkType: 'INTERNAL_PATH',
+    linkUrl: '/projects/@dropit',
     displayOrder: 0,
     active: true,
     createdBy: 7,
@@ -95,27 +96,57 @@ export const adminHandlers = [
     },
   ),
 
-  // TODO 명세에 없는 관리자 프로젝트 심사 API. `src/apis/admin.ts`의 가정과 같은 모양이다.
   http.get('/api/v1/admin/projects', ({ request }) => {
     const status = new URL(request.url).searchParams.get('status') ?? 'PENDING';
+    const items = status === 'PENDING' ? pendingProjects : [];
+    return HttpResponse.json({
+      status: 'success',
+      data: items,
+      meta: { nextCursor: null, hasNext: false, totalCount: items.length },
+    });
+  }),
+
+  http.get('/api/v1/admin/projects/:projectId', ({ params }) => {
+    const project = pendingProjects.find((item) => item.id === Number(params.projectId));
+    if (!project) return new HttpResponse(null, { status: 404 });
     return HttpResponse.json({
       status: 'success',
       data: {
-        items: status === 'PENDING' ? pendingProjects : [],
-        nextCursor: null,
+        ...project,
+        descriptionMd: '## 프로젝트 소개\n팀 회고와 액션 아이템을 공유합니다.',
+        githubRepositoryUrl: 'https://github.com/woowacourse-teams/loop',
+        deploymentUrl: null,
+        viewCount: 0,
+        descriptionMedia: [],
       },
     });
   }),
 
-  http.post(
-    '/api/v1/admin/projects/:projectId/approve',
-    () => new HttpResponse(null, { status: 204 }),
+  http.post('/api/v1/admin/projects/:projectId/approve', ({ params }) =>
+    HttpResponse.json({
+      status: 'success',
+      data: {
+        projectId: Number(params.projectId),
+        approvalStatus: 'APPROVED',
+        decidedAt: '2026-09-20T00:00:00Z',
+        decidedBy: { userId: 7, handle: 'admin' },
+      },
+    }),
   ),
 
-  http.post(
-    '/api/v1/admin/projects/:projectId/reject',
-    () => new HttpResponse(null, { status: 204 }),
-  ),
+  http.post('/api/v1/admin/projects/:projectId/reject', async ({ params, request }) => {
+    const { reason } = (await request.json()) as { reason: string };
+    return HttpResponse.json({
+      status: 'success',
+      data: {
+        projectId: Number(params.projectId),
+        approvalStatus: 'REJECTED',
+        reason,
+        decidedAt: '2026-09-20T00:00:00Z',
+        decidedBy: { userId: 7, handle: 'admin' },
+      },
+    });
+  }),
 
   http.post('/api/v1/news/notices', async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;

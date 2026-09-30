@@ -1,8 +1,8 @@
+import { Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 
 import { AppGnb } from '@/components/AppGnb';
 import { Footer } from '@/components/Footer';
-import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { UserProfilePage } from '@/pages/UserProfilePage';
 import { isProfileTab, type ProfileTab } from '@/types/user';
 
@@ -23,9 +23,9 @@ function RouteComponent() {
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <AppGnb />
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 pt-6 pb-12 md:gap-8 md:pt-10 md:pb-20">
-        <AsyncBoundary fallback={<ProfilePageSkeleton />}>
+        <Suspense fallback={<ProfilePageSkeleton />}>
           <UserProfilePage />
-        </AsyncBoundary>
+        </Suspense>
       </main>
       <Footer />
     </div>

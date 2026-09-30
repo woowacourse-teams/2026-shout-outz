@@ -30,7 +30,7 @@ export function ProjectList({ filter, onResetFilter }: ProjectListProps) {
         className="grid grid-cols-1 gap-x-5 gap-y-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
       >
         {projects.map((project) => (
-          <li key={project.id} className="min-w-0">
+          <li key={project.slug} className="min-w-0">
             <Link
               to="/projects/$slug"
               params={{ slug: toProjectSlugParam(project.slug) }}
@@ -39,7 +39,7 @@ export function ProjectList({ filter, onResetFilter }: ProjectListProps) {
                 analytics.track({ name: 'card_clicked', target: 'project', surface: 'projects' });
                 analytics.track({
                   name: 'project_detail_opened',
-                  projectId: project.id,
+                  slug: project.slug,
                   from: 'projects',
                 });
               }}

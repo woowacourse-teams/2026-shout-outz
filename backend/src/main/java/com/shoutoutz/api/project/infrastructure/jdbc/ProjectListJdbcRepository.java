@@ -149,10 +149,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
                 ) AS bookmarked_by_me
             FROM projects p
             WHERE p.deleted_at IS NULL
-              AND (
-                  p.approval_status = 'APPROVED'
-                  OR (:includePending = TRUE AND p.approval_status = 'PENDING')
-              )
+              AND (:includeAllApprovalStatuses = TRUE OR p.approval_status = 'APPROVED')
             """;
 
     private static final String COHORTS_CONDITION = """
@@ -297,14 +294,14 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
     public UserProjectResult findAllByUserId(
             long userId,
             Long viewerId,
-            boolean includePending,
+            boolean includeAllApprovalStatuses,
             ProjectCursor cursor,
             int size
     ) {
         MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("userId", userId)
                 .addValue("viewerId", viewerId, Types.BIGINT)
-                .addValue("includePending", includePending)
+                .addValue("includeAllApprovalStatuses", includeAllApprovalStatuses)
                 .addValue("limit", size + 1);
         String filteredProjectsSql = USER_PROJECTS_SQL + """
                   AND (

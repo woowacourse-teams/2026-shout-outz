@@ -1,4 +1,5 @@
 import type { HomeBanner } from '@/types/home';
+import { toProjectSlugParam } from '@/utils/project';
 
 /**
  * 배너가 눌렸을 때 갈 곳.
@@ -9,10 +10,9 @@ import type { HomeBanner } from '@/types/home';
 export type HomeBannerLink =
   { kind: 'internal'; href: string } | { kind: 'external'; href: string };
 
-/** 대상 리소스 유형별 상세 경로. 라우트(`/news/$newsId` 등)와 같은 접두사를 쓴다. */
+/** ID로 찾는 대상 리소스 유형별 상세 경로. 라우트(`/news/$newsId` 등)와 같은 접두사를 쓴다. */
 const TARGET_SEGMENTS = {
   NEWS: 'news',
-  PROJECT: 'projects',
   FEED: 'feeds',
 } as const;
 
@@ -24,7 +24,8 @@ const isHttpUrl = (url: string) => /^https?:\/\//i.test(url);
  * 배너 응답을 이동할 링크로 바꾼다.
  *
  * 서버는 이동 방식을 두 갈래로 준다.
- * - `TARGET`: 서비스 안의 리소스를 가리킨다. `targetType`과 `targetId`로 상세 경로를 만든다.
+ * - `TARGET`: 서비스 안의 리소스를 가리킨다. 프로젝트는 `targetSlug`, 소식·피드는 `targetId`로
+ *   상세 경로를 만든다.
  * - `URL`: 주소를 직접 준다. `linkType`이 내부 경로인지 외부 주소인지 알려준다.
  *
  * `linkType`이 둘 중 하나가 아니면 이동하지 않는다. 주소 모양으로 짐작하지 않는다.
@@ -32,6 +33,10 @@ const isHttpUrl = (url: string) => /^https?:\/\//i.test(url);
  */
 export function resolveHomeBannerLink(banner: HomeBanner): HomeBannerLink | null {
   if (banner.destinationType === 'TARGET') {
+    if (banner.targetType === 'PROJECT') {
+      const slug = banner.targetSlug?.trim();
+      return slug ? { kind: 'internal', href: `/projects/${toProjectSlugParam(slug)}` } : null;
+    }
     const segment = banner.targetType ? TARGET_SEGMENTS[banner.targetType] : undefined;
     if (!segment || banner.targetId == null) return null;
 

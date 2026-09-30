@@ -11,16 +11,16 @@ it('수정 시 작성자를 맨 앞에 고정하고 추가 팀원이 없어도 �
   const user = userEvent.setup();
   let body: unknown;
   server.use(
-    http.put('/api/v1/projects/1', async ({ request }) => {
+    http.put('/api/v1/projects/@dropit', async ({ request }) => {
       body = await request.json();
       return HttpResponse.json({
         status: 'success',
-        data: { projectId: 1, approvalStatus: 'APPROVED' },
+        data: { slug: 'dropit', approvalStatus: 'APPROVED' },
       });
     }),
   );
 
-  renderRoute('/projects/1/edit');
+  renderRoute('/projects/@dropit/edit');
 
   const members = await screen.findByRole('list', { name: '선택한 참여 팀원' });
   expect(
@@ -36,4 +36,5 @@ it('수정 시 작성자를 맨 앞에 고정하고 추가 팀원이 없어도 �
   await user.click(screen.getByRole('button', { name: '프로젝트 수정하기' }));
 
   await waitFor(() => expect(body).toEqual(expect.objectContaining({ memberHandles: ['woojin'] })));
+  expect(await screen.findByRole('heading', { level: 1, name: 'Dropit' })).toBeInTheDocument();
 });

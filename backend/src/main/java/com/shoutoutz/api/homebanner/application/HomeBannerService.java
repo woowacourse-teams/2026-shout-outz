@@ -1,5 +1,6 @@
 package com.shoutoutz.api.homebanner.application;
 
+import com.shoutoutz.api.homebanner.domain.BannerTargetType;
 import com.shoutoutz.api.homebanner.domain.HomeBanner;
 import com.shoutoutz.api.homebanner.domain.HomeBannerRepository;
 import com.shoutoutz.api.homebanner.presentation.dto.response.HomeBannerResponse;
@@ -31,10 +32,18 @@ public class HomeBannerService {
                 imageUrl,
                 banner.getDestinationType().name(),
                 enumName(banner.getTargetType()),
-                banner.getTargetId(),
+                targetIdOf(banner),
+                banner.getTargetSlug(),
                 enumName(banner.getLinkType()),
                 banner.getLinkUrl()
         );
+    }
+
+    /**
+     * 프로젝트는 slug로 가리키므로 ID를 내려주지 않는다. 뉴스·피드는 slug가 없어 ID를 내려준다.
+     */
+    private Long targetIdOf(HomeBanner banner) {
+        return banner.getTargetType() == BannerTargetType.PROJECT ? null : banner.getTargetId();
     }
 
     private String enumName(Enum<?> value) {

@@ -25,7 +25,7 @@ const toProjectMember = (member: (typeof projects)[number]['members'][number]) =
   githubProfileUrl: null,
 });
 
-const updatedProjects = new Map<number, Record<string, unknown>>();
+const updatedProjects = new Map<string, Record<string, unknown>>();
 
 export const handlers = [
   http.get('/api/v1/auth/session', () =>
@@ -108,15 +108,16 @@ export const handlers = [
     HttpResponse.json(
       {
         status: 'success',
-        data: { id: 101, approvalStatus: 'PENDING', createdAt: '2026-09-16T10:00:00+09:00' },
+        data: { slug: 'new-project' },
       },
       { status: 201 },
     ),
   ),
 
-  http.put('/api/v1/projects/:projectId', async ({ params, request }) => {
-    const projectId = Number(params.projectId);
-    if (!projects[projectId - 1]) return new HttpResponse(null, { status: 404 });
+  http.put('/api/v1/projects/@:slug', async ({ params, request }) => {
+    const slug = String(params.slug);
+    const index = projects.findIndex((project) => project.id === slug);
+    if (index < 0) return new HttpResponse(null, { status: 404 });
 
     const update = (await request.json()) as ProjectUpdateRequest;
     const knownMembers = projects.flatMap((item) => item.members.map(toProjectMember));
@@ -129,7 +130,7 @@ export const handlers = [
       })
       .filter((member) => member !== undefined);
 
-    updatedProjects.set(projectId, {
+    updatedProjects.set(slug, {
       title: update.title,
       teamName: update.teamName,
       tagline: update.tagline,
@@ -148,7 +149,7 @@ export const handlers = [
 
     return HttpResponse.json({
       status: 'success',
-      data: { projectId, approvalStatus: 'APPROVED' },
+      data: { slug, approvalStatus: 'APPROVED' },
     });
   }),
 
@@ -208,7 +209,6 @@ export const handlers = [
     return HttpResponse.json({
       status: 'success',
       data: {
-        id: index + 1,
         slug: project.id,
         title: project.name,
         teamName: project.teamName,
@@ -224,7 +224,7 @@ export const handlers = [
         rejectReason: null,
         viewCount: 0,
         starCount: 0,
-        ...getMockProjectReaction(index + 1, project.likeCount),
+        ...getMockProjectReaction(project.id, project.likeCount),
         bookmarkCount: project.bookmarkCount,
         bookmarkedByMe: false,
         commentCount: 0,
@@ -232,19 +232,19 @@ export const handlers = [
         members: project.members.map(toProjectMember),
         createdAt: '2026-08-09T11:30:00+09:00',
         updatedAt: '2026-08-09T11:30:00+09:00',
-        ...updatedProjects.get(index + 1),
+        ...updatedProjects.get(project.id),
       },
     });
   }),
-  http.put('/api/v1/projects/:projectId/reactions/LIKE', ({ params }) => {
-    const projectId = Number(params.projectId);
-    const project = projects[projectId - 1];
+  http.put('/api/v1/projects/@:slug/reactions/LIKE', ({ params }) => {
+    const slug = String(params.slug);
+    const project = projects.find((item) => item.id === slug);
     if (!project) return new HttpResponse(null, { status: 404 });
-    const reaction = setMockProjectLike(projectId, project.likeCount, true);
+    const reaction = setMockProjectLike(slug, project.likeCount, true);
     return HttpResponse.json({
       status: 'success',
       data: {
-        projectId,
+        slug,
         type: 'LIKE',
         active: true,
         ...reaction,
@@ -252,15 +252,15 @@ export const handlers = [
       },
     });
   }),
-  http.delete('/api/v1/projects/:projectId/reactions/LIKE', ({ params }) => {
-    const projectId = Number(params.projectId);
-    const project = projects[projectId - 1];
+  http.delete('/api/v1/projects/@:slug/reactions/LIKE', ({ params }) => {
+    const slug = String(params.slug);
+    const project = projects.find((item) => item.id === slug);
     if (!project) return new HttpResponse(null, { status: 404 });
-    const reaction = setMockProjectLike(projectId, project.likeCount, false);
+    const reaction = setMockProjectLike(slug, project.likeCount, false);
     return HttpResponse.json({
       status: 'success',
       data: {
-        projectId,
+        slug,
         type: 'LIKE',
         active: false,
         ...reaction,
@@ -272,18 +272,17 @@ export const handlers = [
     HttpResponse.json({
       status: 'success',
       // 상세 페이지용 JSON을 목록 API 응답 형식으로 변환한다.
-      data: projects.map(({ id, name, tagline, cohort, likeCount, techTags, members }, index) => ({
-        id: index + 1,
+      data: projects.map(({ id, name, tagline, cohort, likeCount, techTags, members }) => ({
         slug: id,
         title: name,
         tagline,
         cohort,
         thumbnailUrl: null,
-        ...getMockProjectReaction(index + 1, likeCount),
+        ...getMockProjectReaction(id, likeCount),
         commentCount: 0,
         techTags: techTags.map((displayName, tagIndex) => ({ id: tagIndex + 1, displayName })),
         members: members.map(toProjectMember),
-        ...updatedProjects.get(index + 1),
+        ...updatedProjects.get(id),
       })),
       meta: { nextCursor: null, hasNext: false, totalCount: projects.length },
     }),
@@ -392,11 +391,12 @@ export const handlers = [
         {
           bannerId: 100,
           imageUrl: 'https://cdn.example.com/banners/loop.webp',
-          destinationType: 'TARGET',
-          targetType: 'PROJECT',
-          targetId: 1,
-          linkType: null,
-          linkUrl: null,
+          destinationType: 'URL',
+          targetType: null,
+          targetId: null,
+          targetSlug: null,
+          linkType: 'INTERNAL_PATH',
+          linkUrl: '/projects/@dropit',
         },
       ],
     }),

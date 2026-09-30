@@ -1,8 +1,5 @@
 import { infiniteQueryOptions, keepPreviousData, queryOptions } from '@tanstack/react-query';
-import type {
-  ProjectFilterOptionsSuccessResponse,
-  ProjectFindAllSuccessResponse,
-} from '@/api/generated/schema';
+import type { ProjectFilterOptionsSuccessResponse } from '@/api/generated/schema';
 import { DEFAULT_PROJECT_FILTER } from '@/constants/project';
 import {
   type ProjectFilter,
@@ -10,7 +7,7 @@ import {
   type ProjectListMeta,
   type ProjectSummary,
 } from '@/types/project';
-import { httpClient } from '@/utils/client';
+import { httpClient, type ApiSuccessBody } from '@/utils/client';
 
 const PROJECTS_PATH = '/api/v1/projects';
 const PROJECT_FILTERS_PATH = '/api/v1/projects/filters';
@@ -33,19 +30,22 @@ export async function fetchProjectListPage(
   cursor?: string,
   signal?: AbortSignal,
 ) {
-  const response = await httpClient<ProjectFindAllSuccessResponse>(PROJECTS_PATH, {
-    method: 'get',
-    signal,
-    retry: 0,
-    searchParams: { ...toSearchParams(filter), ...(cursor ? { cursor } : {}) },
-  });
+  const response = await httpClient<ApiSuccessBody<ProjectSummary[], ProjectListMeta>>(
+    PROJECTS_PATH,
+    {
+      method: 'get',
+      signal,
+      retry: 0,
+      searchParams: { ...toSearchParams(filter), ...(cursor ? { cursor } : {}) },
+    },
+  );
 
   if (!response || !Array.isArray(response.data)) {
     throw new Error(`프로젝트 목록 응답이 비어 있습니다: ${PROJECTS_PATH}`);
   }
 
   return {
-    projects: response.data as ProjectSummary[],
+    projects: response.data,
     meta: response.meta ?? { ...EMPTY_META, totalCount: response.data.length },
   };
 }

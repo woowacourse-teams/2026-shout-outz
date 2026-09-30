@@ -2,12 +2,11 @@ import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import type {
   UserFeedFindAllSuccessResponse,
   UserProfileSuccessResponse,
-  UserProjectFindAllSuccessResponse,
 } from '@/api/generated/schema';
-import { type UserProjectListItem } from '@/types/project';
+import { type ProjectListMeta, type UserProjectListItem } from '@/types/project';
 import { type UserFeedListItem } from '@/types/feed';
 import { type UserProfile } from '@/types/user';
-import { httpClient } from '@/utils/client';
+import { httpClient, type ApiSuccessBody } from '@/utils/client';
 
 const USERS_PATH = '/api/v1/users';
 
@@ -35,7 +34,7 @@ export async function fetchUserProjects(handle: string): Promise<UserProjectList
 async function fetchUserProjectsPage(handle: string, cursor?: string, signal?: AbortSignal) {
   const path = `${USERS_PATH}/${handle}/projects`;
 
-  const body = await httpClient<UserProjectFindAllSuccessResponse>(path, {
+  const body = await httpClient<ApiSuccessBody<UserProjectListItem[], ProjectListMeta>>(path, {
     method: 'get',
     signal,
     searchParams: cursor ? { cursor } : undefined,
@@ -43,8 +42,8 @@ async function fetchUserProjectsPage(handle: string, cursor?: string, signal?: A
   if (!body) throw new Error(`프로필 프로젝트 응답이 비어 있습니다: ${path}`);
 
   return {
-    data: body.data as UserProjectListItem[],
-    meta: body.meta ?? { nextCursor: null, hasNext: false },
+    data: body.data,
+    meta: body.meta ?? { nextCursor: null, hasNext: false, totalCount: body.data.length },
   };
 }
 

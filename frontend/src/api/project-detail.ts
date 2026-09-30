@@ -1,7 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
-import type { ProjectFindDetailSuccessResponse } from '@/api/generated/schema';
 import type { ProjectDetail } from '@/types/project';
-import { httpClient } from '@/utils/client';
+import { httpClient, type ApiSuccessBody } from '@/utils/client';
 
 export type { ProjectDetail };
 
@@ -10,7 +9,7 @@ const PROJECTS_PATH = '/api/v1/projects';
 /**
  * slug로 상세를 조회한다.
  *
- * 숫자 id로는 받지 않는다(405). 수정·리액션·댓글처럼 이후 요청은 이 응답의 `id`를 쓴다.
+ * 숫자 id로는 받지 않는다(405). 후속 프로젝트 API에도 같은 slug를 사용한다.
  */
 export async function fetchProjectDetail(
   slug: string,
@@ -18,7 +17,7 @@ export async function fetchProjectDetail(
 ): Promise<ProjectDetail> {
   const path = `${PROJECTS_PATH}/@${slug}`;
 
-  const body = await httpClient<ProjectFindDetailSuccessResponse>(path, {
+  const body = await httpClient<ApiSuccessBody<ProjectDetail>>(path, {
     method: 'get',
     signal,
     retry: 0,

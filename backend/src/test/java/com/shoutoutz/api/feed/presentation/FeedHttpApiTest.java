@@ -35,6 +35,7 @@ import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.feed.application.FeedService;
 import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
+import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
@@ -199,7 +200,9 @@ class FeedHttpApiTest {
         mockMvc.perform(get("/api/v1/feeds/{feedId}", FEED_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.title").value("피드 제목"))
-                .andExpect(jsonPath("$.data.content").value("본문입니다."))
+                .andExpect(jsonPath("$.data.content").value("본문입니다. https://example.com/article"))
+                .andExpect(jsonPath("$.data.linkPreview.url").value("https://example.com/article"))
+                .andExpect(jsonPath("$.data.linkPreview.title").value("글 제목"))
                 .andDo(document(
                         "feed-find",
                         resource(ResourceSnippetParameters.builder()
@@ -764,7 +767,7 @@ class FeedHttpApiTest {
         return new FeedItem(
                 FEED_ID,
                 "피드 제목",
-                "본문입니다.",
+                "본문입니다. https://example.com/article",
                 new FeedItem.Author(
                         USER_ID,
                         "@zzaekkii",
@@ -783,9 +786,14 @@ class FeedHttpApiTest {
                 List.of(new FeedItem.Media(21L, 0)),
                 0L,
                 0L,
+                0L,
+                false,
+                false,
                 0,
                 CREATED_AT,
-                CREATED_AT
+                CREATED_AT,
+                new LinkPreview("https://example.com/article", "글 제목", "글 설명",
+                        "https://example.com/image.png", "Example")
         );
     }
 
