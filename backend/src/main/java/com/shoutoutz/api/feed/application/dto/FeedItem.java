@@ -14,6 +14,7 @@ public record FeedItem(
         long feedId,
         String title,
         String content,
+        boolean isAnonymous,
         Author author,
         List<Category> categories,
         List<Media> media,
@@ -41,9 +42,30 @@ public record FeedItem(
             boolean bookmarkedByMe,
             int relevanceRank,
             Instant createdAt,
+            Instant updatedAt,
+            LinkPreview linkPreview
+    ) {
+        this(feedId, title, content, false, author, categories, media, likeCount, commentCount,
+                bookmarkCount, likedByMe, bookmarkedByMe, relevanceRank, createdAt, updatedAt, linkPreview);
+    }
+
+    public FeedItem(
+            long feedId,
+            String title,
+            String content,
+            Author author,
+            List<Category> categories,
+            List<Media> media,
+            long likeCount,
+            long commentCount,
+            long bookmarkCount,
+            boolean likedByMe,
+            boolean bookmarkedByMe,
+            int relevanceRank,
+            Instant createdAt,
             Instant updatedAt
     ) {
-        this(feedId, title, content, author, categories, media, likeCount, commentCount,
+        this(feedId, title, content, false, author, categories, media, likeCount, commentCount,
                 bookmarkCount, likedByMe, bookmarkedByMe, relevanceRank, createdAt, updatedAt, null);
     }
 
@@ -64,6 +86,7 @@ public record FeedItem(
                 feedId,
                 title,
                 content,
+                false,
                 author,
                 categories,
                 media,

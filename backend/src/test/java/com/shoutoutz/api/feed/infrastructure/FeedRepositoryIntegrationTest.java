@@ -118,6 +118,51 @@ class FeedRepositoryIntegrationTest {
     }
 
     @Test
+    void 답변_대기순은_활성_댓글이_없는_피드만_최신순으로_조회하고_익명_작성자를_마스킹한다() {
+        long authorId = insertUser("GENERAL", null, null);
+        long otherUserId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+
+        Feed unanswered = feedRepository.save(
+                Feed.create(authorId, "답변 대기", "본문", true, base)
+        );
+        feedRepository.saveCategories(unanswered.getId(), List.of(categoryId));
+
+        Feed answered = saveFeed(authorId, "답변 완료", base.plus(1, ChronoUnit.HOURS), categoryId);
+        insertComment(answered.getId(), otherUserId, false);
+
+        Feed deletedAnswer = saveFeed(
+                authorId,
+                "삭제된 답변만 있음",
+                base.plus(2, ChronoUnit.HOURS),
+                categoryId
+        );
+        insertComment(deletedAnswer.getId(), otherUserId, true);
+
+        FeedPage waitingPage = feedQueryRepository.findAll(
+                FeedSort.WAITING,
+                null,
+                null,
+                null,
+                10
+        );
+
+        assertThat(waitingPage.items()).extracting(FeedItem::feedId)
+                .containsExactly(deletedAnswer.getId(), unanswered.getId());
+        assertThat(waitingPage.totalCount()).isEqualTo(2L);
+        FeedItem masked = waitingPage.items().stream()
+                .filter(item -> item.feedId() == unanswered.getId())
+                .findFirst()
+                .orElseThrow();
+        assertThat(masked.isAnonymous()).isTrue();
+        assertThat(masked.author().userId()).isNull();
+
+        FeedItem ownerView = feedQueryRepository.findById(unanswered.getId(), authorId).orElseThrow();
+        assertThat(ownerView.author().userId()).isEqualTo(authorId);
+    }
+
+    @Test
     void 전체_좋아요_수로_인기순_슬라이스를_조회한다() {
         long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
         long firstUserId = insertUser("GENERAL", null, null);

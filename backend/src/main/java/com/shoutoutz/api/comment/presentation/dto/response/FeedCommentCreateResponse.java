@@ -10,8 +10,21 @@ public record FeedCommentCreateResponse(
         Long parentId,
         Instant createdAt,
         Instant updatedAt,
-        boolean editable
+        boolean editable,
+        boolean isAnonymous
 ) {
+
+    public FeedCommentCreateResponse(
+            Long id,
+            String content,
+            Author author,
+            Long parentId,
+            Instant createdAt,
+            Instant updatedAt,
+            boolean editable
+    ) {
+        this(id, content, author, parentId, createdAt, updatedAt, editable, false);
+    }
 
     public record Author(
             Long userId,

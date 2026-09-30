@@ -13,6 +13,7 @@ public class FeedComment {
     private final Long authorId;
     private final Long parentId;
     private final String content;
+    private final boolean anonymous;
     private final Instant createdAt;
     private final Instant updatedAt;
     private final Instant deletedAt;
@@ -24,6 +25,7 @@ public class FeedComment {
             Long authorId,
             Long parentId,
             String content,
+            boolean anonymous,
             Instant createdAt,
             Instant updatedAt,
             Instant deletedAt
@@ -33,6 +35,7 @@ public class FeedComment {
         this.authorId = authorId;
         this.parentId = parentId;
         this.content = content;
+        this.anonymous = anonymous;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.deletedAt = deletedAt;
@@ -44,11 +47,22 @@ public class FeedComment {
             Long parentId,
             String content
     ) {
+        return create(feedId, authorId, parentId, content, false);
+    }
+
+    public static FeedComment create(
+            long feedId,
+            long authorId,
+            Long parentId,
+            String content,
+            boolean anonymous
+    ) {
         return FeedComment.builder()
                 .feedId(feedId)
                 .authorId(authorId)
                 .parentId(parentId)
                 .content(content == null ? null : content.strip())
+                .anonymous(anonymous)
                 .build();
     }
 
@@ -65,12 +79,37 @@ public class FeedComment {
             Instant updatedAt,
             Instant deletedAt
     ) {
+        return reconstitute(
+                id,
+                feedId,
+                authorId,
+                parentId,
+                content,
+                false,
+                createdAt,
+                updatedAt,
+                deletedAt
+        );
+    }
+
+    public static FeedComment reconstitute(
+            Long id,
+            Long feedId,
+            Long authorId,
+            Long parentId,
+            String content,
+            boolean anonymous,
+            Instant createdAt,
+            Instant updatedAt,
+            Instant deletedAt
+    ) {
         return FeedComment.builder()
                 .id(id)
                 .feedId(feedId)
                 .authorId(authorId)
                 .parentId(parentId)
                 .content(content)
+                .anonymous(anonymous)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
                 .deletedAt(deletedAt)
@@ -96,6 +135,7 @@ public class FeedComment {
                 .authorId(authorId)
                 .parentId(parentId)
                 .content(content == null ? null : content.strip())
+                .anonymous(anonymous)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
                 .deletedAt(deletedAt)
@@ -109,6 +149,7 @@ public class FeedComment {
                 .authorId(authorId)
                 .parentId(parentId)
                 .content(content)
+                .anonymous(anonymous)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
                 .deletedAt(deletedAt)

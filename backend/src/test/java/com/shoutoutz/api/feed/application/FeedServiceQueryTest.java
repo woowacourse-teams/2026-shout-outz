@@ -172,6 +172,25 @@ class FeedServiceQueryTest {
     }
 
     @Test
+    void 답변_대기순을_요청하면_답변_대기순으로_조회한다() {
+        FeedFindAllRequest request = new FeedFindAllRequest(
+                FeedSort.WAITING,
+                null,
+                null,
+                null,
+                2
+        );
+        List<FeedItem> queried = List.of(feed(2L, "2026-09-10T00:00:00Z"));
+        when(feedQueryRepository.findAll(FeedSort.WAITING, null, null, null, 2))
+                .thenReturn(new FeedPage(queried, false, 1L));
+
+        FeedFindAllResult result = feedService.findAllFeed(request);
+
+        assertThat(result.items()).containsExactlyElementsOf(queried);
+        verify(feedQueryRepository).findAll(FeedSort.WAITING, null, null, null, 2);
+    }
+
+    @Test
     void 검색어가_있으면_정확도순으로_조회한다() {
         FeedFindAllRequest request = new FeedFindAllRequest(
                 null,
