@@ -2,13 +2,12 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 
 import { homeBannersQueryOptions } from '@/api/home';
 import { HeroBanner } from '@/components/home/HeroBanner';
+import { BannerCarousel } from '@/components/home/BannerCarousel';
 
 /**
  * 홈 상단 배너 영역.
  *
- * 응답은 표시 순서대로 정렬된 활성 배너 목록이지만 디자인의 배너 자리는 하나라 맨 앞 배너만 그린다.
- * 활성 배너가 없으면 빈 자리를 남기지 않고 아무것도 그리지 않는다.
- * 여러 배너를 돌려 보여주는 캐러셀은 디자인이 나오면 여기서 붙인다.
+ * API의 표시 순서를 유지하며, 활성 배너가 여러 개면 캐러셀로 보여준다.
  */
 export function HomeBannerSection() {
   const { data: banners } = useSuspenseQuery(homeBannersQueryOptions());
@@ -16,5 +15,7 @@ export function HomeBannerSection() {
 
   if (!banner) return null;
 
-  return <HeroBanner banner={banner} />;
+  if (banners.length === 1) return <HeroBanner banner={banner} />;
+
+  return <BannerCarousel key={banners.map((item) => item.bannerId).join(',')} banners={banners} />;
 }
