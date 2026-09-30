@@ -28,6 +28,7 @@ import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.notification.application.NotificationService;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
@@ -62,6 +63,7 @@ public class FeedCommentService {
     private final UserRepository userRepository;
     private final MediaUrlResolver mediaUrlResolver;
     private final FeedCommentReactionRepository feedCommentReactionRepository;
+    private final NotificationService notificationService;
 
     public FeedCommentService(
             FeedRepository feedRepository,
@@ -78,6 +80,7 @@ public class FeedCommentService {
                 userProfileRepository,
                 mediaUrlResolver,
                 feedCommentReactionRepository,
+                null,
                 null
         );
     }
@@ -90,7 +93,8 @@ public class FeedCommentService {
             UserProfileRepository userProfileRepository,
             MediaUrlResolver mediaUrlResolver,
             FeedCommentReactionRepository feedCommentReactionRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            NotificationService notificationService
     ) {
         this.feedRepository = feedRepository;
         this.feedCommentRepository = feedCommentRepository;
@@ -99,6 +103,28 @@ public class FeedCommentService {
         this.userRepository = userRepository;
         this.mediaUrlResolver = mediaUrlResolver;
         this.feedCommentReactionRepository = feedCommentReactionRepository;
+        this.notificationService = notificationService;
+    }
+
+    public FeedCommentService(
+            FeedRepository feedRepository,
+            FeedCommentRepository feedCommentRepository,
+            FeedCommentQueryRepository feedCommentQueryRepository,
+            UserProfileRepository userProfileRepository,
+            MediaUrlResolver mediaUrlResolver,
+            FeedCommentReactionRepository feedCommentReactionRepository,
+            UserRepository userRepository
+    ) {
+        this(
+                feedRepository,
+                feedCommentRepository,
+                feedCommentQueryRepository,
+                userProfileRepository,
+                mediaUrlResolver,
+                feedCommentReactionRepository,
+                userRepository,
+                null
+        );
     }
 
     public FeedCommentService(
@@ -114,6 +140,7 @@ public class FeedCommentService {
                 feedCommentQueryRepository,
                 userProfileRepository,
                 mediaUrlResolver,
+                null,
                 null,
                 null
         );
@@ -136,6 +163,13 @@ public class FeedCommentService {
                 request.content()
         );
         FeedComment savedComment = feedCommentRepository.save(comment);
+        if (notificationService != null) {
+            notificationService.createForFeedComment(
+                    feedId,
+                    savedComment.getId(),
+                    authorId
+            );
+        }
 
         return new FeedCommentCreateResponse(
                 savedComment.getId(),
