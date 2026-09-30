@@ -1,4 +1,5 @@
 import ky from 'ky';
+import type { MediaStatusSuccessResponse } from '@/api/generated/schema';
 import { kyInstance } from '@/utils/http';
 
 const MEDIA_PATH = '/api/v1/media';
@@ -37,6 +38,41 @@ interface MediaUploadTicket {
  * 아직 대상이 만들어지기 전(프로젝트 등록, 배너 등록, 프로필 수정)에도 올릴 수 있어야 해서
  * 1번의 targetId를 null로 보낸다(백엔드와 합의됨).
  */
+
+/** 상태를 물어보는 간격. 다 쓰면 포기한다. 합이 약 9초다. */
+const STATUS_POLL_DELAYS_MS = [200, 300, 500, 800, 1200, 2000, 2000, 2000];
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * 이미지 처리가 끝날 때까지 기다린다.
+ *
+ * `complete`는 처리를 큐에 넣고 바로 응답한다(서버가 별도 스레드 풀에서 돌린다). 그래서 응답이
+ * 왔다고 쓸 수 있는 게 아니고, 이 상태로 프로필을 저장하면 `AVATAR_IMAGE_NOT_READY`로 거절된다.
+ *
+ * 저장 요청을 반복하는 대신 상태만 물어본다. 실패한 저장은 전체 프로필 교체 PUT이라 무겁고,
+ * 무엇보다 `FAILED`와 "아직 처리 중"을 구분하지 못한다.
+ */
+async function waitUntilReady(mediaId: number): Promise<void> {
+  const path = `${MEDIA_PATH}/${mediaId}/status`;
+
+  for (let attempt = 0; ; attempt += 1) {
+    const body = await kyInstance.get(path).json<MediaStatusSuccessResponse>();
+    const { status } = body.data;
+
+    if (status === 'READY') return;
+    // 처리가 끝나 버린 상태들. 더 기다려도 바뀌지 않는다.
+    if (status === 'FAILED' || status === 'EXPIRED') {
+      throw new Error(`이미지 처리에 실패했습니다: ${status}`);
+    }
+
+    const delayMs = STATUS_POLL_DELAYS_MS[attempt];
+    if (delayMs === undefined) throw new Error('이미지 처리가 끝나지 않았습니다.');
+
+    await sleep(delayMs);
+  }
+}
+
 export async function uploadMedia(file: File, purpose: MediaPurpose): Promise<number> {
   const ticket = await kyInstance
     .post(`${MEDIA_PATH}/uploads`, {
@@ -57,6 +93,7 @@ export async function uploadMedia(file: File, purpose: MediaPurpose): Promise<nu
   });
 
   await kyInstance.post(`${MEDIA_PATH}/${ticket.mediaId}/complete`);
+  await waitUntilReady(ticket.mediaId);
 
   return ticket.mediaId;
 }

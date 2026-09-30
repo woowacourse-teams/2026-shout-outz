@@ -10,6 +10,262 @@
  * ---------------------------------------------------------------
  */
 
+/** AdminProjectApproveSuccessResponse */
+export interface AdminProjectApproveSuccessResponse {
+  /** 승인 결과 */
+  data: {
+    /** 변경된 승인 상태 */
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+    /** 승인 시각 */
+    decidedAt: string;
+    /** 승인한 관리자 */
+    decidedBy: {
+      /** 관리자 handle */
+      handle: string;
+      /** 관리자 사용자 ID */
+      userId: number;
+    };
+    /** 프로젝트 ID */
+    projectId: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** AdminProjectDetailSuccessResponse */
+export interface AdminProjectDetailSuccessResponse {
+  /** 프로젝트 상세 */
+  data: {
+    /** 승인 상태 */
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+    /** 북마크 수 */
+    bookmarkCount: number;
+    /** 요청자의 북마크 여부 */
+    bookmarkedByMe: boolean;
+    /** 우아한테크코스 기수 */
+    cohort: number;
+    /** 댓글 수 */
+    commentCount: number;
+    /** 등록 시각 */
+    createdAt: string;
+    /** 배포 URL */
+    deploymentUrl?: string | null;
+    /** 프로젝트 설명 */
+    descriptionMd?: string | null;
+    /** 본문 이미지 */
+    descriptionMedia: (object | boolean | string | number)[];
+    /** GitHub 저장소 URL */
+    githubRepositoryUrl: string;
+    /** 프로젝트 ID */
+    id: number;
+    /** 프로젝트 썸네일 URL */
+    imageUrl?: string | null;
+    /** 좋아요 수 */
+    likeCount: number;
+    /** 요청자의 좋아요 여부 */
+    likedByMe: boolean;
+    /** 프로젝트 팀원 */
+    members: (object | boolean | string | number)[];
+    /** 프로젝트 등록자 ID */
+    registeredBy?: number | null;
+    /** 반려 사유 */
+    rejectReason?: string | null;
+    /** 운영 상태 */
+    serviceStatus: "OPERATING" | "CLOSED";
+    /** 프로젝트 slug */
+    slug: string;
+    /** GitHub star 수 */
+    starCount?: number | null;
+    /** 한 줄 소개 */
+    tagline: string;
+    /** 팀 이름 */
+    teamName: string;
+    /** 기술 스택 */
+    techTags: (object | boolean | string | number)[];
+    /** 프로젝트 썸네일 이미지 ID */
+    thumbnailImageId?: number | null;
+    /** 프로젝트 이름 */
+    title: string;
+    /** 수정 시각 */
+    updatedAt: string;
+    /** 조회 수 */
+    viewCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** AdminProjectFindAllSuccessResponse */
+export interface AdminProjectFindAllSuccessResponse {
+  /** 프로젝트 심사 목록 */
+  data: {
+    /** 승인 상태 */
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+    /** 북마크 수 */
+    bookmarkCount: number;
+    /** 요청자의 북마크 여부 */
+    bookmarkedByMe: boolean;
+    /** 우아한테크코스 기수 */
+    cohort: number;
+    /** 댓글 수 */
+    commentCount: number;
+    /** 등록 시각 */
+    createdAt: string;
+    /** 프로젝트 ID */
+    id: number;
+    /** 좋아요 수 */
+    likeCount: number;
+    /** 요청자의 좋아요 여부 */
+    likedByMe: boolean;
+    /** 프로젝트 팀원 */
+    members: (object | boolean | string | number)[];
+    /** 프로젝트 등록자 ID */
+    registeredBy?: number | null;
+    /** 반려 사유. REJECTED일 때만 값이 있다. */
+    rejectReason?: string | null;
+    /** 운영 상태 */
+    serviceStatus: "OPERATING" | "CLOSED";
+    /** 프로젝트 slug */
+    slug: string;
+    /** GitHub star 수 */
+    starCount?: number | null;
+    /** 한 줄 소개 */
+    tagline: string;
+    /** 팀 이름 */
+    teamName: string;
+    /** 기술 스택 */
+    techTags: (object | boolean | string | number)[];
+    /** 프로젝트 썸네일 이미지 ID */
+    thumbnailImageId?: number | null;
+    /** 프로젝트 썸네일 URL */
+    thumbnailUrl?: string | null;
+    /** 프로젝트 이름 */
+    title: string;
+    /** 수정 시각 */
+    updatedAt: string;
+  }[];
+  /** 페이지네이션 정보 */
+  meta: {
+    /** 다음 페이지 존재 여부 */
+    hasNext: boolean;
+    /** 다음 페이지 커서 */
+    nextCursor?: string | null;
+    /** 전체 프로젝트 수 */
+    totalCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** AdminProjectHistorySuccessResponse */
+export interface AdminProjectHistorySuccessResponse {
+  /** 프로젝트 심사 이력 */
+  data: {
+    /** 상태 변경 이력 */
+    items: {
+      /** 상태 변경 시각 */
+      changedAt: string;
+      /** 상태를 변경한 사용자. 최초 등록이면 null */
+      changedBy?: object | null;
+      /** 변경 전 상태. 최초 등록이면 null */
+      fromStatus?: string | null;
+      /** 이력 ID */
+      historyId: number;
+      /** 반려 사유 */
+      reason?: string | null;
+      /** 변경 후 상태 */
+      toStatus: "PENDING" | "APPROVED" | "REJECTED";
+    }[];
+    /** 프로젝트 ID */
+    projectId: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** AdminProjectMigrationUpdateRequest */
+export interface AdminProjectMigrationUpdateRequest {
+  /** 승인 상태 */
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | null;
+  /** 기수(1~8) */
+  cohort?: number | null;
+  /** 생성 시각. ISO 날짜·시각 또는 YYYY-MM-DD */
+  createdAt?: string | null;
+  /** 배포 URL. null 허용 */
+  deploymentUrl?: string | null;
+  /** 마크다운 본문. null 허용 */
+  descriptionMd?: string | null;
+  /** GitHub 저장소 URL */
+  githubRepositoryUrl?: string | null;
+  /** 서비스 상태 */
+  serviceStatus?: "OPERATING" | "CLOSED" | null;
+  /** 프로젝트 slug */
+  slug?: string | null;
+  /** GitHub 스타 수. null 허용 */
+  starCount?: number | null;
+  /** 스타 동기화 시각. ISO 날짜·시각 또는 YYYY-MM-DD. null 허용 */
+  starSyncedAt?: string | null;
+  /** 한 줄 소개 */
+  tagline?: string | null;
+  /** 팀 이름 */
+  teamName?: string | null;
+  /** 기술 태그 ID 전체 목록. 빈 배열이면 모두 제거. 생략하면 유지 */
+  techTagIds?: number[] | null;
+  /** 썸네일 미디어 ID. null 허용 */
+  thumbnailImageId?: number | null;
+  /** 프로젝트 이름 */
+  title?: string | null;
+  /** 수정 시각. ISO 날짜·시각 또는 YYYY-MM-DD */
+  updatedAt?: string | null;
+  /** 조회수 */
+  viewCount?: number | null;
+}
+
+/** AdminProjectMigrationUpdateSuccessResponse */
+export interface AdminProjectMigrationUpdateSuccessResponse {
+  /** 수정 결과 */
+  data: {
+    /** 프로젝트 ID */
+    projectId: number;
+    /** 수정 시각 */
+    updatedAt: string;
+    /** 수정한 필드명 목록 */
+    updatedFields: string[];
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** AdminProjectRejectRequest */
+export interface AdminProjectRejectRequest {
+  /** 반려 사유(앞뒤 공백 제거 후 1~100자) */
+  reason: string;
+}
+
+/** AdminProjectRejectSuccessResponse */
+export interface AdminProjectRejectSuccessResponse {
+  /** 반려 결과 */
+  data: {
+    /** 변경된 승인 상태 */
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+    /** 반려 시각 */
+    decidedAt: string;
+    /** 반려한 관리자 */
+    decidedBy: {
+      /** 관리자 handle */
+      handle: string;
+      /** 관리자 사용자 ID */
+      userId: number;
+    };
+    /** 프로젝트 ID */
+    projectId: number;
+    /** 반려 사유 */
+    reason: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
 /** AdminVerificationRequestApproveSuccessResponse */
 export interface AdminVerificationRequestApproveSuccessResponse {
   /** 승인 결과 */
@@ -296,6 +552,8 @@ export interface EventCreateSuccessResponse {
       cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 handle */
+      handle?: string | null;
       /** 작성자 이름 */
       name: string;
       /** 작성자 트랙 */
@@ -359,6 +617,8 @@ export interface FeedCommentCreateSuccessResponse {
       cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 handle */
+      handle?: string | null;
       /** 작성자 트랙 */
       track?: string | null;
       /** 작성자 ID */
@@ -414,6 +674,8 @@ export interface FeedCommentFindAllSuccessResponse {
       cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 handle */
+      handle?: string | null;
       /** 작성자 트랙 */
       track?: string | null;
       /** 작성자 ID */
@@ -488,6 +750,8 @@ export interface FeedCommentUpdateSuccessResponse {
       cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 handle */
+      handle?: string | null;
       /** 작성자 트랙 */
       track?: string | null;
       /** 작성자 ID */
@@ -564,6 +828,19 @@ export interface FeedFindAllSuccessResponse {
     likeCount: number;
     /** 요청자의 좋아요 여부. 비로그인이면 false */
     likedByMe: boolean;
+    /** 본문 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 본문 미디어 목록 */
     media: {
       /** 미디어 표시 순서 */
@@ -641,6 +918,19 @@ export interface FeedFindSuccessResponse {
     likeCount: number;
     /** 요청자의 좋아요 여부. 비로그인이면 false */
     likedByMe: boolean;
+    /** 본문 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 본문 미디어 목록 */
     media: {
       /** 미디어 표시 순서 */
@@ -728,6 +1018,19 @@ export interface FeedSaveSuccessResponse {
     createdAt: string;
     /** 피드 ID */
     feedId: number;
+    /** 본문 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 본문 미디어 목록 */
     media: {
       /** 미디어 표시 순서 */
@@ -802,6 +1105,19 @@ export interface FeedUpdateSuccessResponse {
     createdAt: string;
     /** 피드 ID */
     feedId: number;
+    /** 본문 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 본문 미디어 목록 */
     media: {
       /** 미디어 표시 순서 */
@@ -842,8 +1158,10 @@ export interface HomeBannerAdminFindAllSuccessResponse {
     linkUrl?: string | null;
     /** 미디어 ID */
     mediaId: number;
-    /** 대상 리소스 ID */
+    /** 대상 리소스 ID. 대상이 뉴스·피드일 때만 값이 있다. */
     targetId?: number | null;
+    /** 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다. */
+    targetSlug?: string | null;
     /** 대상 리소스 유형 */
     targetType?: "NEWS" | "PROJECT" | "FEED" | null;
     /** 수정 시각 */
@@ -877,8 +1195,10 @@ export interface HomeBannerAdminSaveSuccessResponse {
     linkUrl?: string | null;
     /** 미디어 ID */
     mediaId: number;
-    /** 대상 리소스 ID */
+    /** 대상 리소스 ID. 대상이 뉴스·피드일 때만 값이 있다. */
     targetId?: number | null;
+    /** 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다. */
+    targetSlug?: string | null;
     /** 대상 리소스 유형 */
     targetType?: "NEWS" | "PROJECT" | "FEED" | null;
     /** 수정 시각 */
@@ -912,8 +1232,10 @@ export interface HomeBannerAdminUpdateSuccessResponse {
     linkUrl?: string | null;
     /** 미디어 ID */
     mediaId: number;
-    /** 대상 리소스 ID */
+    /** 대상 리소스 ID. 대상이 뉴스·피드일 때만 값이 있다. */
     targetId?: number | null;
+    /** 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다. */
+    targetSlug?: string | null;
     /** 대상 리소스 유형 */
     targetType?: "NEWS" | "PROJECT" | "FEED" | null;
     /** 수정 시각 */
@@ -950,8 +1272,10 @@ export interface HomeBannerFindAllSuccessResponse {
     linkUrl?: string | null;
     /** 배너 이미지 미디어 ID */
     mediaId: number;
-    /** 대상 리소스 ID */
+    /** 대상 리소스 ID. 대상이 뉴스·피드일 때만 값이 있다. */
     targetId?: number | null;
+    /** 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다. */
+    targetSlug?: string | null;
     /** 대상 리소스 유형 */
     targetType?: "NEWS" | "PROJECT" | "FEED" | null;
   }[];
@@ -973,8 +1297,10 @@ export interface HomeBannerUpsertRequest {
   linkUrl?: string | null;
   /** READY HOME_BANNER 미디어 ID */
   mediaId: number;
-  /** 대상 리소스 ID */
+  /** 대상 소식·피드 ID. 대상이 소식·피드일 때만 넣는다. */
   targetId?: number | null;
+  /** 대상 프로젝트 slug. 대상이 프로젝트일 때만 넣는다. */
+  targetSlug?: string | null;
   /** 대상 리소스 유형 */
   targetType?: "NEWS" | "PROJECT" | "FEED" | null;
 }
@@ -993,6 +1319,19 @@ export interface HomeStatisticsSuccessResponse {
     projectCount: number;
   };
   /** 응답 상태 */
+  status: string;
+}
+
+/** MediaStatusSuccessResponse */
+export interface MediaStatusSuccessResponse {
+  /** 미디어 처리 상태 */
+  data: {
+    /** 미디어 ID */
+    mediaId: number;
+    /** 미디어 상태 */
+    status: "PENDING_UPLOAD" | "PROCESSING" | "READY" | "FAILED" | "EXPIRED";
+  };
+  /** 응답 상태 (success) */
   status: string;
 }
 
@@ -1063,6 +1402,8 @@ export interface NewsFindDetailSuccessResponse {
       cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 handle */
+      handle?: string | null;
       /** 작성자 이름 */
       name: string;
       /** 작성자 트랙 */
@@ -1176,6 +1517,8 @@ export interface NewsUpdateSuccessResponse {
       cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 handle */
+      handle?: string | null;
       /** 작성자 이름 */
       name: string;
       /** 작성자 트랙 */
@@ -1248,6 +1591,8 @@ export interface NoticeCreateSuccessResponse {
       cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 handle */
+      handle?: string | null;
       /** 작성자 이름 */
       name: string;
       /** 작성자 트랙 */
@@ -1289,7 +1634,7 @@ export interface NoticeCreateSuccessResponse {
 export interface OAuthSignupRequest {
   /** 프로필 표시 이름 */
   displayName: string;
-  /** 영구 공개 핸들 */
+  /** @[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들 */
   handle: string;
 }
 
@@ -1324,6 +1669,8 @@ export interface ProjectCommentCreateSuccessResponse {
       cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 handle */
+      handle?: string | null;
       /** 작성자 트랙 */
       track?: string | null;
       /** 작성자 ID */
@@ -1379,6 +1726,8 @@ export interface ProjectCommentFindAllSuccessResponse {
       cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 handle */
+      handle?: string | null;
       /** 작성자 트랙 */
       track?: string | null;
       /** 작성자 ID */
@@ -1426,8 +1775,8 @@ export interface ProjectCommentReactionSuccessResponse {
     agreeCount: number;
     /** 댓글 ID */
     commentId: number;
-    /** 프로젝트 ID */
-    projectId: number;
+    /** 프로젝트 slug */
+    slug: string;
     /** 반응 타입(현재 AGREE) */
     type: string;
   };
@@ -1453,6 +1802,8 @@ export interface ProjectCommentUpdateSuccessResponse {
       cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
+      /** 작성자 handle */
+      handle?: string | null;
       /** 작성자 트랙 */
       track?: string | null;
       /** 작성자 ID */
@@ -1487,9 +1838,9 @@ export interface ProjectCreateRequest {
   deploymentUrl?: string | null;
   /** 프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId}) 형식으로 넣으며, 본인이 업로드한 PROJECT_DESCRIPTION 용도의 처리 완료 이미지만 쓸 수 있다. */
   descriptionMd?: string | null;
-  /** https://github.com/{owner}/{repo} 형식 (2,048자 이하). 끝의 .git이나 /는 허용하지만, /tree/main처럼 경로가 더 붙으면 400이다. 리포지토리 이름으로 slug를 만든다. */
+  /** https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하). 다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, 경로(/tree/main), 쿼리(?tab=readme), 앵커(#readme)는 허용하고 버린 뒤 저장한다. 리포지토리 이름으로 slug를 만든다. */
   githubRepositoryUrl: string;
-  /** 팀원 handle 목록 (1명 이상). 등록자를 포함할 수 있으며, 활동 중인 우아한테크코스 크루 또는 코치여야 하며, 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다. */
+  /** @[A-Za-z0-9_-]{2,30} 형식의 팀원 handle 목록 (1명 이상). 등록자를 포함할 수 있으며, 활동 중인 우아한테크코스 크루 또는 코치여야 하며, 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다. */
   memberHandles: string[];
   /** 한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준) */
   tagline: string;
@@ -1507,8 +1858,6 @@ export interface ProjectCreateRequest {
 export interface ProjectCreateSuccessResponse {
   /** 등록된 프로젝트 */
   data: {
-    /** 등록된 프로젝트 ID */
-    projectId: number;
     /** 프로젝트 주소로 쓰이는 slug */
     slug: string;
   };
@@ -1522,10 +1871,10 @@ export interface ProjectDeleteSuccessResponse {
   data: {
     /** 삭제 시각 (UTC) */
     deletedAt: string;
-    /** 삭제한 프로젝트 ID */
-    id: number;
     /** 복구 기한 (UTC). 이 시각까지 복구할 수 있다. */
     restoreDeadlineAt: string;
+    /** 삭제한 프로젝트 slug */
+    slug: string;
   };
   /** 메타 정보 */
   meta?: object | null;
@@ -1574,24 +1923,18 @@ export interface ProjectFindAllSuccessResponse {
     cohort: number;
     /** 삭제되지 않은 댓글 수 (대댓글 포함) */
     commentCount: number;
-    /** 프로젝트 ID */
-    id: number;
     /** 좋아요 수 */
     likeCount: number;
     /** 요청자의 좋아요 여부. 비로그인이면 false다. */
     likedByMe: boolean;
     /** 팀원 전체 목록. 상세 조회의 members와 같은 규칙이며, 등록 순서대로 정렬한다. */
     members: {
-      /** 프로필 이미지 미디어 ID */
-      avatarImageId?: number | null;
-      /** CloudFront에서 제공하는 공개 프로필 이미지 URL */
+      /** 프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, 가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL이다. */
       avatarUrl?: string | null;
       /** 기수. 크루가 아닌 팀원과 이관 팀원은 null이다. */
       cohort?: number | null;
       /** 표시 이름. 탈퇴한 팀원은 '탈퇴한 사용자', 가입하지 않은 이관 팀원은 GitHub 이름(없으면 GitHub 아이디)이다. */
       displayName: string;
-      /** GitHub 프로필 이미지 URL. 가입하지 않은 이관 팀원만 값이 있다. */
-      githubAvatarUrl?: string | null;
       /** GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다. */
       githubProfileUrl?: string | null;
       /** 프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다. */
@@ -1667,8 +2010,6 @@ export interface ProjectFindDetailSuccessResponse {
     editable: boolean;
     /** GitHub 리포지토리 URL */
     githubRepositoryUrl: string;
-    /** 프로젝트 ID */
-    id: number;
     /** CloudFront에서 제공하는 공개 이미지 URL */
     imageUrl?: string | null;
     /** 좋아요 수 */
@@ -1677,16 +2018,12 @@ export interface ProjectFindDetailSuccessResponse {
     likedByMe: boolean;
     /** 팀원 목록. 저장된 순서대로 반환한다. */
     members: {
-      /** 프로필 이미지 미디어 ID */
-      avatarImageId?: number | null;
-      /** CloudFront에서 제공하는 공개 프로필 이미지 URL */
+      /** 프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, 가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL이다. */
       avatarUrl?: string | null;
       /** 기수. 크루가 아닌 팀원과 이관 팀원은 null이다. */
       cohort?: number | null;
       /** 표시 이름. 탈퇴한 팀원은 '탈퇴한 사용자', 가입하지 않은 이관 팀원은 GitHub 이름(없으면 GitHub 아이디)이다. */
       displayName: string;
-      /** GitHub 프로필 이미지 URL. 가입하지 않은 이관 팀원만 값이 있다. */
-      githubAvatarUrl?: string | null;
       /** GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다. */
       githubProfileUrl?: string | null;
       /** 프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다. */
@@ -1740,8 +2077,8 @@ export interface ProjectReactionSuccessResponse {
     bookmarkCount: number;
     /** 프로젝트 좋아요 수 */
     likeCount: number;
-    /** 프로젝트 ID */
-    projectId: number;
+    /** 프로젝트 slug */
+    slug: string;
     /** 반응 타입(LIKE 또는 BOOKMARK) */
     type: string;
   };
@@ -1755,10 +2092,10 @@ export interface ProjectRestoreSuccessResponse {
   data: {
     /** 승인 상태. 삭제 이전 값을 그대로 유지한다. */
     approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
-    /** 복구한 프로젝트 ID */
-    id: number;
     /** 복구 시각 (UTC) */
     restoredAt: string;
+    /** 복구한 프로젝트 slug */
+    slug: string;
   };
   /** 메타 정보 */
   meta?: object | null;
@@ -1774,7 +2111,7 @@ export interface ProjectUpdateRequest {
   deploymentUrl?: string | null;
   /** 프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId}) 형식으로 넣으며, 상세 조회 응답의 CDN URL을 그대로 보내도 기존 본문 이미지 참조를 유지한다. */
   descriptionMd?: string | null;
-  /** https://github.com/{owner}/{repo} 형식 (2,048자 이하). 끝의 .git이나 /는 허용하지만, /tree/main처럼 경로가 더 붙으면 400이다. 바꿀 수 있지만 다른 프로젝트가 등록한 리포지토리로는 바꿀 수 없다. slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다. */
+  /** https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하). 다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, 경로(/tree/main), 쿼리(?tab=readme), 앵커(#readme)는 허용하고 버린 뒤 저장한다. 바꿀 수 있지만 다른 프로젝트가 등록한 리포지토리로는 바꿀 수 없다. slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다. */
   githubRepositoryUrl: string;
   /** 팀원 handle 전체 목록 (1명 이상). 등록자를 포함할 수 있으며, 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다. */
   memberHandles: string[];
@@ -1798,8 +2135,8 @@ export interface ProjectUpdateSuccessResponse {
   data: {
     /** 수정 후 승인 상태. PENDING 또는 APPROVED이며 REJECTED는 오지 않는다. */
     approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
-    /** 수정한 프로젝트 ID */
-    projectId: number;
+    /** 수정한 프로젝트 slug */
+    slug: string;
   };
   /** 응답 상태 */
   status: string;
@@ -1848,8 +2185,10 @@ export interface UserCommentFindAllSuccessResponse {
     content: string;
     /** 댓글 작성 시각 */
     createdAt: string;
-    /** 이동할 피드 또는 프로젝트 ID */
-    targetId: number;
+    /** 피드 댓글이면 이동할 피드 ID. 프로젝트 댓글이면 null */
+    feedId?: number | null;
+    /** 프로젝트 댓글이면 이동할 프로젝트 slug. 피드 댓글이면 null */
+    projectSlug?: string | null;
     /** 댓글 대상 종류 */
     type: "FEED" | "PROJECT";
     /** 댓글 최종 수정 시각 */
@@ -1918,6 +2257,19 @@ export interface UserFeedFindAllSuccessResponse {
     likeCount: number;
     /** 요청자의 좋아요 여부. 비로그인이면 false */
     likedByMe: boolean;
+    /** 본문 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 본문 미디어 목록 */
     media: {
       /** 미디어 표시 순서 */
@@ -2057,24 +2409,18 @@ export interface UserProjectFindAllSuccessResponse {
     cohort: number;
     /** 삭제되지 않은 댓글 수 */
     commentCount: number;
-    /** 프로젝트 ID */
-    id: number;
     /** 좋아요 수 */
     likeCount: number;
     /** 요청자의 좋아요 여부. 비로그인이면 false다. */
     likedByMe: boolean;
     /** 프로젝트 팀원 */
     members: {
-      /** 프로필 이미지 미디어 ID */
-      avatarImageId?: number | null;
-      /** CloudFront에서 제공하는 공개 프로필 이미지 URL */
+      /** 프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, 가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL이다. */
       avatarUrl?: string | null;
       /** 기수 */
       cohort?: number | null;
       /** 표시 이름 */
       displayName: string;
-      /** 이관 팀원의 GitHub 프로필 이미지 URL */
-      githubAvatarUrl?: string | null;
       /** 이관 팀원의 GitHub 프로필 URL */
       githubProfileUrl?: string | null;
       /** 사용자 handle */
@@ -2086,6 +2432,8 @@ export interface UserProjectFindAllSuccessResponse {
       /** 사용자 유형 */
       userType?: string | null;
     }[];
+    /** 반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다. */
+    rejectReason?: string | null;
     /** 운영 상태 */
     serviceStatus: "OPERATING" | "CLOSED";
     /** 프로젝트 slug */
@@ -2116,7 +2464,7 @@ export interface UserProjectFindAllSuccessResponse {
     hasNext: boolean;
     /** 다음 페이지 커서 */
     nextCursor?: string | null;
-    /** 커서와 size에 무관한 조회 가능한 전체 참여 프로젝트 수. 본인 조회는 승인 대기 프로젝트를 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함 */
+    /** 커서와 size에 무관한 조회 가능한 전체 참여 프로젝트 수. 본인 조회는 승인 대기 및 반려 프로젝트를 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함 */
     totalCount: number;
   };
   /** 응답 상태 */
