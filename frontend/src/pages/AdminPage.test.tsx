@@ -248,3 +248,40 @@ test('프로젝트 배너는 slug 경로로 보이고, 수정할 때 targetSlug�
     expect.objectContaining({ targetType: 'PROJECT', targetId: null, targetSlug: 'loop' }),
   );
 });
+
+test('관리자가 다른 사람의 프로젝트를 고치면 바꾼 칸만 보낸다', async () => {
+  const user = userEvent.setup();
+  signInAs('ADMIN');
+  let patchBody: unknown;
+  server.use(
+    http.patch('/api/v1/admin/projects/:projectId/migration', async ({ params, request }) => {
+      patchBody = await request.json();
+      return HttpResponse.json({
+        status: 'success',
+        data: {
+          projectId: Number(params.projectId),
+          updatedFields: Object.keys(patchBody as object),
+          updatedAt: '2026-09-30T00:00:00Z',
+        },
+      });
+    }),
+  );
+
+  renderRoute('/admin?tab=project-edit');
+  await user.click(await screen.findByRole('button', { name: 'shout-outz 수정' }));
+
+  const title = await screen.findByLabelText('프로젝트 이름 *');
+  await user.clear(title);
+  await user.type(title, '샤웃아웃즈');
+  const slug = screen.getByLabelText('slug *');
+  await user.clear(slug);
+  await user.type(slug, 'shoutouts');
+
+  expect(screen.getByText('바뀐 항목: 프로젝트 이름, slug')).toBeInTheDocument();
+  expect(screen.getByText(/기존 주소 \/projects\/@shout-outz/)).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: '저장' }));
+
+  expect(await screen.findByRole('status')).toHaveTextContent('저장했어요.');
+  expect(patchBody).toEqual({ title: '샤웃아웃즈', slug: 'shoutouts' });
+});

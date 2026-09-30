@@ -61,6 +61,20 @@ const pendingProjects = [
   rejectReason: null,
 }));
 
+const approvedProjects = [
+  {
+    ...pendingProjects[0],
+    id: 200,
+    slug: 'shout-outz',
+    title: 'shout-outz',
+    tagline: '우테코 크루들의 프로젝트와 소식을 모아보는 곳',
+    techTags: [{ id: 1, displayName: 'React' }],
+    approvalStatus: 'APPROVED',
+  },
+];
+
+const adminProjects = [...pendingProjects, ...approvedProjects];
+
 const decided = (requestId: number, status: string) => ({
   requestId,
   status,
@@ -98,7 +112,7 @@ export const adminHandlers = [
 
   http.get('/api/v1/admin/projects', ({ request }) => {
     const status = new URL(request.url).searchParams.get('status') ?? 'PENDING';
-    const items = status === 'PENDING' ? pendingProjects : [];
+    const items = adminProjects.filter((item) => item.approvalStatus === status);
     return HttpResponse.json({
       status: 'success',
       data: items,
@@ -107,17 +121,32 @@ export const adminHandlers = [
   }),
 
   http.get('/api/v1/admin/projects/:projectId', ({ params }) => {
-    const project = pendingProjects.find((item) => item.id === Number(params.projectId));
+    const project = adminProjects.find((item) => item.id === Number(params.projectId));
     if (!project) return new HttpResponse(null, { status: 404 });
     return HttpResponse.json({
       status: 'success',
       data: {
         ...project,
+        teamName: '팀 루프',
+        serviceStatus: 'CLOSED',
+        imageUrl: null,
         descriptionMd: '## 프로젝트 소개\n팀 회고와 액션 아이템을 공유합니다.',
         githubRepositoryUrl: 'https://github.com/woowacourse-teams/loop',
         deploymentUrl: null,
         viewCount: 0,
         descriptionMedia: [],
+      },
+    });
+  }),
+
+  http.patch('/api/v1/admin/projects/:projectId/migration', async ({ params, request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json({
+      status: 'success',
+      data: {
+        projectId: Number(params.projectId),
+        updatedFields: Object.keys(body),
+        updatedAt: '2026-09-30T00:00:00Z',
       },
     });
   }),
