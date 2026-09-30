@@ -25,6 +25,15 @@ public class OAuthAccountRepositoryImpl implements OAuthAccountRepository {
     }
 
     @Override
+    public Optional<OAuthAccount> findByUserIdAndProvider(
+            long userId,
+            OAuthProvider provider
+    ) {
+        return oauthAccountJpaRepository.findByUserIdAndProvider(userId, provider)
+                .map(OAuthAccountMapper::toDomain);
+    }
+
+    @Override
     public Optional<OAuthAccount> findByProviderAndProviderAccountId(
             OAuthProvider provider,
             String providerAccountId

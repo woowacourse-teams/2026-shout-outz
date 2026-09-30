@@ -8,6 +8,9 @@ import static org.mockito.Mockito.never;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.auth.domain.OAuthAccount;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
+import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
 import com.shoutoutz.api.user.application.dto.UserProfileCounts;
@@ -57,6 +60,9 @@ class UserServiceTest {
     @Mock
     private MediaUrlResolver mediaUrlResolver;
 
+    @Mock
+    private OAuthAccountRepository oauthAccountRepository;
+
     private UserSearchCursorCodec userSearchCursorCodec;
 
     private UserService userService;
@@ -70,7 +76,8 @@ class UserServiceTest {
                 userQueryRepository,
                 userSearchCursorCodec,
                 mediaMetadataRepository,
-                mediaUrlResolver
+                mediaUrlResolver,
+                oauthAccountRepository
         );
     }
 
@@ -102,6 +109,39 @@ class UserServiceTest {
                 21L,
                 "https://cdn.example.com/media/21/display"
         ));
+    }
+
+    @Test
+    @DisplayName("직접 업로드한 이미지가 없으면 GitHub 아바타 URL을 사용한다")
+    void usesGithubAvatarWhenCustomAvatarIsMissing() {
+        User user = User.builder()
+                .id(1L)
+                .handle("@zzaekkii")
+                .status(UserStatus.ACTIVE)
+                .role(UserRole.USER)
+                .build();
+        UserProfile profile = UserProfile.builder()
+                .userId(1L)
+                .displayName("재키")
+                .userType(UserType.GENERAL)
+                .build();
+        OAuthAccount oauthAccount = OAuthAccount.builder()
+                .id(10L)
+                .userId(1L)
+                .provider(OAuthProvider.GITHUB)
+                .providerAccountId("12345678")
+                .providerAvatarUrl("https://avatars.githubusercontent.com/u/12345678")
+                .build();
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
+        given(userProfileRepository.findByUserId(1L)).willReturn(Optional.of(profile));
+        given(oauthAccountRepository.findByUserIdAndProvider(1L, OAuthProvider.GITHUB))
+                .willReturn(Optional.of(oauthAccount));
+
+        UserProfileSummaryResponse result = userService.getMyProfileSummary(1L);
+
+        assertThat(result.avatarImageId()).isNull();
+        assertThat(result.avatarUrl())
+                .isEqualTo("https://avatars.githubusercontent.com/u/12345678");
     }
 
     @Test

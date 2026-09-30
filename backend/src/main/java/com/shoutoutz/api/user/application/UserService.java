@@ -4,6 +4,8 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
+import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.domain.MediaMetadata;
 import com.shoutoutz.api.media.domain.MediaMetadataRepository;
@@ -48,6 +50,7 @@ public class UserService {
     private final UserSearchCursorCodec userSearchCursorCodec;
     private final MediaMetadataRepository mediaMetadataRepository;
     private final MediaUrlResolver mediaUrlResolver;
+    private final OAuthAccountRepository oauthAccountRepository;
 
     @Transactional
     public UserProfileUpdateResponse updateMyProfile(
@@ -75,7 +78,7 @@ public class UserService {
                 trackValue(savedProfile),
                 cohortValue(savedProfile),
                 savedProfile.getBio(),
-                toUrl(mediaUrlResolver.resolve(savedProfile.getAvatarImageId())),
+                resolveAvatarUrl(userId, savedProfile.getAvatarImageId()),
                 savedProfile.getGithubProfileUrl(),
                 savedProfile.getBlogUrl()
         );
@@ -90,7 +93,7 @@ public class UserService {
                 user.getHandle().value(),
                 profile.getDisplayName().value(),
                 profile.getAvatarImageId(),
-                toUrl(mediaUrlResolver.resolve(profile.getAvatarImageId()))
+                resolveAvatarUrl(userId, profile.getAvatarImageId())
         );
     }
 
@@ -213,7 +216,7 @@ public class UserService {
                 cohortValue(profile),
                 profile.getBio(),
                 profile.getAvatarImageId(),
-                toUrl(mediaUrlResolver.resolve(profile.getAvatarImageId())),
+                resolveAvatarUrl(profile.getUserId(), profile.getAvatarImageId()),
                 profile.getGithubProfileUrl(),
                 profile.getBlogUrl(),
                 new UserProfileResponse.Counts(counts.projects(), counts.feeds())
@@ -252,6 +255,23 @@ public class UserService {
 
     private String toUrl(java.net.URI url) {
         return url == null ? null : url.toString();
+    }
+
+    /**
+     * 사용자가 직접 업로드한 이미지가 있으면 그 이미지를 우선하고,
+     * 아직 업로드하지 않은 신규 OAuth 사용자는 Provider 아바타를 사용한다.
+     *
+     * <p>{@code avatarImageId}는 {@code media_metadata.id}를 가리키는 값이므로
+     * 외부 GitHub URL을 이 필드에 저장하지 않는다.</p>
+     */
+    private String resolveAvatarUrl(long userId, Long avatarImageId) {
+        String mediaUrl = toUrl(mediaUrlResolver.resolve(avatarImageId));
+        if (mediaUrl != null) {
+            return mediaUrl;
+        }
+        return oauthAccountRepository.findByUserIdAndProvider(userId, OAuthProvider.GITHUB)
+                .map(account -> account.getProviderAvatarUrl())
+                .orElse(null);
     }
 
     /**
