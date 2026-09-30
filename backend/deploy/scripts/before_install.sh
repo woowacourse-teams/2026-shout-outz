@@ -6,6 +6,7 @@ readonly SERVICE_USER="shoutoutz"
 readonly APP_ROOT="/opt/shout-outz"
 readonly APP_DIR="${APP_ROOT}/app"
 readonly ENV_FILE="${APP_ROOT}/shout-outz.env"
+readonly LOG_DIR="/var/log/shout-outz"
 readonly MIN_FREE_MB=256
 readonly MIN_FREE_KB=$((MIN_FREE_MB * 1024))
 
@@ -39,6 +40,8 @@ fi
 
 install -d -o root -g "$SERVICE_USER" -m 0750 "$APP_ROOT"
 install -d -o root -g "$SERVICE_USER" -m 0750 "$APP_DIR"
+# 애플리케이션이 직접 로그 파일을 만들고 롤링하므로 서비스 사용자가 소유한다.
+install -d -o "$SERVICE_USER" -g "$SERVICE_USER" -m 0750 "$LOG_DIR"
 
 [[ -f "$ENV_FILE" ]] || fail "환경 변수 파일이 없습니다: ${ENV_FILE}"
 
