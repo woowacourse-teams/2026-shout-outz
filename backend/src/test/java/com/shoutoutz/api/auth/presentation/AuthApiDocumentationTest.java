@@ -109,7 +109,13 @@ class AuthApiDocumentationTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Auth")
                                 .summary("GitHub 로그인 시작")
-                                .description("state와 PKCE 값을 생성해 세션에 저장하고 GitHub 인가 화면으로 이동한다.")
+                                .description("state와 PKCE 값을 생성해 세션에 저장하고 GitHub 인가 화면으로 이동한다. "
+                                        + "허용 목록에 있는 returnTo가 있으면 Callback 완료 후 해당 프론트엔드로 이동한다.")
+                                .queryParameters(
+                                        parameterWithName("returnTo")
+                                                .description("OAuth 완료 후 이동할 허용된 프론트엔드 URI")
+                                                .optional()
+                                )
                                 .responseHeaders(
                                         headerWithName(HttpHeaders.LOCATION)
                                                 .description("GitHub OAuth 인가 화면 URI"),

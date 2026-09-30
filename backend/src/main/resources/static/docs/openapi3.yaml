@@ -98,11 +98,11 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
-                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayOrder\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
                     ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"}]}"
+                    :\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug 형식이\
+                    \ 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1666,10 +1666,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
+                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
+                    eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -4827,8 +4827,16 @@ paths:
       tags:
       - Auth
       summary: GitHub 로그인 시작
-      description: state와 PKCE 값을 생성해 세션에 저장하고 GitHub 인가 화면으로 이동한다.
+      description: state와 PKCE 값을 생성해 세션에 저장하고 GitHub 인가 화면으로 이동한다. 허용 목록에 있는 returnTo가
+        있으면 Callback 완료 후 해당 프론트엔드로 이동한다.
       operationId: auth-github-authorization
+      parameters:
+      - name: returnTo
+        in: query
+        description: OAuth 완료 후 이동할 허용된 프론트엔드 URI
+        required: false
+        schema:
+          type: string
       responses:
         "302":
           description: "302"
