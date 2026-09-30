@@ -1,6 +1,7 @@
 import { ADMIN_TABS } from '@/constants/admin';
 import type {
   AdminHomeBannerItem,
+  AdminProjectUpdateRequest,
   AdminVerificationItem,
   AdminVerificationListData,
   EventCreateBody,
@@ -42,11 +43,30 @@ export type AdminProject = Pick<
 };
 export type AdminProjectStatus = AdminProject['approvalStatus'];
 
-/** AdminProjectDetailResponse.java에서 심사 화면이 사용하는 필드. */
+/** AdminProjectDetailResponse.java에서 심사·수정 화면이 사용하는 필드. */
 export type AdminProjectDetail = Pick<
   ProjectDetailData,
-  'descriptionMd' | 'githubRepositoryUrl' | 'deploymentUrl' | 'slug'
-> & { id: number };
+  | 'slug'
+  | 'title'
+  | 'teamName'
+  | 'tagline'
+  | 'cohort'
+  | 'thumbnailImageId'
+  | 'imageUrl'
+  | 'githubRepositoryUrl'
+  | 'deploymentUrl'
+  | 'descriptionMd'
+  | 'serviceStatus'
+  | 'techTags'
+  | 'members'
+> & { id: number; approvalStatus: ProjectApprovalStatus };
+
+/**
+ * 관리자 프로젝트 수정 요청. `PATCH /api/v1/admin/projects/{projectId}/migration`
+ *
+ * 보낸 필드만 바뀌고, 작성자·승인 상태 전이 검사를 거치지 않는다. 팀원은 이 요청으로 바꿀 수 없다.
+ */
+export type AdminProjectUpdateBody = AdminProjectUpdateRequest;
 
 /** AdminProjectApproveResponse.java와 AdminProjectRejectResponse.java. */
 export interface AdminProjectDecision {

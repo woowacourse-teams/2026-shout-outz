@@ -10,6 +10,7 @@
  *
  */
 import type {
+  AdminProjectMigrationUpdateRequest,
   AdminVerificationRequestFindAllSuccessResponse,
   AuthSessionSuccessResponse,
   CohortFindAllSuccessResponse,
@@ -151,3 +152,4 @@ export type AdminVerificationListData = Data<AdminVerificationRequestFindAllSucc
 export type AdminVerificationItem = Item<AdminVerificationListData>;
 export type AdminHomeBannerItem = Item<Data<HomeBannerAdminFindAllSuccessResponse>>;
 export type HomeBannerUpsertBody = HomeBannerUpsertRequest;
+export type AdminProjectUpdateRequest = AdminProjectMigrationUpdateRequest;
