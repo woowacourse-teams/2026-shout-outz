@@ -88,15 +88,16 @@ sudo sysctl -p /etc/sysctl.d/99-swappiness.conf
 다음으로 우분투가 기본으로 켜지만 이 서버에서 할 일이 없는 서비스를 끈다. `fwupd`는 하드웨어 펌웨어 업데이트를, `udisks2`는 이동식 디스크 관리를 담당하며 가상 머신에는 대상이 없다. 둘이 합쳐 약 76MB를 사용한다.
 
 ```bash
-sudo systemctl disable --now fwupd.service udisks2.service
+sudo systemctl mask --now fwupd.service
+sudo systemctl disable --now udisks2.service
 sudo chmod -x /etc/update-motd.d/50-landscape-sysinfo
 ```
 
 `50-landscape-sysinfo`는 SSH 로그인 시 시스템 요약을 출력하는 스크립트다. 메모리가 빠듯한 상태에서 이 스크립트의 할당 요청이 OOM killer를 발동시킨 사례가 있어 함께 비활성화한다. 반면 `unattended-upgrades`도 메모리를 쓰지만 보안 패치를 자동으로 적용하므로 끄지 않는다.
 
-`fwupd`는 D-Bus로 다시 기동될 수 있다. 이후 `ps aux | grep fwupd`에 다시 보이면 `sudo systemctl mask fwupd.service`로 막는다.
+`fwupd`는 부팅 시 켜지는 서비스가 아니라 D-Bus 요청으로 기동되므로 `disable`로는 막히지 않는다. 실제로 `disable` 후에도 다시 떠 있는 것이 확인되어 `mask`로 기동 자체를 막는다.
 
-애플리케이션의 힙 상한(`shout-outz-backend.service`의 `-Xmx`)은 위 절차를 적용한 상태를 전제로 계산한 값이다. 현재 `-Xmx320m`은 힙 320MB에 힙 외 영역 약 170MB, OS와 에이전트 약 360MB를 더해 903MB 안에 들어가도록 잡았다. 메모리 확보 절차를 건너뛰면 OS 몫이 460MB로 늘어 이 값으로도 물리 메모리를 초과하므로, 두 가지는 함께 적용해야 한다.
+애플리케이션의 힙 상한(`shout-outz-backend.service`의 `-Xmx`)은 위 절차를 적용한 상태를 전제로 계산한 값이다. 현재 `-Xmx320m`은 힙 320MB에 힙 외 영역 약 170MB, OS와 에이전트 약 360MB를 더해 903MB 안에 들어가도록 잡았다. Metaspace는 128MB에서 반복 종료가 발생해 상한을 256MB로 올렸으므로, 힙 외 영역은 170MB보다 커질 수 있다. 힙이 상한까지 차서 903MB를 넘으면 swap이 받치므로 메모리 사용량을 모니터링한다. 메모리 확보 절차를 건너뛰면 OS 몫이 460MB로 늘어 이 값으로도 물리 메모리를 초과하므로, 두 가지는 함께 적용해야 한다.
 
 인스턴스 사양을 변경하면 `-Xmx`도 함께 조정한다. 비율 방식(`-XX:MaxRAMPercentage`)과 달리 절대값은 사양 변경을 자동으로 따라가지 않으므로, 메모리를 늘려도 애플리케이션은 기존 상한을 유지한다.
 
