@@ -6,36 +6,69 @@
  */
 
 /**
- * 색 갈래. 디자인이 이니셜 원에 쓰는 네 가지와 같다(🖥️ 17의 참여 팀원 목록).
+ * 색 갈래. 색상 다섯 가지 × 원 모양 두 가지다.
  *
- * 여기서 색은 의미를 나르지 않고 사람을 구분하기만 하므로, 컬러 토큰 규칙상
- * "색상 자체를 표현하는 경우"에 해당해 색 이름 토큰을 그대로 쓴다.
+ * 색이 의미를 나르지 않고 사람을 구분하기만 하므로, 컬러 토큰 규칙상 "색상 자체를 표현하는 경우"에
+ * 해당해 `primary` 별칭 대신 색 이름 토큰을 쓴다.
+ *
+ * 색상만으로는 네 가지뿐이라 같은 화면에서 자주 겹쳤다. 단계(50/100/200…)를 섞는 방법은
+ * 옅은 쪽 끝의 대비가 1.03~1.11이라 눈으로 구분되지 않아, 대신 배경과 글자를 뒤집은
+ * `solid`를 더해 가짓수를 두 배로 늘렸다.
  */
-export const AVATAR_TONES = ['primary', 'green', 'yellow', 'red'] as const;
+export const AVATAR_TONES = [
+  'blue-soft',
+  'green-soft',
+  'yellow-soft',
+  'red-soft',
+  'gray-soft',
+  'blue-solid',
+  'green-solid',
+  'yellow-solid',
+  'red-solid',
+  'gray-solid',
+] as const;
 
 export type AvatarTone = (typeof AVATAR_TONES)[number];
 
-/** 배경은 옅게, 글자는 진하게. Badge의 `soft`와 같은 짝이다. */
+/**
+ * `soft`는 옅은 배경에 진한 글자, `solid`는 그 반대다.
+ *
+ * 800 단계를 쓰는 이유는 대비다. 기존 `text-*-600`은 라이트 모드에서 green 3.52,
+ * yellow 2.20으로 WCAG AA(4.5)에 못 미쳤다. 800으로 올리면 라이트·다크 모두 5.01 이상이다.
+ */
 export const AVATAR_TONE_CLASSES: Record<AvatarTone, string> = {
-  primary: 'bg-primary-50 text-primary-600',
-  green: 'bg-green-50 text-green-600',
-  yellow: 'bg-yellow-50 text-yellow-600',
-  red: 'bg-red-50 text-red-600',
+  'blue-soft': 'bg-blue-50 text-blue-800',
+  'green-soft': 'bg-green-50 text-green-800',
+  'yellow-soft': 'bg-yellow-50 text-yellow-800',
+  'red-soft': 'bg-red-50 text-red-800',
+  'gray-soft': 'bg-gray-50 text-gray-800',
+  'blue-solid': 'bg-blue-800 text-blue-50',
+  'green-solid': 'bg-green-800 text-green-50',
+  'yellow-solid': 'bg-yellow-800 text-yellow-50',
+  'red-solid': 'bg-red-800 text-red-50',
+  'gray-solid': 'bg-gray-800 text-gray-50',
 };
 
 /**
  * 이름을 색 하나로 접는다.
  *
- * 코드 포인트를 훑어 더하는 것뿐이라 한글·영문·이모지를 가리지 않는다. 고르게 흩어지는 것보다
- * 같은 이름이 늘 같은 색으로 나오는 것이 중요해서 단순하게 둔다.
+ * 코드 포인트 단위로 훑어 한글·영문·이모지를 가리지 않는다. 같은 이름은 어디서 보든 늘 같은
+ * 색이어야 하므로 난수를 쓰지 않는다.
  */
 export function getAvatarTone(name: string): AvatarTone {
   let hash = 0;
   for (const char of name.trim()) {
-    hash = (hash + (char.codePointAt(0) ?? 0)) % AVATAR_TONES.length;
+    hash = (Math.imul(hash, 31) + (char.codePointAt(0) ?? 0)) | 0;
   }
 
-  return AVATAR_TONES[hash] ?? AVATAR_TONES[0];
+  // 여기서 상위 비트를 하위로 접지 않으면 한글 이름의 색이 뭉친다.
+  // 한글 음절은 0xAC00 + 초성*588 + 중성*28 + 종성인데 세 값이 모두 4의 배수라,
+  // 4로 나눈 나머지에는 종성만 남고 초성·중성이 통째로 사라진다.
+  hash ^= hash >>> 15;
+  hash = Math.imul(hash, 0x2545f491);
+  hash ^= hash >>> 13;
+
+  return AVATAR_TONES[(hash >>> 0) % AVATAR_TONES.length] ?? AVATAR_TONES[0];
 }
 
 /**

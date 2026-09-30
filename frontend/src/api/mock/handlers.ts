@@ -180,6 +180,15 @@ export const handlers = [
     }),
   ),
 
+  // complete가 PROCESSING으로 응답하므로, 쓸 수 있는지는 여기서 확인한다.
+  // 개발 환경에서는 기다릴 이유가 없어 바로 READY로 준다.
+  http.get('/api/v1/media/:mediaId/status', ({ params }) =>
+    HttpResponse.json({
+      status: 'success',
+      data: { mediaId: Number(params.mediaId), status: 'READY' },
+    }),
+  ),
+
   http.get('/api/v1/projects/filters', ({ request }) => {
     const selected = new URL(request.url).searchParams.get('techTagIds')?.split(',') ?? [];
 

@@ -183,6 +183,59 @@ export interface AdminProjectHistorySuccessResponse {
   status: string;
 }
 
+/** AdminProjectMigrationUpdateRequest */
+export interface AdminProjectMigrationUpdateRequest {
+  /** 승인 상태 */
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | null;
+  /** 기수(1~8) */
+  cohort?: number | null;
+  /** 생성 시각. ISO 날짜·시각 또는 YYYY-MM-DD */
+  createdAt?: string | null;
+  /** 배포 URL. null 허용 */
+  deploymentUrl?: string | null;
+  /** 마크다운 본문. null 허용 */
+  descriptionMd?: string | null;
+  /** GitHub 저장소 URL */
+  githubRepositoryUrl?: string | null;
+  /** 서비스 상태 */
+  serviceStatus?: "OPERATING" | "CLOSED" | null;
+  /** 프로젝트 slug */
+  slug?: string | null;
+  /** GitHub 스타 수. null 허용 */
+  starCount?: number | null;
+  /** 스타 동기화 시각. ISO 날짜·시각 또는 YYYY-MM-DD. null 허용 */
+  starSyncedAt?: string | null;
+  /** 한 줄 소개 */
+  tagline?: string | null;
+  /** 팀 이름 */
+  teamName?: string | null;
+  /** 기술 태그 ID 전체 목록. 빈 배열이면 모두 제거. 생략하면 유지 */
+  techTagIds?: number[] | null;
+  /** 썸네일 미디어 ID. null 허용 */
+  thumbnailImageId?: number | null;
+  /** 프로젝트 이름 */
+  title?: string | null;
+  /** 수정 시각. ISO 날짜·시각 또는 YYYY-MM-DD */
+  updatedAt?: string | null;
+  /** 조회수 */
+  viewCount?: number | null;
+}
+
+/** AdminProjectMigrationUpdateSuccessResponse */
+export interface AdminProjectMigrationUpdateSuccessResponse {
+  /** 수정 결과 */
+  data: {
+    /** 프로젝트 ID */
+    projectId: number;
+    /** 수정 시각 */
+    updatedAt: string;
+    /** 수정한 필드명 목록 */
+    updatedFields: string[];
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
 /** AdminProjectRejectRequest */
 export interface AdminProjectRejectRequest {
   /** 반려 사유(앞뒤 공백 제거 후 1~100자) */
@@ -775,6 +828,19 @@ export interface FeedFindAllSuccessResponse {
     likeCount: number;
     /** 요청자의 좋아요 여부. 비로그인이면 false */
     likedByMe: boolean;
+    /** 본문 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 본문 미디어 목록 */
     media: {
       /** 미디어 표시 순서 */
@@ -852,6 +918,19 @@ export interface FeedFindSuccessResponse {
     likeCount: number;
     /** 요청자의 좋아요 여부. 비로그인이면 false */
     likedByMe: boolean;
+    /** 본문 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 본문 미디어 목록 */
     media: {
       /** 미디어 표시 순서 */
@@ -939,6 +1018,19 @@ export interface FeedSaveSuccessResponse {
     createdAt: string;
     /** 피드 ID */
     feedId: number;
+    /** 본문 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 본문 미디어 목록 */
     media: {
       /** 미디어 표시 순서 */
@@ -1013,6 +1105,19 @@ export interface FeedUpdateSuccessResponse {
     createdAt: string;
     /** 피드 ID */
     feedId: number;
+    /** 본문 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 본문 미디어 목록 */
     media: {
       /** 미디어 표시 순서 */
@@ -1214,6 +1319,19 @@ export interface HomeStatisticsSuccessResponse {
     projectCount: number;
   };
   /** 응답 상태 */
+  status: string;
+}
+
+/** MediaStatusSuccessResponse */
+export interface MediaStatusSuccessResponse {
+  /** 미디어 처리 상태 */
+  data: {
+    /** 미디어 ID */
+    mediaId: number;
+    /** 미디어 상태 */
+    status: "PENDING_UPLOAD" | "PROCESSING" | "READY" | "FAILED" | "EXPIRED";
+  };
+  /** 응답 상태 (success) */
   status: string;
 }
 
@@ -2139,6 +2257,19 @@ export interface UserFeedFindAllSuccessResponse {
     likeCount: number;
     /** 요청자의 좋아요 여부. 비로그인이면 false */
     likedByMe: boolean;
+    /** 본문 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 본문 미디어 목록 */
     media: {
       /** 미디어 표시 순서 */
