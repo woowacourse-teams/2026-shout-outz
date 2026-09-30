@@ -95,7 +95,6 @@ describe('AuthActions', () => {
   it('로그인한 사용자의 이름을 내 프로필로 연결한다', async () => {
     renderRoute('/');
 
-    // handle을 알고 있으므로 `/users` 리다이렉트를 거치지 않고 바로 간다.
     expect(await screen.findByRole('link', { name: '정우진' })).toHaveAttribute(
       'href',
       '/users/woojin',
