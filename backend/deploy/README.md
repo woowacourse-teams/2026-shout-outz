@@ -175,6 +175,18 @@ sudo systemctl status shout-outz-backend --no-pager
 sudo journalctl -u shout-outz-backend -n 200 --no-pager
 ```
 
+같은 로그가 파일에도 남는다. `prod` 프로필의 `logging.file.name`이 경로를 정하고, 폴더는 `before_install.sh`가 서비스 사용자 소유로 만든다.
+
+```bash
+sudo tail -n 200 /var/log/shout-outz/app.log
+```
+
+`app.log`가 10MB를 넘거나 날짜가 바뀌면 `app.log.{날짜}.{번호}.gz`로 압축해 떼어 내고, 7일이 지나거나 합계가 200MB를 넘으면 오래된 것부터 지운다. 장기 보관은 CloudWatch가 맡는다.
+
+- CloudWatch Agent 설정의 수집 경로는 `logging.file.name`과 같아야 한다. 한쪽을 바꾸면 다른 쪽도 함께 바꾼다.
+- 폴더와 파일은 `shoutoutz` 소유이고 그룹 외에는 읽을 수 없다. CloudWatch Agent를 root가 아닌 사용자(`cwagent` 등)로 실행하면 그 사용자를 `shoutoutz` 그룹에 추가한다.
+- `shout-outz-backend.service`에 `ProtectSystem=strict`를 추가하면 `/var/log`가 읽기 전용이 되어 로그 파일을 쓰지 못한다. 이때는 `ReadWritePaths=/var/log/shout-outz`를 함께 추가한다.
+
 애플리케이션이 예고 없이 재시작했다면 메모리 부족으로 강제 종료되었는지 확인한다.
 
 ```bash
