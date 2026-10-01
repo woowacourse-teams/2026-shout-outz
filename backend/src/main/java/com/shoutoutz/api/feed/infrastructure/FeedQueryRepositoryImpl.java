@@ -813,6 +813,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         Long authorId = resultSet.getObject("user_id", Long.class);
         boolean isAnonymous = resultSet.getBoolean("is_anonymous");
         boolean authorVisible = !isAnonymous || Objects.equals(authorId, viewerId);
+        Cohort crewCohort = userType == UserType.WOOWACOURSE_CREW ? cohort : null;
         FeedItem.Author author = authorVisible
                 ? new FeedItem.Author(
                         authorId,
@@ -820,10 +821,11 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                         resultSet.getString("display_name"),
                         userType,
                         userType == UserType.WOOWACOURSE_CREW ? track : null,
-                        userType == UserType.WOOWACOURSE_CREW ? cohort : null,
+                        crewCohort,
                         resultSet.getObject("avatar_image_id", Long.class)
                 )
-                : new FeedItem.Author(null, null, null, null, null, null, null);
+                // 익명 작성자도 크루 배지 구분을 위해 유형과 기수만 공개한다
+                : new FeedItem.Author(null, null, null, userType, null, crewCohort, null);
         return new FeedBaseRow(
                 resultSet.getLong("id"),
                 FeedType.valueOf(resultSet.getString("feed_type")),
