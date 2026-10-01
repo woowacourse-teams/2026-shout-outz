@@ -96,6 +96,7 @@ class FeedHttpApiTest {
                 .andExpect(jsonPath("$.data[0].feedId").value(FEED_ID))
                 .andExpect(jsonPath("$.data[0].title").value("피드 제목"))
                 .andExpect(jsonPath("$.data[0].author.avatarImageId").value(21L))
+                .andExpect(jsonPath("$.data[0].author.cohort").value(8))
                 .andExpect(jsonPath("$.data[0].author.isCurrent").value(true))
                 .andExpect(jsonPath("$.data[0].media[0].mediaId").value(21L))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
@@ -133,6 +134,45 @@ class FeedHttpApiTest {
                                 .responseFields(feedListResponseFields("피드 목록"))
                                 .build())
                 ));
+    }
+
+    @Test
+    @DisplayName("타인의 익명 크루 피드에는 기수 대신 현재 기수 여부를 반환한다")
+    void hidesCohortOfAnonymousCrewFeedForExternalViewer() throws Exception {
+        FeedItem anonymousFeed = new FeedItem(
+                FEED_ID,
+                "익명 질문",
+                "익명 본문",
+                true,
+                new FeedItem.Author(
+                        null,
+                        null,
+                        null,
+                        UserType.WOOWACOURSE_CREW,
+                        null,
+                        Cohort.COHORT_7,
+                        null
+                ),
+                List.of(),
+                List.of(),
+                0L,
+                0L,
+                0L,
+                false,
+                false,
+                0,
+                CREATED_AT,
+                CREATED_AT,
+                null
+        );
+        given(feedService.findAllFeed(any(FeedFindAllRequest.class)))
+                .willReturn(new FeedFindAllResult(List.of(anonymousFeed), null, false, 1L, Map.of()));
+
+        mockMvc.perform(get("/api/v1/feeds").queryParam("type", "QUESTION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].author.userType").value("WOOWACOURSE_CREW"))
+                .andExpect(jsonPath("$.data[0].author.cohort").doesNotExist())
+                .andExpect(jsonPath("$.data[0].author.isCurrent").value(false));
     }
 
     @Test

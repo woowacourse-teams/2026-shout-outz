@@ -263,6 +263,7 @@ class FeedCommentServiceTest {
         assertThat(comment.author().avatarUrl()).isNull();
         assertThat(comment.author().handle()).isNull();
         assertThat(comment.author().track()).isNull();
+        assertThat(comment.author().cohort()).isNull();
         assertThat(comment.author().isCurrent()).isNull();
     }
 
@@ -283,6 +284,7 @@ class FeedCommentServiceTest {
         Comment comment = findFirstCommentAs(null);
 
         assertThat(comment.author().userType()).isEqualTo(UserType.WOOWACOURSE_CREW);
+        assertThat(comment.author().cohort()).isNull();
         assertThat(comment.author().isCurrent()).isFalse();
         assertThat(comment.author().track()).isNull();
         assertThat(comment.author().userId()).isNull();
@@ -307,12 +309,13 @@ class FeedCommentServiceTest {
         Comment comment = findFirstCommentAs(AUTHOR_ID + 1);
 
         assertThat(comment.author().userType()).isEqualTo(UserType.WOOWACOURSE_COACH);
+        assertThat(comment.author().cohort()).isNull();
         assertThat(comment.author().isCurrent()).isNull();
         assertThat(comment.author().userId()).isNull();
     }
 
     @Test
-    @DisplayName("익명 댓글 작성자가 본인이면 크루 정보를 포함한 전체 정보를 조회한다.")
+    @DisplayName("익명 댓글 작성자가 본인이면 전체 작성자 정보를 조회한다.")
     void exposesFullAuthorOfAnonymousCommentToOwner() {
         givenActiveFeed();
         givenAnonymousCommentPage();
@@ -330,8 +333,29 @@ class FeedCommentServiceTest {
         Comment comment = findFirstCommentAs(AUTHOR_ID);
 
         assertThat(comment.author().userId()).isEqualTo(AUTHOR_ID);
+        assertThat(comment.author().cohort()).isEqualTo((short) 8);
         assertThat(comment.author().isCurrent()).isTrue();
         assertThat(comment.author().track()).isEqualTo("BACKEND");
+    }
+
+    @Test
+    @DisplayName("실명 댓글 작성자가 크루면 기수와 현재 기수 여부를 공개한다.")
+    void exposesCohortOfNamedCrewCommentAuthor() {
+        givenActiveFeed();
+        givenCommentPage(false);
+        givenAuthor(UserProfile.builder()
+                .userId(AUTHOR_ID)
+                .displayName("크루")
+                .userType(UserType.WOOWACOURSE_CREW)
+                .track(Track.BACKEND)
+                .cohort(Cohort.from(8))
+                .avatarImageId(10L)
+                .build());
+
+        Comment comment = findFirstCommentAs(null);
+
+        assertThat(comment.author().cohort()).isEqualTo((short) 8);
+        assertThat(comment.author().isCurrent()).isTrue();
     }
 
     @Test
@@ -842,13 +866,17 @@ class FeedCommentServiceTest {
     }
 
     private void givenAnonymousCommentPage() {
+        givenCommentPage(true);
+    }
+
+    private void givenCommentPage(boolean anonymous) {
         FeedComment anonymousComment = FeedComment.reconstitute(
                 COMMENT_ID,
                 FEED_ID,
                 AUTHOR_ID,
                 null,
                 "익명 댓글",
-                true,
+                anonymous,
                 NOW,
                 NOW,
                 null

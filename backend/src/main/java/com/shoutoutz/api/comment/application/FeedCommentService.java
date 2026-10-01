@@ -180,6 +180,7 @@ public class FeedCommentService {
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
+                        cohortValue(author),
                         isCurrent(author),
                         userAvatarUrlResolver.resolve(
                                 author.getUserId(),
@@ -284,6 +285,7 @@ public class FeedCommentService {
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
+                        cohortValue(author),
                         isCurrent(author),
                         userAvatarUrlResolver.resolve(
                                 author.getUserId(),
@@ -357,6 +359,14 @@ public class FeedCommentService {
         return profile.getCohort() == Cohort.current();
     }
 
+    private Short cohortValue(UserProfile profile) {
+        if (profile.getUserType() != UserType.WOOWACOURSE_CREW
+                || profile.getCohort() == null) {
+            return null;
+        }
+        return (short) profile.getCohort().getValue();
+    }
+
     private String handleValue(long userId) {
         if (userRepository == null) {
             return null;
@@ -416,6 +426,7 @@ public class FeedCommentService {
                                 author.getDisplayName().value(),
                                 author.getUserType(),
                                 trackValue(author),
+                                cohortValue(author),
                                 isCurrent(author),
                                 author.getAvatarImageId(),
                                 avatarUrls.get(author.getUserId())
@@ -426,6 +437,7 @@ public class FeedCommentService {
                                 null,
                                 null,
                                 author.getUserType(),
+                                null,
                                 null,
                                 isCurrent(author),
                                 null,
