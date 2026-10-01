@@ -3,6 +3,7 @@ package com.shoutoutz.api.feed.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.category.domain.CategoryType;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.application.FeedQueryRepository;
 import com.shoutoutz.api.feed.application.dto.FeedCursor;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
@@ -12,6 +13,7 @@ import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.feed.domain.FeedType;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -214,9 +216,61 @@ class FeedRepositoryIntegrationTest {
                 .orElseThrow();
         assertThat(masked.isAnonymous()).isTrue();
         assertThat(masked.author().userId()).isNull();
+        assertThat(masked.author().handle()).isNull();
+        assertThat(masked.author().displayName()).isNull();
 
         FeedItem ownerView = feedQueryRepository.findById(unanswered.getId(), authorId).orElseThrow();
         assertThat(ownerView.author().userId()).isEqualTo(authorId);
+    }
+
+    @Test
+    void 익명_피드의_작성자_유형과_기수는_타인에게도_공개하고_신원은_숨긴다() {
+        long crewId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 7);
+        long coachId = insertUser("WOOWACOURSE_COACH", null, null);
+        long generalId = insertUser("GENERAL", null, null);
+        long viewerId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed crewFeed = saveAnonymousFeed(crewId, "크루 익명", base, categoryId);
+        Feed coachFeed = saveAnonymousFeed(coachId, "코치 익명", base.plus(1, ChronoUnit.HOURS), categoryId);
+        Feed generalFeed = saveAnonymousFeed(generalId, "일반 익명", base.plus(2, ChronoUnit.HOURS), categoryId);
+
+        FeedItem.Author crew = feedQueryRepository.findById(crewFeed.getId(), viewerId).orElseThrow().author();
+        FeedItem.Author coach = feedQueryRepository.findById(coachFeed.getId(), viewerId).orElseThrow().author();
+        FeedItem.Author general = feedQueryRepository.findById(generalFeed.getId(), null).orElseThrow().author();
+
+        assertThat(crew.userType()).isEqualTo(UserType.WOOWACOURSE_CREW);
+        assertThat(crew.cohort()).isEqualTo(Cohort.from((short) 7));
+        assertThat(coach.userType()).isEqualTo(UserType.WOOWACOURSE_COACH);
+        assertThat(coach.cohort()).isNull();
+        assertThat(general.userType()).isEqualTo(UserType.GENERAL);
+        assertThat(general.cohort()).isNull();
+        assertThat(List.of(crew, coach, general)).allSatisfy(author -> {
+            assertThat(author.userId()).isNull();
+            assertThat(author.handle()).isNull();
+            assertThat(author.displayName()).isNull();
+            assertThat(author.track()).isNull();
+            assertThat(author.avatarImageId()).isNull();
+        });
+    }
+
+    @Test
+    void 익명_피드의_작성자_유형과_기수는_목록_조회에서도_공개한다() {
+        long crewId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 7);
+        long viewerId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed anonymous = saveAnonymousFeed(crewId, "크루 익명", base, categoryId);
+
+        FeedItem listed = feedQueryRepository.findAll(FeedSort.LATEST, null, null, viewerId, null, 10).items().stream()
+                .filter(item -> item.feedId() == anonymous.getId())
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(listed.author().userType()).isEqualTo(UserType.WOOWACOURSE_CREW);
+        assertThat(listed.author().cohort()).isEqualTo(Cohort.from((short) 7));
+        assertThat(listed.author().userId()).isNull();
+        assertThat(listed.author().track()).isNull();
     }
 
     @Test
