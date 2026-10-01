@@ -25,6 +25,8 @@ import type {
   NewsFindAllSuccessResponse,
   NewsFindDetailSuccessResponse,
   NoticeCreateRequest,
+  NotificationListSuccessResponse,
+  NotificationUnreadCountSuccessResponse,
   ProjectCreateRequest as GeneratedProjectCreateRequest,
   ProjectFilterOptionsSuccessResponse,
   ProjectFindAllSuccessResponse,
@@ -132,6 +134,11 @@ export type ProjectDetailData = Omit<
   'id'
 >;
 export type ProjectFilterOptionsData = Data<ProjectFilterOptionsSuccessResponse>;
+
+// ── 알림 ────────────────────────────────────────────────────────────────────
+
+export type NotificationItemData = Item<Data<NotificationListSuccessResponse>>;
+export type NotificationUnreadCountData = Data<NotificationUnreadCountSuccessResponse>;
 
 // ── 홈 ──────────────────────────────────────────────────────────────────────
 
