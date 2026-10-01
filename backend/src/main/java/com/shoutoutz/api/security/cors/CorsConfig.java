@@ -22,7 +22,12 @@ class CorsConfig implements WebMvcConfigurer {
                         corsProperties.allowedOriginPatterns().toArray(String[]::new)
                 )
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                .allowedHeaders("Content-Type", "X-CSRF-Token")
+                .allowedHeaders(
+                        "Content-Type",
+                        "X-CSRF-Token",
+                        "baggage",
+                        "sentry-trace"
+                )
                 .allowCredentials(true);
     }
 }
