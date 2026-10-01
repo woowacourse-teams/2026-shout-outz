@@ -39,4 +39,10 @@ class CohortTest {
         assertThat(cohorts.getFirst()).isEqualTo(Cohort.COHORT_8);
         assertThat(cohorts.getLast()).isEqualTo(Cohort.COHORT_1);
     }
+
+    @Test
+    @DisplayName("현재 기수를 반환한다.")
+    void returnsCurrentCohort() {
+        assertThat(Cohort.current()).isEqualTo(Cohort.COHORT_8);
+    }
 }

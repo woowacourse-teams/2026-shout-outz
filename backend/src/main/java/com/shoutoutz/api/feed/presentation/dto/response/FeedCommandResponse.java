@@ -58,7 +58,7 @@ public record FeedCommandResponse(
             String displayName,
             UserType userType,
             String track,
-            Short cohort,
+            Boolean isCurrent,
             String avatarUrl
     ) {
         public Author(
@@ -66,10 +66,10 @@ public record FeedCommandResponse(
                 String displayName,
                 UserType userType,
                 String track,
-                Short cohort,
+                Boolean isCurrent,
                 String avatarUrl
         ) {
-            this(null, handle, displayName, userType, track, cohort, avatarUrl);
+            this(null, handle, displayName, userType, track, isCurrent, avatarUrl);
         }
 
         private static Author from(
@@ -83,7 +83,7 @@ public record FeedCommandResponse(
                     author.displayName(),
                     author.userType(),
                     trackValue(author.userType(), author.track()),
-                    cohortValue(author.userType(), author.cohort()),
+                    isCurrentValue(author.userType(), author.cohort()),
                     avatarUrl(author, mediaUrls, userAvatarUrls)
             );
         }
@@ -104,8 +104,10 @@ public record FeedCommandResponse(
             return userType == UserType.WOOWACOURSE_CREW && track != null ? track.getValue() : null;
         }
 
-        private static Short cohortValue(UserType userType, Cohort cohort) {
-            return userType == UserType.WOOWACOURSE_CREW && cohort != null ? (short) cohort.getValue() : null;
+        private static Boolean isCurrentValue(UserType userType, Cohort cohort) {
+            return userType == UserType.WOOWACOURSE_CREW && cohort != null
+                    ? cohort == Cohort.current()
+                    : null;
         }
     }
 
