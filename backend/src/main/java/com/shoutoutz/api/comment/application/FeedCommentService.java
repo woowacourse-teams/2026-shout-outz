@@ -421,13 +421,14 @@ public class FeedCommentService {
                                 author.getAvatarImageId(),
                                 avatarUrls.get(author.getUserId())
                         )
+                        // 익명 작성자도 크루 배지 구분을 위해 유형과 기수만 공개한다
                         : new FeedCommentFindResponse.Author(
                                 null,
                                 null,
                                 null,
+                                author.getUserType(),
                                 null,
-                                null,
-                                null,
+                                cohortValue(author),
                                 null,
                                 null
                         ),
