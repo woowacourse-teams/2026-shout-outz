@@ -8,6 +8,7 @@ import com.shoutoutz.api.category.presentation.dto.request.CategoryUpdateRequest
 import com.shoutoutz.api.category.presentation.dto.response.CategoryFindAllResponse;
 import com.shoutoutz.api.category.presentation.dto.response.CategoryResponse;
 import com.shoutoutz.api.common.response.SuccessResponse;
+import com.shoutoutz.api.feed.domain.FeedType;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -30,8 +32,12 @@ public class CategoryHttpApi {
     private final CategoryService categoryService;
 
     @GetMapping
-    public ResponseEntity<SuccessResponse<List<CategoryFindAllResponse>>> findAllCategories() {
-        List<CategoryFindAllResponse> response = categoryService.findAllCategories();
+    public ResponseEntity<SuccessResponse<List<CategoryFindAllResponse>>> findAllCategories(
+            @RequestParam(required = false) FeedType feedType
+    ) {
+        List<CategoryFindAllResponse> response = feedType == null
+                ? categoryService.findAllCategories()
+                : categoryService.findAllCategories(feedType);
         return ResponseEntity.ok(SuccessResponse.success(response));
     }
 

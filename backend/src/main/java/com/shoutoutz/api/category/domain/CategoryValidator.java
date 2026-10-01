@@ -1,5 +1,6 @@
 package com.shoutoutz.api.category.domain;
 
+import com.shoutoutz.api.feed.domain.FeedType;
 import static com.shoutoutz.api.category.domain.CategoryErrorCode.CATEGORY_INVALID_STATE;
 import static com.shoutoutz.api.common.validator.DomainValidator.validateIntRange;
 import static com.shoutoutz.api.common.validator.DomainValidator.validateLongMinSize;
@@ -27,6 +28,7 @@ final class CategoryValidator {
             String slug,
             String displayName,
             CategoryType type,
+            FeedType feedType,
             int displayOrder
     ) {
         if (id != null) {
@@ -38,6 +40,7 @@ final class CategoryValidator {
         validateNotNullOrBlank(displayName, CATEGORY_INVALID_STATE);
         validateMaxLength(displayName, MAX_NAME_LENGTH, CATEGORY_INVALID_STATE);
         validateNotNull(type, CATEGORY_INVALID_STATE);
+        validateNotNull(feedType, CATEGORY_INVALID_STATE);
         validateIntRange(displayOrder, 0, MAX_DISPLAY_ORDER, CATEGORY_INVALID_STATE);
     }
 }

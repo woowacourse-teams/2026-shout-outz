@@ -9,6 +9,7 @@ import com.shoutoutz.api.category.presentation.dto.response.CategoryFindAllRespo
 import com.shoutoutz.api.category.presentation.dto.response.CategoryResponse;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -30,10 +31,20 @@ public class CategoryService {
         return CategoryFindAllResponse.from(categories);
     }
 
+    @Transactional(readOnly = true)
+    public List<CategoryFindAllResponse> findAllCategories(FeedType feedType) {
+        if (feedType == null) {
+            return findAllCategories();
+        }
+        List<Category> categories = categoryRepository.findAllActiveByFeedType(feedType);
+        return CategoryFindAllResponse.from(categories);
+    }
+
     @Transactional
     public CategoryResponse saveCategory(UserRole role, CategorySaveRequest request) {
         validateAdmin(role);
         Category savedCategory = categoryRepository.save(request.toCategory());
+        categoryRepository.saveFeedType(savedCategory.getId(), request.feedType());
         return CategoryResponse.from(savedCategory);
     }
 

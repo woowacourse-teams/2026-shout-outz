@@ -15,6 +15,7 @@ import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
 import com.shoutoutz.api.feed.domain.FeedRepository;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
@@ -61,7 +62,7 @@ public class FeedService {
     @Transactional
     public FeedCommandResponse saveFeed(long userId, FeedSaveRequest request) {
         validateWriter(userId);
-        validateCategories(request.categoryIds());
+        validateCategories(request.feedType(), request.categoryIds());
         validateMedia(request.mediaIds(), userId);
 
         Instant now = clock.instant();
@@ -202,7 +203,7 @@ public class FeedService {
     @Transactional
     public FeedCommandResponse updateFeed(long feedId, long userId, FeedUpdateRequest request) {
         Feed feed = findOwnedFeed(feedId, userId);
-        validateCategories(request.categoryIds());
+        validateCategories(feed.getType(), request.categoryIds());
         validateMedia(request.mediaIds(), userId);
 
         Feed updatedFeed = feedRepository.update(feed.update(
@@ -325,8 +326,8 @@ public class FeedService {
     /**
      * 일반 카테고리 하나와 제한 없는 이벤트 카테고리 선택 정책 검증
      */
-    private void validateCategories(List<Long> categoryIds) {
-        List<Category> categories = categoryRepository.findAllActiveByIds(categoryIds);
+    private void validateCategories(FeedType feedType, List<Long> categoryIds) {
+        List<Category> categories = categoryRepository.findAllActiveByIds(categoryIds, feedType);
         if (categories.size() != categoryIds.size()) {
             throw new BadRequestException(FeedErrorCode.FEED_CATEGORY_INVALID);
         }

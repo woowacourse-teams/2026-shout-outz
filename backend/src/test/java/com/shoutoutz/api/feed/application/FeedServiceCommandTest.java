@@ -22,6 +22,7 @@ import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.FeedMediaReference;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
@@ -113,7 +114,7 @@ class FeedServiceCommandTest {
         );
         FeedItem item = item();
         givenWriter(userType);
-        when(categoryRepository.findAllActiveByIds(request.categoryIds()))
+        when(categoryRepository.findAllActiveByIds(request.categoryIds(), request.feedType()))
                 .thenReturn(categories());
         when(feedQueryRepository.findAllMediaByIds(request.mediaIds()))
                 .thenReturn(List.of(readyFeedMedia(20L)));
@@ -140,7 +141,7 @@ class FeedServiceCommandTest {
     @Test
     void 비활성_카테고리가_포함되면_작성하지_않는다() {
         givenWriter(UserType.WOOWACOURSE_CREW);
-        when(categoryRepository.findAllActiveByIds(List.of(1L, 2L, 3L)))
+        when(categoryRepository.findAllActiveByIds(List.of(1L, 2L, 3L), request().feedType()))
                 .thenReturn(List.of(generalCategory(1L)));
 
         assertThatThrownBy(() -> feedService.saveFeed(1L, request()))
@@ -150,9 +151,29 @@ class FeedServiceCommandTest {
     }
 
     @Test
+    void 질문_피드는_질문_피드에_연결된_카테고리만_사용할_수_있다() {
+        givenWriter(UserType.WOOWACOURSE_CREW);
+        FeedSaveRequest request = new FeedSaveRequest(
+                "질문",
+                "질문 본문",
+                List.of(1L),
+                List.of(),
+                false,
+                FeedType.QUESTION
+        );
+        when(categoryRepository.findAllActiveByIds(request.categoryIds(), FeedType.QUESTION))
+                .thenReturn(List.of());
+
+        assertThatThrownBy(() -> feedService.saveFeed(1L, request))
+                .isInstanceOf(BadRequestException.class);
+
+        verify(feedRepository, never()).save(any());
+    }
+
+    @Test
     void 본인_소유의_READY_본문_이미지가_아니면_작성하지_않는다() {
         givenWriter(UserType.WOOWACOURSE_CREW);
-        when(categoryRepository.findAllActiveByIds(List.of(1L, 2L, 3L)))
+        when(categoryRepository.findAllActiveByIds(List.of(1L, 2L, 3L), request().feedType()))
                 .thenReturn(categories());
         when(feedQueryRepository.findAllMediaByIds(List.of(20L)))
                 .thenReturn(List.of(new FeedMediaReference(
@@ -178,7 +199,7 @@ class FeedServiceCommandTest {
                 List.of()
         );
         when(feedRepository.findActiveById(10L)).thenReturn(Optional.of(feed));
-        when(categoryRepository.findAllActiveByIds(List.of(3L)))
+        when(categoryRepository.findAllActiveByIds(List.of(3L), FeedType.POST))
                 .thenReturn(List.of(generalCategory(3L)));
         when(feedQueryRepository.findAllMediaByIds(List.of())).thenReturn(List.of());
         when(feedRepository.update(any(Feed.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -229,7 +250,7 @@ class FeedServiceCommandTest {
     @Test
     void 일반_카테고리가_없으면_피드를_작성하지_않는다() {
         givenWriter(UserType.WOOWACOURSE_CREW);
-        when(categoryRepository.findAllActiveByIds(List.of(2L, 3L)))
+        when(categoryRepository.findAllActiveByIds(List.of(2L, 3L), FeedType.POST))
                 .thenReturn(List.of(eventCategory(2L), eventCategory(3L)));
         FeedSaveRequest request = new FeedSaveRequest("제목", "본문", List.of(2L, 3L), List.of());
 
@@ -242,7 +263,7 @@ class FeedServiceCommandTest {
     @Test
     void 일반_카테고리가_둘_이상이면_피드를_작성하지_않는다() {
         givenWriter(UserType.WOOWACOURSE_CREW);
-        when(categoryRepository.findAllActiveByIds(List.of(1L, 4L)))
+        when(categoryRepository.findAllActiveByIds(List.of(1L, 4L), FeedType.POST))
                 .thenReturn(List.of(generalCategory(1L), generalCategory(4L)));
         FeedSaveRequest request = new FeedSaveRequest("제목", "본문", List.of(1L, 4L), List.of());
 

@@ -153,13 +153,24 @@ public record FeedResponse(
             long categoryId,
             String slug,
             String displayName,
+            FeedType feedType,
             CategoryType type
     ) {
+        public Category(
+                long categoryId,
+                String slug,
+                String displayName,
+                CategoryType type
+        ) {
+            this(categoryId, slug, displayName, FeedType.POST, type);
+        }
+
         private static Category from(FeedItem.Category category) {
             return new Category(
                     category.categoryId(),
                     category.slug(),
                     category.displayName(),
+                    category.feedType(),
                     category.type()
             );
         }

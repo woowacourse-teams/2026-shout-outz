@@ -2,6 +2,7 @@ package com.shoutoutz.api.category.presentation.dto.request;
 
 import com.shoutoutz.api.category.domain.Category;
 import com.shoutoutz.api.category.domain.CategoryType;
+import com.shoutoutz.api.feed.domain.FeedType;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -25,13 +26,25 @@ public record CategorySaveRequest(
         @NotNull(message = "type은 필수입니다.")
         CategoryType type,
 
+        @NotNull(message = "feedType은 필수입니다.")
+        FeedType feedType,
+
         @NotNull(message = "displayOrder는 필수입니다.")
         @Min(value = 0, message = "displayOrder는 0 이상이어야 합니다.")
         @Max(value = Short.MAX_VALUE, message = "displayOrder는 32767 이하여야 합니다.")
         Integer displayOrder
 ) {
 
+    public CategorySaveRequest(
+            String slug,
+            String displayName,
+            CategoryType type,
+            Integer displayOrder
+    ) {
+        this(slug, displayName, type, FeedType.POST, displayOrder);
+    }
+
     public Category toCategory() {
-        return Category.create(slug, displayName, type, displayOrder);
+        return Category.create(slug, displayName, type, feedType, displayOrder);
     }
 }
