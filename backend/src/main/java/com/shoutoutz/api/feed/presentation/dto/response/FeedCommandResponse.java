@@ -1,5 +1,6 @@
 package com.shoutoutz.api.feed.presentation.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.shoutoutz.api.category.domain.CategoryType;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
@@ -43,7 +44,7 @@ public record FeedCommandResponse(
                 feed.title(),
                 feed.content(),
                 feed.isAnonymous(),
-                Author.from(feed.author(), urls, fallbackUrls),
+                Author.from(feed.author(), feed.isAnonymous(), urls, fallbackUrls),
                 feed.categories().stream().map(Category::from).toList(),
                 feed.media().stream().map(media -> Media.from(media, urls)).toList(),
                 feed.linkPreview(),
@@ -58,6 +59,7 @@ public record FeedCommandResponse(
             String displayName,
             UserType userType,
             String track,
+            @JsonInclude(JsonInclude.Include.NON_NULL) Short cohort,
             Boolean isCurrent,
             String avatarUrl
     ) {
@@ -66,14 +68,16 @@ public record FeedCommandResponse(
                 String displayName,
                 UserType userType,
                 String track,
+                Short cohort,
                 Boolean isCurrent,
                 String avatarUrl
         ) {
-            this(null, handle, displayName, userType, track, isCurrent, avatarUrl);
+            this(null, handle, displayName, userType, track, cohort, isCurrent, avatarUrl);
         }
 
         private static Author from(
                 FeedItem.Author author,
+                boolean anonymous,
                 Map<Long, URI> mediaUrls,
                 Map<Long, String> userAvatarUrls
         ) {
@@ -83,6 +87,7 @@ public record FeedCommandResponse(
                     author.displayName(),
                     author.userType(),
                     trackValue(author.userType(), author.track()),
+                    cohortValue(author, anonymous),
                     isCurrentValue(author.userType(), author.cohort()),
                     avatarUrl(author, mediaUrls, userAvatarUrls)
             );
@@ -102,6 +107,16 @@ public record FeedCommandResponse(
 
         private static String trackValue(UserType userType, Track track) {
             return userType == UserType.WOOWACOURSE_CREW && track != null ? track.getValue() : null;
+        }
+
+        private static Short cohortValue(FeedItem.Author author, boolean anonymous) {
+            if (anonymous
+                    || author.userId() == null
+                    || author.userType() != UserType.WOOWACOURSE_CREW
+                    || author.cohort() == null) {
+                return null;
+            }
+            return (short) author.cohort().getValue();
         }
 
         private static Boolean isCurrentValue(UserType userType, Cohort cohort) {

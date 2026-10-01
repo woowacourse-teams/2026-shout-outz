@@ -37,6 +37,8 @@ final class FeedRestDocsFields {
                         .description("작성자 유형. 크루 배지 구분을 위해 타인의 익명 글에도 포함"),
                 new EnumFields(Track.class).withPath("author.track")
                         .description("작성자 트랙. 크루가 아니거나 타인의 익명 글이면 null").optional(),
+                fieldWithPath("author.cohort").type(NUMBER)
+                        .description("작성자 기수. 실명 작성자가 크루일 때만 포함하고 익명 작성자이면 제외").optional(),
                 fieldWithPath("author.isCurrent").type(BOOLEAN)
                         .description("작성자가 현재 기수 크루인지 여부. 크루가 아니면 null").optional(),
                 fieldWithPath("author.avatarImageId").type(NUMBER).description("현재 프로필 이미지 미디어 ID. 타인의 익명 글이면 null").optional(),
@@ -92,6 +94,8 @@ final class FeedRestDocsFields {
                 fieldWithPath("author.displayName").type(STRING).description("작성자 이름"),
                 new EnumFields(UserType.class).withPath("author.userType").description("작성자 유형"),
                 new EnumFields(Track.class).withPath("author.track").description("작성자 트랙").optional(),
+                fieldWithPath("author.cohort").type(NUMBER)
+                        .description("작성자 기수. 실명 작성자가 크루일 때만 포함하고 익명 작성자이면 제외").optional(),
                 fieldWithPath("author.isCurrent").type(BOOLEAN)
                         .description("작성자가 현재 기수 크루인지 여부. 크루가 아니면 null").optional(),
                 fieldWithPath("author.avatarUrl").type(STRING).description("직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL").optional(),

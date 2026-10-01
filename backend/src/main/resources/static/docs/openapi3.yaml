@@ -110,12 +110,12 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"slug\"\
-                    ,\"message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
+                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\"\
                     :\"type은 필수입니다.\"},{\"field\":\"displayName\",\"message\":\"displayName은\
                     \ 필수입니다.\"},{\"field\":\"feedType\",\"message\":\"feedType은 필수\
-                    입니다.\"}]}"
+                    입니다.\"},{\"field\":\"displayOrder\",\"message\":\"displayOrder는\
+                    \ 0 이상이어야 합니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -242,11 +242,11 @@ paths:
                     :\"POST\",\"title\":\"피드 제목\",\"content\":\"본문입니다. https://example.com/article\"\
                     ,\"isAnonymous\":false,\"author\":{\"userId\":1,\"handle\":\"\
                     @zzaekkii\",\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\"\
-                    ,\"track\":\"BACKEND\",\"isCurrent\":true,\"avatarImageId\":21,\"\
-                    avatarUrl\":\"https://cdn.example.com/media/21/display\"},\"categories\"\
-                    :[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\":\"백엔드\
-                    \",\"feedType\":\"POST\",\"type\":\"GENERAL\"}],\"media\":[{\"\
-                    mediaId\":21,\"url\":\"https://cdn.example.com/media/21/display\"\
+                    ,\"track\":\"BACKEND\",\"cohort\":8,\"isCurrent\":true,\"avatarImageId\"\
+                    :21,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
+                    },\"categories\":[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\"\
+                    :\"백엔드\",\"feedType\":\"POST\",\"type\":\"GENERAL\"}],\"media\"\
+                    :[{\"mediaId\":21,\"url\":\"https://cdn.example.com/media/21/display\"\
                     ,\"displayOrder\":0}],\"linkPreview\":{\"url\":\"https://example.com/article\"\
                     ,\"title\":\"글 제목\",\"description\":\"글 설명\",\"imageUrl\":\"https://example.com/image.png\"\
                     ,\"siteName\":\"Example\"},\"likeCount\":0,\"bookmarkCount\":0,\"\
@@ -327,10 +327,11 @@ paths:
                     :\"POST\",\"title\":\"피드 제목\",\"content\":\"본문입니다. https://example.com/article\"\
                     ,\"isAnonymous\":false,\"author\":{\"userId\":1,\"handle\":\"\
                     @zzaekkii\",\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\"\
-                    ,\"track\":\"BACKEND\",\"isCurrent\":true,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
-                    },\"categories\":[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\"\
-                    :\"백엔드\",\"feedType\":\"POST\",\"type\":\"GENERAL\"}],\"media\"\
-                    :[{\"url\":\"https://cdn.example.com/media/21/display\",\"displayOrder\"\
+                    ,\"track\":\"BACKEND\",\"cohort\":8,\"isCurrent\":true,\"avatarUrl\"\
+                    :\"https://cdn.example.com/media/21/display\"},\"categories\"\
+                    :[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\":\"백엔드\
+                    \",\"feedType\":\"POST\",\"type\":\"GENERAL\"}],\"media\":[{\"\
+                    url\":\"https://cdn.example.com/media/21/display\",\"displayOrder\"\
                     :0}],\"linkPreview\":{\"url\":\"https://example.com/article\"\
                     ,\"title\":\"글 제목\",\"description\":\"글 설명\",\"imageUrl\":\"https://example.com/image.png\"\
                     ,\"siteName\":\"Example\"},\"createdAt\":\"2026-09-11T00:00:00Z\"\
@@ -1174,8 +1175,8 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1395,11 +1396,11 @@ paths:
                     :\"POST\",\"title\":\"피드 제목\",\"content\":\"본문입니다. https://example.com/article\"\
                     ,\"isAnonymous\":false,\"author\":{\"userId\":1,\"handle\":\"\
                     @zzaekkii\",\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\"\
-                    ,\"track\":\"BACKEND\",\"isCurrent\":true,\"avatarImageId\":21,\"\
-                    avatarUrl\":\"https://cdn.example.com/media/21/display\"},\"categories\"\
-                    :[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\":\"백엔드\
-                    \",\"feedType\":\"POST\",\"type\":\"GENERAL\"}],\"media\":[{\"\
-                    mediaId\":21,\"url\":\"https://cdn.example.com/media/21/display\"\
+                    ,\"track\":\"BACKEND\",\"cohort\":8,\"isCurrent\":true,\"avatarImageId\"\
+                    :21,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
+                    },\"categories\":[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\"\
+                    :\"백엔드\",\"feedType\":\"POST\",\"type\":\"GENERAL\"}],\"media\"\
+                    :[{\"mediaId\":21,\"url\":\"https://cdn.example.com/media/21/display\"\
                     ,\"displayOrder\":0}],\"linkPreview\":{\"url\":\"https://example.com/article\"\
                     ,\"title\":\"글 제목\",\"description\":\"글 설명\",\"imageUrl\":\"https://example.com/image.png\"\
                     ,\"siteName\":\"Example\"},\"likeCount\":0,\"bookmarkCount\":0,\"\
@@ -1474,10 +1475,11 @@ paths:
                     :\"POST\",\"title\":\"피드 제목\",\"content\":\"본문입니다. https://example.com/article\"\
                     ,\"isAnonymous\":false,\"author\":{\"userId\":1,\"handle\":\"\
                     @zzaekkii\",\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\"\
-                    ,\"track\":\"BACKEND\",\"isCurrent\":true,\"avatarUrl\":\"https://cdn.example.com/media/21/display\"\
-                    },\"categories\":[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\"\
-                    :\"백엔드\",\"feedType\":\"POST\",\"type\":\"GENERAL\"}],\"media\"\
-                    :[{\"url\":\"https://cdn.example.com/media/21/display\",\"displayOrder\"\
+                    ,\"track\":\"BACKEND\",\"cohort\":8,\"isCurrent\":true,\"avatarUrl\"\
+                    :\"https://cdn.example.com/media/21/display\"},\"categories\"\
+                    :[{\"categoryId\":3,\"slug\":\"backend\",\"displayName\":\"백엔드\
+                    \",\"feedType\":\"POST\",\"type\":\"GENERAL\"}],\"media\":[{\"\
+                    url\":\"https://cdn.example.com/media/21/display\",\"displayOrder\"\
                     :0}],\"linkPreview\":{\"url\":\"https://example.com/article\"\
                     ,\"title\":\"글 제목\",\"description\":\"글 설명\",\"imageUrl\":\"https://example.com/image.png\"\
                     ,\"siteName\":\"Example\"},\"createdAt\":\"2026-09-11T00:00:00Z\"\
@@ -1727,10 +1729,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
+                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
+                    eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -2590,9 +2592,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -3603,9 +3605,9 @@ paths:
               examples:
                 user-verification-request-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
-                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
-                    ,\"message\":\"nickname은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"},{\"field\":\"cohort\",\"message\"\
+                    :\"cohort는 양의 정수여야 합니다.\"}]}"
         "201":
           description: "201"
           content:
@@ -3685,11 +3687,11 @@ paths:
                     :\"POST\",\"title\":\"사용자 피드 제목\",\"content\":\"사용자 피드 본문 https://example.com/article\"\
                     ,\"isAnonymous\":false,\"author\":{\"userId\":1,\"handle\":\"\
                     @zzaekkii\",\"displayName\":\"재키\",\"userType\":\"WOOWACOURSE_CREW\"\
-                    ,\"track\":\"BACKEND\",\"isCurrent\":true,\"avatarImageId\":20,\"\
-                    avatarUrl\":\"https://cdn.example.com/media/20/display\"},\"categories\"\
-                    :[{\"categoryId\":1,\"slug\":\"backend\",\"displayName\":\"백엔드\
-                    \",\"feedType\":\"POST\",\"type\":\"GENERAL\"}],\"media\":[{\"\
-                    mediaId\":30,\"url\":\"https://cdn.example.com/media/30/display\"\
+                    ,\"track\":\"BACKEND\",\"cohort\":8,\"isCurrent\":true,\"avatarImageId\"\
+                    :20,\"avatarUrl\":\"https://cdn.example.com/media/20/display\"\
+                    },\"categories\":[{\"categoryId\":1,\"slug\":\"backend\",\"displayName\"\
+                    :\"백엔드\",\"feedType\":\"POST\",\"type\":\"GENERAL\"}],\"media\"\
+                    :[{\"mediaId\":30,\"url\":\"https://cdn.example.com/media/30/display\"\
                     ,\"displayOrder\":0}],\"linkPreview\":{\"url\":\"https://example.com/article\"\
                     ,\"title\":\"글 제목\",\"description\":null,\"imageUrl\":null,\"\
                     siteName\":\"Example\"},\"likeCount\":5,\"bookmarkCount\":0,\"\
@@ -5365,6 +5367,201 @@ components:
         title:
           type: string
           description: 프로젝트 이름. 앞뒤 공백을 자른 뒤 100자 이하 (유니코드 코드 포인트 기준)
+    FeedFindSuccessResponse:
+      title: FeedFindSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - bookmarkCount
+          - bookmarkedByMe
+          - categories
+          - commentCount
+          - content
+          - createdAt
+          - feedId
+          - feedType
+          - isAnonymous
+          - likeCount
+          - likedByMe
+          - media
+          - title
+          - updatedAt
+          type: object
+          properties:
+            bookmarkedByMe:
+              type: boolean
+              description: 요청자의 북마크 여부. 비로그인이면 false
+            author:
+              required:
+              - userType
+              type: object
+              properties:
+                isCurrent:
+                  type: boolean
+                  description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
+                  nullable: true
+                avatarImageId:
+                  type: number
+                  description: 현재 프로필 이미지 미디어 ID. 타인의 익명 글이면 null
+                  nullable: true
+                avatarUrl:
+                  type: string
+                  description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL.
+                    타인의 익명 글이면 null
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 이름. 타인의 익명 글이면 null
+                  nullable: true
+                cohort:
+                  type: number
+                  description: 작성자 기수. 실명 작성자가 크루일 때만 포함하고 익명 작성자이면 제외
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 핸들. 타인의 익명 글이면 null
+                  nullable: true
+                userType:
+                  type: string
+                  description: 작성자 유형. 크루 배지 구분을 위해 타인의 익명 글에도 포함
+                  enum:
+                  - GENERAL
+                  - WOOWACOURSE_CREW
+                  - WOOWACOURSE_COACH
+                track:
+                  type: string
+                  description: 작성자 트랙. 크루가 아니거나 타인의 익명 글이면 null
+                  nullable: true
+                  enum:
+                  - BACKEND
+                  - ANDROID
+                  - FRONTEND
+                userId:
+                  type: number
+                  description: 작성자 ID. 타인의 익명 글이면 null
+                  nullable: true
+              description: 현재 작성자 프로필
+            likeCount:
+              type: number
+              description: 좋아요 수
+            media:
+              type: array
+              description: 본문 미디어 목록
+              items:
+                required:
+                - displayOrder
+                - mediaId
+                - url
+                type: object
+                properties:
+                  displayOrder:
+                    type: number
+                    description: 미디어 표시 순서
+                  mediaId:
+                    type: number
+                    description: 본문 미디어 ID
+                  url:
+                    type: string
+                    description: 본문 미디어 공개 URL
+            title:
+              type: string
+              description: 피드 제목
+            content:
+              type: string
+              description: Markdown 본문
+            commentCount:
+              type: number
+              description: 삭제되지 않은 댓글 수
+            linkPreview:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                  description: 외부 페이지 이미지 URL
+                  nullable: true
+                siteName:
+                  type: string
+                  description: 외부 사이트 이름
+                  nullable: true
+                description:
+                  type: string
+                  description: 외부 페이지 설명
+                  nullable: true
+                title:
+                  type: string
+                  description: 외부 페이지 제목. 수집 전·실패 시 null
+                  nullable: true
+                url:
+                  type: string
+                  description: 본문에서 추출한 첫 URL
+                  nullable: true
+              description: 본문 첫 URL의 링크 미리보기. URL이 없으면 null
+            createdAt:
+              type: string
+              description: ISO-8601 생성 시각
+            isAnonymous:
+              type: boolean
+              description: 작성자 정보를 익명으로 공개할지 여부
+            likedByMe:
+              type: boolean
+              description: 요청자의 좋아요 여부. 비로그인이면 false
+            feedId:
+              type: number
+              description: 피드 ID
+            feedType:
+              type: string
+              description: 피드 유형
+              enum:
+              - POST
+              - QUESTION
+            bookmarkCount:
+              type: number
+              description: 북마크 수
+            categories:
+              type: array
+              description: 카테고리 목록
+              items:
+                required:
+                - categoryId
+                - displayName
+                - feedType
+                - slug
+                - type
+                type: object
+                properties:
+                  displayName:
+                    type: string
+                    description: 카테고리 표시 이름
+                  feedType:
+                    type: string
+                    description: 카테고리가 연결된 피드 유형
+                    enum:
+                    - POST
+                    - QUESTION
+                  type:
+                    type: string
+                    description: 카테고리 유형
+                    enum:
+                    - GENERAL
+                    - EVENT
+                  slug:
+                    type: string
+                    description: 카테고리 slug
+                  categoryId:
+                    type: number
+                    description: 카테고리 ID
+            updatedAt:
+              type: string
+              description: ISO-8601 수정 시각
+          description: 피드
+        status:
+          type: string
+          description: 응답 상태
     NotificationUnreadCountSuccessResponse:
       title: NotificationUnreadCountSuccessResponse
       required:
@@ -5453,6 +5650,87 @@ components:
               type: number
               description: 카테고리 ID
           description: 카테고리
+        status:
+          type: string
+          description: 응답 상태
+    FeedCommentCreateSuccessResponse:
+      title: FeedCommentCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - content
+          - createdAt
+          - editable
+          - id
+          - isAnonymous
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 생성 시각 (UTC ISO-8601)
+            isAnonymous:
+              type: boolean
+              description: 작성자 정보를 익명으로 공개할지 여부
+            editable:
+              type: boolean
+              description: 현재 사용자가 수정할 수 있는지 여부
+            author:
+              required:
+              - displayName
+              - userId
+              type: object
+              properties:
+                isCurrent:
+                  type: boolean
+                  description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
+                  nullable: true
+                avatarUrl:
+                  type: string
+                  description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수. 실명 작성자가 크루일 때만 포함하고 익명 작성자이면 제외
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 handle
+                  nullable: true
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  nullable: true
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 댓글 작성자
+            id:
+              type: number
+              description: 댓글 ID
+            parentId:
+              type: number
+              description: 부모 댓글 ID
+              nullable: true
+            content:
+              type: string
+              description: 저장된 댓글 내용
+            updatedAt:
+              type: string
+              description: 수정 시각 (UTC ISO-8601)
+          description: 생성된 댓글
         status:
           type: string
           description: 응답 상태
@@ -6321,6 +6599,127 @@ components:
         status:
           type: string
           description: 응답 상태
+    FeedCommentFindAllSuccessResponse:
+      title: FeedCommentFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 피드 댓글 목록
+          items:
+            required:
+            - agreeCount
+            - agreedByMe
+            - author
+            - createdAt
+            - deleted
+            - editable
+            - edited
+            - id
+            - isAnonymous
+            - updatedAt
+            type: object
+            properties:
+              createdAt:
+                type: string
+                description: 생성 시각 (UTC ISO-8601)
+              isAnonymous:
+                type: boolean
+                description: 작성자 정보를 익명으로 공개할지 여부
+              deleted:
+                type: boolean
+                description: 댓글이 삭제되었는지 여부
+              agreedByMe:
+                type: boolean
+                description: 현재 사용자의 공감 여부. 비로그인이면 false
+              edited:
+                type: boolean
+                description: 댓글 내용이 수정된 적이 있는지 여부
+              agreeCount:
+                type: number
+                description: 댓글 공감 수
+              editable:
+                type: boolean
+                description: 현재 사용자가 수정할 수 있는지 여부
+              author:
+                type: object
+                properties:
+                  isCurrent:
+                    type: boolean
+                    description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
+                    nullable: true
+                  avatarImageId:
+                    type: number
+                    description: 작성자 프로필 이미지 미디어 ID. 타인의 익명 댓글이면 null
+                    nullable: true
+                  avatarUrl:
+                    type: string
+                    description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개
+                      URL. 타인의 익명 댓글이면 null
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 작성자 표시 이름. 타인의 익명 댓글이면 null
+                    nullable: true
+                  cohort:
+                    type: number
+                    description: 작성자 기수. 실명 작성자가 크루일 때만 포함하고 익명 작성자이면 제외
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 작성자 handle. 타인의 익명 댓글이면 null
+                    nullable: true
+                  userType:
+                    type: string
+                    description: 작성자 유형. 크루 배지 구분을 위해 타인의 익명 댓글에도 포함
+                    nullable: true
+                  track:
+                    type: string
+                    description: 작성자 트랙. 크루가 아니거나 타인의 익명 댓글이면 null
+                    nullable: true
+                  userId:
+                    type: number
+                    description: 작성자 ID. 타인의 익명 댓글이면 null
+                    nullable: true
+                description: 댓글 작성자
+              id:
+                type: number
+                description: 댓글 ID
+              parentId:
+                type: number
+                description: 부모 루트 댓글 ID
+                nullable: true
+              content:
+                type: string
+                description: 댓글 내용. 삭제된 댓글은 null
+                nullable: true
+              updatedAt:
+                type: string
+                description: 수정 시각 (UTC ISO-8601)
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 cursor
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수
+          description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
     NotificationReadSuccessResponse:
       title: NotificationReadSuccessResponse
       required:
@@ -6372,298 +6771,6 @@ components:
               type: string
               description: 사용자 handle
           description: 프로필 요약 정보
-        status:
-          type: string
-          description: 응답 상태
-    UserFeedFindAllSuccessResponse:
-      title: UserFeedFindAllSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 사용자가 작성한 피드 목록
-          items:
-            required:
-            - author
-            - bookmarkCount
-            - bookmarkedByMe
-            - categories
-            - commentCount
-            - content
-            - createdAt
-            - feedId
-            - feedType
-            - isAnonymous
-            - likeCount
-            - likedByMe
-            - media
-            - title
-            - updatedAt
-            type: object
-            properties:
-              bookmarkedByMe:
-                type: boolean
-                description: 요청자의 북마크 여부. 비로그인이면 false
-              author:
-                required:
-                - userType
-                type: object
-                properties:
-                  isCurrent:
-                    type: boolean
-                    description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
-                    nullable: true
-                  avatarImageId:
-                    type: number
-                    description: 현재 프로필 이미지 미디어 ID. 타인의 익명 글이면 null
-                    nullable: true
-                  avatarUrl:
-                    type: string
-                    description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL.
-                      타인의 익명 글이면 null
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 작성자 이름. 타인의 익명 글이면 null
-                    nullable: true
-                  handle:
-                    type: string
-                    description: 작성자 핸들. 타인의 익명 글이면 null
-                    nullable: true
-                  userType:
-                    type: string
-                    description: 작성자 유형. 크루 배지 구분을 위해 타인의 익명 글에도 포함
-                    enum:
-                    - GENERAL
-                    - WOOWACOURSE_CREW
-                    - WOOWACOURSE_COACH
-                  track:
-                    type: string
-                    description: 작성자 트랙. 크루가 아니거나 타인의 익명 글이면 null
-                    nullable: true
-                    enum:
-                    - BACKEND
-                    - ANDROID
-                    - FRONTEND
-                  userId:
-                    type: number
-                    description: 작성자 ID. 타인의 익명 글이면 null
-                    nullable: true
-                description: 현재 작성자 프로필
-              likeCount:
-                type: number
-                description: 좋아요 수
-              media:
-                type: array
-                description: 본문 미디어 목록
-                items:
-                  required:
-                  - displayOrder
-                  - mediaId
-                  - url
-                  type: object
-                  properties:
-                    displayOrder:
-                      type: number
-                      description: 미디어 표시 순서
-                    mediaId:
-                      type: number
-                      description: 본문 미디어 ID
-                    url:
-                      type: string
-                      description: 본문 미디어 공개 URL
-              title:
-                type: string
-                description: 피드 제목
-              content:
-                type: string
-                description: Markdown 본문
-              commentCount:
-                type: number
-                description: 삭제되지 않은 댓글 수
-              linkPreview:
-                type: object
-                properties:
-                  imageUrl:
-                    type: string
-                    description: 외부 페이지 이미지 URL
-                    nullable: true
-                  siteName:
-                    type: string
-                    description: 외부 사이트 이름
-                    nullable: true
-                  description:
-                    type: string
-                    description: 외부 페이지 설명
-                    nullable: true
-                  title:
-                    type: string
-                    description: 외부 페이지 제목. 수집 전·실패 시 null
-                    nullable: true
-                  url:
-                    type: string
-                    description: 본문에서 추출한 첫 URL
-                    nullable: true
-                description: 본문 첫 URL의 링크 미리보기. URL이 없으면 null
-              createdAt:
-                type: string
-                description: ISO-8601 생성 시각
-              isAnonymous:
-                type: boolean
-                description: 작성자 정보를 익명으로 공개할지 여부
-              likedByMe:
-                type: boolean
-                description: 요청자의 좋아요 여부. 비로그인이면 false
-              feedId:
-                type: number
-                description: 피드 ID
-              feedType:
-                type: string
-                description: 피드 유형
-                enum:
-                - POST
-                - QUESTION
-              bookmarkCount:
-                type: number
-                description: 북마크 수
-              categories:
-                type: array
-                description: 카테고리 목록
-                items:
-                  required:
-                  - categoryId
-                  - displayName
-                  - feedType
-                  - slug
-                  - type
-                  type: object
-                  properties:
-                    displayName:
-                      type: string
-                      description: 카테고리 표시 이름
-                    feedType:
-                      type: string
-                      description: 카테고리가 연결된 피드 유형
-                      enum:
-                      - POST
-                      - QUESTION
-                    type:
-                      type: string
-                      description: 카테고리 유형
-                      enum:
-                      - GENERAL
-                      - EVENT
-                    slug:
-                      type: string
-                      description: 카테고리 slug
-                    categoryId:
-                      type: number
-                      description: 카테고리 ID
-              updatedAt:
-                type: string
-                description: ISO-8601 수정 시각
-        meta:
-          required:
-          - hasNext
-          - totalCount
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-            totalCount:
-              type: number
-              description: 커서와 size에 무관한 해당 사용자의 전체 공개 피드 수
-          description: 페이지네이션 정보
-        status:
-          type: string
-          description: 응답 상태
-    FeedCommentUpdateSuccessResponse:
-      title: FeedCommentUpdateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - content
-          - createdAt
-          - editable
-          - edited
-          - id
-          - isAnonymous
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: 생성 시각 (UTC ISO-8601)
-            isAnonymous:
-              type: boolean
-              description: 작성자 정보를 익명으로 공개할지 여부
-            edited:
-              type: boolean
-              description: 댓글 내용이 수정된 적이 있는지 여부
-            editable:
-              type: boolean
-              description: 현재 사용자가 수정할 수 있는지 여부
-            author:
-              required:
-              - displayName
-              - userId
-              type: object
-              properties:
-                isCurrent:
-                  type: boolean
-                  description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
-                  nullable: true
-                avatarUrl:
-                  type: string
-                  description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                handle:
-                  type: string
-                  description: 작성자 handle
-                  nullable: true
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  nullable: true
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 댓글 작성자
-            id:
-              type: number
-              description: 댓글 ID
-            parentId:
-              type: number
-              description: 부모 댓글 ID
-              nullable: true
-            content:
-              type: string
-              description: 저장된 댓글 내용
-            updatedAt:
-              type: string
-              description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
-          description: 수정된 댓글
         status:
           type: string
           description: 응답 상태
@@ -6744,6 +6851,23 @@ components:
         status:
           type: string
           description: 응답 상태
+    FeedCommentCreateRequest:
+      title: FeedCommentCreateRequest
+      required:
+      - content
+      type: object
+      properties:
+        isAnonymous:
+          type: boolean
+          description: 작성자 정보를 익명으로 공개할지 여부
+          nullable: true
+        parentId:
+          type: number
+          description: 같은 피드의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글
+          nullable: true
+        content:
+          type: string
+          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
     OAuthSignupSuccessResponse:
       title: OAuthSignupSuccessResponse
       required:
@@ -6763,23 +6887,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedCommentCreateRequest:
-      title: FeedCommentCreateRequest
-      required:
-      - content
-      type: object
-      properties:
-        isAnonymous:
-          type: boolean
-          description: 작성자 정보를 익명으로 공개할지 여부
-          nullable: true
-        parentId:
-          type: number
-          description: 같은 피드의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글
-          nullable: true
-        content:
-          type: string
-          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
     UserProjectFindAllSuccessResponse:
       title: UserProjectFindAllSuccessResponse
       required:
@@ -6949,6 +7056,61 @@ components:
         status:
           type: string
           description: 응답 상태
+    UserVerificationRequestCreateSuccessResponse:
+      title: UserVerificationRequestCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - nickname
+          - requestId
+          - requestedAt
+          - status
+          - userType
+          type: object
+          properties:
+            requestedAt:
+              type: string
+              description: 신청 시각(ISO-8601)
+            requestId:
+              type: number
+              description: 인증 신청 ID
+            nickname:
+              type: string
+              description: 신청 닉네임
+            cohort:
+              type: number
+              description: 신청 기수
+              nullable: true
+            userType:
+              type: string
+              description: 신청 유형
+              enum:
+              - GENERAL
+              - WOOWACOURSE_CREW
+              - WOOWACOURSE_COACH
+            track:
+              type: string
+              description: 신청 트랙
+              nullable: true
+              enum:
+              - BACKEND
+              - ANDROID
+              - FRONTEND
+            status:
+              type: string
+              description: 신청 상태
+              enum:
+              - PENDING
+              - APPROVED
+              - REJECTED
+          description: 생성된 인증 신청
+        status:
+          type: string
+          description: 응답 상태
     NoticeCreateSuccessResponse:
       title: NoticeCreateSuccessResponse
       required:
@@ -7046,61 +7208,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    UserVerificationRequestCreateSuccessResponse:
-      title: UserVerificationRequestCreateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - nickname
-          - requestId
-          - requestedAt
-          - status
-          - userType
-          type: object
-          properties:
-            requestedAt:
-              type: string
-              description: 신청 시각(ISO-8601)
-            requestId:
-              type: number
-              description: 인증 신청 ID
-            nickname:
-              type: string
-              description: 신청 닉네임
-            cohort:
-              type: number
-              description: 신청 기수
-              nullable: true
-            userType:
-              type: string
-              description: 신청 유형
-              enum:
-              - GENERAL
-              - WOOWACOURSE_CREW
-              - WOOWACOURSE_COACH
-            track:
-              type: string
-              description: 신청 트랙
-              nullable: true
-              enum:
-              - BACKEND
-              - ANDROID
-              - FRONTEND
-            status:
-              type: string
-              description: 신청 상태
-              enum:
-              - PENDING
-              - APPROVED
-              - REJECTED
-          description: 생성된 인증 신청
-        status:
-          type: string
-          description: 응답 상태
     TechTagFindAllSuccessResponse:
       title: TechTagFindAllSuccessResponse
       required:
@@ -7129,6 +7236,172 @@ components:
                     type: number
                     description: 기술 스택 ID
           description: 기술 스택 목록
+        status:
+          type: string
+          description: 응답 상태
+    FeedUpdateSuccessResponse:
+      title: FeedUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - categories
+          - content
+          - createdAt
+          - feedId
+          - feedType
+          - isAnonymous
+          - media
+          - title
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: ISO-8601 생성 시각
+            isAnonymous:
+              type: boolean
+              description: 작성자 정보를 익명으로 공개할지 여부
+            feedId:
+              type: number
+              description: 피드 ID
+            author:
+              required:
+              - displayName
+              - handle
+              - userId
+              - userType
+              type: object
+              properties:
+                isCurrent:
+                  type: boolean
+                  description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
+                  nullable: true
+                avatarUrl:
+                  type: string
+                  description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수. 실명 작성자가 크루일 때만 포함하고 익명 작성자이면 제외
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 핸들
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  enum:
+                  - GENERAL
+                  - WOOWACOURSE_CREW
+                  - WOOWACOURSE_COACH
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                  enum:
+                  - BACKEND
+                  - ANDROID
+                  - FRONTEND
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 현재 작성자 프로필
+            feedType:
+              type: string
+              description: 피드 유형
+              enum:
+              - POST
+              - QUESTION
+            media:
+              type: array
+              description: 본문 미디어 목록
+              items:
+                required:
+                - displayOrder
+                - url
+                type: object
+                properties:
+                  displayOrder:
+                    type: number
+                    description: 미디어 표시 순서
+                  url:
+                    type: string
+                    description: 본문 미디어 공개 URL
+            categories:
+              type: array
+              description: 카테고리 목록
+              items:
+                required:
+                - categoryId
+                - displayName
+                - feedType
+                - slug
+                - type
+                type: object
+                properties:
+                  displayName:
+                    type: string
+                    description: 카테고리 표시 이름
+                  feedType:
+                    type: string
+                    description: 카테고리가 연결된 피드 유형
+                    enum:
+                    - POST
+                    - QUESTION
+                  type:
+                    type: string
+                    description: 카테고리 유형
+                    enum:
+                    - GENERAL
+                    - EVENT
+                  slug:
+                    type: string
+                    description: 카테고리 slug
+                  categoryId:
+                    type: number
+                    description: 카테고리 ID
+            title:
+              type: string
+              description: 피드 제목
+            content:
+              type: string
+              description: Markdown 본문
+            updatedAt:
+              type: string
+              description: ISO-8601 수정 시각
+            linkPreview:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                  description: 외부 페이지 이미지 URL
+                  nullable: true
+                siteName:
+                  type: string
+                  description: 외부 사이트 이름
+                  nullable: true
+                description:
+                  type: string
+                  description: 외부 페이지 설명
+                  nullable: true
+                title:
+                  type: string
+                  description: 외부 페이지 제목. 수집 전·실패 시 null
+                  nullable: true
+                url:
+                  type: string
+                  description: 본문에서 추출한 첫 URL
+                  nullable: true
+              description: 본문 첫 URL의 링크 미리보기. URL이 없으면 null
+          description: 피드
         status:
           type: string
           description: 응답 상태
@@ -7272,37 +7545,6 @@ components:
         mediaId:
           type: number
           description: READY HOME_BANNER 미디어 ID
-    HomeStatisticsSuccessResponse:
-      title: HomeStatisticsSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - currentCohort
-          - feedCount
-          - ongoingEventCount
-          - projectCount
-          type: object
-          properties:
-            projectCount:
-              type: number
-              description: 승인되었고 삭제되지 않은 프로젝트 수
-            currentCohort:
-              type: number
-              description: 전체 기수 개수
-            feedCount:
-              type: number
-              description: 삭제되지 않은 피드 수
-            ongoingEventCount:
-              type: number
-              description: 조회 시각에 진행 중인 삭제되지 않은 이벤트 수
-          description: 홈 통계
-        status:
-          type: string
-          description: 응답 상태
     UserProfileUpdateSuccessResponse:
       title: UserProfileUpdateSuccessResponse
       required:
@@ -7366,8 +7608,8 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedFindSuccessResponse:
-      title: FeedFindSuccessResponse
+    HomeStatisticsSuccessResponse:
+      title: HomeStatisticsSuccessResponse
       required:
       - data
       - status
@@ -7375,185 +7617,25 @@ components:
       properties:
         data:
           required:
-          - author
-          - bookmarkCount
-          - bookmarkedByMe
-          - categories
-          - commentCount
-          - content
-          - createdAt
-          - feedId
-          - feedType
-          - isAnonymous
-          - likeCount
-          - likedByMe
-          - media
-          - title
-          - updatedAt
+          - currentCohort
+          - feedCount
+          - ongoingEventCount
+          - projectCount
           type: object
           properties:
-            bookmarkedByMe:
-              type: boolean
-              description: 요청자의 북마크 여부. 비로그인이면 false
-            author:
-              required:
-              - userType
-              type: object
-              properties:
-                isCurrent:
-                  type: boolean
-                  description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
-                  nullable: true
-                avatarImageId:
-                  type: number
-                  description: 현재 프로필 이미지 미디어 ID. 타인의 익명 글이면 null
-                  nullable: true
-                avatarUrl:
-                  type: string
-                  description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL.
-                    타인의 익명 글이면 null
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 이름. 타인의 익명 글이면 null
-                  nullable: true
-                handle:
-                  type: string
-                  description: 작성자 핸들. 타인의 익명 글이면 null
-                  nullable: true
-                userType:
-                  type: string
-                  description: 작성자 유형. 크루 배지 구분을 위해 타인의 익명 글에도 포함
-                  enum:
-                  - GENERAL
-                  - WOOWACOURSE_CREW
-                  - WOOWACOURSE_COACH
-                track:
-                  type: string
-                  description: 작성자 트랙. 크루가 아니거나 타인의 익명 글이면 null
-                  nullable: true
-                  enum:
-                  - BACKEND
-                  - ANDROID
-                  - FRONTEND
-                userId:
-                  type: number
-                  description: 작성자 ID. 타인의 익명 글이면 null
-                  nullable: true
-              description: 현재 작성자 프로필
-            likeCount:
+            projectCount:
               type: number
-              description: 좋아요 수
-            media:
-              type: array
-              description: 본문 미디어 목록
-              items:
-                required:
-                - displayOrder
-                - mediaId
-                - url
-                type: object
-                properties:
-                  displayOrder:
-                    type: number
-                    description: 미디어 표시 순서
-                  mediaId:
-                    type: number
-                    description: 본문 미디어 ID
-                  url:
-                    type: string
-                    description: 본문 미디어 공개 URL
-            title:
-              type: string
-              description: 피드 제목
-            content:
-              type: string
-              description: Markdown 본문
-            commentCount:
+              description: 승인되었고 삭제되지 않은 프로젝트 수
+            currentCohort:
               type: number
-              description: 삭제되지 않은 댓글 수
-            linkPreview:
-              type: object
-              properties:
-                imageUrl:
-                  type: string
-                  description: 외부 페이지 이미지 URL
-                  nullable: true
-                siteName:
-                  type: string
-                  description: 외부 사이트 이름
-                  nullable: true
-                description:
-                  type: string
-                  description: 외부 페이지 설명
-                  nullable: true
-                title:
-                  type: string
-                  description: 외부 페이지 제목. 수집 전·실패 시 null
-                  nullable: true
-                url:
-                  type: string
-                  description: 본문에서 추출한 첫 URL
-                  nullable: true
-              description: 본문 첫 URL의 링크 미리보기. URL이 없으면 null
-            createdAt:
-              type: string
-              description: ISO-8601 생성 시각
-            isAnonymous:
-              type: boolean
-              description: 작성자 정보를 익명으로 공개할지 여부
-            likedByMe:
-              type: boolean
-              description: 요청자의 좋아요 여부. 비로그인이면 false
-            feedId:
+              description: 전체 기수 개수
+            feedCount:
               type: number
-              description: 피드 ID
-            feedType:
-              type: string
-              description: 피드 유형
-              enum:
-              - POST
-              - QUESTION
-            bookmarkCount:
+              description: 삭제되지 않은 피드 수
+            ongoingEventCount:
               type: number
-              description: 북마크 수
-            categories:
-              type: array
-              description: 카테고리 목록
-              items:
-                required:
-                - categoryId
-                - displayName
-                - feedType
-                - slug
-                - type
-                type: object
-                properties:
-                  displayName:
-                    type: string
-                    description: 카테고리 표시 이름
-                  feedType:
-                    type: string
-                    description: 카테고리가 연결된 피드 유형
-                    enum:
-                    - POST
-                    - QUESTION
-                  type:
-                    type: string
-                    description: 카테고리 유형
-                    enum:
-                    - GENERAL
-                    - EVENT
-                  slug:
-                    type: string
-                    description: 카테고리 slug
-                  categoryId:
-                    type: number
-                    description: 카테고리 ID
-            updatedAt:
-              type: string
-              description: ISO-8601 수정 시각
-          description: 피드
+              description: 조회 시각에 진행 중인 삭제되지 않은 이벤트 수
+          description: 홈 통계
         status:
           type: string
           description: 응답 상태
@@ -7918,41 +8000,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedCommentReactionSuccessResponse:
-      title: FeedCommentReactionSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - active
-          - agreeCount
-          - commentId
-          - feedId
-          - type
-          type: object
-          properties:
-            feedId:
-              type: number
-              description: 피드 ID
-            agreeCount:
-              type: number
-              description: 댓글 공감 수
-            active:
-              type: boolean
-              description: 요청한 반응의 활성 상태
-            commentId:
-              type: number
-              description: 댓글 ID
-            type:
-              type: string
-              description: 반응 타입(현재 AGREE)
-          description: 피드 댓글 반응 변경 결과
-        status:
-          type: string
-          description: 응답 상태
     CategorySaveSuccessResponse:
       title: CategorySaveSuccessResponse
       required:
@@ -7999,6 +8046,41 @@ components:
               type: number
               description: 카테고리 ID
           description: 카테고리
+        status:
+          type: string
+          description: 응답 상태
+    FeedCommentReactionSuccessResponse:
+      title: FeedCommentReactionSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - agreeCount
+          - commentId
+          - feedId
+          - type
+          type: object
+          properties:
+            feedId:
+              type: number
+              description: 피드 ID
+            agreeCount:
+              type: number
+              description: 댓글 공감 수
+            active:
+              type: boolean
+              description: 요청한 반응의 활성 상태
+            commentId:
+              type: number
+              description: 댓글 ID
+            type:
+              type: string
+              description: 반응 타입(현재 AGREE)
+          description: 피드 댓글 반응 변경 결과
         status:
           type: string
           description: 응답 상태
@@ -8315,8 +8397,8 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedCommentFindAllSuccessResponse:
-      title: FeedCommentFindAllSuccessResponse
+    UserFeedFindAllSuccessResponse:
+      title: UserFeedFindAllSuccessResponse
       required:
       - data
       - meta
@@ -8325,419 +8407,7 @@ components:
       properties:
         data:
           type: array
-          description: 피드 댓글 목록
-          items:
-            required:
-            - agreeCount
-            - agreedByMe
-            - author
-            - createdAt
-            - deleted
-            - editable
-            - edited
-            - id
-            - isAnonymous
-            - updatedAt
-            type: object
-            properties:
-              createdAt:
-                type: string
-                description: 생성 시각 (UTC ISO-8601)
-              isAnonymous:
-                type: boolean
-                description: 작성자 정보를 익명으로 공개할지 여부
-              deleted:
-                type: boolean
-                description: 댓글이 삭제되었는지 여부
-              agreedByMe:
-                type: boolean
-                description: 현재 사용자의 공감 여부. 비로그인이면 false
-              edited:
-                type: boolean
-                description: 댓글 내용이 수정된 적이 있는지 여부
-              agreeCount:
-                type: number
-                description: 댓글 공감 수
-              editable:
-                type: boolean
-                description: 현재 사용자가 수정할 수 있는지 여부
-              author:
-                type: object
-                properties:
-                  isCurrent:
-                    type: boolean
-                    description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
-                    nullable: true
-                  avatarImageId:
-                    type: number
-                    description: 작성자 프로필 이미지 미디어 ID. 타인의 익명 댓글이면 null
-                    nullable: true
-                  avatarUrl:
-                    type: string
-                    description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개
-                      URL. 타인의 익명 댓글이면 null
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 작성자 표시 이름. 타인의 익명 댓글이면 null
-                    nullable: true
-                  handle:
-                    type: string
-                    description: 작성자 handle. 타인의 익명 댓글이면 null
-                    nullable: true
-                  userType:
-                    type: string
-                    description: 작성자 유형. 크루 배지 구분을 위해 타인의 익명 댓글에도 포함
-                    nullable: true
-                  track:
-                    type: string
-                    description: 작성자 트랙. 크루가 아니거나 타인의 익명 댓글이면 null
-                    nullable: true
-                  userId:
-                    type: number
-                    description: 작성자 ID. 타인의 익명 댓글이면 null
-                    nullable: true
-                description: 댓글 작성자
-              id:
-                type: number
-                description: 댓글 ID
-              parentId:
-                type: number
-                description: 부모 루트 댓글 ID
-                nullable: true
-              content:
-                type: string
-                description: 댓글 내용. 삭제된 댓글은 null
-                nullable: true
-              updatedAt:
-                type: string
-                description: 수정 시각 (UTC ISO-8601)
-        meta:
-          required:
-          - hasNext
-          - totalCount
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 cursor
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-            totalCount:
-              type: number
-              description: 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수
-          description: 페이지네이션 정보
-        status:
-          type: string
-          description: 응답 상태
-    UserProfileUpdateRequest:
-      title: UserProfileUpdateRequest
-      required:
-      - displayName
-      type: object
-      properties:
-        avatarImageId:
-          type: number
-          description: READY 상태의 USER_AVATAR 미디어 ID
-          nullable: true
-        displayName:
-          type: string
-          description: 표시 이름. 인증된 우테코 사용자는 변경 불가
-        blogUrl:
-          type: string
-          description: 블로그 URL
-          nullable: true
-        githubProfileUrl:
-          type: string
-          description: GitHub 프로필 URL
-          nullable: true
-        bio:
-          type: string
-          description: 한 줄 소개
-          nullable: true
-    HomeBannerAdminUpdateSuccessResponse:
-      title: HomeBannerAdminUpdateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - active
-          - bannerId
-          - createdAt
-          - createdBy
-          - destinationType
-          - displayOrder
-          - imageUrl
-          - mediaId
-          - updatedAt
-          type: object
-          properties:
-            targetId:
-              type: number
-              description: 대상 리소스 ID. 대상이 뉴스·피드일 때만 값이 있다.
-              nullable: true
-            bannerId:
-              type: number
-              description: 배너 ID
-            displayOrder:
-              type: number
-              description: 표시 순서
-            active:
-              type: boolean
-              description: 활성 여부
-            targetType:
-              type: string
-              description: 대상 리소스 유형
-              nullable: true
-              enum:
-              - NEWS
-              - PROJECT
-              - FEED
-            mediaId:
-              type: number
-              description: 미디어 ID
-            createdAt:
-              type: string
-              description: 생성 시각
-            createdBy:
-              type: number
-              description: 등록 관리자 ID
-            imageUrl:
-              type: string
-              description: 표시용 이미지 URL
-            linkUrl:
-              type: string
-              description: 내부 경로 또는 외부 HTTPS URL
-              nullable: true
-            destinationType:
-              type: string
-              description: 이동 방식
-              enum:
-              - TARGET
-              - URL
-            linkType:
-              type: string
-              description: URL 유형
-              nullable: true
-              enum:
-              - INTERNAL_PATH
-              - EXTERNAL_URL
-            targetSlug:
-              type: string
-              description: 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다.
-              nullable: true
-            updatedAt:
-              type: string
-              description: 수정 시각
-          description: 홈 배너 데이터
-        status:
-          type: string
-          description: 응답 상태
-    FeedSaveSuccessResponse:
-      title: FeedSaveSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - categories
-          - content
-          - createdAt
-          - feedId
-          - feedType
-          - isAnonymous
-          - media
-          - title
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: ISO-8601 생성 시각
-            isAnonymous:
-              type: boolean
-              description: 작성자 정보를 익명으로 공개할지 여부
-            feedId:
-              type: number
-              description: 피드 ID
-            author:
-              required:
-              - displayName
-              - handle
-              - userId
-              - userType
-              type: object
-              properties:
-                isCurrent:
-                  type: boolean
-                  description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
-                  nullable: true
-                avatarUrl:
-                  type: string
-                  description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 이름
-                handle:
-                  type: string
-                  description: 작성자 핸들
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  enum:
-                  - GENERAL
-                  - WOOWACOURSE_CREW
-                  - WOOWACOURSE_COACH
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                  enum:
-                  - BACKEND
-                  - ANDROID
-                  - FRONTEND
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 현재 작성자 프로필
-            feedType:
-              type: string
-              description: 피드 유형
-              enum:
-              - POST
-              - QUESTION
-            media:
-              type: array
-              description: 본문 미디어 목록
-              items:
-                required:
-                - displayOrder
-                - url
-                type: object
-                properties:
-                  displayOrder:
-                    type: number
-                    description: 미디어 표시 순서
-                  url:
-                    type: string
-                    description: 본문 미디어 공개 URL
-            categories:
-              type: array
-              description: 카테고리 목록
-              items:
-                required:
-                - categoryId
-                - displayName
-                - feedType
-                - slug
-                - type
-                type: object
-                properties:
-                  displayName:
-                    type: string
-                    description: 카테고리 표시 이름
-                  feedType:
-                    type: string
-                    description: 카테고리가 연결된 피드 유형
-                    enum:
-                    - POST
-                    - QUESTION
-                  type:
-                    type: string
-                    description: 카테고리 유형
-                    enum:
-                    - GENERAL
-                    - EVENT
-                  slug:
-                    type: string
-                    description: 카테고리 slug
-                  categoryId:
-                    type: number
-                    description: 카테고리 ID
-            title:
-              type: string
-              description: 피드 제목
-            content:
-              type: string
-              description: Markdown 본문
-            updatedAt:
-              type: string
-              description: ISO-8601 수정 시각
-            linkPreview:
-              type: object
-              properties:
-                imageUrl:
-                  type: string
-                  description: 외부 페이지 이미지 URL
-                  nullable: true
-                siteName:
-                  type: string
-                  description: 외부 사이트 이름
-                  nullable: true
-                description:
-                  type: string
-                  description: 외부 페이지 설명
-                  nullable: true
-                title:
-                  type: string
-                  description: 외부 페이지 제목. 수집 전·실패 시 null
-                  nullable: true
-                url:
-                  type: string
-                  description: 본문에서 추출한 첫 URL
-                  nullable: true
-              description: 본문 첫 URL의 링크 미리보기. URL이 없으면 null
-          description: 피드
-        status:
-          type: string
-          description: 응답 상태
-    NewsDeleteSuccessResponse:
-      title: NewsDeleteSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - deletedAt
-          - id
-          type: object
-          properties:
-            deletedAt:
-              type: string
-              description: 삭제 시각
-            id:
-              type: number
-              description: 삭제한 소식 ID
-          description: 삭제 결과
-        meta:
-          type: object
-          description: 메타 정보
-          nullable: true
-        status:
-          type: string
-          description: 응답 상태
-    FeedFindAllSuccessResponse:
-      title: FeedFindAllSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 피드 목록
+          description: 사용자가 작성한 피드 목록
           items:
             required:
             - author
@@ -8781,6 +8451,10 @@ components:
                   displayName:
                     type: string
                     description: 작성자 이름. 타인의 익명 글이면 null
+                    nullable: true
+                  cohort:
+                    type: number
+                    description: 작성자 기수. 실명 작성자가 크루일 때만 포함하고 익명 작성자이면 제외
                     nullable: true
                   handle:
                     type: string
@@ -8933,8 +8607,141 @@ components:
               description: 다음 페이지 존재 여부
             totalCount:
               type: number
-              description: 커서와 size를 제외한 조회 조건을 만족하는 전체 피드 수
+              description: 커서와 size에 무관한 해당 사용자의 전체 공개 피드 수
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    UserProfileUpdateRequest:
+      title: UserProfileUpdateRequest
+      required:
+      - displayName
+      type: object
+      properties:
+        avatarImageId:
+          type: number
+          description: READY 상태의 USER_AVATAR 미디어 ID
+          nullable: true
+        displayName:
+          type: string
+          description: 표시 이름. 인증된 우테코 사용자는 변경 불가
+        blogUrl:
+          type: string
+          description: 블로그 URL
+          nullable: true
+        githubProfileUrl:
+          type: string
+          description: GitHub 프로필 URL
+          nullable: true
+        bio:
+          type: string
+          description: 한 줄 소개
+          nullable: true
+    HomeBannerAdminUpdateSuccessResponse:
+      title: HomeBannerAdminUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - bannerId
+          - createdAt
+          - createdBy
+          - destinationType
+          - displayOrder
+          - imageUrl
+          - mediaId
+          - updatedAt
+          type: object
+          properties:
+            targetId:
+              type: number
+              description: 대상 리소스 ID. 대상이 뉴스·피드일 때만 값이 있다.
+              nullable: true
+            bannerId:
+              type: number
+              description: 배너 ID
+            displayOrder:
+              type: number
+              description: 표시 순서
+            active:
+              type: boolean
+              description: 활성 여부
+            targetType:
+              type: string
+              description: 대상 리소스 유형
+              nullable: true
+              enum:
+              - NEWS
+              - PROJECT
+              - FEED
+            mediaId:
+              type: number
+              description: 미디어 ID
+            createdAt:
+              type: string
+              description: 생성 시각
+            createdBy:
+              type: number
+              description: 등록 관리자 ID
+            imageUrl:
+              type: string
+              description: 표시용 이미지 URL
+            linkUrl:
+              type: string
+              description: 내부 경로 또는 외부 HTTPS URL
+              nullable: true
+            destinationType:
+              type: string
+              description: 이동 방식
+              enum:
+              - TARGET
+              - URL
+            linkType:
+              type: string
+              description: URL 유형
+              nullable: true
+              enum:
+              - INTERNAL_PATH
+              - EXTERNAL_URL
+            targetSlug:
+              type: string
+              description: 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다.
+              nullable: true
+            updatedAt:
+              type: string
+              description: 수정 시각
+          description: 홈 배너 데이터
+        status:
+          type: string
+          description: 응답 상태
+    NewsDeleteSuccessResponse:
+      title: NewsDeleteSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - deletedAt
+          - id
+          type: object
+          properties:
+            deletedAt:
+              type: string
+              description: 삭제 시각
+            id:
+              type: number
+              description: 삭제한 소식 ID
+          description: 삭제 결과
+        meta:
+          type: object
+          description: 메타 정보
+          nullable: true
         status:
           type: string
           description: 응답 상태
@@ -9226,6 +9033,221 @@ components:
         status:
           type: string
           description: 응답 상태
+    FeedFindAllSuccessResponse:
+      title: FeedFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 피드 목록
+          items:
+            required:
+            - author
+            - bookmarkCount
+            - bookmarkedByMe
+            - categories
+            - commentCount
+            - content
+            - createdAt
+            - feedId
+            - feedType
+            - isAnonymous
+            - likeCount
+            - likedByMe
+            - media
+            - title
+            - updatedAt
+            type: object
+            properties:
+              bookmarkedByMe:
+                type: boolean
+                description: 요청자의 북마크 여부. 비로그인이면 false
+              author:
+                required:
+                - userType
+                type: object
+                properties:
+                  isCurrent:
+                    type: boolean
+                    description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
+                    nullable: true
+                  avatarImageId:
+                    type: number
+                    description: 현재 프로필 이미지 미디어 ID. 타인의 익명 글이면 null
+                    nullable: true
+                  avatarUrl:
+                    type: string
+                    description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL.
+                      타인의 익명 글이면 null
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 작성자 이름. 타인의 익명 글이면 null
+                    nullable: true
+                  cohort:
+                    type: number
+                    description: 작성자 기수. 실명 작성자가 크루일 때만 포함하고 익명 작성자이면 제외
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 작성자 핸들. 타인의 익명 글이면 null
+                    nullable: true
+                  userType:
+                    type: string
+                    description: 작성자 유형. 크루 배지 구분을 위해 타인의 익명 글에도 포함
+                    enum:
+                    - GENERAL
+                    - WOOWACOURSE_CREW
+                    - WOOWACOURSE_COACH
+                  track:
+                    type: string
+                    description: 작성자 트랙. 크루가 아니거나 타인의 익명 글이면 null
+                    nullable: true
+                    enum:
+                    - BACKEND
+                    - ANDROID
+                    - FRONTEND
+                  userId:
+                    type: number
+                    description: 작성자 ID. 타인의 익명 글이면 null
+                    nullable: true
+                description: 현재 작성자 프로필
+              likeCount:
+                type: number
+                description: 좋아요 수
+              media:
+                type: array
+                description: 본문 미디어 목록
+                items:
+                  required:
+                  - displayOrder
+                  - mediaId
+                  - url
+                  type: object
+                  properties:
+                    displayOrder:
+                      type: number
+                      description: 미디어 표시 순서
+                    mediaId:
+                      type: number
+                      description: 본문 미디어 ID
+                    url:
+                      type: string
+                      description: 본문 미디어 공개 URL
+              title:
+                type: string
+                description: 피드 제목
+              content:
+                type: string
+                description: Markdown 본문
+              commentCount:
+                type: number
+                description: 삭제되지 않은 댓글 수
+              linkPreview:
+                type: object
+                properties:
+                  imageUrl:
+                    type: string
+                    description: 외부 페이지 이미지 URL
+                    nullable: true
+                  siteName:
+                    type: string
+                    description: 외부 사이트 이름
+                    nullable: true
+                  description:
+                    type: string
+                    description: 외부 페이지 설명
+                    nullable: true
+                  title:
+                    type: string
+                    description: 외부 페이지 제목. 수집 전·실패 시 null
+                    nullable: true
+                  url:
+                    type: string
+                    description: 본문에서 추출한 첫 URL
+                    nullable: true
+                description: 본문 첫 URL의 링크 미리보기. URL이 없으면 null
+              createdAt:
+                type: string
+                description: ISO-8601 생성 시각
+              isAnonymous:
+                type: boolean
+                description: 작성자 정보를 익명으로 공개할지 여부
+              likedByMe:
+                type: boolean
+                description: 요청자의 좋아요 여부. 비로그인이면 false
+              feedId:
+                type: number
+                description: 피드 ID
+              feedType:
+                type: string
+                description: 피드 유형
+                enum:
+                - POST
+                - QUESTION
+              bookmarkCount:
+                type: number
+                description: 북마크 수
+              categories:
+                type: array
+                description: 카테고리 목록
+                items:
+                  required:
+                  - categoryId
+                  - displayName
+                  - feedType
+                  - slug
+                  - type
+                  type: object
+                  properties:
+                    displayName:
+                      type: string
+                      description: 카테고리 표시 이름
+                    feedType:
+                      type: string
+                      description: 카테고리가 연결된 피드 유형
+                      enum:
+                      - POST
+                      - QUESTION
+                    type:
+                      type: string
+                      description: 카테고리 유형
+                      enum:
+                      - GENERAL
+                      - EVENT
+                    slug:
+                      type: string
+                      description: 카테고리 slug
+                    categoryId:
+                      type: number
+                      description: 카테고리 ID
+              updatedAt:
+                type: string
+                description: ISO-8601 수정 시각
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: 커서와 size를 제외한 조회 조건을 만족하는 전체 피드 수
+          description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
     FeedUpdateRequest:
       title: FeedUpdateRequest
       required:
@@ -9401,19 +9423,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    OAuthSignupRequest:
-      title: OAuthSignupRequest
-      required:
-      - displayName
-      - handle
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 프로필 표시 이름
-        handle:
-          type: string
-          description: "@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"
     ProjectCommentCreateRequest:
       title: ProjectCommentCreateRequest
       required:
@@ -9427,85 +9436,21 @@ components:
         content:
           type: string
           description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
-    FeedCommentCreateSuccessResponse:
-      title: FeedCommentCreateSuccessResponse
+    OAuthSignupRequest:
+      title: OAuthSignupRequest
       required:
-      - data
-      - status
+      - displayName
+      - handle
       type: object
       properties:
-        data:
-          required:
-          - author
-          - content
-          - createdAt
-          - editable
-          - id
-          - isAnonymous
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: 생성 시각 (UTC ISO-8601)
-            isAnonymous:
-              type: boolean
-              description: 작성자 정보를 익명으로 공개할지 여부
-            editable:
-              type: boolean
-              description: 현재 사용자가 수정할 수 있는지 여부
-            author:
-              required:
-              - displayName
-              - userId
-              type: object
-              properties:
-                isCurrent:
-                  type: boolean
-                  description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
-                  nullable: true
-                avatarUrl:
-                  type: string
-                  description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                handle:
-                  type: string
-                  description: 작성자 handle
-                  nullable: true
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  nullable: true
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 댓글 작성자
-            id:
-              type: number
-              description: 댓글 ID
-            parentId:
-              type: number
-              description: 부모 댓글 ID
-              nullable: true
-            content:
-              type: string
-              description: 저장된 댓글 내용
-            updatedAt:
-              type: string
-              description: 수정 시각 (UTC ISO-8601)
-          description: 생성된 댓글
-        status:
+        displayName:
           type: string
-          description: 응답 상태
-    FeedUpdateSuccessResponse:
-      title: FeedUpdateSuccessResponse
+          description: 프로필 표시 이름
+        handle:
+          type: string
+          description: "@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"
+    FeedSaveSuccessResponse:
+      title: FeedSaveSuccessResponse
       required:
       - data
       - status
@@ -9553,6 +9498,10 @@ components:
                 displayName:
                   type: string
                   description: 작성자 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수. 실명 작성자가 크루일 때만 포함하고 익명 작성자이면 제외
+                  nullable: true
                 handle:
                   type: string
                   description: 작성자 핸들
@@ -9663,6 +9612,91 @@ components:
                   nullable: true
               description: 본문 첫 URL의 링크 미리보기. URL이 없으면 null
           description: 피드
+        status:
+          type: string
+          description: 응답 상태
+    FeedCommentUpdateSuccessResponse:
+      title: FeedCommentUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - content
+          - createdAt
+          - editable
+          - edited
+          - id
+          - isAnonymous
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 생성 시각 (UTC ISO-8601)
+            isAnonymous:
+              type: boolean
+              description: 작성자 정보를 익명으로 공개할지 여부
+            edited:
+              type: boolean
+              description: 댓글 내용이 수정된 적이 있는지 여부
+            editable:
+              type: boolean
+              description: 현재 사용자가 수정할 수 있는지 여부
+            author:
+              required:
+              - displayName
+              - userId
+              type: object
+              properties:
+                isCurrent:
+                  type: boolean
+                  description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
+                  nullable: true
+                avatarUrl:
+                  type: string
+                  description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                cohort:
+                  type: number
+                  description: 작성자 기수. 실명 작성자가 크루일 때만 포함하고 익명 작성자이면 제외
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 handle
+                  nullable: true
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  nullable: true
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 댓글 작성자
+            id:
+              type: number
+              description: 댓글 ID
+            parentId:
+              type: number
+              description: 부모 댓글 ID
+              nullable: true
+            content:
+              type: string
+              description: 저장된 댓글 내용
+            updatedAt:
+              type: string
+              description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
+          description: 수정된 댓글
         status:
           type: string
           description: 응답 상태
