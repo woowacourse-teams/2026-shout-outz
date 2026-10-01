@@ -20,12 +20,14 @@ export function NewsNavRow({ direction, id, title, publishedAt }: NewsNavRowProp
     <Link
       to="/news/$newsId"
       params={{ newsId: String(id) }}
-      className="flex flex-col gap-0.5 border-b border-gray-100 py-3 last:border-b-0 md:flex-row md:items-center md:gap-3 md:py-3.5"
+      className="group focus-visible:outline-primary-600 flex flex-col gap-1 border-b border-gray-100 py-4 focus-visible:outline-2 md:flex-row md:items-center md:gap-4"
     >
-      <span className="text-xs font-bold text-gray-500 md:w-12 md:flex-none">
+      <span className="text-xs font-medium text-gray-500 md:w-12 md:flex-none">
         {DIRECTION_LABEL[direction]}
       </span>
-      <span className="text-sm text-gray-900">{title}</span>
+      <span className="group-hover:text-primary-600 min-w-0 text-sm font-medium break-words text-gray-900">
+        {title}
+      </span>
       <time dateTime={publishedAt} className="hidden text-xs text-gray-500 md:ml-auto md:block">
         {formatDotDate(publishedAt)}
       </time>

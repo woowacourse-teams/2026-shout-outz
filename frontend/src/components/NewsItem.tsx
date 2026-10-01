@@ -10,6 +10,7 @@ export interface NewsItemProps extends Omit<ComponentProps<'article'>, 'children
   title: string;
   summary: string;
   publishedAt: string;
+  compact?: boolean;
 }
 
 export function NewsItem({
@@ -17,21 +18,39 @@ export function NewsItem({
   title,
   summary,
   publishedAt,
+  compact = false,
   className,
   ...props
 }: NewsItemProps) {
   return (
-    <article className={cn('flex flex-col gap-1.5 md:gap-2.5', className)} {...props}>
-      <div className="flex items-center gap-1.5 md:gap-2">
+    <article
+      className={cn('flex min-w-0 flex-col gap-3', compact && 'gap-2', className)}
+      {...props}
+    >
+      <div className="flex items-center justify-between gap-3">
         <NewsCategoryBadge type={type} />
-        <time dateTime={publishedAt} className="text-xs text-gray-500">
+        <time dateTime={publishedAt} className="shrink-0 text-xs text-gray-500">
           {formatDotDate(publishedAt)}
         </time>
       </div>
 
-      <h2 className="text-sm leading-snug font-bold text-gray-900 md:text-base">{title}</h2>
+      <h2
+        className={cn(
+          'group-hover:text-primary-600 leading-6 font-semibold tracking-tight break-words text-gray-900',
+          compact ? 'line-clamp-2 text-sm' : 'text-base',
+        )}
+      >
+        {title}
+      </h2>
 
-      <p className="text-xs leading-normal text-gray-600 md:text-sm">{summary}</p>
+      <p
+        className={cn(
+          'line-clamp-2 break-words text-gray-600',
+          compact ? 'text-xs leading-5' : 'text-sm leading-6',
+        )}
+      >
+        {summary}
+      </p>
     </article>
   );
 }

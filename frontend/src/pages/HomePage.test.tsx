@@ -12,8 +12,8 @@ import { homeBanners } from '@/api/mock/home';
 // httpClient(ky)가 5xx GET을 두 번 재시도한 뒤에 실패하므로 오류 화면은 기본 대기 시간보다 늦게 뜬다.
 const ERROR_TIMEOUT = { timeout: 3000 };
 
-const feedRegion = () => screen.getByRole('region', { name: '피드' });
-const eventRegion = () => screen.getByRole('region', { name: '진행 중인 크루 이벤트' });
+const feedRegion = () => screen.getByRole('region', { name: '커뮤니티' });
+const eventRegion = () => screen.getByRole('region', { name: '진행 중인 이벤트' });
 
 const findStatistic = async (label: string) => {
   const items = await within(
@@ -26,12 +26,10 @@ const findStatistic = async (label: string) => {
 };
 
 const findFeeds = async () =>
-  within(await screen.findByRole('region', { name: '피드' })).findAllByRole('article');
+  within(await screen.findByRole('region', { name: '커뮤니티' })).findAllByRole('article');
 
 const findEvents = async () =>
-  within(await screen.findByRole('region', { name: '진행 중인 크루 이벤트' })).findAllByRole(
-    'article',
-  );
+  within(await screen.findByRole('region', { name: '진행 중인 이벤트' })).findAllByRole('article');
 
 const failWith500 = (path: string) =>
   server.use(http.get(path, () => new HttpResponse(null, { status: 500 })));
@@ -51,7 +49,7 @@ describe('HomePage', () => {
   });
 
   describe('홈 배너', () => {
-    it('배너가 하나면 조작 버튼 없이 링크를 보여준다', async () => {
+    it('배너가 하나여도 캐러셀 안에 링크와 위치를 보여준다', async () => {
       server.use(
         http.get('/api/v1/home/banners', () =>
           HttpResponse.json({ status: 'success', data: homeBanners.slice(0, 1) }),
@@ -62,18 +60,22 @@ describe('HomePage', () => {
       const banner = await screen.findByRole('link', { name: '홈 배너' });
 
       expect(banner).toHaveAttribute('href', '/projects/@dropit');
-      expect(screen.queryByRole('button', { name: '다음 배너' })).not.toBeInTheDocument();
+      expect(screen.getByRole('region', { name: '홈 배너 모음' })).toBeInTheDocument();
+      expect(screen.getByText('1 / 1')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '다음 배너' })).toBeDisabled();
       expect(within(banner).getByRole('img')).toHaveAttribute('src', homeBanners[0]!.imageUrl);
     });
 
-    it('활성 배너가 없으면 배너 자리를 비운다', async () => {
+    it('활성 배너가 없으면 회색 배너 자리에 안내 문구를 보여준다', async () => {
       server.use(
         http.get('/api/v1/home/banners', () => HttpResponse.json({ status: 'success', data: [] })),
       );
 
       renderRoute('/');
 
-      await screen.findByRole('region', { name: '서비스 통계' });
+      const placeholder = await screen.findByText('현재 표시할 배너가 없습니다.');
+      expect(placeholder).toHaveClass('bg-gray-100', 'h-59');
+      expect(screen.getByRole('region', { name: '홈 배너 모음' })).toBeInTheDocument();
       expect(screen.queryByRole('link', { name: '홈 배너' })).not.toBeInTheDocument();
     });
   });
@@ -89,20 +91,63 @@ describe('HomePage', () => {
     });
   });
 
-  describe('피드', () => {
-    it('처음에는 최신순으로 3개를 보여준다', async () => {
+  describe('커뮤니티', () => {
+    it('처음에는 피드 탭에서 최신 피드 3개를 보여준다', async () => {
       renderRoute('/');
 
       const feeds = await findFeeds();
 
       expect(feeds).toHaveLength(3);
+      expect(within(feedRegion()).getByRole('tab', { name: '피드' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
       expect(within(feedRegion()).getByRole('tab', { name: '최신순' })).toHaveAttribute(
         'aria-selected',
         'true',
       );
       expect(feeds[0]).toHaveTextContent('루프 프로젝트에서 WebSocket');
       expect(feeds[1]).toHaveTextContent('TanStack Query v5의 낙관적 업데이트');
-      expect(feeds[2]).toHaveTextContent('Server-Sent Events(SSE)');
+      expect(feeds[2]).toHaveTextContent('웹 접근성 스터디 4주 차 회고');
+    });
+
+    it('홈 피드에도 목록 카드의 링크와 반응 수를 표시한다', async () => {
+      renderRoute('/');
+      const feeds = await findFeeds();
+
+      expect(within(feeds[0]!).getAllByRole('link')).toHaveLength(1);
+      expect(within(feeds[0]!).getByRole('link')).toHaveAttribute('href', '/community/1');
+      expect(within(feeds[0]!).getByLabelText('좋아요 42개')).toBeInTheDocument();
+      expect(within(feeds[0]!).getByLabelText('댓글 2개')).toBeInTheDocument();
+      expect(feeds[2]).not.toHaveTextContent('답변을 기다리고 있어요');
+      expect(
+        within(feedRegion()).queryByRole('button', { name: /좋아요|댓글|공유/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('질문 탭에서는 질문만 보여주고 전체보기에도 질문 유형을 전달한다', async () => {
+      const user = userEvent.setup();
+      renderRoute('/');
+      await findFeeds();
+
+      await user.click(within(feedRegion()).getByRole('tab', { name: '질문' }));
+      await waitFor(() =>
+        expect(within(feedRegion()).getAllByRole('article')[0]).toHaveTextContent(
+          'Server-Sent Events(SSE)',
+        ),
+      );
+      const questions = within(feedRegion()).getAllByRole('article');
+      expect(questions).toHaveLength(3);
+      expect(questions[1]).toHaveTextContent('첫 이직을 준비할 때');
+      expect(questions[2]).toHaveTextContent('백엔드 면접에서');
+      expect(within(feedRegion()).getByRole('tab', { name: '질문' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      const href = within(feedRegion())
+        .getByRole('link', { name: /^질문 전체보기/ })
+        .getAttribute('href');
+      expect(new URL(href!, 'https://example.com').searchParams.get('type')).toBe('QUESTION');
     });
 
     it('인기순을 고르면 인기순으로 3개를 다시 보여준다', async () => {
@@ -131,10 +176,12 @@ describe('HomePage', () => {
       renderRoute('/');
       await findFeeds();
 
-      expect(within(feedRegion()).getByRole('link', { name: /^피드 전체보기/ })).toHaveAttribute(
-        'href',
-        '/feeds',
-      );
+      const href = within(feedRegion())
+        .getByRole('link', { name: /^피드 전체보기/ })
+        .getAttribute('href');
+      const url = new URL(href!, 'https://example.com');
+      expect(url.pathname).toBe('/community');
+      expect(url.searchParams.get('type')).toBe('POST');
     });
 
     it('피드가 없으면 안내 문구를 보여준다', async () => {
@@ -154,7 +201,7 @@ describe('HomePage', () => {
     });
   });
 
-  describe('진행 중인 크루 이벤트', () => {
+  describe('진행 중인 이벤트', () => {
     it('종료된 이벤트는 빼고 진행 중인 이벤트만 보여준다', async () => {
       renderRoute('/');
 
@@ -166,11 +213,11 @@ describe('HomePage', () => {
       expect(within(eventRegion()).queryByText(/\[종료\]/)).not.toBeInTheDocument();
     });
 
-    it('소식 더보기로 소식 페이지에 갈 수 있다', async () => {
+    it('소식 전체보기로 소식 페이지에 갈 수 있다', async () => {
       renderRoute('/');
       await findEvents();
 
-      expect(within(eventRegion()).getByRole('link', { name: /^소식 더보기/ })).toHaveAttribute(
+      expect(within(eventRegion()).getByRole('link', { name: /^소식 전체보기/ })).toHaveAttribute(
         'href',
         '/news',
       );
@@ -193,17 +240,17 @@ describe('HomePage', () => {
     {
       path: '/api/v1/home/statistics',
       failedRegion: '서비스 통계',
-      preservedRegions: ['피드', '진행 중인 크루 이벤트'],
+      preservedRegions: ['커뮤니티', '진행 중인 이벤트'],
     },
     {
       path: '/api/v1/feeds',
-      failedRegion: '피드',
-      preservedRegions: ['서비스 통계', '진행 중인 크루 이벤트'],
+      failedRegion: '커뮤니티',
+      preservedRegions: ['서비스 통계', '진행 중인 이벤트'],
     },
     {
       path: '/api/v1/news',
-      failedRegion: '진행 중인 크루 이벤트',
-      preservedRegions: ['서비스 통계', '피드'],
+      failedRegion: '진행 중인 이벤트',
+      preservedRegions: ['서비스 통계', '커뮤니티'],
     },
   ])(
     '$path 조회가 실패하면 해당 영역에만 에러 화면을 보여준다',
