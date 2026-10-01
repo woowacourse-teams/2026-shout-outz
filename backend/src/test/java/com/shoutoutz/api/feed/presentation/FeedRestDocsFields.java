@@ -10,6 +10,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWit
 
 import com.epages.restdocs.apispec.EnumFields;
 import com.shoutoutz.api.category.domain.CategoryType;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.util.ArrayList;
@@ -24,21 +25,28 @@ final class FeedRestDocsFields {
     static List<FieldDescriptor> feedFields(String prefix) {
         return applyPathPrefix(prefix, List.of(
                 fieldWithPath("feedId").type(NUMBER).description("피드 ID"),
+                new EnumFields(FeedType.class).withPath("feedType").description("피드 유형"),
                 fieldWithPath("title").type(STRING).description("피드 제목"),
                 fieldWithPath("content").type(STRING).description("Markdown 본문"),
+                fieldWithPath("isAnonymous").type(BOOLEAN).description("작성자 정보를 익명으로 공개할지 여부"),
                 fieldWithPath("author").type(OBJECT).description("현재 작성자 프로필"),
-                fieldWithPath("author.userId").type(NUMBER).description("작성자 ID"),
-                fieldWithPath("author.handle").type(STRING).description("작성자 핸들"),
-                fieldWithPath("author.displayName").type(STRING).description("작성자 이름"),
-                new EnumFields(UserType.class).withPath("author.userType").description("작성자 유형"),
-                new EnumFields(Track.class).withPath("author.track").description("작성자 트랙").optional(),
-                fieldWithPath("author.cohort").type(NUMBER).description("작성자 기수").optional(),
-                fieldWithPath("author.avatarImageId").type(NUMBER).description("현재 프로필 이미지 미디어 ID").optional(),
-                fieldWithPath("author.avatarUrl").type(STRING).description("현재 프로필 이미지 공개 URL").optional(),
+                fieldWithPath("author.userId").type(NUMBER).description("작성자 ID. 타인의 익명 글이면 null").optional(),
+                fieldWithPath("author.handle").type(STRING).description("작성자 핸들. 타인의 익명 글이면 null").optional(),
+                fieldWithPath("author.displayName").type(STRING).description("작성자 이름. 타인의 익명 글이면 null").optional(),
+                new EnumFields(UserType.class).withPath("author.userType")
+                        .description("작성자 유형. 크루 배지 구분을 위해 타인의 익명 글에도 포함"),
+                new EnumFields(Track.class).withPath("author.track")
+                        .description("작성자 트랙. 크루가 아니거나 타인의 익명 글이면 null").optional(),
+                fieldWithPath("author.isCurrent").type(BOOLEAN)
+                        .description("작성자가 현재 기수 크루인지 여부. 크루가 아니면 null").optional(),
+                fieldWithPath("author.avatarImageId").type(NUMBER).description("현재 프로필 이미지 미디어 ID. 타인의 익명 글이면 null").optional(),
+                fieldWithPath("author.avatarUrl").type(STRING).description("직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL. 타인의 익명 글이면 null").optional(),
                 fieldWithPath("categories").type(ARRAY).description("카테고리 목록"),
                 fieldWithPath("categories[].categoryId").type(NUMBER).description("카테고리 ID"),
                 fieldWithPath("categories[].slug").type(STRING).description("카테고리 slug"),
                 fieldWithPath("categories[].displayName").type(STRING).description("카테고리 표시 이름"),
+                new EnumFields(FeedType.class).withPath("categories[].feedType")
+                        .description("카테고리가 연결된 피드 유형"),
                 new EnumFields(CategoryType.class).withPath("categories[].type").description("카테고리 유형"),
                 fieldWithPath("media").type(ARRAY).description("본문 미디어 목록"),
                 fieldWithPath("media[].mediaId").type(NUMBER).description("본문 미디어 ID"),
@@ -74,20 +82,25 @@ final class FeedRestDocsFields {
         fields.add(fieldWithPath("data").type(OBJECT).description("피드"));
         fields.addAll(applyPathPrefix(prefix, List.of(
                 fieldWithPath("feedId").type(NUMBER).description("피드 ID"),
+                new EnumFields(FeedType.class).withPath("feedType").description("피드 유형"),
                 fieldWithPath("title").type(STRING).description("피드 제목"),
                 fieldWithPath("content").type(STRING).description("Markdown 본문"),
+                fieldWithPath("isAnonymous").type(BOOLEAN).description("작성자 정보를 익명으로 공개할지 여부"),
                 fieldWithPath("author").type(OBJECT).description("현재 작성자 프로필"),
                 fieldWithPath("author.userId").type(NUMBER).description("작성자 ID"),
                 fieldWithPath("author.handle").type(STRING).description("작성자 핸들"),
                 fieldWithPath("author.displayName").type(STRING).description("작성자 이름"),
                 new EnumFields(UserType.class).withPath("author.userType").description("작성자 유형"),
                 new EnumFields(Track.class).withPath("author.track").description("작성자 트랙").optional(),
-                fieldWithPath("author.cohort").type(NUMBER).description("작성자 기수").optional(),
-                fieldWithPath("author.avatarUrl").type(STRING).description("현재 프로필 이미지 공개 URL").optional(),
+                fieldWithPath("author.isCurrent").type(BOOLEAN)
+                        .description("작성자가 현재 기수 크루인지 여부. 크루가 아니면 null").optional(),
+                fieldWithPath("author.avatarUrl").type(STRING).description("직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL").optional(),
                 fieldWithPath("categories").type(ARRAY).description("카테고리 목록"),
                 fieldWithPath("categories[].categoryId").type(NUMBER).description("카테고리 ID"),
                 fieldWithPath("categories[].slug").type(STRING).description("카테고리 slug"),
                 fieldWithPath("categories[].displayName").type(STRING).description("카테고리 표시 이름"),
+                new EnumFields(FeedType.class).withPath("categories[].feedType")
+                        .description("카테고리가 연결된 피드 유형"),
                 new EnumFields(CategoryType.class).withPath("categories[].type").description("카테고리 유형"),
                 fieldWithPath("media").type(ARRAY).description("본문 미디어 목록"),
                 fieldWithPath("media[].url").type(STRING).description("본문 미디어 공개 URL"),

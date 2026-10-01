@@ -20,11 +20,19 @@ class FeedTest {
 
         assertThat(feed.getId()).isNull();
         assertThat(feed.getAuthorId()).isEqualTo(1L);
+        assertThat(feed.getType()).isEqualTo(FeedType.POST);
         assertThat(feed.getTitle()).isEqualTo(title);
         assertThat(feed.getContent()).isEqualTo(content);
         assertThat(feed.getCreatedAt()).isEqualTo(NOW);
         assertThat(feed.getUpdatedAt()).isEqualTo(NOW);
         assertThat(feed.getDeletedAt()).isNull();
+    }
+
+    @Test
+    void 질문_타입의_피드를_생성한다() {
+        Feed feed = Feed.create(1L, FeedType.QUESTION, "질문", "본문", false, NOW);
+
+        assertThat(feed.getType()).isEqualTo(FeedType.QUESTION);
     }
 
     @Test

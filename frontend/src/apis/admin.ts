@@ -1,6 +1,7 @@
 import { infiniteQueryOptions, mutationOptions, queryOptions } from '@tanstack/react-query';
 import { httpClient, type ApiSuccessBody } from '@/utils/client';
 import type {
+  AdminProjectMigrationUpdateSuccessResponse,
   AdminVerificationRequestApproveSuccessResponse,
   AdminVerificationRequestFindAllSuccessResponse,
   AdminVerificationRequestRejectSuccessResponse,
@@ -17,6 +18,7 @@ import type {
   AdminProjectDetail,
   AdminProjectRejection,
   AdminProjectStatus,
+  AdminProjectUpdateBody,
   AdminVerificationStatus,
   EventCreateBody,
   HomeBannerUpsertBody,
@@ -149,6 +151,26 @@ export async function rejectProject({ projectId, reason }: { projectId: number; 
 
 export const rejectProjectMutation = mutationOptions({
   mutationFn: rejectProject,
+  retry: false,
+});
+
+export async function updateAdminProject({
+  projectId,
+  body: input,
+}: {
+  projectId: number;
+  body: AdminProjectUpdateBody;
+}) {
+  const body = await httpClient<AdminProjectMigrationUpdateSuccessResponse>(
+    `${PROJECT_PATH}/${projectId}/migration`,
+    { method: 'patch', json: input },
+  );
+  if (!body) throw new Error('프로젝트 수정 결과를 확인하지 못했습니다.');
+  return body.data;
+}
+
+export const updateAdminProjectMutation = mutationOptions({
+  mutationFn: updateAdminProject,
   retry: false,
 });
 

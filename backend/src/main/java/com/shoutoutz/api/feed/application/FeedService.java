@@ -15,6 +15,7 @@ import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
 import com.shoutoutz.api.feed.domain.FeedRepository;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
@@ -25,6 +26,7 @@ import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -53,27 +55,32 @@ public class FeedService {
     private final UserProfileRepository userProfileRepository;
     private final FeedCursorCodec feedCursorCodec;
     private final MediaUrlResolver mediaUrlResolver;
+    private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final FeedLinkPreviewService linkPreviewService;
     private final Clock clock;
 
     @Transactional
     public FeedCommandResponse saveFeed(long userId, FeedSaveRequest request) {
         validateWriter(userId);
-        validateCategories(request.categoryIds());
+        validateCategories(request.feedType(), request.categoryIds());
         validateMedia(request.mediaIds(), userId);
 
         Instant now = clock.instant();
         Feed savedFeed = feedRepository.save(Feed.create(
                 userId,
+                request.feedType(),
                 request.title(),
                 request.content(),
+                request.isAnonymous(),
                 now
         ));
         feedRepository.saveCategories(savedFeed.getId(), request.categoryIds());
         feedRepository.saveMedia(savedFeed.getId(), request.mediaIds());
         linkPreviewService.sync(savedFeed.getId(), request.content());
 
-        return toCommandResponse(findFeedItem(savedFeed.getId()));
+        return toCommandResponse(request.isAnonymous()
+                ? findFeedItem(savedFeed.getId(), userId)
+                : findFeedItem(savedFeed.getId()));
     }
 
     @Transactional(readOnly = true)
@@ -98,22 +105,41 @@ public class FeedService {
         int size = request.resolvedSize();
         FeedPage page;
         if (viewerId == null) {
-            page = feedQueryRepository.findAll(
-                        sort,
-                        request.categoryId(),
-                        request.keyword(),
-                        cursor,
-                        size
-                );
+            page = request.type() == null
+                    ? feedQueryRepository.findAll(
+                            sort,
+                            request.categoryId(),
+                            request.keyword(),
+                            cursor,
+                            size
+                    )
+                    : feedQueryRepository.findAll(
+                            sort,
+                            request.categoryId(),
+                            request.keyword(),
+                            request.type(),
+                            cursor,
+                            size
+                    );
         } else {
-            page = feedQueryRepository.findAll(
-                        sort,
-                        request.categoryId(),
-                        request.keyword(),
-                        viewerId,
-                        cursor,
-                        size
-                );
+            page = request.type() == null
+                    ? feedQueryRepository.findAll(
+                            sort,
+                            request.categoryId(),
+                            request.keyword(),
+                            viewerId,
+                            cursor,
+                            size
+                    )
+                    : feedQueryRepository.findAll(
+                            sort,
+                            request.categoryId(),
+                            request.keyword(),
+                            request.type(),
+                            viewerId,
+                            cursor,
+                            size
+                    );
         }
         return createSlice(page, sort);
     }
@@ -144,7 +170,7 @@ public class FeedService {
         User user = userRepository.findByHandle(handle)
                 .orElseThrow(() -> new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
         if (user.isDeleted()) {
-            return new FeedFindAllResult(List.of(), null, false, 0L, Map.of());
+            return new FeedFindAllResult(List.of(), null, false, 0L, Map.of(), Map.of());
         }
 
         FeedSort sort = FeedSort.LATEST;
@@ -152,14 +178,24 @@ public class FeedService {
         int size = request.resolvedSize();
         FeedPage page;
         if (viewerId == null) {
-            page = feedQueryRepository.findAllByAuthorId(user.getId(), cursor, size);
+            page = request.type() == null
+                    ? feedQueryRepository.findAllByAuthorId(user.getId(), cursor, size)
+                    : feedQueryRepository.findAllByAuthorId(user.getId(), request.type(), cursor, size);
         } else {
-            page = feedQueryRepository.findAllByAuthorId(
-                        user.getId(),
-                        viewerId,
-                        cursor,
-                        size
-                );
+            page = request.type() == null
+                    ? feedQueryRepository.findAllByAuthorId(
+                            user.getId(),
+                            viewerId,
+                            cursor,
+                            size
+                    )
+                    : feedQueryRepository.findAllByAuthorId(
+                            user.getId(),
+                            request.type(),
+                            viewerId,
+                            cursor,
+                            size
+                    );
         }
         return createSlice(page, sort);
     }
@@ -167,18 +203,21 @@ public class FeedService {
     @Transactional
     public FeedCommandResponse updateFeed(long feedId, long userId, FeedUpdateRequest request) {
         Feed feed = findOwnedFeed(feedId, userId);
-        validateCategories(request.categoryIds());
+        validateCategories(feed.getType(), request.categoryIds());
         validateMedia(request.mediaIds(), userId);
 
         Feed updatedFeed = feedRepository.update(feed.update(
                 request.title(),
                 request.content(),
+                request.isAnonymous() == null ? feed.isAnonymous() : request.isAnonymous(),
                 clock.instant()
         ));
         feedRepository.saveCategories(feedId, request.categoryIds());
         feedRepository.saveMedia(feedId, request.mediaIds());
         linkPreviewService.sync(feedId, request.content());
-        return toCommandResponse(findFeedItem(updatedFeed.getId()));
+        return toCommandResponse(updatedFeed.isAnonymous()
+                ? findFeedItem(updatedFeed.getId(), userId)
+                : findFeedItem(updatedFeed.getId()));
     }
 
     @Transactional
@@ -196,8 +235,17 @@ public class FeedService {
             FeedSort sort
     ) {
         List<FeedItem> items = page.items();
+        Map<Long, java.net.URI> mediaUrls = resolveMediaUrls(items);
+        Map<Long, String> userAvatarUrls = resolveUserAvatarUrls(items);
         if (!page.hasNext()) {
-            return new FeedFindAllResult(items, null, false, page.totalCount(), resolveMediaUrls(items));
+            return new FeedFindAllResult(
+                    items,
+                    null,
+                    false,
+                    page.totalCount(),
+                    mediaUrls,
+                    userAvatarUrls
+            );
         }
 
         FeedItem lastItem = items.getLast();
@@ -210,15 +258,30 @@ public class FeedService {
                         lastItem.feedId()
                 )
         );
-        return new FeedFindAllResult(items, nextCursor, true, page.totalCount(), resolveMediaUrls(items));
+        return new FeedFindAllResult(
+                items,
+                nextCursor,
+                true,
+                page.totalCount(),
+                mediaUrls,
+                userAvatarUrls
+        );
     }
 
     private FeedResponse toQueryResponse(FeedItem item) {
-        return FeedResponse.from(item, resolveMediaUrls(List.of(item)));
+        return FeedResponse.from(
+                item,
+                resolveMediaUrls(List.of(item)),
+                resolveUserAvatarUrls(List.of(item))
+        );
     }
 
     private FeedCommandResponse toCommandResponse(FeedItem item) {
-        return FeedCommandResponse.from(item, resolveMediaUrls(List.of(item)));
+        return FeedCommandResponse.from(
+                item,
+                resolveMediaUrls(List.of(item)),
+                resolveUserAvatarUrls(List.of(item))
+        );
     }
 
     private Map<Long, java.net.URI> resolveMediaUrls(List<FeedItem> items) {
@@ -231,6 +294,15 @@ public class FeedService {
                 .collect(java.util.stream.Collectors.toSet());
         Map<Long, java.net.URI> urls = mediaUrlResolver.resolveAll(mediaIds);
         return urls == null ? Map.of() : urls;
+    }
+
+    private Map<Long, String> resolveUserAvatarUrls(List<FeedItem> items) {
+        return userAvatarUrlResolver.resolveAll(items.stream()
+                .map(item -> new UserAvatarUrlResolver.AvatarReference(
+                        item.author().userId(),
+                        item.author().avatarImageId()
+                ))
+                .toList());
     }
 
     /**
@@ -254,8 +326,8 @@ public class FeedService {
     /**
      * 일반 카테고리 하나와 제한 없는 이벤트 카테고리 선택 정책 검증
      */
-    private void validateCategories(List<Long> categoryIds) {
-        List<Category> categories = categoryRepository.findAllActiveByIds(categoryIds);
+    private void validateCategories(FeedType feedType, List<Long> categoryIds) {
+        List<Category> categories = categoryRepository.findAllActiveByIds(categoryIds, feedType);
         if (categories.size() != categoryIds.size()) {
             throw new BadRequestException(FeedErrorCode.FEED_CATEGORY_INVALID);
         }

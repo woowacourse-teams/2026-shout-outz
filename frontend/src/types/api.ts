@@ -10,6 +10,7 @@
  *
  */
 import type {
+  AdminProjectMigrationUpdateRequest,
   AdminVerificationRequestFindAllSuccessResponse,
   AuthSessionSuccessResponse,
   CohortFindAllSuccessResponse,
@@ -24,6 +25,8 @@ import type {
   NewsFindAllSuccessResponse,
   NewsFindDetailSuccessResponse,
   NoticeCreateRequest,
+  NotificationListSuccessResponse,
+  NotificationUnreadCountSuccessResponse,
   ProjectCreateRequest as GeneratedProjectCreateRequest,
   ProjectFilterOptionsSuccessResponse,
   ProjectFindAllSuccessResponse,
@@ -132,6 +135,11 @@ export type ProjectDetailData = Omit<
 >;
 export type ProjectFilterOptionsData = Data<ProjectFilterOptionsSuccessResponse>;
 
+// ── 알림 ────────────────────────────────────────────────────────────────────
+
+export type NotificationItemData = Item<Data<NotificationListSuccessResponse>>;
+export type NotificationUnreadCountData = Data<NotificationUnreadCountSuccessResponse>;
+
 // ── 홈 ──────────────────────────────────────────────────────────────────────
 
 export type HomeStatisticsData = Data<HomeStatisticsSuccessResponse>;
@@ -151,3 +159,4 @@ export type AdminVerificationListData = Data<AdminVerificationRequestFindAllSucc
 export type AdminVerificationItem = Item<AdminVerificationListData>;
 export type AdminHomeBannerItem = Item<Data<HomeBannerAdminFindAllSuccessResponse>>;
 export type HomeBannerUpsertBody = HomeBannerUpsertRequest;
+export type AdminProjectUpdateRequest = AdminProjectMigrationUpdateRequest;

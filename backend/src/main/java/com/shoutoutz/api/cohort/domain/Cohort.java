@@ -46,4 +46,13 @@ public enum Cohort {
                 .sorted(Comparator.comparingInt(Cohort::getValue).reversed())
                 .toList();
     }
+
+    /**
+     * 현재 시스템에 정의된 가장 최신 기수다.
+     */
+    public static Cohort current() {
+        return Arrays.stream(values())
+                .max(Comparator.comparingInt(Cohort::getValue))
+                .orElseThrow();
+    }
 }

@@ -15,6 +15,7 @@ public final class FeedCommentMapper {
                 .authorId(comment.getAuthorId())
                 .parentId(comment.getParentId())
                 .content(comment.getContent())
+                .anonymous(comment.isAnonymous())
                 .deletedAt(comment.getDeletedAt())
                 .build();
     }
@@ -26,6 +27,7 @@ public final class FeedCommentMapper {
                 entity.getAuthorId(),
                 entity.getParentId(),
                 entity.getContent(),
+                entity.isAnonymous(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
                 entity.getDeletedAt()

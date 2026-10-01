@@ -26,17 +26,16 @@ import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.cohort.domain.Cohort;
-import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.project.application.ProjectSlugResolver;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +55,7 @@ public class ProjectCommentService {
     private final ProjectCommentQueryRepository projectCommentQueryRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
-    private final MediaUrlResolver mediaUrlResolver;
+    private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final ProjectCommentReactionRepository projectCommentReactionRepository;
 
     public ProjectCommentService(
@@ -65,7 +64,7 @@ public class ProjectCommentService {
             ProjectCommentRepository projectCommentRepository,
             ProjectCommentQueryRepository projectCommentQueryRepository,
             UserProfileRepository userProfileRepository,
-            MediaUrlResolver mediaUrlResolver,
+            UserAvatarUrlResolver userAvatarUrlResolver,
             ProjectCommentReactionRepository projectCommentReactionRepository
     ) {
         this(
@@ -74,7 +73,7 @@ public class ProjectCommentService {
                 projectCommentRepository,
                 projectCommentQueryRepository,
                 userProfileRepository,
-                mediaUrlResolver,
+                userAvatarUrlResolver,
                 projectCommentReactionRepository,
                 null
         );
@@ -87,7 +86,7 @@ public class ProjectCommentService {
             ProjectCommentRepository projectCommentRepository,
             ProjectCommentQueryRepository projectCommentQueryRepository,
             UserProfileRepository userProfileRepository,
-            MediaUrlResolver mediaUrlResolver,
+            UserAvatarUrlResolver userAvatarUrlResolver,
             ProjectCommentReactionRepository projectCommentReactionRepository,
             UserRepository userRepository
     ) {
@@ -97,7 +96,7 @@ public class ProjectCommentService {
         this.projectCommentQueryRepository = projectCommentQueryRepository;
         this.userProfileRepository = userProfileRepository;
         this.userRepository = userRepository;
-        this.mediaUrlResolver = mediaUrlResolver;
+        this.userAvatarUrlResolver = userAvatarUrlResolver;
         this.projectCommentReactionRepository = projectCommentReactionRepository;
     }
 
@@ -107,7 +106,7 @@ public class ProjectCommentService {
             ProjectCommentRepository projectCommentRepository,
             ProjectCommentQueryRepository projectCommentQueryRepository,
             UserProfileRepository userProfileRepository,
-            MediaUrlResolver mediaUrlResolver
+            UserAvatarUrlResolver userAvatarUrlResolver
     ) {
         this(
                 projectRepository,
@@ -115,7 +114,7 @@ public class ProjectCommentService {
                 projectCommentRepository,
                 projectCommentQueryRepository,
                 userProfileRepository,
-                mediaUrlResolver,
+                userAvatarUrlResolver,
                 null,
                 null
         );
@@ -150,7 +149,10 @@ public class ProjectCommentService {
                         author.getUserType(),
                         trackValue(author),
                         cohortValue(author),
-                        toUrl(mediaUrlResolver.resolve(author.getAvatarImageId()))
+                        userAvatarUrlResolver.resolve(
+                                author.getUserId(),
+                                author.getAvatarImageId()
+                        )
                 ),
                 savedComment.getParentId(),
                 savedComment.getCreatedAt(),
@@ -203,7 +205,7 @@ public class ProjectCommentService {
             }
         }
 
-        Map<Long, URI> avatarUrls = resolveAvatarUrls(authors.values());
+        Map<Long, String> avatarUrls = resolveAvatarUrls(authors.values());
         Map<Long, String> handles = resolveHandles(authors.keySet());
         Map<Long, ProjectCommentReactionCounts> reactionCounts = findReactionCounts(orderedComments, loginUserId);
         List<ProjectCommentFindResponse.Comment> comments = orderedComments.stream()
@@ -253,7 +255,10 @@ public class ProjectCommentService {
                         author.getUserType(),
                         trackValue(author),
                         cohortValue(author),
-                        toUrl(mediaUrlResolver.resolve(author.getAvatarImageId()))
+                        userAvatarUrlResolver.resolve(
+                                author.getUserId(),
+                                author.getAvatarImageId()
+                        )
                 ),
                 comment.getParentId(),
                 comment.getCreatedAt(),
@@ -354,7 +359,7 @@ public class ProjectCommentService {
             Long loginUserId,
             Map<Long, UserProfile> authors,
             Map<Long, String> handles,
-            Map<Long, URI> avatarUrls,
+            Map<Long, String> avatarUrls,
             Map<Long, ProjectCommentReactionCounts> reactionCounts
     ) {
         UserProfile author = authors.computeIfAbsent(comment.getAuthorId(), this::findAuthor);
@@ -375,7 +380,7 @@ public class ProjectCommentService {
                         trackValue(author),
                         cohortValue(author),
                         author.getAvatarImageId(),
-                        toUrl(findUrl(avatarUrls, author.getAvatarImageId()))
+                        avatarUrls.get(author.getUserId())
                 ),
                 comment.getParentId(),
                 comment.getCreatedAt(),
@@ -432,22 +437,14 @@ public class ProjectCommentService {
         }
     }
 
-    private Map<Long, URI> resolveAvatarUrls(Iterable<UserProfile> authors) {
-        List<Long> avatarImageIds = new ArrayList<>();
+    private Map<Long, String> resolveAvatarUrls(Iterable<UserProfile> authors) {
+        List<UserAvatarUrlResolver.AvatarReference> references = new ArrayList<>();
         for (UserProfile author : authors) {
-            if (author.getAvatarImageId() != null) {
-                avatarImageIds.add(author.getAvatarImageId());
-            }
+            references.add(new UserAvatarUrlResolver.AvatarReference(
+                    author.getUserId(),
+                    author.getAvatarImageId()
+            ));
         }
-        Map<Long, URI> urls = mediaUrlResolver.resolveAll(avatarImageIds);
-        return urls == null ? Map.of() : urls;
-    }
-
-    private static URI findUrl(Map<Long, URI> urls, Long mediaId) {
-        return mediaId == null ? null : urls.get(mediaId);
-    }
-
-    private static String toUrl(URI url) {
-        return url == null ? null : url.toString();
+        return userAvatarUrlResolver.resolveAll(references);
     }
 }

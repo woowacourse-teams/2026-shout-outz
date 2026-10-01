@@ -2,6 +2,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import 'webpack-dev-server';
+import CopyPlugin from 'copy-webpack-plugin';
 import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
@@ -79,6 +80,16 @@ const config = {
   },
   plugins: [
     new ForkTsCheckerWebpackPlugin(),
+    // public/은 dev server만 서빙하고, 배포는 dist만 올라갑니다. 그래서 정적 파일을 dist로 복사합니다.
+    // MSW 워커는 개발에서만 쓰므로 배포물에 넣지 않습니다.
+    new CopyPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, 'public'),
+          globOptions: { ignore: ['**/mockServiceWorker.js'] },
+        },
+      ],
+    }),
     tanstackRouter({
       target: 'react',
       autoCodeSplitting: true,

@@ -3,6 +3,7 @@ package com.shoutoutz.api.feed.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.category.domain.CategoryType;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.application.FeedQueryRepository;
 import com.shoutoutz.api.feed.application.dto.FeedCursor;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
@@ -11,6 +12,8 @@ import com.shoutoutz.api.feed.application.dto.FeedPage;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
+import com.shoutoutz.api.feed.domain.FeedType;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -40,6 +43,62 @@ class FeedRepositoryIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Test
+    void 피드_타입으로_질문과_포스트를_분리해_조회한다() {
+        long authorId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+
+        Feed post = saveFeed(authorId, "일반 포스트", base, categoryId);
+        jdbcTemplate.update(
+                "INSERT INTO category_feed_types (category_id, feed_type) VALUES (?, 'QUESTION')",
+                categoryId
+        );
+        Feed question = feedRepository.save(Feed.create(
+                authorId,
+                FeedType.QUESTION,
+                "질문",
+                "질문 본문",
+                false,
+                base.plus(1, ChronoUnit.HOURS)
+        ));
+        feedRepository.saveCategories(question.getId(), List.of(categoryId));
+
+        FeedPage questionPage = feedQueryRepository.findAll(
+                FeedSort.LATEST,
+                null,
+                null,
+                FeedType.QUESTION,
+                null,
+                10
+        );
+        FeedPage postPage = feedQueryRepository.findAll(
+                FeedSort.LATEST,
+                null,
+                null,
+                FeedType.POST,
+                null,
+                10
+        );
+
+        assertThat(questionPage.items()).extracting(FeedItem::feedId)
+                .containsExactly(question.getId());
+        assertThat(questionPage.items()).extracting(FeedItem::feedType)
+                .containsOnly(FeedType.QUESTION);
+        assertThat(questionPage.items().getFirst().categories())
+                .extracting(FeedItem.Category::feedType)
+                .containsOnly(FeedType.QUESTION);
+        assertThat(questionPage.totalCount()).isEqualTo(1L);
+        assertThat(postPage.items()).extracting(FeedItem::feedId)
+                .containsExactly(post.getId());
+        assertThat(postPage.items()).extracting(FeedItem::feedType)
+                .containsOnly(FeedType.POST);
+        assertThat(postPage.items().getFirst().categories())
+                .extracting(FeedItem.Category::feedType)
+                .containsOnly(FeedType.POST);
+        assertThat(postPage.totalCount()).isEqualTo(1L);
+    }
 
     @Test
     void 피드_검증에_필요한_미디어_데이터를_조회한다() {
@@ -115,6 +174,103 @@ class FeedRepositoryIntegrationTest {
         assertThat(detail.categories()).extracting(FeedItem.Category::type)
                 .containsExactly(CategoryType.GENERAL);
         assertThat(detail.media()).extracting(FeedItem.Media::mediaId).containsExactly(mediaId);
+    }
+
+    @Test
+    void 답변_대기순은_활성_댓글이_없는_피드만_최신순으로_조회하고_익명_작성자를_마스킹한다() {
+        long authorId = insertUser("GENERAL", null, null);
+        long otherUserId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+
+        Feed unanswered = feedRepository.save(
+                Feed.create(authorId, "답변 대기", "본문", true, base)
+        );
+        feedRepository.saveCategories(unanswered.getId(), List.of(categoryId));
+
+        Feed answered = saveFeed(authorId, "답변 완료", base.plus(1, ChronoUnit.HOURS), categoryId);
+        insertComment(answered.getId(), otherUserId, false);
+
+        Feed deletedAnswer = saveFeed(
+                authorId,
+                "삭제된 답변만 있음",
+                base.plus(2, ChronoUnit.HOURS),
+                categoryId
+        );
+        insertComment(deletedAnswer.getId(), otherUserId, true);
+
+        FeedPage waitingPage = feedQueryRepository.findAll(
+                FeedSort.WAITING,
+                null,
+                null,
+                null,
+                10
+        );
+
+        assertThat(waitingPage.items()).extracting(FeedItem::feedId)
+                .containsExactly(deletedAnswer.getId(), unanswered.getId());
+        assertThat(waitingPage.totalCount()).isEqualTo(2L);
+        FeedItem masked = waitingPage.items().stream()
+                .filter(item -> item.feedId() == unanswered.getId())
+                .findFirst()
+                .orElseThrow();
+        assertThat(masked.isAnonymous()).isTrue();
+        assertThat(masked.author().userId()).isNull();
+        assertThat(masked.author().handle()).isNull();
+        assertThat(masked.author().displayName()).isNull();
+
+        FeedItem ownerView = feedQueryRepository.findById(unanswered.getId(), authorId).orElseThrow();
+        assertThat(ownerView.author().userId()).isEqualTo(authorId);
+    }
+
+    @Test
+    void 익명_피드의_작성자_유형과_기수는_조회_모델에_보존하고_신원은_숨긴다() {
+        long crewId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 7);
+        long coachId = insertUser("WOOWACOURSE_COACH", null, null);
+        long generalId = insertUser("GENERAL", null, null);
+        long viewerId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed crewFeed = saveAnonymousFeed(crewId, "크루 익명", base, categoryId);
+        Feed coachFeed = saveAnonymousFeed(coachId, "코치 익명", base.plus(1, ChronoUnit.HOURS), categoryId);
+        Feed generalFeed = saveAnonymousFeed(generalId, "일반 익명", base.plus(2, ChronoUnit.HOURS), categoryId);
+
+        FeedItem.Author crew = feedQueryRepository.findById(crewFeed.getId(), viewerId).orElseThrow().author();
+        FeedItem.Author coach = feedQueryRepository.findById(coachFeed.getId(), viewerId).orElseThrow().author();
+        FeedItem.Author general = feedQueryRepository.findById(generalFeed.getId(), null).orElseThrow().author();
+
+        assertThat(crew.userType()).isEqualTo(UserType.WOOWACOURSE_CREW);
+        assertThat(crew.cohort()).isEqualTo(Cohort.from((short) 7));
+        assertThat(coach.userType()).isEqualTo(UserType.WOOWACOURSE_COACH);
+        assertThat(coach.cohort()).isNull();
+        assertThat(general.userType()).isEqualTo(UserType.GENERAL);
+        assertThat(general.cohort()).isNull();
+        assertThat(List.of(crew, coach, general)).allSatisfy(author -> {
+            assertThat(author.userId()).isNull();
+            assertThat(author.handle()).isNull();
+            assertThat(author.displayName()).isNull();
+            assertThat(author.track()).isNull();
+            assertThat(author.avatarImageId()).isNull();
+        });
+    }
+
+    @Test
+    void 익명_피드의_작성자_유형과_기수는_목록_조회_모델에도_보존한다() {
+        long crewId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 7);
+        long viewerId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed anonymous = saveAnonymousFeed(crewId, "크루 익명", base, categoryId);
+
+        FeedItem listed = feedQueryRepository.findAll(FeedSort.LATEST, null, null, viewerId, null, 10).items().stream()
+                .filter(item -> item.feedId() == anonymous.getId())
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(listed.author().userType()).isEqualTo(UserType.WOOWACOURSE_CREW);
+        assertThat(listed.author().cohort()).isEqualTo(Cohort.from((short) 7));
+        assertThat(listed.author().userId()).isNull();
+        assertThat(listed.author().track()).isNull();
     }
 
     @Test
@@ -383,6 +539,65 @@ class FeedRepositoryIntegrationTest {
         assertThat(secondPage.totalCount()).isEqualTo(3L);
     }
 
+    @Test
+    void 타인과_비로그인_사용자의_프로필_피드에서는_익명_글을_제외하고_개수도_맞춘다() {
+        long authorId = insertUser("GENERAL", null, null);
+        long viewerId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed open = saveFeed(authorId, "공개 글", base, categoryId);
+        saveAnonymousFeed(authorId, "익명 글", base.plus(1, ChronoUnit.HOURS), categoryId);
+
+        FeedPage otherView = feedQueryRepository.findAllByAuthorId(authorId, viewerId, null, 10);
+        FeedPage guestView = feedQueryRepository.findAllByAuthorId(authorId, null, 10);
+
+        assertThat(otherView.items()).extracting(FeedItem::feedId).containsExactly(open.getId());
+        assertThat(otherView.totalCount()).isEqualTo(1L);
+        assertThat(guestView.items()).extracting(FeedItem::feedId).containsExactly(open.getId());
+        assertThat(guestView.totalCount()).isEqualTo(1L);
+    }
+
+    @Test
+    void 본인_프로필_피드에서는_익명_글을_포함하고_개수도_맞춘다() {
+        long authorId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed open = saveFeed(authorId, "공개 글", base, categoryId);
+        Feed anonymous = saveAnonymousFeed(authorId, "익명 글", base.plus(1, ChronoUnit.HOURS), categoryId);
+
+        FeedPage ownerView = feedQueryRepository.findAllByAuthorId(authorId, authorId, null, 10);
+
+        assertThat(ownerView.items()).extracting(FeedItem::feedId)
+                .containsExactly(anonymous.getId(), open.getId());
+        assertThat(ownerView.totalCount()).isEqualTo(2L);
+    }
+
+    @Test
+    void 피드_타입_필터와_함께_조회해도_타인에게는_익명_글이_제외된다() {
+        long authorId = insertUser("GENERAL", null, null);
+        long viewerId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed openQuestion = feedRepository.save(Feed.create(
+                authorId, FeedType.QUESTION, "공개 질문", "본문", false, base));
+        feedRepository.saveCategories(openQuestion.getId(), List.of(categoryId));
+        Feed anonymousQuestion = feedRepository.save(Feed.create(
+                authorId, FeedType.QUESTION, "익명 질문", "본문", true, base.plus(1, ChronoUnit.HOURS)));
+        feedRepository.saveCategories(anonymousQuestion.getId(), List.of(categoryId));
+
+        FeedPage page = feedQueryRepository.findAllByAuthorId(
+                authorId, FeedType.QUESTION, viewerId, null, 10);
+
+        assertThat(page.items()).extracting(FeedItem::feedId).containsExactly(openQuestion.getId());
+        assertThat(page.totalCount()).isEqualTo(1L);
+    }
+
+    private Feed saveAnonymousFeed(long authorId, String content, Instant createdAt, long categoryId) {
+        Feed feed = feedRepository.save(Feed.create(authorId, "제목 " + content, content, true, createdAt));
+        feedRepository.saveCategories(feed.getId(), List.of(categoryId));
+        return feed;
+    }
+
     private Feed saveFeed(long authorId, String content, Instant createdAt, long categoryId, long... mediaIds) {
         return saveFeed(authorId, "제목 " + content, content, createdAt, categoryId, mediaIds);
     }
@@ -421,13 +636,18 @@ class FeedRepositoryIntegrationTest {
 
     private long insertCategory(boolean active) {
         String token = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-        return jdbcTemplate.queryForObject(
+        long categoryId = jdbcTemplate.queryForObject(
                 "INSERT INTO categories (slug, display_name, is_active) VALUES (?, ?, ?) RETURNING id",
                 Long.class,
                 "feed-" + token,
                 "카테고리 " + token,
                 active
         );
+        jdbcTemplate.update(
+                "INSERT INTO category_feed_types (category_id, feed_type) VALUES (?, 'POST')",
+                categoryId
+        );
+        return categoryId;
     }
 
     private long insertMedia(long userId, String purpose, String status) {

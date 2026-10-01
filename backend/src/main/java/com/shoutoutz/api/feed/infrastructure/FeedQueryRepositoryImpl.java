@@ -10,6 +10,7 @@ import com.shoutoutz.api.feed.application.dto.FeedMediaReference;
 import com.shoutoutz.api.feed.application.dto.FeedPage;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.application.dto.LinkPreview;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -31,6 +33,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 @RequiredArgsConstructor
 public class FeedQueryRepositoryImpl implements FeedQueryRepository {
+
+    /**
+     * 익명 피드는 작성자 본인에게만 보인다. viewerId가 null이면 익명 피드를 모두 제외한다.
+     */
+    private static final String ANONYMOUS_VISIBILITY_FILTER = """
+              AND (p.is_anonymous = FALSE OR p.author_id = :viewerId)
+            """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final FeedLinkPreviewRepository linkPreviewRepository;
@@ -45,8 +54,10 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         List<FeedBaseRow> rows = jdbcTemplate.query(
                 """
                         SELECT p.id,
+                               p.feed_type,
                                p.title,
                                p.content,
+                               p.is_anonymous,
                                (
                                    SELECT COUNT(*)
                                    FROM feed_reactions r
@@ -98,7 +109,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                 new MapSqlParameterSource()
                         .addValue("feedId", feedId)
                         .addValue("viewerId", viewerId, Types.BIGINT),
-                (resultSet, rowNumber) -> toBaseRow(resultSet)
+                (resultSet, rowNumber) -> toBaseRow(resultSet, viewerId)
         );
         return assembleItems(rows).stream().findFirst();
     }
@@ -111,7 +122,19 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
             FeedCursor cursor,
             int size
     ) {
-        return findAll(sort, categoryId, keyword, null, cursor, size);
+        return findAll(sort, categoryId, keyword, (FeedType) null, cursor, size);
+    }
+
+    @Override
+    public FeedPage findAll(
+            FeedSort sort,
+            Long categoryId,
+            String keyword,
+            FeedType type,
+            FeedCursor cursor,
+            int size
+    ) {
+        return findAll(sort, categoryId, keyword, type, null, cursor, size);
     }
 
     @Override
@@ -123,10 +146,24 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
             FeedCursor cursor,
             int size
     ) {
+        return findAll(sort, categoryId, keyword, null, viewerId, cursor, size);
+    }
+
+    @Override
+    public FeedPage findAll(
+            FeedSort sort,
+            Long categoryId,
+            String keyword,
+            FeedType type,
+            Long viewerId,
+            FeedCursor cursor,
+            int size
+    ) {
         StringBuilder sql = createFindAllQuery(sort);
         MapSqlParameterSource parameters = new MapSqlParameterSource("limit", size + 1)
                 .addValue("viewerId", viewerId, Types.BIGINT);
         appendKeywordParameters(parameters, keyword);
+        appendFeedTypeFilter(sql, parameters, type);
         appendCategoryFilter(sql, parameters, categoryId);
         appendCursorAndOrder(sql, parameters, sort, cursor);
         sql.append("LIMIT :limit");
@@ -134,20 +171,41 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         List<FeedBaseRow> rows = jdbcTemplate.query(
                 sql.toString(),
                 parameters,
-                (resultSet, rowNumber) -> toBaseRow(resultSet)
+                (resultSet, rowNumber) -> toBaseRow(resultSet, viewerId)
         );
         List<FeedItem> items = assembleItems(rows);
-        return createPage(items, size, countAll(categoryId, keyword));
+        return createPage(items, size, countAll(sort, categoryId, keyword, type));
     }
 
     @Override
     public FeedPage findAllByAuthorId(long authorId, FeedCursor cursor, int size) {
-        return findAllByAuthorId(authorId, null, cursor, size);
+        return findAllByAuthorId(authorId, (FeedType) null, cursor, size);
     }
 
     @Override
     public FeedPage findAllByAuthorId(
             long authorId,
+            FeedType type,
+            FeedCursor cursor,
+            int size
+    ) {
+        return findAllByAuthorId(authorId, type, null, cursor, size);
+    }
+
+    @Override
+    public FeedPage findAllByAuthorId(
+            long authorId,
+            Long viewerId,
+            FeedCursor cursor,
+            int size
+    ) {
+        return findAllByAuthorId(authorId, null, viewerId, cursor, size);
+    }
+
+    @Override
+    public FeedPage findAllByAuthorId(
+            long authorId,
+            FeedType type,
             Long viewerId,
             FeedCursor cursor,
             int size
@@ -158,19 +216,21 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                 .addValue("viewerId", viewerId, Types.BIGINT)
                 .addValue("limit", size + 1);
         sql.append("  AND p.author_id = :authorId\n");
+        sql.append(ANONYMOUS_VISIBILITY_FILTER);
+        appendFeedTypeFilter(sql, parameters, type);
         appendLatestCursorAndOrder(sql, parameters, cursor);
         sql.append("LIMIT :limit");
 
         List<FeedBaseRow> rows = jdbcTemplate.query(
                 sql.toString(),
                 parameters,
-                (resultSet, rowNumber) -> toBaseRow(resultSet)
+                (resultSet, rowNumber) -> toBaseRow(resultSet, viewerId)
         );
         List<FeedItem> items = assembleItems(rows);
-        return createPage(items, size, countAllByAuthorId(authorId));
+        return createPage(items, size, countAllByAuthorId(authorId, type, viewerId));
     }
 
-    private long countAll(Long categoryId, String keyword) {
+    private long countAll(FeedSort sort, Long categoryId, String keyword, FeedType type) {
         StringBuilder sql = new StringBuilder("""
                 SELECT COUNT(*)
                 FROM feeds p
@@ -186,21 +246,25 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                     """);
             appendKeywordParameters(parameters, keyword);
         }
+        appendFeedTypeFilter(sql, parameters, type);
         appendCategoryFilter(sql, parameters, categoryId);
+        appendWaitingFilter(sql, sort);
         return jdbcTemplate.queryForObject(sql.toString(), parameters, Long.class);
     }
 
-    private long countAllByAuthorId(long authorId) {
-        return jdbcTemplate.queryForObject(
-                """
-                        SELECT COUNT(*)
-                        FROM feeds p
-                        WHERE p.deleted_at IS NULL
-                          AND p.author_id = :authorId
-                        """,
-                Map.of("authorId", authorId),
-                Long.class
-        );
+    private long countAllByAuthorId(long authorId, FeedType type, Long viewerId) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT COUNT(*)
+                FROM feeds p
+                WHERE p.deleted_at IS NULL
+                  AND p.author_id = :authorId
+                """);
+        sql.append(ANONYMOUS_VISIBILITY_FILTER);
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("authorId", authorId)
+                .addValue("viewerId", viewerId, Types.BIGINT);
+        appendFeedTypeFilter(sql, parameters, type);
+        return jdbcTemplate.queryForObject(sql.toString(), parameters, Long.class);
     }
 
     private FeedPage createPage(List<FeedItem> items, int size, long totalCount) {
@@ -248,11 +312,13 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
     }
 
     private StringBuilder createFindAllQuery(FeedSort sort) {
-        return switch (sort) {
-            case LATEST -> new StringBuilder("""
+        StringBuilder sql = switch (sort) {
+            case LATEST, WAITING -> new StringBuilder("""
                     SELECT p.id,
+                           p.feed_type,
                            p.title,
                            p.content,
+                           p.is_anonymous,
                            (
                                SELECT COUNT(*)
                                FROM feed_reactions r
@@ -302,8 +368,10 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                     """);
             case POPULAR -> new StringBuilder("""
                     SELECT p.id,
+                           p.feed_type,
                            p.title,
                            p.content,
+                           p.is_anonymous,
                            COALESCE(reactions.like_count, 0) AS like_count,
                            (
                                SELECT COUNT(*)
@@ -355,8 +423,10 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
             case RELEVANCE -> new StringBuilder("""
                     WITH ranked_feeds AS (
                         SELECT p.id,
+                               p.feed_type,
                                p.title,
                                p.content,
+                               p.is_anonymous,
                                (
                                    SELECT COUNT(*)
                                    FROM feed_reactions r
@@ -418,13 +488,17 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                     WHERE true
                     """);
         };
+        appendWaitingFilter(sql, sort);
+        return sql;
     }
 
     private StringBuilder createUserFeedQuery() {
         return new StringBuilder("""
                 SELECT p.id,
+                       p.feed_type,
                        p.title,
                        p.content,
+                       p.is_anonymous,
                        (
                            SELECT COUNT(*)
                            FROM feed_reactions r
@@ -484,10 +558,24 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
             FeedCursor cursor
     ) {
         switch (sort) {
-            case LATEST -> appendLatestCursorAndOrder(sql, parameters, cursor);
+            case LATEST, WAITING -> appendLatestCursorAndOrder(sql, parameters, cursor);
             case POPULAR -> appendPopularCursorAndOrder(sql, parameters, cursor);
             case RELEVANCE -> appendRelevanceCursorAndOrder(sql, parameters, cursor);
         }
+    }
+
+    private void appendWaitingFilter(StringBuilder sql, FeedSort sort) {
+        if (sort != FeedSort.WAITING) {
+            return;
+        }
+        sql.append("""
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM feed_comments waiting_comment
+                      WHERE waiting_comment.feed_id = p.id
+                        AND waiting_comment.deleted_at IS NULL
+                  )
+                """);
     }
 
     private void appendLatestCursorAndOrder(
@@ -565,16 +653,31 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
             return;
         }
         sql.append("""
-                  AND EXISTS (
+                AND EXISTS (
                       SELECT 1
                       FROM feed_categories filter_pc
                       JOIN categories filter_c ON filter_c.id = filter_pc.category_id
+                      JOIN category_feed_types filter_cft
+                        ON filter_cft.category_id = filter_pc.category_id
+                       AND filter_cft.feed_type = p.feed_type
                       WHERE filter_pc.feed_id = p.id
                         AND filter_pc.category_id = :categoryId
                         AND filter_c.is_active = true
                   )
                 """);
         parameters.addValue("categoryId", categoryId);
+    }
+
+    private void appendFeedTypeFilter(
+            StringBuilder sql,
+            MapSqlParameterSource parameters,
+            FeedType type
+    ) {
+        if (type == null) {
+            return;
+        }
+        sql.append("  AND p.feed_type = :feedType\n");
+        parameters.addValue("feedType", type.name());
     }
 
     private void appendKeywordParameters(
@@ -643,9 +746,14 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
     private Map<Long, List<FeedItem.Category>> loadCategories(List<Long> feedIds) {
         return jdbcTemplate.query(
                 """
-                        SELECT pc.feed_id, c.id, c.slug, c.display_name, c.category_type
+                        SELECT pc.feed_id, c.id, c.slug, c.display_name,
+                               c.category_type, cft.feed_type
                         FROM feed_categories pc
+                        JOIN feeds p ON p.id = pc.feed_id
                         JOIN categories c ON c.id = pc.category_id
+                        JOIN category_feed_types cft
+                          ON cft.category_id = pc.category_id
+                         AND cft.feed_type = p.feed_type
                         WHERE pc.feed_id IN (:feedIds)
                         ORDER BY pc.feed_id, c.display_order, c.id
                         """,
@@ -663,6 +771,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                     resultSet.getLong("id"),
                     resultSet.getString("slug"),
                     resultSet.getString("display_name"),
+                    FeedType.valueOf(resultSet.getString("feed_type")),
                     CategoryType.valueOf(resultSet.getString("category_type"))
             );
             categories.computeIfAbsent(feedId, ignored -> new ArrayList<>()).add(category);
@@ -697,23 +806,33 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         return media;
     }
 
-    private FeedBaseRow toBaseRow(ResultSet resultSet) throws SQLException {
+    private FeedBaseRow toBaseRow(ResultSet resultSet, Long viewerId) throws SQLException {
         UserType userType = UserType.valueOf(resultSet.getString("user_type"));
         Track track = toTrack(resultSet.getString("track"));
         Cohort cohort = toCohort(resultSet.getObject("cohort", Short.class));
-        return new FeedBaseRow(
-                resultSet.getLong("id"),
-                resultSet.getString("title"),
-                resultSet.getString("content"),
-                new FeedItem.Author(
-                        resultSet.getObject("user_id", Long.class),
+        Long authorId = resultSet.getObject("user_id", Long.class);
+        boolean isAnonymous = resultSet.getBoolean("is_anonymous");
+        boolean authorVisible = !isAnonymous || Objects.equals(authorId, viewerId);
+        Cohort crewCohort = userType == UserType.WOOWACOURSE_CREW ? cohort : null;
+        FeedItem.Author author = authorVisible
+                ? new FeedItem.Author(
+                        authorId,
                         resultSet.getString("handle"),
                         resultSet.getString("display_name"),
                         userType,
                         userType == UserType.WOOWACOURSE_CREW ? track : null,
-                        userType == UserType.WOOWACOURSE_CREW ? cohort : null,
+                        crewCohort,
                         resultSet.getObject("avatar_image_id", Long.class)
-                ),
+                )
+                // 익명 작성자도 크루 배지 구분을 위해 유형과 기수 정보를 조회 모델에 보존한다
+                : new FeedItem.Author(null, null, null, userType, null, crewCohort, null);
+        return new FeedBaseRow(
+                resultSet.getLong("id"),
+                FeedType.valueOf(resultSet.getString("feed_type")),
+                resultSet.getString("title"),
+                resultSet.getString("content"),
+                isAnonymous,
+                author,
                 resultSet.getLong("like_count"),
                 resultSet.getLong("comment_count"),
                 resultSet.getLong("bookmark_count"),
@@ -741,8 +860,10 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
 
     private record FeedBaseRow(
             long feedId,
+            FeedType feedType,
             String title,
             String content,
+            boolean isAnonymous,
             FeedItem.Author author,
             long likeCount,
             long commentCount,
@@ -760,8 +881,10 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         ) {
             return new FeedItem(
                     feedId,
+                    feedType,
                     title,
                     content,
+                    isAnonymous,
                     author,
                     categories,
                     media,

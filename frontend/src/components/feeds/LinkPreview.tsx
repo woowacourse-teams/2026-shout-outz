@@ -1,5 +1,6 @@
 import { IconLink } from '@tabler/icons-react';
 import { Image } from '@/components/Image';
+import { cn } from '@/utils/cn';
 
 export interface LinkPreviewProps {
   url: string;
@@ -9,14 +10,15 @@ export interface LinkPreviewProps {
   siteName?: string | null;
 }
 
+/**
+ * 왼쪽 썸네일, 오른쪽 글자로 놓는 가로형 링크 카드.
+ *
+ * 썸네일은 OG 이미지 표준 비율(1200×630 ≈ 1.91:1)로 높이만 고정해 이미지가 거의 잘리지 않는다.
+ * 이미지가 없으면 정사각형 아이콘 칸으로 줄여 글자 쪽에 폭을 더 준다.
+ */
 export function LinkPreview({ url, title, description, imageUrl, siteName }: LinkPreviewProps) {
-  const titleFallback = (
-    <div className="flex h-20 items-center px-3 md:h-28 md:px-4">
-      <p className="line-clamp-2 text-sm font-semibold text-gray-500">{title}</p>
-    </div>
-  );
   const imageFallback = (
-    <div className="flex h-20 items-center justify-center md:h-28">
+    <div className="flex size-full items-center justify-center">
       <IconLink className="size-6 text-gray-400" aria-hidden="true" />
     </div>
   );
@@ -27,28 +29,31 @@ export function LinkPreview({ url, title, description, imageUrl, siteName }: Lin
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`${title || siteName || url} 링크 열기`}
-      className="block overflow-hidden rounded-lg bg-gray-50"
+      className="flex overflow-hidden rounded-lg bg-gray-50"
     >
-      <div className="bg-gray-100">
+      <div
+        className={cn(
+          'h-20 shrink-0 bg-gray-100 md:h-28',
+          imageUrl ? 'aspect-[1.91/1]' : 'aspect-square',
+        )}
+      >
         {imageUrl ? (
           <Image
             src={imageUrl}
             alt=""
             loading="lazy"
-            className="h-20 w-full md:h-28"
+            className="size-full"
             fallback={imageFallback}
           />
-        ) : title ? (
-          titleFallback
         ) : (
           imageFallback
         )}
       </div>
-      <div className="space-y-1 px-3 py-2 md:px-4 md:py-3">
-        {imageUrl && title && (
-          <p className="line-clamp-2 text-sm font-semibold text-gray-800">{title}</p>
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-3 py-2 md:px-4 md:py-3">
+        {title && <p className="line-clamp-1 text-sm font-semibold text-gray-800">{title}</p>}
+        {description && (
+          <p className="line-clamp-1 text-xs text-gray-600 md:line-clamp-2">{description}</p>
         )}
-        {description && <p className="line-clamp-2 text-xs text-gray-600">{description}</p>}
         <p className="truncate text-xs text-gray-500">{siteName || url}</p>
       </div>
     </a>

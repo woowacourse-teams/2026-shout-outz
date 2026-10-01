@@ -38,6 +38,7 @@ import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -72,6 +73,7 @@ class CategoryHttpApiTest {
                         "backend",
                         "백엔드",
                         CategoryType.GENERAL,
+                        FeedType.POST,
                         1
                 ),
                 new CategoryFindAllResponse(
@@ -79,6 +81,7 @@ class CategoryHttpApiTest {
                         "tecode-talk",
                         "테코드톡",
                         CategoryType.EVENT,
+                        FeedType.POST,
                         2
                 )
         ));
@@ -86,6 +89,7 @@ class CategoryHttpApiTest {
         mockMvc.perform(get("/api/v1/categories"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].type").value("GENERAL"))
+                .andExpect(jsonPath("$.data[0].feedType").value("POST"))
                 .andExpect(jsonPath("$.data[1].type").value("EVENT"))
                 .andDo(document(
                         "category-find-all",
@@ -93,6 +97,11 @@ class CategoryHttpApiTest {
                                 .tag("Category")
                                 .summary("카테고리 목록 조회")
                                 .description("피드 작성에 사용할 활성 카테고리를 표시 순서대로 조회한다.")
+                                .queryParameters(
+                                        parameterWithName("feedType")
+                                                .description("카테고리를 사용할 피드 유형(QUESTION 또는 POST). 생략하면 전체 유형 조회")
+                                                .optional()
+                                )
                                 .responseSchema(Schema.schema("CategoryFindAllSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
@@ -105,6 +114,8 @@ class CategoryHttpApiTest {
                                                 .description("표시 이름"),
                                         new EnumFields(CategoryType.class).withPath("data[].type")
                                                 .description("카테고리 유형"),
+                                        new EnumFields(FeedType.class).withPath("data[].feedType")
+                                                .description("카테고리가 연결된 피드 유형"),
                                         fieldWithPath("data[].displayOrder").type(NUMBER)
                                                 .description("표시 순서")
                                 )
@@ -141,6 +152,8 @@ class CategoryHttpApiTest {
                                                 .description("고유 표시 이름"),
                                         new EnumFields(CategoryType.class).withPath("type")
                                                 .description("카테고리 유형"),
+                                        new EnumFields(FeedType.class).withPath("feedType")
+                                                .description("카테고리가 연결될 피드 유형"),
                                         fieldWithPath("displayOrder").type(NUMBER)
                                                 .description("0 이상 32767 이하 표시 순서")
                                 )
@@ -451,6 +464,7 @@ class CategoryHttpApiTest {
                   "slug": "backend",
                   "displayName": "백엔드",
                   "type": "GENERAL",
+                  "feedType": "POST",
                   "displayOrder": 1
                 }
                 """;
@@ -471,6 +485,7 @@ class CategoryHttpApiTest {
                 "backend",
                 "백엔드",
                 CategoryType.GENERAL,
+                FeedType.POST,
                 1,
                 true
         );
@@ -522,6 +537,8 @@ class CategoryHttpApiTest {
                 fieldWithPath("data.slug").type(STRING).description("카테고리 slug"),
                 fieldWithPath("data.displayName").type(STRING).description("표시 이름"),
                 new EnumFields(CategoryType.class).withPath("data.type").description("카테고리 유형"),
+                new EnumFields(FeedType.class).withPath("data.feedType")
+                        .description("카테고리가 연결된 피드 유형"),
                 fieldWithPath("data.displayOrder").type(NUMBER).description("표시 순서"),
                 fieldWithPath("data.active").type(BOOLEAN).description("활성 여부")
         );

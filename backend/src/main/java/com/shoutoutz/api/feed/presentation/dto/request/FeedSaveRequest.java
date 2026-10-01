@@ -3,6 +3,7 @@ package com.shoutoutz.api.feed.presentation.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import com.shoutoutz.api.feed.domain.FeedType;
 import java.util.List;
 import org.hibernate.validator.constraints.CodePointLength;
 import org.hibernate.validator.constraints.UniqueElements;
@@ -22,6 +23,34 @@ public record FeedSaveRequest(
 
         @NotNull(message = "mediaIds는 필수입니다.")
         @UniqueElements(message = "mediaIds에는 중복된 ID를 포함할 수 없습니다.")
-        List<@NotNull Long> mediaIds
+        List<@NotNull Long> mediaIds,
+
+        Boolean isAnonymous,
+
+        FeedType feedType
 ) {
+
+    public FeedSaveRequest {
+        isAnonymous = Boolean.TRUE.equals(isAnonymous);
+        feedType = feedType == null ? FeedType.POST : feedType;
+    }
+
+    public FeedSaveRequest(
+            String title,
+            String content,
+            List<Long> categoryIds,
+            List<Long> mediaIds
+    ) {
+        this(title, content, categoryIds, mediaIds, false, FeedType.POST);
+    }
+
+    public FeedSaveRequest(
+            String title,
+            String content,
+            List<Long> categoryIds,
+            List<Long> mediaIds,
+            Boolean isAnonymous
+    ) {
+        this(title, content, categoryIds, mediaIds, isAnonymous, FeedType.POST);
+    }
 }

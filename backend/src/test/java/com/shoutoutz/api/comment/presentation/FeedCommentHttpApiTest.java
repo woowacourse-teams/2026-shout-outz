@@ -162,18 +162,26 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data[].content").type(STRING)
                                                 .description("댓글 내용. 삭제된 댓글은 null")
                                                 .optional(),
+                                        fieldWithPath("data[].isAnonymous").type(BOOLEAN)
+                                                .description("작성자 정보를 익명으로 공개할지 여부"),
                                         fieldWithPath("data[].author").type(OBJECT).description("댓글 작성자"),
-                                        fieldWithPath("data[].author.userId").type(NUMBER).description("작성자 ID"),
-                                        fieldWithPath("data[].author.handle").type(STRING).description("작성자 handle").optional(),
-                                        fieldWithPath("data[].author.displayName").type(STRING).description("작성자 표시 이름"),
-                                        fieldWithPath("data[].author.userType").type(STRING).description("작성자 유형").optional(),
-                                        fieldWithPath("data[].author.track").type(STRING).description("작성자 트랙").optional(),
-                                        fieldWithPath("data[].author.cohort").type(NUMBER).description("작성자 기수").optional(),
+                                        fieldWithPath("data[].author.userId").type(NUMBER)
+                                                .description("작성자 ID. 타인의 익명 댓글이면 null").optional(),
+                                        fieldWithPath("data[].author.handle").type(STRING)
+                                                .description("작성자 handle. 타인의 익명 댓글이면 null").optional(),
+                                        fieldWithPath("data[].author.displayName").type(STRING)
+                                                .description("작성자 표시 이름. 타인의 익명 댓글이면 null").optional(),
+                                        fieldWithPath("data[].author.userType").type(STRING)
+                                                .description("작성자 유형. 크루 배지 구분을 위해 타인의 익명 댓글에도 포함").optional(),
+                                        fieldWithPath("data[].author.track").type(STRING)
+                                                .description("작성자 트랙. 크루가 아니거나 타인의 익명 댓글이면 null").optional(),
+                                        fieldWithPath("data[].author.isCurrent").type(BOOLEAN)
+                                                .description("작성자가 현재 기수 크루인지 여부. 크루가 아니면 null").optional(),
                                         fieldWithPath("data[].author.avatarImageId").type(NUMBER)
-                                                .description("작성자 프로필 이미지 미디어 ID")
+                                                .description("작성자 프로필 이미지 미디어 ID. 타인의 익명 댓글이면 null")
                                                 .optional(),
                                         fieldWithPath("data[].author.avatarUrl").type(STRING)
-                                                .description("작성자 프로필 이미지 공개 URL")
+                                                .description("직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL. 타인의 익명 댓글이면 null")
                                                 .optional(),
                                         fieldWithPath("data[].parentId").type(NUMBER)
                                                 .description("부모 루트 댓글 ID")
@@ -316,6 +324,9 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("content")
                                                 .type(STRING)
                                                 .description("앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"),
+                                        fieldWithPath("isAnonymous").type(BOOLEAN)
+                                                .description("작성자 정보를 익명으로 공개할지 여부")
+                                                .optional(),
                                         fieldWithPath("parentId")
                                                 .type(NUMBER)
                                                 .description("같은 피드의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글")
@@ -326,15 +337,18 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("생성된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("댓글 ID"),
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
+                                        fieldWithPath("data.isAnonymous").type(BOOLEAN)
+                                                .description("작성자 정보를 익명으로 공개할지 여부"),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.handle").type(STRING).description("작성자 handle").optional(),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
                                         fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
                                         fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
-                                        fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
+                                        fieldWithPath("data.author.isCurrent").type(BOOLEAN)
+                                                .description("작성자가 현재 기수 크루인지 여부. 크루가 아니면 null").optional(),
                                         fieldWithPath("data.author.avatarUrl").type(STRING)
-                                                .description("작성자 프로필 이미지 공개 URL")
+                                                .description("직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL")
                                                 .optional(),
                                         fieldWithPath("data.parentId").type(NUMBER).description("부모 댓글 ID")
                                                 .optional(),
@@ -418,15 +432,18 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("수정된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("댓글 ID"),
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
+                                        fieldWithPath("data.isAnonymous").type(BOOLEAN)
+                                                .description("작성자 정보를 익명으로 공개할지 여부"),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.handle").type(STRING).description("작성자 handle").optional(),
                                         fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
                                         fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
                                         fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
-                                        fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
+                                        fieldWithPath("data.author.isCurrent").type(BOOLEAN)
+                                                .description("작성자가 현재 기수 크루인지 여부. 크루가 아니면 null").optional(),
                                         fieldWithPath("data.author.avatarUrl").type(STRING)
-                                                .description("작성자 프로필 이미지 공개 URL")
+                                                .description("직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL")
                                                 .optional(),
                                         fieldWithPath("data.parentId").type(NUMBER).description("부모 댓글 ID")
                                                 .optional(),

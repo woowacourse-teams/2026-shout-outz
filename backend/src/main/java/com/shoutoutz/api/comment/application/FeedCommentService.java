@@ -27,7 +27,8 @@ import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.domain.FeedRepository;
-import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.notification.application.NotificationService;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
@@ -35,7 +36,6 @@ import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,15 +60,16 @@ public class FeedCommentService {
     private final FeedCommentQueryRepository feedCommentQueryRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
-    private final MediaUrlResolver mediaUrlResolver;
+    private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final FeedCommentReactionRepository feedCommentReactionRepository;
+    private final NotificationService notificationService;
 
     public FeedCommentService(
             FeedRepository feedRepository,
             FeedCommentRepository feedCommentRepository,
             FeedCommentQueryRepository feedCommentQueryRepository,
             UserProfileRepository userProfileRepository,
-            MediaUrlResolver mediaUrlResolver,
+            UserAvatarUrlResolver userAvatarUrlResolver,
             FeedCommentReactionRepository feedCommentReactionRepository
     ) {
         this(
@@ -76,8 +77,9 @@ public class FeedCommentService {
                 feedCommentRepository,
                 feedCommentQueryRepository,
                 userProfileRepository,
-                mediaUrlResolver,
+                userAvatarUrlResolver,
                 feedCommentReactionRepository,
+                null,
                 null
         );
     }
@@ -88,17 +90,19 @@ public class FeedCommentService {
             FeedCommentRepository feedCommentRepository,
             FeedCommentQueryRepository feedCommentQueryRepository,
             UserProfileRepository userProfileRepository,
-            MediaUrlResolver mediaUrlResolver,
+            UserAvatarUrlResolver userAvatarUrlResolver,
             FeedCommentReactionRepository feedCommentReactionRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            NotificationService notificationService
     ) {
         this.feedRepository = feedRepository;
         this.feedCommentRepository = feedCommentRepository;
         this.feedCommentQueryRepository = feedCommentQueryRepository;
         this.userProfileRepository = userProfileRepository;
         this.userRepository = userRepository;
-        this.mediaUrlResolver = mediaUrlResolver;
+        this.userAvatarUrlResolver = userAvatarUrlResolver;
         this.feedCommentReactionRepository = feedCommentReactionRepository;
+        this.notificationService = notificationService;
     }
 
     public FeedCommentService(
@@ -106,14 +110,36 @@ public class FeedCommentService {
             FeedCommentRepository feedCommentRepository,
             FeedCommentQueryRepository feedCommentQueryRepository,
             UserProfileRepository userProfileRepository,
-            MediaUrlResolver mediaUrlResolver
+            UserAvatarUrlResolver userAvatarUrlResolver,
+            FeedCommentReactionRepository feedCommentReactionRepository,
+            UserRepository userRepository
     ) {
         this(
                 feedRepository,
                 feedCommentRepository,
                 feedCommentQueryRepository,
                 userProfileRepository,
-                mediaUrlResolver,
+                userAvatarUrlResolver,
+                feedCommentReactionRepository,
+                userRepository,
+                null
+        );
+    }
+
+    public FeedCommentService(
+            FeedRepository feedRepository,
+            FeedCommentRepository feedCommentRepository,
+            FeedCommentQueryRepository feedCommentQueryRepository,
+            UserProfileRepository userProfileRepository,
+            UserAvatarUrlResolver userAvatarUrlResolver
+    ) {
+        this(
+                feedRepository,
+                feedCommentRepository,
+                feedCommentQueryRepository,
+                userProfileRepository,
+                userAvatarUrlResolver,
+                null,
                 null,
                 null
         );
@@ -133,9 +159,17 @@ public class FeedCommentService {
                 feedId,
                 authorId,
                 parent == null ? null : parent.getId(),
-                request.content()
+                request.content(),
+                request.isAnonymous()
         );
         FeedComment savedComment = feedCommentRepository.save(comment);
+        if (notificationService != null) {
+            notificationService.createForFeedComment(
+                    feedId,
+                    savedComment.getId(),
+                    authorId
+            );
+        }
 
         return new FeedCommentCreateResponse(
                 savedComment.getId(),
@@ -146,13 +180,17 @@ public class FeedCommentService {
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
-                        cohortValue(author),
-                        toUrl(mediaUrlResolver.resolve(author.getAvatarImageId()))
+                        isCurrent(author),
+                        userAvatarUrlResolver.resolve(
+                                author.getUserId(),
+                                author.getAvatarImageId()
+                        )
                 ),
                 savedComment.getParentId(),
                 savedComment.getCreatedAt(),
                 savedComment.getUpdatedAt(),
-                true
+                true,
+                savedComment.isAnonymous()
         );
     }
 
@@ -199,7 +237,7 @@ public class FeedCommentService {
             }
         }
 
-        Map<Long, URI> avatarUrls = resolveAvatarUrls(authors.values());
+        Map<Long, String> avatarUrls = resolveAvatarUrls(authors.values());
         Map<Long, String> handles = resolveHandles(authors.keySet());
         Map<Long, FeedCommentReactionCounts> reactionCounts = findReactionCounts(orderedComments, loginUserId);
         List<FeedCommentFindResponse.Comment> comments = orderedComments.stream()
@@ -246,14 +284,18 @@ public class FeedCommentService {
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
-                        cohortValue(author),
-                        toUrl(mediaUrlResolver.resolve(author.getAvatarImageId()))
+                        isCurrent(author),
+                        userAvatarUrlResolver.resolve(
+                                author.getUserId(),
+                                author.getAvatarImageId()
+                        )
                 ),
                 comment.getParentId(),
                 comment.getCreatedAt(),
                 comment.getUpdatedAt(),
                 true,
-                comment.isEdited()
+                comment.isEdited(),
+                comment.isAnonymous()
         );
     }
 
@@ -308,12 +350,11 @@ public class FeedCommentService {
         return track.getValue();
     }
 
-    private Short cohortValue(UserProfile profile) {
+    private Boolean isCurrent(UserProfile profile) {
         if (profile.getUserType() != UserType.WOOWACOURSE_CREW || profile.getCohort() == null) {
             return null;
         }
-        Cohort cohort = profile.getCohort();
-        return (short) cohort.getValue();
+        return profile.getCohort() == Cohort.current();
     }
 
     private String handleValue(long userId) {
@@ -353,29 +394,43 @@ public class FeedCommentService {
             Long loginUserId,
             Map<Long, UserProfile> authors,
             Map<Long, String> handles,
-            Map<Long, URI> avatarUrls,
+            Map<Long, String> avatarUrls,
             Map<Long, FeedCommentReactionCounts> reactionCounts
     ) {
         UserProfile author = authors.computeIfAbsent(comment.getAuthorId(), this::findAuthor);
         // 삭제된 댓글이 아니며, 작성자가 본인인 경우 수정 가능
         boolean editable = !comment.isDeleted()
                 && Objects.equals(comment.getAuthorId(), loginUserId);
+        boolean authorVisible = !comment.isAnonymous()
+                || Objects.equals(comment.getAuthorId(), loginUserId);
         FeedCommentReactionCounts counts = comment.isDeleted()
                 ? new FeedCommentReactionCounts(0L, false)
                 : reactionCounts.getOrDefault(comment.getId(), new FeedCommentReactionCounts(0L, false));
         return new FeedCommentFindResponse.Comment(
                 comment.getId(),
                 comment.isDeleted() ? null : comment.getContent(),
-                new FeedCommentFindResponse.Author(
-                        author.getUserId(),
-                        handles.get(author.getUserId()),
-                        author.getDisplayName().value(),
-                        author.getUserType(),
-                        trackValue(author),
-                        cohortValue(author),
-                        author.getAvatarImageId(),
-                        toUrl(findUrl(avatarUrls, author.getAvatarImageId()))
-                ),
+                authorVisible
+                        ? new FeedCommentFindResponse.Author(
+                                author.getUserId(),
+                                handles.get(author.getUserId()),
+                                author.getDisplayName().value(),
+                                author.getUserType(),
+                                trackValue(author),
+                                isCurrent(author),
+                                author.getAvatarImageId(),
+                                avatarUrls.get(author.getUserId())
+                        )
+                        // 익명 작성자도 크루 배지 구분을 위해 유형과 현재 기수 여부만 공개한다
+                        : new FeedCommentFindResponse.Author(
+                                null,
+                                null,
+                                null,
+                                author.getUserType(),
+                                null,
+                                isCurrent(author),
+                                null,
+                                null
+                        ),
                 comment.getParentId(),
                 comment.getCreatedAt(),
                 comment.getUpdatedAt(),
@@ -383,7 +438,8 @@ public class FeedCommentService {
                 comment.isEdited(),
                 comment.isDeleted(),
                 counts.agreeCount(),
-                counts.agreedByMe()
+                counts.agreedByMe(),
+                comment.isAnonymous()
         );
     }
 
@@ -414,22 +470,14 @@ public class FeedCommentService {
         }
     }
 
-    private Map<Long, URI> resolveAvatarUrls(Iterable<UserProfile> authors) {
-        List<Long> avatarImageIds = new ArrayList<>();
+    private Map<Long, String> resolveAvatarUrls(Iterable<UserProfile> authors) {
+        List<UserAvatarUrlResolver.AvatarReference> references = new ArrayList<>();
         for (UserProfile author : authors) {
-            if (author.getAvatarImageId() != null) {
-                avatarImageIds.add(author.getAvatarImageId());
-            }
+            references.add(new UserAvatarUrlResolver.AvatarReference(
+                    author.getUserId(),
+                    author.getAvatarImageId()
+            ));
         }
-        Map<Long, URI> urls = mediaUrlResolver.resolveAll(avatarImageIds);
-        return urls == null ? Map.of() : urls;
-    }
-
-    private static URI findUrl(Map<Long, URI> urls, Long mediaId) {
-        return mediaId == null ? null : urls.get(mediaId);
-    }
-
-    private static String toUrl(URI url) {
-        return url == null ? null : url.toString();
+        return userAvatarUrlResolver.resolveAll(references);
     }
 }

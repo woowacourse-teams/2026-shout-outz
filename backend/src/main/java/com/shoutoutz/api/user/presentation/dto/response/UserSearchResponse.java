@@ -15,7 +15,7 @@ public record UserSearchResponse(
 
     public static UserSearchResponse from(UserSearchResult result) {
         List<Item> items = result.items().stream()
-                .map(item -> Item.from(item, result.avatarUrls()))
+                .map(item -> Item.from(item, result.avatarUrls(), result.userAvatarUrls()))
                 .toList();
         return new UserSearchResponse(items);
     }
@@ -43,7 +43,11 @@ public record UserSearchResponse(
             this(null, handle, displayName, userType, track, cohort, avatarImageId, avatarUrl);
         }
 
-        private static Item from(UserSearchItem item, Map<Long, URI> avatarUrls) {
+        private static Item from(
+                UserSearchItem item,
+                Map<Long, URI> avatarUrls,
+                Map<Long, String> userAvatarUrls
+        ) {
             return new Item(
                     item.userId(),
                     item.handle(),
@@ -52,8 +56,20 @@ public record UserSearchResponse(
                     trackValue(item.userType(), item.track()),
                     cohortValue(item.userType(), item.cohort()),
                     item.avatarImageId(),
-                    toUrl(findUrl(avatarUrls, item.avatarImageId()))
+                    avatarUrl(item, avatarUrls, userAvatarUrls)
             );
+        }
+
+        private static String avatarUrl(
+                UserSearchItem item,
+                Map<Long, URI> avatarUrls,
+                Map<Long, String> userAvatarUrls
+        ) {
+            URI mediaUrl = findUrl(avatarUrls, item.avatarImageId());
+            if (mediaUrl != null) {
+                return mediaUrl.toString();
+            }
+            return item.userId() == null ? null : userAvatarUrls.get(item.userId());
         }
 
         private static String trackValue(UserType userType, Track track) {

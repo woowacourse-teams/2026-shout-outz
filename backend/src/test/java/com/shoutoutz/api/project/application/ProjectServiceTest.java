@@ -16,6 +16,9 @@ import static org.mockito.Mockito.when;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.cohort.domain.CohortErrorCode;
 import com.shoutoutz.api.cohort.domain.InvalidCohortException;
+import com.shoutoutz.api.auth.domain.OAuthAccount;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
+import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
@@ -83,6 +86,7 @@ import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -152,6 +156,9 @@ class ProjectServiceTest {
     @Mock
     private MediaUrlResolver mediaUrlResolver;
 
+    @Mock
+    private OAuthAccountRepository oauthAccountRepository;
+
     private ProjectService projectService;
 
     @BeforeEach
@@ -167,6 +174,7 @@ class ProjectServiceTest {
                 projectDeletionRepository,
                 userProjectQueryRepository,
                 mediaUrlResolver,
+                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
         lenient().when(projectSlugResolver.resolveId(SLUG)).thenReturn(PROJECT_ID);
@@ -611,8 +619,8 @@ class ProjectServiceTest {
         ProjectSummary last = summary(9L, 3L, NOW.minusSeconds(60));
         when(projectRepository.findAll(any(ProjectSearchCondition.class)))
                 .thenReturn(new ProjectPage(List.of(first, last), true, 48));
-        when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL))
-                .thenReturn(Map.of(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail")));
+        when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.DISPLAY))
+                .thenReturn(Map.of(THUMBNAIL_ID, URI.create("https://cdn.example.com/display")));
         when(mediaUrlResolver.resolveAll(Set.of(21L), MediaVariant.DISPLAY))
                 .thenReturn(Map.of(21L, URI.create("https://cdn.example.com/avatar-21")));
 
@@ -625,11 +633,11 @@ class ProjectServiceTest {
         assertThat(ProjectCursorCodec.decode(response.meta().nextCursor(), ProjectSort.POPULAR))
                 .isEqualTo(ProjectCursor.popular(3L, NOW.minusSeconds(60), 9L));
         assertThat(response.items().getFirst().thumbnailUrl())
-                .isEqualTo("https://cdn.example.com/thumbnail");
+                .isEqualTo("https://cdn.example.com/display");
         assertThat(response.items().getFirst().thumbnailImageId()).isEqualTo(THUMBNAIL_ID);
         assertThat(response.items().getFirst().members().getFirst().avatarUrl())
                 .isEqualTo("https://cdn.example.com/avatar-21");
-        verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL);
+        verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.DISPLAY);
         verify(mediaUrlResolver).resolveAll(Set.of(21L), MediaVariant.DISPLAY);
     }
 
@@ -656,8 +664,8 @@ class ProjectServiceTest {
         when(userRepository.findByHandle(MEMBER_HANDLE)).thenReturn(Optional.of(user));
         when(userProjectQueryRepository.findAllByUserId(REGISTERED_BY, cursor, 20))
                 .thenReturn(new UserProjectResult(List.of(project), true, 4L, Map.of()));
-        when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL))
-                .thenReturn(Map.of(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail")));
+        when(mediaUrlResolver.resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.DISPLAY))
+                .thenReturn(Map.of(THUMBNAIL_ID, URI.create("https://cdn.example.com/display")));
         when(mediaUrlResolver.resolveAll(Set.of(21L), MediaVariant.DISPLAY))
                 .thenReturn(Map.of(21L, URI.create("https://cdn.example.com/avatar-21")));
 
@@ -671,11 +679,11 @@ class ProjectServiceTest {
         assertThat(response.totalCount()).isEqualTo(4L);
         assertThat(response.nextCursor()).isEqualTo(ProjectCursor.latest(NOW.minusSeconds(60), 9L));
         assertThat(response.mediaUrls())
-                .containsEntry(THUMBNAIL_ID, URI.create("https://cdn.example.com/thumbnail"))
+                .containsEntry(THUMBNAIL_ID, URI.create("https://cdn.example.com/display"))
                 .containsEntry(21L, URI.create("https://cdn.example.com/avatar-21"))
                 .hasSize(2);
         verify(userProjectQueryRepository).findAllByUserId(REGISTERED_BY, cursor, 20);
-        verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.THUMBNAIL);
+        verify(mediaUrlResolver).resolveAll(Set.of(THUMBNAIL_ID), MediaVariant.DISPLAY);
         verify(mediaUrlResolver).resolveAll(Set.of(21L), MediaVariant.DISPLAY);
     }
 
@@ -968,8 +976,9 @@ class ProjectServiceTest {
     }
 
     @Test
-    @DisplayName("가입한 팀원이 프로필 이미지를 정하지 않았으면 GitHub 프로필 이미지가 있어도 avatarUrl은 null이다.")
-    void returnsNullAvatarUrlForUserWithoutAvatar() {
+    @DisplayName("가입한 팀원이 프로필 이미지를 정하지 않으면 GitHub 프로필 이미지를 기본값으로 반환한다.")
+    void returnsGithubAvatarUrlForUserWithoutAvatar() {
+        String githubAvatarUrl = "https://avatars.githubusercontent.com/u/1";
         ProjectDetail detail = projectDetail(ApprovalStatus.APPROVED, DESCRIPTION, List.of(new ProjectMemberProfile(
                 REGISTERED_BY,
                 "@dhyepark",
@@ -982,10 +991,20 @@ class ProjectServiceTest {
                 null
         )));
         when(projectRepository.findDetailBySlug(new Slug("loop"), null)).thenReturn(Optional.of(detail));
+        when(oauthAccountRepository.findAllByUserIdsAndProvider(
+                Set.of(REGISTERED_BY),
+                OAuthProvider.GITHUB
+        )).thenReturn(List.of(OAuthAccount.builder()
+                .id(10L)
+                .userId(REGISTERED_BY)
+                .provider(OAuthProvider.GITHUB)
+                .providerAccountId("12345678")
+                .providerAvatarUrl(githubAvatarUrl)
+                .build()));
 
         ProjectDetailResponse response = projectService.findDetail("loop", null);
 
-        assertThat(response.members().getFirst().avatarUrl()).isNull();
+        assertThat(response.members().getFirst().avatarUrl()).isEqualTo(githubAvatarUrl);
     }
 
     @Test

@@ -29,15 +29,20 @@ import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentDeleteResp
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentFindResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentFindResponse.Comment;
 import com.shoutoutz.api.comment.presentation.dto.response.FeedCommentUpdateResponse;
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.notification.application.NotificationService;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
+import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -83,7 +88,13 @@ class FeedCommentServiceTest {
     private MediaUrlResolver mediaUrlResolver;
 
     @Mock
+    private OAuthAccountRepository oauthAccountRepository;
+
+    @Mock
     private FeedCommentReactionRepository feedCommentReactionRepository;
+
+    @Mock
+    private NotificationService notificationService;
 
     private FeedCommentService feedCommentService;
 
@@ -94,9 +105,10 @@ class FeedCommentServiceTest {
                 feedCommentRepository,
                 feedCommentQueryRepository,
                 userProfileRepository,
-                mediaUrlResolver,
+                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
                 feedCommentReactionRepository,
-                userRepository
+                userRepository,
+                notificationService
         );
         lenient().when(mediaUrlResolver.resolve(10L))
                 .thenReturn(URI.create("https://cdn.example.com/media/10/display"));
@@ -134,6 +146,7 @@ class FeedCommentServiceTest {
         assertThat(captor.getValue().getAuthorId()).isEqualTo(AUTHOR_ID);
         assertThat(captor.getValue().getContent()).isEqualTo("좋은 피드네요.");
         assertThat(captor.getValue().getParentId()).isNull();
+        verify(notificationService).createForFeedComment(FEED_ID, COMMENT_ID, AUTHOR_ID);
     }
 
     @Test
@@ -210,6 +223,115 @@ class FeedCommentServiceTest {
         assertThat(result.comments().get(2).editable()).isFalse();
         assertThat(result.meta().nextCursor()).isNull();
         assertThat(result.meta().hasNext()).isFalse();
+    }
+
+    @Test
+    @DisplayName("익명 댓글은 작성자가 아닌 사용자에게 작성자 정보를 노출하지 않는다.")
+    void masksAnonymousCommentAuthorForAnotherViewer() {
+        givenActiveFeed();
+        FeedComment anonymousComment = FeedComment.reconstitute(
+                COMMENT_ID,
+                FEED_ID,
+                AUTHOR_ID,
+                null,
+                "익명 댓글",
+                true,
+                NOW,
+                NOW,
+                null
+        );
+        when(feedCommentQueryRepository.findRootCommentsPage(
+                FEED_ID,
+                null,
+                FeedCommentSort.LATEST,
+                5
+        )).thenReturn(new FeedCommentPage(List.of(anonymousComment), false, 1L));
+        when(feedCommentQueryRepository.findReplies(FEED_ID, List.of(COMMENT_ID)))
+                .thenReturn(List.of());
+        givenAuthor();
+
+        FeedCommentFindResponse result = feedCommentService.findAll(
+                FEED_ID,
+                new FeedCommentFindRequest(null, 5, "LATEST"),
+                null
+        );
+
+        Comment comment = result.comments().getFirst();
+        assertThat(comment.isAnonymous()).isTrue();
+        assertThat(comment.author().userId()).isNull();
+        assertThat(comment.author().displayName()).isNull();
+        assertThat(comment.author().avatarUrl()).isNull();
+        assertThat(comment.author().handle()).isNull();
+        assertThat(comment.author().track()).isNull();
+        assertThat(comment.author().isCurrent()).isNull();
+    }
+
+    @Test
+    @DisplayName("익명 댓글도 작성자가 크루면 유형과 현재 기수 여부만 공개하고 트랙과 신원은 숨긴다.")
+    void exposesCurrentStatusOfAnonymousCrewCommentAuthor() {
+        givenActiveFeed();
+        givenAnonymousCommentPage();
+        givenAuthor(UserProfile.builder()
+                .userId(AUTHOR_ID)
+                .displayName("크루")
+                .userType(UserType.WOOWACOURSE_CREW)
+                .track(Track.BACKEND)
+                .cohort(Cohort.from(7))
+                .avatarImageId(10L)
+                .build());
+
+        Comment comment = findFirstCommentAs(null);
+
+        assertThat(comment.author().userType()).isEqualTo(UserType.WOOWACOURSE_CREW);
+        assertThat(comment.author().isCurrent()).isFalse();
+        assertThat(comment.author().track()).isNull();
+        assertThat(comment.author().userId()).isNull();
+        assertThat(comment.author().handle()).isNull();
+        assertThat(comment.author().displayName()).isNull();
+        assertThat(comment.author().avatarImageId()).isNull();
+        assertThat(comment.author().avatarUrl()).isNull();
+    }
+
+    @Test
+    @DisplayName("익명 댓글 작성자가 코치면 유형만 공개하고 현재 기수 여부는 null이다.")
+    void exposesOnlyUserTypeOfAnonymousCoachCommentAuthor() {
+        givenActiveFeed();
+        givenAnonymousCommentPage();
+        givenAuthor(UserProfile.builder()
+                .userId(AUTHOR_ID)
+                .displayName("코치")
+                .userType(UserType.WOOWACOURSE_COACH)
+                .avatarImageId(10L)
+                .build());
+
+        Comment comment = findFirstCommentAs(AUTHOR_ID + 1);
+
+        assertThat(comment.author().userType()).isEqualTo(UserType.WOOWACOURSE_COACH);
+        assertThat(comment.author().isCurrent()).isNull();
+        assertThat(comment.author().userId()).isNull();
+    }
+
+    @Test
+    @DisplayName("익명 댓글 작성자가 본인이면 크루 정보를 포함한 전체 정보를 조회한다.")
+    void exposesFullAuthorOfAnonymousCommentToOwner() {
+        givenActiveFeed();
+        givenAnonymousCommentPage();
+        when(feedCommentReactionRepository.findByCommentIds(List.of(COMMENT_ID), AUTHOR_ID))
+                .thenReturn(Map.of());
+        givenAuthor(UserProfile.builder()
+                .userId(AUTHOR_ID)
+                .displayName("크루")
+                .userType(UserType.WOOWACOURSE_CREW)
+                .track(Track.BACKEND)
+                .cohort(Cohort.from(8))
+                .avatarImageId(10L)
+                .build());
+
+        Comment comment = findFirstCommentAs(AUTHOR_ID);
+
+        assertThat(comment.author().userId()).isEqualTo(AUTHOR_ID);
+        assertThat(comment.author().isCurrent()).isTrue();
+        assertThat(comment.author().track()).isEqualTo("BACKEND");
     }
 
     @Test
@@ -705,15 +827,48 @@ class FeedCommentServiceTest {
     }
 
     private void givenAuthor(long userId, String displayName, long avatarImageId) {
-        when(userProfileRepository.findByUserId(userId)).thenReturn(Optional.of(
-                UserProfile.builder()
-                        .userId(userId)
-                        .displayName(displayName)
-                        .userType(UserType.GENERAL)
-                        .avatarImageId(avatarImageId)
-                        .build()
-        ));
+        givenAuthor(UserProfile.builder()
+                .userId(userId)
+                .displayName(displayName)
+                .userType(UserType.GENERAL)
+                .avatarImageId(avatarImageId)
+                .build());
+    }
+
+    private void givenAuthor(UserProfile profile) {
+        long userId = profile.getUserId();
+        when(userProfileRepository.findByUserId(userId)).thenReturn(Optional.of(profile));
         when(userRepository.findById(userId)).thenReturn(Optional.of(User.initialize("@author" + userId)));
+    }
+
+    private void givenAnonymousCommentPage() {
+        FeedComment anonymousComment = FeedComment.reconstitute(
+                COMMENT_ID,
+                FEED_ID,
+                AUTHOR_ID,
+                null,
+                "익명 댓글",
+                true,
+                NOW,
+                NOW,
+                null
+        );
+        when(feedCommentQueryRepository.findRootCommentsPage(
+                FEED_ID,
+                null,
+                FeedCommentSort.LATEST,
+                5
+        )).thenReturn(new FeedCommentPage(List.of(anonymousComment), false, 1L));
+        when(feedCommentQueryRepository.findReplies(FEED_ID, List.of(COMMENT_ID)))
+                .thenReturn(List.of());
+    }
+
+    private Comment findFirstCommentAs(Long loginUserId) {
+        return feedCommentService.findAll(
+                FEED_ID,
+                new FeedCommentFindRequest(null, 5, "LATEST"),
+                loginUserId
+        ).comments().getFirst();
     }
 
     private FeedComment rootComment() {

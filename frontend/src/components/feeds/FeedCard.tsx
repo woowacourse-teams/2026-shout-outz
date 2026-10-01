@@ -12,7 +12,6 @@ import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { ShareButton } from '@/components/feeds/ShareButton';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { Comments } from '@/components/feed-comments/Comments';
-import { findFirstUrl } from '@/utils/feed';
 import { analytics, type FeedSurface } from '@/utils/analytics';
 
 export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }) {
@@ -20,7 +19,7 @@ export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }
   const [firstMedia, ...restMedia] = [...feed.media].sort(
     (a, b) => a.displayOrder - b.displayOrder,
   );
-  const firstUrl = findFirstUrl(feed.content);
+  const linkPreview = feed.linkPreview;
 
   return (
     <article className="min-w-0 border-b border-gray-100 py-6 first:pt-4 md:py-7">
@@ -48,9 +47,9 @@ export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }
         <div className="mt-2 line-clamp-5 space-y-3 text-base leading-7 break-words text-gray-800">
           <FeedMarkdown content={feed.content} hideCodeBlocks />
         </div>
-        {firstUrl && (
+        {linkPreview?.url && (
           <div className="relative z-10 mt-4">
-            <LinkPreview url={firstUrl} />
+            <LinkPreview {...linkPreview} url={linkPreview.url} />
           </div>
         )}
         {firstMedia && (

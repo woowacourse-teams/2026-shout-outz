@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
@@ -30,6 +31,7 @@ import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -70,6 +72,9 @@ class AdminProjectServiceTest {
     @Mock
     private MediaUrlResolver mediaUrlResolver;
 
+    @Mock
+    private OAuthAccountRepository oauthAccountRepository;
+
     private AdminProjectService service;
 
     @BeforeEach
@@ -82,6 +87,7 @@ class AdminProjectServiceTest {
                 techTagAndMemberJdbcRepository,
                 userRepository,
                 mediaUrlResolver,
+                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }

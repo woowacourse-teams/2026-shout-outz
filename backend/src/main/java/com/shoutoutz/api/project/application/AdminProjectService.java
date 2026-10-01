@@ -31,6 +31,7 @@ import com.shoutoutz.api.project.presentation.dto.response.AdminProjectFindAllRe
 import com.shoutoutz.api.project.presentation.dto.response.AdminProjectHistoryResponse;
 import com.shoutoutz.api.project.presentation.dto.response.AdminProjectRejectResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
@@ -58,6 +59,7 @@ public class AdminProjectService {
     private final ProjectTechTagAndMemberJdbcRepository techTagAndMemberJdbcRepository;
     private final UserRepository userRepository;
     private final MediaUrlResolver mediaUrlResolver;
+    private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final Clock clock;
 
     @Transactional(readOnly = true)
@@ -78,7 +80,8 @@ public class AdminProjectService {
         return AdminProjectFindAllResponse.from(
                 items,
                 new SliceMetaResponse(nextCursor, page.hasNext(), page.totalCount()),
-                resolveListMediaUrls(items)
+                resolveListMediaUrls(items),
+                resolveListUserAvatarUrls(items)
         );
     }
 
@@ -88,6 +91,7 @@ public class AdminProjectService {
         ProjectDetail detail = projectRepository.findDetailById(projectId, null)
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
         Map<Long, URI> mediaUrls = resolveDetailMediaUrls(detail);
+        Map<Long, String> userAvatarUrls = resolveUserAvatarUrls(detail.members());
         String descriptionMd = mediaUrlResolver.replaceDescriptionReferences(
                 detail.descriptionMd(),
                 mediaUrls
@@ -98,6 +102,7 @@ public class AdminProjectService {
         ProjectDetailResponse projectDetail = ProjectDetailResponse.from(
                 detail,
                 mediaUrls,
+                userAvatarUrls,
                 descriptionMd,
                 null
         );
@@ -267,6 +272,25 @@ public class AdminProjectService {
             mediaUrls.putAll(mediaUrlResolver.resolveAll(avatarIds, MediaVariant.DISPLAY));
         }
         return Map.copyOf(mediaUrls);
+    }
+
+    private Map<Long, String> resolveListUserAvatarUrls(List<AdminProjectItem> items) {
+        return userAvatarUrlResolver.resolveAll(items.stream()
+                .flatMap(item -> item.members().stream())
+                .map(member -> new UserAvatarUrlResolver.AvatarReference(
+                        member.userId(),
+                        member.avatarImageId()
+                ))
+                .toList());
+    }
+
+    private Map<Long, String> resolveUserAvatarUrls(List<ProjectMemberProfile> members) {
+        return userAvatarUrlResolver.resolveAll(members.stream()
+                .map(member -> new UserAvatarUrlResolver.AvatarReference(
+                        member.userId(),
+                        member.avatarImageId()
+                ))
+                .toList());
     }
 
     private Map<Long, URI> resolveDetailMediaUrls(ProjectDetail detail) {

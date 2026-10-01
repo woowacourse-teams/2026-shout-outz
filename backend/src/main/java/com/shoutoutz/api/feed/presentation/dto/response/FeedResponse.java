@@ -4,6 +4,7 @@ import com.shoutoutz.api.category.domain.CategoryType;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.LinkPreview;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.net.URI;
@@ -13,8 +14,10 @@ import java.util.Map;
 
 public record FeedResponse(
         long feedId,
+        FeedType feedType,
         String title,
         String content,
+        boolean isAnonymous,
         Author author,
         List<Category> categories,
         List<Media> media,
@@ -32,12 +35,23 @@ public record FeedResponse(
     }
 
     public static FeedResponse from(FeedItem feed, Map<Long, URI> mediaUrls) {
+        return from(feed, mediaUrls, Map.of());
+    }
+
+    public static FeedResponse from(
+            FeedItem feed,
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls
+    ) {
         Map<Long, URI> urls = mediaUrls == null ? Map.of() : mediaUrls;
+        Map<Long, String> fallbackUrls = userAvatarUrls == null ? Map.of() : userAvatarUrls;
         return new FeedResponse(
                 feed.feedId(),
+                feed.feedType(),
                 feed.title(),
                 feed.content(),
-                Author.from(feed.author(), urls),
+                feed.isAnonymous(),
+                Author.from(feed.author(), urls, fallbackUrls),
                 feed.categories().stream().map(Category::from).toList(),
                 feed.media().stream().map(media -> Media.from(media, urls)).toList(),
                 feed.linkPreview(),
@@ -56,8 +70,16 @@ public record FeedResponse(
     }
 
     public static List<FeedResponse> from(List<FeedItem> feeds, Map<Long, URI> mediaUrls) {
+        return from(feeds, mediaUrls, Map.of());
+    }
+
+    public static List<FeedResponse> from(
+            List<FeedItem> feeds,
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls
+    ) {
         return feeds.stream()
-                .map(feed -> from(feed, mediaUrls))
+                .map(feed -> from(feed, mediaUrls, userAvatarUrls))
                 .toList();
     }
 
@@ -67,7 +89,7 @@ public record FeedResponse(
             String displayName,
             UserType userType,
             String track,
-            Short cohort,
+            Boolean isCurrent,
             Long avatarImageId,
             String avatarUrl
     ) {
@@ -76,24 +98,40 @@ public record FeedResponse(
                 String displayName,
                 UserType userType,
                 String track,
-                Short cohort,
+                Boolean isCurrent,
                 Long avatarImageId,
                 String avatarUrl
         ) {
-            this(null, handle, displayName, userType, track, cohort, avatarImageId, avatarUrl);
+            this(null, handle, displayName, userType, track, isCurrent, avatarImageId, avatarUrl);
         }
 
-        private static Author from(FeedItem.Author author, Map<Long, URI> mediaUrls) {
+        private static Author from(
+                FeedItem.Author author,
+                Map<Long, URI> mediaUrls,
+                Map<Long, String> userAvatarUrls
+        ) {
             return new Author(
                     author.userId(),
                     author.handle(),
                     author.displayName(),
                     author.userType(),
                     trackValue(author.userType(), author.track()),
-                    cohortValue(author.userType(), author.cohort()),
+                    isCurrentValue(author.userType(), author.cohort()),
                     author.avatarImageId(),
-                    toUrl(findUrl(mediaUrls, author.avatarImageId()))
+                    avatarUrl(author, mediaUrls, userAvatarUrls)
             );
+        }
+
+        private static String avatarUrl(
+                FeedItem.Author author,
+                Map<Long, URI> mediaUrls,
+                Map<Long, String> userAvatarUrls
+        ) {
+            URI mediaUrl = findUrl(mediaUrls, author.avatarImageId());
+            if (mediaUrl != null) {
+                return mediaUrl.toString();
+            }
+            return author.userId() == null ? null : userAvatarUrls.get(author.userId());
         }
 
         private static String trackValue(UserType userType, Track track) {
@@ -103,11 +141,11 @@ public record FeedResponse(
             return track.getValue();
         }
 
-        private static Short cohortValue(UserType userType, Cohort cohort) {
+        private static Boolean isCurrentValue(UserType userType, Cohort cohort) {
             if (userType != UserType.WOOWACOURSE_CREW || cohort == null) {
                 return null;
             }
-            return (short) cohort.getValue();
+            return cohort == Cohort.current();
         }
     }
 
@@ -115,13 +153,24 @@ public record FeedResponse(
             long categoryId,
             String slug,
             String displayName,
+            FeedType feedType,
             CategoryType type
     ) {
+        public Category(
+                long categoryId,
+                String slug,
+                String displayName,
+                CategoryType type
+        ) {
+            this(categoryId, slug, displayName, FeedType.POST, type);
+        }
+
         private static Category from(FeedItem.Category category) {
             return new Category(
                     category.categoryId(),
                     category.slug(),
                     category.displayName(),
+                    category.feedType(),
                     category.type()
             );
         }

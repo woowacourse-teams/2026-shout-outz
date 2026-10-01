@@ -1,5 +1,6 @@
 package com.shoutoutz.api.auth.application;
 
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -11,7 +12,8 @@ import java.util.Base64;
 public record OAuthLoginAttempt(
         String state,
         String codeVerifier,
-        Instant createdAt
+        Instant createdAt,
+        URI completionUri
 ) {
 
     private static final int STATE_BYTES = 32;
@@ -19,11 +21,24 @@ public record OAuthLoginAttempt(
     private static final Duration VALIDITY = Duration.ofMinutes(5);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
+    public OAuthLoginAttempt(
+            String state,
+            String codeVerifier,
+            Instant createdAt
+    ) {
+        this(state, codeVerifier, createdAt, null);
+    }
+
     public static OAuthLoginAttempt create() {
+        return create(null);
+    }
+
+    public static OAuthLoginAttempt create(URI completionUri) {
         return new OAuthLoginAttempt(
                 generateRandomValue(STATE_BYTES),
                 generateRandomValue(CODE_VERIFIER_BYTES),
-                Instant.now()
+                Instant.now(),
+                completionUri
         );
     }
 

@@ -11,6 +11,7 @@ import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.feed.application.dto.FeedCursor;
 import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
@@ -26,6 +27,7 @@ import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -60,6 +62,9 @@ class FeedServiceQueryTest {
     private MediaUrlResolver mediaUrlResolver;
 
     @Mock
+    private OAuthAccountRepository oauthAccountRepository;
+
+    @Mock
     private FeedLinkPreviewService linkPreviewService;
 
     private FeedCursorCodec cursorCodec;
@@ -76,6 +81,7 @@ class FeedServiceQueryTest {
                 userProfileRepository,
                 cursorCodec,
                 mediaUrlResolver,
+                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
                 linkPreviewService,
                 java.time.Clock.systemUTC()
         );
@@ -169,6 +175,25 @@ class FeedServiceQueryTest {
 
         assertThat(result.items()).containsExactlyElementsOf(queried);
         verify(feedQueryRepository).findAll(FeedSort.POPULAR, null, null, null, 2);
+    }
+
+    @Test
+    void 답변_대기순을_요청하면_답변_대기순으로_조회한다() {
+        FeedFindAllRequest request = new FeedFindAllRequest(
+                FeedSort.WAITING,
+                null,
+                null,
+                null,
+                2
+        );
+        List<FeedItem> queried = List.of(feed(2L, "2026-09-10T00:00:00Z"));
+        when(feedQueryRepository.findAll(FeedSort.WAITING, null, null, null, 2))
+                .thenReturn(new FeedPage(queried, false, 1L));
+
+        FeedFindAllResult result = feedService.findAllFeed(request);
+
+        assertThat(result.items()).containsExactlyElementsOf(queried);
+        verify(feedQueryRepository).findAll(FeedSort.WAITING, null, null, null, 2);
     }
 
     @Test

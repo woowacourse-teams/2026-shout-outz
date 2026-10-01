@@ -48,6 +48,7 @@ public class UserService {
     private final UserSearchCursorCodec userSearchCursorCodec;
     private final MediaMetadataRepository mediaMetadataRepository;
     private final MediaUrlResolver mediaUrlResolver;
+    private final UserAvatarUrlResolver userAvatarUrlResolver;
 
     @Transactional
     public UserProfileUpdateResponse updateMyProfile(
@@ -75,7 +76,7 @@ public class UserService {
                 trackValue(savedProfile),
                 cohortValue(savedProfile),
                 savedProfile.getBio(),
-                toUrl(mediaUrlResolver.resolve(savedProfile.getAvatarImageId())),
+                resolveAvatarUrl(userId, savedProfile.getAvatarImageId()),
                 savedProfile.getGithubProfileUrl(),
                 savedProfile.getBlogUrl()
         );
@@ -90,7 +91,7 @@ public class UserService {
                 user.getHandle().value(),
                 profile.getDisplayName().value(),
                 profile.getAvatarImageId(),
-                toUrl(mediaUrlResolver.resolve(profile.getAvatarImageId()))
+                resolveAvatarUrl(userId, profile.getAvatarImageId())
         );
     }
 
@@ -148,7 +149,14 @@ public class UserService {
     private UserSearchResult createSearchResult(UserSearchPage page) {
         List<UserSearchItem> items = page.items();
         if (!page.hasNext()) {
-            return new UserSearchResult(items, null, false, page.totalCount(), resolveAvatarUrls(items));
+            return new UserSearchResult(
+                    items,
+                    null,
+                    false,
+                    page.totalCount(),
+                    resolveAvatarUrls(items),
+                    resolveUserAvatarUrls(items)
+            );
         }
 
         return new UserSearchResult(
@@ -156,7 +164,8 @@ public class UserService {
                 encodeCursor(items.getLast()),
                 true,
                 page.totalCount(),
-                resolveAvatarUrls(items)
+                resolveAvatarUrls(items),
+                resolveUserAvatarUrls(items)
         );
     }
 
@@ -213,7 +222,7 @@ public class UserService {
                 cohortValue(profile),
                 profile.getBio(),
                 profile.getAvatarImageId(),
-                toUrl(mediaUrlResolver.resolve(profile.getAvatarImageId())),
+                resolveAvatarUrl(profile.getUserId(), profile.getAvatarImageId()),
                 profile.getGithubProfileUrl(),
                 profile.getBlogUrl(),
                 new UserProfileResponse.Counts(counts.projects(), counts.feeds())
@@ -250,8 +259,28 @@ public class UserService {
         return urls == null ? Map.of() : urls;
     }
 
+    private Map<Long, String> resolveUserAvatarUrls(List<UserSearchItem> items) {
+        return userAvatarUrlResolver.resolveAll(items.stream()
+                .map(item -> new UserAvatarUrlResolver.AvatarReference(
+                        item.userId(),
+                        item.avatarImageId()
+                ))
+                .toList());
+    }
+
     private String toUrl(java.net.URI url) {
         return url == null ? null : url.toString();
+    }
+
+    /**
+     * 사용자가 직접 업로드한 이미지가 있으면 그 이미지를 우선하고,
+     * 아직 업로드하지 않은 신규 OAuth 사용자는 Provider 아바타를 사용한다.
+     *
+     * <p>{@code avatarImageId}는 {@code media_metadata.id}를 가리키는 값이므로
+     * 외부 GitHub URL을 이 필드에 저장하지 않는다.</p>
+     */
+    private String resolveAvatarUrl(long userId, Long avatarImageId) {
+        return userAvatarUrlResolver.resolve(userId, avatarImageId);
     }
 
     /**

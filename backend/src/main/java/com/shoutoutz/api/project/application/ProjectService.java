@@ -70,6 +70,7 @@ import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserStatus;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.UserType;
@@ -101,6 +102,7 @@ public class ProjectService {
     private final ProjectDeletionRepository projectDeletionRepository;
     private final UserProjectQueryRepository userProjectQueryRepository;
     private final MediaUrlResolver mediaUrlResolver;
+    private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final Clock clock;
 
     @Transactional
@@ -204,10 +206,12 @@ public class ProjectService {
                 : projectRepository.findAll(condition, viewerId);
         ProjectCursor nextCursor = page.nextCursor(sort);
         Map<Long, URI> mediaUrls = resolveProjectMediaUrls(page.items());
+        Map<Long, String> userAvatarUrls = resolveProjectSummaryUserAvatarUrls(page.items());
         return ProjectFindAllResponse.of(
                 page,
                 nextCursor == null ? null : ProjectCursorCodec.encode(nextCursor),
-                mediaUrls
+                mediaUrls,
+                userAvatarUrls
         );
     }
 
@@ -249,7 +253,8 @@ public class ProjectService {
                 result.projects(),
                 result.hasNext(),
                 result.totalCount(),
-                resolveUserProjectMediaUrls(result.projects())
+                resolveUserProjectMediaUrls(result.projects()),
+                resolveUserProjectUserAvatarUrls(result.projects())
         );
     }
 
@@ -278,6 +283,7 @@ public class ProjectService {
                 .filter(project -> project.isVisibleTo(loginUserId))
                 .orElseThrow(() -> new EntityNotFoundException(PROJECT_NOT_FOUND));
         Map<Long, URI> mediaUrls = resolveProjectMediaUrls(detail);
+        Map<Long, String> userAvatarUrls = resolveProjectMemberUserAvatarUrls(detail.members());
         String descriptionMd = mediaUrlResolver.replaceDescriptionReferences(
                 detail.descriptionMd(),
                 mediaUrls
@@ -288,8 +294,36 @@ public class ProjectService {
         return ProjectDetailResponse.from(
                 detail,
                 mediaUrls,
+                userAvatarUrls,
                 descriptionMd,
                 loginUserId
+        );
+    }
+
+    private Map<Long, String> resolveProjectSummaryUserAvatarUrls(List<ProjectSummary> projects) {
+        return userAvatarUrlResolver.resolveAll(projects.stream()
+                .flatMap(project -> project.members().stream())
+                .map(this::avatarReference)
+                .toList());
+    }
+
+    private Map<Long, String> resolveUserProjectUserAvatarUrls(List<UserProjectItem> projects) {
+        return userAvatarUrlResolver.resolveAll(projects.stream()
+                .flatMap(project -> project.members().stream())
+                .map(this::avatarReference)
+                .toList());
+    }
+
+    private Map<Long, String> resolveProjectMemberUserAvatarUrls(List<ProjectMemberProfile> members) {
+        return userAvatarUrlResolver.resolveAll(members.stream()
+                .map(this::avatarReference)
+                .toList());
+    }
+
+    private UserAvatarUrlResolver.AvatarReference avatarReference(ProjectMemberProfile member) {
+        return new UserAvatarUrlResolver.AvatarReference(
+                member.userId(),
+                member.avatarImageId()
         );
     }
 
@@ -326,7 +360,7 @@ public class ProjectService {
     private Map<Long, URI> resolveProjectListMediaUrls(Set<Long> thumbnailIds, Set<Long> avatarIds) {
         Map<Long, URI> mediaUrls = new HashMap<>();
         if (!thumbnailIds.isEmpty()) {
-            mediaUrls.putAll(mediaUrlResolver.resolveAll(thumbnailIds, MediaVariant.THUMBNAIL));
+            mediaUrls.putAll(mediaUrlResolver.resolveAll(thumbnailIds, MediaVariant.DISPLAY));
         }
         if (!avatarIds.isEmpty()) {
             mediaUrls.putAll(mediaUrlResolver.resolveAll(avatarIds, MediaVariant.DISPLAY));

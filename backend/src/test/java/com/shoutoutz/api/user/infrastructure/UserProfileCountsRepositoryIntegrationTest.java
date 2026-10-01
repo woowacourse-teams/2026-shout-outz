@@ -53,6 +53,21 @@ class UserProfileCountsRepositoryIntegrationTest {
         assertThat(selfCounts).isEqualTo(new UserProfileCounts(2L, 1L));
     }
 
+    @Test
+    @DisplayName("타인이 조회하면 익명 피드를 제외하고 본인이 조회하면 포함해 센다")
+    void countByUserIdExcludesAnonymousFeedsForOthers() {
+        User user = userRepository.save(User.initialize("@counts-anonymous"));
+        saveFeed(user.getId(), null);
+        saveAnonymousFeed(user.getId(), null);
+        saveAnonymousFeed(user.getId(), Instant.now());
+
+        UserProfileCounts others = userQueryRepository.countByUserId(user.getId(), false);
+        UserProfileCounts owner = userQueryRepository.countByUserId(user.getId(), true);
+
+        assertThat(others.feeds()).isEqualTo(1L);
+        assertThat(owner.feeds()).isEqualTo(2L);
+    }
+
     private long saveProject(Instant deletedAt) {
         return saveProject("APPROVED", deletedAt);
     }
@@ -93,6 +108,16 @@ class UserProfileCountsRepositoryIntegrationTest {
                 "INSERT INTO feeds (author_id, title, content, deleted_at) VALUES (?, '테스트 피드', ?, ?)",
                 userId,
                 "개수 테스트 피드",
+                deletedAt == null ? null : Timestamp.from(deletedAt)
+        );
+    }
+
+    private void saveAnonymousFeed(long userId, Instant deletedAt) {
+        jdbcTemplate.update(
+                "INSERT INTO feeds (author_id, title, content, is_anonymous, deleted_at) "
+                        + "VALUES (?, '익명 피드', ?, TRUE, ?)",
+                userId,
+                "개수 테스트 익명 피드",
                 deletedAt == null ? null : Timestamp.from(deletedAt)
         );
     }

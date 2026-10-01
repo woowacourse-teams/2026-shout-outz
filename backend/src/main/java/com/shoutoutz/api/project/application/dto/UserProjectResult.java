@@ -12,12 +12,23 @@ public record UserProjectResult(
         List<UserProjectItem> projects,
         boolean hasNext,
         long totalCount,
-        Map<Long, URI> mediaUrls
+        Map<Long, URI> mediaUrls,
+        Map<Long, String> userAvatarUrls
 ) {
+
+    public UserProjectResult(
+            List<UserProjectItem> projects,
+            boolean hasNext,
+            long totalCount,
+            Map<Long, URI> mediaUrls
+    ) {
+        this(projects, hasNext, totalCount, mediaUrls, Map.of());
+    }
 
     public UserProjectResult {
         projects = List.copyOf(projects);
         mediaUrls = mediaUrls == null ? Map.of() : Map.copyOf(mediaUrls);
+        userAvatarUrls = userAvatarUrls == null ? Map.of() : Map.copyOf(userAvatarUrls);
     }
 
     public ProjectCursor nextCursor() {

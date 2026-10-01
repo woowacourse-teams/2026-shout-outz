@@ -103,6 +103,9 @@ class UserFeedHttpApiTest {
                                         parameterWithName("cursor")
                                                 .description("다음 페이지 조회용 커서. 첫 요청은 생략")
                                                 .optional(),
+                                        parameterWithName("type")
+                                                .description("QUESTION 또는 POST. 생략하면 전체 유형 조회")
+                                                .optional(),
                                         parameterWithName("size")
                                                 .type(INTEGER)
                                                 .description("한 번에 가져올 피드 수. 기본값 20, 1~50")

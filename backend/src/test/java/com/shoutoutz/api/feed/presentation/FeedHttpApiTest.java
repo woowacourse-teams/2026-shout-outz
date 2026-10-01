@@ -14,6 +14,7 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
+import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -95,6 +96,7 @@ class FeedHttpApiTest {
                 .andExpect(jsonPath("$.data[0].feedId").value(FEED_ID))
                 .andExpect(jsonPath("$.data[0].title").value("피드 제목"))
                 .andExpect(jsonPath("$.data[0].author.avatarImageId").value(21L))
+                .andExpect(jsonPath("$.data[0].author.isCurrent").value(true))
                 .andExpect(jsonPath("$.data[0].media[0].mediaId").value(21L))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
@@ -104,10 +106,13 @@ class FeedHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Feed")
                                 .summary("피드 목록 조회")
-                                .description("전체 공개 피드를 최신순, 인기순 또는 키워드 정확도순 Slice로 조회한다.")
+                                .description("전체 공개 피드를 최신순, 인기순, 답변 대기 또는 키워드 정확도순 Slice로 조회한다.")
                                 .queryParameters(
                                         parameterWithName("sort")
-                                                .description("LATEST, POPULAR 또는 RELEVANCE. 검색어가 없으면 기본 LATEST, 있으면 기본 RELEVANCE")
+                                                .description("LATEST, POPULAR, WAITING 또는 RELEVANCE. 검색어가 없으면 기본 LATEST, 있으면 기본 RELEVANCE")
+                                                .optional(),
+                                        parameterWithName("type")
+                                                .description("QUESTION 또는 POST. 생략하면 전체 유형 조회")
                                                 .optional(),
                                         parameterWithName("categoryId")
                                                 .type(INTEGER)
@@ -252,10 +257,16 @@ class FeedHttpApiTest {
                                                 .description("피드 제목(공백 제외 1자 이상, Unicode 최대 100자)"),
                                         fieldWithPath("content").type(STRING)
                                                 .description("Markdown 본문(공백 제외 1자 이상, Unicode 최대 5,000자)"),
+                                        fieldWithPath("isAnonymous").type(BOOLEAN)
+                                                .description("작성자 정보를 익명으로 공개할지 여부")
+                                                .optional(),
                                         fieldWithPath("categoryIds").type(ARRAY)
                                                 .description("활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"),
                                         fieldWithPath("mediaIds").type(ARRAY)
-                                                .description("작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록")
+                                                .description("작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록"),
+                                        fieldWithPath("feedType").type(STRING)
+                                                .description("피드 유형(QUESTION 또는 POST). 생략하면 POST")
+                                                .optional()
                                 )
                                 .responseFields(commandSuccessResponseFields("data."))
                                 .build())
@@ -293,6 +304,9 @@ class FeedHttpApiTest {
                                         fieldWithPath("title").type(STRING).description("변경할 피드 제목"),
                                         fieldWithPath("content").type(STRING)
                                                 .description("변경할 Markdown 본문(공백 제외 1자 이상, Unicode 최대 5,000자)"),
+                                        fieldWithPath("isAnonymous").type(BOOLEAN)
+                                                .description("작성자 정보를 익명으로 공개할지 여부")
+                                                .optional(),
                                         fieldWithPath("categoryIds").type(ARRAY)
                                                 .description("변경할 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음)"),
                                         fieldWithPath("mediaIds").type(ARRAY).description("변경할 본문 미디어 ID 목록")
@@ -492,7 +506,7 @@ class FeedHttpApiTest {
                         "feed-find-all-invalid",
                         resource(errorResponse(
                                 "피드 목록 조회",
-                                "전체 공개 피드를 최신순 또는 전체 기간 인기순 Slice로 조회한다."
+                                "전체 공개 피드를 최신순, 인기순, 답변 대기 또는 키워드 정확도순 Slice로 조회한다."
                         ))
                 ));
 

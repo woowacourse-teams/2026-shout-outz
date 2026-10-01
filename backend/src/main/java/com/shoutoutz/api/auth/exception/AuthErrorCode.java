@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 public enum AuthErrorCode implements ErrorCode {
     OAUTH_LOGIN_SESSION_NOT_FOUND("OAuth 로그인 세션을 찾을 수 없습니다."),
     OAUTH_LOGIN_ATTEMPT_NOT_FOUND("OAuth 로그인 시도를 찾을 수 없습니다."),
+    OAUTH_COMPLETION_URI_NOT_ALLOWED("허용되지 않은 OAuth 완료 URI입니다."),
     OAUTH_SIGNUP_SESSION_NOT_FOUND("가입 대기 OAuth 신원을 찾을 수 없습니다."),
     CSRF_TOKEN_INVALID("CSRF Token이 유효하지 않습니다.");
 

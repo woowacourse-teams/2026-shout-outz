@@ -161,7 +161,7 @@ class ProjectCommentHttpApiTest {
                                                 .description("작성자 프로필 이미지 미디어 ID")
                                                 .optional(),
                                         fieldWithPath("data[].author.avatarUrl").type(STRING)
-                                                .description("작성자 프로필 이미지 공개 URL")
+                                                .description("직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL")
                                                 .optional(),
                                         fieldWithPath("data[].parentId").type(NUMBER)
                                                 .description("부모 루트 댓글 ID")
@@ -350,7 +350,7 @@ class ProjectCommentHttpApiTest {
                                         fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
                                         fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
                                         fieldWithPath("data.author.avatarUrl").type(STRING)
-                                                .description("작성자 프로필 이미지 공개 URL")
+                                                .description("직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL")
                                                 .optional(),
                                         fieldWithPath("data.parentId").type(NUMBER).description("부모 댓글 ID")
                                                 .optional(),
@@ -441,7 +441,7 @@ class ProjectCommentHttpApiTest {
                                         fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
                                         fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
                                         fieldWithPath("data.author.avatarUrl").type(STRING)
-                                                .description("작성자 프로필 이미지 공개 URL")
+                                                .description("직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL")
                                                 .optional(),
                                         fieldWithPath("data.parentId").type(NUMBER).description("부모 댓글 ID")
                                                 .optional(),

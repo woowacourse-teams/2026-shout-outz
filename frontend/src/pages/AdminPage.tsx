@@ -12,6 +12,7 @@ import { CrewApprovalPanel } from '@/components/admin/CrewApprovalPanel';
 import { HomeBannerPanel } from '@/components/admin/HomeBannerPanel';
 import { NewsCreatePanel } from '@/components/admin/NewsCreatePanel';
 import { ProjectApprovalPanel } from '@/components/admin/ProjectApprovalPanel';
+import { ProjectEditPanel } from '@/components/admin/ProjectEditPanel';
 import { ADMIN_TAB_LABELS, ADMIN_TABS, DEFAULT_ADMIN_TAB } from '@/constants/admin';
 import { type AdminTab } from '@/types/admin';
 import { getGithubLoginUrl } from '@/utils/auth';
@@ -92,6 +93,8 @@ function AdminTabPanel({ tab }: { tab: AdminTab }) {
       return <CrewApprovalPanel />;
     case 'projects':
       return <ProjectApprovalPanel />;
+    case 'project-edit':
+      return <ProjectEditPanel />;
     case 'news':
       return <NewsCreatePanel />;
     case 'banners':

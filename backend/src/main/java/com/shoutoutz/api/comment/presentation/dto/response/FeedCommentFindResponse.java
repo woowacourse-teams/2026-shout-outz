@@ -25,7 +25,8 @@ public record FeedCommentFindResponse(
             boolean edited,
             boolean deleted,
             long agreeCount,
-            boolean agreedByMe
+            boolean agreedByMe,
+            boolean isAnonymous
     ) {
 
         public Comment(
@@ -39,7 +40,24 @@ public record FeedCommentFindResponse(
                 boolean edited,
                 boolean deleted
         ) {
-            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted, 0L, false);
+            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted, 0L, false, false);
+        }
+
+        public Comment(
+                Long id,
+                String content,
+                Author author,
+                Long parentId,
+                Instant createdAt,
+                Instant updatedAt,
+                boolean editable,
+                boolean edited,
+                boolean deleted,
+                long agreeCount,
+                boolean agreedByMe
+        ) {
+            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted,
+                    agreeCount, agreedByMe, false);
         }
     }
 
@@ -49,7 +67,7 @@ public record FeedCommentFindResponse(
             String displayName,
             UserType userType,
             String track,
-            Short cohort,
+            Boolean isCurrent,
             Long avatarImageId,
             String avatarUrl
     ) {
