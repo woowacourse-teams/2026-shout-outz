@@ -4,6 +4,7 @@ import { adminHandlers } from '@/api/mock/admin';
 import { homeBanners } from '@/api/mock/home';
 import { getFeedList } from '@/api/mock/feed';
 import { getNewsDetail, getNewsList } from '@/api/mock/news';
+import { notificationHandlers } from '@/api/mock/notification';
 import { getCohorts, getTechTags, searchCrewList } from '@/api/mock/project';
 import projects from '@/api/mock/projects.json';
 import { getUserFeeds, getUserProfile, getUserProjects, updateProfile } from '@/api/mock/user';
@@ -413,4 +414,5 @@ export const handlers = [
   }),
 
   ...adminHandlers,
+  ...notificationHandlers,
 ];
