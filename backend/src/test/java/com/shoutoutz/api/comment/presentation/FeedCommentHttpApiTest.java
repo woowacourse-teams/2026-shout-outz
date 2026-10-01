@@ -176,7 +176,7 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data[].author.track").type(STRING)
                                                 .description("작성자 트랙. 크루가 아니거나 타인의 익명 댓글이면 null").optional(),
                                         fieldWithPath("data[].author.cohort").type(NUMBER)
-                                                .description("작성자 기수. 실명 작성자가 크루일 때만 포함하고 익명 작성자이면 제외").optional(),
+                                                .description("작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외").optional(),
                                         fieldWithPath("data[].author.isCurrent").type(BOOLEAN)
                                                 .description("작성자가 현재 기수 크루인지 여부. 크루가 아니면 null").optional(),
                                         fieldWithPath("data[].author.avatarImageId").type(NUMBER)
@@ -348,7 +348,7 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
                                         fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
                                         fieldWithPath("data.author.cohort").type(NUMBER)
-                                                .description("작성자 기수. 실명 작성자가 크루일 때만 포함하고 익명 작성자이면 제외").optional(),
+                                                .description("작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외").optional(),
                                         fieldWithPath("data.author.isCurrent").type(BOOLEAN)
                                                 .description("작성자가 현재 기수 크루인지 여부. 크루가 아니면 null").optional(),
                                         fieldWithPath("data.author.avatarUrl").type(STRING)
@@ -445,7 +445,7 @@ class FeedCommentHttpApiTest {
                                         fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
                                         fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
                                         fieldWithPath("data.author.cohort").type(NUMBER)
-                                                .description("작성자 기수. 실명 작성자가 크루일 때만 포함하고 익명 작성자이면 제외").optional(),
+                                                .description("작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외").optional(),
                                         fieldWithPath("data.author.isCurrent").type(BOOLEAN)
                                                 .description("작성자가 현재 기수 크루인지 여부. 크루가 아니면 null").optional(),
                                         fieldWithPath("data.author.avatarUrl").type(STRING)

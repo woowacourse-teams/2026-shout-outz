@@ -44,7 +44,7 @@ public record FeedCommandResponse(
                 feed.title(),
                 feed.content(),
                 feed.isAnonymous(),
-                Author.from(feed.author(), feed.isAnonymous(), urls, fallbackUrls),
+                Author.from(feed.author(), urls, fallbackUrls),
                 feed.categories().stream().map(Category::from).toList(),
                 feed.media().stream().map(media -> Media.from(media, urls)).toList(),
                 feed.linkPreview(),
@@ -77,7 +77,6 @@ public record FeedCommandResponse(
 
         private static Author from(
                 FeedItem.Author author,
-                boolean anonymous,
                 Map<Long, URI> mediaUrls,
                 Map<Long, String> userAvatarUrls
         ) {
@@ -87,7 +86,7 @@ public record FeedCommandResponse(
                     author.displayName(),
                     author.userType(),
                     trackValue(author.userType(), author.track()),
-                    cohortValue(author, anonymous),
+                    cohortValue(author),
                     isCurrentValue(author.userType(), author.cohort()),
                     avatarUrl(author, mediaUrls, userAvatarUrls)
             );
@@ -109,9 +108,8 @@ public record FeedCommandResponse(
             return userType == UserType.WOOWACOURSE_CREW && track != null ? track.getValue() : null;
         }
 
-        private static Short cohortValue(FeedItem.Author author, boolean anonymous) {
-            if (anonymous
-                    || author.userId() == null
+        private static Short cohortValue(FeedItem.Author author) {
+            if (author.userId() == null
                     || author.userType() != UserType.WOOWACOURSE_CREW
                     || author.cohort() == null) {
                 return null;

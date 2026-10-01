@@ -315,7 +315,7 @@ class FeedCommentServiceTest {
     }
 
     @Test
-    @DisplayName("익명 댓글 작성자가 본인이면 식별 정보와 트랙은 보여주고 기수는 숨긴다.")
+    @DisplayName("익명 댓글 작성자가 본인이면 전체 작성자 정보를 조회한다.")
     void exposesFullAuthorOfAnonymousCommentToOwner() {
         givenActiveFeed();
         givenAnonymousCommentPage();
@@ -333,7 +333,7 @@ class FeedCommentServiceTest {
         Comment comment = findFirstCommentAs(AUTHOR_ID);
 
         assertThat(comment.author().userId()).isEqualTo(AUTHOR_ID);
-        assertThat(comment.author().cohort()).isNull();
+        assertThat(comment.author().cohort()).isEqualTo((short) 8);
         assertThat(comment.author().isCurrent()).isTrue();
         assertThat(comment.author().track()).isEqualTo("BACKEND");
     }

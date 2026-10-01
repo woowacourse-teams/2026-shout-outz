@@ -180,7 +180,7 @@ public class FeedCommentService {
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
-                        cohortValue(author, savedComment.isAnonymous()),
+                        cohortValue(author),
                         isCurrent(author),
                         userAvatarUrlResolver.resolve(
                                 author.getUserId(),
@@ -285,7 +285,7 @@ public class FeedCommentService {
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
-                        cohortValue(author, comment.isAnonymous()),
+                        cohortValue(author),
                         isCurrent(author),
                         userAvatarUrlResolver.resolve(
                                 author.getUserId(),
@@ -359,9 +359,8 @@ public class FeedCommentService {
         return profile.getCohort() == Cohort.current();
     }
 
-    private Short cohortValue(UserProfile profile, boolean anonymous) {
-        if (anonymous
-                || profile.getUserType() != UserType.WOOWACOURSE_CREW
+    private Short cohortValue(UserProfile profile) {
+        if (profile.getUserType() != UserType.WOOWACOURSE_CREW
                 || profile.getCohort() == null) {
             return null;
         }
@@ -427,7 +426,7 @@ public class FeedCommentService {
                                 author.getDisplayName().value(),
                                 author.getUserType(),
                                 trackValue(author),
-                                cohortValue(author, comment.isAnonymous()),
+                                cohortValue(author),
                                 isCurrent(author),
                                 author.getAvatarImageId(),
                                 avatarUrls.get(author.getUserId())
