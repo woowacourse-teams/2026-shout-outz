@@ -110,7 +110,6 @@ export function ProjectDetailContent({ slug }: { slug: string }) {
                   <ProjectMemberProfile
                     key={member.handle ?? `${member.displayName}-${index}`}
                     member={member}
-                    isAuthor={index === 0}
                   />
                 ))}
               </ul>
@@ -138,22 +137,13 @@ export function ProjectDetailContent({ slug }: { slug: string }) {
   );
 }
 
-function ProjectMemberProfile({
-  member,
-  isAuthor,
-}: {
-  member: ProjectDetail['members'][number];
-  isAuthor: boolean;
-}) {
+function ProjectMemberProfile({ member }: { member: ProjectDetail['members'][number] }) {
   const profile = (
     <>
       <Avatar src={member.avatarUrl} name={member.displayName} alt="" />
       <div className="min-w-0 text-sm">
         <p className="flex items-center gap-1.5 font-semibold break-words">
-          <span>
-            {member.displayName}
-            {isAuthor ? ' (작성자)' : ''}
-          </span>
+          <span>{member.displayName}</span>
           <CrewStatusBadge userType={member.userType} cohort={member.cohort} />
         </p>
         <p className="text-gray-500">
