@@ -116,27 +116,28 @@ sudo chmod 0600 /opt/shout-outz/shout-outz.env
 
 ### CloudWatch Agent
 
-애플리케이션 로그와 EC2 기본 지표에 없는 메모리·디스크·swap 사용률을 CloudWatch로 보낸다. 설정은 `cloudwatch/cloudwatch-agent-dev.json`에 두며, 배포로 자동 반영되지 않으므로 서버에 직접 적용한다.
+애플리케이션 로그와 EC2 기본 지표에 없는 메모리·디스크·swap 사용률을 CloudWatch로 보낸다. 설정은 환경별로 `cloudwatch/cloudwatch-agent-dev.json`, `cloudwatch/cloudwatch-agent-prod.json`에 두며, 배포로 자동 반영되지 않으므로 서버에 직접 적용한다.
 
 | 대상 | 보내는 곳 |
 |------|----------|
-| `/var/log/shout-outz/app.log` | 로그 그룹 `/shout-outz/dev/app` (30일 보관) |
+| `/var/log/shout-outz/app.log` | 로그 그룹 `/shout-outz/dev/app`, `/shout-outz/prod/app` (30일 보관) |
 | `mem_used_percent`, `swap_used_percent`, `disk_used_percent` | 지표 네임스페이스 `ShoutOutz` |
 
-공용 AWS 계정이라 기본 네임스페이스 `CWAgent`는 다른 팀 지표와 섞이므로 `ShoutOutz`로 분리한다. `multi_line_start_pattern`은 날짜로 시작하는 줄을 로그 한 건의 시작으로 보아, 스택트레이스를 한 건으로 묶는다.
+공용 AWS 계정이라 기본 네임스페이스 `CWAgent`는 다른 팀 지표와 섞이므로 `ShoutOutz`로 분리한다. 지표에는 `InstanceId`가 붙어 dev와 prod 서버가 구분된다. `multi_line_start_pattern`은 날짜로 시작하는 줄을 로그 한 건의 시작으로 보아, 스택트레이스를 한 건으로 묶는다.
 
-EC2 인스턴스 역할에 `CloudWatchAgentServerPolicy` 권한이 있어야 한다. ARM64용 패키지를 설치하고 설정을 적용한다.
+EC2 인스턴스 역할에 `CloudWatchAgentServerPolicy` 권한이 있어야 한다. ARM64용 패키지를 설치하고, 서버 환경에 맞는 설정 파일(`ENV`에 `dev` 또는 `prod`)을 적용한다.
 
 ```bash
+ENV=dev
 cd /tmp
 wget https://amazoncloudwatch-agent.s3.amazonaws.com/ubuntu/arm64/latest/amazon-cloudwatch-agent.deb
 sudo dpkg -i -E ./amazon-cloudwatch-agent.deb
-sudo install -m 0644 cloudwatch-agent-dev.json /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+sudo install -m 0644 "cloudwatch-agent-${ENV}.json" /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s \
   -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 ```
 
-`install` 명령의 원본은 저장소의 `cloudwatch/cloudwatch-agent-dev.json`을 서버로 옮긴 파일이다. `fetch-config`는 이 파일을 `/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/file_amazon-cloudwatch-agent.json`으로 옮기므로, 적용 후에는 원래 경로에 파일이 남지 않는다. 서버 설정이 저장소와 같은지는 옮겨진 파일과 저장소 파일의 체크섬을 비교해 확인한다.
+`install` 명령의 원본은 저장소의 `cloudwatch/cloudwatch-agent-${ENV}.json`을 서버로 옮긴 파일이다. `fetch-config`는 이 파일을 `/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/file_amazon-cloudwatch-agent.json`으로 옮기므로, 적용 후에는 원래 경로에 파일이 남지 않는다. 서버 설정이 저장소와 같은지는 옮겨진 파일과 저장소 파일의 체크섬을 비교해 확인한다.
 
 ```bash
 sudo md5sum /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.d/file_amazon-cloudwatch-agent.json
@@ -149,7 +150,7 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a status
 sudo grep -iE "error|denied" /opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log | tail -5
 ```
 
-설정을 바꿀 때는 저장소 파일을 먼저 수정해 PR로 남긴 뒤 서버에 같은 방법으로 적용한다. 서버에서 직접 고치면 변경 이유가 남지 않고 저장소와 서버가 달라진다. prod 서버를 만들 때는 이 파일을 복사해 `log_group_name`만 `/shout-outz/prod/app`으로 바꾼 `cloudwatch-agent-prod.json`을 추가한다.
+설정을 바꿀 때는 저장소 파일을 먼저 수정해 PR로 남긴 뒤 서버에 같은 방법으로 적용한다. 서버에서 직접 고치면 변경 이유가 남지 않고 저장소와 서버가 달라진다. 두 설정 파일은 `log_group_name`만 다르므로, 지표나 수집 대상을 바꿀 때는 두 파일을 함께 수정한다.
 
 ## AWS 구성
 
