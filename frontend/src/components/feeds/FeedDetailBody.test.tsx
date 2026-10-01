@@ -18,6 +18,8 @@ const feed = (overrides: Partial<Feed> = {}): Feed => ({
   },
   categories: [],
   media: [],
+  feedType: 'POST',
+  isAnonymous: false,
   likeCount: 0,
   likedByMe: false,
   bookmarkCount: 0,

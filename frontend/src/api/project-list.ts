@@ -1,6 +1,6 @@
 import { infiniteQueryOptions, keepPreviousData, queryOptions } from '@tanstack/react-query';
 import type { ProjectFilterOptionsSuccessResponse } from '@/api/generated/schema';
-import { DEFAULT_PROJECT_FILTER } from '@/constants/project';
+import { DEFAULT_PROJECT_FILTER, PROJECT_PAGE_SIZE } from '@/constants/project';
 import {
   type ProjectFilter,
   type ProjectFilterOptions,
@@ -36,7 +36,11 @@ export async function fetchProjectListPage(
       method: 'get',
       signal,
       retry: 0,
-      searchParams: { ...toSearchParams(filter), ...(cursor ? { cursor } : {}) },
+      searchParams: {
+        ...toSearchParams(filter),
+        size: PROJECT_PAGE_SIZE,
+        ...(cursor ? { cursor } : {}),
+      },
     },
   );
 
@@ -50,9 +54,18 @@ export async function fetchProjectListPage(
   };
 }
 
+/** 전체 프로젝트를 받는다. 상세 페이지 SSG 경로를 모으는 용도라 `nextCursor`를 따라 끝까지 요청한다. */
 export async function fetchProjectList(signal?: AbortSignal): Promise<ProjectSummary[]> {
-  const page = await fetchProjectListPage(DEFAULT_PROJECT_FILTER, undefined, signal);
-  return page.projects;
+  const projects: ProjectSummary[] = [];
+  let cursor: string | undefined;
+
+  do {
+    const page = await fetchProjectListPage(DEFAULT_PROJECT_FILTER, cursor, signal);
+    projects.push(...page.projects);
+    cursor = page.meta.hasNext ? (page.meta.nextCursor ?? undefined) : undefined;
+  } while (cursor);
+
+  return projects;
 }
 
 export const projectListQueryOptions = () =>

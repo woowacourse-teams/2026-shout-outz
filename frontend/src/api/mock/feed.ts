@@ -27,6 +27,8 @@ const feed = (feedId: number, author: FeedAuthor, content: string, createdAt: st
   author,
   categories: [],
   media: [],
+  feedType: 'POST',
+  isAnonymous: false,
   likeCount: 0,
   likedByMe: false,
   bookmarkCount: 0,

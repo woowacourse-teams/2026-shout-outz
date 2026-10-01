@@ -8,7 +8,6 @@ import { setupServer } from 'msw/node';
 import { FeedList } from '@/components/feeds/FeedList';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { PopularFeedList } from '@/components/feeds/PopularFeedList';
-import { findFirstUrl } from '@/utils/feed';
 import { Comments } from '@/components/feed-comments/Comments';
 import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
 import { createFeedHandlers, mockFeeds } from '@/mocks/handlers';
@@ -179,15 +178,17 @@ test('카드는 본문의 코드 블록을 빼고 보여준다', async () => {
   expect(card).toHaveTextContent('설정은 이렇게 했다.');
   expect(card).not.toHaveTextContent('const retry = 3;');
 });
-test('본문의 첫 번째 링크를 미리보기로 표시한다', async () => {
-  const previewUrl = findFirstUrl(mockFeeds[0]!.content);
-  if (!previewUrl) throw new Error('첫 번째 목 피드에 링크가 필요합니다.');
+test('서버가 준 링크 미리보기를 표시한다', async () => {
+  const preview = mockFeeds[0]!.linkPreview;
+  if (!preview?.url || !preview.title)
+    throw new Error('첫 번째 목 피드에 링크 미리보기가 필요합니다.');
   show(<FeedList sort="LATEST" />);
   const first = (await screen.findAllByRole('article'))[0]!;
-  expect(within(first).getByRole('link', { name: `${previewUrl} 링크 열기` })).toHaveAttribute(
+  expect(within(first).getByRole('link', { name: `${preview.title} 링크 열기` })).toHaveAttribute(
     'href',
-    previewUrl,
+    preview.url,
   );
+  expect(within(first).getByText(preview.description!)).toBeInTheDocument();
 });
 test('댓글 정렬 선택 없이 최신순으로 조회한다', async () => {
   let requestedSort: string | null = null;

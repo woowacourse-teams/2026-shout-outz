@@ -2,7 +2,6 @@ import type { Feed } from '@/apis/feed';
 import { Image } from '@/components/Image';
 import { FeedMarkdown } from '@/components/feeds/FeedMarkdown';
 import { LinkPreview } from '@/components/feeds/LinkPreview';
-import { findFirstUrl } from '@/utils/feed';
 
 /**
  * 피드 상세의 제목·본문·첨부. 전체 내용은 여기서만 보여준다.
@@ -12,7 +11,7 @@ import { findFirstUrl } from '@/utils/feed';
  */
 export function FeedDetailBody({ feed }: { feed: Feed }) {
   const media = [...feed.media].sort((a, b) => a.displayOrder - b.displayOrder);
-  const firstUrl = findFirstUrl(feed.content);
+  const linkPreview = feed.linkPreview;
 
   return (
     <>
@@ -22,9 +21,9 @@ export function FeedDetailBody({ feed }: { feed: Feed }) {
       <div className="mt-2 space-y-3 text-base leading-7 break-words text-gray-800">
         <FeedMarkdown content={feed.content} />
       </div>
-      {firstUrl && (
+      {linkPreview?.url && (
         <div className="mt-4">
-          <LinkPreview url={firstUrl} />
+          <LinkPreview {...linkPreview} url={linkPreview.url} />
         </div>
       )}
       {media.length > 0 && (
