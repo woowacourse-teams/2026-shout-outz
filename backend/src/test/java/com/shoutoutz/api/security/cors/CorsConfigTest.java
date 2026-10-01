@@ -1,5 +1,6 @@
 package com.shoutoutz.api.security.cors;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -46,6 +47,14 @@ class CorsConfigTest {
                 .andExpect(header().string(
                         HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS,
                         "true"
+                ))
+                .andExpect(header().string(
+                        HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
+                        containsString("baggage")
+                ))
+                .andExpect(header().string(
+                        HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
+                        containsString("sentry-trace")
                 ));
     }
 
@@ -64,7 +73,11 @@ class CorsConfigTest {
     private static MockHttpServletRequestBuilder corsPreflight(String origin) {
         return options(API_PATH)
                 .header(HttpHeaders.ORIGIN, origin)
-                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, HttpMethod.GET.name());
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, HttpMethod.GET.name())
+                .header(
+                        HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS,
+                        "baggage,sentry-trace"
+                );
     }
 
     @RestController
