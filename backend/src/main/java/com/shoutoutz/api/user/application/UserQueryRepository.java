@@ -9,9 +9,10 @@ import com.shoutoutz.api.user.application.dto.UserSearchPage;
  */
 public interface UserQueryRepository {
 
-    UserProfileCounts countByUserId(long userId);
-
-    UserProfileCounts countByUserId(long userId, boolean includePending);
+    /**
+     * @param ownerView 본인 조회 여부. true이면 승인 대기 프로젝트와 익명 피드도 센다.
+     */
+    UserProfileCounts countByUserId(long userId, boolean ownerView);
 
     UserSearchPage searchWoowaMember(
             String keyword,
