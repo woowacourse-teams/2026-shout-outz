@@ -1,6 +1,13 @@
 import { http, HttpResponse } from 'msw';
 import type { Feed } from '@/apis/feed';
 import type { FeedComment } from '@/apis/feed-comment';
+import { findFirstUrl } from '@/utils/feed';
+
+/** 서버처럼 본문 첫 URL로 링크 미리보기를 만든다. 작성·수정 직후는 OG 수집 전이라 url만 채운다. */
+const linkPreviewOf = (content: string): Feed['linkPreview'] => {
+  const url = findFirstUrl(content);
+  return url ? { url, title: null, description: null, imageUrl: null, siteName: null } : undefined;
+};
 export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
   feedId: index + 1,
   title: ['WebSocket 동기화 개선기', 'TanStack Query 서버 상태 관리', '기억에 남는 트러블슈팅'][
@@ -21,7 +28,21 @@ export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
     avatarUrl: null,
   },
   categories: [{ categoryId: 1, slug: 'backend', displayName: '개발 이야기', type: 'GENERAL' }],
+  linkPreview:
+    index % 3 === 0
+      ? {
+          url: 'https://woojin.log/tech/redis-pub-sub',
+          title: '여러 서버의 WebSocket 세션 묶기',
+          description:
+            '여러 서버에 흩어진 WebSocket 세션을 Redis Pub/Sub으로 묶은 과정을 정리했습니다.',
+          // 첫 피드는 OG 이미지가 있는 경우, 네 번째 피드는 없는 경우를 보여준다.
+          imageUrl: index === 0 ? 'https://picsum.photos/seed/redis-pub-sub/1200/630' : null,
+          siteName: 'woojin.log',
+        }
+      : undefined,
   media: [],
+  feedType: 'POST',
+  isAnonymous: false,
   likeCount: 0,
   likedByMe: false,
   bookmarkCount: 0,
@@ -53,6 +74,7 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
             avatarUrl: null,
           },
           parentId: null,
+          isAnonymous: false,
           createdAt: '2026-09-14T00:00:00Z',
           updatedAt: '2026-09-14T00:00:00Z',
           editable: true,
@@ -150,6 +172,7 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
         feedId: sequence++,
         title: body.title,
         content: body.content,
+        linkPreview: linkPreviewOf(body.content),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -216,6 +239,7 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
         ...existing,
         title: body.title,
         content: body.content,
+        linkPreview: linkPreviewOf(body.content),
         categories: body.categoryIds.map((id) =>
           id === 1
             ? { categoryId: 1, slug: 'backend', displayName: '백엔드', type: 'GENERAL' }
@@ -349,6 +373,7 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
           avatarUrl: null,
         },
         parentId: null,
+        isAnonymous: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         editable: true,
