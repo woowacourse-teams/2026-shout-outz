@@ -153,8 +153,17 @@ public record FeedItem(
             long categoryId,
             String slug,
             String displayName,
+            FeedType feedType,
             CategoryType type
     ) {
+        public Category(
+                long categoryId,
+                String slug,
+                String displayName,
+                CategoryType type
+        ) {
+            this(categoryId, slug, displayName, FeedType.POST, type);
+        }
     }
 
     public record Media(long mediaId, int displayOrder) {

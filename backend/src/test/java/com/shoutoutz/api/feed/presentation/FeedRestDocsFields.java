@@ -42,6 +42,8 @@ final class FeedRestDocsFields {
                 fieldWithPath("categories[].categoryId").type(NUMBER).description("카테고리 ID"),
                 fieldWithPath("categories[].slug").type(STRING).description("카테고리 slug"),
                 fieldWithPath("categories[].displayName").type(STRING).description("카테고리 표시 이름"),
+                new EnumFields(FeedType.class).withPath("categories[].feedType")
+                        .description("카테고리가 연결된 피드 유형"),
                 new EnumFields(CategoryType.class).withPath("categories[].type").description("카테고리 유형"),
                 fieldWithPath("media").type(ARRAY).description("본문 미디어 목록"),
                 fieldWithPath("media[].mediaId").type(NUMBER).description("본문 미디어 ID"),
@@ -93,6 +95,8 @@ final class FeedRestDocsFields {
                 fieldWithPath("categories[].categoryId").type(NUMBER).description("카테고리 ID"),
                 fieldWithPath("categories[].slug").type(STRING).description("카테고리 slug"),
                 fieldWithPath("categories[].displayName").type(STRING).description("카테고리 표시 이름"),
+                new EnumFields(FeedType.class).withPath("categories[].feedType")
+                        .description("카테고리가 연결된 피드 유형"),
                 new EnumFields(CategoryType.class).withPath("categories[].type").description("카테고리 유형"),
                 fieldWithPath("media").type(ARRAY).description("본문 미디어 목록"),
                 fieldWithPath("media[].url").type(STRING).description("본문 미디어 공개 URL"),

@@ -7,6 +7,7 @@ import com.shoutoutz.api.category.domain.Category;
 import com.shoutoutz.api.category.domain.CategoryRepository;
 import com.shoutoutz.api.category.domain.CategoryType;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
+import com.shoutoutz.api.feed.domain.FeedType;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,11 @@ class CategoryRepositoryIntegrationTest {
         assertThat(categories)
                 .extracting(Category::getType)
                 .containsExactlyInAnyOrder(CategoryType.GENERAL, CategoryType.EVENT);
+        assertThat(categoryRepository.findAllActiveByFeedType(FeedType.POST))
+                .filteredOn(category -> category.getId() == generalCategoryId
+                        || category.getId() == eventCategoryId)
+                .extracting(Category::getFeedType)
+                .containsOnly(FeedType.POST);
     }
 
     @Test
@@ -76,6 +82,18 @@ class CategoryRepositoryIntegrationTest {
     }
 
     @Test
+    void 카테고리를_질문_피드에_연결한다() {
+        long categoryId = insertCategory(CategoryType.GENERAL, 1, true);
+
+        categoryRepository.saveFeedType(categoryId, FeedType.QUESTION);
+
+        assertThat(categoryRepository.findAllActiveByFeedType(FeedType.QUESTION))
+                .filteredOn(category -> category.getId() == categoryId)
+                .extracting(Category::getFeedType)
+                .containsOnly(FeedType.QUESTION);
+    }
+
+    @Test
     void 중복된_slug나_표시_이름으로_저장할_수_없다() {
         categoryRepository.save(Category.create(
                 "duplicate-category",
@@ -94,7 +112,7 @@ class CategoryRepositoryIntegrationTest {
 
     private long insertCategory(CategoryType type, int displayOrder, boolean active) {
         String token = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-        return jdbcTemplate.queryForObject(
+        long categoryId = jdbcTemplate.queryForObject(
                 """
                         INSERT INTO categories (
                             slug, display_name, category_type, display_order, is_active
@@ -108,5 +126,11 @@ class CategoryRepositoryIntegrationTest {
                 displayOrder,
                 active
         );
+        jdbcTemplate.update(
+                "INSERT INTO category_feed_types (category_id, feed_type) VALUES (?, ?)",
+                categoryId,
+                FeedType.POST.name()
+        );
+        return categoryId;
     }
 }

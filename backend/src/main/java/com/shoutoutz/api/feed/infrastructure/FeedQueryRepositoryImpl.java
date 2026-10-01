@@ -642,10 +642,13 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
             return;
         }
         sql.append("""
-                  AND EXISTS (
+                AND EXISTS (
                       SELECT 1
                       FROM feed_categories filter_pc
                       JOIN categories filter_c ON filter_c.id = filter_pc.category_id
+                      JOIN category_feed_types filter_cft
+                        ON filter_cft.category_id = filter_pc.category_id
+                       AND filter_cft.feed_type = p.feed_type
                       WHERE filter_pc.feed_id = p.id
                         AND filter_pc.category_id = :categoryId
                         AND filter_c.is_active = true
@@ -732,9 +735,14 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
     private Map<Long, List<FeedItem.Category>> loadCategories(List<Long> feedIds) {
         return jdbcTemplate.query(
                 """
-                        SELECT pc.feed_id, c.id, c.slug, c.display_name, c.category_type
+                        SELECT pc.feed_id, c.id, c.slug, c.display_name,
+                               c.category_type, cft.feed_type
                         FROM feed_categories pc
+                        JOIN feeds p ON p.id = pc.feed_id
                         JOIN categories c ON c.id = pc.category_id
+                        JOIN category_feed_types cft
+                          ON cft.category_id = pc.category_id
+                         AND cft.feed_type = p.feed_type
                         WHERE pc.feed_id IN (:feedIds)
                         ORDER BY pc.feed_id, c.display_order, c.id
                         """,
@@ -752,6 +760,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                     resultSet.getLong("id"),
                     resultSet.getString("slug"),
                     resultSet.getString("display_name"),
+                    FeedType.valueOf(resultSet.getString("feed_type")),
                     CategoryType.valueOf(resultSet.getString("category_type"))
             );
             categories.computeIfAbsent(feedId, ignored -> new ArrayList<>()).add(category);

@@ -49,6 +49,10 @@ class FeedRepositoryIntegrationTest {
         Instant base = Instant.parse("2026-09-11T00:00:00Z");
 
         Feed post = saveFeed(authorId, "일반 포스트", base, categoryId);
+        jdbcTemplate.update(
+                "INSERT INTO category_feed_types (category_id, feed_type) VALUES (?, 'QUESTION')",
+                categoryId
+        );
         Feed question = feedRepository.save(Feed.create(
                 authorId,
                 FeedType.QUESTION,
@@ -80,10 +84,16 @@ class FeedRepositoryIntegrationTest {
                 .containsExactly(question.getId());
         assertThat(questionPage.items()).extracting(FeedItem::feedType)
                 .containsOnly(FeedType.QUESTION);
+        assertThat(questionPage.items().getFirst().categories())
+                .extracting(FeedItem.Category::feedType)
+                .containsOnly(FeedType.QUESTION);
         assertThat(questionPage.totalCount()).isEqualTo(1L);
         assertThat(postPage.items()).extracting(FeedItem::feedId)
                 .containsExactly(post.getId());
         assertThat(postPage.items()).extracting(FeedItem::feedType)
+                .containsOnly(FeedType.POST);
+        assertThat(postPage.items().getFirst().categories())
+                .extracting(FeedItem.Category::feedType)
                 .containsOnly(FeedType.POST);
         assertThat(postPage.totalCount()).isEqualTo(1L);
     }
@@ -513,13 +523,18 @@ class FeedRepositoryIntegrationTest {
 
     private long insertCategory(boolean active) {
         String token = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-        return jdbcTemplate.queryForObject(
+        long categoryId = jdbcTemplate.queryForObject(
                 "INSERT INTO categories (slug, display_name, is_active) VALUES (?, ?, ?) RETURNING id",
                 Long.class,
                 "feed-" + token,
                 "카테고리 " + token,
                 active
         );
+        jdbcTemplate.update(
+                "INSERT INTO category_feed_types (category_id, feed_type) VALUES (?, 'POST')",
+                categoryId
+        );
+        return categoryId;
     }
 
     private long insertMedia(long userId, String purpose, String status) {

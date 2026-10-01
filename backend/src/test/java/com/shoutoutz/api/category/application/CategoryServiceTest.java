@@ -17,6 +17,7 @@ import com.shoutoutz.api.category.presentation.dto.request.CategoryUpdateRequest
 import com.shoutoutz.api.category.presentation.dto.response.CategoryFindAllResponse;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.util.List;
 import java.util.Optional;
@@ -58,6 +59,18 @@ class CategoryServiceTest {
 
         assertThat(response).hasSize(1);
         assertThat(response.getFirst().type()).isEqualTo(CategoryType.GENERAL);
+        assertThat(response.getFirst().feedType()).isEqualTo(FeedType.POST);
+    }
+
+    @Test
+    void 피드_유형에_맞는_활성_카테고리_목록을_반환한다() {
+        when(categoryRepository.findAllActiveByFeedType(FeedType.QUESTION))
+                .thenReturn(List.of(category));
+
+        List<CategoryFindAllResponse> response = categoryService.findAllCategories(FeedType.QUESTION);
+
+        assertThat(response).hasSize(1);
+        verify(categoryRepository).findAllActiveByFeedType(FeedType.QUESTION);
     }
 
     @Test
@@ -82,6 +95,7 @@ class CategoryServiceTest {
 
         assertThat(response.categoryId()).isEqualTo(2L);
         assertThat(response.active()).isTrue();
+        verify(categoryRepository).saveFeedType(2L, FeedType.POST);
     }
 
     @Test

@@ -5,6 +5,7 @@ import com.shoutoutz.api.category.domain.CategoryErrorCode;
 import com.shoutoutz.api.category.domain.CategoryRepository;
 import com.shoutoutz.api.category.domain.CategoryType;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
+import com.shoutoutz.api.feed.domain.FeedType;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -27,7 +28,9 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     public Category save(Category category) {
         try {
-            return insertCategory(category);
+            Category savedCategory = insertCategory(category);
+            saveFeedType(savedCategory.getId(), category.getFeedType());
+            return savedCategory;
         } catch (DataIntegrityViolationException exception) {
             throw translateException(exception);
         }
@@ -53,7 +56,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
                         RETURNING id, slug, display_name, category_type, display_order, is_active
                         """,
                 categoryParameters(category),
-                (resultSet, rowNumber) -> toCategory(resultSet)
+                (resultSet, rowNumber) -> toCategory(resultSet, category.getFeedType(), false)
         );
     }
 
@@ -68,7 +71,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
                         RETURNING id, slug, display_name, category_type, display_order, is_active
                         """,
                 categoryParameters(category).addValue("categoryId", category.getId()),
-                (resultSet, rowNumber) -> toCategory(resultSet)
+                (resultSet, rowNumber) -> toCategory(resultSet, category.getFeedType(), false)
         );
     }
 
@@ -85,12 +88,16 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     public Optional<Category> findById(long categoryId) {
         List<Category> categories = jdbcTemplate.query(
                 """
-                        SELECT id, slug, display_name, category_type, display_order, is_active
-                        FROM categories
-                        WHERE id = :categoryId
+                        SELECT c.id, c.slug, c.display_name, c.category_type,
+                               c.display_order, c.is_active, cft.feed_type
+                        FROM categories c
+                        LEFT JOIN category_feed_types cft ON cft.category_id = c.id
+                        WHERE c.id = :categoryId
+                        ORDER BY cft.feed_type
+                        LIMIT 1
                         """,
                 Map.of("categoryId", categoryId),
-                (resultSet, rowNumber) -> toCategory(resultSet)
+                (resultSet, rowNumber) -> toCategory(resultSet, FeedType.POST, true)
         );
         return categories.stream().findFirst();
     }
@@ -98,40 +105,105 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     public List<Category> findAllActive() {
         return jdbcTemplate.query(
-                """
-                        SELECT id, slug, display_name, category_type, display_order, is_active
-                        FROM categories
-                        WHERE is_active = true
-                        ORDER BY display_order, id
-                        """,
-                Map.of(),
-                (resultSet, rowNumber) -> toCategory(resultSet)
+                findAllActiveSql(null),
+                new MapSqlParameterSource(),
+                (resultSet, rowNumber) -> toCategory(resultSet, FeedType.POST, true)
+        );
+    }
+
+    @Override
+    public List<Category> findAllActiveByFeedType(FeedType feedType) {
+        return jdbcTemplate.query(
+                findAllActiveSql(feedType),
+                categoryParameters(feedType),
+                (resultSet, rowNumber) -> toCategory(resultSet, feedType, true)
         );
     }
 
     @Override
     public List<Category> findAllActiveByIds(List<Long> categoryIds) {
+        return findAllActiveByIds(categoryIds, null);
+    }
+
+    @Override
+    public List<Category> findAllActiveByIds(List<Long> categoryIds, FeedType feedType) {
         if (categoryIds.isEmpty()) {
             return List.of();
         }
         return jdbcTemplate.query(
-                """
-                        SELECT id, slug, display_name, category_type, display_order, is_active
-                        FROM categories
-                        WHERE id IN (:categoryIds)
-                          AND is_active = true
-                        """,
-                Map.of("categoryIds", categoryIds),
-                (resultSet, rowNumber) -> toCategory(resultSet)
+                findActiveByIdsSql(feedType),
+                categoryParameters(categoryIds, feedType),
+                (resultSet, rowNumber) -> toCategory(resultSet, feedType, true)
         );
     }
 
-    private Category toCategory(ResultSet resultSet) throws SQLException {
+    @Override
+    public void saveFeedType(long categoryId, FeedType feedType) {
+        jdbcTemplate.update(
+                """
+                        INSERT INTO category_feed_types (category_id, feed_type)
+                        VALUES (:categoryId, :feedType)
+                        ON CONFLICT (category_id, feed_type) DO NOTHING
+                        """,
+                new MapSqlParameterSource()
+                        .addValue("categoryId", categoryId)
+                        .addValue("feedType", feedType.name())
+        );
+    }
+
+    private String findAllActiveSql(FeedType feedType) {
+        String feedTypeCondition = feedType == null ? "" : "  AND cft.feed_type = :feedType\n";
+        return """
+                SELECT c.id, c.slug, c.display_name, c.category_type,
+                       c.display_order, c.is_active, cft.feed_type
+                FROM categories c
+                JOIN category_feed_types cft ON cft.category_id = c.id
+                WHERE c.is_active = true
+                """ + feedTypeCondition + """
+                ORDER BY c.display_order, c.id, cft.feed_type
+                """;
+    }
+
+    private String findActiveByIdsSql(FeedType feedType) {
+        String feedTypeCondition = feedType == null ? "" : "  AND cft.feed_type = :feedType\n";
+        return """
+                SELECT c.id, c.slug, c.display_name, c.category_type,
+                       c.display_order, c.is_active, cft.feed_type
+                FROM categories c
+                JOIN category_feed_types cft ON cft.category_id = c.id
+                WHERE c.id IN (:categoryIds)
+                  AND c.is_active = true
+                """ + feedTypeCondition + """
+                ORDER BY c.display_order, c.id, cft.feed_type
+                """;
+    }
+
+    private MapSqlParameterSource categoryParameters(FeedType feedType) {
+        return new MapSqlParameterSource()
+                .addValue("feedType", feedType == null ? null : feedType.name());
+    }
+
+    private MapSqlParameterSource categoryParameters(
+            List<Long> categoryIds,
+            FeedType feedType
+    ) {
+        return new MapSqlParameterSource()
+                .addValue("categoryIds", categoryIds)
+                .addValue("feedType", feedType == null ? null : feedType.name());
+    }
+
+    private Category toCategory(
+            ResultSet resultSet,
+            FeedType defaultFeedType,
+            boolean readFeedType
+    ) throws SQLException {
+        String feedType = readFeedType ? resultSet.getString("feed_type") : null;
         return Category.reconstitute(
                 resultSet.getLong("id"),
                 resultSet.getString("slug"),
                 resultSet.getString("display_name"),
                 CategoryType.valueOf(resultSet.getString("category_type")),
+                feedType == null ? defaultFeedType : FeedType.valueOf(feedType),
                 resultSet.getInt("display_order"),
                 resultSet.getBoolean("is_active")
         );
