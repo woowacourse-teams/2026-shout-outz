@@ -7,6 +7,7 @@ import {
   feedQuery,
   updateFeedMutation,
   type Feed,
+  type FeedType,
 } from '@/apis/feed';
 import { myProfileQuery } from '@/apis/user';
 import { categoriesQuery } from '@/apis/category';
@@ -18,14 +19,23 @@ import { analytics } from '@/utils/analytics';
 
 interface FeedFormProps {
   userId: number;
+  feedType?: FeedType;
   initialFeed?: Feed;
   onCancel: () => void;
   onSaved: (feedId: number) => void;
 }
 
-export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormProps) {
+export function FeedForm({
+  userId,
+  feedType = 'POST',
+  initialFeed,
+  onCancel,
+  onSaved,
+}: FeedFormProps) {
+  const effectiveType =
+    initialFeed?.feedType === 'QUESTION' ? 'QUESTION' : initialFeed ? 'POST' : feedType;
   const { data: profile } = useSuspenseQuery(myProfileQuery(userId));
-  const { data: categories } = useSuspenseQuery(categoriesQuery);
+  const { data: categories } = useSuspenseQuery(categoriesQuery(effectiveType));
   const generalCategories = categories.filter((category) => category.type === 'GENERAL');
   const [categoryId, setCategoryId] = useState<string | null>(() => {
     const category = initialFeed?.categories.find((item) => item.type === 'GENERAL');
@@ -53,6 +63,7 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
       const feed = await mutation.mutateAsync({
         title: title.trim(),
         content,
+        ...(!initialFeed ? { feedType: effectiveType } : {}),
         categoryIds: [
           Number(categoryId),
           ...(initialFeed?.categories
@@ -140,7 +151,11 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
           id="feed-title"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder="어떤 이야기인지 한 줄로 알려주세요."
+          placeholder={
+            effectiveType === 'QUESTION'
+              ? '무엇이 궁금한가요?'
+              : '어떤 이야기인지 한 줄로 알려주세요.'
+          }
           disabled={mutation.isPending}
           aria-invalid={titleTooLong || undefined}
           aria-describedby={titleTooLong ? 'feed-title-error' : undefined}
@@ -160,7 +175,11 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
           id="feed-content"
           value={content}
           onChange={(event) => setContent(event.target.value)}
-          placeholder="크루들과 나누고 싶은 기술 이야기나 경험을 적어보세요."
+          placeholder={
+            effectiveType === 'QUESTION'
+              ? '질문 내용을 자세히 적어주세요.'
+              : '크루들과 나누고 싶은 기술 이야기나 경험을 적어보세요.'
+          }
           rows={8}
           disabled={mutation.isPending}
           aria-invalid={tooLong || undefined}
@@ -187,7 +206,13 @@ export function FeedForm({ userId, initialFeed, onCancel, onSaved }: FeedFormPro
           className="flex-1 md:flex-none"
           disabled={invalid || mutation.isPending}
         >
-          {mutation.isPending ? '저장 중…' : initialFeed ? '수정 완료' : '피드 등록하기'}
+          {mutation.isPending
+            ? '저장 중…'
+            : initialFeed
+              ? '수정 완료'
+              : effectiveType === 'QUESTION'
+                ? '질문 등록하기'
+                : '피드 등록하기'}
         </Button>
       </div>
     </form>

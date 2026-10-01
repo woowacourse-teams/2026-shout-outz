@@ -18,16 +18,21 @@ export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
     'TanStack Query를 사용하면서 배운 서버 상태 관리 이야기입니다.\n\n```ts\nawait queryClient.invalidateQueries({ queryKey: ["projects"] });\n```',
     '프로젝트에서 가장 기억에 남는 트러블슈팅은 무엇인가요?',
   ][index % 3]!,
+  isAnonymous: index === 0 || index === 2,
+  feedType: index === 2 || index === 5 ? 'QUESTION' : 'POST',
   author: {
     userId: index + 1,
     handle: `crew${index}`,
     displayName: ['정우진', '김도현', '이지민'][index % 3]!,
     userType: 'WOOWACOURSE_CREW',
     track: index % 2 ? 'FRONTEND' : 'BACKEND',
-    cohort: 6,
+    isCurrent: false,
     avatarUrl: null,
   },
-  categories: [{ categoryId: 1, slug: 'backend', displayName: '개발 이야기', type: 'GENERAL' }],
+  categories:
+    index === 2 || index === 5
+      ? [{ categoryId: 2, slug: 'career', displayName: '진로 고민', type: 'GENERAL' }]
+      : [{ categoryId: 1, slug: 'backend', displayName: '개발 이야기', type: 'GENERAL' }],
   linkPreview:
     index % 3 === 0
       ? {
@@ -41,8 +46,6 @@ export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
         }
       : undefined,
   media: [],
-  feedType: 'POST',
-  isAnonymous: false,
   likeCount: 0,
   likedByMe: false,
   bookmarkCount: 0,
@@ -59,9 +62,10 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
     feeds.map((feed) => [feed.feedId, { likeCount: 12, likedByMe: false }]),
   );
   const getComments = (id: number) => {
-    if (!comments.has(id))
-      comments.set(id, [
-        {
+    if (!comments.has(id)) {
+      const items: FeedComment[] = [];
+      if (id !== 6) {
+        items.push({
           id: id * 10,
           content: '경험을 공유해 주셔서 감사합니다!',
           author: {
@@ -69,7 +73,7 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
             handle: 'woojin',
             displayName: '개발용 사용자',
             userType: 'WOOWACOURSE_CREW',
-            cohort: 8,
+            isCurrent: true,
             track: 'BACKEND',
             avatarUrl: null,
           },
@@ -82,12 +86,72 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
           deleted: false,
           agreeCount: 2,
           agreedByMe: false,
-        },
-      ]);
+        });
+      }
+      if (id === 3) {
+        items.unshift({
+          id: id * 10 + 1,
+          content: '이 댓글은 익명으로 작성했습니다.',
+          author: {
+            userId: null,
+            handle: null,
+            displayName: null,
+            userType: 'WOOWACOURSE_CREW',
+            isCurrent: false,
+            track: null,
+            avatarUrl: null,
+          } as unknown as FeedComment['author'],
+          parentId: null,
+          createdAt: '2026-09-14T01:00:00Z',
+          updatedAt: '2026-09-14T01:00:00Z',
+          editable: false,
+          edited: false,
+          deleted: false,
+          agreeCount: 1,
+          agreedByMe: false,
+          isAnonymous: true,
+        });
+        items.push({
+          id: id * 10 + 2,
+          content: '저도 같은 경험이 있어요.',
+          author: {
+            userId: 2,
+            handle: 'crew1',
+            displayName: '김도현',
+            userType: 'WOOWACOURSE_CREW',
+            isCurrent: false,
+            track: 'FRONTEND',
+            avatarUrl: null,
+          },
+          parentId: id * 10 + 1,
+          createdAt: '2026-09-14T02:00:00Z',
+          updatedAt: '2026-09-14T02:00:00Z',
+          editable: false,
+          edited: false,
+          deleted: false,
+          agreeCount: 0,
+          agreedByMe: false,
+          isAnonymous: false,
+        });
+      }
+      comments.set(id, items);
+    }
     return comments.get(id)!;
   };
   const withFeedState = (feed: Feed) => ({
     ...feed,
+    author:
+      feed.isAnonymous && feed.author.userId !== 1
+        ? ({
+            userId: null,
+            handle: null,
+            displayName: null,
+            userType: feed.author.userType,
+            track: null,
+            isCurrent: feed.author.isCurrent,
+            avatarUrl: null,
+          } as unknown as Feed['author'])
+        : feed.author,
     ...feedLikes.get(feed.feedId),
     commentCount: getComments(feed.feedId).filter((comment) => !comment.deleted).length,
   });
@@ -105,25 +169,49 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
     });
   };
   return [
-    http.get('/api/v1/categories', () =>
+    http.get('/api/v1/categories', ({ request }) =>
       HttpResponse.json({
         status: 'success',
-        data: [
-          {
-            categoryId: 1,
-            slug: 'backend',
-            displayName: '백엔드',
-            type: 'GENERAL',
-            displayOrder: 1,
-          },
-          {
-            categoryId: 3,
-            slug: 'tecode-talk',
-            displayName: '테코드톡',
-            type: 'EVENT',
-            displayOrder: 2,
-          },
-        ],
+        data: (
+          [
+            {
+              categoryId: 1,
+              slug: 'backend',
+              displayName: '백엔드',
+              type: 'GENERAL',
+              feedType: 'POST',
+              displayOrder: 1,
+            },
+            {
+              categoryId: 3,
+              slug: 'tecode-talk',
+              displayName: '테코드톡',
+              type: 'EVENT',
+              feedType: 'POST',
+              displayOrder: 2,
+            },
+            {
+              categoryId: 2,
+              slug: 'career',
+              displayName: '진로 고민',
+              type: 'GENERAL',
+              feedType: 'QUESTION',
+              displayOrder: 1,
+            },
+            {
+              categoryId: 4,
+              slug: 'question-event',
+              displayName: '질문 이벤트',
+              type: 'EVENT',
+              feedType: 'QUESTION',
+              displayOrder: 2,
+            },
+          ] as const
+        ).filter(
+          (category) =>
+            !new URL(request.url).searchParams.has('feedType') ||
+            category.feedType === new URL(request.url).searchParams.get('feedType'),
+        ),
       }),
     ),
     ...(includeProfile
@@ -148,14 +236,16 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
         content: string;
         categoryIds: number[];
         mediaIds: number[];
+        isAnonymous?: boolean;
+        feedType?: 'POST' | 'QUESTION';
       };
       if (
         !body.title?.trim() ||
         Array.from(body.title).length > 100 ||
         !body.content?.trim() ||
-        Array.from(body.content).length > 500 ||
+        Array.from(body.content).length > 5000 ||
         body.categoryIds?.length !== 1 ||
-        body.categoryIds[0] !== 1 ||
+        body.categoryIds[0] !== (body.feedType === 'QUESTION' ? 2 : 1) ||
         body.mediaIds?.length !== 0
       ) {
         return HttpResponse.json(
@@ -173,6 +263,12 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
         title: body.title,
         content: body.content,
         linkPreview: linkPreviewOf(body.content),
+        isAnonymous: body.isAnonymous ?? false,
+        feedType: body.feedType ?? 'POST',
+        categories:
+          body.feedType === 'QUESTION'
+            ? [{ categoryId: 2, slug: 'career', displayName: '진로 고민', type: 'GENERAL' }]
+            : [{ categoryId: 1, slug: 'backend', displayName: '백엔드', type: 'GENERAL' }],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -180,16 +276,12 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
       feedLikes.set(feed.feedId, { likeCount: 0, likedByMe: false });
       return HttpResponse.json({ status: 'success', data: withFeedState(feed) }, { status: 201 });
     }),
-    ...(includeProfile
-      ? [
-          http.get('/api/v1/users/me/summary', () =>
-            HttpResponse.json({
-              status: 'success',
-              data: { handle: 'crew0', displayName: '정우진', avatarUrl: null },
-            }),
-          ),
-        ]
-      : []),
+    http.get('/api/v1/users/me/summary', () =>
+      HttpResponse.json({
+        status: 'success',
+        data: { handle: 'crew0', displayName: '정우진', avatarUrl: null },
+      }),
+    ),
     http.put('/api/v1/feeds/:feedId', async ({ params, request }) => {
       const index = feeds.findIndex((feed) => feed.feedId === Number(params.feedId));
       const existing = feeds[index];
@@ -219,8 +311,11 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
         !body.content?.trim() ||
         Array.from(body.content).length > 500 ||
         !Array.isArray(body.categoryIds) ||
-        body.categoryIds.filter((id) => id === 1).length !== 1 ||
-        body.categoryIds.some((id) => id !== 1 && id !== 3) ||
+        body.categoryIds.filter((id) => id === (existing.feedType === 'QUESTION' ? 2 : 1))
+          .length !== 1 ||
+        body.categoryIds.some(
+          (id) => !(existing.feedType === 'QUESTION' ? [2, 4] : [1, 3]).includes(id),
+        ) ||
         new Set(body.categoryIds).size !== body.categoryIds.length ||
         !Array.isArray(body.mediaIds) ||
         new Set(body.mediaIds).size !== body.mediaIds.length ||
@@ -243,7 +338,16 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
         categories: body.categoryIds.map((id) =>
           id === 1
             ? { categoryId: 1, slug: 'backend', displayName: '백엔드', type: 'GENERAL' }
-            : { categoryId: 3, slug: 'tecode-talk', displayName: '테코드톡', type: 'EVENT' },
+            : id === 2
+              ? { categoryId: 2, slug: 'career', displayName: '진로 고민', type: 'GENERAL' }
+              : id === 3
+                ? { categoryId: 3, slug: 'tecode-talk', displayName: '테코드톡', type: 'EVENT' }
+                : {
+                    categoryId: 4,
+                    slug: 'question-event',
+                    displayName: '질문 이벤트',
+                    type: 'EVENT',
+                  },
         ),
         media: body.mediaIds.map((mediaId, displayOrder) => ({
           displayOrder,
@@ -315,11 +419,25 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
       const url = new URL(request.url);
       const offset = Number(url.searchParams.get('cursor') ?? 0);
       const data =
-        url.searchParams.get('categoryId') && url.searchParams.get('categoryId') !== '1'
+        url.searchParams.get('categoryId') &&
+        !['1', '2'].includes(url.searchParams.get('categoryId')!)
           ? []
-          : url.searchParams.get('sort') === 'POPULAR'
-            ? [...feeds].reverse()
-            : feeds;
+          : feeds
+              .filter((feed) => {
+                const type = url.searchParams.get('type');
+                const keyword = url.searchParams.get('keyword')?.toLocaleLowerCase();
+                const waiting = url.searchParams.get('sort') === 'WAITING';
+                return (
+                  (!type || feed.feedType === type) &&
+                  (!waiting ||
+                    (feed.feedType === 'QUESTION' && getComments(feed.feedId).length === 0)) &&
+                  (!keyword ||
+                    `${feed.title} ${feed.content}`.toLocaleLowerCase().includes(keyword))
+                );
+              })
+              .sort((a, b) =>
+                url.searchParams.get('sort') === 'POPULAR' ? b.feedId - a.feedId : 0,
+              );
       const end = offset + Math.min(Number(url.searchParams.get('size') ?? 20), 3);
       return HttpResponse.json({
         status: 'success',
@@ -335,16 +453,25 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
     ),
     http.get('/api/v1/feeds/:feedId/comments', ({ params, request }) => {
       const url = new URL(request.url);
-      const items = [...getComments(Number(params.feedId))].sort(
-        (a, b) => a.createdAt.localeCompare(b.createdAt) || a.id - b.id,
-      );
-      if (url.searchParams.get('sort') !== 'OLDEST') items.reverse();
+      const all = getComments(Number(params.feedId));
+      const roots = all
+        .filter((item) => item.parentId == null)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id - b.id);
+      if (url.searchParams.get('sort') !== 'OLDEST') roots.reverse();
       const start = Number(url.searchParams.get('cursor') ?? 0);
-      const end = start + 20;
+      const end = start + Math.max(1, Number(url.searchParams.get('size') ?? 20));
+      const items = roots
+        .slice(start, end)
+        .flatMap((root) => [
+          root,
+          ...all
+            .filter((item) => item.parentId === root.id)
+            .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id - b.id),
+        ]);
       return HttpResponse.json({
         status: 'success',
-        data: items.slice(start, end),
-        meta: { nextCursor: end < items.length ? String(end) : null, hasNext: end < items.length },
+        data: items,
+        meta: { nextCursor: end < roots.length ? String(end) : null, hasNext: end < roots.length },
       });
     }),
     http.put('/api/v1/feeds/:feedId/comments/:commentId/reactions/AGREE', ({ params }) =>
@@ -354,26 +481,52 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
       setCommentReaction(Number(params.feedId), Number(params.commentId), false),
     ),
     http.post('/api/v1/feeds/:feedId/comments', async ({ params, request }) => {
-      const body = (await request.json()) as { content: string };
+      const body = (await request.json()) as {
+        content: string;
+        isAnonymous?: boolean;
+        parentId?: number | null;
+      };
       if (!body.content?.trim())
         return HttpResponse.json(
           { status: 'error', code: 'VALIDATION_ERROR', message: '댓글 내용을 확인해 주세요.' },
           { status: 400 },
         );
+      const parent =
+        body.parentId == null
+          ? null
+          : getComments(Number(params.feedId)).find((item) => item.id === body.parentId);
+      if (body.parentId != null && (!parent || parent.parentId != null || parent.deleted))
+        return HttpResponse.json(
+          {
+            status: 'error',
+            code: 'COMMENT_PARENT_INVALID',
+            message: '답글을 달 수 없는 댓글입니다.',
+          },
+          { status: 400 },
+        );
       const item: FeedComment = {
         id: sequence++,
         content: body.content,
-        author: {
-          userId: 1,
-          handle: 'woojin',
-          displayName: '개발용 사용자',
-          userType: 'WOOWACOURSE_CREW',
-          cohort: 8,
-          track: 'BACKEND',
-          avatarUrl: null,
-        },
-        parentId: null,
-        isAnonymous: false,
+        author: body.isAnonymous
+          ? ({
+              userId: 1,
+              handle: null,
+              displayName: null,
+              userType: 'WOOWACOURSE_CREW',
+              isCurrent: true,
+              track: null,
+              avatarUrl: null,
+            } as unknown as FeedComment['author'])
+          : {
+              userId: 1,
+              handle: 'woojin',
+              displayName: '개발용 사용자',
+              userType: 'WOOWACOURSE_CREW',
+              isCurrent: true,
+              track: 'BACKEND',
+              avatarUrl: null,
+            },
+        parentId: body.parentId ?? null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         editable: true,
@@ -381,6 +534,7 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
         deleted: false,
         agreeCount: 0,
         agreedByMe: false,
+        isAnonymous: body.isAnonymous ?? false,
       };
       getComments(Number(params.feedId)).push(item);
       return HttpResponse.json({ status: 'success', data: item }, { status: 201 });
@@ -394,7 +548,7 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
           { status: 'error', code: 'COMMENT_NOT_FOUND', message: '댓글을 찾을 수 없습니다.' },
           { status: 404 },
         );
-      const body = (await request.json()) as { content: string };
+      const body = (await request.json()) as { content: string; isAnonymous?: boolean };
       Object.assign(item, {
         content: body.content,
         edited: true,

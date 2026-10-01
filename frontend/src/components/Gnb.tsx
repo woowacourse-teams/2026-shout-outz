@@ -7,14 +7,14 @@ import { analytics, toPathPattern, type NavTab } from '@/utils/analytics';
 
 export const GNB_ITEMS = linkOptions([
   { to: '/', activeOptions: { exact: true }, label: '홈' },
-  { to: '/feeds', label: '피드' },
+  { to: '/community', label: '커뮤니티' },
   { to: '/projects', label: '프로젝트' },
   { to: '/news', label: '소식' },
 ]);
 
 const NAV_TAB_BY_PATH: Record<string, NavTab> = {
   '/': 'home',
-  '/feeds': 'feeds',
+  '/community': 'feeds',
   '/projects': 'projects',
   '/news': 'news',
 };

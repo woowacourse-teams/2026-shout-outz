@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { feedQuery } from '@/apis/feed';
+import { feedQuery, type FeedType } from '@/apis/feed';
 import { sessionQuery } from '@/apis/session';
 import { getButtonStyles } from '@/components/Button';
 import { Footer } from '@/components/Footer';
@@ -10,12 +10,14 @@ import { getGithubLoginUrl } from '@/utils/auth';
 
 interface FeedEditorPageProps {
   feedId?: number;
+  feedType?: FeedType;
   onCancel: () => void;
   onSaved: (feedId: number) => void;
 }
 
 export function FeedEditorPage(props: FeedEditorPageProps) {
-  const title = props.feedId === undefined ? '피드 작성' : '피드 수정';
+  const label = props.feedType === 'QUESTION' ? '질문' : '피드';
+  const title = props.feedId === undefined ? `${label} 작성` : '글 수정';
   return (
     <div className="bg-background flex min-h-dvh flex-col">
       <title>{`${title} | shout-outz`}</title>
@@ -25,7 +27,11 @@ export function FeedEditorPage(props: FeedEditorPageProps) {
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
             <p className="hidden text-sm text-gray-600 md:block">
-              나누고 싶은 기술 아티클, 트러블슈팅 경험, 프로젝트 회고를 자유롭게 공유해보세요.
+              {props.feedId !== undefined
+                ? '작성한 내용을 수정해보세요.'
+                : props.feedType === 'QUESTION'
+                  ? '크루에게 묻고 싶은 내용을 자유롭게 작성해보세요.'
+                  : '나누고 싶은 기술 아티클, 트러블슈팅 경험, 프로젝트 회고를 자유롭게 공유해보세요.'}
             </p>
           </div>
           <AsyncBoundary>
@@ -54,6 +60,7 @@ function AuthenticatedForm(props: FeedEditorPageProps) {
     <FeedForm
       key={session.userId}
       userId={session.userId}
+      feedType={props.feedType ?? 'POST'}
       onCancel={props.onCancel}
       onSaved={props.onSaved}
     />
@@ -73,13 +80,14 @@ function EditForm({
   userId,
   onCancel,
   onSaved,
-}: Required<FeedEditorPageProps> & { userId: number }) {
+}: Omit<Required<FeedEditorPageProps>, 'feedType'> & { userId: number }) {
   const { data: feed } = useSuspenseQuery(feedQuery(feedId));
   return (
     <FeedForm
       key={feedId}
       userId={userId}
       initialFeed={feed}
+      feedType={feed.feedType === 'QUESTION' ? 'QUESTION' : 'POST'}
       onCancel={onCancel}
       onSaved={onSaved}
     />

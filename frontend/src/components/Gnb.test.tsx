@@ -10,7 +10,7 @@ import {
 import { Gnb, GNB_ITEMS, type GnbProps } from '@/components/Gnb';
 import { tabItemStyles } from '@/components/Tab';
 
-const ROUTE_PATHS = ['/', '/feeds', '/projects', '/projects/$projectId', '/news'];
+const ROUTE_PATHS = ['/', '/community', '/projects', '/projects/$projectId', '/news'];
 
 const renderGnb = async (path: string, props: GnbProps = {}) => {
   const rootRoute = createRootRoute({ component: () => <Gnb {...props} /> });
@@ -53,9 +53,9 @@ describe('Gnb', () => {
 
   describe('활성 표시', () => {
     it('현재 경로에 해당하는 항목 하나만 활성이다', async () => {
-      await renderGnb('/feeds');
+      await renderGnb('/community');
 
-      expect(activeLabels()).toEqual(['피드']);
+      expect(activeLabels()).toEqual(['커뮤니티']);
     });
 
     it('홈은 정확히 일치할 때만 활성이다', async () => {
@@ -82,7 +82,7 @@ describe('Gnb', () => {
     it('md 오버라이드가 Tab의 weak variant와 같은 값을 쓴다', async () => {
       await renderGnb('/');
 
-      const { className } = itemNamed('피드');
+      const { className } = itemNamed('커뮤니티');
 
       tabItemStyles.weak.split(' ').forEach((tabClassName) => {
         expect(className).toContain(`md:${tabClassName}`);

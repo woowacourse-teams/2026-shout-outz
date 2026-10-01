@@ -1,11 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { FeedEditorPage } from '@/pages/FeedEditorPage';
+import { createFileRoute, Navigate } from '@tanstack/react-router';
 
-export const Route = createFileRoute('/feeds/$feedId_/edit')({ component: FeedEditRoute });
+export const Route = createFileRoute('/feeds/$feedId_/edit')({ component: LegacyFeedEdit });
 
-function FeedEditRoute() {
-  const { feedId } = Route.useParams();
-  const navigate = Route.useNavigate();
-  const goToDetail = () => void navigate({ to: '/feeds/$feedId', params: { feedId } });
-  return <FeedEditorPage feedId={Number(feedId)} onCancel={goToDetail} onSaved={goToDetail} />;
+function LegacyFeedEdit() {
+  return <Navigate to="/community/$feedId/edit" params={Route.useParams()} replace />;
 }

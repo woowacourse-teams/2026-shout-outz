@@ -36,7 +36,7 @@ function show(feedId?: number) {
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   const router = createRouter({
     routeTree,
-    history: createMemoryHistory({ initialEntries: ['/feeds/new'] }),
+    history: createMemoryHistory({ initialEntries: ['/community/new'] }),
   });
   const onSaved = jest.fn();
   const onCancel = jest.fn();
@@ -69,7 +69,7 @@ test('실제 작성자를 표시하고 등록한 피드를 상세와 목록에�
   // 헤더에도 내 이름이 있으므로 폼의 작성자 블록으로 범위를 좁힌다.
   const author = screen.getByRole('link', { name: '정우진 프로필 보기' });
   expect(within(author).getByText('정우진')).toBeInTheDocument();
-  expect(within(author).getByText('BE 6기 크루')).toBeInTheDocument();
+  expect(within(author).getByText('BE 크루')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeDisabled();
   await fillTitle(user, '새 피드 제목');
   await user.type(input, '새로운 기술 이야기');
@@ -199,7 +199,7 @@ test('목록에서 작성 페이지 진입 후 등록하면 생성한 상세 페
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   const router = createRouter({
     routeTree,
-    history: createMemoryHistory({ initialEntries: ['/feeds'] }),
+    history: createMemoryHistory({ initialEntries: ['/community'] }),
   });
   render(
     <QueryClientProvider client={client}>
@@ -215,12 +215,75 @@ test('목록에서 작성 페이지 진입 후 등록하면 생성한 상세 페
     await screen.findByRole('textbox', { name: '피드 내용' }),
     '등록 후 상세에서 확인할 내용',
   );
-  expect(router.state.location.pathname).toBe('/feeds/new');
+  expect(router.state.location.pathname).toBe('/community/new');
   await user.click(screen.getByRole('combobox', { name: '카테고리' }));
   await user.click(screen.getByRole('option', { name: '백엔드' }));
   await user.click(screen.getByRole('button', { name: '피드 등록하기' }));
   await screen.findByText('등록 후 상세에서 확인할 내용');
-  expect(router.state.location.pathname).toBe('/feeds/100');
+  expect(router.state.location.pathname).toBe('/community/100');
+});
+
+test('이전 피드 목록 주소는 질문 탭 상태를 유지하며 커뮤니티로 이동한다', async () => {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
+  });
+  client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  const router = createRouter({
+    routeTree,
+    history: createMemoryHistory({ initialEntries: ['/feeds?type=QUESTION'] }),
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <ModalProvider>
+        <RouterProvider router={router} />
+      </ModalProvider>
+    </QueryClientProvider>,
+  );
+
+  await waitFor(() => expect(router.state.location.pathname).toBe('/community'));
+  expect(router.state.location.search.type).toBe('QUESTION');
+});
+
+test('질문 탭에서 질문 전용 카테고리로 작성하고 질문 목록으로 돌아간다', async () => {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
+  });
+  client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  const router = createRouter({
+    routeTree,
+    history: createMemoryHistory({ initialEntries: ['/community'] }),
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <ModalProvider>
+        <RouterProvider router={router} />
+      </ModalProvider>
+    </QueryClientProvider>,
+  );
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole('tab', { name: '질문' }));
+  expect(await screen.findByRole('tab', { name: '질문', selected: true })).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '질문하기' }));
+  expect(router.state.location.search.type).toBe('QUESTION');
+  await fillTitle(user, '진로 질문');
+  await user.type(
+    await screen.findByRole('textbox', { name: '피드 내용' }),
+    '어떤 방향이 좋을까요?',
+  );
+  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+  expect(screen.queryByRole('option', { name: '백엔드' })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('option', { name: '진로 고민' }));
+  await user.click(screen.getByRole('button', { name: '질문 등록하기' }));
+  await waitFor(() => expect(router.state.location.pathname).toBe('/community/100'));
+  expect(await fetchFeed(100)).toMatchObject({
+    feedType: 'QUESTION',
+    categories: [{ categoryId: 2 }],
+  });
+  await user.click(await screen.findByRole('link', { name: '목록으로' }));
+  await waitFor(() => expect(router.state.location.pathname).toBe('/community'));
+  expect(router.state.location.search.type).toBe('QUESTION');
 });
 
 test('수정은 기존 본문과 카테고리를 채우고 저장 결과를 상세에 반영한다', async () => {
@@ -305,7 +368,7 @@ test('본인 글 메뉴에서 수정하고 저장하면 상세 페이지로 돌�
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   const router = createRouter({
     routeTree,
-    history: createMemoryHistory({ initialEntries: ['/feeds'] }),
+    history: createMemoryHistory({ initialEntries: ['/community/1'] }),
   });
   render(
     <QueryClientProvider client={client}>
@@ -318,12 +381,12 @@ test('본인 글 메뉴에서 수정하고 저장하면 상세 페이지로 돌�
   await user.click(await screen.findByRole('button', { name: '피드 메뉴' }));
   await user.click(screen.getByRole('menuitem', { name: '수정' }));
   const input = await screen.findByRole('textbox', { name: '피드 내용' });
-  expect(router.state.location.pathname).toBe('/feeds/1/edit');
+  expect(router.state.location.pathname).toBe('/community/1/edit');
   await user.clear(input);
   await user.type(input, '수정 페이지에서 저장한 내용');
   await user.click(screen.getByRole('button', { name: '수정 완료' }));
   await screen.findByText('수정 페이지에서 저장한 내용');
-  expect(router.state.location.pathname).toBe('/feeds/1');
+  expect(router.state.location.pathname).toBe('/community/1');
 });
 
 test('삭제 확인 후 피드를 목록에서 제거하고 상세 조회도 실패한다', async () => {
@@ -334,7 +397,7 @@ test('삭제 확인 후 피드를 목록에서 제거하고 상세 조회도 실
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   const router = createRouter({
     routeTree,
-    history: createMemoryHistory({ initialEntries: ['/feeds/1'] }),
+    history: createMemoryHistory({ initialEntries: ['/community/1'] }),
   });
   render(
     <QueryClientProvider client={client}>
@@ -347,9 +410,9 @@ test('삭제 확인 후 피드를 목록에서 제거하고 상세 조회도 실
   await user.click(await screen.findByRole('button', { name: '피드 메뉴' }));
   await user.click(screen.getByRole('menuitem', { name: '삭제' }));
   expect(screen.getByRole('group', { name: '피드 삭제 확인' })).toBeInTheDocument();
-  expect(router.state.location.pathname).toBe('/feeds/1');
+  expect(router.state.location.pathname).toBe('/community/1');
   await user.click(screen.getByRole('button', { name: '삭제 확인' }));
-  await waitFor(() => expect(router.state.location.pathname).toBe('/feeds'));
+  await waitFor(() => expect(router.state.location.pathname).toBe('/community'));
   expect(
     (await fetchFeeds({ sort: 'LATEST', size: 20 })).data.some((feed) => feed.feedId === 1),
   ).toBe(false);
@@ -376,7 +439,7 @@ test('삭제 실패 시 서버 메시지를 표시하고 상세에 머문다', a
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   const router = createRouter({
     routeTree,
-    history: createMemoryHistory({ initialEntries: ['/feeds/1'] }),
+    history: createMemoryHistory({ initialEntries: ['/community/1'] }),
   });
   render(
     <QueryClientProvider client={client}>
@@ -392,7 +455,7 @@ test('삭제 실패 시 서버 메시지를 표시하고 상세에 머문다', a
   expect(await screen.findByRole('alert')).toHaveTextContent(
     '본인이 작성한 피드만 삭제할 수 있습니다.',
   );
-  expect(router.state.location.pathname).toBe('/feeds/1');
+  expect(router.state.location.pathname).toBe('/community/1');
 });
 
 test('제목이 비면 등록을 막는다', async () => {

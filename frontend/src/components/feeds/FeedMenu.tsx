@@ -8,22 +8,40 @@ import { myProfileSummaryQuery } from '@/apis/user';
 import { Button } from '@/components/Button';
 import { Dropdown } from '@/components/Dropdown';
 import { getApiErrorMessage } from '@/utils/error';
+import type { FeedType } from '@/types/feed';
 
-export function FeedMenu({ authorHandle, feedId }: { authorHandle: string; feedId: number }) {
+export function FeedMenu({
+  authorHandle,
+  feedId,
+  feedType = 'POST',
+}: {
+  authorHandle: string;
+  feedId: number;
+  feedType?: FeedType;
+}) {
   const { data: session } = useSuspenseQuery(sessionQuery);
   if (session.status !== 'AUTHENTICATED' || session.userId == null) return null;
 
-  return <AuthorMenu feedId={feedId} authorHandle={authorHandle} userId={session.userId} />;
+  return (
+    <AuthorMenu
+      feedId={feedId}
+      authorHandle={authorHandle}
+      userId={session.userId}
+      feedType={feedType}
+    />
+  );
 }
 
 function AuthorMenu({
   authorHandle,
   userId,
   feedId,
+  feedType,
 }: {
   authorHandle: string;
   userId: number;
   feedId: number;
+  feedType: FeedType;
 }) {
   const navigate = useNavigate();
   const client = useQueryClient();
@@ -40,7 +58,7 @@ function AuthorMenu({
       // TODO 프로필 피드 탭은 ['users', handle, 'feeds']로 따로 캐시된다.
       // api 폴더를 정리할 때 피드 캐시 키를 한 규칙으로 맞추고 이 줄을 없앤다.
       void client.invalidateQueries({ queryKey: ['users'] });
-      void navigate({ to: '/feeds', search: { sort: 'LATEST' } });
+      void navigate({ to: '/community', search: { sort: 'LATEST', type: feedType } });
     } catch {
       // Mutation의 오류를 확인 UI에 표시한다.
     }
@@ -54,7 +72,7 @@ function AuthorMenu({
       >
         <Dropdown.Item
           onSelect={() =>
-            void navigate({ to: '/feeds/$feedId/edit', params: { feedId: String(feedId) } })
+            void navigate({ to: '/community/$feedId/edit', params: { feedId: String(feedId) } })
           }
         >
           수정

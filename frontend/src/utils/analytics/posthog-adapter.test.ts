@@ -49,11 +49,11 @@ describe('posthogAdapter', () => {
     const adapter = posthogAdapter({ key: 'phc_test', host: 'h', load: load(client) });
 
     await Promise.resolve();
-    adapter.pageView('/feeds/:feedId', CONTEXT);
+    adapter.pageView('/community/:feedId', CONTEXT);
 
     expect(calls.at(-1)).toEqual({
       method: 'capture',
-      args: ['$pageview', { $current_url: '/feeds/:feedId', ...CONTEXT }],
+      args: ['$pageview', { $current_url: '/community/:feedId', ...CONTEXT }],
     });
   });
 

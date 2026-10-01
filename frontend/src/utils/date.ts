@@ -48,10 +48,16 @@ export function formatRelativeTime(isoDateTime: string, now: Date = new Date()):
 }
 
 export function formatDateTime(value: string) {
-  const date = new Date(value);
-  const pad = (number: number) => String(number).padStart(2, '0');
-  const day = [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join('.');
-  const time = [pad(date.getHours()), pad(date.getMinutes())].join(':');
-
-  return `${day} ${time}`;
+  const parts = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(value));
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? '';
+  return `${get('year')}.${get('month')}.${get('day')} ${get('hour')}:${get('minute')}`;
 }

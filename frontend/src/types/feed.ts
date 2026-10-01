@@ -7,7 +7,8 @@ import type {
 } from '@/types/api';
 
 /** GET /api/v1/feeds의 sort 쿼리 파라미터. 스키마가 쿼리 파라미터는 내보내지 않아 여기서 정의한다. */
-export type FeedSort = 'LATEST' | 'POPULAR';
+export type FeedSort = 'LATEST' | 'POPULAR' | 'WAITING';
+export type FeedType = 'POST' | 'QUESTION';
 
 export interface FeedListParams {
   sort: FeedSort;

@@ -100,7 +100,7 @@ const feedAuthor = {
   displayName: '정우진',
   userType: 'WOOWACOURSE_CREW',
   track: 'BACKEND',
-  cohort: 8,
+  isCurrent: true,
   avatarUrl: null,
   userId: 10,
 } satisfies FeedAuthor;

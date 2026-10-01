@@ -1,11 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { FeedDetailPage } from '@/pages/FeedDetailPage';
+import { createFileRoute, Navigate } from '@tanstack/react-router';
 
-export const Route = createFileRoute('/feeds/$feedId')({
-  component: FeedDetailRoute,
-});
+export const Route = createFileRoute('/feeds/$feedId')({ component: LegacyFeedDetail });
 
-function FeedDetailRoute() {
-  const { feedId } = Route.useParams();
-  return <FeedDetailPage feedId={Number(feedId)} />;
+function LegacyFeedDetail() {
+  return <Navigate to="/community/$feedId" params={Route.useParams()} replace />;
 }

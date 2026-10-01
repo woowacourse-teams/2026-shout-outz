@@ -25,18 +25,10 @@ afterEach(() => {
 });
 afterAll(() => server.close());
 
-test('본인 글에만 수정과 삭제 메뉴를 표시한다', async () => {
-  const user = userEvent.setup();
+test('피드 목록에는 수정과 삭제 메뉴를 표시하지 않는다', async () => {
   show(<FeedList sort="LATEST" />);
-  const trigger = await screen.findByRole('button', { name: '피드 메뉴' });
-  expect(screen.getAllByRole('button', { name: '피드 메뉴' })).toHaveLength(1);
-  expect(
-    within(screen.getAllByRole('article')[0]!).getByRole('button', { name: '피드 메뉴' }),
-  ).toBe(trigger);
-  await user.click(trigger);
-  expect(screen.getByRole('menuitem', { name: '수정' })).toBeInTheDocument();
-  await user.click(screen.getByRole('menuitem', { name: '삭제' }));
-  expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  await screen.findAllByRole('article');
+  expect(screen.queryByRole('button', { name: '피드 메뉴' })).not.toBeInTheDocument();
 });
 
 test('비로그인 상태에서는 프로필 조회 없이 피드 메뉴를 숨긴다', async () => {
@@ -63,7 +55,7 @@ function show(children: ReactNode) {
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   const router = createRouter({
     routeTree,
-    history: createMemoryHistory({ initialEntries: ['/feeds'] }),
+    history: createMemoryHistory({ initialEntries: ['/community'] }),
   });
   const wrap = (content: ReactNode) => (
     <QueryClientProvider client={client}>
@@ -105,33 +97,30 @@ test('빈 피드를 안내한다', async () => {
   show(<FeedList sort="LATEST" />);
   expect(await screen.findByText('아직 등록된 피드가 없습니다.')).toBeInTheDocument();
 });
-test('피드 링크와 공유 주소가 상세 페이지를 가리킨다', async () => {
+test('피드 목록 카드는 전체가 상세 페이지로 이동하고 반응 수를 표시한다', async () => {
   const feed = mockFeeds[0]!;
-  const detailPath = `/feeds/${feed.feedId}`;
-  const user = userEvent.setup();
-  const share = jest.fn().mockResolvedValue(undefined);
-  Object.defineProperty(navigator, 'share', { configurable: true, value: share });
+  const detailPath = `/community/${feed.feedId}`;
   show(<FeedList sort="LATEST" />);
   const first = (await screen.findAllByRole('article'))[0]!;
   expect(within(first).getByRole('link', { name: feed.title })).toHaveAttribute('href', detailPath);
-  await user.click(within(first).getByRole('button', { name: '공유' }));
-  expect(share).toHaveBeenCalledWith({
-    title: document.title,
-    url: new URL(detailPath, window.location.origin).href,
-  });
+  expect(within(first).getByLabelText('좋아요 12개')).toBeInTheDocument();
+  expect(within(first).getByLabelText('댓글 1개')).toBeInTheDocument();
+  expect(within(first).queryByRole('button', { name: /좋아요|댓글|공유/ })).not.toBeInTheDocument();
 });
-test('인기 피드는 제목과 본문 미리보기를 함께 보여준다', async () => {
+test('인기 피드는 목록 카드와 같은 링크와 반응 정보를 보여준다', async () => {
   // 목 핸들러는 인기순을 최신순의 역순으로 준다.
   const feed = mockFeeds.at(-1)!;
   show(<PopularFeedList />);
   const firstItem = within(await screen.findByRole('list')).getAllByRole('listitem')[0]!;
 
-  // 항목에 링크가 둘이다. 제목·본문은 피드 상세로, 작성자는 프로필로 간다.
-  const [detailLink, authorLink] = within(firstItem).getAllByRole('link');
-  expect(detailLink).toHaveAttribute('href', `/feeds/${feed.feedId}`);
-  expect(authorLink).toHaveAttribute('href', `/users/${feed.author.handle}`);
+  const [detailLink] = within(firstItem).getAllByRole('link');
+  expect(within(firstItem).getAllByRole('link')).toHaveLength(1);
+  expect(detailLink).toHaveAttribute('href', `/community/${feed.feedId}`);
   expect(firstItem).toHaveTextContent(feed.title);
   expect(firstItem).toHaveTextContent(feed.content);
+  expect(within(firstItem).getByLabelText('궁금해요 12개')).toBeInTheDocument();
+  expect(within(firstItem).getByLabelText('답변 0개')).toBeInTheDocument();
+  expect(within(firstItem).queryByRole('button', { name: '피드 메뉴' })).not.toBeInTheDocument();
 });
 test('카드는 첫 이미지와 남은 장수만 보여준다', async () => {
   server.use(
@@ -178,19 +167,12 @@ test('카드는 본문의 코드 블록을 빼고 보여준다', async () => {
   expect(card).toHaveTextContent('설정은 이렇게 했다.');
   expect(card).not.toHaveTextContent('const retry = 3;');
 });
-test('서버가 준 링크 미리보기를 표시한다', async () => {
-  const preview = mockFeeds[0]!.linkPreview;
-  if (!preview?.url || !preview.title)
-    throw new Error('첫 번째 목 피드에 링크 미리보기가 필요합니다.');
+test('본문의 URL은 카드에서 별도 링크로 추출하지 않는다', async () => {
   show(<FeedList sort="LATEST" />);
   const first = (await screen.findAllByRole('article'))[0]!;
-  expect(within(first).getByRole('link', { name: `${preview.title} 링크 열기` })).toHaveAttribute(
-    'href',
-    preview.url,
-  );
-  expect(within(first).getByText(preview.description!)).toBeInTheDocument();
+  expect(within(first).getAllByRole('link')).toHaveLength(1);
 });
-test('댓글 정렬 선택 없이 최신순으로 조회한다', async () => {
+test('댓글 정렬 선택 없이 오래된 순으로 조회한다', async () => {
   let requestedSort: string | null = null;
   server.use(
     http.get('*/api/v1/feeds/:feedId/comments', ({ request }) => {
@@ -199,23 +181,23 @@ test('댓글 정렬 선택 없이 최신순으로 조회한다', async () => {
         status: 'success',
         data: [
           {
-            id: 2,
-            content: '새 댓글',
-            author: { userId: 2, displayName: '새 작성자', avatarImageId: null },
-            parentId: null,
-            createdAt: '2026-09-15T02:00:00Z',
-            updatedAt: '2026-09-15T02:00:00Z',
-            editable: false,
-            edited: false,
-            deleted: false,
-          },
-          {
             id: 1,
             content: '이전 댓글',
             author: { userId: 3, displayName: '이전 작성자', avatarImageId: null },
             parentId: null,
             createdAt: '2026-09-14T02:00:00Z',
             updatedAt: '2026-09-14T02:00:00Z',
+            editable: false,
+            edited: false,
+            deleted: false,
+          },
+          {
+            id: 2,
+            content: '새 댓글',
+            author: { userId: 2, displayName: '새 작성자', avatarImageId: null },
+            parentId: null,
+            createdAt: '2026-09-15T02:00:00Z',
+            updatedAt: '2026-09-15T02:00:00Z',
             editable: false,
             edited: false,
             deleted: false,
@@ -228,12 +210,38 @@ test('댓글 정렬 선택 없이 최신순으로 조회한다', async () => {
   show(<Comments feedId={1} />);
   await screen.findByText('새 댓글');
 
-  expect(requestedSort).toBe('LATEST');
+  expect(requestedSort).toBe('OLDEST');
   expect(screen.queryByRole('combobox', { name: '댓글 정렬' })).not.toBeInTheDocument();
   expect(screen.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-    expect.stringContaining('새 댓글'),
     expect.stringContaining('이전 댓글'),
+    expect.stringContaining('새 댓글'),
   ]);
+});
+test('답글을 부모 댓글 아래에 표시하고 새 답글의 parentId를 전달한다', async () => {
+  const user = userEvent.setup();
+  let postedBody: unknown;
+  server.use(
+    http.post('*/api/v1/feeds/:feedId/comments', async ({ request }) => {
+      postedBody = await request.json();
+      return HttpResponse.json({ status: 'success', data: { id: 101 } }, { status: 201 });
+    }),
+  );
+  show(<Comments feedId={3} />);
+  const parent = (await screen.findByText('이 댓글은 익명으로 작성했습니다.')).closest('li')!;
+  expect(within(parent).getByRole('list', { name: '답글 목록' })).toHaveTextContent(
+    '저도 같은 경험이 있어요.',
+  );
+  const replies = within(parent).getByRole('list', { name: '답글 목록' });
+  expect(replies).toHaveClass('bg-gray-50/70', 'border-blue-100');
+  const replyButton = await within(parent).findByRole('button', { name: '답글 달기' });
+  expect(replyButton.parentElement).toContainElement(
+    within(parent).getAllByRole('button', { name: '공감' })[0]!,
+  );
+  await user.click(replyButton);
+  await user.type(within(parent).getByRole('textbox', { name: '답글 내용' }), '새 답글');
+  await user.click(within(parent).getByRole('button', { name: '답글 등록' }));
+  await screen.findByText('답글을 저장했습니다.');
+  expect(postedBody).toEqual({ content: '새 답글', parentId: 31, isAnonymous: false });
 });
 test('댓글 작성, 수정, 삭제가 조회 결과에 반영된다', async () => {
   const user = userEvent.setup();
@@ -424,4 +432,49 @@ test('서버가 같은 커서를 반복하면 추가 조회를 중단한다', as
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: '피드 더 보기' })).not.toBeInTheDocument(),
   );
+});
+
+test('답변 대기순을 서버에 전달하고 본인 익명 질문을 표시한다', async () => {
+  let requestedSort: string | null = null;
+  let requestedType: string | null = null;
+  server.use(
+    http.get('*/api/v1/feeds', ({ request }) => {
+      requestedSort = new URL(request.url).searchParams.get('sort');
+      requestedType = new URL(request.url).searchParams.get('type');
+      return HttpResponse.json({
+        status: 'success',
+        data: [{ ...mockFeeds[0]!, feedType: 'QUESTION', isAnonymous: true, commentCount: 0 }],
+        meta: { hasNext: false, nextCursor: null },
+      });
+    }),
+  );
+  show(<FeedList sort="WAITING" />);
+  const card = await screen.findByRole('article');
+  expect(requestedSort).toBe('WAITING');
+  expect(requestedType).toBe('QUESTION');
+  expect(within(card).getByText('답변을 기다리고 있어요')).toBeInTheDocument();
+  expect(within(card).getByText('정우진')).toBeInTheDocument();
+  expect(within(card).getByText('익명으로 작성한 글입니다')).toBeInTheDocument();
+  expect(within(card).queryByRole('link', { name: /프로필 보기/ })).not.toBeInTheDocument();
+});
+
+test('익명 댓글 선택을 작성 요청에 전달한다', async () => {
+  let body: unknown;
+  server.use(
+    http.post('*/api/v1/feeds/:feedId/comments', async ({ request }) => {
+      body = await request.json();
+      return HttpResponse.json({ status: 'success', data: { id: 123 } });
+    }),
+  );
+  const user = userEvent.setup();
+  show(<Comments feedId={1} />);
+  await user.type(
+    await screen.findByRole('textbox', { name: '댓글 남기기' }),
+    '익명으로 경험 공유',
+  );
+  await user.click(screen.getByRole('checkbox', { name: '익명으로 남기기' }));
+  await user.click(screen.getByRole('button', { name: '댓글 작성' }));
+  await screen.findByText('댓글을 저장했습니다.');
+  expect(body).toEqual({ content: '익명으로 경험 공유', isAnonymous: true });
+  expect(screen.getByRole('checkbox', { name: '익명으로 남기기' })).not.toBeChecked();
 });

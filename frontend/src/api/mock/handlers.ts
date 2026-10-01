@@ -309,10 +309,12 @@ export const handlers = [
     const searchParams = new URL(request.url).searchParams;
     const sort = searchParams.get('sort') === 'POPULAR' ? 'POPULAR' : 'LATEST';
     const size = Number(searchParams.get('size') ?? 20);
+    const type = searchParams.get('type');
+    const feedType = type === 'QUESTION' || type === 'POST' ? type : undefined;
 
     return HttpResponse.json({
       status: 'success',
-      data: getFeedList(sort, size),
+      data: getFeedList(sort, size, feedType),
       meta: { nextCursor: null, hasNext: false },
     });
   }),

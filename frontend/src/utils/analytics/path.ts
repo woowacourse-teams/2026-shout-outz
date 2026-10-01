@@ -1,8 +1,10 @@
 const PATTERNS: [RegExp, string][] = [
   [/^\/users\/[^/]+$/, '/users/:handle'],
-  [/^\/feeds\/\d+$/, '/feeds/:feedId'],
-  [/^\/feeds\/\d+\/edit$/, '/feeds/:feedId/edit'],
-  [/^\/projects\/[^/]+$/, '/projects/:slug'],
+  [/^\/community\/\d+$/, '/community/:feedId'],
+  [/^\/community\/\d+\/edit$/, '/community/:feedId/edit'],
+  [/^\/feeds\/\d+$/, '/community/:feedId'],
+  [/^\/feeds\/\d+\/edit$/, '/community/:feedId/edit'],
+  [/^\/projects\/(?!new$)[^/]+$/, '/projects/:slug'],
   [/^\/news\/\d+$/, '/news/:newsId'],
 ];
 

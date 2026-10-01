@@ -1,24 +1,26 @@
+import type { ReactNode } from 'react';
 import type { Feed } from '@/apis/feed';
 import { Image } from '@/components/Image';
 import { FeedMarkdown } from '@/components/feeds/FeedMarkdown';
 import { LinkPreview } from '@/components/feeds/LinkPreview';
 
-/**
- * 피드 상세의 제목·본문·첨부. 전체 내용은 여기서만 보여준다.
- *
- * 제목은 `h2`다. 상세는 위에 다른 제목이 없어 이 제목이 문서의 두 번째 단계다.
- * 목록 카드는 본문을 잘라 보여주므로 `FeedCard`가 따로 그린다.
- */
-export function FeedDetailBody({ feed }: { feed: Feed }) {
+/** 상세의 제목, 작성자, 본문, 첨부를 읽는 순서대로 보여준다. */
+export function FeedDetailBody({ feed, author }: { feed: Feed; author?: ReactNode }) {
   const media = [...feed.media].sort((a, b) => a.displayOrder - b.displayOrder);
   const linkPreview = feed.linkPreview;
 
   return (
     <>
-      <h2 className="mt-4 text-base leading-snug font-bold break-words text-gray-900 md:text-lg">
+      <p className="text-xs leading-5 font-medium text-gray-600">
+        {feed.categories.map((category) => category.displayName).join(' · ') ||
+          (feed.feedType === 'QUESTION' ? '질문' : '이야기')}
+      </p>
+      <h1 className="mt-3 text-2xl leading-snug font-bold tracking-tight break-words text-gray-900 md:text-3xl">
+        {feed.feedType === 'QUESTION' && <span className="text-primary-600 mr-2">Q.</span>}
         {feed.title}
-      </h2>
-      <div className="mt-2 space-y-3 text-base leading-7 break-words text-gray-800">
+      </h1>
+      {author && <div className="mt-7">{author}</div>}
+      <div className="mt-7 space-y-6 border-t border-gray-100 pt-8 text-sm leading-6 break-words text-gray-600">
         <FeedMarkdown content={feed.content} />
       </div>
       {linkPreview?.url && (
