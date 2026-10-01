@@ -13,7 +13,7 @@ describe('resolveHomeBannerLink', () => {
   describe('destinationType이 TARGET이면 대상 리소스의 상세 경로로 간다', () => {
     it.each([
       ['NEWS', '/news/7'],
-      ['FEED', '/feeds/7'],
+      ['FEED', '/community/7'],
     ] as const)('%s는 %s', (targetType, href) => {
       expect(
         resolveHomeBannerLink(banner({ destinationType: 'TARGET', targetType, targetId: 7 })),

@@ -137,6 +137,7 @@ test('조회한 배너 목록이 바뀌면 새 목록의 첫 배너를 표시한
     client.setQueryData(queryKey, []);
     await jest.advanceTimersByTimeAsync(0);
   });
-  expect(screen.queryByRole('region', { name: '홈 배너 모음' })).not.toBeInTheDocument();
+  expect(screen.getByRole('region', { name: '홈 배너 모음' })).toBeInTheDocument();
+  expect(screen.getByText('현재 표시할 배너가 없습니다.')).toBeInTheDocument();
   client.clear();
 });
