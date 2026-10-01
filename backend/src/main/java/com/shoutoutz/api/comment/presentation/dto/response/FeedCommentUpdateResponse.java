@@ -34,7 +34,7 @@ public record FeedCommentUpdateResponse(
             String displayName,
             UserType userType,
             String track,
-            Short cohort,
+            Boolean isCurrent,
             String avatarUrl
     ) {
         public Author(Long userId, String handle, String displayName, String avatarUrl) {

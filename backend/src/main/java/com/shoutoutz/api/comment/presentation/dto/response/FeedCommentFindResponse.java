@@ -67,7 +67,7 @@ public record FeedCommentFindResponse(
             String displayName,
             UserType userType,
             String track,
-            Short cohort,
+            Boolean isCurrent,
             Long avatarImageId,
             String avatarUrl
     ) {

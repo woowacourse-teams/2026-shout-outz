@@ -824,7 +824,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                         crewCohort,
                         resultSet.getObject("avatar_image_id", Long.class)
                 )
-                // 익명 작성자도 크루 배지 구분을 위해 유형과 기수만 공개한다
+                // 익명 작성자도 크루 배지 구분을 위해 유형과 기수 정보를 조회 모델에 보존한다
                 : new FeedItem.Author(null, null, null, userType, null, crewCohort, null);
         return new FeedBaseRow(
                 resultSet.getLong("id"),

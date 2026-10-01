@@ -224,7 +224,7 @@ class FeedRepositoryIntegrationTest {
     }
 
     @Test
-    void 익명_피드의_작성자_유형과_기수는_타인에게도_공개하고_신원은_숨긴다() {
+    void 익명_피드의_작성자_유형과_기수는_조회_모델에_보존하고_신원은_숨긴다() {
         long crewId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 7);
         long coachId = insertUser("WOOWACOURSE_COACH", null, null);
         long generalId = insertUser("GENERAL", null, null);
@@ -255,7 +255,7 @@ class FeedRepositoryIntegrationTest {
     }
 
     @Test
-    void 익명_피드의_작성자_유형과_기수는_목록_조회에서도_공개한다() {
+    void 익명_피드의_작성자_유형과_기수는_목록_조회_모델에도_보존한다() {
         long crewId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 7);
         long viewerId = insertUser("GENERAL", null, null);
         long categoryId = insertCategory(true);

@@ -263,11 +263,12 @@ class FeedCommentServiceTest {
         assertThat(comment.author().avatarUrl()).isNull();
         assertThat(comment.author().handle()).isNull();
         assertThat(comment.author().track()).isNull();
+        assertThat(comment.author().isCurrent()).isNull();
     }
 
     @Test
-    @DisplayName("익명 댓글도 작성자가 크루면 유형과 기수만 공개하고 트랙과 신원은 숨긴다.")
-    void exposesCohortOfAnonymousCrewCommentAuthor() {
+    @DisplayName("익명 댓글도 작성자가 크루면 유형과 현재 기수 여부만 공개하고 트랙과 신원은 숨긴다.")
+    void exposesCurrentStatusOfAnonymousCrewCommentAuthor() {
         givenActiveFeed();
         givenAnonymousCommentPage();
         givenAuthor(UserProfile.builder()
@@ -282,7 +283,7 @@ class FeedCommentServiceTest {
         Comment comment = findFirstCommentAs(null);
 
         assertThat(comment.author().userType()).isEqualTo(UserType.WOOWACOURSE_CREW);
-        assertThat(comment.author().cohort()).isEqualTo((short) 7);
+        assertThat(comment.author().isCurrent()).isFalse();
         assertThat(comment.author().track()).isNull();
         assertThat(comment.author().userId()).isNull();
         assertThat(comment.author().handle()).isNull();
@@ -292,7 +293,7 @@ class FeedCommentServiceTest {
     }
 
     @Test
-    @DisplayName("익명 댓글 작성자가 코치면 유형만 공개하고 기수는 없다.")
+    @DisplayName("익명 댓글 작성자가 코치면 유형만 공개하고 현재 기수 여부는 null이다.")
     void exposesOnlyUserTypeOfAnonymousCoachCommentAuthor() {
         givenActiveFeed();
         givenAnonymousCommentPage();
@@ -306,7 +307,7 @@ class FeedCommentServiceTest {
         Comment comment = findFirstCommentAs(AUTHOR_ID + 1);
 
         assertThat(comment.author().userType()).isEqualTo(UserType.WOOWACOURSE_COACH);
-        assertThat(comment.author().cohort()).isNull();
+        assertThat(comment.author().isCurrent()).isNull();
         assertThat(comment.author().userId()).isNull();
     }
 
@@ -322,14 +323,14 @@ class FeedCommentServiceTest {
                 .displayName("크루")
                 .userType(UserType.WOOWACOURSE_CREW)
                 .track(Track.BACKEND)
-                .cohort(Cohort.from(7))
+                .cohort(Cohort.from(8))
                 .avatarImageId(10L)
                 .build());
 
         Comment comment = findFirstCommentAs(AUTHOR_ID);
 
         assertThat(comment.author().userId()).isEqualTo(AUTHOR_ID);
-        assertThat(comment.author().cohort()).isEqualTo((short) 7);
+        assertThat(comment.author().isCurrent()).isTrue();
         assertThat(comment.author().track()).isEqualTo("BACKEND");
     }
 

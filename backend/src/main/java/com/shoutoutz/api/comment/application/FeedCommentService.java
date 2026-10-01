@@ -180,7 +180,7 @@ public class FeedCommentService {
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
-                        cohortValue(author),
+                        isCurrent(author),
                         userAvatarUrlResolver.resolve(
                                 author.getUserId(),
                                 author.getAvatarImageId()
@@ -284,7 +284,7 @@ public class FeedCommentService {
                         author.getDisplayName().value(),
                         author.getUserType(),
                         trackValue(author),
-                        cohortValue(author),
+                        isCurrent(author),
                         userAvatarUrlResolver.resolve(
                                 author.getUserId(),
                                 author.getAvatarImageId()
@@ -350,12 +350,11 @@ public class FeedCommentService {
         return track.getValue();
     }
 
-    private Short cohortValue(UserProfile profile) {
+    private Boolean isCurrent(UserProfile profile) {
         if (profile.getUserType() != UserType.WOOWACOURSE_CREW || profile.getCohort() == null) {
             return null;
         }
-        Cohort cohort = profile.getCohort();
-        return (short) cohort.getValue();
+        return profile.getCohort() == Cohort.current();
     }
 
     private String handleValue(long userId) {
@@ -417,18 +416,18 @@ public class FeedCommentService {
                                 author.getDisplayName().value(),
                                 author.getUserType(),
                                 trackValue(author),
-                                cohortValue(author),
+                                isCurrent(author),
                                 author.getAvatarImageId(),
                                 avatarUrls.get(author.getUserId())
                         )
-                        // 익명 작성자도 크루 배지 구분을 위해 유형과 기수만 공개한다
+                        // 익명 작성자도 크루 배지 구분을 위해 유형과 현재 기수 여부만 공개한다
                         : new FeedCommentFindResponse.Author(
                                 null,
                                 null,
                                 null,
                                 author.getUserType(),
                                 null,
-                                cohortValue(author),
+                                isCurrent(author),
                                 null,
                                 null
                         ),
