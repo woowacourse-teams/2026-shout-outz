@@ -18,39 +18,45 @@ export function HomeEventSection() {
     <section aria-labelledby={headingId} className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2 pb-1">
         <h2 id={headingId} className="text-base font-bold tracking-tight text-gray-900">
-          진행 중인 크루 이벤트
+          진행 중인 이벤트
         </h2>
 
         <Link
           to="/news"
-          className="text-primary-600 focus-visible:outline-primary-600 shrink-0 rounded-sm text-xs font-bold focus-visible:outline-2"
+          className="text-primary-600 focus-visible:outline-primary-600 shrink-0 rounded-sm text-sm font-bold focus-visible:outline-2"
           onClick={() => analytics.track({ name: 'section_more_clicked', target: 'news' })}
         >
-          소식 더보기 ›
+          소식 전체보기 ›
         </Link>
       </div>
 
       {events.length === 0 ? (
         <p className="py-8 text-center text-sm text-gray-500">진행 중인 이벤트가 없습니다.</p>
       ) : (
-        <ul className="flex flex-col gap-4">
-          {events.map(({ id, ...event }) => (
-            <li key={id} className="border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
+        <ul className="flex flex-col gap-3">
+          {events.map(({ id, type, title, summary, publishedAt }) => (
+            <li key={id} className="group min-w-0">
               <Link
                 to="/news/$newsId"
                 params={{ newsId: String(id) }}
-                className="focus-visible:outline-primary-600 block rounded-sm focus-visible:outline-2"
+                className="bg-background focus-visible:outline-primary-600 block rounded-lg border border-gray-200 p-4 transition-colors hover:border-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2"
                 onClick={() => {
                   analytics.track({ name: 'card_clicked', target: 'news', surface: 'home' });
                   analytics.track({
                     name: 'news_detail_opened',
                     newsId: id,
-                    type: event.type,
+                    type,
                     from: 'home',
                   });
                 }}
               >
-                <NewsItem {...event} />
+                <NewsItem
+                  type={type}
+                  title={title}
+                  summary={summary}
+                  publishedAt={publishedAt}
+                  compact
+                />
               </Link>
             </li>
           ))}

@@ -27,7 +27,7 @@ export async function fetchComments({ feedId, cursor, size, signal }: FetchComme
     {
       method: 'get',
       signal,
-      searchParams: { sort: 'LATEST', size, ...(cursor ? { cursor } : {}) },
+      searchParams: { sort: 'OLDEST', size, ...(cursor ? { cursor } : {}) },
     },
   );
 
@@ -51,6 +51,8 @@ export type CommentChange = {
   method: 'post' | 'patch' | 'delete';
   commentId?: number;
   content?: string;
+  isAnonymous?: boolean;
+  parentId?: number;
 };
 
 export function changeComment(feedId: number, input: CommentChange) {
@@ -58,7 +60,19 @@ export function changeComment(feedId: number, input: CommentChange) {
     `/api/v1/feeds/${feedId}/comments${input.commentId === undefined ? '' : `/${input.commentId}`}`,
     {
       method: input.method,
-      ...(input.method === 'delete' ? {} : { json: { content: input.content } }),
+      ...(input.method === 'delete'
+        ? {}
+        : {
+            json: {
+              content: input.content,
+              ...(input.method === 'post'
+                ? {
+                    isAnonymous: input.isAnonymous ?? false,
+                    ...(input.parentId === undefined ? {} : { parentId: input.parentId }),
+                  }
+                : {}),
+            },
+          }),
     },
   );
 }

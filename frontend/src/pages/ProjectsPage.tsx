@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
-import { IconFilter, IconSearch } from '@tabler/icons-react';
+import { IconFilter, IconPlus, IconSearch } from '@tabler/icons-react';
 
 import { sessionQuery } from '@/apis/session';
 import { Button, getButtonStyles } from '@/components/Button';
@@ -51,7 +51,7 @@ export function ProjectsPage() {
           <div>
             <h1 className="text-xl font-bold md:text-2xl">프로젝트</h1>
             <p className="mt-2 text-sm leading-relaxed text-gray-500">
-              우아한테크코스 크루들이 제작한 프로젝트 모음
+              우아한테크코스 정규 프로젝트
             </p>
           </div>
           <ProjectRegistrationLink />
@@ -167,6 +167,7 @@ function ProjectRegistrationLink() {
 
   return (
     <Link to="/projects/new" className={getButtonStyles({ size: 'sm' })}>
+      <IconPlus className="mr-1 size-3" aria-hidden="true" />
       프로젝트 등록
     </Link>
   );

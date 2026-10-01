@@ -1,16 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { FeedEditorPage } from '@/pages/FeedEditorPage';
+import { createFileRoute, Navigate } from '@tanstack/react-router';
+import type { FeedType } from '@/apis/feed';
 
-export const Route = createFileRoute('/feeds/new')({ component: FeedCreateRoute });
+export const Route = createFileRoute('/feeds/new')({
+  validateSearch: (search: Record<string, unknown>): { type: FeedType } => ({
+    type: search.type === 'QUESTION' ? 'QUESTION' : 'POST',
+  }),
+  component: LegacyFeedCreate,
+});
 
-function FeedCreateRoute() {
-  const navigate = Route.useNavigate();
-  return (
-    <FeedEditorPage
-      onCancel={() => void navigate({ to: '/feeds', search: { sort: 'LATEST' } })}
-      onSaved={(feedId) =>
-        void navigate({ to: '/feeds/$feedId', params: { feedId: String(feedId) } })
-      }
-    />
-  );
+function LegacyFeedCreate() {
+  return <Navigate to="/community/new" search={Route.useSearch()} replace />;
 }

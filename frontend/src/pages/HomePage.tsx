@@ -15,10 +15,6 @@ export function HomePage() {
         <AsyncBoundary>
           <HomeBannerSection />
         </AsyncBoundary>
-        <AsyncBoundary>
-          <HomeStatistics />
-        </AsyncBoundary>
-
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
           <div className="min-w-0 lg:flex-1">
             <AsyncBoundary>
@@ -31,6 +27,9 @@ export function HomePage() {
             </AsyncBoundary>
           </div>
         </div>
+        <AsyncBoundary>
+          <HomeStatistics />
+        </AsyncBoundary>
       </main>
       <Footer />
     </div>

@@ -1,64 +1,60 @@
-import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { IconMessageCircle } from '@tabler/icons-react';
+import { IconHeart, IconMessageCircle, IconSparkles } from '@tabler/icons-react';
 import type { Feed } from '@/apis/feed';
-import { Button } from '@/components/Button';
 import { Image } from '@/components/Image';
 import { FeedAuthor } from '@/components/feeds/FeedAuthor';
-import { FeedLikeButton } from '@/components/feeds/FeedLikeButton';
-import { FeedMarkdown } from '@/components/feeds/FeedMarkdown';
-import { LinkPreview } from '@/components/feeds/LinkPreview';
-import { FeedMenu } from '@/components/feeds/FeedMenu';
-import { ShareButton } from '@/components/feeds/ShareButton';
-import { AsyncBoundary } from '@/components/AsyncBoundary';
-import { Comments } from '@/components/feed-comments/Comments';
+import { toPlainText } from '@/utils/markdown';
+import { formatRelativeTime } from '@/utils/date';
 import { analytics, type FeedSurface } from '@/utils/analytics';
 
 export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }) {
-  const [open, setOpen] = useState(false);
   const [firstMedia, ...restMedia] = [...feed.media].sort(
     (a, b) => a.displayOrder - b.displayOrder,
   );
-  const linkPreview = feed.linkPreview;
 
   return (
-    <article className="min-w-0 border-b border-gray-100 py-6 first:pt-4 md:py-7">
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <FeedAuthor author={feed.author} createdAt={feed.createdAt} />
+    <article className="group bg-background relative min-w-0 rounded-lg border border-gray-200 p-5 transition-colors hover:border-gray-300 md:p-6">
+      <Link
+        to="/community/$feedId"
+        params={{ feedId: String(feed.feedId) }}
+        onClick={() =>
+          analytics.track({ name: 'feed_detail_opened', feedId: feed.feedId, from: surface })
+        }
+        aria-label={feed.title}
+        className="focus-visible:outline-primary-600 absolute inset-0 z-10 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2"
+      />
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="text-primary-600 flex flex-col items-start gap-3 text-xs leading-4 font-medium">
+          {feed.feedType === 'QUESTION' && (feed.commentCount ?? 0) === 0 && (
+            <span className="flex items-center gap-1">
+              <IconSparkles className="size-3.5 text-yellow-500" aria-hidden="true" />
+              답변을 기다리고 있어요
+            </span>
+          )}
+          <span>
+            {feed.categories.map((category) => category.displayName).join(' · ') ||
+              (feed.feedType === 'QUESTION' ? '질문' : '이야기')}
+          </span>
         </div>
-        <AsyncBoundary>
-          <FeedMenu feedId={feed.feedId} authorHandle={feed.author.handle} />
-        </AsyncBoundary>
+        <time dateTime={feed.createdAt} className="shrink-0 text-xs leading-4 text-gray-500">
+          {formatRelativeTime(feed.createdAt)}
+        </time>
       </div>
       <div className="relative">
-        <h3 className="mt-4 text-base leading-snug font-bold break-words text-gray-900 md:text-lg">
-          <Link
-            to="/feeds/$feedId"
-            params={{ feedId: String(feed.feedId) }}
-            onClick={() =>
-              analytics.track({ name: 'feed_detail_opened', feedId: feed.feedId, from: surface })
-            }
-            className="focus-visible:outline-primary-600 after:absolute after:inset-0 focus-visible:outline-2"
-          >
-            {feed.title}
-          </Link>
+        <h3 className="group-hover:text-primary-600 text-base leading-6 font-semibold tracking-tight break-words text-gray-900">
+          {feed.feedType === 'QUESTION' && <span className="text-primary-600 mr-1.5">Q.</span>}
+          {feed.title}
         </h3>
-        <div className="mt-2 line-clamp-5 space-y-3 text-base leading-7 break-words text-gray-800">
-          <FeedMarkdown content={feed.content} hideCodeBlocks />
-        </div>
-        {linkPreview?.url && (
-          <div className="relative z-10 mt-4">
-            <LinkPreview {...linkPreview} url={linkPreview.url} />
-          </div>
-        )}
+        <p className="mt-2 line-clamp-2 text-sm leading-6 break-words text-gray-600">
+          {toPlainText(feed.content)}
+        </p>
         {firstMedia && (
-          <div className="pointer-events-none relative mt-4">
+          <div className="pointer-events-none relative mt-4 w-36">
             <Image
               src={firstMedia.url}
               alt="피드 첨부 이미지"
               loading="lazy"
-              className="max-h-96 w-full rounded-xl bg-gray-50 object-contain"
+              className="h-24 w-36 rounded-lg bg-gray-50 object-contain"
               fallback={<p className="text-sm text-gray-500">이미지를 불러오지 못했습니다.</p>}
             />
             {restMedia.length > 0 && (
@@ -70,40 +66,35 @@ export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }
           </div>
         )}
       </div>
-      <div className="mt-5 flex items-center gap-2 text-sm text-gray-500">
-        <FeedLikeButton
-          feedId={feed.feedId}
-          likeCount={feed.likeCount}
-          likedByMe={feed.likedByMe}
-        />
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1 px-2"
-          aria-label="댓글"
-          aria-expanded={open}
-          aria-controls={`comments-${feed.feedId}`}
-          onClick={() => setOpen(!open)}
-        >
-          <IconMessageCircle className="size-4" aria-hidden="true" />
-          <span aria-label="댓글 수">{feed.commentCount ?? 0}</span>
-        </Button>
-        <span className="ml-auto">
-          <ShareButton
-            url={new URL(`/feeds/${feed.feedId}`, window.location.origin).href}
-            className="px-2"
+      <div className="mt-5 flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
+        <div className="min-w-0">
+          <FeedAuthor
+            author={feed.author}
+            isAnonymous={feed.isAnonymous}
+            avatarSize="sm"
+            profileLink={false}
           />
-        </span>
-      </div>
-      {open && (
-        <section
-          id={`comments-${feed.feedId}`}
-          aria-label={`${feed.author.displayName} 피드 댓글`}
-          className="mt-5 border-t border-gray-100 pt-5"
+        </div>
+        <div
+          className="flex shrink-0 items-center gap-3 text-xs text-gray-500"
+          aria-label="반응 수"
         >
-          <Comments feedId={feed.feedId} />
-        </section>
-      )}
+          <span
+            className="inline-flex items-center gap-1"
+            aria-label={`${feed.feedType === 'QUESTION' ? '궁금해요' : '좋아요'} ${feed.likeCount ?? 0}개`}
+          >
+            <IconHeart className="size-4" aria-hidden="true" />
+            {feed.likeCount ?? 0}
+          </span>
+          <span
+            className="inline-flex items-center gap-1"
+            aria-label={`${feed.feedType === 'QUESTION' ? '답변' : '댓글'} ${feed.commentCount ?? 0}개`}
+          >
+            <IconMessageCircle className="size-4" aria-hidden="true" />
+            {feed.commentCount ?? 0}
+          </span>
+        </div>
+      </div>
     </article>
   );
 }

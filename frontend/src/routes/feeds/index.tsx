@@ -1,20 +1,21 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { FeedsPage } from '@/pages/FeedsPage';
-import type { FeedSort } from '@/apis/feed';
+import { createFileRoute, Navigate } from '@tanstack/react-router';
+import type { FeedSort, FeedType } from '@/apis/feed';
+
 export const Route = createFileRoute('/feeds/')({
-  validateSearch: (search: Record<string, unknown>): { sort?: FeedSort } => ({
-    sort: search.sort === 'POPULAR' ? 'POPULAR' : 'LATEST',
-  }),
-  component: FeedRoute,
+  validateSearch: (search: Record<string, unknown>): { sort: FeedSort; type: FeedType } => {
+    const type = search.type === 'QUESTION' ? 'QUESTION' : 'POST';
+    return {
+      type,
+      sort:
+        search.sort === 'POPULAR' || (type === 'QUESTION' && search.sort === 'WAITING')
+          ? search.sort
+          : 'LATEST',
+    };
+  },
+  component: LegacyFeedList,
 });
-function FeedRoute() {
-  const { sort } = Route.useSearch();
-  const navigate = Route.useNavigate();
-  return (
-    <FeedsPage
-      onCreate={() => void navigate({ to: '/feeds/new' })}
-      sort={sort ?? 'LATEST'}
-      onSortChange={(value) => void navigate({ search: { sort: value } })}
-    />
-  );
+
+function LegacyFeedList() {
+  const search = Route.useSearch();
+  return <Navigate to="/community" search={search} replace />;
 }

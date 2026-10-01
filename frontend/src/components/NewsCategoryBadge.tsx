@@ -18,7 +18,7 @@ export interface NewsCategoryBadgeProps extends Omit<ComponentProps<'span'>, 'ch
 
 export function NewsCategoryBadge({ type, ...props }: NewsCategoryBadgeProps) {
   return (
-    <Badge variant="solid" tone={TYPE_TONE[type]} {...props}>
+    <Badge variant="soft" tone={TYPE_TONE[type]} {...props}>
       {TYPE_LABEL[type]}
     </Badge>
   );

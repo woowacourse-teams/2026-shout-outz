@@ -1,4 +1,5 @@
 import type { Feed } from '@/apis/feed';
+import { IconUser } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 import { Avatar } from '@/components/Avatar';
 import type { AvatarSize } from '@/components/Avatar';
@@ -11,44 +12,95 @@ const TRACK_ABBREVIATIONS: Record<string, string> = {
   ANDROID: 'AOS',
 };
 
+const ANONYMOUS_AVATAR_SIZE: Record<AvatarSize, string> = {
+  xs: 'size-5',
+  sm: 'size-7',
+  md: 'size-8',
+  lg: 'size-13',
+};
+
+const ANONYMOUS_ICON_SIZE: Record<AvatarSize, string> = {
+  xs: 'size-3.5',
+  sm: 'size-4',
+  md: 'size-5',
+  lg: 'size-8',
+};
+
 function formatAuthorRole(author: Feed['author']) {
   if (author.userType !== 'WOOWACOURSE_CREW') return null;
 
   const track = author.track ? TRACK_ABBREVIATIONS[author.track] : null;
-  return [track, author.cohort == null ? null : `${author.cohort}기`, '크루']
-    .filter(Boolean)
-    .join(' ');
+  return [track, '크루'].filter(Boolean).join(' ');
 }
 
 export function FeedAuthor({
   author,
   createdAt,
   avatarSize = 'md',
+  isAnonymous = false,
+  profileLink = true,
 }: {
   author: Feed['author'];
   createdAt?: string;
   avatarSize?: AvatarSize;
+  isAnonymous?: boolean;
+  profileLink?: boolean;
 }) {
-  const role = formatAuthorRole(author);
+  const role = isAnonymous || !author.handle ? null : formatAuthorRole(author);
+  const isOwnAnonymous = isAnonymous && author.handle != null;
+  const isCompact = avatarSize === 'xs';
+  if (!author.handle) {
+    return (
+      <div className={`flex min-w-0 items-center ${isCompact ? 'gap-1.5' : 'gap-2'}`}>
+        <span
+          className={`flex shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 ${ANONYMOUS_AVATAR_SIZE[avatarSize]}`}
+        >
+          <IconUser className={ANONYMOUS_ICON_SIZE[avatarSize]} aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p
+              className={`text-xs font-semibold text-gray-900 ${isCompact ? 'leading-4' : 'leading-5'}`}
+            >
+              익명
+            </p>
+            <CrewStatusBadge
+              userType={author.userType}
+              isCurrent={author.isCurrent}
+              size={isCompact ? 'xs' : 'sm'}
+            />
+          </div>
+          {role && <p className="truncate text-xs leading-4 text-gray-500">{role}</p>}
+        </div>
+      </div>
+    );
+  }
 
-  return (
-    <Link
-      to="/users/$handle"
-      params={{ handle: author.handle }}
-      aria-label={`${author.displayName} 프로필 보기`}
-      className="group focus-visible:outline-primary-600 flex min-w-0 items-center gap-2 rounded-sm focus-visible:outline-2"
-    >
-      {/* 이름이 바로 옆에 있으므로 아바타는 장식이다. 사진이 없으면 이름 첫 글자로 그린다. */}
+  const authorDetails = (
+    <>
       <Avatar size={avatarSize} src={author.avatarUrl} name={author.displayName} alt="" />
       <div className="min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="group-hover:text-primary-600 truncate text-sm font-semibold text-gray-900">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span
+            className={`group-hover:text-primary-600 truncate text-xs font-semibold text-gray-900 ${isCompact ? 'leading-4' : 'leading-5'}`}
+          >
             {author.displayName}
           </span>
-          <CrewStatusBadge userType={author.userType} cohort={author.cohort} />
+          <CrewStatusBadge
+            userType={author.userType}
+            isCurrent={author.isCurrent}
+            size={isCompact ? 'xs' : 'sm'}
+          />
+          {isOwnAnonymous && (
+            <span
+              className={`bg-primary-50 text-primary-700 rounded-full text-xs font-medium ${isCompact ? 'px-1.5 py-0' : 'px-2 py-0.5'}`}
+            >
+              익명으로 작성한 글입니다
+            </span>
+          )}
         </div>
         {(role || createdAt) && (
-          <div className="flex min-w-0 items-center gap-1.5 text-sm text-gray-500">
+          <div className="flex min-w-0 items-center gap-1.5 text-xs leading-4 text-gray-500">
             {role && <span className="truncate">{role}</span>}
             {createdAt && (
               <>
@@ -61,6 +113,25 @@ export function FeedAuthor({
           </div>
         )}
       </div>
+    </>
+  );
+
+  if (!profileLink) {
+    return (
+      <div className={`flex min-w-0 items-center ${isCompact ? 'gap-1.5' : 'gap-2'}`}>
+        {authorDetails}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      to="/users/$handle"
+      params={{ handle: author.handle }}
+      aria-label={`${author.displayName} 프로필 보기`}
+      className={`group focus-visible:outline-primary-600 flex min-w-0 items-center rounded-sm focus-visible:outline-2 ${isCompact ? 'gap-1.5' : 'gap-2'}`}
+    >
+      {authorDetails}
     </Link>
   );
 }

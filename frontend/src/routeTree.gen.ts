@@ -13,6 +13,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as CommunityIndexRouteImport } from './routes/community/index'
+import { Route as CommunityFeedIdRouteImport } from './routes/community/$feedId'
+import { Route as CommunityNewRouteImport } from './routes/community/new'
 import { Route as FeedsIndexRouteImport } from './routes/feeds/index'
 import { Route as FeedsFeedIdRouteImport } from './routes/feeds/$feedId'
 import { Route as FeedsNewRouteImport } from './routes/feeds/new'
@@ -23,6 +26,7 @@ import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectsSlugRouteImport } from './routes/projects/$slug'
 import { Route as ProjectsNewRouteImport } from './routes/projects/new'
 import { Route as UsersHandleRouteImport } from './routes/users/$handle'
+import { Route as CommunityFeedIdEditRouteImport } from './routes/community/$feedId_.edit'
 import { Route as FeedsFeedIdEditRouteImport } from './routes/feeds/$feedId_.edit'
 import { Route as ProjectsSlugEditRouteImport } from './routes/projects/$slug_.edit'
 
@@ -44,6 +48,21 @@ const AdminRoute = AdminRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityIndexRoute = CommunityIndexRouteImport.update({
+  id: '/community/',
+  path: '/community/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityFeedIdRoute = CommunityFeedIdRouteImport.update({
+  id: '/community/$feedId',
+  path: '/community/$feedId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityNewRoute = CommunityNewRouteImport.update({
+  id: '/community/new',
+  path: '/community/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FeedsIndexRoute = FeedsIndexRouteImport.update({
@@ -96,6 +115,11 @@ const UsersHandleRoute = UsersHandleRouteImport.update({
   path: '/users/$handle',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunityFeedIdEditRoute = CommunityFeedIdEditRouteImport.update({
+  id: '/community/$feedId_/edit',
+  path: '/community/$feedId/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FeedsFeedIdEditRoute = FeedsFeedIdEditRouteImport.update({
   id: '/feeds/$feedId_/edit',
   path: '/feeds/$feedId/edit',
@@ -112,6 +136,8 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/signup': typeof SignupRoute
+  '/community/$feedId': typeof CommunityFeedIdRoute
+  '/community/new': typeof CommunityNewRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
   '/mypage/verification': typeof MypageVerificationRoute
@@ -119,9 +145,11 @@ export interface FileRoutesByFullPath {
   '/projects/$slug': typeof ProjectsSlugRoute
   '/projects/new': typeof ProjectsNewRoute
   '/users/$handle': typeof UsersHandleRoute
+  '/community/': typeof CommunityIndexRoute
   '/feeds/': typeof FeedsIndexRoute
   '/news/': typeof NewsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/community/$feedId/edit': typeof CommunityFeedIdEditRoute
   '/feeds/$feedId/edit': typeof FeedsFeedIdEditRoute
   '/projects/$slug/edit': typeof ProjectsSlugEditRoute
 }
@@ -130,6 +158,8 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/signup': typeof SignupRoute
+  '/community/$feedId': typeof CommunityFeedIdRoute
+  '/community/new': typeof CommunityNewRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
   '/mypage/verification': typeof MypageVerificationRoute
@@ -137,9 +167,11 @@ export interface FileRoutesByTo {
   '/projects/$slug': typeof ProjectsSlugRoute
   '/projects/new': typeof ProjectsNewRoute
   '/users/$handle': typeof UsersHandleRoute
+  '/community': typeof CommunityIndexRoute
   '/feeds': typeof FeedsIndexRoute
   '/news': typeof NewsIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/community/$feedId/edit': typeof CommunityFeedIdEditRoute
   '/feeds/$feedId/edit': typeof FeedsFeedIdEditRoute
   '/projects/$slug/edit': typeof ProjectsSlugEditRoute
 }
@@ -149,6 +181,8 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/signup': typeof SignupRoute
+  '/community/$feedId': typeof CommunityFeedIdRoute
+  '/community/new': typeof CommunityNewRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
   '/mypage/verification': typeof MypageVerificationRoute
@@ -156,9 +190,11 @@ export interface FileRoutesById {
   '/projects/$slug': typeof ProjectsSlugRoute
   '/projects/new': typeof ProjectsNewRoute
   '/users/$handle': typeof UsersHandleRoute
+  '/community/': typeof CommunityIndexRoute
   '/feeds/': typeof FeedsIndexRoute
   '/news/': typeof NewsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/community/$feedId_/edit': typeof CommunityFeedIdEditRoute
   '/feeds/$feedId_/edit': typeof FeedsFeedIdEditRoute
   '/projects/$slug_/edit': typeof ProjectsSlugEditRoute
 }
@@ -169,6 +205,8 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/signup'
+    | '/community/$feedId'
+    | '/community/new'
     | '/feeds/$feedId'
     | '/feeds/new'
     | '/mypage/verification'
@@ -176,9 +214,11 @@ export interface FileRouteTypes {
     | '/projects/$slug'
     | '/projects/new'
     | '/users/$handle'
+    | '/community/'
     | '/feeds/'
     | '/news/'
     | '/projects/'
+    | '/community/$feedId/edit'
     | '/feeds/$feedId/edit'
     | '/projects/$slug/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -187,6 +227,8 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/signup'
+    | '/community/$feedId'
+    | '/community/new'
     | '/feeds/$feedId'
     | '/feeds/new'
     | '/mypage/verification'
@@ -194,9 +236,11 @@ export interface FileRouteTypes {
     | '/projects/$slug'
     | '/projects/new'
     | '/users/$handle'
+    | '/community'
     | '/feeds'
     | '/news'
     | '/projects'
+    | '/community/$feedId/edit'
     | '/feeds/$feedId/edit'
     | '/projects/$slug/edit'
   id:
@@ -205,6 +249,8 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/signup'
+    | '/community/$feedId'
+    | '/community/new'
     | '/feeds/$feedId'
     | '/feeds/new'
     | '/mypage/verification'
@@ -212,9 +258,11 @@ export interface FileRouteTypes {
     | '/projects/$slug'
     | '/projects/new'
     | '/users/$handle'
+    | '/community/'
     | '/feeds/'
     | '/news/'
     | '/projects/'
+    | '/community/$feedId_/edit'
     | '/feeds/$feedId_/edit'
     | '/projects/$slug_/edit'
   fileRoutesById: FileRoutesById
@@ -224,6 +272,8 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
   SignupRoute: typeof SignupRoute
+  CommunityFeedIdRoute: typeof CommunityFeedIdRoute
+  CommunityNewRoute: typeof CommunityNewRoute
   FeedsFeedIdRoute: typeof FeedsFeedIdRoute
   FeedsNewRoute: typeof FeedsNewRoute
   MypageVerificationRoute: typeof MypageVerificationRoute
@@ -231,9 +281,11 @@ export interface RootRouteChildren {
   ProjectsSlugRoute: typeof ProjectsSlugRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   UsersHandleRoute: typeof UsersHandleRoute
+  CommunityIndexRoute: typeof CommunityIndexRoute
   FeedsIndexRoute: typeof FeedsIndexRoute
   NewsIndexRoute: typeof NewsIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
+  CommunityFeedIdEditRoute: typeof CommunityFeedIdEditRoute
   FeedsFeedIdEditRoute: typeof FeedsFeedIdEditRoute
   ProjectsSlugEditRoute: typeof ProjectsSlugEditRoute
 }
@@ -266,6 +318,27 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community/': {
+      id: '/community/'
+      path: '/community'
+      fullPath: '/community/'
+      preLoaderRoute: typeof CommunityIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community/$feedId': {
+      id: '/community/$feedId'
+      path: '/community/$feedId'
+      fullPath: '/community/$feedId'
+      preLoaderRoute: typeof CommunityFeedIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community/new': {
+      id: '/community/new'
+      path: '/community/new'
+      fullPath: '/community/new'
+      preLoaderRoute: typeof CommunityNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/feeds/': {
@@ -338,6 +411,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsersHandleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/community/$feedId_/edit': {
+      id: '/community/$feedId_/edit'
+      path: '/community/$feedId/edit'
+      fullPath: '/community/$feedId/edit'
+      preLoaderRoute: typeof CommunityFeedIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/feeds/$feedId_/edit': {
       id: '/feeds/$feedId_/edit'
       path: '/feeds/$feedId/edit'
@@ -360,6 +440,8 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
   SignupRoute: SignupRoute,
+  CommunityFeedIdRoute: CommunityFeedIdRoute,
+  CommunityNewRoute: CommunityNewRoute,
   FeedsFeedIdRoute: FeedsFeedIdRoute,
   FeedsNewRoute: FeedsNewRoute,
   MypageVerificationRoute: MypageVerificationRoute,
@@ -367,9 +449,11 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsSlugRoute: ProjectsSlugRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   UsersHandleRoute: UsersHandleRoute,
+  CommunityIndexRoute: CommunityIndexRoute,
   FeedsIndexRoute: FeedsIndexRoute,
   NewsIndexRoute: NewsIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
+  CommunityFeedIdEditRoute: CommunityFeedIdEditRoute,
   FeedsFeedIdEditRoute: FeedsFeedIdEditRoute,
   ProjectsSlugEditRoute: ProjectsSlugEditRoute,
 }

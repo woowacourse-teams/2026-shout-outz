@@ -10,7 +10,7 @@ import {
   unreadNotificationCountQuery,
 } from '@/apis/notification';
 import { Button } from '@/components/Button';
-import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
 import type { NotificationItem } from '@/types/notification';
 import { cn } from '@/utils/cn';
 import { formatRelativeTime } from '@/utils/date';

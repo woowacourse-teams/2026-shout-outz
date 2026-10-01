@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react';
+import { IconMessageCircle } from '@tabler/icons-react';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { feedsQuery, type FeedSort } from '@/apis/feed';
+import { feedsQuery, type FeedSort, type FeedType } from '@/apis/feed';
 import { Button } from '@/components/Button';
 import { FeedCard } from '@/components/feeds/FeedCard';
 import { getApiErrorMessage } from '@/utils/error';
 
-export function FeedList({ sort }: { sort: FeedSort }) {
-  const query = useSuspenseInfiniteQuery(feedsQuery(sort));
+export function FeedList({ sort, feedType }: { sort: FeedSort; feedType?: FeedType }) {
+  const itemLabel = feedType === 'QUESTION' ? '질문' : '피드';
+  const query = useSuspenseInfiniteQuery(feedsQuery(sort, undefined, 20, feedType));
   const sentinel = useRef<HTMLDivElement>(null);
   const { fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } = query;
 
@@ -25,9 +27,16 @@ export function FeedList({ sort }: { sort: FeedSort }) {
   const feeds = query.data.pages.flatMap((page) => page.data);
 
   return (
-    <div>
+    <div className="space-y-3">
       {feeds.length === 0 ? (
-        <p className="py-12 text-center text-gray-500">아직 등록된 피드가 없습니다.</p>
+        <div className="flex flex-col items-center gap-3 py-16 text-center text-gray-500">
+          <IconMessageCircle className="size-8 text-gray-300" aria-hidden="true" />
+          <p>
+            {feedType === 'QUESTION'
+              ? '아직 등록된 질문이 없습니다.'
+              : '아직 등록된 피드가 없습니다.'}
+          </p>
+        </div>
       ) : (
         feeds.map((feed) => <FeedCard key={feed.feedId} feed={feed} surface="feeds" />)
       )}
@@ -47,8 +56,8 @@ export function FeedList({ sort }: { sort: FeedSort }) {
             {isFetchingNextPage
               ? '불러오는 중…'
               : isFetchNextPageError
-                ? '추가 피드 다시 시도'
-                : '피드 더 보기'}
+                ? `추가 ${itemLabel} 다시 시도`
+                : `${itemLabel} 더 보기`}
           </Button>
         </div>
       )}

@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 
-export type TabVariant = 'underline' | 'weak' | 'chip';
+export type TabVariant = 'underline' | 'subnav' | 'weak' | 'chip';
 export type TabSize = 'sm' | 'md' | 'lg';
 
 export type TabProps = Omit<ComponentPropsWithoutRef<'div'>, 'children' | 'onChange'> & {
@@ -34,6 +34,7 @@ const tabListBaseStyle = 'inline-flex items-center';
 
 const tabListStyles: Record<TabVariant, string> = {
   underline: '',
+  subnav: 'gap-2',
   weak: 'gap-1',
   chip: 'gap-2',
 };
@@ -50,6 +51,8 @@ export const tabItemSizeStyles: Record<TabSize, string> = {
 export const tabItemStyles: Record<TabVariant, string> = {
   underline:
     'border-b-3 border-transparent bg-transparent text-gray-500 data-[status=active]:border-gray-900 data-[status=active]:text-gray-900',
+  subnav:
+    'border-b-2 border-transparent bg-transparent font-semibold text-gray-600 hover:text-primary-600 data-[status=active]:border-primary-600 data-[status=active]:text-primary-600',
   weak: 'rounded-lg border-0 bg-transparent text-gray-600 data-[status=active]:bg-primary-50 data-[status=active]:text-primary-600',
   chip: 'rounded-full border-0 bg-gray-100 text-gray-600 data-[status=active]:bg-gray-900 data-[status=active]:text-white',
 };

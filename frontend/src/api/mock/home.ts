@@ -30,7 +30,7 @@ export const homeBanners: HomeBanner[] = [
     imageUrl: bannerImage('02', 'FEEDS', '함께 나누는 개발 이야기', '#047857'),
     destinationType: 'URL',
     linkType: 'INTERNAL_PATH',
-    linkUrl: '/feeds',
+    linkUrl: '/community',
   },
   {
     bannerId: 102,

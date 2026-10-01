@@ -8,9 +8,9 @@ import type {
   FeedUpdateSuccessResponse,
 } from '@/api/generated/schema';
 import type { CursorMeta } from '@/types/api';
-import type { Feed, FeedListItem, FeedSort } from '@/types/feed';
+import type { Feed, FeedListItem, FeedSort, FeedType } from '@/types/feed';
 
-export type { Feed, FeedSort } from '@/types/feed';
+export type { Feed, FeedSort, FeedType } from '@/types/feed';
 
 export async function fetchFeed(feedId: number, signal?: AbortSignal): Promise<Feed> {
   const response = await httpClient<FeedFindSuccessResponse>(`/api/v1/feeds/${feedId}`, {
@@ -40,6 +40,7 @@ export function feedQuery(feedId: number) {
 export interface SaveFeedInput extends Omit<FeedSaveRequest, 'categoryIds' | 'mediaIds'> {
   categoryIds: number[];
   mediaIds: number[];
+  feedType?: FeedType;
 }
 
 /** 제목·본문 길이 한도. 서버 제약과 같은 값을 화면에서도 미리 막는다. */
@@ -92,18 +93,27 @@ export function nextCursor(page: { meta: CursorMeta }, previous: (string | undef
 interface FetchFeedsParams {
   sort: FeedSort;
   categoryId?: number;
+  feedType?: FeedType;
   cursor?: string;
   size: number;
   signal?: AbortSignal;
 }
 
-export async function fetchFeeds({ sort, categoryId, cursor, size, signal }: FetchFeedsParams) {
+export async function fetchFeeds({
+  sort,
+  categoryId,
+  feedType,
+  cursor,
+  size,
+  signal,
+}: FetchFeedsParams) {
   const response = await httpClient<FeedFindAllSuccessResponse>('/api/v1/feeds', {
     method: 'get',
     signal,
     searchParams: {
       sort,
       size,
+      ...(feedType || sort === 'WAITING' ? { type: feedType ?? 'QUESTION' } : {}),
       ...(categoryId === undefined ? {} : { categoryId }),
       ...(cursor ? { cursor } : {}),
     },
@@ -113,12 +123,12 @@ export async function fetchFeeds({ sort, categoryId, cursor, size, signal }: Fet
   return { ...response, data: response.data as FeedListItem[] };
 }
 
-export function feedsQuery(sort: FeedSort, categoryId?: number, size = 20) {
+export function feedsQuery(sort: FeedSort, categoryId?: number, size = 20, feedType?: FeedType) {
   return infiniteQueryOptions({
-    queryKey: ['feeds', { sort, categoryId, size }],
+    queryKey: ['feeds', { sort, categoryId, size, feedType }],
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam, signal }) =>
-      fetchFeeds({ sort, categoryId, cursor: pageParam, size, signal }),
+      fetchFeeds({ sort, categoryId, feedType, cursor: pageParam, size, signal }),
     getNextPageParam: (last, _pages, _param, params) => nextCursor(last, params),
   });
 }

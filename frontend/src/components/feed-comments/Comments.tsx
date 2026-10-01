@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { Component, Suspense, useState, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
+  QueryErrorResetBoundary,
   useMutation,
   useSuspenseQuery,
   useQueryClient,
@@ -17,43 +18,87 @@ import { Button } from '@/components/Button';
 import { Avatar } from '@/components/Avatar';
 import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
-import { formatRelativeTime } from '@/utils/date';
+import { formatDateTime } from '@/utils/date';
 import { getApiErrorMessage } from '@/utils/error';
 import { getGithubLoginUrl } from '@/utils/auth';
 import { analytics, toPathPattern } from '@/utils/analytics';
-import { IconThumbUp, IconThumbUpFilled } from '@tabler/icons-react';
+import {
+  IconCornerDownRight,
+  IconPencil,
+  IconThumbUp,
+  IconThumbUpFilled,
+  IconTrash,
+} from '@tabler/icons-react';
 import { setFeedCommentAgree } from '@/apis/reaction';
 import { useRequireAuthentication } from '@/hooks/useRequireAuthentication';
+import type { FeedType } from '@/types/feed';
 
-export function Comments({ feedId }: { feedId: number }) {
+export function Comments({ feedId, feedType = 'POST' }: { feedId: number; feedType?: FeedType }) {
   return (
-    <AsyncBoundary
-      errorFallback={(error, reset) => (
-        <div>
-          <div role="alert" className="mb-3 text-sm text-gray-600">
-            {getApiErrorMessage(error)}{' '}
-            <Button variant="ghost" size="sm" onClick={reset}>
-              로그인 상태 다시 확인
-            </Button>
-          </div>
-          <GuestComments feedId={feedId} />
-        </div>
+    <QueryErrorResetBoundary>
+      {({ reset }) => (
+        <SessionBoundary
+          reset={reset}
+          guest={<GuestComments feedId={feedId} feedType={feedType} />}
+        >
+          <Suspense
+            fallback={
+              <p role="status" className="p-6 text-gray-500">
+                불러오는 중…
+              </p>
+            }
+          >
+            <CommentsWithSession feedId={feedId} feedType={feedType} />
+          </Suspense>
+        </SessionBoundary>
       )}
-    >
-      <CommentsWithSession feedId={feedId} />
-    </AsyncBoundary>
+    </QueryErrorResetBoundary>
   );
 }
 
-function GuestComments({ feedId }: { feedId: number }) {
+class SessionBoundary extends Component<
+  { children: ReactNode; guest: ReactNode; reset: () => void },
+  { error: unknown | null }
+> {
+  state: { error: unknown | null } = { error: null };
+
+  static getDerivedStateFromError(error: unknown) {
+    return { error };
+  }
+
+  render() {
+    if (this.state.error === null) return this.props.children;
+
+    return (
+      <div>
+        <div role="alert" className="mb-3 text-sm text-gray-600">
+          {getApiErrorMessage(this.state.error)}{' '}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              this.props.reset();
+              this.setState({ error: null });
+            }}
+          >
+            로그인 상태 다시 확인
+          </Button>
+        </div>
+        {this.props.guest}
+      </div>
+    );
+  }
+}
+
+function GuestComments({ feedId, feedType }: { feedId: number; feedType: FeedType }) {
   return (
     <AsyncBoundary key={`guest-${feedId}`}>
-      <CommentList feedId={feedId} viewer={null} sessionReady={false} />
+      <CommentList feedId={feedId} feedType={feedType} viewer={null} sessionReady={false} />
     </AsyncBoundary>
   );
 }
 
-function CommentsWithSession({ feedId }: { feedId: number }) {
+function CommentsWithSession({ feedId, feedType }: { feedId: number; feedType: FeedType }) {
   const session = useSuspenseQuery(sessionQuery);
   const viewer = session.data.status === 'AUTHENTICATED' ? (session.data.userId ?? null) : null;
 
@@ -61,6 +106,7 @@ function CommentsWithSession({ feedId }: { feedId: number }) {
     <AsyncBoundary key={viewer ?? 'guest'}>
       <CommentList
         feedId={feedId}
+        feedType={feedType}
         viewer={viewer}
         sessionReady={!session.isFetching && !session.isError}
       />
@@ -69,10 +115,12 @@ function CommentsWithSession({ feedId }: { feedId: number }) {
 }
 function CommentList({
   feedId,
+  feedType,
   viewer,
   sessionReady,
 }: {
   feedId: number;
+  feedType: FeedType;
   viewer: number | null;
   sessionReady: boolean;
 }) {
@@ -80,14 +128,25 @@ function CommentList({
   const client = useQueryClient();
   const mutation = useMutation(commentMutation(feedId));
   const [content, setContent] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [message, setMessage] = useState('');
   const [failure, setFailure] = useState('');
   const [refreshError, setRefreshError] = useState<unknown | null>(null);
+  const isQuestion = feedType === 'QUESTION';
+  const itemLabel = isQuestion ? '답변' : '댓글';
   const items = [
     ...new Map(
       query.data.pages.flatMap((page) => page.data).map((item) => [item.id, item]),
     ).values(),
   ];
+  const repliesByParent = new Map<number, FeedComment[]>();
+  const roots = items.filter((item) => item.parentId == null);
+  for (const item of items) {
+    if (item.parentId == null) continue;
+    const replies = repliesByParent.get(item.parentId) ?? [];
+    replies.push(item);
+    repliesByParent.set(item.parentId, replies);
+  }
   async function change(input: CommentChange, onSuccess: () => void) {
     setFailure('');
     setMessage('');
@@ -99,7 +158,16 @@ function CommentList({
       return;
     }
     onSuccess();
-    setMessage(input.method === 'delete' ? '댓글을 삭제했습니다.' : '댓글을 저장했습니다.');
+    const changedItem = items.find((item) => item.id === input.commentId);
+    const changedLabel =
+      (input.method === 'post' ? input.parentId : changedItem?.parentId) == null
+        ? itemLabel
+        : '답글';
+    setMessage(
+      input.method === 'delete'
+        ? `${changedLabel}을 삭제했습니다.`
+        : `${changedLabel}을 저장했습니다.`,
+    );
     try {
       await client.invalidateQueries(
         { queryKey: ['feed-comments', feedId] },
@@ -121,33 +189,60 @@ function CommentList({
           onSubmit={(e) => {
             e.preventDefault();
             if (content.trim() && !mutation.isPending)
-              void change({ method: 'post', content }, () => setContent(''));
+              void change({ method: 'post', content, isAnonymous }, () => {
+                setContent('');
+                setIsAnonymous(false);
+              });
           }}
-          className="flex items-center gap-2 rounded-lg border border-gray-200 p-1"
+          className="space-y-3"
         >
-          <label className="sr-only" htmlFor={`new-comment-${feedId}`}>
-            댓글 남기기
+          <label
+            className="block text-xs leading-5 font-semibold text-gray-800"
+            htmlFor={`new-comment-${feedId}`}
+          >
+            <span className="inline-flex items-center gap-1.5">{itemLabel} 남기기</span>
           </label>
-          <input
+          <textarea
             id={`new-comment-${feedId}`}
-            type="text"
+            rows={5}
+            maxLength={500}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             disabled={mutation.isPending}
-            placeholder="피드에 크루 댓글을 남겨보세요..."
-            className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-500"
+            placeholder={
+              isQuestion
+                ? '질문에 도움이 될 답변을 작성해 주세요.'
+                : '나의 경험과 도움이 될 만한 이야기를 적어주세요.'
+            }
+            className="focus-visible:border-primary-500 focus-visible:ring-primary-500 w-full resize-y rounded-lg border border-gray-200 bg-transparent p-4 text-sm leading-6 text-gray-900 outline-none placeholder:text-gray-400 focus-visible:ring-1"
           />
-          <Button
-            type="submit"
-            aria-label="댓글 작성"
-            disabled={!content.trim() || mutation.isPending || !sessionReady}
-          >
-            작성
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-xs text-gray-500">
+              <input
+                type="checkbox"
+                checked={isAnonymous}
+                onChange={(event) => setIsAnonymous(event.target.checked)}
+                disabled={mutation.isPending}
+                className="accent-primary-600"
+              />
+              익명으로 남기기
+            </label>
+            <span className="text-xs text-gray-400">{Array.from(content).length} / 500</span>
+            <Button
+              className="ml-auto"
+              variant="primary"
+              size="sm"
+              type="submit"
+              aria-label={`${itemLabel} 작성`}
+              disabled={!content.trim() || mutation.isPending || !sessionReady}
+            >
+              {itemLabel} 등록하기
+            </Button>
+          </div>
         </form>
       ) : (
         <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
-          댓글을 작성하려면{' '}
+          {itemLabel}을 작성하려면{' '}
           <a
             className="text-primary-600 underline"
             href={getGithubLoginUrl()}
@@ -187,21 +282,60 @@ function CommentList({
           </Button>
         </div>
       )}
-      {items.length === 0 && <p className="py-4 text-sm text-gray-500">아직 댓글이 없습니다.</p>}
-      <ul className="divide-y divide-gray-100">
-        {items.map((item) => (
-          <CommentItem
-            key={item.id}
-            item={item}
-            canEdit={
-              !item.deleted && sessionReady && viewer === item.author.userId && item.editable
-            }
-            canDelete={!item.deleted && sessionReady && viewer === item.author.userId}
-            canReact={sessionReady}
-            feedId={feedId}
-            pending={mutation.isPending}
-            change={change}
-          />
+      {items.length === 0 && (
+        <p className="py-4 text-sm text-gray-500">{`아직 ${itemLabel}이 없습니다.`}</p>
+      )}
+      <ul
+        aria-label={`${itemLabel} 목록`}
+        className="divide-y divide-gray-100 border-t border-gray-100 pt-6"
+      >
+        {roots.map((root) => (
+          <li key={root.id} className="min-w-0 py-7 first:pt-0 last:pb-0">
+            <CommentItem
+              item={root}
+              label={itemLabel}
+              canEdit={
+                !root.deleted && sessionReady && viewer === root.author.userId && root.editable
+              }
+              canDelete={!root.deleted && sessionReady && viewer === root.author.userId}
+              canReact={sessionReady}
+              canReply={!root.deleted && sessionReady && viewer !== null}
+              feedId={feedId}
+              pending={mutation.isPending}
+              change={change}
+            />
+            {(repliesByParent.get(root.id)?.length ?? 0) > 0 && (
+              <ul
+                aria-label="답글 목록"
+                className="mt-7 ml-7 divide-y divide-gray-100 border-l-2 border-blue-100 bg-gray-50/70 md:ml-8"
+              >
+                {repliesByParent.get(root.id)!.map((reply) => (
+                  <li key={reply.id} className="relative min-w-0 px-5 py-6 md:px-6 md:py-7">
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute top-10 -left-8 h-5 w-8 rounded-bl-xl border-b-2 border-l-2 border-blue-100"
+                    />
+                    <CommentItem
+                      item={reply}
+                      label="답글"
+                      canEdit={
+                        !reply.deleted &&
+                        sessionReady &&
+                        viewer === reply.author.userId &&
+                        reply.editable
+                      }
+                      canDelete={!reply.deleted && sessionReady && viewer === reply.author.userId}
+                      canReact={sessionReady}
+                      canReply={false}
+                      feedId={feedId}
+                      pending={mutation.isPending}
+                      change={change}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
         ))}
       </ul>
       {query.isFetchNextPageError && (
@@ -219,8 +353,8 @@ function CommentList({
             {query.isFetchingNextPage
               ? '불러오는 중…'
               : query.isFetchNextPageError
-                ? '추가 댓글 다시 시도'
-                : '댓글 더 보기'}
+                ? `추가 ${itemLabel} 다시 시도`
+                : `${itemLabel} 더 보기`}
           </Button>
         </div>
       )}
@@ -229,17 +363,21 @@ function CommentList({
 }
 function CommentItem({
   item,
+  label,
   canEdit,
   canDelete,
   canReact,
+  canReply,
   feedId,
   pending,
   change,
 }: {
   item: FeedComment;
+  label: string;
   canEdit: boolean;
   canDelete: boolean;
   canReact: boolean;
+  canReply: boolean;
   feedId: number;
   pending: boolean;
   change: (input: CommentChange, done: () => void) => Promise<void>;
@@ -248,71 +386,95 @@ function CommentItem({
   const { requireAuthentication } = useRequireAuthentication();
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [replying, setReplying] = useState(false);
+  const [replyContent, setReplyContent] = useState('');
+  const [replyAnonymous, setReplyAnonymous] = useState(false);
   const [draft, setDraft] = useState(item.content ?? '');
-  const [agreeCount, setAgreeCount] = useState(item.agreeCount ?? 0);
-  const [agreed, setAgreed] = useState(item.agreedByMe ?? false);
+  const [reactionOverride, setReactionOverride] = useState<{
+    baseCount: number;
+    baseAgreed: boolean;
+    count: number;
+    agreed: boolean;
+  } | null>(null);
+  const baseCount = item.agreeCount ?? 0;
+  const baseAgreed = item.agreedByMe ?? false;
+  const currentOverride =
+    reactionOverride?.baseCount === baseCount && reactionOverride.baseAgreed === baseAgreed
+      ? reactionOverride
+      : null;
+  const agreeCount = currentOverride?.count ?? baseCount;
+  const agreed = currentOverride?.agreed ?? baseAgreed;
   const trackLabels: Record<string, string> = {
     ANDROID: 'AN',
     BACKEND: 'BE',
     FRONTEND: 'FE',
   };
-  const trackLabel = item.author.track ? trackLabels[item.author.track] : undefined;
-  const crewInfo = [
-    trackLabel,
-    item.author.cohort == null ? null : `${item.author.cohort}기`,
-    item.author.userType === 'WOOWACOURSE_CREW' ? '크루' : null,
-  ]
+  const trackLabel =
+    !item.isAnonymous && item.author.handle && item.author.track
+      ? trackLabels[item.author.track]
+      : undefined;
+  const crewInfo = [trackLabel, item.author.userType === 'WOOWACOURSE_CREW' ? '크루' : null]
     .filter(Boolean)
     .join(' ');
   const agreeMutation = useMutation({
     mutationFn: (active: boolean) => setFeedCommentAgree(feedId, item.id, active),
   });
 
-  useEffect(() => {
-    setAgreeCount(item.agreeCount ?? 0);
-    setAgreed(item.agreedByMe ?? false);
-  }, [item.agreeCount, item.agreedByMe]);
-
   const toggleAgree = async () => {
     if (!requireAuthentication() || !canReact || agreeMutation.isPending) return;
-    const previous = { agreeCount, agreed };
     const next = !agreed;
-    setAgreed(next);
-    setAgreeCount(Math.max(0, agreeCount + (next ? 1 : -1)));
+    setReactionOverride({
+      baseCount,
+      baseAgreed,
+      count: Math.max(0, agreeCount + (next ? 1 : -1)),
+      agreed: next,
+    });
     try {
       const result = await agreeMutation.mutateAsync(next);
-      setAgreeCount(result.agreeCount);
-      setAgreed(result.active);
+      setReactionOverride({
+        baseCount,
+        baseAgreed,
+        count: result.agreeCount,
+        agreed: result.active,
+      });
       void client.invalidateQueries({ queryKey: ['feed-comments', feedId] });
     } catch {
-      setAgreeCount(previous.agreeCount);
-      setAgreed(previous.agreed);
+      setReactionOverride(null);
     }
   };
 
   const authorDetails = (
     <>
-      <Avatar size="sm" src={item.author.avatarUrl} name={item.author.displayName} alt="" />
+      <Avatar
+        size="sm"
+        src={item.author.avatarUrl}
+        name={item.isAnonymous ? '익명' : item.author.displayName}
+        alt=""
+      />
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-1.5">
-          <span className="group-hover:text-primary-600 truncate text-sm font-semibold text-gray-900">
-            {item.author.displayName}
+          <span className="group-hover:text-primary-600 truncate text-xs leading-5 font-semibold text-gray-900">
+            {item.isAnonymous ? '익명' : item.author.displayName}
           </span>
-          <CrewStatusBadge userType={item.author.userType} cohort={item.author.cohort} size="xs" />
+          <CrewStatusBadge
+            userType={item.author.userType}
+            isCurrent={item.author.isCurrent}
+            size="xs"
+          />
         </div>
-        {crewInfo && <p className="mt-0.5 text-sm text-gray-500">{crewInfo}</p>}
+        {crewInfo && <p className="mt-0.5 text-xs leading-4 text-gray-500">{crewInfo}</p>}
       </div>
     </>
   );
 
   return (
-    <li className="min-w-0 py-4 first:pt-0 last:pb-0">
+    <div className="min-w-0">
       <div className="flex min-w-0 items-center gap-3">
-        {item.author.handle ? (
+        {item.author.handle && !item.isAnonymous ? (
           <Link
             to="/users/$handle"
             params={{ handle: item.author.handle }}
-            aria-label={`${item.author.displayName} 프로필 보기`}
+            aria-label={`${item.isAnonymous ? '익명' : item.author.displayName} 프로필 보기`}
             className="group focus-visible:outline-primary-600 flex min-w-0 flex-1 items-center gap-3 rounded-sm focus-visible:outline-2"
           >
             {authorDetails}
@@ -320,17 +482,14 @@ function CommentItem({
         ) : (
           <div className="flex min-w-0 flex-1 items-center gap-3">{authorDetails}</div>
         )}
-        <time dateTime={item.createdAt} className="shrink-0 text-sm text-gray-500">
-          {formatRelativeTime(item.createdAt)}
+        <time dateTime={item.createdAt} className="shrink-0 text-xs text-gray-500">
+          {formatDateTime(item.createdAt)}
           {item.edited ? ' · 수정됨' : ''}
         </time>
       </div>
-      {item.parentId !== null && (
-        <p className="mt-3 text-xs text-gray-500">댓글 #{item.parentId}에 대한 답글</p>
-      )}
       {editing && canEdit ? (
         <form
-          className="mt-3 space-y-2"
+          className="mt-4 space-y-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4"
           onSubmit={(e) => {
             e.preventDefault();
             if (draft.trim() && !pending)
@@ -340,80 +499,189 @@ function CommentItem({
           }}
         >
           <label className="sr-only" htmlFor={`edit-${item.id}`}>
-            댓글 수정 내용
+            {label} 수정 내용
           </label>
           <textarea
             id={`edit-${item.id}`}
-            className="bg-background w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-900"
+            rows={3}
+            maxLength={500}
+            className="bg-background focus-visible:border-primary-500 focus-visible:ring-primary-500 w-full resize-y rounded-lg border border-gray-200 p-3 text-sm leading-6 text-gray-900 outline-none focus-visible:ring-1"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             disabled={pending}
           />
-          <Button size="sm" type="submit" disabled={pending || !draft.trim()}>
-            수정 저장
-          </Button>
-          <Button size="sm" variant="ghost" disabled={pending} onClick={() => setEditing(false)}>
-            취소
-          </Button>
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="ghost" disabled={pending} onClick={() => setEditing(false)}>
+              취소
+            </Button>
+            <Button size="sm" variant="primary" type="submit" disabled={pending || !draft.trim()}>
+              수정 저장
+            </Button>
+          </div>
         </form>
       ) : (
         <p className="mt-4 text-sm leading-6 break-words whitespace-pre-wrap text-gray-700">
-          {item.deleted ? '삭제된 댓글입니다.' : item.content}
+          {item.deleted ? `삭제된 ${label}입니다.` : item.content}
         </p>
       )}
-      <div className="mt-3 flex items-center gap-1">
-        {!item.deleted && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className={`gap-1 px-2 ${agreed ? 'text-primary-600' : ''}`}
-            aria-label={agreed ? '공감 취소' : '공감'}
-            aria-pressed={agreed}
-            disabled={agreeMutation.isPending}
-            onClick={() => void toggleAgree()}
-          >
-            {agreed ? (
-              <IconThumbUpFilled className="size-4" aria-hidden="true" />
-            ) : (
-              <IconThumbUp className="size-4" aria-hidden="true" />
+      {!item.deleted && !editing && !deleting && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              className={`gap-1.5 rounded-full px-2.5 ${agreed ? 'bg-primary-50 text-primary-600 hover:bg-primary-100' : 'text-gray-500 hover:text-gray-800'}`}
+              aria-label={agreed ? '공감 취소' : '공감'}
+              aria-pressed={agreed}
+              disabled={agreeMutation.isPending}
+              onClick={() => void toggleAgree()}
+            >
+              {agreed ? (
+                <IconThumbUpFilled className="size-4" aria-hidden="true" />
+              ) : (
+                <IconThumbUp className="size-4" aria-hidden="true" />
+              )}
+              <span>
+                공감 <span aria-label="공감 수">{agreeCount}</span>
+              </span>
+            </Button>
+            {canReply && !replying && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-1.5 rounded-full px-2.5 text-gray-500 hover:text-gray-800"
+                disabled={pending}
+                aria-label="답글 달기"
+                onClick={() => setReplying(true)}
+              >
+                <IconCornerDownRight className="size-4" aria-hidden="true" />
+                답글
+              </Button>
             )}
-            <span aria-label="공감 수">{agreeCount}</span>
-          </Button>
-        )}
-        {canEdit && !editing && (
-          <Button
-            size="sm"
-            variant="ghost"
+          </div>
+          {(canEdit || canDelete) && (
+            <div className="ml-auto flex items-center gap-1">
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1 rounded-full px-2.5 text-gray-500 hover:text-gray-800"
+                  disabled={pending}
+                  onClick={() => {
+                    setDraft(item.content ?? '');
+                    setEditing(true);
+                  }}
+                >
+                  <IconPencil className="size-4" aria-hidden="true" />
+                  수정
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1 rounded-full px-2.5 text-gray-500 hover:bg-red-50 hover:text-red-600"
+                  disabled={pending}
+                  onClick={() => setDeleting(true)}
+                >
+                  <IconTrash className="size-4" aria-hidden="true" />
+                  삭제
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      {replying && canReply && (
+        <form
+          className="mt-4 space-y-3 rounded-xl border border-gray-200 bg-gray-50/50 p-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (replyContent.trim() && !pending)
+              void change(
+                {
+                  method: 'post',
+                  content: replyContent,
+                  parentId: item.id,
+                  isAnonymous: replyAnonymous,
+                },
+                () => {
+                  setReplyContent('');
+                  setReplyAnonymous(false);
+                  setReplying(false);
+                },
+              );
+          }}
+        >
+          <label className="sr-only" htmlFor={`reply-${item.id}`}>
+            답글 내용
+          </label>
+          <textarea
+            id={`reply-${item.id}`}
+            rows={3}
+            maxLength={500}
+            value={replyContent}
+            onChange={(event) => setReplyContent(event.target.value)}
             disabled={pending}
-            onClick={() => {
-              setDraft(item.content ?? '');
-              setEditing(true);
-            }}
-          >
-            수정
-          </Button>
-        )}
-        {canDelete && (
-          <Button size="sm" variant="ghost" disabled={pending} onClick={() => setDeleting(true)}>
-            삭제
-          </Button>
-        )}
-      </div>
+            placeholder="답글을 작성해 주세요."
+            className="bg-background focus-visible:border-primary-500 focus-visible:ring-primary-500 w-full resize-y rounded-lg border border-gray-200 p-3 text-sm leading-6 text-gray-900 outline-none focus-visible:ring-1"
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-xs text-gray-500">
+              <input
+                type="checkbox"
+                checked={replyAnonymous}
+                onChange={(event) => setReplyAnonymous(event.target.checked)}
+                disabled={pending}
+                className="accent-primary-600"
+              />
+              익명으로 남기기
+            </label>
+            <span className="text-xs text-gray-400">{Array.from(replyContent).length} / 500</span>
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={pending}
+                onClick={() => setReplying(false)}
+              >
+                취소
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                type="submit"
+                disabled={pending || !replyContent.trim()}
+              >
+                답글 등록
+              </Button>
+            </div>
+          </div>
+        </form>
+      )}
       {deleting && canDelete && (
-        <div role="group" aria-label="댓글 삭제 확인" className="mt-2 rounded-lg bg-gray-50 p-3">
-          <p className="mb-2 text-sm text-gray-700">이 댓글을 삭제할까요?</p>
-          <Button
-            size="sm"
-            disabled={pending}
-            onClick={() =>
-              void change({ method: 'delete', commentId: item.id }, () => setDeleting(false))
-            }
-          >
-            삭제 확인
-          </Button>
-          <Button size="sm" variant="ghost" disabled={pending} onClick={() => setDeleting(false)}>
-            취소
-          </Button>
+        <div
+          role="group"
+          aria-label={`${label} 삭제 확인`}
+          className="mt-4 rounded-xl border border-red-100 bg-red-50/50 p-4"
+        >
+          <p className="text-sm text-gray-800">{`이 ${label}을 삭제할까요?`}</p>
+          <div className="mt-3 flex justify-end gap-2">
+            <Button size="sm" variant="ghost" disabled={pending} onClick={() => setDeleting(false)}>
+              취소
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              className="bg-red-600 hover:bg-red-700 disabled:hover:bg-red-600"
+              disabled={pending}
+              onClick={() =>
+                void change({ method: 'delete', commentId: item.id }, () => setDeleting(false))
+              }
+            >
+              삭제 확인
+            </Button>
+          </div>
         </div>
       )}
       {agreeMutation.isError && (
@@ -421,6 +689,6 @@ function CommentItem({
           {getApiErrorMessage(agreeMutation.error)}
         </p>
       )}
-    </li>
+    </div>
   );
 }

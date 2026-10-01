@@ -13,7 +13,7 @@ const feed = (overrides: Partial<Feed> = {}): Feed => ({
     displayName: '정우진',
     userType: 'WOOWACOURSE_CREW',
     track: 'BACKEND',
-    cohort: 6,
+    isCurrent: false,
     avatarUrl: null,
   },
   categories: [],
@@ -31,11 +31,11 @@ const feed = (overrides: Partial<Feed> = {}): Feed => ({
 });
 
 describe('FeedDetailBody', () => {
-  it('제목을 본문 위에 h2로 보여준다', () => {
+  it('제목을 본문 위에 h1으로 보여준다', () => {
     render(<FeedDetailBody feed={feed()} />);
 
     expect(
-      screen.getByRole('heading', { level: 2, name: 'Redis Pub/Sub 동기화 개선기' }),
+      screen.getByRole('heading', { level: 1, name: 'Redis Pub/Sub 동기화 개선기' }),
     ).toBeInTheDocument();
     expect(screen.getByText('캐시 무효화와 메시지 순서를 함께 고민했어요.')).toBeInTheDocument();
   });

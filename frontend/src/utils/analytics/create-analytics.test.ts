@@ -63,9 +63,9 @@ describe('createAnalytics', () => {
     const { adapter, recorded } = recordingAdapter();
     const analytics = createAnalytics({ adapters: [adapter], getContext: () => CONTEXT });
 
-    analytics.pageView('/feeds/101');
+    analytics.pageView('/community/101');
 
-    expect(recorded.pageViews[0]?.path).toBe('/feeds/:feedId');
+    expect(recorded.pageViews[0]?.path).toBe('/community/:feedId');
   });
 
   it('사용자 식별자를 어댑터에 넘긴다', () => {

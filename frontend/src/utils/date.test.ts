@@ -1,4 +1,9 @@
-import { formatDotDate, formatRelativeTime } from '@/utils/date';
+import { formatDateTime, formatDotDate, formatRelativeTime } from '@/utils/date';
+
+test('날짜와 시간을 한국 시간으로 표시한다', () => {
+  expect(formatDateTime('2026-09-14T00:05:00Z')).toBe('2026.09.14 09:05');
+  expect(formatDateTime('2026-09-14T09:05:00+09:00')).toBe('2026.09.14 09:05');
+});
 
 describe('formatDotDate', () => {
   it('ISO date-time을 점으로 구분한 날짜로 보여준다', () => {

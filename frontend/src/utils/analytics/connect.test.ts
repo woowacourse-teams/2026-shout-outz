@@ -44,9 +44,9 @@ describe('connectRouterPageViews', () => {
 
     navigate('/');
     navigate('/users/woojin', '?tab=feeds');
-    navigate('/feeds/101');
+    navigate('/community/101');
 
-    expect(paths).toEqual(['/', '/users/woojin?tab=feeds', '/feeds/101']);
+    expect(paths).toEqual(['/', '/users/woojin?tab=feeds', '/community/101']);
   });
 
   it('연결을 끊으면 더 보내지 않는다', () => {

@@ -10,7 +10,7 @@ import {
 import { HeroBanner } from '@/components/home/HeroBanner';
 import { type HomeBanner } from '@/types/home';
 
-const ROUTE_PATHS = ['/', '/projects/$slug', '/news/$newsId', '/feeds/$feedId'];
+const ROUTE_PATHS = ['/', '/projects/$slug', '/news/$newsId', '/community/$feedId'];
 
 const banner = (overrides: Partial<HomeBanner> = {}): HomeBanner => ({
   bannerId: 100,

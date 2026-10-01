@@ -13,7 +13,7 @@ export type HomeBannerLink =
 /** ID로 찾는 대상 리소스 유형별 상세 경로. 라우트(`/news/$newsId` 등)와 같은 접두사를 쓴다. */
 const TARGET_SEGMENTS = {
   NEWS: 'news',
-  FEED: 'feeds',
+  FEED: 'community',
 } as const;
 
 const isInternalPath = (url: string) => url.startsWith('/') && !url.startsWith('//');

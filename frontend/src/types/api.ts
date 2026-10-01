@@ -59,11 +59,18 @@ type WithProjectMemberType<T extends { members: unknown[] }> = Omit<T, 'members'
   rejectReason?: string | null;
 };
 
+/** 피드 작성자의 기수 번호 대신 현재 기수 여부를 내려주는 최신 응답. */
+type WithFeedAuthorStatus<T extends { author: object }> = Omit<T, 'author'> & {
+  author: Omit<T['author'], 'cohort'> & { isCurrent?: boolean | null };
+};
+
 /** 피드 응답에 서버가 제공하지만 생성 타입에서 빠진 반응·개수 필드. */
-type WithFeedReactionState<T> = T & {
+type WithFeedReactionState<T extends { author: object }> = WithFeedAuthorStatus<T> & {
   likeCount?: number;
   likedByMe?: boolean;
   commentCount?: number;
+  feedType?: 'POST' | 'QUESTION';
+  isAnonymous?: boolean;
 };
 
 /** 커서 페이지네이션 meta. 목록 응답이 공통으로 쓴다. */
@@ -104,8 +111,10 @@ type GeneratedFeedComment = Item<Data<FeedCommentFindAllSuccessResponse>>;
 export type FeedCommentData = Omit<GeneratedFeedComment, 'author'> & {
   agreeCount?: number;
   agreedByMe?: boolean;
-  author: GeneratedFeedComment['author'] & {
+  isAnonymous?: boolean;
+  author: Omit<GeneratedFeedComment['author'], 'cohort'> & {
     handle?: string | null;
+    isCurrent?: boolean | null;
   };
 };
 
