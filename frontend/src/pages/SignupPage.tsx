@@ -1,4 +1,5 @@
 import { Suspense, useState } from 'react';
+import * as Sentry from '@sentry/react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 
 import { sessionQuery, signupMutation } from '@/apis/session';

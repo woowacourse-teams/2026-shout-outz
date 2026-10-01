@@ -4,7 +4,7 @@ import { Button } from '@/components/Button';
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
 import { Tab } from '@/components/Tab';
-import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { FeedList } from '@/components/feeds/FeedList';
 import { PopularFeedList } from '@/components/feeds/PopularFeedList';
 import { useMediaQuery } from '@/hooks/useMediaQuery';

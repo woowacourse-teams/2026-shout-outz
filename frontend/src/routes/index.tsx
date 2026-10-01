@@ -4,7 +4,6 @@ import { HomePage } from '@/pages/HomePage';
 
 export const Route = createFileRoute('/')({
   component: RouteComponent,
-  errorComponent: HomeError,
 });
 
 function RouteComponent() {
@@ -13,10 +12,6 @@ function RouteComponent() {
       <HomePage />
     </Suspense>
   );
-}
-
-function HomeError() {
-  return <HomeMessage>홈 화면을 불러오지 못했습니다.</HomeMessage>;
 }
 
 function HomeMessage({ children }: { children: string }) {

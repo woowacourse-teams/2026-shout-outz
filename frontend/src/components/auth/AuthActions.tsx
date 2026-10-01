@@ -7,6 +7,7 @@ import { myProfileQuery, myProfileSummaryQuery } from '@/apis/user';
 import { Avatar } from '@/components/Avatar';
 import { AuthSheet } from '@/components/auth/AuthSheet';
 import { Button } from '@/components/Button';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
 import { useModal } from '@/hooks/useModal';
 import { getApiErrorMessage } from '@/utils/error';
@@ -47,6 +48,7 @@ export function AuthActions() {
           누구인지 알기 전에는 링크를 내지 않는다. handle 없이 만들 수 있는 주소는 `/users`뿐인데,
           그쪽은 같은 요약을 한 번 더 조회해 리다이렉트하고, 실패하면 로그인 안내를 띄운다.
         */}
+        {authenticated && <NotificationBell />}
         {authenticated && profile.data && (
           <Link
             to="/users/$handle"

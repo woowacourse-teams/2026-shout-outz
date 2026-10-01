@@ -42,12 +42,14 @@ export function Gnb({ trailing, className, ...props }: GnbProps) {
     >
       <div className="mx-auto flex max-w-6xl flex-wrap items-center px-4">
         <Link to="/" className="flex h-14 items-center gap-2 md:h-18 md:gap-2.5">
-          <span
-            className="bg-primary-600 flex size-7 items-center justify-center rounded-lg text-sm font-bold text-white md:size-8 md:text-base"
-            aria-hidden="true"
-          >
-            S
-          </span>
+          {/* 파비콘과 같은 아이콘을 쓴다. */}
+          <img
+            src="/favicon/android-chrome-192x192.png"
+            alt=""
+            width={32}
+            height={32}
+            className="size-7 md:size-8"
+          />
           <span className="text-lg font-bold text-gray-900 md:text-xl">shout-outz</span>
         </Link>
 

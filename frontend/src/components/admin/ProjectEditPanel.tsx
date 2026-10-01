@@ -20,7 +20,7 @@ import { Field } from '@/components/Field';
 import { Image } from '@/components/Image';
 import { Input } from '@/components/Input';
 import { Select } from '@/components/Select';
-import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { ReviewStatusTab } from '@/components/admin/ReviewStatusTab';
 import { TechTagField } from '@/components/projects/TechTagField';
 import { ThumbnailField } from '@/components/projects/ThumbnailField';

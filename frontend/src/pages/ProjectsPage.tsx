@@ -5,11 +5,11 @@ import { IconFilter, IconPlus, IconSearch } from '@tabler/icons-react';
 
 import { sessionQuery } from '@/apis/session';
 import { Button, getButtonStyles } from '@/components/Button';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
 import { ProjectFilterModal } from '@/components/modals/ProjectFilterModal';
 import { ProjectList } from '@/components/projects/ProjectList';
-import { ProjectListBoundary } from '@/components/projects/ProjectListBoundary';
 import { Select } from '@/components/Select';
 import { DEFAULT_PROJECT_FILTER, PROJECT_SORTS, PROJECT_SORT_LABELS } from '@/constants/project';
 import { useModal } from '@/hooks/useModal';
@@ -60,9 +60,23 @@ export function ProjectsPage() {
         <ProjectSearchBar filter={filter} onApply={apply} />
 
         <div className="mt-8">
-          <ProjectListBoundary>
+          <AsyncBoundary
+            fallback={
+              <p role="status" className="py-16 text-center text-gray-500">
+                프로젝트를 불러오는 중입니다.
+              </p>
+            }
+            errorFallback={(_error, reset) => (
+              <div role="alert" className="space-y-4 py-16 text-center">
+                <p className="text-gray-600">프로젝트를 불러오지 못했습니다.</p>
+                <Button variant="outline" onClick={reset}>
+                  다시 시도
+                </Button>
+              </div>
+            )}
+          >
             <ProjectList filter={filter} onResetFilter={() => apply(DEFAULT_PROJECT_FILTER)} />
-          </ProjectListBoundary>
+          </AsyncBoundary>
         </div>
       </main>
       <Footer />

@@ -5,7 +5,7 @@ import { feedQuery } from '@/apis/feed';
 import { Button } from '@/components/Button';
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
-import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { FeedDetailBody } from '@/components/feeds/FeedDetailBody';
 import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { FeedLikeButton } from '@/components/feeds/FeedLikeButton';

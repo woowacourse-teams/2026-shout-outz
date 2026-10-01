@@ -5,6 +5,7 @@ import { setupServer } from 'msw/node';
 
 import { handlers } from '@/api/mock/handlers';
 import { ModalProvider } from '@/components/ModalProvider';
+import { RouteError } from '@/components/RouteError';
 import { routeTree } from '@/routeTree.gen';
 import { PATH_PARAMS_ALLOWED_CHARACTERS } from '@/constants/router';
 
@@ -42,6 +43,7 @@ export function renderRoute(entry: string) {
   });
   const router = createRouter({
     routeTree,
+    defaultErrorComponent: RouteError,
     pathParamsAllowedCharacters: [...PATH_PARAMS_ALLOWED_CHARACTERS],
     history: createMemoryHistory({ initialEntries: [entry] }),
     scrollRestoration: false,

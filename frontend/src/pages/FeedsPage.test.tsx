@@ -9,7 +9,7 @@ import { FeedList } from '@/components/feeds/FeedList';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { PopularFeedList } from '@/components/feeds/PopularFeedList';
 import { Comments } from '@/components/feed-comments/Comments';
-import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { createFeedHandlers, mockFeeds } from '@/mocks/handlers';
 import { routeTree } from '@/routeTree.gen';
 import type { ReactNode } from 'react';

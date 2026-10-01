@@ -2060,7 +2060,7 @@ export interface ProjectFindAllSuccessResponse {
     }[];
     /** 프로젝트 썸네일 미디어 ID */
     thumbnailImageId?: number | null;
-    /** CloudFront에서 제공하는 프로젝트 카드용 공개 이미지 URL */
+    /** CloudFront에서 제공하는 공개 썸네일 URL */
     thumbnailUrl?: string | null;
     /** 프로젝트 이름 */
     title: string;
@@ -2556,7 +2556,7 @@ export interface UserProjectFindAllSuccessResponse {
     }[];
     /** 프로젝트 썸네일 이미지 ID */
     thumbnailImageId?: number | null;
-    /** CloudFront에서 제공하는 프로젝트 카드용 공개 이미지 URL */
+    /** CloudFront에서 제공하는 공개 썸네일 URL */
     thumbnailUrl?: string | null;
     /** 프로젝트 이름 */
     title: string;

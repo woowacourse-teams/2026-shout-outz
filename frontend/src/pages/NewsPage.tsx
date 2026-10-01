@@ -2,11 +2,11 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { newsInfiniteQueryOptions } from '@/api/news';
 import { AppGnb } from '@/components/AppGnb';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
+import { Button } from '@/components/Button';
 import { Footer } from '@/components/Footer';
 import { NewsItem } from '@/components/NewsItem';
-import { Button } from '@/components/Button';
 import { Tab } from '@/components/Tab';
-import { NewsListBoundary } from '@/components/news/NewsListBoundary';
 import { DEFAULT_NEWS_FILTER, DEFAULT_NEWS_SORT, NEWS_FILTERS } from '@/constants/news';
 import type { NewsFilter, NewsSort } from '@/types/news';
 import { analytics } from '@/utils/analytics';
@@ -60,9 +60,24 @@ export function NewsPage() {
           </Tab>
         </div>
 
-        <NewsListBoundary key={`${filter}-${sortBy}`}>
+        <AsyncBoundary
+          key={`${filter}-${sortBy}`}
+          fallback={
+            <p role="status" className="py-16 text-center text-sm text-gray-500">
+              소식을 불러오는 중…
+            </p>
+          }
+          errorFallback={(_error, reset) => (
+            <div role="alert" className="space-y-4 py-16 text-center">
+              <p className="text-gray-600">소식을 불러오지 못했습니다.</p>
+              <Button variant="outline" onClick={reset}>
+                다시 시도
+              </Button>
+            </div>
+          )}
+        >
           <NewsList filter={filter} sort={sortBy} />
-        </NewsListBoundary>
+        </AsyncBoundary>
       </main>
       <Footer />
     </div>
