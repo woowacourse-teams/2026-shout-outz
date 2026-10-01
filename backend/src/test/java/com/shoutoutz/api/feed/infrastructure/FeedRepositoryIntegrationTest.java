@@ -485,6 +485,65 @@ class FeedRepositoryIntegrationTest {
         assertThat(secondPage.totalCount()).isEqualTo(3L);
     }
 
+    @Test
+    void 타인과_비로그인_사용자의_프로필_피드에서는_익명_글을_제외하고_개수도_맞춘다() {
+        long authorId = insertUser("GENERAL", null, null);
+        long viewerId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed open = saveFeed(authorId, "공개 글", base, categoryId);
+        saveAnonymousFeed(authorId, "익명 글", base.plus(1, ChronoUnit.HOURS), categoryId);
+
+        FeedPage otherView = feedQueryRepository.findAllByAuthorId(authorId, viewerId, null, 10);
+        FeedPage guestView = feedQueryRepository.findAllByAuthorId(authorId, null, 10);
+
+        assertThat(otherView.items()).extracting(FeedItem::feedId).containsExactly(open.getId());
+        assertThat(otherView.totalCount()).isEqualTo(1L);
+        assertThat(guestView.items()).extracting(FeedItem::feedId).containsExactly(open.getId());
+        assertThat(guestView.totalCount()).isEqualTo(1L);
+    }
+
+    @Test
+    void 본인_프로필_피드에서는_익명_글을_포함하고_개수도_맞춘다() {
+        long authorId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed open = saveFeed(authorId, "공개 글", base, categoryId);
+        Feed anonymous = saveAnonymousFeed(authorId, "익명 글", base.plus(1, ChronoUnit.HOURS), categoryId);
+
+        FeedPage ownerView = feedQueryRepository.findAllByAuthorId(authorId, authorId, null, 10);
+
+        assertThat(ownerView.items()).extracting(FeedItem::feedId)
+                .containsExactly(anonymous.getId(), open.getId());
+        assertThat(ownerView.totalCount()).isEqualTo(2L);
+    }
+
+    @Test
+    void 피드_타입_필터와_함께_조회해도_타인에게는_익명_글이_제외된다() {
+        long authorId = insertUser("GENERAL", null, null);
+        long viewerId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed openQuestion = feedRepository.save(Feed.create(
+                authorId, FeedType.QUESTION, "공개 질문", "본문", false, base));
+        feedRepository.saveCategories(openQuestion.getId(), List.of(categoryId));
+        Feed anonymousQuestion = feedRepository.save(Feed.create(
+                authorId, FeedType.QUESTION, "익명 질문", "본문", true, base.plus(1, ChronoUnit.HOURS)));
+        feedRepository.saveCategories(anonymousQuestion.getId(), List.of(categoryId));
+
+        FeedPage page = feedQueryRepository.findAllByAuthorId(
+                authorId, FeedType.QUESTION, viewerId, null, 10);
+
+        assertThat(page.items()).extracting(FeedItem::feedId).containsExactly(openQuestion.getId());
+        assertThat(page.totalCount()).isEqualTo(1L);
+    }
+
+    private Feed saveAnonymousFeed(long authorId, String content, Instant createdAt, long categoryId) {
+        Feed feed = feedRepository.save(Feed.create(authorId, "제목 " + content, content, true, createdAt));
+        feedRepository.saveCategories(feed.getId(), List.of(categoryId));
+        return feed;
+    }
+
     private Feed saveFeed(long authorId, String content, Instant createdAt, long categoryId, long... mediaIds) {
         return saveFeed(authorId, "제목 " + content, content, createdAt, categoryId, mediaIds);
     }

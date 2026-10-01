@@ -34,6 +34,13 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class FeedQueryRepositoryImpl implements FeedQueryRepository {
 
+    /**
+     * 익명 피드는 작성자 본인에게만 보인다. viewerId가 null이면 익명 피드를 모두 제외한다.
+     */
+    private static final String ANONYMOUS_VISIBILITY_FILTER = """
+              AND (p.is_anonymous = FALSE OR p.author_id = :viewerId)
+            """;
+
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final FeedLinkPreviewRepository linkPreviewRepository;
 
@@ -209,6 +216,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                 .addValue("viewerId", viewerId, Types.BIGINT)
                 .addValue("limit", size + 1);
         sql.append("  AND p.author_id = :authorId\n");
+        sql.append(ANONYMOUS_VISIBILITY_FILTER);
         appendFeedTypeFilter(sql, parameters, type);
         appendLatestCursorAndOrder(sql, parameters, cursor);
         sql.append("LIMIT :limit");
@@ -219,7 +227,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                 (resultSet, rowNumber) -> toBaseRow(resultSet, viewerId)
         );
         List<FeedItem> items = assembleItems(rows);
-        return createPage(items, size, countAllByAuthorId(authorId, type));
+        return createPage(items, size, countAllByAuthorId(authorId, type, viewerId));
     }
 
     private long countAll(FeedSort sort, Long categoryId, String keyword, FeedType type) {
@@ -244,14 +252,17 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         return jdbcTemplate.queryForObject(sql.toString(), parameters, Long.class);
     }
 
-    private long countAllByAuthorId(long authorId, FeedType type) {
+    private long countAllByAuthorId(long authorId, FeedType type, Long viewerId) {
         StringBuilder sql = new StringBuilder("""
                 SELECT COUNT(*)
                 FROM feeds p
                 WHERE p.deleted_at IS NULL
                   AND p.author_id = :authorId
                 """);
-        MapSqlParameterSource parameters = new MapSqlParameterSource("authorId", authorId);
+        sql.append(ANONYMOUS_VISIBILITY_FILTER);
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("authorId", authorId)
+                .addValue("viewerId", viewerId, Types.BIGINT);
         appendFeedTypeFilter(sql, parameters, type);
         return jdbcTemplate.queryForObject(sql.toString(), parameters, Long.class);
     }

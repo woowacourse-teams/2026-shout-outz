@@ -24,12 +24,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Override
-    public UserProfileCounts countByUserId(long userId) {
-        return countByUserId(userId, false);
-    }
-
-    @Override
-    public UserProfileCounts countByUserId(long userId, boolean includePending) {
+    public UserProfileCounts countByUserId(long userId, boolean ownerView) {
         String sql = """
                 SELECT
                     (
@@ -40,7 +35,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                           AND p.deleted_at IS NULL
                           AND (
                               p.approval_status = 'APPROVED'
-                              OR (:includePending = TRUE AND p.approval_status = 'PENDING')
+                              OR (:ownerView = TRUE AND p.approval_status = 'PENDING')
                           )
                     ) AS projects,
                     (
@@ -48,6 +43,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                         FROM feeds p
                         WHERE p.author_id = :userId
                           AND p.deleted_at IS NULL
+                          AND (:ownerView = TRUE OR p.is_anonymous = FALSE)
                     ) AS feeds
                 """;
 
@@ -55,7 +51,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
                 sql,
                 new MapSqlParameterSource()
                         .addValue("userId", userId)
-                        .addValue("includePending", includePending),
+                        .addValue("ownerView", ownerView),
                 (resultSet, rowNumber) -> new UserProfileCounts(
                         resultSet.getLong("projects"),
                         resultSet.getLong("feeds")
