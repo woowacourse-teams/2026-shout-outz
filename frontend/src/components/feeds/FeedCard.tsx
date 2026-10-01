@@ -10,7 +10,7 @@ import { FeedMarkdown } from '@/components/feeds/FeedMarkdown';
 import { LinkPreview } from '@/components/feeds/LinkPreview';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { ShareButton } from '@/components/feeds/ShareButton';
-import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { Comments } from '@/components/feed-comments/Comments';
 import { analytics, type FeedSurface } from '@/utils/analytics';
 

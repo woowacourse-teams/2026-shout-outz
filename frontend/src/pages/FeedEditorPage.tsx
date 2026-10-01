@@ -4,7 +4,7 @@ import { sessionQuery } from '@/apis/session';
 import { getButtonStyles } from '@/components/Button';
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
-import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { FeedForm } from '@/components/feeds/FeedForm';
 import { getGithubLoginUrl } from '@/utils/auth';
 

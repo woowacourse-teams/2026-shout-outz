@@ -13,7 +13,6 @@ export const Route = createFileRoute('/admin')({
     tab: isAdminTab(search.tab) ? search.tab : undefined,
   }),
   component: RouteComponent,
-  errorComponent: AdminError,
 });
 
 function RouteComponent() {
@@ -22,10 +21,6 @@ function RouteComponent() {
       <AdminPage />
     </Suspense>
   );
-}
-
-function AdminError() {
-  return <AdminMessage>관리자 화면을 불러오지 못했습니다.</AdminMessage>;
 }
 
 function AdminMessage({ children }: { children: string }) {

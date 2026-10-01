@@ -5,7 +5,6 @@ import { ProjectCreatePage } from '@/pages/ProjectCreatePage';
 
 export const Route = createFileRoute('/projects/new')({
   component: RouteComponent,
-  errorComponent: ProjectCreateError,
 });
 
 function RouteComponent() {
@@ -14,10 +13,6 @@ function RouteComponent() {
       <ProjectCreatePage />
     </Suspense>
   );
-}
-
-function ProjectCreateError() {
-  return <ProjectCreateMessage>등록 화면을 불러오지 못했습니다.</ProjectCreateMessage>;
 }
 
 function ProjectCreateMessage({ children }: { children: string }) {

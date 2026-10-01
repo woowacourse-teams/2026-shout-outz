@@ -1,5 +1,5 @@
 import { createRoot, hydrateRoot } from 'react-dom/client';
-import { QueryClient } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 import { hydrate } from '@tanstack/react-router/ssr/client';
 import '@/styles/index.css';
 import { Document } from '@/Document';
@@ -8,9 +8,30 @@ import { App } from '@/App';
 import { createAppRouter } from './router';
 import { analytics } from '@/utils/analytics';
 import { connectRouterPageViews } from '@/utils/analytics/connect';
+import * as Sentry from '@sentry/react';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: (error) => Sentry.captureException(error) }),
+  mutationCache: new MutationCache({ onError: (error) => Sentry.captureException(error) }),
+});
 const router = createAppRouter(queryClient);
+const apiOrigin = getApiOrigin();
+
+Sentry.init({
+  dsn: process.env.NODE_ENV === 'production' ? process.env.SENTRY_DSN || undefined : undefined,
+  environment: process.env.SENTRY_ENVIRONMENT,
+  release: process.env.SENTRY_RELEASE || undefined,
+  integrations: [Sentry.browserTracingIntegration()],
+  // Tracing
+  tracesSampleRate: 1.0, //  Capture 100% of the transactions
+  ...(apiOrigin ? { tracePropagationTargets: [apiOrigin] } : {}),
+});
+
+const errorHandlers = {
+  onUncaughtError: Sentry.reactErrorHandler(),
+  onCaughtError: Sentry.reactErrorHandler(),
+  onRecoverableError: Sentry.reactErrorHandler(),
+};
 
 // document 자체가 React Root입니다. render.tsx가 그리는 트리와 정확히 같은
 // <Document><App/></Document>를 그리고, 이 문서가 실제로 프리렌더됐는지에 따라 마운트 방식만
@@ -34,13 +55,13 @@ async function bootstrap() {
 
   if (!routerHydrationState) {
     // $_TSR이 없는 순수 CSR(dev 서버 등)에서는 하이드레이션 없이 새로 그립니다.
-    createRoot(document).render(tree);
+    createRoot(document, errorHandlers).render(tree);
     return;
   }
 
   // Router 매치 상태와 React Query 캐시를 복원한 뒤 React 트리를 하이드레이트합니다.
   await hydrate(router).finally(() => routerHydrationState.h());
-  hydrateRoot(document, tree);
+  hydrateRoot(document, tree, errorHandlers);
 }
 
 void bootstrap();

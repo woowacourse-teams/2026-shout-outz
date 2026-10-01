@@ -1,7 +1,6 @@
-import { Component, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
-  QueryErrorResetBoundary,
   useMutation,
   useSuspenseQuery,
   useQueryClient,
@@ -17,7 +16,7 @@ import { sessionQuery } from '@/apis/session';
 import { Button } from '@/components/Button';
 import { Avatar } from '@/components/Avatar';
 import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
-import { AsyncBoundary } from '@/components/feeds/AsyncBoundary';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { formatRelativeTime } from '@/utils/date';
 import { getApiErrorMessage } from '@/utils/error';
 import { getGithubLoginUrl } from '@/utils/auth';
@@ -28,56 +27,22 @@ import { useRequireAuthentication } from '@/hooks/useRequireAuthentication';
 
 export function Comments({ feedId }: { feedId: number }) {
   return (
-    <QueryErrorResetBoundary>
-      {({ reset }) => (
-        <SessionBoundary reset={reset} guest={<GuestComments feedId={feedId} />}>
-          <Suspense
-            fallback={
-              <p role="status" className="p-6 text-gray-500">
-                불러오는 중…
-              </p>
-            }
-          >
-            <CommentsWithSession feedId={feedId} />
-          </Suspense>
-        </SessionBoundary>
-      )}
-    </QueryErrorResetBoundary>
-  );
-}
-
-class SessionBoundary extends Component<
-  { children: ReactNode; guest: ReactNode; reset: () => void },
-  { error: unknown | null }
-> {
-  state: { error: unknown | null } = { error: null };
-
-  static getDerivedStateFromError(error: unknown) {
-    return { error };
-  }
-
-  render() {
-    if (this.state.error === null) return this.props.children;
-
-    return (
-      <div>
-        <div role="alert" className="mb-3 text-sm text-gray-600">
-          {getApiErrorMessage(this.state.error)}{' '}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              this.props.reset();
-              this.setState({ error: null });
-            }}
-          >
-            로그인 상태 다시 확인
-          </Button>
+    <AsyncBoundary
+      errorFallback={(error, reset) => (
+        <div>
+          <div role="alert" className="mb-3 text-sm text-gray-600">
+            {getApiErrorMessage(error)}{' '}
+            <Button variant="ghost" size="sm" onClick={reset}>
+              로그인 상태 다시 확인
+            </Button>
+          </div>
+          <GuestComments feedId={feedId} />
         </div>
-        {this.props.guest}
-      </div>
-    );
-  }
+      )}
+    >
+      <CommentsWithSession feedId={feedId} />
+    </AsyncBoundary>
+  );
 }
 
 function GuestComments({ feedId }: { feedId: number }) {
