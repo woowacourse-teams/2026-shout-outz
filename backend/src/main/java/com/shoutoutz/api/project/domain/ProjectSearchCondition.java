@@ -7,7 +7,7 @@ import java.util.Objects;
  * 프로젝트 목록 조회 조건
  * 검색어가 null이면 검색하지 않고, 필터가 빈 목록이면 필터링하지 않는다. 커서가 null이면 첫 페이지를 조회한다.
  *
- * @param keyword    프로젝트 이름, 한 줄 소개, 기술 스택 이름, 참여 크루 이름 검색어 (대소문자 무시 부분 일치)
+ * @param keyword    프로젝트 이름, 한 줄 소개, 참여 크루 이름 검색어 (대소문자 무시 부분 일치)
  * @param cohorts    선택한 기수 중 하나에 해당하는 프로젝트 (OR)
  * @param techTagIds 선택한 기술 스택을 모두 사용한 프로젝트 (AND)
  */
