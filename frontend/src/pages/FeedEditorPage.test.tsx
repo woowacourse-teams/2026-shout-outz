@@ -32,7 +32,7 @@ afterEach(() => {
 });
 afterAll(() => server.close());
 
-function show(feedId?: number) {
+function show(feedId?: number, feedType: 'POST' | 'QUESTION' = 'POST') {
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   const router = createRouter({
     routeTree,
@@ -44,7 +44,12 @@ function show(feedId?: number) {
     <QueryClientProvider client={client}>
       <ModalProvider>
         <RouterContextProvider router={router}>
-          <FeedEditorPage feedId={feedId} onCancel={onCancel} onSaved={onSaved} />
+          <FeedEditorPage
+            feedId={feedId}
+            feedType={feedType}
+            onCancel={onCancel}
+            onSaved={onSaved}
+          />
         </RouterContextProvider>
       </ModalProvider>
     </QueryClientProvider>,
@@ -58,6 +63,36 @@ const fillTitle = async (user: User, value = '제목') => {
   await user.clear(input);
   await user.type(input, value);
 };
+
+test.each(['POST', 'QUESTION'] as const)(
+  '%s 작성 시 익명 선택을 저장 요청에 전달한다',
+  async (feedType) => {
+    let body: unknown;
+    server.use(
+      http.post('*/api/v1/feeds', async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ status: 'success', data: mockFeeds[0] }, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    show(undefined, feedType);
+    await fillTitle(user);
+    await user.type(screen.getByRole('textbox', { name: '피드 내용' }), '익명 작성 내용');
+    await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+    await user.click(
+      screen.getByRole('option', { name: feedType === 'QUESTION' ? '진로 고민' : '백엔드' }),
+    );
+    await user.click(screen.getByRole('checkbox', { name: '익명으로 쓰기' }));
+    await user.click(
+      screen.getByRole('button', {
+        name: feedType === 'QUESTION' ? '질문 등록하기' : '피드 등록하기',
+      }),
+    );
+    await waitFor(() =>
+      expect(body).toEqual(expect.objectContaining({ feedType, isAnonymous: true })),
+    );
+  },
+);
 
 test('실제 작성자를 표시하고 등록한 피드를 상세와 목록에서 조회할 수 있다', async () => {
   const user = userEvent.setup();
@@ -292,12 +327,14 @@ test('수정은 기존 본문과 카테고리를 채우고 저장 결과를 상�
   const { onSaved } = show(1);
   const input = await screen.findByRole('textbox', { name: '피드 내용' });
   expect(input).toHaveValue(mockFeeds[0]!.content);
+  expect(screen.getByRole('checkbox', { name: '익명으로 쓰기' })).toBeChecked();
   expect(screen.getByRole('combobox', { name: '카테고리' })).toHaveTextContent('백엔드');
   await user.clear(input);
   await user.type(input, '수정한 본문');
   await user.click(screen.getByRole('button', { name: '수정 완료' }));
   await waitFor(() => expect(onSaved).toHaveBeenCalledWith(1));
   expect((await fetchFeed(1)).content).toBe('수정한 본문');
+  expect((await fetchFeed(1)).isAnonymous).toBe(true);
   expect(client.getQueryData(['feed', 1])).toMatchObject({ content: '수정한 본문' });
 });
 
@@ -356,6 +393,7 @@ test('수정 시 기존 이벤트 카테고리와 미디어 연결을 보존한�
   expect(body).toEqual({
     title: original.title,
     content: original.content,
+    isAnonymous: original.isAnonymous,
     categoryIds: [1, 3],
     mediaIds: [31, 32],
   });

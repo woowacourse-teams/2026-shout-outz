@@ -63,6 +63,7 @@ export function FeedForm({
   const submitting = useRef(false);
   const [title, setTitle] = useState(initialFeed?.title ?? '');
   const [content, setContent] = useState(initialFeed?.content ?? '');
+  const [isAnonymous, setIsAnonymous] = useState(initialFeed?.isAnonymous ?? false);
   // 길이는 코드 포인트로 센다. 서버가 Unicode 기준으로 재므로 이모지·한글이 같은 수로 잡힌다.
   const titleTooLong = Array.from(title).length > FEED_TITLE_MAX;
   const tooLong = Array.from(content).length > FEED_CONTENT_MAX;
@@ -75,6 +76,7 @@ export function FeedForm({
       const feed = await mutation.mutateAsync({
         title: title.trim(),
         content,
+        isAnonymous,
         ...(!initialFeed ? { feedType: effectiveType } : {}),
         categoryIds: [
           Number(categoryId),
@@ -134,7 +136,7 @@ export function FeedForm({
       }}
     >
       <div className="flex items-center gap-2 md:gap-3">
-        <FeedAuthor author={profile} avatarSize="sm" />
+        <FeedAuthor author={profile} avatarSize="sm" isAnonymous={isAnonymous} />
       </div>
       <div className="space-y-2">
         <label htmlFor="feed-category" className="text-sm font-medium text-gray-900">
@@ -214,6 +216,16 @@ export function FeedForm({
           {getApiErrorMessage(mutation.error)}
         </p>
       )}
+      <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+        <input
+          type="checkbox"
+          checked={isAnonymous}
+          onChange={(event) => setIsAnonymous(event.target.checked)}
+          disabled={mutation.isPending}
+          className="accent-primary-600 size-4"
+        />
+        익명으로 쓰기
+      </label>
       <div className="flex gap-2 md:gap-3 md:pt-2">
         <Button variant="outline" onClick={onCancel} disabled={mutation.isPending}>
           취소
