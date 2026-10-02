@@ -1,3 +1,4 @@
+import { formatTrackLabel } from '@/utils/user';
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -148,13 +149,7 @@ function ProjectMemberProfile({ member }: { member: ProjectDetail['members'][num
         </p>
         <p className="text-gray-500">
           {member.cohort != null && `${member.cohort}기 `}
-          {(
-            {
-              ANDROID: '안드로이드',
-              BACKEND: '백엔드',
-              FRONTEND: '프론트엔드',
-            } as Record<string, string>
-          )[member.track ?? ''] ?? member.track}
+          {formatTrackLabel(member.track) ?? member.track}
         </p>
       </div>
     </>

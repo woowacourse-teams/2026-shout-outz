@@ -56,7 +56,9 @@ test('상세 URL에서 피드와 댓글을 각각 조회한다', async () => {
     within(notice.parentElement!).getByRole('img', { name: '우테코 크루' }),
   ).toBeInTheDocument();
   expect(
-    within(screen.getByRole('link', { name: '정우진 프로필 보기' })).queryByText(/BE.*기.*크루/),
+    within(screen.getByRole('link', { name: '정우진 프로필 보기' })).queryByText(
+      /기.*백엔드.*크루/,
+    ),
   ).not.toBeInTheDocument();
   // 리액션 API가 생겨 좋아요를 누를 수 있다. 비활성은 요청이 도는 동안뿐이다.
   expect(screen.getByRole('button', { name: '좋아요' })).toBeEnabled();
@@ -66,7 +68,7 @@ test('기수 숫자가 내려온 피드 작성자는 기수를 표시한다', as
   show(2);
 
   const author = await screen.findByRole('link', { name: '김도현 프로필 보기' });
-  expect(within(author).getByText('6기 FE 크루')).toBeInTheDocument();
+  expect(within(author).getByText('6기 프론트엔드 크루')).toBeInTheDocument();
 });
 
 test('질문 피드의 공유 안내를 본문 위에 두고 좋아요 문구를 표시한다', async () => {

@@ -1,3 +1,4 @@
+import { formatTrackLabel } from '@/utils/user';
 import type { Feed } from '@/apis/feed';
 import { IconUser } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
@@ -5,12 +6,6 @@ import { Avatar } from '@/components/Avatar';
 import type { AvatarSize } from '@/components/Avatar';
 import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
 import { formatRelativeTime } from '@/utils/date';
-
-const TRACK_ABBREVIATIONS: Record<string, string> = {
-  BACKEND: 'BE',
-  FRONTEND: 'FE',
-  ANDROID: 'AOS',
-};
 
 const ANONYMOUS_AVATAR_SIZE: Record<AvatarSize, string> = {
   xs: 'size-5',
@@ -29,7 +24,7 @@ const ANONYMOUS_ICON_SIZE: Record<AvatarSize, string> = {
 function formatAuthorRole(author: Feed['author']) {
   if (author.userType !== 'WOOWACOURSE_CREW') return null;
 
-  const track = author.track ? TRACK_ABBREVIATIONS[author.track] : null;
+  const track = formatTrackLabel(author.track);
   const cohort = author.cohort != null ? `${author.cohort}기` : null;
   return [cohort, track, '크루'].filter(Boolean).join(' ');
 }

@@ -42,7 +42,9 @@ function renderPage(path = '/projects/@dropit') {
 test('상세 직접 진입 시 API 정보와 공통 레이아웃을 표시한다', async () => {
   renderPage();
   expect(await screen.findByRole('heading', { level: 1, name: 'Dropit' })).toBeInTheDocument();
-  expect(screen.getByText(/정우진 \(작성자\)/)).toBeInTheDocument();
+  const member = screen.getByRole('link', { name: '정우진 프로필 보기' });
+  expect(within(member).getByText('정우진')).toBeInTheDocument();
+  expect(within(member).getByText('8기 백엔드')).toBeInTheDocument();
   expect(screen.getByText('React', { selector: 'span' })).toBeInTheDocument();
   expect(screen.getByRole('link', { name: '프로젝트 수정' })).toHaveAttribute(
     'href',

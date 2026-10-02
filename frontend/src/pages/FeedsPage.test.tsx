@@ -304,7 +304,7 @@ test('익명 댓글은 피드처럼 본인에게만 작성자를 알리고 트�
   expect(within(own).getByText('익명으로 작성한 글입니다')).toBeInTheDocument();
   expect(within(own).getByRole('img', { name: '우테코 크루' })).toBeInTheDocument();
   expect(within(own).getByText('작성자')).toBeInTheDocument();
-  expect(within(own).queryByText('BE 크루')).not.toBeInTheDocument();
+  expect(within(own).queryByText('백엔드 크루')).not.toBeInTheDocument();
   expect(within(own).queryByText('8기')).not.toBeInTheDocument();
   expect(within(own).queryByText('크루')).not.toBeInTheDocument();
 
@@ -319,7 +319,7 @@ test('기수 숫자가 내려온 댓글 작성자는 기수를 표시한다', as
   show(<Comments feedId={1} />);
 
   const comment = (await screen.findByText('경험을 공유해 주셔서 감사합니다!')).closest('li')!;
-  expect(within(comment).getByText('8기 BE 크루')).toBeInTheDocument();
+  expect(within(comment).getByText('8기 백엔드 크루')).toBeInTheDocument();
 });
 test('댓글 작성, 수정, 삭제가 조회 결과에 반영된다', async () => {
   const user = userEvent.setup();
