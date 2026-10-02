@@ -92,15 +92,12 @@ public class UserProfile {
             String verificationTrack
     ) {
         boolean crew = verificationType == UserType.WOOWACOURSE_CREW;
-        String verifiedDisplayName = crew
-                ? verificationCohort + "기 " + nickname
-                : nickname;
         Track verifiedTrack = crew ? Track.from(verificationTrack) : null;
         Cohort verifiedCohort = crew ? Cohort.from(verificationCohort) : null;
 
         return new UserProfile(
                 userId,
-                verifiedDisplayName,
+                nickname,
                 verificationType,
                 verifiedTrack,
                 verifiedCohort,
