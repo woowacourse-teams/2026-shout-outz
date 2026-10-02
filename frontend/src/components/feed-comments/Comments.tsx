@@ -473,8 +473,8 @@ function CommentItem({
   const crewInfo = item.isAnonymous
     ? null
     : [
-        trackLabel,
         item.author.cohort != null ? `${item.author.cohort}기` : null,
+        trackLabel,
         item.author.userType === 'WOOWACOURSE_CREW' ? '크루' : null,
       ]
         .filter(Boolean)

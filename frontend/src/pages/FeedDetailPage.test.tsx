@@ -66,7 +66,7 @@ test('기수 숫자가 내려온 피드 작성자는 기수를 표시한다', as
   show(2);
 
   const author = await screen.findByRole('link', { name: '김도현 프로필 보기' });
-  expect(within(author).getByText('FE 6기 크루')).toBeInTheDocument();
+  expect(within(author).getByText('6기 FE 크루')).toBeInTheDocument();
 });
 
 test('질문 피드의 공유 안내를 본문 위에 두고 좋아요 문구를 표시한다', async () => {
