@@ -15,7 +15,6 @@ import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
-import com.shoutoutz.api.project.application.ArchivedProjectMemberMatchService;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -37,9 +36,6 @@ class OAuthSignupServiceTest {
             mock(UserProfileRepository.class);
     private final OAuthAccountRepository oauthAccountRepository =
             mock(OAuthAccountRepository.class);
-    private final ArchivedProjectMemberMatchService archivedProjectMemberMatchService =
-            mock(ArchivedProjectMemberMatchService.class);
-
     private OAuthSignupService oauthSignupService;
 
     @BeforeEach
@@ -47,8 +43,7 @@ class OAuthSignupServiceTest {
         oauthSignupService = new OAuthSignupService(
                 userRepository,
                 userProfileRepository,
-                oauthAccountRepository,
-                archivedProjectMemberMatchService
+                oauthAccountRepository
         );
     }
 
@@ -74,8 +69,6 @@ class OAuthSignupServiceTest {
         verify(userRepository).save(userCaptor.capture());
         verify(userProfileRepository).save(profileCaptor.capture());
         verify(oauthAccountRepository).save(accountCaptor.capture());
-        verify(archivedProjectMemberMatchService).matchGithubAccount(1L, "12345678");
-
         User user = userCaptor.getValue();
         UserProfile profile = profileCaptor.getValue();
         OAuthAccount account = accountCaptor.getValue();
