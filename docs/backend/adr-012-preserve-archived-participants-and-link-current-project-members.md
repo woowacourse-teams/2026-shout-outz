@@ -23,6 +23,8 @@
 
 과거 기수 프로젝트의 참여자가 Drop it에서 크루 인증을 승인받으면, 연결된 GitHub OAuth 계정 ID로 아카이브 참여자를 찾는다. 아카이브 참여자 테이블(`woowa_archived_project_members`) 행의 `matched_user_id`를 채우고, 동시에 `project_members`에 현재 사용자와 프로젝트의 연결을 추가한다. 회원가입, 로그인, 인증 신청, 코치 인증 승인 시에는 연결하지 않는다.
 
+이 변경은 앞으로 발생하는 연결에 적용한다. 기존 회원가입 또는 로그인 시점에 이미 연결된 사용자의 데이터는 해제하지 않는다.
+
 아카이브 참여자 테이블(`woowa_archived_project_members`)의 원본 스냅샷은 삭제하거나 현재 프로필 정보로 덮어쓰지 않는다.
 
 `project_members`는 현재 Dropit 회원을 기준으로 프로젝트 멤버를 조회하는 데 사용하고, 아카이브 참여자 테이블(`woowa_archived_project_members`)은 수집 당시의 정보를 보존하는 데 사용한다. 즉, `woowa_archived_project_members`에는 미래 시점에 새로운 행 INSERT가 존재하지 않는다.
