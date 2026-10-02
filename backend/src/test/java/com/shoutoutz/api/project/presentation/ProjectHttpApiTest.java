@@ -482,7 +482,7 @@ class ProjectHttpApiTest {
                                 .description(FIND_ALL_DESCRIPTION)
                                 .queryParameters(
                                         parameterWithName("keyword")
-                                                .description("프로젝트 이름, 한 줄 소개, 참여 크루 이름, 기술 스택 이름 검색어. "
+                                                .description("프로젝트 이름, 한 줄 소개, 참여 크루 이름 검색어. "
                                                         + "대소문자를 무시한 부분 일치이며 100자 이하")
                                                 .optional(),
                                         parameterWithName("cohorts")
