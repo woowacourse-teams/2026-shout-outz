@@ -2,12 +2,14 @@ package com.shoutoutz.api.project.presentation.dto.request;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.shoutoutz.api.project.domain.ServiceStatus;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -30,6 +32,37 @@ class ProjectCreateRequestTest {
     }
 
     @Test
+    @DisplayName("serviceStatus가 없으면 거절한다.")
+    void rejectsMissingServiceStatus() {
+        assertThat(validator.validate(request("https://loop.team", null)))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("serviceStatus");
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"   "})
+    @DisplayName("배포 URL이 없고 운영 중이면 거절한다.")
+    void rejectsOperatingWithoutDeploymentUrl(String deploymentUrl) {
+        assertThat(validator.validate(request(deploymentUrl, ServiceStatus.OPERATING)))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("serviceStatusValid");
+    }
+
+    @Test
+    @DisplayName("배포 URL이 없어도 종료 상태면 허용한다.")
+    void acceptsClosedWithoutDeploymentUrl() {
+        assertThat(validator.validate(request(null, ServiceStatus.CLOSED))).isEmpty();
+    }
+
+    @ParameterizedTest
+    @EnumSource(ServiceStatus.class)
+    @DisplayName("배포 URL이 있으면 어떤 서비스 상태든 허용한다.")
+    void acceptsAnyServiceStatusWithDeploymentUrl(ServiceStatus serviceStatus) {
+        assertThat(validator.validate(request("https://loop.team", serviceStatus))).isEmpty();
+    }
+
+    @Test
     @DisplayName("문자열 필드의 앞뒤 공백을 자른다.")
     void stripsStringFields() {
         ProjectCreateRequest request = new ProjectCreateRequest(
@@ -41,6 +74,7 @@ class ProjectCreateRequestTest {
                 " https://github.com/woowacourse-teams/2026-loop ",
                 " https://loop.team ",
                 "설명",
+                ServiceStatus.OPERATING,
                 List.of(1L),
                 List.of(" @dahye ", "@teammate")
         );
@@ -61,6 +95,7 @@ class ProjectCreateRequestTest {
                 "루프", "루프팀", "소개", 8, null,
                 "https://github.com/woowacourse-teams/2026-loop", null,
                 "    indented code\n",
+                ServiceStatus.OPERATING,
                 List.of(1L), List.of("@teammate")
         );
 
@@ -73,6 +108,7 @@ class ProjectCreateRequestTest {
         ProjectCreateRequest request = new ProjectCreateRequest(
                 " " + "가".repeat(100) + " ", "루프팀", "소개", 8, null,
                 "https://github.com/woowacourse-teams/2026-loop", null, "설명",
+                ServiceStatus.CLOSED,
                 List.of(1L), List.of("@teammate")
         );
 
@@ -85,6 +121,7 @@ class ProjectCreateRequestTest {
         ProjectCreateRequest request = new ProjectCreateRequest(
                 "루프", "루프팀", "소개", 8, null,
                 "https://github.com/woowacourse-teams/2026-loop", null, "설명",
+                ServiceStatus.CLOSED,
                 List.of(1L), List.of("@teammate", "   ")
         );
 
@@ -99,6 +136,7 @@ class ProjectCreateRequestTest {
         ProjectCreateRequest request = new ProjectCreateRequest(
                 "루프", "루프팀", "소개", 8, null,
                 "https://github.com/woowacourse-teams/2026-loop", null, "설명",
+                ServiceStatus.CLOSED,
                 List.of(1L), List.of("teammate")
         );
 
@@ -132,11 +170,16 @@ class ProjectCreateRequestTest {
         return new ProjectCreateRequest(
                 "루프", "루프팀", "소개", 8, null,
                 githubRepositoryUrl, null, "설명",
+                ServiceStatus.CLOSED,
                 List.of(1L), List.of("@teammate")
         );
     }
 
     private static ProjectCreateRequest request(String deploymentUrl) {
+        return request(deploymentUrl, ServiceStatus.CLOSED);
+    }
+
+    private static ProjectCreateRequest request(String deploymentUrl, ServiceStatus serviceStatus) {
         return new ProjectCreateRequest(
                 "루프",
                 "루프팀",
@@ -146,6 +189,7 @@ class ProjectCreateRequestTest {
                 "https://github.com/woowacourse-teams/2026-loop",
                 deploymentUrl,
                 "설명",
+                serviceStatus,
                 List.of(1L),
                 List.of("@teammate")
         );

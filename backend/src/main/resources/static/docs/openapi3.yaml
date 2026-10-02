@@ -582,6 +582,7 @@ paths:
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                   }
@@ -596,6 +597,7 @@ paths:
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                   }
@@ -610,6 +612,7 @@ paths:
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                   }
@@ -624,6 +627,7 @@ paths:
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                   }
@@ -638,6 +642,7 @@ paths:
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                   }
@@ -652,6 +657,7 @@ paths:
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                   }
@@ -666,6 +672,22 @@ paths:
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                  }
+              project-create-invalid-service-status:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailImageId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": null,
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                   }
@@ -680,9 +702,19 @@ paths:
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "   "]
                   }
+              project-create-invalid-service-status-missing:
+                value: "{\n  \"title\": \"루프 (Loop)\",\n  \"teamName\": \"루프팀\",\n\
+                  \  \"tagline\": \"스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구\",\n  \"cohort\"\
+                  : 6,\n  \"thumbnailImageId\": 12,\n  \"githubRepositoryUrl\": \"\
+                  https://github.com/woowacourse-teams/2026-loop\",\n  \"deploymentUrl\"\
+                  : \"https://loop.team\",\n  \"descriptionMd\": \"## 문제\\n회고 도구와\
+                  \ 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)\",\n  \n  \"techTagIds\"\
+                  : [1, 2, 3],\n  \"memberHandles\": [\"@dhyepark\", \"@zzaekkii\"\
+                  , \"@sangjun121\"]\n}\n"
               project-create:
                 value: |
                   {
@@ -694,6 +726,7 @@ paths:
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                   }
@@ -703,8 +736,9 @@ paths:
                   : 12,\n  \"githubRepositoryUrl\": \"https://github.com/woowacourse-teams/2026-loop\"\
                   ,\n  \"deploymentUrl\": \"https://loop.team\",\n  \"descriptionMd\"\
                   : \"## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)\"\
-                  ,\n  \"techTagIds\": [1, 2, 3],\n  \"memberHandles\": [\"@dhyepark\"\
-                  , \"@zzaekkii\", \"@sangjun121\"]\n}\n"
+                  ,\n  \"serviceStatus\": \"OPERATING\",\n  \"techTagIds\": [1, 2,\
+                  \ 3],\n  \"memberHandles\": [\"@dhyepark\", \"@zzaekkii\", \"@sangjun121\"\
+                  ]\n}\n"
               project-create-invalid-thumbnail:
                 value: |
                   {
@@ -716,6 +750,7 @@ paths:
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                   }
@@ -730,6 +765,7 @@ paths:
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                   }
@@ -744,6 +780,7 @@ paths:
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                   }
@@ -758,6 +795,7 @@ paths:
                     "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                   }
@@ -772,6 +810,7 @@ paths:
                     "githubRepositoryUrl": "https://github.com/other-org/2026-loop",
                     "deploymentUrl": "https://loop.team",
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
                     "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                   }
@@ -802,10 +841,19 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"PROJECT_INVALID_SLUG\"\
                     ,\"message\":\"리포지토리 이름으로 프로젝트 주소를 만들 수 없습니다. 이름에 영문자나 숫자가 있어야\
                     \ 하고, 주소는 100자를 넘을 수 없습니다.\"}"
+                project-create-invalid-service-status:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"serviceStatusValid\"\
+                    ,\"message\":\"deploymentUrl이 없으면 serviceStatus를 OPERATING으로 둘\
+                    \ 수 없습니다.\"}]}"
                 project-create-invalid-blank-member-handle:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"memberHandles\"\
                     ,\"message\":\"memberHandles에 빈 값을 넣을 수 없습니다.\"}]}"
+                project-create-invalid-service-status-missing:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"serviceStatus\"\
+                    ,\"message\":\"serviceStatus는 필수입니다.\"}]}"
                 project-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
@@ -5401,6 +5449,7 @@ components:
       - cohort
       - githubRepositoryUrl
       - memberHandles
+      - serviceStatus
       - tagline
       - teamName
       - techTagIds
@@ -5426,6 +5475,13 @@ components:
             가 표시 순서가 된다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다."
           items:
             type: string
+        serviceStatus:
+          type: string
+          description: "서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반\
+            환한다. 이때 오류 응답의 details.field는 serviceStatusValid다."
+          enum:
+          - OPERATING
+          - CLOSED
         descriptionMd:
           type: string
           description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\

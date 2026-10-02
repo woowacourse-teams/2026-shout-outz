@@ -769,6 +769,7 @@ class ProjectAcceptanceTest {
                 "cohort", 6,
                 "githubRepositoryUrl", githubRepositoryUrl,
                 "deploymentUrl", "https://loop.team",
+                "serviceStatus", "OPERATING",
                 "techTagIds", techTagIds,
                 "memberHandles", memberHandles
         );
