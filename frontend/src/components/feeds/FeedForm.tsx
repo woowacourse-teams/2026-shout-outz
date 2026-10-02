@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import {
   createFeedMutation,
@@ -45,6 +45,18 @@ export function FeedForm({
     (category) => String(category.categoryId) === categoryId,
   );
   const client = useQueryClient();
+
+  const creating = initialFeed === undefined;
+  useEffect(() => {
+    if (creating) {
+      analytics.track({
+        name: 'feed_create_started',
+        from: document.referrer,
+        feedType: effectiveType,
+      });
+    }
+  }, [creating, effectiveType]);
+
   const mutation = useMutation(
     initialFeed ? updateFeedMutation(initialFeed.feedId) : createFeedMutation,
   );
@@ -87,12 +99,17 @@ export function FeedForm({
           name: 'feed_create_submitted',
           categoryCount: feed.categories.length,
           mediaCount: feed.media.length,
+          feedType: effectiveType,
         });
       }
       onSaved(feed.feedId);
     } catch {
       if (!initialFeed) {
-        analytics.track({ name: 'feed_create_failed', reason: '요청 실패' });
+        analytics.track({
+          name: 'feed_create_failed',
+          reason: '요청 실패',
+          feedType: effectiveType,
+        });
       }
       // Mutation의 오류 상태로 메시지를 표시하고 작성 내용은 유지한다.
     } finally {

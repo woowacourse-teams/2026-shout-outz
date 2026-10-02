@@ -5,6 +5,7 @@ import { IconHeart, IconHeartFilled } from '@tabler/icons-react';
 import { setProjectLike } from '@/apis/reaction';
 import { Button } from '@/components/Button';
 import { useRequireAuthentication } from '@/hooks/useRequireAuthentication';
+import { analytics } from '@/utils/analytics';
 
 export function ProjectLikeButton({
   slug,
@@ -38,6 +39,7 @@ export function ProjectLikeButton({
       const result = await mutation.mutateAsync(next);
       setCount(result.likeCount);
       setLiked(result.active);
+      analytics.track({ name: 'project_like_toggled', slug, liked: result.active });
       void client.invalidateQueries({ queryKey: ['project-detail', slug] });
       void client.invalidateQueries({ queryKey: ['project-list'] });
       void client.invalidateQueries({ queryKey: ['users'] });

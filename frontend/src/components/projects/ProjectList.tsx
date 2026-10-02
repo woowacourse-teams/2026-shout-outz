@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { IconSearch } from '@tabler/icons-react';
@@ -18,6 +19,15 @@ export interface ProjectListProps {
 export function ProjectList({ filter, onResetFilter }: ProjectListProps) {
   const query = useSuspenseInfiniteQuery(projectListInfiniteQueryOptions(filter));
   const projects = query.data.pages.flatMap((page) => page.projects);
+  const keywordLength = [...filter.keyword.trim()].length;
+  const resultCount = query.data.pages[0]?.meta.totalCount ?? projects.length;
+
+  // 검색어 자체는 보내지 않는다. 검색어에 사람 이름이 들어갈 수 있다.
+  useEffect(() => {
+    if (keywordLength > 0) {
+      analytics.track({ name: 'project_search_performed', keywordLength, resultCount });
+    }
+  }, [keywordLength, resultCount]);
 
   if (projects.length === 0) {
     return <EmptyResult filter={filter} onResetFilter={onResetFilter} />;

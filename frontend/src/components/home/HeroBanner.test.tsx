@@ -22,7 +22,9 @@ const banner = (overrides: Partial<HomeBanner> = {}): HomeBanner => ({
 
 /** HeroBanner는 내부 이동에 라우터 Link를 쓰므로 라우터 안에서 그린다. */
 const renderBanner = async (value: HomeBanner) => {
-  const rootRoute = createRootRoute({ component: () => <HeroBanner banner={value} /> });
+  const rootRoute = createRootRoute({
+    component: () => <HeroBanner banner={value} position={0} />,
+  });
   const router = createRouter({
     routeTree: rootRoute.addChildren(
       ROUTE_PATHS.map((path) =>

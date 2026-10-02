@@ -36,10 +36,10 @@ describe('createAnalytics', () => {
       getContext: () => CONTEXT,
     });
 
-    analytics.track({ name: 'hero_banner_clicked' });
+    analytics.track({ name: 'signup_submitted' });
 
-    expect(first.recorded.events[0]?.event).toEqual({ name: 'hero_banner_clicked' });
-    expect(second.recorded.events[0]?.event).toEqual({ name: 'hero_banner_clicked' });
+    expect(first.recorded.events[0]?.event).toEqual({ name: 'signup_submitted' });
+    expect(second.recorded.events[0]?.event).toEqual({ name: 'signup_submitted' });
   });
 
   it('공통 파라미터를 붙여서 보낸다', () => {
@@ -99,7 +99,7 @@ describe('createAnalytics', () => {
         getContext: () => CONTEXT,
       });
 
-      expect(() => analytics.track({ name: 'hero_banner_clicked' })).not.toThrow();
+      expect(() => analytics.track({ name: 'signup_submitted' })).not.toThrow();
       expect(() => analytics.pageView('/')).not.toThrow();
       expect(() => analytics.identify(null)).not.toThrow();
       expect(recorded.events).toHaveLength(1);
@@ -111,11 +111,11 @@ describe('createAnalytics', () => {
       const { adapter, recorded } = recordingAdapter();
       const analytics = createAnalytics({ adapters: [adapter], getContext: () => CONTEXT });
 
-      analytics.track({ name: 'hero_banner_clicked' });
+      analytics.track({ name: 'signup_submitted' });
       analytics.identify({ userId: 10, handle: 'woojin' });
-      analytics.track({ name: 'hero_banner_clicked' });
+      analytics.track({ name: 'signup_submitted' });
       analytics.identify(null);
-      analytics.track({ name: 'hero_banner_clicked' });
+      analytics.track({ name: 'signup_submitted' });
 
       expect(recorded.events.map(({ context }) => context.isLoggedIn)).toEqual([
         false,
@@ -154,6 +154,6 @@ describe('createAnalytics', () => {
   it('어댑터가 없으면 아무 일도 하지 않는다', () => {
     const analytics = createAnalytics({ adapters: [], getContext: () => CONTEXT });
 
-    expect(() => analytics.track({ name: 'hero_banner_clicked' })).not.toThrow();
+    expect(() => analytics.track({ name: 'signup_submitted' })).not.toThrow();
   });
 });

@@ -14,6 +14,7 @@ import { Select } from '@/components/Select';
 import { DEFAULT_PROJECT_FILTER, PROJECT_SORTS, PROJECT_SORT_LABELS } from '@/constants/project';
 import { useModal } from '@/hooks/useModal';
 import { type ProjectFilter, type ProjectSort } from '@/types/project';
+import { analytics } from '@/utils/analytics';
 
 const route = getRouteApi('/projects/');
 
@@ -100,7 +101,17 @@ function ProjectSearchBar({
     const next = await open<ProjectFilter>((close) => (
       <ProjectFilterModal initial={filter} onApply={close} onClose={() => close(filter)} />
     ));
-    if (next) onApply(next);
+    if (next) {
+      // 닫기는 처음 값을 그대로 돌려준다. 적용을 누른 경우만 센다.
+      if (next !== filter) {
+        analytics.track({
+          name: 'project_filter_applied',
+          cohortCount: next.cohorts.length,
+          techTagCount: next.techTagIds.length,
+        });
+      }
+      onApply(next);
+    }
   };
 
   return (
@@ -147,7 +158,10 @@ function ProjectSearchBar({
           <Select
             aria-label="프로젝트 정렬"
             value={filter.sort}
-            onValueChange={(value) => onApply({ ...filter, sort: value as ProjectSort })}
+            onValueChange={(value) => {
+              analytics.track({ name: 'project_sort_changed', sort: value });
+              onApply({ ...filter, sort: value as ProjectSort });
+            }}
           >
             {PROJECT_SORTS.map((sort) => (
               <Select.Item key={sort} value={sort}>

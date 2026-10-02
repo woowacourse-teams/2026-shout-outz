@@ -152,7 +152,13 @@ function CommentList({
     setMessage('');
     try {
       await mutation.mutateAsync(input);
-      if (input.method === 'post') analytics.track({ name: 'comment_submitted' });
+      if (input.method === 'post') {
+        analytics.track({
+          name: 'comment_submitted',
+          isReply: input.parentId != null,
+          isAnonymous: input.isAnonymous ?? false,
+        });
+      }
     } catch (error) {
       setFailure(getApiErrorMessage(error));
       return;
@@ -435,6 +441,12 @@ function CommentItem({
         baseCount,
         baseAgreed,
         count: result.agreeCount,
+        agreed: result.active,
+      });
+      analytics.track({
+        name: 'comment_agree_toggled',
+        feedId,
+        isReply: item.parentId != null,
         agreed: result.active,
       });
       void client.invalidateQueries({ queryKey: ['feed-comments', feedId] });

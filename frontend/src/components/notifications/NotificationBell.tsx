@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/Button';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import type { NotificationItem } from '@/types/notification';
+import { analytics } from '@/utils/analytics';
 import { cn } from '@/utils/cn';
 import { formatRelativeTime } from '@/utils/date';
 
@@ -70,7 +71,10 @@ export function NotificationBell() {
         aria-label={unreadCount > 0 ? `알림, 읽지 않은 알림 ${unreadCount}개` : '알림'}
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          if (!open) analytics.track({ name: 'notification_box_opened', unreadCount });
+          setOpen((current) => !current);
+        }}
         className="aria-expanded:bg-primary-50 aria-expanded:text-primary-600 relative size-8 rounded-full px-0"
       >
         <IconBell className="size-4.5" stroke={1.7} aria-hidden="true" />
@@ -98,7 +102,10 @@ export function NotificationBell() {
               variant="ghost"
               size="sm"
               disabled={markAllRead.isPending}
-              onClick={() => markAllRead.mutate()}
+              onClick={() => {
+                analytics.track({ name: 'notification_read_all_clicked', unreadCount });
+                markAllRead.mutate();
+              }}
               className="text-primary-600"
             >
               모두 읽음
@@ -129,6 +136,11 @@ function NotificationList({ onNavigate }: { onNavigate: () => void }) {
   }
 
   const open = (notification: NotificationItem) => {
+    analytics.track({
+      name: 'notification_clicked',
+      notificationType: notification.notificationType,
+      wasRead: notification.isRead,
+    });
     if (!notification.isRead) markRead.mutate(notification.notificationId);
     onNavigate();
     if (notification.feedId != null) {

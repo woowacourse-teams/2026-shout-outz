@@ -47,7 +47,14 @@ export function FeedsPage({
             size="md"
             className="mt-5 w-full border-b border-gray-200"
             value={feedType}
-            onChange={(value) => onTypeChange(value as FeedType)}
+            onChange={(value) => {
+              analytics.track({
+                name: 'feed_type_changed',
+                feedType: value as FeedType,
+                surface: 'feeds',
+              });
+              onTypeChange(value as FeedType);
+            }}
             aria-label="커뮤니티 유형"
           >
             <Tab.Item value="QUESTION">
@@ -67,7 +74,12 @@ export function FeedsPage({
                 size="sm"
                 value={sort}
                 onChange={(value) => {
-                  analytics.track({ name: 'feed_sort_changed', sort: value, surface: 'feeds' });
+                  analytics.track({
+                    name: 'feed_sort_changed',
+                    sort: value,
+                    surface: 'feeds',
+                    feedType,
+                  });
                   onSortChange(value as FeedSort);
                 }}
                 aria-label="피드 정렬"

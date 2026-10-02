@@ -97,7 +97,7 @@ describe('posthogAdapter', () => {
     const adapter = posthogAdapter({ key: 'phc_test', host: 'h', load: load(client) });
 
     adapter.pageView('/', CONTEXT);
-    adapter.track({ name: 'hero_banner_clicked' }, CONTEXT);
+    adapter.track({ name: 'signup_submitted' }, CONTEXT);
     expect(calls).toHaveLength(0);
 
     await Promise.resolve();
@@ -106,7 +106,7 @@ describe('posthogAdapter', () => {
     expect(calls.map(({ method, args }) => [method, args[0]])).toEqual([
       ['init', 'phc_test'],
       ['capture', '$pageview'],
-      ['capture', 'hero_banner_clicked'],
+      ['capture', 'signup_submitted'],
     ]);
   });
 
@@ -121,7 +121,7 @@ describe('posthogAdapter', () => {
 
       await Promise.resolve();
 
-      expect(() => adapter.track({ name: 'hero_banner_clicked' }, CONTEXT)).not.toThrow();
+      expect(() => adapter.track({ name: 'signup_submitted' }, CONTEXT)).not.toThrow();
     } finally {
       consoleWarn.mockRestore();
     }

@@ -230,6 +230,7 @@ export function ProjectForm({
           memberCount: values.members.length + 1,
           hasThumbnail: values.thumbnailImageId !== null,
           hasDeploymentUrl: values.deploymentUrl.trim() !== '',
+          serviceStatus: resolveServiceStatus(values),
         }),
       onError: (error) => {
         // 서버가 짚어 준 칸이 있으면 그 칸에 붙인다. 없으면 폼 아래 공통 문구만 남는다.
