@@ -1,3 +1,5 @@
+import type { FeedType } from '@/types/feed';
+
 export type AnalyticsEvent =
   // 인증·가입
   | { name: 'login_started'; from: string }
@@ -10,12 +12,21 @@ export type AnalyticsEvent =
       cohort: number | null;
     }
   // 피드
-  | { name: 'feed_create_started'; from: string }
-  | { name: 'feed_create_submitted'; categoryCount: number; mediaCount: number }
-  | { name: 'feed_create_failed'; reason: string }
+  | { name: 'feed_create_started'; from: string; feedType: FeedType }
+  | {
+      name: 'feed_create_submitted';
+      categoryCount: number;
+      mediaCount: number;
+      feedType: FeedType;
+    }
+  | { name: 'feed_create_failed'; reason: string; feedType: FeedType }
   | { name: 'feed_detail_opened'; feedId: number; from: FeedSurface }
-  | { name: 'feed_sort_changed'; sort: string; surface: FeedSurface }
-  | { name: 'comment_submitted' }
+  | { name: 'feed_type_changed'; feedType: FeedType; surface: FeedSurface }
+  | { name: 'feed_sort_changed'; sort: string; surface: FeedSurface; feedType: FeedType }
+  | { name: 'feed_like_toggled'; feedId: number; liked: boolean }
+  | { name: 'link_preview_clicked'; feedId: number }
+  | { name: 'comment_submitted'; isReply: boolean; isAnonymous: boolean }
+  | { name: 'comment_agree_toggled'; feedId: number; isReply: boolean; agreed: boolean }
   // 프로젝트
   | { name: 'project_create_started'; from: string }
   | {
@@ -25,15 +36,23 @@ export type AnalyticsEvent =
       memberCount: number;
       hasThumbnail: boolean;
       hasDeploymentUrl: boolean;
+      serviceStatus: 'OPERATING' | 'CLOSED';
     }
   | { name: 'project_create_failed'; reason: string; invalidFields: string[] }
   | { name: 'project_detail_opened'; slug: string; from: string }
   | { name: 'project_search_performed'; keywordLength: number; resultCount: number }
+  | { name: 'project_filter_applied'; cohortCount: number; techTagCount: number }
+  | { name: 'project_sort_changed'; sort: string }
+  | { name: 'project_like_toggled'; slug: string; liked: boolean }
   // 소식·프로필
   | { name: 'news_filter_changed'; type: string }
   | { name: 'news_detail_opened'; newsId: number; type: string; from: string }
   | { name: 'profile_tab_changed'; tab: string }
-  | { name: 'hero_banner_clicked' }
+  | { name: 'hero_banner_clicked'; bannerId: number; position: number }
+  // 알림
+  | { name: 'notification_box_opened'; unreadCount: number }
+  | { name: 'notification_clicked'; notificationType: string; wasRead: boolean }
+  | { name: 'notification_read_all_clicked'; unreadCount: number }
   // 이동 경로
   | { name: 'nav_tab_clicked'; tab: NavTab; from: string }
   | { name: 'section_more_clicked'; target: 'feeds' | 'news' }

@@ -26,10 +26,11 @@ export function HomeFeedSection() {
 
   // TODO fallback을 보여주지 않지만 반응이 없는 것처럼 보일 수도 있음. 논의 후에 적용하면 좋을 것 같아서 남겨둠
   const changeSort = (value: string) => {
-    analytics.track({ name: 'feed_sort_changed', sort: value, surface: 'home' });
+    analytics.track({ name: 'feed_sort_changed', sort: value, surface: 'home', feedType });
     startTransition(() => setSort(value as FeedSort));
   };
   const changeType = (value: string) => {
+    analytics.track({ name: 'feed_type_changed', feedType: value as FeedType, surface: 'home' });
     startTransition(() => {
       setFeedType(value as FeedType);
       setSort('LATEST');

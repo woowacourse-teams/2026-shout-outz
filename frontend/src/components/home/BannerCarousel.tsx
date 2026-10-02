@@ -79,7 +79,11 @@ export function BannerCarousel({ banners }: { banners: HomeBanner[] }) {
                 inert={position !== activeIndex}
                 className="w-full min-w-0 shrink-0"
               >
-                <HeroBanner banner={banner} className="focus-visible:-outline-offset-2" />
+                <HeroBanner
+                  banner={banner}
+                  position={position}
+                  className="focus-visible:-outline-offset-2"
+                />
               </div>
             ))}
           </div>

@@ -8,6 +8,7 @@ export interface LinkPreviewProps {
   description?: string | null;
   imageUrl?: string | null;
   siteName?: string | null;
+  onClick?: () => void;
   /** sm은 댓글처럼 좁은 곳에 둔다. 썸네일을 줄이고 설명은 뺀다. */
   size?: 'sm' | 'md';
 }
@@ -25,6 +26,7 @@ export function LinkPreview({
   imageUrl,
   siteName,
   size = 'md',
+  onClick,
 }: LinkPreviewProps) {
   const small = size === 'sm';
   const imageFallback = (
@@ -38,6 +40,7 @@ export function LinkPreview({
       href={url}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={onClick}
       aria-label={`${title || siteName || url} 링크 열기`}
       className="flex overflow-hidden rounded-lg bg-gray-50"
     >

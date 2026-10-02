@@ -15,6 +15,8 @@ import { analytics } from '@/utils/analytics';
  */
 export interface HeroBannerProps {
   banner: HomeBanner;
+  /** 캐러셀에서 몇 번째 배너인지. 0부터 센다. */
+  position: number;
   className?: string;
 }
 
@@ -23,7 +25,9 @@ const BANNER_LABEL = '홈 배너';
 const FRAME =
   'focus-visible:outline-primary-600 block h-59 overflow-hidden rounded-2xl bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 md:h-57.5';
 
-export function HeroBanner({ banner, className }: HeroBannerProps) {
+export function HeroBanner({ banner, position, className }: HeroBannerProps) {
+  const trackClick = () =>
+    analytics.track({ name: 'hero_banner_clicked', bannerId: banner.bannerId, position });
   const link = resolveHomeBannerLink(banner);
   const image = <img src={banner.imageUrl} alt={BANNER_LABEL} className="size-full object-cover" />;
 
@@ -38,7 +42,7 @@ export function HeroBanner({ banner, className }: HeroBannerProps) {
         target="_blank"
         rel="noopener noreferrer"
         className={cn(FRAME, className)}
-        onClick={() => analytics.track({ name: 'hero_banner_clicked' })}
+        onClick={trackClick}
       >
         {image}
       </a>
@@ -46,11 +50,7 @@ export function HeroBanner({ banner, className }: HeroBannerProps) {
   }
 
   return (
-    <Link
-      to={link.href}
-      className={cn(FRAME, className)}
-      onClick={() => analytics.track({ name: 'hero_banner_clicked' })}
-    >
+    <Link to={link.href} className={cn(FRAME, className)} onClick={trackClick}>
       {image}
     </Link>
   );

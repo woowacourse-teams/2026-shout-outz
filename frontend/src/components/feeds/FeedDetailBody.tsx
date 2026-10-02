@@ -3,6 +3,7 @@ import type { Feed } from '@/apis/feed';
 import { Image } from '@/components/Image';
 import { FeedMarkdown } from '@/components/feeds/FeedMarkdown';
 import { LinkPreview } from '@/components/feeds/LinkPreview';
+import { analytics } from '@/utils/analytics';
 
 /** 상세의 제목, 작성자, 본문, 첨부를 읽는 순서대로 보여준다. */
 export function FeedDetailBody({ feed, author }: { feed: Feed; author?: ReactNode }) {
@@ -25,7 +26,11 @@ export function FeedDetailBody({ feed, author }: { feed: Feed; author?: ReactNod
       </div>
       {linkPreview?.url && (
         <div className="mt-4">
-          <LinkPreview {...linkPreview} url={linkPreview.url} />
+          <LinkPreview
+            {...linkPreview}
+            url={linkPreview.url}
+            onClick={() => analytics.track({ name: 'link_preview_clicked', feedId: feed.feedId })}
+          />
         </div>
       )}
       {media.length > 0 && (
