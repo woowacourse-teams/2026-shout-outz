@@ -170,7 +170,7 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
             """;
 
     /**
-     * 프로젝트 이름, 한 줄 소개, 기술 스택 이름, 참여 크루 이름 중 하나라도 검색어를 포함하면 남긴다.
+     * 프로젝트 이름, 한 줄 소개, 참여 크루 이름 중 하나라도 검색어를 포함하면 남긴다.
      * 크루 이름은 상세 조회에서 보이는 이름과 맞춘다.
      * - 탈퇴한 팀원은 이름을 숨기므로 검색되지 않는다.
      * - 가입하지 않은 이관 팀원은 GitHub 이름과 GitHub 아이디로, 가입해서 매칭된 이관 팀원은 프로필 이름으로 검색된다.
@@ -179,13 +179,6 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
               AND (
                   p.title ILIKE :keywordPattern ESCAPE '\\'
                   OR p.tagline ILIKE :keywordPattern ESCAPE '\\'
-                  OR EXISTS (
-                      SELECT 1
-                      FROM project_tags pt
-                      JOIN tech_tags t ON t.id = pt.tech_tag_id
-                      WHERE pt.project_id = p.id
-                        AND t.display_name ILIKE :keywordPattern ESCAPE '\\'
-                  )
                   OR EXISTS (
                       SELECT 1
                       FROM project_members pm

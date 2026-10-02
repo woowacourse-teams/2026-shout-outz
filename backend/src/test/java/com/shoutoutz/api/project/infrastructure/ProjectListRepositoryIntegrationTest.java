@@ -109,8 +109,8 @@ class ProjectListRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("검색어는 프로젝트 이름, 한 줄 소개, 기술 스택 이름, 참여 크루 이름에서 대소문자를 무시하고 부분 일치로 찾는다.")
-    void searchesByTitleTaglineTechTagAndMemberNames() {
+    @DisplayName("검색어는 프로젝트 이름, 한 줄 소개, 참여 크루 이름에서 대소문자를 무시하고 부분 일치로 찾고, 기술 스택 이름으로는 찾지 않는다.")
+    void searchesByTitleTaglineAndMemberNames() {
         long byTitle = saveProject("[" + token.toUpperCase() + "] 제목", "소개", "APPROVED", 6, BASE_TIME);
         long byTagline = saveProject("제목", "소개 " + token, "APPROVED", 6, BASE_TIME);
         long byTechTag = saveProject("제목", "소개", "APPROVED", 6, BASE_TIME);
@@ -127,8 +127,8 @@ class ProjectListRepositoryIntegrationTest {
         ProjectPage page = findAll(condition(token));
 
         assertThat(ids(page)).containsExactlyInAnyOrder(
-                byTitle, byTagline, byTechTag, byMember, byArchivedGithubLogin, byMatchedArchivedMember);
-        assertThat(ids(page)).doesNotContain(byWithdrawnMember);
+                byTitle, byTagline, byMember, byArchivedGithubLogin, byMatchedArchivedMember);
+        assertThat(ids(page)).doesNotContain(byTechTag, byWithdrawnMember);
     }
 
     @Test
