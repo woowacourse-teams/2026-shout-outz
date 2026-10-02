@@ -66,6 +66,7 @@ public class Project {
             String descriptionMd,
             GithubRepositoryUrl githubRepositoryUrl,
             DeploymentUrl deploymentUrl,
+            ServiceStatus serviceStatus,
             Long thumbnailMediaId
     ) {
         ProjectValidator.validateRegistration(registeredBy);
@@ -76,7 +77,7 @@ public class Project {
                 .slug(Slug.from(githubRepositoryUrl.getRepositoryName()))
                 .title(title)
                 .tagline(tagline)
-                .serviceStatus(initialServiceStatus(deploymentUrl))
+                .serviceStatus(serviceStatus)
                 .approvalStatus(ApprovalStatus.PENDING)
                 .descriptionMd(descriptionMd)
                 .githubRepositoryUrl(githubRepositoryUrl)
@@ -124,12 +125,5 @@ public class Project {
                 .deploymentUrl(deploymentUrl)
                 .thumbnailMediaId(thumbnailMediaId)
                 .build();
-    }
-
-    private static ServiceStatus initialServiceStatus(DeploymentUrl deploymentUrl) {
-        if (deploymentUrl == null) {
-            return ServiceStatus.CLOSED;
-        }
-        return ServiceStatus.OPERATING;
     }
 }

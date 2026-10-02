@@ -117,6 +117,7 @@ public class ProjectService {
                 request.descriptionMd(),
                 new GithubRepositoryUrl(request.githubRepositoryUrl()),
                 request.deploymentUrl() == null ? null : new DeploymentUrl(request.deploymentUrl()),
+                request.serviceStatus(),
                 request.thumbnailImageId()
         );
         validateGithubRepositoryNotDuplicated(project.getGithubRepositoryUrl());

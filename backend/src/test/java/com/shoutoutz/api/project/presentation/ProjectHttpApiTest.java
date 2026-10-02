@@ -204,6 +204,9 @@ class ProjectHttpApiTest {
                                                         + "이미지는 ![설명](media://{mediaId}) 형식으로 넣으며, "
                                                         + "본인이 업로드한 PROJECT_DESCRIPTION 용도의 처리 완료 이미지만 쓸 수 있다.")
                                                 .optional(),
+                                        new EnumFields(ServiceStatus.class).withPath("serviceStatus")
+                                                .description("서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, "
+                                                        + "어기면 400을 반환한다. 이때 오류 응답의 details.field는 serviceStatusValid다."),
                                         fieldWithPath("techTagIds").type(ARRAY)
                                                 .description("선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다.")
                                                 .attributes(key("itemsType").value("number")),
@@ -288,6 +291,40 @@ class ProjectHttpApiTest {
                         "\"@sangjun121\"", "\"   \"",
                         "memberHandles", "memberHandles에 빈 값을 넣을 수 없습니다.")
         );
+    }
+
+    @Test
+    @DisplayName("serviceStatus 없이 프로젝트를 등록하는 경우, 400과 필드 오류를 반환하고, 서비스를 호출하지 않는다.")
+    void rejectsRegistrationWithoutServiceStatus() throws Exception {
+        mockMvc.perform(post("/api/v1/projects")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRequestJson().replace("\"serviceStatus\": \"OPERATING\",", "")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details.length()").value(1))
+                .andExpect(jsonPath("$.details[0].field").value("serviceStatus"))
+                .andDo(document("project-create-invalid-service-status-missing", resource(errorResource())));
+
+        verifyNoInteractions(projectService);
+    }
+
+    @Test
+    @DisplayName("배포 URL 없이 운영 중으로 등록하는 경우, 400과 serviceStatusValid 필드 오류를 반환하고, 서비스를 호출하지 않는다.")
+    void rejectsRegistrationOperatingWithoutDeploymentUrl() throws Exception {
+        mockMvc.perform(post("/api/v1/projects")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRequestJson().replace("\"https://loop.team\"", "null")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details.length()").value(1))
+                .andExpect(jsonPath("$.details[0].field").value("serviceStatusValid"))
+                .andExpect(jsonPath("$.details[0].message")
+                        .value("deploymentUrl이 없으면 serviceStatus를 OPERATING으로 둘 수 없습니다."))
+                .andDo(document("project-create-invalid-service-status", resource(errorResource())));
+
+        verifyNoInteractions(projectService);
     }
 
     @Test
@@ -1291,6 +1328,7 @@ class ProjectHttpApiTest {
                   "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                   "deploymentUrl": "https://loop.team",
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)",
+                  "serviceStatus": "OPERATING",
                   "techTagIds": [1, 2, 3],
                   "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
                 }

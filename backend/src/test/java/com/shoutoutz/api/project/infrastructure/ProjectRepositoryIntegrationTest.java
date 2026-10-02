@@ -375,6 +375,7 @@ class ProjectRepositoryIntegrationTest {
                 "설명",
                 new GithubRepositoryUrl("https://github.com/woowacourse-teams/" + repositoryName),
                 null,
+                ServiceStatus.CLOSED,
                 null
         );
     }
