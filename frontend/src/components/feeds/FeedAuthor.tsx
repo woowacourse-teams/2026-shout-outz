@@ -31,7 +31,7 @@ function formatAuthorRole(author: Feed['author']) {
 
   const track = author.track ? TRACK_ABBREVIATIONS[author.track] : null;
   const cohort = author.cohort != null ? `${author.cohort}기` : null;
-  return [track, cohort, '크루'].filter(Boolean).join(' ');
+  return [cohort, track, '크루'].filter(Boolean).join(' ');
 }
 
 export function FeedAuthor({
