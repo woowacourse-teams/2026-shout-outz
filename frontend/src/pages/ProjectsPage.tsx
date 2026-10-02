@@ -119,7 +119,7 @@ function ProjectSearchBar({
             aria-label="프로젝트 검색"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder="서비스 이름, 소개, 제작자, 기술 스택으로 검색"
+            placeholder="서비스 이름, 소개, 제작자로 검색"
             className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-500"
           />
         </div>
