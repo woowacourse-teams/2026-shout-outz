@@ -16,6 +16,7 @@ const crew = (
   displayName,
   userType: 'WOOWACOURSE_CREW',
   track,
+  cohort,
   isCurrent: cohort === 8,
   avatarUrl: null,
 });
@@ -74,6 +75,7 @@ const FEEDS: Feed[] = [
       displayName: '최민준',
       userType: 'GENERAL',
       track: null,
+      cohort: null,
       isCurrent: null,
       avatarUrl: null,
     },

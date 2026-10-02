@@ -11,7 +11,7 @@ export function CrewStatusBadge({
   /** 응답마다 문자열이나 열거값으로 달라 넓게 받는다. 크루 여부만 비교한다. */
   userType?: string | null;
   cohort?: number | null;
-  /** 피드·댓글 작성자 응답은 기수 번호 대신 현재 기수 여부를 제공한다. */
+  /** 피드·댓글 작성자 응답은 현재 기수 여부도 제공한다. */
   isCurrent?: boolean | null;
   size?: 'xs' | 'sm';
 }) {

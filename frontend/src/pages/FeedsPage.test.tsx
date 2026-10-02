@@ -228,6 +228,7 @@ test('답글을 부모 댓글 아래에 표시하고 새 답글의 parentId를 �
   );
   show(<Comments feedId={3} />);
   const parent = (await screen.findByText('이 댓글은 익명으로 작성했습니다.')).closest('li')!;
+  expect(within(parent).queryByText('작성자')).not.toBeInTheDocument();
   expect(within(parent).getByRole('list', { name: '답글 목록' })).toHaveTextContent(
     '저도 같은 경험이 있어요.',
   );
@@ -242,6 +243,83 @@ test('답글을 부모 댓글 아래에 표시하고 새 답글의 parentId를 �
   await user.click(within(parent).getByRole('button', { name: '답글 등록' }));
   await screen.findByText('답글을 저장했습니다.');
   expect(postedBody).toEqual({ content: '새 답글', parentId: 31, isAnonymous: false });
+});
+test('익명 댓글은 피드처럼 본인에게만 작성자를 알리고 트랙·크루 문구를 숨긴다', async () => {
+  server.use(
+    http.get('*/api/v1/feeds/:feedId/comments', () =>
+      HttpResponse.json({
+        status: 'success',
+        data: [
+          {
+            id: 101,
+            content: '본인 익명 댓글',
+            author: {
+              userId: 1,
+              handle: 'woojin',
+              displayName: '개발용 사용자',
+              userType: 'WOOWACOURSE_CREW',
+              track: 'BACKEND',
+              cohort: 8,
+              isCurrent: true,
+              avatarUrl: null,
+            },
+            parentId: null,
+            isAnonymous: true,
+            createdAt: '2026-09-14T00:00:00Z',
+            updatedAt: '2026-09-14T00:00:00Z',
+            editable: true,
+            edited: false,
+            deleted: false,
+          },
+          {
+            id: 102,
+            content: '다른 사람 익명 댓글',
+            author: {
+              userId: null,
+              handle: null,
+              displayName: null,
+              userType: 'WOOWACOURSE_CREW',
+              track: null,
+              cohort: null,
+              isCurrent: false,
+              avatarUrl: null,
+            },
+            parentId: null,
+            isAnonymous: true,
+            createdAt: '2026-09-14T01:00:00Z',
+            updatedAt: '2026-09-14T01:00:00Z',
+            editable: false,
+            edited: false,
+            deleted: false,
+          },
+        ],
+        meta: { hasNext: false, nextCursor: null },
+      }),
+    ),
+  );
+  show(<Comments feedId={1} feedAuthorId={1} />);
+
+  const own = (await screen.findByText('본인 익명 댓글')).closest('li')!;
+  expect(within(own).getByRole('link', { name: '개발용 사용자 프로필 보기' })).toBeInTheDocument();
+  expect(within(own).getByText('익명으로 작성한 글입니다')).toBeInTheDocument();
+  expect(within(own).getByRole('img', { name: '우테코 크루' })).toBeInTheDocument();
+  expect(within(own).getByText('작성자')).toBeInTheDocument();
+  expect(within(own).queryByText('BE 크루')).not.toBeInTheDocument();
+  expect(within(own).queryByText('8기')).not.toBeInTheDocument();
+  expect(within(own).queryByText('크루')).not.toBeInTheDocument();
+
+  const other = screen.getByText('다른 사람 익명 댓글').closest('li')!;
+  expect(within(other).getByText('익명')).toBeInTheDocument();
+  expect(within(other).queryByRole('link', { name: /프로필 보기/ })).not.toBeInTheDocument();
+  expect(within(other).getByRole('img', { name: '우테코 수료 크루' })).toBeInTheDocument();
+  expect(within(other).queryByText('작성자')).not.toBeInTheDocument();
+  expect(within(other).queryByText('크루')).not.toBeInTheDocument();
+});
+test('기수 숫자가 내려온 댓글 작성자는 기수를 표시한다', async () => {
+  show(<Comments feedId={1} />);
+
+  const comment = (await screen.findByText('경험을 공유해 주셔서 감사합니다!')).closest('li')!;
+  expect(within(comment).getByText('BE 8기 크루')).toBeInTheDocument();
 });
 test('댓글 작성, 수정, 삭제가 조회 결과에 반영된다', async () => {
   const user = userEvent.setup();
@@ -280,7 +358,7 @@ test('작성 실패 시 입력을 보존한다', async () => {
   expect(await screen.findByText('댓글 내용을 확인해 주세요.')).toBeInTheDocument();
   expect(input).toHaveValue('보존할 내용');
 });
-test('비로그인 상태는 작성 및 관리 메뉴를 표시하지 않는다', async () => {
+test('비로그인 상태는 익명 댓글에도 작성 및 관리 메뉴를 표시하지 않는다', async () => {
   server.use(
     http.get('*/api/v1/auth/session', () =>
       HttpResponse.json({
@@ -289,10 +367,11 @@ test('비로그인 상태는 작성 및 관리 메뉴를 표시하지 않는다'
       }),
     ),
   );
-  show(<Comments feedId={1} />);
-  await screen.findByText('경험을 공유해 주셔서 감사합니다!');
+  show(<Comments feedId={3} />);
+  await screen.findByText('이 댓글은 익명으로 작성했습니다.');
   expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument();
 });
 
 test('세션 조회가 실패해도 공개 댓글을 읽고 로그인 상태를 재확인할 수 있다', async () => {

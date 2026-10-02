@@ -59,9 +59,9 @@ type WithProjectMemberType<T extends { members: unknown[] }> = Omit<T, 'members'
   rejectReason?: string | null;
 };
 
-/** 피드 작성자의 기수 번호 대신 현재 기수 여부를 내려주는 최신 응답. */
+/** 피드 작성자는 기수 번호와 현재 기수 여부를 함께 내려준다. */
 type WithFeedAuthorStatus<T extends { author: object }> = Omit<T, 'author'> & {
-  author: Omit<T['author'], 'cohort'> & { isCurrent?: boolean | null };
+  author: T['author'] & { isCurrent?: boolean | null };
 };
 
 /** 피드 응답에 서버가 제공하지만 생성 타입에서 빠진 반응·개수 필드. */
@@ -112,7 +112,7 @@ export type FeedCommentData = Omit<GeneratedFeedComment, 'author'> & {
   agreeCount?: number;
   agreedByMe?: boolean;
   isAnonymous?: boolean;
-  author: Omit<GeneratedFeedComment['author'], 'cohort'> & {
+  author: GeneratedFeedComment['author'] & {
     handle?: string | null;
     isCurrent?: boolean | null;
   };

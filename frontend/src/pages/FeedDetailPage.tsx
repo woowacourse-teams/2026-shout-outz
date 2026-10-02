@@ -92,7 +92,11 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
         aria-label={`${commentLabel} 목록`}
         className="mt-12 px-0 md:px-3"
       >
-        <Comments feedId={feed.feedId} feedType={isQuestion ? 'QUESTION' : 'POST'} />
+        <Comments
+          feedId={feed.feedId}
+          feedType={isQuestion ? 'QUESTION' : 'POST'}
+          feedAuthorId={feed.author.userId ?? null}
+        />
       </section>
     </article>
   );
