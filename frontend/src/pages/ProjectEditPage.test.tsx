@@ -38,3 +38,39 @@ it('수정 시 작성자를 맨 앞에 고정하고 추가 팀원이 없어도 �
   await waitFor(() => expect(body).toEqual(expect.objectContaining({ memberHandles: ['woojin'] })));
   expect(await screen.findByRole('heading', { level: 1, name: 'Dropit' })).toBeInTheDocument();
 });
+
+it.each(['PENDING', 'REJECTED'] as const)(
+  '%s 프로젝트 수정 후 승인 대기 안내를 표시한다',
+  async (approvalStatus) => {
+    const user = userEvent.setup();
+    const detail = await (await fetch('http://localhost/api/v1/projects/@dropit')).json();
+    server.use(
+      http.get('/api/v1/projects/@dropit', () =>
+        HttpResponse.json({
+          ...detail,
+          data: { ...detail.data, approvalStatus },
+        }),
+      ),
+      http.put('/api/v1/projects/@dropit', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: { slug: 'dropit', approvalStatus: 'PENDING' },
+        }),
+      ),
+    );
+
+    renderRoute('/projects/@dropit/edit');
+    await user.click(await screen.findByRole('button', { name: '프로젝트 수정하기' }));
+
+    const heading = await screen.findByRole('heading', {
+      name: '프로젝트 수정 내용이 접수됐어요.',
+    });
+    const notice = heading.closest<HTMLElement>('[role="status"]')!;
+    expect(within(notice).getByText('운영진 승인 후 프로젝트를 볼 수 있어요.')).toBeInTheDocument();
+    expect(within(notice).getByRole('link', { name: '프로젝트 목록으로' })).toHaveAttribute(
+      'href',
+      '/projects',
+    );
+    expect(screen.queryByRole('heading', { level: 1, name: 'Dropit' })).not.toBeInTheDocument();
+  },
+);
