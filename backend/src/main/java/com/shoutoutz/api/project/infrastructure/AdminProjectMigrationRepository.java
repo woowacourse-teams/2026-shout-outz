@@ -11,7 +11,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-/** 이관 프로젝트의 projects 행과 기술 태그만 직접 보정하는 임시 저장소. */
+/** 프로젝트의 projects 행과 기술 태그를 직접 수정하는 관리자 저장소. */
 @Repository
 @RequiredArgsConstructor
 public class AdminProjectMigrationRepository {
@@ -20,7 +20,7 @@ public class AdminProjectMigrationRepository {
 
     /**
      * columnValues의 키는 서비스의 고정된 컬럼 목록에서만 온다. 값은 모두 바인딩한다.
-     * 등록자가 없는 활성 프로젝트만 대상으로 한다.
+     * 삭제되지 않은 활성 프로젝트를 등록자 여부와 관계없이 대상으로 한다.
      */
     public Optional<Instant> update(long projectId, Map<String, Object> columnValues) {
         MapSqlParameterSource parameters = new MapSqlParameterSource("projectId", projectId);
@@ -34,7 +34,7 @@ public class AdminProjectMigrationRepository {
             assignments += assignments.isEmpty() ? "updated_at = now()" : ", updated_at = now()";
         }
         String sql = "UPDATE projects SET " + assignments + " "
-                + "WHERE id = :projectId AND registered_by IS NULL AND deleted_at IS NULL "
+                + "WHERE id = :projectId AND deleted_at IS NULL "
                 + "RETURNING updated_at";
         return jdbcTemplate.query(sql, parameters, resultSet -> {
             if (!resultSet.next()) {

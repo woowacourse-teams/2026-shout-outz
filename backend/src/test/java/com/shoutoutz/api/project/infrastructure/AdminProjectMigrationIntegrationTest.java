@@ -1,9 +1,7 @@
 package com.shoutoutz.api.project.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.project.application.AdminProjectMigrationService;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -35,7 +33,7 @@ class AdminProjectMigrationIntegrationTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void updatesImportedProjectAndTagsWithoutTouchingArchivedMembers() {
+    void updatesProjectAndTagsWithoutTouchingArchivedMembers() {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         long projectId = jdbcTemplate.queryForObject("""
                         INSERT INTO projects (
@@ -92,7 +90,7 @@ class AdminProjectMigrationIntegrationTest {
     }
 
     @Test
-    void doesNotUpdateAProjectRegisteredByAUser() {
+    void updatesAProjectRegisteredByAUser() {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         long userId = userRepository.save(User.initialize("@arch" + suffix)).getId();
         long projectId = jdbcTemplate.queryForObject("""
@@ -109,11 +107,11 @@ class AdminProjectMigrationIntegrationTest {
                 "https://github.com/woowacourse-teams/2026-" + suffix
         );
 
-        assertThatThrownBy(() -> service.update(projectId, 7L, UserRole.ADMIN,
-                objectMapper.readTree("{\"title\":\"바뀐 제목\"}")))
-                .isInstanceOf(EntityNotFoundException.class);
+        service.update(projectId, 7L, UserRole.ADMIN,
+                objectMapper.readTree("{\"title\":\"바뀐 제목\"}"));
+
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT title FROM projects WHERE id = ?", String.class, projectId))
-                .isEqualTo("기존 제목");
+                .isEqualTo("바뀐 제목");
     }
 }

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.JsonNode;
 
-/** 이관 프로젝트의 projects 행을 보정한 뒤 제거할 관리자 전용 API. */
+/** 프로젝트의 projects 행을 직접 수정하는 관리자 전용 API. */
 @RestController
 @RequestMapping("/api/v1/admin/projects")
 @RequiredArgsConstructor

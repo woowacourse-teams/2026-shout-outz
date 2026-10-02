@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
 
 /**
- * 이관 프로젝트의 DB 값을 한 요청으로 보정하는 임시 서비스다.
+ * 프로젝트의 DB 값을 한 요청으로 직접 수정하는 관리자 서비스다.
  * 일반 프로젝트 수정의 작성자, 미디어 소유자, 승인 상태 전이 정책을 적용하지 않는다.
  */
 @Slf4j
@@ -101,7 +101,7 @@ public class AdminProjectMigrationService {
             if (techTagIds != null) {
                 repository.replaceTechTags(projectId, techTagIds);
             }
-            log.info("Admin corrected migrated project: adminUserId={}, projectId={}, fields={}",
+            log.info("Admin directly updated project: adminUserId={}, projectId={}, fields={}",
                     adminUserId, projectId, updatedFields);
             return new AdminProjectMigrationUpdateResponse(projectId, updatedFields, updatedAt);
         } catch (DataIntegrityViolationException e) {
