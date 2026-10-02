@@ -35,8 +35,8 @@ public class LinkPreviewWorker {
                     ? 86_400
                     : Math.min(3_600, 60L << Math.min(job.attempts() - 1, 6));
             repository.fail(job, now.plusSeconds(delaySeconds));
-            log.warn("링크 미리보기 수집에 실패했습니다. cacheId={}, reason={}",
-                    job.id(), exception.getClass().getSimpleName());
+            log.warn("링크 미리보기 수집에 실패했습니다. cacheId={}, attempts={}, reason={}",
+                    job.id(), job.attempts(), exception.getMessage(), exception);
         }
     }
 }
