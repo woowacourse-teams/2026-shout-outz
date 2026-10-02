@@ -1,6 +1,7 @@
 package com.shoutoutz.api.comment.presentation.dto.response;
 
 import com.shoutoutz.api.common.response.SliceMetaResponse;
+import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.List;
@@ -25,7 +26,8 @@ public record ProjectCommentFindResponse(
             boolean edited,
             boolean deleted,
             long agreeCount,
-            boolean agreedByMe
+            boolean agreedByMe,
+            LinkPreview linkPreview
     ) {
 
         public Comment(
@@ -39,7 +41,25 @@ public record ProjectCommentFindResponse(
                 boolean edited,
                 boolean deleted
         ) {
-            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted, 0L, false);
+            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted,
+                    0L, false, null);
+        }
+
+        public Comment(
+                Long id,
+                String content,
+                Author author,
+                Long parentId,
+                Instant createdAt,
+                Instant updatedAt,
+                boolean editable,
+                boolean edited,
+                boolean deleted,
+                long agreeCount,
+                boolean agreedByMe
+        ) {
+            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted,
+                    agreeCount, agreedByMe, null);
         }
     }
 

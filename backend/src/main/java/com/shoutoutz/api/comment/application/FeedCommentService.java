@@ -27,6 +27,8 @@ import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.domain.FeedRepository;
+import com.shoutoutz.api.feed.application.FeedLinkPreviewService;
+import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.notification.application.NotificationService;
 import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -63,6 +65,7 @@ public class FeedCommentService {
     private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final FeedCommentReactionRepository feedCommentReactionRepository;
     private final NotificationService notificationService;
+    private final FeedLinkPreviewService linkPreviewService;
 
     public FeedCommentService(
             FeedRepository feedRepository,
@@ -80,6 +83,7 @@ public class FeedCommentService {
                 userAvatarUrlResolver,
                 feedCommentReactionRepository,
                 null,
+                null,
                 null
         );
     }
@@ -93,7 +97,8 @@ public class FeedCommentService {
             UserAvatarUrlResolver userAvatarUrlResolver,
             FeedCommentReactionRepository feedCommentReactionRepository,
             UserRepository userRepository,
-            NotificationService notificationService
+            NotificationService notificationService,
+            FeedLinkPreviewService linkPreviewService
     ) {
         this.feedRepository = feedRepository;
         this.feedCommentRepository = feedCommentRepository;
@@ -103,6 +108,30 @@ public class FeedCommentService {
         this.userAvatarUrlResolver = userAvatarUrlResolver;
         this.feedCommentReactionRepository = feedCommentReactionRepository;
         this.notificationService = notificationService;
+        this.linkPreviewService = linkPreviewService;
+    }
+
+    public FeedCommentService(
+            FeedRepository feedRepository,
+            FeedCommentRepository feedCommentRepository,
+            FeedCommentQueryRepository feedCommentQueryRepository,
+            UserProfileRepository userProfileRepository,
+            UserAvatarUrlResolver userAvatarUrlResolver,
+            FeedCommentReactionRepository feedCommentReactionRepository,
+            UserRepository userRepository,
+            NotificationService notificationService
+    ) {
+        this(
+                feedRepository,
+                feedCommentRepository,
+                feedCommentQueryRepository,
+                userProfileRepository,
+                userAvatarUrlResolver,
+                feedCommentReactionRepository,
+                userRepository,
+                notificationService,
+                null
+        );
     }
 
     public FeedCommentService(
@@ -122,6 +151,7 @@ public class FeedCommentService {
                 userAvatarUrlResolver,
                 feedCommentReactionRepository,
                 userRepository,
+                null,
                 null
         );
     }
@@ -139,6 +169,7 @@ public class FeedCommentService {
                 feedCommentQueryRepository,
                 userProfileRepository,
                 userAvatarUrlResolver,
+                null,
                 null,
                 null,
                 null
@@ -163,6 +194,9 @@ public class FeedCommentService {
                 request.isAnonymous()
         );
         FeedComment savedComment = feedCommentRepository.save(comment);
+        if (linkPreviewService != null) {
+            linkPreviewService.syncFeedComment(savedComment.getId(), savedComment.getContent());
+        }
         if (notificationService != null) {
             notificationService.createForFeedComment(
                     feedId,
@@ -191,7 +225,8 @@ public class FeedCommentService {
                 savedComment.getCreatedAt(),
                 savedComment.getUpdatedAt(),
                 true,
-                savedComment.isAnonymous()
+                savedComment.isAnonymous(),
+                findFeedCommentPreview(savedComment.getId())
         );
     }
 
@@ -241,8 +276,10 @@ public class FeedCommentService {
         Map<Long, String> avatarUrls = resolveAvatarUrls(authors.values());
         Map<Long, String> handles = resolveHandles(authors.keySet());
         Map<Long, FeedCommentReactionCounts> reactionCounts = findReactionCounts(orderedComments, loginUserId);
+        Map<Long, LinkPreview> linkPreviews = findFeedCommentPreviews(orderedComments);
         List<FeedCommentFindResponse.Comment> comments = orderedComments.stream()
-                .map(comment -> toFindResponse(comment, loginUserId, authors, handles, avatarUrls, reactionCounts))
+                .map(comment -> toFindResponse(
+                        comment, loginUserId, authors, handles, avatarUrls, reactionCounts, linkPreviews))
                 .toList();
 
         // 4. meta 정보: 다음 커서 정보 제공
@@ -274,6 +311,9 @@ public class FeedCommentService {
 
         if (!Objects.equals(comment.getContent(), request.content())) {
             comment = feedCommentRepository.save(comment.updateContent(request.content()));
+            if (linkPreviewService != null) {
+                linkPreviewService.syncFeedComment(comment.getId(), comment.getContent());
+            }
         }
 
         return new FeedCommentUpdateResponse(
@@ -297,7 +337,8 @@ public class FeedCommentService {
                 comment.getUpdatedAt(),
                 true,
                 comment.isEdited(),
-                comment.isAnonymous()
+                comment.isAnonymous(),
+                findFeedCommentPreview(comment.getId())
         );
     }
 
@@ -312,6 +353,9 @@ public class FeedCommentService {
         validateAuthor(comment, authorId);
 
         FeedComment deletedComment = feedCommentRepository.save(comment.delete(Instant.now()));
+        if (linkPreviewService != null) {
+            linkPreviewService.unlinkFeedComment(deletedComment.getId());
+        }
         return new FeedCommentDeleteResponse(
                 deletedComment.getId(),
                 deletedComment.isDeleted()
@@ -405,7 +449,8 @@ public class FeedCommentService {
             Map<Long, UserProfile> authors,
             Map<Long, String> handles,
             Map<Long, String> avatarUrls,
-            Map<Long, FeedCommentReactionCounts> reactionCounts
+            Map<Long, FeedCommentReactionCounts> reactionCounts,
+            Map<Long, LinkPreview> linkPreviews
     ) {
         UserProfile author = authors.computeIfAbsent(comment.getAuthorId(), this::findAuthor);
         // 삭제된 댓글이 아니며, 작성자가 본인인 경우 수정 가능
@@ -451,8 +496,27 @@ public class FeedCommentService {
                 comment.isDeleted(),
                 counts.agreeCount(),
                 counts.agreedByMe(),
-                comment.isAnonymous()
+                comment.isAnonymous(),
+                comment.isDeleted() ? null : linkPreviews.get(comment.getId())
         );
+    }
+
+    private Map<Long, LinkPreview> findFeedCommentPreviews(List<FeedComment> comments) {
+        if (comments.isEmpty() || linkPreviewService == null) {
+            return Map.of();
+        }
+        Map<Long, LinkPreview> previews = linkPreviewService.findByFeedCommentIds(
+                comments.stream().map(FeedComment::getId).toList()
+        );
+        return previews == null ? Map.of() : previews;
+    }
+
+    private LinkPreview findFeedCommentPreview(long commentId) {
+        if (linkPreviewService == null) {
+            return null;
+        }
+        Map<Long, LinkPreview> previews = linkPreviewService.findByFeedCommentIds(List.of(commentId));
+        return previews == null ? null : previews.get(commentId);
     }
 
     private Map<Long, FeedCommentReactionCounts> findReactionCounts(

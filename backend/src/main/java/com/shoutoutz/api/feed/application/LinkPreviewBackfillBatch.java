@@ -26,4 +26,28 @@ public class LinkPreviewBackfillBatch {
         }
         return feeds.isEmpty() ? -1L : feeds.getLast().id();
     }
+
+    @Transactional
+    public long scanFeedCommentsAfter(long lastId) {
+        var comments = repository.findFeedCommentsAfter(lastId, BATCH_SIZE);
+        for (var comment : comments) {
+            if (!repository.hasFeedCommentReference(comment.id())) {
+                extractor.firstUrl(comment.content())
+                        .ifPresent(url -> repository.linkFeedComment(comment.id(), url));
+            }
+        }
+        return comments.isEmpty() ? -1L : comments.getLast().id();
+    }
+
+    @Transactional
+    public long scanProjectCommentsAfter(long lastId) {
+        var comments = repository.findProjectCommentsAfter(lastId, BATCH_SIZE);
+        for (var comment : comments) {
+            if (!repository.hasProjectCommentReference(comment.id())) {
+                extractor.firstUrl(comment.content())
+                        .ifPresent(url -> repository.linkProjectComment(comment.id(), url));
+            }
+        }
+        return comments.isEmpty() ? -1L : comments.getLast().id();
+    }
 }
