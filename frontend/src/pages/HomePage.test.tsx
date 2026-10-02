@@ -216,14 +216,16 @@ describe('HomePage', () => {
       expect(within(eventRegion()).queryByText(/\[종료\]/)).not.toBeInTheDocument();
     });
 
-    it('소식 전체보기로 소식 페이지에 갈 수 있다', async () => {
+    it('이벤트 전체보기로 소식 페이지의 이벤트 탭에 갈 수 있다', async () => {
       renderRoute('/');
       await findEvents();
 
-      expect(within(eventRegion()).getByRole('link', { name: /^소식 전체보기/ })).toHaveAttribute(
-        'href',
-        '/news',
-      );
+      const href = within(eventRegion())
+        .getByRole('link', { name: /^이벤트 전체보기/ })
+        .getAttribute('href');
+      const url = new URL(href!, 'https://example.com');
+      expect(url.pathname).toBe('/news');
+      expect(url.searchParams.get('type')).toBe('EVENT');
     });
 
     it('진행 중인 이벤트가 없으면 안내 문구를 보여준다', async () => {

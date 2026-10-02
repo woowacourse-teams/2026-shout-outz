@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router';
 
 import { newsListQueryOptions } from '@/api/news';
 import { NewsItem } from '@/components/NewsItem';
+import { getButtonStyles } from '@/components/Button';
 import { analytics } from '@/utils/analytics';
 
 const HOME_EVENT_SIZE = 2;
@@ -20,14 +21,6 @@ export function HomeEventSection() {
         <h2 id={headingId} className="text-base font-bold tracking-tight text-gray-900">
           진행 중인 이벤트
         </h2>
-
-        <Link
-          to="/news"
-          className="text-primary-600 focus-visible:outline-primary-600 shrink-0 rounded-sm text-sm font-bold focus-visible:outline-2"
-          onClick={() => analytics.track({ name: 'section_more_clicked', target: 'news' })}
-        >
-          소식 전체보기 ›
-        </Link>
       </div>
 
       {events.length === 0 ? (
@@ -62,6 +55,14 @@ export function HomeEventSection() {
           ))}
         </ul>
       )}
+      <Link
+        to="/news"
+        search={{ type: 'EVENT', sort: 'LATEST' }}
+        className={getButtonStyles({ variant: 'outline', className: 'w-full' })}
+        onClick={() => analytics.track({ name: 'section_more_clicked', target: 'news' })}
+      >
+        이벤트 전체보기 ›
+      </Link>
     </section>
   );
 }
