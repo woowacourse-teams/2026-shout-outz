@@ -113,7 +113,14 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
         });
         items.push({
           id: id * 10 + 2,
-          content: '저도 같은 경험이 있어요.',
+          content: '저도 같은 경험이 있어요. 그때 정리한 글이에요 https://dohyun.log/redis-fanout',
+          linkPreview: {
+            url: 'https://dohyun.log/redis-fanout',
+            title: 'Redis로 메시지 팬아웃하기',
+            description: '서버 여러 대에 메시지를 고르게 퍼뜨린 방법을 정리했습니다.',
+            imageUrl: 'https://picsum.photos/seed/redis-fanout/1200/630',
+            siteName: 'dohyun.log',
+          },
           author: {
             userId: 2,
             handle: 'crew1',
@@ -507,6 +514,7 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
       const item: FeedComment = {
         id: sequence++,
         content: body.content,
+        linkPreview: linkPreviewOf(body.content),
         author: body.isAnonymous
           ? ({
               userId: 1,
@@ -551,6 +559,7 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
       const body = (await request.json()) as { content: string; isAnonymous?: boolean };
       Object.assign(item, {
         content: body.content,
+        linkPreview: linkPreviewOf(body.content),
         edited: true,
         updatedAt: new Date().toISOString(),
       });

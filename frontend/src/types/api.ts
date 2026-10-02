@@ -112,6 +112,8 @@ export type FeedCommentData = Omit<GeneratedFeedComment, 'author'> & {
   agreeCount?: number;
   agreedByMe?: boolean;
   isAnonymous?: boolean;
+  /** 서버 명세에 아직 없다. 피드처럼 본문 첫 URL의 OG 정보를 내려줄 것을 가정하고 먼저 받아 둔다. */
+  linkPreview?: FeedData['linkPreview'];
   author: Omit<GeneratedFeedComment['author'], 'cohort'> & {
     handle?: string | null;
     isCurrent?: boolean | null;
