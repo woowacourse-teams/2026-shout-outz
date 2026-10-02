@@ -34,7 +34,7 @@ public class ArchivedProjectMemberMatchService {
 
     /**
      * 같은 GitHub 계정으로 연결된 모든 아카이브 참여자를 현재 사용자와 연결한다.
-     * 가입/로그인 트랜잭션 안에서 호출되므로 두 테이블의 변경도 함께 커밋된다.
+     * 크루 인증 승인 트랜잭션 안에서 호출되므로 두 테이블의 변경도 함께 커밋된다.
      */
     @Transactional
     public void matchGithubAccount(long userId, String githubAccountId) {

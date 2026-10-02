@@ -13,7 +13,6 @@ import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
-import com.shoutoutz.api.project.application.ArchivedProjectMemberMatchService;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -32,17 +31,13 @@ class OAuthAccountLoginServiceTest {
     private final OAuthAccountRepository oauthAccountRepository =
             mock(OAuthAccountRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
-    private final ArchivedProjectMemberMatchService archivedProjectMemberMatchService =
-            mock(ArchivedProjectMemberMatchService.class);
-
     private OAuthAccountLoginService oauthAccountLoginService;
 
     @BeforeEach
     void setUp() {
         oauthAccountLoginService = new OAuthAccountLoginService(
                 oauthAccountRepository,
-                userRepository,
-                archivedProjectMemberMatchService
+                userRepository
         );
     }
 
@@ -69,7 +64,6 @@ class OAuthAccountLoginServiceTest {
         assertThat(result.identity()).isNull();
         verify(oauthAccountRepository).save(org.mockito.ArgumentMatchers.any());
         verify(userRepository).save(org.mockito.ArgumentMatchers.any());
-        verify(archivedProjectMemberMatchService).matchGithubAccount(1L, "12345678");
     }
 
     @Test

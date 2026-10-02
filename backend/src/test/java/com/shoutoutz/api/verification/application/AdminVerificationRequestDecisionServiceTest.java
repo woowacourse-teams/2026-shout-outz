@@ -8,10 +8,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.shoutoutz.api.auth.domain.OAuthAccount;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
+import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.project.application.ArchivedProjectMemberMatchService;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
@@ -59,6 +63,12 @@ class AdminVerificationRequestDecisionServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private OAuthAccountRepository oauthAccountRepository;
+
+    @Mock
+    private ArchivedProjectMemberMatchService archivedProjectMemberMatchService;
+
     private AdminVerificationRequestDecisionService decisionService;
 
     @BeforeEach
@@ -68,6 +78,8 @@ class AdminVerificationRequestDecisionServiceTest {
                 historyRepository,
                 userProfileRepository,
                 userRepository,
+                oauthAccountRepository,
+                archivedProjectMemberMatchService,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -79,6 +91,12 @@ class AdminVerificationRequestDecisionServiceTest {
         given(userProfileRepository.findByUserId(USER_ID))
                 .willReturn(Optional.of(UserProfile.initialize(USER_ID, "일반 사용자")));
         given(userRepository.findById(ADMIN_ID)).willReturn(Optional.of(admin()));
+        given(oauthAccountRepository.findByUserIdAndProvider(USER_ID, OAuthProvider.GITHUB))
+                .willReturn(Optional.of(OAuthAccount.builder()
+                        .userId(USER_ID)
+                        .provider(OAuthProvider.GITHUB)
+                        .providerAccountId("12345678")
+                        .build()));
         given(requestRepository.save(any(UserVerificationRequest.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
         given(userProfileRepository.save(any(UserProfile.class)))
@@ -111,6 +129,7 @@ class AdminVerificationRequestDecisionServiceTest {
         assertThat(profileCaptor.getValue().getUserType()).isEqualTo(UserType.WOOWACOURSE_CREW);
         assertThat(profileCaptor.getValue().getCohort()).isEqualTo(Cohort.COHORT_8);
         assertThat(profileCaptor.getValue().getTrack()).isEqualTo(Track.BACKEND);
+        verify(archivedProjectMemberMatchService).matchGithubAccount(USER_ID, "12345678");
 
         ArgumentCaptor<UserVerificationRequestHistory> historyCaptor =
                 ArgumentCaptor.forClass(UserVerificationRequestHistory.class);
@@ -156,6 +175,7 @@ class AdminVerificationRequestDecisionServiceTest {
         assertThat(profileCaptor.getValue().getUserType()).isEqualTo(UserType.WOOWACOURSE_COACH);
         assertThat(profileCaptor.getValue().getCohort()).isNull();
         assertThat(profileCaptor.getValue().getTrack()).isNull();
+        verifyNoInteractions(oauthAccountRepository, archivedProjectMemberMatchService);
     }
 
     @Test
@@ -202,6 +222,22 @@ class AdminVerificationRequestDecisionServiceTest {
         assertThat(historyCaptor.getValue().getChangedAt()).isEqualTo(NOW);
 
         verifyNoInteractions(userProfileRepository);
+        verifyNoInteractions(oauthAccountRepository, archivedProjectMemberMatchService);
+    }
+
+    @Test
+    void 크루_인증_대상에_GitHub_계정이_없으면_승인을_실패한다() {
+        given(requestRepository.findById(REQUEST_ID)).willReturn(Optional.of(crewRequest()));
+        given(userProfileRepository.findByUserId(USER_ID))
+                .willReturn(Optional.of(UserProfile.initialize(USER_ID, "일반 사용자")));
+        given(userRepository.findById(ADMIN_ID)).willReturn(Optional.of(admin()));
+        given(oauthAccountRepository.findByUserIdAndProvider(USER_ID, OAuthProvider.GITHUB))
+                .willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> decisionService.approve(REQUEST_ID, ADMIN_ID, UserRole.ADMIN))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("크루 인증 대상 사용자의 GitHub OAuth 계정이 없습니다.");
+        verifyNoInteractions(archivedProjectMemberMatchService);
     }
 
     @Test

@@ -1,8 +1,11 @@
 package com.shoutoutz.api.verification.application;
 
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
+import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.project.application.ArchivedProjectMemberMatchService;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -10,6 +13,7 @@ import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.verification.domain.UserVerificationErrorCode;
 import com.shoutoutz.api.verification.domain.UserVerificationRequest;
 import com.shoutoutz.api.verification.domain.UserVerificationRequestHistory;
@@ -33,6 +37,8 @@ public class AdminVerificationRequestDecisionService {
     private final UserVerificationRequestHistoryRepository historyRepository;
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
+    private final OAuthAccountRepository oauthAccountRepository;
+    private final ArchivedProjectMemberMatchService archivedProjectMemberMatchService;
     private final Clock clock;
 
     @Transactional
@@ -69,6 +75,16 @@ public class AdminVerificationRequestDecisionService {
                 null,
                 now
         ));
+        if (request.getUserType() == UserType.WOOWACOURSE_CREW) {
+            String githubAccountId = oauthAccountRepository.findByUserIdAndProvider(
+                            request.getUserId(), OAuthProvider.GITHUB
+                    )
+                    .orElseThrow(() -> new IllegalStateException(
+                            "크루 인증 대상 사용자의 GitHub OAuth 계정이 없습니다."
+                    ))
+                    .getProviderAccountId();
+            archivedProjectMemberMatchService.matchGithubAccount(request.getUserId(), githubAccountId);
+        }
 
         return AdminVerificationRequestApproveResponse.of(
                 approvedRequest,
