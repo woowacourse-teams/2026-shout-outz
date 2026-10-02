@@ -415,6 +415,8 @@ export interface CategoryFindAllSuccessResponse {
     displayName: string;
     /** 표시 순서 */
     displayOrder: number;
+    /** 카테고리가 연결된 피드 유형 */
+    feedType: 'POST' | 'QUESTION';
     /** 카테고리 slug */
     slug: string;
     /** 카테고리 유형 */
@@ -430,6 +432,8 @@ export interface CategorySaveRequest {
   displayName: string;
   /** 0 이상 32767 이하 표시 순서 */
   displayOrder: number;
+  /** 카테고리가 연결될 피드 유형 */
+  feedType: 'POST' | 'QUESTION';
   /** 영문 소문자, 숫자, 하이픈으로 구성된 고유 slug */
   slug: string;
   /** 카테고리 유형 */
@@ -448,6 +452,8 @@ export interface CategorySaveSuccessResponse {
     displayName: string;
     /** 표시 순서 */
     displayOrder: number;
+    /** 카테고리가 연결된 피드 유형 */
+    feedType: 'POST' | 'QUESTION';
     /** 카테고리 slug */
     slug: string;
     /** 카테고리 유형 */
@@ -477,6 +483,8 @@ export interface CategoryUpdateSuccessResponse {
     displayName: string;
     /** 표시 순서 */
     displayOrder: number;
+    /** 카테고리가 연결된 피드 유형 */
+    feedType: 'POST' | 'QUESTION';
     /** 카테고리 slug */
     slug: string;
     /** 카테고리 유형 */
@@ -613,14 +621,16 @@ export interface FeedCommentCreateSuccessResponse {
   data: {
     /** 댓글 작성자 */
     author: {
-      /** 작성자 프로필 이미지 공개 URL */
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
-      /** 작성자 기수 */
+      /** 작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외 */
       cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
       /** 작성자 handle */
       handle?: string | null;
+      /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
+      isCurrent?: boolean | null;
       /** 작성자 트랙 */
       track?: string | null;
       /** 작성자 ID */
@@ -670,21 +680,23 @@ export interface FeedCommentFindAllSuccessResponse {
     agreedByMe: boolean;
     /** 댓글 작성자 */
     author: {
-      /** 작성자 프로필 이미지 미디어 ID */
+      /** 작성자 프로필 이미지 미디어 ID. 타인의 익명 댓글이면 null */
       avatarImageId?: number | null;
-      /** 작성자 프로필 이미지 공개 URL */
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL. 타인의 익명 댓글이면 null */
       avatarUrl?: string | null;
-      /** 작성자 기수 */
+      /** 작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외 */
       cohort?: number | null;
-      /** 작성자 표시 이름 */
-      displayName: string;
-      /** 작성자 handle */
+      /** 작성자 표시 이름. 타인의 익명 댓글이면 null */
+      displayName?: string | null;
+      /** 작성자 handle. 타인의 익명 댓글이면 null */
       handle?: string | null;
-      /** 작성자 트랙 */
+      /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
+      isCurrent?: boolean | null;
+      /** 작성자 트랙. 크루가 아니거나 타인의 익명 댓글이면 null */
       track?: string | null;
-      /** 작성자 ID */
-      userId: number;
-      /** 작성자 유형 */
+      /** 작성자 ID. 타인의 익명 댓글이면 null */
+      userId?: number | null;
+      /** 작성자 유형. 크루 배지 구분을 위해 타인의 익명 댓글에도 포함 */
       userType?: string | null;
     };
     /** 댓글 내용. 삭제된 댓글은 null */
@@ -750,14 +762,16 @@ export interface FeedCommentUpdateSuccessResponse {
   data: {
     /** 댓글 작성자 */
     author: {
-      /** 작성자 프로필 이미지 공개 URL */
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
-      /** 작성자 기수 */
+      /** 작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외 */
       cohort?: number | null;
       /** 작성자 표시 이름 */
       displayName: string;
       /** 작성자 handle */
       handle?: string | null;
+      /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
+      isCurrent?: boolean | null;
       /** 작성자 트랙 */
       track?: string | null;
       /** 작성자 ID */
@@ -792,21 +806,23 @@ export interface FeedFindAllSuccessResponse {
   data: {
     /** 현재 작성자 프로필 */
     author: {
-      /** 현재 프로필 이미지 미디어 ID */
+      /** 현재 프로필 이미지 미디어 ID. 타인의 익명 글이면 null */
       avatarImageId?: number | null;
-      /** 현재 프로필 이미지 공개 URL */
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL. 타인의 익명 글이면 null */
       avatarUrl?: string | null;
-      /** 작성자 기수 */
+      /** 작성자 정보가 공개되는 크루의 기수. 타인의 익명 글이면 제외 */
       cohort?: number | null;
-      /** 작성자 이름 */
-      displayName: string;
-      /** 작성자 핸들 */
-      handle: string;
-      /** 작성자 트랙 */
+      /** 작성자 이름. 타인의 익명 글이면 null */
+      displayName?: string | null;
+      /** 작성자 핸들. 타인의 익명 글이면 null */
+      handle?: string | null;
+      /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
+      isCurrent?: boolean | null;
+      /** 작성자 트랙. 크루가 아니거나 타인의 익명 글이면 null */
       track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
-      /** 작성자 ID */
-      userId: number;
-      /** 작성자 유형 */
+      /** 작성자 ID. 타인의 익명 글이면 null */
+      userId?: number | null;
+      /** 작성자 유형. 크루 배지 구분을 위해 타인의 익명 글에도 포함 */
       userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
     };
     /** 북마크 수 */
@@ -819,6 +835,8 @@ export interface FeedFindAllSuccessResponse {
       categoryId: number;
       /** 카테고리 표시 이름 */
       displayName: string;
+      /** 카테고리가 연결된 피드 유형 */
+      feedType: 'POST' | 'QUESTION';
       /** 카테고리 slug */
       slug: string;
       /** 카테고리 유형 */
@@ -886,21 +904,23 @@ export interface FeedFindSuccessResponse {
   data: {
     /** 현재 작성자 프로필 */
     author: {
-      /** 현재 프로필 이미지 미디어 ID */
+      /** 현재 프로필 이미지 미디어 ID. 타인의 익명 글이면 null */
       avatarImageId?: number | null;
-      /** 현재 프로필 이미지 공개 URL */
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL. 타인의 익명 글이면 null */
       avatarUrl?: string | null;
-      /** 작성자 기수 */
+      /** 작성자 정보가 공개되는 크루의 기수. 타인의 익명 글이면 제외 */
       cohort?: number | null;
-      /** 작성자 이름 */
-      displayName: string;
-      /** 작성자 핸들 */
-      handle: string;
-      /** 작성자 트랙 */
+      /** 작성자 이름. 타인의 익명 글이면 null */
+      displayName?: string | null;
+      /** 작성자 핸들. 타인의 익명 글이면 null */
+      handle?: string | null;
+      /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
+      isCurrent?: boolean | null;
+      /** 작성자 트랙. 크루가 아니거나 타인의 익명 글이면 null */
       track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
-      /** 작성자 ID */
-      userId: number;
-      /** 작성자 유형 */
+      /** 작성자 ID. 타인의 익명 글이면 null */
+      userId?: number | null;
+      /** 작성자 유형. 크루 배지 구분을 위해 타인의 익명 글에도 포함 */
       userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
     };
     /** 북마크 수 */
@@ -913,6 +933,8 @@ export interface FeedFindSuccessResponse {
       categoryId: number;
       /** 카테고리 표시 이름 */
       displayName: string;
+      /** 카테고리가 연결된 피드 유형 */
+      feedType: 'POST' | 'QUESTION';
       /** 카테고리 slug */
       slug: string;
       /** 카테고리 유형 */
@@ -1006,14 +1028,16 @@ export interface FeedSaveSuccessResponse {
   data: {
     /** 현재 작성자 프로필 */
     author: {
-      /** 현재 프로필 이미지 공개 URL */
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
-      /** 작성자 기수 */
+      /** 작성자 정보가 공개되는 크루의 기수. 타인의 익명 글이면 제외 */
       cohort?: number | null;
       /** 작성자 이름 */
       displayName: string;
       /** 작성자 핸들 */
       handle: string;
+      /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
+      isCurrent?: boolean | null;
       /** 작성자 트랙 */
       track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
       /** 작성자 ID */
@@ -1027,6 +1051,8 @@ export interface FeedSaveSuccessResponse {
       categoryId: number;
       /** 카테고리 표시 이름 */
       displayName: string;
+      /** 카테고리가 연결된 피드 유형 */
+      feedType: 'POST' | 'QUESTION';
       /** 카테고리 slug */
       slug: string;
       /** 카테고리 유형 */
@@ -1099,14 +1125,16 @@ export interface FeedUpdateSuccessResponse {
   data: {
     /** 현재 작성자 프로필 */
     author: {
-      /** 현재 프로필 이미지 공개 URL */
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
-      /** 작성자 기수 */
+      /** 작성자 정보가 공개되는 크루의 기수. 타인의 익명 글이면 제외 */
       cohort?: number | null;
       /** 작성자 이름 */
       displayName: string;
       /** 작성자 핸들 */
       handle: string;
+      /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
+      isCurrent?: boolean | null;
       /** 작성자 트랙 */
       track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
       /** 작성자 ID */
@@ -1120,6 +1148,8 @@ export interface FeedUpdateSuccessResponse {
       categoryId: number;
       /** 카테고리 표시 이름 */
       displayName: string;
+      /** 카테고리가 연결된 피드 유형 */
+      feedType: 'POST' | 'QUESTION';
       /** 카테고리 slug */
       slug: string;
       /** 카테고리 유형 */
@@ -1666,7 +1696,7 @@ export interface NotificationListSuccessResponse {
   data: {
     /** 알림을 발생시킨 사용자 */
     actor?: {
-      /** 사용자 아바타 URL */
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 사용자 아바타 URL */
       avatarUrl?: string | null;
       /** 사용자 표시 이름 */
       displayName?: string | null;
@@ -1762,7 +1792,7 @@ export interface ProjectCommentCreateSuccessResponse {
   data: {
     /** 댓글 작성자 */
     author: {
-      /** 작성자 프로필 이미지 공개 URL */
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 작성자 기수 */
       cohort?: number | null;
@@ -1819,7 +1849,7 @@ export interface ProjectCommentFindAllSuccessResponse {
     author: {
       /** 작성자 프로필 이미지 미디어 ID */
       avatarImageId?: number | null;
-      /** 작성자 프로필 이미지 공개 URL */
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 작성자 기수 */
       cohort?: number | null;
@@ -1895,7 +1925,7 @@ export interface ProjectCommentUpdateSuccessResponse {
   data: {
     /** 댓글 작성자 */
     author: {
-      /** 작성자 프로필 이미지 공개 URL */
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL */
       avatarUrl?: string | null;
       /** 작성자 기수 */
       cohort?: number | null;
@@ -1941,6 +1971,8 @@ export interface ProjectCreateRequest {
   githubRepositoryUrl: string;
   /** @[A-Za-z0-9_-]{2,30} 형식의 팀원 handle 목록 (1명 이상). 등록자를 포함할 수 있으며, 활동 중인 우아한테크코스 크루 또는 코치여야 하며, 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다. */
   memberHandles: string[];
+  /** 서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반환한다. 이때 오류 응답의 details.field는 serviceStatusValid다. */
+  serviceStatus: 'OPERATING' | 'CLOSED';
   /** 한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준) */
   tagline: string;
   /** 팀 이름. 앞뒤 공백을 자른 뒤 50자 이하 (유니코드 코드 포인트 기준) */
@@ -2028,7 +2060,7 @@ export interface ProjectFindAllSuccessResponse {
     likedByMe: boolean;
     /** 팀원 전체 목록. 상세 조회의 members와 같은 규칙이며, 등록 순서대로 정렬한다. */
     members: {
-      /** 프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, 가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL이다. */
+      /** 프로필 이미지 URL. 가입한 팀원은 CloudFront 공개 이미지 URL을 우선하고, 없으면 연결된 GitHub 프로필 이미지 URL을 사용하며, 가입하지 않은 이관 팀원은 저장된 GitHub 프로필 이미지 URL을 사용한다. */
       avatarUrl?: string | null;
       /** 기수. 크루가 아닌 팀원과 이관 팀원은 null이다. */
       cohort?: number | null;
@@ -2060,7 +2092,7 @@ export interface ProjectFindAllSuccessResponse {
     }[];
     /** 프로젝트 썸네일 미디어 ID */
     thumbnailImageId?: number | null;
-    /** CloudFront에서 제공하는 공개 썸네일 URL */
+    /** CloudFront에서 제공하는 프로젝트 카드용 공개 이미지 URL */
     thumbnailUrl?: string | null;
     /** 프로젝트 이름 */
     title: string;
@@ -2117,7 +2149,7 @@ export interface ProjectFindDetailSuccessResponse {
     likedByMe: boolean;
     /** 팀원 목록. 저장된 순서대로 반환한다. */
     members: {
-      /** 프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, 가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL이다. */
+      /** 프로필 이미지 URL. 가입한 팀원은 CloudFront 공개 이미지 URL을 우선하고, 없으면 연결된 GitHub 프로필 이미지 URL을 사용하며, 가입하지 않은 이관 팀원은 저장된 GitHub 프로필 이미지 URL을 사용한다. */
       avatarUrl?: string | null;
       /** 기수. 크루가 아닌 팀원과 이관 팀원은 null이다. */
       cohort?: number | null;
@@ -2312,21 +2344,23 @@ export interface UserFeedFindAllSuccessResponse {
   data: {
     /** 현재 작성자 프로필 */
     author: {
-      /** 현재 프로필 이미지 미디어 ID */
+      /** 현재 프로필 이미지 미디어 ID. 타인의 익명 글이면 null */
       avatarImageId?: number | null;
-      /** 현재 프로필 이미지 공개 URL */
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 현재 프로필 이미지 공개 URL. 타인의 익명 글이면 null */
       avatarUrl?: string | null;
-      /** 작성자 기수 */
+      /** 작성자 정보가 공개되는 크루의 기수. 타인의 익명 글이면 제외 */
       cohort?: number | null;
-      /** 작성자 이름 */
-      displayName: string;
-      /** 작성자 핸들 */
-      handle: string;
-      /** 작성자 트랙 */
+      /** 작성자 이름. 타인의 익명 글이면 null */
+      displayName?: string | null;
+      /** 작성자 핸들. 타인의 익명 글이면 null */
+      handle?: string | null;
+      /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
+      isCurrent?: boolean | null;
+      /** 작성자 트랙. 크루가 아니거나 타인의 익명 글이면 null */
       track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
-      /** 작성자 ID */
-      userId: number;
-      /** 작성자 유형 */
+      /** 작성자 ID. 타인의 익명 글이면 null */
+      userId?: number | null;
+      /** 작성자 유형. 크루 배지 구분을 위해 타인의 익명 글에도 포함 */
       userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
     };
     /** 북마크 수 */
@@ -2339,6 +2373,8 @@ export interface UserFeedFindAllSuccessResponse {
       categoryId: number;
       /** 카테고리 표시 이름 */
       displayName: string;
+      /** 카테고리가 연결된 피드 유형 */
+      feedType: 'POST' | 'QUESTION';
       /** 카테고리 slug */
       slug: string;
       /** 카테고리 유형 */
@@ -2518,7 +2554,7 @@ export interface UserProjectFindAllSuccessResponse {
     likedByMe: boolean;
     /** 프로젝트 팀원 */
     members: {
-      /** 프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, 가입하지 않은 이관 팀원은 GitHub 프로필 이미지 URL이다. */
+      /** 프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, 없으면 연결된 GitHub 프로필 이미지 URL, 가입하지 않은 이관 팀원은 저장된 GitHub 프로필 이미지 URL이다. */
       avatarUrl?: string | null;
       /** 기수 */
       cohort?: number | null;
@@ -2556,7 +2592,7 @@ export interface UserProjectFindAllSuccessResponse {
     }[];
     /** 프로젝트 썸네일 이미지 ID */
     thumbnailImageId?: number | null;
-    /** CloudFront에서 제공하는 공개 썸네일 URL */
+    /** CloudFront에서 제공하는 프로젝트 카드용 공개 이미지 URL */
     thumbnailUrl?: string | null;
     /** 프로젝트 이름 */
     title: string;
