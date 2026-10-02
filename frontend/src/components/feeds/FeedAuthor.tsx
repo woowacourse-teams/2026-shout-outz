@@ -30,7 +30,8 @@ function formatAuthorRole(author: Feed['author']) {
   if (author.userType !== 'WOOWACOURSE_CREW') return null;
 
   const track = author.track ? TRACK_ABBREVIATIONS[author.track] : null;
-  return [track, '크루'].filter(Boolean).join(' ');
+  const cohort = author.cohort != null ? `${author.cohort}기` : null;
+  return [track, cohort, '크루'].filter(Boolean).join(' ');
 }
 
 export function FeedAuthor({
@@ -66,6 +67,7 @@ export function FeedAuthor({
             </p>
             <CrewStatusBadge
               userType={author.userType}
+              cohort={author.cohort}
               isCurrent={author.isCurrent}
               size={isCompact ? 'xs' : 'sm'}
             />
@@ -93,6 +95,7 @@ export function FeedAuthor({
           </span>
           <CrewStatusBadge
             userType={author.userType}
+            cohort={author.cohort}
             isCurrent={author.isCurrent}
             size={isCompact ? 'xs' : 'sm'}
           />

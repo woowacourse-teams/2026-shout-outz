@@ -69,7 +69,7 @@ test('실제 작성자를 표시하고 등록한 피드를 상세와 목록에�
   // 헤더에도 내 이름이 있으므로 폼의 작성자 블록으로 범위를 좁힌다.
   const author = screen.getByRole('link', { name: '정우진 프로필 보기' });
   expect(within(author).getByText('정우진')).toBeInTheDocument();
-  expect(within(author).getByText('BE 크루')).toBeInTheDocument();
+  expect(within(author).getByText('BE 8기 크루')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeDisabled();
   await fillTitle(user, '새 피드 제목');
   await user.type(input, '새로운 기술 이야기');
@@ -209,6 +209,7 @@ test('목록에서 작성 페이지 진입 후 등록하면 생성한 상세 페
     </QueryClientProvider>,
   );
   const user = userEvent.setup();
+  await user.click(await screen.findByRole('tab', { name: '피드' }));
   await user.click(await screen.findByRole('button', { name: '글쓰기' }));
   await fillTitle(user);
   await user.type(

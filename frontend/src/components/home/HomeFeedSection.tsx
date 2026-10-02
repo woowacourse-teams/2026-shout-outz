@@ -5,6 +5,7 @@ import { IconMessage, IconMessageQuestion } from '@tabler/icons-react';
 
 import { feedsQuery } from '@/apis/feed';
 import { FeedCard } from '@/components/feeds/FeedCard';
+import { getButtonStyles } from '@/components/Button';
 import { Tab } from '@/components/Tab';
 import { type FeedSort, type FeedType } from '@/types/feed';
 import { analytics } from '@/utils/analytics';
@@ -19,7 +20,7 @@ const SORT_TABS: { value: FeedSort; label: string }[] = [
 export function HomeFeedSection() {
   // TODO 현재는 홈에서 보는 정보는 미리보기 용이기 때문에 url로 관리하지 않기로 결정, 추후에 논의 필요
   const [sort, setSort] = useState<FeedSort>('LATEST');
-  const [feedType, setFeedType] = useState<FeedType>('POST');
+  const [feedType, setFeedType] = useState<FeedType>('QUESTION');
   const { data } = useSuspenseInfiniteQuery(feedsQuery(sort, undefined, HOME_FEED_SIZE, feedType));
   const feeds = data.pages[0]?.data ?? [];
   const label = feedType === 'QUESTION' ? '질문' : '피드';
@@ -41,15 +42,6 @@ export function HomeFeedSection() {
     <section aria-label="커뮤니티" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2 pb-1">
         <h2 className="text-base font-bold tracking-tight text-gray-900">커뮤니티</h2>
-
-        <Link
-          to="/community"
-          search={{ type: feedType, sort: 'LATEST' }}
-          className="text-primary-600 focus-visible:outline-primary-600 shrink-0 rounded-sm text-sm font-bold focus-visible:outline-2"
-          onClick={() => analytics.track({ name: 'section_more_clicked', target: 'feeds' })}
-        >
-          {label} 전체보기 ›
-        </Link>
       </div>
       <Tab
         variant="subnav"
@@ -91,6 +83,14 @@ export function HomeFeedSection() {
           ))}
         </ul>
       )}
+      <Link
+        to="/community"
+        search={{ type: feedType, sort }}
+        className={getButtonStyles({ variant: 'outline', className: 'w-full' })}
+        onClick={() => analytics.track({ name: 'section_more_clicked', target: 'feeds' })}
+      >
+        {label} 전체보기 ›
+      </Link>
     </section>
   );
 }

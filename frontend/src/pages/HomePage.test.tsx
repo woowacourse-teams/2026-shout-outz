@@ -92,13 +92,13 @@ describe('HomePage', () => {
   });
 
   describe('커뮤니티', () => {
-    it('처음에는 피드 탭에서 최신 피드 3개를 보여준다', async () => {
+    it('처음에는 질문 탭에서 최신 질문 3개를 보여준다', async () => {
       renderRoute('/');
 
       const feeds = await findFeeds();
 
       expect(feeds).toHaveLength(3);
-      expect(within(feedRegion()).getByRole('tab', { name: '피드' })).toHaveAttribute(
+      expect(within(feedRegion()).getByRole('tab', { name: '질문' })).toHaveAttribute(
         'aria-selected',
         'true',
       );
@@ -106,14 +106,22 @@ describe('HomePage', () => {
         'aria-selected',
         'true',
       );
-      expect(feeds[0]).toHaveTextContent('루프 프로젝트에서 WebSocket');
-      expect(feeds[1]).toHaveTextContent('TanStack Query v5의 낙관적 업데이트');
-      expect(feeds[2]).toHaveTextContent('웹 접근성 스터디 4주 차 회고');
+      expect(feeds[0]).toHaveTextContent('Server-Sent Events(SSE)');
+      expect(feeds[1]).toHaveTextContent('첫 이직을 준비할 때');
+      expect(feeds[2]).toHaveTextContent('백엔드 면접에서');
     });
 
     it('홈 피드에도 목록 카드의 링크와 반응 수를 표시한다', async () => {
+      const user = userEvent.setup();
       renderRoute('/');
-      const feeds = await findFeeds();
+      await findFeeds();
+      await user.click(within(feedRegion()).getByRole('tab', { name: '피드' }));
+      await waitFor(() =>
+        expect(within(feedRegion()).getAllByRole('article')[0]).toHaveTextContent(
+          '루프 프로젝트에서 WebSocket',
+        ),
+      );
+      const feeds = within(feedRegion()).getAllByRole('article');
 
       expect(within(feeds[0]!).getAllByRole('link')).toHaveLength(1);
       expect(within(feeds[0]!).getByRole('link')).toHaveAttribute('href', '/community/1');
@@ -126,16 +134,8 @@ describe('HomePage', () => {
     });
 
     it('질문 탭에서는 질문만 보여주고 전체보기에도 질문 유형을 전달한다', async () => {
-      const user = userEvent.setup();
       renderRoute('/');
       await findFeeds();
-
-      await user.click(within(feedRegion()).getByRole('tab', { name: '질문' }));
-      await waitFor(() =>
-        expect(within(feedRegion()).getAllByRole('article')[0]).toHaveTextContent(
-          'Server-Sent Events(SSE)',
-        ),
-      );
       const questions = within(feedRegion()).getAllByRole('article');
       expect(questions).toHaveLength(3);
       expect(questions[1]).toHaveTextContent('첫 이직을 준비할 때');
@@ -154,6 +154,7 @@ describe('HomePage', () => {
       const user = userEvent.setup();
       renderRoute('/');
       await findFeeds();
+      await user.click(within(feedRegion()).getByRole('tab', { name: '피드' }));
 
       await user.click(within(feedRegion()).getByRole('tab', { name: '인기순' }));
 
@@ -173,18 +174,20 @@ describe('HomePage', () => {
     });
 
     it('피드 전체보기로 피드 페이지에 갈 수 있다', async () => {
+      const user = userEvent.setup();
       renderRoute('/');
       await findFeeds();
+      await user.click(within(feedRegion()).getByRole('tab', { name: '피드' }));
 
-      const href = within(feedRegion())
-        .getByRole('link', { name: /^피드 전체보기/ })
-        .getAttribute('href');
+      const href = (
+        await within(feedRegion()).findByRole('link', { name: /^피드 전체보기/ })
+      ).getAttribute('href');
       const url = new URL(href!, 'https://example.com');
       expect(url.pathname).toBe('/community');
       expect(url.searchParams.get('type')).toBe('POST');
     });
 
-    it('피드가 없으면 안내 문구를 보여준다', async () => {
+    it('질문이 없으면 안내 문구를 보여준다', async () => {
       server.use(
         http.get('/api/v1/feeds', () =>
           HttpResponse.json({
@@ -196,7 +199,7 @@ describe('HomePage', () => {
       );
       renderRoute('/');
 
-      expect(await screen.findByText('아직 작성된 피드가 없습니다.')).toBeInTheDocument();
+      expect(await screen.findByText('아직 작성된 질문이 없습니다.')).toBeInTheDocument();
       expect(within(feedRegion()).queryByRole('article')).not.toBeInTheDocument();
     });
   });
@@ -213,14 +216,16 @@ describe('HomePage', () => {
       expect(within(eventRegion()).queryByText(/\[종료\]/)).not.toBeInTheDocument();
     });
 
-    it('소식 전체보기로 소식 페이지에 갈 수 있다', async () => {
+    it('이벤트 전체보기로 소식 페이지의 이벤트 탭에 갈 수 있다', async () => {
       renderRoute('/');
       await findEvents();
 
-      expect(within(eventRegion()).getByRole('link', { name: /^소식 전체보기/ })).toHaveAttribute(
-        'href',
-        '/news',
-      );
+      const href = within(eventRegion())
+        .getByRole('link', { name: /^이벤트 전체보기/ })
+        .getAttribute('href');
+      const url = new URL(href!, 'https://example.com');
+      expect(url.pathname).toBe('/news');
+      expect(url.searchParams.get('type')).toBe('EVENT');
     });
 
     it('진행 중인 이벤트가 없으면 안내 문구를 보여준다', async () => {

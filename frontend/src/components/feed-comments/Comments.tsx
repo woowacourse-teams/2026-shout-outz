@@ -35,13 +35,21 @@ import { setFeedCommentAgree } from '@/apis/reaction';
 import { useRequireAuthentication } from '@/hooks/useRequireAuthentication';
 import type { FeedType } from '@/types/feed';
 
-export function Comments({ feedId, feedType = 'POST' }: { feedId: number; feedType?: FeedType }) {
+export function Comments({
+  feedId,
+  feedType = 'POST',
+  feedAuthorId = null,
+}: {
+  feedId: number;
+  feedType?: FeedType;
+  feedAuthorId?: number | null;
+}) {
   return (
     <QueryErrorResetBoundary>
       {({ reset }) => (
         <SessionBoundary
           reset={reset}
-          guest={<GuestComments feedId={feedId} feedType={feedType} />}
+          guest={<GuestComments feedId={feedId} feedType={feedType} feedAuthorId={feedAuthorId} />}
         >
           <Suspense
             fallback={
@@ -50,7 +58,7 @@ export function Comments({ feedId, feedType = 'POST' }: { feedId: number; feedTy
               </p>
             }
           >
-            <CommentsWithSession feedId={feedId} feedType={feedType} />
+            <CommentsWithSession feedId={feedId} feedType={feedType} feedAuthorId={feedAuthorId} />
           </Suspense>
         </SessionBoundary>
       )}
@@ -92,15 +100,37 @@ class SessionBoundary extends Component<
   }
 }
 
-function GuestComments({ feedId, feedType }: { feedId: number; feedType: FeedType }) {
+function GuestComments({
+  feedId,
+  feedType,
+  feedAuthorId,
+}: {
+  feedId: number;
+  feedType: FeedType;
+  feedAuthorId: number | null;
+}) {
   return (
     <AsyncBoundary key={`guest-${feedId}`}>
-      <CommentList feedId={feedId} feedType={feedType} viewer={null} sessionReady={false} />
+      <CommentList
+        feedId={feedId}
+        feedType={feedType}
+        feedAuthorId={feedAuthorId}
+        viewer={null}
+        sessionReady={false}
+      />
     </AsyncBoundary>
   );
 }
 
-function CommentsWithSession({ feedId, feedType }: { feedId: number; feedType: FeedType }) {
+function CommentsWithSession({
+  feedId,
+  feedType,
+  feedAuthorId,
+}: {
+  feedId: number;
+  feedType: FeedType;
+  feedAuthorId: number | null;
+}) {
   const session = useSuspenseQuery(sessionQuery);
   const viewer = session.data.status === 'AUTHENTICATED' ? (session.data.userId ?? null) : null;
 
@@ -109,6 +139,7 @@ function CommentsWithSession({ feedId, feedType }: { feedId: number; feedType: F
       <CommentList
         feedId={feedId}
         feedType={feedType}
+        feedAuthorId={feedAuthorId}
         viewer={viewer}
         sessionReady={!session.isFetching && !session.isError}
       />
@@ -118,11 +149,13 @@ function CommentsWithSession({ feedId, feedType }: { feedId: number; feedType: F
 function CommentList({
   feedId,
   feedType,
+  feedAuthorId,
   viewer,
   sessionReady,
 }: {
   feedId: number;
   feedType: FeedType;
+  feedAuthorId: number | null;
   viewer: number | null;
   sessionReady: boolean;
 }) {
@@ -302,10 +335,17 @@ function CommentList({
             <CommentItem
               item={root}
               label={itemLabel}
+              isFeedAuthor={feedAuthorId !== null && root.author.userId === feedAuthorId}
               canEdit={
-                !root.deleted && sessionReady && viewer === root.author.userId && root.editable
+                !root.deleted &&
+                sessionReady &&
+                viewer !== null &&
+                viewer === root.author.userId &&
+                root.editable
               }
-              canDelete={!root.deleted && sessionReady && viewer === root.author.userId}
+              canDelete={
+                !root.deleted && sessionReady && viewer !== null && viewer === root.author.userId
+              }
               canReact={sessionReady}
               canReply={!root.deleted && sessionReady && viewer !== null}
               feedId={feedId}
@@ -326,13 +366,20 @@ function CommentList({
                     <CommentItem
                       item={reply}
                       label="답글"
+                      isFeedAuthor={feedAuthorId !== null && reply.author.userId === feedAuthorId}
                       canEdit={
                         !reply.deleted &&
                         sessionReady &&
+                        viewer !== null &&
                         viewer === reply.author.userId &&
                         reply.editable
                       }
-                      canDelete={!reply.deleted && sessionReady && viewer === reply.author.userId}
+                      canDelete={
+                        !reply.deleted &&
+                        sessionReady &&
+                        viewer !== null &&
+                        viewer === reply.author.userId
+                      }
                       canReact={sessionReady}
                       canReply={false}
                       feedId={feedId}
@@ -372,6 +419,7 @@ function CommentList({
 function CommentItem({
   item,
   label,
+  isFeedAuthor,
   canEdit,
   canDelete,
   canReact,
@@ -382,6 +430,7 @@ function CommentItem({
 }: {
   item: FeedComment;
   label: string;
+  isFeedAuthor: boolean;
   canEdit: boolean;
   canDelete: boolean;
   canReact: boolean;
@@ -421,9 +470,17 @@ function CommentItem({
     !item.isAnonymous && item.author.handle && item.author.track
       ? trackLabels[item.author.track]
       : undefined;
-  const crewInfo = [trackLabel, item.author.userType === 'WOOWACOURSE_CREW' ? '크루' : null]
-    .filter(Boolean)
-    .join(' ');
+  const crewInfo = item.isAnonymous
+    ? null
+    : [
+        trackLabel,
+        item.author.cohort != null ? `${item.author.cohort}기` : null,
+        item.author.userType === 'WOOWACOURSE_CREW' ? '크루' : null,
+      ]
+        .filter(Boolean)
+        .join(' ');
+  const isOwnAnonymous = item.isAnonymous && item.author.handle != null;
+  const authorName = item.isAnonymous && !isOwnAnonymous ? '익명' : item.author.displayName;
   const agreeMutation = useMutation({
     mutationFn: (active: boolean) => setFeedCommentAgree(feedId, item.id, active),
   });
@@ -459,22 +516,28 @@ function CommentItem({
 
   const authorDetails = (
     <>
-      <Avatar
-        size="sm"
-        src={item.author.avatarUrl}
-        name={item.isAnonymous ? '익명' : (item.author.displayName ?? undefined)}
-        alt=""
-      />
+      <Avatar size="sm" src={item.author.avatarUrl} name={authorName ?? undefined} alt="" />
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-1.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <span className="group-hover:text-primary-600 truncate text-xs leading-5 font-semibold text-gray-900">
-            {item.isAnonymous ? '익명' : item.author.displayName}
+            {authorName}
           </span>
           <CrewStatusBadge
             userType={item.author.userType}
+            cohort={item.author.cohort}
             isCurrent={item.author.isCurrent}
             size="xs"
           />
+          {isFeedAuthor && (
+            <span className="bg-primary-50 text-primary-700 rounded-full px-1.5 text-xs font-medium">
+              작성자
+            </span>
+          )}
+          {isOwnAnonymous && (
+            <span className="bg-primary-50 text-primary-700 rounded-full px-1.5 text-xs font-medium">
+              익명으로 작성한 글입니다
+            </span>
+          )}
         </div>
         {crewInfo && <p className="mt-0.5 text-xs leading-4 text-gray-500">{crewInfo}</p>}
       </div>
@@ -484,11 +547,11 @@ function CommentItem({
   return (
     <div className="min-w-0">
       <div className="flex min-w-0 items-center gap-3">
-        {item.author.handle && !item.isAnonymous ? (
+        {item.author.handle ? (
           <Link
             to="/users/$handle"
             params={{ handle: item.author.handle }}
-            aria-label={`${item.isAnonymous ? '익명' : item.author.displayName} 프로필 보기`}
+            aria-label={`${item.author.displayName} 프로필 보기`}
             className="group focus-visible:outline-primary-600 flex min-w-0 flex-1 items-center gap-3 rounded-sm focus-visible:outline-2"
           >
             {authorDetails}

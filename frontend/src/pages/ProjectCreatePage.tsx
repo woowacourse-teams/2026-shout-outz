@@ -253,6 +253,10 @@ export function ProjectForm({
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-12 md:pt-10 md:pb-20">
         {createProject.isSuccess ? (
           <RegistrationComplete />
+        ) : editing &&
+          updateProject.isSuccess &&
+          updateProject.data.approvalStatus !== 'APPROVED' ? (
+          <ProjectUpdatePending />
         ) : (
           <>
             <header className="flex flex-col gap-2">
@@ -456,6 +460,23 @@ function RegistrationComplete() {
       <h1 className="text-xl font-bold md:text-2xl">등록이 완료됐어요.</h1>
       <p className="text-sm leading-relaxed text-gray-500">
         운영진 승인이 끝나면 아카이브에서 볼 수 있어요.
+      </p>
+      <Link
+        to="/projects"
+        className="bg-primary-600 focus-visible:outline-primary-600 mt-2 rounded-lg px-5 py-3 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        프로젝트 목록으로
+      </Link>
+    </div>
+  );
+}
+
+function ProjectUpdatePending() {
+  return (
+    <div className="flex flex-col items-center gap-4 py-20 text-center" role="status">
+      <h1 className="text-xl font-bold md:text-2xl">프로젝트 수정 내용이 접수됐어요.</h1>
+      <p className="text-sm leading-relaxed text-gray-500">
+        운영진 승인 후 프로젝트를 볼 수 있어요.
       </p>
       <Link
         to="/projects"
