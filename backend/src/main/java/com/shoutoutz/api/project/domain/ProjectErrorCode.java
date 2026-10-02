@@ -21,8 +21,8 @@ public enum ProjectErrorCode implements ErrorCode {
             "프로젝트 심사 목록 조회 커서가 올바르지 않습니다. 커서 없이 다시 조회해주세요."
     ),
 
-    /** 이관 프로젝트 데이터 보정 API 에러 코드 */
-    PROJECT_MIGRATION_ADMIN_FORBIDDEN("관리자만 이관 프로젝트 정보를 수정할 수 있습니다."),
+    /** 관리자 프로젝트 직접 수정 API 에러 코드 */
+    PROJECT_MIGRATION_ADMIN_FORBIDDEN("관리자만 프로젝트 정보를 직접 수정할 수 있습니다."),
 
     /**
      * 프로젝트 목록 조회 에러 코드

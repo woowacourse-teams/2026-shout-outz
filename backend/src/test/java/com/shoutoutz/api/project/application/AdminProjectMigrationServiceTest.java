@@ -117,7 +117,7 @@ class AdminProjectMigrationServiceTest {
     }
 
     @Test
-    void returnsNotFoundForNonArchivedProject() throws Exception {
+    void returnsNotFoundWhenRepositoryDoesNotUpdateProject() throws Exception {
         AdminProjectMigrationService service = new AdminProjectMigrationService(repository);
         given(repository.update(eq(PROJECT_ID), anyMap())).willReturn(Optional.empty());
 

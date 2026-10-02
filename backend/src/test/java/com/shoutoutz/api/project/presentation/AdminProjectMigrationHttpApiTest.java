@@ -52,7 +52,7 @@ class AdminProjectMigrationHttpApiTest {
     private AdminProjectMigrationService service;
 
     @Test
-    void updatesMigratedProject() throws Exception {
+    void updatesProjectDirectly() throws Exception {
         given(service.update(eq(100L), eq(7L), eq(UserRole.ADMIN), any()))
                 .willReturn(new AdminProjectMigrationUpdateResponse(
                         100L, List.of("title", "descriptionMd", "techTagIds"),
@@ -79,12 +79,12 @@ class AdminProjectMigrationHttpApiTest {
                 .andDo(document("admin-project-migration-update",
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Admin Project Migration")
-                                .summary("이관 프로젝트 데이터 보정")
-                                .description("관리자가 등록자 없는 프로젝트의 projects 컬럼과 기술 태그를 "
-                                        + "한 요청으로 수정한다. 생략한 필드는 유지하며, techTagIds는 보내면 전체 교체한다. "
-                                        + "팀원 테이블은 수정하지 않는다. 임시 API다.")
+                                .summary("관리자 프로젝트 데이터 직접 수정")
+                                .description("관리자가 등록자 여부와 관계없이 삭제되지 않은 프로젝트의 projects 컬럼과 기술 태그를 "
+                                        + "한 요청으로 직접 수정한다. 생략한 필드는 유지하며, techTagIds는 보내면 전체 교체한다. "
+                                        + "팀원 테이블은 수정하지 않는다. 일반 프로젝트 수정 정책은 적용하지 않는다.")
                                 .pathParameters(parameterWithName("projectId")
-                                        .type(SimpleType.INTEGER).description("이관 프로젝트 ID"))
+                                        .type(SimpleType.INTEGER).description("프로젝트 ID"))
                                 .requestHeaders(
                                         org.springframework.restdocs.headers.HeaderDocumentation.headerWithName(
                                                 HttpHeaders.COOKIE).description("관리자 세션의 JSESSIONID"),
