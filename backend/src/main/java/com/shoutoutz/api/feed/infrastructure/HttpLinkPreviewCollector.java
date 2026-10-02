@@ -18,7 +18,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class HttpLinkPreviewCollector implements LinkPreviewCollector {
 
-    private static final int MAX_HTML_BYTES = 512 * 1_024;
+    // YouTube watch 페이지는 일반적인 OG 페이지보다 HTML이 크다.
+    // OG 태그 수집은 계속 제한하되, 짧은 URL이 youtube.com으로 리다이렉트된 뒤
+    // 정상적인 watch 페이지를 읽을 수 있도록 기존 512 KiB보다 여유를 둔다.
+    private static final int MAX_HTML_BYTES = 2 * 1_024 * 1_024;
     private static final int MAX_REDIRECTS = 3;
 
     private final CloseableHttpClient httpClient;
@@ -34,21 +37,28 @@ public class HttpLinkPreviewCollector implements LinkPreviewCollector {
 
     @Override
     public LinkPreviewMetadata collect(String url) throws IOException {
-        URI current = URI.create(url);
+        URI input = URI.create(url);
+        urlPolicy.validateSyntax(input);
+        URI current = normalizeYoutubeShortUrl(input);
         for (int redirects = 0; redirects <= MAX_REDIRECTS; redirects++) {
             urlPolicy.validateSyntax(current);
             HttpGet request = new HttpGet(current);
             request.addHeader("Accept", "text/html,application/xhtml+xml");
             request.addHeader("User-Agent", "ShoutOutzLinkPreview/1.0");
+            request.addHeader("Cache-Control", "no-cache");
+            request.addHeader("Pragma", "no-cache");
 
             PageResponse page = httpClient.execute(request, response -> {
                 int status = response.getCode();
-                if (status >= 300 && status < 400) {
+                if (isRedirectStatus(status)) {
                     Header location = response.getFirstHeader("Location");
                     if (location == null) {
                         throw new IOException("리다이렉트 주소가 없습니다.");
                     }
                     return new PageResponse(location.getValue(), null);
+                }
+                if (status == 304) {
+                    throw new IOException("304 Not Modified 응답에는 HTML 본문이 없습니다.");
                 }
                 if (status != 200 || response.getEntity() == null) {
                     throw new IOException("미리보기 페이지 응답이 올바르지 않습니다: " + status);
@@ -75,6 +85,39 @@ public class HttpLinkPreviewCollector implements LinkPreviewCollector {
             current = current.resolve(page.redirect());
         }
         throw new IOException("리다이렉트 횟수를 초과했습니다.");
+    }
+
+    /** youtu.be는 리다이렉트 응답에 의존하지 않고 영상 페이지를 직접 요청한다. */
+    private URI normalizeYoutubeShortUrl(URI url) {
+        String host = url.getHost();
+        if (host == null) {
+            return url;
+        }
+        String normalizedHost = host.toLowerCase(Locale.ROOT);
+        if (!normalizedHost.equals("youtu.be") && !normalizedHost.equals("www.youtu.be")) {
+            return url;
+        }
+
+        String path = url.getPath();
+        if (path == null || path.length() <= 1) {
+            return url;
+        }
+        String videoId = path.substring(1);
+        if (videoId.endsWith("/")) {
+            videoId = videoId.substring(0, videoId.length() - 1);
+        }
+        if (!videoId.matches("[A-Za-z0-9_-]{11}")) {
+            return url;
+        }
+        return URI.create("https://www.youtube.com/watch?v=" + videoId);
+    }
+
+    private boolean isRedirectStatus(int status) {
+        return status == 301
+                || status == 302
+                || status == 303
+                || status == 307
+                || status == 308;
     }
 
     private LinkPreviewMetadata parse(byte[] body, URI pageUrl) throws IOException {

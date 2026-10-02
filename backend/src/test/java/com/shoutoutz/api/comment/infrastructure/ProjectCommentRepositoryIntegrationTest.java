@@ -12,6 +12,7 @@ import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.Project;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.user.domain.account.User;
@@ -202,6 +203,7 @@ class ProjectCommentRepositoryIntegrationTest {
                 "설명",
                 new GithubRepositoryUrl("https://github.com/woowacourse-teams/" + repositoryName),
                 null,
+                ServiceStatus.CLOSED,
                 null
         );
     }

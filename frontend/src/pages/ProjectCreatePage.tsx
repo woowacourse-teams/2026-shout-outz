@@ -24,6 +24,7 @@ import {
 import {
   toProjectCreateRequest,
   toProjectFormErrors,
+  resolveServiceStatus,
   toProjectUpdateRequest,
   validateProjectForm,
 } from '@/utils/project';
@@ -349,25 +350,21 @@ export function ProjectForm({
                 )}
               </Field>
 
-              {editing && (
-                <Field label="서비스 운영 상태">
-                  {() => (
-                    <Select
-                      aria-label="서비스 운영 상태"
-                      value={
-                        values.deploymentUrl.trim() ? (values.serviceStatus ?? 'CLOSED') : 'CLOSED'
-                      }
-                      disabled={!values.deploymentUrl.trim()}
-                      onValueChange={(value) =>
-                        setField('serviceStatus', value as 'OPERATING' | 'CLOSED')
-                      }
-                    >
-                      <Select.Item value="OPERATING">운영 중</Select.Item>
-                      <Select.Item value="CLOSED">운영 종료</Select.Item>
-                    </Select>
-                  )}
-                </Field>
-              )}
+              <Field label="서비스 운영 상태" error={errors.serviceStatus}>
+                {() => (
+                  <Select
+                    aria-label="서비스 운영 상태"
+                    value={resolveServiceStatus(values)}
+                    disabled={!values.deploymentUrl.trim()}
+                    onValueChange={(value) =>
+                      setField('serviceStatus', value as 'OPERATING' | 'CLOSED')
+                    }
+                  >
+                    <Select.Item value="OPERATING">운영 중</Select.Item>
+                    <Select.Item value="CLOSED">운영 종료</Select.Item>
+                  </Select>
+                )}
+              </Field>
 
               <Field label="상세 설명" error={errors.descriptionMd}>
                 {(id) => (

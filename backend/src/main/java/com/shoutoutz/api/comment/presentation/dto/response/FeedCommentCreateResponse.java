@@ -1,6 +1,7 @@
 package com.shoutoutz.api.comment.presentation.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 
@@ -12,7 +13,8 @@ public record FeedCommentCreateResponse(
         Instant createdAt,
         Instant updatedAt,
         boolean editable,
-        boolean isAnonymous
+        boolean isAnonymous,
+        LinkPreview linkPreview
 ) {
 
     public FeedCommentCreateResponse(
@@ -24,7 +26,20 @@ public record FeedCommentCreateResponse(
             Instant updatedAt,
             boolean editable
     ) {
-        this(id, content, author, parentId, createdAt, updatedAt, editable, false);
+        this(id, content, author, parentId, createdAt, updatedAt, editable, false, null);
+    }
+
+    public FeedCommentCreateResponse(
+            Long id,
+            String content,
+            Author author,
+            Long parentId,
+            Instant createdAt,
+            Instant updatedAt,
+            boolean editable,
+            boolean isAnonymous
+    ) {
+        this(id, content, author, parentId, createdAt, updatedAt, editable, isAnonymous, null);
     }
 
     public record Author(

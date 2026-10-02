@@ -109,6 +109,15 @@ export function validateProjectForm(values: ProjectFormValues): ProjectFormError
   return errors;
 }
 
+/**
+ * 요청에 실을 서비스 운영 상태.
+ *
+ * 배포 URL이 없으면 서버가 `CLOSED`만 받는다. 고른 적이 없으면 `OPERATING`으로 두는데,
+ * 등록 때 서버가 배포 URL 유무로 정하던 예전 동작과 같은 결과를 내기 위해서다.
+ */
+export const resolveServiceStatus = (values: ProjectFormValues) =>
+  values.deploymentUrl.trim() ? (values.serviceStatus ?? 'OPERATING') : 'CLOSED';
+
 /** 작성자를 첫 팀원으로 포함해 등록 요청 본문으로 바꾼다. 비어 있는 선택 입력은 null로 보낸다. */
 export function toProjectCreateRequest(
   values: ProjectFormValues,
@@ -126,6 +135,7 @@ export function toProjectCreateRequest(
     thumbnailImageId: values.thumbnailImageId,
     githubRepositoryUrl: values.githubRepositoryUrl.trim(),
     deploymentUrl: values.deploymentUrl.trim() || null,
+    serviceStatus: resolveServiceStatus(values),
     // 서버가 자르지 않는 필드다. 여기서 자르면 코드블록 들여쓰기처럼 의미 있는 공백이 사라진다.
     descriptionMd: values.descriptionMd,
     techTagIds: values.techTags.map((tag) => tag.id),
@@ -142,17 +152,15 @@ export function toProjectUpdateRequest(
   values: ProjectFormValues,
   authorHandle: string,
 ): ProjectUpdateRequest {
-  const request = toProjectCreateRequest(values, authorHandle);
-  return {
-    ...request,
-    serviceStatus: values.deploymentUrl.trim() ? (values.serviceStatus ?? 'CLOSED') : 'CLOSED',
-  };
+  return toProjectCreateRequest(values, authorHandle);
 }
 
 /** 요청 본문 필드명 → 폼 필드명. 이름이 다른 것만 적는다. */
 const FIELD_BY_REQUEST_FIELD: Record<string, keyof ProjectFormValues> = {
   techTagIds: 'techTags',
   memberHandles: 'members',
+  // 배포 URL과 함께 보는 검증이라 필드명 대신 검증 메서드 이름이 온다.
+  serviceStatusValid: 'serviceStatus',
 };
 
 /**

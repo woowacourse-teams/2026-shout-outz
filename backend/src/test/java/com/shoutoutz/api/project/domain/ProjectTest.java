@@ -27,20 +27,30 @@ class ProjectTest {
         assertThat(project.getRegisteredBy()).isEqualTo(1L);
     }
 
-    @Test
-    @DisplayName("배포 URL이 있는 경우, 운영 중 상태로 시작한다.")
-    void startsOperatingWithDeploymentUrl() {
-        Project project = register(1L, "한 줄 소개", new DeploymentUrl("https://loop.team"));
+    @ParameterizedTest
+    @EnumSource(ServiceStatus.class)
+    @DisplayName("배포 URL이 있는 경우, 전달한 서비스 상태로 시작한다.")
+    void startsWithGivenServiceStatusWithDeploymentUrl(ServiceStatus serviceStatus) {
+        Project project = register(1L, "한 줄 소개", new DeploymentUrl("https://loop.team"), serviceStatus);
 
-        assertThat(project.getServiceStatus()).isEqualTo(ServiceStatus.OPERATING);
+        assertThat(project.getServiceStatus()).isEqualTo(serviceStatus);
     }
 
     @Test
-    @DisplayName("배포 URL이 없는 경우, 종료 상태로 시작한다.")
+    @DisplayName("배포 URL이 없어도, 종료 상태로 시작할 수 있다.")
     void startsClosedWithoutDeploymentUrl() {
-        Project project = register(1L, "한 줄 소개", null);
+        Project project = register(1L, "한 줄 소개", null, ServiceStatus.CLOSED);
 
         assertThat(project.getServiceStatus()).isEqualTo(ServiceStatus.CLOSED);
+    }
+
+    @Test
+    @DisplayName("신규 등록에서 배포 URL이 없는데 운영 중 상태인 경우, 도메인 예외를 던진다.")
+    void rejectsOperatingRegistrationWithoutDeploymentUrl() {
+        assertThatThrownBy(() -> register(1L, "한 줄 소개", null, ServiceStatus.OPERATING))
+                .isInstanceOfSatisfying(DomainValidationException.class,
+                        error -> assertThat(error.getErrorCode())
+                                .isEqualTo(ProjectErrorCode.PROJECT_INVALID_SERVICE_STATUS));
     }
 
     @Test
@@ -222,6 +232,15 @@ class ProjectTest {
     }
 
     private static Project register(Long registeredBy, String tagline, DeploymentUrl deploymentUrl) {
+        return register(registeredBy, tagline, deploymentUrl, ServiceStatus.CLOSED);
+    }
+
+    private static Project register(
+            Long registeredBy,
+            String tagline,
+            DeploymentUrl deploymentUrl,
+            ServiceStatus serviceStatus
+    ) {
         return Project.register(
                 Cohort.COHORT_6,
                 registeredBy,
@@ -231,6 +250,7 @@ class ProjectTest {
                 "## 문제",
                 new GithubRepositoryUrl(REPOSITORY_URL),
                 deploymentUrl,
+                serviceStatus,
                 12L
         );
     }

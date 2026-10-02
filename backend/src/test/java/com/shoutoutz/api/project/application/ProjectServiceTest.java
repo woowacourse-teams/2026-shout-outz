@@ -306,6 +306,22 @@ class ProjectServiceTest {
     }
 
     @Test
+    @DisplayName("배포 URL이 있어도 요청한 서비스 상태가 종료면 종료 상태로 저장한다.")
+    void createsProjectWithRequestedServiceStatus() {
+        givenValidProjectExceptMembers();
+        givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
+        when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
+                .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
+
+        projectService.create(REGISTERED_BY,
+                request(6, null, TECH_TAG_IDS, List.of(MEMBER_HANDLE), DESCRIPTION, ServiceStatus.CLOSED));
+
+        ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
+        verify(projectRepository).save(projectCaptor.capture(), eq(TECH_TAG_IDS), anyList());
+        assertThat(projectCaptor.getValue().getServiceStatus()).isEqualTo(ServiceStatus.CLOSED);
+    }
+
+    @Test
     @DisplayName("등록자를 포함한 팀원 요청을 거절하지 않고 요청 순서대로 저장한다.")
     void acceptsRegistrantAsMemberAndKeepsRequestOrder() {
         givenValidProjectExceptMembers();
@@ -1556,6 +1572,17 @@ class ProjectServiceTest {
             List<String> memberHandles,
             String descriptionMd
     ) {
+        return request(cohort, thumbnailMediaId, techTagIds, memberHandles, descriptionMd, ServiceStatus.OPERATING);
+    }
+
+    private static ProjectCreateRequest request(
+            int cohort,
+            Long thumbnailMediaId,
+            List<Long> techTagIds,
+            List<String> memberHandles,
+            String descriptionMd,
+            ServiceStatus serviceStatus
+    ) {
         return new ProjectCreateRequest(
                 "루프 (Loop)",
                 "루프팀",
@@ -1565,6 +1592,7 @@ class ProjectServiceTest {
                 "https://github.com/woowacourse-teams/2026-loop",
                 "https://loop.team",
                 descriptionMd,
+                serviceStatus,
                 techTagIds,
                 memberHandles
         );

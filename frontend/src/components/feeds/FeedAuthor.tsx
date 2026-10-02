@@ -78,7 +78,12 @@ export function FeedAuthor({
 
   const authorDetails = (
     <>
-      <Avatar size={avatarSize} src={author.avatarUrl} name={author.displayName} alt="" />
+      <Avatar
+        size={avatarSize}
+        src={author.avatarUrl}
+        name={author.displayName ?? undefined}
+        alt=""
+      />
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-1.5">
           <span

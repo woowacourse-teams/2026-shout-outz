@@ -31,8 +31,24 @@ export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
   },
   categories:
     index === 2 || index === 5
-      ? [{ categoryId: 2, slug: 'career', displayName: '진로 고민', type: 'GENERAL' }]
-      : [{ categoryId: 1, slug: 'backend', displayName: '개발 이야기', type: 'GENERAL' }],
+      ? [
+          {
+            categoryId: 2,
+            slug: 'career',
+            displayName: '진로 고민',
+            type: 'GENERAL',
+            feedType: 'QUESTION',
+          },
+        ]
+      : [
+          {
+            categoryId: 1,
+            slug: 'backend',
+            displayName: '개발 이야기',
+            type: 'GENERAL',
+            feedType: 'POST',
+          },
+        ],
   linkPreview:
     index % 3 === 0
       ? {
@@ -274,8 +290,24 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
         feedType: body.feedType ?? 'POST',
         categories:
           body.feedType === 'QUESTION'
-            ? [{ categoryId: 2, slug: 'career', displayName: '진로 고민', type: 'GENERAL' }]
-            : [{ categoryId: 1, slug: 'backend', displayName: '백엔드', type: 'GENERAL' }],
+            ? [
+                {
+                  categoryId: 2,
+                  slug: 'career',
+                  displayName: '진로 고민',
+                  type: 'GENERAL',
+                  feedType: 'QUESTION',
+                },
+              ]
+            : [
+                {
+                  categoryId: 1,
+                  slug: 'backend',
+                  displayName: '백엔드',
+                  type: 'GENERAL',
+                  feedType: 'POST',
+                },
+              ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -344,16 +376,35 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
         linkPreview: linkPreviewOf(body.content),
         categories: body.categoryIds.map((id) =>
           id === 1
-            ? { categoryId: 1, slug: 'backend', displayName: '백엔드', type: 'GENERAL' }
+            ? {
+                categoryId: 1,
+                slug: 'backend',
+                displayName: '백엔드',
+                type: 'GENERAL',
+                feedType: 'POST',
+              }
             : id === 2
-              ? { categoryId: 2, slug: 'career', displayName: '진로 고민', type: 'GENERAL' }
+              ? {
+                  categoryId: 2,
+                  slug: 'career',
+                  displayName: '진로 고민',
+                  type: 'GENERAL',
+                  feedType: 'QUESTION',
+                }
               : id === 3
-                ? { categoryId: 3, slug: 'tecode-talk', displayName: '테코드톡', type: 'EVENT' }
+                ? {
+                    categoryId: 3,
+                    slug: 'tecode-talk',
+                    displayName: '테코드톡',
+                    type: 'EVENT',
+                    feedType: 'POST',
+                  }
                 : {
                     categoryId: 4,
                     slug: 'question-event',
                     displayName: '질문 이벤트',
                     type: 'EVENT',
+                    feedType: 'QUESTION',
                   },
         ),
         media: body.mediaIds.map((mediaId, displayOrder) => ({

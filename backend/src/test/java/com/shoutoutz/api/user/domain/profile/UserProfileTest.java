@@ -198,7 +198,7 @@ class UserProfileTest {
     }
 
     @Test
-    @DisplayName("크루 인증 승인 시 기수와 닉네임으로 표시 이름을 만들고 인증 정보를 반영한다")
+    @DisplayName("크루 인증 승인 시 닉네임만 표시 이름으로 사용하고 기수와 트랙을 별도로 반영한다")
     void approvesWoowacourseCrewProfile() {
         UserProfile profile = UserProfile.builder()
                 .userId(1L)
@@ -214,7 +214,7 @@ class UserProfileTest {
                 "BACKEND"
         );
 
-        assertThat(approved.getDisplayName().value()).isEqualTo("8기 샤를");
+        assertThat(approved.getDisplayName().value()).isEqualTo("샤를");
         assertThat(approved.getUserType()).isEqualTo(UserType.WOOWACOURSE_CREW);
         assertThat(approved.getCohort()).isEqualTo(Cohort.COHORT_8);
         assertThat(approved.getTrack()).isEqualTo(Track.BACKEND);

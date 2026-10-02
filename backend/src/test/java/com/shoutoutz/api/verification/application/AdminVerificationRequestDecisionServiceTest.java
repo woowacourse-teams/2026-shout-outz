@@ -107,7 +107,7 @@ class AdminVerificationRequestDecisionServiceTest {
 
         ArgumentCaptor<UserProfile> profileCaptor = ArgumentCaptor.forClass(UserProfile.class);
         verify(userProfileRepository).save(profileCaptor.capture());
-        assertThat(profileCaptor.getValue().getDisplayName().value()).isEqualTo("8기 샤를");
+        assertThat(profileCaptor.getValue().getDisplayName().value()).isEqualTo("샤를");
         assertThat(profileCaptor.getValue().getUserType()).isEqualTo(UserType.WOOWACOURSE_CREW);
         assertThat(profileCaptor.getValue().getCohort()).isEqualTo(Cohort.COHORT_8);
         assertThat(profileCaptor.getValue().getTrack()).isEqualTo(Track.BACKEND);

@@ -2,9 +2,12 @@ package com.shoutoutz.api.project.presentation.dto.request;
 
 import static com.shoutoutz.api.user.domain.account.Handle.HANDLE_FORMAT_REGEX;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.shoutoutz.api.common.util.DataResolveUtil;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
+import com.shoutoutz.api.project.domain.ServiceStatus;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -44,6 +47,9 @@ public record ProjectCreateRequest(
         @CodePointLength(max = 100_000, message = "descriptionMd는 100,000자를 초과할 수 없습니다.")
         String descriptionMd,
 
+        @NotNull(message = "serviceStatus는 필수입니다.")
+        ServiceStatus serviceStatus,
+
         @NotEmpty(message = "techTagIds는 1개 이상이어야 합니다.")
         List<@NotNull(message = "techTagIds에 null을 넣을 수 없습니다.") Long> techTagIds,
 
@@ -66,5 +72,15 @@ public record ProjectCreateRequest(
         githubRepositoryUrl = DataResolveUtil.sanitizeString(githubRepositoryUrl);
         deploymentUrl = DataResolveUtil.sanitizeString(deploymentUrl);
         memberHandles = DataResolveUtil.sanitizeStrings(memberHandles);
+    }
+
+    /**
+     * 배포 URL 이 없으면 운영 중일 수 없다. 도메인도 같은 규칙을 내부 불변식으로 검사하지만,
+     * 사용자 입력은 API 레이어에서 400으로 거른다. 오류 응답의 field 는 serviceStatusValid 다.
+     */
+    @JsonIgnore
+    @AssertTrue(message = "deploymentUrl이 없으면 serviceStatus를 OPERATING으로 둘 수 없습니다.")
+    public boolean isServiceStatusValid() {
+        return deploymentUrl != null || serviceStatus != ServiceStatus.OPERATING;
     }
 }
