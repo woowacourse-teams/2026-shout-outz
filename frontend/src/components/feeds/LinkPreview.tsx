@@ -9,6 +9,8 @@ export interface LinkPreviewProps {
   imageUrl?: string | null;
   siteName?: string | null;
   onClick?: () => void;
+  /** sm은 댓글처럼 좁은 곳에 둔다. 썸네일을 줄이고 설명은 뺀다. */
+  size?: 'sm' | 'md';
 }
 
 /**
@@ -23,11 +25,13 @@ export function LinkPreview({
   description,
   imageUrl,
   siteName,
+  size = 'md',
   onClick,
 }: LinkPreviewProps) {
+  const small = size === 'sm';
   const imageFallback = (
     <div className="flex size-full items-center justify-center">
-      <IconLink className="size-6 text-gray-400" aria-hidden="true" />
+      <IconLink className={cn('text-gray-400', small ? 'size-4' : 'size-6')} aria-hidden="true" />
     </div>
   );
 
@@ -42,7 +46,8 @@ export function LinkPreview({
     >
       <div
         className={cn(
-          'h-20 shrink-0 bg-gray-100 md:h-28',
+          'shrink-0 bg-gray-100',
+          small ? 'h-14' : 'h-20 md:h-28',
           imageUrl ? 'aspect-[1.91/1]' : 'aspect-square',
         )}
       >
@@ -58,9 +63,23 @@ export function LinkPreview({
           imageFallback
         )}
       </div>
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-3 py-2 md:px-4 md:py-3">
-        {title && <p className="line-clamp-1 text-sm font-semibold text-gray-800">{title}</p>}
-        {description && (
+      <div
+        className={cn(
+          'flex min-w-0 flex-1 flex-col justify-center',
+          small ? 'gap-0.5 px-3 py-1.5' : 'gap-1 px-3 py-2 md:px-4 md:py-3',
+        )}
+      >
+        {title && (
+          <p
+            className={cn(
+              'line-clamp-1 font-semibold text-gray-800',
+              small ? 'text-xs' : 'text-sm',
+            )}
+          >
+            {title}
+          </p>
+        )}
+        {!small && description && (
           <p className="line-clamp-1 text-xs text-gray-600 md:line-clamp-2">{description}</p>
         )}
         <p className="truncate text-xs text-gray-500">{siteName || url}</p>

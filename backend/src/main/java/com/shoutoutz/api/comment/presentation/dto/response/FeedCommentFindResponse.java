@@ -2,6 +2,7 @@ package com.shoutoutz.api.comment.presentation.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
+import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.List;
@@ -27,7 +28,8 @@ public record FeedCommentFindResponse(
             boolean deleted,
             long agreeCount,
             boolean agreedByMe,
-            boolean isAnonymous
+            boolean isAnonymous,
+            LinkPreview linkPreview
     ) {
 
         public Comment(
@@ -41,7 +43,8 @@ public record FeedCommentFindResponse(
                 boolean edited,
                 boolean deleted
         ) {
-            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted, 0L, false, false);
+            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted,
+                    0L, false, false, null);
         }
 
         public Comment(
@@ -58,7 +61,25 @@ public record FeedCommentFindResponse(
                 boolean agreedByMe
         ) {
             this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted,
-                    agreeCount, agreedByMe, false);
+                    agreeCount, agreedByMe, false, null);
+        }
+
+        public Comment(
+                Long id,
+                String content,
+                Author author,
+                Long parentId,
+                Instant createdAt,
+                Instant updatedAt,
+                boolean editable,
+                boolean edited,
+                boolean deleted,
+                long agreeCount,
+                boolean agreedByMe,
+                boolean isAnonymous
+        ) {
+            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted,
+                    agreeCount, agreedByMe, isAnonymous, null);
         }
     }
 

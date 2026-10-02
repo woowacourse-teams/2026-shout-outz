@@ -4,12 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.feed.application.FeedLinkPreviewRepository;
 import com.shoutoutz.api.feed.application.FeedLinkPreviewRepository.FetchJob;
+import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.feed.application.dto.LinkPreviewMetadata;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -122,6 +124,33 @@ class FeedLinkPreviewRepositoryIntegrationTest {
         assertThat(existsCache(unusedRecent)).isTrue();
     }
 
+    @Test
+    void 피드_댓글과_프로젝트_댓글을_같은_캐시에_연결하고_각각_조회한다() {
+        long feedCommentId = insertFeedComment();
+        long projectCommentId = insertProjectComment();
+        String url = "https://youtu.be/dQw4w9WgXcQ";
+
+        assertThat(linkPreviewRepository.findFeedCommentsAfter(0L, 100))
+                .anyMatch(comment -> comment.id() == feedCommentId);
+        assertThat(linkPreviewRepository.findProjectCommentsAfter(0L, 100))
+                .anyMatch(comment -> comment.id() == projectCommentId);
+
+        linkPreviewRepository.linkFeedComment(feedCommentId, url);
+        linkPreviewRepository.linkProjectComment(projectCommentId, url);
+
+        assertThat(linkPreviewRepository.hasFeedCommentReference(feedCommentId)).isTrue();
+        assertThat(linkPreviewRepository.hasProjectCommentReference(projectCommentId)).isTrue();
+        assertThat(linkPreviewRepository.findByFeedCommentIds(List.of(feedCommentId)))
+                .containsEntry(feedCommentId, new LinkPreview(url, null, null, null, null));
+        assertThat(linkPreviewRepository.findByProjectCommentIds(List.of(projectCommentId)))
+                .containsEntry(projectCommentId, new LinkPreview(url, null, null, null, null));
+
+        linkPreviewRepository.unlinkFeedComment(feedCommentId);
+        linkPreviewRepository.unlinkProjectComment(projectCommentId);
+        assertThat(linkPreviewRepository.hasFeedCommentReference(feedCommentId)).isFalse();
+        assertThat(linkPreviewRepository.hasProjectCommentReference(projectCommentId)).isFalse();
+    }
+
     private long insertCache(
             String status,
             int attempts,
@@ -155,6 +184,61 @@ class FeedLinkPreviewRepositoryIntegrationTest {
                 "INSERT INTO feed_link_preview_refs (feed_id, cache_id) VALUES (?, ?)",
                 feed.getId(),
                 cacheId
+        );
+    }
+
+    private long insertFeedComment() {
+        long authorId = insertUser();
+        Feed feed = feedRepository.save(Feed.create(authorId, "댓글 링크 미리보기", "본문", BASE));
+        return jdbcTemplate.queryForObject(
+                """
+                        INSERT INTO feed_comments (feed_id, author_id, content, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?)
+                        RETURNING id
+                        """,
+                Long.class,
+                feed.getId(),
+                authorId,
+                "피드 댓글 https://youtu.be/dQw4w9WgXcQ",
+                toTimestamp(BASE),
+                toTimestamp(BASE)
+        );
+    }
+
+    private long insertProjectComment() {
+        long authorId = insertUser();
+        long projectId = jdbcTemplate.queryForObject(
+                """
+                        INSERT INTO projects (
+                            cohort, registered_by, team_name, slug, title, tagline,
+                            service_status, approval_status, description_md, github_repository_url
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        RETURNING id
+                        """,
+                Long.class,
+                8,
+                authorId,
+                "링크 팀",
+                "link-preview-test",
+                "링크 미리보기 테스트",
+                "테스트 프로젝트",
+                "OPERATING",
+                "APPROVED",
+                "설명",
+                "https://github.com/shoutoutz/link-preview-test"
+        );
+        return jdbcTemplate.queryForObject(
+                """
+                        INSERT INTO project_comments (project_id, author_id, content, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?)
+                        RETURNING id
+                        """,
+                Long.class,
+                projectId,
+                authorId,
+                "프로젝트 댓글 https://youtu.be/dQw4w9WgXcQ",
+                toTimestamp(BASE),
+                toTimestamp(BASE)
         );
     }
 
