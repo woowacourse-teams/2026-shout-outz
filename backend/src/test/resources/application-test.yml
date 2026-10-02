@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/shoutoutz
+    username: shoutoutz
+    password: localdev
+    driver-class-name: org.postgresql.Driver
+
+link-preview:
+  enabled: false
+
+github:
+  oauth:
+    client-id: test-client-id
+    client-secret: test-client-secret
+    redirect-uri: http://localhost:8080/login/oauth2/code/github
+
+auth:
+  oauth:
+    completion-uri: http://localhost:3000/oauth/callback
+
+aws:
+  s3:
+    bucket: test-bucket
+    region: test-region
+    key-prefix: test-prefix/
+    presigned-url-expiration-seconds: 100
+  cloudfront:
+    public-base-url: https://cdn.example.com/
+
+visitor:
+  hash-secret: test-visitor-hash-secret-32-chars-min

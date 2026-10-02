@@ -1,0 +1,1532 @@
+package com.shoutoutz.api.news.presentation;
+
+import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.hasItem;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
+import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
+import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
+import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
+import static org.springframework.restdocs.payload.JsonFieldType.STRING;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.epages.restdocs.apispec.EnumFields;
+import com.epages.restdocs.apispec.ResourceSnippetParameters;
+import com.epages.restdocs.apispec.Schema;
+import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
+import com.shoutoutz.api.common.exception.code.CommonErrorCode;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.exception.custom.DomainValidationException;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.common.exception.custom.ValidationFailedException;
+import com.shoutoutz.api.common.restdocs.RestDocsFields;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
+import com.shoutoutz.api.news.application.NewsService;
+import com.shoutoutz.api.news.domain.enums.EventStatus;
+import com.shoutoutz.api.news.domain.NewsErrorCode;
+import com.shoutoutz.api.news.domain.enums.NewsType;
+import com.shoutoutz.api.news.presentation.dto.request.EventCreateRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NewsFindAllRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NewsFindRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NoticeCreateRequest;
+import com.shoutoutz.api.news.presentation.dto.request.NewsUpdateRequest;
+import com.shoutoutz.api.news.presentation.dto.response.EventCreateResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsDeleteResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsFindAllResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsFindResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NewsUpdateResponse;
+import com.shoutoutz.api.news.presentation.dto.response.NoticeCreateResponse;
+import com.shoutoutz.api.user.domain.account.UserRole;
+import java.time.Instant;
+import java.util.List;
+import java.util.stream.Stream;
+import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
+/**
+ * 컨트롤러 슬라이스 테스트
+ */
+@WebMvcTest(controllers = NewsHttpApi.class)
+@AutoConfigureRestDocs
+class NewsHttpApiTest {
+
+    private static final String AUTHENTICATED_SESSION_ATTRIBUTE = AuthenticatedSession.class.getName();
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
+    private NewsService newsService;
+
+    /**
+     * DOCS: POST /api/v1/news/notices
+     */
+    @Test
+    @DisplayName("공지 등록 성공 테스트. 201과 생성된 공지 정보를 반환한다.")
+    void returnsSuccessResponseAndCreatedStatusWhenNoticeIsCreated() throws Exception {
+        NoticeCreateResponse result = new NoticeCreateResponse(
+                106L,
+                NewsType.NOTICE,
+                "데모데이 안내",
+                "데모데이 일정을 안내합니다.",
+                "2026년 9월 12일에 데모데이를 진행합니다.",
+                new NoticeCreateResponse.Author(1L, "샤라웃 운영팀", "@admin"),
+                Instant.parse("2026-09-05T00:00:00Z"),
+                false,
+                null,
+                new NoticeCreateResponse.Cta("일정 확인", "example.com")
+        );
+        given(newsService.createNotice(
+                eq(1L), eq(UserRole.ADMIN), any(NoticeCreateRequest.class)))
+                .willReturn(result);
+
+        mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJsonWithCta()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(106))
+                .andExpect(jsonPath("$.data.type").value("NOTICE"))
+                .andExpect(jsonPath("$.data.author.userId").value(1))
+                .andExpect(jsonPath("$.data.author.handle").value("@admin"))
+                .andExpect(jsonPath("$.data.author.name").value("샤라웃 운영팀"))
+                .andExpect(jsonPath("$.data.isPinned").value(false))
+                .andExpect(jsonPath("$.data.pinOrder").value(nullValue()))
+                .andExpect(jsonPath("$.data.cta.label").value("일정 확인"))
+                .andExpect(jsonPath("$.data.cta.url").value("example.com"))
+                .andDo(document(
+                        "news-notice-create",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("공지 생성")
+                                .description("관리자가 공지와 선택적인 CTA를 생성한다.")
+                                .requestSchema(Schema.schema("NoticeCreateRequest"))
+                                .responseSchema(Schema.schema("NoticeCreateSuccessResponse"))
+                                .requestFields(
+                                        fieldWithPath("title")
+                                                .type(STRING)
+                                                .description("공지 제목"),
+                                        fieldWithPath("summary")
+                                                .type(STRING)
+                                                .description("공지 요약"),
+                                        fieldWithPath("body")
+                                                .type(STRING)
+                                                .description("공지 본문"),
+                                        fieldWithPath("authorName")
+                                                .type(STRING)
+                                                .description("공지 작성자 이름"),
+                                        fieldWithPath("cta")
+                                                .type(OBJECT)
+                                                .description("공지 CTA")
+                                                .optional(),
+                                        fieldWithPath("cta.label")
+                                                .type(STRING)
+                                                .description("CTA 라벨"),
+                                        fieldWithPath("cta.url")
+                                                .type(STRING)
+                                                .description("CTA URL")
+                                )
+                                .responseFields(
+                                        fieldWithPath("status")
+                                                .type(STRING)
+                                                .description("응답 상태"),
+                                        fieldWithPath("data")
+                                                .type(OBJECT)
+                                                .description("생성된 공지"),
+                                        fieldWithPath("data.id")
+                                                .type(NUMBER)
+                                                .description("공지 ID"),
+                                        new EnumFields(NewsType.class).withPath("data.type")
+                                                .description("소식 유형. 공지 등록이므로 항상 NOTICE다."),
+                                        fieldWithPath("data.title")
+                                                .type(STRING)
+                                                .description("공지 제목"),
+                                        fieldWithPath("data.summary")
+                                                .type(STRING)
+                                                .description("공지 요약"),
+                                        fieldWithPath("data.body")
+                                                .type(STRING)
+                                                .description("공지 본문"),
+                                        fieldWithPath("data.author")
+                                                .type(OBJECT)
+                                                .description("공지 작성자"),
+                                        fieldWithPath("data.author.userId")
+                                                .type(NUMBER)
+                                                .description("작성자 ID"),
+                                        fieldWithPath("data.author.handle")
+                                                .type(STRING)
+                                                .description("작성자 handle")
+                                                .optional(),
+                                        fieldWithPath("data.author.name")
+                                                .type(STRING)
+                                                .description("작성자 이름"),
+                                        fieldWithPath("data.author.displayName")
+                                                .type(STRING)
+                                                .description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType")
+                                                .type(STRING)
+                                                .description("작성자 유형")
+                                                .optional(),
+                                        fieldWithPath("data.author.track")
+                                                .type(STRING)
+                                                .description("작성자 트랙")
+                                                .optional(),
+                                        fieldWithPath("data.author.cohort")
+                                                .type(NUMBER)
+                                                .description("작성자 기수")
+                                                .optional(),
+                                        fieldWithPath("data.publishedAt")
+                                                .type(STRING)
+                                                .description("게시 시각"),
+                                        fieldWithPath("data.isPinned")
+                                                .type(BOOLEAN)
+                                                .description("고정 여부"),
+                                        fieldWithPath("data.pinOrder")
+                                                .type(NUMBER)
+                                                .description("고정 순서")
+                                                .optional(),
+                                        fieldWithPath("data.cta")
+                                                .type(OBJECT)
+                                                .description("공지 CTA")
+                                                .optional(),
+                                        fieldWithPath("data.cta.label")
+                                                .type(STRING)
+                                                .description("CTA 라벨"),
+                                        fieldWithPath("data.cta.url")
+                                                .type(STRING)
+                                                .description("CTA URL")
+                                )
+                                .build())
+                ));
+
+        verify(newsService).createNotice(
+                eq(1L), eq(UserRole.ADMIN), any(NoticeCreateRequest.class));
+    }
+
+    @Test
+    @DisplayName("공지 등록 성공 테스트. CTA가 없는 경우 cta 항목을 null로 반환한다.")
+    void returnsNullCtaWhenCtaIsAbsent() throws Exception {
+        NoticeCreateResponse result = new NoticeCreateResponse(
+                107L,
+                NewsType.NOTICE,
+                "서비스 점검 안내",
+                "점검 일정을 안내합니다.",
+                "2026년 9월 10일에 점검을 진행합니다.",
+                new NoticeCreateResponse.Author(1L, "샤라웃 운영팀", "@admin"),
+                Instant.parse("2026-09-05T00:00:00Z"),
+                false,
+                null,
+                null
+        );
+        given(newsService.createNotice(
+                eq(1L), eq(UserRole.ADMIN), any(NoticeCreateRequest.class)))
+                .willReturn(result);
+
+        mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJsonWithoutCta()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.cta").value(nullValue()))
+                .andExpect(jsonPath("$.data.pinOrder").value(nullValue()));
+    }
+
+    /**
+     * DOCS: POST /api/v1/news/events
+     */
+    @Test
+    @DisplayName("이벤트 등록 성공 테스트. 201과 생성된 이벤트 정보를 반환한다.")
+    void returnsEventResponseAndCreatedStatusWhenEventIsCreated() throws Exception {
+        EventCreateResponse result = new EventCreateResponse(
+                107L,
+                NewsType.EVENT,
+                "프로젝트 아카이빙 챌린지",
+                "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                "프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.",
+                new EventCreateResponse.Author(1L, "샤라웃 운영팀", "@admin"),
+                Instant.parse("2026-09-05T00:00:00Z"),
+                EventStatus.ONGOING,
+                Instant.parse("2026-09-01T00:00:00Z"),
+                Instant.parse("2026-09-30T23:59:59Z"),
+                false,
+                null,
+                new EventCreateResponse.Cta("프로젝트 등록하기", "/projects/3001")
+        );
+        given(newsService.createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class)))
+                .willReturn(result);
+
+        mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(eventRequestJsonWithCta()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(107))
+                .andExpect(jsonPath("$.data.type").value("EVENT"))
+                .andExpect(jsonPath("$.data.eventStatus").value("ONGOING"))
+                .andExpect(jsonPath("$.data.eventStartAt").value("2026-09-01T00:00:00Z"))
+                .andExpect(jsonPath("$.data.eventEndAt").value("2026-09-30T23:59:59Z"))
+                .andExpect(jsonPath("$.data.isPinned").value(false))
+                .andExpect(jsonPath("$.data.pinOrder").value(nullValue()))
+                .andExpect(jsonPath("$.data.cta.label").value("프로젝트 등록하기"))
+                .andExpect(jsonPath("$.data.cta.url").value("/projects/3001"))
+                .andDo(document(
+                        "news-event-create",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("이벤트 생성")
+                                .description("관리자가 이벤트와 선택적인 CTA를 생성한다.")
+                                .requestSchema(Schema.schema("EventCreateRequest"))
+                                .responseSchema(Schema.schema("EventCreateSuccessResponse"))
+                                .requestFields(
+                                        fieldWithPath("title").type(STRING).description("이벤트 제목"),
+                                        fieldWithPath("summary").type(STRING).description("이벤트 요약"),
+                                        fieldWithPath("body").type(STRING).description("이벤트 본문"),
+                                        fieldWithPath("authorName").type(STRING).description("이벤트 작성자 이름"),
+                                        fieldWithPath("eventStartAt").type(STRING).description("이벤트 시작 시각"),
+                                        fieldWithPath("eventEndAt").type(STRING).description("이벤트 종료 시각"),
+                                        fieldWithPath("cta").type(OBJECT).description("이벤트 CTA").optional(),
+                                        fieldWithPath("cta.label").type(STRING).description("CTA 라벨"),
+                                        fieldWithPath("cta.url").type(STRING).description("CTA URL")
+                                )
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("생성된 이벤트"),
+                                        fieldWithPath("data.id").type(NUMBER).description("이벤트 ID"),
+                                        new EnumFields(NewsType.class).withPath("data.type").description("소식 유형. 이벤트 등록이므로 항상 EVENT다."),
+                                        fieldWithPath("data.title").type(STRING).description("이벤트 제목"),
+                                        fieldWithPath("data.summary").type(STRING).description("이벤트 요약"),
+                                        fieldWithPath("data.body").type(STRING).description("이벤트 본문"),
+                                        fieldWithPath("data.author").type(OBJECT).description("이벤트 작성자"),
+                                        fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
+                                        fieldWithPath("data.author.handle").type(STRING).description("작성자 handle").optional(),
+                                        fieldWithPath("data.author.name").type(STRING).description("작성자 이름"),
+                                        fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
+                                        fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
+                                        fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
+                                        fieldWithPath("data.publishedAt").type(STRING).description("게시 시각"),
+                                        new EnumFields(EventStatus.class).withPath("data.eventStatus").description("이벤트 상태"),
+                                        fieldWithPath("data.eventStartAt").type(STRING).description("이벤트 시작 시각"),
+                                        fieldWithPath("data.eventEndAt").type(STRING).description("이벤트 종료 시각"),
+                                        fieldWithPath("data.isPinned").type(BOOLEAN).description("고정 여부"),
+                                        fieldWithPath("data.pinOrder").type(NUMBER).description("고정 순서").optional(),
+                                        fieldWithPath("data.cta").type(OBJECT).description("이벤트 CTA").optional(),
+                                        fieldWithPath("data.cta.label").type(STRING).description("CTA 라벨"),
+                                        fieldWithPath("data.cta.url").type(STRING).description("CTA URL")
+                                )
+                                .build())
+                ));
+
+        verify(newsService).createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class));
+    }
+
+    @Test
+    @DisplayName("이벤트 등록 성공 테스트. CTA가 없는 경우 cta 항목을 null로 반환한다.")
+    void createsEventWithoutCta() throws Exception {
+        EventCreateResponse result = new EventCreateResponse(
+                108L,
+                NewsType.EVENT,
+                "서비스 이벤트",
+                "이벤트 요약",
+                "이벤트 본문",
+                new EventCreateResponse.Author(1L, "샤라웃 운영팀", "@admin"),
+                Instant.parse("2026-09-05T00:00:00Z"),
+                EventStatus.UPCOMING,
+                Instant.parse("2026-10-01T00:00:00Z"),
+                Instant.parse("2026-10-31T23:59:59Z"),
+                false,
+                null,
+                null
+        );
+        given(newsService.createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class)))
+                .willReturn(result);
+
+        mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(eventRequestJsonWithoutCta()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.type").value("EVENT"))
+                .andExpect(jsonPath("$.data.cta").value(nullValue()))
+                .andExpect(jsonPath("$.data.isPinned").value(false))
+                .andExpect(jsonPath("$.data.pinOrder").value(nullValue()));
+    }
+
+    /**
+     * DOCS: GET /api/v1/news
+     */
+    @Test
+    @DisplayName("소식 전체 목록 조회 성공 테스트.")
+    void returnsNewsListWithPaginationMetadata() throws Exception {
+        NewsFindAllResponse result = new NewsFindAllResponse(
+                List.of(new NewsFindAllResponse.Item(
+                        102L,
+                        NewsType.EVENT,
+                        "프로젝트 아카이빙 챌린지",
+                        "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                        Instant.parse("2026-08-25T00:00:00Z"),
+                        EventStatus.ONGOING,
+                        Instant.parse("2026-08-20T00:00:00Z"),
+                        Instant.parse("2026-09-20T14:59:59Z"),
+                        false,
+                        null
+                )),
+                new SliceMetaResponse(null, false, 1L)
+        );
+        given(newsService.findAll(any(NewsFindAllRequest.class))).willReturn(result);
+
+        mockMvc.perform(get("/api/v1/news")
+                        .queryParam("type", "EVENT")
+                        .queryParam("eventStatus", "ONGOING")
+                        .queryParam("sort", "LATEST"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data[0].id").value(102))
+                .andExpect(jsonPath("$.data[0].type").value("EVENT"))
+                .andExpect(jsonPath("$.data[0].eventStatus").value("ONGOING"))
+                .andExpect(jsonPath("$.data[0].isPinned").value(false))
+                .andExpect(jsonPath("$.data[0].likeCount").value(0))
+                .andExpect(jsonPath("$.data[0].likedByMe").value(false))
+                .andExpect(jsonPath("$.meta.nextCursor").value(nullValue()))
+                .andExpect(jsonPath("$.meta.hasNext").value(false))
+                .andExpect(jsonPath("$.meta.totalCount").value(1))
+                .andDo(document(
+                        "news-find-all",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("소식 목록 조회")
+                                .description("소식 목록을 유형과 이벤트 상태로 필터링하고 최신순으로 조회한다.")
+                                .queryParameters(
+                                        parameterWithName("type")
+                                                .description("소식 유형(ALL, NOTICE, EVENT). 기본값은 ALL")
+                                                .optional(),
+                                        parameterWithName("eventStatus")
+                                                .description("이벤트 상태(UPCOMING, ONGOING, ENDED)")
+                                                .optional(),
+                                        parameterWithName("sort")
+                                                .description("정렬 기준. 현재 LATEST만 지원하며 기본값은 LATEST")
+                                                .optional(),
+                                        parameterWithName("size")
+                                                .description("조회 개수. 기본값 20, 최댓값 50")
+                                                .optional(),
+                                        parameterWithName("cursor")
+                                                .description("다음 페이지 조회에 사용하는 opaque cursor")
+                                                .optional()
+                                )
+                                .responseSchema(Schema.schema("NewsFindAllSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status")
+                                                .type(STRING)
+                                                .description("응답 상태"),
+                                        fieldWithPath("data")
+                                                .type(ARRAY)
+                                                .description("소식 목록"),
+                                        fieldWithPath("data[].id")
+                                                .type(NUMBER)
+                                                .description("소식 ID"),
+                                        new EnumFields(NewsType.class).withPath("data[].type")
+                                                .description("소식 유형"),
+                                        fieldWithPath("data[].title")
+                                                .type(STRING)
+                                                .description("소식 제목"),
+                                        fieldWithPath("data[].summary")
+                                                .type(STRING)
+                                                .description("소식 요약"),
+                                        fieldWithPath("data[].publishedAt")
+                                                .type(STRING)
+                                                .description("게시 시각"),
+                                        new EnumFields(EventStatus.class).withPath("data[].eventStatus")
+                                                .description("이벤트 상태. 공지인 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data[].eventStartAt")
+                                                .type(STRING)
+                                                .description("이벤트 시작 시각. 공지인 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data[].eventEndAt")
+                                                .type(STRING)
+                                                .description("이벤트 종료 시각. 공지인 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data[].isPinned")
+                                                .type(BOOLEAN)
+                                                .description("고정 여부"),
+                                        fieldWithPath("data[].pinOrder")
+                                                .type(NUMBER)
+                                                .description("고정 순서. 고정되지 않은 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data[].likeCount")
+                                                .type(NUMBER)
+                                                .description("좋아요 수"),
+                                        fieldWithPath("data[].likedByMe")
+                                                .type(BOOLEAN)
+                                                .description("현재 사용자의 좋아요 여부"),
+                                        fieldWithPath("meta")
+                                                .type(OBJECT)
+                                                .description("페이지네이션 정보"),
+                                        fieldWithPath("meta.nextCursor")
+                                                .type(STRING)
+                                                .description("다음 페이지 커서. 다음 페이지가 없으면 null")
+                                                .optional(),
+                                        fieldWithPath("meta.hasNext")
+                                                .type(BOOLEAN)
+                                                .description("다음 페이지 존재 여부"),
+                                        fieldWithPath("meta.totalCount")
+                                                .type(NUMBER)
+                                                .description("커서와 size를 제외한 유형·이벤트 상태 조건을 만족하는 전체 소식 수")
+                                )
+                                .build())
+                ));
+
+        ArgumentCaptor<NewsFindAllRequest> requestCaptor =
+                ArgumentCaptor.forClass(NewsFindAllRequest.class);
+        verify(newsService).findAll(requestCaptor.capture());
+        NewsFindAllRequest request = requestCaptor.getValue();
+        assertThat(request.getNewsType()).isEqualTo(NewsType.EVENT);
+        assertThat(request.getEventStatus()).isEqualTo(EventStatus.ONGOING);
+        assertThat(request.getSort().name()).isEqualTo("LATEST");
+        assertThat(request.getSize()).isEqualTo(20);
+        assertThat(request.getCursor()).isNull();
+    }
+
+    /**
+     * DOCS: GET /api/v1/news/{newsId}
+     */
+    @Test
+    @DisplayName("소식 상세 조회 성공 테스트. 상세 정보와 이전, 다음 글을 반환한다")
+    void returnsNewsDetailWithNavigation() throws Exception {
+        NewsFindResponse result = new NewsFindResponse(
+                102L,
+                NewsType.EVENT,
+                "프로젝트 아카이빙 챌린지",
+                "팀 프로젝트를 등록하고 동료 크루들의 피드백을 받아보세요.",
+                new NewsFindResponse.Author(1L, "샤라웃 운영팀", "@admin"),
+                Instant.parse("2026-08-25T00:00:00Z"),
+                EventStatus.ONGOING,
+                Instant.parse("2026-08-20T00:00:00Z"),
+                Instant.parse("2026-09-20T14:59:59Z"),
+                false,
+                null,
+                new NewsFindResponse.Cta("프로젝트 등록하기", "/projects/3001"),
+                new NewsFindResponse.Navigation(
+                        101L,
+                        "우아한테크코스 6기 최종 프로젝트 데모데이 안내",
+                        Instant.parse("2026-08-24T00:00:00Z")
+                ),
+                new NewsFindResponse.Navigation(
+                        103L,
+                        "다음 소식",
+                        Instant.parse("2026-08-26T00:00:00Z")
+                )
+        );
+        given(newsService.findDetail(new NewsFindRequest(102L, true)))
+                .willReturn(result);
+
+        mockMvc.perform(get("/api/v1/news/{newsId}", 102L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(102))
+                .andExpect(jsonPath("$.data.type").value("EVENT"))
+                .andExpect(jsonPath("$.data.title").value("프로젝트 아카이빙 챌린지"))
+                .andExpect(jsonPath("$.data.body")
+                        .value("팀 프로젝트를 등록하고 동료 크루들의 피드백을 받아보세요."))
+                .andExpect(jsonPath("$.data.author.userId").value(1))
+                .andExpect(jsonPath("$.data.author.handle").value("@admin"))
+                .andExpect(jsonPath("$.data.author.name").value("샤라웃 운영팀"))
+                .andExpect(jsonPath("$.data.eventStatus").value("ONGOING"))
+                .andExpect(jsonPath("$.data.isPinned").value(false))
+                .andExpect(jsonPath("$.data.pinOrder").value(nullValue()))
+                .andExpect(jsonPath("$.data.likeCount").value(0))
+                .andExpect(jsonPath("$.data.likedByMe").value(false))
+                .andExpect(jsonPath("$.data.cta.label").value("프로젝트 등록하기"))
+                .andExpect(jsonPath("$.data.cta.url").value("/projects/3001"))
+                .andExpect(jsonPath("$.data.previous.id").value(101))
+                .andExpect(jsonPath("$.data.previous.title")
+                        .value("우아한테크코스 6기 최종 프로젝트 데모데이 안내"))
+                .andExpect(jsonPath("$.data.next.id").value(103))
+                .andDo(document(
+                        "news-find-detail",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("소식 상세 조회")
+                                .description("소식의 상세 정보와 전체 소식 기준 이전/다음 글을 조회한다.")
+                                .pathParameters(
+                                        parameterWithName("newsId").description("조회할 소식 ID")
+                                )
+                                .queryParameters(
+                                        com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("navigation")
+                                                .description("이전/다음 소식 포함 여부. 기본값은 true")
+                                                .type(com.epages.restdocs.apispec.SimpleType.BOOLEAN)
+                                                .optional()
+                                )
+                                .responseSchema(Schema.schema("NewsFindDetailSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status")
+                                                .type(STRING)
+                                                .description("응답 상태"),
+                                        fieldWithPath("data")
+                                                .type(OBJECT)
+                                                .description("소식 상세"),
+                                        fieldWithPath("data.id")
+                                                .type(NUMBER)
+                                                .description("소식 ID"),
+                                        new EnumFields(NewsType.class).withPath("data.type")
+                                                .description("소식 유형"),
+                                        fieldWithPath("data.title")
+                                                .type(STRING)
+                                                .description("소식 제목"),
+                                        fieldWithPath("data.body")
+                                                .type(STRING)
+                                                .description("소식 본문"),
+                                        fieldWithPath("data.author")
+                                                .type(OBJECT)
+                                                .description("소식 작성자"),
+                                        fieldWithPath("data.author.userId")
+                                                .type(NUMBER)
+                                                .description("작성자 ID"),
+                                        fieldWithPath("data.author.handle")
+                                                .type(STRING)
+                                                .description("작성자 handle")
+                                                .optional(),
+                                        fieldWithPath("data.author.name")
+                                                .type(STRING)
+                                                .description("작성자 이름"),
+                                        fieldWithPath("data.author.displayName")
+                                                .type(STRING)
+                                                .description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType")
+                                                .type(STRING)
+                                                .description("작성자 유형")
+                                                .optional(),
+                                        fieldWithPath("data.author.track")
+                                                .type(STRING)
+                                                .description("작성자 트랙")
+                                                .optional(),
+                                        fieldWithPath("data.author.cohort")
+                                                .type(NUMBER)
+                                                .description("작성자 기수")
+                                                .optional(),
+                                        fieldWithPath("data.publishedAt")
+                                                .type(STRING)
+                                                .description("게시 시각"),
+                                        new EnumFields(EventStatus.class).withPath("data.eventStatus")
+                                                .description("이벤트 상태. 공지인 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data.eventStartAt")
+                                                .type(STRING)
+                                                .description("이벤트 시작 시각. 공지인 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data.eventEndAt")
+                                                .type(STRING)
+                                                .description("이벤트 종료 시각. 공지인 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data.isPinned")
+                                                .type(BOOLEAN)
+                                                .description("고정 여부"),
+                                        fieldWithPath("data.pinOrder")
+                                                .type(NUMBER)
+                                                .description("고정 순서. 고정되지 않은 경우 null")
+                                                .optional(),
+                                        fieldWithPath("data.likeCount")
+                                                .type(NUMBER)
+                                                .description("좋아요 수"),
+                                        fieldWithPath("data.likedByMe")
+                                                .type(BOOLEAN)
+                                                .description("현재 사용자의 좋아요 여부"),
+                                        fieldWithPath("data.cta")
+                                                .type(OBJECT)
+                                                .description("소식 CTA")
+                                                .optional(),
+                                        fieldWithPath("data.cta.label")
+                                                .type(STRING)
+                                                .description("CTA 라벨"),
+                                        fieldWithPath("data.cta.url")
+                                                .type(STRING)
+                                                .description("CTA URL"),
+                                        fieldWithPath("data.previous")
+                                                .type(OBJECT)
+                                                .description("이전 소식. 없으면 null")
+                                                .optional(),
+                                        fieldWithPath("data.previous.id")
+                                                .type(NUMBER)
+                                                .description("이전 소식 ID"),
+                                        fieldWithPath("data.previous.title")
+                                                .type(STRING)
+                                                .description("이전 소식 제목"),
+                                        fieldWithPath("data.previous.publishedAt")
+                                                .type(STRING)
+                                                .description("이전 소식 게시 시각"),
+                                        fieldWithPath("data.next")
+                                                .type(OBJECT)
+                                                .description("다음 소식. 없으면 null")
+                                                .optional(),
+                                        fieldWithPath("data.next.id")
+                                                .type(NUMBER)
+                                                .description("다음 소식 ID"),
+                                        fieldWithPath("data.next.title")
+                                                .type(STRING)
+                                                .description("다음 소식 제목"),
+                                        fieldWithPath("data.next.publishedAt")
+                                                .type(STRING)
+                                                .description("다음 소식 게시 시각")
+                                )
+                                .build())
+                ));
+
+        verify(newsService).findDetail(new NewsFindRequest(102L, true));
+    }
+
+    @Test
+    @DisplayName("소식 상세 조회 성공 테스트. navigation=false이면 이전/다음 글 없이 상세 정보를 조회한다")
+    void excludesNavigationWhenNavigationIsFalse() throws Exception {
+        NewsFindResponse result = new NewsFindResponse(
+                102L,
+                NewsType.NOTICE,
+                "공지",
+                "공지 본문",
+                new NewsFindResponse.Author(1L, "샤라웃 운영팀", "@admin"),
+                Instant.parse("2026-08-25T00:00:00Z"),
+                null,
+                null,
+                null,
+                false,
+                null,
+                null,
+                null,
+                null
+        );
+        given(newsService.findDetail(new NewsFindRequest(102L, false)))
+                .willReturn(result);
+
+        mockMvc.perform(get("/api/v1/news/{newsId}", 102L)
+                        .queryParam("navigation", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.previous").value(nullValue()))
+                .andExpect(jsonPath("$.data.next").value(nullValue()));
+
+        verify(newsService).findDetail(new NewsFindRequest(102L, false));
+    }
+
+    @Test
+    @DisplayName("navigation 값이 올바르지 않으면 400을 반환하고 서비스를 호출하지 않는다")
+    void returnsBadRequestWhenNewsNavigationIsInvalid() throws Exception {
+        mockMvc.perform(get("/api/v1/news/{newsId}", 102L)
+                        .queryParam("navigation", "tre"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.VALIDATION_FAILED.name()));
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("소식 상세 조회 실패 테스트. 존재하지 않는 소식을 상세 조회한 경우는 404를 반환한다")
+    void returnsNotFoundWhenNewsDetailDoesNotExist() throws Exception {
+        given(newsService.findDetail(new NewsFindRequest(999L, true)))
+                .willThrow(new EntityNotFoundException(CommonErrorCode.RESOURCE_NOT_FOUND));
+
+        mockMvc.perform(get("/api/v1/news/{newsId}", 999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.RESOURCE_NOT_FOUND.name()))
+                .andDo(document(
+                        "news-find-detail-not-found",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("소식 상세 조회 실패")
+                                .description("존재하지 않는 소식을 조회하면 404를 반환한다.")
+                                .pathParameters(
+                                        parameterWithName("newsId").description("조회할 소식 ID")
+                                )
+                                .queryParameters(
+                                        com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName("navigation")
+                                                .description("이전·다음 소식 포함 여부. 기본값은 true")
+                                                .type(com.epages.restdocs.apispec.SimpleType.BOOLEAN)
+                                                .optional()
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verify(newsService).findDetail(new NewsFindRequest(999L, true));
+    }
+
+    @Test
+    @DisplayName("소식 목록 조회 기본값을 서비스에 전달한다")
+    void usesDefaultNewsListQueryValues() throws Exception {
+        NewsFindAllResponse result = new NewsFindAllResponse(
+                List.of(),
+                new SliceMetaResponse(null, false, 0L)
+        );
+        given(newsService.findAll(any(NewsFindAllRequest.class))).willReturn(result);
+
+        mockMvc.perform(get("/api/v1/news"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.meta.hasNext").value(false));
+
+        ArgumentCaptor<NewsFindAllRequest> requestCaptor =
+                ArgumentCaptor.forClass(NewsFindAllRequest.class);
+        verify(newsService).findAll(requestCaptor.capture());
+        NewsFindAllRequest request = requestCaptor.getValue();
+        assertThat(request.getNewsType()).isNull();
+        assertThat(request.getEventStatus()).isNull();
+        assertThat(request.getSort().name()).isEqualTo("LATEST");
+        assertThat(request.getSize()).isEqualTo(20);
+        assertThat(request.getCursor()).isNull();
+    }
+
+    @Test
+    @DisplayName("소식 목록 조회 개수가 50을 초과하면 400을 반환하고 서비스를 호출하지 않는다")
+    void returnsBadRequestWhenNewsListSizeExceedsMaximum() throws Exception {
+        mockMvc.perform(get("/api/v1/news")
+                        .queryParam("size", "51"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("소식 목록 조회 유형이 올바르지 않으면 400을 반환한다")
+    void returnsBadRequestWhenNewsTypeIsInvalid() throws Exception {
+        mockMvc.perform(get("/api/v1/news")
+                        .queryParam("type", "INVALID"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("소식 목록 조회 이벤트 상태가 올바르지 않으면 400을 반환한다")
+    void returnsBadRequestWhenEventStatusIsInvalid() throws Exception {
+        mockMvc.perform(get("/api/v1/news")
+                        .queryParam("eventStatus", "INVALID"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(newsService);
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidNewsFilterCombinations")
+    @DisplayName("소식 유형과 이벤트 상태 조합이 올바르지 않으면 400을 반환한다")
+    void returnsBadRequestWhenNewsFilterCombinationIsInvalid(
+            String type,
+            String eventStatus
+    ) throws Exception {
+        MockHttpServletRequestBuilder request = get("/api/v1/news")
+                .queryParam("eventStatus", eventStatus);
+        if (type != null) {
+            request.queryParam("type", type);
+        }
+
+        String typeName = type == null ? "all" : type.toLowerCase();
+        String documentName = "news-find-all-filter-combination-invalid-"
+                + typeName + "-" + eventStatus.toLowerCase();
+        mockMvc.perform(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code")
+                        .value(NewsErrorCode.NEWS_EVENT_STATUS_REQUIRES_EVENT_TYPE.name()))
+                .andDo(document(
+                        documentName,
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("소식 목록 조회")
+                                .description("소식 목록을 유형과 이벤트 상태로 필터링하고 최신순으로 조회한다.")
+                                .queryParameters(
+                                        parameterWithName("type")
+                                                .description("소식 유형(ALL, NOTICE, EVENT). 기본값은 ALL")
+                                                .optional(),
+                                        parameterWithName("eventStatus")
+                                                .description("이벤트 상태(UPCOMING, ONGOING, ENDED)")
+                                                .optional(),
+                                        parameterWithName("sort")
+                                                .description("정렬 기준. 현재 LATEST만 지원하며 기본값은 LATEST")
+                                                .optional(),
+                                        parameterWithName("size")
+                                                .description("조회 개수. 기본값 20, 최댓값 50")
+                                                .optional(),
+                                        parameterWithName("cursor")
+                                                .description("다음 페이지 조회에 사용하는 opaque cursor")
+                                                .optional()
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verifyNoInteractions(newsService);
+    }
+
+    private static Stream<Arguments> invalidNewsFilterCombinations() {
+        return Stream.of(
+                Arguments.of("NOTICE", "UPCOMING"),
+                Arguments.of("NOTICE", "ONGOING"),
+                Arguments.of("NOTICE", "ENDED"),
+                Arguments.of("ALL", "UPCOMING"),
+                Arguments.of("ALL", "ONGOING"),
+                Arguments.of("ALL", "ENDED"),
+                Arguments.of(null, "ONGOING")
+        );
+    }
+
+    @Test
+    @DisplayName("소식 목록 조회 정렬 기준이 올바르지 않으면 400을 반환한다")
+    void returnsBadRequestWhenNewsSortIsInvalid() throws Exception {
+        mockMvc.perform(get("/api/v1/news")
+                        .queryParam("sort", "INVALID"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(newsService);
+    }
+
+    /**
+     * 공지 실패 테스트
+     * DOCS: /api/v1/news/notices
+     */
+    @Test
+    @DisplayName("공지 생성 실패 테스트. 필수 요청값이 없으면 400을 반환하고 서비스를 호출하지 않는다.")
+    void returnsBadRequestWithoutCallingServiceWhenNoticeRequiredFieldIsMissing() throws Exception {
+        mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "summary": "요약",
+                                  "body": "본문",
+                                  "authorName": "샤라웃 운영팀"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andDo(document(
+                        "news-notice-create-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("공지 생성")
+                                .description("관리자가 공지와 선택적인 CTA를 생성한다.")
+                                .requestSchema(Schema.schema("NoticeCreateRequest"))
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verifyNoInteractions(newsService);
+    }
+
+    /**
+     * 이벤트 생성 실패 테스트
+     * DOCS: /api/v1/news/events
+     */
+    @Test
+    @DisplayName("이벤트 생성 실패 테스트. 필수 요청값이 없으면 400을 반환하고 서비스를 호출하지 않는다.")
+    void returnsBadRequestWithoutCallingServiceWhenEventRequiredFieldIsMissing() throws Exception {
+        mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "summary": "요약",
+                                  "body": "본문",
+                                  "authorName": "샤라웃 운영팀"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andDo(document(
+                        "news-event-create-required-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("이벤트 생성")
+                                .description("관리자가 이벤트와 선택적인 CTA를 생성한다.")
+                                .requestSchema(Schema.schema("EventCreateRequest"))
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("이벤트 시작 시각이 없으면 400을 반환하고 서비스를 호출하지 않는다")
+    void returnsBadRequestWithoutCallingServiceWhenEventStartAtIsMissing() throws Exception {
+        mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "이벤트",
+                                  "summary": "요약",
+                                  "body": "본문",
+                                  "authorName": "샤라웃 운영팀",
+                                  "eventEndAt": "2026-09-30T23:59:59Z"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andDo(document(
+                        "news-event-create-period-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("이벤트 생성")
+                                .description("관리자가 이벤트와 선택적인 CTA를 생성한다.")
+                                .requestSchema(Schema.schema("EventCreateRequest"))
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("이벤트 시작 시각이 종료 시각보다 늦으면 통합 기간 오류 코드로 400을 반환한다")
+    void returnsBadRequestWhenEventStartAtIsAfterEndAt() throws Exception {
+        given(newsService.createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class)))
+                .willThrow(new BadRequestException(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID));
+
+        mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "이벤트",
+                                  "summary": "요약",
+                                  "body": "본문",
+                                  "authorName": "샤라웃 운영팀",
+                                  "eventStartAt": "2026-10-01T00:00:00Z",
+                                  "eventEndAt": "2026-09-30T23:59:59Z"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID.name()))
+                .andDo(document(
+                        "news-event-create-period-order-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("이벤트 생성 실패")
+                                .description("이벤트 시작 시각이 종료 시각보다 늦으면 400 Bad Request를 반환한다.")
+                                .requestSchema(Schema.schema("EventCreateRequest"))
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verify(newsService).createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class));
+    }
+
+    @Test
+    @DisplayName("공지 CTA 검증에 실패하면 400을 반환하고 서비스를 호출하지 않는다")
+    void returnsBadRequestWhenNoticeCtaIsInvalid() throws Exception {
+        mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "공지",
+                                  "summary": "요약",
+                                  "body": "본문",
+                                  "authorName": "샤라웃 운영팀",
+                                  "cta": {
+                                    "label": "",
+                                    "url": "example.com"
+                                  }
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details[0].field").value("cta"))
+                .andDo(document(
+                        "news-notice-create-cta-invalid",
+                        resource(errorResponseResource(
+                                "공지 생성",
+                                "관리자가 공지와 선택적인 CTA를 생성한다.",
+                                "NoticeCreateRequest"))
+                ));
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("잘못된 JSON 요청 본문은 400 오류 응답으로 반환한다")
+    void returnsBadRequestWhenNoticeRequestBodyIsMalformed() throws Exception {
+        mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andDo(document(
+                        "news-notice-create-malformed-json",
+                        resource(errorResponseResource(
+                                "공지 생성",
+                                "관리자가 공지와 선택적인 CTA를 생성한다.",
+                                "NoticeCreateRequest"))
+                ));
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("공지 생성 중 도메인 예외가 발생하면 500 오류 응답을 반환한다")
+    void returnsInternalServerErrorWhenNoticeDomainValidationFails() throws Exception {
+        given(newsService.createNotice(
+                eq(1L), eq(UserRole.ADMIN), any(NoticeCreateRequest.class)))
+                .willThrow(new DomainValidationException(NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE));
+
+        mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJsonWithCta()))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value(NewsErrorCode.NEWS_INVALID_AUTHOR_ID_SIZE.name()))
+                .andDo(document(
+                        "news-notice-create-domain-invalid",
+                        resource(errorResponseResource(
+                                "공지 생성",
+                                "관리자가 공지와 선택적인 CTA를 생성한다.",
+                                "NoticeCreateRequest"))
+                ));
+
+        verify(newsService).createNotice(
+                eq(1L), eq(UserRole.ADMIN), any(NoticeCreateRequest.class));
+    }
+
+    @Test
+    @DisplayName("이벤트 생성 중 도메인 예외가 발생하면 500 오류 응답을 반환한다")
+    void returnsInternalServerErrorWhenEventDomainValidationFails() throws Exception {
+        given(newsService.createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class)))
+                .willThrow(new DomainValidationException(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID));
+
+        mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(eventRequestJsonWithCta()))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value(NewsErrorCode.NEWS_EVENT_PERIOD_INVALID.name()))
+                .andDo(document(
+                        "news-event-create-domain-invalid",
+                        resource(errorResponseResource(
+                                "이벤트 생성",
+                                "관리자가 이벤트와 선택적인 CTA를 생성한다.",
+                                "EventCreateRequest"))
+                ));
+
+        verify(newsService).createEvent(
+                eq(1L), eq(UserRole.ADMIN), any(EventCreateRequest.class));
+    }
+
+    @Test
+    @DisplayName("관리자가 전체 필드를 전달해 소식을 수정하면 200과 수정 결과를 반환한다")
+    void updatesNewsAsAdmin() throws Exception {
+        NewsUpdateResponse result = new NewsUpdateResponse(
+                106L,
+                NewsType.NOTICE,
+                "수정된 공지",
+                "수정된 요약",
+                "수정된 본문",
+                new NewsUpdateResponse.Author(1L, "샤라웃 운영팀", "@admin"),
+                Instant.parse("2026-09-05T00:00:00Z"),
+                null,
+                null,
+                null,
+                false,
+                null,
+                null
+        );
+        given(newsService.update(eq(106L), eq(UserRole.ADMIN), any(NewsUpdateRequest.class)))
+                .willReturn(result);
+
+        mockMvc.perform(put("/api/v1/news/{newsId}", 106L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "수정된 공지",
+                                  "summary": "수정된 요약",
+                                  "body": "수정된 본문",
+                                  "authorName": "샤라웃 운영팀",
+                                  "eventStartAt": null,
+                                  "eventEndAt": null,
+                                  "cta": null
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(106))
+                .andExpect(jsonPath("$.data.summary").value("수정된 요약"))
+                .andExpect(jsonPath("$.data.cta").value(nullValue()))
+                .andDo(document(
+                        "news-update",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("소식 수정")
+                                .description("관리자가 소식의 편집 가능 필드를 전체 교체한다.")
+                                .pathParameters(parameterWithName("newsId").description("수정할 소식 ID"))
+                                .requestSchema(Schema.schema("NewsUpdateRequest"))
+                                .responseSchema(Schema.schema("NewsUpdateSuccessResponse"))
+                                .requestFields(
+                                        fieldWithPath("title").type(STRING).description("소식 제목"),
+                                        fieldWithPath("summary").type(STRING).description("소식 요약"),
+                                        fieldWithPath("body").type(STRING).description("소식 본문"),
+                                        fieldWithPath("authorName").type(STRING).description("표시 작성자 이름"),
+                                        fieldWithPath("eventStartAt").type(STRING)
+                                                .description("이벤트 시작 시각. 공지는 null").optional(),
+                                        fieldWithPath("eventEndAt").type(STRING)
+                                                .description("이벤트 종료 시각. 공지는 null").optional(),
+                                        fieldWithPath("cta").type(OBJECT)
+                                                .description("CTA. 삭제할 때 null").optional(),
+                                        fieldWithPath("cta.label").type(STRING).description("CTA 라벨").optional(),
+                                        fieldWithPath("cta.url").type(STRING).description("CTA URL").optional()
+                                )
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("수정된 소식"),
+                                        fieldWithPath("data.id").type(NUMBER).description("소식 ID"),
+                                        new EnumFields(NewsType.class).withPath("data.type")
+                                                .description("소식 유형"),
+                                        fieldWithPath("data.title").type(STRING).description("소식 제목"),
+                                        fieldWithPath("data.summary").type(STRING).description("소식 요약"),
+                                        fieldWithPath("data.body").type(STRING).description("소식 본문"),
+                                        fieldWithPath("data.author").type(OBJECT).description("작성자"),
+                                        fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
+                                        fieldWithPath("data.author.handle").type(STRING).description("작성자 handle").optional(),
+                                        fieldWithPath("data.author.name").type(STRING).description("작성자 이름"),
+                                        fieldWithPath("data.author.displayName").type(STRING).description("작성자 표시 이름"),
+                                        fieldWithPath("data.author.userType").type(STRING).description("작성자 유형").optional(),
+                                        fieldWithPath("data.author.track").type(STRING).description("작성자 트랙").optional(),
+                                        fieldWithPath("data.author.cohort").type(NUMBER).description("작성자 기수").optional(),
+                                        fieldWithPath("data.publishedAt").type(STRING).description("게시 시각"),
+                                        fieldWithPath("data.eventStatus").type(STRING)
+                                                .description("이벤트 상태. 공지는 null").optional(),
+                                        fieldWithPath("data.eventStartAt").type(STRING)
+                                                .description("이벤트 시작 시각").optional(),
+                                        fieldWithPath("data.eventEndAt").type(STRING)
+                                                .description("이벤트 종료 시각").optional(),
+                                        fieldWithPath("data.isPinned").type(BOOLEAN).description("고정 여부"),
+                                        fieldWithPath("data.pinOrder").type(NUMBER).description("고정 순서").optional(),
+                                        fieldWithPath("data.cta").type(OBJECT).description("CTA").optional(),
+                                        fieldWithPath("data.cta.label").type(STRING).description("CTA 라벨").optional(),
+                                        fieldWithPath("data.cta.url").type(STRING).description("CTA URL").optional()
+                                )
+                                .build())
+                ));
+
+        verify(newsService).update(eq(106L), eq(UserRole.ADMIN), any(NewsUpdateRequest.class));
+    }
+
+    @Test
+    @DisplayName("수정 요청에서 CTA 필드를 생략하면 명시적 null을 요구하는 400을 반환한다")
+    void rejectsNewsUpdateWhenCtaIsOmitted() throws Exception {
+        mockMvc.perform(put("/api/v1/news/{newsId}", 106L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "수정된 공지",
+                                  "summary": "수정된 요약",
+                                  "body": "수정된 본문",
+                                  "authorName": "샤라웃 운영팀",
+                                  "eventStartAt": null,
+                                  "eventEndAt": null
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.VALIDATION_FAILED.name()))
+                .andExpect(jsonPath("$.details[0].field").value("cta"))
+                .andExpect(jsonPath("$.details[0].message")
+                        .value("cta는 필수입니다. 삭제하려면 null을 명시해주세요."));
+
+        mockMvc.perform(put("/api/v1/news/{newsId}", 106L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "수정된 공지",
+                                  "summary": "수정된 요약",
+                                  "body": "수정된 본문",
+                                  "authorName": "샤라웃 운영팀",
+                                  "cta": null
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.VALIDATION_FAILED.name()))
+                .andExpect(jsonPath("$.details[*].field", hasItem("eventStartAt")))
+                .andExpect(jsonPath("$.details[*].field", hasItem("eventEndAt")));
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("수정 서비스가 이벤트 기간 상세 오류를 반환하면 details와 함께 400을 반환한다")
+    void returnsEventPeriodDetailsWhenNewsUpdateHasMissingEventEndAt() throws Exception {
+        given(newsService.update(eq(106L), eq(UserRole.ADMIN), any(NewsUpdateRequest.class)))
+                .willThrow(new ValidationFailedException(List.of(
+                        new com.shoutoutz.api.common.response.ErrorResponse.ErrorDetail(
+                                "eventEndAt", "eventEndAt은 필수입니다.")
+                )));
+
+        mockMvc.perform(put("/api/v1/news/{newsId}", 106L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "이벤트 수정",
+                                  "summary": "이벤트 요약",
+                                  "body": "이벤트 본문",
+                                  "authorName": "샤라웃 운영팀",
+                                  "eventStartAt": "2026-10-01T00:00:00+09:00",
+                                  "eventEndAt": null,
+                                  "cta": null
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.VALIDATION_FAILED.name()))
+                .andExpect(jsonPath("$.details[0].field").value("eventEndAt"));
+
+        verify(newsService).update(eq(106L), eq(UserRole.ADMIN), any(NewsUpdateRequest.class));
+    }
+
+    @Test
+    @DisplayName("관리자가 소식을 삭제하면 200과 삭제 시각을 반환한다")
+    void deletesNewsAsAdmin() throws Exception {
+        given(newsService.delete(106L, UserRole.ADMIN))
+                .willReturn(new NewsDeleteResponse(
+                        106L,
+                        Instant.parse("2026-09-19T12:00:00Z")
+                ));
+
+        mockMvc.perform(delete("/api/v1/news/{newsId}", 106L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.ADMIN)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.id").value(106))
+                .andExpect(jsonPath("$.data.deletedAt").value("2026-09-19T12:00:00Z"))
+                .andDo(document(
+                        "news-delete",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("News")
+                                .summary("소식 삭제")
+                                .description("관리자가 소식을 소프트 삭제하고 삭제 시각을 반환한다.")
+                                .pathParameters(parameterWithName("newsId").description("삭제할 소식 ID"))
+                                .responseSchema(Schema.schema("NewsDeleteSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("삭제 결과"),
+                                        fieldWithPath("data.id").type(NUMBER).description("삭제한 소식 ID"),
+                                        fieldWithPath("data.deletedAt").type(STRING).description("삭제 시각"),
+                                        fieldWithPath("meta").type(OBJECT).description("메타 정보").optional()
+                                )
+                                .build())
+                ));
+
+        verify(newsService).delete(106L, UserRole.ADMIN);
+    }
+
+    @Test
+    @DisplayName("로그인하지 않고 소식 생성·수정·삭제를 요청하면 401을 반환하고 서비스를 호출하지 않는다")
+    void rejectsUnauthenticatedNewsMutation() throws Exception {
+        mockMvc.perform(post("/api/v1/news/notices")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJsonWithCta()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.UNAUTHORIZED.name()))
+                .andDo(document(
+                        "news-notice-create-unauthorized",
+                        resource(errorResponseResource(
+                                "공지 생성",
+                                "관리자 로그인이 필요하다.",
+                                "NoticeCreateRequest"))
+                ));
+
+        mockMvc.perform(post("/api/v1/news/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(eventRequestJsonWithCta()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.UNAUTHORIZED.name()))
+                .andDo(document(
+                        "news-event-create-unauthorized",
+                        resource(errorResponseResource(
+                                "이벤트 생성",
+                                "관리자 로그인이 필요하다.",
+                                "EventCreateRequest"))
+                ));
+
+        mockMvc.perform(delete("/api/v1/news/{newsId}", 106L))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.UNAUTHORIZED.name()));
+
+        mockMvc.perform(put("/api/v1/news/{newsId}", 106L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.UNAUTHORIZED.name()));
+
+        verifyNoInteractions(newsService);
+    }
+
+    @Test
+    @DisplayName("일반 사용자가 소식을 생성하면 403을 반환한다")
+    void rejectsNonAdminNewsCreation() throws Exception {
+        given(newsService.createNotice(
+                eq(1L), eq(UserRole.USER), any(NoticeCreateRequest.class)))
+                .willThrow(new ForbiddenException(NewsErrorCode.NEWS_ADMIN_FORBIDDEN));
+        given(newsService.createEvent(
+                eq(1L), eq(UserRole.USER), any(EventCreateRequest.class)))
+                .willThrow(new ForbiddenException(NewsErrorCode.NEWS_ADMIN_FORBIDDEN));
+
+        mockMvc.perform(post("/api/v1/news/notices")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJsonWithCta()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(NewsErrorCode.NEWS_ADMIN_FORBIDDEN.name()))
+                .andExpect(jsonPath("$.message").value("관리자만 소식을 관리할 수 있습니다."))
+                .andDo(document(
+                        "news-notice-create-forbidden",
+                        resource(errorResponseResource(
+                                "공지 생성",
+                                "관리자만 공지를 생성할 수 있다.",
+                                "NoticeCreateRequest"))
+                ));
+
+        mockMvc.perform(post("/api/v1/news/events")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
+                                new AuthenticatedSession(1L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(eventRequestJsonWithCta()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(NewsErrorCode.NEWS_ADMIN_FORBIDDEN.name()))
+                .andExpect(jsonPath("$.message").value("관리자만 소식을 관리할 수 있습니다."))
+                .andDo(document(
+                        "news-event-create-forbidden",
+                        resource(errorResponseResource(
+                                "이벤트 생성",
+                                "관리자만 이벤트를 생성할 수 있다.",
+                                "EventCreateRequest"))
+                ));
+    }
+
+    /**
+     * 헬퍼 메서드
+     */
+    private String requestJsonWithCta() {
+        return """
+                {
+                  "title": "우아한테크코스 6기 최종 프로젝트 데모데이 안내",
+                  "summary": "최종 프로젝트 데모데이 일정을 안내합니다.",
+                  "body": "우아한테크코스 6기 최종 프로젝트 데모데이는 2026년 9월 12일에 진행됩니다.",
+                  "authorName": "샤라웃 운영팀",
+                  "cta": {
+                    "label": "데모데이 일정 확인",
+                    "url": "example.com"
+                  }
+                }
+                """;
+    }
+
+    private String requestJsonWithoutCta() {
+        return """
+                {
+                  "title": "서비스 점검 안내",
+                  "summary": "안정적인 서비스 제공을 위해 점검을 진행합니다.",
+                  "body": "2026년 9월 10일에 점검을 진행합니다.",
+                  "authorName": "샤라웃 운영팀",
+                  "cta": null
+                }
+                """;
+    }
+
+    private String eventRequestJsonWithCta() {
+        return """
+                {
+                  "title": "프로젝트 아카이빙 챌린지",
+                  "summary": "팀 프로젝트를 등록하고 피드백을 받아보세요.",
+                  "body": "프로젝트를 등록하면 동료 크루들의 피드백을 받을 수 있습니다.",
+                  "authorName": "샤라웃 운영팀",
+                  "eventStartAt": "2026-09-01T00:00:00Z",
+                  "eventEndAt": "2026-09-30T23:59:59Z",
+                  "cta": {
+                    "label": "프로젝트 등록하기",
+                    "url": "/projects/3001"
+                  }
+                }
+                """;
+    }
+
+    private String eventRequestJsonWithoutCta() {
+        return """
+                {
+                  "title": "서비스 이벤트",
+                  "summary": "이벤트 요약",
+                  "body": "이벤트 본문",
+                  "authorName": "샤라웃 운영팀",
+                  "eventStartAt": "2026-10-01T00:00:00Z",
+                  "eventEndAt": "2026-10-31T23:59:59Z"
+                }
+                """;
+    }
+
+    private ResourceSnippetParameters errorResponseResource(
+            String summary,
+            String description,
+            String requestSchemaName
+    ) {
+        return ResourceSnippetParameters.builder()
+                .tag("News")
+                .summary(summary)
+                .description(description)
+                .requestSchema(Schema.schema(requestSchemaName))
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse())
+                .build();
+    }
+}

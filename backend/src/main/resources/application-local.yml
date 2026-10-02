@@ -4,3 +4,7 @@ spring:
     username: shoutoutz
     password: localdev
     driver-class-name: org.postgresql.Driver
+
+# 로컬 개발용 값이다. 운영에서는 VISITOR_HASH_SECRET 환경 변수로 주입한다.
+visitor:
+  hash-secret: ${VISITOR_HASH_SECRET:local-visitor-hash-secret-for-dev-only}

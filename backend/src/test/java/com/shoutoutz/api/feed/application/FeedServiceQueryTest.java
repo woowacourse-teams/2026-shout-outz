@@ -1,0 +1,390 @@
+package com.shoutoutz.api.feed.application;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import com.shoutoutz.api.category.domain.CategoryRepository;
+import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.NotFoundException;
+import com.shoutoutz.api.auth.domain.OAuthAccountRepository;
+import com.shoutoutz.api.feed.application.dto.FeedCursor;
+import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
+import com.shoutoutz.api.feed.application.dto.FeedItem;
+import com.shoutoutz.api.feed.application.dto.FeedPage;
+import com.shoutoutz.api.feed.application.dto.FeedSort;
+import com.shoutoutz.api.feed.domain.FeedRepository;
+import com.shoutoutz.api.media.application.MediaUrlResolver;
+import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
+import com.shoutoutz.api.feed.presentation.dto.request.FeedSuggestionRequest;
+import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
+import com.shoutoutz.api.user.domain.account.User;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
+import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.account.UserStatus;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
+import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
+import com.shoutoutz.api.user.domain.profile.Track;
+import com.shoutoutz.api.user.domain.profile.UserType;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class FeedServiceQueryTest {
+
+    @Mock
+    private FeedRepository feedRepository;
+
+    @Mock
+    private CategoryRepository categoryRepository;
+
+    @Mock
+    private FeedQueryRepository feedQueryRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private UserProfileRepository userProfileRepository;
+
+    @Mock
+    private MediaUrlResolver mediaUrlResolver;
+
+    @Mock
+    private OAuthAccountRepository oauthAccountRepository;
+
+    @Mock
+    private FeedLinkPreviewService linkPreviewService;
+
+    private FeedCursorCodec cursorCodec;
+    private FeedService feedService;
+
+    @BeforeEach
+    void setUp() {
+        cursorCodec = new FeedCursorCodec();
+        feedService = new FeedService(
+                feedRepository,
+                categoryRepository,
+                feedQueryRepository,
+                userRepository,
+                userProfileRepository,
+                cursorCodec,
+                mediaUrlResolver,
+                new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
+                linkPreviewService,
+                java.time.Clock.systemUTC()
+        );
+    }
+
+    @Test
+    void 활성_피드_상세를_조회한다() {
+        FeedItem feed = feed(1L, "2026-09-11T00:00:00Z");
+        when(feedQueryRepository.findById(1L)).thenReturn(Optional.of(feed));
+
+        assertThat(feedService.findFeed(1L).feedId()).isEqualTo(feed.feedId());
+    }
+
+    @Test
+    void 삭제되었거나_없는_피드는_조회할_수_없다() {
+        when(feedQueryRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> feedService.findFeed(1L))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void 다음_슬라이스가_있으면_커서를_만든다() {
+        FeedCursor cursor = new FeedCursor(
+                FeedSort.LATEST,
+                0,
+                0L,
+                Instant.parse("2026-09-12T00:00:00Z"),
+                4L
+        );
+        FeedFindAllRequest request = new FeedFindAllRequest(
+                FeedSort.LATEST,
+                1L,
+                null,
+                cursorCodec.encode(cursor),
+                2
+        );
+        List<FeedItem> queried = List.of(
+                feed(3L, "2026-09-11T00:00:00Z"),
+                feed(2L, "2026-09-10T00:00:00Z"),
+                feed(1L, "2026-09-09T00:00:00Z")
+        );
+        when(feedQueryRepository.findAll(FeedSort.LATEST, 1L, null, cursor, 2))
+                .thenReturn(new FeedPage(queried.subList(0, 2), true, 8L));
+
+        FeedFindAllResult result = feedService.findAllFeed(request);
+
+        assertThat(result.items()).containsExactly(queried.get(0), queried.get(1));
+        assertThat(result.hasNext()).isTrue();
+        assertThat(result.totalCount()).isEqualTo(8L);
+        assertThat(cursorCodec.decode(result.nextCursor(), FeedSort.LATEST))
+                .isEqualTo(new FeedCursor(
+                        FeedSort.LATEST,
+                        0,
+                        0L,
+                        queried.get(1).createdAt(),
+                        2L
+                ));
+        verify(feedQueryRepository).findAll(FeedSort.LATEST, 1L, null, cursor, 2);
+    }
+
+    @Test
+    void 다음_슬라이스가_없으면_커서를_반환하지_않는다() {
+        FeedFindAllRequest request = new FeedFindAllRequest(null, null, null, null, 2);
+        when(feedQueryRepository.findAll(FeedSort.LATEST, null, null, null, 2))
+                .thenReturn(new FeedPage(List.of(feed(1L, "2026-09-11T00:00:00Z")), false, 1L));
+
+        FeedFindAllResult result = feedService.findAllFeed(request);
+
+        assertThat(result.hasNext()).isFalse();
+        assertThat(result.nextCursor()).isNull();
+    }
+
+    @Test
+    void 인기순을_요청하면_전체_좋아요_수_기준으로_조회한다() {
+        FeedFindAllRequest request = new FeedFindAllRequest(
+                FeedSort.POPULAR,
+                null,
+                null,
+                null,
+                2
+        );
+        List<FeedItem> queried = List.of(
+                feed(2L, "2026-09-10T00:00:00Z", 5L),
+                feed(1L, "2026-09-09T00:00:00Z", 3L)
+        );
+        when(feedQueryRepository.findAll(FeedSort.POPULAR, null, null, null, 2))
+                .thenReturn(new FeedPage(queried, false, 2L));
+
+        FeedFindAllResult result = feedService.findAllFeed(request);
+
+        assertThat(result.items()).containsExactlyElementsOf(queried);
+        verify(feedQueryRepository).findAll(FeedSort.POPULAR, null, null, null, 2);
+    }
+
+    @Test
+    void 답변_대기순을_요청하면_답변_대기순으로_조회한다() {
+        FeedFindAllRequest request = new FeedFindAllRequest(
+                FeedSort.WAITING,
+                null,
+                null,
+                null,
+                2
+        );
+        List<FeedItem> queried = List.of(feed(2L, "2026-09-10T00:00:00Z"));
+        when(feedQueryRepository.findAll(FeedSort.WAITING, null, null, null, 2))
+                .thenReturn(new FeedPage(queried, false, 1L));
+
+        FeedFindAllResult result = feedService.findAllFeed(request);
+
+        assertThat(result.items()).containsExactlyElementsOf(queried);
+        verify(feedQueryRepository).findAll(FeedSort.WAITING, null, null, null, 2);
+    }
+
+    @Test
+    void 검색어가_있으면_정확도순으로_조회한다() {
+        FeedFindAllRequest request = new FeedFindAllRequest(
+                null,
+                1L,
+                " 검색어 ",
+                null,
+                2
+        );
+        List<FeedItem> queried = List.of(feed(1L, "2026-09-11T00:00:00Z"));
+        when(feedQueryRepository.findAll(
+                FeedSort.RELEVANCE,
+                1L,
+                "검색어",
+                null,
+                2
+        )).thenReturn(new FeedPage(queried, false, 1L));
+
+        FeedFindAllResult result = feedService.findAllFeed(request);
+
+        assertThat(result.items()).containsExactlyElementsOf(queried);
+        verify(feedQueryRepository).findAll(
+                FeedSort.RELEVANCE,
+                1L,
+                "검색어",
+                null,
+                2
+        );
+    }
+
+    @Test
+    void 검색어와_정렬_조건의_잘못된_조합을_거부한다() {
+        FeedFindAllRequest latestSearch = new FeedFindAllRequest(
+                FeedSort.LATEST,
+                null,
+                "검색어",
+                null,
+                20
+        );
+        FeedFindAllRequest relevanceWithoutKeyword = new FeedFindAllRequest(
+                FeedSort.RELEVANCE,
+                null,
+                null,
+                null,
+                20
+        );
+
+        assertThatThrownBy(() -> feedService.findAllFeed(latestSearch))
+                .isInstanceOf(BadRequestException.class);
+        assertThatThrownBy(() -> feedService.findAllFeed(relevanceWithoutKeyword))
+                .isInstanceOf(BadRequestException.class);
+        verifyNoInteractions(feedQueryRepository);
+    }
+
+    @Test
+    void 피드_제목_자동완성_후보를_조회한다() {
+        FeedSuggestionRequest request = new FeedSuggestionRequest(" 우테코 ", null);
+        when(feedQueryRepository.findTitleSuggestions("우테코", 10))
+                .thenReturn(List.of("우테코", "우테코 회고"));
+
+        List<String> result = feedService.findTitleSuggestions(request);
+
+        assertThat(result).containsExactly("우테코", "우테코 회고");
+        verify(feedQueryRepository).findTitleSuggestions("우테코", 10);
+    }
+
+    @Test
+    void 사용자가_작성한_피드를_최신순_커서로_조회한다() {
+        FeedCursor cursor = new FeedCursor(
+                FeedSort.LATEST,
+                0,
+                0L,
+                Instant.parse("2026-09-12T00:00:00Z"),
+                4L
+        );
+        List<FeedItem> queried = List.of(
+                feed(3L, "2026-09-11T00:00:00Z"),
+                feed(2L, "2026-09-10T00:00:00Z"),
+                feed(1L, "2026-09-09T00:00:00Z")
+        );
+        when(userRepository.findByHandle("@zzaekkii"))
+                .thenReturn(Optional.of(user(UserStatus.ACTIVE)));
+        when(feedQueryRepository.findAllByAuthorId(1L, cursor, 2))
+                .thenReturn(new FeedPage(queried.subList(0, 2), true, 3L));
+
+        FeedFindAllResult result = feedService.findAllByUser(
+                "@zzaekkii",
+                new UserFeedFindRequest(cursorCodec.encode(cursor), 2)
+        );
+
+        assertThat(result.items()).containsExactly(queried.get(0), queried.get(1));
+        assertThat(result.hasNext()).isTrue();
+        assertThat(result.totalCount()).isEqualTo(3L);
+        assertThat(cursorCodec.decode(result.nextCursor(), FeedSort.LATEST))
+                .isEqualTo(new FeedCursor(
+                        FeedSort.LATEST,
+                        0,
+                        0L,
+                        queried.get(1).createdAt(),
+                        queried.get(1).feedId()
+                ));
+        verify(feedQueryRepository).findAllByAuthorId(1L, cursor, 2);
+    }
+
+    @Test
+    void 탈퇴한_사용자의_피드는_공개하지_않는다() {
+        when(userRepository.findByHandle("@zzaekkii"))
+                .thenReturn(Optional.of(user(UserStatus.DELETED)));
+
+        FeedFindAllResult result = feedService.findAllByUser(
+                "@zzaekkii",
+                new UserFeedFindRequest(null, null)
+        );
+
+        assertThat(result.items()).isEmpty();
+        assertThat(result.nextCursor()).isNull();
+        assertThat(result.hasNext()).isFalse();
+        assertThat(result.totalCount()).isZero();
+        verifyNoInteractions(feedQueryRepository);
+    }
+
+    @Test
+    void 정지된_사용자의_기존_피드는_공개한다() {
+        when(userRepository.findByHandle("@zzaekkii"))
+                .thenReturn(Optional.of(user(UserStatus.BANNED)));
+        when(feedQueryRepository.findAllByAuthorId(1L, null, 20))
+                .thenReturn(new FeedPage(List.of(feed(1L, "2026-09-11T00:00:00Z")), false, 1L));
+
+        FeedFindAllResult result = feedService.findAllByUser(
+                "@zzaekkii",
+                new UserFeedFindRequest(null, null)
+        );
+
+        assertThat(result.items()).hasSize(1);
+        verify(feedQueryRepository).findAllByAuthorId(1L, null, 20);
+    }
+
+    @Test
+    void 존재하지_않는_사용자의_피드는_조회할_수_없다() {
+        when(userRepository.findByHandle("@missing-user")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> feedService.findAllByUser(
+                "@missing-user",
+                new UserFeedFindRequest(null, null)
+        )).isInstanceOfSatisfying(EntityNotFoundException.class,
+                error -> assertThat(error.getErrorCode()).isEqualTo(UserErrorCode.USER_NOT_FOUND));
+
+        verifyNoInteractions(feedQueryRepository);
+    }
+
+    private FeedItem feed(long id, String createdAt) {
+        return feed(id, createdAt, 0L);
+    }
+
+    private FeedItem feed(long id, String createdAt, long likeCount) {
+        Instant instant = Instant.parse(createdAt);
+        return new FeedItem(
+                id,
+                "제목 " + id,
+                "본문 " + id,
+                new FeedItem.Author(
+                        "@zzaekkii",
+                        "재키",
+                        UserType.WOOWACOURSE_CREW,
+                        Track.BACKEND,
+                        Cohort.COHORT_8,
+                        null
+                ),
+                List.of(),
+                List.of(),
+                likeCount,
+                0L,
+                0,
+                instant,
+                instant
+        );
+    }
+
+    private User user(UserStatus status) {
+        Instant deletedAt = null;
+        if (status == UserStatus.DELETED) {
+            deletedAt = Instant.now();
+        }
+        return User.builder()
+                .id(1L)
+                .handle("@zzaekkii")
+                .status(status)
+                .role(UserRole.USER)
+                .deletedAt(deletedAt)
+                .build();
+    }
+}

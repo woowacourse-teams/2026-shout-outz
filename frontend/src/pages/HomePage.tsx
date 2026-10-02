@@ -1,0 +1,37 @@
+import { Footer } from '@/components/Footer';
+import { AppGnb } from '@/components/AppGnb';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
+import { HomeBannerSection } from '@/components/home/HomeBannerSection';
+import { HomeEventSection } from '@/components/home/HomeEventSection';
+import { HomeFeedSection } from '@/components/home/HomeFeedSection';
+import { HomeStatistics } from '@/components/home/HomeStatistics';
+
+export function HomePage() {
+  return (
+    <div className="bg-background flex min-h-dvh flex-col text-gray-900">
+      <title>shout-outz</title>
+      <AppGnb />
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pt-6 pb-12 md:gap-8 md:pt-10 md:pb-20">
+        <AsyncBoundary>
+          <HomeBannerSection />
+        </AsyncBoundary>
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
+          <div className="min-w-0 lg:flex-1">
+            <AsyncBoundary>
+              <HomeFeedSection />
+            </AsyncBoundary>
+          </div>
+          <div className="lg:w-93 lg:shrink-0">
+            <AsyncBoundary>
+              <HomeEventSection />
+            </AsyncBoundary>
+          </div>
+        </div>
+        <AsyncBoundary>
+          <HomeStatistics />
+        </AsyncBoundary>
+      </main>
+      <Footer />
+    </div>
+  );
+}

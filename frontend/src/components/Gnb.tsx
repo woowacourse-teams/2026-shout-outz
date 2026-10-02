@@ -1,0 +1,79 @@
+import { Link, linkOptions } from '@tanstack/react-router';
+import type { ComponentProps, ReactNode } from 'react';
+
+import { tabItemBaseStyle, tabItemSizeStyles, tabItemStyles } from '@/components/Tab';
+import { cn } from '@/utils/cn';
+import { analytics, toPathPattern, type NavTab } from '@/utils/analytics';
+
+export const GNB_ITEMS = linkOptions([
+  { to: '/', activeOptions: { exact: true }, label: '홈' },
+  { to: '/community', label: '커뮤니티' },
+  { to: '/projects', label: '프로젝트' },
+  { to: '/news', label: '소식' },
+]);
+
+const NAV_TAB_BY_PATH: Record<string, NavTab> = {
+  '/': 'home',
+  '/community': 'feeds',
+  '/projects': 'projects',
+  '/news': 'news',
+};
+
+export interface GnbProps extends ComponentProps<'header'> {
+  trailing?: ReactNode;
+}
+
+const NAV_ITEM = [
+  tabItemBaseStyle,
+  tabItemSizeStyles.sm,
+  tabItemStyles.underline,
+  'md:rounded-lg md:border-0 md:bg-transparent md:text-gray-600',
+  'md:data-[status=active]:bg-primary-50 md:data-[status=active]:text-primary-600',
+].join(' ');
+
+export function Gnb({ trailing, className, ...props }: GnbProps) {
+  return (
+    <header
+      className={cn(
+        'bg-background sticky top-0 z-50 border-b border-gray-100 md:border-gray-200',
+        className,
+      )}
+      {...props}
+    >
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center px-4">
+        <Link to="/" className="flex h-14 items-center gap-2 md:h-18 md:gap-2.5">
+          {/* 파비콘과 같은 아이콘을 쓴다. */}
+          <img
+            src="/favicon/android-chrome-192x192.png"
+            alt=""
+            width={32}
+            height={32}
+            className="size-7 md:size-8"
+          />
+          <span className="text-lg font-bold text-gray-900 md:text-xl">shout-outz</span>
+        </Link>
+
+        <nav className="order-last flex h-11 w-full items-center gap-4 border-t border-gray-100 md:order-none md:ml-9 md:h-18 md:w-auto md:gap-2 md:border-t-0">
+          {GNB_ITEMS.map((item) => (
+            <Link
+              key={item.to}
+              {...item}
+              className={NAV_ITEM}
+              onClick={() =>
+                analytics.track({
+                  name: 'nav_tab_clicked',
+                  tab: NAV_TAB_BY_PATH[item.to]!,
+                  from: toPathPattern(window.location.pathname),
+                })
+              }
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="ml-auto flex h-14 items-center md:h-18">{trailing}</div>
+      </div>
+    </header>
+  );
+}

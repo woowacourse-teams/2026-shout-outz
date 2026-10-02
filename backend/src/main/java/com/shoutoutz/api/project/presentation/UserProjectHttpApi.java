@@ -1,0 +1,72 @@
+package com.shoutoutz.api.project.presentation;
+
+import static com.shoutoutz.api.user.domain.account.Handle.HANDLE_FORMAT_REGEX;
+
+import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
+import com.shoutoutz.api.auth.presentation.security.LoginUser;
+import com.shoutoutz.api.common.response.SliceMetaResponse;
+import com.shoutoutz.api.common.response.SuccessResponse;
+import com.shoutoutz.api.project.application.ProjectCursorCodec;
+import com.shoutoutz.api.project.application.ProjectService;
+import com.shoutoutz.api.project.application.dto.UserProjectResult;
+import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
+import com.shoutoutz.api.project.presentation.dto.response.UserProjectResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * 사용자 페이지의 프로젝트 목록 API.
+ */
+@RestController
+@RequestMapping("/api/v1/users/{handle}/projects")
+@RequiredArgsConstructor
+@Validated
+public class UserProjectHttpApi {
+
+    private final ProjectService projectService;
+
+    @GetMapping
+    public ResponseEntity<SuccessResponse<List<UserProjectResponse>>> findAll(
+            @LoginUser(required = false) AuthenticatedUser loginUser,
+            @Pattern(
+                    regexp = HANDLE_FORMAT_REGEX,
+                    message = "handle 형식이 올바르지 않습니다."
+            )
+            @PathVariable String handle,
+            @Valid @ModelAttribute UserProjectFindRequest request
+    ) {
+        Long viewerId = AuthenticatedUser.userIdOrNull(loginUser);
+        UserProjectResult result = viewerId == null
+                ? projectService.findAllByUser(handle, request)
+                : projectService.findAllByUser(handle, request, viewerId);
+        List<UserProjectResponse> response = UserProjectResponse.from(
+                result.projects(),
+                result.mediaUrls(),
+                result.userAvatarUrls()
+        );
+        SliceMetaResponse meta = new SliceMetaResponse(
+                encodeNextCursor(result.nextCursor()),
+                result.hasNext(),
+                result.totalCount()
+        );
+
+        return ResponseEntity.ok(SuccessResponse.success(response, meta));
+    }
+
+    private static String encodeNextCursor(ProjectCursor cursor) {
+        if (cursor == null) {
+            return null;
+        }
+        return ProjectCursorCodec.encode(cursor);
+    }
+}

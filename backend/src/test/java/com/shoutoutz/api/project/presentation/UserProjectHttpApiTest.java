@@ -1,0 +1,337 @@
+package com.shoutoutz.api.project.presentation;
+
+import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
+import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
+import static com.epages.restdocs.apispec.SimpleType.INTEGER;
+import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
+import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
+import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
+import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
+import static org.springframework.restdocs.payload.JsonFieldType.STRING;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.epages.restdocs.apispec.EnumFields;
+import com.epages.restdocs.apispec.ResourceSnippetParameters;
+import com.epages.restdocs.apispec.Schema;
+import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
+import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.restdocs.RestDocsFields;
+import com.shoutoutz.api.project.application.ProjectCursorCodec;
+import com.shoutoutz.api.project.application.ProjectService;
+import com.shoutoutz.api.project.application.dto.UserProjectItem;
+import com.shoutoutz.api.project.application.dto.UserProjectResult;
+import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.ProjectCursor;
+import com.shoutoutz.api.project.domain.ProjectMemberProfile;
+import com.shoutoutz.api.project.domain.ServiceStatus;
+import com.shoutoutz.api.project.domain.ProjectTechTag;
+import com.shoutoutz.api.project.domain.exception.InvalidProjectCursorException;
+import com.shoutoutz.api.project.presentation.dto.request.UserProjectFindRequest;
+import com.shoutoutz.api.user.domain.account.UserErrorCode;
+import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.user.domain.profile.Track;
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+@DisplayName("사용자 프로젝트 목록 API")
+@WebMvcTest(controllers = UserProjectHttpApi.class)
+@AutoConfigureRestDocs
+class UserProjectHttpApiTest {
+
+    private static final Instant CREATED_AT = Instant.parse("2026-09-16T00:00:00Z");
+    private static final String AUTHENTICATED_SESSION_ATTRIBUTE = AuthenticatedSession.class.getName();
+
+    private static final String SUMMARY = "사용자 프로젝트 목록 조회";
+    private static final String DESCRIPTION = "handle로 사용자가 참여한 프로젝트를 최신순으로 조회한다. 본인 조회는 승인 대기 및 반려 프로젝트를 포함하고, "
+            + "타인 또는 비로그인 조회는 승인된 프로젝트만 포함한다. "
+            + "현재 프로젝트 팀원과 가입 계정에 매칭된 이관 프로젝트 팀원을 모두 포함한다. "
+            + "탈퇴한 사용자는 빈 목록을 반환하고, 정지된 사용자는 기존 프로젝트를 공개한다. "
+            + "로그인하지 않아도 조회할 수 있으며, 응답의 meta.nextCursor를 다음 요청에 그대로 전달한다.";
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
+    private ProjectService projectService;
+
+    @Test
+    @DisplayName("로그인하지 않아도 사용자가 참여한 프로젝트를 조회한다.")
+    void findsUserProjects() throws Exception {
+        given(projectService.findAllByUser("@zzaekkii", new UserProjectFindRequest(20, null)))
+                .willReturn(new UserProjectResult(
+                        List.of(project()),
+                        true,
+                        3L,
+                        Map.of(
+                                12L, URI.create("https://cdn.example.com/display"),
+                                21L, URI.create("https://cdn.example.com/avatar-21")
+                        )
+                ));
+
+        mockMvc.perform(get("/api/v1/users/{handle}/projects", "@zzaekkii")
+                        .queryParam("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data[0].slug").value("loop"))
+                .andExpect(jsonPath("$.data[0].id").doesNotExist())
+                .andExpect(jsonPath("$.data[0].title").value("루프"))
+                .andExpect(jsonPath("$.data[0].approvalStatus").value("APPROVED"))
+                .andExpect(jsonPath("$.data[0].rejectReason").value(nullValue()))
+                .andExpect(jsonPath("$.data[0].thumbnailUrl")
+                        .value("https://cdn.example.com/display"))
+                .andExpect(jsonPath("$.data[0].thumbnailImageId").value(12L))
+                .andExpect(jsonPath("$.data[0].starCount").value(128))
+                .andExpect(jsonPath("$.data[0].techTags[0].displayName").value("Spring"))
+                .andExpect(jsonPath("$.data[0].members[0].handle").value("@zzaekkii"))
+                .andExpect(jsonPath("$.data[0].members[0].displayName").value("재키"))
+                .andExpect(jsonPath("$.data[0].members[0].userType").value("WOOWACOURSE_CREW"))
+                .andExpect(jsonPath("$.data[0].members[0].track").value("BACKEND"))
+                .andExpect(jsonPath("$.data[0].members[0].cohort").value(6))
+                .andExpect(jsonPath("$.data[0].members[0].avatarUrl")
+                        .value("https://cdn.example.com/avatar-21"))
+                .andExpect(jsonPath("$.data[0].members[1].avatarUrl")
+                        .value("https://avatars.githubusercontent.com/u/1"))
+                .andExpect(jsonPath("$.data[0].members[1].githubProfileUrl")
+                        .value("https://github.com/archived-crew"))
+                .andExpect(jsonPath("$.data[0].members[0].userId").value(7L))
+                .andExpect(jsonPath("$.meta.nextCursor").value(ProjectCursorCodec.encode(
+                        ProjectCursor.latest(CREATED_AT, 100L))))
+                .andExpect(jsonPath("$.meta.hasNext").value(true))
+                .andExpect(jsonPath("$.meta.totalCount").value(3))
+                .andDo(document("user-project-find-all", resource(successResource())));
+
+        verify(projectService).findAllByUser("@zzaekkii", new UserProjectFindRequest(20, null));
+    }
+
+    @Test
+    @DisplayName("반려 사유가 있으면 프로젝트 목록 응답에 함께 반환한다.")
+    void returnsRejectReason() throws Exception {
+        given(projectService.findAllByUser("@zzaekkii", new UserProjectFindRequest(null, null), 7L))
+                .willReturn(new UserProjectResult(
+                        List.of(project(ApprovalStatus.REJECTED, "한 줄 소개를 구체적으로 적어주세요.")),
+                        false,
+                        1L,
+                        Map.of(
+                                12L, URI.create("https://cdn.example.com/display"),
+                                21L, URI.create("https://cdn.example.com/avatar-21")
+                        )
+                ));
+
+        mockMvc.perform(get("/api/v1/users/{handle}/projects", "@zzaekkii")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].approvalStatus").value("REJECTED"))
+                .andExpect(jsonPath("$.data[0].rejectReason")
+                        .value("한 줄 소개를 구체적으로 적어주세요."))
+                .andDo(document("user-project-find-all-rejected", resource(successResource())));
+
+        verify(projectService).findAllByUser("@zzaekkii", new UserProjectFindRequest(null, null), 7L);
+    }
+
+    @Test
+    @DisplayName("파라미터를 생략하면 기본 조회 조건을 사용한다.")
+    void usesDefaultParameters() throws Exception {
+        given(projectService.findAllByUser("@zzaekkii", new UserProjectFindRequest(null, null)))
+                .willReturn(new UserProjectResult(List.of(), false, 0L, Map.of()));
+
+        mockMvc.perform(get("/api/v1/users/{handle}/projects", "@zzaekkii"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andExpect(jsonPath("$.meta.hasNext").value(false))
+                .andExpect(jsonPath("$.meta.totalCount").value(0));
+
+        verify(projectService).findAllByUser("@zzaekkii", new UserProjectFindRequest(null, null));
+    }
+
+    @Test
+    @DisplayName("handle 형식이 올바르지 않으면 조회할 수 없다.")
+    void rejectsInvalidHandle() throws Exception {
+        mockMvc.perform(get("/api/v1/users/{handle}/projects", "잘못된-핸들"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        verifyNoInteractions(projectService);
+    }
+
+    @Test
+    @DisplayName("조회 개수가 범위를 벗어나면 조회할 수 없다.")
+    void rejectsInvalidSize() throws Exception {
+        mockMvc.perform(get("/api/v1/users/{handle}/projects", "@zzaekkii")
+                        .queryParam("size", "51"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        verifyNoInteractions(projectService);
+    }
+
+    @Test
+    @DisplayName("커서가 올바르지 않으면 조회할 수 없다.")
+    void rejectsInvalidCursor() throws Exception {
+        given(projectService.findAllByUser("@zzaekkii", new UserProjectFindRequest(null, "broken")))
+                .willThrow(new InvalidProjectCursorException());
+
+        mockMvc.perform(get("/api/v1/users/{handle}/projects", "@zzaekkii")
+                        .queryParam("cursor", "broken"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("PROJECT_INVALID_CURSOR"))
+                .andDo(document("user-project-find-all-invalid-cursor", resource(errorResource())));
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자의 프로젝트는 조회할 수 없다.")
+    void rejectsUnknownUser() throws Exception {
+        given(projectService.findAllByUser("@missing-user", new UserProjectFindRequest(null, null)))
+                .willThrow(new EntityNotFoundException(UserErrorCode.USER_NOT_FOUND));
+
+        mockMvc.perform(get("/api/v1/users/{handle}/projects", "@missing-user"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("USER_NOT_FOUND"))
+                .andDo(document("user-project-find-all-not-found", resource(errorResource())));
+    }
+
+    private static UserProjectItem project() {
+        return project(ApprovalStatus.APPROVED, null);
+    }
+
+    private static UserProjectItem project(ApprovalStatus approvalStatus, String rejectReason) {
+        return new UserProjectItem(
+                100L,
+                "loop",
+                "루프",
+                "루프팀",
+                "스프린트 회고와 액션 아이템을 관리하는 협업 도구",
+                6,
+                ServiceStatus.OPERATING,
+                approvalStatus,
+                rejectReason,
+                12L,
+                7L,
+                128,
+                184L,
+                14L,
+                0L,
+                false,
+                false,
+                List.of(new ProjectTechTag(1L, "Spring")),
+                List.of(
+                        ProjectMemberProfile.user(7L, "@zzaekkii", "재키", Cohort.COHORT_6, Track.BACKEND, 21L),
+                        ProjectMemberProfile.archived(
+                                "Archived Crew",
+                                6,
+                                "https://avatars.githubusercontent.com/u/1",
+                                "https://github.com/archived-crew"
+                        )
+                ),
+                CREATED_AT
+        );
+    }
+
+    private static List<org.springframework.restdocs.payload.FieldDescriptor> responseFields() {
+        return List.of(
+                fieldWithPath("status").type(STRING).description("응답 상태"),
+                fieldWithPath("data").type(ARRAY).description("사용자가 참여한 프로젝트 목록"),
+                fieldWithPath("data[].slug").type(STRING).description("프로젝트 slug"),
+                fieldWithPath("data[].title").type(STRING).description("프로젝트 이름"),
+                fieldWithPath("data[].teamName").type(STRING).description("팀 이름"),
+                fieldWithPath("data[].tagline").type(STRING).description("한 줄 소개"),
+                fieldWithPath("data[].cohort").type(NUMBER).description("우아한테크코스 기수"),
+                new EnumFields(ServiceStatus.class).withPath("data[].serviceStatus").description("운영 상태"),
+                new EnumFields(ApprovalStatus.class).withPath("data[].approvalStatus").description("심사 상태"),
+                fieldWithPath("data[].rejectReason").type(STRING)
+                        .description("반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다.").optional(),
+                fieldWithPath("data[].thumbnailImageId").type(NUMBER).description("프로젝트 썸네일 이미지 ID").optional(),
+                fieldWithPath("data[].thumbnailUrl").type(STRING)
+                        .description("CloudFront에서 제공하는 프로젝트 카드용 공개 이미지 URL").optional(),
+                fieldWithPath("data[].starCount").type(NUMBER)
+                        .description("GitHub star 수. 동기화 전이면 null이다.").optional(),
+                fieldWithPath("data[].likeCount").type(NUMBER).description("좋아요 수"),
+                fieldWithPath("data[].commentCount").type(NUMBER).description("삭제되지 않은 댓글 수"),
+                fieldWithPath("data[].bookmarkCount").type(NUMBER).description("북마크 수"),
+                fieldWithPath("data[].likedByMe").type(BOOLEAN)
+                        .description("요청자의 좋아요 여부. 비로그인이면 false다."),
+                fieldWithPath("data[].bookmarkedByMe").type(BOOLEAN)
+                        .description("요청자의 북마크 여부. 비로그인이면 false다."),
+                fieldWithPath("data[].techTags").type(ARRAY).description("기술 스택"),
+                fieldWithPath("data[].techTags[].id").type(NUMBER).description("기술 스택 ID"),
+                fieldWithPath("data[].techTags[].displayName").type(STRING).description("기술 스택 이름"),
+                fieldWithPath("data[].members").type(ARRAY).description("프로젝트 팀원"),
+                fieldWithPath("data[].members[].userId").type(NUMBER).description("사용자 ID. 이관 팀원은 null이다.").optional(),
+                fieldWithPath("data[].members[].handle").type(STRING).description("사용자 handle").optional(),
+                fieldWithPath("data[].members[].displayName").type(STRING).description("표시 이름"),
+                fieldWithPath("data[].members[].userType").type(STRING).description("사용자 유형").optional(),
+                fieldWithPath("data[].members[].cohort").type(NUMBER).description("기수").optional(),
+                new EnumFields(Track.class).withPath("data[].members[].track").description("트랙").optional(),
+                fieldWithPath("data[].members[].avatarUrl").type(STRING)
+                        .description("프로필 이미지 URL. 가입한 팀원은 CloudFront에서 제공하는 공개 이미지 URL, "
+                                + "없으면 연결된 GitHub 프로필 이미지 URL, 가입하지 않은 이관 팀원은 저장된 GitHub 프로필 이미지 URL이다.")
+                        .optional(),
+                fieldWithPath("data[].members[].githubProfileUrl").type(STRING)
+                        .description("이관 팀원의 GitHub 프로필 URL").optional(),
+                fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
+                fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서").optional(),
+                fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"),
+                fieldWithPath("meta.totalCount").type(NUMBER)
+                        .description("커서와 size에 무관한 조회 가능한 전체 참여 프로젝트 수. 본인 조회는 승인 대기 및 반려 프로젝트를 포함하고, 타인 또는 비로그인 조회는 승인된 프로젝트만 포함")
+        );
+    }
+
+    private static ResourceSnippetParameters successResource() {
+        return ResourceSnippetParameters.builder()
+                .tag("User")
+                .summary(SUMMARY)
+                .description(DESCRIPTION)
+                .pathParameters(
+                        parameterWithName("handle").description("@[A-Za-z0-9_-]{2,30} 형식의 조회 대상 사용자 handle")
+                )
+                .requestHeaders(
+                        headerWithName("Cookie")
+                                .description("로그인 상태면 본인 프로젝트 조회에 사용하는 JSESSIONID")
+                                .optional()
+                )
+                .queryParameters(
+                        parameterWithName("size")
+                                .type(INTEGER)
+                                .description("한 번에 가져올 프로젝트 수. 기본값 20, 1~50")
+                                .optional(),
+                        parameterWithName("cursor")
+                                .description("다음 페이지 조회용 커서. 첫 요청은 생략")
+                                .optional()
+                )
+                .responseSchema(Schema.schema("UserProjectFindAllSuccessResponse"))
+                .responseFields(responseFields())
+                .build();
+    }
+
+    private static ResourceSnippetParameters errorResource() {
+        return ResourceSnippetParameters.builder()
+                .tag("User")
+                .summary(SUMMARY)
+                .description(DESCRIPTION)
+                .pathParameters(
+                        parameterWithName("handle").description("@[A-Za-z0-9_-]{2,30} 형식의 조회 대상 사용자 handle")
+                )
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse())
+                .build();
+    }
+}

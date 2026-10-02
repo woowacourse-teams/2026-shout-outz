@@ -1,0 +1,100 @@
+package com.shoutoutz.api.project.domain;
+
+import java.time.Instant;
+import java.util.List;
+
+/**
+ * 프로젝트 목록 카드에 필요한 조회 모델
+ * 등록자(registeredBy)가 없으면, 이전 기수에서 이관된 프로젝트다.
+ * GitHub 스타 수(starCount)는 아직 동기화하지 않은 프로젝트면 없다.
+ */
+public record ProjectSummary(
+        long id,
+        String slug,
+        String title,
+        String tagline,
+        int cohort,
+        Long thumbnailMediaId,
+        Long registeredBy,
+        Integer starCount,
+        long likeCount,
+        long commentCount,
+        long bookmarkCount,
+        boolean likedByMe,
+        boolean bookmarkedByMe,
+        List<ProjectTechTag> techTags,
+        List<ProjectMemberProfile> members,
+        Instant createdAt
+) {
+
+    public ProjectSummary(
+            long id,
+            String slug,
+            String title,
+            String tagline,
+            int cohort,
+            Long thumbnailMediaId,
+            Long registeredBy,
+            Integer starCount,
+            long likeCount,
+            long commentCount,
+            List<ProjectTechTag> techTags,
+            List<ProjectMemberProfile> members,
+            Instant createdAt
+    ) {
+        this(
+                id,
+                slug,
+                title,
+                tagline,
+                cohort,
+                thumbnailMediaId,
+                registeredBy,
+                starCount,
+                likeCount,
+                commentCount,
+                0L,
+                false,
+                false,
+                techTags,
+                members,
+                createdAt
+        );
+    }
+
+    public boolean isArchived() {
+        return registeredBy == null;
+    }
+
+    /**
+     * 이 프로젝트를 기준으로 다음 페이지를 조회하는 커서
+     * 정렬에 쓰인 값을 그대로 담아야 다음 페이지에서 이 프로젝트 바로 다음부터 조회할 수 있다.
+     */
+    public ProjectCursor toCursor(ProjectSort sort) {
+        if (sort == ProjectSort.POPULAR) {
+            return ProjectCursor.popular(likeCount, createdAt, id);
+        }
+        return ProjectCursor.latest(createdAt, id);
+    }
+
+    public ProjectSummary withTechTagsAndMembers(List<ProjectTechTag> techTags, List<ProjectMemberProfile> members) {
+        return new ProjectSummary(
+                id,
+                slug,
+                title,
+                tagline,
+                cohort,
+                thumbnailMediaId,
+                registeredBy,
+                starCount,
+                likeCount,
+                commentCount,
+                bookmarkCount,
+                likedByMe,
+                bookmarkedByMe,
+                List.copyOf(techTags),
+                List.copyOf(members),
+                createdAt
+        );
+    }
+}

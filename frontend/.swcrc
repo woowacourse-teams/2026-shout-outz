@@ -1,17 +1,17 @@
 {
-    "jsc": {
-        "transform": {
-            "react": { "runtime": "automatic" }
-        },
-        "parser": {
-            "syntax": "typescript",
-            "tsx": true
-        },
-        "externalHelpers": true
+  "jsc": {
+    "transform": {
+      "react": { "runtime": "automatic" }
     },
-    "env": {
-        "mode": "usage",
-        "coreJs": "3.50"
+    "parser": {
+      "syntax": "typescript",
+      "tsx": true
     },
-    "minify": true
+    "externalHelpers": true
+  },
+  "env": {
+    "mode": "usage",
+    "coreJs": "3.50"
+  },
+  "minify": true
 }

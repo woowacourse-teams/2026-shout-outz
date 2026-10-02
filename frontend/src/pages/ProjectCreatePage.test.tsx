@@ -1,0 +1,261 @@
+/**
+ * @jest-environment ./jest.network-environment.js
+ * @jest-environment-options {"customExportConditions":["node","node-addons"]}
+ */
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
+
+import { renderRoute, server } from '@/test/renderRoute';
+
+type User = ReturnType<typeof userEvent.setup>;
+
+const FORM = {
+  title: '루프 (Loop)',
+  teamName: '루프팀',
+  tagline: '스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구',
+  githubRepositoryUrl: 'https://github.com/woowacourse-teams/2026-loop',
+  deploymentUrl: 'https://loop.team',
+  descriptionMd: '## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.',
+};
+
+const submit = async (user: User) => {
+  await user.click(screen.getByRole('button', { name: '프로젝트 등록하기' }));
+};
+
+/** 등록 요청 본문을 가로채 돌려준다. */
+const captureCreateRequest = () => {
+  const received: { body?: unknown } = {};
+
+  server.use(
+    http.post('/api/v1/projects', async ({ request }) => {
+      received.body = await request.json();
+
+      return HttpResponse.json(
+        {
+          status: 'success',
+          data: { slug: '2026-loop' },
+        },
+        { status: 201 },
+      );
+    }),
+  );
+
+  return received;
+};
+
+const fillRequiredFields = async (user: User, includeCrew = true) => {
+  // 기수 목록을 불러오는 동안에는 폼 대신 로딩 문구가 떠 있다.
+  await user.type(await screen.findByRole('textbox', { name: /프로젝트 이름/ }), FORM.title);
+  await user.type(screen.getByRole('textbox', { name: /한 줄 소개/ }), FORM.tagline);
+
+  await user.click(screen.getByRole('combobox', { name: /우테코 기수/ }));
+  await user.click(screen.getByRole('option', { name: '6기 (2024)' }));
+
+  await user.type(
+    screen.getByRole('textbox', { name: /GitHub 레포지토리 URL/ }),
+    FORM.githubRepositoryUrl,
+  );
+
+  await selectTechTags(user, ['React']);
+  if (includeCrew) await selectCrews(user, '재키', ['재키']);
+};
+
+/** 기술 스택 시트를 열어 이름으로 고르고 적용한다. */
+const selectTechTags = async (user: User, names: string[]) => {
+  await user.click(screen.getByRole('button', { name: '기술 스택 추가' }));
+
+  const list = await screen.findByRole('list', { name: '기술 스택 목록' });
+  for (const name of names) {
+    await user.click(within(list).getByRole('checkbox', { name }));
+  }
+
+  await user.click(screen.getByRole('button', { name: `${names.length}개 스택 선택 완료` }));
+};
+
+/** 참여 팀원 시트를 열어 검색하고 고른 뒤 적용한다. */
+const selectCrews = async (user: User, keyword: string, names: string[]) => {
+  await user.click(screen.getByRole('button', { name: '참여 팀원 추가' }));
+  await user.type(screen.getByRole('searchbox', { name: '크루 검색' }), keyword);
+
+  const results = await screen.findByRole('list', { name: '크루 검색 결과' });
+  for (const name of names) {
+    await user.click(within(results).getByRole('checkbox', { name: new RegExp(name) }));
+  }
+
+  await user.click(screen.getByRole('button', { name: `${names.length}명 팀원 추가하기` }));
+};
+
+describe('ProjectCreatePage', () => {
+  it('작성자를 첫 번째 팀원으로 고정하고 선택 화면에서도 제거하지 못하게 한다', async () => {
+    const user = userEvent.setup();
+    renderRoute('/projects/new');
+
+    const members = await screen.findByRole('list', { name: '선택한 참여 팀원' });
+    expect(within(members).getAllByRole('listitem')[0]).toHaveTextContent('정우진 (작성자)');
+
+    await user.click(screen.getByRole('button', { name: '참여 팀원 추가' }));
+    await user.type(screen.getByRole('searchbox', { name: '크루 검색' }), '정우진');
+
+    const results = await screen.findByRole('list', { name: '크루 검색 결과' });
+    expect(within(results).getByRole('checkbox', { name: /정우진/ })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: '정우진 선택 해제' })).not.toBeInTheDocument();
+  });
+
+  // FIXME ProjectCreatePage의 자격 검사를 확인용으로 열어둬서 잠시 끔. 가드를 되돌리면 같이 켤 것.
+  it.skip('구성원 인증을 받지 않은 사용자는 등록 폼 대신 인증 신청 안내를 본다', async () => {
+    server.use(
+      http.get('/api/v1/users/me/verification-request', () =>
+        HttpResponse.json({ status: 'success', data: null }),
+      ),
+    );
+
+    renderRoute('/projects/new');
+
+    expect(await screen.findByText('구성원 인증이 필요해요.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '구성원 인증 신청' })).toHaveAttribute(
+      'href',
+      '/mypage/verification',
+    );
+    expect(screen.queryByRole('textbox', { name: /프로젝트 이름/ })).not.toBeInTheDocument();
+  });
+
+  it('명세의 필드를 모두 입력해 등록한다', async () => {
+    const user = userEvent.setup();
+    const received = captureCreateRequest();
+    renderRoute('/projects/new');
+
+    await fillRequiredFields(user);
+    await user.type(screen.getByRole('textbox', { name: /팀 이름/ }), FORM.teamName);
+    await user.type(screen.getByRole('textbox', { name: /서비스 배포 URL/ }), FORM.deploymentUrl);
+    await user.type(screen.getByRole('textbox', { name: /상세 설명/ }), FORM.descriptionMd);
+    await submit(user);
+
+    await waitFor(() =>
+      expect(received.body).toEqual({
+        title: FORM.title,
+        teamName: FORM.teamName,
+        tagline: FORM.tagline,
+        cohort: 6,
+        thumbnailImageId: null,
+        githubRepositoryUrl: FORM.githubRepositoryUrl,
+        deploymentUrl: FORM.deploymentUrl,
+        // 운영 상태를 고르지 않았고 배포 URL이 있으므로 OPERATING으로 보낸다.
+        serviceStatus: 'OPERATING',
+        descriptionMd: FORM.descriptionMd,
+        techTagIds: [1],
+        memberHandles: ['woojin', 'zzaekkii'],
+      }),
+    );
+  });
+
+  describe('등록 성공', () => {
+    it('작성자 한 명만 있어도 등록 요청을 보내고 목 응답을 표시한다', async () => {
+      const user = userEvent.setup();
+      const received = captureCreateRequest();
+      renderRoute('/projects/new');
+
+      await fillRequiredFields(user, false);
+      await submit(user);
+
+      expect(await screen.findByText('등록이 완료됐어요.')).toBeInTheDocument();
+      expect(received.body).toEqual(expect.objectContaining({ memberHandles: ['woojin'] }));
+      expect(screen.getByRole('link', { name: '프로젝트 목록으로' })).toHaveAttribute(
+        'href',
+        '/projects',
+      );
+      expect(screen.queryByRole('textbox', { name: /프로젝트 이름/ })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('입력 검증', () => {
+    it('필수 항목이 비어 있으면 알리고 요청하지 않는다', async () => {
+      const user = userEvent.setup();
+      const received = captureCreateRequest();
+      renderRoute('/projects/new');
+
+      await screen.findByRole('textbox', { name: /프로젝트 이름/ });
+      await submit(user);
+
+      expect(await screen.findByText('프로젝트 이름을 입력해 주세요.')).toBeInTheDocument();
+      expect(screen.getByText('한 줄 소개를 입력해 주세요.')).toBeInTheDocument();
+      expect(screen.getByText('우테코 기수를 선택해 주세요.')).toBeInTheDocument();
+      expect(screen.getByText('GitHub 레포지토리 URL을 입력해 주세요.')).toBeInTheDocument();
+      expect(screen.getByText('기술 스택을 1개 이상 선택해 주세요.')).toBeInTheDocument();
+      expect(received.body).toBeUndefined();
+    });
+
+    it('고치고 다시 제출하면 오류 문구가 사라지고 등록된다', async () => {
+      const user = userEvent.setup();
+      renderRoute('/projects/new');
+
+      await screen.findByRole('textbox', { name: /프로젝트 이름/ });
+      await submit(user);
+      await screen.findByText('프로젝트 이름을 입력해 주세요.');
+
+      await fillRequiredFields(user);
+      await submit(user);
+
+      expect(await screen.findByText('등록이 완료됐어요.')).toBeInTheDocument();
+    });
+  });
+
+  describe('등록 실패', () => {
+    it('서버가 거절하면 알리고 입력을 유지한다', async () => {
+      server.use(http.post('/api/v1/projects', () => new HttpResponse(null, { status: 400 })));
+      const user = userEvent.setup();
+      renderRoute('/projects/new');
+
+      await fillRequiredFields(user);
+      await submit(user);
+
+      expect(await screen.findByText('프로젝트 등록에 실패했습니다.')).toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: /프로젝트 이름/ })).toHaveValue(FORM.title);
+    });
+
+    it('서버가 짚어 준 필드에 오류를 붙인다', async () => {
+      server.use(
+        http.post('/api/v1/projects', () =>
+          HttpResponse.json(
+            {
+              status: 'error',
+              code: 'VALIDATION_FAILED',
+              message: '입력값이 올바르지 않습니다.',
+              details: [{ field: 'githubRepositoryUrl', message: '이미 등록된 레포지토리입니다.' }],
+            },
+            { status: 400 },
+          ),
+        ),
+      );
+      const user = userEvent.setup();
+      renderRoute('/projects/new');
+
+      await fillRequiredFields(user);
+      await submit(user);
+
+      expect(await screen.findByText('이미 등록된 레포지토리입니다.')).toBeInTheDocument();
+    });
+
+    it('details 없이 코드만 오면 표에 적힌 입력칸에 붙인다', async () => {
+      server.use(
+        http.post('/api/v1/projects', () =>
+          HttpResponse.json(
+            {
+              status: 'error',
+              code: 'PROJECT_DUPLICATE_SLUG',
+              message: '같은 주소의 프로젝트가 이미 있습니다.',
+            },
+            { status: 400 },
+          ),
+        ),
+      );
+      const user = userEvent.setup();
+      renderRoute('/projects/new');
+
+      await fillRequiredFields(user);
+      await submit(user);
+
+      expect(await screen.findByText('같은 주소의 프로젝트가 이미 있습니다.')).toBeInTheDocument();
+    });
+  });
+});

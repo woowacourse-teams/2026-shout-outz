@@ -1,0 +1,104 @@
+package com.shoutoutz.api.project.domain;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
+public interface ProjectRepository {
+
+    Project save(Project project, List<Long> techTagIds, List<Long> memberIds);
+
+    boolean existsBySlug(Slug slug);
+
+    /**
+     * slug 로 프로젝트 id 를 찾는다. 삭제 여부와 승인 상태는 보지 않는다.
+     * 삭제된 프로젝트도 slug 를 계속 차지하므로 결과는 최대 한 건이고, 복구할 프로젝트도 이 메서드로 찾는다.
+     */
+    Optional<Long> findIdBySlug(Slug slug);
+
+    /**
+     * 같은 리포지토리를 가리키는 프로젝트가 이미 있는지 확인한다.
+     * GithubRepositoryUrl이 표기를 정규화해서 갖고 있으므로, 값 비교만으로 같은 리포지토리를 찾는다.
+     */
+    boolean existsByGithubRepositoryUrl(GithubRepositoryUrl githubRepositoryUrl);
+
+    /**
+     * 수정할 프로젝트 자신은 빼고, 같은 리포지토리를 가리키는 다른 프로젝트가 있는지 확인한다.
+     */
+    boolean existsByGithubRepositoryUrlExcluding(GithubRepositoryUrl githubRepositoryUrl, long projectId);
+
+    /**
+     * 삭제되지 않은 프로젝트를 한 건 조회한다. 승인 상태와 무관하게 찾는다.
+     */
+    Optional<Project> findActiveById(long projectId);
+
+    /**
+     * 예상한 승인 상태일 때만 프로젝트 승인 상태를 바꾼다.
+     * 동시 심사 요청 중 하나만 성공하도록 데이터베이스에서 상태 조건을 함께 검사한다.
+     */
+    boolean transitionApprovalStatus(
+            long projectId,
+            ApprovalStatus fromStatus,
+            ApprovalStatus toStatus
+    );
+
+    /**
+     * 프로젝트에 달린 기술 스택 id 를 저장된 순서대로 조회한다.
+     */
+    List<Long> findTechTagIds(long projectId);
+
+    /**
+     * 프로젝트의 팀원 id 를 저장된 순서대로 조회한다.
+     */
+    List<Long> findMemberIds(long projectId);
+
+    /**
+     * 프로젝트 내용과 기술 스택, 팀원을 함께 수정한다.
+     * 기술 스택과 팀원은 받은 목록으로 통째로 바꾸며, 목록 순서가 그대로 노출 순서가 된다.
+     */
+    Project update(Project project, List<Long> techTagIds, List<Long> memberIds);
+
+    boolean existsPublicById(long projectId);
+  
+    /**
+     * slug로 프로젝트 상세 정보를 조회한다. 삭제되지 않은 프로젝트는 모두 조회하고,
+     * 삭제된 프로젝트는 등록자 본인(viewerId)일 때만 조회한다.
+     * @param viewerId 요청한 사용자 ID. 비로그인이면 null이며, 이때 likedByMe와 bookmarkedByMe는 false다.
+     */
+    Optional<ProjectDetail> findDetailBySlug(Slug slug, Long viewerId);
+
+    /**
+     * 관리자용 프로젝트 상세 조회. 승인 상태와 무관하게 삭제되지 않은 프로젝트를 찾는다.
+     */
+    Optional<ProjectDetail> findDetailById(long projectId, Long viewerId);
+
+    /**
+     * 승인되고 삭제되지 않은 프로젝트 목록을 조건에 맞게 한 페이지 조회한다.
+     */
+    ProjectPage findAll(ProjectSearchCondition condition);
+
+    ProjectPage findAll(ProjectSearchCondition condition, Long viewerId);
+
+    /**
+     * 승인되고 삭제되지 않은 프로젝트 중 조건에 맞는 프로젝트 수를 필터 선택지별로 조회한다.
+     */
+    ProjectFilterOptions findFilterOptions(ProjectFilterCondition condition);
+
+    /**
+     * 등록자 본인의 삭제되지 않은 프로젝트를 소프트 삭제하고, 삭제 이력에 남길 삭제 시점 정보를 돌려준다.
+     * 삭제는 심사 중이어도 가능하므로, 승인 상태는 보지 않는다.
+     * 없는 프로젝트, 남의 프로젝트, 이미 삭제된 프로젝트는 모두 빈 값이다.
+     */
+    Optional<DeletedProject> softDelete(long projectId, long registeredBy, Instant deletedAt);
+
+    /**
+     * 등록자 본인의 삭제된 프로젝트와 아직 복구되지 않은 삭제 이력을 함께 조회한다.
+     * 없는 프로젝트, 남의 프로젝트, 삭제되지 않은 프로젝트는 모두 빈 값이다.
+     */
+    Optional<RestorableProject> findRestorable(long projectId, long registeredBy);
+
+    /**
+     * 삭제된 프로젝트를 복구하고 복구 시점의 승인 상태를 돌려준다. 복구할 프로젝트가 없으면 빈 값이다.
+     */
+    Optional<ApprovalStatus> restore(long projectId, Instant restoredAt);
+}

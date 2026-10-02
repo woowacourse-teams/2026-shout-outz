@@ -1,0 +1,42 @@
+version: 0.2
+
+env:
+  shell: bash
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto21
+    commands:
+      - java -version
+
+  pre_build:
+    commands:
+      - set -Eeuo pipefail
+      - chmod +x backend/gradlew
+      - docker rm --force shout-outz-build-db >/dev/null 2>&1 || true
+      - docker run --detach --rm --name shout-outz-build-db --env POSTGRES_DB=shoutoutz --env POSTGRES_USER=shoutoutz --env POSTGRES_PASSWORD=localdev --publish 5432:5432 postgres:17
+      - timeout 60 bash -c 'until docker exec shout-outz-build-db pg_isready -U shoutoutz -d shoutoutz >/dev/null 2>&1; do sleep 2; done'
+
+  build:
+    commands:
+      - set -Eeuo pipefail
+      - ./backend/gradlew -p backend --no-daemon --max-workers=1 clean test bootJar
+      - |
+        BOOT_JAR="$(find backend/build/libs -maxdepth 1 -type f -name 'shout-outz-*.jar' ! -name '*-plain.jar' -print -quit)"
+        test -n "$BOOT_JAR"
+        install -d build-artifact/deploy/scripts
+        install -m 0644 "$BOOT_JAR" build-artifact/app.jar
+        install -m 0644 appspec.yml build-artifact/appspec.yml
+        install -m 0755 backend/deploy/scripts/*.sh build-artifact/deploy/scripts/
+        install -m 0644 backend/deploy/shout-outz-backend.service build-artifact/deploy/shout-outz-backend.service
+        ls -lR build-artifact
+
+  post_build:
+    commands:
+      - docker rm --force shout-outz-build-db >/dev/null 2>&1 || true
+
+artifacts:
+  base-directory: build-artifact
+  files:
+    - "**/*"

@@ -1,51 +1,149 @@
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import 'webpack-dev-server';
-import HtmlWebpackPlugin from 'html-webpack-plugin';
+import CopyPlugin from 'copy-webpack-plugin';
 import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
+import { tanstackRouter } from '@tanstack/router-plugin/webpack';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 const isProduction = process.env.NODE_ENV === 'production';
+
+function readGitCommit() {
+  try {
+    return execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: __dirname,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return undefined;
+  }
+}
+
+process.env.SENTRY_ENVIRONMENT ||=
+  process.env.GITHUB_ACTIONS === 'true'
+    ? process.env.GITHUB_REF_NAME === 'main'
+      ? 'production'
+      : 'development'
+    : 'local';
+const sentryRelease = process.env.SENTRY_RELEASE || process.env.GITHUB_SHA || readGitCommit();
+if (sentryRelease) process.env.SENTRY_RELEASE = sentryRelease;
 
 /** @type {import("webpack").Configuration} */
 const config = {
-    entry: './src/main.tsx',
-    output: {
-        path: path.resolve(__dirname, 'dist'),
-    },
-    devServer: {
-        open: true,
-    },
-    plugins: [
-        new HtmlWebpackPlugin({
-            template: './src/index.html',
-        }),
-        new ForkTsCheckerWebpackPlugin(),
+  dotenv: {
+    dir: __dirname,
+    template: ['src/.env', '.env'],
+    prefix: [
+      'API_ORIGIN',
+      'POSTHOG_',
+      'SENTRY_DSN',
+      'SENTRY_ENVIRONMENT',
+      'SENTRY_RELEASE',
+      'CURRENT_COHORT',
     ],
-    module: {
-        rules: [
-            {
-                test: /\.(ts|tsx|js|jsx)$/i,
-                loader: 'swc-loader',
-                exclude: /[\\/]node_modules[\\/]/,
-            },
-            {
-                test: /\.css$/i,
-                use: ['style-loader', 'css-loader', 'postcss-loader'],
-            },
+  },
+  entry: './ssg/client.tsx',
+  // Sentry 업로드용 소스맵을 생성하고 번들에는 소스맵 URL을 첨부하지 않는다.
+  devtool: isProduction ? 'hidden-source-map' : undefined,
+  // 타입 검사 플러그인의 디렉터리 감시에도 적용해 의존성과 생성물을 제외합니다.
+  watchOptions: {
+    ignored: /[\\/](?:node_modules|dist|\.git|\.tanstack|\.build)(?:[\\/]|$)/,
+  },
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    // 삭제된 라우트의 HTML이나 이전 contenthash 자산이 배포물에 남지 않게 합니다.
+    clean: true,
+    publicPath: '/',
+    // 프로덕션에서는 캐시 무효화를 위해 contenthash를 붙입니다. 실제 파일명은 아래
+    // WebpackManifestPlugin이 dist/build-assets.json으로 남기므로, ssg/render.tsx/
+    // ssg/generate.ts 어디에도 "main.js"를 하드코딩하지 않습니다.
+    filename: isProduction ? '[name].[contenthash:8].js' : '[name].js',
+    chunkFilename: isProduction ? '[name].[contenthash:8].chunk.js' : '[name].chunk.js',
+  },
+  devServer: {
+    port: 5173,
+    open: true,
+    historyApiFallback: true,
+    // Document는 프레임워크가 아니라 그냥 React 컴포넌트라서, 요청마다 렌더링해 줄 서버가
+    // 없는 dev server에서는 미리 만들어둔 dist/index.html(predev가 채워둔 CSR 셸)을 정적으로
+    // 서빙합니다. 번들(main.js)만 dev server가 갈아끼웁니다.
+    static: [
+      { directory: path.resolve(__dirname, 'dist'), watch: false },
+      { directory: path.resolve(__dirname, 'public'), publicPath: '/' },
+    ],
+  },
+  plugins: [
+    new ForkTsCheckerWebpackPlugin(),
+    // public/은 dev server만 서빙하고, 배포는 dist만 올라갑니다. 그래서 정적 파일을 dist로 복사합니다.
+    // MSW 워커는 개발에서만 쓰므로 배포물에 넣지 않습니다.
+    new CopyPlugin({
+      patterns: [
+        {
+          from: path.resolve(__dirname, 'public'),
+          globOptions: { ignore: ['**/mockServiceWorker.js'] },
+        },
+      ],
+    }),
+    tanstackRouter({
+      target: 'react',
+      autoCodeSplitting: true,
+    }),
+    // 개발 환경은 style-loader로 CSS를 JS에서 <style>로 주입해 HMR을 살리고,
+    // 프로덕션은 별도 .css 파일로 뽑아 브라우저가 병렬로 캐시/로드하게 합니다.
+    new MiniCssExtractPlugin({
+      filename: isProduction ? '[name].[contenthash:8].css' : '[name].css',
+    }),
+    new WebpackManifestPlugin({
+      fileName: 'build-assets.json',
+      generate: (_seed, _files, entrypoints) => {
+        const mainFiles = entrypoints.main ?? [];
+        const script = mainFiles.find((file) => file.endsWith('.js'));
+        const style = mainFiles.find((file) => file.endsWith('.css'));
+
+        if (!script) {
+          throw new Error('WebpackManifestPlugin: main entry script를 찾지 못했습니다.');
+        }
+
+        return { script: `/${script}`, ...(style ? { style: `/${style}` } : {}) };
+      },
+    }),
+  ],
+  module: {
+    rules: [
+      {
+        test: /\.(ts|tsx|js|jsx)$/i,
+        loader: 'swc-loader',
+        exclude: /[\\/]node_modules[\\/]/,
+      },
+      {
+        test: /\.css$/i,
+        use: [
+          isProduction ? MiniCssExtractPlugin.loader : 'style-loader',
+          'css-loader',
+          'postcss-loader',
         ],
+      },
+    ],
+  },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.jsx', '.js'],
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
     },
-    resolve: {
-        extensions: ['.tsx', '.ts', '.jsx', '.js'],
-    },
+  },
 };
 
 export default () => {
-    if (isProduction) {
-        config.mode = 'production';
-    } else {
-        config.mode = 'development';
-    }
-    return config;
+  if (isProduction) {
+    config.mode = 'production';
+  } else {
+    config.mode = 'development';
+  }
+  return config;
 };

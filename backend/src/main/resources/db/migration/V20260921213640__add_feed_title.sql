@@ -1,0 +1,2 @@
+ALTER TABLE feeds
+    ADD COLUMN title VARCHAR(100) NOT NULL;

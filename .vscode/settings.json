@@ -1,0 +1,23 @@
+{
+    "typescript.preferences.importModuleSpecifier": "non-relative",
+    "javascript.preferences.importModuleSpecifier": "non-relative",
+	"js/ts.preferences.importModuleSpecifier": "non-relative",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+    "eslint.workingDirectories": [ "./frontend"],
+    "prettier.requireConfig": true,
+    "[javascript][javascriptreact][typescript][typescriptreact][json][jsonc][css][html][markdown]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "files.readonlyInclude": {
+        "**/routeTree.gen.ts": true
+    },
+    "files.watcherExclude": {
+        "**/routeTree.gen.ts": true
+    },
+    "search.exclude": {
+        "**/routeTree.gen.ts": true
+    }
+}

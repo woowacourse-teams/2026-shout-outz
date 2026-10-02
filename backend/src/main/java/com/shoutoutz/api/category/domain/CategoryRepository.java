@@ -1,0 +1,24 @@
+package com.shoutoutz.api.category.domain;
+
+import com.shoutoutz.api.feed.domain.FeedType;
+import java.util.List;
+import java.util.Optional;
+
+public interface CategoryRepository {
+
+    Category save(Category category);
+
+    Category update(Category category);
+
+    Optional<Category> findById(long categoryId);
+
+    List<Category> findAllActive();
+
+    List<Category> findAllActiveByFeedType(FeedType feedType);
+
+    List<Category> findAllActiveByIds(List<Long> categoryIds);
+
+    List<Category> findAllActiveByIds(List<Long> categoryIds, FeedType feedType);
+
+    void saveFeedType(long categoryId, FeedType feedType);
+}
