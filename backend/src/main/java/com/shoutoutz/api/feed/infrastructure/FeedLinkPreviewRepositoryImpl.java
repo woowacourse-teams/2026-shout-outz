@@ -26,19 +26,7 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
 
     @Override
     public void link(long feedId, String url) {
-        String hash = sha256(url);
-        jdbcTemplate.update("""
-                INSERT INTO link_preview_cache (url_hash, url)
-                VALUES (:hash, :url)
-                ON CONFLICT (url_hash) DO NOTHING
-                """, Map.of("hash", hash, "url", url));
-        CacheIdentity cache = jdbcTemplate.queryForObject("""
-                SELECT id, url FROM link_preview_cache WHERE url_hash = :hash
-                """, Map.of("hash", hash), (rs, rowNum) ->
-                new CacheIdentity(rs.getLong("id"), rs.getString("url")));
-        if (cache == null || !cache.url().equals(url)) {
-            throw new IllegalStateException("링크 미리보기 URL 해시 충돌");
-        }
+        CacheIdentity cache = findOrCreateCache(url);
         jdbcTemplate.update("""
                 INSERT INTO feed_link_preview_refs (feed_id, cache_id)
                 VALUES (:feedId, :cacheId)
@@ -47,9 +35,29 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
     }
 
     @Override
+    public void linkFeedComment(long commentId, String url) {
+        linkComment("feed_comment_link_preview_refs", commentId, url);
+    }
+
+    @Override
+    public void linkProjectComment(long commentId, String url) {
+        linkComment("project_comment_link_preview_refs", commentId, url);
+    }
+
+    @Override
     public void unlink(long feedId) {
         jdbcTemplate.update("DELETE FROM feed_link_preview_refs WHERE feed_id = :feedId",
                 Map.of("feedId", feedId));
+    }
+
+    @Override
+    public void unlinkFeedComment(long commentId) {
+        unlinkComment("feed_comment_link_preview_refs", commentId);
+    }
+
+    @Override
+    public void unlinkProjectComment(long commentId) {
+        unlinkComment("project_comment_link_preview_refs", commentId);
     }
 
     @Override
@@ -61,28 +69,28 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
     }
 
     @Override
+    public boolean hasFeedCommentReference(long commentId) {
+        return hasCommentReference("feed_comment_link_preview_refs", commentId);
+    }
+
+    @Override
+    public boolean hasProjectCommentReference(long commentId) {
+        return hasCommentReference("project_comment_link_preview_refs", commentId);
+    }
+
+    @Override
     public Map<Long, LinkPreview> findByFeedIds(List<Long> feedIds) {
-        if (feedIds.isEmpty()) {
-            return Map.of();
-        }
-        return jdbcTemplate.query("""
-                SELECT r.feed_id, c.url, c.title, c.description, c.image_url, c.site_name
-                FROM feed_link_preview_refs r
-                JOIN link_preview_cache c ON c.id = r.cache_id
-                WHERE r.feed_id IN (:feedIds)
-                """, Map.of("feedIds", feedIds), rs -> {
-            Map<Long, LinkPreview> previews = new HashMap<>();
-            while (rs.next()) {
-                previews.put(rs.getLong("feed_id"), new LinkPreview(
-                        rs.getString("url"),
-                        rs.getString("title"),
-                        rs.getString("description"),
-                        rs.getString("image_url"),
-                        rs.getString("site_name")
-                ));
-            }
-            return previews;
-        });
+        return findByReferenceIds("feed_link_preview_refs", "feed_id", "feedIds", feedIds);
+    }
+
+    @Override
+    public Map<Long, LinkPreview> findByFeedCommentIds(List<Long> commentIds) {
+        return findByReferenceIds("feed_comment_link_preview_refs", "comment_id", "commentIds", commentIds);
+    }
+
+    @Override
+    public Map<Long, LinkPreview> findByProjectCommentIds(List<Long> commentIds) {
+        return findByReferenceIds("project_comment_link_preview_refs", "comment_id", "commentIds", commentIds);
     }
 
     /** 하나의 SQL 문에서 작업을 선점해 여러 서버가 같은 URL을 동시에 가져오지 않게 한다. */
@@ -105,11 +113,32 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                         OR (candidate.status = 'READY'
                             AND candidate.fetched_at < :staleBefore)
                     )
-                    AND EXISTS (
-                        SELECT 1
-                        FROM feed_link_preview_refs r
-                        JOIN feeds f ON f.id = r.feed_id
-                        WHERE r.cache_id = candidate.id AND f.deleted_at IS NULL
+                    AND (
+                        EXISTS (
+                            SELECT 1
+                            FROM feed_link_preview_refs r
+                            JOIN feeds f ON f.id = r.feed_id
+                            WHERE r.cache_id = candidate.id AND f.deleted_at IS NULL
+                        )
+                        OR EXISTS (
+                            SELECT 1
+                            FROM feed_comment_link_preview_refs r
+                            JOIN feed_comments fc ON fc.id = r.comment_id
+                            JOIN feeds f ON f.id = fc.feed_id
+                            WHERE r.cache_id = candidate.id
+                              AND fc.deleted_at IS NULL
+                              AND f.deleted_at IS NULL
+                        )
+                        OR EXISTS (
+                            SELECT 1
+                            FROM project_comment_link_preview_refs r
+                            JOIN project_comments pc ON pc.id = r.comment_id
+                            JOIN projects p ON p.id = pc.project_id
+                            WHERE r.cache_id = candidate.id
+                              AND pc.deleted_at IS NULL
+                              AND p.deleted_at IS NULL
+                              AND p.approval_status = 'APPROVED'
+                        )
                     )
                     ORDER BY candidate.next_attempt_at NULLS LAST, candidate.id
                     LIMIT 1
@@ -169,11 +198,46 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
     }
 
     @Override
+    public List<CommentContent> findFeedCommentsAfter(long afterId, int limit) {
+        return jdbcTemplate.query("""
+                SELECT id, content FROM feed_comments
+                WHERE id > :afterId AND deleted_at IS NULL
+                ORDER BY id
+                LIMIT :limit
+                FOR UPDATE
+                """, Map.of("afterId", afterId, "limit", limit),
+                (rs, rowNum) -> new CommentContent(rs.getLong("id"), rs.getString("content")));
+    }
+
+    @Override
+    public List<CommentContent> findProjectCommentsAfter(long afterId, int limit) {
+        return jdbcTemplate.query("""
+                SELECT pc.id, pc.content
+                FROM project_comments pc
+                JOIN projects p ON p.id = pc.project_id
+                WHERE pc.id > :afterId
+                  AND pc.deleted_at IS NULL
+                  AND p.deleted_at IS NULL
+                  AND p.approval_status = 'APPROVED'
+                ORDER BY pc.id
+                LIMIT :limit
+                FOR UPDATE OF pc
+                """, Map.of("afterId", afterId, "limit", limit),
+                (rs, rowNum) -> new CommentContent(rs.getLong("id"), rs.getString("content")));
+    }
+
+    @Override
     public int deleteUnusedBefore(Instant cutoff) {
         return jdbcTemplate.update("""
                 DELETE FROM link_preview_cache c
                 WHERE NOT EXISTS (
                     SELECT 1 FROM feed_link_preview_refs r WHERE r.cache_id = c.id
+                )
+                AND NOT EXISTS (
+                    SELECT 1 FROM feed_comment_link_preview_refs r WHERE r.cache_id = c.id
+                )
+                AND NOT EXISTS (
+                    SELECT 1 FROM project_comment_link_preview_refs r WHERE r.cache_id = c.id
                 )
                 AND (
                     (c.status = 'READY' AND c.fetched_at < :cutoff)
@@ -181,6 +245,76 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                     OR (c.status = 'PROCESSING' AND c.lease_until < :cutoff)
                 )
                 """, Map.of("cutoff", Timestamp.from(cutoff)));
+    }
+
+    private CacheIdentity findOrCreateCache(String url) {
+        String hash = sha256(url);
+        jdbcTemplate.update("""
+                INSERT INTO link_preview_cache (url_hash, url)
+                VALUES (:hash, :url)
+                ON CONFLICT (url_hash) DO NOTHING
+                """, Map.of("hash", hash, "url", url));
+        CacheIdentity cache = jdbcTemplate.queryForObject("""
+                SELECT id, url FROM link_preview_cache WHERE url_hash = :hash
+                """, Map.of("hash", hash), (rs, rowNum) ->
+                new CacheIdentity(rs.getLong("id"), rs.getString("url")));
+        if (cache == null || !cache.url().equals(url)) {
+            throw new IllegalStateException("링크 미리보기 URL 해시 충돌");
+        }
+        return cache;
+    }
+
+    private void linkComment(String tableName, long commentId, String url) {
+        CacheIdentity cache = findOrCreateCache(url);
+        jdbcTemplate.update("""
+                INSERT INTO %s (comment_id, cache_id)
+                VALUES (:commentId, :cacheId)
+                ON CONFLICT (comment_id) DO UPDATE SET cache_id = EXCLUDED.cache_id
+                """.formatted(tableName), Map.of("commentId", commentId, "cacheId", cache.id()));
+    }
+
+    private void unlinkComment(String tableName, long commentId) {
+        jdbcTemplate.update("DELETE FROM %s WHERE comment_id = :commentId".formatted(tableName),
+                Map.of("commentId", commentId));
+    }
+
+    private boolean hasCommentReference(String tableName, long commentId) {
+        Boolean exists = jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM %s WHERE comment_id = :commentId)".formatted(tableName),
+                Map.of("commentId", commentId),
+                Boolean.class
+        );
+        return Boolean.TRUE.equals(exists);
+    }
+
+    private Map<Long, LinkPreview> findByReferenceIds(
+            String tableName,
+            String referenceColumn,
+            String parameterName,
+            List<Long> referenceIds
+    ) {
+        if (referenceIds.isEmpty()) {
+            return Map.of();
+        }
+        return jdbcTemplate.query("""
+                SELECT r.%s, c.url, c.title, c.description, c.image_url, c.site_name
+                FROM %s r
+                JOIN link_preview_cache c ON c.id = r.cache_id
+                WHERE r.%s IN (:%s)
+                """.formatted(referenceColumn, tableName, referenceColumn, parameterName),
+                Map.of(parameterName, referenceIds), rs -> {
+            Map<Long, LinkPreview> previews = new HashMap<>();
+            while (rs.next()) {
+                previews.put(rs.getLong(referenceColumn), new LinkPreview(
+                        rs.getString("url"),
+                        rs.getString("title"),
+                        rs.getString("description"),
+                        rs.getString("image_url"),
+                        rs.getString("site_name")
+                ));
+            }
+            return previews;
+        });
     }
 
     private String sha256(String value) {
