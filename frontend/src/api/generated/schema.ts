@@ -648,6 +648,19 @@ export interface FeedCommentCreateSuccessResponse {
     id: number;
     /** 작성자 정보를 익명으로 공개할지 여부 */
     isAnonymous: boolean;
+    /** 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 댓글 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 부모 댓글 ID */
     parentId?: number | null;
     /** 수정 시각 (UTC ISO-8601) */
@@ -713,6 +726,19 @@ export interface FeedCommentFindAllSuccessResponse {
     id: number;
     /** 작성자 정보를 익명으로 공개할지 여부 */
     isAnonymous: boolean;
+    /** 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 댓글 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 부모 루트 댓글 ID */
     parentId?: number | null;
     /** 수정 시각 (UTC ISO-8601) */
@@ -791,6 +817,19 @@ export interface FeedCommentUpdateSuccessResponse {
     id: number;
     /** 작성자 정보를 익명으로 공개할지 여부 */
     isAnonymous: boolean;
+    /** 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 댓글 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 부모 댓글 ID */
     parentId?: number | null;
     /** 수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지) */
@@ -1815,6 +1854,19 @@ export interface ProjectCommentCreateSuccessResponse {
     editable: boolean;
     /** 댓글 ID */
     id: number;
+    /** 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 댓글 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 부모 댓글 ID */
     parentId?: number | null;
     /** 수정 시각 (UTC ISO-8601) */
@@ -1876,6 +1928,19 @@ export interface ProjectCommentFindAllSuccessResponse {
     edited: boolean;
     /** 댓글 ID */
     id: number;
+    /** 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 댓글 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 부모 루트 댓글 ID */
     parentId?: number | null;
     /** 수정 시각 (UTC ISO-8601) */
@@ -1950,6 +2015,19 @@ export interface ProjectCommentUpdateSuccessResponse {
     edited: boolean;
     /** 댓글 ID */
     id: number;
+    /** 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 댓글 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
     /** 부모 댓글 ID */
     parentId?: number | null;
     /** 수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지) */

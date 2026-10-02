@@ -18,6 +18,8 @@ import { Button } from '@/components/Button';
 import { Avatar } from '@/components/Avatar';
 import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
+import { LinkifiedText } from '@/components/LinkifiedText';
+import { LinkPreview } from '@/components/feeds/LinkPreview';
 import { formatDateTime } from '@/utils/date';
 import { getApiErrorMessage } from '@/utils/error';
 import { getGithubLoginUrl } from '@/utils/auth';
@@ -521,8 +523,13 @@ function CommentItem({
         </form>
       ) : (
         <p className="mt-4 text-sm leading-6 break-words whitespace-pre-wrap text-gray-700">
-          {item.deleted ? `삭제된 ${label}입니다.` : item.content}
+          {item.deleted ? `삭제된 ${label}입니다.` : <LinkifiedText text={item.content ?? ''} />}
         </p>
+      )}
+      {!item.deleted && !editing && item.linkPreview?.url && (
+        <div className="mt-3 max-w-md">
+          <LinkPreview size="sm" {...item.linkPreview} url={item.linkPreview.url} />
+        </div>
       )}
       {!item.deleted && !editing && !deleting && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">

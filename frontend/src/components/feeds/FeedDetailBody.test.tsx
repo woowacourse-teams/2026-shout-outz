@@ -56,4 +56,14 @@ describe('FeedDetailBody', () => {
 
     expect(screen.getByText('const retry = 3;')).toBeInTheDocument();
   });
+
+  it('본문 속 URL을 새 탭으로 열리는 링크로 바꾼다', () => {
+    render(
+      <FeedDetailBody feed={feed({ content: '정리한 글은 https://blog.test/redis 에 있어요.' })} />,
+    );
+
+    const link = screen.getByRole('link', { name: 'https://blog.test/redis' });
+    expect(link).toHaveAttribute('href', 'https://blog.test/redis');
+    expect(link).toHaveAttribute('target', '_blank');
+  });
 });
