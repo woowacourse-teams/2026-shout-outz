@@ -448,7 +448,7 @@ function CommentItem({
       <Avatar
         size="sm"
         src={item.author.avatarUrl}
-        name={item.isAnonymous ? '익명' : item.author.displayName}
+        name={item.isAnonymous ? '익명' : (item.author.displayName ?? undefined)}
         alt=""
       />
       <div className="min-w-0 flex-1">

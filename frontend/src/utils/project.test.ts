@@ -90,6 +90,7 @@ describe('toProjectCreateRequest', () => {
       thumbnailImageId: 12,
       githubRepositoryUrl: 'https://github.com/woowacourse-teams/2026-loop',
       deploymentUrl: 'https://loop.team',
+      serviceStatus: 'OPERATING',
       descriptionMd: '## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.',
       techTagIds: [1, 2],
       memberHandles: ['woojin', 'dhyepark', 'zzaekkii'],
@@ -100,6 +101,21 @@ describe('toProjectCreateRequest', () => {
     expect(
       toProjectCreateRequest({ ...FILLED, deploymentUrl: '' }, 'woojin').deploymentUrl,
     ).toBeNull();
+  });
+
+  it('배포 URL이 없으면 운영 상태를 고른 값과 상관없이 CLOSED로 보낸다', () => {
+    expect(
+      toProjectCreateRequest(
+        { ...FILLED, deploymentUrl: ' ', serviceStatus: 'OPERATING' },
+        'woojin',
+      ).serviceStatus,
+    ).toBe('CLOSED');
+  });
+
+  it('배포 URL이 있으면 고른 운영 상태를 보낸다', () => {
+    expect(
+      toProjectCreateRequest({ ...FILLED, serviceStatus: 'CLOSED' }, 'woojin').serviceStatus,
+    ).toBe('CLOSED');
   });
 
   it('앞뒤 공백은 잘라서 보낸다', () => {
@@ -193,6 +209,21 @@ describe('toProjectFormErrors', () => {
     expect(toProjectFormErrors(error)).toEqual({
       teamName: '팀 이름은 필수입니다.',
       members: '팀원을 1명 이상 선택해 주세요.',
+    });
+  });
+
+  it('serviceStatusValid는 운영 상태 입력칸에 붙인다', () => {
+    const error = httpError({
+      status: 'error',
+      code: 'VALIDATION_FAILED',
+      message: '입력값이 올바르지 않습니다.',
+      details: [
+        { field: 'serviceStatusValid', message: '배포 URL이 없으면 운영 중일 수 없습니다.' },
+      ],
+    });
+
+    expect(toProjectFormErrors(error)).toEqual({
+      serviceStatus: '배포 URL이 없으면 운영 중일 수 없습니다.',
     });
   });
 
