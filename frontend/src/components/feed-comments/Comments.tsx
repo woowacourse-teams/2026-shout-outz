@@ -1,3 +1,4 @@
+import { formatTrackLabel } from '@/utils/user';
 import { Component, Suspense, useState, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
@@ -461,14 +462,9 @@ function CommentItem({
       : null;
   const agreeCount = currentOverride?.count ?? baseCount;
   const agreed = currentOverride?.agreed ?? baseAgreed;
-  const trackLabels: Record<string, string> = {
-    ANDROID: 'AN',
-    BACKEND: 'BE',
-    FRONTEND: 'FE',
-  };
   const trackLabel =
     !item.isAnonymous && item.author.handle && item.author.track
-      ? trackLabels[item.author.track]
+      ? formatTrackLabel(item.author.track)
       : undefined;
   const crewInfo = item.isAnonymous
     ? null

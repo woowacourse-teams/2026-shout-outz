@@ -2,6 +2,7 @@ import { formatCrewName, formatCrewRole } from '@/utils/user';
 
 describe('formatCrewRole', () => {
   it.each([
+    ['ANDROID', '6기 안드로이드'],
     ['BACKEND', '6기 백엔드'],
     ['FRONTEND', '6기 프론트엔드'],
   ])('기수와 트랙 %s를 소속 문구로 만든다', (track, expected) => {

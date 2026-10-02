@@ -1,8 +1,12 @@
-// TODO 서버의 트랙 허용 값이 확정되면 대체
 const TRACK_LABELS: Record<string, string> = {
+  ANDROID: '안드로이드',
   BACKEND: '백엔드',
   FRONTEND: '프론트엔드',
 };
+
+export function formatTrackLabel(track: string | null | undefined): string | null {
+  return track == null ? null : (TRACK_LABELS[track] ?? null);
+}
 
 /**
  * 크루의 소속 표시 문구.
@@ -17,10 +21,7 @@ export function formatCrewRole(
   cohort: number | null | undefined,
   track: string | null | undefined,
 ): string | null {
-  const parts = [
-    cohort == null ? null : `${cohort}기`,
-    track == null ? null : TRACK_LABELS[track],
-  ].filter(Boolean);
+  const parts = [cohort == null ? null : `${cohort}기`, formatTrackLabel(track)].filter(Boolean);
 
   return parts.length === 0 ? null : parts.join(' ');
 }
