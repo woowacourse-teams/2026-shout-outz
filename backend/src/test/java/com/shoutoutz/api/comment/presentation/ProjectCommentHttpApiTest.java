@@ -150,6 +150,19 @@ class ProjectCommentHttpApiTest {
                                         fieldWithPath("data[].content").type(STRING)
                                                 .description("댓글 내용. 삭제된 댓글은 null")
                                                 .optional(),
+                                        fieldWithPath("data[].linkPreview").type(OBJECT)
+                                                .description("댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null")
+                                                .optional(),
+                                        fieldWithPath("data[].linkPreview.url").type(STRING)
+                                                .description("댓글 본문에서 추출한 첫 URL").optional(),
+                                        fieldWithPath("data[].linkPreview.title").type(STRING)
+                                                .description("외부 페이지 제목. 수집 전·실패 시 null").optional(),
+                                        fieldWithPath("data[].linkPreview.description").type(STRING)
+                                                .description("외부 페이지 설명").optional(),
+                                        fieldWithPath("data[].linkPreview.imageUrl").type(STRING)
+                                                .description("외부 페이지 이미지 URL").optional(),
+                                        fieldWithPath("data[].linkPreview.siteName").type(STRING)
+                                                .description("외부 사이트 이름").optional(),
                                         fieldWithPath("data[].author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data[].author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data[].author.handle").type(STRING).description("작성자 handle").optional(),
@@ -342,6 +355,19 @@ class ProjectCommentHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("생성된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("댓글 ID"),
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
+                                        fieldWithPath("data.linkPreview").type(OBJECT)
+                                                .description("댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null")
+                                                .optional(),
+                                        fieldWithPath("data.linkPreview.url").type(STRING)
+                                                .description("댓글 본문에서 추출한 첫 URL").optional(),
+                                        fieldWithPath("data.linkPreview.title").type(STRING)
+                                                .description("외부 페이지 제목. 수집 전·실패 시 null").optional(),
+                                        fieldWithPath("data.linkPreview.description").type(STRING)
+                                                .description("외부 페이지 설명").optional(),
+                                        fieldWithPath("data.linkPreview.imageUrl").type(STRING)
+                                                .description("외부 페이지 이미지 URL").optional(),
+                                        fieldWithPath("data.linkPreview.siteName").type(STRING)
+                                                .description("외부 사이트 이름").optional(),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.handle").type(STRING).description("작성자 handle").optional(),
@@ -433,6 +459,19 @@ class ProjectCommentHttpApiTest {
                                         fieldWithPath("data").type(OBJECT).description("수정된 댓글"),
                                         fieldWithPath("data.id").type(NUMBER).description("댓글 ID"),
                                         fieldWithPath("data.content").type(STRING).description("저장된 댓글 내용"),
+                                        fieldWithPath("data.linkPreview").type(OBJECT)
+                                                .description("댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null")
+                                                .optional(),
+                                        fieldWithPath("data.linkPreview.url").type(STRING)
+                                                .description("댓글 본문에서 추출한 첫 URL").optional(),
+                                        fieldWithPath("data.linkPreview.title").type(STRING)
+                                                .description("외부 페이지 제목. 수집 전·실패 시 null").optional(),
+                                        fieldWithPath("data.linkPreview.description").type(STRING)
+                                                .description("외부 페이지 설명").optional(),
+                                        fieldWithPath("data.linkPreview.imageUrl").type(STRING)
+                                                .description("외부 페이지 이미지 URL").optional(),
+                                        fieldWithPath("data.linkPreview.siteName").type(STRING)
+                                                .description("외부 사이트 이름").optional(),
                                         fieldWithPath("data.author").type(OBJECT).description("댓글 작성자"),
                                         fieldWithPath("data.author.userId").type(NUMBER).description("작성자 ID"),
                                         fieldWithPath("data.author.handle").type(STRING).description("작성자 handle").optional(),

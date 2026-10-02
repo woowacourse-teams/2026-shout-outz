@@ -26,6 +26,8 @@ import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.cohort.domain.Cohort;
+import com.shoutoutz.api.feed.application.FeedLinkPreviewService;
+import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.project.application.ProjectSlugResolver;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -57,6 +59,7 @@ public class ProjectCommentService {
     private final UserRepository userRepository;
     private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final ProjectCommentReactionRepository projectCommentReactionRepository;
+    private final FeedLinkPreviewService linkPreviewService;
 
     public ProjectCommentService(
             ProjectRepository projectRepository,
@@ -75,6 +78,7 @@ public class ProjectCommentService {
                 userProfileRepository,
                 userAvatarUrlResolver,
                 projectCommentReactionRepository,
+                null,
                 null
         );
     }
@@ -88,7 +92,8 @@ public class ProjectCommentService {
             UserProfileRepository userProfileRepository,
             UserAvatarUrlResolver userAvatarUrlResolver,
             ProjectCommentReactionRepository projectCommentReactionRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            FeedLinkPreviewService linkPreviewService
     ) {
         this.projectRepository = projectRepository;
         this.projectSlugResolver = projectSlugResolver;
@@ -98,6 +103,30 @@ public class ProjectCommentService {
         this.userRepository = userRepository;
         this.userAvatarUrlResolver = userAvatarUrlResolver;
         this.projectCommentReactionRepository = projectCommentReactionRepository;
+        this.linkPreviewService = linkPreviewService;
+    }
+
+    public ProjectCommentService(
+            ProjectRepository projectRepository,
+            ProjectSlugResolver projectSlugResolver,
+            ProjectCommentRepository projectCommentRepository,
+            ProjectCommentQueryRepository projectCommentQueryRepository,
+            UserProfileRepository userProfileRepository,
+            UserAvatarUrlResolver userAvatarUrlResolver,
+            ProjectCommentReactionRepository projectCommentReactionRepository,
+            UserRepository userRepository
+    ) {
+        this(
+                projectRepository,
+                projectSlugResolver,
+                projectCommentRepository,
+                projectCommentQueryRepository,
+                userProfileRepository,
+                userAvatarUrlResolver,
+                projectCommentReactionRepository,
+                userRepository,
+                null
+        );
     }
 
     public ProjectCommentService(
@@ -115,6 +144,7 @@ public class ProjectCommentService {
                 projectCommentQueryRepository,
                 userProfileRepository,
                 userAvatarUrlResolver,
+                null,
                 null,
                 null
         );
@@ -138,6 +168,9 @@ public class ProjectCommentService {
                 request.content()
         );
         ProjectComment savedComment = projectCommentRepository.save(comment);
+        if (linkPreviewService != null) {
+            linkPreviewService.syncProjectComment(savedComment.getId(), savedComment.getContent());
+        }
 
         return new ProjectCommentCreateResponse(
                 savedComment.getId(),
@@ -157,7 +190,8 @@ public class ProjectCommentService {
                 savedComment.getParentId(),
                 savedComment.getCreatedAt(),
                 savedComment.getUpdatedAt(),
-                true
+                true,
+                findProjectCommentPreview(savedComment.getId())
         );
     }
 
@@ -208,8 +242,10 @@ public class ProjectCommentService {
         Map<Long, String> avatarUrls = resolveAvatarUrls(authors.values());
         Map<Long, String> handles = resolveHandles(authors.keySet());
         Map<Long, ProjectCommentReactionCounts> reactionCounts = findReactionCounts(orderedComments, loginUserId);
+        Map<Long, LinkPreview> linkPreviews = findProjectCommentPreviews(orderedComments);
         List<ProjectCommentFindResponse.Comment> comments = orderedComments.stream()
-                .map(comment -> toFindResponse(comment, loginUserId, authors, handles, avatarUrls, reactionCounts))
+                .map(comment -> toFindResponse(
+                        comment, loginUserId, authors, handles, avatarUrls, reactionCounts, linkPreviews))
                 .toList();
 
         // 4. meta 정보: 다음 커서 정보 제공
@@ -243,6 +279,9 @@ public class ProjectCommentService {
         // 변경사항 없는 경우, 생략
         if (!Objects.equals(comment.getContent(), request.content())) {
             comment = projectCommentRepository.save(comment.updateContent(request.content()));
+            if (linkPreviewService != null) {
+                linkPreviewService.syncProjectComment(comment.getId(), comment.getContent());
+            }
         }
 
         return new ProjectCommentUpdateResponse(
@@ -264,7 +303,8 @@ public class ProjectCommentService {
                 comment.getCreatedAt(),
                 comment.getUpdatedAt(),
                 true,
-                comment.isEdited()
+                comment.isEdited(),
+                findProjectCommentPreview(comment.getId())
         );
     }
 
@@ -280,6 +320,9 @@ public class ProjectCommentService {
         validateAuthor(comment, authorId);
 
         ProjectComment deletedComment = projectCommentRepository.save(comment.delete(Instant.now()));
+        if (linkPreviewService != null) {
+            linkPreviewService.unlinkProjectComment(deletedComment.getId());
+        }
         return new ProjectCommentDeleteResponse(
                 deletedComment.getId(),
                 deletedComment.isDeleted()
@@ -360,7 +403,8 @@ public class ProjectCommentService {
             Map<Long, UserProfile> authors,
             Map<Long, String> handles,
             Map<Long, String> avatarUrls,
-            Map<Long, ProjectCommentReactionCounts> reactionCounts
+            Map<Long, ProjectCommentReactionCounts> reactionCounts,
+            Map<Long, LinkPreview> linkPreviews
     ) {
         UserProfile author = authors.computeIfAbsent(comment.getAuthorId(), this::findAuthor);
         // 삭제된 댓글이 아니며, 작성자가 본인인 경우 수정 가능
@@ -389,8 +433,27 @@ public class ProjectCommentService {
                 comment.isEdited(),
                 comment.isDeleted(),
                 counts.agreeCount(),
-                counts.agreedByMe()
+                counts.agreedByMe(),
+                comment.isDeleted() ? null : linkPreviews.get(comment.getId())
         );
+    }
+
+    private Map<Long, LinkPreview> findProjectCommentPreviews(List<ProjectComment> comments) {
+        if (comments.isEmpty() || linkPreviewService == null) {
+            return Map.of();
+        }
+        Map<Long, LinkPreview> previews = linkPreviewService.findByProjectCommentIds(
+                comments.stream().map(ProjectComment::getId).toList()
+        );
+        return previews == null ? Map.of() : previews;
+    }
+
+    private LinkPreview findProjectCommentPreview(long commentId) {
+        if (linkPreviewService == null) {
+            return null;
+        }
+        Map<Long, LinkPreview> previews = linkPreviewService.findByProjectCommentIds(List.of(commentId));
+        return previews == null ? null : previews.get(commentId);
     }
 
     private Map<Long, ProjectCommentReactionCounts> findReactionCounts(
