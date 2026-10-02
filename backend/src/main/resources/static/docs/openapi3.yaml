@@ -2461,34 +2461,6 @@ paths:
                     projectCount\":28}],\"techTags\":[{\"id\":2,\"displayName\":\"\
                     React\",\"projectCount\":48},{\"id\":1,\"displayName\":\"Spring\
                     \ Boot\",\"projectCount\":51}],\"matchedProjectCount\":8}}"
-  /api/v1/projects/{projectId}:
-    get:
-      tags:
-      - Project
-      summary: 프로젝트 상세 조회
-      description: "프로젝트 상세 화면에 필요한 기본 정보, 상세 설명, 팀원, 기술 스택, 외부 링크, 리액션 및 댓글 수를 조회\
-        한다. 로그인하지 않아도 조회할 수 있다. 승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 조회할 수 있으며, 볼 수 없\
-        는 프로젝트는 존재 여부를 숨기기 위해 없는 프로젝트와 같은 404를 반환한다. editable은 요청자가 등록자 본인인지를 나타내며\
-        , 수정·삭제 버튼 노출에 쓴다. 프로젝트 ID가 숫자가 아니면 400을 반환한다."
-      operationId: project-find-detail-invalid-id
-      parameters:
-      - name: projectId
-        in: path
-        description: 조회할 프로젝트 ID
-        required: true
-        schema:
-          type: string
-      responses:
-        "400":
-          description: "400"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                project-find-detail-invalid-id:
-                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\"}"
   /api/v1/users/me:
     get:
       tags:
