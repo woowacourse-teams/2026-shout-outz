@@ -3,7 +3,7 @@ import { FeedsPage } from '@/pages/FeedsPage';
 import type { FeedSort, FeedType } from '@/apis/feed';
 export const Route = createFileRoute('/community/')({
   validateSearch: (search: Record<string, unknown>): { sort?: FeedSort; type?: FeedType } => {
-    const type = search.type === 'QUESTION' ? 'QUESTION' : 'POST';
+    const type = search.type === 'POST' ? 'POST' : 'QUESTION';
     return {
       type,
       sort:
@@ -19,9 +19,9 @@ function FeedRoute() {
   const navigate = Route.useNavigate();
   return (
     <FeedsPage
-      feedType={type ?? 'POST'}
+      feedType={type ?? 'QUESTION'}
       onTypeChange={(value) => void navigate({ search: { type: value, sort: 'LATEST' } })}
-      onCreate={() => void navigate({ to: '/community/new', search: { type: type ?? 'POST' } })}
+      onCreate={() => void navigate({ to: '/community/new', search: { type: type ?? 'QUESTION' } })}
       sort={sort ?? 'LATEST'}
       onSortChange={(value) => void navigate({ search: { type, sort: value } })}
     />

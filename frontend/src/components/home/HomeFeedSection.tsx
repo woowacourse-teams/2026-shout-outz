@@ -19,7 +19,7 @@ const SORT_TABS: { value: FeedSort; label: string }[] = [
 export function HomeFeedSection() {
   // TODO 현재는 홈에서 보는 정보는 미리보기 용이기 때문에 url로 관리하지 않기로 결정, 추후에 논의 필요
   const [sort, setSort] = useState<FeedSort>('LATEST');
-  const [feedType, setFeedType] = useState<FeedType>('POST');
+  const [feedType, setFeedType] = useState<FeedType>('QUESTION');
   const { data } = useSuspenseInfiniteQuery(feedsQuery(sort, undefined, HOME_FEED_SIZE, feedType));
   const feeds = data.pages[0]?.data ?? [];
   const label = feedType === 'QUESTION' ? '질문' : '피드';
