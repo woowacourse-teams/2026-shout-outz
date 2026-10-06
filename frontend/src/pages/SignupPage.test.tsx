@@ -34,7 +34,7 @@ describe('SignupPage', () => {
     );
 
     const router = renderRoute('/signup');
-    await user.type(await screen.findByRole('textbox', { name: '핸들' }), 'woowa_crew');
+    await user.type(await screen.findByRole('textbox', { name: 'id' }), 'woowa_crew');
     await user.type(screen.getByRole('textbox', { name: '닉네임' }), '샤라웃');
     await user.click(screen.getByRole('button', { name: '가입하기' }));
 
@@ -62,7 +62,7 @@ describe('SignupPage', () => {
     );
 
     renderRoute('/signup');
-    await user.type(await screen.findByRole('textbox', { name: '핸들' }), 'a');
+    await user.type(await screen.findByRole('textbox', { name: 'id' }), 'a');
     await user.type(screen.getByRole('textbox', { name: '닉네임' }), '샤라웃');
     await user.click(screen.getByRole('button', { name: '가입하기' }));
 

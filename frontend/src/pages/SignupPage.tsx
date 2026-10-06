@@ -135,7 +135,7 @@ function SignupForm({ onComplete }: SignupPageProps) {
           void submit();
         }}
       >
-        <Field label="핸들" error={errors.handle}>
+        <Field label="id" error={errors.handle}>
           {(id) => (
             <div className="relative">
               <span

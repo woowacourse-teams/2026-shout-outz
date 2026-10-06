@@ -27,16 +27,19 @@ export function AuthSheet({ onClose }: AuthSheetProps) {
       </Button>
 
       <div className="flex flex-col items-center gap-4 px-7 pt-5 pb-8 text-center md:px-10 md:pt-8">
-        <span
-          aria-hidden="true"
-          className="bg-primary-600 flex size-13 items-center justify-center rounded-3xl text-3xl font-bold text-white"
-        >
-          S
-        </span>
+        <img
+          src="/favicon/android-chrome-192x192.png"
+          alt=""
+          width={52}
+          height={52}
+          className="size-13"
+        />
 
-        <h2 className="text-lg font-bold">우아한테크코스 크루 인증 & 로그인</h2>
-        <p className="text-sm leading-relaxed text-gray-600">
-          우아한테크코스 크루 인증을 완료하고 프로젝트 아카이빙과 피드 소통을 시작하세요.
+        <h2 className="text-xl font-bold">
+          <span className="text-primary-600 font-extrabold">샤라웃</span>에 오신 것을 환영해요!
+        </h2>
+        <p className="-mt-2 text-sm leading-relaxed text-balance break-keep text-gray-600">
+          궁금한 건 편하게 묻고, 서로의 이야기에 응원을 보내 보세요.
         </p>
 
         <a
