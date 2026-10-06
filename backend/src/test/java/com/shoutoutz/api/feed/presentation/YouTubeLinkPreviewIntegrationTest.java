@@ -103,10 +103,9 @@ class YouTubeLinkPreviewIntegrationTest {
         assertThat(json.getString("data.linkPreview.title"))
                 .as("피드 조회의 미리보기 제목이 영상 제목과 일치해야 한다")
                 .isEqualTo(EXPECTED_VIDEO_TITLE);
-        assertThat(json.getString("data.linkPreview.description"))
-                .isNotBlank().doesNotContain("YouTube에서 마음에 드는 동영상과 음악을 감상하고");
+        assertThat(json.getString("data.linkPreview.description")).isNull();
         assertThat(json.getString("data.linkPreview.imageUrl"))
-                .startsWith("https://i.ytimg.com/vi/KifSefVEdBs/");
+                .isEqualTo("https://i.ytimg.com/vi/KifSefVEdBs/hqdefault.jpg");
         assertThat(json.getString("data.linkPreview.siteName")).isEqualTo("YouTube");
         System.out.printf("YouTube integration feedId=%d, userId=%d%nGET response=%s%n",
                 feedId, userId, response);

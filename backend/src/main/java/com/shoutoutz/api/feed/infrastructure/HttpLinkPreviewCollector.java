@@ -5,7 +5,10 @@ import com.shoutoutz.api.feed.application.dto.LinkPreviewMetadata;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.Optional;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.core5.http.Header;
@@ -14,32 +17,42 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class HttpLinkPreviewCollector implements LinkPreviewCollector {
 
-    // YouTube watch 페이지는 일반적인 OG 페이지보다 HTML이 크다.
-    // OG 태그 수집은 계속 제한하되, 짧은 URL이 youtube.com으로 리다이렉트된 뒤
-    // 정상적인 watch 페이지를 읽을 수 있도록 기존 512 KiB보다 여유를 둔다.
+    // 일반 사이트의 HTML OG 수집 크기 제한.
     private static final int MAX_HTML_BYTES = 2 * 1_024 * 1_024;
+    private static final int MAX_OEMBED_BYTES = 64 * 1_024;
     private static final int MAX_REDIRECTS = 3;
+    private static final String YOUTUBE_HOST = "www.youtube.com";
 
     private final CloseableHttpClient httpClient;
     private final PublicLinkUrlPolicy urlPolicy;
+    private final ObjectMapper objectMapper;
 
     public HttpLinkPreviewCollector(
             @Qualifier("linkPreviewHttpClient") CloseableHttpClient httpClient,
-            PublicLinkUrlPolicy urlPolicy
+            PublicLinkUrlPolicy urlPolicy,
+            ObjectMapper objectMapper
     ) {
         this.httpClient = httpClient;
         this.urlPolicy = urlPolicy;
+        this.objectMapper = objectMapper;
     }
 
     @Override
     public LinkPreviewMetadata collect(String url) throws IOException {
         URI input = URI.create(url);
         urlPolicy.validateSyntax(input);
-        URI current = normalizeYoutubeShortUrl(input);
+        Optional<String> youtubeVideoId = youtubeVideoId(input);
+        if (youtubeVideoId.isPresent()) {
+            return collectYoutubeOEmbed(youtubeVideoId.get());
+        }
+
+        URI current = input;
         for (int redirects = 0; redirects <= MAX_REDIRECTS; redirects++) {
             urlPolicy.validateSyntax(current);
             HttpGet request = new HttpGet(current);
@@ -87,29 +100,117 @@ public class HttpLinkPreviewCollector implements LinkPreviewCollector {
         throw new IOException("리다이렉트 횟수를 초과했습니다.");
     }
 
-    /** youtu.be는 리다이렉트 응답에 의존하지 않고 영상 페이지를 직접 요청한다. */
-    private URI normalizeYoutubeShortUrl(URI url) {
+    private Optional<String> youtubeVideoId(URI url) {
         String host = url.getHost();
         if (host == null) {
-            return url;
+            return Optional.empty();
         }
         String normalizedHost = host.toLowerCase(Locale.ROOT);
-        if (!normalizedHost.equals("youtu.be") && !normalizedHost.equals("www.youtu.be")) {
-            return url;
+        String path = url.getPath();
+        if (normalizedHost.equals("youtu.be") || normalizedHost.equals("www.youtu.be")) {
+            return pathVideoId(path, 1);
+        }
+        if (!normalizedHost.equals("youtube.com")
+                && !normalizedHost.equals("www.youtube.com")
+                && !normalizedHost.equals("m.youtube.com")) {
+            return Optional.empty();
         }
 
-        String path = url.getPath();
-        if (path == null || path.length() <= 1) {
-            return url;
+        if ("/watch".equals(path)) {
+            String query = url.getRawQuery();
+            if (query != null) {
+                for (String parameter : query.split("&")) {
+                    String[] pair = parameter.split("=", 2);
+                    if (pair.length == 2 && pair[0].equals("v")) {
+                        return validVideoId(pair[1]);
+                    }
+                }
+            }
+            return Optional.empty();
         }
-        String videoId = path.substring(1);
-        if (videoId.endsWith("/")) {
-            videoId = videoId.substring(0, videoId.length() - 1);
+
+        if (path != null) {
+            String[] segments = path.split("/");
+            if (segments.length == 3
+                    && (segments[1].equals("shorts")
+                    || segments[1].equals("live")
+                    || segments[1].equals("embed"))) {
+                return validVideoId(segments[2]);
+            }
         }
-        if (!videoId.matches("[A-Za-z0-9_-]{11}")) {
-            return url;
+        return Optional.empty();
+    }
+
+    private Optional<String> pathVideoId(String path, int expectedSegments) {
+        if (path == null) {
+            return Optional.empty();
         }
-        return URI.create("https://www.youtube.com/watch?v=" + videoId);
+        String[] segments = path.split("/");
+        if (segments.length == expectedSegments + 1 && segments[0].isEmpty()) {
+            return validVideoId(segments[expectedSegments]);
+        }
+        return Optional.empty();
+    }
+
+    private Optional<String> validVideoId(String videoId) {
+        return videoId.matches("[A-Za-z0-9_-]{11}") ? Optional.of(videoId) : Optional.empty();
+    }
+
+    private LinkPreviewMetadata collectYoutubeOEmbed(String videoId) throws IOException {
+        String videoUrl = "https://" + YOUTUBE_HOST + "/watch?v=" + videoId;
+        URI endpoint = URI.create("https://" + YOUTUBE_HOST + "/oembed?url="
+                + URLEncoder.encode(videoUrl, StandardCharsets.UTF_8) + "&format=json");
+        urlPolicy.requireFetchable(endpoint);
+
+        byte[] body = httpClient.execute(new HttpGet(endpoint), response -> {
+            int status = response.getCode();
+            if (status != 200 || response.getEntity() == null) {
+                throw new IOException("YouTube oEmbed 응답이 올바르지 않습니다: " + status);
+            }
+            Header contentType = response.getFirstHeader("Content-Type");
+            String mediaType = contentType == null ? "" : contentType.getValue().toLowerCase(Locale.ROOT);
+            if (!mediaType.startsWith("application/json")) {
+                throw new IOException("YouTube oEmbed 응답이 JSON이 아닙니다.");
+            }
+            if (response.getEntity().getContentLength() > MAX_OEMBED_BYTES) {
+                throw new IOException("YouTube oEmbed 응답이 너무 큽니다.");
+            }
+            byte[] responseBody = response.getEntity().getContent().readNBytes(MAX_OEMBED_BYTES + 1);
+            if (responseBody.length > MAX_OEMBED_BYTES) {
+                throw new IOException("YouTube oEmbed 응답이 너무 큽니다.");
+            }
+            return responseBody;
+        });
+
+        JsonNode data;
+        try {
+            data = objectMapper.readTree(body);
+        } catch (RuntimeException exception) {
+            throw new IOException("YouTube oEmbed 응답을 해석하지 못했습니다.", exception);
+        }
+        String title = text(data, "title");
+        String thumbnailUrl = text(data, "thumbnail_url");
+        String providerName = text(data, "provider_name");
+        if (title == null || thumbnailUrl == null || !"YouTube".equals(providerName)) {
+            throw new IOException("YouTube oEmbed 응답에 미리보기 정보가 없습니다.");
+        }
+
+        String validatedThumbnailUrl;
+        try {
+            validatedThumbnailUrl = urlPolicy.requireFetchable(URI.create(thumbnailUrl)).toString();
+        } catch (IOException | IllegalArgumentException exception) {
+            throw new IOException("YouTube 썸네일 주소를 가져올 수 없습니다.", exception);
+        }
+        return new LinkPreviewMetadata(
+                limit(title, 300), null, validatedThumbnailUrl, limit(providerName, 100)
+        );
+    }
+
+    private String text(JsonNode object, String field) {
+        JsonNode value = object.get(field);
+        return value == null || value.isNull() || !value.isString() || value.asString().isBlank()
+                ? null
+                : value.asString().strip();
     }
 
     private boolean isRedirectStatus(int status) {
