@@ -7,37 +7,25 @@ import { Field } from '@/components/Field';
 import { Input } from '@/components/Input';
 import { SelectionModal } from '@/components/modals/SelectionModal';
 import type { UserProfile } from '@/types/user';
-import { getApiErrorMessage, isApiResponseError } from '@/utils/error';
+import { getApiErrorMessage } from '@/utils/error';
 
 export interface ProfileEditModalProps {
   profile: UserProfile;
   onClose: () => void;
 }
 
-interface ProfileEditErrors {
-  displayName?: string;
-  bio?: string;
-  githubProfileUrl?: string;
-  blogUrl?: string;
-}
-
-const toNullable = (value: string) => value.trim() || null;
-
 /**
- * 내 프로필의 닉네임, 한 줄 소개, 링크를 고친다.
+ * 내 프로필의 닉네임을 고친다.
  *
  * 구성원 인증을 마친 사용자는 인증 때 확인한 닉네임을 써야 해서 닉네임 칸을 막는다.
- * 프로필 수정은 전체 교체라 지금 사진도 그대로 다시 보낸다.
+ * 프로필 수정은 전체 교체라 지금 사진, 소개, 링크도 그대로 다시 보낸다.
  */
 export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
   const formId = useId();
   const client = useQueryClient();
   const verified = profile.userType !== 'GENERAL';
   const [displayName, setDisplayName] = useState(profile.displayName);
-  const [bio, setBio] = useState(profile.bio ?? '');
-  const [githubProfileUrl, setGithubProfileUrl] = useState(profile.githubProfileUrl ?? '');
-  const [blogUrl, setBlogUrl] = useState(profile.blogUrl ?? '');
-  const [errors, setErrors] = useState<ProfileEditErrors>({});
+  const [error, setError] = useState<string>();
   const update = useMutation({
     ...updateMyProfileMutation,
     onSuccess: async () => {
@@ -48,37 +36,24 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
       ]);
       onClose();
     },
-    onError: (error) => {
-      if (!isApiResponseError(error)) return;
-      setErrors(
-        Object.fromEntries(
-          (error.data.details ?? []).map((detail) => [detail.field, detail.message]),
-        ),
-      );
-    },
   });
 
   function validate() {
-    const next: ProfileEditErrors = {};
-    if (!displayName.trim()) next.displayName = '닉네임을 입력해 주세요.';
-    else if (Array.from(displayName).length > 50) {
-      next.displayName = '닉네임은 50자 이하로 입력해 주세요.';
-    }
-    if (Array.from(bio).length > 200) next.bio = '한 줄 소개는 200자 이하로 입력해 주세요.';
-    return next;
+    if (!displayName.trim()) return '닉네임을 입력해 주세요.';
+    if (Array.from(displayName).length > 50) return '닉네임은 50자 이하로 입력해 주세요.';
   }
 
   function submit() {
-    if (update.isPending) return;
-    const nextErrors = validate();
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+    if (verified || update.isPending) return;
+    const nextError = validate();
+    setError(nextError);
+    if (nextError) return;
 
     update.mutate({
-      displayName: verified ? profile.displayName : displayName.trim(),
-      bio: toNullable(bio),
-      githubProfileUrl: toNullable(githubProfileUrl),
-      blogUrl: toNullable(blogUrl),
+      displayName: displayName.trim(),
+      bio: profile.bio,
+      githubProfileUrl: profile.githubProfileUrl,
+      blogUrl: profile.blogUrl,
       avatarImageId: profile.avatarImageId,
     });
   }
@@ -97,7 +72,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
             form={formId}
             size="lg"
             className="flex-1 md:flex-none"
-            disabled={update.isPending}
+            disabled={verified || update.isPending}
           >
             {update.isPending ? '저장 중…' : '저장'}
           </Button>
@@ -112,7 +87,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
           submit();
         }}
       >
-        <Field label="닉네임" error={errors.displayName}>
+        <Field label="닉네임" error={error}>
           {(id) => (
             <div className="flex flex-col gap-1.5">
               <Input
@@ -120,7 +95,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
                 value={displayName}
                 disabled={verified}
                 aria-describedby={verified ? `${id}-locked` : undefined}
-                aria-invalid={errors.displayName ? true : undefined}
+                aria-invalid={error ? true : undefined}
                 onChange={(event) => setDisplayName(event.target.value)}
               />
               {verified && (
@@ -129,38 +104,6 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
                 </p>
               )}
             </div>
-          )}
-        </Field>
-        <Field label="한 줄 소개" error={errors.bio}>
-          {(id) => (
-            <Input
-              id={id}
-              value={bio}
-              placeholder="나를 한 줄로 소개해 주세요"
-              onChange={(event) => setBio(event.target.value)}
-            />
-          )}
-        </Field>
-        <Field label="GitHub" error={errors.githubProfileUrl}>
-          {(id) => (
-            <Input
-              id={id}
-              type="url"
-              value={githubProfileUrl}
-              placeholder="https://github.com/"
-              onChange={(event) => setGithubProfileUrl(event.target.value)}
-            />
-          )}
-        </Field>
-        <Field label="블로그" error={errors.blogUrl}>
-          {(id) => (
-            <Input
-              id={id}
-              type="url"
-              value={blogUrl}
-              placeholder="https://"
-              onChange={(event) => setBlogUrl(event.target.value)}
-            />
           )}
         </Field>
         {update.isError && (
