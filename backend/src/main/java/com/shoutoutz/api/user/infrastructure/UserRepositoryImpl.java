@@ -46,6 +46,11 @@ public class UserRepositoryImpl implements UserRepository {
                 .map(UserMapper::toDomain);
     }
 
+    @Override
+    public boolean existsByHandle(String handle) {
+        return userJpaRepository.existsByHandleIgnoreCase(handle);
+    }
+
     private boolean isHandleUniqueViolation(Throwable exception) {
         Throwable cause = exception;
         while (cause != null) {

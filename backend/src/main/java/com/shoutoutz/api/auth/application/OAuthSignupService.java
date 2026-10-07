@@ -24,6 +24,11 @@ public class OAuthSignupService {
     private final UserProfileRepository userProfileRepository;
     private final OAuthAccountRepository oauthAccountRepository;
 
+    @Transactional(readOnly = true)
+    public boolean isHandleAvailable(String handle) {
+        return !userRepository.existsByHandle(handle);
+    }
+
     @Transactional
     public OAuthSignupResult signup(OAuthSignupCommand command) {
         OAuthIdentity identity = command.identity();
