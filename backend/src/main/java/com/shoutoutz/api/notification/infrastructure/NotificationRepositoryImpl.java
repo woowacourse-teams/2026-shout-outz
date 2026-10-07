@@ -113,6 +113,26 @@ public class NotificationRepositoryImpl implements NotificationRepository, Notif
         jdbcTemplate.update(
                 """
                         WITH candidates AS (
+                            SELECT parent.author_id AS recipient_id,
+                                   'COMMENT_REPLY' AS notification_type,
+                                   '내 댓글에 새로운 답글이 달렸어요.' AS message,
+                                   0 AS priority
+                            FROM feed_comments reply
+                            JOIN feed_comments parent
+                              ON parent.id = reply.parent_id
+                             AND parent.feed_id = reply.feed_id
+                            JOIN feeds f ON f.id = reply.feed_id
+                            JOIN users recipient ON recipient.id = parent.author_id
+                            WHERE reply.id = :commentId
+                              AND reply.feed_id = :feedId
+                              AND reply.deleted_at IS NULL
+                              AND parent.deleted_at IS NULL
+                              AND f.deleted_at IS NULL
+                              AND recipient.status = 'ACTIVE'
+                              AND recipient.deleted_at IS NULL
+
+                            UNION ALL
+
                             SELECT f.author_id AS recipient_id,
                                    CASE WHEN f.feed_type = 'QUESTION'
                                         THEN 'QUESTION_ACTIVITY'

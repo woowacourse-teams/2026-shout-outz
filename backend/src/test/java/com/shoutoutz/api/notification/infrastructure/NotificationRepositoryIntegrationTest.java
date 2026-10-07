@@ -124,24 +124,90 @@ class NotificationRepositoryIntegrationTest {
 
     @ParameterizedTest
     @EnumSource(FeedType.class)
-    void 대댓글도_글_작성자와_기존_댓글_작성자에게_알림을_보낸다(FeedType feedType) {
+    void 직접_답글과_같은_글의_다른_댓글_참여자_알림을_구분한다(FeedType feedType) {
         long authorId = insertUser("author");
         long commenterId = insertUser("commenter");
+        long otherCommenterId = insertUser("other-commenter");
+        long interestedId = insertUser("interested");
         long actorId = insertUser("actor");
         long feedId = insertFeed(authorId, feedType);
         long parentId = insertComment(feedId, commenterId);
-        long replyId = jdbcTemplate.queryForObject(
-                "INSERT INTO feed_comments (feed_id, author_id, parent_id, content) VALUES (?, ?, ?, ?) RETURNING id",
-                Long.class, feedId, actorId, parentId, "대댓글 내용"
-        );
+        insertComment(feedId, otherCommenterId);
+        insertLike(feedId, commenterId);
+        insertLike(feedId, interestedId);
+        insertLike(feedId, actorId);
+        long replyId = insertReply(feedId, actorId, parentId);
+
+        notificationRepository.createForFeedComment(feedId, replyId, actorId);
+        notificationRepository.createForFeedComment(feedId, replyId, actorId);
+
+        assertThat(notificationQueryRepository.findAll(authorId, null, 20).items())
+                .extracting(item -> item.notificationType())
+                .containsExactly(feedType == FeedType.QUESTION
+                        ? NotificationType.QUESTION_ACTIVITY : NotificationType.POST_ACTIVITY);
+        assertThat(notificationQueryRepository.findAll(commenterId, null, 20).items())
+                .satisfiesExactly(item -> {
+                    assertThat(item.notificationType()).isEqualTo(NotificationType.COMMENT_REPLY);
+                    assertThat(item.message()).isEqualTo("내 댓글에 새로운 답글이 달렸어요.");
+                    assertThat(item.commentId()).isEqualTo(replyId);
+                });
+        assertThat(notificationQueryRepository.findAll(otherCommenterId, null, 20).items())
+                .satisfiesExactly(item -> {
+                    assertThat(item.notificationType()).isEqualTo(feedType == FeedType.QUESTION
+                            ? NotificationType.COMMENTED_QUESTION_ACTIVITY : NotificationType.COMMENTED_POST_ACTIVITY);
+                    assertThat(item.message()).isEqualTo(feedType == FeedType.QUESTION
+                            ? "댓글을 남긴 질문에 새로운 답변이 달렸어요."
+                            : "댓글을 남긴 피드에 새로운 댓글이 달렸어요.");
+                    assertThat(item.commentId()).isEqualTo(replyId);
+                });
+        NotificationPage interestedPage = notificationQueryRepository.findAll(interestedId, null, 20);
+        if (feedType == FeedType.QUESTION) {
+            assertThat(interestedPage.items()).satisfiesExactly(item -> {
+                assertThat(item.notificationType()).isEqualTo(NotificationType.INTERESTED_QUESTION_ACTIVITY);
+                assertThat(item.message()).isEqualTo("관심 있는 질문에 새로운 답변이 달렸어요.");
+                assertThat(item.commentId()).isEqualTo(replyId);
+            });
+        } else {
+            assertThat(interestedPage.items()).isEmpty();
+        }
+        assertThat(notificationQueryRepository.findAll(actorId, null, 20).items()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @EnumSource(FeedType.class)
+    void 글_작성자의_댓글에_답글이_달리면_직접_답글_알림을_우선한다(FeedType feedType) {
+        long authorId = insertUser("author");
+        long actorId = insertUser("actor");
+        long feedId = insertFeed(authorId, feedType);
+        long parentId = insertComment(feedId, authorId);
+        insertLike(feedId, authorId);
+        long replyId = insertReply(feedId, actorId, parentId);
 
         notificationRepository.createForFeedComment(feedId, replyId, actorId);
 
         assertThat(notificationQueryRepository.findAll(authorId, null, 20).items())
-                .extracting(item -> item.commentId()).containsExactly(replyId);
-        assertThat(notificationQueryRepository.findAll(commenterId, null, 20).items())
-                .extracting(item -> item.commentId()).containsExactly(replyId);
+                .satisfiesExactly(item -> {
+                    assertThat(item.notificationType()).isEqualTo(NotificationType.COMMENT_REPLY);
+                    assertThat(item.message()).isEqualTo("내 댓글에 새로운 답글이 달렸어요.");
+                    assertThat(item.commentId()).isEqualTo(replyId);
+                });
+    }
+
+    @ParameterizedTest
+    @EnumSource(FeedType.class)
+    void 내_댓글에_내가_답글을_달면_본인에게는_알림을_보내지_않는다(FeedType feedType) {
+        long authorId = insertUser("author");
+        long actorId = insertUser("actor");
+        long feedId = insertFeed(authorId, feedType);
+        long parentId = insertComment(feedId, actorId);
+        insertLike(feedId, actorId);
+        long replyId = insertReply(feedId, actorId, parentId);
+
+        notificationRepository.createForFeedComment(feedId, replyId, actorId);
+
         assertThat(notificationQueryRepository.findAll(actorId, null, 20).items()).isEmpty();
+        assertThat(notificationQueryRepository.findAll(authorId, null, 20).items())
+                .extracting(item -> item.commentId()).containsExactly(replyId);
     }
 
     @ParameterizedTest
@@ -227,6 +293,13 @@ class NotificationRepositoryIntegrationTest {
                 feedId,
                 authorId,
                 "댓글 내용"
+        );
+    }
+
+    private long insertReply(long feedId, long authorId, long parentId) {
+        return jdbcTemplate.queryForObject(
+                "INSERT INTO feed_comments (feed_id, author_id, parent_id, content) VALUES (?, ?, ?, ?) RETURNING id",
+                Long.class, feedId, authorId, parentId, "대댓글 내용"
         );
     }
 }
