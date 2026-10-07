@@ -57,6 +57,8 @@ describe('NewsPage', () => {
       renderRoute('/news');
 
       expect(await newsCount()).toBe(4);
+      expect(screen.getAllByText('진행 중')).toHaveLength(2);
+      expect(screen.getByText('종료')).toBeInTheDocument();
       expect(tabNamed('전체')).toHaveAttribute('aria-selected', 'true');
       expect(screen.getAllByRole('banner')).toHaveLength(1);
     });

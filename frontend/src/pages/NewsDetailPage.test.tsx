@@ -24,6 +24,9 @@ describe('NewsDetailPage', () => {
     expect(screen.getByText(/6기 프로젝트 아카이빙 챌린지'를 시작합니다/)).toBeInTheDocument();
     expect(screen.getByText('우아한테크코스 운영진', { exact: false })).toBeInTheDocument();
     expect(screen.getAllByRole('banner')).toHaveLength(1);
+    expect(screen.getByText('진행 중')).toBeInTheDocument();
+    expect(screen.getByText('2026.10.01 00:00')).toBeInTheDocument();
+    expect(screen.getByText('2026.10.31 23:59')).toBeInTheDocument();
   });
 
   describe('이전·다음 소식', () => {

@@ -1,5 +1,8 @@
 import type { ComponentProps } from 'react';
 
+import { NewsEventStatusBadge } from '@/components/NewsEventStatusBadge';
+import { NewsEventPeriod } from '@/components/NewsEventPeriod';
+import type { NewsSummary } from '@/types/news';
 import { NewsCategoryBadge } from '@/components/NewsCategoryBadge';
 import { cn } from '@/utils/cn';
 import { type NewsType } from '@/types/news';
@@ -10,6 +13,9 @@ export interface NewsItemProps extends Omit<ComponentProps<'article'>, 'children
   title: string;
   summary: string;
   publishedAt: string;
+  eventStatus?: NewsSummary['eventStatus'];
+  eventStartAt?: NewsSummary['eventStartAt'];
+  eventEndAt?: NewsSummary['eventEndAt'];
   compact?: boolean;
 }
 
@@ -18,6 +24,9 @@ export function NewsItem({
   title,
   summary,
   publishedAt,
+  eventStatus,
+  eventStartAt,
+  eventEndAt,
   compact = false,
   className,
   ...props
@@ -28,7 +37,10 @@ export function NewsItem({
       {...props}
     >
       <div className="flex items-center justify-between gap-3">
-        <NewsCategoryBadge type={type} />
+        <div className="flex flex-wrap items-center gap-2">
+          {type === 'EVENT' && <NewsEventStatusBadge status={eventStatus} />}
+          <NewsCategoryBadge type={type} />
+        </div>
         <time dateTime={publishedAt} className="shrink-0 text-xs text-gray-500">
           {formatDotDate(publishedAt)}
         </time>
@@ -51,6 +63,7 @@ export function NewsItem({
       >
         {summary}
       </p>
+      {type === 'EVENT' && <NewsEventPeriod startAt={eventStartAt} endAt={eventEndAt} compact />}
     </article>
   );
 }
