@@ -110,12 +110,12 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"feedType\"\
-                    ,\"message\":\"feedType은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\"\
-                    :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
+                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\":\"type은\
+                    \ 필수입니다.\"},{\"field\":\"feedType\",\"message\":\"feedType은 필수\
+                    입니다.\"},{\"field\":\"displayOrder\",\"message\":\"displayOrder는\
+                    \ 0 이상이어야 합니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -446,12 +446,17 @@ paths:
               examples:
                 notification-list:
                   value: "{\"status\":\"success\",\"data\":[{\"notificationId\":100,\"\
-                    notificationType\":\"QUESTION_ACTIVITY\",\"message\":\"새로운 답변이\
-                    \ 달렸어요.\",\"feedId\":10,\"feedTitle\":\"질문 제목\",\"commentId\"\
+                    notificationType\":\"QUESTION_ACTIVITY\",\"message\":\"내 질문에 새\
+                    로운 답변이 달렸어요.\",\"feedId\":10,\"feedTitle\":\"질문 제목\",\"commentId\"\
                     :20,\"actor\":{\"userId\":30,\"handle\":\"@actor\",\"displayName\"\
                     :\"작성자\",\"avatarUrl\":null},\"isRead\":false,\"createdAt\":\"\
-                    2026-09-30T00:00:00Z\"}],\"meta\":{\"nextCursor\":null,\"hasNext\"\
-                    :false,\"totalCount\":1}}"
+                    2026-09-30T00:00:00Z\"},{\"notificationId\":99,\"notificationType\"\
+                    :\"POST_ACTIVITY\",\"message\":\"내 피드에 새로운 댓글이 달렸어요.\",\"feedId\"\
+                    :11,\"feedTitle\":\"피드 제목\",\"commentId\":21,\"actor\":{\"userId\"\
+                    :30,\"handle\":\"@actor\",\"displayName\":\"작성자\",\"avatarUrl\"\
+                    :null},\"isRead\":false,\"createdAt\":\"2026-09-29T00:00:00Z\"\
+                    }],\"meta\":{\"nextCursor\":null,\"hasNext\":false,\"totalCount\"\
+                    :2}}"
   /api/v1/projects:
     get:
       tags:
@@ -1220,9 +1225,9 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
                     :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
@@ -2611,9 +2616,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -3626,9 +3631,9 @@ paths:
               examples:
                 user-verification-request-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
-                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
-                    ,\"message\":\"nickname은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"},{\"field\":\"cohort\",\"message\"\
+                    :\"cohort는 양의 정수여야 합니다.\"}]}"
         "201":
           description: "201"
           content:
@@ -4998,93 +5003,68 @@ paths:
                 type: string
 components:
   schemas:
-    NotificationListSuccessResponse:
-      title: NotificationListSuccessResponse
+    ProjectCreateRequest:
+      title: ProjectCreateRequest
       required:
-      - data
-      - meta
-      - status
+      - cohort
+      - githubRepositoryUrl
+      - memberHandles
+      - serviceStatus
+      - tagline
+      - teamName
+      - techTagIds
+      - title
       type: object
       properties:
-        data:
-          type: array
-          description: 알림 목록
-          items:
-            required:
-            - createdAt
-            - isRead
-            - message
-            - notificationId
-            - notificationType
-            type: object
-            properties:
-              actor:
-                type: object
-                properties:
-                  avatarUrl:
-                    type: string
-                    description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 사용자 아바타 URL
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 사용자 표시 이름
-                    nullable: true
-                  handle:
-                    type: string
-                    description: 사용자 handle
-                    nullable: true
-                  userId:
-                    type: number
-                    description: 사용자 ID
-                    nullable: true
-                description: 알림을 발생시킨 사용자
-              createdAt:
-                type: string
-                description: 알림 생성 시각
-              feedId:
-                type: number
-                description: 대상 피드 ID
-                nullable: true
-              isRead:
-                type: boolean
-                description: 읽음 상태
-              commentId:
-                type: number
-                description: 대상 댓글 ID
-                nullable: true
-              notificationId:
-                type: number
-                description: 알림 ID
-              notificationType:
-                type: string
-                description: 알림 타입
-              feedTitle:
-                type: string
-                description: 대상 피드 제목
-                nullable: true
-              message:
-                type: string
-                description: 알림 메시지
-        meta:
-          required:
-          - hasNext
-          - totalCount
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-            totalCount:
-              type: number
-              description: 전체 알림 수
-          description: 페이지 정보
-        status:
+        teamName:
           type: string
-          description: 응답 상태
+          description: 팀 이름. 앞뒤 공백을 자른 뒤 50자 이하 (유니코드 코드 포인트 기준)
+        thumbnailImageId:
+          type: number
+          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID
+          nullable: true
+        techTagIds:
+          type: array
+          description: "선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다."
+          items:
+            type: number
+        memberHandles:
+          type: array
+          description: "@[A-Za-z0-9_-]{2,30} 형식의 팀원 handle 목록 (1명 이상). 등록자를 포함할 수\
+            \ 있으며, 활동 중인 우아한테크코스 크루 또는 코치여야 하며, 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서\
+            가 표시 순서가 된다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다."
+          items:
+            type: string
+        serviceStatus:
+          type: string
+          description: "서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반\
+            환한다. 이때 오류 응답의 details.field는 serviceStatusValid다."
+          enum:
+          - OPERATING
+          - CLOSED
+        descriptionMd:
+          type: string
+          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
+            \ 형식으로 넣으며, 본인이 업로드한 PROJECT_DESCRIPTION 용도의 처리 완료 이미지만 쓸 수 있다."
+          nullable: true
+        deploymentUrl:
+          type: string
+          description: 서비스 배포 URL (http/https). 빈 문자열이나 공백만 있으면 입력하지 않은 것으로 본다.
+          nullable: true
+        githubRepositoryUrl:
+          type: string
+          description: "https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하\
+            ). 다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, 경로(/tree/main), 쿼리(?tab=readme),\
+            \ 앵커(#readme)는 허용하고 버린 뒤 저장한다. 리포지토리 이름으로 slug를 만든다."
+        cohort:
+          type: number
+          description: 우아한테크코스 기수 (1~8)
+        tagline:
+          type: string
+          description: 한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준)
+        title:
+          type: string
+          description: 프로젝트 이름. 앞뒤 공백을 자른 뒤 100자 이하 (유니코드 코드 포인트 기준)
     AdminVerificationRequestRejectRequest:
       title: AdminVerificationRequestRejectRequest
       required:
@@ -5262,68 +5242,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    ProjectCreateRequest:
-      title: ProjectCreateRequest
-      required:
-      - cohort
-      - githubRepositoryUrl
-      - memberHandles
-      - serviceStatus
-      - tagline
-      - teamName
-      - techTagIds
-      - title
-      type: object
-      properties:
-        teamName:
-          type: string
-          description: 팀 이름. 앞뒤 공백을 자른 뒤 50자 이하 (유니코드 코드 포인트 기준)
-        thumbnailImageId:
-          type: number
-          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID
-          nullable: true
-        techTagIds:
-          type: array
-          description: "선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다."
-          items:
-            type: number
-        memberHandles:
-          type: array
-          description: "@[A-Za-z0-9_-]{2,30} 형식의 팀원 handle 목록 (1명 이상). 등록자를 포함할 수\
-            \ 있으며, 활동 중인 우아한테크코스 크루 또는 코치여야 하며, 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서\
-            가 표시 순서가 된다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다."
-          items:
-            type: string
-        serviceStatus:
-          type: string
-          description: "서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반\
-            환한다. 이때 오류 응답의 details.field는 serviceStatusValid다."
-          enum:
-          - OPERATING
-          - CLOSED
-        descriptionMd:
-          type: string
-          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
-            \ 형식으로 넣으며, 본인이 업로드한 PROJECT_DESCRIPTION 용도의 처리 완료 이미지만 쓸 수 있다."
-          nullable: true
-        deploymentUrl:
-          type: string
-          description: 서비스 배포 URL (http/https). 빈 문자열이나 공백만 있으면 입력하지 않은 것으로 본다.
-          nullable: true
-        githubRepositoryUrl:
-          type: string
-          description: "https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하\
-            ). 다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, 경로(/tree/main), 쿼리(?tab=readme),\
-            \ 앵커(#readme)는 허용하고 버린 뒤 저장한다. 리포지토리 이름으로 slug를 만든다."
-        cohort:
-          type: number
-          description: 우아한테크코스 기수 (1~8)
-        tagline:
-          type: string
-          description: 한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준)
-        title:
-          type: string
-          description: 프로젝트 이름. 앞뒤 공백을 자른 뒤 100자 이하 (유니코드 코드 포인트 기준)
     NotificationUnreadCountSuccessResponse:
       title: NotificationUnreadCountSuccessResponse
       required:
@@ -5693,6 +5611,95 @@ components:
               type: number
               description: 이벤트 ID
           description: 생성된 이벤트
+        status:
+          type: string
+          description: 응답 상태
+    NotificationListSuccessResponse:
+      title: NotificationListSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 알림 목록
+          items:
+            required:
+            - createdAt
+            - isRead
+            - message
+            - notificationId
+            - notificationType
+            type: object
+            properties:
+              actor:
+                type: object
+                properties:
+                  avatarUrl:
+                    type: string
+                    description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 사용자 아바타 URL
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 사용자 표시 이름
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 사용자 handle
+                    nullable: true
+                  userId:
+                    type: number
+                    description: 사용자 ID
+                    nullable: true
+                description: 알림을 발생시킨 사용자
+              createdAt:
+                type: string
+                description: 알림 생성 시각
+              feedId:
+                type: number
+                description: 대상 피드 ID
+                nullable: true
+              isRead:
+                type: boolean
+                description: 읽음 상태
+              commentId:
+                type: number
+                description: 대상 댓글 ID
+                nullable: true
+              notificationId:
+                type: number
+                description: 알림 ID
+              notificationType:
+                type: string
+                description: "알림 유형. POST_ACTIVITY(내 피드), COMMENTED_POST_ACTIVITY(댓\
+                  글을 남긴 피드), QUESTION_ACTIVITY(내 질문), INTERESTED_QUESTION_ACTIVITY(궁\
+                  금해요를 누른 질문), COMMENTED_QUESTION_ACTIVITY(댓글을 남긴 질문)"
+              feedTitle:
+                type: string
+                description: 대상 피드 제목
+                nullable: true
+              message:
+                type: string
+                description: 알림 메시지
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: 전체 알림 수
+          description: 페이지 정보
         status:
           type: string
           description: 응답 상태
@@ -6899,6 +6906,61 @@ components:
         status:
           type: string
           description: 응답 상태
+    UserVerificationRequestCreateSuccessResponse:
+      title: UserVerificationRequestCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - nickname
+          - requestId
+          - requestedAt
+          - status
+          - userType
+          type: object
+          properties:
+            requestedAt:
+              type: string
+              description: 신청 시각(ISO-8601)
+            requestId:
+              type: number
+              description: 인증 신청 ID
+            nickname:
+              type: string
+              description: 신청 닉네임
+            cohort:
+              type: number
+              description: 신청 기수
+              nullable: true
+            userType:
+              type: string
+              description: 신청 유형
+              enum:
+              - GENERAL
+              - WOOWACOURSE_CREW
+              - WOOWACOURSE_COACH
+            track:
+              type: string
+              description: 신청 트랙
+              nullable: true
+              enum:
+              - BACKEND
+              - ANDROID
+              - FRONTEND
+            status:
+              type: string
+              description: 신청 상태
+              enum:
+              - PENDING
+              - APPROVED
+              - REJECTED
+          description: 생성된 인증 신청
+        status:
+          type: string
+          description: 응답 상태
     NoticeCreateSuccessResponse:
       title: NoticeCreateSuccessResponse
       required:
@@ -6993,61 +7055,6 @@ components:
               - NOTICE
               - EVENT
           description: 생성된 공지
-        status:
-          type: string
-          description: 응답 상태
-    UserVerificationRequestCreateSuccessResponse:
-      title: UserVerificationRequestCreateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - nickname
-          - requestId
-          - requestedAt
-          - status
-          - userType
-          type: object
-          properties:
-            requestedAt:
-              type: string
-              description: 신청 시각(ISO-8601)
-            requestId:
-              type: number
-              description: 인증 신청 ID
-            nickname:
-              type: string
-              description: 신청 닉네임
-            cohort:
-              type: number
-              description: 신청 기수
-              nullable: true
-            userType:
-              type: string
-              description: 신청 유형
-              enum:
-              - GENERAL
-              - WOOWACOURSE_CREW
-              - WOOWACOURSE_COACH
-            track:
-              type: string
-              description: 신청 트랙
-              nullable: true
-              enum:
-              - BACKEND
-              - ANDROID
-              - FRONTEND
-            status:
-              type: string
-              description: 신청 상태
-              enum:
-              - PENDING
-              - APPROVED
-              - REJECTED
-          description: 생성된 인증 신청
         status:
           type: string
           description: 응답 상태
@@ -7323,37 +7330,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    HomeStatisticsSuccessResponse:
-      title: HomeStatisticsSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - currentCohort
-          - feedCount
-          - ongoingEventCount
-          - projectCount
-          type: object
-          properties:
-            projectCount:
-              type: number
-              description: 승인되었고 삭제되지 않은 프로젝트 수
-            currentCohort:
-              type: number
-              description: 전체 기수 개수
-            feedCount:
-              type: number
-              description: 삭제되지 않은 피드 수
-            ongoingEventCount:
-              type: number
-              description: 조회 시각에 진행 중인 삭제되지 않은 이벤트 수
-          description: 홈 통계
-        status:
-          type: string
-          description: 응답 상태
     UserProfileUpdateSuccessResponse:
       title: UserProfileUpdateSuccessResponse
       required:
@@ -7414,6 +7390,37 @@ components:
               type: number
               description: 사용자 ID
           description: 수정된 사용자 프로필
+        status:
+          type: string
+          description: 응답 상태
+    HomeStatisticsSuccessResponse:
+      title: HomeStatisticsSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - currentCohort
+          - feedCount
+          - ongoingEventCount
+          - projectCount
+          type: object
+          properties:
+            projectCount:
+              type: number
+              description: 승인되었고 삭제되지 않은 프로젝트 수
+            currentCohort:
+              type: number
+              description: 전체 기수 개수
+            feedCount:
+              type: number
+              description: 삭제되지 않은 피드 수
+            ongoingEventCount:
+              type: number
+              description: 조회 시각에 진행 중인 삭제되지 않은 이벤트 수
+          description: 홈 통계
         status:
           type: string
           description: 응답 상태

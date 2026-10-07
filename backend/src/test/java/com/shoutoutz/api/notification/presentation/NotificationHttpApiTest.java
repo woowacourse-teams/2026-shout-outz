@@ -49,10 +49,10 @@ class NotificationHttpApiTest {
 
     @Test
     void 알림_목록을_조회한다() throws Exception {
-        NotificationResponse response = new NotificationResponse(
+        NotificationResponse questionNotification = new NotificationResponse(
                 100L,
                 NotificationType.QUESTION_ACTIVITY,
-                "새로운 답변이 달렸어요.",
+                "내 질문에 새로운 답변이 달렸어요.",
                 10L,
                 "질문 제목",
                 20L,
@@ -60,10 +60,21 @@ class NotificationHttpApiTest {
                 false,
                 Instant.parse("2026-09-30T00:00:00Z")
         );
+        NotificationResponse postNotification = new NotificationResponse(
+                99L,
+                NotificationType.POST_ACTIVITY,
+                "내 피드에 새로운 댓글이 달렸어요.",
+                11L,
+                "피드 제목",
+                21L,
+                new NotificationResponse.Actor(30L, "@actor", "작성자", null),
+                false,
+                Instant.parse("2026-09-29T00:00:00Z")
+        );
         given(notificationService.findAll(USER_ID, null, 20))
                 .willReturn(new NotificationFindAllResponse(
-                        List.of(response),
-                        new SliceMetaResponse(null, false, 1L)
+                        List.of(questionNotification, postNotification),
+                        new SliceMetaResponse(null, false, 2L)
                 ));
 
         mockMvc.perform(get("/api/v1/notifications").with(authenticated()))
@@ -72,6 +83,11 @@ class NotificationHttpApiTest {
                 .andExpect(jsonPath("$.data[0].notificationId").value(100))
                 .andExpect(jsonPath("$.data[0].notificationType")
                         .value("QUESTION_ACTIVITY"))
+                .andExpect(jsonPath("$.data[0].message")
+                        .value("내 질문에 새로운 답변이 달렸어요."))
+                .andExpect(jsonPath("$.data[1].notificationType").value("POST_ACTIVITY"))
+                .andExpect(jsonPath("$.data[1].message")
+                        .value("내 피드에 새로운 댓글이 달렸어요."))
                 .andExpect(jsonPath("$.data[0].isRead").value(false))
                 .andExpect(jsonPath("$.meta.hasNext").value(false))
                 .andDo(document(
@@ -211,7 +227,11 @@ class NotificationHttpApiTest {
                 fieldWithPath("data[].notificationId")
                         .type(JsonFieldType.NUMBER).description("알림 ID"),
                 fieldWithPath("data[].notificationType")
-                        .type(JsonFieldType.STRING).description("알림 타입"),
+                        .type(JsonFieldType.STRING).description(
+                                "알림 유형. POST_ACTIVITY(내 피드), COMMENTED_POST_ACTIVITY(댓글을 남긴 피드), "
+                                        + "QUESTION_ACTIVITY(내 질문), INTERESTED_QUESTION_ACTIVITY(궁금해요를 누른 질문), "
+                                        + "COMMENTED_QUESTION_ACTIVITY(댓글을 남긴 질문)"
+                        ),
                 fieldWithPath("data[].message")
                         .type(JsonFieldType.STRING).description("알림 메시지"),
                 fieldWithPath("data[].feedId")
