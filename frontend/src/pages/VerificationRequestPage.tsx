@@ -116,6 +116,9 @@ function VerificationForm({ rejectionReason }: { rejectionReason: string | null 
       <p className="mt-2 text-sm leading-relaxed text-gray-600">
         프로젝트 등록 권한을 위해 운영진이 확인할 정보를 입력해 주세요.
       </p>
+      <p className="mt-5 rounded-lg bg-gray-100 p-4 text-sm leading-relaxed text-gray-700">
+        인증이 승인되면 입력한 닉네임과 기수·트랙이 프로필에 반영되고, 이후에는 바꿀 수 없어요.
+      </p>
       {rejectionReason && (
         <p role="alert" className="mt-5 rounded-lg bg-red-50 p-4 text-sm text-red-700">
           이전 신청 반려 사유: {rejectionReason}
