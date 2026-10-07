@@ -22,4 +22,14 @@ describe('AuthSheet', () => {
 
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('크루 인증 문구 없이 환영 제목을 보여준다', () => {
+    render(<AuthSheet onClose={jest.fn()} />);
+
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(
+      '샤라웃에 오신 것을 환영해요',
+    );
+    expect(screen.getByText('샤라웃')).toHaveClass('text-primary-600');
+    expect(screen.queryByText(/크루 인증/)).not.toBeInTheDocument();
+  });
 });

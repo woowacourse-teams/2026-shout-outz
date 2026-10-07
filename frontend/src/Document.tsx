@@ -15,6 +15,19 @@ export function Document({ children }: PropsWithChildren) {
         <link rel="icon" type="image/png" sizes="48x48" href="/favicon/favicon-48x48.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
         <link rel="manifest" href="/favicon/site.webmanifest" />
+        {/* 링크 공유 미리보기. 크롤러는 JS를 실행하지 않아 모든 페이지에 공통으로 넣고, 이미지는 절대 주소여야 한다. */}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="shout-outz" />
+        <meta property="og:title" content="shout-outz" />
+        <meta
+          property="og:description"
+          content="궁금한 건 편하게 묻고, 서로의 이야기에 응원을 보내 보세요."
+        />
+        <meta property="og:image" content="https://shout-ou.tz/og-image.jpg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="메가폰으로 응원을 외치는 shout-outz 캐릭터" />
+        <meta name="twitter:card" content="summary_large_image" />
       </head>
       <body>{children}</body>
     </html>
