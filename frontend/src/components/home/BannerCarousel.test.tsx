@@ -63,9 +63,11 @@ test('배너 개수와 현재 위치를 표시하고 버튼과 위치 막대로 
   expect(screen.getAllByRole('link')).toHaveLength(1);
 });
 
-test('5초마다 전환하고 마우스를 올리거나 초점이 들어오면 멈춘다', () => {
+test('3초마다 전환하고 마우스를 올리거나 초점이 들어오면 멈춘다', () => {
   render(<BannerCarousel banners={banners} />);
-  act(() => jest.advanceTimersByTime(5_000));
+  act(() => jest.advanceTimersByTime(2_999));
+  expectBanner(1);
+  act(() => jest.advanceTimersByTime(1));
   expectBanner(2);
 
   const region = screen.getByRole('region', { name: '홈 배너 모음' });
@@ -73,7 +75,7 @@ test('5초마다 전환하고 마우스를 올리거나 초점이 들어오면 �
   act(() => jest.advanceTimersByTime(10_000));
   expectBanner(2);
   fireEvent.mouseLeave(region);
-  act(() => jest.advanceTimersByTime(5_000));
+  act(() => jest.advanceTimersByTime(3_000));
   expectBanner(3);
 
   fireEvent.focus(screen.getByRole('button', { name: '다음 배너' }));
@@ -98,7 +100,7 @@ test('일시정지 후 영역을 벗어나도 멈춰 있고 재생하면 다시 
   fireEvent.blur(screen.getByRole('button', { name: '배너 자동 재생 일시정지' }), {
     relatedTarget: document.body,
   });
-  act(() => jest.advanceTimersByTime(5_000));
+  act(() => jest.advanceTimersByTime(3_000));
   expectBanner(2);
 });
 
