@@ -1,11 +1,13 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { updateMyProfileMutation } from '@/apis/user';
+import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { Input } from '@/components/Input';
 import { SelectionModal } from '@/components/modals/SelectionModal';
+import { AvatarUploadButton } from '@/components/users/AvatarUploadButton';
 import type { UserProfile } from '@/types/user';
 import { getApiErrorMessage } from '@/utils/error';
 
@@ -15,17 +17,32 @@ export interface ProfileEditModalProps {
 }
 
 /**
- * 내 프로필의 닉네임을 고친다.
+ * 내 프로필의 사진과 닉네임을 고친다.
  *
- * 구성원 인증을 마친 사용자는 인증 때 확인한 닉네임을 써야 해서 닉네임 칸을 막는다.
- * 프로필 수정은 전체 교체라 지금 사진, 소개, 링크도 그대로 다시 보낸다.
+ * 구성원 인증을 마친 사용자는 인증 때 확인한 닉네임을 써야 해서 닉네임 칸만 막는다.
+ * 사진은 고른 즉시 올려 두고, 저장할 때 그 미디어 ID를 함께 보낸다.
+ * 프로필 수정은 전체 교체라 화면에 없는 소개와 링크도 그대로 다시 보낸다.
  */
 export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
   const formId = useId();
   const client = useQueryClient();
   const verified = profile.userType !== 'GENERAL';
   const [displayName, setDisplayName] = useState(profile.displayName);
+  // 저장할 사진. 새로 올린 사진은 서버 주소를 모르니 미리보기 주소로 보여 준다.
+  const [avatar, setAvatar] = useState({
+    id: profile.avatarImageId ?? null,
+    url: profile.avatarUrl ?? null,
+  });
+  const [preview, setPreview] = useState<string>();
   const [error, setError] = useState<string>();
+  const objectUrls = useRef<string[]>([]);
+  // 업로드가 끝났을 때 부르는 함수는 고를 때의 렌더에서 온 것이라, 최신 미리보기는 ref로 읽는다.
+  const previewRef = useRef<string>(undefined);
+  const uploading = preview !== undefined;
+
+  // 미리보기 주소는 저장한 사진으로 계속 쓸 수 있어서 모달을 닫을 때 한꺼번에 정리한다.
+  useEffect(() => () => objectUrls.current.forEach((url) => URL.revokeObjectURL(url)), []);
+
   const update = useMutation({
     ...updateMyProfileMutation,
     onSuccess: async () => {
@@ -44,7 +61,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
   }
 
   function submit() {
-    if (verified || update.isPending) return;
+    if (uploading || update.isPending) return;
     const nextError = validate();
     setError(nextError);
     if (nextError) return;
@@ -54,7 +71,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
       bio: profile.bio,
       githubProfileUrl: profile.githubProfileUrl,
       blogUrl: profile.blogUrl,
-      avatarImageId: profile.avatarImageId,
+      avatarImageId: avatar.id,
     });
   }
 
@@ -72,7 +89,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
             form={formId}
             size="lg"
             className="flex-1 md:flex-none"
-            disabled={verified || update.isPending}
+            disabled={uploading || update.isPending}
           >
             {update.isPending ? '저장 중…' : '저장'}
           </Button>
@@ -87,6 +104,40 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
           submit();
         }}
       >
+        <div className="flex flex-col items-center gap-3">
+          <Avatar
+            size="lg"
+            src={preview ?? avatar.url}
+            name={displayName || profile.displayName}
+            alt=""
+          />
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <AvatarUploadButton
+              label={avatar.url ? '사진 변경' : '프로필 사진 추가'}
+              disabled={update.isPending}
+              onPreview={(objectUrl) => {
+                if (objectUrl) objectUrls.current.push(objectUrl);
+                previewRef.current = objectUrl;
+                setPreview(objectUrl);
+              }}
+              onUploaded={(mediaId) => {
+                setAvatar({ id: mediaId, url: previewRef.current ?? null });
+                previewRef.current = undefined;
+                setPreview(undefined);
+              }}
+            />
+            {avatar.url && (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={uploading || update.isPending}
+                onClick={() => setAvatar({ id: null, url: null })}
+              >
+                기본 이미지로
+              </Button>
+            )}
+          </div>
+        </div>
         <Field label="닉네임" error={error}>
           {(id) => (
             <div className="flex flex-col gap-1.5">
