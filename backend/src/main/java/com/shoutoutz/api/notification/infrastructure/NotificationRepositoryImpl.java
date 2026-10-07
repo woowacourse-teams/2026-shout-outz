@@ -114,8 +114,14 @@ public class NotificationRepositoryImpl implements NotificationRepository, Notif
                 """
                         WITH candidates AS (
                             SELECT f.author_id AS recipient_id,
-                                   'QUESTION_ACTIVITY' AS notification_type,
-                                   '내 질문에 새로운 답변이 달렸어요.' AS message,
+                                   CASE WHEN f.feed_type = 'QUESTION'
+                                        THEN 'QUESTION_ACTIVITY'
+                                        ELSE 'POST_ACTIVITY'
+                                   END AS notification_type,
+                                   CASE WHEN f.feed_type = 'QUESTION'
+                                        THEN '내 질문에 새로운 답변이 달렸어요.'
+                                        ELSE '내 피드에 새로운 댓글이 달렸어요.'
+                                   END AS message,
                                    1 AS priority
                             FROM feeds f
                             JOIN users recipient ON recipient.id = f.author_id
@@ -131,8 +137,11 @@ public class NotificationRepositoryImpl implements NotificationRepository, Notif
                                    '관심 있는 질문에 새로운 답변이 달렸어요.' AS message,
                                    2 AS priority
                             FROM feed_reactions reaction
+                            JOIN feeds f ON f.id = reaction.feed_id
                             JOIN users recipient ON recipient.id = reaction.user_id
                             WHERE reaction.feed_id = :feedId
+                              AND f.feed_type = 'QUESTION'
+                              AND f.deleted_at IS NULL
                               AND reaction.reaction_type = 'LIKE'
                               AND recipient.status = 'ACTIVE'
                               AND recipient.deleted_at IS NULL
@@ -140,12 +149,20 @@ public class NotificationRepositoryImpl implements NotificationRepository, Notif
                             UNION ALL
 
                             SELECT comment.author_id AS recipient_id,
-                                   'COMMENTED_QUESTION_ACTIVITY' AS notification_type,
-                                   '참여한 질문에 새로운 답변이 달렸어요.' AS message,
+                                   CASE WHEN f.feed_type = 'QUESTION'
+                                        THEN 'COMMENTED_QUESTION_ACTIVITY'
+                                        ELSE 'COMMENTED_POST_ACTIVITY'
+                                   END AS notification_type,
+                                   CASE WHEN f.feed_type = 'QUESTION'
+                                        THEN '댓글을 남긴 질문에 새로운 답변이 달렸어요.'
+                                        ELSE '댓글을 남긴 피드에 새로운 댓글이 달렸어요.'
+                                   END AS message,
                                    3 AS priority
                             FROM feed_comments comment
+                            JOIN feeds f ON f.id = comment.feed_id
                             JOIN users recipient ON recipient.id = comment.author_id
                             WHERE comment.feed_id = :feedId
+                              AND f.deleted_at IS NULL
                               AND comment.deleted_at IS NULL
                               AND recipient.status = 'ACTIVE'
                               AND recipient.deleted_at IS NULL
