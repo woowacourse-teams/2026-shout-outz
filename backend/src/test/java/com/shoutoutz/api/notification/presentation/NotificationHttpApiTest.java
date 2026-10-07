@@ -71,10 +71,21 @@ class NotificationHttpApiTest {
                 false,
                 Instant.parse("2026-09-29T00:00:00Z")
         );
+        NotificationResponse replyNotification = new NotificationResponse(
+                98L,
+                NotificationType.COMMENT_REPLY,
+                "내 댓글에 새로운 답글이 달렸어요.",
+                11L,
+                "피드 제목",
+                22L,
+                new NotificationResponse.Actor(30L, "@actor", "작성자", null),
+                false,
+                Instant.parse("2026-09-28T00:00:00Z")
+        );
         given(notificationService.findAll(USER_ID, null, 20))
                 .willReturn(new NotificationFindAllResponse(
-                        List.of(questionNotification, postNotification),
-                        new SliceMetaResponse(null, false, 2L)
+                        List.of(questionNotification, postNotification, replyNotification),
+                        new SliceMetaResponse(null, false, 3L)
                 ));
 
         mockMvc.perform(get("/api/v1/notifications").with(authenticated()))
@@ -88,6 +99,9 @@ class NotificationHttpApiTest {
                 .andExpect(jsonPath("$.data[1].notificationType").value("POST_ACTIVITY"))
                 .andExpect(jsonPath("$.data[1].message")
                         .value("내 피드에 새로운 댓글이 달렸어요."))
+                .andExpect(jsonPath("$.data[2].notificationType").value("COMMENT_REPLY"))
+                .andExpect(jsonPath("$.data[2].message")
+                        .value("내 댓글에 새로운 답글이 달렸어요."))
                 .andExpect(jsonPath("$.data[0].isRead").value(false))
                 .andExpect(jsonPath("$.meta.hasNext").value(false))
                 .andDo(document(
@@ -228,7 +242,8 @@ class NotificationHttpApiTest {
                         .type(JsonFieldType.NUMBER).description("알림 ID"),
                 fieldWithPath("data[].notificationType")
                         .type(JsonFieldType.STRING).description(
-                                "알림 유형. POST_ACTIVITY(내 피드), COMMENTED_POST_ACTIVITY(댓글을 남긴 피드), "
+                                "알림 유형. COMMENT_REPLY(내 댓글의 직접 답글), "
+                                        + "POST_ACTIVITY(내 피드), COMMENTED_POST_ACTIVITY(댓글을 남긴 피드), "
                                         + "QUESTION_ACTIVITY(내 질문), INTERESTED_QUESTION_ACTIVITY(궁금해요를 누른 질문), "
                                         + "COMMENTED_QUESTION_ACTIVITY(댓글을 남긴 질문)"
                         ),

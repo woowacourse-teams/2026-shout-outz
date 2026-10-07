@@ -110,12 +110,12 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\":\"type은\
-                    \ 필수입니다.\"},{\"field\":\"feedType\",\"message\":\"feedType은 필수\
-                    입니다.\"},{\"field\":\"displayOrder\",\"message\":\"displayOrder는\
-                    \ 0 이상이어야 합니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"},{\"field\":\"feedType\",\"message\":\"feedType은\
+                    \ 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug 형식이 올바르지 않습\
+                    니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -455,8 +455,12 @@ paths:
                     :11,\"feedTitle\":\"피드 제목\",\"commentId\":21,\"actor\":{\"userId\"\
                     :30,\"handle\":\"@actor\",\"displayName\":\"작성자\",\"avatarUrl\"\
                     :null},\"isRead\":false,\"createdAt\":\"2026-09-29T00:00:00Z\"\
-                    }],\"meta\":{\"nextCursor\":null,\"hasNext\":false,\"totalCount\"\
-                    :2}}"
+                    },{\"notificationId\":98,\"notificationType\":\"COMMENT_REPLY\"\
+                    ,\"message\":\"내 댓글에 새로운 답글이 달렸어요.\",\"feedId\":11,\"feedTitle\"\
+                    :\"피드 제목\",\"commentId\":22,\"actor\":{\"userId\":30,\"handle\"\
+                    :\"@actor\",\"displayName\":\"작성자\",\"avatarUrl\":null},\"isRead\"\
+                    :false,\"createdAt\":\"2026-09-28T00:00:00Z\"}],\"meta\":{\"nextCursor\"\
+                    :null,\"hasNext\":false,\"totalCount\":3}}"
   /api/v1/projects:
     get:
       tags:
@@ -1225,9 +1229,9 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
                     :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
@@ -1781,10 +1785,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
+                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -2616,9 +2620,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -5501,6 +5505,96 @@ components:
         status:
           type: string
           description: 응답 상태
+    NotificationListSuccessResponse:
+      title: NotificationListSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 알림 목록
+          items:
+            required:
+            - createdAt
+            - isRead
+            - message
+            - notificationId
+            - notificationType
+            type: object
+            properties:
+              actor:
+                type: object
+                properties:
+                  avatarUrl:
+                    type: string
+                    description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 사용자 아바타 URL
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 사용자 표시 이름
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 사용자 handle
+                    nullable: true
+                  userId:
+                    type: number
+                    description: 사용자 ID
+                    nullable: true
+                description: 알림을 발생시킨 사용자
+              createdAt:
+                type: string
+                description: 알림 생성 시각
+              feedId:
+                type: number
+                description: 대상 피드 ID
+                nullable: true
+              isRead:
+                type: boolean
+                description: 읽음 상태
+              commentId:
+                type: number
+                description: 대상 댓글 ID
+                nullable: true
+              notificationId:
+                type: number
+                description: 알림 ID
+              notificationType:
+                type: string
+                description: "알림 유형. COMMENT_REPLY(내 댓글의 직접 답글), POST_ACTIVITY(내 피\
+                  드), COMMENTED_POST_ACTIVITY(댓글을 남긴 피드), QUESTION_ACTIVITY(내 질문),\
+                  \ INTERESTED_QUESTION_ACTIVITY(궁금해요를 누른 질문), COMMENTED_QUESTION_ACTIVITY(댓\
+                  글을 남긴 질문)"
+              feedTitle:
+                type: string
+                description: 대상 피드 제목
+                nullable: true
+              message:
+                type: string
+                description: 알림 메시지
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: 전체 알림 수
+          description: 페이지 정보
+        status:
+          type: string
+          description: 응답 상태
     EventCreateSuccessResponse:
       title: EventCreateSuccessResponse
       required:
@@ -5611,95 +5705,6 @@ components:
               type: number
               description: 이벤트 ID
           description: 생성된 이벤트
-        status:
-          type: string
-          description: 응답 상태
-    NotificationListSuccessResponse:
-      title: NotificationListSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 알림 목록
-          items:
-            required:
-            - createdAt
-            - isRead
-            - message
-            - notificationId
-            - notificationType
-            type: object
-            properties:
-              actor:
-                type: object
-                properties:
-                  avatarUrl:
-                    type: string
-                    description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 사용자 아바타 URL
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 사용자 표시 이름
-                    nullable: true
-                  handle:
-                    type: string
-                    description: 사용자 handle
-                    nullable: true
-                  userId:
-                    type: number
-                    description: 사용자 ID
-                    nullable: true
-                description: 알림을 발생시킨 사용자
-              createdAt:
-                type: string
-                description: 알림 생성 시각
-              feedId:
-                type: number
-                description: 대상 피드 ID
-                nullable: true
-              isRead:
-                type: boolean
-                description: 읽음 상태
-              commentId:
-                type: number
-                description: 대상 댓글 ID
-                nullable: true
-              notificationId:
-                type: number
-                description: 알림 ID
-              notificationType:
-                type: string
-                description: "알림 유형. POST_ACTIVITY(내 피드), COMMENTED_POST_ACTIVITY(댓\
-                  글을 남긴 피드), QUESTION_ACTIVITY(내 질문), INTERESTED_QUESTION_ACTIVITY(궁\
-                  금해요를 누른 질문), COMMENTED_QUESTION_ACTIVITY(댓글을 남긴 질문)"
-              feedTitle:
-                type: string
-                description: 대상 피드 제목
-                nullable: true
-              message:
-                type: string
-                description: 알림 메시지
-        meta:
-          required:
-          - hasNext
-          - totalCount
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-            totalCount:
-              type: number
-              description: 전체 알림 수
-          description: 페이지 정보
         status:
           type: string
           description: 응답 상태
@@ -7330,6 +7335,37 @@ components:
         status:
           type: string
           description: 응답 상태
+    HomeStatisticsSuccessResponse:
+      title: HomeStatisticsSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - currentCohort
+          - feedCount
+          - ongoingEventCount
+          - projectCount
+          type: object
+          properties:
+            projectCount:
+              type: number
+              description: 승인되었고 삭제되지 않은 프로젝트 수
+            currentCohort:
+              type: number
+              description: 전체 기수 개수
+            feedCount:
+              type: number
+              description: 삭제되지 않은 피드 수
+            ongoingEventCount:
+              type: number
+              description: 조회 시각에 진행 중인 삭제되지 않은 이벤트 수
+          description: 홈 통계
+        status:
+          type: string
+          description: 응답 상태
     UserProfileUpdateSuccessResponse:
       title: UserProfileUpdateSuccessResponse
       required:
@@ -7390,37 +7426,6 @@ components:
               type: number
               description: 사용자 ID
           description: 수정된 사용자 프로필
-        status:
-          type: string
-          description: 응답 상태
-    HomeStatisticsSuccessResponse:
-      title: HomeStatisticsSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - currentCohort
-          - feedCount
-          - ongoingEventCount
-          - projectCount
-          type: object
-          properties:
-            projectCount:
-              type: number
-              description: 승인되었고 삭제되지 않은 프로젝트 수
-            currentCohort:
-              type: number
-              description: 전체 기수 개수
-            feedCount:
-              type: number
-              description: 삭제되지 않은 피드 수
-            ongoingEventCount:
-              type: number
-              description: 조회 시각에 진행 중인 삭제되지 않은 이벤트 수
-          description: 홈 통계
         status:
           type: string
           description: 응답 상태
@@ -8166,6 +8171,41 @@ components:
         status:
           type: string
           description: 응답 상태
+    FeedCommentReactionSuccessResponse:
+      title: FeedCommentReactionSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - agreeCount
+          - commentId
+          - feedId
+          - type
+          type: object
+          properties:
+            feedId:
+              type: number
+              description: 피드 ID
+            agreeCount:
+              type: number
+              description: 댓글 공감 수
+            active:
+              type: boolean
+              description: 요청한 반응의 활성 상태
+            commentId:
+              type: number
+              description: 댓글 ID
+            type:
+              type: string
+              description: 반응 타입(현재 AGREE)
+          description: 피드 댓글 반응 변경 결과
+        status:
+          type: string
+          description: 응답 상태
     CategorySaveSuccessResponse:
       title: CategorySaveSuccessResponse
       required:
@@ -8212,41 +8252,6 @@ components:
               type: number
               description: 카테고리 ID
           description: 카테고리
-        status:
-          type: string
-          description: 응답 상태
-    FeedCommentReactionSuccessResponse:
-      title: FeedCommentReactionSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - active
-          - agreeCount
-          - commentId
-          - feedId
-          - type
-          type: object
-          properties:
-            feedId:
-              type: number
-              description: 피드 ID
-            agreeCount:
-              type: number
-              description: 댓글 공감 수
-            active:
-              type: boolean
-              description: 요청한 반응의 활성 상태
-            commentId:
-              type: number
-              description: 댓글 ID
-            type:
-              type: string
-              description: 반응 타입(현재 AGREE)
-          description: 피드 댓글 반응 변경 결과
         status:
           type: string
           description: 응답 상태
