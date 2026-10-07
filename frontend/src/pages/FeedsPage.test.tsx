@@ -557,3 +557,21 @@ test('익명 댓글 선택을 작성 요청에 전달한다', async () => {
   expect(body).toEqual({ content: '익명으로 경험 공유', isAnonymous: true });
   expect(screen.getByRole('checkbox', { name: '익명으로 남기기' })).not.toBeChecked();
 });
+
+test.each(['LATEST', 'POPULAR', 'WAITING'] as const)('질문 %s 빈 목록을 안내한다', async (sort) => {
+  server.use(
+    http.get('*/api/v1/feeds', () =>
+      HttpResponse.json({
+        status: 'success',
+        data: [],
+        meta: { hasNext: false, nextCursor: null },
+      }),
+    ),
+  );
+  show(<FeedList sort={sort} feedType="QUESTION" />);
+  expect(
+    await screen.findByText(
+      sort === 'WAITING' ? '답변을 기다리는 질문이 없어요!' : '아직 등록된 질문이 없습니다.',
+    ),
+  ).toBeInTheDocument();
+});
