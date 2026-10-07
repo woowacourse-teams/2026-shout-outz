@@ -24,6 +24,8 @@ import { myProfileSummaryQuery, updateMyProfileMutation } from '@/apis/user';
 import { verificationRequestQuery } from '@/apis/verification';
 import { Button, getButtonStyles } from '@/components/Button';
 import { AvatarUploadButton } from '@/components/users/AvatarUploadButton';
+import { ProfileEditModal } from '@/components/modals/ProfileEditModal';
+import { useModal } from '@/hooks/useModal';
 import { analytics } from '@/utils/analytics';
 import { toProjectSlugParam } from '@/utils/project';
 
@@ -83,6 +85,7 @@ export function UserProfilePage() {
 
 function MyProfileActions({ profile }: { profile: UserProfile }) {
   const client = useQueryClient();
+  const { open } = useModal();
   const session = useQuery({ ...sessionQuery, enabled: typeof window !== 'undefined' });
   const authenticated = session.data?.status === 'AUTHENTICATED' && session.data.userId !== null;
   const me = useQuery({
@@ -117,8 +120,15 @@ function MyProfileActions({ profile }: { profile: UserProfile }) {
   // 인증이 끝났으면 인증 링크만 감춘다. 사진 버튼은 남는다.
   const showVerification = !verification.isPending && verification.data?.status !== 'APPROVED';
 
+  const openEdit = () => {
+    void open<void>((close) => <ProfileEditModal profile={profile} onClose={() => close()} />);
+  };
+
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2">
+      <Button variant="outline" size="sm" onClick={openEdit}>
+        프로필 수정
+      </Button>
       <AvatarUploadButton
         label={profile.avatarUrl ? '사진 변경' : '프로필 사진 추가'}
         disabled={update.isPending}

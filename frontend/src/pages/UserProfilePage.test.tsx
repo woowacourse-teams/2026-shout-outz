@@ -199,3 +199,87 @@ describe('프로필 사진', () => {
     );
   });
 });
+
+describe('프로필 수정', () => {
+  const generalProfile = {
+    userId: 10,
+    handle: 'woojin',
+    displayName: '정우진',
+    userType: 'GENERAL',
+    track: null,
+    cohort: null,
+    bio: null,
+    avatarImageId: 3,
+    avatarUrl: 'https://example.com/me.png',
+    githubProfileUrl: null,
+    blogUrl: null,
+    counts: { projects: 0, feeds: 0 },
+  };
+
+  it('인증 전 사용자는 닉네임과 소개, 링크를 고칠 수 있다', async () => {
+    const user = userEvent.setup();
+    let body: unknown;
+    server.use(
+      http.get('/api/v1/users/woojin', () =>
+        HttpResponse.json({ status: 'success', data: generalProfile }),
+      ),
+      http.put('/api/v1/users/me', async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ status: 'success', data: generalProfile });
+      }),
+    );
+
+    renderRoute('/users/woojin');
+    await user.click(await screen.findByRole('button', { name: '프로필 수정' }));
+
+    const dialog = await screen.findByRole('dialog');
+    const nickname = within(dialog).getByLabelText('닉네임');
+    expect(nickname).toBeEnabled();
+    await user.clear(nickname);
+    await user.type(nickname, '우진');
+    await user.type(within(dialog).getByLabelText('한 줄 소개'), '안녕하세요');
+    await user.click(within(dialog).getByRole('button', { name: '저장' }));
+
+    // 프로필 수정은 전체 교체라 지금 사진도 그대로 다시 보낸다.
+    await waitFor(() =>
+      expect(body).toEqual({
+        displayName: '우진',
+        bio: '안녕하세요',
+        githubProfileUrl: null,
+        blogUrl: null,
+        avatarImageId: 3,
+      }),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('구성원 인증을 마친 사용자는 닉네임을 고칠 수 없다', async () => {
+    const user = userEvent.setup();
+
+    renderRoute('/users/woojin');
+    await user.click(await screen.findByRole('button', { name: '프로필 수정' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByLabelText('닉네임')).toBeDisabled();
+    expect(within(dialog).getByLabelText('닉네임')).toHaveAccessibleDescription(
+      '구성원 인증을 마친 사용자는 닉네임을 바꿀 수 없어요.',
+    );
+    expect(within(dialog).getByLabelText('한 줄 소개')).toBeEnabled();
+  });
+
+  it('남의 프로필에는 수정 버튼이 없다', async () => {
+    server.use(
+      http.get('/api/v1/users/me/summary', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: { userId: 99, handle: 'someone', displayName: '남', avatarUrl: null },
+        }),
+      ),
+    );
+
+    renderRoute('/users/woojin');
+    await screen.findByRole('heading', { name: '정우진' });
+
+    expect(screen.queryByRole('button', { name: '프로필 수정' })).not.toBeInTheDocument();
+  });
+});
