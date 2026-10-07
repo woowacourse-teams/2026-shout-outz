@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
@@ -96,6 +96,7 @@ function VerificationContent() {
 
 function VerificationForm({ rejectionReason }: { rejectionReason: string | null }) {
   const client = useQueryClient();
+  const policyId = useId();
   const { data: cohorts } = useSuspenseQuery(cohortsQueryOptions());
   const mutation = useMutation({
     ...createVerificationRequestMutation,
@@ -122,6 +123,7 @@ function VerificationForm({ rejectionReason }: { rejectionReason: string | null 
         </p>
       )}
       <form
+        aria-describedby={crew ? policyId : undefined}
         className="mt-7 flex flex-col gap-5"
         onSubmit={(event) => {
           event.preventDefault();
@@ -154,45 +156,72 @@ function VerificationForm({ rejectionReason }: { rejectionReason: string | null 
         </Field>
         <Field label="우테코 닉네임">
           {(id) => (
-            <Input
-              id={id}
-              value={nickname}
-              maxLength={50}
-              onChange={(event) => setNickname(event.target.value)}
-              placeholder="닉네임"
-            />
+            <>
+              <Input
+                id={id}
+                value={nickname}
+                maxLength={50}
+                onChange={(event) => setNickname(event.target.value)}
+                placeholder="닉네임"
+                aria-describedby={`${id}-help`}
+              />
+              <ul id={`${id}-help`} className="list-disc pl-4 text-xs leading-5 text-gray-500">
+                <li>우아한테크코스에서 사용하는 실제 닉네임을 입력해 주세요.</li>
+              </ul>
+            </>
           )}
         </Field>
         {crew && (
           <>
             <Field label="기수">
               {(id) => (
-                <Select
-                  id={id}
-                  value={cohort}
-                  placeholder="기수를 선택하세요"
-                  onValueChange={setCohort}
-                >
-                  {cohorts.map((item) => (
-                    <Select.Item key={item.cohort} value={String(item.cohort)}>
-                      {item.cohort}기 ({item.year})
-                    </Select.Item>
-                  ))}
-                </Select>
+                <>
+                  <Select
+                    id={id}
+                    value={cohort}
+                    placeholder="기수를 선택하세요"
+                    onValueChange={setCohort}
+                    aria-describedby={`${id}-help`}
+                  >
+                    {cohorts.map((item) => (
+                      <Select.Item key={item.cohort} value={String(item.cohort)}>
+                        {item.cohort}기 ({item.year})
+                      </Select.Item>
+                    ))}
+                  </Select>
+                  <ul id={`${id}-help`} className="list-disc pl-4 text-xs leading-5 text-gray-500">
+                    <li>본인의 우아한테크코스 기수를 정확히 선택해 주세요.</li>
+                  </ul>
+                </>
               )}
             </Field>
             <Field label="트랙">
               {(id) => (
-                <Select
-                  id={id}
-                  value={track}
-                  placeholder="트랙을 선택하세요"
-                  onValueChange={(value) => setTrack(value as VerificationTrack)}
-                >
-                  <Select.Item value="BACKEND">백엔드</Select.Item>
-                  <Select.Item value="FRONTEND">프론트엔드</Select.Item>
-                  <Select.Item value="ANDROID">안드로이드</Select.Item>
-                </Select>
+                <>
+                  <Select
+                    id={id}
+                    value={track}
+                    placeholder="트랙을 선택하세요"
+                    onValueChange={(value) => setTrack(value as VerificationTrack)}
+                    aria-describedby={`${id}-help`}
+                  >
+                    <Select.Item value="BACKEND">백엔드</Select.Item>
+                    <Select.Item value="FRONTEND">프론트엔드</Select.Item>
+                    <Select.Item value="ANDROID">안드로이드</Select.Item>
+                  </Select>
+                  <ul
+                    id={`${id}-help`}
+                    className="flex list-disc flex-col gap-1 pl-4 text-xs leading-5 text-gray-500"
+                  >
+                    <li>본인의 파트(백엔드·프론트엔드·안드로이드)를 정확히 선택해 주세요.</li>
+                    <li id={policyId} className="text-gray-600">
+                      크루 인증 이후에는{' '}
+                      <strong className="font-semibold">
+                        닉네임과 파트·기수 정보를 수정할 수 없습니다.
+                      </strong>
+                    </li>
+                  </ul>
+                </>
               )}
             </Field>
           </>
