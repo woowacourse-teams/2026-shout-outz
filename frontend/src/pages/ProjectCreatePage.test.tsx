@@ -101,7 +101,10 @@ describe('ProjectCreatePage', () => {
     await user.type(screen.getByRole('searchbox', { name: '크루 검색' }), '정우진');
 
     const results = await screen.findByRole('list', { name: '크루 검색 결과' });
-    expect(within(results).getByRole('checkbox', { name: /정우진/ })).toBeDisabled();
+    const authorOption = within(results).getByRole('checkbox', { name: /정우진/ });
+    expect(authorOption).toHaveAttribute('aria-disabled', 'true');
+    await user.click(authorOption);
+    expect(authorOption).toHaveAttribute('aria-checked', 'true');
     expect(screen.queryByRole('button', { name: '정우진 선택 해제' })).not.toBeInTheDocument();
   });
 

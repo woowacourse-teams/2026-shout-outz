@@ -581,3 +581,19 @@ test.each(['LATEST', 'POPULAR', 'WAITING'] as const)('질문 %s 빈 목록을 �
     ),
   ).toBeInTheDocument();
 });
+
+test.each(['일반', '인기'])(
+  '%s 목록에서 소속 아이콘의 호버와 탭으로 설명을 표시한다',
+  async (kind) => {
+    const user = userEvent.setup();
+    show(kind === '일반' ? <FeedList sort="LATEST" /> : <PopularFeedList />);
+    const icons = await screen.findAllByRole('button', { name: '우아한테크코스 소속' });
+    const icon = icons[0]!;
+    await user.hover(icon);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('소속 인증을 완료한 사용자');
+    await user.unhover(icon);
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    await user.pointer([{ keys: '[TouchA>]', target: icon }, { keys: '[/TouchA]' }]);
+    expect(screen.getByRole('tooltip')).toBeInTheDocument();
+  },
+);
