@@ -196,7 +196,8 @@ function FeedTab({ handle }: { handle: string }) {
       {feeds.length === 0 ? (
         <p className="py-16 text-center text-sm text-gray-500">작성한 피드가 없습니다.</p>
       ) : (
-        <ul>
+        // 커뮤니티 목록(FeedList)·홈 피드와 같은 간격으로 카드를 띄운다.
+        <ul className="space-y-3">
           {feeds.map((feed) => (
             <li key={feed.feedId} className="min-w-0">
               <FeedCard feed={feed} surface="profile" />
