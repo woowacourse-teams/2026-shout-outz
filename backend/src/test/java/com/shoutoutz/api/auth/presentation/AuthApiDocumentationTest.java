@@ -4,6 +4,8 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
@@ -24,6 +26,7 @@ import com.shoutoutz.api.auth.application.OAuthLoginService;
 import com.shoutoutz.api.auth.application.OAuthSignupService;
 import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
 import com.shoutoutz.api.auth.application.command.OAuthLoginStartResult;
+import com.shoutoutz.api.auth.application.command.OAuthSignupCommand;
 import com.shoutoutz.api.auth.application.command.OAuthSignupResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
@@ -43,6 +46,8 @@ import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -323,6 +328,51 @@ class AuthApiDocumentationTest {
                                 )
                                 .build())
                 ));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "{\"handle\":\"@zzaekkii\",\"displayName\":\"재키\"}",
+            "{\"handle\":\"@zzaekkii\",\"displayName\":\"재키\","
+                    + "\"bio\":null,\"githubProfileUrl\":null,\"blogUrl\":null}"
+    })
+    @DisplayName("추가 프로필 필드를 생략하거나 null로 보내도 가입할 수 있다")
+    void signupWithoutAdditionalProfileInformation(String requestBody) throws Exception {
+        OAuthIdentity identity = githubIdentity();
+        given(authSessionAccessor.findPendingIdentity(any())).willReturn(Optional.of(identity));
+        given(oauthSignupService.signup(any())).willReturn(new OAuthSignupResult(1L, UserRole.USER));
+
+        mockMvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated());
+
+        verify(oauthSignupService).signup(new OAuthSignupCommand(
+                "@zzaekkii", "재키", null, null, null, identity
+        ));
+    }
+
+    @Test
+    @DisplayName("추가 프로필 정보가 유효하지 않으면 가입 처리 전에 400을 반환한다")
+    void rejectInvalidAdditionalProfileInformation() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "handle": "@zzaekkii",
+                                  "displayName": "재키",
+                                  "bio": "%s",
+                                  "githubProfileUrl": "http://github.com/zzaekkii",
+                                  "blogUrl": "not-a-url"
+                                }
+                                """.formatted("😀".repeat(201))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details[?(@.field == 'bio')]").isNotEmpty())
+                .andExpect(jsonPath("$.details[?(@.field == 'githubProfileUrl')]").isNotEmpty())
+                .andExpect(jsonPath("$.details[?(@.field == 'blogUrl')]").isNotEmpty());
+
+        verifyNoInteractions(oauthSignupService);
     }
 
     @Test
