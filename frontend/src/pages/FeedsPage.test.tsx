@@ -302,17 +302,22 @@ test('익명 댓글은 본인에게 전체 소속을, 타인에게 수료 여부
   const own = (await screen.findByText('본인 익명 댓글')).closest('li')!;
   expect(within(own).getByRole('link', { name: '개발용 사용자 프로필 보기' })).toBeInTheDocument();
   expect(within(own).getByText('익명으로 작성한 글입니다')).toBeInTheDocument();
-  expect(within(own).getByRole('img', { name: '우아한테크코스 소속 인증' })).toBeInTheDocument();
+  expect(
+    within(own).queryByRole('img', { name: '우아한테크코스 소속 인증' }),
+  ).not.toBeInTheDocument();
   expect(within(own).getByText('작성자')).toBeInTheDocument();
   expect(within(own).queryByText('백엔드 크루')).not.toBeInTheDocument();
-  expect(within(own).getByText('우아한테크코스 8기 백엔드')).toBeInTheDocument();
+  expect(within(own).getByText('8기 백엔드 크루')).toBeInTheDocument();
   expect(within(own).queryByText('크루')).not.toBeInTheDocument();
 
   const other = screen.getByText('다른 사람 익명 댓글').closest('li')!;
   expect(within(other).getByText('익명')).toBeInTheDocument();
+  expect(within(other).queryByText('익', { exact: true })).not.toBeInTheDocument();
   expect(within(other).queryByRole('link', { name: /프로필 보기/ })).not.toBeInTheDocument();
-  expect(within(other).getByRole('img', { name: '우아한테크코스 소속 인증' })).toBeInTheDocument();
-  expect(within(other).getByText('우아한테크코스 수료생')).toBeInTheDocument();
+  expect(
+    within(other).queryByRole('img', { name: '우아한테크코스 소속 인증' }),
+  ).not.toBeInTheDocument();
+  expect(within(other).getByText('수료생')).toBeInTheDocument();
   expect(within(other).queryByText('작성자')).not.toBeInTheDocument();
   expect(within(other).queryByText('크루')).not.toBeInTheDocument();
 });
@@ -320,7 +325,7 @@ test('기수 숫자가 내려온 댓글 작성자는 기수를 표시한다', as
   show(<Comments feedId={1} />);
 
   const comment = (await screen.findByText('경험을 공유해 주셔서 감사합니다!')).closest('li')!;
-  expect(within(comment).getByText('우아한테크코스 8기 백엔드')).toBeInTheDocument();
+  expect(within(comment).getByText('8기 백엔드 크루')).toBeInTheDocument();
 });
 test('댓글 작성, 수정, 삭제가 조회 결과에 반영된다', async () => {
   const user = userEvent.setup();

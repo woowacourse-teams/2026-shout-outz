@@ -17,6 +17,8 @@ import { sessionQuery } from '@/apis/session';
 import { Button } from '@/components/Button';
 import { Avatar } from '@/components/Avatar';
 import { UserAffiliation } from '@/components/users/UserAffiliation';
+import { WoowacourseIcon } from '@/components/users/WoowacourseIcon';
+import { UserHandle } from '@/components/users/UserHandle';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { LinkifiedText } from '@/components/LinkifiedText';
 import { LinkPreview } from '@/components/feeds/LinkPreview';
@@ -498,12 +500,24 @@ function CommentItem({
 
   const authorDetails = (
     <>
-      <Avatar size="sm" src={item.author.avatarUrl} name={authorName ?? undefined} alt="" />
+      <Avatar
+        size="sm"
+        anonymous={item.isAnonymous && !isOwnAnonymous}
+        src={item.author.avatarUrl}
+        name={authorName ?? undefined}
+        alt=""
+      />
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-1.5">
           <span className="group-hover:text-primary-600 truncate text-xs leading-5 font-semibold text-gray-900">
             {authorName}
           </span>
+          {item.isAnonymous && !isOwnAnonymous && (
+            <WoowacourseIcon userType={item.author.userType} />
+          )}
+          {(!item.isAnonymous || isOwnAnonymous) && (
+            <UserHandle handle={item.author.handle} userType={item.author.userType} />
+          )}
           {isFeedAuthor && (
             <span className="bg-primary-50 text-primary-700 rounded-full px-1.5 text-xs font-medium">
               작성자

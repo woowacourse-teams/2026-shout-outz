@@ -21,7 +21,7 @@ describe('UserProfilePage', () => {
     renderRoute('/users/woojin');
 
     expect(await screen.findByRole('heading', { name: '정우진' })).toBeInTheDocument();
-    expect(screen.getAllByText('우아한테크코스 8기 백엔드').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('8기 백엔드 크루').length).toBeGreaterThan(0);
     expect(
       screen.getByText('대규모 트래픽 분산 처리와 데이터 정합성에 집착하는 백엔드 개발자입니다.'),
     ).toBeInTheDocument();

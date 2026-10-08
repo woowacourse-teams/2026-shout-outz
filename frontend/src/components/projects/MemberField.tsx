@@ -2,6 +2,7 @@ import { IconPlus } from '@tabler/icons-react';
 
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { UserHandle } from '@/components/users/UserHandle';
 import { UserAffiliation } from '@/components/users/UserAffiliation';
 import { CrewSelectModal } from '@/components/modals/CrewSelectModal';
 import { useModal } from '@/hooks/useModal';
@@ -41,7 +42,11 @@ export function MemberField({ author, value, onChange, error }: MemberFieldProps
                 tone="primary"
                 className="max-w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 whitespace-normal"
               >
-                <span>{author.displayName} (작성자)</span>
+                <span className="flex min-w-0 flex-wrap items-baseline gap-x-1">
+                  <span>{author.displayName}</span>
+                  <UserHandle handle={author.handle} userType={author.userType} />
+                  <span>(작성자)</span>
+                </span>
                 <UserAffiliation {...author} />
               </Badge>
             </li>
@@ -52,7 +57,10 @@ export function MemberField({ author, value, onChange, error }: MemberFieldProps
                 tone="primary"
                 className="max-w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 whitespace-normal"
               >
-                <span>{crew.displayName}</span>
+                <span className="flex min-w-0 flex-wrap items-baseline gap-x-1">
+                  <span>{crew.displayName}</span>
+                  <UserHandle handle={crew.handle} userType={crew.userType} />
+                </span>
                 <UserAffiliation {...crew} />
               </Badge>
             </li>

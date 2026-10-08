@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { Avatar } from '@/components/Avatar';
 import { UserAffiliation } from '@/components/users/UserAffiliation';
+import { UserHandle } from '@/components/users/UserHandle';
 import type { UserType } from '@/types/user';
 
 /**
@@ -11,6 +12,7 @@ import type { UserType } from '@/types/user';
  */
 export interface ProfileHeaderProps {
   displayName: string;
+  handle?: string | null;
   userType?: UserType;
   cohort?: number | null;
   track?: string | null;
@@ -26,6 +28,7 @@ const LINK_STYLE =
 
 export function ProfileHeader({
   displayName,
+  handle,
   userType,
   cohort,
   track,
@@ -40,17 +43,18 @@ export function ProfileHeader({
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-4">
           <Avatar size="lg" src={avatarUrl} name={displayName} alt="" />
-          <div className="flex min-w-0 flex-col gap-1.5">
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-xl font-bold break-words text-gray-900 md:text-2xl">
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
+              <h1 className="text-xl leading-7 font-bold break-words text-gray-900 md:text-2xl md:leading-8">
                 {displayName}
               </h1>
+              <UserHandle handle={handle} userType={userType} className="text-sm leading-5" />
             </div>
             <UserAffiliation
               userType={userType}
               cohort={cohort}
               track={track}
-              className="text-sm"
+              className="text-sm leading-5"
             />
           </div>
         </div>

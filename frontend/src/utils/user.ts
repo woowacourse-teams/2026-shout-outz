@@ -20,7 +20,9 @@ export function formatUserAffiliation({
   if (userType === 'WOOWACOURSE_COACH') return '우아한테크코스 코치';
   if (userType !== 'WOOWACOURSE_CREW') return null;
   if (!anonymous && cohort != null) {
-    return ['우아한테크코스', `${cohort}기`, formatTrackLabel(track)].filter(Boolean).join(' ');
+    return ['우아한테크코스', `${cohort}기`, formatTrackLabel(track), '크루']
+      .filter(Boolean)
+      .join(' ');
   }
   return isCurrent === false ? '우아한테크코스 수료생' : '우아한테크코스 크루';
 }

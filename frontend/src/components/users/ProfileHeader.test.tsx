@@ -17,7 +17,7 @@ describe('ProfileHeader', () => {
     render(<ProfileHeader {...PROFILE} />);
 
     expect(screen.getByRole('heading', { name: '정우진' })).toBeInTheDocument();
-    expect(screen.getByText('우아한테크코스 6기 백엔드')).toBeInTheDocument();
+    expect(screen.getByText('6기 백엔드 크루')).toBeInTheDocument();
     expect(screen.getByText(PROFILE.bio!)).toBeInTheDocument();
   });
 

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { crewSearchQueryOptions } from '@/api/project';
 import { Avatar } from '@/components/Avatar';
+import { UserHandle } from '@/components/users/UserHandle';
 import { UserAffiliation } from '@/components/users/UserAffiliation';
 import { Button } from '@/components/Button';
 import {
@@ -67,7 +68,10 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
         <div className="flex items-center gap-2 rounded-xl bg-gray-50 p-3 text-sm font-semibold text-gray-900">
           <Avatar size="sm" src={author.avatarUrl} name={author.displayName} alt="" />
           <div className="min-w-0 flex-1">
-            <span>{author.displayName}</span>
+            <span className="flex min-w-0 flex-wrap items-baseline gap-x-1">
+              <span>{author.displayName}</span>
+              <UserHandle handle={author.handle} userType={author.userType} />
+            </span>
             <UserAffiliation {...author} />
           </div>
           <span className="text-primary-600 text-xs">작성자 · 항상 포함</span>
@@ -81,7 +85,10 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
         getLabel={(crew) => crew.displayName}
         renderLabel={(crew) => (
           <span className="flex min-w-0 flex-col items-start">
-            <span>{crew.displayName}</span>
+            <span className="flex min-w-0 flex-wrap items-baseline gap-x-1">
+              <span>{crew.displayName}</span>
+              <UserHandle handle={crew.handle} userType={crew.userType} />
+            </span>
             <UserAffiliation {...crew} />
           </span>
         )}
@@ -121,7 +128,7 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
                 >
                   <Avatar size="sm" src={crew.avatarUrl} name={crew.displayName} alt="" />
                   <span className="flex min-w-0 flex-col">
-                    <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
                       <span
                         className={cn(
                           'truncate text-sm font-bold',
@@ -130,6 +137,7 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
                       >
                         {crew.displayName}
                       </span>
+                      <UserHandle handle={crew.handle} userType={crew.userType} />
                     </span>
                     <UserAffiliation {...crew} />
                   </span>

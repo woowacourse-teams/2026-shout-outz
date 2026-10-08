@@ -4,23 +4,23 @@ import { UserAffiliation } from '@/components/users/UserAffiliation';
 test.each([
   [
     { userType: 'WOOWACOURSE_CREW', cohort: 8, track: 'BACKEND', isCurrent: true },
-    '우아한테크코스 8기 백엔드',
+    '8기 백엔드 크루',
   ],
   [
     { userType: 'WOOWACOURSE_CREW', cohort: 7, track: 'FRONTEND', isCurrent: false },
-    '우아한테크코스 7기 프론트엔드',
+    '7기 프론트엔드 크루',
   ],
   [
     { userType: 'WOOWACOURSE_CREW', cohort: 8, track: 'BACKEND', isCurrent: true, anonymous: true },
-    '우아한테크코스 크루',
+    '크루',
   ],
-  [{ userType: 'WOOWACOURSE_CREW', isCurrent: false, anonymous: true }, '우아한테크코스 수료생'],
-  [{ userType: 'WOOWACOURSE_CREW' }, '우아한테크코스 크루'],
-  [{ userType: 'WOOWACOURSE_COACH', isCurrent: false }, '우아한테크코스 코치'],
-])('소속 정보 %j를 문구와 인증 배지로 표시한다', (user, label) => {
+  [{ userType: 'WOOWACOURSE_CREW', isCurrent: false, anonymous: true }, '수료생'],
+  [{ userType: 'WOOWACOURSE_CREW' }, '크루'],
+  [{ userType: 'WOOWACOURSE_COACH', isCurrent: false }, '코치'],
+])('소속 정보 %j를 문구로 표시하고 인증 배지는 표시하지 않는다', (user, label) => {
   render(<UserAffiliation {...user} />);
   expect(screen.getByText(label)).toBeInTheDocument();
-  expect(screen.getByRole('img', { name: '우아한테크코스 소속 인증' })).toBeInTheDocument();
+  expect(screen.queryByRole('img', { name: '우아한테크코스 소속 인증' })).not.toBeInTheDocument();
 });
 
 test.each(['GENERAL', undefined])(

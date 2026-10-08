@@ -92,7 +92,10 @@ describe('ProjectCreatePage', () => {
     renderRoute('/projects/new');
 
     const members = await screen.findByRole('list', { name: '선택한 참여 팀원' });
-    expect(within(members).getAllByRole('listitem')[0]).toHaveTextContent('정우진 (작성자)');
+    const author = within(within(members).getAllByRole('listitem')[0]!);
+    expect(author.getByText('정우진')).toBeInTheDocument();
+    expect(author.getByText('@woojin')).toBeInTheDocument();
+    expect(author.getByText('(작성자)')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '참여 팀원 추가' }));
     await user.type(screen.getByRole('searchbox', { name: '크루 검색' }), '정우진');

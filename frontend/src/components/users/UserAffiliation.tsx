@@ -1,4 +1,3 @@
-import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
 import { formatUserAffiliation } from '@/utils/user';
 import { cn } from '@/utils/cn';
 
@@ -12,15 +11,17 @@ export interface UserAffiliationProps {
 }
 
 export function UserAffiliation({ className, ...user }: UserAffiliationProps) {
-  const label = formatUserAffiliation(user);
+  const label = formatUserAffiliation(user)?.replace(/^우아한테크코스\s+/, '');
   if (!label) return null;
 
   return (
     <span
-      className={cn('flex min-w-0 items-start gap-1 text-xs leading-5 text-gray-500', className)}
+      className={cn(
+        'block min-w-0 text-xs leading-5 break-keep whitespace-normal text-gray-500',
+        className,
+      )}
     >
-      <CrewStatusBadge userType={user.userType} size="xs" />
-      <span className="min-w-0 break-keep whitespace-normal">{label}</span>
+      {label}
     </span>
   );
 }

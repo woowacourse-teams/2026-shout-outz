@@ -52,6 +52,7 @@ export function UserProfilePage() {
       <title>{`${profile.displayName} | shout-outz`}</title>
       <ProfileHeader
         displayName={profile.displayName}
+        handle={profile.handle}
         userType={profile.userType}
         cohort={profile.cohort}
         track={profile.track}

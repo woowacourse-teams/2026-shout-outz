@@ -1,24 +1,11 @@
 import type { Feed } from '@/apis/feed';
-import { IconUser } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 import { Avatar } from '@/components/Avatar';
 import type { AvatarSize } from '@/components/Avatar';
 import { UserAffiliation } from '@/components/users/UserAffiliation';
+import { WoowacourseIcon } from '@/components/users/WoowacourseIcon';
+import { UserHandle } from '@/components/users/UserHandle';
 import { formatRelativeTime } from '@/utils/date';
-
-const ANONYMOUS_AVATAR_SIZE: Record<AvatarSize, string> = {
-  xs: 'size-5',
-  sm: 'size-7',
-  md: 'size-8',
-  lg: 'size-13',
-};
-
-const ANONYMOUS_ICON_SIZE: Record<AvatarSize, string> = {
-  xs: 'size-3.5',
-  sm: 'size-4',
-  md: 'size-5',
-  lg: 'size-8',
-};
 
 export function FeedAuthor({
   author,
@@ -35,14 +22,11 @@ export function FeedAuthor({
 }) {
   const isOwnAnonymous = isAnonymous && author.handle != null;
   const isCompact = avatarSize === 'xs';
+  const displayAvatarSize = avatarSize;
   if (!author.handle) {
     return (
       <div className={`flex min-w-0 items-center ${isCompact ? 'gap-1.5' : 'gap-2'}`}>
-        <span
-          className={`flex shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-400 ${ANONYMOUS_AVATAR_SIZE[avatarSize]}`}
-        >
-          <IconUser className={ANONYMOUS_ICON_SIZE[avatarSize]} aria-hidden="true" />
-        </span>
+        <Avatar size={displayAvatarSize} anonymous alt="" />
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <p
@@ -50,8 +34,9 @@ export function FeedAuthor({
             >
               익명
             </p>
+            <WoowacourseIcon userType={author.userType} />
           </div>
-          <UserAffiliation {...author} anonymous />
+          <UserAffiliation {...author} anonymous className={isCompact ? 'leading-4' : undefined} />
         </div>
       </div>
     );
@@ -60,18 +45,19 @@ export function FeedAuthor({
   const authorDetails = (
     <>
       <Avatar
-        size={avatarSize}
+        size={displayAvatarSize}
         src={author.avatarUrl}
         name={author.displayName ?? undefined}
         alt=""
       />
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-baseline gap-1.5">
           <span
             className={`group-hover:text-primary-600 truncate text-xs font-semibold text-gray-900 ${isCompact ? 'leading-4' : 'leading-5'}`}
           >
             {author.displayName}
           </span>
+          <UserHandle handle={author.handle} userType={author.userType} />
           {isOwnAnonymous && (
             <span
               className={`bg-primary-50 text-primary-700 rounded-full text-xs font-medium ${isCompact ? 'px-1.5 py-0' : 'px-2 py-0.5'}`}
@@ -80,7 +66,7 @@ export function FeedAuthor({
             </span>
           )}
         </div>
-        <UserAffiliation {...author} />
+        <UserAffiliation {...author} className={isCompact ? 'leading-4' : undefined} />
         {createdAt && (
           <time className="block text-xs leading-4 text-gray-400" dateTime={createdAt}>
             {formatRelativeTime(createdAt)}
