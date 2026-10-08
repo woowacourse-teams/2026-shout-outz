@@ -253,7 +253,7 @@ public class FeedService {
                 new FeedCursor(
                         sort,
                         lastItem.relevanceRank(),
-                        lastItem.likeCount(),
+                        lastItem.popularityScore(),
                         lastItem.createdAt(),
                         lastItem.feedId()
                 )

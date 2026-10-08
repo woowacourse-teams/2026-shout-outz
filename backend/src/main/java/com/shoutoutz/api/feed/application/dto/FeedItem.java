@@ -127,6 +127,13 @@ public record FeedItem(
         );
     }
 
+    /**
+     * 인기순 정렬과 커서 비교에 쓰는 좋아요 수와 활성 댓글 수의 합
+     */
+    public long popularityScore() {
+        return likeCount + commentCount;
+    }
+
     public record Author(
             Long userId,
             String handle,

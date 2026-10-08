@@ -17,17 +17,24 @@ import { Field } from '@/components/Field';
 import { Footer } from '@/components/Footer';
 import { Input } from '@/components/Input';
 import { CrewInfoFields } from '@/components/users/CrewInfoFields';
+import { ProfileIntroFields } from '@/components/users/ProfileIntroFields';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { getGithubLoginUrl } from '@/utils/auth';
 import { getApiErrorMessage, isApiResponseError } from '@/utils/error';
 import { analytics, toPathPattern } from '@/utils/analytics';
 import { cn } from '@/utils/cn';
+import {
+  toProfileIntroBody,
+  validateProfileIntro,
+  type ProfileIntroErrors,
+  type ProfileIntroInput,
+} from '@/utils/user';
 
 interface SignupPageProps {
   onComplete: () => void;
 }
 
-interface SignupErrors {
+interface SignupErrors extends ProfileIntroErrors {
   handle?: string;
   displayName?: string;
   memberType?: string;
@@ -116,6 +123,12 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
   const [handleName, setHandleName] = useState('');
   const availability = useHandleAvailability(handleName);
   const [displayName, setDisplayName] = useState('');
+  // 소개와 주소는 선택 항목이라 비워 두면 null로 보낸다. 나중에 프로필 수정에서 바꿀 수 있다.
+  const [intro, setIntro] = useState<ProfileIntroInput>({
+    bio: '',
+    githubProfileUrl: '',
+    blogUrl: '',
+  });
   const [memberType, setMemberType] = useState<MemberType | null>(null);
   const crew = memberType === 'WOOWACOURSE_CREW';
   const member = memberType !== null && memberType !== 'GENERAL';
@@ -129,7 +142,7 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
 
   function validate(withVerification: boolean) {
-    const next: SignupErrors = {};
+    const next: SignupErrors = validateProfileIntro(intro);
     if (!HANDLE_FORMAT.test(handleName)) {
       next.handle = '2~30자의 영문, 숫자, 밑줄, 하이픈으로 입력해 주세요.';
     } else if (availability === 'taken') {
@@ -153,7 +166,11 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
     setSubmitMode(withVerification ? 'verify' : 'skip');
     onSubmit();
     try {
-      await mutation.mutateAsync({ handle: `@${handleName}`, displayName: displayName.trim() });
+      await mutation.mutateAsync({
+        handle: `@${handleName}`,
+        displayName: displayName.trim(),
+        ...toProfileIntroBody(intro),
+      });
       analytics.track({ name: 'signup_submitted' });
       // 가입하면 서버가 인증된 세션을 새로 만든다. 인증 신청에 쓸 CSRF 토큰도 여기서 다시 받는다.
       await queryClient.fetchQuery(sessionQuery);
@@ -208,6 +225,8 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
       <form
         aria-describedby={member ? policyId : undefined}
         className="mt-7 flex flex-col gap-5"
+        // 주소 칸이 type="url"이라 브라우저 기본 검사 대신 validateProfileIntro로 검사한다.
+        noValidate
         onSubmit={(event) => {
           event.preventDefault();
           void submit({ withVerification: true });
@@ -281,6 +300,13 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
             </>
           )}
         </Field>
+        <ProfileIntroFields
+          value={intro}
+          onChange={setIntro}
+          errors={errors}
+          disabled={submitting}
+          optional
+        />
         <MemberQuestion
           value={memberType}
           error={errors.memberType}

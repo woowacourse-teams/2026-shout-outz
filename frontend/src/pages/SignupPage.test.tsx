@@ -40,11 +40,23 @@ describe('SignupPage', () => {
       /GitHub 아이디와 달라도 괜찮아요/,
     );
     await user.type(screen.getByRole('textbox', { name: '닉네임' }), '샤라웃');
+    await user.type(screen.getByRole('textbox', { name: '한 줄 소개 (선택)' }), '안녕하세요');
+    await user.type(
+      screen.getByRole('textbox', { name: 'GitHub 주소 (선택)' }),
+      'https://github.com/woowa',
+    );
     await user.click(screen.getByRole('button', { name: '아니요' }));
     await user.click(screen.getByRole('button', { name: '가입하기' }));
 
+    // 비워 둔 블로그 주소는 null로 보낸다.
     await waitFor(() =>
-      expect(requestBody).toEqual({ handle: '@woowa_test', displayName: '샤라웃' }),
+      expect(requestBody).toEqual({
+        handle: '@woowa_test',
+        displayName: '샤라웃',
+        bio: '안녕하세요',
+        githubProfileUrl: 'https://github.com/woowa',
+        blogUrl: null,
+      }),
     );
     await waitFor(() => expect(router.state.location.pathname).toBe('/'));
   });
@@ -341,5 +353,41 @@ describe('SignupPage', () => {
       expect(await screen.findByText('이미 사용 중인 아이디예요.')).toBeInTheDocument();
       expect(screen.queryByText('이미 사용 중인 handle입니다.')).not.toBeInTheDocument();
     });
+  });
+
+  it('주소 형식이 맞지 않으면 가입하지 않고 알린다', async () => {
+    const user = userEvent.setup();
+    let requested = false;
+
+    server.use(
+      http.get('/api/v1/auth/session', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: { status: 'SIGNUP_REQUIRED', userId: null, role: null, csrfToken: 'token' },
+        }),
+      ),
+      http.post('/api/v1/auth/signup', () => {
+        requested = true;
+        return HttpResponse.json({ status: 'success', data: { userId: 1 } }, { status: 201 });
+      }),
+    );
+
+    renderRoute('/signup');
+    await user.type(await screen.findByRole('textbox', { name: '사용자 아이디' }), 'woowa_test');
+    await user.type(screen.getByRole('textbox', { name: '닉네임' }), '샤라웃');
+    await user.type(
+      screen.getByRole('textbox', { name: 'GitHub 주소 (선택)' }),
+      'github.com/woowa',
+    );
+    await user.type(screen.getByRole('textbox', { name: '블로그 주소 (선택)' }), 'woowa.log');
+    await user.click(screen.getByRole('button', { name: '가입하기' }));
+
+    expect(
+      await screen.findByText('https://github.com/아이디 형식으로 입력해 주세요.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('http:// 또는 https://로 시작하는 주소를 입력해 주세요.'),
+    ).toBeInTheDocument();
+    expect(requested).toBe(false);
   });
 });

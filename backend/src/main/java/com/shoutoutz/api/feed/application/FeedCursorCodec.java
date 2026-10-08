@@ -25,7 +25,7 @@ public class FeedCursorCodec {
                 + DELIMITER
                 + cursor.relevanceRank()
                 + DELIMITER
-                + cursor.likeCount()
+                + cursor.popularityScore()
                 + DELIMITER
                 + cursor.createdAt()
                 + DELIMITER
@@ -55,18 +55,18 @@ public class FeedCursorCodec {
 
             FeedSort sort = FeedSort.valueOf(parts[0]);
             int relevanceRank = Integer.parseInt(parts[1]);
-            long likeCount = Long.parseLong(parts[2]);
+            long popularityScore = Long.parseLong(parts[2]);
             Instant createdAt = Instant.parse(parts[3]);
             long feedId = Long.parseLong(parts[4]);
             if (sort != expectedSort
                     || relevanceRank < MIN_RELEVANCE_RANK
                     || relevanceRank > MAX_RELEVANCE_RANK
                     || (sort != FeedSort.RELEVANCE && relevanceRank != 0)
-                    || likeCount < 0
+                    || popularityScore < 0
                     || feedId <= 0) {
                 throw new IllegalArgumentException();
             }
-            return new FeedCursor(sort, relevanceRank, likeCount, createdAt, feedId);
+            return new FeedCursor(sort, relevanceRank, popularityScore, createdAt, feedId);
         } catch (IllegalArgumentException | DateTimeParseException exception) {
             throw new BadRequestException(FeedErrorCode.FEED_CURSOR_INVALID, exception);
         }

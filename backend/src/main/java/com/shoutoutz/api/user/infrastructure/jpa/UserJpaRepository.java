@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface UserJpaRepository extends JpaRepository<UserEntity, Long> {
 
     Optional<UserEntity> findByHandleIgnoreCase(String handle);
+
+    boolean existsByHandleIgnoreCase(String handle);
 }

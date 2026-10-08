@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { IconBrandGithub, IconWorld } from '@tabler/icons-react';
 
 import { Avatar } from '@/components/Avatar';
 import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
@@ -23,7 +24,7 @@ export interface ProfileHeaderProps {
 }
 
 const LINK_STYLE =
-  'focus-visible:outline-primary-600 rounded-sm text-sm text-gray-600 underline hover:text-gray-900 focus-visible:outline-2';
+  'focus-visible:outline-primary-600 inline-flex items-center gap-1 rounded-sm text-sm text-gray-600 hover:text-gray-900 hover:underline focus-visible:outline-2';
 
 export function ProfileHeader({
   displayName,
@@ -61,12 +62,19 @@ export function ProfileHeader({
       {(githubProfileUrl || blogUrl) && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {githubProfileUrl && (
-            <a href={githubProfileUrl} className={LINK_STYLE}>
+            <a
+              href={githubProfileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={LINK_STYLE}
+            >
+              <IconBrandGithub className="size-4" aria-hidden="true" />
               GitHub
             </a>
           )}
           {blogUrl && (
-            <a href={blogUrl} className={LINK_STYLE}>
+            <a href={blogUrl} target="_blank" rel="noopener noreferrer" className={LINK_STYLE}>
+              <IconWorld className="size-4" aria-hidden="true" />
               블로그
             </a>
           )}

@@ -4,7 +4,10 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
@@ -24,6 +27,7 @@ import com.shoutoutz.api.auth.application.OAuthLoginService;
 import com.shoutoutz.api.auth.application.OAuthSignupService;
 import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
 import com.shoutoutz.api.auth.application.command.OAuthLoginStartResult;
+import com.shoutoutz.api.auth.application.command.OAuthSignupCommand;
 import com.shoutoutz.api.auth.application.command.OAuthSignupResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
@@ -43,12 +47,15 @@ import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -70,9 +77,18 @@ class AuthApiDocumentationTest {
                     + "처리 후 로그인 또는 가입 대기 상태를 만들고 프론트엔드로 이동한다.";
     private static final String SIGNUP_DESCRIPTION =
             "가입 대기 OAuth 신원에 서비스 사용자와 프로필을 생성하고 인증 세션을 설정한다. "
+                    + "일반 사용자(GENERAL)로 가입하며 bio, githubProfileUrl, blogUrl은 선택 입력이다. "
+                    + "선택 필드는 생략하거나 null로 보낼 수 있다. URL 미입력 시 빈 문자열 대신 "
+                    + "생략 또는 null을 사용한다. "
                     + "가입 정보가 유효하지 않으면 400 VALIDATION_FAILED, 가입 대기 신원이 없으면 "
                     + "400 OAUTH_SIGNUP_SESSION_NOT_FOUND, CSRF Token이 유효하지 않으면 "
                     + "403 CSRF_TOKEN_INVALID, handle이 중복되면 409 HANDLE_ALREADY_EXISTS를 반환한다.";
+    private static final String SIGNUP_HANDLE_AVAILABILITY_DESCRIPTION =
+            "가입 대기 OAuth 세션에서 handle의 사용 가능 여부를 조회한다. "
+                    + "handle은 @[A-Za-z0-9_-]{2,30} 형식이며 대소문자를 구분하지 않는다. "
+                    + "이미 사용 중이면 available=false를 반환한다. 조회 결과는 가입 시점까지 보장되지 않으므로 "
+                    + "가입 API에서 중복을 다시 확인한다. handle 형식이 잘못되면 400 VALIDATION_FAILED, "
+                    + "가입 대기 OAuth 신원이 없으면 400 OAUTH_SIGNUP_SESSION_NOT_FOUND를 반환한다.";
 
     @Autowired
     private MockMvc mockMvc;
@@ -282,7 +298,10 @@ class AuthApiDocumentationTest {
                         .content("""
                                 {
                                   "handle": "@zzaekkii",
-                                  "displayName": "재키"
+                                  "displayName": "재키",
+                                  "bio": "백엔드 개발자입니다.",
+                                  "githubProfileUrl": "https://github.com/zzaekkii",
+                                  "blogUrl": "https://zzaekkii.dev"
                                 }
                                 """))
                 .andExpect(status().isCreated())
@@ -303,12 +322,7 @@ class AuthApiDocumentationTest {
                                                 .description("application/json")
                                 )
                                 .requestSchema(Schema.schema("OAuthSignupRequest"))
-                                .requestFields(
-                                        fieldWithPath("handle").type(STRING)
-                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"),
-                                        fieldWithPath("displayName").type(STRING)
-                                                .description("프로필 표시 이름")
-                                )
+                                .requestFields(signupRequestFields())
                                 .responseSchema(Schema.schema("OAuthSignupSuccessResponse"))
                                 .responseHeaders(
                                         headerWithName(HttpHeaders.SET_COOKIE)
@@ -321,6 +335,217 @@ class AuthApiDocumentationTest {
                                         fieldWithPath("data.userId").type(NUMBER)
                                                 .description("생성된 사용자 ID")
                                 )
+                                .build())
+                ));
+
+        verify(oauthSignupService).signup(new OAuthSignupCommand(
+                "@zzaekkii",
+                "재키",
+                "백엔드 개발자입니다.",
+                "https://github.com/zzaekkii",
+                "https://zzaekkii.dev",
+                githubIdentity()
+        ));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "{\"handle\":\"@zzaekkii\",\"displayName\":\"재키\"}",
+            "{\"handle\":\"@zzaekkii\",\"displayName\":\"재키\","
+                    + "\"bio\":null,\"githubProfileUrl\":null,\"blogUrl\":null}"
+    })
+    @DisplayName("추가 프로필 필드를 생략하거나 null로 보내도 가입할 수 있다")
+    void signupWithoutAdditionalProfileInformation(String requestBody) throws Exception {
+        OAuthIdentity identity = githubIdentity();
+        given(authSessionAccessor.findPendingIdentity(any())).willReturn(Optional.of(identity));
+        given(oauthSignupService.signup(any())).willReturn(new OAuthSignupResult(1L, UserRole.USER));
+
+        mockMvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated());
+
+        verify(oauthSignupService).signup(new OAuthSignupCommand(
+                "@zzaekkii", "재키", null, null, null, identity
+        ));
+    }
+
+    @Test
+    @DisplayName("추가 프로필 정보가 유효하지 않으면 가입 처리 전에 400을 반환한다")
+    void rejectInvalidAdditionalProfileInformation() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "handle": "@zzaekkii",
+                                  "displayName": "재키",
+                                  "bio": "%s",
+                                  "githubProfileUrl": "http://github.com/zzaekkii",
+                                  "blogUrl": "not-a-url"
+                                }
+                                """.formatted("😀".repeat(201))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details[?(@.field == 'bio')]").isNotEmpty())
+                .andExpect(jsonPath("$.details[?(@.field == 'githubProfileUrl')]").isNotEmpty())
+                .andExpect(jsonPath("$.details[?(@.field == 'blogUrl')]").isNotEmpty())
+                .andDo(document(
+                        "auth-signup-invalid-profile",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("OAuth 사용자 가입")
+                                .description(SIGNUP_DESCRIPTION)
+                                .requestSchema(Schema.schema("OAuthSignupRequest"))
+                                .requestFields(signupRequestFields())
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verifyNoInteractions(oauthSignupService);
+    }
+
+    @Test
+    @DisplayName("OAuth 가입에 사용할 핸들의 사용 가능 여부를 조회한다")
+    void checkSignupHandleAvailability() throws Exception {
+        given(authSessionAccessor.findPendingIdentity(any()))
+                .willReturn(Optional.of(githubIdentity()));
+        given(oauthSignupService.isHandleAvailable("@available"))
+                .willReturn(true);
+
+        mockMvc.perform(get("/api/v1/auth/signup/handle-availability")
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=session-id")
+                        .queryParam("handle", "@available"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.available").value(true))
+                .andDo(document(
+                        "auth-signup-handle-availability",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("OAuth 가입 핸들 중복 확인")
+                                .description(SIGNUP_HANDLE_AVAILABILITY_DESCRIPTION)
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("가입 대기 신원이 저장된 JSESSIONID")
+                                )
+                                .queryParameters(
+                                        parameterWithName("handle")
+                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 확인할 핸들")
+                                )
+                                .responseSchema(Schema.schema(
+                                        "OAuthSignupHandleAvailabilitySuccessResponse"
+                                ))
+                                .responseHeaders(
+                                        headerWithName(HttpHeaders.CACHE_CONTROL)
+                                                .description("사용 가능 여부를 캐시하지 않음")
+                                )
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("핸들 확인 결과"),
+                                        fieldWithPath("data.available").type(BOOLEAN)
+                                                .description("핸들을 사용할 수 있는지 여부")
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    @DisplayName("이미 사용 중인 핸들은 사용할 수 없다고 응답한다")
+    void returnsUnavailableForDuplicateSignupHandle() throws Exception {
+        given(authSessionAccessor.findPendingIdentity(any()))
+                .willReturn(Optional.of(githubIdentity()));
+        given(oauthSignupService.isHandleAvailable("@taken"))
+                .willReturn(false);
+
+        mockMvc.perform(get("/api/v1/auth/signup/handle-availability")
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=session-id")
+                        .queryParam("handle", "@taken"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.available").value(false))
+                .andDo(document(
+                        "auth-signup-handle-availability-unavailable",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("OAuth 가입 핸들 중복 확인")
+                                .description(SIGNUP_HANDLE_AVAILABILITY_DESCRIPTION)
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("가입 대기 신원이 저장된 JSESSIONID")
+                                )
+                                .queryParameters(
+                                        parameterWithName("handle")
+                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 확인할 핸들")
+                                )
+                                .responseSchema(Schema.schema(
+                                        "OAuthSignupHandleAvailabilitySuccessResponse"
+                                ))
+                                .responseHeaders(
+                                        headerWithName(HttpHeaders.CACHE_CONTROL)
+                                                .description("사용 가능 여부를 캐시하지 않음")
+                                )
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("핸들 확인 결과"),
+                                        fieldWithPath("data.available").type(BOOLEAN)
+                                                .description("핸들을 사용할 수 있는지 여부")
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    @DisplayName("잘못된 형식의 가입 핸들은 중복 확인을 거부한다")
+    void rejectInvalidSignupHandleAvailabilityRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/signup/handle-availability")
+                        .queryParam("handle", "invalid handle"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andDo(document(
+                        "auth-signup-handle-availability-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("OAuth 가입 핸들 중복 확인")
+                                .description(SIGNUP_HANDLE_AVAILABILITY_DESCRIPTION)
+                                .queryParameters(
+                                        parameterWithName("handle")
+                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 확인할 핸들")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+    }
+
+    @Test
+    @DisplayName("가입 대기 OAuth 신원이 없으면 핸들 중복 확인을 거부한다")
+    void rejectHandleAvailabilityWithoutPendingOAuthIdentity() throws Exception {
+        given(authSessionAccessor.findPendingIdentity(any())).willReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/auth/signup/handle-availability")
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=expired-session-id")
+                        .queryParam("handle", "@available"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code")
+                        .value(AuthErrorCode.OAUTH_SIGNUP_SESSION_NOT_FOUND.name()))
+                .andDo(document(
+                        "auth-signup-handle-availability-session-missing",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("OAuth 가입 핸들 중복 확인")
+                                .description(SIGNUP_HANDLE_AVAILABILITY_DESCRIPTION)
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("가입 대기 신원이 저장된 JSESSIONID")
+                                )
+                                .queryParameters(
+                                        parameterWithName("handle")
+                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 확인할 핸들")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
                                 .build())
                 ));
     }
@@ -347,12 +572,7 @@ class AuthApiDocumentationTest {
                                 .summary("OAuth 사용자 가입")
                                 .description(SIGNUP_DESCRIPTION)
                                 .requestSchema(Schema.schema("OAuthSignupRequest"))
-                                .requestFields(
-                                        fieldWithPath("handle").type(STRING)
-                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"),
-                                        fieldWithPath("displayName").type(STRING)
-                                                .description("프로필 표시 이름")
-                                )
+                                .requestFields(signupRequestFields())
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -395,12 +615,7 @@ class AuthApiDocumentationTest {
                                                 .description("application/json")
                                 )
                                 .requestSchema(Schema.schema("OAuthSignupRequest"))
-                                .requestFields(
-                                        fieldWithPath("handle").type(STRING)
-                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"),
-                                        fieldWithPath("displayName").type(STRING)
-                                                .description("프로필 표시 이름")
-                                )
+                                .requestFields(signupRequestFields())
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -440,12 +655,7 @@ class AuthApiDocumentationTest {
                                                 .description("application/json")
                                 )
                                 .requestSchema(Schema.schema("OAuthSignupRequest"))
-                                .requestFields(
-                                        fieldWithPath("handle").type(STRING)
-                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"),
-                                        fieldWithPath("displayName").type(STRING)
-                                                .description("프로필 표시 이름")
-                                )
+                                .requestFields(signupRequestFields())
                                 .responseSchema(Schema.schema("ErrorResponse"))
                                 .responseFields(RestDocsFields.errorResponse())
                                 .build())
@@ -474,6 +684,24 @@ class AuthApiDocumentationTest {
                                 )
                                 .build())
                 ));
+    }
+
+    private FieldDescriptor[] signupRequestFields() {
+        return new FieldDescriptor[] {
+                fieldWithPath("handle").type(STRING)
+                        .description("@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"),
+                fieldWithPath("displayName").type(STRING)
+                        .description("프로필 표시 이름 (최대 50자, Unicode code point 기준)"),
+                fieldWithPath("bio").type(STRING)
+                        .description("한 줄 소개 (최대 200자, Unicode code point 기준). 생략 또는 null 허용")
+                        .optional(),
+                fieldWithPath("githubProfileUrl").type(STRING)
+                        .description("https://github.com/{계정} 형식의 GitHub 프로필 URL. 마지막 / 허용. 생략 또는 null 허용")
+                        .optional(),
+                fieldWithPath("blogUrl").type(STRING)
+                        .description("호스트가 있는 HTTP 또는 HTTPS 블로그 URL. 생략 또는 null 허용")
+                        .optional()
+        };
     }
 
     private OAuthLoginAttempt loginAttempt() {

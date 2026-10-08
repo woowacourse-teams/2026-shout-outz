@@ -73,4 +73,13 @@ class UserRepositoryIntegrationTest {
         assertThat(foundUser.getId()).isEqualTo(savedUser.getId());
         assertThat(foundUser.getHandle()).isEqualTo(new Handle("@zzaekkii-handle"));
     }
+
+    @Test
+    @DisplayName("핸들 존재 여부를 대소문자 구분 없이 조회한다")
+    void checksHandleExistenceIgnoringCase() {
+        userRepository.save(User.initialize("@sangjun"));
+
+        assertThat(userRepository.existsByHandle("@SANGJUN")).isTrue();
+        assertThat(userRepository.existsByHandle("@available")).isFalse();
+    }
 }
