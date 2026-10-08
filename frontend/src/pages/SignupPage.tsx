@@ -1,5 +1,4 @@
 import { Suspense, useState } from 'react';
-import * as Sentry from '@sentry/react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 
 import { sessionQuery, signupMutation } from '@/apis/session';
@@ -127,7 +126,7 @@ function SignupForm({ onComplete }: SignupPageProps) {
   return (
     <div className="w-full rounded-xl border border-gray-200 p-6 md:p-8">
       <h1 className="text-2xl font-bold">프로필 만들기</h1>
-      <p className="mt-2 text-sm text-gray-600">서비스에서 사용할 이름을 입력해 주세요.</p>
+      <p className="mt-2 text-sm text-gray-600">샤라웃에서 사용할 닉네임과 아이디를 정해 주세요.</p>
       <form
         className="mt-7 flex flex-col gap-5"
         onSubmit={(event) => {
@@ -135,40 +134,64 @@ function SignupForm({ onComplete }: SignupPageProps) {
           void submit();
         }}
       >
-        <Field label="id" error={errors.handle}>
-          {(id) => (
-            <div className="relative">
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-gray-500"
-              >
-                @
-              </span>
-              <Input
-                id={id}
-                value={handleName}
-                // @를 붙여 붙여넣어도 고정된 @와 겹치지 않게 앞의 @는 뗀다.
-                onChange={(event) => setHandleName(event.target.value.replace(/^@+/, ''))}
-                placeholder="woowa_crew"
-                autoComplete="username"
-                aria-invalid={Boolean(errors.handle)}
-                disabled={mutation.isPending}
-                className="pl-8"
-              />
-            </div>
-          )}
-        </Field>
         <Field label="닉네임" error={errors.displayName}>
           {(id) => (
-            <Input
-              id={id}
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              placeholder="코딩하는 곰돌이"
-              autoComplete="nickname"
-              aria-invalid={Boolean(errors.displayName)}
-              disabled={mutation.isPending}
-            />
+            <>
+              <Input
+                id={id}
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder="코딩하는 곰돌이"
+                autoComplete="nickname"
+                aria-describedby={`${id}-help`}
+                aria-invalid={Boolean(errors.displayName)}
+                disabled={mutation.isPending}
+              />
+              <ul id={`${id}-help`} className="list-disc pl-4 text-xs leading-5 text-gray-500">
+                <li>글과 댓글에 표시되는 이름이에요.</li>
+              </ul>
+            </>
+          )}
+        </Field>
+        <Field label="사용자 아이디" error={errors.handle}>
+          {(id) => (
+            <>
+              <div className="flex flex-col gap-1">
+                <div className="relative">
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-gray-500"
+                  >
+                    @
+                  </span>
+                  <Input
+                    id={id}
+                    value={handleName}
+                    // @는 자동으로 붙이므로 붙여넣은 값의 접두사는 제거한다.
+                    onChange={(event) => setHandleName(event.target.value.replace(/^@+/, ''))}
+                    placeholder="woowa_crew"
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    aria-describedby={`${id}-help ${id}-preview`}
+                    aria-invalid={Boolean(errors.handle)}
+                    disabled={mutation.isPending}
+                    className="pl-8"
+                  />
+                </div>
+                <p id={`${id}-preview`} className="px-2 text-xs leading-5 break-all text-gray-400">
+                  https://shout-ou.tz/users/@{handleName || 'woowa_crew'}
+                </p>
+              </div>
+              <ul
+                id={`${id}-help`}
+                className="flex list-disc flex-col gap-1 pl-4 text-xs leading-5 text-gray-500"
+              >
+                <li>프로필 주소에 사용되는 고유한 아이디예요.</li>
+                <li>GitHub 아이디와 달라도 괜찮아요.</li>
+                <li>영문·숫자·밑줄(_)·하이픈(-)으로 2~30자</li>
+              </ul>
+            </>
           )}
         </Field>
         {mutation.isError && (

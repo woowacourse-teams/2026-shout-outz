@@ -34,12 +34,16 @@ describe('SignupPage', () => {
     );
 
     const router = renderRoute('/signup');
-    await user.type(await screen.findByRole('textbox', { name: 'id' }), 'woowa_crew');
+    await user.type(await screen.findByRole('textbox', { name: '사용자 아이디' }), 'woowa_test');
+    expect(screen.getByText('https://shout-ou.tz/users/@woowa_test')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '사용자 아이디' })).toHaveAccessibleDescription(
+      /GitHub 아이디와 달라도 괜찮아요/,
+    );
     await user.type(screen.getByRole('textbox', { name: '닉네임' }), '샤라웃');
     await user.click(screen.getByRole('button', { name: '가입하기' }));
 
     await waitFor(() =>
-      expect(requestBody).toEqual({ handle: '@woowa_crew', displayName: '샤라웃' }),
+      expect(requestBody).toEqual({ handle: '@woowa_test', displayName: '샤라웃' }),
     );
     await waitFor(() => expect(router.state.location.pathname).toBe('/'));
   });
@@ -62,7 +66,7 @@ describe('SignupPage', () => {
     );
 
     renderRoute('/signup');
-    await user.type(await screen.findByRole('textbox', { name: 'id' }), 'a');
+    await user.type(await screen.findByRole('textbox', { name: '사용자 아이디' }), 'a');
     await user.type(screen.getByRole('textbox', { name: '닉네임' }), '샤라웃');
     await user.click(screen.getByRole('button', { name: '가입하기' }));
 

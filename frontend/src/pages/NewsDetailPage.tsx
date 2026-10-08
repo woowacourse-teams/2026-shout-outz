@@ -1,7 +1,9 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
-import { IconArrowLeft } from '@tabler/icons-react';
+import { IconArrowLeft, IconClock } from '@tabler/icons-react';
 
+import { NewsEventPeriod } from '@/components/NewsEventPeriod';
+import { NewsEventStatusBadge } from '@/components/NewsEventStatusBadge';
 import { NewsCategoryBadge } from '@/components/NewsCategoryBadge';
 import { NewsNavRow } from '@/components/NewsNavRow';
 import { AppGnb } from '@/components/AppGnb';
@@ -79,6 +81,19 @@ function NewsDetail({ newsId }: { newsId: number }) {
         <span aria-hidden="true">·</span>
         <time dateTime={news.publishedAt}>{formatDotDate(news.publishedAt)}</time>
       </div>
+
+      {news.type === 'EVENT' && (news.eventStatus || news.eventStartAt || news.eventEndAt) && (
+        <section aria-label="이벤트 일정" className="mt-6 rounded-lg bg-gray-50 p-4 md:p-5">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <IconClock aria-hidden="true" className="size-4 text-gray-500" />
+              이벤트 일정
+            </h2>
+            <NewsEventStatusBadge status={news.eventStatus} />
+          </div>
+          <NewsEventPeriod startAt={news.eventStartAt} endAt={news.eventEndAt} />
+        </section>
+      )}
 
       <div className="mt-7 border-t border-gray-100 pt-8 text-sm leading-7 break-words whitespace-pre-line text-gray-600 md:text-base">
         {news.body}

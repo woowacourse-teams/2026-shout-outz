@@ -169,6 +169,7 @@ class FeedCommentServiceTest {
         verify(feedCommentRepository).save(captor.capture());
         assertThat(captor.getValue().getFeedId()).isEqualTo(FEED_ID);
         assertThat(captor.getValue().getParentId()).isEqualTo(PARENT_ID);
+        verify(notificationService).createForFeedComment(FEED_ID, COMMENT_ID, AUTHOR_ID);
     }
 
     @Test

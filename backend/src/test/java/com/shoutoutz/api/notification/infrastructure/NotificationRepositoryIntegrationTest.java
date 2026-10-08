@@ -2,12 +2,15 @@ package com.shoutoutz.api.notification.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.notification.application.NotificationQueryRepository;
 import com.shoutoutz.api.notification.application.dto.NotificationPage;
 import com.shoutoutz.api.notification.domain.NotificationRepository;
 import com.shoutoutz.api.notification.domain.NotificationType;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -33,15 +36,19 @@ class NotificationRepositoryIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @Test
-    void 댓글_생성_알림은_수신자별로_한건만_저장하고_본인은_제외한다() {
+    @ParameterizedTest
+    @EnumSource(FeedType.class)
+    void 글_유형에_따라_작성자와_관심_사용자와_댓글_참여자에게_알림을_보낸다(FeedType feedType) {
         long feedAuthorId = insertUser("feed-author");
         long interestedUserId = insertUser("interested-user");
         long commenterId = insertUser("commenter-user");
         long actorId = insertUser("actor-user");
-        long feedId = insertFeed(feedAuthorId);
+        long feedId = insertFeed(feedAuthorId, feedType);
+        insertLike(feedId, feedAuthorId);
+        insertComment(feedId, feedAuthorId);
         insertLike(feedId, interestedUserId);
         insertComment(feedId, commenterId);
+        insertLike(feedId, actorId);
         long commentId = insertComment(feedId, actorId);
 
         notificationRepository.createForFeedComment(feedId, commentId, actorId);
@@ -64,21 +71,172 @@ class NotificationRepositoryIntegrationTest {
         );
         NotificationPage actorPage = notificationQueryRepository.findAll(actorId, null, 20);
 
+        boolean question = feedType == FeedType.QUESTION;
         assertThat(authorPage.items()).extracting(item -> item.notificationType())
-                .containsExactly(NotificationType.QUESTION_ACTIVITY);
-        assertThat(interestedPage.items()).extracting(item -> item.notificationType())
-                .containsExactly(NotificationType.INTERESTED_QUESTION_ACTIVITY);
+                .containsExactly(question ? NotificationType.QUESTION_ACTIVITY : NotificationType.POST_ACTIVITY);
+        assertThat(authorPage.items()).extracting(item -> item.message())
+                .containsExactly(question
+                        ? "내 질문에 새로운 답변이 달렸어요."
+                        : "내 피드에 새로운 댓글이 달렸어요.");
+        if (question) {
+            assertThat(interestedPage.items()).extracting(item -> item.notificationType())
+                    .containsExactly(NotificationType.INTERESTED_QUESTION_ACTIVITY);
+            assertThat(interestedPage.items()).extracting(item -> item.message())
+                    .containsExactly("관심 있는 질문에 새로운 답변이 달렸어요.");
+        } else {
+            assertThat(interestedPage.items()).isEmpty();
+        }
         assertThat(commenterPage.items()).extracting(item -> item.notificationType())
-                .containsExactly(NotificationType.COMMENTED_QUESTION_ACTIVITY);
+                .containsExactly(question
+                        ? NotificationType.COMMENTED_QUESTION_ACTIVITY
+                        : NotificationType.COMMENTED_POST_ACTIVITY);
+        assertThat(commenterPage.items()).extracting(item -> item.message())
+                .containsExactly(question
+                        ? "댓글을 남긴 질문에 새로운 답변이 달렸어요."
+                        : "댓글을 남긴 피드에 새로운 댓글이 달렸어요.");
         assertThat(actorPage.items()).isEmpty();
         assertThat(authorPage.totalCount()).isEqualTo(1L);
+    }
+
+    @Test
+    void 질문_수신_조건이_겹치면_작성자와_관심_사용자_순서로_한건만_보낸다() {
+        long authorId = insertUser("author");
+        long interestedId = insertUser("interested");
+        long actorId = insertUser("actor");
+        long feedId = insertFeed(authorId, FeedType.QUESTION);
+        insertLike(feedId, authorId);
+        insertComment(feedId, authorId);
+        insertLike(feedId, interestedId);
+        insertComment(feedId, interestedId);
+        insertLike(feedId, actorId);
+        long commentId = insertComment(feedId, actorId);
+
+        notificationRepository.createForFeedComment(feedId, commentId, actorId);
+
+        assertThat(notificationQueryRepository.findAll(authorId, null, 20).items())
+                .extracting(item -> item.notificationType())
+                .containsExactly(NotificationType.QUESTION_ACTIVITY);
+        assertThat(notificationQueryRepository.findAll(interestedId, null, 20).items())
+                .extracting(item -> item.notificationType())
+                .containsExactly(NotificationType.INTERESTED_QUESTION_ACTIVITY);
+        assertThat(notificationQueryRepository.findAll(actorId, null, 20).items()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @EnumSource(FeedType.class)
+    void 직접_답글과_같은_글의_다른_댓글_참여자_알림을_구분한다(FeedType feedType) {
+        long authorId = insertUser("author");
+        long commenterId = insertUser("commenter");
+        long otherCommenterId = insertUser("other-commenter");
+        long interestedId = insertUser("interested");
+        long actorId = insertUser("actor");
+        long feedId = insertFeed(authorId, feedType);
+        long parentId = insertComment(feedId, commenterId);
+        insertComment(feedId, otherCommenterId);
+        insertLike(feedId, commenterId);
+        insertLike(feedId, interestedId);
+        insertLike(feedId, actorId);
+        long replyId = insertReply(feedId, actorId, parentId);
+
+        notificationRepository.createForFeedComment(feedId, replyId, actorId);
+        notificationRepository.createForFeedComment(feedId, replyId, actorId);
+
+        assertThat(notificationQueryRepository.findAll(authorId, null, 20).items())
+                .extracting(item -> item.notificationType())
+                .containsExactly(feedType == FeedType.QUESTION
+                        ? NotificationType.QUESTION_ACTIVITY : NotificationType.POST_ACTIVITY);
+        assertThat(notificationQueryRepository.findAll(commenterId, null, 20).items())
+                .satisfiesExactly(item -> {
+                    assertThat(item.notificationType()).isEqualTo(NotificationType.COMMENT_REPLY);
+                    assertThat(item.message()).isEqualTo("내 댓글에 새로운 답글이 달렸어요.");
+                    assertThat(item.commentId()).isEqualTo(replyId);
+                });
+        assertThat(notificationQueryRepository.findAll(otherCommenterId, null, 20).items())
+                .satisfiesExactly(item -> {
+                    assertThat(item.notificationType()).isEqualTo(feedType == FeedType.QUESTION
+                            ? NotificationType.COMMENTED_QUESTION_ACTIVITY : NotificationType.COMMENTED_POST_ACTIVITY);
+                    assertThat(item.message()).isEqualTo(feedType == FeedType.QUESTION
+                            ? "댓글을 남긴 질문에 새로운 답변이 달렸어요."
+                            : "댓글을 남긴 피드에 새로운 댓글이 달렸어요.");
+                    assertThat(item.commentId()).isEqualTo(replyId);
+                });
+        NotificationPage interestedPage = notificationQueryRepository.findAll(interestedId, null, 20);
+        if (feedType == FeedType.QUESTION) {
+            assertThat(interestedPage.items()).satisfiesExactly(item -> {
+                assertThat(item.notificationType()).isEqualTo(NotificationType.INTERESTED_QUESTION_ACTIVITY);
+                assertThat(item.message()).isEqualTo("관심 있는 질문에 새로운 답변이 달렸어요.");
+                assertThat(item.commentId()).isEqualTo(replyId);
+            });
+        } else {
+            assertThat(interestedPage.items()).isEmpty();
+        }
+        assertThat(notificationQueryRepository.findAll(actorId, null, 20).items()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @EnumSource(FeedType.class)
+    void 글_작성자의_댓글에_답글이_달리면_직접_답글_알림을_우선한다(FeedType feedType) {
+        long authorId = insertUser("author");
+        long actorId = insertUser("actor");
+        long feedId = insertFeed(authorId, feedType);
+        long parentId = insertComment(feedId, authorId);
+        insertLike(feedId, authorId);
+        long replyId = insertReply(feedId, actorId, parentId);
+
+        notificationRepository.createForFeedComment(feedId, replyId, actorId);
+
+        assertThat(notificationQueryRepository.findAll(authorId, null, 20).items())
+                .satisfiesExactly(item -> {
+                    assertThat(item.notificationType()).isEqualTo(NotificationType.COMMENT_REPLY);
+                    assertThat(item.message()).isEqualTo("내 댓글에 새로운 답글이 달렸어요.");
+                    assertThat(item.commentId()).isEqualTo(replyId);
+                });
+    }
+
+    @ParameterizedTest
+    @EnumSource(FeedType.class)
+    void 내_댓글에_내가_답글을_달면_본인에게는_알림을_보내지_않는다(FeedType feedType) {
+        long authorId = insertUser("author");
+        long actorId = insertUser("actor");
+        long feedId = insertFeed(authorId, feedType);
+        long parentId = insertComment(feedId, actorId);
+        insertLike(feedId, actorId);
+        long replyId = insertReply(feedId, actorId, parentId);
+
+        notificationRepository.createForFeedComment(feedId, replyId, actorId);
+
+        assertThat(notificationQueryRepository.findAll(actorId, null, 20).items()).isEmpty();
+        assertThat(notificationQueryRepository.findAll(authorId, null, 20).items())
+                .extracting(item -> item.commentId()).containsExactly(replyId);
+    }
+
+    @ParameterizedTest
+    @EnumSource(FeedType.class)
+    void 삭제된_댓글의_작성자와_북마크만_한_사용자는_알림을_받지_않는다(FeedType feedType) {
+        long authorId = insertUser("author");
+        long commenterId = insertUser("commenter");
+        long bookmarkerId = insertUser("bookmarker");
+        long actorId = insertUser("actor");
+        long feedId = insertFeed(authorId, feedType);
+        long deletedCommentId = insertComment(feedId, commenterId);
+        jdbcTemplate.update("UPDATE feed_comments SET deleted_at = now() WHERE id = ?", deletedCommentId);
+        jdbcTemplate.update(
+                "INSERT INTO feed_reactions (feed_id, user_id, reaction_type) VALUES (?, ?, 'BOOKMARK')",
+                feedId, bookmarkerId
+        );
+        long commentId = insertComment(feedId, actorId);
+
+        notificationRepository.createForFeedComment(feedId, commentId, actorId);
+
+        assertThat(notificationQueryRepository.findAll(commenterId, null, 20).items()).isEmpty();
+        assertThat(notificationQueryRepository.findAll(bookmarkerId, null, 20).items()).isEmpty();
     }
 
     @Test
     void 읽음_처리와_읽지_않은_수_조회가_동작한다() {
         long recipientId = insertUser("notification-recipient");
         long actorId = insertUser("notification-actor");
-        long feedId = insertFeed(recipientId);
+        long feedId = insertFeed(recipientId, FeedType.POST);
         long commentId = insertComment(feedId, actorId);
 
         notificationRepository.createForFeedComment(feedId, commentId, actorId);
@@ -109,13 +267,14 @@ class NotificationRepositoryIntegrationTest {
         return userId;
     }
 
-    private long insertFeed(long authorId) {
+    private long insertFeed(long authorId, FeedType feedType) {
         return jdbcTemplate.queryForObject(
-                "INSERT INTO feeds (author_id, title, content) VALUES (?, ?, ?) RETURNING id",
+                "INSERT INTO feeds (author_id, feed_type, title, content) VALUES (?, ?, ?, ?) RETURNING id",
                 Long.class,
                 authorId,
-                "질문 제목",
-                "질문 내용"
+                feedType.name(),
+                "글 제목",
+                "글 내용"
         );
     }
 
@@ -134,6 +293,13 @@ class NotificationRepositoryIntegrationTest {
                 feedId,
                 authorId,
                 "댓글 내용"
+        );
+    }
+
+    private long insertReply(long feedId, long authorId, long parentId) {
+        return jdbcTemplate.queryForObject(
+                "INSERT INTO feed_comments (feed_id, author_id, parent_id, content) VALUES (?, ?, ?, ?) RETURNING id",
+                Long.class, feedId, authorId, parentId, "대댓글 내용"
         );
     }
 }

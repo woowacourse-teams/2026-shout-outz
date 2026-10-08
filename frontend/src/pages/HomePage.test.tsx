@@ -199,7 +199,7 @@ describe('HomePage', () => {
       );
       renderRoute('/');
 
-      expect(await screen.findByText('아직 작성된 질문이 없습니다.')).toBeInTheDocument();
+      expect(await screen.findByText('아직 등록된 질문이 없습니다.')).toBeInTheDocument();
       expect(within(feedRegion()).queryByRole('article')).not.toBeInTheDocument();
     });
   });

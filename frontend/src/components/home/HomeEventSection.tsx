@@ -27,32 +27,37 @@ export function HomeEventSection() {
         <p className="py-8 text-center text-sm text-gray-500">진행 중인 이벤트가 없습니다.</p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {events.map(({ id, type, title, summary, publishedAt }) => (
-            <li key={id} className="group min-w-0">
-              <Link
-                to="/news/$newsId"
-                params={{ newsId: String(id) }}
-                className="bg-background focus-visible:outline-primary-600 block rounded-lg border border-gray-200 p-4 transition-colors hover:border-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2"
-                onClick={() => {
-                  analytics.track({ name: 'card_clicked', target: 'news', surface: 'home' });
-                  analytics.track({
-                    name: 'news_detail_opened',
-                    newsId: id,
-                    type,
-                    from: 'home',
-                  });
-                }}
-              >
-                <NewsItem
-                  type={type}
-                  title={title}
-                  summary={summary}
-                  publishedAt={publishedAt}
-                  compact
-                />
-              </Link>
-            </li>
-          ))}
+          {events.map(
+            ({ id, type, title, summary, publishedAt, eventStatus, eventStartAt, eventEndAt }) => (
+              <li key={id} className="group min-w-0">
+                <Link
+                  to="/news/$newsId"
+                  params={{ newsId: String(id) }}
+                  className="bg-background focus-visible:outline-primary-600 block rounded-lg border border-gray-200 p-4 transition-colors hover:border-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2"
+                  onClick={() => {
+                    analytics.track({ name: 'card_clicked', target: 'news', surface: 'home' });
+                    analytics.track({
+                      name: 'news_detail_opened',
+                      newsId: id,
+                      type,
+                      from: 'home',
+                    });
+                  }}
+                >
+                  <NewsItem
+                    type={type}
+                    title={title}
+                    summary={summary}
+                    publishedAt={publishedAt}
+                    eventStatus={eventStatus}
+                    eventStartAt={eventStartAt}
+                    eventEndAt={eventEndAt}
+                    compact
+                  />
+                </Link>
+              </li>
+            ),
+          )}
         </ul>
       )}
       <Link

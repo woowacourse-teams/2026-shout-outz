@@ -13,7 +13,11 @@ const findNews = () => screen.findAllByRole('listitem');
 const newsCount = async () => (await findNews()).length;
 
 describe('NewsPage', () => {
-  it('등록된 소식이 없으면 빈 상태를 보여준다', async () => {
+  it.each([
+    ['ALL', '소식이'],
+    ['NOTICE', '공지사항이'],
+    ['EVENT', '이벤트가'],
+  ])('%s 빈 목록은 유형에 맞게 안내한다', async (filter, label) => {
     server.use(
       http.get('/api/v1/news', () =>
         HttpResponse.json({
@@ -24,9 +28,9 @@ describe('NewsPage', () => {
       ),
     );
 
-    renderRoute('/news');
+    renderRoute(`/news?type=${filter}`);
 
-    expect(await screen.findByText('등록된 소식이 없습니다.')).toBeInTheDocument();
+    expect(await screen.findByText(`등록된 ${label} 없습니다.`)).toBeInTheDocument();
     expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '소식 더 보기' })).not.toBeInTheDocument();
   });
@@ -57,6 +61,8 @@ describe('NewsPage', () => {
       renderRoute('/news');
 
       expect(await newsCount()).toBe(4);
+      expect(screen.getAllByText('진행 중')).toHaveLength(2);
+      expect(screen.getByText('종료')).toBeInTheDocument();
       expect(tabNamed('전체')).toHaveAttribute('aria-selected', 'true');
       expect(screen.getAllByRole('banner')).toHaveLength(1);
     });
