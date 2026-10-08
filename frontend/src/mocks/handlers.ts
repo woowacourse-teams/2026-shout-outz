@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 import type { Feed } from '@/apis/feed';
 import type { FeedComment } from '@/apis/feed-comment';
 import { findFirstUrl } from '@/utils/feed';
+import { createProfileCaseComments, createProfileCaseFeeds } from '@/mocks/profile-cases';
 
 /** 서버처럼 본문 첫 URL로 링크 미리보기를 만든다. 작성·수정 직후는 OG 수집 전이라 url만 채운다. */
 const linkPreviewOf = (content: string): Feed['linkPreview'] => {
@@ -71,9 +72,12 @@ export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
   createdAt: new Date(Date.UTC(2026, 8, 14, 9 - index)).toISOString(),
   updatedAt: new Date(Date.UTC(2026, 8, 14, 9 - index)).toISOString(),
 }));
-export function createFeedHandlers({ includeProfile = true }: { includeProfile?: boolean } = {}) {
+export function createFeedHandlers({
+  includeProfile = true,
+  profileCases = false,
+}: { includeProfile?: boolean; profileCases?: boolean } = {}) {
   let sequence = 100;
-  const feeds = [...mockFeeds];
+  const feeds = profileCases ? createProfileCaseFeeds(mockFeeds[0]!) : [...mockFeeds];
   const comments = new Map<number, FeedComment[]>();
   const feedLikes = new Map(
     feeds.map((feed) => [feed.feedId, { likeCount: 12, likedByMe: false }]),
@@ -159,7 +163,7 @@ export function createFeedHandlers({ includeProfile = true }: { includeProfile?:
           isAnonymous: false,
         });
       }
-      comments.set(id, items);
+      comments.set(id, profileCases ? createProfileCaseComments(id) : items);
     }
     return comments.get(id)!;
   };
