@@ -8,13 +8,13 @@ import {
   type VerificationUserType,
 } from '@/apis/verification';
 import { sessionQuery } from '@/apis/session';
-import { cohortsQueryOptions } from '@/api/project';
 import { AppGnb } from '@/components/AppGnb';
 import { Button, getButtonStyles } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { Footer } from '@/components/Footer';
 import { Input } from '@/components/Input';
 import { Select } from '@/components/Select';
+import { CrewInfoFields } from '@/components/users/CrewInfoFields';
 import { getGithubLoginUrl } from '@/utils/auth';
 import { getApiErrorMessage } from '@/utils/error';
 import { analytics, toPathPattern } from '@/utils/analytics';
@@ -97,7 +97,6 @@ function VerificationContent() {
 function VerificationForm({ rejectionReason }: { rejectionReason: string | null }) {
   const client = useQueryClient();
   const policyId = useId();
-  const { data: cohorts } = useSuspenseQuery(cohortsQueryOptions());
   const mutation = useMutation({
     ...createVerificationRequestMutation,
     onSuccess: (createdRequest) => {
@@ -175,59 +174,13 @@ function VerificationForm({ rejectionReason }: { rejectionReason: string | null 
           )}
         </Field>
         {crew && (
-          <>
-            <Field label="기수">
-              {(id) => (
-                <>
-                  <Select
-                    id={id}
-                    value={cohort}
-                    placeholder="기수를 선택하세요"
-                    onValueChange={setCohort}
-                    aria-describedby={`${id}-help`}
-                  >
-                    {cohorts.map((item) => (
-                      <Select.Item key={item.cohort} value={String(item.cohort)}>
-                        {item.cohort}기 ({item.year})
-                      </Select.Item>
-                    ))}
-                  </Select>
-                  <ul id={`${id}-help`} className="list-disc pl-4 text-xs leading-5 text-gray-500">
-                    <li>본인의 우아한테크코스 기수를 정확히 선택해 주세요.</li>
-                  </ul>
-                </>
-              )}
-            </Field>
-            <Field label="트랙">
-              {(id) => (
-                <>
-                  <Select
-                    id={id}
-                    value={track}
-                    placeholder="트랙을 선택하세요"
-                    onValueChange={(value) => setTrack(value as VerificationTrack)}
-                    aria-describedby={`${id}-help`}
-                  >
-                    <Select.Item value="BACKEND">백엔드</Select.Item>
-                    <Select.Item value="FRONTEND">프론트엔드</Select.Item>
-                    <Select.Item value="ANDROID">안드로이드</Select.Item>
-                  </Select>
-                  <ul
-                    id={`${id}-help`}
-                    className="flex list-disc flex-col gap-1 pl-4 text-xs leading-5 text-gray-500"
-                  >
-                    <li>본인의 파트(백엔드·프론트엔드·안드로이드)를 정확히 선택해 주세요.</li>
-                    <li id={policyId} className="text-gray-600">
-                      크루 인증 이후에는{' '}
-                      <strong className="font-semibold">
-                        닉네임과 파트·기수 정보를 수정할 수 없습니다.
-                      </strong>
-                    </li>
-                  </ul>
-                </>
-              )}
-            </Field>
-          </>
+          <CrewInfoFields
+            cohort={cohort}
+            track={track}
+            onCohortChange={setCohort}
+            onTrackChange={setTrack}
+            policyId={policyId}
+          />
         )}
         {mutation.isError && (
           <p role="alert" className="text-sm text-red-600">
