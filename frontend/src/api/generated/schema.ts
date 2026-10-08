@@ -405,6 +405,111 @@ export interface AuthSessionSuccessResponse {
   status: string;
 }
 
+/** BugReportAdminDetailSuccessResponse */
+export interface BugReportAdminDetailSuccessResponse {
+  /** 버그 제보 상세 정보 */
+  data: {
+    /** 버그 제보 ID */
+    bugReportId: number;
+    /** 버그 제보 전체 내용 */
+    content: string;
+    /** ISO-8601 생성 시각 */
+    createdAt: string;
+    /** 제보한 사용자 ID. 비로그인 제보이면 null */
+    reporterUserId?: number | null;
+    /** 제보 상태 */
+    status: 'OPEN' | 'COMPLETED';
+    /** 마지막 상태 변경 시각. 변경 전이면 null */
+    statusChangedAt?: string | null;
+    /** 마지막으로 상태를 변경한 관리자 ID. 변경 전이면 null */
+    statusChangedByUserId?: number | null;
+    /** ISO-8601 수정 시각 */
+    updatedAt: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** BugReportAdminFindAllSuccessResponse */
+export interface BugReportAdminFindAllSuccessResponse {
+  /** 버그 제보 미리보기 목록 */
+  data: {
+    /** 버그 제보 ID */
+    bugReportId: number;
+    /** 전체 내용의 미리보기. 최대 200자 */
+    contentPreview: string;
+    /** ISO-8601 생성 시각 */
+    createdAt: string;
+    /** 제보한 사용자 ID. 비로그인 제보이면 null */
+    reporterUserId?: number | null;
+    /** 제보 상태 */
+    status: 'OPEN' | 'COMPLETED';
+    /** 마지막 상태 변경 시각. 변경 전이면 null */
+    statusChangedAt?: string | null;
+    /** 마지막으로 상태를 변경한 관리자 ID. 변경 전이면 null */
+    statusChangedByUserId?: number | null;
+    /** ISO-8601 수정 시각 */
+    updatedAt: string;
+  }[];
+  /** 커서 페이지네이션 정보 */
+  meta: {
+    /** 다음 페이지 존재 여부 */
+    hasNext: boolean;
+    /** 다음 페이지 요청에 사용할 커서. 다음 페이지가 없으면 null */
+    nextCursor?: string | null;
+    /** 상태 필터에 해당하는 전체 제보 수 */
+    totalCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** BugReportCreateRequest */
+export interface BugReportCreateRequest {
+  /** 버그 제보 내용. 공백 제거 후 1~5,000자 */
+  content: string;
+}
+
+/** BugReportCreateSuccessResponse */
+export interface BugReportCreateSuccessResponse {
+  /** 생성된 버그 제보 */
+  data: {
+    /** 버그 제보 ID */
+    bugReportId: number;
+    /** ISO-8601 생성 시각 */
+    createdAt: string;
+    /** 제보 상태. 생성 직후 OPEN */
+    status: 'OPEN' | 'COMPLETED';
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** BugReportStatusUpdateRequest */
+export interface BugReportStatusUpdateRequest {
+  /** 변경할 제보 상태. OPEN 또는 COMPLETED */
+  status: 'OPEN' | 'COMPLETED';
+}
+
+/** BugReportStatusUpdateSuccessResponse */
+export interface BugReportStatusUpdateSuccessResponse {
+  /** 변경된 버그 제보 상태 */
+  data: {
+    /** 버그 제보 ID */
+    bugReportId: number;
+    /** 변경된 제보 상태 */
+    status: 'OPEN' | 'COMPLETED';
+    /** 마지막 상태 변경 시각. 상태 변경 이력이 없으면 null */
+    statusChangedAt?: string | null;
+    /** 마지막으로 상태를 변경한 관리자 ID. 상태 변경 이력이 없으면 null */
+    statusChangedByUserId?: number | null;
+    /** ISO-8601 수정 시각 */
+    updatedAt: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
 /** CategoryFindAllSuccessResponse */
 export interface CategoryFindAllSuccessResponse {
   /** 활성 카테고리 목록 */
