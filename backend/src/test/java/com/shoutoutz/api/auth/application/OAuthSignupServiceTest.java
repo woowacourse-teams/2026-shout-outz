@@ -95,7 +95,9 @@ class OAuthSignupServiceTest {
         assertThat(profile.getTrack()).isNull();
         assertThat(profile.getCohort()).isNull();
         assertThat(profile.getAvatarImageId()).isNull();
-        assertThat(profile.getGithubProfileUrl()).isNull();
+        assertThat(profile.getBio()).isEqualTo("백엔드 개발자입니다.");
+        assertThat(profile.getGithubProfileUrl()).isEqualTo("https://github.com/sangjun");
+        assertThat(profile.getBlogUrl()).isEqualTo("https://sangjun.dev");
         assertThat(account.getUserId()).isEqualTo(1L);
         assertThat(account.getProvider()).isEqualTo(OAuthProvider.GITHUB);
         assertThat(account.getProviderAccountId()).isEqualTo("12345678");
@@ -148,6 +150,9 @@ class OAuthSignupServiceTest {
         return new OAuthSignupCommand(
                 "@sangjun",
                 "상준",
+                "백엔드 개발자입니다.",
+                "https://github.com/sangjun",
+                "https://sangjun.dev",
                 new OAuthIdentity(
                         OAuthProvider.GITHUB,
                         "12345678",

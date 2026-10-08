@@ -42,7 +42,14 @@ class OAuthSignupHttpApiTest {
     void rotatesSessionIdAndStoresAuthenticationAfterSignup() {
         OAuthIdentity identity = githubIdentity();
         OAuthSignupRequest signupRequest = signupRequest();
-        OAuthSignupCommand command = signupRequest.toCommand(identity);
+        OAuthSignupCommand command = new OAuthSignupCommand(
+                "@sangjun",
+                "상준",
+                "백엔드 개발자입니다.",
+                "https://github.com/sangjun",
+                "https://sangjun.dev",
+                identity
+        );
         MockHttpServletRequest request = signupHttpRequest(identity);
         MockHttpSession session = (MockHttpSession) request.getSession();
         String previousSessionId = session.getId();
@@ -100,7 +107,10 @@ class OAuthSignupHttpApiTest {
     private OAuthSignupRequest signupRequest() {
         return new OAuthSignupRequest(
                 "@sangjun",
-                "상준"
+                "상준",
+                "백엔드 개발자입니다.",
+                "https://github.com/sangjun",
+                "https://sangjun.dev"
         );
     }
 
