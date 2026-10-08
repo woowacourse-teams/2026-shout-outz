@@ -1,7 +1,7 @@
 import { startTransition, useState } from 'react';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { IconMessage, IconMessageQuestion } from '@tabler/icons-react';
+import { IconMessage, IconMessageQuestion, IconPlus } from '@tabler/icons-react';
 
 import { feedsQuery } from '@/apis/feed';
 import { FeedCard } from '@/components/feeds/FeedCard';
@@ -60,13 +60,30 @@ export function HomeFeedSection() {
           피드
         </Tab.Item>
       </Tab>
-      <Tab variant="chip" size="sm" value={sort} onChange={changeSort} aria-label={`${label} 정렬`}>
-        {SORT_TABS.map(({ value, label: sortLabel }) => (
-          <Tab.Item key={value} value={value}>
-            {sortLabel}
-          </Tab.Item>
-        ))}
-      </Tab>
+      <div className="flex items-center justify-between gap-2">
+        <Tab
+          variant="chip"
+          size="sm"
+          value={sort}
+          onChange={changeSort}
+          aria-label={`${label} 정렬`}
+        >
+          {SORT_TABS.map(({ value, label: sortLabel }) => (
+            <Tab.Item key={value} value={value}>
+              {sortLabel}
+            </Tab.Item>
+          ))}
+        </Tab>
+        {/* 커뮤니티 화면의 작성 버튼과 같은 곳으로 보낸다. 로그인 확인은 작성 화면이 한다. */}
+        <Link
+          to="/community/new"
+          search={{ type: feedType }}
+          className={getButtonStyles({ variant: 'primary', size: 'sm', className: 'shrink-0' })}
+        >
+          <IconPlus className="mr-1 size-3" aria-hidden="true" />
+          {feedType === 'QUESTION' ? '질문하기' : '글쓰기'}
+        </Link>
+      </div>
 
       {feeds.length === 0 ? (
         <p className="py-8 text-center text-sm text-gray-500">
