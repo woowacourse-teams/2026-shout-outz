@@ -48,6 +48,22 @@ class OAuthSignupServiceTest {
     }
 
     @Test
+    @DisplayName("사용하지 않는 핸들은 사용 가능하다고 반환한다")
+    void returnsAvailableWhenHandleDoesNotExist() {
+        given(userRepository.existsByHandle("@available")).willReturn(false);
+
+        assertThat(oauthSignupService.isHandleAvailable("@available")).isTrue();
+    }
+
+    @Test
+    @DisplayName("이미 사용 중인 핸들은 사용 불가하다고 반환한다")
+    void returnsUnavailableWhenHandleExists() {
+        given(userRepository.existsByHandle("@sangjun")).willReturn(true);
+
+        assertThat(oauthSignupService.isHandleAvailable("@sangjun")).isFalse();
+    }
+
+    @Test
     @DisplayName("가입 정보와 OAuth 신원으로 사용자와 프로필 및 OAuth 계정을 생성한다")
     void signsUpOAuthUser() {
         OAuthSignupCommand command = signupCommand();

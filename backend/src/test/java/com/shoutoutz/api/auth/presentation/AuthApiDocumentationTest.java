@@ -7,6 +7,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
@@ -82,6 +83,12 @@ class AuthApiDocumentationTest {
                     + "가입 정보가 유효하지 않으면 400 VALIDATION_FAILED, 가입 대기 신원이 없으면 "
                     + "400 OAUTH_SIGNUP_SESSION_NOT_FOUND, CSRF Token이 유효하지 않으면 "
                     + "403 CSRF_TOKEN_INVALID, handle이 중복되면 409 HANDLE_ALREADY_EXISTS를 반환한다.";
+    private static final String SIGNUP_HANDLE_AVAILABILITY_DESCRIPTION =
+            "가입 대기 OAuth 세션에서 handle의 사용 가능 여부를 조회한다. "
+                    + "handle은 @[A-Za-z0-9_-]{2,30} 형식이며 대소문자를 구분하지 않는다. "
+                    + "이미 사용 중이면 available=false를 반환한다. 조회 결과는 가입 시점까지 보장되지 않으므로 "
+                    + "가입 API에서 중복을 다시 확인한다. handle 형식이 잘못되면 400 VALIDATION_FAILED, "
+                    + "가입 대기 OAuth 신원이 없으면 400 OAUTH_SIGNUP_SESSION_NOT_FOUND를 반환한다.";
 
     @Autowired
     private MockMvc mockMvc;
@@ -396,6 +403,151 @@ class AuthApiDocumentationTest {
                 ));
 
         verifyNoInteractions(oauthSignupService);
+    }
+
+    @Test
+    @DisplayName("OAuth 가입에 사용할 핸들의 사용 가능 여부를 조회한다")
+    void checkSignupHandleAvailability() throws Exception {
+        given(authSessionAccessor.findPendingIdentity(any()))
+                .willReturn(Optional.of(githubIdentity()));
+        given(oauthSignupService.isHandleAvailable("@available"))
+                .willReturn(true);
+
+        mockMvc.perform(get("/api/v1/auth/signup/handle-availability")
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=session-id")
+                        .queryParam("handle", "@available"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
+                .andExpect(jsonPath("$.status").value("success"))
+                .andExpect(jsonPath("$.data.available").value(true))
+                .andDo(document(
+                        "auth-signup-handle-availability",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("OAuth 가입 핸들 중복 확인")
+                                .description(SIGNUP_HANDLE_AVAILABILITY_DESCRIPTION)
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("가입 대기 신원이 저장된 JSESSIONID")
+                                )
+                                .queryParameters(
+                                        parameterWithName("handle")
+                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 확인할 핸들")
+                                )
+                                .responseSchema(Schema.schema(
+                                        "OAuthSignupHandleAvailabilitySuccessResponse"
+                                ))
+                                .responseHeaders(
+                                        headerWithName(HttpHeaders.CACHE_CONTROL)
+                                                .description("사용 가능 여부를 캐시하지 않음")
+                                )
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("핸들 확인 결과"),
+                                        fieldWithPath("data.available").type(BOOLEAN)
+                                                .description("핸들을 사용할 수 있는지 여부")
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    @DisplayName("이미 사용 중인 핸들은 사용할 수 없다고 응답한다")
+    void returnsUnavailableForDuplicateSignupHandle() throws Exception {
+        given(authSessionAccessor.findPendingIdentity(any()))
+                .willReturn(Optional.of(githubIdentity()));
+        given(oauthSignupService.isHandleAvailable("@taken"))
+                .willReturn(false);
+
+        mockMvc.perform(get("/api/v1/auth/signup/handle-availability")
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=session-id")
+                        .queryParam("handle", "@taken"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.available").value(false))
+                .andDo(document(
+                        "auth-signup-handle-availability-unavailable",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("OAuth 가입 핸들 중복 확인")
+                                .description(SIGNUP_HANDLE_AVAILABILITY_DESCRIPTION)
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("가입 대기 신원이 저장된 JSESSIONID")
+                                )
+                                .queryParameters(
+                                        parameterWithName("handle")
+                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 확인할 핸들")
+                                )
+                                .responseSchema(Schema.schema(
+                                        "OAuthSignupHandleAvailabilitySuccessResponse"
+                                ))
+                                .responseHeaders(
+                                        headerWithName(HttpHeaders.CACHE_CONTROL)
+                                                .description("사용 가능 여부를 캐시하지 않음")
+                                )
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("핸들 확인 결과"),
+                                        fieldWithPath("data.available").type(BOOLEAN)
+                                                .description("핸들을 사용할 수 있는지 여부")
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    @DisplayName("잘못된 형식의 가입 핸들은 중복 확인을 거부한다")
+    void rejectInvalidSignupHandleAvailabilityRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/signup/handle-availability")
+                        .queryParam("handle", "invalid handle"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andDo(document(
+                        "auth-signup-handle-availability-invalid",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("OAuth 가입 핸들 중복 확인")
+                                .description(SIGNUP_HANDLE_AVAILABILITY_DESCRIPTION)
+                                .queryParameters(
+                                        parameterWithName("handle")
+                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 확인할 핸들")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+    }
+
+    @Test
+    @DisplayName("가입 대기 OAuth 신원이 없으면 핸들 중복 확인을 거부한다")
+    void rejectHandleAvailabilityWithoutPendingOAuthIdentity() throws Exception {
+        given(authSessionAccessor.findPendingIdentity(any())).willReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/auth/signup/handle-availability")
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=expired-session-id")
+                        .queryParam("handle", "@available"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code")
+                        .value(AuthErrorCode.OAUTH_SIGNUP_SESSION_NOT_FOUND.name()))
+                .andDo(document(
+                        "auth-signup-handle-availability-session-missing",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("OAuth 가입 핸들 중복 확인")
+                                .description(SIGNUP_HANDLE_AVAILABILITY_DESCRIPTION)
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("가입 대기 신원이 저장된 JSESSIONID")
+                                )
+                                .queryParameters(
+                                        parameterWithName("handle")
+                                                .description("@[A-Za-z0-9_-]{2,30} 형식의 확인할 핸들")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
     }
 
     @Test

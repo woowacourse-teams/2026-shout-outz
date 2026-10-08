@@ -2,6 +2,7 @@ package com.shoutoutz.api.auth.presentation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.shoutoutz.api.auth.presentation.dto.request.OAuthSignupHandleAvailabilityRequest;
 import com.shoutoutz.api.auth.presentation.dto.request.OAuthSignupRequest;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -107,5 +108,36 @@ class OAuthSignupRequestValidationTest {
         assertThat(validator.validate(request))
                 .extracting(violation -> violation.getPropertyPath().toString())
                 .containsExactly("blogUrl");
+    }
+
+    @ParameterizedTest
+    @DisplayName("핸들 중복 확인 요청의 핸들 형식을 검증한다")
+    @ValueSource(strings = {
+            "",
+            "sangjun",
+            "@",
+            "@a",
+            "@잘못된핸들",
+            "@user handle",
+            "@abcdefghijklmnopqrstuvwxyz12345"
+    })
+    void validateHandleAvailabilityRequest(String handle) {
+        OAuthSignupHandleAvailabilityRequest request =
+                new OAuthSignupHandleAvailabilityRequest(handle);
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .contains("handle");
+    }
+
+    @Test
+    @DisplayName("핸들 중복 확인 요청에서 핸들이 없으면 유효하지 않다")
+    void requireHandleForAvailabilityRequest() {
+        OAuthSignupHandleAvailabilityRequest request =
+                new OAuthSignupHandleAvailabilityRequest(null);
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .contains("handle");
     }
 }
