@@ -109,16 +109,26 @@ public class UserProfile {
     }
 
     public static UserProfile initialize(Long userId, String displayName) {
+        return initialize(userId, displayName, null, null, null);
+    }
+
+    public static UserProfile initialize(
+            Long userId,
+            String displayName,
+            String bio,
+            String githubProfileUrl,
+            String blogUrl
+    ) {
         return new UserProfile(
                 userId,
                 displayName,
                 UserType.GENERAL,
                 null,
                 null,
+                bio,
                 null,
-                null,
-                null,
-                null
+                githubProfileUrl,
+                blogUrl
         );
     }
 

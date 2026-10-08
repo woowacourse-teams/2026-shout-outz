@@ -17,13 +17,28 @@ public record OAuthSignupRequest(
         String handle,
         @NotBlank(message = "displayName은 필수입니다.")
         @CodePointLength(max = 50, message = "displayName은 50자를 초과할 수 없습니다.")
-        String displayName
+        String displayName,
+        @CodePointLength(max = 200, message = "bio는 200자를 초과할 수 없습니다.")
+        String bio,
+        @Pattern(
+                regexp = "^https://github\\.com/[^/\\s?#]+/?$",
+                message = "githubProfileUrl 형식이 올바르지 않습니다."
+        )
+        String githubProfileUrl,
+        @Pattern(
+                regexp = "^https?://[^\\s/?#:]+(?::\\d{1,5})?(?:[/?#][^\\s]*)?$",
+                message = "blogUrl 형식이 올바르지 않습니다."
+        )
+        String blogUrl
 ) {
 
     public OAuthSignupCommand toCommand(OAuthIdentity identity) {
         return new OAuthSignupCommand(
                 handle,
                 displayName,
+                bio,
+                githubProfileUrl,
+                blogUrl,
                 identity
         );
     }

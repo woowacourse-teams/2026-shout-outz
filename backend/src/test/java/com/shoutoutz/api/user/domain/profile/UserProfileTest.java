@@ -28,6 +28,36 @@ class UserProfileTest {
     }
 
     @Test
+    @DisplayName("추가 프로필 정보를 정제해 일반 사용자 프로필을 초기화한다")
+    void initializesGeneralUserProfileWithAdditionalInformation() {
+        UserProfile profile = UserProfile.initialize(
+                1L,
+                "재키",
+                "  백엔드 개발자입니다.  ",
+                " https://github.com/zzaekkii ",
+                " https://zzaekkii.dev "
+        );
+
+        assertThat(profile.getBio()).isEqualTo("백엔드 개발자입니다.");
+        assertThat(profile.getGithubProfileUrl()).isEqualTo("https://github.com/zzaekkii");
+        assertThat(profile.getBlogUrl()).isEqualTo("https://zzaekkii.dev");
+        assertThat(profile.getUserType()).isEqualTo(UserType.GENERAL);
+        assertThat(profile.getTrack()).isNull();
+        assertThat(profile.getCohort()).isNull();
+        assertThat(profile.getAvatarImageId()).isNull();
+    }
+
+    @Test
+    @DisplayName("초기 프로필의 공백뿐인 선택 값은 null로 변환한다")
+    void initializesBlankOptionalProfileInformationAsNull() {
+        UserProfile profile = UserProfile.initialize(1L, "재키", "  ", "", "\t");
+
+        assertThat(profile.getBio()).isNull();
+        assertThat(profile.getGithubProfileUrl()).isNull();
+        assertThat(profile.getBlogUrl()).isNull();
+    }
+
+    @Test
     @DisplayName("프로필 생성 시 문자열 표시 이름을 값 객체로 변환한다")
     void convertsRawDisplayNameWhenInitializingUserProfile() {
         assertThatThrownBy(() -> UserProfile.initialize(1L, " "))

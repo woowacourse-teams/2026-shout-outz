@@ -9,4 +9,6 @@ public interface UserRepository {
     Optional<User> findById(long id);
 
     Optional<User> findByHandle(String handle);
+
+    boolean existsByHandle(String handle);
 }

@@ -9,12 +9,16 @@ import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
 import com.shoutoutz.api.auth.infrastructure.jpa.OAuthAccountJpaRepository;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
+import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.infrastructure.jpa.UserJpaRepository;
 import com.shoutoutz.api.user.infrastructure.jpa.UserProfileJpaRepository;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -68,7 +72,7 @@ class OAuthSignupServiceIntegrationTest {
         OAuthIdentity identity = new OAuthIdentity(OAuthProvider.GITHUB, suffix, null);
 
         OAuthSignupResult signup = oauthSignupService.signup(
-                new OAuthSignupCommand("@crew" + suffix, "가입자", identity)
+                new OAuthSignupCommand("@crew" + suffix, "가입자", null, null, null, identity)
         );
         assertThat(jdbcTemplate.queryForObject("""
                         SELECT matched_user_id FROM woowa_archived_project_members WHERE project_id = ?
@@ -86,6 +90,39 @@ class OAuthSignupServiceIntegrationTest {
                 .isZero();
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    @Transactional
+    @DisplayName("추가 프로필 정보 유무와 관계없이 일반 사용자로 가입하고 입력값을 저장한다")
+    void savesOptionalProfileInformation(boolean hasAdditionalInformation) {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String bio = hasAdditionalInformation ? "  백엔드 개발자입니다.  " : null;
+        String githubProfileUrl = hasAdditionalInformation ? "https://github.com/zzaekkii" : null;
+        String blogUrl = hasAdditionalInformation ? "https://zzaekkii.dev" : null;
+
+        OAuthSignupResult signup = oauthSignupService.signup(new OAuthSignupCommand(
+                "@profile-" + suffix,
+                "재키",
+                bio,
+                githubProfileUrl,
+                blogUrl,
+                new OAuthIdentity(OAuthProvider.GITHUB, suffix, null)
+        ));
+
+        userProfileJpaRepository.flush();
+        Map<String, Object> profile = jdbcTemplate.queryForMap("""
+                SELECT bio, github_profile_url, blog_url, user_type, track, cohort
+                FROM user_profiles WHERE user_id = ?
+                """, signup.userId());
+        assertThat(profile)
+                .containsEntry("bio", hasAdditionalInformation ? "백엔드 개발자입니다." : null)
+                .containsEntry("github_profile_url", githubProfileUrl)
+                .containsEntry("blog_url", blogUrl)
+                .containsEntry("user_type", UserType.GENERAL.name())
+                .containsEntry("track", null)
+                .containsEntry("cohort", null);
+    }
+
     @Test
     @DisplayName("프로필 생성에 실패하면 사용자와 OAuth 계정 생성을 모두 롤백한다")
     void rollsBackSignupWhenProfileCreationFails() {
@@ -96,6 +133,9 @@ class OAuthSignupServiceIntegrationTest {
         OAuthSignupCommand invalidCommand = new OAuthSignupCommand(
                 "@dahye-" + suffix,
                 " ",
+                null,
+                null,
+                null,
                 new OAuthIdentity(OAuthProvider.GITHUB, suffix, null)
         );
 
