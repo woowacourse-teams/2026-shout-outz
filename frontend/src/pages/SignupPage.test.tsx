@@ -2,7 +2,7 @@
  * @jest-environment ./jest.network-environment.js
  * @jest-environment-options {"customExportConditions":["node","node-addons"]}
  */
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
@@ -77,7 +77,7 @@ describe('SignupPage', () => {
     expect(requested).toBe(false);
   });
 
-  describe('크루 가입', () => {
+  describe('구성원 가입', () => {
     /** 가입 전후로 세션과 CSRF 토큰이 바뀌는 서버를 흉내 내고, 요청 순서를 남긴다. */
     const mockSignupServer = ({ verificationFails = false } = {}) => {
       let status = 'SIGNUP_REQUIRED';
@@ -128,7 +128,7 @@ describe('SignupPage', () => {
     const fillCrewForm = async (user: ReturnType<typeof userEvent.setup>) => {
       await user.type(await screen.findByRole('textbox', { name: '사용자 아이디' }), 'woowa_test');
       await user.type(screen.getByRole('textbox', { name: '닉네임' }), '라이');
-      await user.click(screen.getByRole('button', { name: '네, 크루예요' }));
+      await user.click(screen.getByRole('button', { name: '크루예요' }));
       await user.click(await screen.findByRole('combobox', { name: '기수' }));
       await user.click(screen.getByRole('option', { name: '8기 (2026)' }));
       await user.click(screen.getByRole('combobox', { name: '트랙' }));
@@ -181,7 +181,47 @@ describe('SignupPage', () => {
       );
     });
 
-    it('크루 여부나 기수·트랙을 고르지 않으면 가입하지 않는다', async () => {
+    it('코치는 기수·트랙 없이 코치 인증을 신청한다', async () => {
+      const user = userEvent.setup();
+      const { recorded } = mockSignupServer();
+
+      renderRoute('/signup');
+      await user.type(await screen.findByRole('textbox', { name: '사용자 아이디' }), 'coach_test');
+      await user.type(screen.getByRole('textbox', { name: '닉네임' }), '브라운');
+      await user.click(screen.getByRole('button', { name: '코치예요' }));
+
+      expect(screen.queryByRole('combobox', { name: '기수' })).not.toBeInTheDocument();
+      expect(screen.getByText('닉네임을 수정할 수 없습니다.')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: '가입하고 코치 인증 신청하기' }));
+
+      expect(
+        await screen.findByText('코치 인증 신청이 접수됐고, 지금은 승인 대기 중이에요.'),
+      ).toBeInTheDocument();
+      expect(recorded.verificationBody).toEqual({
+        userType: 'WOOWACOURSE_COACH',
+        nickname: '브라운',
+        cohort: null,
+        track: null,
+      });
+    });
+
+    it('크루여도 인증 없이 가입만 할 수 있다', async () => {
+      const user = userEvent.setup();
+      const { calls } = mockSignupServer();
+
+      const router = renderRoute('/signup');
+      await user.type(await screen.findByRole('textbox', { name: '사용자 아이디' }), 'woowa_test');
+      await user.type(screen.getByRole('textbox', { name: '닉네임' }), '라이');
+      await user.click(screen.getByRole('button', { name: '크루예요' }));
+      // 기수·트랙을 고르지 않아도 가입만 하는 데는 막지 않는다.
+      await user.click(screen.getByRole('button', { name: '인증 없이 가입만 하기' }));
+
+      await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+      expect(calls).toContain('signup');
+      expect(calls).not.toContain('verification');
+    });
+
+    it('구성원 여부나 기수·트랙을 고르지 않으면 가입하지 않는다', async () => {
       const user = userEvent.setup();
       const { calls } = mockSignupServer();
 
@@ -190,14 +230,42 @@ describe('SignupPage', () => {
       await user.type(screen.getByRole('textbox', { name: '닉네임' }), '라이');
       await user.click(screen.getByRole('button', { name: '가입하기' }));
 
-      expect(await screen.findByText('우테코 크루인지 선택해 주세요.')).toBeInTheDocument();
+      expect(await screen.findByText('우테코 크루나 코치인지 선택해 주세요.')).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', { name: '네, 크루예요' }));
+      await user.click(screen.getByRole('button', { name: '크루예요' }));
       await user.click(screen.getByRole('button', { name: '가입하고 크루 인증 신청하기' }));
 
       expect(await screen.findByText('기수를 선택해 주세요.')).toBeInTheDocument();
       expect(screen.getByText('트랙을 선택해 주세요.')).toBeInTheDocument();
       expect(calls).not.toContain('signup');
     });
+  });
+
+  it('아이디 규칙을 입력하는 대로 확인해 보여준다', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/api/v1/auth/session', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: { status: 'SIGNUP_REQUIRED', userId: null, role: null, csrfToken: 'token' },
+        }),
+      ),
+    );
+
+    renderRoute('/signup');
+    const handle = await screen.findByRole('textbox', { name: '사용자 아이디' });
+    const rules = () => within(screen.getByRole('list', { name: '아이디 규칙' }));
+
+    expect(rules().getByText(/2~30자/)).not.toHaveTextContent(/충족/);
+
+    await user.type(handle, 'a');
+    expect(rules().getByText(/영문·숫자/)).toHaveTextContent(
+      '영문·숫자·밑줄(_)·하이픈(-)만 사용 충족',
+    );
+    expect(rules().getByText(/2~30자/)).toHaveTextContent('2~30자 미충족');
+
+    await user.type(handle, 'b!');
+    expect(rules().getByText(/영문·숫자/)).toHaveTextContent('미충족');
+    expect(rules().getByText(/2~30자/)).toHaveTextContent('2~30자 충족');
   });
 });
