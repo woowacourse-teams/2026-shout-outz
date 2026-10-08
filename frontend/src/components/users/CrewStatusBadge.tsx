@@ -1,48 +1,20 @@
 import { IconCircleCheckFilled } from '@tabler/icons-react';
 
-const CURRENT_COHORT = Number(process.env.CURRENT_COHORT);
-
 export function CrewStatusBadge({
   userType,
-  cohort,
-  isCurrent,
   size = 'sm',
 }: {
-  /** 응답마다 문자열이나 열거값으로 달라 넓게 받는다. 크루 여부만 비교한다. */
+  /** 인증된 크루와 코치를 같은 색상으로 표시한다. */
   userType?: string | null;
-  cohort?: number | null;
-  /** 피드·댓글 작성자 응답은 현재 기수 여부도 제공한다. */
-  isCurrent?: boolean | null;
   size?: 'xs' | 'sm';
 }) {
-  if (userType !== 'WOOWACOURSE_CREW') return null;
-
-  const current =
-    isCurrent ??
-    (cohort != null && Number.isInteger(CURRENT_COHORT) && CURRENT_COHORT > 0
-      ? cohort <= CURRENT_COHORT
-        ? cohort === CURRENT_COHORT
-        : null
-      : null);
-  if (current == null) return null;
-
-  const sizeClass = size === 'xs' ? 'size-3' : 'size-4';
-
-  if (current) {
-    return (
-      <IconCircleCheckFilled
-        className={`${sizeClass} text-primary-500 shrink-0`}
-        role="img"
-        aria-label="우테코 크루"
-      />
-    );
-  }
+  if (userType !== 'WOOWACOURSE_CREW' && userType !== 'WOOWACOURSE_COACH') return null;
 
   return (
     <IconCircleCheckFilled
-      className={`${sizeClass} shrink-0 text-green-500`}
+      className={`${size === 'xs' ? 'mt-1 size-3' : 'size-4'} shrink-0 text-green-500`}
       role="img"
-      aria-label="우테코 수료 크루"
+      aria-label="우아한테크코스 소속 인증"
     />
   );
 }

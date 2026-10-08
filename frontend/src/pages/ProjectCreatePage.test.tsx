@@ -103,7 +103,7 @@ describe('ProjectCreatePage', () => {
   });
 
   // FIXME ProjectCreatePage의 자격 검사를 확인용으로 열어둬서 잠시 끔. 가드를 되돌리면 같이 켤 것.
-  it.skip('구성원 인증을 받지 않은 사용자는 등록 폼 대신 인증 신청 안내를 본다', async () => {
+  it.skip('우아한테크코스 소속 인증을 받지 않은 사용자는 등록 폼 대신 인증 신청 안내를 본다', async () => {
     server.use(
       http.get('/api/v1/users/me/verification-request', () =>
         HttpResponse.json({ status: 'success', data: null }),
@@ -112,8 +112,8 @@ describe('ProjectCreatePage', () => {
 
     renderRoute('/projects/new');
 
-    expect(await screen.findByText('구성원 인증이 필요해요.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '구성원 인증 신청' })).toHaveAttribute(
+    expect(await screen.findByText('우아한테크코스 소속 인증이 필요해요.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '우아한테크코스 소속 인증 신청' })).toHaveAttribute(
       'href',
       '/mypage/verification',
     );

@@ -26,7 +26,7 @@ test('관리자가 아닌 계정은 관리 메뉴를 보지 못한다', async ()
   expect(screen.queryByRole('tablist', { name: '관리 메뉴' })).not.toBeInTheDocument();
 });
 
-test('관리자가 대기 중인 크루 인증 신청을 승인한다', async () => {
+test('관리자가 대기 중인 우아한테크코스 소속 인증 신청을 승인한다', async () => {
   const user = userEvent.setup();
   signInAs('ADMIN');
   let approvedId: string | undefined;

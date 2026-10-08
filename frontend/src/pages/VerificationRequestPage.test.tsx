@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { renderRoute, server } from '@/test/renderRoute';
 
-test('신청 이력이 없는 로그인 사용자가 크루 인증을 신청한다', async () => {
+test('신청 이력이 없는 로그인 사용자가 우아한테크코스 소속 인증을 신청한다', async () => {
   const user = userEvent.setup();
   let requestBody: unknown;
   server.use(
@@ -47,7 +47,7 @@ test('신청 이력이 없는 로그인 사용자가 크루 인증을 신청한�
   );
   expect(screen.getByRole('combobox', { name: '트랙' })).toHaveAccessibleDescription(/본인의 파트/);
   expect(screen.getByText('닉네임과 파트·기수 정보를 수정할 수 없습니다.')).toBeInTheDocument();
-  await user.click(screen.getByRole('button', { name: '인증 신청하기' }));
+  await user.click(screen.getByRole('button', { name: '우아한테크코스 소속 인증 신청하기' }));
 
   expect(requestBody).toEqual({
     userType: 'WOOWACOURSE_CREW',
@@ -55,5 +55,7 @@ test('신청 이력이 없는 로그인 사용자가 크루 인증을 신청한�
     cohort: 8,
     track: 'FRONTEND',
   });
-  expect(await screen.findByText('인증 신청을 검토하고 있어요.')).toBeInTheDocument();
+  expect(
+    await screen.findByText('우아한테크코스 소속 인증 신청을 검토하고 있어요.'),
+  ).toBeInTheDocument();
 });

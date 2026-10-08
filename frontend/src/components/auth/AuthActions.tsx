@@ -8,7 +8,7 @@ import { Avatar } from '@/components/Avatar';
 import { AuthSheet } from '@/components/auth/AuthSheet';
 import { Button } from '@/components/Button';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
+import { UserAffiliation } from '@/components/users/UserAffiliation';
 import { useModal } from '@/hooks/useModal';
 import { getApiErrorMessage } from '@/utils/error';
 
@@ -57,14 +57,9 @@ export function AuthActions() {
           >
             <Avatar size="md" src={profile.data.avatarUrl} name={profile.data.displayName} alt="" />
             {/* 좁은 화면에서는 이름을 감추되 DOM에는 남긴다. 아바타만 남으면 링크에 읽을 이름이 없다. */}
-            <span className="sr-only flex items-center gap-1 sm:not-sr-only">
-              {profile.data.displayName}
-              {fullProfile.data && (
-                <CrewStatusBadge
-                  userType={fullProfile.data.userType}
-                  cohort={fullProfile.data.cohort}
-                />
-              )}
+            <span className="sr-only flex max-w-56 flex-col items-start lg:not-sr-only">
+              <span>{profile.data.displayName}</span>
+              {fullProfile.data && <UserAffiliation {...fullProfile.data} />}
             </span>
           </Link>
         )}

@@ -37,7 +37,7 @@ export const adminQueryKeys = {
   banners: ['admin', 'home-banners'] as const,
 };
 
-// ── 크루 인증 신청 ───────────────────────────────────────────────────────────
+// ── 우아한테크코스 소속 인증 신청 ───────────────────────────────────────────────────────────
 
 export async function fetchAdminVerifications(status: AdminVerificationStatus, cursor?: string) {
   const body = await httpClient<AdminVerificationRequestFindAllSuccessResponse>(VERIFICATION_PATH, {

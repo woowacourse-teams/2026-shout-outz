@@ -1,4 +1,3 @@
-import { formatTrackLabel } from '@/utils/user';
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -7,7 +6,7 @@ import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { getButtonStyles } from '@/components/Button';
 import { MarkdownContent } from '@/components/MarkdownContent';
-import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
+import { UserAffiliation } from '@/components/users/UserAffiliation';
 import { ProjectLikeButton } from '@/components/projects/ProjectLikeButton';
 import { ProjectNotApprovedError } from '@/errors/project';
 import type { ProjectDetail } from '@/types/project';
@@ -145,12 +144,8 @@ function ProjectMemberProfile({ member }: { member: ProjectDetail['members'][num
       <div className="min-w-0 text-sm">
         <p className="flex items-center gap-1.5 font-semibold break-words">
           <span>{member.displayName}</span>
-          <CrewStatusBadge userType={member.userType} cohort={member.cohort} />
         </p>
-        <p className="text-gray-500">
-          {member.cohort != null && `${member.cohort}기 `}
-          {formatTrackLabel(member.track) ?? member.track}
-        </p>
+        <UserAffiliation {...member} />
       </div>
     </>
   );

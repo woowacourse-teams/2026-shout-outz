@@ -49,7 +49,7 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
       <FeedDetailBody
         feed={feed}
         author={
-          <div className="relative flex items-center">
+          <div className="relative flex items-center pr-24 sm:pr-64">
             <FeedAuthor author={feed.author} isAnonymous={feed.isAnonymous} />
             <div className="absolute top-1/2 right-0 z-10 flex -translate-y-1/2 items-center gap-2">
               <ShareButton url={window.location.href} />

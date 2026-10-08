@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
 
 import { Avatar } from '@/components/Avatar';
-import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
+import { UserAffiliation } from '@/components/users/UserAffiliation';
 import type { UserType } from '@/types/user';
-import { formatCrewRole } from '@/utils/user';
 
 /**
  * 프로필 상단. 아바타 자리, 이름, 소속 배지, 소개, GitHub·블로그 링크를 보여준다.
@@ -36,8 +35,6 @@ export function ProfileHeader({
   avatarUrl,
   actions,
 }: ProfileHeaderProps) {
-  const role = formatCrewRole(cohort, track);
-
   return (
     <header className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
@@ -48,9 +45,13 @@ export function ProfileHeader({
               <h1 className="text-xl font-bold break-words text-gray-900 md:text-2xl">
                 {displayName}
               </h1>
-              {userType && <CrewStatusBadge userType={userType} cohort={cohort} />}
             </div>
-            {role && <p className="text-sm text-gray-500">{role}</p>}
+            <UserAffiliation
+              userType={userType}
+              cohort={cohort}
+              track={track}
+              className="text-sm"
+            />
           </div>
         </div>
         {actions}

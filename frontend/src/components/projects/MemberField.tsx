@@ -2,7 +2,7 @@ import { IconPlus } from '@tabler/icons-react';
 
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
-import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
+import { UserAffiliation } from '@/components/users/UserAffiliation';
 import { CrewSelectModal } from '@/components/modals/CrewSelectModal';
 import { useModal } from '@/hooks/useModal';
 import { type CrewSearchItem } from '@/types/project';
@@ -36,18 +36,24 @@ export function MemberField({ author, value, onChange, error }: MemberFieldProps
       {(author || members.length > 0) && (
         <ul aria-label="선택한 참여 팀원" className="flex flex-wrap gap-2">
           {author && (
-            <li key={author.handle}>
-              <Badge tone="primary" className="gap-1">
-                {author.displayName} (작성자)
-                <CrewStatusBadge userType={author.userType} cohort={author.cohort} />
+            <li key={author.handle} className="max-w-full">
+              <Badge
+                tone="primary"
+                className="max-w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 whitespace-normal"
+              >
+                <span>{author.displayName} (작성자)</span>
+                <UserAffiliation {...author} />
               </Badge>
             </li>
           )}
           {members.map((crew) => (
-            <li key={crew.handle}>
-              <Badge tone="primary" className="gap-1">
-                {crew.displayName}
-                <CrewStatusBadge userType={crew.userType} cohort={crew.cohort} />
+            <li key={crew.handle} className="max-w-full">
+              <Badge
+                tone="primary"
+                className="max-w-full flex-col items-start gap-0.5 rounded-lg px-3 py-2 whitespace-normal"
+              >
+                <span>{crew.displayName}</span>
+                <UserAffiliation {...crew} />
               </Badge>
             </li>
           ))}

@@ -19,7 +19,7 @@ export interface ProfileEditModalProps {
 /**
  * 내 프로필의 사진과 닉네임을 고친다.
  *
- * 구성원 인증을 마친 사용자는 인증 때 확인한 닉네임을 써야 해서 닉네임 칸만 막는다.
+ * 우아한테크코스 소속 인증을 마친 사용자는 인증 때 확인한 닉네임을 써야 해서 닉네임 칸만 막는다.
  * 사진은 고른 즉시 올려 두고, 저장할 때 그 미디어 ID를 함께 보낸다.
  * 프로필 수정은 전체 교체라 화면에 없는 소개와 링크도 그대로 다시 보낸다.
  */
@@ -151,7 +151,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
               />
               {verified && (
                 <p id={`${id}-locked`} className="text-xs text-gray-500">
-                  구성원 인증을 마친 사용자는 닉네임을 바꿀 수 없어요.
+                  우아한테크코스 소속 인증을 마친 사용자는 닉네임을 바꿀 수 없어요.
                 </p>
               )}
             </div>

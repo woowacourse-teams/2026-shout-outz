@@ -107,7 +107,7 @@ function MyProfileActions({ profile }: { profile: UserProfile }) {
           to="/mypage/verification"
           className={getButtonStyles({ variant: 'outline', size: 'sm' })}
         >
-          구성원 인증
+          우아한테크코스 소속 인증
         </Link>
       )}
     </div>

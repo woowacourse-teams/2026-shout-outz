@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import type { Feed } from '@/apis/feed';
-import { FeedAuthor } from './FeedAuthor';
+import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 
 const author: Feed['author'] = {
   userId: 1,
@@ -15,7 +15,7 @@ const author: Feed['author'] = {
 it('본인의 익명 글에는 기수와 파트를 표시한다', () => {
   render(<FeedAuthor author={author} isAnonymous profileLink={false} />);
 
-  expect(screen.getByText('8기 백엔드 크루')).toBeInTheDocument();
+  expect(screen.getByText('우아한테크코스 8기 백엔드')).toBeInTheDocument();
   expect(screen.getByText('익명으로 작성한 글입니다')).toBeInTheDocument();
 });
 
@@ -29,6 +29,6 @@ it('타인의 익명 글에는 기수와 파트를 표시하지 않는다', () =
   );
 
   expect(screen.getByText('익명')).toBeInTheDocument();
-  expect(screen.queryByText('8기 백엔드 크루')).not.toBeInTheDocument();
+  expect(screen.queryByText('우아한테크코스 8기 백엔드')).not.toBeInTheDocument();
   expect(screen.queryByText('익명으로 작성한 글입니다')).not.toBeInTheDocument();
 });

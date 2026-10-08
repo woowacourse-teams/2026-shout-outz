@@ -1,10 +1,9 @@
-import { formatTrackLabel } from '@/utils/user';
 import type { Feed } from '@/apis/feed';
 import { IconUser } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 import { Avatar } from '@/components/Avatar';
 import type { AvatarSize } from '@/components/Avatar';
-import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
+import { UserAffiliation } from '@/components/users/UserAffiliation';
 import { formatRelativeTime } from '@/utils/date';
 
 const ANONYMOUS_AVATAR_SIZE: Record<AvatarSize, string> = {
@@ -21,14 +20,6 @@ const ANONYMOUS_ICON_SIZE: Record<AvatarSize, string> = {
   lg: 'size-8',
 };
 
-function formatAuthorRole(author: Feed['author']) {
-  if (author.userType !== 'WOOWACOURSE_CREW') return null;
-
-  const track = formatTrackLabel(author.track);
-  const cohort = author.cohort != null ? `${author.cohort}기` : null;
-  return [cohort, track, '크루'].filter(Boolean).join(' ');
-}
-
 export function FeedAuthor({
   author,
   createdAt,
@@ -42,7 +33,6 @@ export function FeedAuthor({
   isAnonymous?: boolean;
   profileLink?: boolean;
 }) {
-  const role = author.handle ? formatAuthorRole(author) : null;
   const isOwnAnonymous = isAnonymous && author.handle != null;
   const isCompact = avatarSize === 'xs';
   if (!author.handle) {
@@ -60,14 +50,8 @@ export function FeedAuthor({
             >
               익명
             </p>
-            <CrewStatusBadge
-              userType={author.userType}
-              cohort={author.cohort}
-              isCurrent={author.isCurrent}
-              size={isCompact ? 'xs' : 'sm'}
-            />
           </div>
-          {role && <p className="truncate text-xs leading-4 text-gray-500">{role}</p>}
+          <UserAffiliation {...author} anonymous />
         </div>
       </div>
     );
@@ -88,12 +72,6 @@ export function FeedAuthor({
           >
             {author.displayName}
           </span>
-          <CrewStatusBadge
-            userType={author.userType}
-            cohort={author.cohort}
-            isCurrent={author.isCurrent}
-            size={isCompact ? 'xs' : 'sm'}
-          />
           {isOwnAnonymous && (
             <span
               className={`bg-primary-50 text-primary-700 rounded-full text-xs font-medium ${isCompact ? 'px-1.5 py-0' : 'px-2 py-0.5'}`}
@@ -102,18 +80,11 @@ export function FeedAuthor({
             </span>
           )}
         </div>
-        {(role || createdAt) && (
-          <div className="flex min-w-0 items-center gap-1.5 text-xs leading-4 text-gray-500">
-            {role && <span className="truncate">{role}</span>}
-            {createdAt && (
-              <>
-                {role && <span aria-hidden="true">·</span>}
-                <time className="shrink-0 text-gray-400" dateTime={createdAt}>
-                  {formatRelativeTime(createdAt)}
-                </time>
-              </>
-            )}
-          </div>
+        <UserAffiliation {...author} />
+        {createdAt && (
+          <time className="block text-xs leading-4 text-gray-400" dateTime={createdAt}>
+            {formatRelativeTime(createdAt)}
+          </time>
         )}
       </div>
     </>
