@@ -1,9 +1,9 @@
 import { Suspense, useId, useState } from 'react';
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { IconCheck, IconX } from '@tabler/icons-react';
 
-import { sessionQuery, signupMutation } from '@/apis/session';
+import { handleAvailabilityQuery, sessionQuery, signupMutation } from '@/apis/session';
 import {
   createVerificationRequestMutation,
   verificationRequestQuery,
@@ -17,6 +17,7 @@ import { Field } from '@/components/Field';
 import { Footer } from '@/components/Footer';
 import { Input } from '@/components/Input';
 import { CrewInfoFields } from '@/components/users/CrewInfoFields';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { getGithubLoginUrl } from '@/utils/auth';
 import { getApiErrorMessage, isApiResponseError } from '@/utils/error';
 import { analytics, toPathPattern } from '@/utils/analytics';
@@ -113,6 +114,7 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
   const policyId = useId();
   // 입력칸에는 @ 뒤의 이름만 둔다. @는 칸 앞에 고정으로 보여 주고, 서버에 보낼 때 붙인다.
   const [handleName, setHandleName] = useState('');
+  const availability = useHandleAvailability(handleName);
   const [displayName, setDisplayName] = useState('');
   const [memberType, setMemberType] = useState<MemberType | null>(null);
   const crew = memberType === 'WOOWACOURSE_CREW';
@@ -128,9 +130,10 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
 
   function validate(withVerification: boolean) {
     const next: SignupErrors = {};
-    // 서버 `Handle.HANDLE_FORMAT_REGEX`(`^@[A-Za-z0-9_-]{2,30}$`)에서 @ 뒤 부분과 같은 규칙.
-    if (!/^[A-Za-z0-9_-]{2,30}$/.test(handleName)) {
+    if (!HANDLE_FORMAT.test(handleName)) {
       next.handle = '2~30자의 영문, 숫자, 밑줄, 하이픈으로 입력해 주세요.';
+    } else if (availability === 'taken') {
+      next.handle = HANDLE_TAKEN_MESSAGE;
     }
     if (!displayName.trim()) next.displayName = '닉네임을 입력해 주세요.';
     else if (Array.from(displayName).length > 50) {
@@ -160,7 +163,10 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
         name: 'signup_failed',
         reason: isApiResponseError(error) ? error.data.code : 'UNKNOWN',
       });
-      if (isApiResponseError(error)) {
+      if (isHandleTakenError(error)) {
+        // 확인한 뒤 가입하기 전에 다른 사람이 먼저 가져간 경우다.
+        setErrors({ handle: HANDLE_TAKEN_MESSAGE });
+      } else if (isApiResponseError(error)) {
         const fieldErrors = Object.fromEntries(
           (error.data.details ?? []).map((detail) => [detail.field, detail.message]),
         );
@@ -268,7 +274,7 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
               >
                 <li>프로필 주소에 사용되는 고유한 아이디예요.</li>
               </ul>
-              <HandleRules id={`${id}-rules`} handleName={handleName} />
+              <HandleRules id={`${id}-rules`} handleName={handleName} availability={availability} />
               <ul id={`${id}-note`} className="list-disc pl-4 text-xs leading-5 text-gray-500">
                 <li>GitHub 아이디와 달라도 괜찮아요.</li>
               </ul>
@@ -303,7 +309,7 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
             <strong className="font-semibold">닉네임을 수정할 수 없습니다.</strong>
           </p>
         )}
-        {mutation.isError && (
+        {mutation.isError && !isHandleTakenError(mutation.error) && (
           <p role="alert" className="text-sm text-red-600">
             {getApiErrorMessage(mutation.error)}
           </p>
@@ -332,6 +338,45 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
   );
 }
 
+/** 서버 `Handle.HANDLE_FORMAT_REGEX`(`^@[A-Za-z0-9_-]{2,30}$`)에서 @ 뒤 부분과 같은 규칙 */
+const HANDLE_FORMAT = /^[A-Za-z0-9_-]{2,30}$/;
+
+const HANDLE_TAKEN_MESSAGE = '이미 사용 중인 아이디예요.';
+
+const isHandleTakenError = (error: unknown) =>
+  isApiResponseError(error) && error.data.code === 'HANDLE_ALREADY_EXISTS';
+
+/**
+ * 아이디 중복 확인 결과.
+ *
+ * - `idle`: 형식이 맞지 않아 아직 묻지 않았다
+ * - `checking`: 입력이 멈추기를 기다리거나 서버에 묻는 중이다
+ * - `unknown`: 확인하지 못했다. 가입할 때 서버가 다시 확인하므로 막지는 않는다
+ */
+type HandleAvailability = 'idle' | 'checking' | 'available' | 'taken' | 'unknown';
+
+/** 형식이 맞는 아이디만, 입력이 0.4초 멈추면 서버에 쓸 수 있는지 묻는다. */
+function useHandleAvailability(handleName: string): HandleAvailability {
+  const debounced = useDebouncedValue(handleName, 400);
+  const query = useQuery({
+    ...handleAvailabilityQuery(`@${debounced}`),
+    enabled: HANDLE_FORMAT.test(debounced),
+  });
+
+  if (!HANDLE_FORMAT.test(handleName)) return 'idle';
+  if (handleName !== debounced || query.isPending) return 'checking';
+  if (query.isError) return 'unknown';
+  return query.data ? 'available' : 'taken';
+}
+
+const AVAILABILITY_TEXT: Record<HandleAvailability, string> = {
+  idle: '다른 사람이 쓰지 않는 아이디',
+  checking: '사용할 수 있는지 확인하는 중…',
+  available: '사용할 수 있는 아이디예요.',
+  taken: HANDLE_TAKEN_MESSAGE,
+  unknown: '사용할 수 있는지 확인하지 못했어요. 가입할 때 다시 확인해요.',
+};
+
 /** 서버 `Handle.HANDLE_FORMAT_REGEX`(`^@[A-Za-z0-9_-]{2,30}$`)를 두 조건으로 나눈 것 */
 const HANDLE_RULES = [
   {
@@ -345,8 +390,17 @@ const HANDLE_RULES = [
  * 아이디 규칙을 입력값으로 바로 확인해 보여 준다.
  *
  * 아직 입력하지 않았으면 회색으로 두고, 입력을 시작하면 통과 여부를 색과 아이콘, 숨은 문구로 알린다.
+ * 마지막 줄은 형식이 맞을 때 서버에 물어본 중복 확인 결과다.
  */
-function HandleRules({ id, handleName }: { id: string; handleName: string }) {
+function HandleRules({
+  id,
+  handleName,
+  availability,
+}: {
+  id: string;
+  handleName: string;
+  availability: HandleAvailability;
+}) {
   return (
     <ul id={id} aria-label="아이디 규칙" className="flex flex-col gap-1 text-xs leading-5">
       {HANDLE_RULES.map((rule) => {
@@ -371,6 +425,23 @@ function HandleRules({ id, handleName }: { id: string; handleName: string }) {
           </li>
         );
       })}
+      {/* 서버 응답이 늦게 오므로 바뀔 때 읽어 주도록 status로 둔다. */}
+      <li
+        role="status"
+        className={cn(
+          'flex items-center gap-1',
+          availability === 'available' && 'text-green-600',
+          availability === 'taken' && 'text-red-600',
+          !['available', 'taken'].includes(availability) && 'text-gray-500',
+        )}
+      >
+        {availability === 'taken' ? (
+          <IconX className="size-3.5 shrink-0" aria-hidden="true" />
+        ) : (
+          <IconCheck className="size-3.5 shrink-0" aria-hidden="true" />
+        )}
+        {AVAILABILITY_TEXT[availability]}
+      </li>
     </ul>
   );
 }

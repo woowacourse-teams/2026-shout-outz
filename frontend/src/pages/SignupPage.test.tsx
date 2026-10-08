@@ -268,4 +268,78 @@ describe('SignupPage', () => {
     expect(rules().getByText(/영문·숫자/)).toHaveTextContent('미충족');
     expect(rules().getByText(/2~30자/)).toHaveTextContent('2~30자 충족');
   });
+
+  describe('아이디 중복 확인', () => {
+    const mockSignupRequired = () => {
+      const calls: string[] = [];
+      server.use(
+        http.get('/api/v1/auth/session', () =>
+          HttpResponse.json({
+            status: 'success',
+            data: { status: 'SIGNUP_REQUIRED', userId: null, role: null, csrfToken: 'token' },
+          }),
+        ),
+        http.get('/api/v1/auth/signup/handle-availability', ({ request }) => {
+          const handle = new URL(request.url).searchParams.get('handle');
+          calls.push(`availability:${handle}`);
+          return HttpResponse.json({ status: 'success', data: { available: handle !== '@taken' } });
+        }),
+        http.post('/api/v1/auth/signup', () => {
+          calls.push('signup');
+          return HttpResponse.json(
+            {
+              status: 'error',
+              code: 'HANDLE_ALREADY_EXISTS',
+              message: '이미 사용 중인 handle입니다.',
+            },
+            { status: 409 },
+          );
+        }),
+      );
+      return calls;
+    };
+
+    it('이미 쓰는 아이디면 알리고 가입하지 않는다', async () => {
+      const user = userEvent.setup();
+      const calls = mockSignupRequired();
+
+      renderRoute('/signup');
+      await user.type(await screen.findByRole('textbox', { name: '사용자 아이디' }), 'taken');
+      await user.type(screen.getByRole('textbox', { name: '닉네임' }), '샤라웃');
+      await user.click(screen.getByRole('button', { name: '아니요' }));
+
+      expect(await screen.findByText('이미 사용 중인 아이디예요.')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: '가입하기' }));
+
+      expect(screen.getAllByText('이미 사용 중인 아이디예요.').length).toBeGreaterThan(0);
+      expect(calls).toEqual(['availability:@taken']);
+    });
+
+    it('쓸 수 있는 아이디면 @를 붙여 확인하고 알린다', async () => {
+      const user = userEvent.setup();
+      const calls = mockSignupRequired();
+
+      renderRoute('/signup');
+      await user.type(await screen.findByRole('textbox', { name: '사용자 아이디' }), 'woowa_test');
+
+      expect(await screen.findByText('사용할 수 있는 아이디예요.')).toBeInTheDocument();
+      // 입력이 멈춘 뒤 한 번만 묻는다.
+      expect(calls).toEqual(['availability:@woowa_test']);
+    });
+
+    it('가입 중에 다른 사람이 먼저 가져가면 아이디 칸에 알린다', async () => {
+      const user = userEvent.setup();
+      mockSignupRequired();
+
+      renderRoute('/signup');
+      await user.type(await screen.findByRole('textbox', { name: '사용자 아이디' }), 'woowa_test');
+      await user.type(screen.getByRole('textbox', { name: '닉네임' }), '샤라웃');
+      await user.click(screen.getByRole('button', { name: '아니요' }));
+      await screen.findByText('사용할 수 있는 아이디예요.');
+      await user.click(screen.getByRole('button', { name: '가입하기' }));
+
+      expect(await screen.findByText('이미 사용 중인 아이디예요.')).toBeInTheDocument();
+      expect(screen.queryByText('이미 사용 중인 handle입니다.')).not.toBeInTheDocument();
+    });
+  });
 });
