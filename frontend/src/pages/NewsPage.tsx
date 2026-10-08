@@ -96,21 +96,31 @@ function NewsList({ filter, sort }: { filter: NewsFilter; sort: NewsSort }) {
   return (
     <>
       <ul className="flex flex-col gap-3">
-        {news.map(({ id, type, title, summary, publishedAt }) => (
-          <li key={id} className="group min-w-0">
-            <Link
-              to="/news/$newsId"
-              params={{ newsId: String(id) }}
-              onClick={() => {
-                analytics.track({ name: 'card_clicked', target: 'news', surface: 'news' });
-                analytics.track({ name: 'news_detail_opened', newsId: id, type, from: 'news' });
-              }}
-              className="bg-background focus-visible:outline-primary-600 block rounded-lg border border-gray-200 p-5 transition-colors hover:border-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 md:p-6"
-            >
-              <NewsItem type={type} title={title} summary={summary} publishedAt={publishedAt} />
-            </Link>
-          </li>
-        ))}
+        {news.map(
+          ({ id, type, title, summary, publishedAt, eventStatus, eventStartAt, eventEndAt }) => (
+            <li key={id} className="group min-w-0">
+              <Link
+                to="/news/$newsId"
+                params={{ newsId: String(id) }}
+                onClick={() => {
+                  analytics.track({ name: 'card_clicked', target: 'news', surface: 'news' });
+                  analytics.track({ name: 'news_detail_opened', newsId: id, type, from: 'news' });
+                }}
+                className="bg-background focus-visible:outline-primary-600 block rounded-lg border border-gray-200 p-5 transition-colors hover:border-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 md:p-6"
+              >
+                <NewsItem
+                  type={type}
+                  title={title}
+                  summary={summary}
+                  publishedAt={publishedAt}
+                  eventStatus={eventStatus}
+                  eventStartAt={eventStartAt}
+                  eventEndAt={eventEndAt}
+                />
+              </Link>
+            </li>
+          ),
+        )}
       </ul>
       {query.hasNextPage && (
         <Button
