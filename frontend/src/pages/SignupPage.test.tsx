@@ -40,6 +40,7 @@ describe('SignupPage', () => {
       /GitHub 아이디와 달라도 괜찮아요/,
     );
     await user.type(screen.getByRole('textbox', { name: '닉네임' }), '샤라웃');
+    await user.click(screen.getByRole('button', { name: '아니요' }));
     await user.click(screen.getByRole('button', { name: '가입하기' }));
 
     await waitFor(() =>
@@ -74,5 +75,129 @@ describe('SignupPage', () => {
       await screen.findByText('2~30자의 영문, 숫자, 밑줄, 하이픈으로 입력해 주세요.'),
     ).toBeInTheDocument();
     expect(requested).toBe(false);
+  });
+
+  describe('크루 가입', () => {
+    /** 가입 전후로 세션과 CSRF 토큰이 바뀌는 서버를 흉내 내고, 요청 순서를 남긴다. */
+    const mockSignupServer = ({ verificationFails = false } = {}) => {
+      let status = 'SIGNUP_REQUIRED';
+      const calls: string[] = [];
+      const recorded: { verificationBody?: unknown; verificationCsrf?: string | null } = {};
+
+      server.use(
+        http.get('/api/v1/auth/session', () => {
+          calls.push(`session:${status}`);
+          return HttpResponse.json({
+            status: 'success',
+            data: {
+              status,
+              userId: status === 'AUTHENTICATED' ? 1 : null,
+              role: null,
+              csrfToken: status === 'AUTHENTICATED' ? 'token-after-signup' : 'token',
+            },
+          });
+        }),
+        http.post('/api/v1/auth/signup', () => {
+          calls.push('signup');
+          status = 'AUTHENTICATED';
+          return HttpResponse.json({ status: 'success', data: { userId: 1 } }, { status: 201 });
+        }),
+        http.post('/api/v1/users/me/verification-requests', async ({ request }) => {
+          calls.push('verification');
+          recorded.verificationBody = await request.json();
+          recorded.verificationCsrf = request.headers.get('X-CSRF-TOKEN');
+          if (verificationFails) return new HttpResponse(null, { status: 500 });
+          return HttpResponse.json(
+            {
+              status: 'success',
+              data: {
+                requestId: 2,
+                ...(recorded.verificationBody as object),
+                status: 'PENDING',
+                requestedAt: '2026-10-08T00:00:00Z',
+              },
+            },
+            { status: 201 },
+          );
+        }),
+      );
+
+      return { calls, recorded };
+    };
+
+    const fillCrewForm = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.type(await screen.findByRole('textbox', { name: '사용자 아이디' }), 'woowa_test');
+      await user.type(screen.getByRole('textbox', { name: '닉네임' }), '라이');
+      await user.click(screen.getByRole('button', { name: '네, 크루예요' }));
+      await user.click(await screen.findByRole('combobox', { name: '기수' }));
+      await user.click(screen.getByRole('option', { name: '8기 (2026)' }));
+      await user.click(screen.getByRole('combobox', { name: '트랙' }));
+      await user.click(screen.getByRole('option', { name: '프론트엔드' }));
+      await user.click(screen.getByRole('button', { name: '가입하고 크루 인증 신청하기' }));
+    };
+
+    it('가입이 끝난 뒤 크루 인증을 이어서 신청하고 승인 대기 중임을 알린다', async () => {
+      const user = userEvent.setup();
+      const { calls, recorded } = mockSignupServer();
+
+      const router = renderRoute('/signup');
+      await fillCrewForm(user);
+
+      expect(
+        await screen.findByText('크루 인증 신청이 접수됐고, 지금은 승인 대기 중이에요.'),
+      ).toBeInTheDocument();
+      // 가입 응답을 받고 새 세션의 CSRF 토큰으로 인증을 신청한다.
+      expect(calls.slice(calls.indexOf('signup'))).toEqual([
+        'signup',
+        'session:AUTHENTICATED',
+        'verification',
+      ]);
+      expect(recorded.verificationCsrf).toBe('token-after-signup');
+      expect(recorded.verificationBody).toEqual({
+        userType: 'WOOWACOURSE_CREW',
+        nickname: '라이',
+        cohort: 8,
+        track: 'FRONTEND',
+      });
+
+      await user.click(screen.getByRole('button', { name: '홈으로 가기' }));
+      await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+    });
+
+    it('인증 신청이 실패하면 가입은 됐다고 알리고 다시 신청할 곳을 안내한다', async () => {
+      const user = userEvent.setup();
+      mockSignupServer({ verificationFails: true });
+
+      renderRoute('/signup');
+      await fillCrewForm(user);
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        '크루 인증 신청은 접수되지 않았어요.',
+      );
+      expect(screen.getByRole('heading', { name: '가입이 완료됐어요.' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: '크루 인증 다시 신청하기' })).toHaveAttribute(
+        'href',
+        '/mypage/verification',
+      );
+    });
+
+    it('크루 여부나 기수·트랙을 고르지 않으면 가입하지 않는다', async () => {
+      const user = userEvent.setup();
+      const { calls } = mockSignupServer();
+
+      renderRoute('/signup');
+      await user.type(await screen.findByRole('textbox', { name: '사용자 아이디' }), 'woowa_test');
+      await user.type(screen.getByRole('textbox', { name: '닉네임' }), '라이');
+      await user.click(screen.getByRole('button', { name: '가입하기' }));
+
+      expect(await screen.findByText('우테코 크루인지 선택해 주세요.')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: '네, 크루예요' }));
+      await user.click(screen.getByRole('button', { name: '가입하고 크루 인증 신청하기' }));
+
+      expect(await screen.findByText('기수를 선택해 주세요.')).toBeInTheDocument();
+      expect(screen.getByText('트랙을 선택해 주세요.')).toBeInTheDocument();
+      expect(calls).not.toContain('signup');
+    });
   });
 });

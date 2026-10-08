@@ -12,6 +12,7 @@ export interface CrewInfoFieldsProps {
   onTrackChange: (track: VerificationTrack) => void;
   /** 수정 불가 정책 문구의 id. 폼의 `aria-describedby`로 가리킨다. */
   policyId: string;
+  errors?: { cohort?: string; track?: string };
   disabled?: boolean;
 }
 
@@ -26,13 +27,14 @@ export function CrewInfoFields({
   onCohortChange,
   onTrackChange,
   policyId,
+  errors,
   disabled,
 }: CrewInfoFieldsProps) {
   const { data: cohorts } = useSuspenseQuery(cohortsQueryOptions());
 
   return (
     <>
-      <Field label="기수">
+      <Field label="기수" error={errors?.cohort}>
         {(id) => (
           <>
             <Select
@@ -55,7 +57,7 @@ export function CrewInfoFields({
           </>
         )}
       </Field>
-      <Field label="트랙">
+      <Field label="트랙" error={errors?.track}>
         {(id) => (
           <>
             <Select
