@@ -156,7 +156,7 @@ class FeedServiceQueryTest {
     }
 
     @Test
-    void 인기순을_요청하면_전체_좋아요_수_기준으로_조회한다() {
+    void 인기순을_요청하면_인기순으로_조회한다() {
         FeedFindAllRequest request = new FeedFindAllRequest(
                 FeedSort.POPULAR,
                 null,
@@ -175,6 +175,31 @@ class FeedServiceQueryTest {
 
         assertThat(result.items()).containsExactlyElementsOf(queried);
         verify(feedQueryRepository).findAll(FeedSort.POPULAR, null, null, null, 2);
+    }
+
+    @Test
+    void 인기순으로_조회하면_다음_페이지_커서에_좋아요_수와_댓글_수의_합을_담는다() {
+        FeedFindAllRequest request = new FeedFindAllRequest(
+                FeedSort.POPULAR,
+                null,
+                null,
+                null,
+                1
+        );
+        FeedItem lastItem = feed(2L, "2026-09-10T00:00:00Z", 3L, 4L);
+        when(feedQueryRepository.findAll(FeedSort.POPULAR, null, null, null, 1))
+                .thenReturn(new FeedPage(List.of(lastItem), true, 2L));
+
+        FeedFindAllResult result = feedService.findAllFeed(request);
+
+        assertThat(cursorCodec.decode(result.nextCursor(), FeedSort.POPULAR))
+                .isEqualTo(new FeedCursor(
+                        FeedSort.POPULAR,
+                        0,
+                        7L,
+                        lastItem.createdAt(),
+                        2L
+                ));
     }
 
     @Test
@@ -351,6 +376,10 @@ class FeedServiceQueryTest {
     }
 
     private FeedItem feed(long id, String createdAt, long likeCount) {
+        return feed(id, createdAt, likeCount, 0L);
+    }
+
+    private FeedItem feed(long id, String createdAt, long likeCount, long commentCount) {
         Instant instant = Instant.parse(createdAt);
         return new FeedItem(
                 id,
@@ -367,7 +396,7 @@ class FeedServiceQueryTest {
                 List.of(),
                 List.of(),
                 likeCount,
-                0L,
+                commentCount,
                 0,
                 instant,
                 instant
