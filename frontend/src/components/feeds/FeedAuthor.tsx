@@ -42,7 +42,7 @@ export function FeedAuthor({
   isAnonymous?: boolean;
   profileLink?: boolean;
 }) {
-  const role = isAnonymous || !author.handle ? null : formatAuthorRole(author);
+  const role = author.handle ? formatAuthorRole(author) : null;
   const isOwnAnonymous = isAnonymous && author.handle != null;
   const isCompact = avatarSize === 'xs';
   if (!author.handle) {
