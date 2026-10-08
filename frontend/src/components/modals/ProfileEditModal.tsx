@@ -8,26 +8,24 @@ import { Field } from '@/components/Field';
 import { Input } from '@/components/Input';
 import { SelectionModal } from '@/components/modals/SelectionModal';
 import { AvatarUploadButton } from '@/components/users/AvatarUploadButton';
+import { ProfileIntroFields } from '@/components/users/ProfileIntroFields';
 import type { UserProfile } from '@/types/user';
 import { getApiErrorMessage } from '@/utils/error';
+import {
+  toProfileIntroBody,
+  validateProfileIntro,
+  type ProfileIntroErrors,
+  type ProfileIntroInput,
+} from '@/utils/user';
 
 export interface ProfileEditModalProps {
   profile: UserProfile;
   onClose: () => void;
 }
 
-interface ProfileEditErrors {
+interface ProfileEditErrors extends ProfileIntroErrors {
   displayName?: string;
-  bio?: string;
-  githubProfileUrl?: string;
-  blogUrl?: string;
 }
-
-// 서버 `UserProfileUpdateRequest`의 `@Pattern`과 같은 규칙.
-const GITHUB_PROFILE_URL = /^https:\/\/github\.com\/[^/\s?#]+\/?$/;
-const BLOG_URL = /^https?:\/\/[^\s/?#:]+(?::\d{1,5})?(?:[/?#][^\s]*)?$/;
-
-const toNullable = (value: string) => value.trim() || null;
 
 /**
  * 내 프로필의 사진, 닉네임, 한 줄 소개, GitHub·블로그 주소를 고친다.
@@ -47,9 +45,11 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
     url: profile.avatarUrl ?? null,
   });
   const [preview, setPreview] = useState<string>();
-  const [bio, setBio] = useState(profile.bio ?? '');
-  const [githubProfileUrl, setGithubProfileUrl] = useState(profile.githubProfileUrl ?? '');
-  const [blogUrl, setBlogUrl] = useState(profile.blogUrl ?? '');
+  const [intro, setIntro] = useState<ProfileIntroInput>({
+    bio: profile.bio ?? '',
+    githubProfileUrl: profile.githubProfileUrl ?? '',
+    blogUrl: profile.blogUrl ?? '',
+  });
   const [errors, setErrors] = useState<ProfileEditErrors>({});
   const objectUrls = useRef<string[]>([]);
   // 업로드가 끝났을 때 부르는 함수는 고를 때의 렌더에서 온 것이라, 최신 미리보기는 ref로 읽는다.
@@ -72,19 +72,10 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
   });
 
   function validate() {
-    const next: ProfileEditErrors = {};
+    const next: ProfileEditErrors = validateProfileIntro(intro);
     if (!displayName.trim()) next.displayName = '닉네임을 입력해 주세요.';
     else if (Array.from(displayName).length > 50) {
       next.displayName = '닉네임은 50자 이하로 입력해 주세요.';
-    }
-    if (Array.from(bio.trim()).length > 200) {
-      next.bio = '한 줄 소개는 200자 이하로 입력해 주세요.';
-    }
-    if (githubProfileUrl.trim() && !GITHUB_PROFILE_URL.test(githubProfileUrl.trim())) {
-      next.githubProfileUrl = 'https://github.com/아이디 형식으로 입력해 주세요.';
-    }
-    if (blogUrl.trim() && !BLOG_URL.test(blogUrl.trim())) {
-      next.blogUrl = 'http:// 또는 https://로 시작하는 주소를 입력해 주세요.';
     }
     return next;
   }
@@ -97,9 +88,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
 
     update.mutate({
       displayName: displayName.trim(),
-      bio: toNullable(bio),
-      githubProfileUrl: toNullable(githubProfileUrl),
-      blogUrl: toNullable(blogUrl),
+      ...toProfileIntroBody(intro),
       avatarImageId: avatar.id,
     });
   }
@@ -128,7 +117,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
       <form
         id={formId}
         className="flex flex-col gap-5"
-        // 주소 칸은 모바일 키보드를 위해 type="url"을 쓰고, 검사는 위 규칙으로 직접 한다.
+        // 주소 칸이 type="url"이라 브라우저 기본 검사 대신 validateProfileIntro로 검사한다.
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
@@ -188,41 +177,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
             </div>
           )}
         </Field>
-        <Field label="한 줄 소개" error={errors.bio}>
-          {(id) => (
-            <Input
-              id={id}
-              value={bio}
-              placeholder="나를 한 줄로 소개해 주세요"
-              aria-invalid={errors.bio ? true : undefined}
-              onChange={(event) => setBio(event.target.value)}
-            />
-          )}
-        </Field>
-        <Field label="GitHub 주소" error={errors.githubProfileUrl}>
-          {(id) => (
-            <Input
-              id={id}
-              type="url"
-              value={githubProfileUrl}
-              placeholder="https://github.com/아이디"
-              aria-invalid={errors.githubProfileUrl ? true : undefined}
-              onChange={(event) => setGithubProfileUrl(event.target.value)}
-            />
-          )}
-        </Field>
-        <Field label="블로그 주소" error={errors.blogUrl}>
-          {(id) => (
-            <Input
-              id={id}
-              type="url"
-              value={blogUrl}
-              placeholder="https://"
-              aria-invalid={errors.blogUrl ? true : undefined}
-              onChange={(event) => setBlogUrl(event.target.value)}
-            />
-          )}
-        </Field>
+        <ProfileIntroFields value={intro} onChange={setIntro} errors={errors} />
         {update.isError && (
           <p role="alert" className="text-sm text-red-600">
             {getApiErrorMessage(update.error)}
