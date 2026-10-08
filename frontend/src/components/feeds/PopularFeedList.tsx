@@ -1,6 +1,6 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { IconHeart, IconMessageCircle } from '@tabler/icons-react';
+import { IconHeart, IconHeartFilled, IconMessageCircle } from '@tabler/icons-react';
 import { feedsQuery } from '@/apis/feed';
 import type { FeedType } from '@/apis/feed';
 import { FeedAuthor } from '@/components/feeds/FeedAuthor';
@@ -73,10 +73,14 @@ export function PopularFeedList({ feedType }: { feedType?: FeedType }) {
                   aria-label="반응 수"
                 >
                   <span
-                    className="inline-flex items-center gap-1"
-                    aria-label={`${feed.feedType === 'QUESTION' ? '궁금해요' : '좋아요'} ${feed.likeCount ?? 0}개`}
+                    className={`inline-flex items-center gap-1 ${feed.likedByMe ? 'text-primary-600' : ''}`}
+                    aria-label={`${feed.feedType === 'QUESTION' ? '궁금해요' : '좋아요'} ${feed.likeCount ?? 0}개${feed.likedByMe ? ', 내가 누름' : ''}`}
                   >
-                    <IconHeart className="size-4" aria-hidden="true" />
+                    {feed.likedByMe ? (
+                      <IconHeartFilled className="text-primary-600 size-4" aria-hidden="true" />
+                    ) : (
+                      <IconHeart className="size-4" aria-hidden="true" />
+                    )}
                     {feed.likeCount ?? 0}
                   </span>
                   <span
