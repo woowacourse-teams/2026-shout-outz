@@ -82,7 +82,80 @@ const decided = (requestId: number, status: string) => ({
   decidedBy: { userId: 7, handle: 'admin' },
 });
 
+// 상태 변경 mock(PATCH)이 값을 바꾸므로 let처럼 다룬다.
+const bugReports = [
+  {
+    bugReportId: 2,
+    contentPreview: '좋아요를 눌러도 숫자가 바로 바뀌지 않아요.',
+    content: '좋아요를 눌러도 숫자가 바로 바뀌지 않아요.\n\n---\n제보한 화면: /community/12',
+    reporterUserId: 10,
+    status: 'OPEN' as 'OPEN' | 'COMPLETED',
+    createdAt: '2026-10-08T05:00:00Z',
+    updatedAt: '2026-10-08T05:00:00Z',
+    statusChangedAt: null as string | null,
+    statusChangedByUserId: null as number | null,
+  },
+  {
+    bugReportId: 1,
+    contentPreview: '모바일에서 프로필 사진이 깨져 보여요.',
+    content: '모바일에서 프로필 사진이 깨져 보여요.\n\n---\n제보한 화면: /users/@woojin',
+    reporterUserId: null as number | null,
+    status: 'COMPLETED' as 'OPEN' | 'COMPLETED',
+    createdAt: '2026-10-07T09:00:00Z',
+    updatedAt: '2026-10-07T12:00:00Z',
+    statusChangedAt: '2026-10-07T12:00:00Z' as string | null,
+    statusChangedByUserId: 7 as number | null,
+  },
+];
+
+// 목록은 전체 내용 대신 미리보기만 준다.
+const toBugReportItem = (report: (typeof bugReports)[number]) => {
+  const item: Partial<typeof report> = { ...report };
+  delete item.content;
+  return item;
+};
+
 export const adminHandlers = [
+  http.get('/api/v1/admin/bug-reports', ({ request }) => {
+    const status = new URL(request.url).searchParams.get('status') ?? 'OPEN';
+    const items = bugReports.filter((item) => status === 'ALL' || item.status === status);
+
+    return HttpResponse.json({
+      status: 'success',
+      data: items.map(toBugReportItem),
+      meta: { nextCursor: null, hasNext: false, totalCount: items.length },
+    });
+  }),
+  http.get('/api/v1/admin/bug-reports/:bugReportId', ({ params }) => {
+    const report = bugReports.find((item) => item.bugReportId === Number(params.bugReportId));
+    if (!report) {
+      return HttpResponse.json(
+        { status: 'error', code: 'BUG_REPORT_NOT_FOUND', message: '버그 제보를 찾을 수 없습니다.' },
+        { status: 404 },
+      );
+    }
+    // 상세는 미리보기 대신 전체 내용을 준다.
+    const detail: Partial<typeof report> = { ...report };
+    delete detail.contentPreview;
+    return HttpResponse.json({ status: 'success', data: detail });
+  }),
+  http.patch('/api/v1/admin/bug-reports/:bugReportId/status', async ({ params, request }) => {
+    const { status } = (await request.json()) as { status: 'OPEN' | 'COMPLETED' };
+    const report = bugReports.find((item) => item.bugReportId === Number(params.bugReportId));
+    if (!report) return new HttpResponse(null, { status: 404 });
+    const now = new Date().toISOString();
+    Object.assign(report, {
+      status,
+      statusChangedAt: now,
+      statusChangedByUserId: 7,
+      updatedAt: now,
+    });
+    const { bugReportId, statusChangedAt, statusChangedByUserId, updatedAt } = report;
+    return HttpResponse.json({
+      status: 'success',
+      data: { bugReportId, status, statusChangedAt, statusChangedByUserId, updatedAt },
+    });
+  }),
   http.get('/api/v1/admin/verification-requests', ({ request }) => {
     const status = new URL(request.url).searchParams.get('status') ?? 'PENDING';
     const items = verificationRequests.filter((item) => item.status === status);

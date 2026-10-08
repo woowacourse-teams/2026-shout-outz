@@ -5,6 +5,9 @@ import type {
   AdminVerificationRequestApproveSuccessResponse,
   AdminVerificationRequestFindAllSuccessResponse,
   AdminVerificationRequestRejectSuccessResponse,
+  BugReportAdminDetailSuccessResponse,
+  BugReportAdminFindAllSuccessResponse,
+  BugReportStatusUpdateSuccessResponse,
   EventCreateSuccessResponse,
   HomeBannerAdminFindAllSuccessResponse,
   HomeBannerAdminSaveSuccessResponse,
@@ -13,6 +16,8 @@ import type {
   NoticeCreateSuccessResponse,
 } from '@/api/generated/schema';
 import type {
+  AdminBugReportFilter,
+  AdminBugReportStatus,
   AdminProject,
   AdminProjectDecision,
   AdminProjectDetail,
@@ -35,6 +40,8 @@ export const adminQueryKeys = {
     ['admin', 'verification-requests', status] as const,
   projects: (status: AdminProjectStatus) => ['admin', 'projects', status] as const,
   banners: ['admin', 'home-banners'] as const,
+  bugReports: (filter: AdminBugReportFilter) => ['admin', 'bug-reports', filter] as const,
+  bugReport: (bugReportId: number) => ['admin', 'bug-report', bugReportId] as const,
 };
 
 // ── 우아한테크코스 소속 인증 신청 ───────────────────────────────────────────────────────────
@@ -263,5 +270,62 @@ export async function deleteBanner(bannerId: number) {
 
 export const deleteBannerMutation = mutationOptions({
   mutationFn: deleteBanner,
+  retry: false,
+});
+
+// ── 버그 제보 ──────────────────────────────────────────────────────────────────────────────
+
+const BUG_REPORT_PATH = '/api/v1/admin/bug-reports';
+
+export async function fetchAdminBugReports(filter: AdminBugReportFilter, cursor?: string) {
+  const body = await httpClient<BugReportAdminFindAllSuccessResponse>(BUG_REPORT_PATH, {
+    method: 'get',
+    searchParams: { status: filter, ...(cursor ? { cursor } : {}) },
+  });
+  if (!body) throw new Error(`버그 제보 목록 응답이 비어 있습니다: ${BUG_REPORT_PATH}`);
+  // 목록은 data, 커서와 전체 개수는 meta에 있다.
+  return body;
+}
+
+export const adminBugReportsQuery = (filter: AdminBugReportFilter) =>
+  infiniteQueryOptions({
+    queryKey: adminQueryKeys.bugReports(filter),
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => fetchAdminBugReports(filter, pageParam),
+    getNextPageParam: (last) => last.meta.nextCursor ?? undefined,
+  });
+
+export async function fetchAdminBugReport(bugReportId: number) {
+  const body = await httpClient<BugReportAdminDetailSuccessResponse>(
+    `${BUG_REPORT_PATH}/${bugReportId}`,
+    { method: 'get' },
+  );
+  if (!body) throw new Error('버그 제보 상세를 확인하지 못했습니다.');
+  return body.data;
+}
+
+export const adminBugReportQuery = (bugReportId: number) =>
+  queryOptions({
+    queryKey: adminQueryKeys.bugReport(bugReportId),
+    queryFn: () => fetchAdminBugReport(bugReportId),
+  });
+
+export async function updateBugReportStatus({
+  bugReportId,
+  status,
+}: {
+  bugReportId: number;
+  status: AdminBugReportStatus;
+}) {
+  const body = await httpClient<BugReportStatusUpdateSuccessResponse>(
+    `${BUG_REPORT_PATH}/${bugReportId}/status`,
+    { method: 'patch', json: { status } },
+  );
+  if (!body) throw new Error('버그 제보 상태 변경 결과를 확인하지 못했습니다.');
+  return body.data;
+}
+
+export const updateBugReportStatusMutation = mutationOptions({
+  mutationFn: updateBugReportStatus,
   retry: false,
 });
