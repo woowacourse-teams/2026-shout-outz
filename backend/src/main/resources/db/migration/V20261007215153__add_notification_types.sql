@@ -11,4 +11,4 @@ ALTER TABLE notifications
             'INTERESTED_QUESTION_ACTIVITY',
             'COMMENTED_QUESTION_ACTIVITY'
         )
-    );
+    ) NOT VALID;
