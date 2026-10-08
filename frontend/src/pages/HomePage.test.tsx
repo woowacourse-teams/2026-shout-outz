@@ -187,6 +187,30 @@ describe('HomePage', () => {
       expect(url.searchParams.get('type')).toBe('POST');
     });
 
+    it('정렬 탭 옆 작성 버튼이 지금 탭에 맞는 작성 화면으로 보낸다', async () => {
+      const user = userEvent.setup();
+      renderRoute('/');
+      await findFeeds();
+
+      const writeUrl = async (name: string) => {
+        const href = (await within(feedRegion()).findByRole('link', { name })).getAttribute('href');
+        return new URL(href!, 'https://example.com');
+      };
+
+      const question = await writeUrl('질문하기');
+      expect(question.pathname).toBe('/community/new');
+      expect(question.searchParams.get('type')).toBe('QUESTION');
+
+      await user.click(within(feedRegion()).getByRole('tab', { name: '피드' }));
+
+      const post = await writeUrl('글쓰기');
+      expect(post.pathname).toBe('/community/new');
+      expect(post.searchParams.get('type')).toBe('POST');
+      expect(
+        within(feedRegion()).queryByRole('link', { name: '질문하기' }),
+      ).not.toBeInTheDocument();
+    });
+
     it('질문이 없으면 안내 문구를 보여준다', async () => {
       server.use(
         http.get('/api/v1/feeds', () =>
