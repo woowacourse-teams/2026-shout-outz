@@ -13,6 +13,8 @@ import type {
   AdminProjectMigrationUpdateRequest,
   AdminVerificationRequestFindAllSuccessResponse,
   AuthSessionSuccessResponse,
+  BugReportAdminDetailSuccessResponse,
+  BugReportAdminFindAllSuccessResponse,
   CohortFindAllSuccessResponse,
   FeedCommentFindAllSuccessResponse,
   FeedFindAllSuccessResponse,
@@ -169,3 +171,5 @@ export type AdminVerificationItem = Item<AdminVerificationListData>;
 export type AdminHomeBannerItem = Item<Data<HomeBannerAdminFindAllSuccessResponse>>;
 export type HomeBannerUpsertBody = HomeBannerUpsertRequest;
 export type AdminProjectUpdateRequest = AdminProjectMigrationUpdateRequest;
+export type AdminBugReportItem = Item<Data<BugReportAdminFindAllSuccessResponse>>;
+export type AdminBugReportDetailData = Data<BugReportAdminDetailSuccessResponse>;

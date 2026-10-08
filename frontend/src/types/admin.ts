@@ -1,5 +1,7 @@
 import { ADMIN_TABS } from '@/constants/admin';
 import type {
+  AdminBugReportDetailData,
+  AdminBugReportItem,
   AdminHomeBannerItem,
   AdminProjectUpdateRequest,
   AdminVerificationItem,
@@ -28,6 +30,14 @@ export type AdminHomeBanner = AdminHomeBannerItem;
 export type { HomeBannerUpsertBody };
 
 export type { NoticeCreateBody, EventCreateBody };
+
+/** 관리자 버그 제보 목록 한 건. `GET /api/v1/admin/bug-reports` */
+export type AdminBugReport = AdminBugReportItem;
+/** 관리자 버그 제보 상세. 목록은 내용을 200자까지만 주고, 전체 내용은 여기서 받는다. */
+export type AdminBugReportDetail = AdminBugReportDetailData;
+export type AdminBugReportStatus = AdminBugReport['status'];
+/** 목록 필터. 서버는 OPEN·COMPLETED에 더해 둘 다 보는 ALL을 받는다. */
+export type AdminBugReportFilter = AdminBugReportStatus | 'ALL';
 
 /**
  * AdminProjectFindAllResponse.Item.java.
