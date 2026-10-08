@@ -379,12 +379,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                                WHERE r.feed_id = p.id
                                  AND r.reaction_type = 'BOOKMARK'
                            ) AS bookmark_count,
-                           (
-                               SELECT COUNT(*)
-                               FROM feed_comments c
-                               WHERE c.feed_id = p.id
-                                 AND c.deleted_at IS NULL
-                           ) AS comment_count,
+                           COALESCE(comments.comment_count, 0) AS comment_count,
                            EXISTS (
                                SELECT 1
                                FROM feed_reactions r
@@ -418,6 +413,12 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                         WHERE reaction_type = 'LIKE'
                         GROUP BY feed_id
                     ) reactions ON reactions.feed_id = p.id
+                    LEFT JOIN (
+                        SELECT feed_id, COUNT(*) AS comment_count
+                        FROM feed_comments
+                        WHERE deleted_at IS NULL
+                        GROUP BY feed_id
+                    ) comments ON comments.feed_id = p.id
                     WHERE p.deleted_at IS NULL
                     """);
             case RELEVANCE -> new StringBuilder("""
@@ -600,16 +601,20 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         if (cursor != null) {
             sql.append("""
                       AND (
-                          COALESCE(reactions.like_count, 0), p.created_at, p.id
+                          COALESCE(reactions.like_count, 0) + COALESCE(comments.comment_count, 0),
+                          p.created_at,
+                          p.id
                       ) < (
-                          :cursorLikeCount, :cursorCreatedAt, :cursorFeedId
+                          :cursorPopularityScore, :cursorCreatedAt, :cursorFeedId
                       )
                     """);
-            parameters.addValue("cursorLikeCount", cursor.likeCount());
+            parameters.addValue("cursorPopularityScore", cursor.popularityScore());
             appendCursorParameters(parameters, cursor);
         }
         sql.append("""
-                ORDER BY COALESCE(reactions.like_count, 0) DESC, p.created_at DESC, p.id DESC
+                ORDER BY COALESCE(reactions.like_count, 0) + COALESCE(comments.comment_count, 0) DESC,
+                         p.created_at DESC,
+                         p.id DESC
                 """);
     }
 

@@ -66,3 +66,36 @@ describe('NewsItem', () => {
     expect(classMatching(screen.getByRole('article'), /^border|^divide|^m[btxy]?-/)).toEqual([]);
   });
 });
+
+describe('이벤트 상태와 기간', () => {
+  it.each([
+    ['UPCOMING', '예정'],
+    ['ONGOING', '진행 중'],
+    ['ENDED', '종료'],
+  ] as const)('%s 이벤트는 상태와 날짜 범위를 보여준다', (eventStatus, label) => {
+    render(
+      <NewsItem
+        {...EVENT}
+        eventStatus={eventStatus}
+        eventStartAt="2026-10-10T05:00:00Z"
+        eventEndAt="2026-10-12T09:00:00Z"
+      />,
+    );
+    expect(screen.getByText(label)).toBeInTheDocument();
+    expect(screen.queryByText(/^D-/)).not.toBeInTheDocument();
+    expect(screen.getByText('이벤트 기간')).toBeInTheDocument();
+    expect(screen.getByText('10.10')).toBeInTheDocument();
+    expect(screen.getByText('10.12')).toBeInTheDocument();
+  });
+
+  it('공지사항에는 이벤트 정보를 표시하지 않는다', () => {
+    render(<NewsItem {...NOTICE} eventStatus="ONGOING" eventEndAt="2026-10-12T09:00:00Z" />);
+    expect(screen.queryByText('진행 중')).not.toBeInTheDocument();
+    expect(screen.queryByText('D-5')).not.toBeInTheDocument();
+  });
+
+  it('기간과 상태가 없는 이벤트도 표시할 수 있다', () => {
+    render(<NewsItem {...EVENT} eventStatus={null} eventStartAt={null} eventEndAt={null} />);
+    expect(screen.getByText(EVENT.title)).toBeInTheDocument();
+  });
+});

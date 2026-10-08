@@ -1,4 +1,3 @@
-import { formatTrackLabel } from '@/utils/user';
 import { Component, Suspense, useState, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
@@ -17,7 +16,9 @@ import {
 import { sessionQuery } from '@/apis/session';
 import { Button } from '@/components/Button';
 import { Avatar } from '@/components/Avatar';
-import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
+import { UserAffiliation } from '@/components/users/UserAffiliation';
+import { WoowacourseIcon } from '@/components/users/WoowacourseIcon';
+import { UserHandle } from '@/components/users/UserHandle';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { LinkifiedText } from '@/components/LinkifiedText';
 import { LinkPreview } from '@/components/feeds/LinkPreview';
@@ -462,19 +463,6 @@ function CommentItem({
       : null;
   const agreeCount = currentOverride?.count ?? baseCount;
   const agreed = currentOverride?.agreed ?? baseAgreed;
-  const trackLabel =
-    !item.isAnonymous && item.author.handle && item.author.track
-      ? formatTrackLabel(item.author.track)
-      : undefined;
-  const crewInfo = item.isAnonymous
-    ? null
-    : [
-        item.author.cohort != null ? `${item.author.cohort}기` : null,
-        trackLabel,
-        item.author.userType === 'WOOWACOURSE_CREW' ? '크루' : null,
-      ]
-        .filter(Boolean)
-        .join(' ');
   const isOwnAnonymous = item.isAnonymous && item.author.handle != null;
   const authorName = item.isAnonymous && !isOwnAnonymous ? '익명' : item.author.displayName;
   const agreeMutation = useMutation({
@@ -512,18 +500,24 @@ function CommentItem({
 
   const authorDetails = (
     <>
-      <Avatar size="sm" src={item.author.avatarUrl} name={authorName ?? undefined} alt="" />
+      <Avatar
+        size="sm"
+        anonymous={item.isAnonymous && !isOwnAnonymous}
+        src={item.author.avatarUrl}
+        name={authorName ?? undefined}
+        alt=""
+      />
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-1.5">
           <span className="group-hover:text-primary-600 truncate text-xs leading-5 font-semibold text-gray-900">
             {authorName}
           </span>
-          <CrewStatusBadge
-            userType={item.author.userType}
-            cohort={item.author.cohort}
-            isCurrent={item.author.isCurrent}
-            size="xs"
-          />
+          {item.isAnonymous && !isOwnAnonymous && (
+            <WoowacourseIcon userType={item.author.userType} />
+          )}
+          {(!item.isAnonymous || isOwnAnonymous) && (
+            <UserHandle handle={item.author.handle} userType={item.author.userType} />
+          )}
           {isFeedAuthor && (
             <span className="bg-primary-50 text-primary-700 rounded-full px-1.5 text-xs font-medium">
               작성자
@@ -535,7 +529,7 @@ function CommentItem({
             </span>
           )}
         </div>
-        {crewInfo && <p className="mt-0.5 text-xs leading-4 text-gray-500">{crewInfo}</p>}
+        <UserAffiliation {...item.author} anonymous={item.isAnonymous && !isOwnAnonymous} />
       </div>
     </>
   );

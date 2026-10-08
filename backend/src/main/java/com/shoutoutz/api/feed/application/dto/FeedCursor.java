@@ -5,7 +5,7 @@ import java.time.Instant;
 public record FeedCursor(
         FeedSort sort,
         int relevanceRank,
-        long likeCount,
+        long popularityScore,
         Instant createdAt,
         long feedId
 ) {

@@ -12,7 +12,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type { HomeBanner } from '@/types/home';
 import { cn } from '@/utils/cn';
 
-const ROTATION_INTERVAL = 5_000;
+const ROTATION_INTERVAL = 3_000;
 
 export function BannerCarousel({ banners }: { banners: HomeBanner[] }) {
   const [index, setIndex] = useState(0);

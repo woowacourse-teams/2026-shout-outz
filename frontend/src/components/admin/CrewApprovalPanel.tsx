@@ -22,7 +22,7 @@ const USER_TYPE_LABELS: Record<AdminVerification['userType'], string> = {
   WOOWACOURSE_COACH: '코치',
 };
 
-/** 크루/코치 인증 신청 심사. */
+/** 우아한테크코스 소속 인증 신청 심사. */
 export function CrewApprovalPanel() {
   const [status, setStatus] = useState<AdminVerificationStatus>('PENDING');
 
@@ -45,7 +45,7 @@ function VerificationList({ status }: { status: AdminVerificationStatus }) {
   if (items.length === 0) {
     return (
       <p className="py-10 text-center text-sm text-gray-500">
-        {REVIEW_STATUS_LABELS[status]} 상태의 인증 신청이 없습니다.
+        {REVIEW_STATUS_LABELS[status]} 상태의 우아한테크코스 소속 인증 신청이 없습니다.
       </p>
     );
   }

@@ -42,8 +42,26 @@ export const handlers = [
     }),
   ),
 
+  // 목에서는 이미 있는 사람(@woojin)만 사용 중으로 본다.
+  http.get('/api/v1/auth/signup/handle-availability', ({ request }) =>
+    HttpResponse.json({
+      status: 'success',
+      data: { available: new URL(request.url).searchParams.get('handle') !== '@woojin' },
+    }),
+  ),
+
   http.post('/api/v1/auth/signup', () =>
     HttpResponse.json({ status: 'success', data: { userId: 1 } }, { status: 201 }),
+  ),
+
+  http.post('/api/v1/bug-reports', () =>
+    HttpResponse.json(
+      {
+        status: 'success',
+        data: { bugReportId: 1, status: 'OPEN', createdAt: new Date().toISOString() },
+      },
+      { status: 201 },
+    ),
   ),
 
   http.post('/api/v1/auth/logout', () => new HttpResponse(null, { status: 204 })),

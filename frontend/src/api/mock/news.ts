@@ -20,6 +20,9 @@ const NEWS: NewsSummary[] = [
   {
     id: 2,
     type: 'EVENT',
+    eventStatus: 'ONGOING',
+    eventStartAt: '2026-10-01T00:00:00+09:00',
+    eventEndAt: '2026-10-31T23:59:00+09:00',
     title: '6기 프로젝트 아카이빙 챌린지 - 등록 크루 전원 굿즈팩 증정',
     summary:
       '지금 팀 프로젝트를 등록하면 전체 크루 피드백과 함께 우테코 공식 굿즈팩을 선물로 드립니다.',
@@ -31,6 +34,9 @@ const NEWS: NewsSummary[] = [
   {
     id: 3,
     type: 'EVENT',
+    eventStatus: 'ONGOING',
+    eventStartAt: '2026-10-05T00:00:00+09:00',
+    eventEndAt: '2026-10-11T23:59:00+09:00',
     title: '주간 베스트 기술 회고 피드 선정 - 커피 쿠폰 증정',
     summary: '매주 좋아요 TOP 3 피드 작성자에게 커피 쿠폰을 드립니다.',
     publishedAt: '2026-08-20T10:00:00+09:00',
@@ -41,6 +47,9 @@ const NEWS: NewsSummary[] = [
   {
     id: 4,
     type: 'EVENT',
+    eventStatus: 'ENDED',
+    eventStartAt: '2026-07-01T00:00:00+09:00',
+    eventEndAt: '2026-07-15T23:59:00+09:00',
     title: '[종료] 상반기 크루 스프린트 회고 피드 작성 리워드 이벤트',
     summary: '상반기 동안 우수하게 소통해 준 크루분들에게 감사의 마음을 전했던 이벤트입니다.',
     publishedAt: '2026-07-15T10:00:00+09:00',
@@ -82,13 +91,6 @@ const CTAS: Record<number, { label: string; url: string }> = {
   2: { label: '지금 프로젝트 등록하러 가기 ›', url: '/projects/new' },
 };
 
-// 이벤트의 진행 상태. 공지사항은 상태가 없다.
-const EVENT_STATUSES: Record<number, NewsEventStatus> = {
-  2: 'ONGOING',
-  3: 'ONGOING',
-  4: 'ENDED',
-};
-
 const AUTHOR = {
   userId: 1,
   name: '우아한테크코스 운영진',
@@ -100,7 +102,7 @@ const toNavItem = (news: NewsSummary | undefined): NewsNavItem | undefined =>
   news ? { id: news.id, title: news.title, publishedAt: news.publishedAt } : undefined;
 
 export function getNewsList(eventStatus?: NewsEventStatus): NewsSummary[] {
-  return eventStatus ? NEWS.filter((news) => EVENT_STATUSES[news.id] === eventStatus) : NEWS;
+  return eventStatus ? NEWS.filter((news) => news.eventStatus === eventStatus) : NEWS;
 }
 
 /**
@@ -116,6 +118,9 @@ export function getNewsDetail(newsId: number): NewsDetail | undefined {
   return {
     id: news.id,
     type: news.type,
+    eventStatus: news.eventStatus,
+    eventStartAt: news.eventStartAt,
+    eventEndAt: news.eventEndAt,
     title: news.title,
     publishedAt: news.publishedAt,
     body: BODIES[newsId] ?? '',

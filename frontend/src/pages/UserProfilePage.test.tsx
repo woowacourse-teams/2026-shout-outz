@@ -21,7 +21,7 @@ describe('UserProfilePage', () => {
     renderRoute('/users/woojin');
 
     expect(await screen.findByRole('heading', { name: '정우진' })).toBeInTheDocument();
-    expect(screen.getByText('8기 백엔드')).toBeInTheDocument();
+    expect(screen.getAllByText('8기 백엔드 크루').length).toBeGreaterThan(0);
     expect(
       screen.getByText('대규모 트래픽 분산 처리와 데이터 정합성에 집착하는 백엔드 개발자입니다.'),
     ).toBeInTheDocument();
@@ -29,7 +29,9 @@ describe('UserProfilePage', () => {
       'href',
       'https://github.com/woojin-dev',
     );
-    expect(screen.queryByRole('link', { name: '구성원 인증' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: '우아한테크코스 소속 인증' }),
+    ).not.toBeInTheDocument();
   });
 
   describe('탭', () => {
@@ -134,40 +136,167 @@ describe('UserProfilePage', () => {
   });
 });
 
-describe('프로필 사진', () => {
-  const pickFile = async (user: ReturnType<typeof userEvent.setup>, label: string) => {
-    const file = new File(['x'], 'me.png', { type: 'image/png' });
-    // 버튼은 숨겨진 file input을 대신 눌러 주는 것이라, 테스트는 input에 직접 올린다.
-    const input = screen.getByLabelText(label);
-    await user.upload(input, file);
+describe('프로필 수정', () => {
+  const generalProfile = {
+    userId: 10,
+    handle: 'woojin',
+    displayName: '정우진',
+    userType: 'GENERAL',
+    track: null,
+    cohort: null,
+    bio: null,
+    avatarImageId: 3,
+    avatarUrl: 'https://example.com/me.png',
+    githubProfileUrl: null,
+    blogUrl: null,
+    counts: { projects: 0, feeds: 0 },
   };
 
-  it('내 프로필에서는 사진을 바로 올릴 수 있다', async () => {
-    const user = userEvent.setup();
-    let body: unknown;
+  const openEditModal = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(await screen.findByRole('button', { name: '프로필 수정' }));
+    return screen.findByRole('dialog');
+  };
+
+  const catchUpdate = () => {
+    const request: { body?: unknown } = {};
     server.use(
-      http.put('/api/v1/users/me', async ({ request }) => {
-        body = await request.json();
+      http.put('/api/v1/users/me', async ({ request: req }) => {
+        request.body = await req.json();
         return HttpResponse.json({
           status: 'success',
           data: { handle: 'woojin', displayName: '정우진', userType: 'WOOWACOURSE_CREW' },
         });
       }),
     );
+    return request;
+  };
+
+  it('인증 전 사용자는 닉네임, 소개, 주소를 고칠 수 있다', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/api/v1/users/woojin', () =>
+        HttpResponse.json({ status: 'success', data: generalProfile }),
+      ),
+    );
+    const request = catchUpdate();
 
     renderRoute('/users/woojin');
-    await screen.findByRole('button', { name: '프로필 사진 추가' });
+    const dialog = await openEditModal(user);
+    const nickname = within(dialog).getByLabelText('닉네임');
+    expect(nickname).toBeEnabled();
+    await user.clear(nickname);
+    await user.type(nickname, '우진');
+    await user.type(within(dialog).getByLabelText('한 줄 소개'), '  안녕하세요  ');
+    await user.type(within(dialog).getByLabelText('GitHub 주소'), 'https://github.com/woojin');
+    await user.type(within(dialog).getByLabelText('블로그 주소'), 'https://woojin.log');
+    await user.click(within(dialog).getByRole('button', { name: '저장' }));
 
-    await pickFile(user, '프로필 사진 추가');
-
-    // 올린 mediaId를 avatarImageId로 싣고, 나머지 값은 그대로 다시 보낸다.
-    await waitFor(() => expect(body).toHaveProperty('avatarImageId', 12));
-    expect(body).toHaveProperty('displayName', '정우진');
-    expect(body).toHaveProperty('bio');
+    // 사진은 건드리지 않았으니 지금 사진을 그대로 다시 보낸다.
+    await waitFor(() =>
+      expect(request.body).toEqual({
+        displayName: '우진',
+        bio: '안녕하세요',
+        githubProfileUrl: 'https://github.com/woojin',
+        blogUrl: 'https://woojin.log',
+        avatarImageId: 3,
+      }),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('남의 프로필에는 사진 버튼이 없다', async () => {
-    // 보는 사람과 프로필 주인이 다른 상황을 만든다.
+  it('소개와 주소를 비우면 지운다', async () => {
+    const user = userEvent.setup();
+    const request = catchUpdate();
+
+    renderRoute('/users/woojin');
+    const dialog = await openEditModal(user);
+    await user.clear(within(dialog).getByLabelText('한 줄 소개'));
+    await user.clear(within(dialog).getByLabelText('GitHub 주소'));
+    await user.clear(within(dialog).getByLabelText('블로그 주소'));
+    await user.click(within(dialog).getByRole('button', { name: '저장' }));
+
+    await waitFor(() =>
+      expect(request.body).toMatchObject({ bio: null, githubProfileUrl: null, blogUrl: null }),
+    );
+  });
+
+  it('주소 형식이 맞지 않으면 저장하지 않고 알린다', async () => {
+    const user = userEvent.setup();
+    const request = catchUpdate();
+
+    renderRoute('/users/woojin');
+    const dialog = await openEditModal(user);
+    const github = within(dialog).getByLabelText('GitHub 주소');
+    await user.clear(github);
+    await user.type(github, 'github.com/woojin');
+    const blog = within(dialog).getByLabelText('블로그 주소');
+    await user.clear(blog);
+    await user.type(blog, 'woojin.log');
+    await user.click(within(dialog).getByRole('button', { name: '저장' }));
+
+    expect(
+      within(dialog).getByText('https://github.com/아이디 형식으로 입력해 주세요.'),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('http:// 또는 https://로 시작하는 주소를 입력해 주세요.'),
+    ).toBeInTheDocument();
+    expect(request.body).toBeUndefined();
+  });
+
+  it('우아한테크코스 소속 인증을 마친 사용자는 닉네임은 막히고 사진은 바꿀 수 있다', async () => {
+    const user = userEvent.setup();
+    const request = catchUpdate();
+
+    renderRoute('/users/woojin');
+    const dialog = await openEditModal(user);
+    expect(within(dialog).getByLabelText('닉네임')).toBeDisabled();
+    expect(within(dialog).getByLabelText('닉네임')).toHaveAccessibleDescription(
+      '우아한테크코스 소속 인증을 마친 사용자는 닉네임을 바꿀 수 없어요.',
+    );
+
+    // 버튼은 숨겨진 file input을 대신 눌러 주는 것이라, 테스트는 input에 직접 올린다.
+    await user.upload(
+      within(dialog).getByLabelText('프로필 사진 추가'),
+      new File(['x'], 'me.png', { type: 'image/png' }),
+    );
+    await within(dialog).findByRole('button', { name: '사진 변경' });
+    await user.click(within(dialog).getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(request.body).toHaveProperty('avatarImageId', 12));
+    expect(request.body).toHaveProperty('displayName', '정우진');
+  });
+
+  it('기본 이미지로 바꾸면 사진 없이 저장한다', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('/api/v1/users/woojin', () =>
+        HttpResponse.json({ status: 'success', data: generalProfile }),
+      ),
+    );
+    const request = catchUpdate();
+
+    renderRoute('/users/woojin');
+    const dialog = await openEditModal(user);
+    await user.click(within(dialog).getByRole('button', { name: '기본 이미지로' }));
+    await user.click(within(dialog).getByRole('button', { name: '저장' }));
+
+    await waitFor(() => expect(request.body).toHaveProperty('avatarImageId', null));
+  });
+
+  it('저장에 실패하면 모달 안에서 알린다', async () => {
+    const user = userEvent.setup();
+    server.use(http.put('/api/v1/users/me', () => new HttpResponse(null, { status: 500 })));
+
+    renderRoute('/users/woojin');
+    const dialog = await openEditModal(user);
+    await user.click(within(dialog).getByRole('button', { name: '저장' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      '요청에 실패했습니다. 다시 시도해 주세요.',
+    );
+  });
+
+  it('남의 프로필에는 수정 버튼이 없다', async () => {
     server.use(
       http.get('/api/v1/users/me/summary', () =>
         HttpResponse.json({
@@ -178,24 +307,11 @@ describe('프로필 사진', () => {
     );
 
     renderRoute('/users/woojin');
-
     await screen.findByRole('heading', { name: '정우진' });
 
-    expect(screen.queryByRole('button', { name: /프로필 사진|사진 변경/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: '구성원 인증' })).not.toBeInTheDocument();
-  });
-
-  it('저장에 실패하면 알린다', async () => {
-    const user = userEvent.setup();
-    server.use(http.put('/api/v1/users/me', () => new HttpResponse(null, { status: 500 })));
-
-    renderRoute('/users/woojin');
-    await screen.findByRole('button', { name: '프로필 사진 추가' });
-
-    await pickFile(user, '프로필 사진 추가');
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      '프로필 사진을 저장하지 못했습니다.',
-    );
+    expect(screen.queryByRole('button', { name: '프로필 수정' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: '우아한테크코스 소속 인증' }),
+    ).not.toBeInTheDocument();
   });
 });

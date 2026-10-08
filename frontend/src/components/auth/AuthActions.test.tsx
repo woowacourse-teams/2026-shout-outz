@@ -61,7 +61,7 @@ describe('AuthActions', () => {
     const router = renderRoute('/');
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/signup'));
-    expect(screen.getByRole('button', { name: '로그아웃' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '내 계정 메뉴' })).toBeInTheDocument();
   });
 
   it('로그아웃 후 비로그인 상태로 갱신한다', async () => {
@@ -87,59 +87,68 @@ describe('AuthActions', () => {
     );
 
     renderRoute('/');
-    await user.click(await screen.findByRole('button', { name: '로그아웃' }));
+    await user.click(await screen.findByRole('button', { name: '내 계정 메뉴' }));
+    await user.click(screen.getByRole('menuitem', { name: '로그아웃' }));
 
     expect(await screen.findByRole('button', { name: '로그인' })).toBeInTheDocument();
   });
 
-  it('로그인한 사용자의 이름을 내 프로필로 연결한다', async () => {
-    renderRoute('/');
-
-    expect(await screen.findByRole('link', { name: '정우진' })).toHaveAttribute(
-      'href',
-      '/users/woojin',
-    );
+  it('프로필 메뉴에서 마이페이지로 이동하고 메뉴를 닫는다', async () => {
+    const user = userEvent.setup();
+    const router = renderRoute('/');
+    const trigger = await screen.findByRole('button', { name: '내 계정 메뉴' });
+    await within(trigger).findByText('정');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(within(trigger).queryByText('정우진')).not.toBeInTheDocument();
+    expect(within(trigger).queryByText(/우아한테크코스/)).not.toBeInTheDocument();
+    expect(within(trigger).queryByRole('status')).not.toBeInTheDocument();
+    await user.click(trigger);
+    const menu = screen.getByRole('menu');
+    expect(within(menu).getByText('정우진')).toBeInTheDocument();
+    expect(within(menu).getByText('@woojin')).toBeInTheDocument();
+    expect(await within(menu).findByText('8기 백엔드 크루')).toBeInTheDocument();
+    await user.click(within(menu).getByRole('menuitem', { name: '마이페이지' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/users/woojin'));
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
-  it('누구인지 알기 전에는 프로필 링크를 내지 않는다', async () => {
-    server.use(
-      http.get('/api/v1/users/me/summary', async () => {
-        await delay('infinite');
-        return new HttpResponse(null);
-      }),
-    );
+  it.each(['로딩', '실패'])(
+    '요약 조회 %s 중에도 로그아웃은 가능하고 마이페이지는 표시하지 않는다',
+    async (state) => {
+      server.use(
+        http.get('/api/v1/users/me/summary', async () => {
+          if (state === '로딩') await delay('infinite');
+          return new HttpResponse(null, { status: 500 });
+        }),
+      );
+      const user = userEvent.setup();
+      renderRoute('/');
+      await user.click(await screen.findByRole('button', { name: '내 계정 메뉴' }));
+      if (state === '로딩') {
+        expect(
+          screen.getByRole('status', { name: '프로필 정보를 불러오는 중' }),
+        ).toBeInTheDocument();
+      }
+      expect(screen.getByRole('menuitem', { name: '로그아웃' })).toBeEnabled();
+      expect(screen.queryByRole('menuitem', { name: '마이페이지' })).not.toBeInTheDocument();
+    },
+  );
 
+  it('프로필 메뉴는 키보드로 이동하고 Escape와 바깥 클릭으로 닫는다', async () => {
+    const user = userEvent.setup();
     renderRoute('/');
-    // 로그아웃 버튼이 떴다는 건 인증 분기까지 렌더가 끝났다는 뜻이다.
-    await screen.findByRole('button', { name: '로그아웃' });
-
-    expect(screen.queryByRole('link', { name: /프로필|정우진|로그인/ })).not.toBeInTheDocument();
-  });
-
-  it('요약 조회에 실패해도 프로필 링크를 내지 않는다', async () => {
-    server.use(http.get('/api/v1/users/me/summary', () => new HttpResponse(null, { status: 500 })));
-
-    renderRoute('/');
-    await screen.findByRole('button', { name: '로그아웃' });
-
-    await waitFor(() =>
-      expect(screen.queryByRole('link', { name: /프로필|정우진|로그인/ })).not.toBeInTheDocument(),
-    );
-  });
-
-  it('프로필 링크에 아바타를 함께 보여준다', async () => {
-    renderRoute('/');
-
-    // mock의 avatarUrl이 null이라 이름 첫 글자로 만든 기본 프로필이 나온다.
-    const link = await screen.findByRole('link', { name: '정우진' });
-    expect(within(link).getByText('정')).toBeInTheDocument();
-  });
-
-  it('아바타 옆 이름은 좁은 화면에서도 DOM에 남는다', async () => {
-    renderRoute('/');
-
-    // sr-only로 감출 뿐이라 링크의 접근성 이름은 화면 너비와 무관하게 유지된다.
-    const link = await screen.findByRole('link', { name: '정우진' });
-    expect(within(link).getByText('정우진')).toHaveClass('sr-only');
+    const trigger = await screen.findByRole('button', { name: '내 계정 메뉴' });
+    await within(trigger).findByText('정');
+    await user.click(trigger);
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitem', { name: '마이페이지' })).toHaveFocus();
+    await user.keyboard('{ArrowDown}');
+    expect(screen.getByRole('menuitem', { name: '로그아웃' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await user.click(trigger);
+    await user.click(document.body);
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 });

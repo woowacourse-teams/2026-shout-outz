@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
@@ -8,13 +8,13 @@ import {
   type VerificationUserType,
 } from '@/apis/verification';
 import { sessionQuery } from '@/apis/session';
-import { cohortsQueryOptions } from '@/api/project';
 import { AppGnb } from '@/components/AppGnb';
 import { Button, getButtonStyles } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { Footer } from '@/components/Footer';
 import { Input } from '@/components/Input';
 import { Select } from '@/components/Select';
+import { CrewInfoFields } from '@/components/users/CrewInfoFields';
 import { getGithubLoginUrl } from '@/utils/auth';
 import { getApiErrorMessage } from '@/utils/error';
 import { analytics, toPathPattern } from '@/utils/analytics';
@@ -24,7 +24,7 @@ export function VerificationRequestPage() {
 
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>구성원 인증 | shout-outz</title>
+      <title>우아한테크코스 소속 인증 | shout-outz</title>
       <AppGnb />
       <main className="mx-auto w-full max-w-xl flex-1 px-4 py-10 md:py-16">
         {session.status === 'AUTHENTICATED' ? (
@@ -32,7 +32,7 @@ export function VerificationRequestPage() {
         ) : session.status === 'SIGNUP_REQUIRED' ? (
           <VerificationMessage
             title="가입을 먼저 완료해 주세요."
-            description="서비스에서 사용할 프로필을 만든 뒤 구성원 인증을 신청할 수 있습니다."
+            description="서비스에서 사용할 프로필을 만든 뒤 우아한테크코스 소속 인증을 신청할 수 있습니다."
             action={
               <Link to="/signup" className={getButtonStyles({})}>
                 가입 계속하기
@@ -42,7 +42,7 @@ export function VerificationRequestPage() {
         ) : (
           <VerificationMessage
             title="로그인이 필요해요."
-            description="GitHub 로그인 후 우아한테크코스 구성원 인증을 신청할 수 있습니다."
+            description="GitHub 로그인 후 우아한테크코스 소속 인증을 신청할 수 있습니다."
             action={
               <a
                 href={getGithubLoginUrl()}
@@ -71,7 +71,7 @@ function VerificationContent() {
   if (request?.status === 'APPROVED') {
     return (
       <VerificationMessage
-        title="구성원 인증이 완료됐어요."
+        title="우아한테크코스 소속 인증이 완료됐어요."
         description="이제 프로젝트를 등록할 수 있습니다."
         action={
           <Link to="/projects/new" className={getButtonStyles({})}>
@@ -85,7 +85,7 @@ function VerificationContent() {
   if (request?.status === 'PENDING') {
     return (
       <VerificationMessage
-        title="인증 신청을 검토하고 있어요."
+        title="우아한테크코스 소속 인증 신청을 검토하고 있어요."
         description={`${request.nickname}님의 신청을 운영진이 확인하고 있습니다.`}
       />
     );
@@ -96,7 +96,7 @@ function VerificationContent() {
 
 function VerificationForm({ rejectionReason }: { rejectionReason: string | null }) {
   const client = useQueryClient();
-  const { data: cohorts } = useSuspenseQuery(cohortsQueryOptions());
+  const policyId = useId();
   const mutation = useMutation({
     ...createVerificationRequestMutation,
     onSuccess: (createdRequest) => {
@@ -112,9 +112,12 @@ function VerificationForm({ rejectionReason }: { rejectionReason: string | null 
 
   return (
     <section className="rounded-xl border border-gray-200 p-6 md:p-8">
-      <h1 className="text-2xl font-bold">우테코 구성원 인증</h1>
+      <h1 className="text-2xl font-bold break-keep">우아한테크코스 소속 인증</h1>
       <p className="mt-2 text-sm leading-relaxed text-gray-600">
         프로젝트 등록 권한을 위해 운영진이 확인할 정보를 입력해 주세요.
+      </p>
+      <p className="mt-5 rounded-lg bg-gray-100 p-4 text-sm leading-relaxed text-gray-700">
+        인증이 승인되면 입력한 닉네임과 기수·트랙이 프로필에 반영되고, 이후에는 바꿀 수 없어요.
       </p>
       {rejectionReason && (
         <p role="alert" className="mt-5 rounded-lg bg-red-50 p-4 text-sm text-red-700">
@@ -122,6 +125,7 @@ function VerificationForm({ rejectionReason }: { rejectionReason: string | null 
         </p>
       )}
       <form
+        aria-describedby={crew ? policyId : undefined}
         className="mt-7 flex flex-col gap-5"
         onSubmit={(event) => {
           event.preventDefault();
@@ -154,56 +158,46 @@ function VerificationForm({ rejectionReason }: { rejectionReason: string | null 
         </Field>
         <Field label="우테코 닉네임">
           {(id) => (
-            <Input
-              id={id}
-              value={nickname}
-              maxLength={50}
-              onChange={(event) => setNickname(event.target.value)}
-              placeholder="닉네임"
-            />
+            <>
+              <Input
+                id={id}
+                value={nickname}
+                maxLength={50}
+                onChange={(event) => setNickname(event.target.value)}
+                placeholder="닉네임"
+                aria-describedby={`${id}-help`}
+              />
+              <ul id={`${id}-help`} className="list-disc pl-4 text-xs leading-5 text-gray-500">
+                <li>우아한테크코스에서 사용하는 실제 닉네임을 입력해 주세요.</li>
+              </ul>
+            </>
           )}
         </Field>
         {crew && (
-          <>
-            <Field label="기수">
-              {(id) => (
-                <Select
-                  id={id}
-                  value={cohort}
-                  placeholder="기수를 선택하세요"
-                  onValueChange={setCohort}
-                >
-                  {cohorts.map((item) => (
-                    <Select.Item key={item.cohort} value={String(item.cohort)}>
-                      {item.cohort}기 ({item.year})
-                    </Select.Item>
-                  ))}
-                </Select>
-              )}
-            </Field>
-            <Field label="트랙">
-              {(id) => (
-                <Select
-                  id={id}
-                  value={track}
-                  placeholder="트랙을 선택하세요"
-                  onValueChange={(value) => setTrack(value as VerificationTrack)}
-                >
-                  <Select.Item value="BACKEND">백엔드</Select.Item>
-                  <Select.Item value="FRONTEND">프론트엔드</Select.Item>
-                  <Select.Item value="ANDROID">안드로이드</Select.Item>
-                </Select>
-              )}
-            </Field>
-          </>
+          <CrewInfoFields
+            cohort={cohort}
+            track={track}
+            onCohortChange={setCohort}
+            onTrackChange={setTrack}
+            policyId={policyId}
+          />
         )}
         {mutation.isError && (
           <p role="alert" className="text-sm text-red-600">
             {getApiErrorMessage(mutation.error)}
           </p>
         )}
-        <Button type="submit" size="lg" disabled={invalid || mutation.isPending}>
-          {mutation.isPending ? '신청 중…' : rejectionReason ? '다시 신청하기' : '인증 신청하기'}
+        <Button
+          type="submit"
+          size="lg"
+          className="h-auto min-h-12 py-3 break-keep whitespace-normal"
+          disabled={invalid || mutation.isPending}
+        >
+          {mutation.isPending
+            ? '신청 중…'
+            : rejectionReason
+              ? '다시 신청하기'
+              : '우아한테크코스 소속 인증 신청하기'}
         </Button>
       </form>
     </section>
@@ -221,7 +215,7 @@ function VerificationMessage({
 }) {
   return (
     <section className="rounded-xl border border-gray-200 p-6 text-center md:p-8">
-      <h1 className="text-xl font-bold">{title}</h1>
+      <h1 className="text-xl font-bold break-keep">{title}</h1>
       <p className="mt-2 text-sm leading-relaxed text-gray-600">{description}</p>
       {action && <div className="mt-6">{action}</div>}
     </section>

@@ -244,7 +244,7 @@ test('답글을 부모 댓글 아래에 표시하고 새 답글의 parentId를 �
   await screen.findByText('답글을 저장했습니다.');
   expect(postedBody).toEqual({ content: '새 답글', parentId: 31, isAnonymous: false });
 });
-test('익명 댓글은 피드처럼 본인에게만 작성자를 알리고 트랙·크루 문구를 숨긴다', async () => {
+test('익명 댓글은 본인에게 전체 소속을, 타인에게 수료 여부만 표시한다', async () => {
   server.use(
     http.get('*/api/v1/feeds/:feedId/comments', () =>
       HttpResponse.json({
@@ -302,16 +302,22 @@ test('익명 댓글은 피드처럼 본인에게만 작성자를 알리고 트�
   const own = (await screen.findByText('본인 익명 댓글')).closest('li')!;
   expect(within(own).getByRole('link', { name: '개발용 사용자 프로필 보기' })).toBeInTheDocument();
   expect(within(own).getByText('익명으로 작성한 글입니다')).toBeInTheDocument();
-  expect(within(own).getByRole('img', { name: '우테코 크루' })).toBeInTheDocument();
+  expect(
+    within(own).queryByRole('img', { name: '우아한테크코스 소속 인증' }),
+  ).not.toBeInTheDocument();
   expect(within(own).getByText('작성자')).toBeInTheDocument();
   expect(within(own).queryByText('백엔드 크루')).not.toBeInTheDocument();
-  expect(within(own).queryByText('8기')).not.toBeInTheDocument();
+  expect(within(own).getByText('8기 백엔드 크루')).toBeInTheDocument();
   expect(within(own).queryByText('크루')).not.toBeInTheDocument();
 
   const other = screen.getByText('다른 사람 익명 댓글').closest('li')!;
   expect(within(other).getByText('익명')).toBeInTheDocument();
+  expect(within(other).queryByText('익', { exact: true })).not.toBeInTheDocument();
   expect(within(other).queryByRole('link', { name: /프로필 보기/ })).not.toBeInTheDocument();
-  expect(within(other).getByRole('img', { name: '우테코 수료 크루' })).toBeInTheDocument();
+  expect(
+    within(other).queryByRole('img', { name: '우아한테크코스 소속 인증' }),
+  ).not.toBeInTheDocument();
+  expect(within(other).getByText('수료생')).toBeInTheDocument();
   expect(within(other).queryByText('작성자')).not.toBeInTheDocument();
   expect(within(other).queryByText('크루')).not.toBeInTheDocument();
 });
@@ -556,4 +562,65 @@ test('익명 댓글 선택을 작성 요청에 전달한다', async () => {
   await screen.findByText('댓글을 저장했습니다.');
   expect(body).toEqual({ content: '익명으로 경험 공유', isAnonymous: true });
   expect(screen.getByRole('checkbox', { name: '익명으로 남기기' })).not.toBeChecked();
+});
+
+test.each(['LATEST', 'POPULAR', 'WAITING'] as const)('질문 %s 빈 목록을 안내한다', async (sort) => {
+  server.use(
+    http.get('*/api/v1/feeds', () =>
+      HttpResponse.json({
+        status: 'success',
+        data: [],
+        meta: { hasNext: false, nextCursor: null },
+      }),
+    ),
+  );
+  show(<FeedList sort={sort} feedType="QUESTION" />);
+  expect(
+    await screen.findByText(
+      sort === 'WAITING' ? '답변을 기다리는 질문이 없어요!' : '아직 등록된 질문이 없습니다.',
+    ),
+  ).toBeInTheDocument();
+});
+
+test.each(['일반', '인기'])(
+  '%s 목록에서 소속 아이콘의 호버와 탭으로 설명을 표시한다',
+  async (kind) => {
+    const user = userEvent.setup();
+    show(kind === '일반' ? <FeedList sort="LATEST" /> : <PopularFeedList />);
+    const icons = await screen.findAllByRole('button', { name: '우아한테크코스 소속' });
+    const icon = icons[0]!;
+    await user.hover(icon);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('소속 인증을 완료한 사용자');
+    await user.unhover(icon);
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    await user.pointer([{ keys: '[TouchA>]', target: icon }, { keys: '[/TouchA]' }]);
+    expect(screen.getByRole('tooltip')).toBeInTheDocument();
+  },
+);
+
+test.each([
+  ['일반', 'POST'],
+  ['일반', 'QUESTION'],
+  ['인기', 'POST'],
+  ['인기', 'QUESTION'],
+] as const)('%s %s 목록에 내가 누른 좋아요를 표시한다', async (kind, type) => {
+  server.use(
+    http.get('*/api/v1/feeds', () =>
+      HttpResponse.json({
+        status: 'success',
+        data: [{ ...mockFeeds[0]!, feedType: type, likedByMe: true, likeCount: 13 }],
+        meta: { hasNext: false, nextCursor: null },
+      }),
+    ),
+  );
+  show(
+    kind === '일반' ? (
+      <FeedList sort="LATEST" feedType={type} />
+    ) : (
+      <PopularFeedList feedType={type} />
+    ),
+  );
+  expect(
+    await screen.findByLabelText(`${type === 'QUESTION' ? '궁금해요' : '좋아요'} 13개, 내가 누름`),
+  ).toBeInTheDocument();
 });

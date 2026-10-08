@@ -131,7 +131,11 @@ export function ProjectFilterModal({ initial, onApply, onClose }: ProjectFilterM
             placeholder="기술 스택 검색... (ex: Spring, React)"
           />
           {visibleTechTags.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-500">검색 결과가 없습니다.</p>
+            <p className="py-8 text-center text-sm text-gray-500">
+              {techKeyword.trim()
+                ? '검색어에 맞는 기술 스택이 없습니다.'
+                : '선택 가능한 기술 스택이 없습니다.'}
+            </p>
           ) : (
             <ul aria-label="기술 스택 필터" className="grid grid-cols-2 gap-2">
               {visibleTechTags.map((tag) => (

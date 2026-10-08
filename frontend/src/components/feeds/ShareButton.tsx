@@ -38,7 +38,7 @@ export function ShareButton({ url, className }: { url: string; className?: strin
     <Button
       variant="outline"
       size="sm"
-      className={`relative h-auto min-h-16 gap-3 rounded-2xl border-blue-200 bg-blue-50 px-4 py-3 text-left shadow-sm after:absolute after:right-7 after:-bottom-2 after:size-4 after:rotate-45 after:border-r after:border-b after:border-blue-200 after:bg-blue-50 hover:bg-blue-100 max-sm:min-h-8 max-sm:rounded-full max-sm:p-2 max-sm:after:hidden ${className ?? ''}`}
+      className={`relative h-auto min-h-16 gap-3 rounded-2xl border-blue-200 bg-blue-50 px-4 py-3 text-left shadow-sm after:absolute after:right-7 after:-bottom-2 after:size-4 after:rotate-45 after:border-r after:border-b after:border-blue-200 after:bg-blue-50 after:transition-colors hover:bg-blue-100 hover:after:bg-blue-100 max-sm:min-h-8 max-sm:rounded-full max-sm:p-2 max-sm:after:hidden ${className ?? ''}`}
       aria-label="공유"
       onClick={() => void share()}
     >

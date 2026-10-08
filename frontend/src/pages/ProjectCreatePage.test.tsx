@@ -92,18 +92,24 @@ describe('ProjectCreatePage', () => {
     renderRoute('/projects/new');
 
     const members = await screen.findByRole('list', { name: '선택한 참여 팀원' });
-    expect(within(members).getAllByRole('listitem')[0]).toHaveTextContent('정우진 (작성자)');
+    const author = within(within(members).getAllByRole('listitem')[0]!);
+    expect(author.getByText('정우진')).toBeInTheDocument();
+    expect(author.getByText('@woojin')).toBeInTheDocument();
+    expect(author.getByText('(작성자)')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '참여 팀원 추가' }));
     await user.type(screen.getByRole('searchbox', { name: '크루 검색' }), '정우진');
 
     const results = await screen.findByRole('list', { name: '크루 검색 결과' });
-    expect(within(results).getByRole('checkbox', { name: /정우진/ })).toBeDisabled();
+    const authorOption = within(results).getByRole('checkbox', { name: /정우진/ });
+    expect(authorOption).toHaveAttribute('aria-disabled', 'true');
+    await user.click(authorOption);
+    expect(authorOption).toHaveAttribute('aria-checked', 'true');
     expect(screen.queryByRole('button', { name: '정우진 선택 해제' })).not.toBeInTheDocument();
   });
 
   // FIXME ProjectCreatePage의 자격 검사를 확인용으로 열어둬서 잠시 끔. 가드를 되돌리면 같이 켤 것.
-  it.skip('구성원 인증을 받지 않은 사용자는 등록 폼 대신 인증 신청 안내를 본다', async () => {
+  it.skip('우아한테크코스 소속 인증을 받지 않은 사용자는 등록 폼 대신 인증 신청 안내를 본다', async () => {
     server.use(
       http.get('/api/v1/users/me/verification-request', () =>
         HttpResponse.json({ status: 'success', data: null }),
@@ -112,8 +118,8 @@ describe('ProjectCreatePage', () => {
 
     renderRoute('/projects/new');
 
-    expect(await screen.findByText('구성원 인증이 필요해요.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '구성원 인증 신청' })).toHaveAttribute(
+    expect(await screen.findByText('우아한테크코스 소속 인증이 필요해요.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '우아한테크코스 소속 인증 신청' })).toHaveAttribute(
       'href',
       '/mypage/verification',
     );

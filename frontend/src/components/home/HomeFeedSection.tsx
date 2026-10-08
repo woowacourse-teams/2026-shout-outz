@@ -71,8 +71,8 @@ export function HomeFeedSection() {
       {feeds.length === 0 ? (
         <p className="py-8 text-center text-sm text-gray-500">
           {feedType === 'QUESTION'
-            ? '아직 작성된 질문이 없습니다.'
-            : '아직 작성된 피드가 없습니다.'}
+            ? '아직 등록된 질문이 없습니다.'
+            : '아직 등록된 피드가 없습니다.'}
         </p>
       ) : (
         <ul className="space-y-3">

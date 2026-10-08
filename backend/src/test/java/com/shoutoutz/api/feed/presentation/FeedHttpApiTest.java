@@ -110,7 +110,8 @@ class FeedHttpApiTest {
                                 .description("전체 공개 피드를 최신순, 인기순, 답변 대기 또는 키워드 정확도순 Slice로 조회한다.")
                                 .queryParameters(
                                         parameterWithName("sort")
-                                                .description("LATEST, POPULAR, WAITING 또는 RELEVANCE. 검색어가 없으면 기본 LATEST, 있으면 기본 RELEVANCE")
+                                                .description("LATEST, POPULAR, WAITING 또는 RELEVANCE. 검색어가 없으면 기본 LATEST, 있으면 기본 RELEVANCE. "
+                                                        + "POPULAR는 좋아요 수와 삭제되지 않은 댓글 수의 합이 큰 순이며, 같으면 최근 작성된 피드가 앞에 온다")
                                                 .optional(),
                                         parameterWithName("type")
                                                 .description("QUESTION 또는 POST. 생략하면 전체 유형 조회")

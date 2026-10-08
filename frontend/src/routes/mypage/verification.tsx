@@ -9,7 +9,11 @@ export const Route = createFileRoute('/mypage/verification')({
 function VerificationRequestRoute() {
   return (
     <Suspense
-      fallback={<main className="p-8 text-sm text-gray-600">인증 상태를 확인하는 중…</main>}
+      fallback={
+        <main className="p-8 text-sm text-gray-600">
+          우아한테크코스 소속 인증 상태를 확인하는 중…
+        </main>
+      }
     >
       <VerificationRequestPage />
     </Suspense>
