@@ -27,7 +27,7 @@ export async function fetchVerificationRequest(signal?: AbortSignal) {
     '/api/v1/users/me/verification-request',
     { method: 'get', signal },
   );
-  if (!response) throw new Error('구성원 인증 상태를 확인하지 못했습니다.');
+  if (!response) throw new Error('우아한테크코스 소속 인증 상태를 확인하지 못했습니다.');
   return response.data ?? null;
 }
 
@@ -44,7 +44,7 @@ export async function createVerificationRequest(
     '/api/v1/users/me/verification-requests',
     { method: 'post', json: input },
   );
-  if (!response) throw new Error('구성원 인증 신청 결과를 확인하지 못했습니다.');
+  if (!response) throw new Error('우아한테크코스 소속 인증 신청 결과를 확인하지 못했습니다.');
 
   // 생성 응답에는 decidedAt·reason이 없다. 조회 응답과 같은 모양으로 맞춰 캐시에 넣는다.
   return { ...response.data, decidedAt: null, reason: null };

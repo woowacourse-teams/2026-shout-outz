@@ -21,7 +21,7 @@ describe('UserProfilePage', () => {
     renderRoute('/users/woojin');
 
     expect(await screen.findByRole('heading', { name: '정우진' })).toBeInTheDocument();
-    expect(screen.getByText('8기 백엔드')).toBeInTheDocument();
+    expect(screen.getAllByText('8기 백엔드 크루').length).toBeGreaterThan(0);
     expect(
       screen.getByText('대규모 트래픽 분산 처리와 데이터 정합성에 집착하는 백엔드 개발자입니다.'),
     ).toBeInTheDocument();
@@ -29,7 +29,9 @@ describe('UserProfilePage', () => {
       'href',
       'https://github.com/woojin-dev',
     );
-    expect(screen.queryByRole('link', { name: '구성원 인증' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: '우아한테크코스 소속 인증' }),
+    ).not.toBeInTheDocument();
   });
 
   describe('탭', () => {
@@ -241,7 +243,7 @@ describe('프로필 수정', () => {
     expect(request.body).toBeUndefined();
   });
 
-  it('구성원 인증을 마친 사용자는 닉네임은 막히고 사진은 바꿀 수 있다', async () => {
+  it('우아한테크코스 소속 인증을 마친 사용자는 닉네임은 막히고 사진은 바꿀 수 있다', async () => {
     const user = userEvent.setup();
     const request = catchUpdate();
 
@@ -249,7 +251,7 @@ describe('프로필 수정', () => {
     const dialog = await openEditModal(user);
     expect(within(dialog).getByLabelText('닉네임')).toBeDisabled();
     expect(within(dialog).getByLabelText('닉네임')).toHaveAccessibleDescription(
-      '구성원 인증을 마친 사용자는 닉네임을 바꿀 수 없어요.',
+      '우아한테크코스 소속 인증을 마친 사용자는 닉네임을 바꿀 수 없어요.',
     );
 
     // 버튼은 숨겨진 file input을 대신 눌러 주는 것이라, 테스트는 input에 직접 올린다.
@@ -308,6 +310,8 @@ describe('프로필 수정', () => {
     await screen.findByRole('heading', { name: '정우진' });
 
     expect(screen.queryByRole('button', { name: '프로필 수정' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: '구성원 인증' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: '우아한테크코스 소속 인증' }),
+    ).not.toBeInTheDocument();
   });
 });

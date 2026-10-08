@@ -19,7 +19,7 @@ export interface CrewInfoFieldsProps {
 /**
  * 크루 인증에 필요한 기수와 트랙 입력.
  *
- * 구성원 인증 화면과 회원가입 화면이 함께 쓴다. 기수 목록을 불러오는 동안 suspend한다.
+ * 우아한테크코스 소속 인증 화면과 회원가입 화면이 함께 쓴다. 기수 목록을 불러오는 동안 suspend한다.
  */
 export function CrewInfoFields({
   cohort,
@@ -78,7 +78,7 @@ export function CrewInfoFields({
             >
               <li>본인의 파트(백엔드·프론트엔드·안드로이드)를 정확히 선택해 주세요.</li>
               <li id={policyId} className="text-gray-600">
-                크루 인증 이후에는{' '}
+                우아한테크코스 소속 인증 이후에는{' '}
                 <strong className="font-semibold">
                   닉네임과 파트·기수 정보를 수정할 수 없습니다.
                 </strong>

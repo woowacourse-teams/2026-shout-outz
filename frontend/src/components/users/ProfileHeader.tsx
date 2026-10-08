@@ -2,9 +2,9 @@ import type { ReactNode } from 'react';
 import { IconBrandGithub, IconWorld } from '@tabler/icons-react';
 
 import { Avatar } from '@/components/Avatar';
-import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
+import { UserAffiliation } from '@/components/users/UserAffiliation';
+import { UserHandle } from '@/components/users/UserHandle';
 import type { UserType } from '@/types/user';
-import { formatCrewRole } from '@/utils/user';
 
 /**
  * 프로필 상단. 아바타 자리, 이름, 소속 배지, 소개, GitHub·블로그 링크를 보여준다.
@@ -13,6 +13,7 @@ import { formatCrewRole } from '@/utils/user';
  */
 export interface ProfileHeaderProps {
   displayName: string;
+  handle?: string | null;
   userType?: UserType;
   cohort?: number | null;
   track?: string | null;
@@ -28,6 +29,7 @@ const LINK_STYLE =
 
 export function ProfileHeader({
   displayName,
+  handle,
   userType,
   cohort,
   track,
@@ -37,21 +39,24 @@ export function ProfileHeader({
   avatarUrl,
   actions,
 }: ProfileHeaderProps) {
-  const role = formatCrewRole(cohort, track);
-
   return (
     <header className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-4">
           <Avatar size="lg" src={avatarUrl} name={displayName} alt="" />
-          <div className="flex min-w-0 flex-col gap-1.5">
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-xl font-bold break-words text-gray-900 md:text-2xl">
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
+              <h1 className="text-xl leading-7 font-bold break-words text-gray-900 md:text-2xl md:leading-8">
                 {displayName}
               </h1>
-              {userType && <CrewStatusBadge userType={userType} cohort={cohort} />}
+              <UserHandle handle={handle} userType={userType} className="text-sm leading-5" />
             </div>
-            {role && <p className="text-sm text-gray-500">{role}</p>}
+            <UserAffiliation
+              userType={userType}
+              cohort={cohort}
+              track={track}
+              className="text-sm leading-5"
+            />
           </div>
         </div>
         {actions}

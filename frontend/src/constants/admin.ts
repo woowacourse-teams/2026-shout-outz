@@ -5,7 +5,7 @@ export const ADMIN_TABS = ['crews', 'projects', 'project-edit', 'news', 'banners
 export const DEFAULT_ADMIN_TAB: AdminTab = 'crews';
 
 export const ADMIN_TAB_LABELS: Record<AdminTab, string> = {
-  crews: '크루 승인',
+  crews: '우아한테크코스 소속 인증',
   projects: '프로젝트 승인',
   'project-edit': '프로젝트 수정',
   news: '소식 등록',

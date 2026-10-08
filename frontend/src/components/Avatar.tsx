@@ -1,11 +1,12 @@
 import { useState, type ComponentProps } from 'react';
+import { IconUser } from '@tabler/icons-react';
 import { cn } from '@/utils/cn';
 import { AVATAR_TONE_CLASSES, getAvatarInitial, getAvatarTone } from '@/utils/avatar';
 
 /**
  * 지름 단계.
  *
- * - `xs`: 20px — 목록 미리보기, 댓글
+ * - `xs`: 20px — 아바타만 표시하는 목록
  * - `sm`: 28px — 카드 작성자
  * - `md`: 32px — 헤더, 데스크톱 작성자
  * - `lg`: 52px — 프로필 헤더
@@ -25,6 +26,7 @@ export interface AvatarProps extends Omit<ComponentProps<'div'>, 'children'> {
   src?: string | null;
   name?: string;
   alt: string;
+  anonymous?: boolean;
   /** 내부 `<img>`에 전달되는 값 */
   loading?: ComponentProps<'img'>['loading'];
 }
@@ -45,12 +47,28 @@ const INITIAL_SIZE_CLASSES: Record<AvatarSize, string> = {
   lg: 'text-xl',
 };
 
-export function Avatar({ size = 'md', src, name, alt, loading, className, ...props }: AvatarProps) {
+const ANONYMOUS_ICON_SIZE: Record<AvatarSize, string> = {
+  xs: 'size-2.5',
+  sm: 'size-3.5',
+  md: 'size-4',
+  lg: 'size-6',
+};
+
+export function Avatar({
+  size = 'md',
+  src,
+  name,
+  alt,
+  anonymous = false,
+  loading,
+  className,
+  ...props
+}: AvatarProps) {
   const [failedSrc, setFailedSrc] = useState<string>();
 
-  const imageSrc = src && src !== failedSrc ? src : undefined;
+  const imageSrc = !anonymous && src && src !== failedSrc ? src : undefined;
   const showImage = imageSrc !== undefined;
-  const initial = name ? getAvatarInitial(name) : '';
+  const initial = !anonymous && name ? getAvatarInitial(name) : '';
   const showInitial = !showImage && initial !== '';
 
   const imageRole = !showImage && alt ? ({ role: 'img', 'aria-label': alt } as const) : undefined;
@@ -60,6 +78,7 @@ export function Avatar({ size = 'md', src, name, alt, loading, className, ...pro
       className={cn(
         BASE,
         SIZE_CLASSES[size],
+        anonymous && 'flex items-center justify-center bg-gray-100 text-gray-400',
         showInitial && [
           'flex items-center justify-center font-bold',
           INITIAL_SIZE_CLASSES[size],
@@ -80,6 +99,7 @@ export function Avatar({ size = 'md', src, name, alt, loading, className, ...pro
         />
       )}
       {showInitial && <span aria-hidden="true">{initial}</span>}
+      {anonymous && <IconUser className={ANONYMOUS_ICON_SIZE[size]} aria-hidden="true" />}
     </div>
   );
 }

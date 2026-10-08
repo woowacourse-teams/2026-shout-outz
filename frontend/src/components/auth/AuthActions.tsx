@@ -1,14 +1,17 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 
 import { logoutMutation, sessionQuery } from '@/apis/session';
 import { myProfileQuery, myProfileSummaryQuery } from '@/apis/user';
+import { IconUser } from '@tabler/icons-react';
+import { Dropdown } from '@/components/Dropdown';
 import { Avatar } from '@/components/Avatar';
 import { AuthSheet } from '@/components/auth/AuthSheet';
 import { Button } from '@/components/Button';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
+import { UserHandle } from '@/components/users/UserHandle';
+import { UserAffiliation } from '@/components/users/UserAffiliation';
 import { useModal } from '@/hooks/useModal';
 import { getApiErrorMessage } from '@/utils/error';
 
@@ -39,43 +42,58 @@ export function AuthActions() {
     if (session.data?.status === 'SIGNUP_REQUIRED') void navigate({ to: '/signup' });
   }, [navigate, session.data?.status]);
 
-  if (session.isPending) return null;
+  if (session.isPending) return <HeaderProfileSkeleton />;
 
   if (authenticated || session.data?.status === 'SIGNUP_REQUIRED') {
     return (
       <div className="flex items-center gap-2">
-        {/*
-          누구인지 알기 전에는 링크를 내지 않는다. handle 없이 만들 수 있는 주소는 `/users`뿐인데,
-          그쪽은 같은 요약을 한 번 더 조회해 리다이렉트하고, 실패하면 로그인 안내를 띄운다.
-        */}
         {authenticated && <NotificationBell />}
-        {authenticated && profile.data && (
-          <Link
-            to="/users/$handle"
-            params={{ handle: profile.data.handle }}
-            className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-          >
-            <Avatar size="md" src={profile.data.avatarUrl} name={profile.data.displayName} alt="" />
-            {/* 좁은 화면에서는 이름을 감추되 DOM에는 남긴다. 아바타만 남으면 링크에 읽을 이름이 없다. */}
-            <span className="sr-only flex items-center gap-1 sm:not-sr-only">
-              {profile.data.displayName}
-              {fullProfile.data && (
-                <CrewStatusBadge
-                  userType={fullProfile.data.userType}
-                  cohort={fullProfile.data.cohort}
-                />
+        <Dropdown
+          aria-label="내 계정 메뉴"
+          triggerClassName="h-10 gap-2 px-2"
+          menuClassName="w-64"
+          trigger={
+            <>
+              {profile.data ? (
+                <span className="relative shrink-0">
+                  <Avatar
+                    size="md"
+                    src={profile.data.avatarUrl}
+                    name={profile.data.displayName}
+                    alt=""
+                  />
+                </span>
+              ) : authenticated && profile.isPending ? (
+                <HeaderProfileSkeleton />
+              ) : (
+                <IconUser className="size-5" aria-hidden="true" />
               )}
-            </span>
-          </Link>
-        )}
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={logout.isPending}
-          onClick={() => logout.mutate()}
+            </>
+          }
         >
-          {logout.isPending ? '로그아웃 중…' : '로그아웃'}
-        </Button>
+          {profile.data && (
+            <div className="mb-1 border-b border-gray-100 px-3 py-3">
+              <p className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-sm font-semibold break-words text-gray-900">
+                <span>{profile.data.displayName}</span>
+                <UserHandle handle={profile.data.handle} userType={fullProfile.data?.userType} />
+              </p>
+              {fullProfile.data && <UserAffiliation {...fullProfile.data} />}
+              {!fullProfile.data && fullProfile.isPending && <AffiliationSkeleton />}
+            </div>
+          )}
+          {authenticated && profile.data && (
+            <Dropdown.Item
+              onSelect={() =>
+                void navigate({ to: '/users/$handle', params: { handle: profile.data!.handle } })
+              }
+            >
+              마이페이지
+            </Dropdown.Item>
+          )}
+          <Dropdown.Item disabled={logout.isPending} onSelect={() => logout.mutate()}>
+            {logout.isPending ? '로그아웃 중…' : '로그아웃'}
+          </Dropdown.Item>
+        </Dropdown>
         {logout.isError && (
           <span className="sr-only" role="alert">
             {getApiErrorMessage(logout.error)}
@@ -92,5 +110,27 @@ export function AuthActions() {
     >
       로그인
     </Button>
+  );
+}
+
+function HeaderProfileSkeleton() {
+  return (
+    <span
+      role="status"
+      aria-label="프로필 정보를 불러오는 중"
+      className="inline-flex items-center gap-2"
+    >
+      <span aria-hidden="true" className="flex items-center gap-2 motion-safe:animate-pulse">
+        <span className="size-8 shrink-0 rounded-full bg-gray-100" />
+      </span>
+    </span>
+  );
+}
+
+function AffiliationSkeleton() {
+  return (
+    <span role="status" aria-label="소속 정보를 불러오는 중" className="flex h-5 items-center">
+      <span aria-hidden="true" className="h-3 w-44 rounded bg-gray-100 motion-safe:animate-pulse" />
+    </span>
   );
 }

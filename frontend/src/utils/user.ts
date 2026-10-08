@@ -4,6 +4,29 @@ const TRACK_LABELS: Record<string, string> = {
   FRONTEND: '프론트엔드',
 };
 
+export function formatUserAffiliation({
+  userType,
+  cohort,
+  track,
+  isCurrent,
+  anonymous = false,
+}: {
+  userType?: string | null;
+  cohort?: number | null;
+  track?: string | null;
+  isCurrent?: boolean | null;
+  anonymous?: boolean;
+}): string | null {
+  if (userType === 'WOOWACOURSE_COACH') return '우아한테크코스 코치';
+  if (userType !== 'WOOWACOURSE_CREW') return null;
+  if (!anonymous && cohort != null) {
+    return ['우아한테크코스', `${cohort}기`, formatTrackLabel(track), '크루']
+      .filter(Boolean)
+      .join(' ');
+  }
+  return isCurrent === false ? '우아한테크코스 수료생' : '우아한테크코스 크루';
+}
+
 export function formatTrackLabel(track: string | null | undefined): string | null {
   return track == null ? null : (TRACK_LABELS[track] ?? null);
 }

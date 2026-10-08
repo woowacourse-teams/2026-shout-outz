@@ -13,7 +13,12 @@ let client: QueryClient;
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 beforeEach(() => {
-  server.use(...createFeedHandlers());
+  server.use(
+    ...createFeedHandlers(),
+    http.get('*/api/v1/notifications/unread-count', () =>
+      HttpResponse.json({ status: 'success', data: { unreadCount: 0 } }),
+    ),
+  );
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     value: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
@@ -52,14 +57,11 @@ test('상세 URL에서 피드와 댓글을 각각 조회한다', async () => {
   expect(screen.getByText('2026.09.14 09:00')).toBeInTheDocument();
   const notice = screen.getByText('익명으로 작성한 글입니다');
   expect(notice.parentElement).toHaveTextContent('정우진');
+  const author = screen.getByRole('link', { name: '정우진 프로필 보기' });
   expect(
-    within(notice.parentElement!).getByRole('img', { name: '우테코 크루' }),
-  ).toBeInTheDocument();
-  expect(
-    within(screen.getByRole('link', { name: '정우진 프로필 보기' })).queryByText(
-      /기.*백엔드.*크루/,
-    ),
+    within(author).queryByRole('img', { name: '우아한테크코스 소속 인증' }),
   ).not.toBeInTheDocument();
+  expect(within(author).getByText('8기 백엔드 크루')).toBeInTheDocument();
   // 리액션 API가 생겨 좋아요를 누를 수 있다. 비활성은 요청이 도는 동안뿐이다.
   expect(screen.getByRole('button', { name: '좋아요' })).toBeEnabled();
 });

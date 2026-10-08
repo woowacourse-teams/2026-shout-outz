@@ -140,18 +140,18 @@ function VerifiedProjectCreatePage({ userId }: { userId: number }) {
   if (verification?.status !== 'APPROVED') {
     const description =
       verification?.status === 'PENDING'
-        ? '구성원 인증 신청을 검토하고 있습니다. 승인 후 프로젝트를 등록할 수 있습니다.'
+        ? '우아한테크코스 소속 인증 신청을 검토하고 있습니다. 승인 후 프로젝트를 등록할 수 있습니다.'
         : verification?.status === 'REJECTED'
-          ? `구성원 인증이 반려되었습니다.${verification.reason ? ` ${verification.reason}` : ''}`
-          : '우아한테크코스 구성원 인증을 받은 뒤 프로젝트를 등록할 수 있습니다.';
+          ? `우아한테크코스 소속 인증이 반려되었습니다.${verification.reason ? ` ${verification.reason}` : ''}`
+          : '우아한테크코스 소속 인증을 받은 뒤 프로젝트를 등록할 수 있습니다.';
     return (
       <ProjectCreateGuard
-        title="구성원 인증이 필요해요."
+        title="우아한테크코스 소속 인증이 필요해요."
         description={description}
         action={
           verification?.status !== 'PENDING' ? (
             <Link to="/mypage/verification" className={getButtonStyles({})}>
-              구성원 인증 신청
+              우아한테크코스 소속 인증 신청
             </Link>
           ) : undefined
         }

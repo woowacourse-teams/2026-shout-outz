@@ -30,7 +30,7 @@ interface ProfileEditErrors extends ProfileIntroErrors {
 /**
  * 내 프로필의 사진, 닉네임, 한 줄 소개, GitHub·블로그 주소를 고친다.
  *
- * 구성원 인증을 마친 사용자는 인증 때 확인한 닉네임을 써야 해서 닉네임 칸만 막는다.
+ * 우아한테크코스 소속 인증을 마친 사용자는 인증 때 확인한 닉네임을 써야 해서 닉네임 칸만 막는다.
  * 사진은 고른 즉시 올려 두고, 저장할 때 그 미디어 ID를 함께 보낸다.
  * 소개와 주소는 비우면 null로 보내 지운다.
  */
@@ -171,7 +171,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
               />
               {verified && (
                 <p id={`${id}-locked`} className="text-xs text-gray-500">
-                  구성원 인증을 마친 사용자는 닉네임을 바꿀 수 없어요.
+                  우아한테크코스 소속 인증을 마친 사용자는 닉네임을 바꿀 수 없어요.
                 </p>
               )}
             </div>

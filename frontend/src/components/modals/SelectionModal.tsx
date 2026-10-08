@@ -95,6 +95,7 @@ export function SelectedCollector<T>({
   items,
   getKey,
   getLabel,
+  renderLabel,
   onRemove,
   onClear,
 }: {
@@ -102,6 +103,7 @@ export function SelectedCollector<T>({
   items: T[];
   getKey: (item: T) => string | number;
   getLabel: (item: T) => string;
+  renderLabel?: (item: T) => ReactNode;
   onRemove: (item: T) => void;
   onClear?: () => void;
 }) {
@@ -123,14 +125,14 @@ export function SelectedCollector<T>({
       </div>
       <ul className="flex flex-wrap gap-1.5">
         {items.map((item) => (
-          <li key={getKey(item)}>
+          <li key={getKey(item)} className="max-w-full">
             <button
               type="button"
               onClick={() => onRemove(item)}
               aria-label={`${getLabel(item)} 선택 해제`}
-              className="bg-primary-50 text-primary-600 focus-visible:outline-primary-600 flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold focus-visible:outline-2"
+              className="bg-primary-50 text-primary-600 focus-visible:outline-primary-600 flex max-w-full cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold focus-visible:outline-2"
             >
-              {getLabel(item)}
+              {renderLabel ? renderLabel(item) : getLabel(item)}
               <IconX className="size-3" aria-hidden="true" />
             </button>
           </li>

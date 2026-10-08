@@ -42,7 +42,7 @@ interface SignupErrors extends ProfileIntroErrors {
   track?: string;
 }
 
-/** 우테코 구성원 여부. 크루나 코치라면 가입하면서 구성원 인증까지 신청한다. */
+/** 우테코 구성원 여부. 크루나 코치라면 가입하면서 우아한테크코스 소속 인증까지 신청한다. */
 type MemberType = VerificationUserType | 'GENERAL';
 
 const MEMBER_LABEL: Record<VerificationUserType, string> = {
@@ -251,7 +251,10 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
               >
                 <li>글과 댓글에 표시되는 이름이에요.</li>
                 {member && (
-                  <li>구성원 인증에도 이 닉네임을 써요. 우테코에서 쓰는 닉네임을 입력해 주세요.</li>
+                  <li>
+                    우아한테크코스 소속 인증에도 이 닉네임을 써요. 우테코에서 쓰는 닉네임을 입력해
+                    주세요.
+                  </li>
                 )}
               </ul>
             </>
@@ -348,7 +351,7 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
               : '가입하기'}
         </Button>
         {member && (
-          // 인증은 나중에 구성원 인증 화면에서 따로 신청할 수 있다.
+          // 인증은 나중에 우아한테크코스 소속 인증 화면에서 따로 신청할 수 있다.
           <Button
             variant="ghost"
             size="lg"
@@ -479,7 +482,7 @@ const MEMBER_OPTIONS: { value: MemberType; label: string }[] = [
 ];
 
 /**
- * 우테코 구성원 여부. 크루나 코치라면 가입하면서 구성원 인증까지 신청한다.
+ * 우테코 구성원 여부. 크루나 코치라면 가입하면서 우아한테크코스 소속 인증까지 신청한다.
  *
  * 처음에는 아무것도 고르지 않은 상태로 두고, 가입 전에 꼭 고르게 한다.
  */
@@ -515,7 +518,8 @@ function MemberQuestion({
         ))}
       </div>
       <p className="text-xs leading-5 text-gray-500">
-        크루나 코치라면 가입과 함께 구성원 인증을 신청해, 가입 후 따로 신청하지 않아도 돼요.
+        크루나 코치라면 가입과 함께 우아한테크코스 소속 인증을 신청해, 가입 후 따로 신청하지 않아도
+        돼요.
       </p>
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
@@ -537,7 +541,8 @@ function SignupCompleted({
       <div className="w-full rounded-xl border border-gray-200 p-6 text-center md:p-8">
         <h1 className="text-xl font-bold">가입이 완료됐어요.</h1>
         <p role="alert" className="mt-2 text-sm leading-relaxed text-gray-600">
-          다만 {label} 인증 신청은 접수되지 않았어요. 구성원 인증 화면에서 다시 신청해 주세요.
+          다만 {label} 인증 신청은 접수되지 않았어요. 우아한테크코스 소속 인증 화면에서 다시 신청해
+          주세요.
         </p>
         <div className="mt-6 flex flex-col gap-2">
           <Link to="/mypage/verification" className={getButtonStyles({ size: 'lg' })}>

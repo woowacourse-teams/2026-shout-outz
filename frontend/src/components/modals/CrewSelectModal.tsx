@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 
 import { crewSearchQueryOptions } from '@/api/project';
 import { Avatar } from '@/components/Avatar';
-import { CrewStatusBadge } from '@/components/users/CrewStatusBadge';
+import { UserHandle } from '@/components/users/UserHandle';
+import { UserAffiliation } from '@/components/users/UserAffiliation';
 import { Button } from '@/components/Button';
 import {
   ModalSearchInput,
@@ -12,7 +13,6 @@ import {
 } from '@/components/modals/SelectionModal';
 import { type CrewSearchItem } from '@/types/project';
 import { cn } from '@/utils/cn';
-import { formatCrewRole } from '@/utils/user';
 
 export interface CrewSelectModalProps {
   author?: CrewSearchItem;
@@ -67,8 +67,13 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
       {author && (
         <div className="flex items-center gap-2 rounded-xl bg-gray-50 p-3 text-sm font-semibold text-gray-900">
           <Avatar size="sm" src={author.avatarUrl} name={author.displayName} alt="" />
-          <span>{author.displayName}</span>
-          <CrewStatusBadge userType={author.userType} cohort={author.cohort} />
+          <div className="min-w-0 flex-1">
+            <span className="flex min-w-0 flex-wrap items-baseline gap-x-1">
+              <span>{author.displayName}</span>
+              <UserHandle handle={author.handle} userType={author.userType} />
+            </span>
+            <UserAffiliation {...author} />
+          </div>
           <span className="text-primary-600 text-xs">작성자 · 항상 포함</span>
         </div>
       )}
@@ -78,6 +83,15 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
         items={selected}
         getKey={(crew) => crew.handle}
         getLabel={(crew) => crew.displayName}
+        renderLabel={(crew) => (
+          <span className="flex min-w-0 flex-col items-start">
+            <span className="flex min-w-0 flex-wrap items-baseline gap-x-1">
+              <span>{crew.displayName}</span>
+              <UserHandle handle={crew.handle} userType={crew.userType} />
+            </span>
+            <UserAffiliation {...crew} />
+          </span>
+        )}
         onRemove={toggle}
       />
 
@@ -96,7 +110,6 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
           {crews.map((crew) => {
             const isAuthor = crew.handle === author?.handle;
             const isSelected = selected.some((item) => item.handle === crew.handle);
-            const role = formatCrewRole(crew.cohort, crew.track);
 
             return (
               <li key={crew.handle} className="min-w-0">
@@ -115,7 +128,7 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
                 >
                   <Avatar size="sm" src={crew.avatarUrl} name={crew.displayName} alt="" />
                   <span className="flex min-w-0 flex-col">
-                    <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
                       <span
                         className={cn(
                           'truncate text-sm font-bold',
@@ -124,11 +137,9 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
                       >
                         {crew.displayName}
                       </span>
-                      <CrewStatusBadge userType={crew.userType} cohort={crew.cohort} />
+                      <UserHandle handle={crew.handle} userType={crew.userType} />
                     </span>
-                    <span className="truncate text-xs text-gray-500">
-                      {role ? `우아한테크코스 ${role}` : `@${crew.handle}`}
-                    </span>
+                    <UserAffiliation {...crew} />
                   </span>
                   <span
                     aria-hidden="true"

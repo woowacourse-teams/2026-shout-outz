@@ -244,7 +244,7 @@ test('답글을 부모 댓글 아래에 표시하고 새 답글의 parentId를 �
   await screen.findByText('답글을 저장했습니다.');
   expect(postedBody).toEqual({ content: '새 답글', parentId: 31, isAnonymous: false });
 });
-test('익명 댓글은 피드처럼 본인에게만 작성자를 알리고 트랙·크루 문구를 숨긴다', async () => {
+test('익명 댓글은 본인에게 전체 소속을, 타인에게 수료 여부만 표시한다', async () => {
   server.use(
     http.get('*/api/v1/feeds/:feedId/comments', () =>
       HttpResponse.json({
@@ -302,16 +302,22 @@ test('익명 댓글은 피드처럼 본인에게만 작성자를 알리고 트�
   const own = (await screen.findByText('본인 익명 댓글')).closest('li')!;
   expect(within(own).getByRole('link', { name: '개발용 사용자 프로필 보기' })).toBeInTheDocument();
   expect(within(own).getByText('익명으로 작성한 글입니다')).toBeInTheDocument();
-  expect(within(own).getByRole('img', { name: '우테코 크루' })).toBeInTheDocument();
+  expect(
+    within(own).queryByRole('img', { name: '우아한테크코스 소속 인증' }),
+  ).not.toBeInTheDocument();
   expect(within(own).getByText('작성자')).toBeInTheDocument();
   expect(within(own).queryByText('백엔드 크루')).not.toBeInTheDocument();
-  expect(within(own).queryByText('8기')).not.toBeInTheDocument();
+  expect(within(own).getByText('8기 백엔드 크루')).toBeInTheDocument();
   expect(within(own).queryByText('크루')).not.toBeInTheDocument();
 
   const other = screen.getByText('다른 사람 익명 댓글').closest('li')!;
   expect(within(other).getByText('익명')).toBeInTheDocument();
+  expect(within(other).queryByText('익', { exact: true })).not.toBeInTheDocument();
   expect(within(other).queryByRole('link', { name: /프로필 보기/ })).not.toBeInTheDocument();
-  expect(within(other).getByRole('img', { name: '우테코 수료 크루' })).toBeInTheDocument();
+  expect(
+    within(other).queryByRole('img', { name: '우아한테크코스 소속 인증' }),
+  ).not.toBeInTheDocument();
+  expect(within(other).getByText('수료생')).toBeInTheDocument();
   expect(within(other).queryByText('작성자')).not.toBeInTheDocument();
   expect(within(other).queryByText('크루')).not.toBeInTheDocument();
 });
