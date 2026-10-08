@@ -1320,9 +1320,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -6808,6 +6808,23 @@ components:
         status:
           type: string
           description: 응답 상태
+    FeedCommentCreateRequest:
+      title: FeedCommentCreateRequest
+      required:
+      - content
+      type: object
+      properties:
+        isAnonymous:
+          type: boolean
+          description: 작성자 정보를 익명으로 공개할지 여부
+          nullable: true
+        parentId:
+          type: number
+          description: 같은 피드의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글
+          nullable: true
+        content:
+          type: string
+          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
     OAuthSignupSuccessResponse:
       title: OAuthSignupSuccessResponse
       required:
@@ -6827,23 +6844,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedCommentCreateRequest:
-      title: FeedCommentCreateRequest
-      required:
-      - content
-      type: object
-      properties:
-        isAnonymous:
-          type: boolean
-          description: 작성자 정보를 익명으로 공개할지 여부
-          nullable: true
-        parentId:
-          type: number
-          description: 같은 피드의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글
-          nullable: true
-        content:
-          type: string
-          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
     UserProjectFindAllSuccessResponse:
       title: UserProjectFindAllSuccessResponse
       required:
@@ -9266,19 +9266,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    OAuthSignupRequest:
-      title: OAuthSignupRequest
-      required:
-      - displayName
-      - handle
-      type: object
-      properties:
-        displayName:
-          type: string
-          description: 프로필 표시 이름
-        handle:
-          type: string
-          description: "@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"
     ProjectCommentCreateRequest:
       title: ProjectCommentCreateRequest
       required:
@@ -9292,6 +9279,19 @@ components:
         content:
           type: string
           description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
+    OAuthSignupRequest:
+      title: OAuthSignupRequest
+      required:
+      - displayName
+      - handle
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 프로필 표시 이름
+        handle:
+          type: string
+          description: "@[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들"
     ProjectFindAllSuccessResponse:
       title: ProjectFindAllSuccessResponse
       required:
