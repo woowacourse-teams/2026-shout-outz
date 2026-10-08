@@ -171,7 +171,7 @@ describe('프로필 수정', () => {
     return request;
   };
 
-  it('인증 전 사용자는 닉네임을 고칠 수 있다', async () => {
+  it('인증 전 사용자는 닉네임, 소개, 주소를 고칠 수 있다', async () => {
     const user = userEvent.setup();
     server.use(
       http.get('/api/v1/users/woojin', () =>
@@ -186,19 +186,61 @@ describe('프로필 수정', () => {
     expect(nickname).toBeEnabled();
     await user.clear(nickname);
     await user.type(nickname, '우진');
+    await user.type(within(dialog).getByLabelText('한 줄 소개'), '  안녕하세요  ');
+    await user.type(within(dialog).getByLabelText('GitHub 주소'), 'https://github.com/woojin');
+    await user.type(within(dialog).getByLabelText('블로그 주소'), 'https://woojin.log');
     await user.click(within(dialog).getByRole('button', { name: '저장' }));
 
-    // 프로필 수정은 전체 교체라 지금 사진, 소개, 링크도 그대로 다시 보낸다.
+    // 사진은 건드리지 않았으니 지금 사진을 그대로 다시 보낸다.
     await waitFor(() =>
       expect(request.body).toEqual({
         displayName: '우진',
-        bio: null,
-        githubProfileUrl: null,
-        blogUrl: null,
+        bio: '안녕하세요',
+        githubProfileUrl: 'https://github.com/woojin',
+        blogUrl: 'https://woojin.log',
         avatarImageId: 3,
       }),
     );
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('소개와 주소를 비우면 지운다', async () => {
+    const user = userEvent.setup();
+    const request = catchUpdate();
+
+    renderRoute('/users/woojin');
+    const dialog = await openEditModal(user);
+    await user.clear(within(dialog).getByLabelText('한 줄 소개'));
+    await user.clear(within(dialog).getByLabelText('GitHub 주소'));
+    await user.clear(within(dialog).getByLabelText('블로그 주소'));
+    await user.click(within(dialog).getByRole('button', { name: '저장' }));
+
+    await waitFor(() =>
+      expect(request.body).toMatchObject({ bio: null, githubProfileUrl: null, blogUrl: null }),
+    );
+  });
+
+  it('주소 형식이 맞지 않으면 저장하지 않고 알린다', async () => {
+    const user = userEvent.setup();
+    const request = catchUpdate();
+
+    renderRoute('/users/woojin');
+    const dialog = await openEditModal(user);
+    const github = within(dialog).getByLabelText('GitHub 주소');
+    await user.clear(github);
+    await user.type(github, 'github.com/woojin');
+    const blog = within(dialog).getByLabelText('블로그 주소');
+    await user.clear(blog);
+    await user.type(blog, 'woojin.log');
+    await user.click(within(dialog).getByRole('button', { name: '저장' }));
+
+    expect(
+      within(dialog).getByText('https://github.com/아이디 형식으로 입력해 주세요.'),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('http:// 또는 https://로 시작하는 주소를 입력해 주세요.'),
+    ).toBeInTheDocument();
+    expect(request.body).toBeUndefined();
   });
 
   it('우아한테크코스 소속 인증을 마친 사용자는 닉네임은 막히고 사진은 바꿀 수 있다', async () => {

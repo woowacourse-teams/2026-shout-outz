@@ -8,20 +8,31 @@ import { Field } from '@/components/Field';
 import { Input } from '@/components/Input';
 import { SelectionModal } from '@/components/modals/SelectionModal';
 import { AvatarUploadButton } from '@/components/users/AvatarUploadButton';
+import { ProfileIntroFields } from '@/components/users/ProfileIntroFields';
 import type { UserProfile } from '@/types/user';
 import { getApiErrorMessage } from '@/utils/error';
+import {
+  toProfileIntroBody,
+  validateProfileIntro,
+  type ProfileIntroErrors,
+  type ProfileIntroInput,
+} from '@/utils/user';
 
 export interface ProfileEditModalProps {
   profile: UserProfile;
   onClose: () => void;
 }
 
+interface ProfileEditErrors extends ProfileIntroErrors {
+  displayName?: string;
+}
+
 /**
- * 내 프로필의 사진과 닉네임을 고친다.
+ * 내 프로필의 사진, 닉네임, 한 줄 소개, GitHub·블로그 주소를 고친다.
  *
  * 우아한테크코스 소속 인증을 마친 사용자는 인증 때 확인한 닉네임을 써야 해서 닉네임 칸만 막는다.
  * 사진은 고른 즉시 올려 두고, 저장할 때 그 미디어 ID를 함께 보낸다.
- * 프로필 수정은 전체 교체라 화면에 없는 소개와 링크도 그대로 다시 보낸다.
+ * 소개와 주소는 비우면 null로 보내 지운다.
  */
 export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
   const formId = useId();
@@ -34,7 +45,12 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
     url: profile.avatarUrl ?? null,
   });
   const [preview, setPreview] = useState<string>();
-  const [error, setError] = useState<string>();
+  const [intro, setIntro] = useState<ProfileIntroInput>({
+    bio: profile.bio ?? '',
+    githubProfileUrl: profile.githubProfileUrl ?? '',
+    blogUrl: profile.blogUrl ?? '',
+  });
+  const [errors, setErrors] = useState<ProfileEditErrors>({});
   const objectUrls = useRef<string[]>([]);
   // 업로드가 끝났을 때 부르는 함수는 고를 때의 렌더에서 온 것이라, 최신 미리보기는 ref로 읽는다.
   const previewRef = useRef<string>(undefined);
@@ -56,21 +72,23 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
   });
 
   function validate() {
-    if (!displayName.trim()) return '닉네임을 입력해 주세요.';
-    if (Array.from(displayName).length > 50) return '닉네임은 50자 이하로 입력해 주세요.';
+    const next: ProfileEditErrors = validateProfileIntro(intro);
+    if (!displayName.trim()) next.displayName = '닉네임을 입력해 주세요.';
+    else if (Array.from(displayName).length > 50) {
+      next.displayName = '닉네임은 50자 이하로 입력해 주세요.';
+    }
+    return next;
   }
 
   function submit() {
     if (uploading || update.isPending) return;
-    const nextError = validate();
-    setError(nextError);
-    if (nextError) return;
+    const nextErrors = validate();
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
 
     update.mutate({
       displayName: displayName.trim(),
-      bio: profile.bio,
-      githubProfileUrl: profile.githubProfileUrl,
-      blogUrl: profile.blogUrl,
+      ...toProfileIntroBody(intro),
       avatarImageId: avatar.id,
     });
   }
@@ -99,6 +117,8 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
       <form
         id={formId}
         className="flex flex-col gap-5"
+        // 주소 칸이 type="url"이라 브라우저 기본 검사 대신 validateProfileIntro로 검사한다.
+        noValidate
         onSubmit={(event) => {
           event.preventDefault();
           submit();
@@ -138,7 +158,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
             )}
           </div>
         </div>
-        <Field label="닉네임" error={error}>
+        <Field label="닉네임" error={errors.displayName}>
           {(id) => (
             <div className="flex flex-col gap-1.5">
               <Input
@@ -146,7 +166,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
                 value={displayName}
                 disabled={verified}
                 aria-describedby={verified ? `${id}-locked` : undefined}
-                aria-invalid={error ? true : undefined}
+                aria-invalid={errors.displayName ? true : undefined}
                 onChange={(event) => setDisplayName(event.target.value)}
               />
               {verified && (
@@ -157,6 +177,7 @@ export function ProfileEditModal({ profile, onClose }: ProfileEditModalProps) {
             </div>
           )}
         </Field>
+        <ProfileIntroFields value={intro} onChange={setIntro} errors={errors} />
         {update.isError && (
           <p role="alert" className="text-sm text-red-600">
             {getApiErrorMessage(update.error)}

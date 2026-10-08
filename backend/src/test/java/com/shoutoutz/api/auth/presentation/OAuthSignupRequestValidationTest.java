@@ -2,6 +2,7 @@ package com.shoutoutz.api.auth.presentation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.shoutoutz.api.auth.presentation.dto.request.OAuthSignupHandleAvailabilityRequest;
 import com.shoutoutz.api.auth.presentation.dto.request.OAuthSignupRequest;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -19,7 +20,10 @@ class OAuthSignupRequestValidationTest {
     void validateDisplayNameLength() {
         OAuthSignupRequest request = new OAuthSignupRequest(
                 "@zzaekkii",
-                "😀".repeat(51)
+                "😀".repeat(51),
+                null,
+                null,
+                null
         );
 
         assertThat(validator.validate(request))
@@ -41,8 +45,96 @@ class OAuthSignupRequestValidationTest {
     void validateHandleFormat(String handle) {
         OAuthSignupRequest request = new OAuthSignupRequest(
                 handle,
-                "재키"
+                "재키",
+                null,
+                null,
+                null
         );
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .contains("handle");
+    }
+
+    @Test
+    @DisplayName("200 코드 포인트의 소개와 유효한 URL을 허용한다")
+    void acceptsValidAdditionalProfileInformation() {
+        OAuthSignupRequest request = new OAuthSignupRequest(
+                "@zzaekkii",
+                "재키",
+                "😀".repeat(200),
+                "https://github.com/zzaekkii/",
+                "https://zzaekkii.dev/posts?tag=java#intro"
+        );
+
+        assertThat(validator.validate(request)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("소개가 200 코드 포인트를 넘으면 거절한다")
+    void rejectsTooLongBio() {
+        OAuthSignupRequest request = new OAuthSignupRequest(
+                "@zzaekkii", "재키", "😀".repeat(201), null, null
+        );
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("bio");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " ", "http://github.com/zzaekkii", "https://github.com/zzaekkii/repo",
+            "https://github.com/zzaekkii?tab=repositories", "https://example.com/zzaekkii"})
+    @DisplayName("GitHub 프로필 URL 형식이 아니면 거절한다")
+    void rejectsInvalidGithubProfileUrl(String githubProfileUrl) {
+        OAuthSignupRequest request = new OAuthSignupRequest(
+                "@zzaekkii", "재키", null, githubProfileUrl, null
+        );
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("githubProfileUrl");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " ", "not-a-url", "https:///profile", "http://?x",
+            "javascript:alert(1)", "https://example.com/a b"})
+    @DisplayName("HTTP 또는 HTTPS 주소 형식이 아닌 블로그 URL은 거절한다")
+    void rejectsInvalidBlogUrl(String blogUrl) {
+        OAuthSignupRequest request = new OAuthSignupRequest(
+                "@zzaekkii", "재키", null, null, blogUrl
+        );
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("blogUrl");
+    }
+
+    @ParameterizedTest
+    @DisplayName("핸들 중복 확인 요청의 핸들 형식을 검증한다")
+    @ValueSource(strings = {
+            "",
+            "sangjun",
+            "@",
+            "@a",
+            "@잘못된핸들",
+            "@user handle",
+            "@abcdefghijklmnopqrstuvwxyz12345"
+    })
+    void validateHandleAvailabilityRequest(String handle) {
+        OAuthSignupHandleAvailabilityRequest request =
+                new OAuthSignupHandleAvailabilityRequest(handle);
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .contains("handle");
+    }
+
+    @Test
+    @DisplayName("핸들 중복 확인 요청에서 핸들이 없으면 유효하지 않다")
+    void requireHandleForAvailabilityRequest() {
+        OAuthSignupHandleAvailabilityRequest request =
+                new OAuthSignupHandleAvailabilityRequest(null);
 
         assertThat(validator.validate(request))
                 .extracting(violation -> violation.getPropertyPath().toString())

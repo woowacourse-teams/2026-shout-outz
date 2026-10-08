@@ -274,7 +274,7 @@ class FeedRepositoryIntegrationTest {
     }
 
     @Test
-    void 전체_좋아요_수로_인기순_슬라이스를_조회한다() {
+    void 좋아요_수가_많은_글부터_인기순_슬라이스를_조회한다() {
         long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
         long firstUserId = insertUser("GENERAL", null, null);
         long secondUserId = insertUser("GENERAL", null, null);
@@ -303,7 +303,7 @@ class FeedRepositoryIntegrationTest {
                 new FeedCursor(
                         FeedSort.POPULAR,
                         0,
-                        firstItem.likeCount(),
+                        firstItem.popularityScore(),
                         firstItem.createdAt(),
                         firstItem.feedId()
                 ),
@@ -315,6 +315,58 @@ class FeedRepositoryIntegrationTest {
         assertThat(firstItem.likeCount()).isEqualTo(2L);
         assertThat(secondSlice.items()).extracting(FeedItem::feedId)
                 .containsExactly(olderPopular.getId(), noLike.getId());
+    }
+
+    @Test
+    void 좋아요_수와_삭제되지_않은_댓글_수의_합으로_인기순_슬라이스를_조회한다() {
+        long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
+        long firstUserId = insertUser("GENERAL", null, null);
+        long secondUserId = insertUser("GENERAL", null, null);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed commentOnly = saveFeed(authorId, "댓글만 있는 글", base, categoryId);
+        Feed likeOnly = saveFeed(authorId, "좋아요만 있는 글", base.plus(1, ChronoUnit.HOURS), categoryId);
+        Feed likeAndComment = saveFeed(authorId, "좋아요와 댓글이 있는 글", base.plus(2, ChronoUnit.HOURS), categoryId);
+        Feed deletedCommentOnly = saveFeed(authorId, "삭제된 댓글만 있는 글", base.plus(3, ChronoUnit.HOURS), categoryId);
+        insertComment(commentOnly.getId(), firstUserId, false);
+        insertComment(commentOnly.getId(), secondUserId, false);
+        insertComment(commentOnly.getId(), authorId, false);
+        insertLike(likeOnly.getId(), firstUserId);
+        insertLike(likeOnly.getId(), secondUserId);
+        insertLike(likeAndComment.getId(), firstUserId);
+        insertComment(likeAndComment.getId(), secondUserId, false);
+        insertComment(deletedCommentOnly.getId(), firstUserId, true);
+        insertComment(deletedCommentOnly.getId(), secondUserId, true);
+
+        FeedPage firstSlice = feedQueryRepository.findAll(
+                FeedSort.POPULAR,
+                null,
+                null,
+                null,
+                2
+        );
+        FeedItem lastItem = firstSlice.items().getLast();
+        FeedPage secondSlice = feedQueryRepository.findAll(
+                FeedSort.POPULAR,
+                null,
+                null,
+                new FeedCursor(
+                        FeedSort.POPULAR,
+                        0,
+                        lastItem.popularityScore(),
+                        lastItem.createdAt(),
+                        lastItem.feedId()
+                ),
+                10
+        );
+
+        assertThat(firstSlice.items()).extracting(FeedItem::feedId)
+                .containsExactly(commentOnly.getId(), likeAndComment.getId());
+        assertThat(firstSlice.items()).extracting(FeedItem::popularityScore)
+                .containsExactly(3L, 2L);
+        assertThat(secondSlice.items()).extracting(FeedItem::feedId)
+                .containsExactly(likeOnly.getId(), deletedCommentOnly.getId());
+        assertThat(secondSlice.items().getLast().commentCount()).isZero();
     }
 
     @Test

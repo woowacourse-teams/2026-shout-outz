@@ -1758,7 +1758,7 @@ export interface NotificationListSuccessResponse {
     message: string;
     /** 알림 ID */
     notificationId: number;
-    /** 알림 타입 */
+    /** 알림 유형. COMMENT_REPLY(내 댓글의 직접 답글), POST_ACTIVITY(내 피드), COMMENTED_POST_ACTIVITY(댓글을 남긴 피드), QUESTION_ACTIVITY(내 질문), INTERESTED_QUESTION_ACTIVITY(궁금해요를 누른 질문), COMMENTED_QUESTION_ACTIVITY(댓글을 남긴 질문) */
     notificationType: string;
   }[];
   /** 페이지 정보 */
@@ -1798,10 +1798,27 @@ export interface NotificationUnreadCountSuccessResponse {
   status: string;
 }
 
+/** OAuthSignupHandleAvailabilitySuccessResponse */
+export interface OAuthSignupHandleAvailabilitySuccessResponse {
+  /** 핸들 확인 결과 */
+  data: {
+    /** 핸들을 사용할 수 있는지 여부 */
+    available: boolean;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
 /** OAuthSignupRequest */
 export interface OAuthSignupRequest {
-  /** 프로필 표시 이름 */
+  /** 한 줄 소개 (최대 200자, Unicode code point 기준). 생략 또는 null 허용 */
+  bio?: string | null;
+  /** 호스트가 있는 HTTP 또는 HTTPS 블로그 URL. 생략 또는 null 허용 */
+  blogUrl?: string | null;
+  /** 프로필 표시 이름 (최대 50자, Unicode code point 기준) */
   displayName: string;
+  /** https://github.com/{계정} 형식의 GitHub 프로필 URL. 마지막 / 허용. 생략 또는 null 허용 */
+  githubProfileUrl?: string | null;
   /** @[A-Za-z0-9_-]{2,30} 형식의 영구 공개 핸들 */
   handle: string;
 }
