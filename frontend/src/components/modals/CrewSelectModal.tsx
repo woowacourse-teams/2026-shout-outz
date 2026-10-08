@@ -117,8 +117,10 @@ export function CrewSelectModal({ author, initial, onApply, onClose }: CrewSelec
                   type="button"
                   role="checkbox"
                   aria-checked={isAuthor || isSelected}
-                  disabled={isAuthor}
-                  onClick={() => toggle(crew)}
+                  aria-disabled={isAuthor}
+                  onClick={() => {
+                    if (!isAuthor) toggle(crew);
+                  }}
                   className={cn(
                     'focus-visible:outline-primary-600 flex w-full cursor-pointer items-center gap-3 rounded-2xl px-4 py-3 text-left focus-visible:outline-2 md:rounded-lg md:py-2.5',
                     isAuthor || isSelected
