@@ -66,13 +66,16 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
           </div>
         }
       />
-      <div className="mt-6 flex flex-wrap items-center gap-2 border-b border-gray-100 pb-5">
+      <div className="mt-10 mb-8 flex justify-center">
         <FeedLikeButton
           feedId={feed.feedId}
           likeCount={feed.likeCount}
           likedByMe={feed.likedByMe}
           label={isQuestion ? '저도 궁금해요' : '좋아요'}
+          size="lg"
         />
+      </div>
+      <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 pb-5">
         <Button
           variant="ghost"
           size="sm"

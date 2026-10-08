@@ -13,11 +13,13 @@ export function FeedLikeButton({
   likeCount = 0,
   likedByMe = false,
   label = '좋아요',
+  size = 'sm',
 }: {
   feedId: number;
   likeCount?: number;
   likedByMe?: boolean;
   label?: string;
+  size?: 'sm' | 'lg';
 }) {
   const client = useQueryClient();
   const { requireAuthentication } = useRequireAuthentication();
@@ -64,18 +66,22 @@ export function FeedLikeButton({
   return (
     <div className="flex flex-col items-start">
       <Button
-        variant="ghost"
-        size="sm"
-        className={`gap-1 px-2 ${liked ? 'text-primary-600' : ''}`}
+        variant={size === 'lg' ? 'outline' : 'ghost'}
+        size={size}
+        className={
+          size === 'lg'
+            ? `min-w-40 gap-2 rounded-full text-xs font-semibold ${liked ? 'border-primary-200 bg-primary-50 text-primary-600 hover:bg-primary-100' : ''}`
+            : `gap-1 px-2 ${liked ? 'text-primary-600' : ''}`
+        }
         aria-label={liked ? `${label} 취소` : label}
         aria-pressed={liked}
         disabled={mutation.isPending}
         onClick={() => void toggle()}
       >
         {liked ? (
-          <IconHeartFilled className="size-4" aria-hidden="true" />
+          <IconHeartFilled className={size === 'lg' ? 'size-6' : 'size-4'} aria-hidden="true" />
         ) : (
-          <IconHeart className="size-4" aria-hidden="true" />
+          <IconHeart className={size === 'lg' ? 'size-6' : 'size-4'} aria-hidden="true" />
         )}
         <span>
           {label} <span aria-label={`${label} 수`}>{count}</span>
