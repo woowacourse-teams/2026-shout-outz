@@ -111,11 +111,11 @@ paths:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"feedType\"\
+                    ,\"message\":\"feedType은 필수입니다.\"},{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"},{\"field\":\"feedType\",\"message\":\"feedType은\
-                    \ 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug 형식이 올바르지 않습\
-                    니다.\"}]}"
+                    :\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug 형식이\
+                    \ 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1229,9 +1229,9 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
                     :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
@@ -1785,9 +1785,9 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
                     :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
@@ -2469,6 +2469,34 @@ paths:
                     projectCount\":28}],\"techTags\":[{\"id\":2,\"displayName\":\"\
                     React\",\"projectCount\":48},{\"id\":1,\"displayName\":\"Spring\
                     \ Boot\",\"projectCount\":51}],\"matchedProjectCount\":8}}"
+  /api/v1/projects/{projectId}:
+    get:
+      tags:
+      - Project
+      summary: 프로젝트 상세 조회
+      description: "프로젝트 상세 화면에 필요한 기본 정보, 상세 설명, 팀원, 기술 스택, 외부 링크, 리액션 및 댓글 수를 조회\
+        한다. 로그인하지 않아도 조회할 수 있다. 승인된 프로젝트는 누구나, 승인되지 않은 프로젝트는 등록자만 조회할 수 있으며, 볼 수 없\
+        는 프로젝트는 존재 여부를 숨기기 위해 없는 프로젝트와 같은 404를 반환한다. editable은 요청자가 등록자 본인인지를 나타내며\
+        , 수정·삭제 버튼 노출에 쓴다. 프로젝트 ID가 숫자가 아니면 400을 반환한다."
+      operationId: project-find-detail-invalid-id
+      parameters:
+      - name: projectId
+        in: path
+        description: 조회할 프로젝트 ID
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                project-find-detail-invalid-id:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\"}"
   /api/v1/users/me:
     get:
       tags:
@@ -2620,9 +2648,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -2928,6 +2956,61 @@ paths:
                     bookmarkedByMe\":false,\"commentCount\":0,\"techTags\":[],\"members\"\
                     :[],\"createdAt\":\"2026-09-20T00:00:00Z\",\"updatedAt\":\"2026-09-20T00:00:00Z\"\
                     }}"
+  /api/v1/auth/signup/handle-availability:
+    get:
+      tags:
+      - Auth
+      summary: OAuth 가입 핸들 중복 확인
+      description: "가입 대기 OAuth 세션에서 handle의 사용 가능 여부를 조회한다. handle은 @[A-Za-z0-9_-]{2,30}\
+        \ 형식이며 대소문자를 구분하지 않는다. 이미 사용 중이면 available=false를 반환한다. 조회 결과는 가입 시점까지 보장되\
+        지 않으므로 가입 API에서 중복을 다시 확인한다. handle 형식이 잘못되면 400 VALIDATION_FAILED, 가입 대기\
+        \ OAuth 신원이 없으면 400 OAUTH_SIGNUP_SESSION_NOT_FOUND를 반환한다."
+      operationId: auth-signup-handle-availability
+      parameters:
+      - name: handle
+        in: query
+        description: "@[A-Za-z0-9_-]{2,30} 형식의 확인할 핸들"
+        required: true
+        schema:
+          type: string
+      - name: Cookie
+        in: header
+        description: 가입 대기 신원이 저장된 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=session-id
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                auth-signup-handle-availability-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"}]}"
+                auth-signup-handle-availability-session-missing:
+                  value: "{\"status\":\"error\",\"code\":\"OAUTH_SIGNUP_SESSION_NOT_FOUND\"\
+                    ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
+        "200":
+          description: "200"
+          headers:
+            Cache-Control:
+              description: 사용 가능 여부를 캐시하지 않음
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthSignupHandleAvailabilitySuccessResponse"
+              examples:
+                auth-signup-handle-availability-unavailable:
+                  value: "{\"status\":\"success\",\"data\":{\"available\":false}}"
+                auth-signup-handle-availability:
+                  value: "{\"status\":\"success\",\"data\":{\"available\":true}}"
   /api/v1/feeds/search/suggestions:
     get:
       tags:
@@ -3635,9 +3718,9 @@ paths:
               examples:
                 user-verification-request-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"nickname\"\
-                    ,\"message\":\"nickname은 필수입니다.\"},{\"field\":\"cohort\",\"message\"\
-                    :\"cohort는 양의 정수여야 합니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
+                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"}]}"
         "201":
           description: "201"
           content:
@@ -5708,6 +5791,25 @@ components:
         status:
           type: string
           description: 응답 상태
+    OAuthSignupHandleAvailabilitySuccessResponse:
+      title: OAuthSignupHandleAvailabilitySuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - available
+          type: object
+          properties:
+            available:
+              type: boolean
+              description: 핸들을 사용할 수 있는지 여부
+          description: 핸들 확인 결과
+        status:
+          type: string
+          description: 응답 상태
     UserVerificationRequestCreateRequest:
       title: UserVerificationRequestCreateRequest
       required:
@@ -6911,61 +7013,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    UserVerificationRequestCreateSuccessResponse:
-      title: UserVerificationRequestCreateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - nickname
-          - requestId
-          - requestedAt
-          - status
-          - userType
-          type: object
-          properties:
-            requestedAt:
-              type: string
-              description: 신청 시각(ISO-8601)
-            requestId:
-              type: number
-              description: 인증 신청 ID
-            nickname:
-              type: string
-              description: 신청 닉네임
-            cohort:
-              type: number
-              description: 신청 기수
-              nullable: true
-            userType:
-              type: string
-              description: 신청 유형
-              enum:
-              - GENERAL
-              - WOOWACOURSE_CREW
-              - WOOWACOURSE_COACH
-            track:
-              type: string
-              description: 신청 트랙
-              nullable: true
-              enum:
-              - BACKEND
-              - ANDROID
-              - FRONTEND
-            status:
-              type: string
-              description: 신청 상태
-              enum:
-              - PENDING
-              - APPROVED
-              - REJECTED
-          description: 생성된 인증 신청
-        status:
-          type: string
-          description: 응답 상태
     NoticeCreateSuccessResponse:
       title: NoticeCreateSuccessResponse
       required:
@@ -7060,6 +7107,61 @@ components:
               - NOTICE
               - EVENT
           description: 생성된 공지
+        status:
+          type: string
+          description: 응답 상태
+    UserVerificationRequestCreateSuccessResponse:
+      title: UserVerificationRequestCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - nickname
+          - requestId
+          - requestedAt
+          - status
+          - userType
+          type: object
+          properties:
+            requestedAt:
+              type: string
+              description: 신청 시각(ISO-8601)
+            requestId:
+              type: number
+              description: 인증 신청 ID
+            nickname:
+              type: string
+              description: 신청 닉네임
+            cohort:
+              type: number
+              description: 신청 기수
+              nullable: true
+            userType:
+              type: string
+              description: 신청 유형
+              enum:
+              - GENERAL
+              - WOOWACOURSE_CREW
+              - WOOWACOURSE_COACH
+            track:
+              type: string
+              description: 신청 트랙
+              nullable: true
+              enum:
+              - BACKEND
+              - ANDROID
+              - FRONTEND
+            status:
+              type: string
+              description: 신청 상태
+              enum:
+              - PENDING
+              - APPROVED
+              - REJECTED
+          description: 생성된 인증 신청
         status:
           type: string
           description: 응답 상태
@@ -7335,37 +7437,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    HomeStatisticsSuccessResponse:
-      title: HomeStatisticsSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - currentCohort
-          - feedCount
-          - ongoingEventCount
-          - projectCount
-          type: object
-          properties:
-            projectCount:
-              type: number
-              description: 승인되었고 삭제되지 않은 프로젝트 수
-            currentCohort:
-              type: number
-              description: 전체 기수 개수
-            feedCount:
-              type: number
-              description: 삭제되지 않은 피드 수
-            ongoingEventCount:
-              type: number
-              description: 조회 시각에 진행 중인 삭제되지 않은 이벤트 수
-          description: 홈 통계
-        status:
-          type: string
-          description: 응답 상태
     UserProfileUpdateSuccessResponse:
       title: UserProfileUpdateSuccessResponse
       required:
@@ -7426,6 +7497,37 @@ components:
               type: number
               description: 사용자 ID
           description: 수정된 사용자 프로필
+        status:
+          type: string
+          description: 응답 상태
+    HomeStatisticsSuccessResponse:
+      title: HomeStatisticsSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - currentCohort
+          - feedCount
+          - ongoingEventCount
+          - projectCount
+          type: object
+          properties:
+            projectCount:
+              type: number
+              description: 승인되었고 삭제되지 않은 프로젝트 수
+            currentCohort:
+              type: number
+              description: 전체 기수 개수
+            feedCount:
+              type: number
+              description: 삭제되지 않은 피드 수
+            ongoingEventCount:
+              type: number
+              description: 조회 시각에 진행 중인 삭제되지 않은 이벤트 수
+          description: 홈 통계
         status:
           type: string
           description: 응답 상태
