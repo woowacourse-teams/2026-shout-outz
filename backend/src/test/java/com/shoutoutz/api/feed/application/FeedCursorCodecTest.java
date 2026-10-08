@@ -14,7 +14,7 @@ class FeedCursorCodecTest {
     private final FeedCursorCodec codec = new FeedCursorCodec();
 
     @Test
-    void 좋아요_수와_생성_시각과_ID를_커서로_변환하고_복원한다() {
+    void 인기_점수와_생성_시각과_ID를_커서로_변환하고_복원한다() {
         Instant createdAt = Instant.parse("2026-09-11T00:00:00Z");
         FeedCursor expected = new FeedCursor(FeedSort.POPULAR, 0, 42L, createdAt, 10L);
 
@@ -46,7 +46,7 @@ class FeedCursorCodecTest {
     }
 
     @Test
-    void 음수_좋아요_수가_포함된_커서를_거부한다() {
+    void 음수_인기_점수가_포함된_커서를_거부한다() {
         FeedCursor cursor = new FeedCursor(
                 FeedSort.POPULAR,
                 0,

@@ -602,10 +602,10 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                       AND (
                           COALESCE(reactions.like_count, 0), p.created_at, p.id
                       ) < (
-                          :cursorLikeCount, :cursorCreatedAt, :cursorFeedId
+                          :cursorPopularityScore, :cursorCreatedAt, :cursorFeedId
                       )
                     """);
-            parameters.addValue("cursorLikeCount", cursor.likeCount());
+            parameters.addValue("cursorPopularityScore", cursor.popularityScore());
             appendCursorParameters(parameters, cursor);
         }
         sql.append("""
