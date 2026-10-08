@@ -7,6 +7,291 @@ servers:
 - url: http://localhost:8080
 tags: []
 paths:
+  /api/v1/bug-reports:
+    post:
+      tags:
+      - BugReport
+      summary: 버그 제보
+      description: "로그인한 사용자와 비로그인 사용자 모두 버그를 제보한다. 내용은 공백을 제거한 뒤 저장하며 1자 이상 5,000자\
+        \ 이하여야 한다. 제보 상태는 OPEN으로 시작한다. 내용이 비어 있거나 5,000자를 초과하면 400 VALIDATION_FAILED를\
+        \ 반환한다."
+      operationId: bug-report-create
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/BugReportCreateRequest"
+            examples:
+              bug-report-create-invalid:
+                value: |
+                  {
+                    "content": "   "
+                  }
+              bug-report-create:
+                value: |
+                  {
+                    "content": "로그인 버튼을 누르면 오류가 발생합니다."
+                  }
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                bug-report-create-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"content\"\
+                    ,\"message\":\"content는 필수입니다.\"}]}"
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BugReportCreateSuccessResponse"
+              examples:
+                bug-report-create:
+                  value: "{\"status\":\"success\",\"data\":{\"bugReportId\":42,\"\
+                    status\":\"OPEN\",\"createdAt\":\"2026-10-08T09:00:00Z\"}}"
+  /api/v1/admin/bug-reports:
+    get:
+      tags:
+      - BugReport
+      summary: 버그 제보 목록 조회
+      description: "관리자가 버그 제보를 최신순으로 조회한다. status 기본값은 OPEN이며 OPEN, COMPLETED, ALL을\
+        \ 지원한다. size 기본값은 20이고 1~100을 허용한다. 다음 페이지는 응답 meta.nextCursor를 cursor로 전달\
+        해 조회한다. totalCount는 상태 필터에 해당하는 전체 제보 수다. 관리자 로그인 세션이 없으면 401, 관리자 권한이 없으면\
+        \ 403을 반환한다. status 또는 size가 유효하지 않으면 400 VALIDATION_FAILED, cursor가 유효하지\
+        \ 않으면 400 BUG_REPORT_ADMIN_CURSOR_INVALID를 반환한다."
+      operationId: bug-report-admin-find-all
+      parameters:
+      - name: status
+        in: query
+        description: "조회할 상태. OPEN, COMPLETED, ALL 중 하나. 생략하면 OPEN"
+        required: false
+        schema:
+          type: string
+      - name: size
+        in: query
+        description: "한 페이지의 제보 수. 기본값 20, 최솟값 1, 최댓값 100"
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: cursor
+        in: query
+        description: 이전 응답의 meta.nextCursor 값. 첫 페이지에서는 생략
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BugReportAdminFindAllSuccessResponse"
+              examples:
+                bug-report-admin-find-all:
+                  value: "{\"status\":\"success\",\"data\":[{\"bugReportId\":42,\"\
+                    contentPreview\":\"로그인 버튼을 누르면 오류가 발생합니다.\",\"status\":\"OPEN\"\
+                    ,\"reporterUserId\":17,\"createdAt\":\"2026-10-08T09:00:00Z\"\
+                    ,\"updatedAt\":\"2026-10-08T10:00:00Z\",\"statusChangedAt\":null,\"\
+                    statusChangedByUserId\":null}],\"meta\":{\"nextCursor\":\"MjAyNi0xMC0wOFQwOTowMDowMFp8NDI\"\
+                    ,\"hasNext\":true,\"totalCount\":3}}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                bug-report-admin-find-all-invalid-filter:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"size\",\"\
+                    message\":\"size는 1 이상이어야 합니다.\"}]}"
+                bug-report-admin-find-all-invalid-cursor:
+                  value: "{\"status\":\"error\",\"code\":\"BUG_REPORT_ADMIN_CURSOR_INVALID\"\
+                    ,\"message\":\"버그 제보 목록 조회 커서가 올바르지 않습니다. 커서 없이 다시 조회해주세요.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                bug-report-admin-find-all-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                bug-report-admin-find-all-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"BUG_REPORT_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 버그 제보를 관리할 수 있습니다.\"}"
+  /api/v1/admin/bug-reports/{bugReportId}:
+    get:
+      tags:
+      - BugReport
+      summary: 버그 제보 상세 조회
+      description: "관리자가 버그 제보의 전체 내용과 처리 이력을 조회한다. 관리자 로그인 세션이 필요하다. 세션이 없으면 401,\
+        \ 관리자 권한이 없으면 403, 제보가 없으면 404 BUG_REPORT_NOT_FOUND를 반환한다."
+      operationId: bug-report-admin-find-detail
+      parameters:
+      - name: bugReportId
+        in: path
+        description: 버그 제보 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                bug-report-admin-find-detail-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                bug-report-admin-find-detail-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"BUG_REPORT_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 버그 제보를 관리할 수 있습니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                bug-report-admin-find-detail-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"BUG_REPORT_NOT_FOUND\"\
+                    ,\"message\":\"버그 제보를 찾을 수 없습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BugReportAdminDetailSuccessResponse"
+              examples:
+                bug-report-admin-find-detail:
+                  value: "{\"status\":\"success\",\"data\":{\"bugReportId\":42,\"\
+                    content\":\"로그인 버튼을 누르면 오류가 발생합니다.\",\"status\":\"OPEN\",\"reporterUserId\"\
+                    :17,\"createdAt\":\"2026-10-08T09:00:00Z\",\"updatedAt\":\"2026-10-08T10:00:00Z\"\
+                    ,\"statusChangedAt\":null,\"statusChangedByUserId\":null}}"
+  /api/v1/admin/bug-reports/{bugReportId}/status:
+    patch:
+      tags:
+      - BugReport
+      summary: 버그 제보 상태 변경
+      description: "관리자가 버그 제보 상태를 OPEN 또는 COMPLETED로 변경한다. 상태가 실제로 바뀌면 상태 변경 시각과\
+        \ 관리자 ID를 기록한다. 관리자 로그인 세션이 없으면 401, 관리자 권한이 없으면 403, 상태가 없거나 올바르지 않으면 400\
+        \ VALIDATION_FAILED, 제보가 없으면 404 BUG_REPORT_NOT_FOUND를 반환한다."
+      operationId: bug-report-admin-update-status
+      parameters:
+      - name: bugReportId
+        in: path
+        description: 버그 제보 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/BugReportStatusUpdateRequest"
+            examples:
+              bug-report-admin-update-status-forbidden:
+                value: |
+                  {
+                    "status": "COMPLETED"
+                  }
+              bug-report-admin-update-status:
+                value: |
+                  {
+                    "status": "COMPLETED"
+                  }
+              bug-report-admin-update-status-unauthorized:
+                value: |
+                  {
+                    "status": "COMPLETED"
+                  }
+              bug-report-admin-update-status-not-found:
+                value: |
+                  {
+                    "status": "COMPLETED"
+                  }
+              bug-report-admin-update-status-invalid:
+                value: "{}"
+      responses:
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                bug-report-admin-update-status-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"BUG_REPORT_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 버그 제보를 관리할 수 있습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BugReportStatusUpdateSuccessResponse"
+              examples:
+                bug-report-admin-update-status:
+                  value: "{\"status\":\"success\",\"data\":{\"bugReportId\":42,\"\
+                    status\":\"COMPLETED\",\"statusChangedAt\":\"2026-10-08T10:00:00Z\"\
+                    ,\"statusChangedByUserId\":7,\"updatedAt\":\"2026-10-08T10:00:00Z\"\
+                    }}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                bug-report-admin-update-status-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                bug-report-admin-update-status-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"BUG_REPORT_NOT_FOUND\"\
+                    ,\"message\":\"버그 제보를 찾을 수 없습니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                bug-report-admin-update-status-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"status\"\
+                    ,\"message\":\"status는 필수입니다.\"}]}"
   /api/v1/categories:
     get:
       tags:
@@ -10924,6 +11209,216 @@ components:
               type: number
               description: 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+
+    BugReportCreateRequest:
+      title: BugReportCreateRequest
+      required:
+      - content
+      type: object
+      properties:
+        content:
+          type: string
+          description: "버그 제보 내용. 공백 제거 후 1~5,000자"
+    BugReportCreateSuccessResponse:
+      title: BugReportCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - bugReportId
+          - createdAt
+          - status
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: ISO-8601 생성 시각
+            status:
+              type: string
+              description: 제보 상태. 생성 직후 OPEN
+              enum:
+              - OPEN
+              - COMPLETED
+            bugReportId:
+              type: number
+              description: 버그 제보 ID
+          description: 생성된 버그 제보
+        status:
+          type: string
+          description: 응답 상태
+    BugReportAdminFindAllSuccessResponse:
+      title: BugReportAdminFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 버그 제보 미리보기 목록
+          items:
+            required:
+            - bugReportId
+            - contentPreview
+            - createdAt
+            - status
+            - updatedAt
+            type: object
+            properties:
+              createdAt:
+                type: string
+                description: ISO-8601 생성 시각
+              statusChangedAt:
+                type: string
+                description: 마지막 상태 변경 시각. 변경 전이면 null
+                nullable: true
+              statusChangedByUserId:
+                type: number
+                description: 마지막으로 상태를 변경한 관리자 ID. 변경 전이면 null
+                nullable: true
+              contentPreview:
+                type: string
+                description: 전체 내용의 미리보기. 최대 200자
+              reporterUserId:
+                type: number
+                description: 제보한 사용자 ID. 비로그인 제보이면 null
+                nullable: true
+              updatedAt:
+                type: string
+                description: ISO-8601 수정 시각
+              status:
+                type: string
+                description: 제보 상태
+                enum:
+                - OPEN
+                - COMPLETED
+              bugReportId:
+                type: number
+                description: 버그 제보 ID
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 요청에 사용할 커서. 다음 페이지가 없으면 null
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: 상태 필터에 해당하는 전체 제보 수
+          description: 커서 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    BugReportAdminDetailSuccessResponse:
+      title: BugReportAdminDetailSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - bugReportId
+          - content
+          - createdAt
+          - status
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: ISO-8601 생성 시각
+            statusChangedAt:
+              type: string
+              description: 마지막 상태 변경 시각. 변경 전이면 null
+              nullable: true
+            statusChangedByUserId:
+              type: number
+              description: 마지막으로 상태를 변경한 관리자 ID. 변경 전이면 null
+              nullable: true
+            reporterUserId:
+              type: number
+              description: 제보한 사용자 ID. 비로그인 제보이면 null
+              nullable: true
+            content:
+              type: string
+              description: 버그 제보 전체 내용
+            updatedAt:
+              type: string
+              description: ISO-8601 수정 시각
+            status:
+              type: string
+              description: 제보 상태
+              enum:
+              - OPEN
+              - COMPLETED
+            bugReportId:
+              type: number
+              description: 버그 제보 ID
+          description: 버그 제보 상세 정보
+        status:
+          type: string
+          description: 응답 상태
+    BugReportStatusUpdateRequest:
+      title: BugReportStatusUpdateRequest
+      required:
+      - status
+      type: object
+      properties:
+        status:
+          type: string
+          description: 변경할 제보 상태. OPEN 또는 COMPLETED
+          enum:
+          - OPEN
+          - COMPLETED
+    BugReportStatusUpdateSuccessResponse:
+      title: BugReportStatusUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - bugReportId
+          - status
+          - updatedAt
+          type: object
+          properties:
+            statusChangedAt:
+              type: string
+              description: 마지막 상태 변경 시각. 상태 변경 이력이 없으면 null
+              nullable: true
+            statusChangedByUserId:
+              type: number
+              description: 마지막으로 상태를 변경한 관리자 ID. 상태 변경 이력이 없으면 null
+              nullable: true
+            updatedAt:
+              type: string
+              description: ISO-8601 수정 시각
+            status:
+              type: string
+              description: 변경된 제보 상태
+              enum:
+              - OPEN
+              - COMPLETED
+            bugReportId:
+              type: number
+              description: 버그 제보 ID
+          description: 변경된 버그 제보 상태
         status:
           type: string
           description: 응답 상태
