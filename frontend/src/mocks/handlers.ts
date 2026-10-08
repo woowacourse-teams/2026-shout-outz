@@ -80,7 +80,13 @@ export function createFeedHandlers({
   const feeds = profileCases ? createProfileCaseFeeds(mockFeeds[0]!) : [...mockFeeds];
   const comments = new Map<number, FeedComment[]>();
   const feedLikes = new Map(
-    feeds.map((feed) => [feed.feedId, { likeCount: 12, likedByMe: false }]),
+    feeds.map((feed, index) => [
+      feed.feedId,
+      {
+        likeCount: profileCases ? 12 + index : 12,
+        likedByMe: profileCases && index % 2 === 0,
+      },
+    ]),
   );
   const getComments = (id: number) => {
     if (!comments.has(id)) {
