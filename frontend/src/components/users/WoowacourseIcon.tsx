@@ -20,8 +20,8 @@ export function WoowacourseIcon({
     const rect = ref.current?.getBoundingClientRect();
     if (rect)
       setPosition({
-        left: Math.max(12, Math.min(rect.left, window.innerWidth - 236)),
-        top: Math.min(rect.bottom + 8, window.innerHeight - 68),
+        left: Math.max(12, rect.left),
+        top: rect.bottom + 8,
       });
   };
   useEffect(() => {
@@ -118,9 +118,14 @@ export function WoowacourseIcon({
       {position &&
         createPortal(
           <span
+            ref={(element) => {
+              if (!element) return;
+              element.style.left = `${Math.max(12, Math.min(position.left, window.innerWidth - element.offsetWidth - 12))}px`;
+              element.style.top = `${Math.max(12, Math.min(position.top, window.innerHeight - element.offsetHeight - 12))}px`;
+            }}
             id={id}
             role="tooltip"
-            className="pointer-events-none fixed z-50 w-56 rounded-lg bg-gray-900 px-3 py-2 text-xs leading-5 font-normal text-white shadow-lg"
+            className="pointer-events-none fixed z-50 w-max max-w-[calc(100vw-1.5rem)] rounded-lg bg-gray-900 px-3 py-2 text-xs leading-5 font-normal break-keep whitespace-normal text-white shadow-lg"
             style={position}
           >
             우아한테크코스 소속 인증을 완료한 사용자예요.
