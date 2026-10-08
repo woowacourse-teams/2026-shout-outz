@@ -30,6 +30,15 @@ describe('ProfileHeader', () => {
     expect(screen.getByRole('link', { name: '블로그' })).toHaveAttribute('href', PROFILE.blogUrl);
   });
 
+  it('외부 링크는 새 탭에서 연다', () => {
+    render(<ProfileHeader {...PROFILE} />);
+
+    for (const link of screen.getAllByRole('link')) {
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    }
+  });
+
   it('소개와 링크가 없으면 그 자리를 그리지 않는다', () => {
     render(<ProfileHeader {...PROFILE} bio={null} githubProfileUrl={null} blogUrl={null} />);
 
