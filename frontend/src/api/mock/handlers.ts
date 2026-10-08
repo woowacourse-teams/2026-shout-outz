@@ -54,6 +54,16 @@ export const handlers = [
     HttpResponse.json({ status: 'success', data: { userId: 1 } }, { status: 201 }),
   ),
 
+  http.post('/api/v1/bug-reports', () =>
+    HttpResponse.json(
+      {
+        status: 'success',
+        data: { bugReportId: 1, status: 'OPEN', createdAt: new Date().toISOString() },
+      },
+      { status: 201 },
+    ),
+  ),
+
   http.post('/api/v1/auth/logout', () => new HttpResponse(null, { status: 204 })),
 
   http.get('/api/v1/users/me/verification-request', () =>
