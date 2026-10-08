@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { IconHeart, IconMessageCircle, IconSparkles } from '@tabler/icons-react';
+import { IconHeart, IconHeartFilled, IconMessageCircle, IconSparkles } from '@tabler/icons-react';
 import type { Feed } from '@/apis/feed';
 import { Image } from '@/components/Image';
 import { FeedAuthor } from '@/components/feeds/FeedAuthor';
@@ -80,10 +80,14 @@ export function FeedCard({ feed, surface }: { feed: Feed; surface: FeedSurface }
           aria-label="반응 수"
         >
           <span
-            className="inline-flex items-center gap-1"
-            aria-label={`${feed.feedType === 'QUESTION' ? '궁금해요' : '좋아요'} ${feed.likeCount ?? 0}개`}
+            className={`inline-flex items-center gap-1 ${feed.likedByMe ? 'text-primary-600' : ''}`}
+            aria-label={`${feed.feedType === 'QUESTION' ? '궁금해요' : '좋아요'} ${feed.likeCount ?? 0}개${feed.likedByMe ? ', 내가 누름' : ''}`}
           >
-            <IconHeart className="size-4" aria-hidden="true" />
+            {feed.likedByMe ? (
+              <IconHeartFilled className="text-primary-600 size-4" aria-hidden="true" />
+            ) : (
+              <IconHeart className="size-4" aria-hidden="true" />
+            )}
             {feed.likeCount ?? 0}
           </span>
           <span

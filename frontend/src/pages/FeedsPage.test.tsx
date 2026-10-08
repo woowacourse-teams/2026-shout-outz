@@ -597,3 +597,30 @@ test.each(['일반', '인기'])(
     expect(screen.getByRole('tooltip')).toBeInTheDocument();
   },
 );
+
+test.each([
+  ['일반', 'POST'],
+  ['일반', 'QUESTION'],
+  ['인기', 'POST'],
+  ['인기', 'QUESTION'],
+] as const)('%s %s 목록에 내가 누른 좋아요를 표시한다', async (kind, type) => {
+  server.use(
+    http.get('*/api/v1/feeds', () =>
+      HttpResponse.json({
+        status: 'success',
+        data: [{ ...mockFeeds[0]!, feedType: type, likedByMe: true, likeCount: 13 }],
+        meta: { hasNext: false, nextCursor: null },
+      }),
+    ),
+  );
+  show(
+    kind === '일반' ? (
+      <FeedList sort="LATEST" feedType={type} />
+    ) : (
+      <PopularFeedList feedType={type} />
+    ),
+  );
+  expect(
+    await screen.findByLabelText(`${type === 'QUESTION' ? '궁금해요' : '좋아요'} 13개, 내가 누름`),
+  ).toBeInTheDocument();
+});

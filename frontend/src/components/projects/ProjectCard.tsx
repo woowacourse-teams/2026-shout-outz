@@ -128,7 +128,7 @@ export function ProjectCard({
           </ul>
 
           <p className="flex items-center gap-3 text-xs text-gray-500">
-            <span>
+            <span className={likedByMe ? 'text-primary-600' : undefined}>
               {likedByMe ? (
                 <IconHeartFilled className="text-primary-600 inline size-3.5" aria-hidden="true" />
               ) : (
