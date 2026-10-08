@@ -65,7 +65,9 @@ export function TechTagSelectModal({ initial, onApply, onClose }: TechTagSelectM
           기술 스택을 불러오는 중…
         </p>
       ) : techTags.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-500">검색 결과가 없습니다.</p>
+        <p className="py-8 text-center text-sm text-gray-500">
+          {keyword.trim() ? '검색어에 맞는 기술 스택이 없습니다.' : '등록된 기술 스택이 없습니다.'}
+        </p>
       ) : (
         <ul aria-label="기술 스택 목록" className="grid grid-cols-2 gap-2">
           {techTags.map((tag) => (

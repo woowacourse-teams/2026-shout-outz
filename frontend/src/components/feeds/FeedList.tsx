@@ -33,7 +33,9 @@ export function FeedList({ sort, feedType }: { sort: FeedSort; feedType?: FeedTy
           <IconMessageCircle className="size-8 text-gray-300" aria-hidden="true" />
           <p>
             {feedType === 'QUESTION'
-              ? '아직 등록된 질문이 없습니다.'
+              ? sort === 'WAITING'
+                ? '답변을 기다리는 질문이 없어요!'
+                : '아직 등록된 질문이 없습니다.'
               : '아직 등록된 피드가 없습니다.'}
           </p>
         </div>

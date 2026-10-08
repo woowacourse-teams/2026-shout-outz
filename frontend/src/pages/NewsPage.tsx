@@ -89,7 +89,8 @@ function NewsList({ filter, sort }: { filter: NewsFilter; sort: NewsSort }) {
   const news = query.data.pages.flatMap((page) => page.data);
 
   if (news.length === 0) {
-    return <p className="py-16 text-center text-sm text-gray-500">등록된 소식이 없습니다.</p>;
+    const label = filter === 'NOTICE' ? '공지사항이' : filter === 'EVENT' ? '이벤트가' : '소식이';
+    return <p className="py-16 text-center text-sm text-gray-500">등록된 {label} 없습니다.</p>;
   }
 
   return (
