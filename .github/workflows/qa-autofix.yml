@@ -1,0 +1,85 @@
+name: QA Autofix
+
+on:
+  schedule:
+    - cron: "7,37 * * * *" # 30분 간격 (정각 지연을 피해 7분, 37분)
+  workflow_dispatch:
+
+# 이전 실행이 끝나기 전에 다음 폴링이 시작되지 않도록 순서대로 실행
+concurrency:
+  group: qa-autofix
+  cancel-in-progress: false
+
+jobs:
+  find-cards:
+    runs-on: ubuntu-latest
+    outputs:
+      card_ids: ${{ steps.find.outputs.card_ids }}
+      count: ${{ steps.find.outputs.count }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: .github/scripts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - id: find
+        run: node .github/scripts/find-qa-cards.mjs
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_QA_DATABASE_ID: ${{ vars.NOTION_QA_DATABASE_ID }}
+
+  autofix:
+    needs: find-cards
+    if: needs.find-cards.outputs.count != '0'
+    runs-on: ubuntu-latest
+    # Action job 전체 실행 시간 한도. AI 단계(55분)가 끝난 뒤 실패 처리 단계가 돌 시간을 남겨 둔다.
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      # PAT로 checkout해야 push와 PR 생성이 다른 워크플로우(dev 타입 검사 등)를 트리거함
+      - uses: actions/checkout@v6
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.QA_BOT_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Configure git author
+        run: |
+          git config user.name "qa-autofix-bot"
+          git config user.email "qa-autofix-bot@users.noreply.github.com"
+
+      - id: claude
+        uses: anthropics/claude-code-action@v1
+        # AI 단계 실행 시간 한도. 넘기면 이 단계만 실패하고 아래 실패 처리 단계가 실행된다.
+        timeout-minutes: 55
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          GH_TOKEN: ${{ secrets.QA_BOT_TOKEN }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.QA_BOT_TOKEN }}
+          prompt: "/qa-autofix ${{ needs.find-cards.outputs.card_ids }}"
+          claude_args: |
+            --mcp-config .github/qa-autofix/mcp.json
+            --max-turns 120
+            --allowedTools "Read,Edit,Write,Glob,Grep,mcp__notion,Bash(git:*),Bash(gh label list:*),Bash(gh issue create:*),Bash(gh pr create:*),Bash(npm run:*),Bash(npm ci:*)"
+
+      # 시간 초과나 턴 한도로 AI가 중간에 끝나면 아직 `AI 처리중`인 카드를 `실패`로 바꾼다.
+      - name: Mark stuck cards as failed
+        if: failure() || cancelled()
+        run: node .github/scripts/fail-stuck-qa-cards.mjs ${{ needs.find-cards.outputs.card_ids }}
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
