@@ -13,6 +13,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.HandlerMapping;
 
 /**
  * 요청당 한 번만 요청 추적 정보와 처리 결과를 기록하는 필터
@@ -25,6 +26,7 @@ public class HttpRequestLoggingFilter extends OncePerRequestFilter {
     static final String TRACE_ID_HEADER = "X-Trace-Id";
     static final String TRACE_ID_MDC_KEY = "traceId";
     private static final Pattern SAFE_TRACE_ID = Pattern.compile("[A-Za-z0-9_-]{1,64}");
+    private static final String NO_ROUTE = "-";
 
     @Override
     protected void doFilterInternal(
@@ -59,13 +61,15 @@ public class HttpRequestLoggingFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             long durationMillis,
             String traceId) {
-        String message = "http_request method={} path={} status={} duration_ms={} trace_id={}";
+        // 로그 기반 지표 필터가 기존 필드 순서에 의존할 수 있으므로 새 필드는 끝에 덧붙인다.
+        String message = "http_request method={} path={} status={} duration_ms={} trace_id={} route={}";
         Object[] arguments = {
                 request.getMethod(),
                 request.getRequestURI(),
                 response.getStatus(),
                 durationMillis,
-                traceId
+                traceId,
+                resolveRoute(request)
         };
 
         if (response.getStatus() >= 500) {
@@ -77,6 +81,19 @@ public class HttpRequestLoggingFilter extends OncePerRequestFilter {
             return;
         }
         log.info(message, arguments);
+    }
+
+    /**
+     * 요청을 처리한 핸들러의 URL 템플릿을 반환한다.
+     * 없는 주소는 정적 리소스 핸들러가 받으므로 {@code /**}로 기록된다.
+     * 핸들러에 닿기 전에 끝난 요청(보안 필터 차단 등)은 템플릿이 없으므로 {@code -}를 반환한다.
+     */
+    private String resolveRoute(HttpServletRequest request) {
+        Object pattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+        if (pattern == null) {
+            return NO_ROUTE;
+        }
+        return pattern.toString();
     }
 
     private void restoreTraceId(String previousTraceId) {
