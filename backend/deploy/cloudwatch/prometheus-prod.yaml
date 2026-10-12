@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 1m
+  scrape_timeout: 10s
+scrape_configs:
+  - job_name: shout-outz-app
+    metrics_path: /actuator/prometheus
+    sample_limit: 10000
+    static_configs:
+      - targets: ["127.0.0.1:8081"]
+        labels:
+          env: prod
+    # 수집 단계에서 필요한 지표만 남긴다. 나머지(JVM, GC, Tomcat 등)는 EMF 로그로도 보내지 않는다.
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: "http_server_requests_seconds_(count|sum|max)|hikaricp_connections_(active|idle|pending)"
+        action: keep
