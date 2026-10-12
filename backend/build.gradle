@@ -40,6 +40,8 @@ dependencies {
     implementation 'org.flywaydb:flyway-database-postgresql'
 
     runtimeOnly 'org.postgresql:postgresql'
+    // CloudWatch Agent가 수집할 수 있도록 Actuator 지표를 Prometheus 형식으로 노출
+    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
