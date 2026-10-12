@@ -4,7 +4,7 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
-#   Spring Boot의 기본 에러 응답에 민감한 정보를 포함하지 않도록 설정
+# Spring Boot의 기본 에러 응답에 민감한 정보를 포함하지 않도록 설정
   web:
     error:
       include-message: never
@@ -21,6 +21,17 @@ logging:
       max-file-size: 10MB
       max-history: 7
       total-size-cap: 200MB
+
+# Actuator는 서비스 포트와 분리해 루프백에만 연다. nginx는 8080만 넘기므로 외부에서 지표에 닿을 수 없다.
+# 보안 그룹은 공용이라 수정할 수 없으므로, address를 빠뜨리면 8081이 모든 인터페이스에 열린다.
+management:
+  server:
+    port: 8081
+    address: 127.0.0.1
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
 
 visitor:
   cookie-secure: ${SESSION_COOKIE_SECURE:true}
