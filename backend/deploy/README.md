@@ -51,6 +51,37 @@ CodeDeploy가 애플리케이션을 재시작하는 동안 nginx는 502를 반�
 
 nginx 설정은 `nginx/shout-outz-backend.conf`에 서버 파일의 사본으로 둔다. 자동으로 반영되지 않으므로 서버에서 설정을 변경하면 저장소 사본도 함께 갱신한다. 443 블록과 리다이렉트의 `# managed by Certbot` 주석 줄은 갱신 때 certbot이 다시 손대므로 직접 수정하지 않는다.
 
+### nginx 액세스 로그
+
+애플리케이션 로그는 Spring 필터에 들어온 요청만 남기므로, 배포 중 502, 애플리케이션이 응답하지 못한 504, 사용자가 실제로 기다린 시간은 nginx 로그로 본다. 443 블록은 요청마다 JSON 한 줄을 `/var/log/nginx/shout-outz-access.log`에 남기고, CloudWatch Agent가 `/shout-outz/{dev|prod}/nginx`로 보낸다. 서버 블록에 `access_log`를 따로 두었으므로 443 요청은 기본 `/var/log/nginx/access.log`에 남지 않는다.
+
+| 필드 | 값 |
+|------|----|
+| `trace_id` | 애플리케이션 로그의 `trace_id`와 같은 값 |
+| `remote_addr`, `user_agent`, `host` | 요청한 쪽의 IP, User-Agent, 요청 도메인 |
+| `method`, `uri` | 메서드와 경로. 쿼리 스트링은 남기지 않는다 |
+| `status` | 사용자에게 돌려준 상태 코드 |
+| `request_time` | nginx가 요청을 받은 뒤 응답을 다 보낼 때까지 걸린 시간(초) |
+| `upstream_status`, `upstream_response_time`, `upstream_connect_time` | 애플리케이션의 상태 코드, 연결 후 응답을 다 받을 때까지 걸린 시간(초, Tomcat에서 기다린 시간 포함), 연결에 걸린 시간(초). 애플리케이션에 닿지 못하면 `-` |
+| `bytes_sent` | 응답 본문 크기(바이트, 헤더 제외) |
+
+- OAuth 콜백의 `?code=` 같은 값이 남지 않도록 `$request_uri` 대신 `$uri`를 쓰고, 같은 이유로 Referer는 남기지 않는다.
+- IP는 스캐너·봇과 요청이 몰리는 출처를 확인하는 용도로 남기며, CloudWatch 로그 그룹 보관 기간 30일이 지나면 삭제된다. 서버의 파일은 Ubuntu nginx logrotate 기본값을 따른다.
+- 로그 그룹 `/shout-outz/dev/nginx`, `/shout-outz/prod/nginx`는 Agent가 처음 보낼 때 자동으로 만들어지므로, 생성되면 콘솔에서 보관 기간(30일)과 필수 태그(`Service`, `Role`, `ProjectTeam`)를 직접 설정한다.
+- 요청의 `X-Trace-Id`가 애플리케이션과 같은 규칙(`[A-Za-z0-9_-]{1,64}`)에 맞으면 그대로 쓰고, 아니면 nginx의 `$request_id`를 쓴다. 이 값을 `X-Trace-Id` 헤더로 애플리케이션에 넘기므로 두 로그가 같은 ID로 이어진다. 규칙이 다르면 애플리케이션이 값을 새로 만들어 연결이 끊기므로, `HttpRequestLoggingFilter`의 규칙을 바꾸면 `map`도 함께 바꾼다.
+
+서버에 적용할 때는 다음을 지킨다.
+
+- 저장소 사본은 prod(`api.shout-ou.tz`) 기준이다. dev는 `server_name`과 인증서 경로가 다르므로 파일을 덮어쓰지 않고, 상단 `map`·`log_format` 블록, `access_log` 줄, `proxy_set_header X-Trace-Id` 줄만 옮긴다.
+- `log_format` 이름은 nginx 전체에서 하나여야 하므로 백업 사본을 `sites-enabled` 안에 두지 않는다. 남겨 두면 `nginx -t`가 `duplicate "log_format"`으로 실패한다.
+
+```bash
+sudo cp /etc/nginx/sites-enabled/shout-outz-backend.conf ~/shout-outz-backend.conf.bak
+sudo editor /etc/nginx/sites-enabled/shout-outz-backend.conf
+sudo nginx -t && sudo systemctl reload nginx
+sudo tail -n 3 /var/log/nginx/shout-outz-access.log
+```
+
 ## EC2 사전 준비
 
 배포 전에 EC2에 Java 21과 CodeDeploy Agent 2.0 이상을 설치한다.
@@ -123,6 +154,7 @@ sudo chmod 0600 /opt/shout-outz/shout-outz.env
 | 대상 | 보내는 곳 |
 |------|----------|
 | `/var/log/shout-outz/app.log` | 로그 그룹 `/shout-outz/dev/app`, `/shout-outz/prod/app` (30일 보관) |
+| `/var/log/nginx/shout-outz-access.log` | 로그 그룹 `/shout-outz/dev/nginx`, `/shout-outz/prod/nginx` (30일 보관) |
 | `mem_used_percent`, `swap_used_percent`, `disk_used_percent` | 지표 네임스페이스 `ShoutOutz` |
 | (prod만) `127.0.0.1:8081/actuator/prometheus`의 API 요청·히카리 풀 지표 | 로그 그룹 `/shout-outz/prod/prometheus`를 거쳐 지표 네임스페이스 `ShoutOutz` |
 
@@ -289,7 +321,7 @@ http_request method=GET path=/api/v1/projects/@shout-outz status=200 duration_ms
 
 - `route`는 Spring이 매칭한 URL 템플릿이다. `path`는 ID·slug마다 달라지므로 API 단위 집계는 `route`로 한다.
 - 어떤 API에도 맞지 않은 요청은 `route=/**`, 컨트롤러에 닿기 전에 끝난 요청(보안 필터 401/403 등)은 `route=-`다.
-- `duration_ms`는 요청이 필터에 들어온 뒤부터 잰다. Tomcat 스레드가 모두 바빠 필터에 들어오기 전에 기다린 시간은 포함되지 않으므로, 부하 테스트에서는 클라이언트가 잰 응답 시간과 함께 본다.
+- `duration_ms`는 요청이 필터에 들어온 뒤부터 잰다. Tomcat 스레드가 모두 바빠 필터에 들어오기 전에 기다린 시간은 포함되지 않으므로, 같은 `trace_id`의 nginx `upstream_response_time`이나 부하 테스트 도구가 잰 응답 시간과 함께 본다.
 
 CloudWatch 콘솔 → 로그 → Logs Insights에서 로그 그룹과 시간 범위를 고르고 실행한다. 부하 테스트 요청에는 `X-Trace-Id: lt-...`처럼 접두사를 붙여 보내면(영문·숫자·`-`·`_` 64자 이내) `trace_id=lt-`로 실제 사용자 요청과 구분할 수 있다.
 
@@ -322,3 +354,36 @@ filter @message like "http_request"
 ```
 
 느린 요청의 `trace_id`를 골라 `filter @message like "{trace_id}"`로 다시 검색하면 그 요청을 처리하며 남긴 로그를 모두 볼 수 있다. 원인은 같은 시점의 히카리 `pending`·`active`, RDS CPU, EC2 CPU 지표와 함께 좁힌다.
+
+### nginx 로그
+
+nginx 로그는 JSON이라 `parse` 없이 필드를 바로 쓴다. 로그 그룹은 `/shout-outz/{dev|prod}/nginx`다.
+
+사용자가 받은 5xx(배포 중 502, 시간 초과 504 등):
+
+```text
+filter status >= 500
+| stats count(*) as requests by status, upstream_status, bin(5m)
+```
+
+`upstream_status`가 `-`이거나 `502`면 애플리케이션까지 닿지 못한 요청이다. 504 중 `upstream_connect_time`이 `-`인 것은 연결 자체에 실패한 경우다.
+
+느린 요청 순위:
+
+```text
+fields request_time, upstream_response_time, upstream_status, method, uri, trace_id
+| sort request_time desc
+| limit 20
+```
+
+한 요청의 시간은 세 구간으로 나눠 본다. 애플리케이션 처리 시간은 같은 `trace_id`의 애플리케이션 로그 `duration_ms`에서 가져온다.
+
+| 구간 | 계산 | 길면 의심할 곳 |
+|------|------|---------------|
+| 클라이언트와 주고받은 시간(요청 본문 업로드, 응답 전송) | `request_time` − `upstream_response_time` | 느린 네트워크, 큰 요청·응답 |
+| 애플리케이션 앞에서 기다린 시간 | `upstream_response_time` − `duration_ms`/1000 | Tomcat 스레드 부족 |
+| 애플리케이션 처리 시간 | `duration_ms` | 쿼리, 커넥션 풀, 연산 |
+
+`upstream_response_time`은 로그에 문자열로 남으므로, 산술이나 `avg()`가 숫자로 계산되는지 처음 적용할 때 확인한다.
+
+같은 요청의 애플리케이션 로그는 nginx 로그의 `trace_id`로 `/shout-outz/{dev|prod}/app`에서 `filter @message like "trace_id={값}"`으로 찾는다.
