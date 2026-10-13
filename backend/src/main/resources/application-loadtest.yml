@@ -1,0 +1,52 @@
+# 부하 테스트 서버 전용 설정. loadtest 프로필 하나만 켜서 띄운다. (prod와 함께 켜면 앱이 시작되지 않는다)
+# 지표·로그 수집 방식은 prod와 같게 두고, k6가 붙는 방식에 맞춰 쿠키와 바인딩 주소만 다르게 둔다.
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  web:
+    error:
+      include-message: never
+      include-stacktrace: never
+      include-binding-errors: never
+
+# prod와 같은 경로에 남겨 CloudWatch Agent 설정을 그대로 쓴다.
+logging:
+  file:
+    name: /var/log/shout-outz/app.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+      total-size-cap: 200MB
+
+# 히카리 풀 등 지표를 prod와 같은 방식(루프백 8081)으로 노출한다.
+management:
+  server:
+    port: 8081
+    address: 127.0.0.1
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+
+# 시드 데이터의 링크로 외부 사이트를 호출해 부하가 섞이지 않도록 링크 미리보기 작업을 끈다.
+link-preview:
+  enabled: false
+
+# k6는 HTTP로 붙으므로 Secure를 끈다. HTTPS로 붙는다면 환경 변수로 켠다.
+visitor:
+  cookie-secure: ${SESSION_COOKIE_SECURE:false}
+  cookie-same-site: ${SESSION_COOKIE_SAME_SITE:Lax}
+
+server:
+  # 기본은 nginx 뒤 루프백. k6가 8080에 직접 붙는다면 SERVER_ADDRESS=0.0.0.0으로 연다.
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        secure: ${SESSION_COOKIE_SECURE:false}
+        same-site: ${SESSION_COOKIE_SAME_SITE:Lax}
