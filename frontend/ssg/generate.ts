@@ -102,7 +102,7 @@ async function main(): Promise<void> {
   const target = process.argv[2];
 
   if (target === '--csr-shell') {
-    await generateCsrShell(distDir, { script: '/main.js' });
+    await generateCsrShell(distDir, { scripts: ['/main.js'] });
     return;
   }
 

@@ -2,8 +2,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 
 export type BuildAssets = {
-  script: string;
-  style?: string;
+  /** main entry를 이루는 script입니다. splitChunks가 framework 등을 떼어내면 여러 개가 됩니다. */
+  scripts: string[];
+  styles?: string[];
 };
 
 function isBuildAssets(value: unknown): value is BuildAssets {
@@ -11,10 +12,14 @@ function isBuildAssets(value: unknown): value is BuildAssets {
 
   const assets = value as Record<string, unknown>;
   return (
-    typeof assets.script === 'string' &&
-    assets.script.length > 0 &&
-    (assets.style === undefined || (typeof assets.style === 'string' && assets.style.length > 0))
+    isFileList(assets.scripts) &&
+    assets.scripts.length > 0 &&
+    (assets.styles === undefined || isFileList(assets.styles))
   );
+}
+
+function isFileList(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((file) => typeof file === 'string' && file.length > 0);
 }
 
 function insertBefore(html: string, marker: string, insertion: string): string {
@@ -47,9 +52,17 @@ export function injectBuildAssets(html: string, assets: BuildAssets): string {
   let result = html;
 
   // CSS는 렌더 차단 리소스라 <head>에 두어 FOUC를 방지합니다.
-  if (assets.style) {
-    result = insertBefore(result, '</head>', `<link rel="stylesheet" href="${assets.style}">`);
+  const styleLinks = (assets.styles ?? [])
+    .map((file) => `<link rel="stylesheet" href="${file}">`)
+    .join('');
+  if (styleLinks) {
+    result = insertBefore(result, '</head>', styleLinks);
   }
 
-  return insertBefore(result, '</body>', `<script type="module" src="${assets.script}"></script>`);
+  // module script는 받는 대로 병렬로 내려받고 문서 순서대로 실행됩니다. webpack 런타임이 entry를 이루는
+  // 청크가 모두 도착했는지 확인한 뒤 main을 시작하므로 순서에 의존하지 않습니다.
+  const scriptTags = assets.scripts
+    .map((file) => `<script type="module" src="${file}"></script>`)
+    .join('');
+  return insertBefore(result, '</body>', scriptTags);
 }
