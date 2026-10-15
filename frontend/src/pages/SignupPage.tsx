@@ -51,7 +51,10 @@ const MEMBER_LABEL: Record<VerificationUserType, string> = {
 };
 
 /** 크루나 코치로 가입했을 때 이어서 보낸 인증 신청의 결과 */
-type VerificationResult = { status: 'requested' | 'failed'; userType: VerificationUserType };
+interface VerificationResult {
+  status: 'requested' | 'failed';
+  userType: VerificationUserType;
+}
 
 export function SignupPage({ onComplete }: SignupPageProps) {
   return (

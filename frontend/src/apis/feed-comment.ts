@@ -47,13 +47,13 @@ export function commentsQuery(feedId: number, viewer: number | null) {
     getNextPageParam: (last, _pages, _param, params) => nextCursor(last, params),
   });
 }
-export type CommentChange = {
+export interface CommentChange {
   method: 'post' | 'patch' | 'delete';
   commentId?: number;
   content?: string;
   isAnonymous?: boolean;
   parentId?: number;
-};
+}
 
 export function changeComment(feedId: number, input: CommentChange) {
   return httpClient(
