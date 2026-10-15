@@ -15,6 +15,15 @@ public record NotificationItem(
         String actorDisplayName,
         Long actorAvatarImageId,
         boolean read,
-        Instant createdAt
+        Instant createdAt,
+        Long interviewId,
+        String interviewTitle,
+        Long interviewCommentId
 ) {
+    public NotificationItem(long notificationId, NotificationType notificationType, String message,
+            Long feedId, String feedTitle, Long commentId, Long actorId, String actorHandle,
+            String actorDisplayName, Long actorAvatarImageId, boolean read, Instant createdAt) {
+        this(notificationId, notificationType, message, feedId, feedTitle, commentId, actorId, actorHandle,
+                actorDisplayName, actorAvatarImageId, read, createdAt, null, null, null);
+    }
 }

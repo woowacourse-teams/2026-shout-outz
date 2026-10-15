@@ -67,7 +67,7 @@ public class InterviewQueryService {
         return new InterviewDetailResponse(item.id(), item.title(), item.summary(),
                 mediaUrlResolver.resolve(item.thumbnailMediaId(), MediaVariant.THUMBNAIL), interviewee(item, urls),
                 mediaUrlResolver.replaceDescriptionReferences(item.contentMd(), urls),
-                item.publishedAt(), item.createdAt(), item.updatedAt(), counts.likeCount(), counts.likedByMe());
+                item.publishedAt(), item.createdAt(), item.updatedAt(), counts.likeCount(), counts.likedByMe(), item.commentCount());
     }
 
     private InterviewPage page(String cursor, int size, boolean admin, Long viewerId) {
@@ -100,7 +100,7 @@ public class InterviewQueryService {
             responses.add(new InterviewSummaryResponse(item.id(), item.title(), item.summary(),
                     mediaUrl(thumbnailUrls, item.thumbnailMediaId()), interviewee(item, displayUrls),
                     item.status(), item.publishedAt(), item.createdAt(), item.updatedAt(),
-                    counts.likeCount(), counts.likedByMe()));
+                    counts.likeCount(), counts.likedByMe(), item.commentCount()));
         }
         String nextCursor = null;
         if (hasNext) {

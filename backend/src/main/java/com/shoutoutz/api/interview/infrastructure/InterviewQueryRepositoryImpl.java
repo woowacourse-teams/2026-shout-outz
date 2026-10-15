@@ -20,7 +20,7 @@ import org.springframework.stereotype.Repository;
 public class InterviewQueryRepositoryImpl implements InterviewQueryRepository {
     private static final String COLUMNS = """
             i.id, i.title, i.summary, i.thumbnail_media_id, i.status,
-            i.published_at, i.created_at, i.updated_at,
+            i.published_at, i.created_at, i.updated_at, i.comment_count,
             CASE WHEN u.status = 'DELETED' THEN NULL ELSE u.handle END AS handle,
             CASE WHEN u.status = 'DELETED' THEN '탈퇴한 사용자' ELSE p.display_name END AS display_name,
             CASE WHEN u.status = 'DELETED' THEN NULL ELSE p.bio END AS bio,
@@ -74,7 +74,7 @@ public class InterviewQueryRepositoryImpl implements InterviewQueryRepository {
                 rs.getString("content_md"), rs.getObject("thumbnail_media_id", Long.class),
                 rs.getString("handle"), rs.getString("display_name"), rs.getString("bio"),
                 rs.getObject("avatar_image_id", Long.class), InterviewStatus.valueOf(rs.getString("status")),
-                instant(rs, "published_at"), instant(rs, "created_at"), instant(rs, "updated_at"));
+                instant(rs, "published_at"), instant(rs, "created_at"), instant(rs, "updated_at"), rs.getLong("comment_count"));
     }
 
     private Instant instant(ResultSet rs, String name) throws SQLException {

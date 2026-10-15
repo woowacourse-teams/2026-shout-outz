@@ -14,8 +14,15 @@ public record UserCommentResponse(
         Instant createdAt,
         Instant updatedAt,
         long agreeCount,
-        boolean agreedByMe
+        boolean agreedByMe,
+        @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        Long interviewId
 ) {
+
+    public UserCommentResponse(long commentId, UserCommentType type, Long feedId, String projectSlug,
+            String content, Instant createdAt, Instant updatedAt, long agreeCount, boolean agreedByMe) {
+        this(commentId, type, feedId, projectSlug, content, createdAt, updatedAt, agreeCount, agreedByMe, null);
+    }
 
     public static List<UserCommentResponse> from(List<UserCommentItem> comments) {
         return comments.stream()
@@ -33,7 +40,8 @@ public record UserCommentResponse(
                 comment.createdAt(),
                 comment.updatedAt(),
                 comment.agreeCount(),
-                comment.agreedByMe()
+                comment.agreedByMe(),
+                comment.interviewId()
         );
     }
 }

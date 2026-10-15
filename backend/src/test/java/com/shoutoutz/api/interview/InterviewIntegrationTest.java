@@ -312,6 +312,7 @@ class InterviewIntegrationTest {
     private List<FieldDescriptor> commonFields(String prefix) {
         return new ArrayList<>(List.of(
                 fieldWithPath("status").type(STRING).description("응답 상태"),
+                fieldWithPath(prefix + ".commentCount").type(NUMBER).description("삭제되지 않은 댓글과 대댓글 수"),
                 fieldWithPath(prefix + ".likeCount").type(NUMBER).description("좋아요 수"),
                 fieldWithPath(prefix + ".likedByMe").type(BOOLEAN).description("내 좋아요 여부"),
                 fieldWithPath(prefix + ".id").type(NUMBER).description("인터뷰 ID"),
