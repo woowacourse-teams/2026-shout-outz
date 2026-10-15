@@ -37,7 +37,7 @@ class QuestionRecommendationServiceTest {
     void setUp() {
         recommendationService = new QuestionRecommendationService(
                 repository,
-                new QuestionRecommendationProperties(5, 5, 5, 5_000, null, null),
+                new QuestionRecommendationProperties(5, 5, 5, 5_000, true, null),
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -82,9 +82,7 @@ class QuestionRecommendationServiceTest {
                 5,
                 5,
                 5_000,
-                new QuestionRecommendationProperties.Gemini(
-                        "api-key", "gemini-test", Duration.ofSeconds(1), Duration.ofSeconds(2)
-                ),
+                true,
                 new QuestionRecommendationProperties.Sqs(
                         true, "queue-url", "dead-letter-queue-url", "ap-northeast-2", 1_000, 1,
                         Duration.ofMinutes(3)

@@ -46,12 +46,12 @@ export interface ButtonProps extends ComponentProps<'button'>, ButtonVariants {}
 /**
  * `<button>`이 아닌 요소에 버튼 스타일을 입힐 때 사용한다.
  *
- * 의미상 링크인 버튼(GitHub 로그인, 서비스 바로가기, 메인 홈으로 이동 등)은
+ * 의미상 링크인 버튼(서비스 바로가기, 메인 홈으로 이동 등)은
  * `<a>`나 라우터의 `Link`로 렌더해야 하므로 스타일만 따로 가져간다.
  *
  * ```tsx
- * <a href="https://github.com/login/oauth" className={getButtonStyles({ size: 'lg' })}>
- *   GitHub 계정으로 시작하기
+ * <a href="https://github.com" className={getButtonStyles({ size: 'lg' })}>
+ *   GitHub 바로가기
  * </a>
  * ```
  */

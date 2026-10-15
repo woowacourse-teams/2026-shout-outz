@@ -138,27 +138,61 @@ http://localhost:8080/docs/openapi3.yaml
 
 ## 질문 AI 추천
 
-질문(`feedType=QUESTION`)은 생성 후 Outbox를 거쳐 SQS 작업 큐로 전달하고, Worker가 Gemini를 호출해 연관 질문 5개를 저장한다. 질문 제목이나 본문을 수정하면 새 추천 작업을 등록한다. 생성·수정 요청은 추천 생성을 기다리지 않으며 응답의 `recommendationStatus`는 `PENDING`, `PROCESSING`, `READY`, `FAILED` 중 하나다.
+질문(`feedType=QUESTION`)은 생성 후 Outbox를 거쳐 SQS 작업 큐로 전달하고, Worker가 Gemini를 먼저 호출해 연관 질문 5개를 저장한다. Gemini 호출이나 추천 응답 검증에 실패하면 같은 작업에서 OpenAI를 한 번 호출한다. 질문 제목이나 본문을 수정하면 새 추천 작업을 등록한다. 생성·수정 요청은 추천 생성을 기다리지 않으며 응답의 `recommendationStatus`는 `PENDING`, `PROCESSING`, `READY`, `FAILED` 중 하나다.
 
 - `GET /api/v1/feeds/{feedId}`의 `relatedQuestionRecommendations`에는 추천 상태와 추천 질문 목록이 담긴다. 생성 완료 전에는 `items`가 빈 배열이고, 완료되면 최대 5개가 제공된다.
 - `POST /api/v1/feeds`와 `PUT /api/v1/feeds/{feedId}`는 질문 추천 작업이 활성화된 환경에서 `recommendationStatus`를 반환한다. 질문 제목이나 본문이 바뀌지 않은 수정은 기존 상태를 유지한다.
 - `GET /api/v1/feeds?type=QUESTION`은 실제 질문을 기본 20개 단위로 페이지네이션한다. `meta.recommendationSlots`에는 실제 질문 5개마다 하나씩 보여줄 추천 질문과 `afterFeedId`가 담긴다. 준비된 추천이 없으면 슬롯은 생략된다. 추천 슬롯은 피드 `data`, 커서, `totalCount`에 포함되지 않는다.
 - 추천 목록 슬롯은 페이지 응답 시점에 READY 상태인 추천 질문 중 무작위로 채운다. 다음 페이지를 요청해도 앞 페이지 응답은 바뀌지 않는다. 새로고침이나 첫 페이지 재조회에서는 슬롯이 달라질 수 있다.
 
-추천 작업을 실행할 환경에는 Gemini 키와 SQS 큐 설정이 필요하다. 기본 값은 비활성화라서 로컬에서 작업자까지 실행하려면 다음 환경 변수를 설정한다.
+추천 작업을 실행할 환경에는 Gemini 키, OpenAI 키와 SQS 큐 설정이 필요하다. SQS 기본값은 비활성화이며, 활성화하면 Gemini 키를 검사한다. 자동 대체는 기본 활성화이므로 OpenAI 키도 필요하고 누락 시 기동에 실패한다. 로컬에서 작업자까지 실행하려면 다음 환경 변수를 설정한다.
 
 ```bash
 QUESTION_RECOMMENDATION_SQS_ENABLED=true
 QUESTION_RECOMMENDATION_QUEUE_URL=<work-queue-url>
 QUESTION_RECOMMENDATION_DLQ_URL=<dead-letter-queue-url>
 GEMINI_API_KEY=<gemini-api-key>
+OPENAI_API_KEY=<openai-api-key>
+QUESTION_RECOMMENDATION_FALLBACK_ENABLED=true
 ```
 
 작업 큐에는 DLQ redrive 정책을 연결하고 `maxReceiveCount`를 `QUESTION_RECOMMENDATION_MAX_GENERATION_ATTEMPTS` 기본값인 5와 맞춘다. 
 큐와 DLQ는 같은 AWS 리전에 두고, 실행 역할에 작업 큐 `SendMessage`, `ReceiveMessage`, `DeleteMessage`, `ChangeMessageVisibility`와 DLQ `ReceiveMessage`, `DeleteMessage` 권한을 부여한다. 
-Gemini 키는 환경 변수나 비밀 저장소로 주입하고 저장소에 기록하지 않는다.
+API 키는 환경 변수나 비밀 저장소로 주입하고 저장소에 기록하지 않는다. 기존 `GEMINI_*` 환경 변수는 그대로 사용한다. YAML 설정 경로는 `question-recommendation.gemini`에서 `llm.gemini`로 이동했고, OpenAI 설정은 `llm.openai`에 있다. 추천 전용 프롬프트·응답 검증은 추천 생성기에, HTTP 요청과 제공자 응답 해석은 `common.llm`에 둔다.
 
-생성 시도 횟수는 `question.recommendation.generation.count` 지표로, 생성 소요 시간은 `question.recommendation.generation` 타이머로 확인할 수 있다. 두 지표 모두 `outcome` 태그를 제공한다.
+SQS poller는 한 번에 가져온 메시지를 순서대로 처리한다. 기본 `QUESTION_RECOMMENDATION_SQS_MAX_MESSAGES_PER_POLL=1`을 유지한다. 배치를 크게 잡으면 뒤 메시지의 가시성 시간이 앞 작업 처리에 쓰일 수 있다.
+
+| 환경 변수 | 기본값 | 용도 |
+| --- | --- | --- |
+| `QUESTION_RECOMMENDATION_FALLBACK_ENABLED` | `true` | Gemini 실패 시 OpenAI 호출. `false`이면 Gemini만 사용하며 OpenAI 키 없이 기동 가능 |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | 기본 제공자 모델 |
+| `GEMINI_CONNECT_TIMEOUT` / `GEMINI_READ_TIMEOUT` | `5s` / `45s` | Gemini 연결·응답 제한 시간 |
+| `OPENAI_MODEL` | `gpt-6-luna` | 대체 제공자 모델 |
+| `OPENAI_REASONING_EFFORT` | `none` | OpenAI 추론 예산. 모델 변경 시 해당 값과 Structured Outputs 지원 여부 확인 |
+| `OPENAI_CONNECT_TIMEOUT` / `OPENAI_READ_TIMEOUT` | `5s` / `45s` | OpenAI 연결·응답 제한 시간 |
+| `QUESTION_RECOMMENDATION_SQS_MAX_MESSAGES_PER_POLL` | `1` | poller가 한 번에 가져올 메시지 수. 순차 처리하므로 기본값 유지 권장 |
+| `QUESTION_RECOMMENDATION_SQS_VISIBILITY_TIMEOUT` | `3m` | SQS 메시지 기본 가시성 제한 시간 |
+
+### 장애와 재시도
+
+- 한 번의 생성 시도에서 Gemini 최대 1회, OpenAI 최대 1회를 호출한다. 추천 5개는 한 요청에서 생성한다.
+- 두 제공자가 모두 실패하면 재시도 가능한 오류가 있는지 판별한다. HTTP 408·429·5xx, 통신 장애, 불완전하거나 잘못된 추천 응답은 재시도 대상으로 취급한다. 단, OpenAI의 `insufficient_quota`와 `billing_hard_limit_reached`는 HTTP 429여도 영구 오류다. 인증·권한 등 영구 오류만 남으면 DB에 `FAILED`를 기록하고 작업 큐 메시지를 삭제한다.
+- 재시도는 SQS 메시지의 visibility timeout으로 예약한다. 워커 스레드에서 잠들거나 HTTP 호출 안에서 재시도를 중첩하지 않는다. 지연은 5·10·20·40초 순으로 증가하고 최대 20%의 무작위 지연을 추가하며, 기본 상한은 300초다. 제공자의 `Retry-After` 또는 Gemini `RetryInfo`가 더 길면 첫 수신 시점부터 12시간인 SQS 상한의 남은 시간까지만 기다린다.
+- 최대 생성 시도 후에는 SQS redrive 정책에 따라 DLQ로 이동하고, DLQ poller가 DB에 `FAILED`와 `MAX_RETRIES_EXCEEDED`를 기록한 뒤 메시지를 삭제한다. 따라서 DLQ가 비어 있어도 실패한 작업은 DB에 남을 수 있다.
+- SQS가 활성화되면 애플리케이션은 Gemini와 fallback OpenAI의 제한 시간 합이 작업 선점 시간 180초와 설정한 SQS visibility timeout보다 짧은지 확인한다. 둘 중 하나 이상이면 애플리케이션 기동에 실패한다.
+
+제공자 호출 실패 로그에는 `provider`, `model`, `httpStatus`, `errorCode`, `retryAfterSeconds`, `fallback`이 남는다. `traceId=recommendation-{feedId}-{generation}-{attempts}`로 워커의 실패·성공 로그를 연결할 수 있다. API 키, 질문, 응답 본문과 제공자가 반환한 원문 오류 메시지는 로그에 기록하지 않는다. 이 로그는 `prod` 프로필의 `/var/log/shout-outz/app.log`에 저장되며 CloudWatch Agent를 적용한 환경에서는 기존 앱 로그 그룹으로 수집된다.
+
+생성 시도 횟수는 `question.recommendation.generation.count` 지표로, 생성 소요 시간은 `question.recommendation.generation` 타이머로 확인할 수 있다. 두 지표 모두 `outcome` 태그를 제공한다. 현재 CloudWatch Prometheus 수집 설정은 HTTP·DB 커넥션 지표만 허용하므로 추천 지표를 장기 보관하려면 수집 필터와 metric declaration도 별도로 추가해야 한다.
+
+### OpenAI 결제와 서버 적용
+
+1. [OpenAI Platform](https://platform.openai.com/)에서 프로젝트를 만들고 API 결제 수단·크레딧을 설정한 뒤 해당 프로젝트의 API 키를 발급한다. 결제 활성화와 계정별 모델 접근 권한은 운영자가 확인한다.
+2. EC2의 `/opt/shout-outz/shout-outz.env`에 `OPENAI_API_KEY`를 추가한다. 모델·제한 시간은 위 기본값을 사용하거나 환경 변수로 지정한다. Gemini 키도 유지한다.
+3. 새 버전을 배포하고 서비스를 재시작한다. 재시작만으로 이전 버전에 OpenAI 기능이 추가되지는 않는다. 키가 아직 준비되지 않았으면 배포 전에 `QUESTION_RECOMMENDATION_FALLBACK_ENABLED=false`로 설정해 Gemini만 사용한다.
+4. 배포 후 질문을 등록해 `PENDING → PROCESSING → READY` 전환을 확인한다. 실제 Gemini 장애 중에는 같은 traceId에서 Gemini 실패와 `provider=OPENAI, fallback=true` 완료 로그를 확인한다. 실 API 검증은 실제 사용료가 발생하므로 자동 테스트는 외부 HTTP 호출을 모의한다.
+
+기본 모델은 [GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna), 요청 방식은 Responses API의 Structured Outputs다. `store=false`, `reasoning.effort=none`, 출력 토큰 상한 4,096으로 요청한다. 2026-10-15에 확인한 [공식 Standard 요금](https://developers.openai.com/api/docs/pricing)은 짧은 컨텍스트 기준 입력 100만 토큰당 $0.10, 출력 100만 토큰당 $0.50이다. 예를 들어 입력 1,000토큰·출력 3,000토큰을 가정하면 OpenAI 호출 1회는 약 $0.0016, 1,000회는 약 $1.60이다. 실제 토큰 수를 측정한 견적은 아니며 캐시 비용·세금·환율·Gemini 비용은 별도다. Gemini 성공 시 OpenAI는 호출하지 않고, 두 제공자 실패 시 재시도마다 호출 비용이 추가될 수 있다.
 
 ### API 문서 작성 규칙
 

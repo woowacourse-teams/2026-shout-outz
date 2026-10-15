@@ -27,24 +27,33 @@ aws:
     public-base-url: ${AWS_CLOUDFRONT_PUBLIC_BASE_URL}
 
 question-recommendation:
-  count: ${QUESTION_RECOMMENDATION_COUNT}
-  max-generation-attempts: ${QUESTION_RECOMMENDATION_MAX_GENERATION_ATTEMPTS}
-  max-outbox-attempts: ${QUESTION_RECOMMENDATION_MAX_OUTBOX_ATTEMPTS}
-  outbox-poll-interval-millis: ${QUESTION_RECOMMENDATION_OUTBOX_POLL_INTERVAL_MILLIS}
-  outbox-initial-delay-millis: ${QUESTION_RECOMMENDATION_OUTBOX_INITIAL_DELAY_MILLIS}
-  gemini:
-    api-key: ${GEMINI_API_KEY}
-    model: ${GEMINI_MODEL}
-    connect-timeout: ${GEMINI_CONNECT_TIMEOUT}
-    read-timeout: ${GEMINI_READ_TIMEOUT}
+  count: ${QUESTION_RECOMMENDATION_COUNT:5}
+  max-generation-attempts: ${QUESTION_RECOMMENDATION_MAX_GENERATION_ATTEMPTS:5}
+  max-outbox-attempts: ${QUESTION_RECOMMENDATION_MAX_OUTBOX_ATTEMPTS:5}
+  outbox-poll-interval-millis: ${QUESTION_RECOMMENDATION_OUTBOX_POLL_INTERVAL_MILLIS:5000}
+  outbox-initial-delay-millis: ${QUESTION_RECOMMENDATION_OUTBOX_INITIAL_DELAY_MILLIS:1000}
+  fallback-enabled: ${QUESTION_RECOMMENDATION_FALLBACK_ENABLED:true}
   sqs:
-    enabled: ${QUESTION_RECOMMENDATION_SQS_ENABLED}
-    queue-url: ${QUESTION_RECOMMENDATION_QUEUE_URL}
-    dead-letter-queue-url: ${QUESTION_RECOMMENDATION_DLQ_URL}
+    enabled: ${QUESTION_RECOMMENDATION_SQS_ENABLED:false}
+    queue-url: ${QUESTION_RECOMMENDATION_QUEUE_URL:}
+    dead-letter-queue-url: ${QUESTION_RECOMMENDATION_DLQ_URL:}
     region: ${AWS_REGION}
-    poll-interval-millis: ${QUESTION_RECOMMENDATION_SQS_POLL_INTERVAL_MILLIS}
-    max-messages-per-poll: ${QUESTION_RECOMMENDATION_SQS_MAX_MESSAGES_PER_POLL}
-    visibility-timeout: ${QUESTION_RECOMMENDATION_SQS_VISIBILITY_TIMEOUT}
+    poll-interval-millis: ${QUESTION_RECOMMENDATION_SQS_POLL_INTERVAL_MILLIS:1000}
+    max-messages-per-poll: ${QUESTION_RECOMMENDATION_SQS_MAX_MESSAGES_PER_POLL:1}
+    visibility-timeout: ${QUESTION_RECOMMENDATION_SQS_VISIBILITY_TIMEOUT:3m}
+
+llm:
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-3.8-flash}
+    connect-timeout: ${GEMINI_CONNECT_TIMEOUT:5s}
+    read-timeout: ${GEMINI_READ_TIMEOUT:45s}
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    model: ${OPENAI_MODEL:gpt-6-luna}
+    connect-timeout: ${OPENAI_CONNECT_TIMEOUT:5s}
+    read-timeout: ${OPENAI_READ_TIMEOUT:45s}
+    reasoning-effort: ${OPENAI_REASONING_EFFORT:none}
 
 github:
   oauth:

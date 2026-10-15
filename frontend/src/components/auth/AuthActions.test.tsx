@@ -42,10 +42,7 @@ describe('AuthActions', () => {
 
     await user.click(await screen.findByRole('button', { name: '로그인' }));
 
-    expect(await screen.findByRole('link', { name: 'GitHub 계정으로 시작하기' })).toHaveAttribute(
-      'href',
-      'http://localhost/oauth2/authorization/github',
-    );
+    expect(await screen.findByRole('button', { name: 'GitHub 계정으로 시작하기' })).toBeEnabled();
   });
 
   it('가입이 필요한 사용자를 가입 페이지로 이동시킨다', async () => {

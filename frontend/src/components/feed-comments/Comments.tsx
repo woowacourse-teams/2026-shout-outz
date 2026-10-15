@@ -24,8 +24,8 @@ import { LinkifiedText } from '@/components/LinkifiedText';
 import { LinkPreview } from '@/components/feeds/LinkPreview';
 import { formatDateTime } from '@/utils/date';
 import { getApiErrorMessage } from '@/utils/error';
-import { getGithubLoginUrl } from '@/utils/auth';
-import { analytics, toPathPattern } from '@/utils/analytics';
+import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
+import { analytics } from '@/utils/analytics';
 import {
   IconCornerDownRight,
   IconPencil,
@@ -286,18 +286,9 @@ function CommentList({
       ) : (
         <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
           {itemLabel}을 작성하려면{' '}
-          <a
-            className="text-primary-600 underline"
-            href={getGithubLoginUrl()}
-            onClick={() =>
-              analytics.track({
-                name: 'login_started',
-                from: toPathPattern(window.location.pathname),
-              })
-            }
-          >
+          <GithubLoginButton className="text-primary-600 underline">
             GitHub 로그인
-          </a>
+          </GithubLoginButton>
           이 필요합니다.
         </p>
       )}

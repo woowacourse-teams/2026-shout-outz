@@ -17,8 +17,15 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles({"test", "loadtest"})
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles({"loadtest", "test"})
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {
+                "spring.datasource.url=jdbc:postgresql://localhost:5432/shoutoutz",
+                "spring.datasource.username=shoutoutz",
+                "spring.datasource.password=localdev"
+        }
+)
 class LoadTestLoginAcceptanceTest {
 
     private static final String SESSION_COOKIE = "JSESSIONID";

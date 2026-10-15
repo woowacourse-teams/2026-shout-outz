@@ -4,13 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { AuthSheet } from '@/components/auth/AuthSheet';
 
 describe('AuthSheet', () => {
-  it('GitHub 로그인은 서버 OAuth 주소로 나가는 링크다', () => {
+  it('GitHub 로그인을 시작하는 버튼을 보여준다', () => {
     render(<AuthSheet onClose={jest.fn()} />);
 
-    expect(screen.getByRole('link', { name: 'GitHub 계정으로 시작하기' })).toHaveAttribute(
-      'href',
-      'http://localhost/oauth2/authorization/github',
-    );
+    expect(screen.getByRole('button', { name: 'GitHub 계정으로 시작하기' })).toBeEnabled();
   });
 
   it('둘러보기를 고르면 그냥 닫는다', async () => {
