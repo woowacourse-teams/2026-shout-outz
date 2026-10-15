@@ -10,8 +10,8 @@ public record QuestionRecommendationProperties(
         @DefaultValue("5") int maxGenerationAttempts,
         @DefaultValue("5") int maxOutboxAttempts,
         @DefaultValue("5000") long outboxPollIntervalMillis,
-        @DefaultValue Gemini gemini,
-        @DefaultValue Sqs sqs
+        @DefaultValue("true") boolean fallbackEnabled,
+        Sqs sqs
 ) {
 
     public QuestionRecommendationProperties {
@@ -21,8 +21,6 @@ public record QuestionRecommendationProperties(
         if (maxGenerationAttempts < 1 || maxOutboxAttempts < 1) {
             throw new IllegalArgumentException("질문 추천 재시도 횟수는 1 이상이어야 합니다.");
         }
-        gemini = gemini == null ? new Gemini(null, "gemini-3.8-flash", Duration.ofSeconds(5),
-                Duration.ofSeconds(45)) : gemini;
         sqs = sqs == null ? new Sqs(false, null, null, "ap-northeast-2", 1_000, 1,
                 Duration.ofMinutes(3)) : sqs;
         if (sqs.enabled() && (isBlank(sqs.queueUrl()) || isBlank(sqs.deadLetterQueueUrl()))) {
@@ -30,21 +28,10 @@ public record QuestionRecommendationProperties(
                     "SQS 질문 추천을 활성화하려면 queue-url과 dead-letter-queue-url을 설정해야 합니다."
             );
         }
-        if (sqs.enabled() && isBlank(gemini.apiKey())) {
-            throw new IllegalArgumentException("SQS 질문 추천을 활성화하려면 Gemini API 키를 설정해야 합니다.");
-        }
     }
 
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
-    }
-
-    public record Gemini(
-            String apiKey,
-            @DefaultValue("gemini-3.8-flash") String model,
-            @DefaultValue("5s") Duration connectTimeout,
-            @DefaultValue("45s") Duration readTimeout
-    ) {
     }
 
     public record Sqs(
