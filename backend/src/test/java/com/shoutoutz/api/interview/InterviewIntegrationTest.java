@@ -17,6 +17,7 @@ import com.shoutoutz.api.interview.application.InterviewService;
 import com.shoutoutz.api.interview.domain.Interview;
 import com.shoutoutz.api.interview.presentation.dto.request.InterviewSaveRequest;
 import com.shoutoutz.api.user.domain.account.UserRole;
+import com.shoutoutz.api.visitor.domain.VisitorKey;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,7 @@ import java.util.List;
 @AutoConfigureRestDocs
 @Transactional
 class InterviewIntegrationTest {
+    private static final VisitorKey VISITOR = new VisitorKey("a".repeat(64));
     @Autowired JdbcTemplate jdbc;
     @Autowired jakarta.persistence.EntityManager entityManager;
     @Autowired MockMvc mvc;
@@ -108,19 +110,19 @@ class InterviewIntegrationTest {
                         .requestAttr(sessionKey(), admin()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("PUBLISHED"))
                 .andDo(adminDocument("interview-publish", "인터뷰 발행", false, true));
-        var publishedAt = queryService.find(draft.getId()).publishedAt();
+        var publishedAt = queryService.find(draft.getId(), null, VISITOR).publishedAt();
         mvc.perform(put("/api/v1/admin/interviews/{interviewId}", draft.getId())
                         .requestAttr(sessionKey(), admin()).contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody("수정된 인터뷰", "수정 본문")))
                 .andExpect(status().isOk()).andDo(adminDocument("interview-update", "인터뷰 전체 수정", true, true));
-        assertThat(queryService.find(draft.getId()).title()).isEqualTo("수정된 인터뷰");
-        assertThat(queryService.find(draft.getId()).publishedAt()).isEqualTo(publishedAt);
+        assertThat(queryService.find(draft.getId(), null, VISITOR).title()).isEqualTo("수정된 인터뷰");
+        assertThat(queryService.find(draft.getId(), null, VISITOR).publishedAt()).isEqualTo(publishedAt);
         mvc.perform(post("/api/v1/admin/interviews/{interviewId}/unpublish", draft.getId())
                         .requestAttr(sessionKey(), admin()))
                 .andExpect(status().isOk()).andDo(adminDocument("interview-unpublish", "인터뷰 발행 취소", false, true));
-        assertThatThrownBy(() -> queryService.find(draft.getId())).isInstanceOf(EntityNotFoundException.class);
+        assertThatThrownBy(() -> queryService.find(draft.getId(), null, VISITOR)).isInstanceOf(EntityNotFoundException.class);
         service.publish(draft.getId(), adminId);
-        assertThat(queryService.find(draft.getId()).publishedAt()).isEqualTo(publishedAt);
+        assertThat(queryService.find(draft.getId(), null, VISITOR).publishedAt()).isEqualTo(publishedAt);
         mvc.perform(delete("/api/v1/admin/interviews/{interviewId}", draft.getId())
                         .requestAttr(sessionKey(), admin()))
                 .andExpect(status().isNoContent())
@@ -199,7 +201,7 @@ class InterviewIntegrationTest {
     void 프로필_변경이_인터뷰에_반영된다() {
         long id = service.publish(create().getId(), adminId).getId();
         jdbc.update("UPDATE user_profiles SET display_name = '새 이름' WHERE user_id = ?", intervieweeId);
-        assertThat(queryService.find(id).interviewee().displayName()).isEqualTo("새 이름");
+        assertThat(queryService.find(id, null, VISITOR).interviewee().displayName()).isEqualTo("새 이름");
     }
 
     @Test
@@ -207,12 +209,12 @@ class InterviewIntegrationTest {
         long id = service.publish(create().getId(), adminId).getId();
         reactionService.add(id, intervieweeId, "LIKE");
         reactionService.add(id, intervieweeId, "LIKE");
-        assertThat(queryService.find(id, intervieweeId).likeCount()).isEqualTo(1);
-        assertThat(queryService.find(id, intervieweeId).likedByMe()).isTrue();
-        assertThat(queryService.find(id).likedByMe()).isFalse();
+        assertThat(queryService.find(id, intervieweeId, VISITOR).likeCount()).isEqualTo(1);
+        assertThat(queryService.find(id, intervieweeId, VISITOR).likedByMe()).isTrue();
+        assertThat(queryService.find(id, null, VISITOR).likedByMe()).isFalse();
         assertThat(queryService.findAll(null, 20, intervieweeId).items().getFirst().likedByMe()).isTrue();
         reactionService.remove(id, intervieweeId, "LIKE");
-        assertThat(queryService.find(id, intervieweeId).likeCount()).isZero();
+        assertThat(queryService.find(id, intervieweeId, VISITOR).likeCount()).isZero();
         assertThatThrownBy(() -> reactionService.remove(id, intervieweeId, "LIKE"))
                 .isInstanceOf(EntityNotFoundException.class);
     }
@@ -232,27 +234,23 @@ class InterviewIntegrationTest {
     }
 
     @Test
-    void 비로그인_조회수를_하루에_한번_집계하고_초안은_집계하지_않는다() throws Exception {
+    void 상세_GET에서_조회수를_집계하고_같은_방문자는_하루에_한번만_반영한다() throws Exception {
         long id = create().getId();
-        mvc.perform(post("/api/v1/interviews/{interviewId}/views", id)).andExpect(status().isNotFound());
-        service.publish(id, adminId);
         var cookie = new jakarta.servlet.http.Cookie("VISITOR_ID", "3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b");
-        mvc.perform(post("/api/v1/interviews/{interviewId}/views", id).cookie(cookie))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.data.viewCount").value(1))
-                .andDo(document("interview-view-record", resource(ResourceSnippetParameters.builder()
-                        .tag("Interview").summary("인터뷰 조회수 기록")
-                        .description("비로그인 포함, 방문자 쿠키와 한국 날짜 기준 하루 한 번 집계한다. 공개 상세 GET은 집계하지 않는다.")
-                        .pathParameters(parameterWithName("interviewId").description("인터뷰 ID"))
-                        .responseFields(fieldWithPath("status").type(STRING).description("응답 상태"),
-                                fieldWithPath("data.viewCount").type(NUMBER).description("반영 후 누적 조회수"))
-                        .build())));
-        mvc.perform(post("/api/v1/interviews/{interviewId}/views", id).cookie(cookie))
-                .andExpect(jsonPath("$.data.viewCount").value(1));
-        var updatedAt = queryService.find(id).updatedAt();
-        mvc.perform(get("/api/v1/interviews/{interviewId}", id)).andExpect(jsonPath("$.data.viewCount").value(1));
-        assertThat(queryService.find(id).updatedAt()).isEqualTo(updatedAt);
+        mvc.perform(get("/api/v1/interviews/{interviewId}", id).cookie(cookie)).andExpect(status().isNotFound());
+        service.publish(id, adminId);
+        var updatedAt = queryService.findAdmin(id, adminId).updatedAt();
+        mvc.perform(get("/api/v1/interviews/{interviewId}", id).cookie(cookie))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.viewCount").value(1));
+        mvc.perform(get("/api/v1/interviews/{interviewId}", id).cookie(cookie))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.viewCount").value(1));
+        assertThat(queryService.findAdmin(id, adminId).updatedAt()).isEqualTo(updatedAt);
+        assertThat(jdbc.queryForObject("SELECT view_count FROM interviews WHERE id = ?", Long.class, id))
+                .isEqualTo(1);
         service.unpublish(id, adminId);
-        mvc.perform(post("/api/v1/interviews/{interviewId}/views", id).cookie(cookie)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/interviews/{interviewId}", id).cookie(cookie)).andExpect(status().isNotFound());
+        assertThat(jdbc.queryForObject("SELECT view_count FROM interviews WHERE id = ?", Long.class, id))
+                .isEqualTo(1);
     }
 
     @Test
@@ -262,7 +260,7 @@ class InterviewIntegrationTest {
                 VALUES (?, 'GITHUB', ?, 'https://avatars.githubusercontent.com/u/123')
                 """, intervieweeId, UUID.randomUUID().toString());
         long id = service.publish(create().getId(), adminId).getId();
-        assertThat(queryService.find(id).interviewee().avatarUrl())
+        assertThat(queryService.find(id, null, VISITOR).interviewee().avatarUrl())
                 .isEqualTo("https://avatars.githubusercontent.com/u/123");
         assertThat(queryService.findAll(null, 20).items().getFirst().interviewee().avatarUrl())
                 .isEqualTo("https://avatars.githubusercontent.com/u/123");
@@ -271,7 +269,7 @@ class InterviewIntegrationTest {
     @Test
     void 저장된_이미지_URL을_다시_보내도_원본_미디어_참조를_유지한다() {
         long id = service.publish(create().getId(), adminId).getId();
-        String publicContent = queryService.find(id).contentMd();
+        String publicContent = queryService.find(id, null, VISITOR).contentMd();
         service.update(id, adminId, request("수정", publicContent));
         var adminView = queryService.findAdmin(id, adminId);
         assertThat(adminView.contentMd()).contains("media://" + imageId);
@@ -317,7 +315,7 @@ class InterviewIntegrationTest {
         mvc.perform(delete("/api/v1/interviews/{interviewId}/reactions/{type}", id, "LIKE")
                         .requestAttr(sessionKey(), authentication))
                 .andExpect(status().isForbidden());
-        assertThat(queryService.find(id).likeCount()).isEqualTo(1);
+        assertThat(queryService.find(id, null, VISITOR).likeCount()).isEqualTo(1);
     }
 
     private Interview create() {
@@ -402,6 +400,7 @@ class InterviewIntegrationTest {
         fields.add(fieldWithPath("data.contentMd").type(STRING).description("이미지 URL로 변환한 Markdown"));
         return document("interview-detail", resource(ResourceSnippetParameters.builder().tag("Interview")
                 .summary("발행된 인터뷰 상세 조회")
+                .description("상세 조회 시 VISITOR_ID 쿠키의 방문자별로 한국 날짜 기준 하루 한 번 조회수를 집계합니다. 응답의 viewCount에 이번 조회가 반영됩니다.")
                 .pathParameters(parameterWithName("interviewId").description("인터뷰 ID"))
                 .responseFields(fields).build()));
     }

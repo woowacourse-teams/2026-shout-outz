@@ -1,15 +1,12 @@
 package com.shoutoutz.api.interview;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 
-import com.shoutoutz.api.interview.application.InterviewAccessService;
 import com.shoutoutz.api.interview.application.InterviewQueryService;
-import com.shoutoutz.api.interview.application.InterviewViewService;
-import com.shoutoutz.api.interview.domain.InterviewViewRepository;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -23,22 +20,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
 @ActiveProfiles("test")
 class InterviewViewIntegrationTest {
     @Autowired JdbcTemplate jdbc;
-    @Autowired InterviewViewService views;
-    @Autowired InterviewAccessService access;
-    @Autowired InterviewViewRepository repository;
     @Autowired InterviewQueryService queryService;
-    @Autowired org.springframework.transaction.PlatformTransactionManager transactionManager;
+    @MockitoBean Clock clock;
     long userId;
     long interviewId;
 
     @BeforeEach
     void setUp() {
+        given(clock.instant()).willReturn(Instant.parse("2026-10-15T12:00:00Z"));
         userId = jdbc.queryForObject("INSERT INTO users(handle, role) VALUES (?, 'ADMIN') RETURNING id", Long.class,
                 "@i" + UUID.randomUUID().toString().replace("-", "").substring(0, 20));
         interviewId = jdbc.queryForObject("""
@@ -71,7 +66,7 @@ class InterviewViewIntegrationTest {
         VisitorKey visitor = new VisitorKey("b".repeat(64));
         List<Callable<Long>> tasks = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
-            tasks.add(() -> views.record(interviewId, visitor).viewCount());
+            tasks.add(() -> queryService.find(interviewId, null, visitor).viewCount());
         }
         assertThat(run(tasks)).containsOnly(1L);
         assertThat(count()).isEqualTo(1);
@@ -84,24 +79,23 @@ class InterviewViewIntegrationTest {
         List<Callable<Long>> tasks = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
             VisitorKey visitor = new VisitorKey("visitor-" + i);
-            tasks.add(() -> views.record(interviewId, visitor).viewCount());
+            tasks.add(() -> queryService.find(interviewId, null, visitor).viewCount());
         }
         run(tasks);
         assertThat(count()).isEqualTo(8);
     }
 
     @Test
-    void 관리자_원본_조회와_공개_상세_조회는_집계하지_않는다() {
+    void 관리자_원본과_목록_조회는_집계하지_않는다() {
         queryService.findAdmin(interviewId, userId);
-        queryService.find(interviewId);
+        queryService.findAll(null, 20);
+        queryService.findAllAdmin(userId, null, 20);
         assertThat(count()).isZero();
     }
 
     private long recordAt(VisitorKey visitor, String timestamp) {
-        var service = new InterviewViewService(access, repository,
-                Clock.fixed(Instant.parse(timestamp), ZoneOffset.UTC));
-        return new TransactionTemplate(transactionManager)
-                .execute(status -> service.record(interviewId, visitor).viewCount());
+        given(clock.instant()).willReturn(Instant.parse(timestamp));
+        return queryService.find(interviewId, null, visitor).viewCount();
     }
 
     private long count() {

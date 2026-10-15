@@ -8,6 +8,8 @@ import com.shoutoutz.api.interview.application.dto.InterviewItem;
 import com.shoutoutz.api.interview.application.dto.InterviewPage;
 import com.shoutoutz.api.interview.domain.InterviewErrorCode;
 import com.shoutoutz.api.interview.domain.Interview;
+import com.shoutoutz.api.interview.domain.InterviewRepository;
+import com.shoutoutz.api.visitor.domain.VisitorKey;
 import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.interview.domain.InterviewReactionRepository;
 import com.shoutoutz.api.interview.domain.InterviewReactionCounts;
@@ -19,7 +21,10 @@ import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
 import com.shoutoutz.api.project.domain.DescriptionMediaReferences;
 import java.net.URI;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -33,9 +38,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class InterviewQueryService {
+    private static final ZoneId VIEW_DATE_ZONE = ZoneId.of("Asia/Seoul");
     private static final InterviewReactionCounts NO_REACTION = new InterviewReactionCounts(0L, false);
     private final InterviewReactionRepository reactionRepository;
     private final InterviewQueryRepository repository;
+    private final InterviewRepository interviewRepository;
+    private final Clock clock;
     private final InterviewAccessService accessService;
     private final MediaUrlResolver mediaUrlResolver;
     private final UserAvatarUrlResolver avatarUrlResolver;
@@ -62,20 +70,21 @@ public class InterviewQueryService {
                 mediaUrlResolver.replaceDescriptionReferences(interview.getContentMd(), contentUrls));
     }
 
-    public InterviewDetailResponse find(long id) {
-        return find(id, null);
-    }
-
-    public InterviewDetailResponse find(long id, Long viewerId) {
+    @Transactional
+    public InterviewDetailResponse find(long id, Long viewerId, VisitorKey visitorKey) {
+        accessService.lockPublished(id);
         InterviewItem item = repository.findPublished(id)
                 .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
+        Instant viewedAt = clock.instant();
+        LocalDate viewedOn = LocalDate.ofInstant(viewedAt, VIEW_DATE_ZONE);
+        long viewCount = interviewRepository.recordView(id, visitorKey, viewedOn, viewedAt);
         Map<Long, URI> urls = contentUrls(item.contentMd());
         Map<Long, String> avatarUrls = resolveAvatarUrls(List.of(item));
         InterviewReactionCounts counts = reactionRepository.findCountsByInterviewId(id, viewerId);
         return new InterviewDetailResponse(item.id(), item.title(), item.summary(),
                 mediaUrlResolver.resolve(item.thumbnailMediaId(), MediaVariant.THUMBNAIL), interviewee(item, avatarUrls),
                 mediaUrlResolver.replaceDescriptionReferences(item.contentMd(), urls),
-                item.publishedAt(), item.createdAt(), item.updatedAt(), counts.likeCount(), counts.likedByMe(), item.commentCount(), item.viewCount());
+                item.publishedAt(), item.createdAt(), item.updatedAt(), counts.likeCount(), counts.likedByMe(), item.commentCount(), viewCount);
     }
 
     private InterviewPage page(String cursor, int size, boolean admin, Long viewerId) {

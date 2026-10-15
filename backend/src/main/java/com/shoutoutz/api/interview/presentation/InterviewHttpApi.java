@@ -7,6 +7,8 @@ import com.shoutoutz.api.interview.application.InterviewQueryService;
 import com.shoutoutz.api.interview.application.dto.InterviewPage;
 import com.shoutoutz.api.interview.presentation.dto.response.InterviewDetailResponse;
 import com.shoutoutz.api.interview.presentation.dto.response.InterviewSummaryResponse;
+import com.shoutoutz.api.visitor.domain.VisitorKey;
+import com.shoutoutz.api.visitor.presentation.Visitor;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +33,8 @@ public class InterviewHttpApi {
 
     @GetMapping("/{interviewId}")
     public SuccessResponse<InterviewDetailResponse> find(@PathVariable long interviewId,
-            @LoginUser(required = false) AuthenticatedUser user) {
-        return SuccessResponse.success(queryService.find(interviewId, AuthenticatedUser.userIdOrNull(user)));
+            @LoginUser(required = false) AuthenticatedUser user, @Visitor VisitorKey visitorKey) {
+        return SuccessResponse.success(queryService.find(
+                interviewId, AuthenticatedUser.userIdOrNull(user), visitorKey));
     }
 }
