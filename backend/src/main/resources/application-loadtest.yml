@@ -36,6 +36,12 @@ management:
 link-preview:
   enabled: false
 
+# 커넥션을 오래 잡는 쿼리를 찾기 위해, 실행 시간이 50ms를 넘은 쿼리를 slow_query 로그로 남긴다.
+# 서버 응답 시간 합격선(p95 50ms)과 같은 값이다. 커넥션 대기 시간은 포함되지 않는다.
+slow-query-log:
+  enabled: true
+  threshold-ms: 50
+
 # k6는 HTTP로 붙으므로 Secure를 끈다. HTTPS로 붙는다면 환경 변수로 켠다.
 visitor:
   cookie-secure: ${SESSION_COOKIE_SECURE:false}
