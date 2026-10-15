@@ -26,6 +26,9 @@ import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
+import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationService;
+import com.shoutoutz.api.feed.recommendation.application.dto.RelatedQuestionRecommendations;
+import com.shoutoutz.api.feed.recommendation.domain.QuestionRecommendationStatus;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -79,6 +82,9 @@ class FeedServiceCommandTest {
     @Mock
     private FeedLinkPreviewService linkPreviewService;
 
+    @Mock
+    private QuestionRecommendationService questionRecommendationService;
+
     private FeedService feedService;
 
     @BeforeEach
@@ -93,6 +99,7 @@ class FeedServiceCommandTest {
                 mediaUrlResolver,
                 new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
                 linkPreviewService,
+                questionRecommendationService,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -168,6 +175,78 @@ class FeedServiceCommandTest {
                 .isInstanceOf(BadRequestException.class);
 
         verify(feedRepository, never()).save(any());
+    }
+
+    @Test
+    void 질문을_작성하면_추천_생성을_요청하고_Pending_상태를_반환한다() {
+        FeedSaveRequest request = new FeedSaveRequest(
+                "질문 제목",
+                "질문 본문",
+                List.of(3L),
+                List.of(),
+                false,
+                FeedType.QUESTION
+        );
+        givenWriter(UserType.WOOWACOURSE_CREW);
+        when(categoryRepository.findAllActiveByIds(request.categoryIds(), FeedType.QUESTION))
+                .thenReturn(List.of(generalCategory(3L)));
+        when(feedQueryRepository.findAllMediaByIds(List.of())).thenReturn(List.of());
+        when(feedRepository.save(any(Feed.class))).thenReturn(Feed.reconstitute(
+                10L, 1L, FeedType.QUESTION, request.title(), request.content(), false, NOW, NOW, null
+        ));
+        when(feedQueryRepository.findById(10L)).thenReturn(Optional.of(item(FeedType.QUESTION)));
+        when(questionRecommendationService.requestGeneration(10L, request.title(), request.content()))
+                .thenReturn(QuestionRecommendationStatus.PENDING);
+
+        FeedCommandResponse result = feedService.saveFeed(1L, request);
+
+        assertThat(result.feedType()).isEqualTo(FeedType.QUESTION);
+        assertThat(result.recommendationStatus()).isEqualTo(QuestionRecommendationStatus.PENDING);
+        verify(questionRecommendationService).requestGeneration(10L, "질문 제목", "질문 본문");
+    }
+
+    @Test
+    void 질문_제목이나_본문을_수정하면_추천을_다시_생성한다() {
+        Feed feed = Feed.reconstitute(
+                10L, 1L, FeedType.QUESTION, "기존 제목", "기존 본문", false, NOW, NOW, null
+        );
+        FeedUpdateRequest request = new FeedUpdateRequest("수정 제목", "수정 본문", List.of(3L), List.of());
+        when(feedRepository.findActiveById(10L)).thenReturn(Optional.of(feed));
+        when(categoryRepository.findAllActiveByIds(List.of(3L), FeedType.QUESTION))
+                .thenReturn(List.of(generalCategory(3L)));
+        when(feedQueryRepository.findAllMediaByIds(List.of())).thenReturn(List.of());
+        when(feedRepository.update(any(Feed.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(feedQueryRepository.findById(10L)).thenReturn(Optional.of(item(FeedType.QUESTION)));
+        when(questionRecommendationService.requestGeneration(10L, "수정 제목", "수정 본문"))
+                .thenReturn(QuestionRecommendationStatus.PENDING);
+
+        FeedCommandResponse result = feedService.updateFeed(10L, 1L, request);
+
+        assertThat(result.recommendationStatus()).isEqualTo(QuestionRecommendationStatus.PENDING);
+        verify(questionRecommendationService).requestGeneration(10L, "수정 제목", "수정 본문");
+    }
+
+    @Test
+    void 질문_내용을_수정하지_않으면_기존_추천_상태를_반환한다() {
+        Feed feed = Feed.reconstitute(
+                10L, 1L, FeedType.QUESTION, "기존 제목", "기존 본문", false, NOW, NOW, null
+        );
+        FeedUpdateRequest request = new FeedUpdateRequest("기존 제목", "기존 본문", List.of(3L), List.of());
+        when(feedRepository.findActiveById(10L)).thenReturn(Optional.of(feed));
+        when(categoryRepository.findAllActiveByIds(List.of(3L), FeedType.QUESTION))
+                .thenReturn(List.of(generalCategory(3L)));
+        when(feedQueryRepository.findAllMediaByIds(List.of())).thenReturn(List.of());
+        when(feedRepository.update(any(Feed.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(feedQueryRepository.findById(10L)).thenReturn(Optional.of(item(FeedType.QUESTION)));
+        when(questionRecommendationService.findByFeedId(10L)).thenReturn(Optional.of(
+                new RelatedQuestionRecommendations(QuestionRecommendationStatus.READY, List.of())
+        ));
+
+        FeedCommandResponse result = feedService.updateFeed(10L, 1L, request);
+
+        assertThat(result.recommendationStatus()).isEqualTo(QuestionRecommendationStatus.READY);
+        verify(questionRecommendationService, never()).requestGeneration(anyLong(), any(), any());
+        verify(questionRecommendationService).findByFeedId(10L);
     }
 
     @Test
@@ -350,10 +429,16 @@ class FeedServiceCommandTest {
     }
 
     private FeedItem item() {
+        return item(FeedType.POST);
+    }
+
+    private FeedItem item(FeedType feedType) {
         return new FeedItem(
                 10L,
+                feedType,
                 "제목",
                 "본문",
+                false,
                 new FeedItem.Author(
                         "@zzaekkii",
                         "재키",
@@ -371,9 +456,13 @@ class FeedServiceCommandTest {
                 List.of(new FeedItem.Media(20L, 0)),
                 0L,
                 0L,
+                0L,
+                false,
+                false,
                 0,
                 NOW,
-                NOW
+                NOW,
+                null
         );
     }
 }

@@ -136,6 +136,30 @@ OpenAPI 원본 YAML은 다음 주소에서 확인할 수 있다.
 http://localhost:8080/docs/openapi3.yaml
 ```
 
+## 질문 AI 추천
+
+질문(`feedType=QUESTION`)은 생성 후 Outbox를 거쳐 SQS 작업 큐로 전달하고, Worker가 Gemini를 호출해 연관 질문 5개를 저장한다. 질문 제목이나 본문을 수정하면 새 추천 작업을 등록한다. 생성·수정 요청은 추천 생성을 기다리지 않으며 응답의 `recommendationStatus`는 `PENDING`, `PROCESSING`, `READY`, `FAILED` 중 하나다.
+
+- `GET /api/v1/feeds/{feedId}`의 `relatedQuestionRecommendations`에는 추천 상태와 추천 질문 목록이 담긴다. 생성 완료 전에는 `items`가 빈 배열이고, 완료되면 최대 5개가 제공된다.
+- `POST /api/v1/feeds`와 `PUT /api/v1/feeds/{feedId}`는 질문 추천 작업이 활성화된 환경에서 `recommendationStatus`를 반환한다. 질문 제목이나 본문이 바뀌지 않은 수정은 기존 상태를 유지한다.
+- `GET /api/v1/feeds?type=QUESTION`은 실제 질문을 기본 20개 단위로 페이지네이션한다. `meta.recommendationSlots`에는 실제 질문 5개마다 하나씩 보여줄 추천 질문과 `afterFeedId`가 담긴다. 준비된 추천이 없으면 슬롯은 생략된다. 추천 슬롯은 피드 `data`, 커서, `totalCount`에 포함되지 않는다.
+- 추천 목록 슬롯은 페이지 응답 시점에 READY 상태인 추천 질문 중 무작위로 채운다. 다음 페이지를 요청해도 앞 페이지 응답은 바뀌지 않는다. 새로고침이나 첫 페이지 재조회에서는 슬롯이 달라질 수 있다.
+
+추천 작업을 실행할 환경에는 Gemini 키와 SQS 큐 설정이 필요하다. 기본 값은 비활성화라서 로컬에서 작업자까지 실행하려면 다음 환경 변수를 설정한다.
+
+```bash
+QUESTION_RECOMMENDATION_SQS_ENABLED=true
+QUESTION_RECOMMENDATION_QUEUE_URL=<work-queue-url>
+QUESTION_RECOMMENDATION_DLQ_URL=<dead-letter-queue-url>
+GEMINI_API_KEY=<gemini-api-key>
+```
+
+작업 큐에는 DLQ redrive 정책을 연결하고 `maxReceiveCount`를 `QUESTION_RECOMMENDATION_MAX_GENERATION_ATTEMPTS` 기본값인 5와 맞춘다. 
+큐와 DLQ는 같은 AWS 리전에 두고, 실행 역할에 작업 큐 `SendMessage`, `ReceiveMessage`, `DeleteMessage`, `ChangeMessageVisibility`와 DLQ `ReceiveMessage`, `DeleteMessage` 권한을 부여한다. 
+Gemini 키는 환경 변수나 비밀 저장소로 주입하고 저장소에 기록하지 않는다.
+
+생성 시도 횟수는 `question.recommendation.generation.count` 지표로, 생성 소요 시간은 `question.recommendation.generation` 타이머로 확인할 수 있다. 두 지표 모두 `outcome` 태그를 제공한다.
+
 ### API 문서 작성 규칙
 
 - 문서 테스트는 각 컨트롤러 테스트 클래스에 작성한다.

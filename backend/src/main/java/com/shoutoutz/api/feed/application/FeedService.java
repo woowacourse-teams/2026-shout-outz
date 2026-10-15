@@ -24,6 +24,10 @@ import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.UserFeedFindRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
+import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationService;
+import com.shoutoutz.api.feed.recommendation.application.dto.QuestionRecommendationSlot;
+import com.shoutoutz.api.feed.recommendation.application.dto.RelatedQuestionRecommendations;
+import com.shoutoutz.api.feed.recommendation.domain.QuestionRecommendationStatus;
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import com.shoutoutz.api.media.domain.MediaStatus;
 import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
@@ -37,7 +41,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +49,6 @@ import org.springframework.transaction.annotation.Transactional;
  * 피드 생성, 조회, 수정, 삭제 흐름 조정
  */
 @Service
-@RequiredArgsConstructor
 public class FeedService {
 
     private final FeedRepository feedRepository;
@@ -57,7 +60,52 @@ public class FeedService {
     private final MediaUrlResolver mediaUrlResolver;
     private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final FeedLinkPreviewService linkPreviewService;
+    private final QuestionRecommendationService questionRecommendationService;
     private final Clock clock;
+
+    @Autowired
+    public FeedService(
+            FeedRepository feedRepository,
+            CategoryRepository categoryRepository,
+            FeedQueryRepository feedQueryRepository,
+            UserRepository userRepository,
+            UserProfileRepository userProfileRepository,
+            FeedCursorCodec feedCursorCodec,
+            MediaUrlResolver mediaUrlResolver,
+            UserAvatarUrlResolver userAvatarUrlResolver,
+            FeedLinkPreviewService linkPreviewService,
+            QuestionRecommendationService questionRecommendationService,
+            Clock clock
+    ) {
+        this.feedRepository = feedRepository;
+        this.categoryRepository = categoryRepository;
+        this.feedQueryRepository = feedQueryRepository;
+        this.userRepository = userRepository;
+        this.userProfileRepository = userProfileRepository;
+        this.feedCursorCodec = feedCursorCodec;
+        this.mediaUrlResolver = mediaUrlResolver;
+        this.userAvatarUrlResolver = userAvatarUrlResolver;
+        this.linkPreviewService = linkPreviewService;
+        this.questionRecommendationService = questionRecommendationService;
+        this.clock = clock;
+    }
+
+    /** 기존 서비스 테스트의 직접 생성을 위한 생성자. */
+    public FeedService(
+            FeedRepository feedRepository,
+            CategoryRepository categoryRepository,
+            FeedQueryRepository feedQueryRepository,
+            UserRepository userRepository,
+            UserProfileRepository userProfileRepository,
+            FeedCursorCodec feedCursorCodec,
+            MediaUrlResolver mediaUrlResolver,
+            UserAvatarUrlResolver userAvatarUrlResolver,
+            FeedLinkPreviewService linkPreviewService,
+            Clock clock
+    ) {
+        this(feedRepository, categoryRepository, feedQueryRepository, userRepository, userProfileRepository,
+                feedCursorCodec, mediaUrlResolver, userAvatarUrlResolver, linkPreviewService, null, clock);
+    }
 
     @Transactional
     public FeedCommandResponse saveFeed(long userId, FeedSaveRequest request) {
@@ -77,10 +125,16 @@ public class FeedService {
         feedRepository.saveCategories(savedFeed.getId(), request.categoryIds());
         feedRepository.saveMedia(savedFeed.getId(), request.mediaIds());
         linkPreviewService.sync(savedFeed.getId(), request.content());
+        QuestionRecommendationStatus recommendationStatus = null;
+        if (request.feedType() == FeedType.QUESTION && questionRecommendationService != null) {
+            recommendationStatus = questionRecommendationService.requestGeneration(
+                    savedFeed.getId(), request.title(), request.content()
+            );
+        }
 
         return toCommandResponse(request.isAnonymous()
                 ? findFeedItem(savedFeed.getId(), userId)
-                : findFeedItem(savedFeed.getId()));
+                : findFeedItem(savedFeed.getId()), recommendationStatus);
     }
 
     @Transactional(readOnly = true)
@@ -141,7 +195,7 @@ public class FeedService {
                             size
                     );
         }
-        return createSlice(page, sort);
+        return createSlice(page, sort, request.type() == FeedType.QUESTION);
     }
 
     @Transactional(readOnly = true)
@@ -197,12 +251,14 @@ public class FeedService {
                             size
                     );
         }
-        return createSlice(page, sort);
+        return createSlice(page, sort, false);
     }
 
     @Transactional
     public FeedCommandResponse updateFeed(long feedId, long userId, FeedUpdateRequest request) {
         Feed feed = findOwnedFeed(feedId, userId);
+        boolean questionContentChanged = !feed.getTitle().equals(request.title())
+                || !feed.getContent().equals(request.content());
         validateCategories(feed.getType(), request.categoryIds());
         validateMedia(request.mediaIds(), userId);
 
@@ -215,9 +271,17 @@ public class FeedService {
         feedRepository.saveCategories(feedId, request.categoryIds());
         feedRepository.saveMedia(feedId, request.mediaIds());
         linkPreviewService.sync(feedId, request.content());
+        QuestionRecommendationStatus recommendationStatus = null;
+        if (updatedFeed.getType() == FeedType.QUESTION && questionRecommendationService != null) {
+            recommendationStatus = questionContentChanged
+                    ? questionRecommendationService.requestGeneration(feedId, request.title(), request.content())
+                    : questionRecommendationService.findByFeedId(feedId)
+                            .map(RelatedQuestionRecommendations::status)
+                            .orElse(null);
+        }
         return toCommandResponse(updatedFeed.isAnonymous()
                 ? findFeedItem(updatedFeed.getId(), userId)
-                : findFeedItem(updatedFeed.getId()));
+                : findFeedItem(updatedFeed.getId()), recommendationStatus);
     }
 
     @Transactional
@@ -232,11 +296,16 @@ public class FeedService {
      */
     private FeedFindAllResult createSlice(
             FeedPage page,
-            FeedSort sort
+            FeedSort sort,
+            boolean includeRecommendationSlots
     ) {
         List<FeedItem> items = page.items();
         Map<Long, java.net.URI> mediaUrls = resolveMediaUrls(items);
         Map<Long, String> userAvatarUrls = resolveUserAvatarUrls(items);
+        List<QuestionRecommendationSlot> slots = includeRecommendationSlots
+                && questionRecommendationService != null
+                ? questionRecommendationService.findListSlots(items)
+                : List.of();
         if (!page.hasNext()) {
             return new FeedFindAllResult(
                     items,
@@ -244,7 +313,8 @@ public class FeedService {
                     false,
                     page.totalCount(),
                     mediaUrls,
-                    userAvatarUrls
+                    userAvatarUrls,
+                    slots
             );
         }
 
@@ -264,23 +334,33 @@ public class FeedService {
                 true,
                 page.totalCount(),
                 mediaUrls,
-                userAvatarUrls
+                userAvatarUrls,
+                slots
         );
     }
 
     private FeedResponse toQueryResponse(FeedItem item) {
+        RelatedQuestionRecommendations recommendations = item.feedType() == FeedType.QUESTION
+                && questionRecommendationService != null
+                ? questionRecommendationService.findByFeedId(item.feedId()).orElse(null)
+                : null;
         return FeedResponse.from(
                 item,
                 resolveMediaUrls(List.of(item)),
-                resolveUserAvatarUrls(List.of(item))
+                resolveUserAvatarUrls(List.of(item)),
+                recommendations
         );
     }
 
-    private FeedCommandResponse toCommandResponse(FeedItem item) {
+    private FeedCommandResponse toCommandResponse(
+            FeedItem item,
+            QuestionRecommendationStatus recommendationStatus
+    ) {
         return FeedCommandResponse.from(
                 item,
                 resolveMediaUrls(List.of(item)),
-                resolveUserAvatarUrls(List.of(item))
+                resolveUserAvatarUrls(List.of(item)),
+                recommendationStatus
         );
     }
 

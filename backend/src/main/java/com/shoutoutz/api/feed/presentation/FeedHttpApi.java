@@ -2,7 +2,6 @@ package com.shoutoutz.api.feed.presentation;
 
 import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
-import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.feed.application.FeedService;
 import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
@@ -11,6 +10,7 @@ import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSuggestionRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
+import com.shoutoutz.api.feed.presentation.dto.response.FeedFindAllMetaResponse;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -48,10 +48,11 @@ public class FeedHttpApi {
                 result.mediaUrls(),
                 result.userAvatarUrls()
         );
-        SliceMetaResponse meta = new SliceMetaResponse(
+        FeedFindAllMetaResponse meta = new FeedFindAllMetaResponse(
                 result.nextCursor(),
                 result.hasNext(),
-                result.totalCount()
+                result.totalCount(),
+                result.recommendationSlots()
         );
 
         return ResponseEntity.ok(SuccessResponse.success(response, meta));

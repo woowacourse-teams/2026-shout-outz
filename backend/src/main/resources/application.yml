@@ -26,6 +26,26 @@ aws:
   cloudfront:
     public-base-url: ${AWS_CLOUDFRONT_PUBLIC_BASE_URL}
 
+question-recommendation:
+  count: ${QUESTION_RECOMMENDATION_COUNT}
+  max-generation-attempts: ${QUESTION_RECOMMENDATION_MAX_GENERATION_ATTEMPTS}
+  max-outbox-attempts: ${QUESTION_RECOMMENDATION_MAX_OUTBOX_ATTEMPTS}
+  outbox-poll-interval-millis: ${QUESTION_RECOMMENDATION_OUTBOX_POLL_INTERVAL_MILLIS}
+  outbox-initial-delay-millis: ${QUESTION_RECOMMENDATION_OUTBOX_INITIAL_DELAY_MILLIS}
+  gemini:
+    api-key: ${GEMINI_API_KEY}
+    model: ${GEMINI_MODEL}
+    connect-timeout: ${GEMINI_CONNECT_TIMEOUT}
+    read-timeout: ${GEMINI_READ_TIMEOUT}
+  sqs:
+    enabled: ${QUESTION_RECOMMENDATION_SQS_ENABLED}
+    queue-url: ${QUESTION_RECOMMENDATION_QUEUE_URL}
+    dead-letter-queue-url: ${QUESTION_RECOMMENDATION_DLQ_URL}
+    region: ${AWS_REGION}
+    poll-interval-millis: ${QUESTION_RECOMMENDATION_SQS_POLL_INTERVAL_MILLIS}
+    max-messages-per-poll: ${QUESTION_RECOMMENDATION_SQS_MAX_MESSAGES_PER_POLL}
+    visibility-timeout: ${QUESTION_RECOMMENDATION_SQS_VISIBILITY_TIMEOUT}
+
 github:
   oauth:
     client-id: ${GITHUB_OAUTH_CLIENT_ID}

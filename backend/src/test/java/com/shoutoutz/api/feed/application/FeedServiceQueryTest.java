@@ -18,6 +18,7 @@ import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.FeedPage;
 import com.shoutoutz.api.feed.application.dto.FeedSort;
 import com.shoutoutz.api.feed.domain.FeedRepository;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.media.application.MediaUrlResolver;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSuggestionRequest;
@@ -31,6 +32,11 @@ import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationService;
+import com.shoutoutz.api.feed.recommendation.application.dto.QuestionRecommendationItem;
+import com.shoutoutz.api.feed.recommendation.application.dto.QuestionRecommendationSlot;
+import com.shoutoutz.api.feed.recommendation.application.dto.RelatedQuestionRecommendations;
+import com.shoutoutz.api.feed.recommendation.domain.QuestionRecommendationStatus;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -67,6 +73,9 @@ class FeedServiceQueryTest {
     @Mock
     private FeedLinkPreviewService linkPreviewService;
 
+    @Mock
+    private QuestionRecommendationService questionRecommendationService;
+
     private FeedCursorCodec cursorCodec;
     private FeedService feedService;
 
@@ -83,6 +92,7 @@ class FeedServiceQueryTest {
                 mediaUrlResolver,
                 new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
                 linkPreviewService,
+                questionRecommendationService,
                 java.time.Clock.systemUTC()
         );
     }
@@ -93,6 +103,66 @@ class FeedServiceQueryTest {
         when(feedQueryRepository.findById(1L)).thenReturn(Optional.of(feed));
 
         assertThat(feedService.findFeed(1L).feedId()).isEqualTo(feed.feedId());
+    }
+
+    @Test
+    void 질문_상세에_추천_상태와_추천_질문을_포함한다() {
+        FeedItem question = feed(1L, "2026-09-11T00:00:00Z", FeedType.QUESTION);
+        List<QuestionRecommendationItem> items = List.of(
+                recommendation(101L),
+                recommendation(102L),
+                recommendation(103L),
+                recommendation(104L),
+                recommendation(105L)
+        );
+        when(feedQueryRepository.findById(1L)).thenReturn(Optional.of(question));
+        when(questionRecommendationService.findByFeedId(1L)).thenReturn(Optional.of(
+                new RelatedQuestionRecommendations(QuestionRecommendationStatus.READY, items)
+        ));
+
+        var result = feedService.findFeed(1L);
+
+        assertThat(result.relatedQuestionRecommendations().status())
+                .isEqualTo(QuestionRecommendationStatus.READY);
+        assertThat(result.relatedQuestionRecommendations().items()).containsExactlyElementsOf(items);
+        verify(questionRecommendationService).findByFeedId(1L);
+    }
+
+    @Test
+    void 질문_목록의_추천_슬롯은_추천_서비스가_계산한_위치를_반환한다() {
+        List<FeedItem> questions = java.util.stream.LongStream.rangeClosed(1L, 10L)
+                .mapToObj(id -> feed(id, "2026-09-11T00:00:00Z", FeedType.QUESTION))
+                .toList();
+        List<QuestionRecommendationSlot> slots = List.of(
+                new QuestionRecommendationSlot(5L, recommendation(201L)),
+                new QuestionRecommendationSlot(10L, recommendation(202L))
+        );
+        FeedFindAllRequest request = new FeedFindAllRequest(
+                FeedSort.LATEST, null, null, null, 10, FeedType.QUESTION
+        );
+        when(feedQueryRepository.findAll(FeedSort.LATEST, null, null, FeedType.QUESTION, null, 10))
+                .thenReturn(new FeedPage(questions, false, 10L));
+        when(questionRecommendationService.findListSlots(questions)).thenReturn(slots);
+
+        FeedFindAllResult result = feedService.findAllFeed(request);
+
+        assertThat(result.items()).containsExactlyElementsOf(questions);
+        assertThat(result.recommendationSlots()).containsExactlyElementsOf(slots);
+        verify(questionRecommendationService).findListSlots(questions);
+    }
+
+    @Test
+    void 일반_피드_목록에는_질문_추천_슬롯을_요청하지_않는다() {
+        FeedFindAllRequest request = new FeedFindAllRequest(
+                FeedSort.LATEST, null, null, null, 2, FeedType.POST
+        );
+        when(feedQueryRepository.findAll(FeedSort.LATEST, null, null, FeedType.POST, null, 2))
+                .thenReturn(new FeedPage(List.of(feed(1L, "2026-09-11T00:00:00Z")), false, 1L));
+
+        FeedFindAllResult result = feedService.findAllFeed(request);
+
+        assertThat(result.recommendationSlots()).isEmpty();
+        verifyNoInteractions(questionRecommendationService);
     }
 
     @Test
@@ -380,11 +450,21 @@ class FeedServiceQueryTest {
     }
 
     private FeedItem feed(long id, String createdAt, long likeCount, long commentCount) {
+        return feed(id, createdAt, likeCount, commentCount, FeedType.POST);
+    }
+
+    private FeedItem feed(long id, String createdAt, FeedType feedType) {
+        return feed(id, createdAt, 0L, 0L, feedType);
+    }
+
+    private FeedItem feed(long id, String createdAt, long likeCount, long commentCount, FeedType feedType) {
         Instant instant = Instant.parse(createdAt);
         return new FeedItem(
                 id,
+                feedType,
                 "제목 " + id,
                 "본문 " + id,
+                false,
                 new FeedItem.Author(
                         "@zzaekkii",
                         "재키",
@@ -397,10 +477,18 @@ class FeedServiceQueryTest {
                 List.of(),
                 likeCount,
                 commentCount,
+                0L,
+                false,
+                false,
                 0,
                 instant,
-                instant
+                instant,
+                null
         );
+    }
+
+    private QuestionRecommendationItem recommendation(long id) {
+        return new QuestionRecommendationItem(id, "추천 제목 " + id, "추천 본문 " + id);
     }
 
     private User user(UserStatus status) {
