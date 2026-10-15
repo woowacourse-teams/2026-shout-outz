@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
+import com.epages.restdocs.apispec.SimpleType;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
@@ -307,8 +308,8 @@ class InterviewIntegrationTest {
                         .requestAttr(sessionKey(), authentication))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("INTERVIEW_USER_FORBIDDEN"))
-                .andDo(document("interview-reaction-inactive-user", resource(ResourceSnippetParameters.builder()
-                        .tag("Interview Reaction").summary("비활성 사용자 반응 변경 거절")
+                .andDo(document("interview-reaction-add-inactive-user", resource(ResourceSnippetParameters.builder()
+                        .tag("Interview Reaction").summary("인터뷰 반응 추가")
                         .pathParameters(parameterWithName("interviewId").description("인터뷰 ID"),
                                 parameterWithName("type").description("LIKE"))
                         .responseFields(com.shoutoutz.api.common.restdocs.RestDocsFields.errorResponse())
@@ -391,7 +392,7 @@ class InterviewIntegrationTest {
         fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 여부"));
         fields.add(fieldWithPath("meta.totalCount").type(NUMBER).description("전체 개수"));
         return document(name, resource(ResourceSnippetParameters.builder().tag("Interview").summary(summary)
-                .queryParameters(parameterWithName("size").optional().description("1~50, 기본 20"),
+                .queryParameters(parameterWithName("size").type(SimpleType.INTEGER).optional().description("1~50, 기본 20"),
                         parameterWithName("cursor").optional().description("다음 커서"))
                 .responseFields(fields).build()));
     }
