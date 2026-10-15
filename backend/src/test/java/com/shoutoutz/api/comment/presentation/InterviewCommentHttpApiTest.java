@@ -31,6 +31,7 @@ import com.shoutoutz.api.comment.presentation.dto.request.InterviewCommentCreate
 import com.shoutoutz.api.comment.presentation.dto.request.InterviewCommentFindRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.InterviewCommentUpdateRequest;
 import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentCreateResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentAuthorResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentDeleteResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentFindResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentFindResponse.Comment;
@@ -78,37 +79,76 @@ class InterviewCommentHttpApiTest {
                                 501L,
                                 "좋은 인터뷰네요.",
                                 new InterviewCommentFindResponse.Author(
-                                        7L, "@author7", "샤라웃 운영팀", 10L, "https://cdn.example.com/media/10/display"),
+                                        7L,
+                                        "@author7",
+                                        "샤라웃 운영팀",
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        10L,
+                                        "https://cdn.example.com/media/10/display"
+                                ),
                                 null,
                                 Instant.parse("2026-09-14T00:00:00Z"),
                                 Instant.parse("2026-09-14T00:00:00Z"),
                                 false,
                                 false,
-                                false
+                                false,
+                                0L,
+                                false,
+                                false,
+                                null
                         ),
                         new Comment(
                                 502L,
                                 "저도 그렇게 생각합니다.",
                                 new InterviewCommentFindResponse.Author(
-                                        8L, "@author8", "재키", 11L, "https://cdn.example.com/media/11/display"),
+                                        8L,
+                                        "@author8",
+                                        "재키",
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        11L,
+                                        "https://cdn.example.com/media/11/display"
+                                ),
                                 501L,
                                 Instant.parse("2026-09-14T00:05:00Z"),
                                 Instant.parse("2026-09-14T00:05:00Z"),
                                 false,
                                 false,
-                                false
+                                false,
+                                0L,
+                                false,
+                                false,
+                                null
                         ),
                         new Comment(
                                 503L,
                                 null,
                                 new InterviewCommentFindResponse.Author(
-                                        9L, "@author9", "이전 작성자", 12L, "https://cdn.example.com/media/12/display"),
+                                        9L,
+                                        "@author9",
+                                        "이전 작성자",
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        12L,
+                                        "https://cdn.example.com/media/12/display"
+                                ),
                                 null,
                                 Instant.parse("2026-09-14T00:10:00Z"),
                                 Instant.parse("2026-09-14T00:10:00Z"),
                                 false,
                                 false,
-                                true
+                                true,
+                                0L,
+                                false,
+                                false,
+                                null
                         )
                 ),
                 new SliceMetaResponse("next-cursor", true, 2L)
@@ -244,17 +284,30 @@ class InterviewCommentHttpApiTest {
                 eq(7L)
         )).willReturn(new InterviewCommentFindResponse(
                 List.of(new Comment(
-                        501L,
-                        "내 댓글",
-                        new InterviewCommentFindResponse.Author(
-                                7L, "@author7", "샤라웃 운영팀", 10L, "https://cdn.example.com/media/10/display"),
-                        null,
-                        Instant.parse("2026-09-14T00:00:00Z"),
-                        Instant.parse("2026-09-14T00:00:00Z"),
-                        true,
-                        false,
-                        false
-                )),
+                                501L,
+                                "내 댓글",
+                                new InterviewCommentFindResponse.Author(
+                                        7L,
+                                        "@author7",
+                                        "샤라웃 운영팀",
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        10L,
+                                        "https://cdn.example.com/media/10/display"
+                                ),
+                                null,
+                                Instant.parse("2026-09-14T00:00:00Z"),
+                                Instant.parse("2026-09-14T00:00:00Z"),
+                                true,
+                                false,
+                                false,
+                                0L,
+                                false,
+                                false,
+                                null
+                        )),
                 new SliceMetaResponse(null, false, 1L)
         ));
 
@@ -287,15 +340,25 @@ class InterviewCommentHttpApiTest {
     void createsComment() throws Exception {
         given(interviewCommentService.create(eq(100L), eq(7L), any(InterviewCommentCreateRequest.class)))
                 .willReturn(new InterviewCommentCreateResponse(
-                        501L,
-                        "좋은 인터뷰네요.",
-                        new InterviewCommentCreateResponse.Author(
-                                7L, "@author7", "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
-                        null,
-                        Instant.parse("2026-09-14T00:00:00Z"),
-                        Instant.parse("2026-09-14T00:00:00Z"),
-                        true
-                ));
+                                501L,
+                                "좋은 인터뷰네요.",
+                                new InterviewCommentAuthorResponse(
+                                        7L,
+                                        "@author7",
+                                        "샤라웃 운영팀",
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        "https://cdn.example.com/media/10/display"
+                                ),
+                                null,
+                                Instant.parse("2026-09-14T00:00:00Z"),
+                                Instant.parse("2026-09-14T00:00:00Z"),
+                                true,
+                                false,
+                                null
+                        ));
 
         mockMvc.perform(post("/api/v1/interviews/{interviewId}/comments", 100L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
@@ -401,16 +464,26 @@ class InterviewCommentHttpApiTest {
                 eq(7L),
                 any(InterviewCommentUpdateRequest.class)
         )).willReturn(new InterviewCommentUpdateResponse(
-                501L,
-                "수정된 댓글입니다.",
-                new InterviewCommentUpdateResponse.Author(
-                        7L, "@author7", "샤라웃 운영팀", "https://cdn.example.com/media/10/display"),
-                null,
-                Instant.parse("2026-09-14T00:00:00Z"),
-                Instant.parse("2026-09-14T00:30:00Z"),
-                true,
-                true
-        ));
+                        501L,
+                        "수정된 댓글입니다.",
+                        new InterviewCommentAuthorResponse(
+                                7L,
+                                "@author7",
+                                "샤라웃 운영팀",
+                                null,
+                                null,
+                                null,
+                                null,
+                                "https://cdn.example.com/media/10/display"
+                        ),
+                        null,
+                        Instant.parse("2026-09-14T00:00:00Z"),
+                        Instant.parse("2026-09-14T00:30:00Z"),
+                        true,
+                        true,
+                        false,
+                        null
+                ));
 
         mockMvc.perform(patch("/api/v1/interviews/{interviewId}/comments/{commentId}", 100L, 501L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,

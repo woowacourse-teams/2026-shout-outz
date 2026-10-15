@@ -1,17 +1,20 @@
 package com.shoutoutz.api.comment.presentation.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.shoutoutz.api.comment.domain.InterviewComment;
+import com.shoutoutz.api.comment.domain.InterviewCommentReactionCounts;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.feed.application.dto.LinkPreview;
+import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 public record InterviewCommentFindResponse(
         List<Comment> comments,
         SliceMetaResponse meta
 ) {
-
     public InterviewCommentFindResponse {
         comments = List.copyOf(comments);
     }
@@ -31,55 +34,29 @@ public record InterviewCommentFindResponse(
             boolean isAnonymous,
             LinkPreview linkPreview
     ) {
-
-        public Comment(
-                Long id,
-                String content,
-                Author author,
-                Long parentId,
-                Instant createdAt,
-                Instant updatedAt,
-                boolean editable,
-                boolean edited,
-                boolean deleted
+        public static Comment from(
+                InterviewComment comment,
+                UserProfile author,
+                String handle,
+                String avatarUrl,
+                Long viewerId,
+                InterviewCommentReactionCounts reactions,
+                LinkPreview preview
         ) {
-            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted,
-                    0L, false, false, null);
-        }
-
-        public Comment(
-                Long id,
-                String content,
-                Author author,
-                Long parentId,
-                Instant createdAt,
-                Instant updatedAt,
-                boolean editable,
-                boolean edited,
-                boolean deleted,
-                long agreeCount,
-                boolean agreedByMe
-        ) {
-            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted,
-                    agreeCount, agreedByMe, false, null);
-        }
-
-        public Comment(
-                Long id,
-                String content,
-                Author author,
-                Long parentId,
-                Instant createdAt,
-                Instant updatedAt,
-                boolean editable,
-                boolean edited,
-                boolean deleted,
-                long agreeCount,
-                boolean agreedByMe,
-                boolean isAnonymous
-        ) {
-            this(id, content, author, parentId, createdAt, updatedAt, editable, edited, deleted,
-                    agreeCount, agreedByMe, isAnonymous, null);
+            boolean owner = Objects.equals(comment.getAuthorId(), viewerId);
+            boolean authorVisible = !comment.isAnonymous() || owner;
+            String content = comment.getContent();
+            if (comment.isDeleted()) {
+                content = null;
+                reactions = new InterviewCommentReactionCounts(0L, false);
+                preview = null;
+            }
+            return new Comment(
+                    comment.getId(), content, Author.from(author, handle, avatarUrl, authorVisible),
+                    comment.getParentId(), comment.getCreatedAt(), comment.getUpdatedAt(),
+                    !comment.isDeleted() && owner, comment.isEdited(), comment.isDeleted(),
+                    reactions.agreeCount(), reactions.agreedByMe(), comment.isAnonymous(), preview
+            );
         }
     }
 
@@ -94,17 +71,15 @@ public record InterviewCommentFindResponse(
             Long avatarImageId,
             String avatarUrl
     ) {
-        public Author(Long userId, String handle, String displayName, Long avatarImageId, String avatarUrl) {
-            this(userId, handle, displayName, null, null, null, null, avatarImageId, avatarUrl);
-        }
-
-        public Author(
-                Long userId,
-                String displayName,
-                Long avatarImageId,
-                String avatarUrl
-        ) {
-            this(userId, null, displayName, null, null, null, null, avatarImageId, avatarUrl);
+        private static Author from(UserProfile profile, String handle, String avatarUrl, boolean visible) {
+            InterviewCommentAuthorResponse author = InterviewCommentAuthorResponse.from(profile, handle, avatarUrl);
+            if (!visible) {
+                return new Author(null, null, null, author.userType(), null, null, author.isCurrent(), null, null);
+            }
+            return new Author(
+                    author.userId(), author.handle(), author.displayName(), author.userType(),
+                    author.track(), author.cohort(), author.isCurrent(), profile.getAvatarImageId(), author.avatarUrl()
+            );
         }
     }
 }

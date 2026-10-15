@@ -54,9 +54,10 @@ public class InterviewCommentRepositoryImpl implements InterviewCommentRepositor
         PageRequest pageRequest = PageRequest.of(0, size + 1);
         List<InterviewCommentEntity> entities;
         if (cursor == null) {
-            entities = interviewCommentJpaRepository.findRootCommentsLatest(interviewId, pageRequest);
             if (sort == InterviewCommentSort.OLDEST) {
                 entities = interviewCommentJpaRepository.findRootCommentsOldest(interviewId, pageRequest);
+            } else {
+                entities = interviewCommentJpaRepository.findRootCommentsLatest(interviewId, pageRequest);
             }
         } else if (sort == InterviewCommentSort.LATEST) {
             entities = interviewCommentJpaRepository.findRootCommentsLatestAfter(

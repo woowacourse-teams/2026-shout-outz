@@ -45,15 +45,6 @@ public class InterviewComment {
             long interviewId,
             long authorId,
             Long parentId,
-            String content
-    ) {
-        return create(interviewId, authorId, parentId, content, false);
-    }
-
-    public static InterviewComment create(
-            long interviewId,
-            long authorId,
-            Long parentId,
             String content,
             boolean anonymous
     ) {
@@ -64,32 +55,6 @@ public class InterviewComment {
                 .content(normalizeContent(content))
                 .anonymous(anonymous)
                 .build();
-    }
-
-    /**
-     * DB에서 꺼내어 재조립하는 경우
-     */
-    public static InterviewComment reconstitute(
-            Long id,
-            Long interviewId,
-            Long authorId,
-            Long parentId,
-            String content,
-            Instant createdAt,
-            Instant updatedAt,
-            Instant deletedAt
-    ) {
-        return reconstitute(
-                id,
-                interviewId,
-                authorId,
-                parentId,
-                content,
-                false,
-                createdAt,
-                updatedAt,
-                deletedAt
-        );
     }
 
     public static InterviewComment reconstitute(

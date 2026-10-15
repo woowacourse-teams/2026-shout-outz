@@ -4,7 +4,6 @@ import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_DEPTH_EX
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_NOT_FOUND;
 import static com.shoutoutz.api.common.exception.code.CommonErrorCode.FORBIDDEN;
 
-import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.comment.application.dto.InterviewCommentCursor;
 import com.shoutoutz.api.comment.application.dto.InterviewCommentPage;
 import com.shoutoutz.api.comment.domain.CommentErrorCode;
@@ -29,15 +28,13 @@ import com.shoutoutz.api.feed.application.FeedLinkPreviewService;
 import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.interview.domain.InterviewErrorCode;
 import com.shoutoutz.api.interview.domain.InterviewRepository;
-import com.shoutoutz.api.notification.application.NotificationService;
+import com.shoutoutz.api.notification.domain.NotificationRepository;
 import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserStatus;
-import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
-import com.shoutoutz.api.user.domain.profile.UserType;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,14 +46,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 인터뷰 댓글의 생성·수정 흐름을 조정한다.
- *
- * 인터뷰 공개 상태와 댓글 정책을 확인하고 댓글, 집계, 링크 미리보기와 알림을 함께 저장한다.
- */
 @Service
 @RequiredArgsConstructor
 public class InterviewCommentService {
+
+    private static final InterviewCommentReactionCounts NO_REACTION = new InterviewCommentReactionCounts(0L, false);
 
     private final InterviewRepository interviewRepository;
     private final InterviewCommentRepository interviewCommentRepository;
@@ -65,7 +59,7 @@ public class InterviewCommentService {
     private final UserRepository userRepository;
     private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final InterviewCommentReactionRepository interviewCommentReactionRepository;
-    private final NotificationService notificationService;
+    private final NotificationRepository notificationRepository;
     private final FeedLinkPreviewService linkPreviewService;
 
     @Transactional
@@ -75,8 +69,8 @@ public class InterviewCommentService {
             InterviewCommentCreateRequest request
     ) {
         validateActiveUser(authorId);
-        validateActiveInterview(interviewId);
-        findParent(interviewId, request.parentId());
+        validatePublishedInterview(interviewId);
+        validateParent(interviewId, request.parentId());
         UserProfile author = findAuthor(authorId);
 
         InterviewComment comment = InterviewComment.create(
@@ -88,35 +82,16 @@ public class InterviewCommentService {
         );
         InterviewComment savedComment = interviewCommentRepository.save(comment);
         linkPreviewService.syncInterviewComment(savedComment.getId(), savedComment.getContent());
-        notificationService.createForInterviewComment(
+        notificationRepository.createForInterviewComment(
                 interviewId,
                 savedComment.getId(),
                 authorId
         );
 
-        return new InterviewCommentCreateResponse(
-                savedComment.getId(),
-                savedComment.getContent(),
-                new InterviewCommentCreateResponse.Author(
-                        author.getUserId(),
-                        handleValue(author.getUserId()),
-                        author.getDisplayName().value(),
-                        author.getUserType(),
-                        trackValue(author),
-                        cohortValue(author),
-                        isCurrent(author),
-                        userAvatarUrlResolver.resolve(
-                                author.getUserId(),
-                                author.getAvatarImageId()
-                        )
-                ),
-                savedComment.getParentId(),
-                savedComment.getCreatedAt(),
-                savedComment.getUpdatedAt(),
-                true,
-                savedComment.isAnonymous(),
-                findInterviewCommentPreview(savedComment.getId())
-        );
+        return InterviewCommentCreateResponse.from(
+                savedComment, author, handleValue(authorId),
+                userAvatarUrlResolver.resolve(authorId, author.getAvatarImageId()),
+                findInterviewCommentPreview(savedComment.getId()));
     }
 
     @Transactional(readOnly = true)
@@ -131,7 +106,6 @@ public class InterviewCommentService {
         InterviewCommentCursor cursor = InterviewCommentCursorCodec.decode(request.cursor());
         validateCursorSort(cursor, request.sort());
 
-        // 1. 루트 댓글 조회
         InterviewCommentPage page = interviewCommentQueryRepository.findRootCommentsPage(
                 interviewId,
                 cursor,
@@ -142,7 +116,6 @@ public class InterviewCommentService {
                 .map(InterviewComment::getId)
                 .toList();
 
-        // 2. 대댓글 조회
         List<InterviewComment> replies = interviewCommentQueryRepository.findReplies(interviewId, rootIds);
         Map<Long, List<InterviewComment>> repliesByParentId = replies.stream()
                 .collect(Collectors.groupingBy(
@@ -151,7 +124,6 @@ public class InterviewCommentService {
                         Collectors.toList()
                 ));
 
-        // 3. 작성자 조회 후 응답 객체 생성
         Map<Long, UserProfile> authors = new HashMap<>();
         List<InterviewComment> orderedComments = new ArrayList<>();
 
@@ -169,14 +141,16 @@ public class InterviewCommentService {
         Map<Long, InterviewCommentReactionCounts> reactionCounts = findReactionCounts(orderedComments, loginUserId);
         Map<Long, LinkPreview> linkPreviews = findInterviewCommentPreviews(orderedComments);
         List<InterviewCommentFindResponse.Comment> comments = orderedComments.stream()
-                .map(comment -> toFindResponse(
-                        comment, loginUserId, authors, handles, avatarUrls, reactionCounts, linkPreviews))
+                .map(comment -> InterviewCommentFindResponse.Comment.from(
+                        comment, authors.get(comment.getAuthorId()), handles.get(comment.getAuthorId()),
+                        avatarUrls.get(comment.getAuthorId()), loginUserId,
+                        reactionCounts.getOrDefault(comment.getId(), NO_REACTION), linkPreviews.get(comment.getId())))
                 .toList();
 
-        // 4. meta 정보: 다음 커서 정보 제공
         String nextCursor = null;
         if (page.hasNext() && !page.items().isEmpty()) {
-            nextCursor = InterviewCommentCursorCodec.encode(toCursor(page.items().getLast(), request.sort()));
+            nextCursor = InterviewCommentCursorCodec.encode(new InterviewCommentCursor(
+                    page.items().getLast().getCreatedAt(), page.items().getLast().getId(), request.sort()));
         }
         return new InterviewCommentFindResponse(
                 comments,
@@ -196,7 +170,7 @@ public class InterviewCommentService {
             InterviewCommentUpdateRequest request
     ) {
         validateActiveUser(authorId);
-        validateActiveInterview(interviewId);
+        validatePublishedInterview(interviewId);
         InterviewComment comment = findComment(interviewId, commentId);
         validateAuthor(comment, authorId);
         UserProfile author = findAuthor(comment.getAuthorId());
@@ -206,30 +180,10 @@ public class InterviewCommentService {
             linkPreviewService.syncInterviewComment(comment.getId(), comment.getContent());
         }
 
-        return new InterviewCommentUpdateResponse(
-                comment.getId(),
-                comment.getContent(),
-                new InterviewCommentUpdateResponse.Author(
-                        author.getUserId(),
-                        handleValue(author.getUserId()),
-                        author.getDisplayName().value(),
-                        author.getUserType(),
-                        trackValue(author),
-                        cohortValue(author),
-                        isCurrent(author),
-                        userAvatarUrlResolver.resolve(
-                                author.getUserId(),
-                                author.getAvatarImageId()
-                        )
-                ),
-                comment.getParentId(),
-                comment.getCreatedAt(),
-                comment.getUpdatedAt(),
-                true,
-                comment.isEdited(),
-                comment.isAnonymous(),
-                findInterviewCommentPreview(comment.getId())
-        );
+        return InterviewCommentUpdateResponse.from(
+                comment, author, handleValue(authorId),
+                userAvatarUrlResolver.resolve(authorId, author.getAvatarImageId()),
+                findInterviewCommentPreview(comment.getId()));
     }
 
     @Transactional
@@ -239,7 +193,7 @@ public class InterviewCommentService {
             long authorId
     ) {
         validateActiveUser(authorId);
-        validateActiveInterview(interviewId);
+        validatePublishedInterview(interviewId);
         InterviewComment comment = findComment(interviewId, commentId);
         validateAuthor(comment, authorId);
 
@@ -257,15 +211,15 @@ public class InterviewCommentService {
                 .orElseThrow(() -> new ForbiddenException(InterviewErrorCode.INTERVIEW_USER_FORBIDDEN));
     }
 
-    private void validateActiveInterview(long interviewId) {
+    private void validatePublishedInterview(long interviewId) {
         interviewRepository.findForUpdate(interviewId)
                 .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND))
                 .validatePublished();
     }
 
-    private InterviewComment findParent(long interviewId, Long parentId) {
+    private void validateParent(long interviewId, Long parentId) {
         if (parentId == null) {
-            return null;
+            return;
         }
 
         InterviewComment parent = interviewCommentRepository.findById(parentId)
@@ -276,35 +230,11 @@ public class InterviewCommentService {
         if (!parent.isRoot()) {
             throw new BadRequestException(COMMENT_DEPTH_EXCEEDED);
         }
-        return parent;
     }
 
     private UserProfile findAuthor(long authorId) {
         return userProfileRepository.findByUserId(authorId)
                 .orElseThrow(() -> new EntityNotFoundException(UserProfileErrorCode.USER_PROFILE_NOT_FOUND));
-    }
-
-    private String trackValue(UserProfile profile) {
-        if (profile.getUserType() != UserType.WOOWACOURSE_CREW || profile.getTrack() == null) {
-            return null;
-        }
-        Track track = profile.getTrack();
-        return track.getValue();
-    }
-
-    private Boolean isCurrent(UserProfile profile) {
-        if (profile.getUserType() != UserType.WOOWACOURSE_CREW || profile.getCohort() == null) {
-            return null;
-        }
-        return profile.getCohort() == Cohort.current();
-    }
-
-    private Short cohortValue(UserProfile profile) {
-        if (profile.getUserType() != UserType.WOOWACOURSE_CREW
-                || profile.getCohort() == null) {
-            return null;
-        }
-        return (short) profile.getCohort().getValue();
     }
 
     private String handleValue(long userId) {
@@ -336,62 +266,12 @@ public class InterviewCommentService {
         }
     }
 
-    private InterviewCommentFindResponse.Comment toFindResponse(
-            InterviewComment comment,
-            Long loginUserId,
-            Map<Long, UserProfile> authors,
-            Map<Long, String> handles,
-            Map<Long, String> avatarUrls,
-            Map<Long, InterviewCommentReactionCounts> reactionCounts,
-            Map<Long, LinkPreview> linkPreviews
-    ) {
-        UserProfile author = authors.computeIfAbsent(comment.getAuthorId(), this::findAuthor);
-        // 삭제된 댓글이 아니며, 작성자가 본인인 경우 수정 가능
-        boolean editable = !comment.isDeleted()
-                && Objects.equals(comment.getAuthorId(), loginUserId);
-        boolean authorVisible = !comment.isAnonymous()
-                || Objects.equals(comment.getAuthorId(), loginUserId);
-        InterviewCommentReactionCounts counts = new InterviewCommentReactionCounts(0L, false);
-        String content = null;
-        LinkPreview preview = null;
-        if (!comment.isDeleted()) {
-            counts = reactionCounts.getOrDefault(comment.getId(), counts);
-            content = comment.getContent();
-            preview = linkPreviews.get(comment.getId());
-        }
-        InterviewCommentFindResponse.Author authorResponse = new InterviewCommentFindResponse.Author(
-                null, null, null, author.getUserType(), null, null, isCurrent(author), null, null);
-        if (authorVisible) {
-            authorResponse = new InterviewCommentFindResponse.Author(
-                    author.getUserId(), handles.get(author.getUserId()), author.getDisplayName().value(),
-                    author.getUserType(), trackValue(author), cohortValue(author), isCurrent(author),
-                    author.getAvatarImageId(), avatarUrls.get(author.getUserId()));
-        }
-        return new InterviewCommentFindResponse.Comment(
-                comment.getId(),
-                content,
-                authorResponse,
-                comment.getParentId(),
-                comment.getCreatedAt(),
-                comment.getUpdatedAt(),
-                editable,
-                comment.isEdited(),
-                comment.isDeleted(),
-                counts.agreeCount(),
-                counts.agreedByMe(),
-                comment.isAnonymous(),
-                preview
-        );
-    }
-
     private Map<Long, LinkPreview> findInterviewCommentPreviews(List<InterviewComment> comments) {
         if (comments.isEmpty()) {
             return Map.of();
         }
-        Map<Long, LinkPreview> previews = linkPreviewService.findByInterviewCommentIds(
-                comments.stream().map(InterviewComment::getId).toList()
-        );
-        return previews;
+        return linkPreviewService.findByInterviewCommentIds(
+                comments.stream().map(InterviewComment::getId).toList());
     }
 
     private LinkPreview findInterviewCommentPreview(long commentId) {
@@ -406,20 +286,10 @@ public class InterviewCommentService {
         if (comments.isEmpty()) {
             return Map.of();
         }
-        Map<Long, InterviewCommentReactionCounts> counts = interviewCommentReactionRepository.findByCommentIds(
-                comments.stream().map(InterviewComment::getId).toList(),
-                loginUserId
-        );
-        return counts;
+        return interviewCommentReactionRepository.findByCommentIds(
+                comments.stream().map(InterviewComment::getId).toList(), loginUserId);
     }
 
-    private InterviewCommentCursor toCursor(InterviewComment comment, InterviewCommentSort sort) {
-        return new InterviewCommentCursor(comment.getCreatedAt(), comment.getId(), sort);
-    }
-
-    /**
-     * cursor 속 정렬 기준과 요청의 sort가 다른 경우
-     */
     private void validateCursorSort(InterviewCommentCursor cursor, InterviewCommentSort sort) {
         if (cursor != null && cursor.sort() != sort) {
             throw new InvalidInputException(CommentErrorCode.MISMATCHED_COMMENT_SORT_AND_CURSOR_SORT);

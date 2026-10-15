@@ -1,14 +1,14 @@
 package com.shoutoutz.api.comment.presentation.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.shoutoutz.api.comment.domain.InterviewComment;
 import com.shoutoutz.api.feed.application.dto.LinkPreview;
-import com.shoutoutz.api.user.domain.profile.UserType;
+import com.shoutoutz.api.user.domain.profile.UserProfile;
 import java.time.Instant;
 
 public record InterviewCommentCreateResponse(
         Long id,
         String content,
-        Author author,
+        InterviewCommentAuthorResponse author,
         Long parentId,
         Instant createdAt,
         Instant updatedAt,
@@ -16,48 +16,23 @@ public record InterviewCommentCreateResponse(
         boolean isAnonymous,
         LinkPreview linkPreview
 ) {
-
-    public InterviewCommentCreateResponse(
-            Long id,
-            String content,
-            Author author,
-            Long parentId,
-            Instant createdAt,
-            Instant updatedAt,
-            boolean editable
-    ) {
-        this(id, content, author, parentId, createdAt, updatedAt, editable, false, null);
-    }
-
-    public InterviewCommentCreateResponse(
-            Long id,
-            String content,
-            Author author,
-            Long parentId,
-            Instant createdAt,
-            Instant updatedAt,
-            boolean editable,
-            boolean isAnonymous
-    ) {
-        this(id, content, author, parentId, createdAt, updatedAt, editable, isAnonymous, null);
-    }
-
-    public record Author(
-            Long userId,
+    public static InterviewCommentCreateResponse from(
+            InterviewComment comment,
+            UserProfile author,
             String handle,
-            String displayName,
-            UserType userType,
-            String track,
-            @JsonInclude(JsonInclude.Include.NON_NULL) Short cohort,
-            Boolean isCurrent,
-            String avatarUrl
+            String avatarUrl,
+            LinkPreview linkPreview
     ) {
-        public Author(Long userId, String handle, String displayName, String avatarUrl) {
-            this(userId, handle, displayName, null, null, null, null, avatarUrl);
-        }
-
-        public Author(Long userId, String displayName, String avatarUrl) {
-            this(userId, null, displayName, null, null, null, null, avatarUrl);
-        }
+        return new InterviewCommentCreateResponse(
+                comment.getId(),
+                comment.getContent(),
+                InterviewCommentAuthorResponse.from(author, handle, avatarUrl),
+                comment.getParentId(),
+                comment.getCreatedAt(),
+                comment.getUpdatedAt(),
+                true,
+                comment.isAnonymous(),
+                linkPreview
+        );
     }
 }

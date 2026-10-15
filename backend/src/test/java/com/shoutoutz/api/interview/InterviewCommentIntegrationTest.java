@@ -101,15 +101,30 @@ class InterviewCommentIntegrationTest {
 
     @Test
     void 익명_작성자는_본인에게만_보이고_알림에서도_숨긴다() {
-        long root = create(authorId, null, true);
+        short cohort = (short) com.shoutoutz.api.cohort.domain.Cohort.current().getValue();
+        jdbc.update("UPDATE user_profiles SET user_type = 'WOOWACOURSE_CREW', track = 'BACKEND', cohort = ? WHERE user_id = ?",
+                cohort, authorId);
+        entityManager.clear();
+        var created = comments.create(interviewId, authorId, new InterviewCommentCreateRequest("익명 댓글", null, true));
+        long root = created.id();
+        assertThat(created.author().track()).isEqualTo("BACKEND");
+        assertThat(created.author().cohort()).isEqualTo(cohort);
+        assertThat(created.author().isCurrent()).isTrue();
+        var updated = comments.update(interviewId, root, authorId, new InterviewCommentUpdateRequest("수정"));
+        assertThat(updated.author()).isEqualTo(created.author());
         var publicComment = comments.findAll(interviewId,
                 new InterviewCommentFindRequest(null, 5, "LATEST"), otherId).comments().getFirst();
         assertThat(publicComment.author().userId()).isNull();
         assertThat(publicComment.author().handle()).isNull();
         assertThat(publicComment.author().displayName()).isNull();
+        assertThat(publicComment.author().track()).isNull();
+        assertThat(publicComment.author().cohort()).isNull();
+        assertThat(publicComment.author().isCurrent()).isTrue();
         var mine = comments.findAll(interviewId,
                 new InterviewCommentFindRequest(null, 5, "LATEST"), authorId).comments().getFirst();
         assertThat(mine.author().userId()).isEqualTo(authorId);
+        assertThat(mine.author().track()).isEqualTo("BACKEND");
+        assertThat(mine.author().cohort()).isEqualTo(cohort);
         assertThat(jdbc.queryForObject("SELECT actor_id FROM notifications WHERE interview_comment_id = ?",
                 Long.class, root)).isNull();
     }

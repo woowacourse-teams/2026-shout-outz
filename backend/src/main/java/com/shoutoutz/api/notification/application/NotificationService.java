@@ -85,11 +85,6 @@ public class NotificationService {
         notificationRepository.createForFeedComment(feedId, commentId, actorId);
     }
 
-    @Transactional
-    public void createForInterviewComment(long interviewId, long commentId, long actorId) {
-        notificationRepository.createForInterviewComment(interviewId, commentId, actorId);
-    }
-
     private void validateSize(int size) {
         if (size < MIN_SIZE || size > MAX_SIZE) {
             throw new InvalidInputException(NotificationErrorCode.INVALID_NOTIFICATION_SIZE);
