@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { IconHeart, IconHeartFilled } from '@tabler/icons-react';
 
@@ -24,10 +24,13 @@ export function ProjectLikeButton({
     mutationFn: (active: boolean) => setProjectLike(slug, active),
   });
 
-  useEffect(() => {
+  // 서버 값이 바뀌면 렌더 중에 로컬 상태를 맞춘다. effect로 맞추면 한 번 더 렌더된다.
+  const [synced, setSynced] = useState({ likeCount, likedByMe });
+  if (synced.likeCount !== likeCount || synced.likedByMe !== likedByMe) {
+    setSynced({ likeCount, likedByMe });
     setCount(likeCount);
     setLiked(likedByMe);
-  }, [likeCount, likedByMe]);
+  }
 
   const toggle = async () => {
     if (!requireAuthentication() || mutation.isPending) return;
