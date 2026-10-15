@@ -46,6 +46,9 @@ import java.util.List;
 class InterviewIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired MockMvc mvc;
+    @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("requestMappingHandlerMapping")
+    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping handlerMapping;
     @Autowired InterviewService service;
     @Autowired com.shoutoutz.api.interview.application.InterviewReactionService reactionService;
     @Autowired InterviewQueryService queryService;
@@ -272,6 +275,17 @@ class InterviewIntegrationTest {
         assertThat(adminView.contentMd()).contains("media://" + imageId);
         assertThat(adminView.previewContentMd()).contains("https://cdn.example.com/");
         assertThat(adminView.thumbnailUrl()).isNotNull();
+    }
+
+    @Test
+    void 인터뷰_API는_관리자와_공개_경로_모두_interviews를_사용한다() {
+        var paths = handlerMapping.getHandlerMethods().entrySet().stream()
+                .filter(entry -> entry.getValue().getBeanType().getSimpleName().startsWith("Interview"))
+                .flatMap(entry -> entry.getKey().getPatternValues().stream())
+                .toList();
+
+        assertThat(paths).isNotEmpty().allSatisfy(path ->
+                assertThat(path).matches("/api/v1/(admin/)?interviews(/.*)?"));
     }
 
     private Interview create() {

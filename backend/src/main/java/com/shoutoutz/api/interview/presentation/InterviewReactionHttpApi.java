@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/interview/{interviewId}/reactions")
+@RequestMapping("/api/v1/interviews/{interviewId}/reactions")
 @RequiredArgsConstructor
 public class InterviewReactionHttpApi {
 

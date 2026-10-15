@@ -41,7 +41,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class InterviewReactionHttpApiTest {
 
     private static final long USER_ID = 1L;
-    private static final long NEWS_ID = 100L;
+    private static final long INTERVIEW_ID = 100L;
     private static final String AUTHENTICATED_SESSION_ATTRIBUTE = AuthenticatedSession.class.getName();
 
     @Autowired
@@ -52,15 +52,15 @@ class InterviewReactionHttpApiTest {
 
     @Test
     void 인터뷰_좋아요를_추가한다() throws Exception {
-        given(interviewReactionService.add(NEWS_ID, USER_ID, "LIKE"))
-                .willReturn(new InterviewReactionResponse(NEWS_ID, InterviewReactionType.LIKE, true, 21L));
+        given(interviewReactionService.add(INTERVIEW_ID, USER_ID, "LIKE"))
+                .willReturn(new InterviewReactionResponse(INTERVIEW_ID, InterviewReactionType.LIKE, true, 21L));
 
-        mockMvc.perform(put("/api/v1/interview/{interviewId}/reactions/{type}", NEWS_ID, "LIKE")
+        mockMvc.perform(put("/api/v1/interviews/{interviewId}/reactions/{type}", INTERVIEW_ID, "LIKE")
                         .with(authenticated())
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
-                .andExpect(jsonPath("$.data.interviewId").value(NEWS_ID))
+                .andExpect(jsonPath("$.data.interviewId").value(INTERVIEW_ID))
                 .andExpect(jsonPath("$.data.type").value("LIKE"))
                 .andExpect(jsonPath("$.data.active").value(true))
                 .andExpect(jsonPath("$.data.likeCount").value(21))
@@ -82,19 +82,19 @@ class InterviewReactionHttpApiTest {
                                 .build())
                 ));
 
-        verify(interviewReactionService).add(NEWS_ID, USER_ID, "LIKE");
+        verify(interviewReactionService).add(INTERVIEW_ID, USER_ID, "LIKE");
     }
 
     @Test
     void 인터뷰_좋아요를_제거한다() throws Exception {
-        given(interviewReactionService.remove(NEWS_ID, USER_ID, "LIKE"))
-                .willReturn(new InterviewReactionResponse(NEWS_ID, InterviewReactionType.LIKE, false, 20L));
+        given(interviewReactionService.remove(INTERVIEW_ID, USER_ID, "LIKE"))
+                .willReturn(new InterviewReactionResponse(INTERVIEW_ID, InterviewReactionType.LIKE, false, 20L));
 
-        mockMvc.perform(delete("/api/v1/interview/{interviewId}/reactions/{type}", NEWS_ID, "LIKE")
+        mockMvc.perform(delete("/api/v1/interviews/{interviewId}/reactions/{type}", INTERVIEW_ID, "LIKE")
                         .with(authenticated())
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.interviewId").value(NEWS_ID))
+                .andExpect(jsonPath("$.data.interviewId").value(INTERVIEW_ID))
                 .andExpect(jsonPath("$.data.type").value("LIKE"))
                 .andExpect(jsonPath("$.data.active").value(false))
                 .andExpect(jsonPath("$.data.likeCount").value(20))
@@ -116,15 +116,15 @@ class InterviewReactionHttpApiTest {
                                 .build())
                 ));
 
-        verify(interviewReactionService).remove(NEWS_ID, USER_ID, "LIKE");
+        verify(interviewReactionService).remove(INTERVIEW_ID, USER_ID, "LIKE");
     }
 
     @Test
     void 인터뷰에_반응이_없으면_삭제할_때_404를_반환한다() throws Exception {
-        given(interviewReactionService.remove(NEWS_ID, USER_ID, "LIKE"))
+        given(interviewReactionService.remove(INTERVIEW_ID, USER_ID, "LIKE"))
                 .willThrow(new EntityNotFoundException(InterviewErrorCode.REACTION_NOT_FOUND));
 
-        mockMvc.perform(delete("/api/v1/interview/{interviewId}/reactions/{type}", NEWS_ID, "LIKE")
+        mockMvc.perform(delete("/api/v1/interviews/{interviewId}/reactions/{type}", INTERVIEW_ID, "LIKE")
                         .with(authenticated())
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isNotFound())
@@ -149,15 +149,15 @@ class InterviewReactionHttpApiTest {
                                 .build())
                 ));
 
-        verify(interviewReactionService).remove(NEWS_ID, USER_ID, "LIKE");
+        verify(interviewReactionService).remove(INTERVIEW_ID, USER_ID, "LIKE");
     }
 
     @Test
     void 지원하지_않는_인터뷰_반응_타입은_400을_반환한다() throws Exception {
-        given(interviewReactionService.add(NEWS_ID, USER_ID, "BOOKMARK"))
+        given(interviewReactionService.add(INTERVIEW_ID, USER_ID, "BOOKMARK"))
                 .willThrow(new InvalidInputException(InterviewErrorCode.REACTION_TYPE_INVALID));
 
-        mockMvc.perform(put("/api/v1/interview/{interviewId}/reactions/{type}", NEWS_ID, "BOOKMARK")
+        mockMvc.perform(put("/api/v1/interviews/{interviewId}/reactions/{type}", INTERVIEW_ID, "BOOKMARK")
                         .with(authenticated())
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isBadRequest())
@@ -180,12 +180,12 @@ class InterviewReactionHttpApiTest {
                                 .build())
                 ));
 
-        verify(interviewReactionService).add(NEWS_ID, USER_ID, "BOOKMARK");
+        verify(interviewReactionService).add(INTERVIEW_ID, USER_ID, "BOOKMARK");
     }
 
     @Test
     void 로그인하지_않으면_인터뷰_좋아요를_변경할_수_없다() throws Exception {
-        mockMvc.perform(put("/api/v1/interview/{interviewId}/reactions/{type}", NEWS_ID, "LIKE"))
+        mockMvc.perform(put("/api/v1/interviews/{interviewId}/reactions/{type}", INTERVIEW_ID, "LIKE"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value(CommonErrorCode.UNAUTHORIZED.name()))
                 .andDo(document(
@@ -203,7 +203,7 @@ class InterviewReactionHttpApiTest {
                                 .build())
                 ));
 
-        mockMvc.perform(delete("/api/v1/interview/{interviewId}/reactions/{type}", NEWS_ID, "LIKE"))
+        mockMvc.perform(delete("/api/v1/interviews/{interviewId}/reactions/{type}", INTERVIEW_ID, "LIKE"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value(CommonErrorCode.UNAUTHORIZED.name()))
                 .andDo(document(
@@ -226,10 +226,10 @@ class InterviewReactionHttpApiTest {
 
     @Test
     void 삭제된_인터뷰에_좋아요를_추가하면_404를_반환한다() throws Exception {
-        given(interviewReactionService.add(NEWS_ID, USER_ID, "LIKE"))
+        given(interviewReactionService.add(INTERVIEW_ID, USER_ID, "LIKE"))
                 .willThrow(new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
 
-        mockMvc.perform(put("/api/v1/interview/{interviewId}/reactions/{type}", NEWS_ID, "LIKE")
+        mockMvc.perform(put("/api/v1/interviews/{interviewId}/reactions/{type}", INTERVIEW_ID, "LIKE")
                         .with(authenticated())
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isNotFound())
@@ -252,15 +252,15 @@ class InterviewReactionHttpApiTest {
                                 .build())
                 ));
 
-        verify(interviewReactionService).add(NEWS_ID, USER_ID, "LIKE");
+        verify(interviewReactionService).add(INTERVIEW_ID, USER_ID, "LIKE");
     }
 
     @Test
     void 삭제된_인터뷰에서_좋아요를_제거하면_404를_반환한다() throws Exception {
-        given(interviewReactionService.remove(NEWS_ID, USER_ID, "LIKE"))
+        given(interviewReactionService.remove(INTERVIEW_ID, USER_ID, "LIKE"))
                 .willThrow(new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
 
-        mockMvc.perform(delete("/api/v1/interview/{interviewId}/reactions/{type}", NEWS_ID, "LIKE")
+        mockMvc.perform(delete("/api/v1/interviews/{interviewId}/reactions/{type}", INTERVIEW_ID, "LIKE")
                         .with(authenticated())
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isNotFound())
@@ -283,7 +283,7 @@ class InterviewReactionHttpApiTest {
                                 .build())
                 ));
 
-        verify(interviewReactionService).remove(NEWS_ID, USER_ID, "LIKE");
+        verify(interviewReactionService).remove(INTERVIEW_ID, USER_ID, "LIKE");
     }
 
     private org.springframework.test.web.servlet.request.RequestPostProcessor authenticated() {
