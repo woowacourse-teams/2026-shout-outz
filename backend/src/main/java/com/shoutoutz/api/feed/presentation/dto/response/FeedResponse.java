@@ -6,6 +6,7 @@ import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.feed.domain.FeedType;
+import com.shoutoutz.api.feed.recommendation.application.dto.RelatedQuestionRecommendations;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.net.URI;
@@ -29,7 +30,8 @@ public record FeedResponse(
         boolean bookmarkedByMe,
         long commentCount,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        @JsonInclude(JsonInclude.Include.NON_NULL) RelatedQuestionRecommendations relatedQuestionRecommendations
 ) {
     public static FeedResponse from(FeedItem feed) {
         return from(feed, Map.of());
@@ -43,6 +45,15 @@ public record FeedResponse(
             FeedItem feed,
             Map<Long, URI> mediaUrls,
             Map<Long, String> userAvatarUrls
+    ) {
+        return from(feed, mediaUrls, userAvatarUrls, null);
+    }
+
+    public static FeedResponse from(
+            FeedItem feed,
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls,
+            RelatedQuestionRecommendations relatedQuestionRecommendations
     ) {
         Map<Long, URI> urls = mediaUrls == null ? Map.of() : mediaUrls;
         Map<Long, String> fallbackUrls = userAvatarUrls == null ? Map.of() : userAvatarUrls;
@@ -62,7 +73,8 @@ public record FeedResponse(
                 feed.bookmarkedByMe(),
                 feed.commentCount(),
                 feed.createdAt(),
-                feed.updatedAt()
+                feed.updatedAt(),
+                relatedQuestionRecommendations
         );
     }
 

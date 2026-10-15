@@ -6,6 +6,7 @@ import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.feed.domain.FeedType;
+import com.shoutoutz.api.feed.recommendation.domain.QuestionRecommendationStatus;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.net.URI;
@@ -24,7 +25,8 @@ public record FeedCommandResponse(
         List<Media> media,
         LinkPreview linkPreview,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        @JsonInclude(JsonInclude.Include.NON_NULL) QuestionRecommendationStatus recommendationStatus
 ) {
 
     public static FeedCommandResponse from(FeedItem feed, Map<Long, URI> mediaUrls) {
@@ -35,6 +37,15 @@ public record FeedCommandResponse(
             FeedItem feed,
             Map<Long, URI> mediaUrls,
             Map<Long, String> userAvatarUrls
+    ) {
+        return from(feed, mediaUrls, userAvatarUrls, null);
+    }
+
+    public static FeedCommandResponse from(
+            FeedItem feed,
+            Map<Long, URI> mediaUrls,
+            Map<Long, String> userAvatarUrls,
+            QuestionRecommendationStatus recommendationStatus
     ) {
         Map<Long, URI> urls = mediaUrls == null ? Map.of() : mediaUrls;
         Map<Long, String> fallbackUrls = userAvatarUrls == null ? Map.of() : userAvatarUrls;
@@ -49,7 +60,8 @@ public record FeedCommandResponse(
                 feed.media().stream().map(media -> Media.from(media, urls)).toList(),
                 feed.linkPreview(),
                 feed.createdAt(),
-                feed.updatedAt()
+                feed.updatedAt(),
+                recommendationStatus
         );
     }
 
