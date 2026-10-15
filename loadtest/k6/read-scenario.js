@@ -95,6 +95,8 @@ export const options = {
   thresholds: THRESHOLDS[PHASE],
   setupTimeout: '5m',
   summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
+  // 부하 요청은 상태 코드만 확인하므로 응답 본문을 메모리에 남기지 않는다. (본문이 필요한 setup 요청만 따로 받는다)
+  discardResponseBodies: true,
 };
 
 // 10/7 GET 요청 23,097건 기준 건수. login이 true면 로그인 상태로만 보낸다.
@@ -210,7 +212,11 @@ function pick(items) {
 }
 
 function getJson(path) {
-  const res = http.get(`${BASE_URL}${path}`, { jar: new http.CookieJar(), tags: { name: 'setup' } });
+  const res = http.get(`${BASE_URL}${path}`, {
+    jar: new http.CookieJar(),
+    responseType: 'text',
+    tags: { name: 'setup' },
+  });
   if (res.status !== 200) {
     fail(`[setup] ${path} 응답 ${res.status}`);
   }

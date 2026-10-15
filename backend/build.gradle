@@ -43,6 +43,8 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
     // CloudWatch Agent가 수집할 수 있도록 Actuator 지표를 Prometheus 형식으로 노출
     runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+    // 부하 테스트에서 느린 쿼리를 찾기 위해 JPA·JdbcTemplate 쿼리의 실행 시간을 잰다 (slow-query-log.enabled일 때만 사용)
+    implementation 'net.ttddyy:datasource-proxy:1.11.0'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
