@@ -74,6 +74,7 @@ class InterviewIntegrationTest {
                         .requestAttr(sessionKey(), admin()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.contentMd").value(draft.getContentMd()))
+                .andExpect(jsonPath("$.data.previewContentMd").value(org.hamcrest.Matchers.containsString("https://cdn.example.com/")))
                 .andDo(adminDocument("interview-admin-detail", "인터뷰 원본과 초안 조회", false, true));
         mvc.perform(get("/api/v1/admin/interviews").requestAttr(sessionKey(), admin()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(2))
@@ -249,6 +250,30 @@ class InterviewIntegrationTest {
         mvc.perform(post("/api/v1/interviews/{interviewId}/views", id).cookie(cookie)).andExpect(status().isNotFound());
     }
 
+    @Test
+    void 인터뷰이_아바타도_기존_GitHub_대체_규칙을_따른다() {
+        jdbc.update("""
+                INSERT INTO oauth_accounts(user_id, provider, provider_account_id, provider_avatar_url)
+                VALUES (?, 'GITHUB', ?, 'https://avatars.githubusercontent.com/u/123')
+                """, intervieweeId, UUID.randomUUID().toString());
+        long id = service.publish(create().getId(), adminId).getId();
+        assertThat(queryService.find(id).interviewee().avatarUrl())
+                .isEqualTo("https://avatars.githubusercontent.com/u/123");
+        assertThat(queryService.findAll(null, 20).items().getFirst().interviewee().avatarUrl())
+                .isEqualTo("https://avatars.githubusercontent.com/u/123");
+    }
+
+    @Test
+    void 저장된_이미지_URL을_다시_보내도_원본_미디어_참조를_유지한다() {
+        long id = service.publish(create().getId(), adminId).getId();
+        String publicContent = queryService.find(id).contentMd();
+        service.update(id, adminId, request("수정", publicContent));
+        var adminView = queryService.findAdmin(id, adminId);
+        assertThat(adminView.contentMd()).contains("media://" + imageId);
+        assertThat(adminView.previewContentMd()).contains("https://cdn.example.com/");
+        assertThat(adminView.thumbnailUrl()).isNotNull();
+    }
+
     private Interview create() {
         return service.create(adminId, request("첫 인터뷰", "![사진](media://" + imageId + ")"));
     }
@@ -290,8 +315,8 @@ class InterviewIntegrationTest {
                     fieldWithPath("title").type(STRING).description("제목, 최대 200자"),
                     fieldWithPath("summary").type(STRING).optional().description("요약, 최대 500자"),
                     fieldWithPath("intervieweeId").type(NUMBER).description("인터뷰 대상 사용자 ID"),
-                    fieldWithPath("thumbnailMediaId").type(NUMBER).optional().description("대표 이미지 ID"),
-                    fieldWithPath("contentMd").type(STRING).optional().description("원본 Markdown, 최대 100000자"));
+                    fieldWithPath("thumbnailMediaId").type(NUMBER).optional().description("INTERVIEW_THUMBNAIL 용도의 READY 미디어 ID"),
+                    fieldWithPath("contentMd").type(STRING).optional().description("원본 Markdown, 최대 100000자. 본문 이미지는 INTERVIEW_CONTENT 용도의 media://ID로 참조"));
         }
         return document(name, resource(builder.build()));
     }
@@ -303,7 +328,9 @@ class InterviewIntegrationTest {
                 fieldWithPath("data.title").type(STRING).description("제목"),
                 fieldWithPath("data.summary").type(STRING).optional().description("요약"),
                 fieldWithPath("data.intervieweeId").type(NUMBER).description("인터뷰 대상 사용자 ID"),
-                fieldWithPath("data.thumbnailMediaId").type(NUMBER).optional().description("대표 이미지 ID"),
+                fieldWithPath("data.thumbnailUrl").type(STRING).optional().description("대표 이미지 미리보기 URL"),
+                fieldWithPath("data.previewContentMd").type(STRING).optional().description("이미지 URL로 변환한 미리보기 Markdown"),
+                fieldWithPath("data.thumbnailMediaId").type(NUMBER).optional().description("INTERVIEW_THUMBNAIL 용도의 READY 미디어 ID"),
                 fieldWithPath("data.contentMd").type(STRING).optional().description("이미지 원본 참조가 포함된 Markdown"),
                 fieldWithPath("data.status").type(STRING).description("DRAFT 또는 PUBLISHED"),
                 fieldWithPath("data.publishedAt").type(STRING).optional().description("최초 발행 시각"),

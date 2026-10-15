@@ -13,12 +13,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.net.URI;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class InterviewMediaService {
+    private static final Pattern HTML_IMAGE = Pattern.compile("<img\\b", Pattern.CASE_INSENSITIVE);
     private final MediaMetadataRepository repository;
     private final MediaUrlResolver urlResolver;
 
@@ -64,8 +66,7 @@ public class InterviewMediaService {
         if (content == null) {
             return false;
         }
-        return java.util.regex.Pattern.compile("<img\\b", java.util.regex.Pattern.CASE_INSENSITIVE)
-                .matcher(content).find();
+        return HTML_IMAGE.matcher(content).find();
     }
 
     private InvalidInputException invalidMedia() {

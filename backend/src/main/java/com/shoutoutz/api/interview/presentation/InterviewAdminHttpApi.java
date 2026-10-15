@@ -3,6 +3,7 @@ package com.shoutoutz.api.interview.presentation;
 import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
+import com.shoutoutz.api.interview.domain.Interview;
 import com.shoutoutz.api.interview.application.InterviewService;
 import com.shoutoutz.api.interview.application.InterviewQueryService;
 import com.shoutoutz.api.interview.application.dto.InterviewPage;
@@ -35,7 +36,8 @@ public class InterviewAdminHttpApi {
     @ResponseStatus(HttpStatus.CREATED)
     public SuccessResponse<InterviewAdminResponse> create(
             @LoginUser AuthenticatedUser user, @Valid @RequestBody InterviewSaveRequest request) {
-        return SuccessResponse.success(InterviewAdminResponse.from(service.create(user.userId(), request)));
+        Interview interview = service.create(user.userId(), request);
+        return SuccessResponse.success(queryService.findAdmin(interview.getId(), user.userId()));
     }
 
     @GetMapping
@@ -55,19 +57,22 @@ public class InterviewAdminHttpApi {
     @PutMapping("/{interviewId}")
     public SuccessResponse<InterviewAdminResponse> update(@PathVariable long interviewId,
             @LoginUser AuthenticatedUser user, @Valid @RequestBody InterviewSaveRequest request) {
-        return SuccessResponse.success(InterviewAdminResponse.from(service.update(interviewId, user.userId(), request)));
+        Interview interview = service.update(interviewId, user.userId(), request);
+        return SuccessResponse.success(queryService.findAdmin(interview.getId(), user.userId()));
     }
 
     @PostMapping("/{interviewId}/publish")
     public SuccessResponse<InterviewAdminResponse> publish(@PathVariable long interviewId,
             @LoginUser AuthenticatedUser user) {
-        return SuccessResponse.success(InterviewAdminResponse.from(service.publish(interviewId, user.userId())));
+        Interview interview = service.publish(interviewId, user.userId());
+        return SuccessResponse.success(queryService.findAdmin(interview.getId(), user.userId()));
     }
 
     @PostMapping("/{interviewId}/unpublish")
     public SuccessResponse<InterviewAdminResponse> unpublish(@PathVariable long interviewId,
             @LoginUser AuthenticatedUser user) {
-        return SuccessResponse.success(InterviewAdminResponse.from(service.unpublish(interviewId, user.userId())));
+        Interview interview = service.unpublish(interviewId, user.userId());
+        return SuccessResponse.success(queryService.findAdmin(interview.getId(), user.userId()));
     }
 
     @DeleteMapping("/{interviewId}")

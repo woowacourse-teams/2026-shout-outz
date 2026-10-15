@@ -7,6 +7,8 @@ import com.shoutoutz.api.interview.application.dto.InterviewCursor;
 import com.shoutoutz.api.interview.application.dto.InterviewItem;
 import com.shoutoutz.api.interview.application.dto.InterviewPage;
 import com.shoutoutz.api.interview.domain.InterviewErrorCode;
+import com.shoutoutz.api.interview.domain.Interview;
+import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.interview.domain.InterviewReactionRepository;
 import com.shoutoutz.api.interview.domain.InterviewReactionCounts;
 import com.shoutoutz.api.interview.presentation.dto.response.InterviewAdminResponse;
@@ -36,6 +38,7 @@ public class InterviewQueryService {
     private final InterviewQueryRepository repository;
     private final InterviewAccessService accessService;
     private final MediaUrlResolver mediaUrlResolver;
+    private final UserAvatarUrlResolver avatarUrlResolver;
 
     public InterviewPage findAll(String cursor, int size) {
         return findAll(cursor, size, null);
@@ -52,7 +55,11 @@ public class InterviewQueryService {
 
     public InterviewAdminResponse findAdmin(long id, long editorId) {
         accessService.requireAdmin(editorId);
-        return InterviewAdminResponse.from(accessService.requireActive(id));
+        Interview interview = accessService.requireActive(id);
+        Map<Long, URI> contentUrls = contentUrls(interview.getContentMd());
+        return InterviewAdminResponse.from(interview,
+                mediaUrlResolver.resolve(interview.getThumbnailMediaId(), MediaVariant.THUMBNAIL),
+                mediaUrlResolver.replaceDescriptionReferences(interview.getContentMd(), contentUrls));
     }
 
     public InterviewDetailResponse find(long id) {
@@ -62,10 +69,11 @@ public class InterviewQueryService {
     public InterviewDetailResponse find(long id, Long viewerId) {
         InterviewItem item = repository.findPublished(id)
                 .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
-        Map<Long, URI> urls = resolveDisplayUrls(List.of(item), true);
+        Map<Long, URI> urls = contentUrls(item.contentMd());
+        Map<Long, String> avatarUrls = resolveAvatarUrls(List.of(item));
         InterviewReactionCounts counts = reactionRepository.findCountsByInterviewId(id, viewerId);
         return new InterviewDetailResponse(item.id(), item.title(), item.summary(),
-                mediaUrlResolver.resolve(item.thumbnailMediaId(), MediaVariant.THUMBNAIL), interviewee(item, urls),
+                mediaUrlResolver.resolve(item.thumbnailMediaId(), MediaVariant.THUMBNAIL), interviewee(item, avatarUrls),
                 mediaUrlResolver.replaceDescriptionReferences(item.contentMd(), urls),
                 item.publishedAt(), item.createdAt(), item.updatedAt(), counts.likeCount(), counts.likedByMe(), item.commentCount(), item.viewCount());
     }
@@ -84,7 +92,7 @@ public class InterviewQueryService {
         if (hasNext) {
             items = items.subList(0, size);
         }
-        Map<Long, URI> displayUrls = resolveDisplayUrls(items, false);
+        Map<Long, String> avatarUrls = resolveAvatarUrls(items);
         Set<Long> thumbnailIds = new HashSet<>();
         for (InterviewItem item : items) {
             if (item.thumbnailMediaId() != null) {
@@ -98,7 +106,7 @@ public class InterviewQueryService {
         for (InterviewItem item : items) {
             InterviewReactionCounts counts = reactions.getOrDefault(item.id(), NO_REACTION);
             responses.add(new InterviewSummaryResponse(item.id(), item.title(), item.summary(),
-                    mediaUrl(thumbnailUrls, item.thumbnailMediaId()), interviewee(item, displayUrls),
+                    mediaUrl(thumbnailUrls, item.thumbnailMediaId()), interviewee(item, avatarUrls),
                     item.status(), item.publishedAt(), item.createdAt(), item.updatedAt(),
                     counts.likeCount(), counts.likedByMe(), item.commentCount(), item.viewCount()));
         }
@@ -114,17 +122,15 @@ public class InterviewQueryService {
         return new InterviewPage(responses, new SliceMetaResponse(nextCursor, hasNext, repository.count(admin)));
     }
 
-    private Map<Long, URI> resolveDisplayUrls(List<InterviewItem> items, boolean includeContent) {
-        Set<Long> ids = new HashSet<>();
-        for (InterviewItem item : items) {
-            if (item.avatarImageId() != null) {
-                ids.add(item.avatarImageId());
-            }
-            if (includeContent) {
-                ids.addAll(DescriptionMediaReferences.extractMediaIds(item.contentMd()));
-            }
-        }
-        return mediaUrlResolver.resolveAll(ids);
+    private Map<Long, URI> contentUrls(String contentMd) {
+        return mediaUrlResolver.resolveAll(DescriptionMediaReferences.extractMediaIds(contentMd));
+    }
+
+    private Map<Long, String> resolveAvatarUrls(List<InterviewItem> items) {
+        List<UserAvatarUrlResolver.AvatarReference> references = items.stream()
+                .map(item -> new UserAvatarUrlResolver.AvatarReference(item.intervieweeUserId(), item.avatarImageId()))
+                .toList();
+        return avatarUrlResolver.resolveAll(references);
     }
 
     private URI mediaUrl(Map<Long, URI> urls, Long id) {
@@ -134,7 +140,11 @@ public class InterviewQueryService {
         return urls.get(id);
     }
 
-    private IntervieweeResponse interviewee(InterviewItem item, Map<Long, URI> urls) {
-        return new IntervieweeResponse(item.handle(), item.displayName(), item.bio(), mediaUrl(urls, item.avatarImageId()));
+    private IntervieweeResponse interviewee(InterviewItem item, Map<Long, String> avatarUrls) {
+        String avatarUrl = null;
+        if (item.intervieweeUserId() != null) {
+            avatarUrl = avatarUrls.get(item.intervieweeUserId());
+        }
+        return new IntervieweeResponse(item.handle(), item.displayName(), item.bio(), avatarUrl);
     }
 }
