@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -22,7 +23,7 @@ import org.springframework.stereotype.Repository;
 public class InterviewCommentRepositoryImpl implements InterviewCommentRepository, InterviewCommentQueryRepository {
 
     private final InterviewCommentJpaRepository interviewCommentJpaRepository;
-    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public InterviewComment save(InterviewComment comment) {

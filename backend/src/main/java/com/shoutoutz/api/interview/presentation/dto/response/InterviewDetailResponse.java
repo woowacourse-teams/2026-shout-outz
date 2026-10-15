@@ -29,9 +29,19 @@ public record InterviewDetailResponse(
             long viewCount
     ) {
         return new InterviewDetailResponse(
-                item.id(), item.title(), item.summary(), thumbnailUrl, interviewee, contentMd,
-                item.publishedAt(), item.createdAt(), item.updatedAt(),
-                reactions.likeCount(), reactions.likedByMe(), item.commentCount(), viewCount
+                item.id(),
+                item.title(),
+                item.summary(),
+                thumbnailUrl,
+                interviewee,
+                contentMd,
+                item.publishedAt(),
+                item.createdAt(),
+                item.updatedAt(),
+                reactions.likeCount(),
+                reactions.likedByMe(),
+                item.commentCount(),
+                viewCount
         );
     }
 }

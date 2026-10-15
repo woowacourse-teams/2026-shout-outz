@@ -30,7 +30,6 @@ public class InterviewCommentEntity extends BaseEntity {
     @Column(name = "interview_id", nullable = false)
     private Long interviewId;
 
-    // TODO: JPA 연관관계로 매핑할지 논의
     @Column(name = "author_id", nullable = false)
     private Long authorId;
 

@@ -54,14 +54,14 @@ public class InterviewService {
     private static final Pattern HTML_IMAGE = Pattern.compile("<img\\b", Pattern.CASE_INSENSITIVE);
     private static final InterviewReactionCounts NO_REACTION = new InterviewReactionCounts(0L, false);
 
-    private final InterviewRepository repository;
-    private final InterviewQueryRepository queryRepository;
-    private final InterviewReactionRepository reactionRepository;
+    private final InterviewRepository interviewRepository;
+    private final InterviewQueryRepository interviewQueryRepository;
+    private final InterviewReactionRepository interviewReactionRepository;
     private final UserRepository userRepository;
-    private final UserProfileRepository profileRepository;
-    private final MediaMetadataRepository mediaRepository;
+    private final UserProfileRepository userProfileRepository;
+    private final MediaMetadataRepository mediaMetadataRepository;
     private final MediaUrlResolver mediaUrlResolver;
-    private final UserAvatarUrlResolver avatarUrlResolver;
+    private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final Clock clock;
 
     @Transactional
@@ -78,7 +78,7 @@ public class InterviewService {
                 .authorId(editorId)
                 .status(InterviewStatus.DRAFT)
                 .build();
-        return adminResponse(repository.save(interview));
+        return adminResponse(interviewRepository.save(interview));
     }
 
     @Transactional
@@ -90,7 +90,7 @@ public class InterviewService {
         validateMedia(interview, request.thumbnailMediaId(), contentMd, editorId);
         interview.edit(request.title().strip(), request.summary(), request.intervieweeId(),
                 request.thumbnailMediaId(), contentMd);
-        return adminResponse(repository.save(interview));
+        return adminResponse(interviewRepository.save(interview));
     }
 
     @Transactional
@@ -100,7 +100,7 @@ public class InterviewService {
         validateInterviewee(interview.getIntervieweeId());
         validateMedia(interview, interview.getThumbnailMediaId(), interview.getContentMd(), editorId);
         interview.publish(clock.instant());
-        return adminResponse(repository.save(interview));
+        return adminResponse(interviewRepository.save(interview));
     }
 
     @Transactional
@@ -108,7 +108,7 @@ public class InterviewService {
         validateAdmin(editorId);
         Interview interview = findForUpdate(id);
         interview.unpublish();
-        return adminResponse(repository.save(interview));
+        return adminResponse(interviewRepository.save(interview));
     }
 
     @Transactional
@@ -116,7 +116,7 @@ public class InterviewService {
         validateAdmin(editorId);
         Interview interview = findForUpdate(id);
         interview.delete(clock.instant());
-        repository.save(interview);
+        interviewRepository.save(interview);
     }
 
     public InterviewPage findAll(String cursor, int size) {
@@ -141,14 +141,14 @@ public class InterviewService {
     @Transactional
     public InterviewDetailResponse find(long id, Long viewerId, VisitorKey visitorKey) {
         findForUpdate(id).validatePublished();
-        InterviewItem item = queryRepository.findPublished(id)
+        InterviewItem item = interviewQueryRepository.findPublished(id)
                 .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
         Instant viewedAt = clock.instant();
         LocalDate viewedOn = LocalDate.ofInstant(viewedAt, VIEW_DATE_ZONE);
-        long viewCount = repository.recordView(id, visitorKey, viewedOn, viewedAt);
+        long viewCount = interviewRepository.recordView(id, visitorKey, viewedOn, viewedAt);
         Map<Long, URI> urls = contentUrls(item.contentMd());
         Map<Long, String> avatarUrls = resolveAvatarUrls(List.of(item));
-        InterviewReactionCounts counts = reactionRepository.findCountsByInterviewId(id, viewerId);
+        InterviewReactionCounts counts = interviewReactionRepository.findCountsByInterviewId(id, viewerId);
         return InterviewDetailResponse.from(item,
                 mediaUrlResolver.resolve(item.thumbnailMediaId(), MediaVariant.THUMBNAIL),
                 interviewee(item, avatarUrls),
@@ -165,7 +165,7 @@ public class InterviewService {
             scope = "ADMIN";
         }
         InterviewCursor decoded = InterviewCursorCodec.decode(cursor, scope);
-        List<InterviewItem> items = queryRepository.findPage(decoded, size + 1, admin);
+        List<InterviewItem> items = interviewQueryRepository.findPage(decoded, size + 1, admin);
         boolean hasNext = items.size() > size;
         if (hasNext) {
             items = items.subList(0, size);
@@ -178,7 +178,7 @@ public class InterviewService {
             }
         }
         Map<Long, URI> thumbnailUrls = mediaUrlResolver.resolveAll(thumbnailIds, MediaVariant.THUMBNAIL);
-        Map<Long, InterviewReactionCounts> reactions = reactionRepository.findCountsByInterviewIds(
+        Map<Long, InterviewReactionCounts> reactions = interviewReactionRepository.findCountsByInterviewIds(
                 items.stream().map(InterviewItem::id).toList(), viewerId);
         List<InterviewSummaryResponse> responses = new ArrayList<>();
         for (InterviewItem item : items) {
@@ -195,7 +195,7 @@ public class InterviewService {
             }
             nextCursor = InterviewCursorCodec.encode(timestamp, last.id(), scope);
         }
-        return new InterviewPage(responses, new SliceMetaResponse(nextCursor, hasNext, queryRepository.count(admin)));
+        return new InterviewPage(responses, new SliceMetaResponse(nextCursor, hasNext, interviewQueryRepository.count(admin)));
     }
 
     private Map<Long, URI> contentUrls(String contentMd) {
@@ -206,7 +206,7 @@ public class InterviewService {
         List<UserAvatarUrlResolver.AvatarReference> references = items.stream()
                 .map(item -> new UserAvatarUrlResolver.AvatarReference(item.intervieweeUserId(), item.avatarImageId()))
                 .toList();
-        return avatarUrlResolver.resolveAll(references);
+        return userAvatarUrlResolver.resolveAll(references);
     }
 
     private URI mediaUrl(Map<Long, URI> urls, Long id) {
@@ -228,7 +228,7 @@ public class InterviewService {
         userRepository.findById(userId)
                 .filter(user -> user.getStatus() == UserStatus.ACTIVE)
                 .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEWEE_NOT_FOUND));
-        profileRepository.findByUserId(userId)
+        userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEWEE_NOT_FOUND));
     }
 
@@ -239,12 +239,12 @@ public class InterviewService {
     }
 
     private Interview findActive(long id) {
-        return repository.findActiveById(id)
+        return interviewRepository.findActiveById(id)
                 .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
     }
 
     private Interview findForUpdate(long id) {
-        return repository.findForUpdate(id)
+        return interviewRepository.findForUpdate(id)
                 .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
     }
 
@@ -281,7 +281,7 @@ public class InterviewService {
     }
 
     private void validateMedia(long id, MediaPurpose purpose, long editorId, boolean alreadyAttached) {
-        MediaMetadata media = mediaRepository.findById(id).orElseThrow(this::invalidMedia);
+        MediaMetadata media = mediaMetadataRepository.findById(id).orElseThrow(this::invalidMedia);
         if (media.getPurpose() != purpose || media.getStatus() != MediaStatus.READY) {
             throw invalidMedia();
         }

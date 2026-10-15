@@ -12,9 +12,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AccessLevel;
 
 @Entity
 @Table(name = "interviews")
@@ -25,18 +25,25 @@ public class InterviewEntity extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(nullable = false, length = 200)
     private String title;
+
     @Column(length = 500)
     private String summary;
+
     @Column(name = "interviewee_id", nullable = false)
     private long intervieweeId;
+
     @Column(name = "thumbnail_media_id")
     private Long thumbnailMediaId;
+
     @Column(name = "content_md", columnDefinition = "TEXT")
     private String contentMd;
+
     @Column(name = "author_id", nullable = false)
     private long authorId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private InterviewStatus status;
@@ -62,9 +69,19 @@ public class InterviewEntity extends BaseEntity {
     }
 
     public Interview toDomain() {
-        return Interview.builder().id(id).title(title).summary(summary).intervieweeId(intervieweeId)
-                .thumbnailMediaId(thumbnailMediaId).contentMd(contentMd).authorId(authorId).status(status)
-                .publishedAt(publishedAt).createdAt(getCreatedAt()).updatedAt(getUpdatedAt())
-                .deletedAt(deletedAt).build();
+        return Interview.builder()
+                .id(id)
+                .title(title)
+                .summary(summary)
+                .intervieweeId(intervieweeId)
+                .thumbnailMediaId(thumbnailMediaId)
+                .contentMd(contentMd)
+                .authorId(authorId)
+                .status(status)
+                .publishedAt(publishedAt)
+                .createdAt(getCreatedAt())
+                .updatedAt(getUpdatedAt())
+                .deletedAt(deletedAt)
+                .build();
     }
 }

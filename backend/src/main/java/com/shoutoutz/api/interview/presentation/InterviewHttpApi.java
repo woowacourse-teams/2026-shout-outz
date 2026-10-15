@@ -11,6 +11,7 @@ import com.shoutoutz.api.visitor.domain.VisitorKey;
 import com.shoutoutz.api.visitor.presentation.Visitor;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,20 +22,27 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/interviews")
 @RequiredArgsConstructor
 public class InterviewHttpApi {
-    private final InterviewService service;
+
+    private final InterviewService interviewService;
 
     @GetMapping
-    public SuccessResponse<List<InterviewSummaryResponse>> findAll(
-            @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "20") int size,
-            @LoginUser(required = false) AuthenticatedUser user) {
-        InterviewPage page = service.findAll(cursor, size, AuthenticatedUser.userIdOrNull(user));
-        return SuccessResponse.success(page.items(), page.meta());
+    public ResponseEntity<SuccessResponse<List<InterviewSummaryResponse>>> findAll(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "20") int size,
+            @LoginUser(required = false) AuthenticatedUser loginUser
+    ) {
+        InterviewPage page = interviewService.findAll(cursor, size, AuthenticatedUser.userIdOrNull(loginUser));
+        return ResponseEntity.ok(SuccessResponse.success(page.items(), page.meta()));
     }
 
     @GetMapping("/{interviewId}")
-    public SuccessResponse<InterviewDetailResponse> find(@PathVariable long interviewId,
-            @LoginUser(required = false) AuthenticatedUser user, @Visitor VisitorKey visitorKey) {
-        return SuccessResponse.success(service.find(
-                interviewId, AuthenticatedUser.userIdOrNull(user), visitorKey));
+    public ResponseEntity<SuccessResponse<InterviewDetailResponse>> find(
+            @PathVariable long interviewId,
+            @LoginUser(required = false) AuthenticatedUser loginUser,
+            @Visitor VisitorKey visitorKey
+    ) {
+        InterviewDetailResponse response = interviewService.find(
+                interviewId, AuthenticatedUser.userIdOrNull(loginUser), visitorKey);
+        return ResponseEntity.ok(SuccessResponse.success(response));
     }
 }

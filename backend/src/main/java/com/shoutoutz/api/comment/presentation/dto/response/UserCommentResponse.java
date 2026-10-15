@@ -1,5 +1,6 @@
 package com.shoutoutz.api.comment.presentation.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.shoutoutz.api.comment.application.dto.UserCommentItem;
 import com.shoutoutz.api.comment.application.dto.UserCommentType;
 import java.time.Instant;
@@ -15,7 +16,7 @@ public record UserCommentResponse(
         Instant updatedAt,
         long agreeCount,
         boolean agreedByMe,
-        @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         Long interviewId
 ) {
 

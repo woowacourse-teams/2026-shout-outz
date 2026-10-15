@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,57 +21,77 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/admin/interviews")
 @RequiredArgsConstructor
 public class InterviewAdminHttpApi {
-    private final InterviewService service;
+
+    private final InterviewService interviewService;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public SuccessResponse<InterviewAdminResponse> create(
-            @LoginUser AuthenticatedUser user, @Valid @RequestBody InterviewSaveRequest request) {
-        return SuccessResponse.success(service.create(user.userId(), request));
+    public ResponseEntity<SuccessResponse<InterviewAdminResponse>> create(
+            @LoginUser AuthenticatedUser loginUser,
+            @Valid @RequestBody InterviewSaveRequest request
+    ) {
+        InterviewAdminResponse response = interviewService.create(loginUser.userId(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(SuccessResponse.success(response));
     }
 
     @GetMapping
-    public SuccessResponse<List<InterviewSummaryResponse>> findAll(
-            @LoginUser AuthenticatedUser user, @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "20") int size) {
-        InterviewPage page = service.findAllAdmin(user.userId(), cursor, size);
-        return SuccessResponse.success(page.items(), page.meta());
+    public ResponseEntity<SuccessResponse<List<InterviewSummaryResponse>>> findAll(
+            @LoginUser AuthenticatedUser loginUser,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        InterviewPage page = interviewService.findAllAdmin(loginUser.userId(), cursor, size);
+        return ResponseEntity.ok(SuccessResponse.success(page.items(), page.meta()));
     }
 
     @GetMapping("/{interviewId}")
-    public SuccessResponse<InterviewAdminResponse> find(@PathVariable long interviewId,
-            @LoginUser AuthenticatedUser user) {
-        return SuccessResponse.success(service.findAdmin(interviewId, user.userId()));
+    public ResponseEntity<SuccessResponse<InterviewAdminResponse>> find(
+            @PathVariable long interviewId,
+            @LoginUser AuthenticatedUser loginUser
+    ) {
+        InterviewAdminResponse response = interviewService.findAdmin(interviewId, loginUser.userId());
+        return ResponseEntity.ok(SuccessResponse.success(response));
     }
 
     @PutMapping("/{interviewId}")
-    public SuccessResponse<InterviewAdminResponse> update(@PathVariable long interviewId,
-            @LoginUser AuthenticatedUser user, @Valid @RequestBody InterviewSaveRequest request) {
-        return SuccessResponse.success(service.update(interviewId, user.userId(), request));
+    public ResponseEntity<SuccessResponse<InterviewAdminResponse>> update(
+            @PathVariable long interviewId,
+            @LoginUser AuthenticatedUser loginUser,
+            @Valid @RequestBody InterviewSaveRequest request
+    ) {
+        InterviewAdminResponse response = interviewService.update(interviewId, loginUser.userId(), request);
+        return ResponseEntity.ok(SuccessResponse.success(response));
     }
 
     @PostMapping("/{interviewId}/publish")
-    public SuccessResponse<InterviewAdminResponse> publish(@PathVariable long interviewId,
-            @LoginUser AuthenticatedUser user) {
-        return SuccessResponse.success(service.publish(interviewId, user.userId()));
+    public ResponseEntity<SuccessResponse<InterviewAdminResponse>> publish(
+            @PathVariable long interviewId,
+            @LoginUser AuthenticatedUser loginUser
+    ) {
+        InterviewAdminResponse response = interviewService.publish(interviewId, loginUser.userId());
+        return ResponseEntity.ok(SuccessResponse.success(response));
     }
 
     @PostMapping("/{interviewId}/unpublish")
-    public SuccessResponse<InterviewAdminResponse> unpublish(@PathVariable long interviewId,
-            @LoginUser AuthenticatedUser user) {
-        return SuccessResponse.success(service.unpublish(interviewId, user.userId()));
+    public ResponseEntity<SuccessResponse<InterviewAdminResponse>> unpublish(
+            @PathVariable long interviewId,
+            @LoginUser AuthenticatedUser loginUser
+    ) {
+        InterviewAdminResponse response = interviewService.unpublish(interviewId, loginUser.userId());
+        return ResponseEntity.ok(SuccessResponse.success(response));
     }
 
     @DeleteMapping("/{interviewId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable long interviewId, @LoginUser AuthenticatedUser user) {
-        service.delete(interviewId, user.userId());
+    public ResponseEntity<Void> delete(
+            @PathVariable long interviewId,
+            @LoginUser AuthenticatedUser loginUser
+    ) {
+        interviewService.delete(interviewId, loginUser.userId());
+        return ResponseEntity.noContent().build();
     }
 }

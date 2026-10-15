@@ -28,9 +28,19 @@ public record InterviewSummaryResponse(
             InterviewReactionCounts reactions
     ) {
         return new InterviewSummaryResponse(
-                item.id(), item.title(), item.summary(), thumbnailUrl, interviewee, item.status(),
-                item.publishedAt(), item.createdAt(), item.updatedAt(),
-                reactions.likeCount(), reactions.likedByMe(), item.commentCount(), item.viewCount()
+                item.id(),
+                item.title(),
+                item.summary(),
+                thumbnailUrl,
+                interviewee,
+                item.status(),
+                item.publishedAt(),
+                item.createdAt(),
+                item.updatedAt(),
+                reactions.likeCount(),
+                reactions.likedByMe(),
+                item.commentCount(),
+                item.viewCount()
         );
     }
 }

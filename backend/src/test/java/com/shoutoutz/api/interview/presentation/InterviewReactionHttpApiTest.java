@@ -33,8 +33,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 @WebMvcTest(controllers = InterviewReactionHttpApi.class)
 @AutoConfigureRestDocs
@@ -286,7 +288,7 @@ class InterviewReactionHttpApiTest {
         verify(interviewReactionService).remove(INTERVIEW_ID, USER_ID, "LIKE");
     }
 
-    private org.springframework.test.web.servlet.request.RequestPostProcessor authenticated() {
+    private RequestPostProcessor authenticated() {
         return request -> {
             request.setAttribute(
                     AUTHENTICATED_SESSION_ATTRIBUTE,
@@ -296,8 +298,8 @@ class InterviewReactionHttpApiTest {
         };
     }
 
-    private org.springframework.restdocs.payload.FieldDescriptor[] successResponseFields() {
-        return new org.springframework.restdocs.payload.FieldDescriptor[]{
+    private FieldDescriptor[] successResponseFields() {
+        return new FieldDescriptor[]{
                 fieldWithPath("status").type(STRING).description("응답 상태"),
                 fieldWithPath("data").type(OBJECT).description("인터뷰 반응 변경 결과"),
                 fieldWithPath("data.interviewId").type(NUMBER).description("인터뷰 ID"),
