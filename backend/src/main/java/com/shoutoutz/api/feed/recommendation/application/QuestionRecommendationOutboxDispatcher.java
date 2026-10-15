@@ -1,7 +1,7 @@
 package com.shoutoutz.api.feed.recommendation.application;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.shoutoutz.api.feed.recommendation.infrastructure.QuestionRecommendationProperties;
+import tools.jackson.databind.ObjectMapper;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -58,7 +58,7 @@ public class QuestionRecommendationOutboxDispatcher {
                     .messageBody(body)
                     .build());
             repository.markOutboxSent(message.id(), clock.instant());
-        } catch (RuntimeException | JsonProcessingException exception) {
+        } catch (RuntimeException exception) {
             Instant now = clock.instant();
             long delaySeconds = Math.min(3_600, 5L << Math.min(message.attempts() - 1, 9));
             repository.retryOutbox(

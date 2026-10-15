@@ -38,12 +38,17 @@ import com.shoutoutz.api.feed.application.dto.FeedFindAllResult;
 import com.shoutoutz.api.feed.application.dto.FeedItem;
 import com.shoutoutz.api.feed.application.dto.LinkPreview;
 import com.shoutoutz.api.feed.domain.FeedErrorCode;
+import com.shoutoutz.api.feed.domain.FeedType;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedFindAllRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSaveRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedSuggestionRequest;
 import com.shoutoutz.api.feed.presentation.dto.request.FeedUpdateRequest;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedCommandResponse;
 import com.shoutoutz.api.feed.presentation.dto.response.FeedResponse;
+import com.shoutoutz.api.feed.recommendation.application.dto.QuestionRecommendationItem;
+import com.shoutoutz.api.feed.recommendation.application.dto.QuestionRecommendationSlot;
+import com.shoutoutz.api.feed.recommendation.application.dto.RelatedQuestionRecommendations;
+import com.shoutoutz.api.feed.recommendation.domain.QuestionRecommendationStatus;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import com.shoutoutz.api.user.domain.profile.Track;
@@ -68,6 +73,10 @@ class FeedHttpApiTest {
     private static final long USER_ID = 1L;
     private static final long FEED_ID = 10L;
     private static final Instant CREATED_AT = Instant.parse("2026-09-11T00:00:00Z");
+    private static final String FEED_LIST_DESCRIPTION = "전체 공개 피드를 최신순, 인기순, 답변 대기 또는 키워드 정확도순 Slice로 조회한다. type=QUESTION이면 추천 질문을 별도 meta.recommendationSlots로 반환하며, 이는 data와 cursor, totalCount에 포함되지 않는다. 페이지 요청마다 추천이 무작위로 정해지므로 기존 페이지 응답의 슬롯은 클라이언트가 유지한다.";
+    private static final String FEED_DETAIL_DESCRIPTION = "삭제되지 않은 전체 공개 피드를 조회한다. QUESTION이면 추천 생성 상태와 READY 상태의 연관 질문 목록을 포함하며, 추천 정보가 없으면 생략한다.";
+    private static final String FEED_CREATE_DESCRIPTION = "로그인 사용자가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다. QUESTION은 추천 생성을 비동기로 요청하며 완료를 기다리지 않고 recommendationStatus를 반환한다. 추천 기능 비활성 시 해당 필드는 생략한다.";
+    private static final String FEED_UPDATE_DESCRIPTION = "작성자가 본문, 카테고리, 본문 미디어를 전체 교체한다. QUESTION의 제목 또는 본문이 바뀌면 추천 생성을 비동기로 다시 요청하며, 완료를 기다리지 않고 recommendationStatus를 반환한다. 제목과 본문이 그대로면 현재 추천 상태를 반환한다.";
 
     @Autowired
     private MockMvc mockMvc;
@@ -76,22 +85,32 @@ class FeedHttpApiTest {
     private FeedService feedService;
 
     @Test
-    @DisplayName("최신순 피드 목록을 Slice 메타와 함께 조회한다")
+    @DisplayName("질문 목록과 5개 단위 추천 슬롯을 Slice 메타와 함께 조회한다")
     void findAllFeed() throws Exception {
-        FeedItem feed = feedItem();
+        List<FeedItem> feeds = List.of(
+                questionFeedItem(10L),
+                questionFeedItem(11L),
+                questionFeedItem(12L),
+                questionFeedItem(13L),
+                questionFeedItem(14L)
+        );
+        QuestionRecommendationItem recommendation = recommendation(101L);
         given(feedService.findAllFeed(any(FeedFindAllRequest.class)))
                 .willReturn(new FeedFindAllResult(
-                        List.of(feed),
+                        feeds,
                         "next-cursor",
                         true,
                         12L,
-                        mediaUrls()
+                        mediaUrls(),
+                        Map.of(),
+                        List.of(new QuestionRecommendationSlot(14L, recommendation))
                 ));
 
         mockMvc.perform(get("/api/v1/feeds")
                         .queryParam("categoryId", "3")
                         .queryParam("sort", "LATEST")
-                        .queryParam("size", "20"))
+                        .queryParam("type", "QUESTION")
+                        .queryParam("size", "5"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].feedId").value(FEED_ID))
                 .andExpect(jsonPath("$.data[0].title").value("피드 제목"))
@@ -102,12 +121,14 @@ class FeedHttpApiTest {
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.meta.hasNext").value(true))
                 .andExpect(jsonPath("$.meta.totalCount").value(12))
+                .andExpect(jsonPath("$.meta.recommendationSlots[0].afterFeedId").value(14))
+                .andExpect(jsonPath("$.meta.recommendationSlots[0].recommendation.recommendationId").value(101))
                 .andDo(document(
                         "feed-find-all",
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Feed")
                                 .summary("피드 목록 조회")
-                                .description("전체 공개 피드를 최신순, 인기순, 답변 대기 또는 키워드 정확도순 Slice로 조회한다.")
+                                .description(FEED_LIST_DESCRIPTION)
                                 .queryParameters(
                                         parameterWithName("sort")
                                                 .description("LATEST, POPULAR, WAITING 또는 RELEVANCE. 검색어가 없으면 기본 LATEST, 있으면 기본 RELEVANCE. "
@@ -241,7 +262,7 @@ class FeedHttpApiTest {
     @Test
     @DisplayName("전체 공개 피드 상세를 조회한다")
     void findFeed() throws Exception {
-        given(feedService.findFeed(FEED_ID)).willReturn(response());
+        given(feedService.findFeed(FEED_ID)).willReturn(questionDetailResponse());
 
         mockMvc.perform(get("/api/v1/feeds/{feedId}", FEED_ID))
                 .andExpect(status().isOk())
@@ -249,12 +270,14 @@ class FeedHttpApiTest {
                 .andExpect(jsonPath("$.data.content").value("본문입니다. https://example.com/article"))
                 .andExpect(jsonPath("$.data.linkPreview.url").value("https://example.com/article"))
                 .andExpect(jsonPath("$.data.linkPreview.title").value("글 제목"))
+                .andExpect(jsonPath("$.data.relatedQuestionRecommendations.status").value("READY"))
+                .andExpect(jsonPath("$.data.relatedQuestionRecommendations.items.length()").value(5))
                 .andDo(document(
                         "feed-find",
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Feed")
                                 .summary("피드 상세 조회")
-                                .description("삭제되지 않은 전체 공개 피드를 조회한다.")
+                                .description(FEED_DETAIL_DESCRIPTION)
                                 .pathParameters(parameterWithName("feedId")
                                         .type(INTEGER)
                                         .description("피드 ID"))
@@ -268,7 +291,7 @@ class FeedHttpApiTest {
     @DisplayName("로그인 사용자가 피드를 작성한다")
     void saveFeed() throws Exception {
         given(feedService.saveFeed(eq(USER_ID), any(FeedSaveRequest.class)))
-                .willReturn(commandResponse());
+                .willReturn(questionCommandResponse());
 
         mockMvc.perform(post("/api/v1/feeds")
                         .with(authenticated())
@@ -278,19 +301,21 @@ class FeedHttpApiTest {
                                   "title": "피드 제목",
                                   "content": "본문입니다.",
                                   "categoryIds": [3],
-                                  "mediaIds": [21]
+                                  "mediaIds": [21],
+                                  "feedType": "QUESTION"
                                 }
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.feedId").value(FEED_ID))
                 .andExpect(jsonPath("$.data.author.avatarImageId").doesNotExist())
                 .andExpect(jsonPath("$.data.media[0].mediaId").doesNotExist())
+                .andExpect(jsonPath("$.data.recommendationStatus").value("PENDING"))
                 .andDo(document(
                         "feed-save",
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Feed")
                                 .summary("피드 작성")
-                                .description("로그인 사용자가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다.")
+                                .description(FEED_CREATE_DESCRIPTION)
                                 .requestSchema(Schema.schema("FeedSaveRequest"))
                                 .responseSchema(Schema.schema("FeedSaveSuccessResponse"))
                                 .requestFields(
@@ -320,7 +345,7 @@ class FeedHttpApiTest {
     @DisplayName("작성자가 피드 전체 내용을 수정한다")
     void updateFeed() throws Exception {
         given(feedService.updateFeed(eq(FEED_ID), eq(USER_ID), any(FeedUpdateRequest.class)))
-                .willReturn(commandResponse());
+                .willReturn(questionCommandResponse());
 
         mockMvc.perform(put("/api/v1/feeds/{feedId}", FEED_ID)
                         .with(authenticated())
@@ -330,12 +355,13 @@ class FeedHttpApiTest {
                 .andExpect(jsonPath("$.data.feedId").value(FEED_ID))
                 .andExpect(jsonPath("$.data.author.avatarImageId").doesNotExist())
                 .andExpect(jsonPath("$.data.media[0].mediaId").doesNotExist())
+                .andExpect(jsonPath("$.data.recommendationStatus").value("PENDING"))
                 .andDo(document(
                         "feed-update",
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Feed")
                                 .summary("피드 수정")
-                                .description("작성자가 본문, 카테고리, 본문 미디어를 전체 교체한다.")
+                                .description(FEED_UPDATE_DESCRIPTION)
                                 .pathParameters(parameterWithName("feedId")
                                         .type(INTEGER)
                                         .description("피드 ID"))
@@ -417,7 +443,7 @@ class FeedHttpApiTest {
                         "feed-save-unauthorized",
                         resource(createErrorResponse(
                                 "피드 작성",
-                                "로그인 사용자가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다."
+                                FEED_CREATE_DESCRIPTION
                         ))
                 ));
 
@@ -440,7 +466,7 @@ class FeedHttpApiTest {
                         "feed-save-invalid",
                         resource(createErrorResponse(
                                 "피드 작성",
-                                "로그인 사용자가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다."
+                                FEED_CREATE_DESCRIPTION
                         ))
                 ));
         mockMvc.perform(post("/api/v1/feeds")
@@ -491,7 +517,7 @@ class FeedHttpApiTest {
                         "feed-update-invalid",
                         resource(updateErrorResponse(
                                 "피드 수정",
-                                "작성자가 본문, 카테고리, 본문 미디어를 전체 교체한다."
+                                FEED_UPDATE_DESCRIPTION
                         ))
                 ));
         mockMvc.perform(put("/api/v1/feeds/{feedId}", FEED_ID)
@@ -547,7 +573,7 @@ class FeedHttpApiTest {
                         "feed-find-all-invalid",
                         resource(errorResponse(
                                 "피드 목록 조회",
-                                "전체 공개 피드를 최신순, 인기순, 답변 대기 또는 키워드 정확도순 Slice로 조회한다."
+                                FEED_LIST_DESCRIPTION
                         ))
                 ));
 
@@ -602,7 +628,7 @@ class FeedHttpApiTest {
                         "feed-save-forbidden",
                         resource(createErrorResponse(
                                 "피드 작성",
-                                "로그인 사용자가 카테고리와 업로드 완료된 본문 이미지를 연결해 피드를 작성한다."
+                                FEED_CREATE_DESCRIPTION
                         ))
                 ));
     }
@@ -624,7 +650,7 @@ class FeedHttpApiTest {
                         "feed-update-forbidden",
                         resource(updateErrorResponse(
                                 "피드 수정",
-                                "작성자가 본문, 카테고리, 본문 미디어를 전체 교체한다."
+                                FEED_UPDATE_DESCRIPTION
                         ))
                 ));
         mockMvc.perform(delete("/api/v1/feeds/{feedId}", FEED_ID)
@@ -650,7 +676,7 @@ class FeedHttpApiTest {
                         "feed-update-unauthorized",
                         resource(updateErrorResponse(
                                 "피드 수정",
-                                "작성자가 본문, 카테고리, 본문 미디어를 전체 교체한다."
+                                FEED_UPDATE_DESCRIPTION
                         ))
                 ));
         mockMvc.perform(delete("/api/v1/feeds/{feedId}", FEED_ID))
@@ -683,7 +709,7 @@ class FeedHttpApiTest {
                         "feed-update-not-found",
                         resource(updateErrorResponse(
                                 "피드 수정",
-                                "작성자가 본문, 카테고리, 본문 미디어를 전체 교체한다."
+                                FEED_UPDATE_DESCRIPTION
                         ))
                 ));
         mockMvc.perform(delete("/api/v1/feeds/{feedId}", FEED_ID)
@@ -738,7 +764,7 @@ class FeedHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Feed")
                                 .summary("피드 상세 조회")
-                                .description("삭제되지 않은 전체 공개 피드를 조회한다.")
+                                .description(FEED_DETAIL_DESCRIPTION)
                                 .pathParameters(parameterWithName("feedId")
                                         .type(INTEGER)
                                         .description("피드 ID"))
@@ -849,6 +875,70 @@ class FeedHttpApiTest {
                 CREATED_AT,
                 new LinkPreview("https://example.com/article", "글 제목", "글 설명",
                         "https://example.com/image.png", "Example")
+        );
+    }
+
+    private FeedItem questionFeedItem(long feedId) {
+        FeedItem feed = feedItem();
+        return new FeedItem(
+                feedId,
+                FeedType.QUESTION,
+                feed.title(),
+                feed.content(),
+                feed.isAnonymous(),
+                feed.author(),
+                feed.categories().stream()
+                        .map(category -> new FeedItem.Category(
+                                category.categoryId(),
+                                category.slug(),
+                                category.displayName(),
+                                FeedType.QUESTION,
+                                category.type()
+                        ))
+                        .toList(),
+                feed.media(),
+                feed.likeCount(),
+                feed.commentCount(),
+                feed.bookmarkCount(),
+                feed.likedByMe(),
+                feed.bookmarkedByMe(),
+                feed.relevanceRank(),
+                feed.createdAt(),
+                feed.updatedAt(),
+                feed.linkPreview()
+        );
+    }
+
+    private QuestionRecommendationItem recommendation(long recommendationId) {
+        return new QuestionRecommendationItem(
+                recommendationId,
+                "추천 질문 제목 " + recommendationId,
+                "추천 질문 본문 " + recommendationId
+        );
+    }
+
+    private FeedResponse questionDetailResponse() {
+        List<QuestionRecommendationItem> recommendations = List.of(
+                recommendation(201L),
+                recommendation(202L),
+                recommendation(203L),
+                recommendation(204L),
+                recommendation(205L)
+        );
+        return FeedResponse.from(
+                questionFeedItem(FEED_ID),
+                mediaUrls(),
+                Map.of(),
+                new RelatedQuestionRecommendations(QuestionRecommendationStatus.READY, recommendations)
+        );
+    }
+
+    private FeedCommandResponse questionCommandResponse() {
+        return FeedCommandResponse.from(
+                questionFeedItem(FEED_ID),
+                mediaUrls(),
+                Map.of(),
+                QuestionRecommendationStatus.PENDING
         );
     }
 

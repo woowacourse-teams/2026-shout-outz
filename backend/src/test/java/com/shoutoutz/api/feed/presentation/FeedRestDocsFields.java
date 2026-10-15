@@ -11,6 +11,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWit
 import com.epages.restdocs.apispec.EnumFields;
 import com.shoutoutz.api.category.domain.CategoryType;
 import com.shoutoutz.api.feed.domain.FeedType;
+import com.shoutoutz.api.feed.recommendation.domain.QuestionRecommendationStatus;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserType;
 import java.util.ArrayList;
@@ -75,6 +76,21 @@ final class FeedRestDocsFields {
         fields.add(fieldWithPath("status").type(STRING).description("응답 상태"));
         fields.add(fieldWithPath("data").type(OBJECT).description("피드"));
         fields.addAll(feedFields(feedPrefix));
+        fields.addAll(applyPathPrefix(feedPrefix, List.of(
+                fieldWithPath("relatedQuestionRecommendations").type(OBJECT)
+                        .description("질문 상세에 포함되는 연관 질문 추천. 추천 작업 생성 전이거나 질문이 아니면 생략")
+                        .optional(),
+                new EnumFields(QuestionRecommendationStatus.class).withPath("relatedQuestionRecommendations.status")
+                        .description("추천 생성 상태. PENDING, PROCESSING, READY, FAILED"),
+                fieldWithPath("relatedQuestionRecommendations.items").type(ARRAY)
+                        .description("READY 상태에서 제공되는 연관 질문 목록(기본 최대 5개). 그 외 상태에서는 빈 배열"),
+                fieldWithPath("relatedQuestionRecommendations.items[].recommendationId").type(NUMBER)
+                        .description("추천 질문 ID"),
+                fieldWithPath("relatedQuestionRecommendations.items[].title").type(STRING)
+                        .description("추천 질문 제목"),
+                fieldWithPath("relatedQuestionRecommendations.items[].content").type(STRING)
+                        .description("추천 질문 본문")
+        )));
         return fields;
     }
 
@@ -116,7 +132,10 @@ final class FeedRestDocsFields {
                 fieldWithPath("linkPreview.imageUrl").type(STRING).description("외부 페이지 이미지 URL").optional(),
                 fieldWithPath("linkPreview.siteName").type(STRING).description("외부 사이트 이름").optional(),
                 fieldWithPath("createdAt").type(STRING).description("ISO-8601 생성 시각"),
-                fieldWithPath("updatedAt").type(STRING).description("ISO-8601 수정 시각")
+                fieldWithPath("updatedAt").type(STRING).description("ISO-8601 수정 시각"),
+                new EnumFields(QuestionRecommendationStatus.class).withPath("recommendationStatus")
+                        .description("비동기 질문 추천 생성 상태. 생성 또는 제목·본문 수정 직후에는 PENDING. 일반 피드 또는 추천 기능 비활성화 시 생략")
+                        .optional()
         )));
         return fields;
     }
@@ -124,20 +143,23 @@ final class FeedRestDocsFields {
     static List<FieldDescriptor> feedListResponseFields(String description) {
         return feedListResponseFields(
                 description,
-                "커서와 size를 제외한 조회 조건을 만족하는 전체 피드 수"
+                "커서와 size를 제외한 조회 조건을 만족하는 전체 피드 수. 추천 질문 슬롯은 포함하지 않음",
+                true
         );
     }
 
     static List<FieldDescriptor> userFeedListResponseFields(String description) {
         return feedListResponseFields(
                 description,
-                "커서와 size에 무관한 해당 사용자의 전체 공개 피드 수"
+                "커서와 size에 무관한 해당 사용자의 전체 공개 피드 수. 추천 질문 슬롯은 포함하지 않음",
+                false
         );
     }
 
     private static List<FieldDescriptor> feedListResponseFields(
             String description,
-            String totalCountDescription
+            String totalCountDescription,
+            boolean includeRecommendationSlots
     ) {
         List<FieldDescriptor> fields = new ArrayList<>();
         fields.add(fieldWithPath("status").type(STRING).description("응답 상태"));
@@ -148,6 +170,21 @@ final class FeedRestDocsFields {
         fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"));
         fields.add(fieldWithPath("meta.totalCount").type(NUMBER)
                 .description(totalCountDescription));
+        if (includeRecommendationSlots) {
+            fields.add(fieldWithPath("meta.recommendationSlots").type(ARRAY)
+                    .description("type=QUESTION일 때 실제 질문 5개마다 무작위 추천 질문을 최대 1개 제공. data·cursor·totalCount에는 포함되지 않는다. 페이지 요청마다 무작위 선택되므로 이미 표시한 페이지의 슬롯은 클라이언트가 유지한다. 일반 피드 목록이면 생략")
+                    .optional());
+            fields.add(fieldWithPath("meta.recommendationSlots[].afterFeedId").type(NUMBER)
+                    .description("추천 질문을 삽입할 위치. 이 피드 바로 뒤에 표시"));
+            fields.add(fieldWithPath("meta.recommendationSlots[].recommendation").type(OBJECT)
+                    .description("무작위 추천 질문"));
+            fields.add(fieldWithPath("meta.recommendationSlots[].recommendation.recommendationId").type(NUMBER)
+                    .description("추천 질문 ID"));
+            fields.add(fieldWithPath("meta.recommendationSlots[].recommendation.title").type(STRING)
+                    .description("추천 질문 제목"));
+            fields.add(fieldWithPath("meta.recommendationSlots[].recommendation.content").type(STRING)
+                    .description("추천 질문 본문"));
+        }
         return fields;
     }
 }

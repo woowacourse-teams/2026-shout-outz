@@ -1,7 +1,7 @@
 package com.shoutoutz.api.feed.recommendation.infrastructure;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationGenerator;
 import com.shoutoutz.api.feed.recommendation.application.dto.GeneratedQuestion;
 import java.util.List;
@@ -44,7 +44,7 @@ public class GeminiRecommendationGenerator implements QuestionRecommendationGene
         String input;
         try {
             input = objectMapper.writeValueAsString(Map.of("title", title, "content", content));
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("질문 추천 입력을 구성하지 못했습니다.", exception);
         }
         String prompt = """
@@ -84,7 +84,7 @@ public class GeminiRecommendationGenerator implements QuestionRecommendationGene
         RecommendationPayload payload;
         try {
             payload = objectMapper.readValue(generatedJson, RecommendationPayload.class);
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new IllegalStateException("Gemini 추천 응답 JSON을 해석하지 못했습니다.", exception);
         }
         return validate(payload, count);

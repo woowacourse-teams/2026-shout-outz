@@ -3,6 +3,7 @@ package com.shoutoutz.api.feed.recommendation.application;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationRepository.GenerationClaim;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationRepository.GenerationTask;
 import com.shoutoutz.api.feed.recommendation.application.dto.GeneratedQuestion;
+import com.shoutoutz.api.feed.recommendation.infrastructure.QuestionRecommendationProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Clock;

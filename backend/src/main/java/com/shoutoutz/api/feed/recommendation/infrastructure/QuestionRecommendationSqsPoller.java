@@ -1,6 +1,6 @@
 package com.shoutoutz.api.feed.recommendation.infrastructure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationOutboxDispatcher.QuestionRecommendationMessage;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationRepository;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationWorker;
