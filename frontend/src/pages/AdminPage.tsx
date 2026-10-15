@@ -15,7 +15,7 @@ import { ProjectApprovalPanel } from '@/components/admin/ProjectApprovalPanel';
 import { ProjectEditPanel } from '@/components/admin/ProjectEditPanel';
 import { ADMIN_TAB_LABELS, ADMIN_TABS, DEFAULT_ADMIN_TAB } from '@/constants/admin';
 import { type AdminTab } from '@/types/admin';
-import { getGithubLoginUrl } from '@/utils/auth';
+import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
 
 const route = getRouteApi('/admin');
 
@@ -33,9 +33,7 @@ export function AdminPage() {
         title="로그인이 필요해요."
         description="관리자 계정으로 로그인해 주세요."
         action={
-          <a href={getGithubLoginUrl()} className={getButtonStyles({})}>
-            GitHub 로그인
-          </a>
+          <GithubLoginButton className={getButtonStyles({})}>GitHub 로그인</GithubLoginButton>
         }
       />
     );

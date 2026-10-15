@@ -6,7 +6,7 @@ import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { FeedForm } from '@/components/feeds/FeedForm';
-import { getGithubLoginUrl } from '@/utils/auth';
+import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
 
 interface FeedEditorPageProps {
   feedId?: number;
@@ -50,9 +50,7 @@ function AuthenticatedForm(props: FeedEditorPageProps) {
     return (
       <div className="space-y-4">
         <p className="text-sm text-gray-600">피드를 작성하거나 수정하려면 로그인이 필요합니다.</p>
-        <a className={getButtonStyles({})} href={getGithubLoginUrl()}>
-          GitHub 로그인
-        </a>
+        <GithubLoginButton className={getButtonStyles({})}>GitHub 로그인</GithubLoginButton>
       </div>
     );
   }
