@@ -1,6 +1,8 @@
 package com.shoutoutz.api.interview.presentation;
 
 import com.shoutoutz.api.common.response.SuccessResponse;
+import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
+import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.interview.application.InterviewQueryService;
 import com.shoutoutz.api.interview.application.dto.InterviewPage;
 import com.shoutoutz.api.interview.presentation.dto.response.InterviewDetailResponse;
@@ -21,13 +23,15 @@ public class InterviewHttpApi {
 
     @GetMapping
     public SuccessResponse<List<InterviewSummaryResponse>> findAll(
-            @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "20") int size) {
-        InterviewPage page = queryService.findAll(cursor, size);
+            @RequestParam(required = false) String cursor, @RequestParam(defaultValue = "20") int size,
+            @LoginUser(required = false) AuthenticatedUser user) {
+        InterviewPage page = queryService.findAll(cursor, size, AuthenticatedUser.userIdOrNull(user));
         return SuccessResponse.success(page.items(), page.meta());
     }
 
     @GetMapping("/{interviewId}")
-    public SuccessResponse<InterviewDetailResponse> find(@PathVariable long interviewId) {
-        return SuccessResponse.success(queryService.find(interviewId));
+    public SuccessResponse<InterviewDetailResponse> find(@PathVariable long interviewId,
+            @LoginUser(required = false) AuthenticatedUser user) {
+        return SuccessResponse.success(queryService.find(interviewId, AuthenticatedUser.userIdOrNull(user)));
     }
 }

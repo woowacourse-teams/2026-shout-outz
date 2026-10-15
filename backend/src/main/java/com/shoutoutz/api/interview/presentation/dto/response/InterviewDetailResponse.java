@@ -5,6 +5,6 @@ import java.time.Instant;
 
 public record InterviewDetailResponse(
         long id, String title, String summary, URI thumbnailUrl, IntervieweeResponse interviewee,
-        String contentMd, Instant publishedAt, Instant createdAt, Instant updatedAt
+        String contentMd, Instant publishedAt, Instant createdAt, Instant updatedAt, long likeCount, boolean likedByMe
 ) {
 }

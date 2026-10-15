@@ -47,6 +47,7 @@ class InterviewIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired MockMvc mvc;
     @Autowired InterviewService service;
+    @Autowired com.shoutoutz.api.interview.application.InterviewReactionService reactionService;
     @Autowired InterviewQueryService queryService;
     long adminId;
     long intervieweeId;
@@ -195,6 +196,35 @@ class InterviewIntegrationTest {
         assertThat(queryService.find(id).interviewee().displayName()).isEqualTo("새 이름");
     }
 
+    @Test
+    void 좋아요는_중복되지_않고_취소와_내_반응이_조회에_반영된다() {
+        long id = service.publish(create().getId(), adminId).getId();
+        reactionService.add(id, intervieweeId, "LIKE");
+        reactionService.add(id, intervieweeId, "LIKE");
+        assertThat(queryService.find(id, intervieweeId).likeCount()).isEqualTo(1);
+        assertThat(queryService.find(id, intervieweeId).likedByMe()).isTrue();
+        assertThat(queryService.find(id).likedByMe()).isFalse();
+        assertThat(queryService.findAll(null, 20, intervieweeId).items().getFirst().likedByMe()).isTrue();
+        reactionService.remove(id, intervieweeId, "LIKE");
+        assertThat(queryService.find(id, intervieweeId).likeCount()).isZero();
+        assertThatThrownBy(() -> reactionService.remove(id, intervieweeId, "LIKE"))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void 초안과_발행취소_삭제된_인터뷰에는_좋아요를_남길_수_없다() {
+        long id = create().getId();
+        assertThatThrownBy(() -> reactionService.add(id, intervieweeId, "LIKE"))
+                .isInstanceOf(EntityNotFoundException.class);
+        service.publish(id, adminId);
+        service.unpublish(id, adminId);
+        assertThatThrownBy(() -> reactionService.add(id, intervieweeId, "LIKE"))
+                .isInstanceOf(EntityNotFoundException.class);
+        service.delete(id, adminId);
+        assertThatThrownBy(() -> reactionService.add(id, intervieweeId, "LIKE"))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
     private Interview create() {
         return service.create(adminId, request("첫 인터뷰", "![사진](media://" + imageId + ")"));
     }
@@ -282,6 +312,8 @@ class InterviewIntegrationTest {
     private List<FieldDescriptor> commonFields(String prefix) {
         return new ArrayList<>(List.of(
                 fieldWithPath("status").type(STRING).description("응답 상태"),
+                fieldWithPath(prefix + ".likeCount").type(NUMBER).description("좋아요 수"),
+                fieldWithPath(prefix + ".likedByMe").type(BOOLEAN).description("내 좋아요 여부"),
                 fieldWithPath(prefix + ".id").type(NUMBER).description("인터뷰 ID"),
                 fieldWithPath(prefix + ".title").type(STRING).description("제목"),
                 fieldWithPath(prefix + ".summary").type(STRING).optional().description("요약"),

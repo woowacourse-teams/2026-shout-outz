@@ -157,12 +157,12 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"feedType\"\
                     ,\"message\":\"feedType은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
                     :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\":\"type은\
-                    \ 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"displayOrder는\
-                    \ 0 이상이어야 합니다.\"}]}"
+                    \ 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -473,17 +473,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/api-v1-admin-interviews-2041317676"
+                $ref: "#/components/schemas/api-v1-admin-interviews21040860"
               examples:
                 interview-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":26,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/97ed9c15-7077-4a1d-83e4-71b909a7c6f0/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@i6c46a93ff67543f7928d\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":50,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/911ec88d-2795-4629-b3af-e04e9be4fd63/thumbnail\"\
+                    ,\"interviewee\":{\"handle\":\"@i389092fecfb4480d909a\",\"displayName\"\
                     :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-10-15T07:58:11.571703Z\",\"createdAt\"\
-                    :\"2026-10-15T07:58:11.568275Z\",\"updatedAt\":\"2026-10-15T07:58:11.572015Z\"\
-                    }],\"meta\":{\"nextCursor\":null,\"hasNext\":false,\"totalCount\"\
-                    :1}}"
+                    ,\"publishedAt\":\"2026-10-15T08:00:58.739754Z\",\"createdAt\"\
+                    :\"2026-10-15T08:00:58.736158Z\",\"updatedAt\":\"2026-10-15T08:00:58.740028Z\"\
+                    ,\"likeCount\":0,\"likedByMe\":false}],\"meta\":{\"nextCursor\"\
+                    :null,\"hasNext\":false,\"totalCount\":1}}"
   /api/v1/news:
     get:
       tags:
@@ -1200,21 +1200,23 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/api-v1-admin-interviews-2041317676"
+                $ref: "#/components/schemas/api-v1-admin-interviews21040860"
               examples:
                 interview-admin-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":28,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/25da8aa3-9cc9-4ee8-9be6-9770977c1222/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@i5b2ed2a070b34568935a\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":52,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/5415284f-de48-4a41-b3f0-05a5b53095b5/thumbnail\"\
+                    ,\"interviewee\":{\"handle\":\"@i5fb5e53ddde24f3aa7ff\",\"displayName\"\
                     :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-15T07:58:11.597406Z\"\
-                    ,\"updatedAt\":\"2026-10-15T07:58:11.597406Z\"},{\"id\":27,\"\
-                    title\":\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/25da8aa3-9cc9-4ee8-9be6-9770977c1222/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@i5b2ed2a070b34568935a\",\"displayName\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-15T08:00:58.771469Z\"\
+                    ,\"updatedAt\":\"2026-10-15T08:00:58.771469Z\",\"likeCount\":0,\"\
+                    likedByMe\":false},{\"id\":51,\"title\":\"첫 인터뷰\",\"summary\"\
+                    :\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/5415284f-de48-4a41-b3f0-05a5b53095b5/thumbnail\"\
+                    ,\"interviewee\":{\"handle\":\"@i5fb5e53ddde24f3aa7ff\",\"displayName\"\
                     :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-15T07:58:11.592023Z\"\
-                    ,\"updatedAt\":\"2026-10-15T07:58:11.592023Z\"}],\"meta\":{\"\
-                    nextCursor\":null,\"hasNext\":false,\"totalCount\":2}}"
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-15T08:00:58.766172Z\"\
+                    ,\"updatedAt\":\"2026-10-15T08:00:58.766172Z\",\"likeCount\":0,\"\
+                    likedByMe\":false}],\"meta\":{\"nextCursor\":null,\"hasNext\"\
+                    :false,\"totalCount\":2}}"
     post:
       tags:
       - Interview Admin
@@ -1229,7 +1231,7 @@ paths:
             examples:
               interview-create:
                 value: "{\"title\":\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :674,\"thumbnailMediaId\":108,\"contentMd\":\"![인터뷰](media://109)\"\
+                  :991,\"thumbnailMediaId\":176,\"contentMd\":\"![인터뷰](media://177)\"\
                   }"
       responses:
         "201":
@@ -1240,11 +1242,11 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-create:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":27,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":674,\"thumbnailMediaId\"\
-                    :108,\"contentMd\":\"![인터뷰](media://109)\",\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-15T07:58:11.592023Z\"\
-                    ,\"updatedAt\":\"2026-10-15T07:58:11.592023Z\"}}"
+                  value: "{\"status\":\"success\",\"data\":{\"id\":51,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":991,\"thumbnailMediaId\"\
+                    :176,\"contentMd\":\"![인터뷰](media://177)\",\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-15T08:00:58.766172Z\"\
+                    ,\"updatedAt\":\"2026-10-15T08:00:58.766172Z\"}}"
   /api/v1/admin/projects:
     get:
       tags:
@@ -1538,19 +1540,19 @@ paths:
               examples:
                 auth-signup-invalid-profile:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"bio\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"bio\",\"\
                     message\":\"bio는 200자를 초과할 수 없습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 auth-signup-session-missing:
                   value: "{\"status\":\"error\",\"code\":\"OAUTH_SIGNUP_SESSION_NOT_FOUND\"\
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"}]}"
+                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -2012,17 +2014,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/api-v1-interviews-interviewId-1869597259"
+                $ref: "#/components/schemas/api-v1-interviews-interviewId1478922645"
               examples:
                 interview-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":26,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/97ed9c15-7077-4a1d-83e4-71b909a7c6f0/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@i6c46a93ff67543f7928d\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":50,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/911ec88d-2795-4629-b3af-e04e9be4fd63/thumbnail\"\
+                    ,\"interviewee\":{\"handle\":\"@i389092fecfb4480d909a\",\"displayName\"\
                     :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"contentMd\":\"![사\
-                    진](https://cdn.example.com/test-prefix/interview/3c6ecdd4-95bd-44a3-a48b-d0347dc3e1ec/display)\"\
-                    ,\"publishedAt\":\"2026-10-15T07:58:11.571703Z\",\"createdAt\"\
-                    :\"2026-10-15T07:58:11.568275Z\",\"updatedAt\":\"2026-10-15T07:58:11.572015Z\"\
-                    }}"
+                    진](https://cdn.example.com/test-prefix/interview/e8aec0a0-a323-4d07-9831-bd0af5f1bf18/display)\"\
+                    ,\"publishedAt\":\"2026-10-15T08:00:58.739754Z\",\"createdAt\"\
+                    :\"2026-10-15T08:00:58.736158Z\",\"updatedAt\":\"2026-10-15T08:00:58.740028Z\"\
+                    ,\"likeCount\":0,\"likedByMe\":false}}"
   /api/v1/news/events:
     post:
       tags:
@@ -2145,10 +2147,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
-                    eventStartAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
+                    :\"eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -2980,9 +2982,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -3335,11 +3337,11 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-admin-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":28,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":674,\"thumbnailMediaId\"\
-                    :108,\"contentMd\":\"![사진](media://109)\",\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-15T07:58:11.597406Z\"\
-                    ,\"updatedAt\":\"2026-10-15T07:58:11.597406Z\"}}"
+                  value: "{\"status\":\"success\",\"data\":{\"id\":52,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":991,\"thumbnailMediaId\"\
+                    :176,\"contentMd\":\"![사진](media://177)\",\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-15T08:00:58.771469Z\"\
+                    ,\"updatedAt\":\"2026-10-15T08:00:58.771469Z\"}}"
     put:
       tags:
       - Interview Admin
@@ -3361,7 +3363,7 @@ paths:
             examples:
               interview-update:
                 value: "{\"title\":\"수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :666,\"thumbnailMediaId\":100,\"contentMd\":\"수정 본문\"}"
+                  :983,\"thumbnailMediaId\":168,\"contentMd\":\"수정 본문\"}"
       responses:
         "200":
           description: "200"
@@ -3371,11 +3373,11 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-update:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":22,\"title\":\"\
-                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":666,\"thumbnailMediaId\"\
-                    :100,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
-                    :\"2026-10-15T07:58:11.507445Z\",\"createdAt\":\"2026-10-15T07:58:11.505689Z\"\
-                    ,\"updatedAt\":\"2026-10-15T07:58:11.527640Z\"}}"
+                  value: "{\"status\":\"success\",\"data\":{\"id\":46,\"title\":\"\
+                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":983,\"thumbnailMediaId\"\
+                    :168,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
+                    :\"2026-10-15T08:00:58.676839Z\",\"createdAt\":\"2026-10-15T08:00:58.675354Z\"\
+                    ,\"updatedAt\":\"2026-10-15T08:00:58.690153Z\"}}"
     delete:
       tags:
       - Interview Admin
@@ -4616,11 +4618,11 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-publish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":22,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":666,\"thumbnailMediaId\"\
-                    :100,\"contentMd\":\"![사진](media://101)\",\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-10-15T07:58:11.507445Z\",\"createdAt\"\
-                    :\"2026-10-15T07:58:11.505689Z\",\"updatedAt\":\"2026-10-15T07:58:11.508575Z\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":46,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":983,\"thumbnailMediaId\"\
+                    :168,\"contentMd\":\"![사진](media://169)\",\"status\":\"PUBLISHED\"\
+                    ,\"publishedAt\":\"2026-10-15T08:00:58.676839Z\",\"createdAt\"\
+                    :\"2026-10-15T08:00:58.675354Z\",\"updatedAt\":\"2026-10-15T08:00:58.677310Z\"\
                     }}"
   /api/v1/admin/interviews/{interviewId}/unpublish:
     post:
@@ -4645,11 +4647,11 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-unpublish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":22,\"title\":\"\
-                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":666,\"thumbnailMediaId\"\
-                    :100,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
-                    :\"2026-10-15T07:58:11.507445Z\",\"createdAt\":\"2026-10-15T07:58:11.505689Z\"\
-                    ,\"updatedAt\":\"2026-10-15T07:58:11.536146Z\"}}"
+                  value: "{\"status\":\"success\",\"data\":{\"id\":46,\"title\":\"\
+                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":983,\"thumbnailMediaId\"\
+                    :168,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
+                    :\"2026-10-15T08:00:58.676839Z\",\"createdAt\":\"2026-10-15T08:00:58.675354Z\"\
+                    ,\"updatedAt\":\"2026-10-15T08:00:58.699494Z\"}}"
   /api/v1/admin/projects/{projectId}/approve:
     post:
       tags:
@@ -5175,6 +5177,136 @@ paths:
                 feed-reaction-remove-reaction-not-found:
                   value: "{\"status\":\"error\",\"code\":\"REACTION_NOT_FOUND\",\"\
                     message\":\"요청한 반응을 찾을 수 없습니다.\"}"
+  /api/v1/interview/{interviewId}/reactions/{type}:
+    put:
+      tags:
+      - Interview Reaction
+      summary: 인터뷰 반응 추가
+      description: "현재 로그인 사용자가 삭제되지 않은 인터뷰에 type 반응을 추가한다. 현재는 LIKE만 지원하며, 이미 존재하\
+        는 반응이면 현재 상태를 반환한다."
+      operationId: interview-reaction-add
+      parameters:
+      - name: interviewId
+        in: path
+        description: 인터뷰 ID
+        required: true
+        schema:
+          type: string
+      - name: type
+        in: path
+        description: 반응 타입. 현재 LIKE만 지원한다.
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewReactionSuccessResponse"
+              examples:
+                interview-reaction-add:
+                  value: "{\"status\":\"success\",\"data\":{\"interviewId\":100,\"\
+                    type\":\"LIKE\",\"active\":true,\"likeCount\":21}}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-reaction-add-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
+                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-reaction-add-invalid-type:
+                  value: "{\"status\":\"error\",\"code\":\"REACTION_TYPE_INVALID\"\
+                    ,\"message\":\"지원하지 않는 인터뷰 반응 타입입니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-reaction-add-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+    delete:
+      tags:
+      - Interview Reaction
+      summary: 인터뷰 반응 제거
+      description: "현재 로그인 사용자가 삭제되지 않은 인터뷰의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 존재\
+        하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다."
+      operationId: interview-reaction-remove
+      parameters:
+      - name: interviewId
+        in: path
+        description: 인터뷰 ID
+        required: true
+        schema:
+          type: string
+      - name: type
+        in: path
+        description: 반응 타입. 현재 LIKE만 지원한다.
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-reaction-remove-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
+                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
+                interview-reaction-remove-reaction-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"REACTION_NOT_FOUND\",\"\
+                    message\":\"요청한 반응을 찾을 수 없습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-reaction-remove-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterviewReactionSuccessResponse"
+              examples:
+                interview-reaction-remove:
+                  value: "{\"status\":\"success\",\"data\":{\"interviewId\":100,\"\
+                    type\":\"LIKE\",\"active\":false,\"likeCount\":20}}"
   /api/v1/news/{newsId}/reactions/{type}:
     put:
       tags:
@@ -6151,70 +6283,6 @@ components:
               type: number
               description: 소식 ID
           description: 수정된 소식
-        status:
-          type: string
-          description: 응답 상태
-    api-v1-interviews-interviewId-1869597259:
-      required:
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - contentMd
-          - createdAt
-          - id
-          - title
-          - updatedAt
-          type: object
-          properties:
-            summary:
-              type: string
-              description: 요약
-              nullable: true
-            createdAt:
-              type: string
-              description: 생성 시각
-            publishedAt:
-              type: string
-              description: 최초 발행 시각
-              nullable: true
-            id:
-              type: number
-              description: 인터뷰 ID
-            contentMd:
-              type: string
-              description: 이미지 URL로 변환한 Markdown
-            title:
-              type: string
-              description: 제목
-            updatedAt:
-              type: string
-              description: 수정 시각
-            interviewee:
-              required:
-              - displayName
-              type: object
-              properties:
-                avatarUrl:
-                  type: string
-                  description: 프로필 이미지 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 표시 이름
-                bio:
-                  type: string
-                  description: 현재 사용자 소개
-                  nullable: true
-                handle:
-                  type: string
-                  description: 사용자 핸들
-                  nullable: true
-            thumbnailUrl:
-              type: string
-              description: 대표 이미지 URL
-              nullable: true
         status:
           type: string
           description: 응답 상태
@@ -8704,90 +8772,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    api-v1-admin-interviews-2041317676:
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 인터뷰 목록
-          items:
-            required:
-            - createdAt
-            - id
-            - status
-            - title
-            - updatedAt
-            type: object
-            properties:
-              summary:
-                type: string
-                description: 요약
-                nullable: true
-              createdAt:
-                type: string
-                description: 생성 시각
-              publishedAt:
-                type: string
-                description: 최초 발행 시각
-                nullable: true
-              id:
-                type: number
-                description: 인터뷰 ID
-              title:
-                type: string
-                description: 제목
-              status:
-                type: string
-                description: 발행 상태
-              updatedAt:
-                type: string
-                description: 수정 시각
-              interviewee:
-                required:
-                - displayName
-                type: object
-                properties:
-                  avatarUrl:
-                    type: string
-                    description: 프로필 이미지 URL
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 표시 이름
-                  bio:
-                    type: string
-                    description: 현재 사용자 소개
-                    nullable: true
-                  handle:
-                    type: string
-                    description: 사용자 핸들
-                    nullable: true
-              thumbnailUrl:
-                type: string
-                description: 대표 이미지 URL
-                nullable: true
-        meta:
-          required:
-          - hasNext
-          - totalCount
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 여부
-            totalCount:
-              type: number
-              description: 전체 개수
-        status:
-          type: string
-          description: 응답 상태
     AdminVerificationRequestRejectSuccessResponse:
       title: AdminVerificationRequestRejectSuccessResponse
       required:
@@ -9511,6 +9495,98 @@ components:
           - BACKEND
           - ANDROID
           - FRONTEND
+    api-v1-admin-interviews21040860:
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 인터뷰 목록
+          items:
+            required:
+            - createdAt
+            - id
+            - likeCount
+            - likedByMe
+            - status
+            - title
+            - updatedAt
+            type: object
+            properties:
+              summary:
+                type: string
+                description: 요약
+                nullable: true
+              createdAt:
+                type: string
+                description: 생성 시각
+              likedByMe:
+                type: boolean
+                description: 내 좋아요 여부
+              publishedAt:
+                type: string
+                description: 최초 발행 시각
+                nullable: true
+              likeCount:
+                type: number
+                description: 좋아요 수
+              id:
+                type: number
+                description: 인터뷰 ID
+              title:
+                type: string
+                description: 제목
+              status:
+                type: string
+                description: 발행 상태
+              updatedAt:
+                type: string
+                description: 수정 시각
+              interviewee:
+                required:
+                - displayName
+                type: object
+                properties:
+                  avatarUrl:
+                    type: string
+                    description: 프로필 이미지 URL
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 표시 이름
+                  bio:
+                    type: string
+                    description: 현재 사용자 소개
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 사용자 핸들
+                    nullable: true
+              thumbnailUrl:
+                type: string
+                description: 대표 이미지 URL
+                nullable: true
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 여부
+            totalCount:
+              type: number
+              description: 전체 개수
+        status:
+          type: string
+          description: 응답 상태
     ProjectCommentCreateSuccessResponse:
       title: ProjectCommentCreateSuccessResponse
       required:
@@ -10162,6 +10238,78 @@ components:
         eventEndAt:
           type: string
           description: 이벤트 종료 시각
+    api-v1-interviews-interviewId1478922645:
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - contentMd
+          - createdAt
+          - id
+          - likeCount
+          - likedByMe
+          - title
+          - updatedAt
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 요약
+              nullable: true
+            createdAt:
+              type: string
+              description: 생성 시각
+            likedByMe:
+              type: boolean
+              description: 내 좋아요 여부
+            publishedAt:
+              type: string
+              description: 최초 발행 시각
+              nullable: true
+            likeCount:
+              type: number
+              description: 좋아요 수
+            id:
+              type: number
+              description: 인터뷰 ID
+            contentMd:
+              type: string
+              description: 이미지 URL로 변환한 Markdown
+            title:
+              type: string
+              description: 제목
+            updatedAt:
+              type: string
+              description: 수정 시각
+            interviewee:
+              required:
+              - displayName
+              type: object
+              properties:
+                avatarUrl:
+                  type: string
+                  description: 프로필 이미지 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 표시 이름
+                bio:
+                  type: string
+                  description: 현재 사용자 소개
+                  nullable: true
+                handle:
+                  type: string
+                  description: 사용자 핸들
+                  nullable: true
+            thumbnailUrl:
+              type: string
+              description: 대표 이미지 URL
+              nullable: true
+        status:
+          type: string
+          description: 응답 상태
     FeedCommentCreateRequest:
       title: FeedCommentCreateRequest
       required:
@@ -10296,6 +10444,37 @@ components:
               type: number
               description: 커서와 size를 제외한 상태 조건을 만족하는 전체 인증 신청 수
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    InterviewReactionSuccessResponse:
+      title: InterviewReactionSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - interviewId
+          - likeCount
+          - type
+          type: object
+          properties:
+            interviewId:
+              type: number
+              description: 인터뷰 ID
+            active:
+              type: boolean
+              description: 요청한 반응의 활성 상태
+            likeCount:
+              type: number
+              description: 인터뷰 좋아요 수
+            type:
+              type: string
+              description: 반응 타입. 현재 LIKE만 지원하며 향후 확장할 수 있다.
+          description: 인터뷰 반응 변경 결과
         status:
           type: string
           description: 응답 상태

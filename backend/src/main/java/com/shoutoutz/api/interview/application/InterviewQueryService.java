@@ -7,6 +7,8 @@ import com.shoutoutz.api.interview.application.dto.InterviewCursor;
 import com.shoutoutz.api.interview.application.dto.InterviewItem;
 import com.shoutoutz.api.interview.application.dto.InterviewPage;
 import com.shoutoutz.api.interview.domain.InterviewErrorCode;
+import com.shoutoutz.api.interview.domain.InterviewReactionRepository;
+import com.shoutoutz.api.interview.domain.InterviewReactionCounts;
 import com.shoutoutz.api.interview.presentation.dto.response.InterviewAdminResponse;
 import com.shoutoutz.api.interview.presentation.dto.response.InterviewDetailResponse;
 import com.shoutoutz.api.interview.presentation.dto.response.InterviewSummaryResponse;
@@ -29,17 +31,23 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class InterviewQueryService {
+    private static final InterviewReactionCounts NO_REACTION = new InterviewReactionCounts(0L, false);
+    private final InterviewReactionRepository reactionRepository;
     private final InterviewQueryRepository repository;
     private final InterviewAccessService accessService;
     private final MediaUrlResolver mediaUrlResolver;
 
     public InterviewPage findAll(String cursor, int size) {
-        return page(cursor, size, false);
+        return findAll(cursor, size, null);
+    }
+
+    public InterviewPage findAll(String cursor, int size, Long viewerId) {
+        return page(cursor, size, false, viewerId);
     }
 
     public InterviewPage findAllAdmin(long editorId, String cursor, int size) {
         accessService.requireAdmin(editorId);
-        return page(cursor, size, true);
+        return page(cursor, size, true, editorId);
     }
 
     public InterviewAdminResponse findAdmin(long id, long editorId) {
@@ -48,16 +56,21 @@ public class InterviewQueryService {
     }
 
     public InterviewDetailResponse find(long id) {
+        return find(id, null);
+    }
+
+    public InterviewDetailResponse find(long id, Long viewerId) {
         InterviewItem item = repository.findPublished(id)
                 .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
         Map<Long, URI> urls = resolveDisplayUrls(List.of(item), true);
+        InterviewReactionCounts counts = reactionRepository.findCountsByInterviewId(id, viewerId);
         return new InterviewDetailResponse(item.id(), item.title(), item.summary(),
                 mediaUrlResolver.resolve(item.thumbnailMediaId(), MediaVariant.THUMBNAIL), interviewee(item, urls),
                 mediaUrlResolver.replaceDescriptionReferences(item.contentMd(), urls),
-                item.publishedAt(), item.createdAt(), item.updatedAt());
+                item.publishedAt(), item.createdAt(), item.updatedAt(), counts.likeCount(), counts.likedByMe());
     }
 
-    private InterviewPage page(String cursor, int size, boolean admin) {
+    private InterviewPage page(String cursor, int size, boolean admin, Long viewerId) {
         if (size < 1 || size > 50) {
             throw new InvalidInputException(InterviewErrorCode.INTERVIEW_INVALID_SIZE);
         }
@@ -79,11 +92,15 @@ public class InterviewQueryService {
             }
         }
         Map<Long, URI> thumbnailUrls = mediaUrlResolver.resolveAll(thumbnailIds, MediaVariant.THUMBNAIL);
+        Map<Long, InterviewReactionCounts> reactions = reactionRepository.findCountsByInterviewIds(
+                items.stream().map(InterviewItem::id).toList(), viewerId);
         List<InterviewSummaryResponse> responses = new ArrayList<>();
         for (InterviewItem item : items) {
+            InterviewReactionCounts counts = reactions.getOrDefault(item.id(), NO_REACTION);
             responses.add(new InterviewSummaryResponse(item.id(), item.title(), item.summary(),
                     mediaUrl(thumbnailUrls, item.thumbnailMediaId()), interviewee(item, displayUrls),
-                    item.status(), item.publishedAt(), item.createdAt(), item.updatedAt()));
+                    item.status(), item.publishedAt(), item.createdAt(), item.updatedAt(),
+                    counts.likeCount(), counts.likedByMe()));
         }
         String nextCursor = null;
         if (hasNext) {
