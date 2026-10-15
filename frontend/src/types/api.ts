@@ -123,9 +123,14 @@ export type FeedCommentData = Omit<GeneratedFeedComment, 'author'> & {
 export type ProjectCreateBody = GeneratedProjectCreateRequest;
 export type ProjectUpdateRequest = GeneratedProjectUpdateRequest;
 /** ProjectCreateResponse.java: 등록 응답은 slug만 제공한다. */
-export type ProjectCreatedData = { slug: string };
+export interface ProjectCreatedData {
+  slug: string;
+}
 /** ProjectUpdateResponse.java: 수정 결과에는 slug와 승인 상태가 있다. */
-export type ProjectUpdatedData = { slug: string; approvalStatus: ProjectApprovalStatus };
+export interface ProjectUpdatedData {
+  slug: string;
+  approvalStatus: ProjectApprovalStatus;
+}
 /** ProjectFindAllResponse.Item.java: 일반 목록에는 프로젝트 ID가 없다. */
 export type ProjectListItemData = Omit<
   WithProjectMemberType<Item<Data<ProjectFindAllSuccessResponse>>>,

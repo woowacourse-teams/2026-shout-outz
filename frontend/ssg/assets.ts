@@ -1,10 +1,10 @@
 /// <reference types="node" />
 import { existsSync, readFileSync } from 'node:fs';
 
-export type BuildAssets = {
+export interface BuildAssets {
   script: string;
   style?: string;
-};
+}
 
 function isBuildAssets(value: unknown): value is BuildAssets {
   if (typeof value !== 'object' || value === null) return false;

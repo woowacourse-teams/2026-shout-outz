@@ -17,6 +17,7 @@ export function createAppRouter(queryClient: QueryClient) {
     dehydrate: () =>
       ({
         queryClientState: dehydrate(queryClient),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 위 이유로 이 경계에서만 단언한다
       }) as any,
     hydrate: (dehydrated) => {
       hydrateQueryClient(queryClient, dehydrated.queryClientState);
