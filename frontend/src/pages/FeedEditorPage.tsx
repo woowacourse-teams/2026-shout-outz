@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { feedQuery, type FeedType } from '@/apis/feed';
 import { sessionQuery } from '@/apis/session';
@@ -6,11 +7,14 @@ import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { FeedForm } from '@/components/feeds/FeedForm';
+import type { RecommendationNavigation } from '@/types/recommendation';
+import { saveLoginQuestionDraft } from '@/utils/recommendation';
 import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
 
 interface FeedEditorPageProps {
   feedId?: number;
   feedType?: FeedType;
+  initialDraft?: RecommendationNavigation;
   onCancel: () => void;
   onSaved: (feedId: number) => void;
 }
@@ -46,19 +50,41 @@ export function FeedEditorPage(props: FeedEditorPageProps) {
 
 function AuthenticatedForm(props: FeedEditorPageProps) {
   const { data: session } = useSuspenseQuery(sessionQuery);
+  const [draftError, setDraftError] = useState(false);
   if (session.status !== 'AUTHENTICATED' || session.userId == null) {
     return (
       <div className="space-y-4">
         <p className="text-sm text-gray-600">피드를 작성하거나 수정하려면 로그인이 필요합니다.</p>
-        <GithubLoginButton className={getButtonStyles({})}>GitHub 로그인</GithubLoginButton>
+        <GithubLoginButton
+          className={getButtonStyles({})}
+          onBeforeLogin={() => {
+            if (!props.initialDraft) return true;
+            const saved = saveLoginQuestionDraft(props.initialDraft);
+            setDraftError(!saved);
+            return saved;
+          }}
+        >
+          GitHub 로그인
+        </GithubLoginButton>
+        {props.initialDraft && (
+          <p className="text-sm text-gray-500">
+            로그인 후 선택한 추천 질문으로 이어서 작성할 수 있어요.
+          </p>
+        )}
+        {draftError && (
+          <p role="alert" className="text-sm text-red-600">
+            초안을 보관하지 못했어요. 브라우저의 사이트 저장소를 허용한 뒤 다시 시도해 주세요.
+          </p>
+        )}
       </div>
     );
   }
   return props.feedId === undefined ? (
     <FeedForm
-      key={session.userId}
+      key={`${session.userId}-${props.initialDraft?.recommendation.recommendationId ?? 'new'}`}
       userId={session.userId}
       feedType={props.feedType ?? 'POST'}
+      initialDraft={props.initialDraft?.recommendation}
       onCancel={props.onCancel}
       onSaved={props.onSaved}
     />
@@ -78,7 +104,7 @@ function EditForm({
   userId,
   onCancel,
   onSaved,
-}: Omit<Required<FeedEditorPageProps>, 'feedType'> & { userId: number }) {
+}: Omit<Required<FeedEditorPageProps>, 'feedType' | 'initialDraft'> & { userId: number }) {
   const { data: feed } = useSuspenseQuery(feedQuery(feedId));
   return (
     <FeedForm

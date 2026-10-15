@@ -15,12 +15,14 @@ import { Select } from '@/components/Select';
 import { Button } from '@/components/Button';
 import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { getApiErrorMessage } from '@/utils/error';
+import type { QuestionRecommendation } from '@/types/recommendation';
 import { analytics } from '@/utils/analytics';
 
 interface FeedFormProps {
   userId: number;
   feedType?: FeedType;
   initialFeed?: Feed;
+  initialDraft?: Pick<QuestionRecommendation, 'title' | 'content'>;
   onCancel: () => void;
   onSaved: (feedId: number) => void;
 }
@@ -29,6 +31,7 @@ export function FeedForm({
   userId,
   feedType = 'POST',
   initialFeed,
+  initialDraft,
   onCancel,
   onSaved,
 }: FeedFormProps) {
@@ -61,8 +64,8 @@ export function FeedForm({
     initialFeed ? updateFeedMutation(initialFeed.feedId) : createFeedMutation,
   );
   const submitting = useRef(false);
-  const [title, setTitle] = useState(initialFeed?.title ?? '');
-  const [content, setContent] = useState(initialFeed?.content ?? '');
+  const [title, setTitle] = useState(initialFeed?.title ?? initialDraft?.title ?? '');
+  const [content, setContent] = useState(initialFeed?.content ?? initialDraft?.content ?? '');
   const [isAnonymous, setIsAnonymous] = useState(initialFeed?.isAnonymous ?? false);
   // 길이는 코드 포인트로 센다. 서버가 Unicode 기준으로 재므로 이모지·한글이 같은 수로 잡힌다.
   const titleTooLong = Array.from(title).length > FEED_TITLE_MAX;

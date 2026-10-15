@@ -1035,7 +1035,21 @@ export interface FeedFindAllSuccessResponse {
     hasNext: boolean;
     /** 다음 페이지 커서 */
     nextCursor?: string | null;
-    /** 커서와 size를 제외한 조회 조건을 만족하는 전체 피드 수 */
+    /** type=QUESTION일 때 실제 질문 5개마다 무작위 추천 질문을 최대 1개 제공. data·cursor·totalCount에는 포함되지 않는다. 페이지 요청마다 무작위 선택되므로 이미 표시한 페이지의 슬롯은 클라이언트가 유지한다. 일반 피드 목록이면 생략 */
+    recommendationSlots?: {
+      /** 추천 질문을 삽입할 위치. 이 피드 바로 뒤에 표시 */
+      afterFeedId: number;
+      /** 무작위 추천 질문 */
+      recommendation: {
+        /** 추천 질문 본문 */
+        content: string;
+        /** 추천 질문 ID */
+        recommendationId: number;
+        /** 추천 질문 제목 */
+        title: string;
+      };
+    }[];
+    /** 커서와 size를 제외한 조회 조건을 만족하는 전체 피드 수. 추천 질문 슬롯은 포함하지 않음 */
     totalCount: number;
   };
   /** 응답 상태 */
@@ -1122,6 +1136,20 @@ export interface FeedFindSuccessResponse {
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
+    /** 질문 상세에 포함되는 연관 질문 추천. 추천 작업 생성 전이거나 질문이 아니면 생략 */
+    relatedQuestionRecommendations?: {
+      /** READY 상태에서 제공되는 연관 질문 목록(기본 최대 5개). 그 외 상태에서는 빈 배열 */
+      items: {
+        /** 추천 질문 본문 */
+        content: string;
+        /** 추천 질문 ID */
+        recommendationId: number;
+        /** 추천 질문 제목 */
+        title: string;
+      }[];
+      /** 추천 생성 상태. PENDING, PROCESSING, READY, FAILED */
+      status: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED';
+    };
     /** 피드 제목 */
     title: string;
     /** ISO-8601 수정 시각 */
@@ -1232,6 +1260,8 @@ export interface FeedSaveSuccessResponse {
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
+    /** 비동기 질문 추천 생성 상태. 생성 또는 제목·본문 수정 직후에는 PENDING. 일반 피드 또는 추천 기능 비활성화 시 생략 */
+    recommendationStatus?: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED' | null;
     /** 피드 제목 */
     title: string;
     /** ISO-8601 수정 시각 */
@@ -1329,6 +1359,8 @@ export interface FeedUpdateSuccessResponse {
       /** 본문 미디어 공개 URL */
       url: string;
     }[];
+    /** 비동기 질문 추천 생성 상태. 생성 또는 제목·본문 수정 직후에는 PENDING. 일반 피드 또는 추천 기능 비활성화 시 생략 */
+    recommendationStatus?: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED' | null;
     /** 피드 제목 */
     title: string;
     /** ISO-8601 수정 시각 */
@@ -2629,7 +2661,7 @@ export interface UserFeedFindAllSuccessResponse {
     hasNext: boolean;
     /** 다음 페이지 커서 */
     nextCursor?: string | null;
-    /** 커서와 size에 무관한 해당 사용자의 전체 공개 피드 수 */
+    /** 커서와 size에 무관한 해당 사용자의 전체 공개 피드 수. 추천 질문 슬롯은 포함하지 않음 */
     totalCount: number;
   };
   /** 응답 상태 */

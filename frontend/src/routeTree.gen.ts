@@ -16,6 +16,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as CommunityIndexRouteImport } from './routes/community/index'
 import { Route as CommunityFeedIdRouteImport } from './routes/community/$feedId'
 import { Route as CommunityNewRouteImport } from './routes/community/new'
+import { Route as CommunityRecommendationsRouteImport } from './routes/community/recommendations'
 import { Route as FeedsIndexRouteImport } from './routes/feeds/index'
 import { Route as FeedsFeedIdRouteImport } from './routes/feeds/$feedId'
 import { Route as FeedsNewRouteImport } from './routes/feeds/new'
@@ -65,6 +66,12 @@ const CommunityNewRoute = CommunityNewRouteImport.update({
   path: '/community/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunityRecommendationsRoute =
+  CommunityRecommendationsRouteImport.update({
+    id: '/community/recommendations',
+    path: '/community/recommendations',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const FeedsIndexRoute = FeedsIndexRouteImport.update({
   id: '/feeds/',
   path: '/feeds/',
@@ -138,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/community/$feedId': typeof CommunityFeedIdRoute
   '/community/new': typeof CommunityNewRoute
+  '/community/recommendations': typeof CommunityRecommendationsRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
   '/mypage/verification': typeof MypageVerificationRoute
@@ -160,6 +168,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/community/$feedId': typeof CommunityFeedIdRoute
   '/community/new': typeof CommunityNewRoute
+  '/community/recommendations': typeof CommunityRecommendationsRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
   '/mypage/verification': typeof MypageVerificationRoute
@@ -183,6 +192,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/community/$feedId': typeof CommunityFeedIdRoute
   '/community/new': typeof CommunityNewRoute
+  '/community/recommendations': typeof CommunityRecommendationsRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
   '/mypage/verification': typeof MypageVerificationRoute
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/community/$feedId'
     | '/community/new'
+    | '/community/recommendations'
     | '/feeds/$feedId'
     | '/feeds/new'
     | '/mypage/verification'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/community/$feedId'
     | '/community/new'
+    | '/community/recommendations'
     | '/feeds/$feedId'
     | '/feeds/new'
     | '/mypage/verification'
@@ -251,6 +263,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/community/$feedId'
     | '/community/new'
+    | '/community/recommendations'
     | '/feeds/$feedId'
     | '/feeds/new'
     | '/mypage/verification'
@@ -274,6 +287,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   CommunityFeedIdRoute: typeof CommunityFeedIdRoute
   CommunityNewRoute: typeof CommunityNewRoute
+  CommunityRecommendationsRoute: typeof CommunityRecommendationsRoute
   FeedsFeedIdRoute: typeof FeedsFeedIdRoute
   FeedsNewRoute: typeof FeedsNewRoute
   MypageVerificationRoute: typeof MypageVerificationRoute
@@ -339,6 +353,13 @@ declare module '@tanstack/react-router' {
       path: '/community/new'
       fullPath: '/community/new'
       preLoaderRoute: typeof CommunityNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community/recommendations': {
+      id: '/community/recommendations'
+      path: '/community/recommendations'
+      fullPath: '/community/recommendations'
+      preLoaderRoute: typeof CommunityRecommendationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/feeds/': {
@@ -442,6 +463,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   CommunityFeedIdRoute: CommunityFeedIdRoute,
   CommunityNewRoute: CommunityNewRoute,
+  CommunityRecommendationsRoute: CommunityRecommendationsRoute,
   FeedsFeedIdRoute: FeedsFeedIdRoute,
   FeedsNewRoute: FeedsNewRoute,
   MypageVerificationRoute: MypageVerificationRoute,

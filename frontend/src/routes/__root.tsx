@@ -1,6 +1,7 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 
+import { ResumeQuestionDraft } from '@/components/recommendations/ResumeQuestionDraft';
 import { AnalyticsIdentifier } from '@/components/AnalyticsIdentifier';
 import { BugReportButton } from '@/components/BugReportButton';
 import { DevelopmentBanner } from '@/components/DevelopmentBanner';
@@ -10,6 +11,7 @@ import { DevelopmentBanner } from '@/components/DevelopmentBanner';
 const RootLayout = () => (
   <>
     <AnalyticsIdentifier />
+    <ResumeQuestionDraft />
     <DevelopmentBanner />
     <Outlet />
     <BugReportButton />
