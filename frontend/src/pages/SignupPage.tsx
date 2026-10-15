@@ -19,9 +19,9 @@ import { Input } from '@/components/Input';
 import { CrewInfoFields } from '@/components/users/CrewInfoFields';
 import { ProfileIntroFields } from '@/components/users/ProfileIntroFields';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { getGithubLoginUrl } from '@/utils/auth';
+import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
 import { getApiErrorMessage, isApiResponseError } from '@/utils/error';
-import { analytics, toPathPattern } from '@/utils/analytics';
+import { analytics } from '@/utils/analytics';
 import { cn } from '@/utils/cn';
 import {
   toProfileIntroBody,
@@ -101,15 +101,9 @@ function SignupContent({ onComplete }: SignupPageProps) {
       <p className="mt-2 text-sm text-gray-600">
         로그인 후 서비스에서 사용할 정보를 입력해 주세요.
       </p>
-      <a
-        href={getGithubLoginUrl()}
-        onClick={() =>
-          analytics.track({ name: 'login_started', from: toPathPattern(window.location.pathname) })
-        }
-        className={getButtonStyles({ className: 'mt-5' })}
-      >
+      <GithubLoginButton className={getButtonStyles({ className: 'mt-5' })}>
         GitHub 로그인
-      </a>
+      </GithubLoginButton>
     </div>
   );
 }
