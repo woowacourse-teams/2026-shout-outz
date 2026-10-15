@@ -225,6 +225,30 @@ class InterviewIntegrationTest {
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
+    @Test
+    void 비로그인_조회수를_하루에_한번_집계하고_초안은_집계하지_않는다() throws Exception {
+        long id = create().getId();
+        mvc.perform(post("/api/v1/interviews/{interviewId}/views", id)).andExpect(status().isNotFound());
+        service.publish(id, adminId);
+        var cookie = new jakarta.servlet.http.Cookie("VISITOR_ID", "3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b");
+        mvc.perform(post("/api/v1/interviews/{interviewId}/views", id).cookie(cookie))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.viewCount").value(1))
+                .andDo(document("interview-view-record", resource(ResourceSnippetParameters.builder()
+                        .tag("Interview").summary("인터뷰 조회수 기록")
+                        .description("비로그인 포함, 방문자 쿠키와 한국 날짜 기준 하루 한 번 집계한다. 공개 상세 GET은 집계하지 않는다.")
+                        .pathParameters(parameterWithName("interviewId").description("인터뷰 ID"))
+                        .responseFields(fieldWithPath("status").type(STRING).description("응답 상태"),
+                                fieldWithPath("data.viewCount").type(NUMBER).description("반영 후 누적 조회수"))
+                        .build())));
+        mvc.perform(post("/api/v1/interviews/{interviewId}/views", id).cookie(cookie))
+                .andExpect(jsonPath("$.data.viewCount").value(1));
+        var updatedAt = queryService.find(id).updatedAt();
+        mvc.perform(get("/api/v1/interviews/{interviewId}", id)).andExpect(jsonPath("$.data.viewCount").value(1));
+        assertThat(queryService.find(id).updatedAt()).isEqualTo(updatedAt);
+        service.unpublish(id, adminId);
+        mvc.perform(post("/api/v1/interviews/{interviewId}/views", id).cookie(cookie)).andExpect(status().isNotFound());
+    }
+
     private Interview create() {
         return service.create(adminId, request("첫 인터뷰", "![사진](media://" + imageId + ")"));
     }
@@ -312,6 +336,7 @@ class InterviewIntegrationTest {
     private List<FieldDescriptor> commonFields(String prefix) {
         return new ArrayList<>(List.of(
                 fieldWithPath("status").type(STRING).description("응답 상태"),
+                fieldWithPath(prefix + ".viewCount").type(NUMBER).description("누적 조회수"),
                 fieldWithPath(prefix + ".commentCount").type(NUMBER).description("삭제되지 않은 댓글과 대댓글 수"),
                 fieldWithPath(prefix + ".likeCount").type(NUMBER).description("좋아요 수"),
                 fieldWithPath(prefix + ".likedByMe").type(BOOLEAN).description("내 좋아요 여부"),
