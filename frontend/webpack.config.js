@@ -6,8 +6,8 @@ import 'webpack-dev-server';
 import CopyPlugin from 'copy-webpack-plugin';
 import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
 import { tanstackRouter } from '@tanstack/router-plugin/webpack';
+import { BuildAssetsPlugin } from './ssg/build-assets-plugin.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -123,7 +123,7 @@ const config = {
     clean: true,
     publicPath: '/',
     // 프로덕션에서는 캐시 무효화를 위해 contenthash를 붙입니다. 실제 파일명은 아래
-    // WebpackManifestPlugin이 dist/build-assets.json으로 남기므로, ssg/render.tsx/
+    // BuildAssetsPlugin이 dist/build-assets.json으로 남기므로, ssg/render.tsx/
     // ssg/generate.ts 어디에도 "main.js"를 하드코딩하지 않습니다.
     filename: isProduction ? '[name].[contenthash:8].js' : '[name].js',
     chunkFilename: isProduction ? '[name].[contenthash:8].chunk.js' : '[name].chunk.js',
@@ -161,25 +161,7 @@ const config = {
     new MiniCssExtractPlugin({
       filename: isProduction ? '[name].[contenthash:8].css' : '[name].css',
     }),
-    new WebpackManifestPlugin({
-      fileName: 'build-assets.json',
-      // splitChunks가 entry에서 framework 등을 떼어내면 main entry는 여러 파일로 이뤄집니다.
-      // HTML은 이 파일을 모두 불러와야 main이 실행됩니다.
-      generate: (_seed, _files, entrypoints) => {
-        const mainFiles = entrypoints.main ?? [];
-        const scripts = mainFiles.filter((file) => file.endsWith('.js'));
-        const styles = mainFiles.filter((file) => file.endsWith('.css'));
-
-        if (scripts.length === 0) {
-          throw new Error('WebpackManifestPlugin: main entry script를 찾지 못했습니다.');
-        }
-
-        return {
-          scripts: scripts.map((file) => `/${file}`),
-          styles: styles.map((file) => `/${file}`),
-        };
-      },
-    }),
+    new BuildAssetsPlugin({ importRequests: ['posthog-js'] }),
   ],
   module: {
     rules: [
