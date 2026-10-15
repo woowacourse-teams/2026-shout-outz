@@ -199,6 +199,32 @@ class InterviewCommentIntegrationTest {
         assertThat(userComments.findAll(authorId, authorId, request).comments()).isEmpty();
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"BANNED", "DELETED"})
+    void 비활성_사용자는_댓글과_공감을_변경할_수_없다(String userStatus) {
+        long root = create(authorId, null, false);
+        reactions.add(interviewId, root, authorId, "AGREE");
+        jdbc.update("""
+                UPDATE users SET status = ?,
+                    deleted_at = CASE WHEN ? = 'DELETED' THEN now() ELSE NULL END
+                WHERE id = ?
+                """, userStatus, userStatus, authorId);
+        entityManager.clear();
+
+        assertThatThrownBy(() -> create(authorId, null, false)).isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> comments.update(interviewId, root, authorId,
+                new InterviewCommentUpdateRequest("정지 후 수정"))).isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> comments.delete(interviewId, root, authorId))
+                .isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> reactions.add(interviewId, root, authorId, "AGREE"))
+                .isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> reactions.remove(interviewId, root, authorId, "AGREE"))
+                .isInstanceOf(ForbiddenException.class);
+        assertThat(count()).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT content FROM interview_comments WHERE id = ?", String.class, root))
+                .isEqualTo("댓글");
+    }
+
     private long create(long userId, Long parentId, boolean anonymous) {
         return comments.create(interviewId, userId, new InterviewCommentCreateRequest("댓글", parentId, anonymous)).id();
     }

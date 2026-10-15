@@ -20,6 +20,7 @@ public class InterviewReactionService {
     @Transactional
     public InterviewReactionResponse add(long interviewId, long userId, String type) {
         InterviewReactionType reactionType = InterviewReactionType.from(type);
+        accessService.requireActiveUser(userId);
         validateActiveInterview(interviewId);
 
         interviewReactionRepository.add(interviewId, userId, reactionType);
@@ -29,6 +30,7 @@ public class InterviewReactionService {
     @Transactional
     public InterviewReactionResponse remove(long interviewId, long userId, String type) {
         InterviewReactionType reactionType = InterviewReactionType.from(type);
+        accessService.requireActiveUser(userId);
         validateActiveInterview(interviewId);
 
         if (!interviewReactionRepository.remove(interviewId, userId, reactionType)) {

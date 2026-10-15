@@ -45,6 +45,7 @@ import java.util.List;
 @Transactional
 class InterviewIntegrationTest {
     @Autowired JdbcTemplate jdbc;
+    @Autowired jakarta.persistence.EntityManager entityManager;
     @Autowired MockMvc mvc;
     @Autowired
     @org.springframework.beans.factory.annotation.Qualifier("requestMappingHandlerMapping")
@@ -286,6 +287,36 @@ class InterviewIntegrationTest {
 
         assertThat(paths).isNotEmpty().allSatisfy(path ->
                 assertThat(path).matches("/api/v1/(admin/)?interviews(/.*)?"));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"BANNED", "DELETED"})
+    void 정지와_탈퇴_후_남은_세션으로_좋아요를_변경할_수_없다(String userStatus) throws Exception {
+        long id = service.publish(create().getId(), adminId).getId();
+        long actorId = user("USER");
+        jdbc.update("INSERT INTO interview_reactions(interview_id, user_id, reaction_type) VALUES (?, ?, 'LIKE')",
+                id, actorId);
+        jdbc.update("""
+                UPDATE users SET status = ?,
+                    deleted_at = CASE WHEN ? = 'DELETED' THEN now() ELSE NULL END
+                WHERE id = ?
+                """, userStatus, userStatus, actorId);
+        entityManager.clear();
+        var authentication = new AuthenticatedSession(actorId, UserRole.USER);
+        mvc.perform(put("/api/v1/interviews/{interviewId}/reactions/{type}", id, "LIKE")
+                        .requestAttr(sessionKey(), authentication))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_USER_FORBIDDEN"))
+                .andDo(document("interview-reaction-inactive-user", resource(ResourceSnippetParameters.builder()
+                        .tag("Interview Reaction").summary("비활성 사용자 반응 변경 거절")
+                        .pathParameters(parameterWithName("interviewId").description("인터뷰 ID"),
+                                parameterWithName("type").description("LIKE"))
+                        .responseFields(com.shoutoutz.api.common.restdocs.RestDocsFields.errorResponse())
+                        .build())));
+        mvc.perform(delete("/api/v1/interviews/{interviewId}/reactions/{type}", id, "LIKE")
+                        .requestAttr(sessionKey(), authentication))
+                .andExpect(status().isForbidden());
+        assertThat(queryService.find(id).likeCount()).isEqualTo(1);
     }
 
     private Interview create() {

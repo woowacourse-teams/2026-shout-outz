@@ -32,6 +32,7 @@ public class InterviewCommentReactionService {
             String type
     ) {
         InterviewCommentReactionType reactionType = InterviewCommentReactionType.from(type);
+        accessService.requireActiveUser(userId);
         validateActiveInterview(interviewId);
         findActiveComment(interviewId, commentId);
 
@@ -47,6 +48,7 @@ public class InterviewCommentReactionService {
             String type
     ) {
         InterviewCommentReactionType reactionType = InterviewCommentReactionType.from(type);
+        accessService.requireActiveUser(userId);
         validateActiveInterview(interviewId);
         findActiveComment(interviewId, commentId);
 

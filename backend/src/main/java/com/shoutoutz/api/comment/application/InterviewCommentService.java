@@ -72,6 +72,7 @@ public class InterviewCommentService {
             long authorId,
             InterviewCommentCreateRequest request
     ) {
+        accessService.requireActiveUser(authorId);
         validateActiveInterview(interviewId);
         findParent(interviewId, request.parentId());
         UserProfile author = findAuthor(authorId);
@@ -190,6 +191,7 @@ public class InterviewCommentService {
             long authorId,
             InterviewCommentUpdateRequest request
     ) {
+        accessService.requireActiveUser(authorId);
         validateActiveInterview(interviewId);
         InterviewComment comment = findComment(interviewId, commentId);
         validateAuthor(comment, authorId);
@@ -197,7 +199,7 @@ public class InterviewCommentService {
 
         if (!Objects.equals(comment.getContent(), request.content())) {
             comment = interviewCommentRepository.save(comment.updateContent(request.content()));
-                linkPreviewService.syncInterviewComment(comment.getId(), comment.getContent());
+            linkPreviewService.syncInterviewComment(comment.getId(), comment.getContent());
         }
 
         return new InterviewCommentUpdateResponse(
@@ -232,6 +234,7 @@ public class InterviewCommentService {
             long commentId,
             long authorId
     ) {
+        accessService.requireActiveUser(authorId);
         validateActiveInterview(interviewId);
         InterviewComment comment = findComment(interviewId, commentId);
         validateAuthor(comment, authorId);

@@ -26,6 +26,12 @@ public class InterviewAccessService {
         }
     }
 
+    public void requireActiveUser(long userId) {
+        userRepository.findById(userId)
+                .filter(user -> user.getStatus() == UserStatus.ACTIVE)
+                .orElseThrow(() -> new ForbiddenException(InterviewErrorCode.INTERVIEW_USER_FORBIDDEN));
+    }
+
     public Interview requirePublished(long id) {
         Interview interview = requireActive(id);
         validatePublished(interview);
