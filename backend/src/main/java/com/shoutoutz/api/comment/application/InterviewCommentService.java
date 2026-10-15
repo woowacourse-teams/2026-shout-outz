@@ -4,13 +4,14 @@ import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_DEPTH_EX
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_NOT_FOUND;
 import static com.shoutoutz.api.common.exception.code.CommonErrorCode.FORBIDDEN;
 
+import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.comment.application.dto.InterviewCommentCursor;
 import com.shoutoutz.api.comment.application.dto.InterviewCommentPage;
 import com.shoutoutz.api.comment.domain.CommentErrorCode;
 import com.shoutoutz.api.comment.domain.InterviewComment;
-import com.shoutoutz.api.comment.domain.InterviewCommentRepository;
 import com.shoutoutz.api.comment.domain.InterviewCommentReactionCounts;
 import com.shoutoutz.api.comment.domain.InterviewCommentReactionRepository;
+import com.shoutoutz.api.comment.domain.InterviewCommentRepository;
 import com.shoutoutz.api.comment.domain.InterviewCommentSort;
 import com.shoutoutz.api.comment.presentation.dto.request.InterviewCommentCreateRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.InterviewCommentFindRequest;
@@ -24,13 +25,14 @@ import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
-import com.shoutoutz.api.cohort.domain.Cohort;
-import com.shoutoutz.api.interview.application.InterviewAccessService;
 import com.shoutoutz.api.feed.application.FeedLinkPreviewService;
 import com.shoutoutz.api.feed.application.dto.LinkPreview;
+import com.shoutoutz.api.interview.domain.InterviewErrorCode;
+import com.shoutoutz.api.interview.domain.InterviewRepository;
 import com.shoutoutz.api.notification.application.NotificationService;
 import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.account.UserStatus;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileErrorCode;
@@ -43,8 +45,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -56,7 +58,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class InterviewCommentService {
 
-    private final InterviewAccessService accessService;
+    private final InterviewRepository interviewRepository;
     private final InterviewCommentRepository interviewCommentRepository;
     private final InterviewCommentQueryRepository interviewCommentQueryRepository;
     private final UserProfileRepository userProfileRepository;
@@ -72,7 +74,7 @@ public class InterviewCommentService {
             long authorId,
             InterviewCommentCreateRequest request
     ) {
-        accessService.requireActiveUser(authorId);
+        validateActiveUser(authorId);
         validateActiveInterview(interviewId);
         findParent(interviewId, request.parentId());
         UserProfile author = findAuthor(authorId);
@@ -123,7 +125,9 @@ public class InterviewCommentService {
             InterviewCommentFindRequest request,
             Long loginUserId
     ) {
-        accessService.requirePublished(interviewId);
+        interviewRepository.findActiveById(interviewId)
+                .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND))
+                .validatePublished();
         InterviewCommentCursor cursor = InterviewCommentCursorCodec.decode(request.cursor());
         validateCursorSort(cursor, request.sort());
 
@@ -191,7 +195,7 @@ public class InterviewCommentService {
             long authorId,
             InterviewCommentUpdateRequest request
     ) {
-        accessService.requireActiveUser(authorId);
+        validateActiveUser(authorId);
         validateActiveInterview(interviewId);
         InterviewComment comment = findComment(interviewId, commentId);
         validateAuthor(comment, authorId);
@@ -234,7 +238,7 @@ public class InterviewCommentService {
             long commentId,
             long authorId
     ) {
-        accessService.requireActiveUser(authorId);
+        validateActiveUser(authorId);
         validateActiveInterview(interviewId);
         InterviewComment comment = findComment(interviewId, commentId);
         validateAuthor(comment, authorId);
@@ -247,8 +251,16 @@ public class InterviewCommentService {
         );
     }
 
+    private void validateActiveUser(long userId) {
+        userRepository.findById(userId)
+                .filter(user -> user.getStatus() == UserStatus.ACTIVE)
+                .orElseThrow(() -> new ForbiddenException(InterviewErrorCode.INTERVIEW_USER_FORBIDDEN));
+    }
+
     private void validateActiveInterview(long interviewId) {
-        accessService.lockPublished(interviewId);
+        interviewRepository.findForUpdate(interviewId)
+                .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND))
+                .validatePublished();
     }
 
     private InterviewComment findParent(long interviewId, Long parentId) {

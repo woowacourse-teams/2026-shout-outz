@@ -3,9 +3,7 @@ package com.shoutoutz.api.interview.presentation;
 import com.shoutoutz.api.auth.presentation.security.AuthenticatedUser;
 import com.shoutoutz.api.auth.presentation.security.LoginUser;
 import com.shoutoutz.api.common.response.SuccessResponse;
-import com.shoutoutz.api.interview.domain.Interview;
 import com.shoutoutz.api.interview.application.InterviewService;
-import com.shoutoutz.api.interview.application.InterviewQueryService;
 import com.shoutoutz.api.interview.application.dto.InterviewPage;
 import com.shoutoutz.api.interview.presentation.dto.request.InterviewSaveRequest;
 import com.shoutoutz.api.interview.presentation.dto.response.InterviewAdminResponse;
@@ -30,49 +28,44 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InterviewAdminHttpApi {
     private final InterviewService service;
-    private final InterviewQueryService queryService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public SuccessResponse<InterviewAdminResponse> create(
             @LoginUser AuthenticatedUser user, @Valid @RequestBody InterviewSaveRequest request) {
-        Interview interview = service.create(user.userId(), request);
-        return SuccessResponse.success(queryService.findAdmin(interview.getId(), user.userId()));
+        return SuccessResponse.success(service.create(user.userId(), request));
     }
 
     @GetMapping
     public SuccessResponse<List<InterviewSummaryResponse>> findAll(
             @LoginUser AuthenticatedUser user, @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "20") int size) {
-        InterviewPage page = queryService.findAllAdmin(user.userId(), cursor, size);
+        InterviewPage page = service.findAllAdmin(user.userId(), cursor, size);
         return SuccessResponse.success(page.items(), page.meta());
     }
 
     @GetMapping("/{interviewId}")
     public SuccessResponse<InterviewAdminResponse> find(@PathVariable long interviewId,
             @LoginUser AuthenticatedUser user) {
-        return SuccessResponse.success(queryService.findAdmin(interviewId, user.userId()));
+        return SuccessResponse.success(service.findAdmin(interviewId, user.userId()));
     }
 
     @PutMapping("/{interviewId}")
     public SuccessResponse<InterviewAdminResponse> update(@PathVariable long interviewId,
             @LoginUser AuthenticatedUser user, @Valid @RequestBody InterviewSaveRequest request) {
-        Interview interview = service.update(interviewId, user.userId(), request);
-        return SuccessResponse.success(queryService.findAdmin(interview.getId(), user.userId()));
+        return SuccessResponse.success(service.update(interviewId, user.userId(), request));
     }
 
     @PostMapping("/{interviewId}/publish")
     public SuccessResponse<InterviewAdminResponse> publish(@PathVariable long interviewId,
             @LoginUser AuthenticatedUser user) {
-        Interview interview = service.publish(interviewId, user.userId());
-        return SuccessResponse.success(queryService.findAdmin(interview.getId(), user.userId()));
+        return SuccessResponse.success(service.publish(interviewId, user.userId()));
     }
 
     @PostMapping("/{interviewId}/unpublish")
     public SuccessResponse<InterviewAdminResponse> unpublish(@PathVariable long interviewId,
             @LoginUser AuthenticatedUser user) {
-        Interview interview = service.unpublish(interviewId, user.userId());
-        return SuccessResponse.success(queryService.findAdmin(interview.getId(), user.userId()));
+        return SuccessResponse.success(service.unpublish(interviewId, user.userId()));
     }
 
     @DeleteMapping("/{interviewId}")

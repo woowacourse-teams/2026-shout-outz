@@ -3,7 +3,6 @@ package com.shoutoutz.api.comment.application;
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.COMMENT_NOT_FOUND;
 import static com.shoutoutz.api.comment.domain.CommentErrorCode.REACTION_NOT_FOUND;
 
-
 import com.shoutoutz.api.comment.domain.InterviewComment;
 import com.shoutoutz.api.comment.domain.InterviewCommentReactionCounts;
 import com.shoutoutz.api.comment.domain.InterviewCommentReactionRepository;
@@ -11,7 +10,11 @@ import com.shoutoutz.api.comment.domain.InterviewCommentReactionType;
 import com.shoutoutz.api.comment.domain.InterviewCommentRepository;
 import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentReactionResponse;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
-import com.shoutoutz.api.interview.application.InterviewAccessService;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.interview.domain.InterviewErrorCode;
+import com.shoutoutz.api.interview.domain.InterviewRepository;
+import com.shoutoutz.api.user.domain.account.UserRepository;
+import com.shoutoutz.api.user.domain.account.UserStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class InterviewCommentReactionService {
 
-    private final InterviewAccessService accessService;
+    private final InterviewRepository interviewRepository;
+    private final UserRepository userRepository;
     private final InterviewCommentRepository interviewCommentRepository;
     private final InterviewCommentReactionRepository interviewCommentReactionRepository;
 
@@ -32,7 +36,7 @@ public class InterviewCommentReactionService {
             String type
     ) {
         InterviewCommentReactionType reactionType = InterviewCommentReactionType.from(type);
-        accessService.requireActiveUser(userId);
+        validateActiveUser(userId);
         validateActiveInterview(interviewId);
         findActiveComment(interviewId, commentId);
 
@@ -48,7 +52,7 @@ public class InterviewCommentReactionService {
             String type
     ) {
         InterviewCommentReactionType reactionType = InterviewCommentReactionType.from(type);
-        accessService.requireActiveUser(userId);
+        validateActiveUser(userId);
         validateActiveInterview(interviewId);
         findActiveComment(interviewId, commentId);
 
@@ -58,8 +62,16 @@ public class InterviewCommentReactionService {
         return response(interviewId, commentId, reactionType, false);
     }
 
+    private void validateActiveUser(long userId) {
+        userRepository.findById(userId)
+                .filter(user -> user.getStatus() == UserStatus.ACTIVE)
+                .orElseThrow(() -> new ForbiddenException(InterviewErrorCode.INTERVIEW_USER_FORBIDDEN));
+    }
+
     private void validateActiveInterview(long interviewId) {
-        accessService.lockPublished(interviewId);
+        interviewRepository.findForUpdate(interviewId)
+                .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND))
+                .validatePublished();
     }
 
     private InterviewComment findActiveComment(long interviewId, long commentId) {

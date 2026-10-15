@@ -1,5 +1,6 @@
 package com.shoutoutz.api.interview.domain;
 
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import java.time.Instant;
 import lombok.Builder;
@@ -51,6 +52,12 @@ public class Interview {
 
     public boolean isPublished() {
         return status == InterviewStatus.PUBLISHED && deletedAt == null;
+    }
+
+    public void validatePublished() {
+        if (!isPublished()) {
+            throw new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND);
+        }
     }
 
     private void validatePublishable(String summary, Long thumbnailMediaId, String contentMd) {

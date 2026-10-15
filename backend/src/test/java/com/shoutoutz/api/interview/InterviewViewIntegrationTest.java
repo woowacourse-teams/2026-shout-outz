@@ -3,7 +3,7 @@ package com.shoutoutz.api.interview;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
-import com.shoutoutz.api.interview.application.InterviewQueryService;
+import com.shoutoutz.api.interview.application.InterviewService;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
 import java.time.Clock;
 import java.time.Instant;
@@ -26,7 +26,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @ActiveProfiles("test")
 class InterviewViewIntegrationTest {
     @Autowired JdbcTemplate jdbc;
-    @Autowired InterviewQueryService queryService;
+    @Autowired InterviewService service;
     @MockitoBean Clock clock;
     long userId;
     long interviewId;
@@ -66,7 +66,7 @@ class InterviewViewIntegrationTest {
         VisitorKey visitor = new VisitorKey("b".repeat(64));
         List<Callable<Long>> tasks = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
-            tasks.add(() -> queryService.find(interviewId, null, visitor).viewCount());
+            tasks.add(() -> service.find(interviewId, null, visitor).viewCount());
         }
         assertThat(run(tasks)).containsOnly(1L);
         assertThat(count()).isEqualTo(1);
@@ -79,7 +79,7 @@ class InterviewViewIntegrationTest {
         List<Callable<Long>> tasks = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
             VisitorKey visitor = new VisitorKey("visitor-" + i);
-            tasks.add(() -> queryService.find(interviewId, null, visitor).viewCount());
+            tasks.add(() -> service.find(interviewId, null, visitor).viewCount());
         }
         run(tasks);
         assertThat(count()).isEqualTo(8);
@@ -87,15 +87,15 @@ class InterviewViewIntegrationTest {
 
     @Test
     void 관리자_원본과_목록_조회는_집계하지_않는다() {
-        queryService.findAdmin(interviewId, userId);
-        queryService.findAll(null, 20);
-        queryService.findAllAdmin(userId, null, 20);
+        service.findAdmin(interviewId, userId);
+        service.findAll(null, 20);
+        service.findAllAdmin(userId, null, 20);
         assertThat(count()).isZero();
     }
 
     private long recordAt(VisitorKey visitor, String timestamp) {
         given(clock.instant()).willReturn(Instant.parse(timestamp));
-        return queryService.find(interviewId, null, visitor).viewCount();
+        return service.find(interviewId, null, visitor).viewCount();
     }
 
     private long count() {

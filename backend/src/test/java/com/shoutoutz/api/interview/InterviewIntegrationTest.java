@@ -1,8 +1,13 @@
 package com.shoutoutz.api.interview;
 
+import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
+import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.*;
+import static org.springframework.restdocs.payload.JsonFieldType.*;
+import static org.springframework.restdocs.payload.PayloadDocumentation.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
@@ -12,33 +17,27 @@ import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
-import com.shoutoutz.api.interview.application.InterviewQueryService;
 import com.shoutoutz.api.interview.application.InterviewService;
-import com.shoutoutz.api.interview.domain.Interview;
 import com.shoutoutz.api.interview.presentation.dto.request.InterviewSaveRequest;
+import com.shoutoutz.api.interview.presentation.dto.response.InterviewAdminResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultHandler;
 import org.springframework.transaction.annotation.Transactional;
-import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
-import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
-import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
-import static org.springframework.restdocs.payload.PayloadDocumentation.*;
-import static org.springframework.restdocs.payload.JsonFieldType.*;
-import org.springframework.restdocs.payload.FieldDescriptor;
-import java.util.ArrayList;
-import java.util.List;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -55,7 +54,6 @@ class InterviewIntegrationTest {
     org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping handlerMapping;
     @Autowired InterviewService service;
     @Autowired com.shoutoutz.api.interview.application.InterviewReactionService reactionService;
-    @Autowired InterviewQueryService queryService;
     long adminId;
     long intervieweeId;
     long thumbnailId;
@@ -76,11 +74,11 @@ class InterviewIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.data.status").value("DRAFT"))
                 .andDo(adminDocument("interview-create", "인터뷰 초안 등록", true, false));
-        Interview draft = create();
-        mvc.perform(get("/api/v1/admin/interviews/{interviewId}", draft.getId())
+        InterviewAdminResponse draft = create();
+        mvc.perform(get("/api/v1/admin/interviews/{interviewId}", draft.id())
                         .requestAttr(sessionKey(), admin()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.contentMd").value(draft.getContentMd()))
+                .andExpect(jsonPath("$.data.contentMd").value(draft.contentMd()))
                 .andExpect(jsonPath("$.data.previewContentMd").value(org.hamcrest.Matchers.containsString("https://cdn.example.com/")))
                 .andDo(adminDocument("interview-admin-detail", "인터뷰 원본과 초안 조회", false, true));
         mvc.perform(get("/api/v1/admin/interviews").requestAttr(sessionKey(), admin()))
@@ -90,14 +88,14 @@ class InterviewIntegrationTest {
 
     @Test
     void 공개_목록과_상세는_발행된_인터뷰만_노출한다() throws Exception {
-        Interview draft = create();
-        mvc.perform(get("/api/v1/interviews/{interviewId}", draft.getId())).andExpect(status().isNotFound());
+        InterviewAdminResponse draft = create();
+        mvc.perform(get("/api/v1/interviews/{interviewId}", draft.id())).andExpect(status().isNotFound());
         mvc.perform(get("/api/v1/interviews")).andExpect(jsonPath("$.data.length()").value(0));
-        service.publish(draft.getId(), adminId);
+        service.publish(draft.id(), adminId);
         mvc.perform(get("/api/v1/interviews"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(1))
                 .andDo(listDocument("interview-list", "공개 인터뷰 목록"));
-        mvc.perform(get("/api/v1/interviews/{interviewId}", draft.getId()))
+        mvc.perform(get("/api/v1/interviews/{interviewId}", draft.id()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.interviewee.displayName").value("인터뷰이"))
                 .andExpect(jsonPath("$.data.contentMd").value(org.hamcrest.Matchers.containsString("https://cdn.example.com/")))
                 .andDo(detailDocument());
@@ -105,31 +103,31 @@ class InterviewIntegrationTest {
 
     @Test
     void 수정_발행취소_재발행_삭제() throws Exception {
-        Interview draft = create();
-        mvc.perform(post("/api/v1/admin/interviews/{interviewId}/publish", draft.getId())
+        InterviewAdminResponse draft = create();
+        mvc.perform(post("/api/v1/admin/interviews/{interviewId}/publish", draft.id())
                         .requestAttr(sessionKey(), admin()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("PUBLISHED"))
                 .andDo(adminDocument("interview-publish", "인터뷰 발행", false, true));
-        var publishedAt = queryService.find(draft.getId(), null, VISITOR).publishedAt();
-        mvc.perform(put("/api/v1/admin/interviews/{interviewId}", draft.getId())
+        var publishedAt = service.find(draft.id(), null, VISITOR).publishedAt();
+        mvc.perform(put("/api/v1/admin/interviews/{interviewId}", draft.id())
                         .requestAttr(sessionKey(), admin()).contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody("수정된 인터뷰", "수정 본문")))
                 .andExpect(status().isOk()).andDo(adminDocument("interview-update", "인터뷰 전체 수정", true, true));
-        assertThat(queryService.find(draft.getId(), null, VISITOR).title()).isEqualTo("수정된 인터뷰");
-        assertThat(queryService.find(draft.getId(), null, VISITOR).publishedAt()).isEqualTo(publishedAt);
-        mvc.perform(post("/api/v1/admin/interviews/{interviewId}/unpublish", draft.getId())
+        assertThat(service.find(draft.id(), null, VISITOR).title()).isEqualTo("수정된 인터뷰");
+        assertThat(service.find(draft.id(), null, VISITOR).publishedAt()).isEqualTo(publishedAt);
+        mvc.perform(post("/api/v1/admin/interviews/{interviewId}/unpublish", draft.id())
                         .requestAttr(sessionKey(), admin()))
                 .andExpect(status().isOk()).andDo(adminDocument("interview-unpublish", "인터뷰 발행 취소", false, true));
-        assertThatThrownBy(() -> queryService.find(draft.getId(), null, VISITOR)).isInstanceOf(EntityNotFoundException.class);
-        service.publish(draft.getId(), adminId);
-        assertThat(queryService.find(draft.getId(), null, VISITOR).publishedAt()).isEqualTo(publishedAt);
-        mvc.perform(delete("/api/v1/admin/interviews/{interviewId}", draft.getId())
+        assertThatThrownBy(() -> service.find(draft.id(), null, VISITOR)).isInstanceOf(EntityNotFoundException.class);
+        service.publish(draft.id(), adminId);
+        assertThat(service.find(draft.id(), null, VISITOR).publishedAt()).isEqualTo(publishedAt);
+        mvc.perform(delete("/api/v1/admin/interviews/{interviewId}", draft.id())
                         .requestAttr(sessionKey(), admin()))
                 .andExpect(status().isNoContent())
                 .andDo(document("interview-delete", resource(ResourceSnippetParameters.builder()
                         .tag("Interview Admin").summary("인터뷰 삭제")
                         .pathParameters(parameterWithName("interviewId").description("인터뷰 ID")).build())));
-        assertThatThrownBy(() -> queryService.findAdmin(draft.getId(), adminId))
+        assertThatThrownBy(() -> service.findAdmin(draft.id(), adminId))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
@@ -147,8 +145,8 @@ class InterviewIntegrationTest {
 
     @Test
     void 필수_정보가_없는_초안은_저장되지만_발행되지_않는다() {
-        Interview draft = service.create(adminId, new InterviewSaveRequest("제목", null, intervieweeId, null, null));
-        assertThatThrownBy(() -> service.publish(draft.getId(), adminId)).isInstanceOf(InvalidInputException.class);
+        InterviewAdminResponse draft = service.create(adminId, new InterviewSaveRequest("제목", null, intervieweeId, null, null));
+        assertThatThrownBy(() -> service.publish(draft.id(), adminId)).isInstanceOf(InvalidInputException.class);
     }
 
     @Test
@@ -176,52 +174,52 @@ class InterviewIntegrationTest {
 
     @Test
     void 다른_관리자는_기존_이미지를_유지하며_수정할_수_있다() {
-        Interview draft = create();
+        InterviewAdminResponse draft = create();
         long secondAdmin = user("ADMIN");
-        service.update(draft.getId(), secondAdmin, request("수정", draft.getContentMd()));
-        assertThat(queryService.findAdmin(draft.getId(), secondAdmin).title()).isEqualTo("수정");
+        service.update(draft.id(), secondAdmin, request("수정", draft.contentMd()));
+        assertThat(service.findAdmin(draft.id(), secondAdmin).title()).isEqualTo("수정");
     }
 
     @Test
     void 동일_발행일도_커서로_중복없이_조회한다() {
         for (int i = 0; i < 3; i++) {
-            service.publish(create().getId(), adminId);
+            service.publish(create().id(), adminId);
         }
         jdbc.update("UPDATE interviews SET published_at = '2026-10-15T00:00:00Z' WHERE author_id = ?", adminId);
-        var first = queryService.findAll(null, 2);
-        var second = queryService.findAll(first.meta().nextCursor(), 2);
+        var first = service.findAll(null, 2);
+        var second = service.findAll(first.meta().nextCursor(), 2);
         assertThat(first.meta().hasNext()).isTrue();
         assertThat(second.items()).hasSize(1);
         assertThat(second.items().getFirst().id()).isLessThan(first.items().getLast().id());
-        assertThatThrownBy(() -> queryService.findAllAdmin(adminId, first.meta().nextCursor(), 2))
+        assertThatThrownBy(() -> service.findAllAdmin(adminId, first.meta().nextCursor(), 2))
                 .isInstanceOf(InvalidInputException.class);
     }
 
     @Test
     void 프로필_변경이_인터뷰에_반영된다() {
-        long id = service.publish(create().getId(), adminId).getId();
+        long id = service.publish(create().id(), adminId).id();
         jdbc.update("UPDATE user_profiles SET display_name = '새 이름' WHERE user_id = ?", intervieweeId);
-        assertThat(queryService.find(id, null, VISITOR).interviewee().displayName()).isEqualTo("새 이름");
+        assertThat(service.find(id, null, VISITOR).interviewee().displayName()).isEqualTo("새 이름");
     }
 
     @Test
     void 좋아요는_중복되지_않고_취소와_내_반응이_조회에_반영된다() {
-        long id = service.publish(create().getId(), adminId).getId();
+        long id = service.publish(create().id(), adminId).id();
         reactionService.add(id, intervieweeId, "LIKE");
         reactionService.add(id, intervieweeId, "LIKE");
-        assertThat(queryService.find(id, intervieweeId, VISITOR).likeCount()).isEqualTo(1);
-        assertThat(queryService.find(id, intervieweeId, VISITOR).likedByMe()).isTrue();
-        assertThat(queryService.find(id, null, VISITOR).likedByMe()).isFalse();
-        assertThat(queryService.findAll(null, 20, intervieweeId).items().getFirst().likedByMe()).isTrue();
+        assertThat(service.find(id, intervieweeId, VISITOR).likeCount()).isEqualTo(1);
+        assertThat(service.find(id, intervieweeId, VISITOR).likedByMe()).isTrue();
+        assertThat(service.find(id, null, VISITOR).likedByMe()).isFalse();
+        assertThat(service.findAll(null, 20, intervieweeId).items().getFirst().likedByMe()).isTrue();
         reactionService.remove(id, intervieweeId, "LIKE");
-        assertThat(queryService.find(id, intervieweeId, VISITOR).likeCount()).isZero();
+        assertThat(service.find(id, intervieweeId, VISITOR).likeCount()).isZero();
         assertThatThrownBy(() -> reactionService.remove(id, intervieweeId, "LIKE"))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
     @Test
     void 초안과_발행취소_삭제된_인터뷰에는_좋아요를_남길_수_없다() {
-        long id = create().getId();
+        long id = create().id();
         assertThatThrownBy(() -> reactionService.add(id, intervieweeId, "LIKE"))
                 .isInstanceOf(EntityNotFoundException.class);
         service.publish(id, adminId);
@@ -235,16 +233,16 @@ class InterviewIntegrationTest {
 
     @Test
     void 상세_GET에서_조회수를_집계하고_같은_방문자는_하루에_한번만_반영한다() throws Exception {
-        long id = create().getId();
+        long id = create().id();
         var cookie = new jakarta.servlet.http.Cookie("VISITOR_ID", "3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b");
         mvc.perform(get("/api/v1/interviews/{interviewId}", id).cookie(cookie)).andExpect(status().isNotFound());
         service.publish(id, adminId);
-        var updatedAt = queryService.findAdmin(id, adminId).updatedAt();
+        var updatedAt = service.findAdmin(id, adminId).updatedAt();
         mvc.perform(get("/api/v1/interviews/{interviewId}", id).cookie(cookie))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.viewCount").value(1));
         mvc.perform(get("/api/v1/interviews/{interviewId}", id).cookie(cookie))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.viewCount").value(1));
-        assertThat(queryService.findAdmin(id, adminId).updatedAt()).isEqualTo(updatedAt);
+        assertThat(service.findAdmin(id, adminId).updatedAt()).isEqualTo(updatedAt);
         assertThat(jdbc.queryForObject("SELECT view_count FROM interviews WHERE id = ?", Long.class, id))
                 .isEqualTo(1);
         service.unpublish(id, adminId);
@@ -259,19 +257,19 @@ class InterviewIntegrationTest {
                 INSERT INTO oauth_accounts(user_id, provider, provider_account_id, provider_avatar_url)
                 VALUES (?, 'GITHUB', ?, 'https://avatars.githubusercontent.com/u/123')
                 """, intervieweeId, UUID.randomUUID().toString());
-        long id = service.publish(create().getId(), adminId).getId();
-        assertThat(queryService.find(id, null, VISITOR).interviewee().avatarUrl())
+        long id = service.publish(create().id(), adminId).id();
+        assertThat(service.find(id, null, VISITOR).interviewee().avatarUrl())
                 .isEqualTo("https://avatars.githubusercontent.com/u/123");
-        assertThat(queryService.findAll(null, 20).items().getFirst().interviewee().avatarUrl())
+        assertThat(service.findAll(null, 20).items().getFirst().interviewee().avatarUrl())
                 .isEqualTo("https://avatars.githubusercontent.com/u/123");
     }
 
     @Test
     void 저장된_이미지_URL을_다시_보내도_원본_미디어_참조를_유지한다() {
-        long id = service.publish(create().getId(), adminId).getId();
-        String publicContent = queryService.find(id, null, VISITOR).contentMd();
+        long id = service.publish(create().id(), adminId).id();
+        String publicContent = service.find(id, null, VISITOR).contentMd();
         service.update(id, adminId, request("수정", publicContent));
-        var adminView = queryService.findAdmin(id, adminId);
+        var adminView = service.findAdmin(id, adminId);
         assertThat(adminView.contentMd()).contains("media://" + imageId);
         assertThat(adminView.previewContentMd()).contains("https://cdn.example.com/");
         assertThat(adminView.thumbnailUrl()).isNotNull();
@@ -291,7 +289,7 @@ class InterviewIntegrationTest {
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.ValueSource(strings = {"BANNED", "DELETED"})
     void 정지와_탈퇴_후_남은_세션으로_좋아요를_변경할_수_없다(String userStatus) throws Exception {
-        long id = service.publish(create().getId(), adminId).getId();
+        long id = service.publish(create().id(), adminId).id();
         long actorId = user("USER");
         jdbc.update("INSERT INTO interview_reactions(interview_id, user_id, reaction_type) VALUES (?, ?, 'LIKE')",
                 id, actorId);
@@ -315,10 +313,10 @@ class InterviewIntegrationTest {
         mvc.perform(delete("/api/v1/interviews/{interviewId}/reactions/{type}", id, "LIKE")
                         .requestAttr(sessionKey(), authentication))
                 .andExpect(status().isForbidden());
-        assertThat(queryService.find(id, null, VISITOR).likeCount()).isEqualTo(1);
+        assertThat(service.find(id, null, VISITOR).likeCount()).isEqualTo(1);
     }
 
-    private Interview create() {
+    private InterviewAdminResponse create() {
         return service.create(adminId, request("첫 인터뷰", "![사진](media://" + imageId + ")"));
     }
 
