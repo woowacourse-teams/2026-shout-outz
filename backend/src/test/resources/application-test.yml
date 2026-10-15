@@ -8,6 +8,26 @@ spring:
 link-preview:
   enabled: false
 
+question-recommendation:
+  count: 5
+  max-generation-attempts: 5
+  max-outbox-attempts: 5
+  outbox-poll-interval-millis: 5000
+  outbox-initial-delay-millis: 1000
+  gemini:
+    api-key: test-gemini-api-key
+    model: gemini-3.8-flash
+    connect-timeout: 5s
+    read-timeout: 45s
+  sqs:
+    enabled: false
+    queue-url: https://sqs.ap-northeast-2.amazonaws.com/000000000000/test-question-recommendations
+    dead-letter-queue-url: https://sqs.ap-northeast-2.amazonaws.com/000000000000/test-question-recommendations-dlq
+    region: ap-northeast-2
+    poll-interval-millis: 1000
+    max-messages-per-poll: 1
+    visibility-timeout: 3m
+
 github:
   oauth:
     client-id: test-client-id
