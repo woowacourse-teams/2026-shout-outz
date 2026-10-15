@@ -14,11 +14,7 @@ question-recommendation:
   max-outbox-attempts: 5
   outbox-poll-interval-millis: 5000
   outbox-initial-delay-millis: 1000
-  gemini:
-    api-key: test-gemini-api-key
-    model: gemini-3.8-flash
-    connect-timeout: 5s
-    read-timeout: 45s
+  fallback-enabled: true
   sqs:
     enabled: false
     queue-url: https://sqs.ap-northeast-2.amazonaws.com/000000000000/test-question-recommendations
@@ -27,6 +23,18 @@ question-recommendation:
     poll-interval-millis: 1000
     max-messages-per-poll: 1
     visibility-timeout: 3m
+
+llm:
+  gemini:
+    api-key: test-gemini-api-key
+    model: gemini-3.8-flash
+    connect-timeout: 5s
+    read-timeout: 45s
+  openai:
+    api-key: test-openai-api-key
+    model: gpt-6-luna
+    connect-timeout: 5s
+    read-timeout: 45s
 
 github:
   oauth:

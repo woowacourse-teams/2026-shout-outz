@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -24,13 +25,14 @@ import org.springframework.stereotype.Service;
 )
 public class QuestionRecommendationWorker {
 
-    private static final int GENERATION_LEASE_SECONDS = 180;
+    public static final int GENERATION_LEASE_SECONDS = 180;
 
     private final QuestionRecommendationRepository repository;
     private final QuestionRecommendationGenerator generator;
     private final QuestionRecommendationProperties properties;
     private final Clock clock;
     private final MeterRegistry meterRegistry;
+    private final QuestionRecommendationRetryPolicy retryPolicy;
 
     public ProcessingResult process(long feedId, int generation) {
         Instant now = clock.instant();
@@ -48,7 +50,16 @@ public class QuestionRecommendationWorker {
         }
 
         GenerationTask task = claim.task();
+        if (task.attempts() > properties.maxGenerationAttempts()) {
+            log.warn(
+                    "질문 추천 최대 시도 횟수를 초과하여 DLQ 이동을 기다립니다. feedId={}, generation={}, attempts={}",
+                    task.feedId(), task.generation(), task.attempts()
+            );
+            return ProcessingResult.retry(GENERATION_LEASE_SECONDS);
+        }
         Timer.Sample sample = Timer.start(meterRegistry);
+        String previousTraceId = MDC.get("traceId");
+        MDC.put("traceId", "recommendation-" + task.feedId() + "-" + task.generation() + "-" + task.attempts());
         String outcome = "success";
         try {
             List<GeneratedQuestion> generated = generator.generate(
@@ -68,10 +79,24 @@ public class QuestionRecommendationWorker {
             return ProcessingResult.done();
         } catch (RuntimeException exception) {
             outcome = "failure";
+            boolean retryable = !(exception instanceof QuestionRecommendationGenerationException failure)
+                    || failure.retryable();
+            long retryAfterSeconds = exception instanceof QuestionRecommendationGenerationException failure
+                    ? failure.retryAfterSeconds() : 0;
+            long delaySeconds = task.attempts() < properties.maxGenerationAttempts()
+                    ? retryPolicy.delaySeconds(task.attempts(), retryAfterSeconds) : GENERATION_LEASE_SECONDS;
             log.warn(
-                    "질문 추천 생성에 실패했습니다. feedId={}, generation={}, attempts={}, reason={}",
-                    task.feedId(), task.generation(), task.attempts(), exception.getClass().getSimpleName()
+                    "질문 추천 생성에 실패했습니다. feedId={}, generation={}, attempts={}, reason={}, "
+                            + "retryable={}, retryDelaySeconds={}",
+                    task.feedId(), task.generation(), task.attempts(), exception.getClass().getSimpleName(),
+                    retryable, retryable ? delaySeconds : 0
             );
+            if (!retryable) {
+                repository.markGenerationFailed(
+                        task.feedId(), task.generation(), "GENERATION_FAILED", clock.instant()
+                );
+                return ProcessingResult.done();
+            }
             if (task.attempts() < properties.maxGenerationAttempts()) {
                 repository.retryGeneration(
                         task.feedId(),
@@ -79,20 +104,26 @@ public class QuestionRecommendationWorker {
                         "GENERATION_FAILED",
                         clock.instant()
                 );
-                long delaySeconds = Math.min(300, 5L << Math.min(task.attempts() - 1, 5));
                 return ProcessingResult.retry(delaySeconds);
             }
             // SQS redrive policy moves this message to the DLQ after maxReceiveCount.
             // Keep the lease until then so another worker cannot start an extra attempt.
-            long delaySeconds = GENERATION_LEASE_SECONDS;
-            return ProcessingResult.retry(delaySeconds);
+            return ProcessingResult.retry(GENERATION_LEASE_SECONDS);
         } finally {
-            sample.stop(Timer.builder("question.recommendation.generation")
-                    .description("질문 추천 생성 시도 소요 시간")
-                    .tag("outcome", outcome)
-                    .register(meterRegistry));
-            meterRegistry.counter("question.recommendation.generation.count", "outcome", outcome)
-                    .increment();
+            try {
+                sample.stop(Timer.builder("question.recommendation.generation")
+                        .description("질문 추천 생성 시도 소요 시간")
+                        .tag("outcome", outcome)
+                        .register(meterRegistry));
+                meterRegistry.counter("question.recommendation.generation.count", "outcome", outcome)
+                        .increment();
+            } finally {
+                if (previousTraceId == null) {
+                    MDC.remove("traceId");
+                } else {
+                    MDC.put("traceId", previousTraceId);
+                }
+            }
         }
     }
 
