@@ -13,6 +13,8 @@ import type {
   HomeBannerAdminSaveSuccessResponse,
   HomeBannerAdminUpdateSuccessResponse,
   HomeBannerDeleteSuccessResponse,
+  InterviewAdminResponse,
+  InterviewFindAllSuccessResponse,
   NoticeCreateSuccessResponse,
 } from '@/api/generated/schema';
 import type {
@@ -27,6 +29,7 @@ import type {
   AdminVerificationStatus,
   EventCreateBody,
   HomeBannerUpsertBody,
+  InterviewSaveBody,
   NoticeCreateBody,
 } from '@/types/admin';
 import type { ProjectListMeta } from '@/types/project';
@@ -34,6 +37,7 @@ import type { ProjectListMeta } from '@/types/project';
 const VERIFICATION_PATH = '/api/v1/admin/verification-requests';
 const BANNER_PATH = '/api/v1/admin/home/banners';
 const PROJECT_PATH = '/api/v1/admin/projects';
+const INTERVIEW_PATH = '/api/v1/admin/interviews';
 
 export const adminQueryKeys = {
   verifications: (status: AdminVerificationStatus) =>
@@ -42,6 +46,8 @@ export const adminQueryKeys = {
   banners: ['admin', 'home-banners'] as const,
   bugReports: (filter: AdminBugReportFilter) => ['admin', 'bug-reports', filter] as const,
   bugReport: (bugReportId: number) => ['admin', 'bug-report', bugReportId] as const,
+  interviews: ['admin', 'interviews'] as const,
+  interview: (interviewId: number) => ['admin', 'interview', interviewId] as const,
 };
 
 // ── 우아한테크코스 소속 인증 신청 ───────────────────────────────────────────────────────────
@@ -327,5 +333,115 @@ export async function updateBugReportStatus({
 
 export const updateBugReportStatusMutation = mutationOptions({
   mutationFn: updateBugReportStatus,
+  retry: false,
+});
+
+// ── 인터뷰 ──────────────────────────────────────────────────────────────────
+
+export async function fetchAdminInterviews(cursor?: string) {
+  const body = await httpClient<InterviewFindAllSuccessResponse>(INTERVIEW_PATH, {
+    method: 'get',
+    searchParams: cursor ? { cursor } : {},
+  });
+  if (!body) throw new Error(`관리자 인터뷰 목록 응답이 비어 있습니다: ${INTERVIEW_PATH}`);
+  return body;
+}
+
+/** 초안을 포함한 전체 인터뷰. 생성 시각 내림차순. */
+export const adminInterviewsQuery = infiniteQueryOptions({
+  queryKey: adminQueryKeys.interviews,
+  initialPageParam: undefined as string | undefined,
+  queryFn: ({ pageParam }) => fetchAdminInterviews(pageParam),
+  getNextPageParam: (last) =>
+    last.meta?.hasNext ? (last.meta.nextCursor ?? undefined) : undefined,
+});
+
+/** 응답 봉투에서 인터뷰 원본을 꺼낸다. 등록·조회·수정·발행이 같은 응답을 쓴다. */
+function toAdminInterview(body: InterviewAdminResponse | null, action: string) {
+  if (!body?.data) throw new Error(`인터뷰 ${action} 결과를 확인하지 못했습니다.`);
+  return body.data;
+}
+
+export async function fetchAdminInterview(interviewId: number) {
+  const body = await httpClient<InterviewAdminResponse>(`${INTERVIEW_PATH}/${interviewId}`, {
+    method: 'get',
+  });
+  return toAdminInterview(body, '조회');
+}
+
+/** 이미지 원본 참조(`media://ID`)가 담긴 본문과, 미리보기용 본문을 함께 받는다. */
+export const adminInterviewQuery = (interviewId: number) =>
+  queryOptions({
+    queryKey: adminQueryKeys.interview(interviewId),
+    queryFn: () => fetchAdminInterview(interviewId),
+  });
+
+/** 초안으로 등록한다. 발행은 따로 한다. */
+export async function createInterview(input: InterviewSaveBody) {
+  const body = await httpClient<InterviewAdminResponse>(INTERVIEW_PATH, {
+    method: 'post',
+    json: input,
+  });
+  return toAdminInterview(body, '등록');
+}
+
+export const createInterviewMutation = mutationOptions({
+  mutationFn: createInterview,
+  retry: false,
+});
+
+/** 전체 교체. 보내지 않은 선택 필드는 비워진다. */
+export async function updateInterview({
+  interviewId,
+  body: input,
+}: {
+  interviewId: number;
+  body: InterviewSaveBody;
+}) {
+  const body = await httpClient<InterviewAdminResponse>(`${INTERVIEW_PATH}/${interviewId}`, {
+    method: 'put',
+    json: input,
+  });
+  return toAdminInterview(body, '수정');
+}
+
+export const updateInterviewMutation = mutationOptions({
+  mutationFn: updateInterview,
+  retry: false,
+});
+
+export async function deleteInterview(interviewId: number) {
+  await httpClient(`${INTERVIEW_PATH}/${interviewId}`, { method: 'delete' });
+}
+
+export const deleteInterviewMutation = mutationOptions({
+  mutationFn: deleteInterview,
+  retry: false,
+});
+
+/** 요약·본문·대표 이미지가 모두 있어야 발행된다(`INTERVIEW_PUBLISH_INCOMPLETE`). */
+export async function publishInterview(interviewId: number) {
+  const body = await httpClient<InterviewAdminResponse>(
+    `${INTERVIEW_PATH}/${interviewId}/publish`,
+    { method: 'post' },
+  );
+  return toAdminInterview(body, '발행');
+}
+
+export const publishInterviewMutation = mutationOptions({
+  mutationFn: publishInterview,
+  retry: false,
+});
+
+export async function unpublishInterview(interviewId: number) {
+  const body = await httpClient<InterviewAdminResponse>(
+    `${INTERVIEW_PATH}/${interviewId}/unpublish`,
+    { method: 'post' },
+  );
+  return toAdminInterview(body, '발행 취소');
+}
+
+export const unpublishInterviewMutation = mutationOptions({
+  mutationFn: unpublishInterview,
   retry: false,
 });
