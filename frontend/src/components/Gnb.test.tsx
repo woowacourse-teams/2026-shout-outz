@@ -10,7 +10,14 @@ import {
 import { Gnb, GNB_ITEMS, type GnbProps } from '@/components/Gnb';
 import { tabItemStyles } from '@/components/Tab';
 
-const ROUTE_PATHS = ['/', '/community', '/projects', '/projects/$projectId', '/news'];
+const ROUTE_PATHS = [
+  '/',
+  '/community',
+  '/projects',
+  '/projects/$projectId',
+  '/interviews',
+  '/news',
+];
 
 const renderGnb = async (path: string, props: GnbProps = {}) => {
   const rootRoute = createRootRoute({ component: () => <Gnb {...props} /> });

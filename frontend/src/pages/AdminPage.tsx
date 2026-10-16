@@ -11,6 +11,7 @@ import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { BugReportPanel } from '@/components/admin/BugReportPanel';
 import { CrewApprovalPanel } from '@/components/admin/CrewApprovalPanel';
 import { HomeBannerPanel } from '@/components/admin/HomeBannerPanel';
+import { InterviewAdminPanel } from '@/components/admin/InterviewAdminPanel';
 import { NewsCreatePanel } from '@/components/admin/NewsCreatePanel';
 import { ProjectApprovalPanel } from '@/components/admin/ProjectApprovalPanel';
 import { ProjectEditPanel } from '@/components/admin/ProjectEditPanel';
@@ -98,6 +99,8 @@ function AdminTabPanel({ tab }: { tab: AdminTab }) {
       return <NewsCreatePanel />;
     case 'banners':
       return <HomeBannerPanel />;
+    case 'interviews':
+      return <InterviewAdminPanel />;
     case 'bug-reports':
       return <BugReportPanel />;
   }

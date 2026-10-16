@@ -5,6 +5,7 @@ const PATTERNS: [RegExp, string][] = [
   [/^\/feeds\/\d+$/, '/community/:feedId'],
   [/^\/feeds\/\d+\/edit$/, '/community/:feedId/edit'],
   [/^\/projects\/(?!new$)[^/]+$/, '/projects/:slug'],
+  [/^\/interviews\/\d+$/, '/interviews/:interviewId'],
   [/^\/news\/\d+$/, '/news/:newsId'],
 ];
 

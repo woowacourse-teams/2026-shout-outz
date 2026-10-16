@@ -24,6 +24,10 @@ import type {
   HomeBannerFindAllSuccessResponse,
   HomeBannerUpsertRequest,
   HomeStatisticsSuccessResponse,
+  InterviewAdminResponse,
+  InterviewFindAllSuccessResponse,
+  InterviewFindSuccessResponse,
+  InterviewSaveRequest,
   NewsFindAllSuccessResponse,
   NewsFindDetailSuccessResponse,
   NoticeCreateRequest,
@@ -163,6 +167,13 @@ export type NewsDetailData = Data<NewsFindDetailSuccessResponse>;
 
 export type NoticeCreateBody = NoticeCreateRequest;
 export type EventCreateBody = EventCreateRequest;
+
+// ── 인터뷰 ──────────────────────────────────────────────────────────────────
+
+export type InterviewListItemData = Item<Data<InterviewFindAllSuccessResponse>>;
+export type InterviewDetailData = Data<InterviewFindSuccessResponse>;
+export type AdminInterviewData = Data<InterviewAdminResponse>;
+export type InterviewSaveBody = InterviewSaveRequest;
 
 // ── 관리자 ──────────────────────────────────────────────────────────────────
 
