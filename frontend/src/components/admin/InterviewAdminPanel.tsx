@@ -585,8 +585,8 @@ function ContentField({
           />
           <p className="text-xs leading-5 text-gray-500">
             이미지 캡션: <code>![설명](media://ID "캡션")</code> · 글자 색:{' '}
-            <code>&lt;span color="red"&gt;강조&lt;/span&gt;</code> (red, blue, green, yellow, gray,
-            primary)
+            <code>&lt;font color="red"&gt;강조&lt;/font&gt;</code>, 다른 태그에도 <code>color</code>{' '}
+            속성 사용 가능 (red, blue, green, yellow, gray, primary)
           </p>
         </div>
       )}
