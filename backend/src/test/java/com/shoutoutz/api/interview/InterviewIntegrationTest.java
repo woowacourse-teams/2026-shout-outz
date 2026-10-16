@@ -111,7 +111,7 @@ class InterviewIntegrationTest {
                 .andDo(adminDocument("interview-admin-detail", "인터뷰 원본과 초안 조회", false, true));
         mockMvc.perform(get("/api/v1/admin/interviews").requestAttr(sessionKey(), admin()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(2))
-                .andDo(listDocument("interview-admin-list", "관리자 인터뷰 목록"));
+                .andDo(listDocument("interview-admin-list", "관리자 인터뷰 목록", "Interview Admin"));
     }
 
     @Test
@@ -122,7 +122,7 @@ class InterviewIntegrationTest {
         interviewService.publish(draft.id(), adminId);
         mockMvc.perform(get("/api/v1/interviews"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(1))
-                .andDo(listDocument("interview-list", "공개 인터뷰 목록"));
+                .andDo(listDocument("interview-list", "공개 인터뷰 목록", "Interview"));
         mockMvc.perform(get("/api/v1/interviews/{interviewId}", draft.id()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.interviewee.displayName").value("인터뷰이"))
                 .andExpect(jsonPath("$.data.contentMd").value(Matchers.containsString("https://cdn.example.com/")))
@@ -408,14 +408,14 @@ class InterviewIntegrationTest {
                 fieldWithPath("data.updatedAt").type(STRING).description("수정 시각")};
     }
 
-    private ResultHandler listDocument(String name, String summary) {
+    private ResultHandler listDocument(String name, String summary, String tag) {
         List<FieldDescriptor> fields = commonFields("data[]");
         fields.add(fieldWithPath("data").type(ARRAY).description("인터뷰 목록"));
         fields.add(fieldWithPath("data[].status").type(STRING).description("발행 상태"));
         fields.add(fieldWithPath("meta.nextCursor").type(STRING).optional().description("다음 커서"));
         fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 여부"));
         fields.add(fieldWithPath("meta.totalCount").type(NUMBER).description("전체 개수"));
-        return document(name, resource(ResourceSnippetParameters.builder().tag("Interview").summary(summary)
+        return document(name, resource(ResourceSnippetParameters.builder().tag(tag).summary(summary)
                 .queryParameters(parameterWithName("size").type(SimpleType.INTEGER).optional().description("1~50, 기본 20"),
                         parameterWithName("cursor").optional().description("다음 커서"))
                 .responseFields(fields).build()));

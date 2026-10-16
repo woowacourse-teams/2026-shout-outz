@@ -159,10 +159,10 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"feedType\"\
-                    ,\"message\":\"feedType은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\":\"type은\
-                    \ 필수입니다.\"}]}"
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
+                    ,\"message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
+                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"feedType\",\"message\"\
+                    :\"feedType은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -474,15 +474,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/api-v1-admin-interviews2045945256"
+                $ref: "#/components/schemas/api-v1-interviews2045945256"
               examples:
                 interview-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":26,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/a078da06-d96b-4bc3-8419-5d53509e1710/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@i296ef3768ea14d219557\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":197,\"title\"\
+                    :\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/24ff2b71-3602-4d9e-ad89-cacde43bbb5e/thumbnail\"\
+                    ,\"interviewee\":{\"handle\":\"@ia3a200fc2f044b41963a\",\"displayName\"\
                     :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-10-15T22:43:33.813177Z\",\"createdAt\"\
-                    :\"2026-10-15T22:43:33.805939Z\",\"updatedAt\":\"2026-10-15T22:43:33.813757Z\"\
+                    ,\"publishedAt\":\"2026-10-16T01:43:08.422299Z\",\"createdAt\"\
+                    :\"2026-10-16T01:43:08.417683Z\",\"updatedAt\":\"2026-10-16T01:43:08.422668Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :0}],\"meta\":{\"nextCursor\":null,\"hasNext\":false,\"totalCount\"\
                     :1}}"
@@ -1179,7 +1179,7 @@ paths:
   /api/v1/admin/interviews:
     get:
       tags:
-      - Interview
+      - Interview Admin
       summary: 관리자 인터뷰 목록
       description: 관리자 인터뷰 목록
       operationId: interview-admin-list
@@ -1203,22 +1203,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/api-v1-admin-interviews2045945256"
+                $ref: "#/components/schemas/api-v1-interviews2045945256"
               examples:
                 interview-admin-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":28,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/3c216f82-a0af-4031-9010-e95209094478/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@i5ce50109bde34ae1be9a\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":199,\"title\"\
+                    :\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/439ab324-1649-471b-9de3-3e0668256b0a/thumbnail\"\
+                    ,\"interviewee\":{\"handle\":\"@i05214573658043279915\",\"displayName\"\
                     :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-15T22:43:33.867619Z\"\
-                    ,\"updatedAt\":\"2026-10-15T22:43:33.867619Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T01:43:08.453383Z\"\
+                    ,\"updatedAt\":\"2026-10-16T01:43:08.453383Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0},{\"id\"\
-                    :27,\"title\":\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/3c216f82-a0af-4031-9010-e95209094478/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@i5ce50109bde34ae1be9a\",\"displayName\"\
+                    :198,\"title\":\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/interview/439ab324-1649-471b-9de3-3e0668256b0a/thumbnail\"\
+                    ,\"interviewee\":{\"handle\":\"@i05214573658043279915\",\"displayName\"\
                     :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-15T22:43:33.857129Z\"\
-                    ,\"updatedAt\":\"2026-10-15T22:43:33.857129Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T01:43:08.446895Z\"\
+                    ,\"updatedAt\":\"2026-10-16T01:43:08.446895Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0}],\"meta\"\
                     :{\"nextCursor\":null,\"hasNext\":false,\"totalCount\":2}}"
     post:
@@ -1235,7 +1235,7 @@ paths:
             examples:
               interview-create:
                 value: "{\"title\":\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :148,\"thumbnailMediaId\":40,\"contentMd\":\"![인터뷰](media://41)\"\
+                  :1055,\"thumbnailMediaId\":262,\"contentMd\":\"![인터뷰](media://263)\"\
                   }"
       responses:
         "201":
@@ -1246,13 +1246,13 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-create:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":27,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":148,\"thumbnailMediaId\"\
-                    :40,\"contentMd\":\"![인터뷰](media://41)\",\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-15T22:43:33.857129Z\"\
-                    ,\"updatedAt\":\"2026-10-15T22:43:33.857129Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/3c216f82-a0af-4031-9010-e95209094478/thumbnail\"\
-                    ,\"previewContentMd\":\"![인터뷰](https://cdn.example.com/test-prefix/interview/c8d32e31-f808-4327-b933-18260c40581e/display)\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":198,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":1055,\"thumbnailMediaId\"\
+                    :262,\"contentMd\":\"![인터뷰](media://263)\",\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T01:43:08.446895Z\"\
+                    ,\"updatedAt\":\"2026-10-16T01:43:08.446895Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/interview/439ab324-1649-471b-9de3-3e0668256b0a/thumbnail\"\
+                    ,\"previewContentMd\":\"![인터뷰](https://cdn.example.com/test-prefix/interview/33c84baf-e6be-4355-86b4-9fae89f86b95/display)\"\
                     }}"
   /api/v1/admin/projects:
     get:
@@ -1547,19 +1547,19 @@ paths:
               examples:
                 auth-signup-invalid-profile:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    bio\",\"message\":\"bio는 200자를 초과할 수 없습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"bio\",\"\
+                    message\":\"bio는 200자를 초과할 수 없습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 auth-signup-session-missing:
                   value: "{\"status\":\"error\",\"code\":\"OAUTH_SIGNUP_SESSION_NOT_FOUND\"\
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
                     ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -2025,13 +2025,13 @@ paths:
                 $ref: "#/components/schemas/api-v1-interviews-interviewId121962149"
               examples:
                 interview-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":26,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/a078da06-d96b-4bc3-8419-5d53509e1710/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@i296ef3768ea14d219557\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":197,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/24ff2b71-3602-4d9e-ad89-cacde43bbb5e/thumbnail\"\
+                    ,\"interviewee\":{\"handle\":\"@ia3a200fc2f044b41963a\",\"displayName\"\
                     :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"contentMd\":\"![사\
-                    진](https://cdn.example.com/test-prefix/interview/72467cd7-d8ca-49dc-9cf4-adfbd68cb681/display)\"\
-                    ,\"publishedAt\":\"2026-10-15T22:43:33.813177Z\",\"createdAt\"\
-                    :\"2026-10-15T22:43:33.805939Z\",\"updatedAt\":\"2026-10-15T22:43:33.813757Z\"\
+                    진](https://cdn.example.com/test-prefix/interview/6edc997c-52ee-41d2-9237-d215b6dafd6b/display)\"\
+                    ,\"publishedAt\":\"2026-10-16T01:43:08.422299Z\",\"createdAt\"\
+                    :\"2026-10-16T01:43:08.417683Z\",\"updatedAt\":\"2026-10-16T01:43:08.422668Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :1}}"
   /api/v1/news/events:
@@ -2156,10 +2156,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
+                    :\"eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -2991,9 +2991,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -3346,13 +3346,13 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-admin-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":28,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":148,\"thumbnailMediaId\"\
-                    :40,\"contentMd\":\"![사진](media://41)\",\"status\":\"DRAFT\",\"\
-                    publishedAt\":null,\"createdAt\":\"2026-10-15T22:43:33.867619Z\"\
-                    ,\"updatedAt\":\"2026-10-15T22:43:33.867619Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/3c216f82-a0af-4031-9010-e95209094478/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/interview/c8d32e31-f808-4327-b933-18260c40581e/display)\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":199,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":1055,\"thumbnailMediaId\"\
+                    :262,\"contentMd\":\"![사진](media://263)\",\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T01:43:08.453383Z\"\
+                    ,\"updatedAt\":\"2026-10-16T01:43:08.453383Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/interview/439ab324-1649-471b-9de3-3e0668256b0a/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/interview/33c84baf-e6be-4355-86b4-9fae89f86b95/display)\"\
                     }}"
     put:
       tags:
@@ -3375,7 +3375,7 @@ paths:
             examples:
               interview-update:
                 value: "{\"title\":\"수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :138,\"thumbnailMediaId\":30,\"contentMd\":\"수정 본문\"}"
+                  :1045,\"thumbnailMediaId\":252,\"contentMd\":\"수정 본문\"}"
       responses:
         "200":
           description: "200"
@@ -3385,12 +3385,12 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-update:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":21,\"title\":\"\
-                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":138,\"thumbnailMediaId\"\
-                    :30,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
-                    :\"2026-10-15T22:43:33.620271Z\",\"createdAt\":\"2026-10-15T22:43:33.615646Z\"\
-                    ,\"updatedAt\":\"2026-10-15T22:43:33.648151Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/322779cf-c5ec-4278-afb7-c45c6af8db6e/thumbnail\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":192,\"title\":\"\
+                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":1045,\"thumbnailMediaId\"\
+                    :252,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
+                    :\"2026-10-16T01:43:08.304162Z\",\"createdAt\":\"2026-10-16T01:43:08.301233Z\"\
+                    ,\"updatedAt\":\"2026-10-16T01:43:08.320030Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/interview/d56a64c9-5a2e-4cd7-9c85-2336d4e8d354/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
     delete:
       tags:
@@ -4744,13 +4744,13 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-publish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":21,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":138,\"thumbnailMediaId\"\
-                    :30,\"contentMd\":\"![사진](media://31)\",\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-10-15T22:43:33.620271Z\",\"createdAt\"\
-                    :\"2026-10-15T22:43:33.615646Z\",\"updatedAt\":\"2026-10-15T22:43:33.620886Z\"\
-                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/322779cf-c5ec-4278-afb7-c45c6af8db6e/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/interview/6e7304fd-5257-4fc5-a362-c301357da8d1/display)\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":192,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":1045,\"thumbnailMediaId\"\
+                    :252,\"contentMd\":\"![사진](media://253)\",\"status\":\"PUBLISHED\"\
+                    ,\"publishedAt\":\"2026-10-16T01:43:08.304162Z\",\"createdAt\"\
+                    :\"2026-10-16T01:43:08.301233Z\",\"updatedAt\":\"2026-10-16T01:43:08.304555Z\"\
+                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/d56a64c9-5a2e-4cd7-9c85-2336d4e8d354/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/interview/afb35cab-5027-4101-a6f4-3921fa8ea4e1/display)\"\
                     }}"
   /api/v1/admin/interviews/{interviewId}/unpublish:
     post:
@@ -4775,12 +4775,12 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-unpublish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":21,\"title\":\"\
-                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":138,\"thumbnailMediaId\"\
-                    :30,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
-                    :\"2026-10-15T22:43:33.620271Z\",\"createdAt\":\"2026-10-15T22:43:33.615646Z\"\
-                    ,\"updatedAt\":\"2026-10-15T22:43:33.675252Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/322779cf-c5ec-4278-afb7-c45c6af8db6e/thumbnail\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":192,\"title\":\"\
+                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":1045,\"thumbnailMediaId\"\
+                    :252,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
+                    :\"2026-10-16T01:43:08.304162Z\",\"createdAt\":\"2026-10-16T01:43:08.301233Z\"\
+                    ,\"updatedAt\":\"2026-10-16T01:43:08.334170Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/interview/d56a64c9-5a2e-4cd7-9c85-2336d4e8d354/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
   /api/v1/admin/projects/{projectId}/approve:
     post:
@@ -7995,47 +7995,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    NewsUpdateRequest:
-      title: NewsUpdateRequest
-      required:
-      - authorName
-      - body
-      - summary
-      - title
-      type: object
-      properties:
-        summary:
-          type: string
-          description: 소식 요약
-        cta:
-          type: object
-          properties:
-            label:
-              type: string
-              description: CTA 라벨
-              nullable: true
-            url:
-              type: string
-              description: CTA URL
-              nullable: true
-          description: CTA. 삭제할 때 null
-        eventStartAt:
-          type: string
-          description: 이벤트 시작 시각. 공지는 null
-          nullable: true
-        authorName:
-          type: string
-          description: 표시 작성자 이름
-        body:
-          type: string
-          description: 소식 본문
-        title:
-          type: string
-          description: 소식 제목
-        eventEndAt:
-          type: string
-          description: 이벤트 종료 시각. 공지는 null
-          nullable: true
     InterviewSaveRequest:
       title: InterviewSaveRequest
       required:
@@ -8062,7 +8021,7 @@ components:
         title:
           type: string
           description: "제목, 최대 200자"
-    api-v1-admin-interviews2045945256:
+    api-v1-interviews2045945256:
       required:
       - data
       - status
@@ -8162,6 +8121,47 @@ components:
         status:
           type: string
           description: 응답 상태
+    NewsUpdateRequest:
+      title: NewsUpdateRequest
+      required:
+      - authorName
+      - body
+      - summary
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: 소식 요약
+        cta:
+          type: object
+          properties:
+            label:
+              type: string
+              description: CTA 라벨
+              nullable: true
+            url:
+              type: string
+              description: CTA URL
+              nullable: true
+          description: CTA. 삭제할 때 null
+        eventStartAt:
+          type: string
+          description: 이벤트 시작 시각. 공지는 null
+          nullable: true
+        authorName:
+          type: string
+          description: 표시 작성자 이름
+        body:
+          type: string
+          description: 소식 본문
+        title:
+          type: string
+          description: 소식 제목
+        eventEndAt:
+          type: string
+          description: 이벤트 종료 시각. 공지는 null
+          nullable: true
     FeedTitleSuggestionsSuccessResponse:
       title: FeedTitleSuggestionsSuccessResponse
       required:
