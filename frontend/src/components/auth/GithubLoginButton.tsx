@@ -7,9 +7,10 @@ import { analytics, toPathPattern } from '@/utils/analytics';
 interface GithubLoginButtonProps {
   children: ReactNode;
   className?: string;
+  onBeforeLogin?: () => boolean;
 }
 
-export function GithubLoginButton({ children, className }: GithubLoginButtonProps) {
+export function GithubLoginButton({ children, className, onBeforeLogin }: GithubLoginButtonProps) {
   const locked = useRef(false);
   const [pending, setPending] = useState(false);
 
@@ -24,7 +25,7 @@ export function GithubLoginButton({ children, className }: GithubLoginButtonProp
   }, []);
 
   const startLogin = () => {
-    if (locked.current) return;
+    if (locked.current || onBeforeLogin?.() === false) return;
     locked.current = true;
     setPending(true);
     analytics.track({ name: 'login_started', from: toPathPattern(window.location.pathname) });

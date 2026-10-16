@@ -21,6 +21,6 @@ export const worker = setupWorker(
     sessionStorage.setItem(MOCK_LOGGED_OUT_KEY, 'true');
     return new HttpResponse(null, { status: 204 });
   }),
-  ...createFeedHandlers({ includeProfile: false, profileCases: true }),
+  ...createFeedHandlers({ includeProfile: false, profileCases: true, recommendations: true }),
   ...handlers,
 );

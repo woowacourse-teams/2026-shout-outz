@@ -12,6 +12,7 @@ import { FeedLikeButton } from '@/components/feeds/FeedLikeButton';
 import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { ShareButton } from '@/components/feeds/ShareButton';
 import { Comments } from '@/components/feed-comments/Comments';
+import { RelatedQuestions } from '@/components/recommendations/RelatedQuestions';
 import { formatDotDate } from '@/utils/date';
 
 export function FeedDetailPage({ feedId }: { feedId: number }) {
@@ -66,6 +67,11 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
           </div>
         }
       />
+      {isQuestion &&
+        feed.relatedQuestionRecommendations?.status === 'READY' &&
+        feed.relatedQuestionRecommendations.items.length > 0 && (
+          <RelatedQuestions key={feed.feedId} items={feed.relatedQuestionRecommendations.items} />
+        )}
       <div className="mt-10 mb-8 flex justify-center">
         <FeedLikeButton
           feedId={feed.feedId}

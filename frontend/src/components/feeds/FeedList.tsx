@@ -1,14 +1,21 @@
-import { useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import { IconMessageCircle } from '@tabler/icons-react';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { feedsQuery, type FeedSort, type FeedType } from '@/apis/feed';
 import { Button } from '@/components/Button';
+import { RecommendationCard } from '@/components/recommendations/RecommendationCard';
 import { FeedCard } from '@/components/feeds/FeedCard';
 import { getApiErrorMessage } from '@/utils/error';
 
 export function FeedList({ sort, feedType }: { sort: FeedSort; feedType?: FeedType }) {
   const itemLabel = feedType === 'QUESTION' ? '질문' : '피드';
-  const query = useSuspenseInfiniteQuery(feedsQuery(sort, undefined, 20, feedType));
+  const query = useSuspenseInfiniteQuery({
+    ...feedsQuery(sort, undefined, 20, feedType),
+    // 무작위 슬롯을 이미 읽은 페이지에서 포커스/재진입만으로 다시 뽑지 않습니다.
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
   const sentinel = useRef<HTMLDivElement>(null);
   const { fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } = query;
 
@@ -40,7 +47,24 @@ export function FeedList({ sort, feedType }: { sort: FeedSort; feedType?: FeedTy
           </p>
         </div>
       ) : (
-        feeds.map((feed) => <FeedCard key={feed.feedId} feed={feed} surface="feeds" />)
+        query.data.pages.map((page, pageIndex) => (
+          <Fragment key={pageIndex}>
+            {page.data.map((feed) => (
+              <Fragment key={feed.feedId}>
+                <FeedCard feed={feed} surface="feeds" />
+                {feedType === 'QUESTION' &&
+                  page.meta.recommendationSlots
+                    ?.filter((slot) => slot.afterFeedId === feed.feedId)
+                    .map((slot) => (
+                      <RecommendationCard
+                        key={slot.recommendation.recommendationId}
+                        recommendation={slot.recommendation}
+                      />
+                    ))}
+              </Fragment>
+            ))}
+          </Fragment>
+        ))
       )}
       {isFetchNextPageError && (
         <p role="alert" className="py-3 text-sm text-red-600">

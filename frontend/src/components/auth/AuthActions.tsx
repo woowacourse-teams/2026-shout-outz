@@ -39,7 +39,11 @@ export function AuthActions() {
   });
 
   useEffect(() => {
-    if (session.data?.status === 'SIGNUP_REQUIRED') void navigate({ to: '/signup' });
+    if (session.data?.status === 'SIGNUP_REQUIRED')
+      void navigate({
+        to: '/signup',
+        state: (previous) => ({ questionDraft: previous.questionDraft }),
+      });
   }, [navigate, session.data?.status]);
 
   if (session.isPending) return <HeaderProfileSkeleton />;
