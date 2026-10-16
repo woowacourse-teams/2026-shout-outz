@@ -1,6 +1,8 @@
 import { ADMIN_TABS } from '@/constants/admin';
 import type {
   AdminBugReportDetailData,
+  AdminInterviewData,
+  InterviewSaveBody,
   AdminBugReportItem,
   AdminHomeBannerItem,
   AdminProjectUpdateRequest,
@@ -87,3 +89,8 @@ export interface AdminProjectDecision {
 }
 
 export type AdminProjectRejection = AdminProjectDecision & { reason: string };
+
+/** 관리자 인터뷰 원본. `GET /api/v1/admin/interviews/{interviewId}` */
+export type AdminInterview = AdminInterviewData;
+/** 인터뷰 초안 등록과 전체 수정 요청. 수정도 전체 교체라 같은 모양을 쓴다. */
+export type { InterviewSaveBody };

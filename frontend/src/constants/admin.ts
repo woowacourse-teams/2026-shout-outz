@@ -6,6 +6,7 @@ export const ADMIN_TABS = [
   'project-edit',
   'news',
   'banners',
+  'interviews',
   'bug-reports',
 ] as const;
 
@@ -17,6 +18,7 @@ export const ADMIN_TAB_LABELS: Record<AdminTab, string> = {
   'project-edit': '프로젝트 수정',
   news: '소식 등록',
   banners: '홈 배너',
+  interviews: '인터뷰',
   'bug-reports': '버그 제보',
 };
 

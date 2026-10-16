@@ -1558,6 +1558,396 @@ export interface HomeStatisticsSuccessResponse {
   status: string;
 }
 
+/** InterviewAdminResponse */
+export interface InterviewAdminResponse {
+  data?: {
+    /** 이미지 원본 참조가 포함된 Markdown */
+    contentMd?: string | null;
+    /** 생성 시각 */
+    createdAt: string;
+    /** 인터뷰 ID */
+    id: number;
+    /** 인터뷰 대상 사용자 ID */
+    intervieweeId: number;
+    /** 이미지 URL로 변환한 미리보기 Markdown */
+    previewContentMd?: string | null;
+    /** 최초 발행 시각 */
+    publishedAt?: string | null;
+    /** DRAFT 또는 PUBLISHED */
+    status: string;
+    /** 요약 */
+    summary?: string | null;
+    /** INTERVIEW_THUMBNAIL 용도의 READY 미디어 ID */
+    thumbnailMediaId?: number | null;
+    /** 대표 이미지 미리보기 URL */
+    thumbnailUrl?: string | null;
+    /** 제목 */
+    title: string;
+    /** 수정 시각 */
+    updatedAt: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** InterviewCommentCreateRequest */
+export interface InterviewCommentCreateRequest {
+  /** 앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준) */
+  content: string;
+  /** 작성자 정보를 익명으로 공개할지 여부 */
+  isAnonymous?: boolean | null;
+  /** 같은 인터뷰의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글 */
+  parentId?: number | null;
+}
+
+/** InterviewCommentCreateSuccessResponse */
+export interface InterviewCommentCreateSuccessResponse {
+  /** 생성된 댓글 */
+  data: {
+    /** 댓글 작성자 */
+    author: {
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL */
+      avatarUrl?: string | null;
+      /** 작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외 */
+      cohort?: number | null;
+      /** 작성자 표시 이름 */
+      displayName: string;
+      /** 작성자 handle */
+      handle?: string | null;
+      /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
+      isCurrent?: boolean | null;
+      /** 작성자 트랙 */
+      track?: string | null;
+      /** 작성자 ID */
+      userId: number;
+      /** 작성자 유형 */
+      userType?: string | null;
+    };
+    /** 저장된 댓글 내용 */
+    content: string;
+    /** 생성 시각 (UTC ISO-8601) */
+    createdAt: string;
+    /** 현재 사용자가 수정할 수 있는지 여부 */
+    editable: boolean;
+    /** 댓글 ID */
+    id: number;
+    /** 작성자 정보를 익명으로 공개할지 여부 */
+    isAnonymous: boolean;
+    /** 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 댓글 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
+    /** 부모 댓글 ID */
+    parentId?: number | null;
+    /** 수정 시각 (UTC ISO-8601) */
+    updatedAt: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** InterviewCommentDeleteSuccessResponse */
+export interface InterviewCommentDeleteSuccessResponse {
+  /** 삭제된 댓글 */
+  data: {
+    /** 댓글 삭제 여부 */
+    deleted: boolean;
+    /** 삭제된 댓글 ID */
+    id: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** InterviewCommentFindAllSuccessResponse */
+export interface InterviewCommentFindAllSuccessResponse {
+  /** 인터뷰 댓글 목록 */
+  data: {
+    /** 댓글 공감 수 */
+    agreeCount: number;
+    /** 현재 사용자의 공감 여부. 비로그인이면 false */
+    agreedByMe: boolean;
+    /** 댓글 작성자 */
+    author: {
+      /** 작성자 프로필 이미지 미디어 ID. 타인의 익명 댓글이면 null */
+      avatarImageId?: number | null;
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL. 타인의 익명 댓글이면 null */
+      avatarUrl?: string | null;
+      /** 작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외 */
+      cohort?: number | null;
+      /** 작성자 표시 이름. 타인의 익명 댓글이면 null */
+      displayName?: string | null;
+      /** 작성자 handle. 타인의 익명 댓글이면 null */
+      handle?: string | null;
+      /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
+      isCurrent?: boolean | null;
+      /** 작성자 트랙. 크루가 아니거나 타인의 익명 댓글이면 null */
+      track?: string | null;
+      /** 작성자 ID. 타인의 익명 댓글이면 null */
+      userId?: number | null;
+      /** 작성자 유형. 크루 배지 구분을 위해 타인의 익명 댓글에도 포함 */
+      userType?: string | null;
+    };
+    /** 댓글 내용. 삭제된 댓글은 null */
+    content?: string | null;
+    /** 생성 시각 (UTC ISO-8601) */
+    createdAt: string;
+    /** 댓글이 삭제되었는지 여부 */
+    deleted: boolean;
+    /** 현재 사용자가 수정할 수 있는지 여부 */
+    editable: boolean;
+    /** 댓글 내용이 수정된 적이 있는지 여부. 삭제된 댓글은 false */
+    edited: boolean;
+    /** 댓글 ID */
+    id: number;
+    /** 작성자 정보를 익명으로 공개할지 여부 */
+    isAnonymous: boolean;
+    /** 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 댓글 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
+    /** 부모 루트 댓글 ID */
+    parentId?: number | null;
+    /** 수정 시각 (UTC ISO-8601) */
+    updatedAt: string;
+  }[];
+  /** 페이지네이션 정보 */
+  meta: {
+    /** 다음 페이지 존재 여부 */
+    hasNext: boolean;
+    /** 다음 페이지 cursor */
+    nextCursor?: string | null;
+    /** 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수 */
+    totalCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** InterviewCommentReactionSuccessResponse */
+export interface InterviewCommentReactionSuccessResponse {
+  /** 인터뷰 댓글 반응 변경 결과 */
+  data: {
+    /** 요청한 반응의 활성 상태 */
+    active: boolean;
+    /** 댓글 공감 수 */
+    agreeCount: number;
+    /** 댓글 ID */
+    commentId: number;
+    /** 인터뷰 ID */
+    interviewId: number;
+    /** 반응 타입(현재 AGREE) */
+    type: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** InterviewCommentUpdateRequest */
+export interface InterviewCommentUpdateRequest {
+  /** 앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준) */
+  content: string;
+}
+
+/** InterviewCommentUpdateSuccessResponse */
+export interface InterviewCommentUpdateSuccessResponse {
+  /** 수정된 댓글 */
+  data: {
+    /** 댓글 작성자 */
+    author: {
+      /** 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL */
+      avatarUrl?: string | null;
+      /** 작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외 */
+      cohort?: number | null;
+      /** 작성자 표시 이름 */
+      displayName: string;
+      /** 작성자 handle */
+      handle?: string | null;
+      /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
+      isCurrent?: boolean | null;
+      /** 작성자 트랙 */
+      track?: string | null;
+      /** 작성자 ID */
+      userId: number;
+      /** 작성자 유형 */
+      userType?: string | null;
+    };
+    /** 저장된 댓글 내용 */
+    content: string;
+    /** 생성 시각 (UTC ISO-8601) */
+    createdAt: string;
+    /** 현재 사용자가 수정할 수 있는지 여부 */
+    editable: boolean;
+    /** 댓글 내용이 수정된 적이 있는지 여부 */
+    edited: boolean;
+    /** 댓글 ID */
+    id: number;
+    /** 작성자 정보를 익명으로 공개할지 여부 */
+    isAnonymous: boolean;
+    /** 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null */
+    linkPreview?: {
+      /** 외부 페이지 설명 */
+      description?: string | null;
+      /** 외부 페이지 이미지 URL */
+      imageUrl?: string | null;
+      /** 외부 사이트 이름 */
+      siteName?: string | null;
+      /** 외부 페이지 제목. 수집 전·실패 시 null */
+      title?: string | null;
+      /** 댓글 본문에서 추출한 첫 URL */
+      url?: string | null;
+    };
+    /** 부모 댓글 ID */
+    parentId?: number | null;
+    /** 수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지) */
+    updatedAt: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** InterviewFindAllSuccessResponse */
+export interface InterviewFindAllSuccessResponse {
+  /** 인터뷰 목록 */
+  data: {
+    /** 삭제되지 않은 댓글과 대댓글 수 */
+    commentCount: number;
+    /** 생성 시각 */
+    createdAt: string;
+    /** 인터뷰 ID */
+    id: number;
+    interviewee?: {
+      /** 프로필 이미지 URL */
+      avatarUrl?: string | null;
+      /** 현재 사용자 소개 */
+      bio?: string | null;
+      /** 표시 이름 */
+      displayName: string;
+      /** 사용자 핸들 */
+      handle?: string | null;
+    };
+    /** 좋아요 수 */
+    likeCount: number;
+    /** 내 좋아요 여부 */
+    likedByMe: boolean;
+    /** 최초 발행 시각 */
+    publishedAt?: string | null;
+    /** 발행 상태 */
+    status: string;
+    /** 요약 */
+    summary?: string | null;
+    /** 대표 이미지 URL */
+    thumbnailUrl?: string | null;
+    /** 제목 */
+    title: string;
+    /** 수정 시각 */
+    updatedAt: string;
+    /** 누적 조회수 */
+    viewCount: number;
+  }[];
+  meta?: {
+    /** 다음 페이지 여부 */
+    hasNext: boolean;
+    /** 다음 커서 */
+    nextCursor?: string | null;
+    /** 전체 개수 */
+    totalCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** InterviewFindSuccessResponse */
+export interface InterviewFindSuccessResponse {
+  data?: {
+    /** 삭제되지 않은 댓글과 대댓글 수 */
+    commentCount: number;
+    /** 이미지 URL로 변환한 Markdown */
+    contentMd: string;
+    /** 생성 시각 */
+    createdAt: string;
+    /** 인터뷰 ID */
+    id: number;
+    interviewee?: {
+      /** 프로필 이미지 URL */
+      avatarUrl?: string | null;
+      /** 현재 사용자 소개 */
+      bio?: string | null;
+      /** 표시 이름 */
+      displayName: string;
+      /** 사용자 핸들 */
+      handle?: string | null;
+    };
+    /** 좋아요 수 */
+    likeCount: number;
+    /** 내 좋아요 여부 */
+    likedByMe: boolean;
+    /** 최초 발행 시각 */
+    publishedAt?: string | null;
+    /** 요약 */
+    summary?: string | null;
+    /** 대표 이미지 URL */
+    thumbnailUrl?: string | null;
+    /** 제목 */
+    title: string;
+    /** 수정 시각 */
+    updatedAt: string;
+    /** 누적 조회수 */
+    viewCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** InterviewReactionSuccessResponse */
+export interface InterviewReactionSuccessResponse {
+  /** 인터뷰 반응 변경 결과 */
+  data: {
+    /** 요청한 반응의 활성 상태 */
+    active: boolean;
+    /** 인터뷰 ID */
+    interviewId: number;
+    /** 인터뷰 좋아요 수 */
+    likeCount: number;
+    /** 반응 타입. 현재 LIKE만 지원하며 향후 확장할 수 있다. */
+    type: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** InterviewSaveRequest */
+export interface InterviewSaveRequest {
+  /** 원본 Markdown, 최대 100000자. 본문 이미지는 INTERVIEW_CONTENT 용도의 media://ID로 참조 */
+  contentMd?: string | null;
+  /** 인터뷰 대상 사용자 ID */
+  intervieweeId: number;
+  /** 요약, 최대 500자 */
+  summary?: string | null;
+  /** INTERVIEW_THUMBNAIL 용도의 READY 미디어 ID */
+  thumbnailMediaId?: number | null;
+  /** 제목, 최대 200자 */
+  title: string;
+}
+
 /** MediaStatusSuccessResponse */
 export interface MediaStatusSuccessResponse {
   /** 미디어 처리 상태 */
@@ -1889,13 +2279,19 @@ export interface NotificationListSuccessResponse {
     feedId?: number | null;
     /** 대상 피드 제목 */
     feedTitle?: string | null;
+    /** 인터뷰 댓글 ID */
+    interviewCommentId?: number | null;
+    /** 대상 인터뷰 ID */
+    interviewId?: number | null;
+    /** 공개 인터뷰 제목 */
+    interviewTitle?: string | null;
     /** 읽음 상태 */
     isRead: boolean;
     /** 알림 메시지 */
     message: string;
     /** 알림 ID */
     notificationId: number;
-    /** 알림 유형. COMMENT_REPLY(내 댓글의 직접 답글), POST_ACTIVITY(내 피드), COMMENTED_POST_ACTIVITY(댓글을 남긴 피드), QUESTION_ACTIVITY(내 질문), INTERESTED_QUESTION_ACTIVITY(궁금해요를 누른 질문), COMMENTED_QUESTION_ACTIVITY(댓글을 남긴 질문) */
+    /** 알림 유형. COMMENT_REPLY(내 댓글의 직접 답글), POST_ACTIVITY(내 피드), COMMENTED_POST_ACTIVITY(댓글을 남긴 피드), QUESTION_ACTIVITY(내 질문), INTERESTED_QUESTION_ACTIVITY(궁금해요를 누른 질문), COMMENTED_QUESTION_ACTIVITY(댓글을 남긴 질문), INTERVIEW_COMMENT_REPLY(인터뷰 댓글 답글), INTERVIEW_ACTIVITY(내가 등록한 인터뷰), COMMENTED_INTERVIEW_ACTIVITY(댓글을 남긴 인터뷰) */
     notificationType: string;
   }[];
   /** 페이지 정보 */
@@ -2550,10 +2946,12 @@ export interface UserCommentFindAllSuccessResponse {
     createdAt: string;
     /** 피드 댓글이면 이동할 피드 ID. 프로젝트 댓글이면 null */
     feedId?: number | null;
+    /** 인터뷰 댓글의 대상 인터뷰 ID */
+    interviewId?: number | null;
     /** 프로젝트 댓글이면 이동할 프로젝트 slug. 피드 댓글이면 null */
     projectSlug?: string | null;
     /** 댓글 대상 종류 */
-    type: 'FEED' | 'PROJECT';
+    type: 'FEED' | 'PROJECT' | 'INTERVIEW';
     /** 댓글 최종 수정 시각 */
     updatedAt: string;
   }[];
