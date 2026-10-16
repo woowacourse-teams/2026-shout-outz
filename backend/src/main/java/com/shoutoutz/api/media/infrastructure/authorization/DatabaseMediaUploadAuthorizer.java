@@ -35,7 +35,7 @@ public class DatabaseMediaUploadAuthorizer implements MediaUploadAuthorizer {
     private final JdbcTemplate jdbcTemplate;
 
     /**
-     * 홈 배너는 활성 관리자만, 나머지 용도는 활성 사용자만 업로드할 수 있다.
+     * 운영 콘텐츠 이미지는 활성 관리자만, 나머지 용도는 활성 사용자만 업로드할 수 있다.
      */
     @Override
     public void authorize(long requesterId, MediaPurpose purpose) {
@@ -43,9 +43,12 @@ public class DatabaseMediaUploadAuthorizer implements MediaUploadAuthorizer {
             throw forbidden();
         }
 
-        String authorizationSql = purpose == MediaPurpose.HOME_BANNER
-                ? ACTIVE_ADMIN_EXISTS_SQL
-                : ACTIVE_USER_EXISTS_SQL;
+        String authorizationSql = ACTIVE_USER_EXISTS_SQL;
+        if (purpose == MediaPurpose.HOME_BANNER
+                || purpose == MediaPurpose.INTERVIEW_THUMBNAIL
+                || purpose == MediaPurpose.INTERVIEW_CONTENT) {
+            authorizationSql = ACTIVE_ADMIN_EXISTS_SQL;
+        }
         if (!exists(authorizationSql, requesterId)) {
             throw forbidden();
         }

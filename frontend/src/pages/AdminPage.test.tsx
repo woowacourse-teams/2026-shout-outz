@@ -285,3 +285,88 @@ test('관리자가 다른 사람의 프로젝트를 고치면 바꾼 칸만 보�
   expect(await screen.findByRole('status')).toHaveTextContent('저장했어요.');
   expect(patchBody).toEqual({ title: '샤웃아웃즈', slug: 'shoutouts' });
 });
+
+describe('버그 제보', () => {
+  const findReports = async () =>
+    within(await screen.findByRole('list', { name: '버그 제보 목록' })).getAllByRole('listitem');
+
+  test('관리자가 접수된 버그 제보를 보고 전체 내용을 펼친다', async () => {
+    const user = userEvent.setup();
+    signInAs('ADMIN');
+
+    renderRoute('/admin?tab=bug-reports');
+
+    const reports = await findReports();
+    expect(reports).toHaveLength(1);
+    expect(screen.getByText('총 1건')).toBeInTheDocument();
+    expect(reports[0]).toHaveTextContent('#2');
+    expect(reports[0]).toHaveTextContent('사용자 #10');
+    expect(reports[0]).not.toHaveTextContent('제보한 화면');
+
+    await user.click(within(reports[0]!).getByRole('button', { name: '전체 내용 보기' }));
+
+    expect(
+      await within(reports[0]!).findByText(/제보한 화면: \/community\/12/),
+    ).toBeInTheDocument();
+    expect(within(reports[0]!).getByRole('button', { name: '접기' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+  });
+
+  test('전체 탭에서는 처리 완료된 제보와 비로그인 제보도 함께 본다', async () => {
+    const user = userEvent.setup();
+    signInAs('ADMIN');
+
+    renderRoute('/admin?tab=bug-reports');
+    await findReports();
+    await user.click(screen.getByRole('tab', { name: '전체' }));
+
+    await waitFor(async () => expect(await findReports()).toHaveLength(2));
+    const reports = await findReports();
+    expect(reports[1]).toHaveTextContent('처리 완료');
+    expect(reports[1]).toHaveTextContent('비로그인 제보');
+    expect(within(reports[1]!).getByRole('button', { name: '다시 접수' })).toBeInTheDocument();
+  });
+
+  test('처리 완료로 바꾸면 접수 목록에서 빠진다', async () => {
+    const user = userEvent.setup();
+    signInAs('ADMIN');
+    let completed = false;
+    let body: unknown;
+    const report = {
+      bugReportId: 9,
+      contentPreview: '버튼이 안 눌려요.',
+      reporterUserId: null,
+      status: 'OPEN',
+      createdAt: '2026-10-08T05:00:00Z',
+      updatedAt: '2026-10-08T05:00:00Z',
+      statusChangedAt: null,
+      statusChangedByUserId: null,
+    };
+    server.use(
+      http.get('/api/v1/admin/bug-reports', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: completed ? [] : [report],
+          meta: { nextCursor: null, hasNext: false, totalCount: completed ? 0 : 1 },
+        }),
+      ),
+      http.patch('/api/v1/admin/bug-reports/:bugReportId/status', async ({ request }) => {
+        body = await request.json();
+        completed = true;
+        return HttpResponse.json({
+          status: 'success',
+          data: { bugReportId: 9, status: 'COMPLETED', updatedAt: '2026-10-08T06:00:00Z' },
+        });
+      }),
+    );
+
+    renderRoute('/admin?tab=bug-reports');
+    const [row] = await findReports();
+    await user.click(within(row!).getByRole('button', { name: '처리 완료' }));
+
+    expect(await screen.findByText('접수 상태의 버그 제보가 없습니다.')).toBeInTheDocument();
+    expect(body).toEqual({ status: 'COMPLETED' });
+  });
+});

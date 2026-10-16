@@ -54,6 +54,20 @@ public class FeedLinkPreviewService {
         return repository.findByProjectCommentIds(commentIds);
     }
 
+    public void syncInterviewComment(long commentId, String content) {
+        sync(content,
+                url -> repository.linkInterviewComment(commentId, url),
+                () -> repository.unlinkInterviewComment(commentId));
+    }
+
+    public void unlinkInterviewComment(long commentId) {
+        repository.unlinkInterviewComment(commentId);
+    }
+
+    public Map<Long, LinkPreview> findByInterviewCommentIds(List<Long> commentIds) {
+        return repository.findByInterviewCommentIds(commentIds);
+    }
+
     private void sync(String content, java.util.function.Consumer<String> linker, Runnable unlinker) {
         urlExtractor.firstUrl(content).ifPresentOrElse(url -> {
             linker.accept(url);

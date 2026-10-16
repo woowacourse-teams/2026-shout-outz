@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.web.servlet.HandlerMapping;
 
 class HttpRequestLoggingFilterTest {
 
@@ -107,5 +108,38 @@ class HttpRequestLoggingFilterTest {
                 .contains("http_request method=POST path=/api/v1/users status=" + status)
                 .contains("duration_ms=")
                 .contains("trace_id=" + traceId);
+    }
+
+    @Test
+    @DisplayName("핸들러가 매칭한 URL 템플릿을 로그 마지막 필드로 기록한다")
+    void logsMatchedRouteAsLastField() throws Exception {
+        String traceId = "trace-123";
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/projects/12");
+        request.addHeader(HttpRequestLoggingFilter.TRACE_ID_HEADER, traceId);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain filterChain = (servletRequest, servletResponse) -> {
+            servletRequest.setAttribute(
+                    HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, "/api/v1/projects/{projectId}");
+            ((MockHttpServletResponse) servletResponse).setStatus(200);
+        };
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertThat(logAppender.list.get(0).getFormattedMessage())
+                .startsWith("http_request method=GET path=/api/v1/projects/12 status=200 duration_ms=")
+                .endsWith("trace_id=" + traceId + " route=/api/v1/projects/{projectId}");
+    }
+
+    @Test
+    @DisplayName("핸들러에 닿기 전에 끝난 요청은 route를 -로 기록한다")
+    void logsDashAsRouteWhenNoHandlerMatched() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/users/me");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain filterChain = (servletRequest, servletResponse) ->
+                ((MockHttpServletResponse) servletResponse).setStatus(401);
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertThat(logAppender.list.get(0).getFormattedMessage()).endsWith(" route=-");
     }
 }

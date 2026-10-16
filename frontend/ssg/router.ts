@@ -9,6 +9,7 @@ import { RouteError } from '@/components/RouteError';
 export function createAppRouter(queryClient: QueryClient) {
   return createRouter({
     routeTree,
+    scrollRestoration: true,
     defaultErrorComponent: RouteError,
     pathParamsAllowedCharacters: [...PATH_PARAMS_ALLOWED_CHARACTERS],
     // React Query의 DehydratedState는 query key/data를 unknown으로 표현해 Router가

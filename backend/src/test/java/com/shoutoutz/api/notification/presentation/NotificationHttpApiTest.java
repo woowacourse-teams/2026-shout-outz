@@ -245,10 +245,14 @@ class NotificationHttpApiTest {
                                 "알림 유형. COMMENT_REPLY(내 댓글의 직접 답글), "
                                         + "POST_ACTIVITY(내 피드), COMMENTED_POST_ACTIVITY(댓글을 남긴 피드), "
                                         + "QUESTION_ACTIVITY(내 질문), INTERESTED_QUESTION_ACTIVITY(궁금해요를 누른 질문), "
-                                        + "COMMENTED_QUESTION_ACTIVITY(댓글을 남긴 질문)"
+                                        + "COMMENTED_QUESTION_ACTIVITY(댓글을 남긴 질문), INTERVIEW_COMMENT_REPLY(인터뷰 댓글 답글), "
+                                        + "INTERVIEW_ACTIVITY(내가 등록한 인터뷰), COMMENTED_INTERVIEW_ACTIVITY(댓글을 남긴 인터뷰)"
                         ),
                 fieldWithPath("data[].message")
                         .type(JsonFieldType.STRING).description("알림 메시지"),
+                fieldWithPath("data[].interviewId").type(JsonFieldType.NUMBER).optional().description("대상 인터뷰 ID"),
+                fieldWithPath("data[].interviewTitle").type(JsonFieldType.STRING).optional().description("공개 인터뷰 제목"),
+                fieldWithPath("data[].interviewCommentId").type(JsonFieldType.NUMBER).optional().description("인터뷰 댓글 ID"),
                 fieldWithPath("data[].feedId")
                         .type(JsonFieldType.NUMBER).description("대상 피드 ID").optional(),
                 fieldWithPath("data[].feedTitle")

@@ -1,6 +1,9 @@
 package com.shoutoutz.api.notification.domain;
 
 public enum NotificationType {
+    INTERVIEW_COMMENT_REPLY,
+    INTERVIEW_ACTIVITY,
+    COMMENTED_INTERVIEW_ACTIVITY,
     COMMENT_REPLY,
     POST_ACTIVITY,
     COMMENTED_POST_ACTIVITY,

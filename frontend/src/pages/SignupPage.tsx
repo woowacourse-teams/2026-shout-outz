@@ -19,9 +19,9 @@ import { Input } from '@/components/Input';
 import { CrewInfoFields } from '@/components/users/CrewInfoFields';
 import { ProfileIntroFields } from '@/components/users/ProfileIntroFields';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { getGithubLoginUrl } from '@/utils/auth';
+import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
 import { getApiErrorMessage, isApiResponseError } from '@/utils/error';
-import { analytics, toPathPattern } from '@/utils/analytics';
+import { analytics } from '@/utils/analytics';
 import { cn } from '@/utils/cn';
 import {
   toProfileIntroBody,
@@ -32,6 +32,7 @@ import {
 
 interface SignupPageProps {
   onComplete: () => void;
+  completionLabel?: string;
 }
 
 interface SignupErrors extends ProfileIntroErrors {
@@ -53,7 +54,7 @@ const MEMBER_LABEL: Record<VerificationUserType, string> = {
 /** 크루나 코치로 가입했을 때 이어서 보낸 인증 신청의 결과 */
 type VerificationResult = { status: 'requested' | 'failed'; userType: VerificationUserType };
 
-export function SignupPage({ onComplete }: SignupPageProps) {
+export function SignupPage({ onComplete, completionLabel = '홈으로 가기' }: SignupPageProps) {
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <title>가입 | shout-outz</title>
@@ -66,7 +67,7 @@ export function SignupPage({ onComplete }: SignupPageProps) {
             </p>
           }
         >
-          <SignupContent onComplete={onComplete} />
+          <SignupContent onComplete={onComplete} completionLabel={completionLabel} />
         </Suspense>
       </main>
       <Footer />
@@ -74,14 +75,20 @@ export function SignupPage({ onComplete }: SignupPageProps) {
   );
 }
 
-function SignupContent({ onComplete }: SignupPageProps) {
+function SignupContent({ onComplete, completionLabel }: SignupPageProps) {
   const { data: session } = useSuspenseQuery(sessionQuery);
   // 가입하면 세션이 AUTHENTICATED로 바뀐다. 이어서 크루 인증을 신청하고 결과를 안내해야 하므로
   // 가입을 시작한 뒤에는 세션 상태와 상관없이 폼을 유지한다.
   const [signingUp, setSigningUp] = useState(false);
 
   if (session.status === 'SIGNUP_REQUIRED' || signingUp) {
-    return <SignupForm onComplete={onComplete} onSubmit={() => setSigningUp(true)} />;
+    return (
+      <SignupForm
+        onComplete={onComplete}
+        completionLabel={completionLabel}
+        onSubmit={() => setSigningUp(true)}
+      />
+    );
   }
 
   if (session.status === 'AUTHENTICATED') {
@@ -89,7 +96,7 @@ function SignupContent({ onComplete }: SignupPageProps) {
       <div className="w-full rounded-xl border border-gray-200 p-6 text-center">
         <h1 className="text-xl font-bold">이미 가입되어 있어요.</h1>
         <Button className="mt-5" onClick={onComplete}>
-          홈으로 가기
+          {completionLabel}
         </Button>
       </div>
     );
@@ -101,20 +108,18 @@ function SignupContent({ onComplete }: SignupPageProps) {
       <p className="mt-2 text-sm text-gray-600">
         로그인 후 서비스에서 사용할 정보를 입력해 주세요.
       </p>
-      <a
-        href={getGithubLoginUrl()}
-        onClick={() =>
-          analytics.track({ name: 'login_started', from: toPathPattern(window.location.pathname) })
-        }
-        className={getButtonStyles({ className: 'mt-5' })}
-      >
+      <GithubLoginButton className={getButtonStyles({ className: 'mt-5' })}>
         GitHub 로그인
-      </a>
+      </GithubLoginButton>
     </div>
   );
 }
 
-function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () => void }) {
+function SignupForm({
+  onComplete,
+  onSubmit,
+  completionLabel,
+}: SignupPageProps & { onSubmit: () => void }) {
   const queryClient = useQueryClient();
   const mutation = useMutation(signupMutation);
   const verification = useMutation(createVerificationRequestMutation);
@@ -215,7 +220,13 @@ function SignupForm({ onComplete, onSubmit }: SignupPageProps & { onSubmit: () =
   }
 
   if (verificationResult) {
-    return <SignupCompleted verificationResult={verificationResult} onComplete={onComplete} />;
+    return (
+      <SignupCompleted
+        verificationResult={verificationResult}
+        onComplete={onComplete}
+        completionLabel={completionLabel}
+      />
+    );
   }
 
   return (
@@ -530,7 +541,9 @@ function MemberQuestion({
 function SignupCompleted({
   verificationResult,
   onComplete,
+  completionLabel = '홈으로 가기',
 }: {
+  completionLabel?: string;
   verificationResult: VerificationResult;
   onComplete: () => void;
 }) {
@@ -549,7 +562,7 @@ function SignupCompleted({
             {label} 인증 다시 신청하기
           </Link>
           <Button variant="ghost" onClick={onComplete}>
-            홈으로 가기
+            {completionLabel}
           </Button>
         </div>
       </div>
@@ -568,7 +581,7 @@ function SignupCompleted({
         수 있어요.
       </p>
       <Button size="lg" className="mt-6 w-full" onClick={onComplete}>
-        홈으로 가기
+        {completionLabel}
       </Button>
     </div>
   );

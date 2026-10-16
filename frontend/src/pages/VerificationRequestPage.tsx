@@ -15,9 +15,9 @@ import { Footer } from '@/components/Footer';
 import { Input } from '@/components/Input';
 import { Select } from '@/components/Select';
 import { CrewInfoFields } from '@/components/users/CrewInfoFields';
-import { getGithubLoginUrl } from '@/utils/auth';
+import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
 import { getApiErrorMessage } from '@/utils/error';
-import { analytics, toPathPattern } from '@/utils/analytics';
+import { analytics } from '@/utils/analytics';
 
 export function VerificationRequestPage() {
   const { data: session } = useSuspenseQuery(sessionQuery);
@@ -44,18 +44,7 @@ export function VerificationRequestPage() {
             title="로그인이 필요해요."
             description="GitHub 로그인 후 우아한테크코스 소속 인증을 신청할 수 있습니다."
             action={
-              <a
-                href={getGithubLoginUrl()}
-                onClick={() =>
-                  analytics.track({
-                    name: 'login_started',
-                    from: toPathPattern(window.location.pathname),
-                  })
-                }
-                className={getButtonStyles({})}
-              >
-                GitHub 로그인
-              </a>
+              <GithubLoginButton className={getButtonStyles({})}>GitHub 로그인</GithubLoginButton>
             }
           />
         )}

@@ -31,8 +31,8 @@ import {
 import { sessionQuery } from '@/apis/session';
 import { myProfileQuery } from '@/apis/user';
 import { verificationRequestQuery } from '@/apis/verification';
-import { getGithubLoginUrl } from '@/utils/auth';
-import { analytics, toPathPattern } from '@/utils/analytics';
+import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
+import { analytics } from '@/utils/analytics';
 
 const EMPTY_FORM: ProjectFormValues = {
   title: '',
@@ -98,18 +98,7 @@ export function ProjectCreatePage() {
         title="로그인이 필요해요."
         description="프로젝트를 등록하려면 먼저 GitHub로 로그인해 주세요."
         action={
-          <a
-            href={getGithubLoginUrl()}
-            onClick={() =>
-              analytics.track({
-                name: 'login_started',
-                from: toPathPattern(window.location.pathname),
-              })
-            }
-            className={getButtonStyles({})}
-          >
-            GitHub 로그인
-          </a>
+          <GithubLoginButton className={getButtonStyles({})}>GitHub 로그인</GithubLoginButton>
         }
       />
     );

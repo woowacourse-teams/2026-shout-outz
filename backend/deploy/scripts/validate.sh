@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 
 readonly SERVICE_NAME="shout-outz-backend.service"
-readonly HEALTH_URL="http://127.0.0.1:8080/actuator/health"
+readonly HEALTH_URL="http://127.0.0.1:8081/actuator/health"
 readonly TIMEOUT_SECONDS=180
 readonly RETRY_INTERVAL_SECONDS=5
 

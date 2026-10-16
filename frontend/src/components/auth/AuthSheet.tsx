@@ -2,8 +2,7 @@ import { IconBrandGithub, IconX } from '@tabler/icons-react';
 
 import { Modal } from '@/components/Modal';
 import { Button, getButtonStyles } from '@/components/Button';
-import { getGithubLoginUrl } from '@/utils/auth';
-import { analytics, toPathPattern } from '@/utils/analytics';
+import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
 
 export interface AuthSheetProps {
   onClose: () => void;
@@ -42,14 +41,7 @@ export function AuthSheet({ onClose }: AuthSheetProps) {
           궁금한 건 편하게 묻고, 서로의 이야기에 응원을 보내 보세요.
         </p>
 
-        <a
-          href={getGithubLoginUrl()}
-          onClick={() =>
-            analytics.track({
-              name: 'login_started',
-              from: toPathPattern(window.location.pathname),
-            })
-          }
+        <GithubLoginButton
           className={getButtonStyles({
             size: 'lg',
             className: 'mt-2 w-full gap-2 rounded-2xl bg-gray-900 hover:bg-gray-800',
@@ -57,7 +49,7 @@ export function AuthSheet({ onClose }: AuthSheetProps) {
         >
           <IconBrandGithub className="size-5" aria-hidden="true" />
           GitHub 계정으로 시작하기
-        </a>
+        </GithubLoginButton>
 
         <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-500">
           로그인 없이 둘러보기

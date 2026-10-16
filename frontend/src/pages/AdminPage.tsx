@@ -8,6 +8,7 @@ import { getButtonStyles } from '@/components/Button';
 import { Footer } from '@/components/Footer';
 import { Tab } from '@/components/Tab';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
+import { BugReportPanel } from '@/components/admin/BugReportPanel';
 import { CrewApprovalPanel } from '@/components/admin/CrewApprovalPanel';
 import { HomeBannerPanel } from '@/components/admin/HomeBannerPanel';
 import { NewsCreatePanel } from '@/components/admin/NewsCreatePanel';
@@ -15,7 +16,7 @@ import { ProjectApprovalPanel } from '@/components/admin/ProjectApprovalPanel';
 import { ProjectEditPanel } from '@/components/admin/ProjectEditPanel';
 import { ADMIN_TAB_LABELS, ADMIN_TABS, DEFAULT_ADMIN_TAB } from '@/constants/admin';
 import { type AdminTab } from '@/types/admin';
-import { getGithubLoginUrl } from '@/utils/auth';
+import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
 
 const route = getRouteApi('/admin');
 
@@ -33,9 +34,7 @@ export function AdminPage() {
         title="로그인이 필요해요."
         description="관리자 계정으로 로그인해 주세요."
         action={
-          <a href={getGithubLoginUrl()} className={getButtonStyles({})}>
-            GitHub 로그인
-          </a>
+          <GithubLoginButton className={getButtonStyles({})}>GitHub 로그인</GithubLoginButton>
         }
       />
     );
@@ -99,6 +98,8 @@ function AdminTabPanel({ tab }: { tab: AdminTab }) {
       return <NewsCreatePanel />;
     case 'banners':
       return <HomeBannerPanel />;
+    case 'bug-reports':
+      return <BugReportPanel />;
   }
 }
 

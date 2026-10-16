@@ -10,6 +10,10 @@ import com.shoutoutz.api.media.application.exception.MediaUploadForbiddenExcepti
 import com.shoutoutz.api.media.domain.MediaPurpose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -44,6 +48,27 @@ class DatabaseMediaUploadAuthorizerTest {
                 .thenReturn(false);
 
         assertThatThrownBy(() -> authorizer.authorize(7L, MediaPurpose.HOME_BANNER))
+                .isInstanceOf(MediaUploadForbiddenException.class);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MediaPurpose.class, names = {"INTERVIEW_THUMBNAIL", "INTERVIEW_CONTENT"})
+    void 인터뷰_이미지는_활성_관리자_권한을_검사한다(MediaPurpose purpose) {
+        when(jdbcTemplate.queryForObject(anyString(), eq(Boolean.class), eq(7L))).thenReturn(true);
+
+        authorizer.authorize(7L, purpose);
+
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).queryForObject(sql.capture(), eq(Boolean.class), eq(7L));
+        assertThat(sql.getValue()).contains("status = 'ACTIVE'", "role = 'ADMIN'");
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MediaPurpose.class, names = {"INTERVIEW_THUMBNAIL", "INTERVIEW_CONTENT"})
+    void 일반_사용자와_비활성_관리자는_인터뷰_이미지를_업로드할_수_없다(MediaPurpose purpose) {
+        when(jdbcTemplate.queryForObject(anyString(), eq(Boolean.class), eq(7L))).thenReturn(false);
+
+        assertThatThrownBy(() -> authorizer.authorize(7L, purpose))
                 .isInstanceOf(MediaUploadForbiddenException.class);
     }
 

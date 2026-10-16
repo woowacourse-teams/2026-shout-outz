@@ -23,6 +23,35 @@
     }
   },
   "logs": {
+    "metrics_collected": {
+      "prometheus": {
+        "log_group_name": "/shout-outz/prod/prometheus",
+        "prometheus_config_path": "/opt/aws/amazon-cloudwatch-agent/etc/prometheus.yaml",
+        "emf_processor": {
+          "metric_declaration_dedup": false,
+          "metric_namespace": "ShoutOutz",
+          "metric_unit": {
+            "http_server_requests_seconds_count": "Count",
+            "http_server_requests_seconds_sum": "Seconds",
+            "http_server_requests_seconds_max": "Seconds",
+            "hikaricp_connections_active": "Count",
+            "hikaricp_connections_idle": "Count",
+            "hikaricp_connections_pending": "Count"
+          },
+          "metric_declaration": [
+            {
+              "source_labels": ["job"],
+              "label_matcher": "^shout-outz-app$",
+              "dimensions": [["env"]],
+              "metric_selectors": [
+                "^http_server_requests_seconds_(count|sum|max)$",
+                "^hikaricp_connections_(active|idle|pending)$"
+              ]
+            }
+          ]
+        }
+      }
+    },
     "logs_collected": {
       "files": {
         "collect_list": [

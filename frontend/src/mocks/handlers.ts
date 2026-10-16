@@ -1,3 +1,4 @@
+import { mockRecommendations } from '@/mocks/recommendations';
 import { http, HttpResponse } from 'msw';
 import type { Feed } from '@/apis/feed';
 import type { FeedComment } from '@/apis/feed-comment';
@@ -75,7 +76,8 @@ export const mockFeeds: Feed[] = Array.from({ length: 6 }, (_, index) => ({
 export function createFeedHandlers({
   includeProfile = true,
   profileCases = false,
-}: { includeProfile?: boolean; profileCases?: boolean } = {}) {
+  recommendations = false,
+}: { includeProfile?: boolean; profileCases?: boolean; recommendations?: boolean } = {}) {
   let sequence = 100;
   const feeds = profileCases ? createProfileCaseFeeds(mockFeeds[0]!) : [...mockFeeds];
   const comments = new Map<number, FeedComment[]>();
@@ -480,7 +482,17 @@ export function createFeedHandlers({
     http.get('/api/v1/feeds/:feedId', ({ params }) => {
       const feed = feeds.find((item) => item.feedId === Number(params.feedId));
       return feed
-        ? HttpResponse.json({ status: 'success', data: withFeedState(feed) })
+        ? HttpResponse.json({
+            status: 'success',
+            data: {
+              ...withFeedState(feed),
+              ...(recommendations && feed.feedType === 'QUESTION'
+                ? {
+                    relatedQuestionRecommendations: { status: 'READY', items: mockRecommendations },
+                  }
+                : {}),
+            },
+          })
         : HttpResponse.json(
             { status: 'error', code: 'FEED_NOT_FOUND', message: '피드를 찾을 수 없습니다.' },
             { status: 404 },
@@ -509,11 +521,32 @@ export function createFeedHandlers({
               .sort((a, b) =>
                 url.searchParams.get('sort') === 'POPULAR' ? b.feedId - a.feedId : 0,
               );
-      const end = offset + Math.min(Number(url.searchParams.get('size') ?? 20), 3);
+      const end =
+        offset + Math.min(Number(url.searchParams.get('size') ?? 20), recommendations ? 20 : 3);
+      const page = data.slice(offset, end);
+      const slots =
+        recommendations && url.searchParams.get('type') === 'QUESTION'
+          ? page.flatMap((feed, index) =>
+              (index + 1) % 5 === 0
+                ? [
+                    {
+                      afterFeedId: feed.feedId,
+                      recommendation:
+                        mockRecommendations[Math.floor(index / 5) % mockRecommendations.length]!,
+                    },
+                  ]
+                : [],
+            )
+          : [];
       return HttpResponse.json({
         status: 'success',
-        data: data.slice(offset, end).map(withFeedState),
-        meta: { nextCursor: end < data.length ? String(end) : null, hasNext: end < data.length },
+        data: page.map(withFeedState),
+        meta: {
+          nextCursor: end < data.length ? String(end) : null,
+          hasNext: end < data.length,
+          totalCount: data.length,
+          ...(slots.length ? { recommendationSlots: slots } : {}),
+        },
       });
     }),
     http.get('/api/v1/auth/session', () =>

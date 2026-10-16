@@ -32,6 +32,7 @@ dependencies {
 
     implementation platform('software.amazon.awssdk:bom:2.54.7')
     implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:sqs'
 
     // Java ImageIO에서 WebP를 읽고 쓰기 위한 ARM/x86 지원 SPI 플러그인
     implementation 'com.github.usefulness:webp-imageio:0.11.0'
@@ -40,6 +41,10 @@ dependencies {
     implementation 'org.flywaydb:flyway-database-postgresql'
 
     runtimeOnly 'org.postgresql:postgresql'
+    // CloudWatch Agent가 수집할 수 있도록 Actuator 지표를 Prometheus 형식으로 노출
+    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+    // 부하 테스트에서 느린 쿼리를 찾기 위해 JPA·JdbcTemplate 쿼리의 실행 시간을 잰다 (slow-query-log.enabled일 때만 사용)
+    implementation 'net.ttddyy:datasource-proxy:1.11.0'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -72,6 +77,26 @@ openapi3 {
     version = project.version
     format = 'yaml'
     separatePublicApi = true
+}
+
+// restdocs-api-spec 0.20.1은 INTEGER 경로 파라미터를 int32로 생성하므로 인터뷰의 long ID를 보정한다.
+tasks.matching { it.name == 'openapi3' }.configureEach {
+    doLast {
+        ['openapi3.yaml', 'openapi3-public.yaml'].each { name ->
+            def document = layout.buildDirectory.file("api-spec/${name}").get().asFile
+            def specification = io.swagger.v3.core.util.Yaml.mapper()
+                    .readValue(document, io.swagger.v3.oas.models.OpenAPI)
+            specification.paths.findAll { path, item -> path.contains('/interviews/') }
+                    .values().each { item ->
+                item.readOperations().each { operation ->
+                    operation.parameters?.findAll { parameter ->
+                        parameter.in == 'path' && parameter.name in ['interviewId', 'commentId']
+                    }?.each { parameter -> parameter.schema.format = 'int64' }
+                }
+            }
+            document.setText(io.swagger.v3.core.util.Yaml.pretty().writeValueAsString(specification), 'UTF-8')
+        }
+    }
 }
 
 /**
