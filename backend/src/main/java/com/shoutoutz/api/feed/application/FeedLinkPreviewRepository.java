@@ -34,6 +34,12 @@ public interface FeedLinkPreviewRepository {
 
     Map<Long, LinkPreview> findByProjectCommentIds(List<Long> commentIds);
 
+    void linkInterviewComment(long commentId, String url);
+
+    void unlinkInterviewComment(long commentId);
+
+    Map<Long, LinkPreview> findByInterviewCommentIds(List<Long> commentIds);
+
     Optional<FetchJob> claimDue(Instant now, Instant staleBefore);
 
     void complete(FetchJob job, LinkPreviewMetadata metadata, Instant now);

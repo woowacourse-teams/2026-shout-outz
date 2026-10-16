@@ -3,6 +3,8 @@ package com.shoutoutz.api.media.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -51,6 +53,17 @@ class MediaSchemaIntegrationTest {
                     now() + interval '5 minutes'
                 )
                 """);
+
+        assertThat(inserted).isEqualTo(1);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"INTERVIEW_THUMBNAIL", "INTERVIEW_CONTENT"})
+    void 인터뷰_미디어_목적을_저장할_수_있다(String purpose) {
+        int inserted = jdbcTemplate.update("""
+                INSERT INTO media_metadata (purpose, s3_key, mime_type, size_bytes, status, expires_at)
+                VALUES (?, ?, 'image/webp', 1024, 'PENDING_UPLOAD', now() + interval '5 minutes')
+                """, purpose, "media/interview/" + purpose);
 
         assertThat(inserted).isEqualTo(1);
     }

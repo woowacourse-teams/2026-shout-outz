@@ -121,7 +121,8 @@ public class NotificationService {
                 item.commentId(),
                 actor,
                 item.read(),
-                item.createdAt()
+                item.createdAt(),
+                item.interviewId(), item.interviewTitle(), item.interviewCommentId()
         );
     }
 
