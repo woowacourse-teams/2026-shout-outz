@@ -8650,6 +8650,7 @@ components:
               - PROCESSING
               - READY
               - FAILED
+              - SKIPPED
             feedId:
               type: number
               description: 피드 ID
@@ -10242,6 +10243,7 @@ components:
               - PROCESSING
               - READY
               - FAILED
+              - SKIPPED
             feedId:
               type: number
               description: 피드 ID
@@ -10829,6 +10831,7 @@ components:
                   - PROCESSING
                   - READY
                   - FAILED
+                  - SKIPPED
               description: 질문 상세에 포함되는 연관 질문 추천. 추천 작업 생성 전이거나 질문이 아니면 생략
             createdAt:
               type: string
