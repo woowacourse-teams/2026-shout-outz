@@ -2,6 +2,20 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
+import { cn } from '@/utils/cn';
+
+/**
+ * `<span color="red">`의 color 값을 컬러 토큰으로 바꾼다. sanitize가 style·class는 지우지만
+ * color 속성은 남기므로, 정해둔 색만 토큰으로 칠하고 나머지 값은 무시한다.
+ */
+const TEXT_COLOR_CLASSES: Record<string, string> = {
+  red: 'text-red-600',
+  blue: 'text-blue-600',
+  green: 'text-green-600',
+  yellow: 'text-yellow-600',
+  gray: 'text-gray-500',
+  primary: 'text-primary-600',
+};
 
 export function MarkdownContent({ children }: { children: string }) {
   if (!children.trim()) return <p className="text-gray-500">등록된 프로젝트 소개가 없습니다.</p>;
@@ -20,9 +34,24 @@ export function MarkdownContent({ children }: { children: string }) {
               </div>
             );
           },
-          img: ({ node, ...props }) => {
+          // `![대체텍스트](주소 "캡션")`의 title을 이미지 아래 캡션으로 보여준다.
+          // 이미지가 <p> 안에 그려지므로 figure 대신 block span으로 감싼다.
+          img: ({ node, title, ...props }) => {
             void node;
-            return <img {...props} loading="lazy" />;
+            if (!title) return <img {...props} loading="lazy" />;
+            return (
+              <span className="block">
+                <img {...props} loading="lazy" />
+                <span className="mt-2 block text-center text-xs leading-5 text-gray-500">
+                  {title}
+                </span>
+              </span>
+            );
+          },
+          span: ({ node, color, className, ...props }) => {
+            void node;
+            const colorClass = color ? TEXT_COLOR_CLASSES[color.trim().toLowerCase()] : undefined;
+            return <span {...props} className={cn(className, colorClass)} />;
           },
         }}
       >
