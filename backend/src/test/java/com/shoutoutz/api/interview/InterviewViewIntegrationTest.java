@@ -1,16 +1,23 @@
 package com.shoutoutz.api.interview;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.BDDMockito.given;
 
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.interview.application.InterviewService;
+import com.shoutoutz.api.interview.domain.InterviewRepository;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
@@ -19,8 +26,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -30,6 +41,12 @@ class InterviewViewIntegrationTest {
 
     @Autowired
     private InterviewService interviewService;
+
+    @Autowired
+    private InterviewRepository interviewRepository;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @MockitoBean
     private Clock clock;
@@ -89,6 +106,80 @@ class InterviewViewIntegrationTest {
         }
         run(tasks);
         assertThat(count()).isEqualTo(8);
+    }
+
+    @Test
+    void 이미_집계한_방문자의_조회는_인터뷰_행_락을_기다리지_않는다() throws Exception {
+        VisitorKey visitor = new VisitorKey("already-viewed");
+        assertThat(interviewService.find(interviewId, null, visitor).viewCount()).isEqualTo(1);
+        var executor = Executors.newSingleThreadExecutor();
+        try (var connection = jdbcTemplate.getDataSource().getConnection()) {
+            connection.setAutoCommit(false);
+            var lockedJdbc = new JdbcTemplate(new SingleConnectionDataSource(connection, true));
+            lockedJdbc.queryForObject("SELECT id FROM interviews WHERE id = ? FOR UPDATE", Long.class, interviewId);
+            try {
+                var response = executor.submit(() -> interviewService.find(interviewId, null, visitor));
+                assertThat(response.get(3, TimeUnit.SECONDS).viewCount()).isEqualTo(1);
+            } finally {
+                connection.rollback();
+            }
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void 중복_기록이_선행_트랜잭션을_기다렸어도_커밋된_조회수를_반환한다() throws Exception {
+        VisitorKey visitor = new VisitorKey("concurrent-duplicate");
+        var executor = Executors.newSingleThreadExecutor();
+        try (var connection = jdbcTemplate.getDataSource().getConnection()) {
+            connection.setAutoCommit(false);
+            var firstJdbc = new JdbcTemplate(new SingleConnectionDataSource(connection, true));
+            firstJdbc.update("""
+                    INSERT INTO interview_view_days(interview_id, visitor_key_hash, viewed_on, first_seen_at)
+                    VALUES (?, ?, '2026-10-15', now())
+                    """, interviewId, visitor.hash());
+            firstJdbc.update("UPDATE interviews SET view_count = view_count + 1 WHERE id = ?", interviewId);
+            try {
+                var backendPid = new CompletableFuture<Integer>();
+                var response = executor.submit(() -> new TransactionTemplate(transactionManager).execute(status -> {
+                    backendPid.complete(jdbcTemplate.queryForObject("SELECT pg_backend_pid()", Integer.class));
+                    return interviewRepository.recordView(interviewId, visitor,
+                            LocalDate.parse("2026-10-15"), Instant.parse("2026-10-15T12:00:00Z"));
+                }));
+                int pid = backendPid.get(5, TimeUnit.SECONDS);
+                await().atMost(Duration.ofSeconds(5)).until(() -> jdbcTemplate.queryForObject(
+                        "SELECT cardinality(pg_blocking_pids(?)) > 0", Boolean.class, pid));
+                connection.commit();
+                assertThat(response.get(5, TimeUnit.SECONDS)).isEqualTo(1);
+                assertThat(count()).isEqualTo(1);
+            } finally {
+                connection.rollback();
+            }
+        } finally {
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void 상세_조회_도중_발행이_취소되면_조회_기록도_롤백한다() {
+        var adminTransaction = new TransactionTemplate(transactionManager);
+        adminTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        given(clock.instant()).willAnswer(invocation -> {
+            adminTransaction.executeWithoutResult(status ->
+                    jdbcTemplate.update("UPDATE interviews SET status = 'DRAFT' WHERE id = ?", interviewId));
+            return Instant.parse("2026-10-15T12:00:00Z");
+        });
+
+        assertThatThrownBy(() -> interviewService.find(interviewId, null, new VisitorKey("unpublished")))
+                .isInstanceOf(EntityNotFoundException.class);
+        assertThat(jdbcTemplate.queryForObject("SELECT status FROM interviews WHERE id = ?", String.class, interviewId))
+                .isEqualTo("DRAFT");
+        assertThat(count()).isZero();
+        assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM interview_view_days WHERE interview_id = ?",
+                Long.class, interviewId)).isZero();
     }
 
     @Test

@@ -43,40 +43,36 @@ public class InterviewRepositoryImpl implements InterviewRepository {
         return interviewJpaRepository.findForUpdate(id).map(InterviewEntity::toDomain);
     }
 
-    /**
-     * 기록, 조회수 증가, 조회수 조회를 한 문장으로 처리한다.
-     * 같은 방문자의 요청이 동시에 들어와도 기본 키 충돌로 한 건만 INSERT 되고, 조회수도 그 한 번만 오른다.
-     * 한 문장 안의 SELECT 는 같은 문장의 UPDATE 이전 값을 보므로, 올린 값(updated)을 먼저 쓰고
-     * 이미 기록돼 있어 올리지 않았을 때만 현재 값을 쓴다.
-     */
     @Override
     public long recordView(long interviewId, VisitorKey visitorKey, LocalDate viewedOn, Instant viewedAt) {
-        Long viewCount = jdbcTemplate.queryForObject(
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("interviewId", interviewId)
+                .addValue("visitorKeyHash", visitorKey.hash())
+                .addValue("viewedOn", viewedOn)
+                .addValue("viewedAt", Timestamp.from(viewedAt));
+        jdbcTemplate.update(
                 """
                         WITH recorded AS (
                             INSERT INTO interview_view_days (interview_id, visitor_key_hash, viewed_on, first_seen_at)
                             VALUES (:interviewId, :visitorKeyHash, :viewedOn, :viewedAt)
                             ON CONFLICT (interview_id, visitor_key_hash, viewed_on) DO NOTHING
                             RETURNING interview_id
-                        ),
-                        updated AS (
-                            UPDATE interviews
-                            SET view_count = view_count + 1
-                            WHERE id IN (SELECT interview_id FROM recorded)
-                            RETURNING view_count
                         )
-                        SELECT COALESCE(
-                            (SELECT view_count FROM updated),
-                            (SELECT view_count FROM interviews WHERE id = :interviewId)
-                        )
+                        UPDATE interviews
+                        SET view_count = view_count + 1
+                        WHERE id IN (SELECT interview_id FROM recorded)
                         """,
-                new MapSqlParameterSource()
-                        .addValue("interviewId", interviewId)
-                        .addValue("visitorKeyHash", visitorKey.hash())
-                        .addValue("viewedOn", viewedOn)
-                        .addValue("viewedAt", Timestamp.from(viewedAt)),
-                Long.class
+                parameters
         );
-        return viewCount;
+        // 중복 INSERT가 다른 트랜잭션을 기다렸다면, 다음 문장의 새 스냅샷으로 커밋된 조회수를 읽는다.
+        return jdbcTemplate.queryForList(
+                """
+                        SELECT view_count FROM interviews
+                        WHERE id = :interviewId AND status = 'PUBLISHED' AND deleted_at IS NULL
+                        """,
+                parameters,
+                Long.class
+        ).stream().findFirst()
+                .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
     }
 }

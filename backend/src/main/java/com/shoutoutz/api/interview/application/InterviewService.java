@@ -140,20 +140,24 @@ public class InterviewService {
 
     @Transactional
     public InterviewDetailResponse find(long id, Long viewerId, VisitorKey visitorKey) {
-        findForUpdate(id).validatePublished();
         InterviewItem item = interviewQueryRepository.findPublished(id)
                 .orElseThrow(() -> new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
-        Instant viewedAt = clock.instant();
-        LocalDate viewedOn = LocalDate.ofInstant(viewedAt, VIEW_DATE_ZONE);
-        long viewCount = interviewRepository.recordView(id, visitorKey, viewedOn, viewedAt);
         Map<Long, URI> urls = contentUrls(item.contentMd());
         Map<Long, String> avatarUrls = resolveAvatarUrls(List.of(item));
         InterviewReactionCounts counts = interviewReactionRepository.findCountsByInterviewId(id, viewerId);
-        return InterviewDetailResponse.from(item,
-                mediaUrlResolver.resolve(item.thumbnailMediaId(), MediaVariant.THUMBNAIL),
+        URI thumbnailUrl = mediaUrlResolver.resolve(item.thumbnailMediaId(), MediaVariant.THUMBNAIL);
+        String contentMd = mediaUrlResolver.replaceDescriptionReferences(item.contentMd(), urls);
+        Instant viewedAt = clock.instant();
+        LocalDate viewedOn = LocalDate.ofInstant(viewedAt, VIEW_DATE_ZONE);
+        long viewCount = interviewRepository.recordView(id, visitorKey, viewedOn, viewedAt);
+        return InterviewDetailResponse.from(
+                item,
+                thumbnailUrl,
                 interviewee(item, avatarUrls),
-                mediaUrlResolver.replaceDescriptionReferences(item.contentMd(), urls),
-                counts, viewCount);
+                contentMd,
+                counts,
+                viewCount
+        );
     }
 
     private InterviewPage page(String cursor, int size, boolean admin, Long viewerId) {
