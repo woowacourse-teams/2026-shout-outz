@@ -54,7 +54,7 @@ public record InterviewCommentFindResponse(
             return new Comment(
                     comment.getId(), content, Author.from(author, handle, avatarUrl, authorVisible),
                     comment.getParentId(), comment.getCreatedAt(), comment.getUpdatedAt(),
-                    !comment.isDeleted() && owner, comment.isEdited(), comment.isDeleted(),
+                    !comment.isDeleted() && owner, !comment.isDeleted() && comment.isEdited(), comment.isDeleted(),
                     reactions.agreeCount(), reactions.agreedByMe(), comment.isAnonymous(), preview
             );
         }

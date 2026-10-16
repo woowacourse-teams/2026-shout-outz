@@ -81,6 +81,9 @@ class InterviewCommentIntegrationTest {
         assertThat(count()).isEqualTo(2);
         interviewCommentService.update(interviewId, root, authorId, new InterviewCommentUpdateRequest("수정"));
         assertThat(count()).isEqualTo(2);
+        var edited = interviewCommentService.findAll(interviewId,
+                new InterviewCommentFindRequest(null, 5, "LATEST"), authorId).comments().getFirst();
+        assertThat(edited.edited()).isTrue();
         interviewCommentService.delete(interviewId, root, authorId);
         assertThat(count()).isEqualTo(1);
         assertThatThrownBy(() -> interviewCommentService.delete(interviewId, root, authorId))
@@ -90,6 +93,7 @@ class InterviewCommentIntegrationTest {
         assertThat(page.comments()).hasSize(2);
         assertThat(page.comments().getFirst().deleted()).isTrue();
         assertThat(page.comments().getFirst().content()).isNull();
+        assertThat(page.comments().getFirst().edited()).isFalse();
         assertThat(page.comments().getLast().id()).isEqualTo(reply);
         assertThat(page.meta().totalCount()).isEqualTo(1);
     }
