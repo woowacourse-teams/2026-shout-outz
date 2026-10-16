@@ -33,6 +33,10 @@ question-recommendation:
   outbox-poll-interval-millis: ${QUESTION_RECOMMENDATION_OUTBOX_POLL_INTERVAL_MILLIS:5000}
   outbox-initial-delay-millis: ${QUESTION_RECOMMENDATION_OUTBOX_INITIAL_DELAY_MILLIS:1000}
   fallback-enabled: ${QUESTION_RECOMMENDATION_FALLBACK_ENABLED:true}
+  quality:
+    candidate-count: ${QUESTION_RECOMMENDATION_CANDIDATE_COUNT:8}
+    min-count: ${QUESTION_RECOMMENDATION_MIN_COUNT:3}
+    min-angle-kinds: ${QUESTION_RECOMMENDATION_MIN_ANGLE_KINDS:3}
   sqs:
     enabled: ${QUESTION_RECOMMENDATION_SQS_ENABLED:false}
     queue-url: ${QUESTION_RECOMMENDATION_QUEUE_URL:}
