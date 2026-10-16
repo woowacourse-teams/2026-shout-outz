@@ -14,12 +14,20 @@ const MEDIA_PATH = '/api/v1/media';
  * 출처(schema.ts의 설명문):
  * - `FEED_CONTENT`        FeedSaveRequest.mediaIds
  * - `HOME_BANNER`         HomeBannerUpsertRequest.mediaId
+ * - `INTERVIEW_CONTENT`   InterviewSaveRequest.contentMd
+ * - `INTERVIEW_THUMBNAIL` InterviewSaveRequest.thumbnailMediaId
  * - `PROJECT_DESCRIPTION` ProjectCreateRequest.descriptionMd
  * - `PROJECT_THUMBNAIL`   ProjectCreateRequest.thumbnailImageId
  * - `USER_AVATAR`         UserProfileUpdateRequest.avatarImageId
  */
 export type MediaPurpose =
-  'FEED_CONTENT' | 'HOME_BANNER' | 'PROJECT_DESCRIPTION' | 'PROJECT_THUMBNAIL' | 'USER_AVATAR';
+  | 'FEED_CONTENT'
+  | 'HOME_BANNER'
+  | 'INTERVIEW_CONTENT'
+  | 'INTERVIEW_THUMBNAIL'
+  | 'PROJECT_DESCRIPTION'
+  | 'PROJECT_THUMBNAIL'
+  | 'USER_AVATAR';
 
 interface MediaUploadTicket {
   mediaId: number;
@@ -157,6 +165,10 @@ export async function uploadMedia(
 export const uploadProjectThumbnail = (file: File) => uploadMedia(file, 'PROJECT_THUMBNAIL');
 
 export const uploadHomeBannerImage = (file: File) => uploadMedia(file, 'HOME_BANNER');
+
+export const uploadInterviewThumbnail = (file: File) => uploadMedia(file, 'INTERVIEW_THUMBNAIL');
+
+export const uploadInterviewContentImage = (file: File) => uploadMedia(file, 'INTERVIEW_CONTENT');
 
 export const uploadAvatar = (file: File, options?: WaitUntilReadyOptions) =>
   uploadMedia(file, 'USER_AVATAR', options);
