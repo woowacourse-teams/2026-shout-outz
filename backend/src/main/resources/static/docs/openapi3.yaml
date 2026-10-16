@@ -158,11 +158,11 @@ paths:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"feedType\"\
-                    ,\"message\":\"feedType은 필수입니다.\"},{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\":\"type은\
-                    \ 필수입니다.\"}]}"
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
+                    ,\"message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
+                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"feedType\",\"message\"\
+                    :\"feedType은 필수입니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -452,7 +452,7 @@ paths:
       tags:
       - Interview
       summary: 공개 인터뷰 목록
-      description: 공개 인터뷰 목록
+      description: 발행된 인터뷰를 최초 발행 시각 내림차순으로 조회합니다. 비회원도 전문을 읽을 수 있습니다.
       operationId: interview-list
       parameters:
       - name: size
@@ -469,6 +469,22 @@ paths:
         schema:
           type: string
       responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-list-invalid-size-51:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_INVALID_SIZE\"\
+                    ,\"message\":\"조회 개수는 1 이상 50 이하여야 합니다.\"}"
+                interview-list-invalid-size-0:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_INVALID_SIZE\"\
+                    ,\"message\":\"조회 개수는 1 이상 50 이하여야 합니다.\"}"
+                interview-list-invalid-cursor:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_INVALID_CURSOR\"\
+                    ,\"message\":\"인터뷰 목록 커서가 올바르지 않습니다.\"}"
         "200":
           description: "200"
           content:
@@ -477,12 +493,12 @@ paths:
                 $ref: "#/components/schemas/InterviewFindAllSuccessResponse"
               examples:
                 interview-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":43,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/e496232e-1cc0-4418-95aa-63f144a43f05/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@i91de3ce071fb4645846b\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":294,\"title\"\
+                    :\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/37ee61b7-bc6f-498b-9696-97274ff1e468/thumbnail\"\
+                    ,\"interviewee\":{\"handle\":\"@iae0a910466d1447da5df\",\"displayName\"\
                     :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-10-16T01:58:12.364245Z\",\"createdAt\"\
-                    :\"2026-10-16T01:58:12.358977Z\",\"updatedAt\":\"2026-10-16T01:58:12.364664Z\"\
+                    ,\"publishedAt\":\"2026-10-16T02:15:30.416527Z\",\"createdAt\"\
+                    :\"2026-10-16T02:15:30.408140Z\",\"updatedAt\":\"2026-10-16T02:15:30.417055Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :0}],\"meta\":{\"nextCursor\":null,\"hasNext\":false,\"totalCount\"\
                     :1}}"
@@ -1181,7 +1197,7 @@ paths:
       tags:
       - Interview Admin
       summary: 관리자 인터뷰 목록
-      description: 관리자 인터뷰 목록
+      description: 활성 관리자가 초안을 포함한 인터뷰를 생성 시각 내림차순으로 조회합니다.
       operationId: interview-admin-list
       parameters:
       - name: size
@@ -1197,6 +1213,13 @@ paths:
         required: false
         schema:
           type: string
+      - name: Cookie
+        in: header
+        description: 활성 관리자 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=83
       responses:
         "200":
           description: "200"
@@ -1206,38 +1229,149 @@ paths:
                 $ref: "#/components/schemas/InterviewFindAllSuccessResponse"
               examples:
                 interview-admin-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":45,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/b0d71c0c-d2fe-49f7-a101-4ec55df4d43d/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@ie6f4c82ab0224877af92\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":296,\"title\"\
+                    :\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/41028b70-4090-4145-a66c-1f9d2e3dde57/thumbnail\"\
+                    ,\"interviewee\":{\"handle\":\"@i437ce63ea5804b7fa948\",\"displayName\"\
                     :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T01:58:12.424058Z\"\
-                    ,\"updatedAt\":\"2026-10-16T01:58:12.424058Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T02:15:30.498239Z\"\
+                    ,\"updatedAt\":\"2026-10-16T02:15:30.498239Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0},{\"id\"\
-                    :44,\"title\":\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/b0d71c0c-d2fe-49f7-a101-4ec55df4d43d/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@ie6f4c82ab0224877af92\",\"displayName\"\
+                    :295,\"title\":\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/interview/41028b70-4090-4145-a66c-1f9d2e3dde57/thumbnail\"\
+                    ,\"interviewee\":{\"handle\":\"@i437ce63ea5804b7fa948\",\"displayName\"\
                     :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T01:58:12.400672Z\"\
-                    ,\"updatedAt\":\"2026-10-16T01:58:12.400672Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T02:15:30.491890Z\"\
+                    ,\"updatedAt\":\"2026-10-16T02:15:30.491890Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0}],\"meta\"\
                     :{\"nextCursor\":null,\"hasNext\":false,\"totalCount\":2}}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-admin-list-invalid-size-51:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_INVALID_SIZE\"\
+                    ,\"message\":\"조회 개수는 1 이상 50 이하여야 합니다.\"}"
+                interview-admin-list-invalid-size-0:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_INVALID_SIZE\"\
+                    ,\"message\":\"조회 개수는 1 이상 50 이하여야 합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-admin-list-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-admin-list-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
     post:
       tags:
       - Interview Admin
       summary: 인터뷰 초안 등록
-      description: 인터뷰 초안 등록
+      description: "활성 관리자가 초안을 등록합니다. 요약, 대표 이미지, 본문은 초안에서는 생략할 수 있습니다."
       operationId: interview-create
+      parameters:
+      - name: Cookie
+        in: header
+        description: 활성 관리자 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=81
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: bG3OwGSSJP0XQO4ir-QvRe0EwyxWO5y5vGHoiFWnh2s
       requestBody:
         content:
           application/json;charset=UTF-8:
             schema:
               $ref: "#/components/schemas/InterviewSaveRequest"
             examples:
+              interview-create-forbidden:
+                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
+                  :2049,\"thumbnailMediaId\":1042,\"contentMd\":\"본문\"}"
+              interview-create-invalid-media:
+                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
+                  :2065,\"thumbnailMediaId\":1058,\"contentMd\":\"![사진](https://example.com/a.png)\"\
+                  }"
+              interview-create-csrf-missing:
+                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
+                  :2081,\"thumbnailMediaId\":1074,\"contentMd\":\"본문\"}"
+              interview-create-csrf-invalid:
+                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
+                  :2141,\"thumbnailMediaId\":1134,\"contentMd\":\"본문\"}"
+              interview-create-interviewee-not-found:
+                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
+                  :9223372036854775807,\"thumbnailMediaId\":1094,\"contentMd\":\"본\
+                  문\"}"
               interview-create:
                 value: "{\"title\":\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :191,\"thumbnailMediaId\":82,\"contentMd\":\"![인터뷰](media://83)\"\
+                  :2135,\"thumbnailMediaId\":1128,\"contentMd\":\"![인터뷰](media://1129)\"\
                   }"
+              interview-create-unauthorized:
+                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
+                  :2121,\"thumbnailMediaId\":1114,\"contentMd\":\"본문\"}"
+              interview-create-validation-failed:
+                value: "{\"title\":\"\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2095,\"\
+                  thumbnailMediaId\":1088,\"contentMd\":\"본문\"}"
       responses:
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-create-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
+                interview-create-csrf-missing:
+                  value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
+                    message\":\"CSRF Token이 유효하지 않습니다.\"}"
+                interview-create-csrf-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
+                    message\":\"CSRF Token이 유효하지 않습니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-create-invalid-media:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_INVALID_MEDIA\"\
+                    ,\"message\":\"사용할 수 없는 인터뷰 이미지입니다.\"}"
+                interview-create-validation-failed:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"must not be blank\"}]}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-create-interviewee-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEWEE_NOT_FOUND\"\
+                    ,\"message\":\"인터뷰 대상 사용자를 찾을 수 없습니다.\"}"
         "201":
           description: "201"
           content:
@@ -1246,14 +1380,24 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-create:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":44,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":191,\"thumbnailMediaId\"\
-                    :82,\"contentMd\":\"![인터뷰](media://83)\",\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T01:58:12.400672Z\"\
-                    ,\"updatedAt\":\"2026-10-16T01:58:12.400672Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/b0d71c0c-d2fe-49f7-a101-4ec55df4d43d/thumbnail\"\
-                    ,\"previewContentMd\":\"![인터뷰](https://cdn.example.com/test-prefix/interview/3fe46a6f-ad19-4ae5-a60a-a92ba5b44036/display)\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":295,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2135,\"thumbnailMediaId\"\
+                    :1128,\"contentMd\":\"![인터뷰](media://1129)\",\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T02:15:30.491890Z\"\
+                    ,\"updatedAt\":\"2026-10-16T02:15:30.491890Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/interview/41028b70-4090-4145-a66c-1f9d2e3dde57/thumbnail\"\
+                    ,\"previewContentMd\":\"![인터뷰](https://cdn.example.com/test-prefix/interview/cc40a3ec-ce66-45e6-96ca-c0c1a8f617bb/display)\"\
                     }}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-create-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
   /api/v1/admin/projects:
     get:
       tags:
@@ -1556,10 +1700,10 @@ paths:
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1647,9 +1791,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -2018,6 +2162,16 @@ paths:
           type: integer
           format: int64
       responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-detail-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
+                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
         "200":
           description: "200"
           content:
@@ -2026,13 +2180,13 @@ paths:
                 $ref: "#/components/schemas/InterviewFindSuccessResponse"
               examples:
                 interview-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":43,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/e496232e-1cc0-4418-95aa-63f144a43f05/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@i91de3ce071fb4645846b\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":294,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/37ee61b7-bc6f-498b-9696-97274ff1e468/thumbnail\"\
+                    ,\"interviewee\":{\"handle\":\"@iae0a910466d1447da5df\",\"displayName\"\
                     :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"contentMd\":\"![사\
-                    진](https://cdn.example.com/test-prefix/interview/63dc901a-91c2-4c42-8517-acfe99c9cbbf/display)\"\
-                    ,\"publishedAt\":\"2026-10-16T01:58:12.364245Z\",\"createdAt\"\
-                    :\"2026-10-16T01:58:12.358977Z\",\"updatedAt\":\"2026-10-16T01:58:12.364664Z\"\
+                    진](https://cdn.example.com/test-prefix/interview/becdc753-c885-4b65-a29f-f7d089ba54a6/display)\"\
+                    ,\"publishedAt\":\"2026-10-16T02:15:30.416527Z\",\"createdAt\"\
+                    :\"2026-10-16T02:15:30.408140Z\",\"updatedAt\":\"2026-10-16T02:15:30.417055Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :1}}"
   /api/v1/news/events:
@@ -2157,10 +2311,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
                     message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"}]}"
+                    :\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
+                    :\"eventStartAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -2992,9 +3146,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -3329,7 +3483,8 @@ paths:
       tags:
       - Interview Admin
       summary: 인터뷰 원본과 초안 조회
-      description: 인터뷰 원본과 초안 조회
+      description: 활성 관리자가 초안을 포함한 인터뷰 원본을 조회합니다. 본문의 media:// 참조와 이미지 URL로 변환한 미리보기를
+        함께 반환합니다.
       operationId: interview-admin-detail
       parameters:
       - name: interviewId
@@ -3339,7 +3494,44 @@ paths:
         schema:
           type: integer
           format: int64
+      - name: Cookie
+        in: header
+        description: 활성 관리자 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=82
       responses:
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-admin-detail-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-admin-detail-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-admin-detail-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
+                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
         "200":
           description: "200"
           content:
@@ -3348,19 +3540,20 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-admin-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":45,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":191,\"thumbnailMediaId\"\
-                    :82,\"contentMd\":\"![사진](media://83)\",\"status\":\"DRAFT\",\"\
-                    publishedAt\":null,\"createdAt\":\"2026-10-16T01:58:12.424058Z\"\
-                    ,\"updatedAt\":\"2026-10-16T01:58:12.424058Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/b0d71c0c-d2fe-49f7-a101-4ec55df4d43d/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/interview/3fe46a6f-ad19-4ae5-a60a-a92ba5b44036/display)\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":296,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2135,\"thumbnailMediaId\"\
+                    :1128,\"contentMd\":\"![사진](media://1129)\",\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T02:15:30.498239Z\"\
+                    ,\"updatedAt\":\"2026-10-16T02:15:30.498239Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/interview/41028b70-4090-4145-a66c-1f9d2e3dde57/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/interview/cc40a3ec-ce66-45e6-96ca-c0c1a8f617bb/display)\"\
                     }}"
     put:
       tags:
       - Interview Admin
       summary: 인터뷰 전체 수정
-      description: 인터뷰 전체 수정
+      description: "편집 가능한 필드를 전체 교체하며 생략한 선택 필드는 null로 처리합니다. 발행된 글의 수정은 즉시 공개되며\
+        \ 요약, 대표 이미지, 본문을 비울 수 없습니다."
       operationId: interview-update
       parameters:
       - name: interviewId
@@ -3370,16 +3563,69 @@ paths:
         schema:
           type: integer
           format: int64
+      - name: Cookie
+        in: header
+        description: 활성 관리자 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=67
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: 96YDfnTDLhjdAsTI9Pm9xDuo3BvwJ9yg0M-RhpyjEkE
       requestBody:
         content:
           application/json;charset=UTF-8:
             schema:
               $ref: "#/components/schemas/InterviewSaveRequest"
             examples:
+              interview-update-csrf-missing:
+                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
+                  :2083,\"thumbnailMediaId\":1076,\"contentMd\":\"본문\"}"
+              interview-update-validation-failed:
+                value: "{\"title\":\"\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2095,\"\
+                  thumbnailMediaId\":1088,\"contentMd\":\"본문\"}"
               interview-update:
                 value: "{\"title\":\"수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :181,\"thumbnailMediaId\":72,\"contentMd\":\"수정 본문\"}"
+                  :2093,\"thumbnailMediaId\":1086,\"contentMd\":\"수정 본문\"}"
+              interview-update-forbidden:
+                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
+                  :2055,\"thumbnailMediaId\":1048,\"contentMd\":\"본문\"}"
+              interview-update-unauthorized:
+                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
+                  :2127,\"thumbnailMediaId\":1120,\"contentMd\":\"본문\"}"
+              interview-update-not-found:
+                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
+                  :2111,\"thumbnailMediaId\":1104,\"contentMd\":\"본문\"}"
       responses:
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-update-csrf-missing:
+                  value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
+                    message\":\"CSRF Token이 유효하지 않습니다.\"}"
+                interview-update-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-update-validation-failed:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"must not be blank\"}]}"
         "200":
           description: "200"
           content:
@@ -3388,18 +3634,39 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-update:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":38,\"title\":\"\
-                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":181,\"thumbnailMediaId\"\
-                    :72,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
-                    :\"2026-10-16T01:58:12.243068Z\",\"createdAt\":\"2026-10-16T01:58:12.239626Z\"\
-                    ,\"updatedAt\":\"2026-10-16T01:58:12.257623Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/c1d37447-0bb2-43bc-a6c2-531917caabb3/thumbnail\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":288,\"title\":\"\
+                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2093,\"thumbnailMediaId\"\
+                    :1086,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
+                    :\"2026-10-16T02:15:30.217775Z\",\"createdAt\":\"2026-10-16T02:15:30.213922Z\"\
+                    ,\"updatedAt\":\"2026-10-16T02:15:30.234754Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/interview/4aeaf65b-a524-4d63-9623-12e18a68b465/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-update-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-update-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
+                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
     delete:
       tags:
       - Interview Admin
       summary: 인터뷰 삭제
-      description: 인터뷰 삭제
+      description: 활성 관리자가 인터뷰를 soft delete합니다. 삭제 후 관리자와 공개 API에서 조회할 수 없으며 응답 본문은
+        없습니다.
       operationId: interview-delete
       parameters:
       - name: interviewId
@@ -3409,9 +3676,56 @@ paths:
         schema:
           type: integer
           format: int64
+      - name: Cookie
+        in: header
+        description: 활성 관리자 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=69
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: mDkeyaPbrA2ZuQ30u2AAbbuXh_Emq-UzOWUAtHli6DY
       responses:
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-delete-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-delete-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
+                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
         "204":
           description: "204"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-delete-csrf-missing:
+                  value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
+                    message\":\"CSRF Token이 유효하지 않습니다.\"}"
+                interview-delete-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
   /api/v1/admin/projects/{projectId}:
     get:
       tags:
@@ -3674,12 +3988,14 @@ paths:
         schema:
           type: integer
           format: int32
+          default: 5
       - name: sort
         in: query
         description: 루트 댓글 정렬 기준(LATEST 또는 OLDEST). 기본값 LATEST
         required: false
         schema:
           type: string
+          default: LATEST
       responses:
         "200":
           description: "200"
@@ -3712,20 +4028,50 @@ paths:
                     :false,\"deleted\":true,\"agreeCount\":0,\"agreedByMe\":false,\"\
                     isAnonymous\":false,\"linkPreview\":null}],\"meta\":{\"nextCursor\"\
                     :\"next-cursor\",\"hasNext\":true,\"totalCount\":2}}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-find-all-invalid-sort:
+                  value: "{\"status\":\"error\",\"code\":\"INVALID_COMMENT_SORT\"\
+                    ,\"message\":\"올바르지 않은 댓글 정렬 기준입니다.\"}"
+                interview-comment-find-all-invalid-size:
+                  value: "{\"status\":\"error\",\"code\":\"INVALID_COMMENT_SIZE\"\
+                    ,\"message\":\"올바르지 않은 댓글 조회 개수입니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-find-all-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
+                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
     post:
       tags:
       - Interview Comment
       summary: 인터뷰 댓글 작성
-      description: 로그인 사용자가 발행된 인터뷰에 댓글 또는 1단계 대댓글을 작성한다.
+      description: 인터뷰 댓글 작성
       operationId: interview-comment-create
       parameters:
       - name: interviewId
         in: path
-        description: 댓글을 작성할 인터뷰 ID
+        description: 인터뷰 ID
         required: true
         schema:
           type: integer
           format: int64
+      - name: Cookie
+        in: header
+        description: 활성 회원 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=user-session
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
@@ -3739,12 +4085,58 @@ paths:
             schema:
               $ref: "#/components/schemas/InterviewCommentCreateRequest"
             examples:
+              interview-comment-create-invalid-parent:
+                value: "{\"content\":\"댓글\",\"parentId\":0}"
               interview-comment-create:
                 value: |
                   {
                     "content": "  좋은 인터뷰네요.  "
                   }
+              interview-comment-create-interview-not-found:
+                value: "{\"content\":\"댓글\"}"
+              interview-comment-create-depth-exceeded:
+                value: "{\"content\":\"댓글\",\"parentId\":301}"
+              interview-comment-create-unauthorized:
+                value: "{\"content\":\"댓글\"}"
+              interview-comment-create-forbidden:
+                value: "{\"content\":\"댓글\"}"
+              interview-comment-create-validation-failed:
+                value: "{\"content\":\"😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\"\
+                  }"
       responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-create-invalid-parent:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"parentId\"\
+                    ,\"message\":\"parentId는 0보다 커야 합니다.\"}]}"
+                interview-comment-create-depth-exceeded:
+                  value: "{\"status\":\"error\",\"code\":\"COMMENT_DEPTH_EXCEEDED\"\
+                    ,\"message\":\"대댓글은 한 단계까지만 작성할 수 있습니다.\"}"
+                interview-comment-create-validation-failed:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"content\"\
+                    ,\"message\":\"댓글 내용은 500자를 초과할 수 없습니다.\"}]}"
         "201":
           description: "201"
           content:
@@ -3760,6 +4152,36 @@ paths:
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:00:00Z\",\"editable\":true,\"isAnonymous\"\
                     :false,\"linkPreview\":null}}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-create-interview-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
+                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-create-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-create-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_USER_FORBIDDEN\"\
+                    ,\"message\":\"활성 사용자만 인터뷰의 반응과 댓글을 변경할 수 있습니다.\"}"
   /api/v1/media/{mediaId}/status:
     get:
       tags:
@@ -4324,9 +4746,9 @@ paths:
               examples:
                 user-verification-request-create-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"nickname\"\
-                    ,\"message\":\"nickname은 필수입니다.\"},{\"field\":\"cohort\",\"message\"\
-                    :\"cohort는 양의 정수여야 합니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"cohort\"\
+                    ,\"message\":\"cohort는 양의 정수여야 합니다.\"},{\"field\":\"nickname\"\
+                    ,\"message\":\"nickname은 필수입니다.\"}]}"
         "201":
           description: "201"
           content:
@@ -4733,7 +5155,7 @@ paths:
       tags:
       - Interview Admin
       summary: 인터뷰 발행
-      description: 인터뷰 발행
+      description: "요약, 대표 이미지, 본문이 있는 인터뷰를 공개합니다. 재발행해도 최초 발행 시각은 유지됩니다."
       operationId: interview-publish
       parameters:
       - name: interviewId
@@ -4743,7 +5165,31 @@ paths:
         schema:
           type: integer
           format: int64
+      - name: Cookie
+        in: header
+        description: 활성 관리자 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=66
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: NaOpcchCI_KhYt0OghqEoUG57IHg9kXW1HYIE1PRTMY
       responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-publish-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
+                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
         "200":
           description: "200"
           content:
@@ -4752,20 +5198,53 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-publish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":38,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":181,\"thumbnailMediaId\"\
-                    :72,\"contentMd\":\"![사진](media://73)\",\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-10-16T01:58:12.243068Z\",\"createdAt\"\
-                    :\"2026-10-16T01:58:12.239626Z\",\"updatedAt\":\"2026-10-16T01:58:12.243579Z\"\
-                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/c1d37447-0bb2-43bc-a6c2-531917caabb3/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/interview/7b8bf6a4-507e-4528-8380-a11d07fa5b5d/display)\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":288,\"title\":\"\
+                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2093,\"thumbnailMediaId\"\
+                    :1086,\"contentMd\":\"![사진](media://1087)\",\"status\":\"PUBLISHED\"\
+                    ,\"publishedAt\":\"2026-10-16T02:15:30.217775Z\",\"createdAt\"\
+                    :\"2026-10-16T02:15:30.213922Z\",\"updatedAt\":\"2026-10-16T02:15:30.218313Z\"\
+                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/4aeaf65b-a524-4d63-9623-12e18a68b465/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/interview/c9c77a2f-2a36-4259-8cea-218a6c12143c/display)\"\
                     }}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-publish-incomplete:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_PUBLISH_INCOMPLETE\"\
+                    ,\"message\":\"발행하려면 요약, 본문, 대표 이미지가 필요합니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-publish-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-publish-csrf-missing:
+                  value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
+                    message\":\"CSRF Token이 유효하지 않습니다.\"}"
+                interview-publish-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
   /api/v1/admin/interviews/{interviewId}/unpublish:
     post:
       tags:
       - Interview Admin
       summary: 인터뷰 발행 취소
-      description: 인터뷰 발행 취소
+      description: "초안으로 전환해 공개 조회와 댓글, 반응을 차단합니다. 최초 발행 시각은 유지됩니다."
       operationId: interview-unpublish
       parameters:
       - name: interviewId
@@ -4775,7 +5254,34 @@ paths:
         schema:
           type: integer
           format: int64
+      - name: Cookie
+        in: header
+        description: 활성 관리자 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=68
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: n-fek5DJjW74p9p06-_QFqJP7MaiRdrFcOOrOEyxdcs
       responses:
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-unpublish-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
+                interview-unpublish-csrf-missing:
+                  value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
+                    message\":\"CSRF Token이 유효하지 않습니다.\"}"
         "200":
           description: "200"
           content:
@@ -4784,13 +5290,33 @@ paths:
                 $ref: "#/components/schemas/InterviewAdminResponse"
               examples:
                 interview-unpublish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":38,\"title\":\"\
-                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":181,\"thumbnailMediaId\"\
-                    :72,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
-                    :\"2026-10-16T01:58:12.243068Z\",\"createdAt\":\"2026-10-16T01:58:12.239626Z\"\
-                    ,\"updatedAt\":\"2026-10-16T01:58:12.272063Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/c1d37447-0bb2-43bc-a6c2-531917caabb3/thumbnail\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":288,\"title\":\"\
+                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2093,\"thumbnailMediaId\"\
+                    :1086,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
+                    :\"2026-10-16T02:15:30.217775Z\",\"createdAt\":\"2026-10-16T02:15:30.213922Z\"\
+                    ,\"updatedAt\":\"2026-10-16T02:15:30.247109Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/interview/4aeaf65b-a524-4d63-9623-12e18a68b465/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-unpublish-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
+                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-unpublish-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
   /api/v1/admin/projects/{projectId}/approve:
     post:
       tags:
@@ -5321,23 +5847,30 @@ paths:
       tags:
       - Interview Comment
       summary: 인터뷰 댓글 삭제
-      description: 댓글 작성자 본인이 발행된 인터뷰의 댓글을 soft delete한다.
+      description: 인터뷰 댓글 삭제
       operationId: interview-comment-delete
       parameters:
       - name: interviewId
         in: path
-        description: 댓글이 속한 인터뷰 ID
+        description: 인터뷰 ID
         required: true
         schema:
           type: integer
           format: int64
       - name: commentId
         in: path
-        description: 삭제할 댓글 ID
+        description: 댓글 ID
         required: true
         schema:
           type: integer
           format: int64
+      - name: Cookie
+        in: header
+        description: 활성 회원 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=user-session
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
@@ -5346,6 +5879,39 @@ paths:
           type: string
         example: csrf-token
       responses:
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-delete-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-delete-interview-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
+                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
+                interview-comment-delete-comment-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"COMMENT_NOT_FOUND\",\"\
+                    message\":\"요청한 댓글을 찾을 수 없습니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-delete-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"FORBIDDEN\",\"message\"\
+                    :\"접근 권한이 없습니다.\"}"
         "200":
           description: "200"
           content:
@@ -5360,24 +5926,30 @@ paths:
       tags:
       - Interview Comment
       summary: 인터뷰 댓글 수정
-      description: 로그인한 인터뷰 댓글 작성자가 발행된 인터뷰의 댓글 내용을 수정한다. 트림 후 기존 내용과 같으면 저장하지 않고
-        수정 시각을 유지한다.
+      description: 인터뷰 댓글 수정
       operationId: interview-comment-update
       parameters:
       - name: interviewId
         in: path
-        description: 댓글이 속한 인터뷰 ID
+        description: 인터뷰 ID
         required: true
         schema:
           type: integer
           format: int64
       - name: commentId
         in: path
-        description: 수정할 댓글 ID
+        description: 댓글 ID
         required: true
         schema:
           type: integer
           format: int64
+      - name: Cookie
+        in: header
+        description: 활성 회원 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=user-session
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
@@ -5391,12 +5963,62 @@ paths:
             schema:
               $ref: "#/components/schemas/InterviewCommentUpdateRequest"
             examples:
+              interview-comment-update-interview-not-found:
+                value: "{\"content\":\"수정된 댓글\"}"
+              interview-comment-update-validation-failed:
+                value: "{\"content\":\"😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
+                  😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\"\
+                  }"
+              interview-comment-update-comment-not-found:
+                value: "{\"content\":\"수정된 댓글\"}"
               interview-comment-update:
                 value: |
                   {
                     "content": "  수정된 댓글입니다.  "
                   }
+              interview-comment-update-unauthorized:
+                value: "{\"content\":\"수정된 댓글\"}"
+              interview-comment-update-forbidden:
+                value: "{\"content\":\"수정된 댓글\"}"
       responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-update-interview-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
+                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
+                interview-comment-update-comment-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"COMMENT_NOT_FOUND\",\"\
+                    message\":\"요청한 댓글을 찾을 수 없습니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-update-validation-failed:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"content\"\
+                    ,\"message\":\"댓글 내용은 500자를 초과할 수 없습니다.\"}]}"
         "200":
           description: "200"
           content:
@@ -5412,6 +6034,26 @@ paths:
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:30:00Z\",\"editable\":true,\"edited\"\
                     :true,\"isAnonymous\":false,\"linkPreview\":null}}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-update-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-update-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"FORBIDDEN\",\"message\"\
+                    :\"접근 권한이 없습니다.\"}"
   /api/v1/interviews/{interviewId}/reactions/{type}:
     put:
       tags:
@@ -5434,6 +6076,13 @@ paths:
         required: true
         schema:
           type: string
+      - name: Cookie
+        in: header
+        description: 활성 회원 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=user-session
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
@@ -5496,8 +6145,7 @@ paths:
       tags:
       - Interview Reaction
       summary: 인터뷰 반응 제거
-      description: "현재 로그인한 활성 사용자가 발행된 인터뷰의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 존재\
-        하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다."
+      description: 인터뷰 반응 제거
       operationId: interview-reaction-remove
       parameters:
       - name: interviewId
@@ -5520,6 +6168,13 @@ paths:
         schema:
           type: string
         example: csrf-token
+      - name: Cookie
+        in: header
+        description: 활성 회원 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=user-session
       responses:
         "404":
           description: "404"
@@ -5544,6 +6199,16 @@ paths:
                 interview-reaction-remove-unauthorized:
                   value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
                     :\"인증이 필요합니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-reaction-remove-invalid-type:
+                  value: "{\"status\":\"error\",\"code\":\"REACTION_TYPE_INVALID\"\
+                    ,\"message\":\"지원하지 않는 인터뷰 반응 타입입니다.\"}"
         "200":
           description: "200"
           content:
@@ -5554,6 +6219,16 @@ paths:
                 interview-reaction-remove:
                   value: "{\"status\":\"success\",\"data\":{\"interviewId\":100,\"\
                     type\":\"LIKE\",\"active\":false,\"likeCount\":20}}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-reaction-remove-inactive-user:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_USER_FORBIDDEN\"\
+                    ,\"message\":\"활성 사용자만 인터뷰의 반응과 댓글을 변경할 수 있습니다.\"}"
   /api/v1/news/{newsId}/reactions/{type}:
     put:
       tags:
@@ -5995,6 +6670,13 @@ paths:
         required: true
         schema:
           type: string
+      - name: Cookie
+        in: header
+        description: 활성 회원 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=user-session
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
@@ -6003,6 +6685,46 @@ paths:
           type: string
         example: csrf-token
       responses:
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-reaction-add-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_USER_FORBIDDEN\"\
+                    ,\"message\":\"활성 사용자만 인터뷰의 반응과 댓글을 변경할 수 있습니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-reaction-add-invalid-type:
+                  value: "{\"status\":\"error\",\"code\":\"REACTION_TYPE_INVALID\"\
+                    ,\"message\":\"지원하지 않는 댓글 반응 타입입니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-reaction-add-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-reaction-add-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
+                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
         "200":
           description: "200"
           content:
@@ -6018,7 +6740,7 @@ paths:
       tags:
       - Interview Comment Reaction
       summary: 인터뷰 댓글 반응 제거
-      description: 현재 로그인 사용자의 해당 인터뷰 댓글 반응이 없으면 REACTION_NOT_FOUND를 반환한다.
+      description: 인터뷰 댓글 반응 제거
       operationId: interview-comment-reaction-remove
       parameters:
       - name: interviewId
@@ -6048,6 +6770,13 @@ paths:
         schema:
           type: string
         example: csrf-token
+      - name: Cookie
+        in: header
+        description: 활성 회원 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=user-session
       responses:
         "404":
           description: "404"
@@ -6070,6 +6799,36 @@ paths:
                   value: "{\"status\":\"success\",\"data\":{\"interviewId\":100,\"\
                     commentId\":501,\"type\":\"AGREE\",\"active\":false,\"agreeCount\"\
                     :6}}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-reaction-remove-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_USER_FORBIDDEN\"\
+                    ,\"message\":\"활성 사용자만 인터뷰의 반응과 댓글을 변경할 수 있습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-reaction-remove-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                interview-comment-reaction-remove-invalid-type:
+                  value: "{\"status\":\"error\",\"code\":\"REACTION_TYPE_INVALID\"\
+                    ,\"message\":\"지원하지 않는 댓글 반응 타입입니다.\"}"
   /api/v1/projects/@{slug}/comments/{commentId}/reactions/{type}:
     put:
       tags:
@@ -7555,41 +8314,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedCommentReactionSuccessResponse:
-      title: FeedCommentReactionSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - active
-          - agreeCount
-          - commentId
-          - feedId
-          - type
-          type: object
-          properties:
-            feedId:
-              type: number
-              description: 피드 ID
-            agreeCount:
-              type: number
-              description: 댓글 공감 수
-            active:
-              type: boolean
-              description: 요청한 반응의 활성 상태
-            commentId:
-              type: number
-              description: 댓글 ID
-            type:
-              type: string
-              description: 반응 타입(현재 AGREE)
-          description: 피드 댓글 반응 변경 결과
-        status:
-          type: string
-          description: 응답 상태
     InterviewFindAllSuccessResponse:
       title: InterviewFindAllSuccessResponse
       required:
@@ -7688,6 +8412,41 @@ components:
             totalCount:
               type: number
               description: 전체 개수
+        status:
+          type: string
+          description: 응답 상태
+    FeedCommentReactionSuccessResponse:
+      title: FeedCommentReactionSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - agreeCount
+          - commentId
+          - feedId
+          - type
+          type: object
+          properties:
+            feedId:
+              type: number
+              description: 피드 ID
+            agreeCount:
+              type: number
+              description: 댓글 공감 수
+            active:
+              type: boolean
+              description: 요청한 반응의 활성 상태
+            commentId:
+              type: number
+              description: 댓글 ID
+            type:
+              type: string
+              description: 반응 타입(현재 AGREE)
+          description: 피드 댓글 반응 변경 결과
         status:
           type: string
           description: 응답 상태
@@ -8111,6 +8870,32 @@ components:
         status:
           type: string
           description: 응답 상태
+    InterviewSaveRequest:
+      title: InterviewSaveRequest
+      required:
+      - intervieweeId
+      - title
+      type: object
+      properties:
+        summary:
+          type: string
+          description: "요약, 최대 500자"
+          nullable: true
+        intervieweeId:
+          type: number
+          description: 인터뷰 대상 사용자 ID
+        thumbnailMediaId:
+          type: number
+          description: INTERVIEW_THUMBNAIL 용도의 READY 미디어 ID
+          nullable: true
+        contentMd:
+          type: string
+          description: "원본 Markdown, 최대 100000자. 본문 이미지는 INTERVIEW_CONTENT 용도의 media://ID로\
+            \ 참조"
+          nullable: true
+        title:
+          type: string
+          description: "제목, 최대 200자"
     NewsUpdateRequest:
       title: NewsUpdateRequest
       required:
@@ -8152,32 +8937,6 @@ components:
           type: string
           description: 이벤트 종료 시각. 공지는 null
           nullable: true
-    InterviewSaveRequest:
-      title: InterviewSaveRequest
-      required:
-      - intervieweeId
-      - title
-      type: object
-      properties:
-        summary:
-          type: string
-          description: "요약, 최대 500자"
-          nullable: true
-        intervieweeId:
-          type: number
-          description: 인터뷰 대상 사용자 ID
-        thumbnailMediaId:
-          type: number
-          description: INTERVIEW_THUMBNAIL 용도의 READY 미디어 ID
-          nullable: true
-        contentMd:
-          type: string
-          description: "원본 Markdown, 최대 100000자. 본문 이미지는 INTERVIEW_CONTENT 용도의 media://ID로\
-            \ 참조"
-          nullable: true
-        title:
-          type: string
-          description: "제목, 최대 200자"
     FeedTitleSuggestionsSuccessResponse:
       title: FeedTitleSuggestionsSuccessResponse
       required:
@@ -11067,6 +11826,37 @@ components:
         status:
           type: string
           description: 응답 상태
+    InterviewReactionSuccessResponse:
+      title: InterviewReactionSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - interviewId
+          - likeCount
+          - type
+          type: object
+          properties:
+            interviewId:
+              type: number
+              description: 인터뷰 ID
+            active:
+              type: boolean
+              description: 요청한 반응의 활성 상태
+            likeCount:
+              type: number
+              description: 인터뷰 좋아요 수
+            type:
+              type: string
+              description: 반응 타입. 현재 LIKE만 지원하며 향후 확장할 수 있다.
+          description: 인터뷰 반응 변경 결과
+        status:
+          type: string
+          description: 응답 상태
     AdminVerificationRequestFindAllSuccessResponse:
       title: AdminVerificationRequestFindAllSuccessResponse
       required:
@@ -11153,37 +11943,6 @@ components:
               type: number
               description: 커서와 size를 제외한 상태 조건을 만족하는 전체 인증 신청 수
           description: 페이지네이션 정보
-        status:
-          type: string
-          description: 응답 상태
-    InterviewReactionSuccessResponse:
-      title: InterviewReactionSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - active
-          - interviewId
-          - likeCount
-          - type
-          type: object
-          properties:
-            interviewId:
-              type: number
-              description: 인터뷰 ID
-            active:
-              type: boolean
-              description: 요청한 반응의 활성 상태
-            likeCount:
-              type: number
-              description: 인터뷰 좋아요 수
-            type:
-              type: string
-              description: 반응 타입. 현재 LIKE만 지원하며 향후 확장할 수 있다.
-          description: 인터뷰 반응 변경 결과
         status:
           type: string
           description: 응답 상태
@@ -11922,42 +12681,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    NewsDeleteSuccessResponse:
-      title: NewsDeleteSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - deletedAt
-          - id
-          type: object
-          properties:
-            deletedAt:
-              type: string
-              description: 삭제 시각
-            id:
-              type: number
-              description: 삭제한 소식 ID
-          description: 삭제 결과
-        meta:
-          type: object
-          description: 메타 정보
-          nullable: true
-        status:
-          type: string
-          description: 응답 상태
-    AdminProjectRejectRequest:
-      title: AdminProjectRejectRequest
-      required:
-      - reason
-      type: object
-      properties:
-        reason:
-          type: string
-          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     InterviewCommentFindAllSuccessResponse:
       title: InterviewCommentFindAllSuccessResponse
       required:
@@ -11985,7 +12708,7 @@ components:
             properties:
               edited:
                 type: boolean
-                description: 댓글 내용이 수정된 적이 있는지 여부
+                description: 댓글 내용이 수정된 적이 있는지 여부. 삭제된 댓글은 false
               editable:
                 type: boolean
                 description: 현재 사용자가 수정할 수 있는지 여부
@@ -12103,6 +12826,33 @@ components:
         status:
           type: string
           description: 응답 상태
+    NewsDeleteSuccessResponse:
+      title: NewsDeleteSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - deletedAt
+          - id
+          type: object
+          properties:
+            deletedAt:
+              type: string
+              description: 삭제 시각
+            id:
+              type: number
+              description: 삭제한 소식 ID
+          description: 삭제 결과
+        meta:
+          type: object
+          description: 메타 정보
+          nullable: true
+        status:
+          type: string
+          description: 응답 상태
     InterviewAdminResponse:
       title: InterviewAdminResponse
       required:
@@ -12164,6 +12914,15 @@ components:
         status:
           type: string
           description: 응답 상태
+    AdminProjectRejectRequest:
+      title: AdminProjectRejectRequest
+      required:
+      - reason
+      type: object
+      properties:
+        reason:
+          type: string
+          description: 반려 사유(앞뒤 공백 제거 후 1~100자)
     AdminProjectApproveSuccessResponse:
       title: AdminProjectApproveSuccessResponse
       required:

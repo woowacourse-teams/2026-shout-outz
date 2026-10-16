@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -60,6 +61,7 @@ class InterviewReactionHttpApiTest {
 
         mockMvc.perform(put("/api/v1/interviews/{interviewId}/reactions/{type}", INTERVIEW_ID, "LIKE")
                         .with(authenticated())
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=user-session")
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
@@ -78,6 +80,7 @@ class InterviewReactionHttpApiTest {
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
                                 )
                                 .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE).description("활성 회원 세션의 JSESSIONID"),
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
                                 )
                                 .responseSchema(Schema.schema("InterviewReactionSuccessResponse"))
@@ -95,6 +98,7 @@ class InterviewReactionHttpApiTest {
 
         mockMvc.perform(delete("/api/v1/interviews/{interviewId}/reactions/{type}", INTERVIEW_ID, "LIKE")
                         .with(authenticated())
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=user-session")
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.interviewId").value(INTERVIEW_ID))
@@ -112,6 +116,7 @@ class InterviewReactionHttpApiTest {
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
                                 )
                                 .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE).description("활성 회원 세션의 JSESSIONID"),
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
                                 )
                                 .responseSchema(Schema.schema("InterviewReactionSuccessResponse"))
@@ -139,7 +144,6 @@ class InterviewReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Reaction")
                                 .summary("인터뷰 반응 제거")
-                                .description("현재 로그인 사용자의 해당 인터뷰 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
@@ -170,7 +174,6 @@ class InterviewReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Reaction")
                                 .summary("인터뷰 반응 추가")
-                                .description("현재 로그인한 활성 사용자가 발행된 인터뷰에 type 반응을 추가한다. 현재는 LIKE만 지원하며, 이미 존재하는 반응이면 현재 상태를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
@@ -187,6 +190,36 @@ class InterviewReactionHttpApiTest {
     }
 
     @Test
+    void 지원하지_않는_타입으로_인터뷰_반응을_삭제하면_400을_반환한다() throws Exception {
+        given(interviewReactionService.remove(INTERVIEW_ID, USER_ID, "BOOKMARK"))
+                .willThrow(new InvalidInputException(InterviewErrorCode.REACTION_TYPE_INVALID));
+
+        mockMvc.perform(delete("/api/v1/interviews/{interviewId}/reactions/{type}", INTERVIEW_ID, "BOOKMARK")
+                        .with(authenticated())
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(InterviewErrorCode.REACTION_TYPE_INVALID.name()))
+                .andDo(document(
+                        "interview-reaction-remove-invalid-type",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Interview Reaction")
+                                .summary("인터뷰 반응 제거")
+                                .pathParameters(
+                                        parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
+                                        parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
+                                )
+                                .requestHeaders(
+                                        headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+
+        verify(interviewReactionService).remove(INTERVIEW_ID, USER_ID, "BOOKMARK");
+    }
+
+    @Test
     void 로그인하지_않으면_인터뷰_좋아요를_변경할_수_없다() throws Exception {
         mockMvc.perform(put("/api/v1/interviews/{interviewId}/reactions/{type}", INTERVIEW_ID, "LIKE"))
                 .andExpect(status().isUnauthorized())
@@ -196,7 +229,6 @@ class InterviewReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Reaction")
                                 .summary("인터뷰 반응 추가")
-                                .description("현재 로그인한 활성 사용자가 발행된 인터뷰에 type 반응을 추가한다. 현재는 LIKE만 지원하며, 이미 존재하는 반응이면 현재 상태를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
@@ -214,7 +246,6 @@ class InterviewReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Reaction")
                                 .summary("인터뷰 반응 제거")
-                                .description("현재 로그인한 활성 사용자가 발행된 인터뷰의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
@@ -242,7 +273,6 @@ class InterviewReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Reaction")
                                 .summary("인터뷰 반응 추가")
-                                .description("현재 로그인한 활성 사용자가 발행된 인터뷰에 type 반응을 추가한다. 현재는 LIKE만 지원하며, 이미 존재하는 반응이면 현재 상태를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
@@ -273,7 +303,6 @@ class InterviewReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Reaction")
                                 .summary("인터뷰 반응 제거")
-                                .description("현재 로그인한 활성 사용자가 발행된 인터뷰의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")

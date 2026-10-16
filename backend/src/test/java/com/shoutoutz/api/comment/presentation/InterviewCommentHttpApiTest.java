@@ -31,16 +31,17 @@ import com.shoutoutz.api.comment.domain.CommentErrorCode;
 import com.shoutoutz.api.comment.presentation.dto.request.InterviewCommentCreateRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.InterviewCommentFindRequest;
 import com.shoutoutz.api.comment.presentation.dto.request.InterviewCommentUpdateRequest;
-import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentCreateResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentAuthorResponse;
+import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentCreateResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentDeleteResponse;
-import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentFindResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentFindResponse.Comment;
+import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentFindResponse;
 import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentUpdateResponse;
 import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
+import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.interview.domain.InterviewErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Instant;
@@ -51,9 +52,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultHandler;
 
 @WebMvcTest(controllers = InterviewCommentHttpApi.class)
 @AutoConfigureRestDocs
@@ -188,10 +191,10 @@ class InterviewCommentHttpApiTest {
                                         parameterWithName("cursor")
                                                 .description("다음 페이지 조회에 사용하는 opaque cursor")
                                                 .optional(),
-                                        parameterWithName("size").type(SimpleType.INTEGER)
+                                        parameterWithName("size").type(SimpleType.INTEGER).defaultValue(5)
                                                 .description("조회할 루트 댓글 개수. 기본값 5, 1~50")
                                                 .optional(),
-                                        parameterWithName("sort")
+                                        parameterWithName("sort").defaultValue("LATEST")
                                                 .description("루트 댓글 정렬 기준(LATEST 또는 OLDEST). 기본값 LATEST")
                                                 .optional()
                                 )
@@ -249,7 +252,7 @@ class InterviewCommentHttpApiTest {
                                         fieldWithPath("data[].editable").type(BOOLEAN)
                                                 .description("현재 사용자가 수정할 수 있는지 여부"),
                                         fieldWithPath("data[].edited").type(BOOLEAN)
-                                                .description("댓글 내용이 수정된 적이 있는지 여부"),
+                                                .description("댓글 내용이 수정된 적이 있는지 여부. 삭제된 댓글은 false"),
                                         fieldWithPath("data[].deleted").type(BOOLEAN)
                                                 .description("댓글이 삭제되었는지 여부"),
                                         fieldWithPath("data[].agreeCount").type(NUMBER)
@@ -331,9 +334,58 @@ class InterviewCommentHttpApiTest {
         mockMvc.perform(get("/api/v1/interviews/{interviewId}/comments", 100L)
                         .queryParam("size", "0"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(CommentErrorCode.INVALID_COMMENT_SIZE.name()));
+                .andExpect(jsonPath("$.code").value(CommentErrorCode.INVALID_COMMENT_SIZE.name()))
+                .andDo(errorDocument("interview-comment-find-all-invalid-size", "인터뷰 댓글 목록 조회", false));
 
         verifyNoInteractions(interviewCommentService);
+    }
+
+    @Test
+    void rejectsInvalidFindSort() throws Exception {
+        mockMvc.perform(get("/api/v1/interviews/{interviewId}/comments", 100L)
+                        .queryParam("sort", "POPULAR"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_COMMENT_SORT"))
+                .andDo(errorDocument("interview-comment-find-all-invalid-sort", "인터뷰 댓글 목록 조회", false));
+
+        verifyNoInteractions(interviewCommentService);
+    }
+
+    @Test
+    void rejectsNonPositiveParentId() throws Exception {
+        mockMvc.perform(post("/api/v1/interviews/{interviewId}/comments", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"content\":\"댓글\",\"parentId\":0}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details[0].field").value("parentId"))
+                .andDo(errorDocument("interview-comment-create-invalid-parent", "인터뷰 댓글 작성", false));
+
+        verifyNoInteractions(interviewCommentService);
+    }
+
+    @Test
+    void rejectsFindingUnpublishedInterviewComments() throws Exception {
+        given(interviewCommentService.findAll(eq(100L), any(InterviewCommentFindRequest.class), any()))
+                .willThrow(new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
+
+        mockMvc.perform(get("/api/v1/interviews/{interviewId}/comments", 100L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_NOT_FOUND"))
+                .andDo(errorDocument("interview-comment-find-all-not-found", "인터뷰 댓글 목록 조회", false));
+    }
+
+    @Test
+    void rejectsCreatingCommentForInactiveUser() throws Exception {
+        given(interviewCommentService.create(eq(100L), eq(7L), any(InterviewCommentCreateRequest.class)))
+                .willThrow(new ForbiddenException(InterviewErrorCode.INTERVIEW_USER_FORBIDDEN));
+
+        mockMvc.perform(post("/api/v1/interviews/{interviewId}/comments", 100L)
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(7L, UserRole.USER))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"content\":\"댓글\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_USER_FORBIDDEN"))
+                .andDo(errorDocument("interview-comment-create-forbidden", "인터뷰 댓글 작성", false));
     }
 
     @Test
@@ -364,6 +416,7 @@ class InterviewCommentHttpApiTest {
         mockMvc.perform(post("/api/v1/interviews/{interviewId}/comments", 100L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(7L, UserRole.USER))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=user-session")
                         .header("X-CSRF-Token", "csrf-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -390,11 +443,12 @@ class InterviewCommentHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Comment")
                                 .summary("인터뷰 댓글 작성")
-                                .description("로그인 사용자가 발행된 인터뷰에 댓글 또는 1단계 대댓글을 작성한다.")
+                                .description("활성 회원이 발행된 인터뷰에 댓글 또는 1단계 대댓글을 작성한다.")
                                 .pathParameters(
                                         parameterWithName("interviewId").type(SimpleType.INTEGER).description("댓글을 작성할 인터뷰 ID")
                                 )
                                 .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE).description("활성 회원 세션의 JSESSIONID"),
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
                                 )
                                 .requestSchema(Schema.schema("InterviewCommentCreateRequest"))
@@ -489,6 +543,7 @@ class InterviewCommentHttpApiTest {
         mockMvc.perform(patch("/api/v1/interviews/{interviewId}/comments/{commentId}", 100L, 501L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(7L, UserRole.USER))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=user-session")
                         .header("X-CSRF-Token", "csrf-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -515,13 +570,14 @@ class InterviewCommentHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Comment")
                                 .summary("인터뷰 댓글 수정")
-                                .description("로그인한 인터뷰 댓글 작성자가 발행된 인터뷰의 댓글 내용을 수정한다. "
+                                .description("활성 회원인 인터뷰 댓글 작성자가 발행된 인터뷰의 댓글 내용을 수정한다. "
                                         + "트림 후 기존 내용과 같으면 저장하지 않고 수정 시각을 유지한다.")
                                 .pathParameters(
                                         parameterWithName("interviewId").type(SimpleType.INTEGER).description("댓글이 속한 인터뷰 ID"),
                                         parameterWithName("commentId").type(SimpleType.INTEGER).description("수정할 댓글 ID")
                                 )
                                 .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE).description("활성 회원 세션의 JSESSIONID"),
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
                                 )
                                 .requestSchema(Schema.schema("InterviewCommentUpdateRequest"))
@@ -592,6 +648,7 @@ class InterviewCommentHttpApiTest {
         mockMvc.perform(delete("/api/v1/interviews/{interviewId}/comments/{commentId}", 100L, 501L)
                         .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(7L, UserRole.USER))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=user-session")
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
@@ -602,12 +659,13 @@ class InterviewCommentHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Comment")
                                 .summary("인터뷰 댓글 삭제")
-                                .description("댓글 작성자 본인이 발행된 인터뷰의 댓글을 soft delete한다.")
+                                .description("활성 회원인 댓글 작성자 본인이 발행된 인터뷰의 댓글을 soft delete한다.")
                                 .pathParameters(
                                         parameterWithName("interviewId").type(SimpleType.INTEGER).description("댓글이 속한 인터뷰 ID"),
                                         parameterWithName("commentId").type(SimpleType.INTEGER).description("삭제할 댓글 ID")
                                 )
                                 .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE).description("활성 회원 세션의 JSESSIONID"),
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
                                 )
                                 .responseSchema(Schema.schema("InterviewCommentDeleteSuccessResponse"))
@@ -634,7 +692,8 @@ class InterviewCommentHttpApiTest {
                         .content("{\"content\":\"" + "😀".repeat(501) + "\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.details[0].field").value("content"));
+                .andExpect(jsonPath("$.details[0].field").value("content"))
+                .andDo(errorDocument("interview-comment-create-validation-failed", "인터뷰 댓글 작성", false));
 
         verifyNoInteractions(interviewCommentService);
     }
@@ -649,7 +708,8 @@ class InterviewCommentHttpApiTest {
                         .content("{\"content\":\"" + "😀".repeat(501) + "\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.details[0].field").value("content"));
+                .andExpect(jsonPath("$.details[0].field").value("content"))
+                .andDo(errorDocument("interview-comment-update-validation-failed", "인터뷰 댓글 수정", true));
 
         verifyNoInteractions(interviewCommentService);
     }
@@ -662,7 +722,8 @@ class InterviewCommentHttpApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"댓글\"}"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(errorDocument("interview-comment-create-unauthorized", "인터뷰 댓글 작성", false));
 
         verifyNoInteractions(interviewCommentService);
     }
@@ -674,7 +735,8 @@ class InterviewCommentHttpApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"수정된 댓글\"}"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(errorDocument("interview-comment-update-unauthorized", "인터뷰 댓글 수정", true));
 
         verifyNoInteractions(interviewCommentService);
     }
@@ -684,7 +746,8 @@ class InterviewCommentHttpApiTest {
     void rejectsUnauthenticatedDelete() throws Exception {
         mockMvc.perform(delete("/api/v1/interviews/{interviewId}/comments/{commentId}", 100L, 501L))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(errorDocument("interview-comment-delete-unauthorized", "인터뷰 댓글 삭제", true));
 
         verifyNoInteractions(interviewCommentService);
     }
@@ -702,7 +765,8 @@ class InterviewCommentHttpApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"댓글\"}"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value(InterviewErrorCode.INTERVIEW_NOT_FOUND.name()));
+                .andExpect(jsonPath("$.code").value(InterviewErrorCode.INTERVIEW_NOT_FOUND.name()))
+                .andDo(errorDocument("interview-comment-create-interview-not-found", "인터뷰 댓글 작성", false));
     }
 
     @Test
@@ -721,7 +785,8 @@ class InterviewCommentHttpApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"수정된 댓글\"}"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value(InterviewErrorCode.INTERVIEW_NOT_FOUND.name()));
+                .andExpect(jsonPath("$.code").value(InterviewErrorCode.INTERVIEW_NOT_FOUND.name()))
+                .andDo(errorDocument("interview-comment-update-interview-not-found", "인터뷰 댓글 수정", true));
     }
 
     @Test
@@ -735,7 +800,8 @@ class InterviewCommentHttpApiTest {
                                 new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value(InterviewErrorCode.INTERVIEW_NOT_FOUND.name()));
+                .andExpect(jsonPath("$.code").value(InterviewErrorCode.INTERVIEW_NOT_FOUND.name()))
+                .andDo(errorDocument("interview-comment-delete-interview-not-found", "인터뷰 댓글 삭제", true));
     }
 
     @Test
@@ -754,7 +820,8 @@ class InterviewCommentHttpApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"수정된 댓글\"}"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"))
+                .andDo(errorDocument("interview-comment-update-forbidden", "인터뷰 댓글 수정", true));
     }
 
     @Test
@@ -768,7 +835,8 @@ class InterviewCommentHttpApiTest {
                                 new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"))
+                .andDo(errorDocument("interview-comment-delete-forbidden", "인터뷰 댓글 삭제", true));
     }
 
     @Test
@@ -787,7 +855,8 @@ class InterviewCommentHttpApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"수정된 댓글\"}"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value(CommentErrorCode.COMMENT_NOT_FOUND.name()));
+                .andExpect(jsonPath("$.code").value(CommentErrorCode.COMMENT_NOT_FOUND.name()))
+                .andDo(errorDocument("interview-comment-update-comment-not-found", "인터뷰 댓글 수정", true));
     }
 
     @Test
@@ -801,7 +870,8 @@ class InterviewCommentHttpApiTest {
                                 new AuthenticatedSession(7L, UserRole.USER))
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value(CommentErrorCode.COMMENT_NOT_FOUND.name()));
+                .andExpect(jsonPath("$.code").value(CommentErrorCode.COMMENT_NOT_FOUND.name()))
+                .andDo(errorDocument("interview-comment-delete-comment-not-found", "인터뷰 댓글 삭제", true));
     }
 
     @Test
@@ -819,6 +889,26 @@ class InterviewCommentHttpApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"댓글\",\"parentId\":301}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(CommentErrorCode.COMMENT_DEPTH_EXCEEDED.name()));
+                .andExpect(jsonPath("$.code").value(CommentErrorCode.COMMENT_DEPTH_EXCEEDED.name()))
+                .andDo(errorDocument("interview-comment-create-depth-exceeded", "인터뷰 댓글 작성", false));
     }
+    private ResultHandler errorDocument(String name, String summary, boolean commentPath) {
+        var interviewId = parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID");
+        var builder = ResourceSnippetParameters.builder().tag("Interview Comment").summary(summary)
+                .pathParameters(interviewId)
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse());
+        if (commentPath) {
+            builder.pathParameters(interviewId,
+                    parameterWithName("commentId").type(SimpleType.INTEGER).description("댓글 ID"));
+        }
+        if (name.startsWith("interview-comment-create-")) {
+            builder.requestSchema(Schema.schema("InterviewCommentCreateRequest"));
+        }
+        if (name.startsWith("interview-comment-update-")) {
+            builder.requestSchema(Schema.schema("InterviewCommentUpdateRequest"));
+        }
+        return document(name, resource(builder.build()));
+    }
+
 }

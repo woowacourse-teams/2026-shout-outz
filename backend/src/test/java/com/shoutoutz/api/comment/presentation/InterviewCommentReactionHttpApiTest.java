@@ -16,6 +16,7 @@ import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -27,15 +28,22 @@ import com.shoutoutz.api.comment.domain.CommentErrorCode;
 import com.shoutoutz.api.comment.domain.InterviewCommentReactionType;
 import com.shoutoutz.api.comment.presentation.dto.response.InterviewCommentReactionResponse;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
+import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
+import com.shoutoutz.api.interview.domain.InterviewErrorCode;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultHandler;
 
 @WebMvcTest(controllers = InterviewCommentReactionHttpApi.class)
 @AutoConfigureRestDocs
@@ -73,6 +81,7 @@ class InterviewCommentReactionHttpApiTest {
                                 AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(USER_ID, UserRole.USER)
                         )
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=user-session")
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
@@ -93,6 +102,7 @@ class InterviewCommentReactionHttpApiTest {
                                         parameterWithName("type").description("반응 타입(현재 AGREE)")
                                 )
                                 .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE).description("활성 회원 세션의 JSESSIONID"),
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
                                 )
                                 .responseSchema(Schema.schema("InterviewCommentReactionSuccessResponse"))
@@ -124,6 +134,7 @@ class InterviewCommentReactionHttpApiTest {
                                 AUTHENTICATED_SESSION_ATTRIBUTE,
                                 new AuthenticatedSession(USER_ID, UserRole.USER)
                         )
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=user-session")
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.interviewId").value(INTERVIEW_ID))
@@ -143,6 +154,7 @@ class InterviewCommentReactionHttpApiTest {
                                         parameterWithName("type").description("반응 타입(현재 AGREE)")
                                 )
                                 .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE).description("활성 회원 세션의 JSESSIONID"),
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
                                 )
                                 .responseSchema(Schema.schema("InterviewCommentReactionSuccessResponse"))
@@ -178,7 +190,6 @@ class InterviewCommentReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Comment Reaction")
                                 .summary("인터뷰 댓글 반응 제거")
-                                .description("현재 로그인 사용자의 해당 인터뷰 댓글 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("interviewId").type(INTEGER).description("인터뷰 ID"),
                                         parameterWithName("commentId").type(INTEGER).description("댓글 ID"),
@@ -212,7 +223,8 @@ class InterviewCommentReactionHttpApiTest {
                         )
                         .header("X-CSRF-Token", "csrf-token"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("REACTION_TYPE_INVALID"));
+                .andExpect(jsonPath("$.code").value("REACTION_TYPE_INVALID"))
+                .andDo(errorDocument("interview-comment-reaction-add-invalid-type"));
     }
 
     @Test
@@ -223,9 +235,74 @@ class InterviewCommentReactionHttpApiTest {
                         COMMENT_ID,
                         "AGREE"
                 ))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andDo(errorDocument("interview-comment-reaction-add-unauthorized"));
 
         verifyNoInteractions(interviewCommentReactionService);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PUT", "DELETE"})
+    void 비활성_사용자의_댓글_공감은_403을_반환한다(String method) throws Exception {
+        given(interviewCommentReactionService.add(INTERVIEW_ID, COMMENT_ID, USER_ID, "AGREE"))
+                .willThrow(new ForbiddenException(InterviewErrorCode.INTERVIEW_USER_FORBIDDEN));
+        given(interviewCommentReactionService.remove(INTERVIEW_ID, COMMENT_ID, USER_ID, "AGREE"))
+                .willThrow(new ForbiddenException(InterviewErrorCode.INTERVIEW_USER_FORBIDDEN));
+        String operation = "remove";
+        if (method.equals("PUT")) {
+            operation = "add";
+        }
+        mockMvc.perform(request(HttpMethod.valueOf(method),
+                        "/api/v1/interviews/{interviewId}/comments/{commentId}/reactions/{type}",
+                        INTERVIEW_ID, COMMENT_ID, "AGREE")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(USER_ID, UserRole.USER)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_USER_FORBIDDEN"))
+                .andDo(errorDocument("interview-comment-reaction-" + operation + "-forbidden"));
+    }
+
+    @Test
+    void 공개되지_않은_인터뷰의_댓글에_공감하면_404를_반환한다() throws Exception {
+        given(interviewCommentReactionService.add(INTERVIEW_ID, COMMENT_ID, USER_ID, "AGREE"))
+                .willThrow(new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
+        mockMvc.perform(put("/api/v1/interviews/{interviewId}/comments/{commentId}/reactions/{type}",
+                        INTERVIEW_ID, COMMENT_ID, "AGREE")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(USER_ID, UserRole.USER)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_NOT_FOUND"))
+                .andDo(errorDocument("interview-comment-reaction-add-not-found"));
+    }
+
+    @Test
+    void 로그인하지_않으면_댓글_공감을_삭제할_수_없다() throws Exception {
+        mockMvc.perform(delete("/api/v1/interviews/{interviewId}/comments/{commentId}/reactions/{type}",
+                        INTERVIEW_ID, COMMENT_ID, "AGREE"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(errorDocument("interview-comment-reaction-remove-unauthorized"));
+        verifyNoInteractions(interviewCommentReactionService);
+    }
+
+    @Test
+    void 잘못된_타입으로_댓글_공감을_삭제하면_400을_반환한다() throws Exception {
+        given(interviewCommentReactionService.remove(INTERVIEW_ID, COMMENT_ID, USER_ID, "LIKE"))
+                .willThrow(new InvalidInputException(CommentErrorCode.REACTION_TYPE_INVALID));
+        mockMvc.perform(delete("/api/v1/interviews/{interviewId}/comments/{commentId}/reactions/{type}",
+                        INTERVIEW_ID, COMMENT_ID, "LIKE")
+                        .requestAttr(AUTHENTICATED_SESSION_ATTRIBUTE, new AuthenticatedSession(USER_ID, UserRole.USER)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("REACTION_TYPE_INVALID"))
+                .andDo(errorDocument("interview-comment-reaction-remove-invalid-type"));
+    }
+
+    private ResultHandler errorDocument(String name) {
+        return document(name, resource(ResourceSnippetParameters.builder().tag("Interview Comment Reaction")
+                .pathParameters(
+                        parameterWithName("interviewId").type(INTEGER).description("인터뷰 ID"),
+                        parameterWithName("commentId").type(INTEGER).description("댓글 ID"),
+                        parameterWithName("type").description("반응 타입(현재 AGREE)"))
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse()).build()));
     }
 
     private org.springframework.restdocs.payload.FieldDescriptor[] successResponseFields() {

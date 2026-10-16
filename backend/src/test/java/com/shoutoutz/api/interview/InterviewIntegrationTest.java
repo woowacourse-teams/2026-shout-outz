@@ -5,10 +5,12 @@ import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithNam
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.delete;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.post;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.put;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.request;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
@@ -20,7 +22,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
 import com.epages.restdocs.apispec.SimpleType;
-import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
+import com.shoutoutz.api.auth.presentation.security.CsrfTokenManager;
+import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InvalidInputException;
@@ -36,22 +39,30 @@ import jakarta.servlet.http.Cookie;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultHandler;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
@@ -65,6 +76,12 @@ class InterviewIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private AuthSessionAccessor authSessionAccessor;
+
+    @Autowired
+    private CsrfTokenManager csrfTokenManager;
 
     @Autowired
     private EntityManager entityManager;
@@ -98,18 +115,20 @@ class InterviewIntegrationTest {
     @Test
     void 초안_등록과_관리자_원본_조회() throws Exception {
         String body = requestBody("첫 인터뷰", "![인터뷰](media://" + imageId + ")");
-        mockMvc.perform(post("/api/v1/admin/interviews").requestAttr(sessionKey(), admin())
+        mockMvc.perform(post("/api/v1/admin/interviews").with(authenticated(adminId, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.data.status").value("DRAFT"))
-                .andDo(adminDocument("interview-create", "인터뷰 초안 등록", true, false));
+                .andDo(adminDocument("interview-create", "인터뷰 초안 등록",
+                        "활성 관리자가 초안을 등록합니다. 요약, 대표 이미지, 본문은 초안에서는 생략할 수 있습니다.", true, false));
         InterviewAdminResponse draft = create();
         mockMvc.perform(get("/api/v1/admin/interviews/{interviewId}", draft.id())
-                        .requestAttr(sessionKey(), admin()))
+                        .with(authenticated(adminId, UserRole.ADMIN)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.contentMd").value(draft.contentMd()))
                 .andExpect(jsonPath("$.data.previewContentMd").value(Matchers.containsString("https://cdn.example.com/")))
-                .andDo(adminDocument("interview-admin-detail", "인터뷰 원본과 초안 조회", false, true));
-        mockMvc.perform(get("/api/v1/admin/interviews").requestAttr(sessionKey(), admin()))
+                .andDo(adminDocument("interview-admin-detail", "인터뷰 원본과 초안 조회",
+                        "활성 관리자가 초안을 포함한 인터뷰 원본을 조회합니다. 본문의 media:// 참조와 이미지 URL로 변환한 미리보기를 함께 반환합니다.", false, true));
+        mockMvc.perform(get("/api/v1/admin/interviews").with(authenticated(adminId, UserRole.ADMIN)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(2))
                 .andDo(listDocument("interview-admin-list", "관리자 인터뷰 목록", "Interview Admin"));
     }
@@ -117,7 +136,10 @@ class InterviewIntegrationTest {
     @Test
     void 공개_목록과_상세는_발행된_인터뷰만_노출한다() throws Exception {
         InterviewAdminResponse draft = create();
-        mockMvc.perform(get("/api/v1/interviews/{interviewId}", draft.id())).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/interviews/{interviewId}", draft.id()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_NOT_FOUND"))
+                .andDo(errorDocument("interview-detail-not-found", "Interview", true));
         mockMvc.perform(get("/api/v1/interviews")).andExpect(jsonPath("$.data.length()").value(0));
         interviewService.publish(draft.id(), adminId);
         mockMvc.perform(get("/api/v1/interviews"))
@@ -141,7 +163,7 @@ class InterviewIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(id));
         mockMvc.perform(get("/api/v1/admin/interviews/{interviewId}", id)
-                        .requestAttr(sessionKey(), admin()))
+                        .with(authenticated(adminId, UserRole.ADMIN)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(id));
         mockMvc.perform(get("/api/v1/interviews/{interviewId}", "invalid"))
@@ -152,27 +174,34 @@ class InterviewIntegrationTest {
     void 수정_발행취소_재발행_삭제() throws Exception {
         InterviewAdminResponse draft = create();
         mockMvc.perform(post("/api/v1/admin/interviews/{interviewId}/publish", draft.id())
-                        .requestAttr(sessionKey(), admin()))
+                        .with(authenticated(adminId, UserRole.ADMIN)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("PUBLISHED"))
-                .andDo(adminDocument("interview-publish", "인터뷰 발행", false, true));
+                .andDo(adminDocument("interview-publish", "인터뷰 발행",
+                        "요약, 대표 이미지, 본문이 있는 인터뷰를 공개합니다. 재발행해도 최초 발행 시각은 유지됩니다.", false, true));
         var publishedAt = interviewService.find(draft.id(), null, VISITOR).publishedAt();
         mockMvc.perform(put("/api/v1/admin/interviews/{interviewId}", draft.id())
-                        .requestAttr(sessionKey(), admin()).contentType(MediaType.APPLICATION_JSON)
+                        .with(authenticated(adminId, UserRole.ADMIN)).contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody("수정된 인터뷰", "수정 본문")))
-                .andExpect(status().isOk()).andDo(adminDocument("interview-update", "인터뷰 전체 수정", true, true));
+                .andExpect(status().isOk()).andDo(adminDocument("interview-update", "인터뷰 전체 수정",
+                        "편집 가능한 필드를 전체 교체하며 생략한 선택 필드는 null로 처리합니다. 발행된 글의 수정은 즉시 공개되며 요약, 대표 이미지, 본문을 비울 수 없습니다.", true, true));
         assertThat(interviewService.find(draft.id(), null, VISITOR).title()).isEqualTo("수정된 인터뷰");
         assertThat(interviewService.find(draft.id(), null, VISITOR).publishedAt()).isEqualTo(publishedAt);
         mockMvc.perform(post("/api/v1/admin/interviews/{interviewId}/unpublish", draft.id())
-                        .requestAttr(sessionKey(), admin()))
-                .andExpect(status().isOk()).andDo(adminDocument("interview-unpublish", "인터뷰 발행 취소", false, true));
+                        .with(authenticated(adminId, UserRole.ADMIN)))
+                .andExpect(status().isOk()).andDo(adminDocument("interview-unpublish", "인터뷰 발행 취소",
+                        "초안으로 전환해 공개 조회와 댓글, 반응을 차단합니다. 최초 발행 시각은 유지됩니다.", false, true));
         assertThatThrownBy(() -> interviewService.find(draft.id(), null, VISITOR)).isInstanceOf(EntityNotFoundException.class);
         interviewService.publish(draft.id(), adminId);
         assertThat(interviewService.find(draft.id(), null, VISITOR).publishedAt()).isEqualTo(publishedAt);
         mockMvc.perform(delete("/api/v1/admin/interviews/{interviewId}", draft.id())
-                        .requestAttr(sessionKey(), admin()))
+                        .with(authenticated(adminId, UserRole.ADMIN)))
                 .andExpect(status().isNoContent())
                 .andDo(document("interview-delete", resource(ResourceSnippetParameters.builder()
                         .tag("Interview Admin").summary("인터뷰 삭제")
+                        .description("활성 관리자가 인터뷰를 soft delete합니다. 삭제 후 관리자와 공개 API에서 조회할 수 없으며 응답 본문은 없습니다.")
+                        .requestHeaders(
+                                headerWithName(HttpHeaders.COOKIE).description("활성 관리자 세션의 JSESSIONID"),
+                                headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰"))
                         .pathParameters(parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID")).build())));
         assertThatThrownBy(() -> interviewService.findAdmin(draft.id(), adminId))
                 .isInstanceOf(EntityNotFoundException.class);
@@ -182,48 +211,195 @@ class InterviewIntegrationTest {
     void 세션_역할이_관리자여도_현재_DB_상태와_권한을_검사한다() throws Exception {
         mockMvc.perform(post("/api/v1/admin/interviews").contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody("제목", "본문"))).andExpect(status().isUnauthorized());
-        assertThatThrownBy(() -> interviewService.create(intervieweeId, request("제목", "본문")))
+        assertThatThrownBy(() -> interviewService.create(intervieweeId, saveRequest("제목", "본문")))
                 .isInstanceOf(ForbiddenException.class);
         jdbcTemplate.update("UPDATE users SET status = 'BANNED' WHERE id = ?", adminId);
-        mockMvc.perform(post("/api/v1/admin/interviews").requestAttr(sessionKey(), admin())
+        mockMvc.perform(post("/api/v1/admin/interviews").with(authenticated(adminId, UserRole.ADMIN))
                 .contentType(MediaType.APPLICATION_JSON).content(requestBody("제목", "본문")))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void 필수_정보가_없는_초안은_저장되지만_발행되지_않는다() {
+    void 필수_정보가_없는_초안은_저장되지만_발행되지_않는다() throws Exception {
         InterviewAdminResponse draft = interviewService.create(adminId, new InterviewSaveRequest("제목", null, intervieweeId, null, null));
-        assertThatThrownBy(() -> interviewService.publish(draft.id(), adminId)).isInstanceOf(InvalidInputException.class);
+        mockMvc.perform(post("/api/v1/admin/interviews/{interviewId}/publish", draft.id())
+                        .with(authenticated(adminId, UserRole.ADMIN)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_PUBLISH_INCOMPLETE"))
+                .andDo(errorDocument("interview-publish-incomplete", "Interview Admin", true));
+    }
+
+    @ParameterizedTest
+    @MethodSource("adminEndpoints")
+    void 관리자_API는_로그인하지_않으면_401을_반환한다(String operation, String method, String path) throws Exception {
+        mockMvc.perform(adminRequest(method, path))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andDo(errorDocument(operation + "-unauthorized",
+                        "Interview Admin", path.contains("{interviewId}")));
+    }
+
+    @ParameterizedTest
+    @MethodSource("adminEndpoints")
+    void 관리자_API는_일반_회원에게_403을_반환한다(String operation, String method, String path) throws Exception {
+        mockMvc.perform(adminRequest(method, path).with(authenticated(intervieweeId, UserRole.USER)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_ADMIN_FORBIDDEN"))
+                .andDo(errorDocument(operation + "-forbidden",
+                        "Interview Admin", path.contains("{interviewId}")));
+    }
+
+    @ParameterizedTest
+    @MethodSource("adminWriteEndpoints")
+    void 관리자_변경_API는_CSRF_토큰이_없으면_403을_반환한다(String operation, String method, String path) throws Exception {
+        var session = new MockHttpSession();
+        authSessionAccessor.saveAuthentication(session, adminId, UserRole.ADMIN);
+        csrfTokenManager.getOrCreate(session);
+        mockMvc.perform(adminRequest(method, path).session(session))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CSRF_TOKEN_INVALID"))
+                .andDo(errorDocument(operation + "-csrf-missing",
+                        "Interview Admin", path.contains("{interviewId}")));
     }
 
     @Test
-    void 잘못된_입력은_400을_반환한다() throws Exception {
-        mockMvc.perform(post("/api/v1/admin/interviews").requestAttr(sessionKey(), admin())
-                .contentType(MediaType.APPLICATION_JSON).content(requestBody(" ", "본문")))
-                .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/v1/interviews").param("size", "51")).andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/v1/interviews").param("cursor", "invalid")).andExpect(status().isBadRequest());
+    void 관리자라도_다른_CSRF_토큰을_보내면_403을_반환한다() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/interviews")
+                        .with(authenticated(adminId, UserRole.ADMIN))
+                        .with(request -> {
+                            request.removeHeader("X-CSRF-Token");
+                            request.addHeader("X-CSRF-Token", "invalid-token");
+                            return request;
+                        })
+                        .contentType(MediaType.APPLICATION_JSON).content(requestBody("제목", "본문")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CSRF_TOKEN_INVALID"))
+                .andDo(errorDocument("interview-create-csrf-invalid", "Interview Admin", false));
+    }
+
+    @ParameterizedTest
+    @MethodSource("adminResourceEndpoints")
+    void 없는_인터뷰를_관리하면_404를_반환한다(String operation, String method, String path) throws Exception {
+        mockMvc.perform(adminRequest(method, path).with(authenticated(adminId, UserRole.ADMIN)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_NOT_FOUND"))
+                .andDo(errorDocument(operation + "-not-found", "Interview Admin", true));
     }
 
     @Test
-    void 이미지_소유자_용도_READY_상태를_검증한다() {
+    void 제목이_빈_인터뷰_요청은_400과_필드_오류를_반환한다() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/interviews").with(authenticated(adminId, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON).content(requestBody("", "본문")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details[0].field").value("title"))
+                .andDo(errorDocument("interview-create-validation-failed", "Interview Admin", false));
+        mockMvc.perform(put("/api/v1/admin/interviews/{interviewId}", create().id())
+                        .with(authenticated(adminId, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON).content(requestBody("", "본문")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andDo(errorDocument("interview-update-validation-failed", "Interview Admin", true));
+    }
+
+    @Test
+    void 등록할_인터뷰이가_없으면_404를_반환한다() throws Exception {
+        String body = requestBody("제목", "본문")
+                .replace("\"intervieweeId\":" + intervieweeId, "\"intervieweeId\":" + Long.MAX_VALUE);
+        mockMvc.perform(post("/api/v1/admin/interviews").with(authenticated(adminId, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("INTERVIEWEE_NOT_FOUND"))
+                .andDo(errorDocument("interview-create-interviewee-not-found", "Interview Admin", false));
+    }
+
+    @Test
+    void 초안_전체_수정에서_생략한_선택_필드는_비워진다() throws Exception {
+        long id = create().id();
+        mockMvc.perform(put("/api/v1/admin/interviews/{interviewId}", id)
+                        .with(authenticated(adminId, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"새 제목\",\"intervieweeId\":" + intervieweeId + "}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.title").value("새 제목"))
+                .andExpect(jsonPath("$.data.summary").value(Matchers.nullValue()))
+                .andExpect(jsonPath("$.data.thumbnailMediaId").value(Matchers.nullValue()))
+                .andExpect(jsonPath("$.data.contentMd").value(Matchers.nullValue()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 51})
+    void 인터뷰_목록_조회_크기가_범위를_벗어나면_400을_반환한다(int size) throws Exception {
+        mockMvc.perform(get("/api/v1/interviews").queryParam("size", String.valueOf(size)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_INVALID_SIZE"))
+                .andDo(errorDocument("interview-list-invalid-size-" + size, "Interview", false));
+        mockMvc.perform(get("/api/v1/admin/interviews").with(authenticated(adminId, UserRole.ADMIN))
+                        .queryParam("size", String.valueOf(size)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_INVALID_SIZE"))
+                .andDo(errorDocument("interview-admin-list-invalid-size-" + size, "Interview Admin", false));
+    }
+
+    @Test
+    void 잘못된_인터뷰_목록_커서는_400을_반환한다() throws Exception {
+        mockMvc.perform(get("/api/v1/interviews").queryParam("cursor", "invalid"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_INVALID_CURSOR"))
+                .andDo(errorDocument("interview-list-invalid-cursor", "Interview", false));
+    }
+
+    private static Stream<Arguments> adminResourceEndpoints() {
+        return Stream.of(
+                Arguments.of("interview-admin-detail", "GET", "/api/v1/admin/interviews/{interviewId}"),
+                Arguments.of("interview-update", "PUT", "/api/v1/admin/interviews/{interviewId}"),
+                Arguments.of("interview-delete", "DELETE", "/api/v1/admin/interviews/{interviewId}"),
+                Arguments.of("interview-publish", "POST", "/api/v1/admin/interviews/{interviewId}/publish"),
+                Arguments.of("interview-unpublish", "POST", "/api/v1/admin/interviews/{interviewId}/unpublish")
+        );
+    }
+
+    private static Stream<Arguments> adminWriteEndpoints() {
+        return Stream.concat(
+                Stream.of(Arguments.of("interview-create", "POST", "/api/v1/admin/interviews")),
+                adminResourceEndpoints().filter(endpoint -> !endpoint.get()[1].equals("GET"))
+        );
+    }
+
+    private static Stream<Arguments> adminEndpoints() {
+        return Stream.concat(
+                Stream.of(Arguments.of("interview-create", "POST", "/api/v1/admin/interviews"),
+                        Arguments.of("interview-admin-list", "GET", "/api/v1/admin/interviews")),
+                adminResourceEndpoints()
+        );
+    }
+
+
+    @Test
+    void 이미지_소유자_용도_READY_상태를_검증한다() throws Exception {
         long otherImage = image(intervieweeId, "INTERVIEW_CONTENT", "READY");
         long processingImage = image(adminId, "INTERVIEW_CONTENT", "PROCESSING");
         for (long id : new long[]{otherImage, processingImage, thumbnailId}) {
-            assertThatThrownBy(() -> interviewService.create(adminId, request("제목", "![사진](media://" + id + ")")))
+            assertThatThrownBy(() -> interviewService.create(adminId, saveRequest("제목", "![사진](media://" + id + ")")))
                     .isInstanceOf(InvalidInputException.class);
         }
-        assertThatThrownBy(() -> interviewService.create(adminId, request("제목", "![사진](https://example.com/a.png)")))
+        assertThatThrownBy(() -> interviewService.create(adminId, saveRequest("제목", "![사진](https://example.com/a.png)")))
                 .isInstanceOf(InvalidInputException.class);
-        assertThatThrownBy(() -> interviewService.create(adminId, request("제목", "<img src='https://example.com/a.png'>")))
+        assertThatThrownBy(() -> interviewService.create(adminId, saveRequest("제목", "<img src='https://example.com/a.png'>")))
                 .isInstanceOf(InvalidInputException.class);
+        mockMvc.perform(post("/api/v1/admin/interviews").with(authenticated(adminId, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody("제목", "![사진](https://example.com/a.png)")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_INVALID_MEDIA"))
+                .andDo(errorDocument("interview-create-invalid-media", "Interview Admin", false));
     }
 
     @Test
     void 다른_관리자는_기존_이미지를_유지하며_수정할_수_있다() {
         InterviewAdminResponse draft = create();
         long secondAdmin = user("ADMIN");
-        interviewService.update(draft.id(), secondAdmin, request("수정", draft.contentMd()));
+        interviewService.update(draft.id(), secondAdmin, saveRequest("수정", draft.contentMd()));
         assertThat(interviewService.findAdmin(draft.id(), secondAdmin).title()).isEqualTo("수정");
     }
 
@@ -315,7 +491,7 @@ class InterviewIntegrationTest {
     void 저장된_이미지_URL을_다시_보내도_원본_미디어_참조를_유지한다() {
         long id = interviewService.publish(create().id(), adminId).id();
         String publicContent = interviewService.find(id, null, VISITOR).contentMd();
-        interviewService.update(id, adminId, request("수정", publicContent));
+        interviewService.update(id, adminId, saveRequest("수정", publicContent));
         var adminView = interviewService.findAdmin(id, adminId);
         assertThat(adminView.contentMd()).contains("media://" + imageId);
         assertThat(adminView.previewContentMd()).contains("https://cdn.example.com/");
@@ -346,9 +522,8 @@ class InterviewIntegrationTest {
                 WHERE id = ?
                 """, userStatus, userStatus, actorId);
         entityManager.clear();
-        var authentication = new AuthenticatedSession(actorId, UserRole.USER);
         mockMvc.perform(put("/api/v1/interviews/{interviewId}/reactions/{type}", id, "LIKE")
-                        .requestAttr(sessionKey(), authentication))
+                        .with(authenticated(actorId, UserRole.USER)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("INTERVIEW_USER_FORBIDDEN"))
                 .andDo(document("interview-reaction-add-inactive-user", resource(ResourceSnippetParameters.builder()
@@ -359,16 +534,24 @@ class InterviewIntegrationTest {
                         .responseFields(RestDocsFields.errorResponse())
                         .build())));
         mockMvc.perform(delete("/api/v1/interviews/{interviewId}/reactions/{type}", id, "LIKE")
-                        .requestAttr(sessionKey(), authentication))
-                .andExpect(status().isForbidden());
+                        .with(authenticated(actorId, UserRole.USER)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("INTERVIEW_USER_FORBIDDEN"))
+                .andDo(document("interview-reaction-remove-inactive-user", resource(ResourceSnippetParameters.builder()
+                        .tag("Interview Reaction")
+                        .pathParameters(parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
+                                parameterWithName("type").description("LIKE"))
+                        .responseSchema(Schema.schema("ErrorResponse"))
+                        .responseFields(RestDocsFields.errorResponse())
+                        .build())));
         assertThat(interviewService.find(id, null, VISITOR).likeCount()).isEqualTo(1);
     }
 
     private InterviewAdminResponse create() {
-        return interviewService.create(adminId, request("첫 인터뷰", "![사진](media://" + imageId + ")"));
+        return interviewService.create(adminId, saveRequest("첫 인터뷰", "![사진](media://" + imageId + ")"));
     }
 
-    private InterviewSaveRequest request(String title, String content) {
+    private InterviewSaveRequest saveRequest(String title, String content) {
         return new InterviewSaveRequest(title, "인터뷰 요약", intervieweeId, thumbnailId, content);
     }
 
@@ -391,12 +574,51 @@ class InterviewIntegrationTest {
                 """, Long.class, userId, purpose, "media/interview/" + UUID.randomUUID(), state);
     }
 
-    private String sessionKey() { return AuthenticatedSession.class.getName(); }
-    private AuthenticatedSession admin() { return new AuthenticatedSession(adminId, UserRole.ADMIN); }
+    private MockHttpServletRequestBuilder adminRequest(String method, String path) {
+        var builder = request(HttpMethod.valueOf(method), path, Long.MAX_VALUE);
+        if (method.equals("PUT") || (method.equals("POST") && path.endsWith("/interviews"))) {
+            builder.contentType(MediaType.APPLICATION_JSON).content(requestBody("제목", "본문"));
+        }
+        return builder;
+    }
 
-    private ResultHandler adminDocument(String name, String summary, boolean request, boolean path) {
-        var builder = ResourceSnippetParameters.builder().tag("Interview Admin").summary(summary)
+    private RequestPostProcessor authenticated(long userId, UserRole role) {
+        return request -> {
+            var session = new MockHttpSession();
+            authSessionAccessor.saveAuthentication(session, userId, role);
+            String csrfToken = csrfTokenManager.getOrCreate(session);
+            request.setSession(session);
+            request.addHeader(HttpHeaders.COOKIE, "JSESSIONID=" + session.getId());
+            if (!"GET".equals(request.getMethod())) {
+                request.addHeader("X-CSRF-Token", csrfToken);
+            }
+            return request;
+        };
+    }
+
+    private ResultHandler errorDocument(String name, String tag, boolean path) {
+        var builder = ResourceSnippetParameters.builder().tag(tag)
+                .responseSchema(Schema.schema("ErrorResponse"))
+                .responseFields(RestDocsFields.errorResponse());
+        if (path) {
+            builder.pathParameters(parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"));
+        }
+        if (name.startsWith("interview-create-") || name.startsWith("interview-update-")) {
+            builder.requestSchema(Schema.schema("InterviewSaveRequest"));
+        }
+        return document(name, resource(builder.build()));
+    }
+
+    private ResultHandler adminDocument(String name, String summary, String description, boolean request, boolean path) {
+        var builder = ResourceSnippetParameters.builder().tag("Interview Admin").summary(summary).description(description)
+                .requestHeaders(headerWithName(HttpHeaders.COOKIE).description("활성 관리자 세션의 JSESSIONID"))
                 .responseSchema(Schema.schema("InterviewAdminResponse")).responseFields(adminFields());
+        if (!name.equals("interview-admin-detail")) {
+            builder.requestHeaders(
+                    headerWithName(HttpHeaders.COOKIE).description("활성 관리자 세션의 JSESSIONID"),
+                    headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
+            );
+        }
         if (path) {
             builder.pathParameters(parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"));
         }
@@ -435,8 +657,13 @@ class InterviewIntegrationTest {
         fields.add(fieldWithPath("meta.nextCursor").type(STRING).optional().description("다음 커서"));
         fields.add(fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 여부"));
         fields.add(fieldWithPath("meta.totalCount").type(NUMBER).description("전체 개수"));
-        return document(name, resource(ResourceSnippetParameters.builder().tag(tag).summary(summary)
-                .queryParameters(parameterWithName("size").type(SimpleType.INTEGER).optional().description("1~50, 기본 20"),
+        var builder = ResourceSnippetParameters.builder().tag(tag).summary(summary)
+                .description("발행된 인터뷰를 최초 발행 시각 내림차순으로 조회합니다. 비회원도 전문을 읽을 수 있습니다.");
+        if (tag.equals("Interview Admin")) {
+            builder.description("활성 관리자가 초안을 포함한 인터뷰를 생성 시각 내림차순으로 조회합니다.")
+                    .requestHeaders(headerWithName(HttpHeaders.COOKIE).description("활성 관리자 세션의 JSESSIONID"));
+        }
+        return document(name, resource(builder.queryParameters(parameterWithName("size").type(SimpleType.INTEGER).optional().description("1~50, 기본 20"),
                         parameterWithName("cursor").optional().description("다음 커서"))
                 .responseSchema(Schema.schema("InterviewFindAllSuccessResponse"))
                 .responseFields(fields).build()));
