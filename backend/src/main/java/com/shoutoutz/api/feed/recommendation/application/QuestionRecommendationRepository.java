@@ -41,6 +41,8 @@ public interface QuestionRecommendationRepository {
 
     void markGenerationFailed(long feedId, int generation, String errorCode, Instant now);
 
+    void markGenerationSkipped(long feedId, int generation, String reason, Instant now);
+
     record OutboxMessage(UUID id, long feedId, int generation, int attempts) {
     }
 

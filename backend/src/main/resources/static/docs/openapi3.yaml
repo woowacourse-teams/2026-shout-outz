@@ -10823,7 +10823,7 @@ components:
                         description: 추천 질문 본문
                 status:
                   type: string
-                  description: "추천 생성 상태. PENDING, PROCESSING, READY, FAILED"
+                  description: "추천 생성 상태. PENDING, PROCESSING, READY, FAILED, SKIPPED"
                   enum:
                   - PENDING
                   - PROCESSING

@@ -257,7 +257,8 @@ public class QuestionRecommendationRepositoryImpl implements QuestionRecommendat
             return new GenerationClaim(GenerationClaim.ClaimStatus.OBSOLETE, null);
         }
         QuestionRecommendationStatus status = currentJobs.getFirst().status();
-        if (status == QuestionRecommendationStatus.READY || status == QuestionRecommendationStatus.FAILED) {
+        if (status == QuestionRecommendationStatus.READY || status == QuestionRecommendationStatus.FAILED
+                || status == QuestionRecommendationStatus.SKIPPED) {
             return new GenerationClaim(GenerationClaim.ClaimStatus.OBSOLETE, null);
         }
         return new GenerationClaim(GenerationClaim.ClaimStatus.BUSY, null);
@@ -329,6 +330,21 @@ public class QuestionRecommendationRepositoryImpl implements QuestionRecommendat
                         WHERE feed_id = ? AND generation = ? AND status IN ('PENDING', 'PROCESSING')
                         """,
                 errorCode,
+                Timestamp.from(now),
+                feedId,
+                generation
+        );
+    }
+
+    @Override
+    public void markGenerationSkipped(long feedId, int generation, String reason, Instant now) {
+        jdbcTemplate.update(
+                """
+                        UPDATE question_recommendation_jobs
+                        SET status = 'SKIPPED', lease_until = NULL, last_error = ?, updated_at = ?
+                        WHERE feed_id = ? AND generation = ? AND status = 'PROCESSING'
+                        """,
+                reason,
                 Timestamp.from(now),
                 feedId,
                 generation

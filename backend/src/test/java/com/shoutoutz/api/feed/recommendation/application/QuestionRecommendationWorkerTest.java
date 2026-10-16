@@ -114,6 +114,22 @@ class QuestionRecommendationWorkerTest {
     }
 
     @Test
+    void 추천에_부적합한_질문이면_건너뜀_상태로_저장하고_재시도하지_않는다() {
+        GenerationTask task = new GenerationTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 1);
+        when(repository.claimGeneration(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
+                .thenReturn(claimed(task));
+        when(generator.generate("질문 제목", "질문 본문", 5))
+                .thenThrow(new QuestionRecommendationSkippedException("TOO_VAGUE"));
+
+        QuestionRecommendationWorker.ProcessingResult result = worker.process(FEED_ID, GENERATION);
+
+        assertThat(result.acknowledged()).isTrue();
+        verify(repository).markGenerationSkipped(FEED_ID, GENERATION, "TOO_VAGUE", NOW);
+        verify(repository, never()).markGenerationFailed(FEED_ID, GENERATION, "GENERATION_FAILED", NOW);
+        verify(repository, never()).retryGeneration(FEED_ID, GENERATION, "GENERATION_FAILED", NOW);
+    }
+
+    @Test
     void 두_제공자가_재시도_불가능한_오류로_실패하면_실패_저장후_메시지를_확인한다() {
         GenerationTask task = new GenerationTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 1);
         when(repository.claimGeneration(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
