@@ -19,6 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
+import com.epages.restdocs.apispec.SimpleType;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.code.CommonErrorCode;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
@@ -73,7 +74,7 @@ class InterviewReactionHttpApiTest {
                                 .summary("인터뷰 반응 추가")
                                 .description("현재 로그인한 활성 사용자가 발행된 인터뷰에 type 반응을 추가한다. 현재는 LIKE만 지원하며, 이미 존재하는 반응이면 현재 상태를 반환한다.")
                                 .pathParameters(
-                                        parameterWithName("interviewId").description("인터뷰 ID"),
+                                        parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
                                 )
                                 .requestHeaders(
@@ -107,7 +108,7 @@ class InterviewReactionHttpApiTest {
                                 .summary("인터뷰 반응 제거")
                                 .description("현재 로그인한 활성 사용자가 발행된 인터뷰의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
-                                        parameterWithName("interviewId").description("인터뷰 ID"),
+                                        parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
                                 )
                                 .requestHeaders(
@@ -140,7 +141,7 @@ class InterviewReactionHttpApiTest {
                                 .summary("인터뷰 반응 제거")
                                 .description("현재 로그인 사용자의 해당 인터뷰 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
-                                        parameterWithName("interviewId").description("인터뷰 ID"),
+                                        parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
                                 )
                                 .requestHeaders(
@@ -171,7 +172,7 @@ class InterviewReactionHttpApiTest {
                                 .summary("인터뷰 반응 추가")
                                 .description("현재 로그인한 활성 사용자가 발행된 인터뷰에 type 반응을 추가한다. 현재는 LIKE만 지원하며, 이미 존재하는 반응이면 현재 상태를 반환한다.")
                                 .pathParameters(
-                                        parameterWithName("interviewId").description("인터뷰 ID"),
+                                        parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
                                 )
                                 .requestHeaders(
@@ -197,7 +198,7 @@ class InterviewReactionHttpApiTest {
                                 .summary("인터뷰 반응 추가")
                                 .description("현재 로그인한 활성 사용자가 발행된 인터뷰에 type 반응을 추가한다. 현재는 LIKE만 지원하며, 이미 존재하는 반응이면 현재 상태를 반환한다.")
                                 .pathParameters(
-                                        parameterWithName("interviewId").description("인터뷰 ID"),
+                                        parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
                                 )
                                 .responseSchema(Schema.schema("ErrorResponse"))
@@ -215,7 +216,7 @@ class InterviewReactionHttpApiTest {
                                 .summary("인터뷰 반응 제거")
                                 .description("현재 로그인한 활성 사용자가 발행된 인터뷰의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
-                                        parameterWithName("interviewId").description("인터뷰 ID"),
+                                        parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
                                 )
                                 .responseSchema(Schema.schema("ErrorResponse"))
@@ -243,7 +244,7 @@ class InterviewReactionHttpApiTest {
                                 .summary("인터뷰 반응 추가")
                                 .description("현재 로그인한 활성 사용자가 발행된 인터뷰에 type 반응을 추가한다. 현재는 LIKE만 지원하며, 이미 존재하는 반응이면 현재 상태를 반환한다.")
                                 .pathParameters(
-                                        parameterWithName("interviewId").description("인터뷰 ID"),
+                                        parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
                                 )
                                 .requestHeaders(
@@ -274,7 +275,7 @@ class InterviewReactionHttpApiTest {
                                 .summary("인터뷰 반응 제거")
                                 .description("현재 로그인한 활성 사용자가 발행된 인터뷰의 type 반응을 제거한다. 현재는 LIKE만 지원하며, 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
-                                        parameterWithName("interviewId").description("인터뷰 ID"),
+                                        parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                         parameterWithName("type").description("반응 타입. 현재 LIKE만 지원한다.")
                                 )
                                 .requestHeaders(

@@ -130,6 +130,25 @@ class InterviewIntegrationTest {
     }
 
     @Test
+    void 인터뷰_ID는_int_범위를_넘는_정수도_받는다() throws Exception {
+        long id = 3_000_000_000L;
+        jdbcTemplate.update("""
+                INSERT INTO interviews(id, title, interviewee_id, author_id, status, published_at)
+                VALUES (?, '큰 ID 인터뷰', ?, ?, 'PUBLISHED', now())
+                """, id, intervieweeId, adminId);
+
+        mockMvc.perform(get("/api/v1/interviews/{interviewId}", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(id));
+        mockMvc.perform(get("/api/v1/admin/interviews/{interviewId}", id)
+                        .requestAttr(sessionKey(), admin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(id));
+        mockMvc.perform(get("/api/v1/interviews/{interviewId}", "invalid"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void 수정_발행취소_재발행_삭제() throws Exception {
         InterviewAdminResponse draft = create();
         mockMvc.perform(post("/api/v1/admin/interviews/{interviewId}/publish", draft.id())
@@ -154,7 +173,7 @@ class InterviewIntegrationTest {
                 .andExpect(status().isNoContent())
                 .andDo(document("interview-delete", resource(ResourceSnippetParameters.builder()
                         .tag("Interview Admin").summary("인터뷰 삭제")
-                        .pathParameters(parameterWithName("interviewId").description("인터뷰 ID")).build())));
+                        .pathParameters(parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID")).build())));
         assertThatThrownBy(() -> interviewService.findAdmin(draft.id(), adminId))
                 .isInstanceOf(EntityNotFoundException.class);
     }
@@ -334,8 +353,9 @@ class InterviewIntegrationTest {
                 .andExpect(jsonPath("$.code").value("INTERVIEW_USER_FORBIDDEN"))
                 .andDo(document("interview-reaction-add-inactive-user", resource(ResourceSnippetParameters.builder()
                         .tag("Interview Reaction").summary("인터뷰 반응 추가")
-                        .pathParameters(parameterWithName("interviewId").description("인터뷰 ID"),
+                        .pathParameters(parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"),
                                 parameterWithName("type").description("LIKE"))
+                        .responseSchema(Schema.schema("ErrorResponse"))
                         .responseFields(RestDocsFields.errorResponse())
                         .build())));
         mockMvc.perform(delete("/api/v1/interviews/{interviewId}/reactions/{type}", id, "LIKE")
@@ -378,7 +398,7 @@ class InterviewIntegrationTest {
         var builder = ResourceSnippetParameters.builder().tag("Interview Admin").summary(summary)
                 .responseSchema(Schema.schema("InterviewAdminResponse")).responseFields(adminFields());
         if (path) {
-            builder.pathParameters(parameterWithName("interviewId").description("인터뷰 ID"));
+            builder.pathParameters(parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"));
         }
         if (request) {
             builder.requestSchema(Schema.schema("InterviewSaveRequest")).requestFields(
@@ -418,6 +438,7 @@ class InterviewIntegrationTest {
         return document(name, resource(ResourceSnippetParameters.builder().tag(tag).summary(summary)
                 .queryParameters(parameterWithName("size").type(SimpleType.INTEGER).optional().description("1~50, 기본 20"),
                         parameterWithName("cursor").optional().description("다음 커서"))
+                .responseSchema(Schema.schema("InterviewFindAllSuccessResponse"))
                 .responseFields(fields).build()));
     }
 
@@ -427,7 +448,8 @@ class InterviewIntegrationTest {
         return document("interview-detail", resource(ResourceSnippetParameters.builder().tag("Interview")
                 .summary("발행된 인터뷰 상세 조회")
                 .description("상세 조회 시 VISITOR_ID 쿠키의 방문자별로 한국 날짜 기준 하루 한 번 조회수를 집계합니다. 응답의 viewCount에 이번 조회가 반영됩니다.")
-                .pathParameters(parameterWithName("interviewId").description("인터뷰 ID"))
+                .pathParameters(parameterWithName("interviewId").type(SimpleType.INTEGER).description("인터뷰 ID"))
+                .responseSchema(Schema.schema("InterviewFindSuccessResponse"))
                 .responseFields(fields).build()));
     }
 

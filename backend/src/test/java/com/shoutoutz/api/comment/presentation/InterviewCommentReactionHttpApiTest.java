@@ -86,7 +86,7 @@ class InterviewCommentReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Comment Reaction")
                                 .summary("인터뷰 댓글 반응 추가")
-                                .description("활성 인터뷰의 삭제되지 않은 댓글에 현재 로그인 사용자의 AGREE 반응을 추가한다. 이미 존재하는 반응이면 현재 상태를 반환한다.")
+                                .description("발행된 인터뷰의 삭제되지 않은 댓글에 현재 로그인 사용자의 AGREE 반응을 추가한다. 이미 존재하는 반응이면 현재 상태를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("interviewId").type(INTEGER).description("인터뷰 ID"),
                                         parameterWithName("commentId").type(INTEGER).description("댓글 ID"),
@@ -136,7 +136,7 @@ class InterviewCommentReactionHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Comment Reaction")
                                 .summary("인터뷰 댓글 반응 제거")
-                                .description("활성 인터뷰의 삭제되지 않은 댓글에서 현재 로그인 사용자의 AGREE 반응을 제거한다. 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
+                                .description("발행된 인터뷰의 삭제되지 않은 댓글에서 현재 로그인 사용자의 AGREE 반응을 제거한다. 반응이 존재하면 삭제 후 현재 상태를 반환하고, 반응이 없으면 REACTION_NOT_FOUND를 반환한다.")
                                 .pathParameters(
                                         parameterWithName("interviewId").type(INTEGER).description("인터뷰 ID"),
                                         parameterWithName("commentId").type(INTEGER).description("댓글 ID"),

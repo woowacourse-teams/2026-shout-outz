@@ -1,6 +1,7 @@
 package com.shoutoutz.api.comment.presentation;
 
 import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.document;
+import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,7 +15,6 @@ import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
+import com.epages.restdocs.apispec.SimpleType;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.comment.application.InterviewCommentService;
 import com.shoutoutz.api.comment.domain.CommentErrorCode;
@@ -178,16 +179,16 @@ class InterviewCommentHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Comment")
                                 .summary("인터뷰 댓글 목록 조회")
-                                .description("비로그인 또는 로그인 사용자가 활성 인터뷰의 댓글 목록을 조회한다. "
+                                .description("비로그인 또는 로그인 사용자가 발행된 인터뷰의 댓글 목록을 조회한다. "
                                         + "size는 루트 댓글 개수이며 각 루트 댓글 뒤에 대댓글을 반환한다.")
                                 .pathParameters(
-                                        parameterWithName("interviewId").description("댓글을 조회할 인터뷰 ID")
+                                        parameterWithName("interviewId").type(SimpleType.INTEGER).description("댓글을 조회할 인터뷰 ID")
                                 )
                                 .queryParameters(
                                         parameterWithName("cursor")
                                                 .description("다음 페이지 조회에 사용하는 opaque cursor")
                                                 .optional(),
-                                        parameterWithName("size")
+                                        parameterWithName("size").type(SimpleType.INTEGER)
                                                 .description("조회할 루트 댓글 개수. 기본값 5, 1~50")
                                                 .optional(),
                                         parameterWithName("sort")
@@ -336,7 +337,7 @@ class InterviewCommentHttpApiTest {
     }
 
     @Test
-    @DisplayName("활성 인터뷰에 댓글을 작성하면 201과 작성자 정보를 포함한 댓글을 반환한다.")
+    @DisplayName("발행된 인터뷰에 댓글을 작성하면 201과 작성자 정보를 포함한 댓글을 반환한다.")
     void createsComment() throws Exception {
         given(interviewCommentService.create(eq(100L), eq(7L), any(InterviewCommentCreateRequest.class)))
                 .willReturn(new InterviewCommentCreateResponse(
@@ -389,9 +390,9 @@ class InterviewCommentHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Comment")
                                 .summary("인터뷰 댓글 작성")
-                                .description("로그인 사용자가 활성 인터뷰에 댓글 또는 1단계 대댓글을 작성한다.")
+                                .description("로그인 사용자가 발행된 인터뷰에 댓글 또는 1단계 대댓글을 작성한다.")
                                 .pathParameters(
-                                        parameterWithName("interviewId").description("댓글을 작성할 인터뷰 ID")
+                                        parameterWithName("interviewId").type(SimpleType.INTEGER).description("댓글을 작성할 인터뷰 ID")
                                 )
                                 .requestHeaders(
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
@@ -514,11 +515,11 @@ class InterviewCommentHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Comment")
                                 .summary("인터뷰 댓글 수정")
-                                .description("로그인한 인터뷰 댓글 작성자가 활성 인터뷰의 댓글 내용을 수정한다. "
+                                .description("로그인한 인터뷰 댓글 작성자가 발행된 인터뷰의 댓글 내용을 수정한다. "
                                         + "트림 후 기존 내용과 같으면 저장하지 않고 수정 시각을 유지한다.")
                                 .pathParameters(
-                                        parameterWithName("interviewId").description("댓글이 속한 인터뷰 ID"),
-                                        parameterWithName("commentId").description("수정할 댓글 ID")
+                                        parameterWithName("interviewId").type(SimpleType.INTEGER).description("댓글이 속한 인터뷰 ID"),
+                                        parameterWithName("commentId").type(SimpleType.INTEGER).description("수정할 댓글 ID")
                                 )
                                 .requestHeaders(
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
@@ -601,10 +602,10 @@ class InterviewCommentHttpApiTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Interview Comment")
                                 .summary("인터뷰 댓글 삭제")
-                                .description("댓글 작성자 본인이 활성 인터뷰의 댓글을 soft delete한다.")
+                                .description("댓글 작성자 본인이 발행된 인터뷰의 댓글을 soft delete한다.")
                                 .pathParameters(
-                                        parameterWithName("interviewId").description("댓글이 속한 인터뷰 ID"),
-                                        parameterWithName("commentId").description("삭제할 댓글 ID")
+                                        parameterWithName("interviewId").type(SimpleType.INTEGER).description("댓글이 속한 인터뷰 ID"),
+                                        parameterWithName("commentId").type(SimpleType.INTEGER).description("삭제할 댓글 ID")
                                 )
                                 .requestHeaders(
                                         headerWithName("X-CSRF-Token").description("세션 조회로 발급받은 CSRF 토큰")
@@ -689,7 +690,7 @@ class InterviewCommentHttpApiTest {
     }
 
     @Test
-    @DisplayName("활성 인터뷰가 아니면 인터뷰를 찾을 수 없다는 404를 반환한다.")
+    @DisplayName("발행된 인터뷰가 아니면 인터뷰를 찾을 수 없다는 404를 반환한다.")
     void rejectsInactiveFeed() throws Exception {
         given(interviewCommentService.create(eq(100L), eq(7L), any(InterviewCommentCreateRequest.class)))
                 .willThrow(new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
@@ -705,7 +706,7 @@ class InterviewCommentHttpApiTest {
     }
 
     @Test
-    @DisplayName("활성 인터뷰가 아니면 댓글 수정 요청에 인터뷰를 찾을 수 없다는 404를 반환한다.")
+    @DisplayName("발행된 인터뷰가 아니면 댓글 수정 요청에 인터뷰를 찾을 수 없다는 404를 반환한다.")
     void rejectsUpdateForInactiveFeed() throws Exception {
         given(interviewCommentService.update(
                 eq(100L),
@@ -724,7 +725,7 @@ class InterviewCommentHttpApiTest {
     }
 
     @Test
-    @DisplayName("활성 인터뷰가 아니면 댓글 삭제 요청에 인터뷰를 찾을 수 없다는 404를 반환한다.")
+    @DisplayName("발행된 인터뷰가 아니면 댓글 삭제 요청에 인터뷰를 찾을 수 없다는 404를 반환한다.")
     void rejectsDeleteForInactiveFeed() throws Exception {
         given(interviewCommentService.delete(100L, 501L, 7L))
                 .willThrow(new EntityNotFoundException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
