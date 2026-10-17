@@ -7,6 +7,8 @@ import com.shoutoutz.api.common.llm.LlmConfiguration;
 import com.shoutoutz.api.common.llm.LlmProperties;
 import com.shoutoutz.api.common.llm.OpenAiLlmClient;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationGenerator;
+import com.shoutoutz.api.feed.recommendation.infrastructure.quality.QuestionRecommendationPrompts;
+import com.shoutoutz.api.feed.recommendation.infrastructure.quality.RecommendationJudge;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.web.client.RestClient;
@@ -16,6 +18,7 @@ class LlmRecommendationConfigurationTest {
 
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
             .withUserConfiguration(LlmConfiguration.class, QuestionRecommendationPropertiesConfiguration.class,
+                    QuestionRecommendationPrompts.class, RecommendationJudge.class,
                     LlmQuestionRecommendationGenerator.class)
             .withBean(RestClient.Builder.class, RestClient::builder)
             .withBean(ObjectMapper.class, ObjectMapper::new);
@@ -30,6 +33,10 @@ class LlmRecommendationConfigurationTest {
             assertThat(context.getBean(QuestionRecommendationProperties.class).sqs().enabled()).isFalse();
             assertThat(context.getBean(QuestionRecommendationProperties.class).fallbackEnabled()).isTrue();
             assertThat(context.getBean(LlmProperties.class).openai().reasoningEffort()).isEqualTo("none");
+            QuestionRecommendationQualityProperties quality = context.getBean(QuestionRecommendationQualityProperties.class);
+            assertThat(quality.candidateCount()).isEqualTo(8);
+            assertThat(quality.minCount()).isEqualTo(3);
+            assertThat(quality.rules().maxContentLength()).isEqualTo(700);
         });
     }
 
@@ -51,7 +58,7 @@ class LlmRecommendationConfigurationTest {
     void SQS_활성화_시_OpenAI키_누락은_컨텍스트_기동을_실패시킨다() {
         enabledContext().withPropertyValues("llm.gemini.api-key=test-gemini")
                 .run(context -> assertThat(context).hasFailed()
-                        .getFailure().hasRootCauseMessage("질문 추천 자동 대체를 활성화하려면 OpenAI API 키를 설정해야 합니다."));
+                        .getFailure().hasRootCauseMessage("질문 추천 교차 검수를 위해 OpenAI API 키를 설정해야 합니다."));
     }
 
     @Test

@@ -4,5 +4,6 @@ public enum QuestionRecommendationStatus {
     PENDING,
     PROCESSING,
     READY,
-    FAILED
+    FAILED,
+    SKIPPED
 }

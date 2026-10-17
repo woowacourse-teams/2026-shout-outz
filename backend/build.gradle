@@ -64,7 +64,14 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    // 실제 LLM API를 호출하는 평가 세트는 -PincludeTags=llm-eval로 명시할 때만 실행한다.
+    useJUnitPlatform {
+        if (project.hasProperty('includeTags')) {
+            includeTags project.property('includeTags')
+        } else {
+            excludeTags 'llm-eval'
+        }
+    }
 }
 
 /**

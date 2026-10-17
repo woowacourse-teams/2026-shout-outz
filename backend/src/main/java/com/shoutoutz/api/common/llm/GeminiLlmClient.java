@@ -1,5 +1,6 @@
 package com.shoutoutz.api.common.llm;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.web.client.RestClient;
@@ -21,11 +22,15 @@ public final class GeminiLlmClient extends AbstractLlmClient {
 
     @Override
     public String generate(LlmRequest request) {
+        Map<String, Object> generationConfig = new LinkedHashMap<>(Map.of("responseMimeType", "application/json",
+                "responseJsonSchema", request.responseSchema(), "maxOutputTokens", request.maxOutputTokens()));
+        if (request.temperature() != null) {
+            generationConfig.put("temperature", request.temperature());
+        }
         JsonNode response = post("/v1beta/models/" + model + ":generateContent", "x-goog-api-key",
                 properties.apiKey(), Map.of(
                         "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", request.prompt())))),
-                        "generationConfig", Map.of("responseMimeType", "application/json",
-                                "responseJsonSchema", request.responseSchema(), "maxOutputTokens", request.maxOutputTokens())));
+                        "generationConfig", generationConfig));
         if (response.path("promptFeedback").hasNonNull("blockReason")) {
             throw failure(200, "CONTENT_BLOCKED", false);
         }
