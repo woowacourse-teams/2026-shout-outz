@@ -10,6 +10,7 @@ public record MagazineAdminResponse(
         String title,
         String summary,
         long featuredUserId,
+        MagazineAuthorResponse author,
         Long thumbnailMediaId,
         String contentMd,
         MagazineStatus status,
@@ -19,12 +20,18 @@ public record MagazineAdminResponse(
         URI thumbnailUrl,
         String previewContentMd
 ) {
-    public static MagazineAdminResponse from(Magazine magazine, URI thumbnailUrl, String previewContentMd) {
+    public static MagazineAdminResponse from(
+            Magazine magazine,
+            MagazineAuthorResponse author,
+            URI thumbnailUrl,
+            String previewContentMd
+    ) {
         return new MagazineAdminResponse(
                 magazine.getId(),
                 magazine.getTitle(),
                 magazine.getSummary(),
                 magazine.getFeaturedUserId(),
+                author,
                 magazine.getThumbnailMediaId(),
                 magazine.getContentMd(),
                 magazine.getStatus(),

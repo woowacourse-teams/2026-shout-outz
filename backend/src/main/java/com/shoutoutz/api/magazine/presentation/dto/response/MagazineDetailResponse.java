@@ -11,6 +11,7 @@ public record MagazineDetailResponse(
         String summary,
         URI thumbnailUrl,
         FeaturedUserResponse featuredUser,
+        MagazineAuthorResponse author,
         String contentMd,
         Instant publishedAt,
         Instant createdAt,
@@ -24,6 +25,7 @@ public record MagazineDetailResponse(
             MagazineItem item,
             URI thumbnailUrl,
             FeaturedUserResponse featuredUser,
+            MagazineAuthorResponse author,
             String contentMd,
             MagazineReactionCounts reactions,
             long viewCount
@@ -34,6 +36,7 @@ public record MagazineDetailResponse(
                 item.summary(),
                 thumbnailUrl,
                 featuredUser,
+                author,
                 contentMd,
                 item.publishedAt(),
                 item.createdAt(),

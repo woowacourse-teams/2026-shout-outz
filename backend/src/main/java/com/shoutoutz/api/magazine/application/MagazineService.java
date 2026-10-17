@@ -15,6 +15,7 @@ import com.shoutoutz.api.magazine.domain.MagazineRepository;
 import com.shoutoutz.api.magazine.domain.MagazineStatus;
 import com.shoutoutz.api.magazine.presentation.dto.request.MagazineSaveRequest;
 import com.shoutoutz.api.magazine.presentation.dto.response.MagazineAdminResponse;
+import com.shoutoutz.api.magazine.presentation.dto.response.MagazineAuthorResponse;
 import com.shoutoutz.api.magazine.presentation.dto.response.MagazineDetailResponse;
 import com.shoutoutz.api.magazine.presentation.dto.response.MagazineSummaryResponse;
 import com.shoutoutz.api.magazine.presentation.dto.response.FeaturedUserResponse;
@@ -29,6 +30,7 @@ import com.shoutoutz.api.user.application.UserAvatarUrlResolver;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.user.domain.account.UserStatus;
+import com.shoutoutz.api.user.domain.profile.UserProfile;
 import com.shoutoutz.api.user.domain.profile.UserProfileRepository;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
 import java.net.URI;
@@ -154,6 +156,7 @@ public class MagazineService {
                 item,
                 thumbnailUrl,
                 featuredUser(item, avatarUrls),
+                author(item, avatarUrls),
                 contentMd,
                 counts,
                 viewCount
@@ -187,8 +190,13 @@ public class MagazineService {
         List<MagazineSummaryResponse> responses = new ArrayList<>();
         for (MagazineItem item : items) {
             MagazineReactionCounts counts = reactions.getOrDefault(item.id(), NO_REACTION);
-            responses.add(MagazineSummaryResponse.from(item,
-                    mediaUrl(thumbnailUrls, item.thumbnailMediaId()), featuredUser(item, avatarUrls), counts));
+            responses.add(MagazineSummaryResponse.from(
+                    item,
+                    mediaUrl(thumbnailUrls, item.thumbnailMediaId()),
+                    featuredUser(item, avatarUrls),
+                    author(item, avatarUrls),
+                    counts
+            ));
         }
         String nextCursor = null;
         if (hasNext) {
@@ -207,9 +215,11 @@ public class MagazineService {
     }
 
     private Map<Long, String> resolveAvatarUrls(List<MagazineItem> items) {
-        List<UserAvatarUrlResolver.AvatarReference> references = items.stream()
-                .map(item -> new UserAvatarUrlResolver.AvatarReference(item.featuredUserId(), item.avatarImageId()))
-                .toList();
+        List<UserAvatarUrlResolver.AvatarReference> references = new ArrayList<>();
+        for (MagazineItem item : items) {
+            references.add(new UserAvatarUrlResolver.AvatarReference(item.featuredUserId(), item.avatarImageId()));
+            references.add(new UserAvatarUrlResolver.AvatarReference(item.authorId(), item.authorAvatarImageId()));
+        }
         return userAvatarUrlResolver.resolveAll(references);
     }
 
@@ -226,6 +236,30 @@ public class MagazineService {
             avatarUrl = avatarUrls.get(item.featuredUserId());
         }
         return new FeaturedUserResponse(item.handle(), item.displayName(), item.bio(), avatarUrl);
+    }
+
+    private MagazineAuthorResponse author(MagazineItem item, Map<Long, String> avatarUrls) {
+        String avatarUrl = null;
+        if (item.authorId() != null) {
+            avatarUrl = avatarUrls.get(item.authorId());
+        }
+        return new MagazineAuthorResponse(item.authorHandle(), item.authorDisplayName(), avatarUrl);
+    }
+
+    private MagazineAuthorResponse author(long authorId) {
+        var user = userRepository.findById(authorId)
+                .orElseThrow(() -> new IllegalStateException("매거진 편집자가 존재하지 않습니다."));
+        if (user.isDeleted()) {
+            return new MagazineAuthorResponse(null, "탈퇴한 사용자", null);
+        }
+        var profile = userProfileRepository.findByUserId(authorId);
+        String displayName = profile.map(value -> value.getDisplayName().value()).orElse(null);
+        Long avatarImageId = profile.map(UserProfile::getAvatarImageId).orElse(null);
+        return new MagazineAuthorResponse(
+                user.getHandle().value(),
+                displayName,
+                userAvatarUrlResolver.resolve(authorId, avatarImageId)
+        );
     }
 
     private void validateFeaturedUser(long userId) {
@@ -254,9 +288,12 @@ public class MagazineService {
 
     private MagazineAdminResponse adminResponse(Magazine magazine) {
         Map<Long, URI> urls = contentUrls(magazine.getContentMd());
-        return MagazineAdminResponse.from(magazine,
+        return MagazineAdminResponse.from(
+                magazine,
+                author(magazine.getAuthorId()),
                 mediaUrlResolver.resolve(magazine.getThumbnailMediaId(), MediaVariant.THUMBNAIL),
-                mediaUrlResolver.replaceDescriptionReferences(magazine.getContentMd(), urls));
+                mediaUrlResolver.replaceDescriptionReferences(magazine.getContentMd(), urls)
+        );
     }
 
     private String normalizeContent(Magazine existing, String contentMd) {

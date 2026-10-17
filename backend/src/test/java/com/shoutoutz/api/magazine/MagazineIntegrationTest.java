@@ -14,6 +14,7 @@ import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuild
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
+import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -32,6 +33,7 @@ import com.shoutoutz.api.magazine.application.MagazineReactionService;
 import com.shoutoutz.api.magazine.application.MagazineService;
 import com.shoutoutz.api.magazine.presentation.dto.request.MagazineSaveRequest;
 import com.shoutoutz.api.magazine.presentation.dto.response.MagazineAdminResponse;
+import com.shoutoutz.api.magazine.presentation.dto.response.MagazineAuthorResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
 import jakarta.persistence.EntityManager;
@@ -107,6 +109,7 @@ class MagazineIntegrationTest {
     @BeforeEach
     void setUp() {
         adminId = user("ADMIN");
+        jdbcTemplate.update("UPDATE user_profiles SET display_name = '편집자' WHERE user_id = ?", adminId);
         featuredUserId = user("USER");
         thumbnailId = image(adminId, "MAGAZINE_THUMBNAIL", "READY");
         imageId = image(adminId, "MAGAZINE_CONTENT", "READY");
@@ -118,6 +121,7 @@ class MagazineIntegrationTest {
         mockMvc.perform(post("/api/v1/admin/magazines").with(authenticated(adminId, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.data.status").value("DRAFT"))
+                .andExpect(jsonPath("$.data.author.displayName").value("편집자"))
                 .andDo(adminDocument("magazine-create", "매거진 초안 등록",
                         "활성 관리자가 초안을 등록합니다. 요약, 대표 이미지, 본문은 초안에서는 생략할 수 있습니다.", true, false));
         MagazineAdminResponse draft = create();
@@ -125,11 +129,13 @@ class MagazineIntegrationTest {
                         .with(authenticated(adminId, UserRole.ADMIN)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.contentMd").value(draft.contentMd()))
+                .andExpect(jsonPath("$.data.author.displayName").value("편집자"))
                 .andExpect(jsonPath("$.data.previewContentMd").value(Matchers.containsString("https://cdn.example.com/")))
                 .andDo(adminDocument("magazine-admin-detail", "매거진 원본과 초안 조회",
                         "활성 관리자가 초안을 포함한 매거진 원본을 조회합니다. 본문의 media:// 참조와 이미지 URL로 변환한 미리보기를 함께 반환합니다.", false, true));
         mockMvc.perform(get("/api/v1/admin/magazines").with(authenticated(adminId, UserRole.ADMIN)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].author.displayName").value("편집자"))
                 .andDo(listDocument("magazine-admin-list", "관리자 매거진 목록", "Magazine Admin"));
     }
 
@@ -144,9 +150,11 @@ class MagazineIntegrationTest {
         magazineService.publish(draft.id(), adminId);
         mockMvc.perform(get("/api/v1/magazines"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].author.displayName").value("편집자"))
                 .andDo(listDocument("magazine-list", "공개 매거진 목록", "Magazine"));
         mockMvc.perform(get("/api/v1/magazines/{magazineId}", draft.id()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.featuredUser.displayName").value("소개 회원"))
+                .andExpect(jsonPath("$.data.author.displayName").value("편집자"))
                 .andExpect(jsonPath("$.data.contentMd").value(Matchers.containsString("https://cdn.example.com/")))
                 .andDo(detailDocument());
     }
@@ -499,6 +507,72 @@ class MagazineIntegrationTest {
     }
 
     @Test
+    void 다른_관리자가_수정해도_최초_등록_편집자를_유지한다() {
+        MagazineAdminResponse draft = create();
+        long otherAdminId = user("ADMIN");
+
+        MagazineAdminResponse updated = magazineService.update(
+                draft.id(), otherAdminId, saveRequest("수정", draft.contentMd()));
+
+        assertThat(updated.author()).isEqualTo(draft.author());
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT author_id FROM magazines WHERE id = ?", Long.class, draft.id())).isEqualTo(adminId);
+    }
+
+    @Test
+    void 편집자_프로필_변경은_공개와_관리자_조회에_반영한다() {
+        long id = magazineService.publish(create().id(), adminId).id();
+        long avatarId = image(adminId, "USER_AVATAR", "READY");
+        jdbcTemplate.update("UPDATE users SET handle = '@magazine-editor' WHERE id = ?", adminId);
+        jdbcTemplate.update("""
+                UPDATE user_profiles SET display_name = '바뀐 편집자', avatar_image_id = ? WHERE user_id = ?
+                """, avatarId, adminId);
+        entityManager.clear();
+
+        var detail = magazineService.find(id, null, VISITOR);
+        var expected = new MagazineAuthorResponse("@magazine-editor", "바뀐 편집자", detail.author().avatarUrl());
+        assertThat(expected.avatarUrl()).startsWith("https://cdn.example.com/");
+        assertThat(List.of(
+                detail.author(),
+                magazineService.findAll(null, 20).items().getFirst().author(),
+                magazineService.findAdmin(id, adminId).author(),
+                magazineService.findAllAdmin(adminId, null, 20).items().getFirst().author()
+        )).containsOnly(expected);
+    }
+
+    @Test
+    void 편집자_아바타도_기존_GitHub_대체_규칙을_따른다() {
+        jdbcTemplate.update("""
+                INSERT INTO oauth_accounts(user_id, provider, provider_account_id, provider_avatar_url)
+                VALUES (?, 'GITHUB', ?, 'https://avatars.githubusercontent.com/u/456')
+                """, adminId, UUID.randomUUID().toString());
+        long id = magazineService.publish(create().id(), adminId).id();
+
+        assertThat(magazineService.find(id, null, VISITOR).author().avatarUrl())
+                .isEqualTo("https://avatars.githubusercontent.com/u/456");
+        assertThat(magazineService.findAll(null, 20).items().getFirst().author().avatarUrl())
+                .isEqualTo("https://avatars.githubusercontent.com/u/456");
+        assertThat(magazineService.findAdmin(id, adminId).author().avatarUrl())
+                .isEqualTo("https://avatars.githubusercontent.com/u/456");
+    }
+
+    @Test
+    void 탈퇴한_편집자의_정보는_공개와_관리자_조회에서_숨긴다() {
+        long id = magazineService.publish(create().id(), adminId).id();
+        long otherAdminId = user("ADMIN");
+        jdbcTemplate.update("UPDATE users SET status = 'DELETED', deleted_at = now() WHERE id = ?", adminId);
+        entityManager.clear();
+        var expected = new MagazineAuthorResponse(null, "탈퇴한 사용자", null);
+
+        assertThat(List.of(
+                magazineService.find(id, null, VISITOR).author(),
+                magazineService.findAll(null, 20).items().getFirst().author(),
+                magazineService.findAdmin(id, otherAdminId).author(),
+                magazineService.findAllAdmin(otherAdminId, null, 20).items().getFirst().author()
+        )).containsOnly(expected);
+    }
+
+    @Test
     void 매거진_API는_관리자와_공개_경로_모두_magazines를_사용한다() {
         var paths = requestMappingHandlerMapping.getHandlerMethods().entrySet().stream()
                 .filter(entry -> entry.getValue().getBeanType().getSimpleName().startsWith("Magazine"))
@@ -640,6 +714,10 @@ class MagazineIntegrationTest {
                 fieldWithPath("data.title").type(STRING).description("제목"),
                 fieldWithPath("data.summary").type(STRING).optional().description("요약"),
                 fieldWithPath("data.featuredUserId").type(NUMBER).description("매거진 대상 사용자 ID"),
+                fieldWithPath("data.author").type(OBJECT).description("최초 등록 편집자, 다른 관리자가 수정해도 유지"),
+                fieldWithPath("data.author.handle").type(STRING).optional().description("최초 등록 편집자의 현재 핸들, 탈퇴 시 null"),
+                fieldWithPath("data.author.displayName").type(STRING).optional().description("편집자의 현재 표시 이름, 탈퇴 시 탈퇴한 사용자"),
+                fieldWithPath("data.author.avatarUrl").type(STRING).optional().description("편집자 프로필 이미지 URL, 없으면 GitHub 아바타"),
                 fieldWithPath("data.thumbnailUrl").type(STRING).optional().description("대표 이미지 미리보기 URL"),
                 fieldWithPath("data.previewContentMd").type(STRING).optional().description("이미지 URL로 변환한 미리보기 Markdown"),
                 fieldWithPath("data.thumbnailMediaId").type(NUMBER).optional().description("MAGAZINE_THUMBNAIL 용도의 READY 미디어 ID"),
@@ -691,6 +769,10 @@ class MagazineIntegrationTest {
                 fieldWithPath(prefix + ".title").type(STRING).description("제목"),
                 fieldWithPath(prefix + ".summary").type(STRING).optional().description("요약"),
                 fieldWithPath(prefix + ".thumbnailUrl").type(STRING).optional().description("대표 이미지 URL"),
+                fieldWithPath(prefix + ".author").type(OBJECT).description("최초 등록 편집자, 다른 관리자가 수정해도 유지"),
+                fieldWithPath(prefix + ".author.handle").type(STRING).optional().description("최초 등록 편집자의 현재 핸들, 탈퇴 시 null"),
+                fieldWithPath(prefix + ".author.displayName").type(STRING).optional().description("편집자의 현재 표시 이름, 탈퇴 시 탈퇴한 사용자"),
+                fieldWithPath(prefix + ".author.avatarUrl").type(STRING).optional().description("편집자 프로필 이미지 URL, 없으면 GitHub 아바타"),
                 fieldWithPath(prefix + ".featuredUser.handle").type(STRING).optional().description("사용자 핸들"),
                 fieldWithPath(prefix + ".featuredUser.displayName").type(STRING).description("표시 이름"),
                 fieldWithPath(prefix + ".featuredUser.bio").type(STRING).optional().description("현재 사용자 소개"),

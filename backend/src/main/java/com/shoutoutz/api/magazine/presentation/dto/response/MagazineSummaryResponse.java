@@ -12,6 +12,7 @@ public record MagazineSummaryResponse(
         String summary,
         URI thumbnailUrl,
         FeaturedUserResponse featuredUser,
+        MagazineAuthorResponse author,
         MagazineStatus status,
         Instant publishedAt,
         Instant createdAt,
@@ -25,6 +26,7 @@ public record MagazineSummaryResponse(
             MagazineItem item,
             URI thumbnailUrl,
             FeaturedUserResponse featuredUser,
+            MagazineAuthorResponse author,
             MagazineReactionCounts reactions
     ) {
         return new MagazineSummaryResponse(
@@ -33,6 +35,7 @@ public record MagazineSummaryResponse(
                 item.summary(),
                 thumbnailUrl,
                 featuredUser,
+                author,
                 item.status(),
                 item.publishedAt(),
                 item.createdAt(),

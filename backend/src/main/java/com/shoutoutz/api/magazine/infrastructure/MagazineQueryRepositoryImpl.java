@@ -25,12 +25,20 @@ public class MagazineQueryRepositoryImpl implements MagazineQueryRepository {
             CASE WHEN u.status = 'DELETED' THEN NULL ELSE u.handle END AS handle,
             CASE WHEN u.status = 'DELETED' THEN '탈퇴한 사용자' ELSE p.display_name END AS display_name,
             CASE WHEN u.status = 'DELETED' THEN NULL ELSE p.bio END AS bio,
-            CASE WHEN u.status = 'DELETED' THEN NULL ELSE p.avatar_image_id END AS avatar_image_id
+            CASE WHEN u.status = 'DELETED' THEN NULL ELSE p.avatar_image_id END AS avatar_image_id,
+            CASE WHEN author.status = 'DELETED' THEN NULL ELSE author.id END AS author_id,
+            CASE WHEN author.status = 'DELETED' THEN NULL ELSE author.handle END AS author_handle,
+            CASE WHEN author.status = 'DELETED' THEN '탈퇴한 사용자'
+                 ELSE author_profile.display_name END AS author_display_name,
+            CASE WHEN author.status = 'DELETED' THEN NULL
+                 ELSE author_profile.avatar_image_id END AS author_avatar_image_id
             """;
     private static final String FROM = """
              FROM magazines i
              JOIN users u ON u.id = i.featured_user_id
              LEFT JOIN user_profiles p ON p.user_id = u.id
+             JOIN users author ON author.id = i.author_id
+             LEFT JOIN user_profiles author_profile ON author_profile.user_id = author.id
              WHERE i.deleted_at IS NULL
             """;
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -71,11 +79,28 @@ public class MagazineQueryRepositoryImpl implements MagazineQueryRepository {
     }
 
     private MagazineItem map(ResultSet rs, int row) throws SQLException {
-        return new MagazineItem(rs.getLong("id"), rs.getString("title"), rs.getString("summary"),
-                rs.getString("content_md"), rs.getObject("thumbnail_media_id", Long.class),
-                rs.getObject("featured_user_id", Long.class), rs.getString("handle"), rs.getString("display_name"), rs.getString("bio"),
-                rs.getObject("avatar_image_id", Long.class), MagazineStatus.valueOf(rs.getString("status")),
-                instant(rs, "published_at"), instant(rs, "created_at"), instant(rs, "updated_at"), rs.getLong("comment_count"), rs.getLong("view_count"));
+        return new MagazineItem(
+                rs.getLong("id"),
+                rs.getString("title"),
+                rs.getString("summary"),
+                rs.getString("content_md"),
+                rs.getObject("thumbnail_media_id", Long.class),
+                rs.getObject("featured_user_id", Long.class),
+                rs.getString("handle"),
+                rs.getString("display_name"),
+                rs.getString("bio"),
+                rs.getObject("avatar_image_id", Long.class),
+                rs.getObject("author_id", Long.class),
+                rs.getString("author_handle"),
+                rs.getString("author_display_name"),
+                rs.getObject("author_avatar_image_id", Long.class),
+                MagazineStatus.valueOf(rs.getString("status")),
+                instant(rs, "published_at"),
+                instant(rs, "created_at"),
+                instant(rs, "updated_at"),
+                rs.getLong("comment_count"),
+                rs.getLong("view_count")
+        );
     }
 
     private Instant instant(ResultSet rs, String name) throws SQLException {
