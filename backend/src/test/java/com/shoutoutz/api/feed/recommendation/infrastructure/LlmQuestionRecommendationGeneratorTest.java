@@ -52,7 +52,7 @@ class LlmQuestionRecommendationGeneratorTest {
     void setUp() {
         when(gemini.provider()).thenReturn(LlmProvider.GEMINI);
         when(openai.provider()).thenReturn(LlmProvider.OPENAI);
-        when(judge.judge(any(), anyString(), anyList())).thenAnswer(invocation -> passAll(invocation.getArgument(2)));
+        when(judge.judge(any(), anyList(), anyString(), anyList())).thenAnswer(invocation -> passAll(invocation.getArgument(3)));
         generator = generator(true);
     }
 
@@ -66,7 +66,8 @@ class LlmQuestionRecommendationGeneratorTest {
                 CANDIDATES.get(0).get("title"), CANDIDATES.get(1).get("title"), CANDIDATES.get(2).get("title"),
                 CANDIDATES.get(4).get("title"), CANDIDATES.get(6).get("title"));
         verify(openai, never()).generate(any());
-        verify(judge).judge(eq(LlmProvider.GEMINI), eq("{\"title\":\"원 제목\",\"content\":\"원 본문\"}"), anyList());
+        verify(judge).judge(eq(LlmProvider.GEMINI), eq(List.of(LlmProvider.OPENAI, LlmProvider.GEMINI)),
+                eq("{\"title\":\"원 제목\",\"content\":\"원 본문\"}"), anyList());
         ArgumentCaptor<LlmRequest> request = ArgumentCaptor.forClass(LlmRequest.class);
         verify(gemini).generate(request.capture());
         assertThat(request.getValue().prompt()).contains("후보 8개", "원 제목", "원 본문");
@@ -86,7 +87,8 @@ class LlmQuestionRecommendationGeneratorTest {
         ArgumentCaptor<LlmRequest> request = ArgumentCaptor.forClass(LlmRequest.class);
         verify(gemini).generate(request.capture());
         verify(openai).generate(request.getValue());
-        verify(judge).judge(eq(LlmProvider.OPENAI), anyString(), anyList());
+        // 이번 시도에서 호출 오류가 난 Gemini는 건너뛰고, 남은 호출 1번은 OpenAI가 직접 채점한다.
+        verify(judge).judge(eq(LlmProvider.OPENAI), eq(List.of(LlmProvider.OPENAI)), anyString(), anyList());
     }
 
     @ParameterizedTest
@@ -119,6 +121,28 @@ class LlmQuestionRecommendationGeneratorTest {
     }
 
     @Test
+    void Gemini_응답만_잘못됐으면_OpenAI가_생성하고_살아있는_Gemini가_교차_채점한다() {
+        when(gemini.generate(any())).thenReturn("not json");
+        when(openai.generate(any())).thenReturn(VALID);
+
+        generator.generate("제목", "본문", 5);
+
+        // 생성에 호출 2번을 썼으므로 judge는 1번만, 호출 오류가 없었던 Gemini가 교차 채점한다.
+        verify(judge).judge(eq(LlmProvider.OPENAI), eq(List.of(LlmProvider.GEMINI)), anyString(), anyList());
+    }
+
+    @Test
+    void 자동대체가_꺼져도_judge는_교차_채점_후_자체_채점으로_대체한다() {
+        generator = generator(false);
+        when(gemini.generate(any())).thenReturn(VALID);
+
+        generator.generate("제목", "본문", 5);
+
+        verify(judge).judge(eq(LlmProvider.GEMINI), eq(List.of(LlmProvider.OPENAI, LlmProvider.GEMINI)), anyString(),
+                anyList());
+    }
+
+    @Test
     void 부적합한_원글이면_대체와_검수없이_건너뛴다() {
         when(gemini.generate(any())).thenReturn(RecommendationFixtures.skip(MAPPER, "TOO_VAGUE"));
 
@@ -126,7 +150,7 @@ class LlmQuestionRecommendationGeneratorTest {
                 .isInstanceOfSatisfying(QuestionRecommendationSkippedException.class,
                         exception -> assertThat(exception.reason()).isEqualTo("TOO_VAGUE"));
         verify(openai, never()).generate(any());
-        verify(judge, never()).judge(any(), anyString(), anyList());
+        verify(judge, never()).judge(any(), anyList(), anyString(), anyList());
     }
 
     @Test
@@ -139,7 +163,7 @@ class LlmQuestionRecommendationGeneratorTest {
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<RecommendationCandidate>> candidates = ArgumentCaptor.forClass(List.class);
-        verify(judge).judge(any(), anyString(), candidates.capture());
+        verify(judge).judge(any(), anyList(), anyString(), candidates.capture());
         assertThat(candidates.getValue()).hasSize(7);
     }
 
@@ -155,14 +179,14 @@ class LlmQuestionRecommendationGeneratorTest {
         assertThatThrownBy(() -> generator.generate("제목", "본문", 5))
                 .isInstanceOfSatisfying(QuestionRecommendationGenerationException.class,
                         exception -> assertThat(exception.retryable()).isTrue());
-        verify(judge, never()).judge(any(), anyString(), anyList());
+        verify(judge, never()).judge(any(), anyList(), anyString(), anyList());
     }
 
     @Test
     void 검수를_통과한_후보가_최소_개수보다_적으면_재시도한다() {
         when(gemini.generate(any())).thenReturn(VALID);
-        when(judge.judge(any(), anyString(), anyList())).thenAnswer(invocation -> {
-            List<RecommendationCandidate> candidates = invocation.getArgument(2);
+        when(judge.judge(any(), anyList(), anyString(), anyList())).thenAnswer(invocation -> {
+            List<RecommendationCandidate> candidates = invocation.getArgument(3);
             return new JudgeResult(candidates.stream()
                     .map(candidate -> verdict(candidate.id(), candidate.order() > 2))
                     .toList(), List.of());
@@ -176,7 +200,7 @@ class LlmQuestionRecommendationGeneratorTest {
     @Test
     void 검수_실패는_그대로_전달하고_다른_제공자로_다시_생성하지_않는다() {
         when(gemini.generate(any())).thenReturn(VALID);
-        when(judge.judge(any(), anyString(), anyList())).thenThrow(new QuestionRecommendationGenerationException(true, 30));
+        when(judge.judge(any(), anyList(), anyString(), anyList())).thenThrow(new QuestionRecommendationGenerationException(true, 30));
 
         assertThatThrownBy(() -> generator.generate("제목", "본문", 5))
                 .isInstanceOfSatisfying(QuestionRecommendationGenerationException.class,

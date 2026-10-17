@@ -21,6 +21,7 @@ import com.shoutoutz.api.feed.recommendation.infrastructure.quality.RuleValidati
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -36,14 +38,16 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 후보 생성 → 규칙 검증 → 교차 judge → 선발 순서로 추천 질문을 만든다.
- * 생성 단계만 Gemini 실패 시 OpenAI로 대체하고, judge는 생성과 다른 제공자로 한 번만 호출한다.
+ * 후보 생성 → 규칙 검증 → judge → 선발 순서로 추천 질문을 만든다.
+ * 생성은 Gemini 실패 시 OpenAI로 대체하고, judge는 생성과 다른 제공자를 먼저 쓰되 실패하면 생성한 제공자가 채점한다.
+ * 작업 선점 시간 안에 끝나도록 한 번의 시도에서 LLM 호출은 최대 MAX_LLM_CALLS번이다.
  */
 @Component
 public class LlmQuestionRecommendationGenerator implements QuestionRecommendationGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(LlmQuestionRecommendationGenerator.class);
     private static final int MAX_OUTPUT_TOKENS = 8_192;
+    public static final int MAX_LLM_CALLS = 3;
     private static final Set<String> SKIP_REASONS = Set.of("OFF_TOPIC", "TOO_VAGUE", "INAPPROPRIATE");
 
     private final Map<LlmProvider, LlmClient> clients;
@@ -84,7 +88,8 @@ public class LlmQuestionRecommendationGenerator implements QuestionRecommendatio
                     violationCounts(validated));
             throw new QuestionRecommendationGenerationException(true, 0);
         }
-        JudgeResult judgement = judge.judge(generation.provider(), source, validated.passed());
+        JudgeResult judgement = judge.judge(generation.provider(), judgeProviders(generation), source,
+                validated.passed());
         List<RecommendationCandidate> selected = selector.select(validated.passed(), judgement, count);
         log.info("질문 추천 품질 검증 완료. provider={}, candidates={}, rulePassed={}, violations={}, "
                         + "hardGateFailures={}, duplicateGroups={}, selected={}",
@@ -97,6 +102,17 @@ public class LlmQuestionRecommendationGenerator implements QuestionRecommendatio
         return selected.stream().map(RecommendationCandidate::toGeneratedQuestion).toList();
     }
 
+    /**
+     * 교차 채점을 먼저 시도하고 생성한 제공자로 대체한다. 이번 시도에서 호출 오류가 난 제공자는 장애로 보고 건너뛰며,
+     * 생성에 쓴 호출 수를 빼고 남은 횟수만큼만 시도한다.
+     */
+    private List<LlmProvider> judgeProviders(Generation generation) {
+        return Stream.of(RecommendationJudge.crossProviderFor(generation.provider()), generation.provider())
+                .filter(provider -> !generation.unavailableProviders().contains(provider))
+                .limit(Math.max(0, MAX_LLM_CALLS - generation.calls()))
+                .toList();
+    }
+
     private Generation generateCandidates(String source) {
         LlmRequest request = new LlmRequest(
                 prompts.generation(source, quality.candidateCount(), quality.minAngleKinds()),
@@ -105,14 +121,18 @@ public class LlmQuestionRecommendationGenerator implements QuestionRecommendatio
                 ? List.of(LlmProvider.GEMINI, LlmProvider.OPENAI) : List.of(LlmProvider.GEMINI);
         boolean retryable = false;
         long retryAfterSeconds = 0;
+        int calls = 0;
+        Set<LlmProvider> unavailable = EnumSet.noneOf(LlmProvider.class);
         for (LlmProvider provider : providers) {
             boolean fallback = provider != LlmProvider.GEMINI;
+            calls++;
             try {
                 List<RecommendationCandidate> candidates = decode(clients.get(provider).generate(request));
                 log.info("질문 추천 후보 생성 완료. provider={}, fallback={}, candidates={}",
                         provider, fallback, candidates.size());
-                return new Generation(provider, candidates);
+                return new Generation(provider, candidates, calls, unavailable);
             } catch (LlmException exception) {
+                unavailable.add(provider);
                 log.warn("질문 추천 제공자 호출 실패. provider={}, model={}, httpStatus={}, errorCode={}, "
                                 + "retryAfterSeconds={}, fallback={}",
                         provider, exception.model(), exception.httpStatus(), exception.errorCode(),
@@ -235,7 +255,8 @@ public class LlmQuestionRecommendationGenerator implements QuestionRecommendatio
         return failures;
     }
 
-    private record Generation(LlmProvider provider, List<RecommendationCandidate> candidates) {
+    private record Generation(LlmProvider provider, List<RecommendationCandidate> candidates, int calls,
+                              Set<LlmProvider> unavailableProviders) {
     }
 
     private record GenerationPayload(String decision, String skipReason, List<CandidatePayload> questions) {

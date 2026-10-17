@@ -44,16 +44,24 @@ class QuestionRecommendationPropertiesConfigurationTest {
     }
 
     @Test
-    void 생성_대체와_judge를_합친_최악_시간이_선점_시간을_넘으면_기동하지_않는다() {
+    void 생성과_judge_대체를_합친_최악_시간이_선점_시간을_넘으면_기동하지_않는다() {
         LlmProperties slow = new LlmProperties(
                 new LlmProperties.Gemini("gemini-key", null, Duration.ofSeconds(5), Duration.ofSeconds(65)),
                 new LlmProperties.OpenAi("openai-key", null, Duration.ofSeconds(5), Duration.ofSeconds(45), null));
 
+        // Gemini 70 + OpenAI 50 + 느린 쪽 70 = 190초. judge 대체 때문에 생성 대체가 꺼져 있어도 같다.
         assertThatThrownBy(() -> configuration.questionRecommendationCredentialsValidator(
                 properties(true, true), QUALITY, slow).afterPropertiesSet())
                 .hasMessageContaining("LLM 총 제한 시간");
-        assertThatCode(() -> configuration.questionRecommendationCredentialsValidator(
+        assertThatThrownBy(() -> configuration.questionRecommendationCredentialsValidator(
                 properties(true, false), QUALITY, slow).afterPropertiesSet())
+                .hasMessageContaining("LLM 총 제한 시간");
+    }
+
+    @Test
+    void 기본_제한시간이면_최악_150초로_기동한다() {
+        assertThatCode(() -> configuration.questionRecommendationCredentialsValidator(
+                properties(true, false), QUALITY, credentials("gemini-key", "openai-key")).afterPropertiesSet())
                 .doesNotThrowAnyException();
     }
 

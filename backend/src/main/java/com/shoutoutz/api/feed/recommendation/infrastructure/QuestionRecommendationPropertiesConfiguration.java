@@ -34,11 +34,9 @@ public class QuestionRecommendationPropertiesConfiguration {
             }
             Duration gemini = llmProperties.gemini().connectTimeout().plus(llmProperties.gemini().readTimeout());
             Duration openai = llmProperties.openai().connectTimeout().plus(llmProperties.openai().readTimeout());
-            // 최악의 경우: Gemini 생성 실패 → OpenAI 생성 → Gemini judge. 대체가 없으면 Gemini 생성 → OpenAI judge.
-            Duration budget = gemini.plus(openai);
-            if (properties.fallbackEnabled()) {
-                budget = budget.plus(gemini);
-            }
+            // 한 번의 시도에서 LLM 호출은 최대 3번이다. 생성 대체(Gemini → OpenAI) 후 judge 1번이거나,
+            // 생성 1번 후 교차 judge 실패 → 자체 judge이므로 어느 경로든 두 제공자 각 1번 + 둘 중 느린 쪽 1번이 최악이다.
+            Duration budget = gemini.plus(openai).plus(gemini.compareTo(openai) >= 0 ? gemini : openai);
             if (budget.compareTo(Duration.ofSeconds(QuestionRecommendationWorker.GENERATION_LEASE_SECONDS)) >= 0
                     || budget.compareTo(properties.sqs().visibilityTimeout()) >= 0) {
                 throw new IllegalArgumentException("LLM 총 제한 시간은 작업 선점 및 SQS 가시성 시간보다 짧아야 합니다.");

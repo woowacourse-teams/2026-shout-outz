@@ -117,10 +117,10 @@ class LlmRecommendationFlowTest {
     }
 
     @Test
-    void Gemini_503이면_OpenAI가_생성하고_Gemini가_검수한_다섯개를_저장한뒤_확인한다() {
+    void Gemini_503이면_OpenAI가_생성하고_장애난_Gemini_대신_OpenAI가_직접_검수해_저장한다() {
         expectGeminiFailure(HttpStatus.SERVICE_UNAVAILABLE, "UNAVAILABLE", null);
         expectOpenAiText(RecommendationFixtures.generation(mapper, RecommendationFixtures.CANDIDATES));
-        expectGeminiText(RecommendationFixtures.judgement(8, List.of()));
+        expectOpenAiText(RecommendationFixtures.judgement(8, List.of()));
         List<GeneratedQuestion> questions = IntStream.of(0, 1, 2, 4, 6)
                 .mapToObj(RecommendationFixtures.CANDIDATES::get)
                 .map(candidate -> new GeneratedQuestion(candidate.get("title"), candidate.get("content")))
@@ -139,6 +139,7 @@ class LlmRecommendationFlowTest {
         assertSafeCorrelatedLogs("provider=GEMINI, model=gemini-3.8-flash, httpStatus=503, "
                         + "errorCode=UNAVAILABLE, retryAfterSeconds=0, fallback=false",
                 "provider=OPENAI, fallback=true, candidates=8",
+                "질문 추천 judge 완료. provider=OPENAI, selfJudge=true",
                 "provider=OPENAI, candidates=8, rulePassed=8, violations={}, hardGateFailures={}, "
                         + "duplicateGroups=0, selected=5");
         server.verify();
@@ -160,9 +161,27 @@ class LlmRecommendationFlowTest {
     }
 
     @Test
-    void 검수_제공자가_실패하면_저장없이_재시도한다() {
+    void 교차_검수_제공자가_실패하면_생성한_Gemini가_직접_검수해_저장한다() {
         expectGeminiText(RecommendationFixtures.generation(mapper, RecommendationFixtures.CANDIDATES));
         expectOpenAiFailure(HttpStatus.SERVICE_UNAVAILABLE, "server_error");
+        expectGeminiText(RecommendationFixtures.judgement(8, List.of()));
+        when(repository.completeGeneration(anyLong(), anyInt(), anyList(), any())).thenReturn(true);
+
+        var result = worker.process(FEED_ID, GENERATION);
+
+        assertThat(result.acknowledged()).isTrue();
+        verify(repository).completeGeneration(anyLong(), anyInt(), anyList(), any());
+        assertSafeCorrelatedLogs("질문 추천 judge 호출 실패. provider=OPENAI, selfJudge=false, model=gpt-6-luna, "
+                        + "httpStatus=503, errorCode=server_error",
+                "질문 추천 judge 완료. provider=GEMINI, selfJudge=true");
+        server.verify();
+    }
+
+    @Test
+    void 두_검수_제공자가_모두_실패하면_저장없이_재시도한다() {
+        expectGeminiText(RecommendationFixtures.generation(mapper, RecommendationFixtures.CANDIDATES));
+        expectOpenAiFailure(HttpStatus.SERVICE_UNAVAILABLE, "server_error");
+        expectGeminiFailure(HttpStatus.SERVICE_UNAVAILABLE, "UNAVAILABLE", null);
 
         var result = worker.process(FEED_ID, GENERATION);
 
@@ -170,8 +189,7 @@ class LlmRecommendationFlowTest {
         verify(repository).retryGeneration(FEED_ID, GENERATION, "GENERATION_FAILED", NOW);
         verify(repository, never()).completeGeneration(anyLong(), anyInt(), anyList(), any());
         assertFailureMetric();
-        assertSafeCorrelatedLogs("질문 추천 judge 호출 실패. provider=OPENAI, model=gpt-6-luna, httpStatus=503, "
-                + "errorCode=server_error");
+        assertSafeCorrelatedLogs("질문 추천 judge 호출 실패. provider=GEMINI, selfJudge=true");
         server.verify();
     }
 

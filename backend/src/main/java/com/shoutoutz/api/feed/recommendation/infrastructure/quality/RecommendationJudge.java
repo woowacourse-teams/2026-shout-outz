@@ -26,8 +26,9 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 생성과 다른 제공자로 후보를 한 번 채점한다. 자기 출력을 후하게 보는 편향을 줄이기 위해 교차 채점하고,
- * 시간 예산 안에 들도록 대체 호출은 하지 않는다. 실패하면 검수되지 않은 질문을 노출하지 않도록 재시도로 돌린다.
+ * 추천 후보를 체크리스트로 채점한다. 호출자가 정한 제공자 순서대로 시도하며, 보통은 자기 출력을 후하게 보는
+ * 편향을 줄이려고 생성과 다른 제공자를 먼저 쓰고 그 제공자가 실패하면 생성한 제공자가 직접 채점한다.
+ * 모든 제공자가 실패하면 검수되지 않은 질문을 노출하지 않도록 재시도로 돌린다.
  */
 @Component
 public class RecommendationJudge {
@@ -54,29 +55,41 @@ public class RecommendationJudge {
         this.random = random;
     }
 
-    public static LlmProvider judgeProviderFor(LlmProvider generator) {
+    public static LlmProvider crossProviderFor(LlmProvider generator) {
         return generator == LlmProvider.GEMINI ? LlmProvider.OPENAI : LlmProvider.GEMINI;
     }
 
-    public JudgeResult judge(LlmProvider generator, String sourceJson, List<RecommendationCandidate> candidates) {
-        LlmProvider provider = judgeProviderFor(generator);
+    /**
+     * providers 순서대로 채점을 시도하고 처음 성공한 판정을 반환한다.
+     */
+    public JudgeResult judge(LlmProvider generator, List<LlmProvider> providers, String sourceJson,
+            List<RecommendationCandidate> candidates) {
         LlmRequest request = new LlmRequest(prompts.judge(sourceJson, candidatesJson(candidates)), schema(),
                 MAX_OUTPUT_TOKENS, TEMPERATURE);
-        String response;
-        try {
-            response = clients.get(provider).generate(request);
-        } catch (LlmException exception) {
-            log.warn("질문 추천 judge 호출 실패. provider={}, model={}, httpStatus={}, errorCode={}, retryAfterSeconds={}",
-                    provider, exception.model(), exception.httpStatus(), exception.errorCode(),
-                    exception.retryAfterSeconds());
-            throw new QuestionRecommendationGenerationException(true, exception.retryAfterSeconds());
+        long retryAfterSeconds = 0;
+        for (LlmProvider provider : providers) {
+            boolean selfJudge = provider == generator;
+            String response;
+            try {
+                response = clients.get(provider).generate(request);
+            } catch (LlmException exception) {
+                log.warn("질문 추천 judge 호출 실패. provider={}, selfJudge={}, model={}, httpStatus={}, errorCode={}, "
+                                + "retryAfterSeconds={}",
+                        provider, selfJudge, exception.model(), exception.httpStatus(), exception.errorCode(),
+                        exception.retryAfterSeconds());
+                retryAfterSeconds = Math.max(retryAfterSeconds, exception.retryAfterSeconds());
+                continue;
+            }
+            JudgeResult result = decode(response, candidates);
+            if (result == null) {
+                log.warn("질문 추천 judge 응답 검증 실패. provider={}, selfJudge={}, errorCode=INVALID_JUDGEMENT",
+                        provider, selfJudge);
+                continue;
+            }
+            log.info("질문 추천 judge 완료. provider={}, selfJudge={}", provider, selfJudge);
+            return result;
         }
-        JudgeResult result = decode(response, candidates);
-        if (result == null) {
-            log.warn("질문 추천 judge 응답 검증 실패. provider={}, errorCode=INVALID_JUDGEMENT", provider);
-            throw new QuestionRecommendationGenerationException(true, 0);
-        }
-        return result;
+        throw new QuestionRecommendationGenerationException(true, retryAfterSeconds);
     }
 
     private String candidatesJson(List<RecommendationCandidate> candidates) {
