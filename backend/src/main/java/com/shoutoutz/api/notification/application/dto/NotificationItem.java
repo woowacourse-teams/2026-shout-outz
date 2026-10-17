@@ -16,9 +16,9 @@ public record NotificationItem(
         Long actorAvatarImageId,
         boolean read,
         Instant createdAt,
-        Long interviewId,
-        String interviewTitle,
-        Long interviewCommentId
+        Long magazineId,
+        String magazineTitle,
+        Long magazineCommentId
 ) {
     public NotificationItem(long notificationId, NotificationType notificationType, String message,
             Long feedId, String feedTitle, Long commentId, Long actorId, String actorHandle,

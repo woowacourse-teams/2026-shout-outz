@@ -34,11 +34,11 @@ public interface FeedLinkPreviewRepository {
 
     Map<Long, LinkPreview> findByProjectCommentIds(List<Long> commentIds);
 
-    void linkInterviewComment(long commentId, String url);
+    void linkMagazineComment(long commentId, String url);
 
-    void unlinkInterviewComment(long commentId);
+    void unlinkMagazineComment(long commentId);
 
-    Map<Long, LinkPreview> findByInterviewCommentIds(List<Long> commentIds);
+    Map<Long, LinkPreview> findByMagazineCommentIds(List<Long> commentIds);
 
     Optional<FetchJob> claimDue(Instant now, Instant staleBefore);
 
