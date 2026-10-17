@@ -15,7 +15,7 @@
 ② 규칙 검증 (코드, 결정적) ── 통과 < 3개 ──▶ 재시도
   │
   ▼
-③ judge 호출 ─ 생성과 다른 제공자 1회, 대체 없음 ── 실패 ──▶ 재시도 (fail-closed)
+③ judge 호출 ─ 교차 제공자 → 실패 시 생성 제공자가 직접 채점 ── 모두 실패 ──▶ 재시도 (fail-closed)
   │  후보별 hard 7개 / soft 4개 이진 판정 + 중복 묶음
   ▼
 ④ 선발 (코드, 결정적) ── 선발 < 3개 ──▶ 재시도
@@ -29,7 +29,8 @@ READY (3~5개 저장)
 - **같은 루브릭을 두 번 사용한다.** 생성 프롬프트의 작성 규칙과 judge 체크리스트가 같은 기준(`RecommendationCheck`)을 바라보므로, 생성기가 처음부터 채점 기준에 맞춰 작성한다.
 - **판단은 LLM, 결정은 코드가 한다.** judge는 항목별 true/false만 반환하고, 탈락·순위·중복 제거·다양성 선택은 코드가 결정적으로 처리한다. 그래서 단위 테스트로 검증할 수 있고, 로그로 원인을 추적할 수 있다.
 - **사용자 입력과 LLM 출력은 데이터로 취급한다.** 두 프롬프트 모두 JSON으로 감싸 전달하고 그 안의 지시는 따르지 않도록 명시한다. 템플릿도 한 번에 치환해서 입력에 섞인 `{{...}}`가 다시 치환되지 않게 막는다.
-- **검수되지 않은 질문은 노출하지 않는다.** judge가 실패하면 저장하지 않고 재시도한다.
+- **검수되지 않은 질문은 노출하지 않는다.** judge를 거치지 못하면 저장하지 않고 재시도한다(fail-closed). 단, judge를 맡을 제공자는 상황에 따라 바꾼다. 중요한 것은 "judge를 거쳤는가"이지 "어느 제공자가 채점했는가"가 아니다.
+- **한 번의 시도에서 LLM 호출은 최대 3번이다.** 그래서 어떤 경로든 최악 150초로, 작업 선점 시간(180초) 안에 끝난다.
 
 ## 2. 배경과 문제
 
@@ -63,9 +64,9 @@ READY (3~5개 저장)
 | 항목 | 결정 | 근거 |
 | --- | --- | --- |
 | 목적 | 원글 독자의 후속 질문 **이면서** 단독으로 등록 가능한 시드 콘텐츠 | 상세 페이지(연관성)와 무작위 목록 노출·등록 흐름(독립성)을 모두 지원해야 한다 |
-| 추가 LLM 호출 | judge 1회 | 비동기(SQS)라 지연 부담이 적고, 루브릭 채점에는 1회로 충분하다 |
+| 추가 LLM 호출 | judge 1회 (교차 judge 실패 시에만 자체 judge 1회 추가) | 비동기(SQS)라 지연 부담이 적고, 루브릭 채점에는 1회로 충분하다 |
 | 연관 거리 | 각도(angle) 4종 혼합 강제: DEEPEN / ADJACENT / COMPARE / PRACTICE | "심화 위주"는 후보끼리 비슷해진다. 태그가 있으면 다양성을 객관적으로 검사할 수 있다 |
-| 모델 배치 | 교차 채점: 생성과 다른 제공자가 judge | 자기 출력을 후하게 보는 편향을 줄인다 |
+| 모델 배치 | 교차 채점 우선: 생성과 다른 제공자가 먼저 judge | 자기 출력을 후하게 보는 편향을 줄인다 |
 | 생성 개수 | N+3(기본 8개) 생성 → 최대 5개 선발, 최소 3개 | 호출 수는 그대로 두고 탈락에 대비해 재시도율을 낮춘다 |
 | 일부 탈락 처리 | 최소 개수(3) 이상이면 그 개수대로 저장, 미만이면 재시도 | "정확히 N개"를 고집하면 비용이 늘고, "통과분만"은 1~2개짜리 추천이 생긴다 |
 | 화자 맥락 | 일반화된 상황만 허용, 수치·조직·기간 등 지어낸 사실 금지 | 다른 사람이 자기 이름으로 등록하면 허위 맥락이 게시된다 |
@@ -73,9 +74,18 @@ READY (3~5개 저장)
 | 도메인 | 개발 + 커리어/협업/학습 | 커뮤니티에 이미 협업·면접 질문이 많다 |
 | judge 채점 | 예/아니오 체크리스트, 항목별 30자 근거를 먼저 쓰고 판정 | 1~5점 척도보다 호출마다 흔들림이 적고 재현성이 높다 |
 | judge 장애 | fail-closed, 기존 재시도 정책 사용 | 추천은 늦어도 되는 기능이다. 검수되지 않은 질문을 노출하지 않는다 |
-| judge 대체 | **대체 없이 1회만** 호출 | 대체까지 하면 최악 200초로 작업 선점(180초)을 넘는다. 1회면 150초 |
+| judge 대체 | **교차 judge가 실패하면 생성한 제공자가 직접 채점(자체 judge)**. 이번 시도에서 호출 오류가 난 제공자는 건너뛰고, 시도당 LLM 호출 3번 안에서만 대체 | 처음에는 "대체 없이 1회"였다(4개 호출이면 200초로 선점 180초 초과). 하지만 그러면 한쪽 제공자가 장애일 때 추천이 전부 실패한다(아래 "변경 이력"). judge를 거치는지가 중요하고 제공자는 무엇이든 괜찮다는 판단으로 바꿨다 |
 | 부적합 원글 저장 | **`SKIPPED` 상태 신설** | 실패(FAILED)와 의도된 건너뜀을 구분해 모니터링한다. 프론트는 READY만 노출하므로 영향이 없다 |
 | 오프라인 평가 | 평가 세트 30건 + 실행기 | 프롬프트를 바꿀 때 품질 회귀를 수치로 확인한다 |
+
+### 변경 이력: judge 대체 정책
+
+처음 설계(judge는 생성과 반대 제공자로 1회만, 대체 없음)에는 다음 구멍이 있었다.
+
+- **Gemini 장애**: Gemini 생성 실패 → OpenAI가 대체 생성 → judge는 반대 제공자인 Gemini로 감 → 또 실패 → 재시도. Gemini가 복구될 때까지 매번 같은 결과라, OpenAI 생성 대체가 사실상 쓸모없었다.
+- **OpenAI 장애**: Gemini가 정상 생성해도 judge(OpenAI)에서 실패해 버려졌다.
+
+그래서 "judge를 반드시 거쳐야 저장한다"(fail-closed)는 원칙은 유지하고, **judge를 맡을 제공자만 대체**하도록 바꿨다. 장애 상황에서는 자기 출력을 자기가 채점하는 편향이 생기지만, 그 앞에 결정적 규칙 검증이 있고 hard gate가 이진 판정이라 추천이 아예 안 나오는 것보다 낫다고 판단했다. 로그의 `selfJudge=true`로 운영에서 구분한다.
 
 ## 4. 호출 흐름 상세
 
@@ -98,10 +108,12 @@ sequenceDiagram
         W->>W: markGenerationSkipped → SKIPPED
     else decision = GENERATE
         G->>G: 정규화(중복 제거, angle 3종 확인) → 규칙 검증
-        G->>J: judge(생성 제공자, 원글, 통과 후보)
-        J->>Oai: (Gemini가 생성했으면) judge 프롬프트, temperature 0
-        J->>Gem: (OpenAI가 생성했으면)
-        J-->>G: JudgeResult (판정 + 중복 묶음)
+        G->>J: judge(생성 제공자, judge 제공자 순서, 원글, 통과 후보)
+        J->>Oai: (Gemini가 생성했으면) 교차 judge, temperature 0
+        alt 교차 judge 실패 (남은 호출이 있을 때)
+            J->>Gem: 생성한 제공자가 직접 채점 (자체 judge)
+        end
+        J-->>G: JudgeResult (판정 + 중복 묶음), 모두 실패하면 재시도
         G->>G: 선발 (최대 5, 최소 3)
         G-->>W: 추천 3~5개
         W->>W: completeGeneration → READY
@@ -110,13 +122,22 @@ sequenceDiagram
 
 ### 제공자 선택
 
-| 상황 | 생성 | judge |
-| --- | --- | --- |
-| 정상 | Gemini | OpenAI |
-| Gemini 생성 실패, fallback 켜짐 | OpenAI | Gemini |
-| fallback 꺼짐 | Gemini | OpenAI |
+judge 제공자 순서는 생성기(`LlmQuestionRecommendationGenerator.judgeProviders`)가 이번 시도의 상태로 정한다.
 
-judge는 생성과 반대 제공자를 쓰므로, **SQS를 켜면 fallback 설정과 관계없이 OpenAI 키가 필요하다**(기동 시 검증).
+1. 교차 제공자(생성과 반대) → 생성한 제공자(자체 judge) 순서
+2. 이번 시도의 생성 단계에서 **호출 오류(`LlmException`)가 난 제공자는 장애로 보고 제외**한다. 응답 형식만 틀린 제공자는 살아 있으므로 제외하지 않는다.
+3. 시도당 LLM 호출 3번에서 생성에 쓴 호출 수를 뺀 만큼만 시도한다.
+
+| 상황 | 생성 | judge 시도 순서 | 호출 수 |
+| --- | --- | --- | --- |
+| 정상 | Gemini | OpenAI | 2 |
+| OpenAI 장애 | Gemini | OpenAI 실패 → Gemini(자체) | 3 |
+| Gemini 장애 (fallback 켜짐) | Gemini 실패 → OpenAI | Gemini는 건너뜀 → OpenAI(자체) | 3 |
+| Gemini 응답 형식 오류 (fallback 켜짐) | Gemini 형식 오류 → OpenAI | Gemini(교차, 살아 있음) 1번만 | 3 |
+| fallback 꺼짐 | Gemini | OpenAI → 실패 시 Gemini(자체) | 2~3 |
+| 두 제공자 모두 장애 | 실패 | — | 저장 없이 재시도 |
+
+SQS를 켜면 fallback 설정과 관계없이 **OpenAI 키도 필요하다**(기동 시 검증). 키가 없어도 자체 judge로 동작은 하지만, 그러면 교차 채점이 한 번도 일어나지 않으므로 설정 실수로 보고 기동을 막는다.
 
 ### 시간 예산
 
@@ -124,8 +145,11 @@ judge는 생성과 반대 제공자를 쓰므로, **SQS를 켜면 fallback 설�
 
 | 경로 | 계산 | 합계 |
 | --- | --- | --- |
-| fallback 켜짐 (최악) | Gemini 생성 실패 50 + OpenAI 생성 50 + Gemini judge 50 | 150초 |
-| fallback 꺼짐 | Gemini 생성 50 + OpenAI judge 50 | 100초 |
+| Gemini 장애 | Gemini 생성 실패 50 + OpenAI 생성 50 + OpenAI 자체 judge 50 | 150초 |
+| OpenAI 장애 | Gemini 생성 50 + OpenAI judge 실패 50 + Gemini 자체 judge 50 | 150초 |
+| 정상 | Gemini 생성 50 + OpenAI judge 50 | 100초 |
+
+시도당 호출이 최대 3번이고 세 번째 호출은 어느 제공자든 될 수 있으므로, 기동 시 검증은 `Gemini + OpenAI + max(Gemini, OpenAI)`로 계산한다.
 
 작업 선점 시간(`GENERATION_LEASE_SECONDS` = 180초)과 SQS visibility timeout(기본 3분)보다 짧아야 하며, `QuestionRecommendationPropertiesConfiguration`이 기동 시 검증한다.
 
@@ -138,7 +162,8 @@ judge는 생성과 반대 제공자를 쓰므로, **SQS를 켜면 fallback 설�
 | 생성 제공자 일시 오류(429, 5xx, 네트워크) | `…GenerationException(true, retryAfter)` | 제공자 대기시간 존중 | `PENDING`으로 돌아감 |
 | 생성 응답 형식 오류(JSON, 개수, angle 2종 이하 등) | 다음 제공자로 대체, 모두 실패하면 retryable | 있음 | `PENDING` |
 | 규칙 검증 통과 후보 < 3 | retryable | 있음 | `PENDING` |
-| judge 호출 실패(영구 오류 포함) 또는 판정 형식 오류 | retryable | 있음 | `PENDING` |
+| 교차 judge 실패(호출 오류 또는 판정 형식 오류) | 남은 호출이 있으면 생성한 제공자로 자체 judge | — | 성공하면 계속 진행 |
+| 시도한 judge가 모두 실패(영구 오류 포함) | retryable, 제공자 대기시간 중 가장 긴 값 전달 | 있음 | `PENDING` |
 | 선발 결과 < 3 | retryable | 있음 | `PENDING` |
 | 정상 | — | — | `READY` |
 
@@ -279,7 +304,7 @@ LLM에 맡길 필요가 없는 검사는 코드로 거른다. 위반한 후보�
 - **이진 판정, 근거 먼저**: 스키마에서 `why`(30자 이내)를 `pass`보다 앞에 둔다(속성 순서 보장). 판정 전에 근거를 쓰게 한다.
 - **엄격 기본값**: "확신이 없으면 false"
 - **독립 판정**: 후보끼리 비교하지 않고 기준에 대해서만 판정한다.
-- **교차 제공자, temperature 0**: temperature는 Gemini judge에만 적용된다. OpenAI 추론 모델은 sampling 파라미터를 받지 않아서 `LlmRequest.temperature`를 무시한다.
+- **교차 제공자 우선, temperature 0**: 기본은 생성과 다른 제공자가 채점하고, 그 제공자가 실패할 때만 생성한 제공자가 채점한다(4장). temperature는 Gemini judge에만 적용된다. OpenAI 추론 모델은 sampling 파라미터를 받지 않아서 `LlmRequest.temperature`를 무시한다.
 - **후보 순서 섞기**: 위치 편향을 줄이기 위해 judge 입력에서 후보 순서를 섞고, `id`로 다시 매핑한다.
 - **판정 기준만 전달**: judge에는 생성 프롬프트를 주지 않는다. 원글, 후보, 체크리스트만 준다.
 
@@ -387,7 +412,7 @@ question-recommendation:
 - `candidate-count`는 1~12, `min-count`는 1 이상 `candidate-count` 이하, `min-angle-kinds`는 1~4
 - `min-count` ≤ `count` ≤ `candidate-count`
 - SQS가 켜져 있으면 Gemini 키와 OpenAI 키(교차 judge용)가 모두 필요하다.
-- 최악 LLM 시간(4장)이 작업 선점 시간과 SQS visibility timeout보다 짧아야 한다.
+- 최악 LLM 시간 `Gemini + OpenAI + max(Gemini, OpenAI)`(4장)가 작업 선점 시간과 SQS visibility timeout보다 짧아야 한다. 기본값(각 50초)이면 150초다.
 
 ## 9. 로그와 메트릭
 
@@ -399,24 +424,25 @@ question-recommendation:
 | `질문 추천 제공자 호출 실패` | WARN | provider, model, httpStatus, errorCode, retryAfterSeconds, fallback |
 | `질문 추천 응답 검증 실패` | WARN | provider, `INVALID_RECOMMENDATIONS`, fallback |
 | `질문 추천 규칙 검증 통과 후보 부족` | WARN | candidates, passed, violations(코드별 개수) |
-| `질문 추천 judge 호출 실패` | WARN | provider, model, httpStatus, errorCode, retryAfterSeconds |
-| `질문 추천 judge 응답 검증 실패` | WARN | provider, `INVALID_JUDGEMENT` |
+| `질문 추천 judge 호출 실패` | WARN | provider, selfJudge, model, httpStatus, errorCode, retryAfterSeconds |
+| `질문 추천 judge 응답 검증 실패` | WARN | provider, selfJudge, `INVALID_JUDGEMENT` |
+| `질문 추천 judge 완료` | INFO | provider, selfJudge |
 | `질문 추천 품질 검증 완료` | INFO | candidates, rulePassed, violations, hardGateFailures(항목별 개수), duplicateGroups, selected |
 | `질문 추천에 적합하지 않은 질문이라 생성을 건너뜁니다` | INFO | feedId, generation, reason |
 
 메트릭 `question.recommendation.generation.count`와 `question.recommendation.generation` 타이머의 `outcome` 태그에 `skipped`를 추가했다(`success` / `failure` / `obsolete` / `skipped`).
 
-**운영에서 볼 지표**: `violations`와 `hardGateFailures`에서 가장 많이 탈락하는 코드가 다음에 고칠 프롬프트 지점이다. 또 `skipped` 비율이 높으면 SKIP 기준이 너무 엄격하다는 신호다.
+**운영에서 볼 지표**: `violations`와 `hardGateFailures`에서 가장 많이 탈락하는 코드가 다음에 고칠 프롬프트 지점이다. `skipped` 비율이 높으면 SKIP 기준이 너무 엄격하다는 신호다. `selfJudge=true` 비율이 늘면 한쪽 제공자에 장애가 있다는 신호다.
 
 ## 10. 구현 매핑
 
 | 역할 | 클래스 / 파일 |
 | --- | --- |
-| 오케스트레이션 | `feed/recommendation/infrastructure/LlmQuestionRecommendationGenerator` |
+| 오케스트레이션 | `feed/recommendation/infrastructure/LlmQuestionRecommendationGenerator` (시도당 호출 상한 `MAX_LLM_CALLS` = 3) |
 | 프롬프트 로드·렌더링 | `infrastructure/quality/QuestionRecommendationPrompts`, `resources/prompts/question-recommendation/{generate,judge}.txt` |
 | 공통 타입 | `RecommendationAngle`, `RecommendationCandidate`, `RecommendationCheck`, `CandidateVerdict`, `JudgeResult`, `TextSimilarity` |
 | 규칙 검증 | `RecommendationRuleValidator`, `RuleViolation`, `RuleValidationResult` |
-| judge | `RecommendationJudge` |
+| judge | `RecommendationJudge`(제공자 순서대로 시도), 순서 결정은 `LlmQuestionRecommendationGenerator.judgeProviders` |
 | 선발 | `RecommendationSelector` |
 | 설정 | `QuestionRecommendationQualityProperties`, `QuestionRecommendationPropertiesConfiguration` |
 | 건너뜀 | `QuestionRecommendationSkippedException`, `QuestionRecommendationWorker`, `QuestionRecommendationRepository(Impl).markGenerationSkipped` |
@@ -425,14 +451,15 @@ question-recommendation:
 
 ## 11. 테스트
 
-- 단위 테스트: 프롬프트 렌더링(4), 공통 타입(5), 규칙 검증(34), 선발(10), judge(14), 생성기(20), 설정(7 + 컨텍스트 5), LLM 클라이언트(28, temperature 포함)
+- 단위 테스트: 프롬프트 렌더링(4), 공통 타입(5), 규칙 검증(34), 선발(10), judge(18, 자체 judge 대체 포함), 생성기(22, 상황별 judge 제공자 순서 포함), 설정(8 + 컨텍스트 5), LLM 클라이언트(28, temperature 포함)
 - `LlmRecommendationFlowTest`(MockRestServiceServer 종단 시나리오)
-  - Gemini 503 → OpenAI 생성 → Gemini judge → 5개 저장, 로그에 키·원문 미노출
+  - Gemini 503 → OpenAI 생성 → 장애난 Gemini는 건너뛰고 OpenAI 자체 judge → 5개 저장, 로그에 키·원문 미노출
   - SKIP → SKIPPED 저장, `skipped` 메트릭
-  - judge 제공자 503 → 저장 없이 재시도
+  - 교차 judge(OpenAI) 503 → Gemini 자체 judge → 저장
+  - 교차 judge와 자체 judge 모두 503 → 저장 없이 재시도
   - 두 제공자 일시 실패 → 제공자 대기시간으로 재시도
   - 두 제공자 영구 실패 → FAILED
-- 전체 백엔드 테스트: 1,937개 통과(실패 0, 건너뜀 2). `llm-eval` 태그는 기본 실행에서 제외된다.
+- 전체 백엔드 테스트: 1,945개 통과(실패 0, 건너뜀 2). `llm-eval` 태그는 기본 실행에서 제외된다.
 - 마이그레이션은 로컬 PostgreSQL에서 적용을 확인했다(`v20261016130000`).
 
 ## 12. 수동 프롬프트 실험 기록 (커뮤니티 68번 글)
@@ -500,7 +527,8 @@ v1 결과의 judge 판정은 아직 실행하지 않았다. v2 결과의 품질�
 
 ## 14. 배포 전 확인 사항
 
-- [ ] 운영·개발 환경에서 SQS를 켤 경우 **OpenAI 키가 반드시 설정되어 있어야 한다**(fallback을 꺼도 judge에 필요). 없으면 기동에 실패한다.
+- [ ] 운영·개발 환경에서 SQS를 켤 경우 **OpenAI 키가 반드시 설정되어 있어야 한다**(fallback을 꺼도 교차 judge에 필요). 없으면 기동에 실패한다.
+- [ ] 운영에서 `selfJudge=true` 로그가 장애 시간대에만 나타나는지 확인한다.
 - [ ] Flyway 마이그레이션 `V20261016130000`이 적용된다(CHECK 제약 교체).
 - [ ] 평가 세트를 실제 키로 한 번 실행해 SKIP 정확도와 선발 개수 분포를 확인한다.
 
