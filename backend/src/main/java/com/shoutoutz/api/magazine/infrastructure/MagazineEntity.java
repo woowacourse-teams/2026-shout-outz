@@ -35,6 +35,9 @@ public class MagazineEntity extends BaseEntity {
     @Column(name = "featured_user_id", nullable = false)
     private long featuredUserId;
 
+    @Column(name = "featured_user_introduction", length = 1000)
+    private String featuredUserIntroduction;
+
     @Column(name = "thumbnail_media_id")
     private Long thumbnailMediaId;
 
@@ -61,6 +64,7 @@ public class MagazineEntity extends BaseEntity {
         title = magazine.getTitle();
         summary = magazine.getSummary();
         featuredUserId = magazine.getFeaturedUserId();
+        featuredUserIntroduction = magazine.getFeaturedUserIntroduction();
         thumbnailMediaId = magazine.getThumbnailMediaId();
         contentMd = magazine.getContentMd();
         status = magazine.getStatus();
@@ -74,6 +78,7 @@ public class MagazineEntity extends BaseEntity {
                 .title(title)
                 .summary(summary)
                 .featuredUserId(featuredUserId)
+                .featuredUserIntroduction(featuredUserIntroduction)
                 .thumbnailMediaId(thumbnailMediaId)
                 .contentMd(contentMd)
                 .authorId(authorId)

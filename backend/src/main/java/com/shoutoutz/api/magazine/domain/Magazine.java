@@ -14,6 +14,7 @@ public class Magazine {
     private String title;
     private String summary;
     private long featuredUserId;
+    private String featuredUserIntroduction;
     private Long thumbnailMediaId;
     private String contentMd;
     private final long authorId;
@@ -23,19 +24,27 @@ public class Magazine {
     private final Instant updatedAt;
     private Instant deletedAt;
 
-    public void edit(String title, String summary, long featuredUserId, Long thumbnailMediaId, String contentMd) {
+    public void edit(
+            String title,
+            String summary,
+            long featuredUserId,
+            String featuredUserIntroduction,
+            Long thumbnailMediaId,
+            String contentMd
+    ) {
         if (status == MagazineStatus.PUBLISHED) {
-            validatePublishable(summary, thumbnailMediaId, contentMd);
+            validatePublishable(summary, featuredUserIntroduction, thumbnailMediaId, contentMd);
         }
         this.title = title;
         this.summary = summary;
         this.featuredUserId = featuredUserId;
+        this.featuredUserIntroduction = featuredUserIntroduction;
         this.thumbnailMediaId = thumbnailMediaId;
         this.contentMd = contentMd;
     }
 
     public void publish(Instant now) {
-        validatePublishable(summary, thumbnailMediaId, contentMd);
+        validatePublishable(summary, featuredUserIntroduction, thumbnailMediaId, contentMd);
         status = MagazineStatus.PUBLISHED;
         if (publishedAt == null) {
             publishedAt = now;
@@ -60,9 +69,15 @@ public class Magazine {
         }
     }
 
-    private void validatePublishable(String summary, Long thumbnailMediaId, String contentMd) {
+    private void validatePublishable(
+            String summary,
+            String featuredUserIntroduction,
+            Long thumbnailMediaId,
+            String contentMd
+    ) {
         if (summary == null || summary.isBlank() || thumbnailMediaId == null
-                || contentMd == null || contentMd.isBlank()) {
+                || contentMd == null || contentMd.isBlank()
+                || featuredUserIntroduction == null || featuredUserIntroduction.isBlank()) {
             throw new InvalidInputException(MagazineErrorCode.MAGAZINE_PUBLISH_INCOMPLETE);
         }
     }

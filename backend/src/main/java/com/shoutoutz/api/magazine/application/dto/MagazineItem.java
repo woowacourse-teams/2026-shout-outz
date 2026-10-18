@@ -12,7 +12,7 @@ public record MagazineItem(
         Long featuredUserId,
         String handle,
         String displayName,
-        String bio,
+        String introduction,
         Long avatarImageId,
         Long authorId,
         String authorHandle,

@@ -75,6 +75,7 @@ public class MagazineService {
                 .title(request.title().strip())
                 .summary(request.summary())
                 .featuredUserId(request.featuredUserId())
+                .featuredUserIntroduction(request.featuredUserIntroduction())
                 .thumbnailMediaId(request.thumbnailMediaId())
                 .contentMd(request.contentMd())
                 .authorId(editorId)
@@ -90,8 +91,14 @@ public class MagazineService {
         validateFeaturedUser(request.featuredUserId());
         String contentMd = normalizeContent(magazine, request.contentMd());
         validateMedia(magazine, request.thumbnailMediaId(), contentMd, editorId);
-        magazine.edit(request.title().strip(), request.summary(), request.featuredUserId(),
-                request.thumbnailMediaId(), contentMd);
+        magazine.edit(
+                request.title().strip(),
+                request.summary(),
+                request.featuredUserId(),
+                request.featuredUserIntroduction(),
+                request.thumbnailMediaId(),
+                contentMd
+        );
         return adminResponse(magazineRepository.save(magazine));
     }
 
@@ -235,7 +242,7 @@ public class MagazineService {
         if (item.featuredUserId() != null) {
             avatarUrl = avatarUrls.get(item.featuredUserId());
         }
-        return new FeaturedUserResponse(item.handle(), item.displayName(), item.bio(), avatarUrl);
+        return new FeaturedUserResponse(item.handle(), item.displayName(), item.introduction(), avatarUrl);
     }
 
     private MagazineAuthorResponse author(MagazineItem item, Map<Long, String> avatarUrls) {

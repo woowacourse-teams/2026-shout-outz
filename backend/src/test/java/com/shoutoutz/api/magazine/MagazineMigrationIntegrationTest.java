@@ -53,8 +53,9 @@ class MagazineMigrationIntegrationTest {
                 """, Long.class);
         String content = "![사진](media://" + mediaId + ")";
         long interviewId = jdbc.queryForObject("""
-                INSERT INTO interviews (title, interviewee_id, author_id, content_md, comment_count, view_count)
-                VALUES ('기존 글', ?, ?, ?, 1, 1) RETURNING id
+                INSERT INTO interviews (title, interviewee_id, author_id, content_md, comment_count, view_count,
+                                        status, published_at)
+                VALUES ('기존 글', ?, ?, ?, 1, 1, 'PUBLISHED', now()) RETURNING id
                 """, Long.class, userId, userId, content);
         long commentId = jdbc.queryForObject("""
                 INSERT INTO interview_comments (interview_id, author_id, content)
@@ -83,6 +84,8 @@ class MagazineMigrationIntegrationTest {
         assertThat(jdbc.queryForMap("SELECT * FROM magazines WHERE id = ?", data.interviewId()))
                 .containsEntry("featured_user_id", data.userId())
                 .containsEntry("author_id", data.userId())
+                .containsEntry("status", "PUBLISHED")
+                .containsEntry("featured_user_introduction", null)
                 .containsEntry("content_md", data.content())
                 .containsEntry("comment_count", 1L)
                 .containsEntry("view_count", 1L);

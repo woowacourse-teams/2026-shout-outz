@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -75,6 +76,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @Transactional
 class MagazineIntegrationTest {
     private static final VisitorKey VISITOR = new VisitorKey("a".repeat(64));
+    private static final String INTRODUCTION = "우아한테크코스 출신 개발자의 경험을 소개합니다.";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -122,13 +124,15 @@ class MagazineIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.data.status").value("DRAFT"))
                 .andExpect(jsonPath("$.data.author.displayName").value("편집자"))
+                .andExpect(jsonPath("$.data.featuredUserIntroduction").value(INTRODUCTION))
                 .andDo(adminDocument("magazine-create", "매거진 초안 등록",
-                        "활성 관리자가 초안을 등록합니다. 요약, 대표 이미지, 본문은 초안에서는 생략할 수 있습니다.", true, false));
+                        "활성 관리자가 초안을 등록합니다. 요약, 인터뷰이 소개문, 대표 이미지, 본문은 초안에서 생략할 수 있습니다.", true, false));
         MagazineAdminResponse draft = create();
         mockMvc.perform(get("/api/v1/admin/magazines/{magazineId}", draft.id())
                         .with(authenticated(adminId, UserRole.ADMIN)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.contentMd").value(draft.contentMd()))
+                .andExpect(jsonPath("$.data.featuredUserIntroduction").value(INTRODUCTION))
                 .andExpect(jsonPath("$.data.author.displayName").value("편집자"))
                 .andExpect(jsonPath("$.data.previewContentMd").value(Matchers.containsString("https://cdn.example.com/")))
                 .andDo(adminDocument("magazine-admin-detail", "매거진 원본과 초안 조회",
@@ -136,6 +140,7 @@ class MagazineIntegrationTest {
         mockMvc.perform(get("/api/v1/admin/magazines").with(authenticated(adminId, UserRole.ADMIN)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].author.displayName").value("편집자"))
+                .andExpect(jsonPath("$.data[0].featuredUser.introduction").value(INTRODUCTION))
                 .andDo(listDocument("magazine-admin-list", "관리자 매거진 목록", "Magazine Admin"));
     }
 
@@ -150,11 +155,14 @@ class MagazineIntegrationTest {
         magazineService.publish(draft.id(), adminId);
         mockMvc.perform(get("/api/v1/magazines"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].featuredUser.introduction").value(INTRODUCTION))
                 .andExpect(jsonPath("$.data[0].author.displayName").value("편집자"))
                 .andDo(listDocument("magazine-list", "공개 매거진 목록", "Magazine"));
         mockMvc.perform(get("/api/v1/magazines/{magazineId}", draft.id()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.featuredUser.displayName").value("소개 회원"))
                 .andExpect(jsonPath("$.data.author.displayName").value("편집자"))
+                .andExpect(jsonPath("$.data.featuredUser.introduction").value(INTRODUCTION))
+                .andExpect(jsonPath("$.data.featuredUser.bio").doesNotExist())
                 .andExpect(jsonPath("$.data.contentMd").value(Matchers.containsString("https://cdn.example.com/")))
                 .andDo(detailDocument());
     }
@@ -185,13 +193,13 @@ class MagazineIntegrationTest {
                         .with(authenticated(adminId, UserRole.ADMIN)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("PUBLISHED"))
                 .andDo(adminDocument("magazine-publish", "매거진 발행",
-                        "요약, 대표 이미지, 본문이 있는 매거진을 공개합니다. 재발행해도 최초 발행 시각은 유지됩니다.", false, true));
+                        "요약, 인터뷰이 소개문, 대표 이미지, 본문이 있는 매거진을 공개합니다. 재발행해도 최초 발행 시각은 유지됩니다.", false, true));
         var publishedAt = magazineService.find(draft.id(), null, VISITOR).publishedAt();
         mockMvc.perform(put("/api/v1/admin/magazines/{magazineId}", draft.id())
                         .with(authenticated(adminId, UserRole.ADMIN)).contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody("수정된 매거진", "수정 본문")))
                 .andExpect(status().isOk()).andDo(adminDocument("magazine-update", "매거진 전체 수정",
-                        "편집 가능한 필드를 전체 교체하며 생략한 선택 필드는 null로 처리합니다. 발행된 글의 수정은 즉시 공개되며 요약, 대표 이미지, 본문을 비울 수 없습니다.", true, true));
+                        "편집 가능한 필드를 전체 교체하며 생략한 선택 필드는 null로 처리합니다. 발행된 글의 수정은 즉시 공개되며 요약, 인터뷰이 소개문, 대표 이미지, 본문을 비울 수 없습니다.", true, true));
         assertThat(magazineService.find(draft.id(), null, VISITOR).title()).isEqualTo("수정된 매거진");
         assertThat(magazineService.find(draft.id(), null, VISITOR).publishedAt()).isEqualTo(publishedAt);
         mockMvc.perform(post("/api/v1/admin/magazines/{magazineId}/unpublish", draft.id())
@@ -229,12 +237,119 @@ class MagazineIntegrationTest {
 
     @Test
     void 필수_정보가_없는_초안은_저장되지만_발행되지_않는다() throws Exception {
-        MagazineAdminResponse draft = magazineService.create(adminId, new MagazineSaveRequest("제목", null, featuredUserId, null, null));
+        MagazineAdminResponse draft = magazineService.create(adminId,
+                new MagazineSaveRequest("제목", null, featuredUserId, null, null, null));
         mockMvc.perform(post("/api/v1/admin/magazines/{magazineId}/publish", draft.id())
                         .with(authenticated(adminId, UserRole.ADMIN)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("MAGAZINE_PUBLISH_INCOMPLETE"))
                 .andDo(errorDocument("magazine-publish-incomplete", "Magazine Admin", true));
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" \t\n"})
+    void 소개문이_없는_초안은_저장되지만_발행되지_않는다(String introduction) throws Exception {
+        var request = new MagazineSaveRequest(
+                "제목", "요약", featuredUserId, introduction, thumbnailId, "본문");
+        MagazineAdminResponse draft = magazineService.create(adminId, request);
+        assertThat(draft.featuredUserIntroduction()).isEqualTo(introduction);
+
+        mockMvc.perform(post("/api/v1/admin/magazines/{magazineId}/publish", draft.id())
+                        .with(authenticated(adminId, UserRole.ADMIN)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MAGAZINE_PUBLISH_INCOMPLETE"));
+        assertThat(magazineService.findAdmin(draft.id(), adminId).status().name()).isEqualTo("DRAFT");
+    }
+
+    @Test
+    void 소개문은_회원_프로필과_독립적으로_매거진마다_저장한다() {
+        long firstId = magazineService.publish(create().id(), adminId).id();
+        var secondRequest = new MagazineSaveRequest(
+                "두 번째 매거진", "요약", featuredUserId, "이번 글은 코치 경험을 소개합니다.", thumbnailId, "본문");
+        long secondId = magazineService.publish(magazineService.create(adminId, secondRequest).id(), adminId).id();
+        jdbcTemplate.update("""
+                UPDATE user_profiles SET display_name = '변경된 이름', bio = '변경된 회원 자기소개' WHERE user_id = ?
+                """, featuredUserId);
+        entityManager.clear();
+
+        var first = magazineService.find(firstId, null, VISITOR).featuredUser();
+        assertThat(first.displayName()).isEqualTo("변경된 이름");
+        assertThat(first.introduction()).isEqualTo(INTRODUCTION);
+        assertThat(magazineService.find(secondId, null, VISITOR).featuredUser().introduction())
+                .isEqualTo("이번 글은 코치 경험을 소개합니다.");
+        assertThat(magazineService.findAdmin(firstId, adminId).featuredUserIntroduction()).isEqualTo(INTRODUCTION);
+    }
+
+    @Test
+    void 소개문을_생략한_PUT은_초안의_소개문을_비운다() throws Exception {
+        long id = create().id();
+        String body = requestBody("수정", "본문").replace(
+                ",\"featuredUserIntroduction\":\"" + INTRODUCTION + "\"", "");
+
+        mockMvc.perform(put("/api/v1/admin/magazines/{magazineId}", id)
+                        .with(authenticated(adminId, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.featuredUserIntroduction").value(Matchers.nullValue()));
+        assertThat(magazineService.findAdmin(id, adminId).featuredUserIntroduction()).isNull();
+    }
+
+    @Test
+    void 발행된_매거진의_소개문을_비우는_수정은_거부한다() throws Exception {
+        long id = magazineService.publish(create().id(), adminId).id();
+
+        mockMvc.perform(put("/api/v1/admin/magazines/{magazineId}", id)
+                        .with(authenticated(adminId, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody("수정", "본문").replace(INTRODUCTION, "")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MAGAZINE_PUBLISH_INCOMPLETE"));
+        assertThat(magazineService.find(id, null, VISITOR).featuredUser().introduction()).isEqualTo(INTRODUCTION);
+    }
+
+    @Test
+    void 작성한_소개문을_수정하면_공개_조회에도_즉시_반영한다() throws Exception {
+        long id = magazineService.publish(create().id(), adminId).id();
+
+        mockMvc.perform(put("/api/v1/admin/magazines/{magazineId}", id)
+                        .with(authenticated(adminId, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody("수정", "본문").replace(INTRODUCTION, "새로운 인터뷰이 소개문")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.featuredUserIntroduction").value("새로운 인터뷰이 소개문"));
+        assertThat(magazineService.find(id, null, VISITOR).featuredUser().introduction()).isEqualTo("새로운 인터뷰이 소개문");
+        assertThat(magazineService.findAll(null, 20).items().getFirst().featuredUser().introduction())
+                .isEqualTo("새로운 인터뷰이 소개문");
+    }
+
+    @Test
+    void 소개문은_이모지를_포함해_1000자까지_입력할_수_있다() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/magazines").with(authenticated(adminId, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody("제목", "본문").replace(INTRODUCTION, "😀".repeat(1000))))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void 소개문이_1000자를_넘으면_400을_반환한다() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/magazines").with(authenticated(adminId, UserRole.ADMIN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody("제목", "본문").replace(INTRODUCTION, "😀".repeat(1001))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.details[0].field").value("featuredUserIntroduction"));
+    }
+
+    @Test
+    void 탈퇴한_소개_회원의_소개문은_공개_응답에서_숨긴다() {
+        long id = magazineService.publish(create().id(), adminId).id();
+        jdbcTemplate.update("UPDATE users SET status = 'DELETED', deleted_at = now() WHERE id = ?", featuredUserId);
+        entityManager.clear();
+
+        assertThat(magazineService.find(id, null, VISITOR).featuredUser().introduction()).isNull();
+        assertThat(magazineService.findAll(null, 20).items().getFirst().featuredUser().introduction()).isNull();
+        assertThat(magazineService.findAdmin(id, adminId).featuredUserIntroduction()).isEqualTo(INTRODUCTION);
     }
 
     @ParameterizedTest
@@ -626,11 +741,12 @@ class MagazineIntegrationTest {
     }
 
     private MagazineSaveRequest saveRequest(String title, String content) {
-        return new MagazineSaveRequest(title, "매거진 요약", featuredUserId, thumbnailId, content);
+        return new MagazineSaveRequest(title, "매거진 요약", featuredUserId, INTRODUCTION, thumbnailId, content);
     }
 
     private String requestBody(String title, String content) {
         return "{\"title\":\"" + title + "\",\"summary\":\"매거진 요약\",\"featuredUserId\":" + featuredUserId
+                + ",\"featuredUserIntroduction\":\"" + INTRODUCTION + "\""
                 + ",\"thumbnailMediaId\":" + thumbnailId + ",\"contentMd\":\"" + content + "\"}";
     }
 
@@ -701,6 +817,8 @@ class MagazineIntegrationTest {
                     fieldWithPath("title").type(STRING).description("제목, 최대 200자"),
                     fieldWithPath("summary").type(STRING).optional().description("요약, 최대 500자"),
                     fieldWithPath("featuredUserId").type(NUMBER).description("매거진 대상 사용자 ID"),
+                    fieldWithPath("featuredUserIntroduction").type(STRING).optional()
+                            .description("매거진에 직접 작성하는 인터뷰이 소개문, 최대 1000자. 초안은 생략 가능하며 발행 및 발행된 글 수정 시 필수"),
                     fieldWithPath("thumbnailMediaId").type(NUMBER).optional().description("MAGAZINE_THUMBNAIL 용도의 READY 미디어 ID"),
                     fieldWithPath("contentMd").type(STRING).optional().description("원본 Markdown, 최대 100000자. 본문 이미지는 MAGAZINE_CONTENT 용도의 media://ID로 참조"));
         }
@@ -714,6 +832,8 @@ class MagazineIntegrationTest {
                 fieldWithPath("data.title").type(STRING).description("제목"),
                 fieldWithPath("data.summary").type(STRING).optional().description("요약"),
                 fieldWithPath("data.featuredUserId").type(NUMBER).description("매거진 대상 사용자 ID"),
+                fieldWithPath("data.featuredUserIntroduction").type(STRING).optional()
+                        .description("매거진에 저장된 인터뷰이 소개문. 기존 글과 소개문이 없는 초안은 null"),
                 fieldWithPath("data.author").type(OBJECT).description("최초 등록 편집자, 다른 관리자가 수정해도 유지"),
                 fieldWithPath("data.author.handle").type(STRING).optional().description("최초 등록 편집자의 현재 핸들, 탈퇴 시 null"),
                 fieldWithPath("data.author.displayName").type(STRING).optional().description("편집자의 현재 표시 이름, 탈퇴 시 탈퇴한 사용자"),
@@ -775,7 +895,8 @@ class MagazineIntegrationTest {
                 fieldWithPath(prefix + ".author.avatarUrl").type(STRING).optional().description("편집자 프로필 이미지 URL, 없으면 GitHub 아바타"),
                 fieldWithPath(prefix + ".featuredUser.handle").type(STRING).optional().description("사용자 핸들"),
                 fieldWithPath(prefix + ".featuredUser.displayName").type(STRING).description("표시 이름"),
-                fieldWithPath(prefix + ".featuredUser.bio").type(STRING).optional().description("현재 사용자 소개"),
+                fieldWithPath(prefix + ".featuredUser.introduction").type(STRING).optional()
+                        .description("매거진에 직접 작성한 소개문. 회원 프로필 변경과 무관하며 기존 글에 미입력했거나 탈퇴한 경우 null"),
                 fieldWithPath(prefix + ".featuredUser.avatarUrl").type(STRING).optional().description("프로필 이미지 URL"),
                 fieldWithPath(prefix + ".publishedAt").type(STRING).optional().description("최초 발행 시각"),
                 fieldWithPath(prefix + ".createdAt").type(STRING).description("생성 시각"),
