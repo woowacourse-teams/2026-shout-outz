@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -103,6 +104,60 @@ class QuestionRecommendationServiceTest {
         assertThat(status).isEqualTo(QuestionRecommendationStatus.PENDING);
         verify(repository).requestGeneration(
                 eq(10L), eq("질문 제목"), eq("질문 본문"), any(UUID.class), eq(NOW)
+        );
+    }
+
+    @Test
+    void 추천_질문을_사용하면_사용_처리하고_원글의_대체_생성을_등록한다() {
+        recommendationService = new QuestionRecommendationService(
+                repository,
+                sqsEnabledProperties(),
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+        when(repository.consume(101L, 20L, NOW))
+                .thenReturn(Optional.of(new QuestionRecommendationRepository.ConsumedRecommendation(10L, 3)));
+
+        recommendationService.markUsed(101L, 20L);
+
+        verify(repository).requestReplenish(eq(10L), eq(3), any(UUID.class), eq(NOW));
+    }
+
+    @Test
+    void 사용할_수_없는_추천이면_예외없이_무시한다() {
+        recommendationService = new QuestionRecommendationService(
+                repository,
+                sqsEnabledProperties(),
+                Clock.fixed(NOW, ZoneOffset.UTC)
+        );
+        when(repository.consume(101L, 20L, NOW)).thenReturn(Optional.empty());
+
+        recommendationService.markUsed(101L, 20L);
+
+        verify(repository, never()).requestReplenish(any(Long.class), any(Integer.class), any(), any());
+    }
+
+    @Test
+    void SQS가_비활성화되면_사용_처리만_하고_대체_생성은_등록하지_않는다() {
+        when(repository.consume(101L, 20L, NOW))
+                .thenReturn(Optional.of(new QuestionRecommendationRepository.ConsumedRecommendation(10L, 3)));
+
+        recommendationService.markUsed(101L, 20L);
+
+        verify(repository).consume(101L, 20L, NOW);
+        verify(repository, never()).requestReplenish(any(Long.class), any(Integer.class), any(), any());
+    }
+
+    private QuestionRecommendationProperties sqsEnabledProperties() {
+        return new QuestionRecommendationProperties(
+                5,
+                5,
+                5,
+                5_000,
+                true,
+                new QuestionRecommendationProperties.Sqs(
+                        true, "queue-url", "dead-letter-queue-url", "ap-northeast-2", 1_000, 1,
+                        Duration.ofMinutes(3)
+                )
         );
     }
 

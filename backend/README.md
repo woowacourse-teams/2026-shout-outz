@@ -145,6 +145,15 @@ http://localhost:8080/docs/openapi3.yaml
 - `GET /api/v1/feeds?type=QUESTION`은 실제 질문을 기본 20개 단위로 페이지네이션한다. `meta.recommendationSlots`에는 실제 질문 5개마다 하나씩 보여줄 추천 질문과 `afterFeedId`가 담긴다. 준비된 추천이 없으면 슬롯은 생략된다. 추천 슬롯은 피드 `data`, 커서, `totalCount`에 포함되지 않는다.
 - 추천 목록 슬롯은 페이지 응답 시점에 READY 상태인 추천 질문 중 무작위로 채운다. 다음 페이지를 요청해도 앞 페이지 응답은 바뀌지 않는다. 새로고침이나 첫 페이지 재조회에서는 슬롯이 달라질 수 있다.
 
+### 사용된 추천 질문 처리
+
+- 추천 질문으로 질문을 등록할 때 `POST /api/v1/feeds` 요청에 `recommendationId`를 함께 보낸다. 해당 추천은 사용됨(`consumed_feed_id`, `consumed_at`)으로 표시되고 상세와 목록 슬롯에 더 이상 노출되지 않는다.
+- 무효하거나 이미 사용된 `recommendationId`는 무시하며 질문 등록은 그대로 성공한다. 400을 반환하지 않는다.
+- 사용으로 줄어든 미사용 추천은 원글당 5개를 맞추도록 비동기로 대체 생성한다. REPLENISH Outbox를 거쳐 SQS로 전달하고 Worker가 LLM을 호출한다. 대체 생성 중에도 추천 상태는 `READY`로 유지되어 남은 추천이 계속 노출된다.
+- 질문 수정으로 추천을 재생성하면 진행 중인 대체 생성 결과는 폐기한다.
+- 대체 생성이 최종 실패하면 `last_error`만 기록하고 남은 추천과 `READY` 상태는 유지한다. 시도 횟수는 초기화되어 다음에 추천이 사용되면 다시 대체 생성을 시도한다.
+- 비용 가드로 generation당 대체 생성 총량을 `question-recommendation.max-replenish-per-generation`(기본 5)으로 제한한다. 이 값을 넘으면 더 생성하지 않는다.
+
 추천 작업을 실행할 환경에는 Gemini 키, OpenAI 키와 SQS 큐 설정이 필요하다. SQS 기본값은 비활성화이며, 활성화하면 Gemini 키를 검사한다. 자동 대체는 기본 활성화이므로 OpenAI 키도 필요하고 누락 시 기동에 실패한다. 로컬에서 작업자까지 실행하려면 다음 환경 변수를 설정한다.
 
 ```bash

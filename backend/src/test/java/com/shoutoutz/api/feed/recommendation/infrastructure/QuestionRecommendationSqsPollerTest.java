@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationRepository;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationWorker;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationWorker.ProcessingResult;
+import com.shoutoutz.api.feed.recommendation.domain.QuestionRecommendationJobKind;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -67,7 +68,7 @@ class QuestionRecommendationSqsPollerTest {
     @Test
     void 수신_요청과_제공자_호출_경과시간을_빼고_가시성_시간을_제한한다() {
         receive(message(10), 2);
-        when(worker.process(10, 1)).thenAnswer(invocation -> {
+        when(worker.process(10, 1, QuestionRecommendationJobKind.GENERATE)).thenAnswer(invocation -> {
             advanceSeconds(30);
             return ProcessingResult.retry(43_200);
         });
@@ -88,11 +89,11 @@ class QuestionRecommendationSqsPollerTest {
             advanceSeconds(2);
             return ReceiveMessageResponse.builder().messages(message(10), message(11)).build();
         });
-        when(worker.process(10, 1)).thenAnswer(invocation -> {
+        when(worker.process(10, 1, QuestionRecommendationJobKind.GENERATE)).thenAnswer(invocation -> {
             advanceSeconds(20);
             return ProcessingResult.retry(43_200);
         });
-        when(worker.process(11, 1)).thenAnswer(invocation -> {
+        when(worker.process(11, 1, QuestionRecommendationJobKind.GENERATE)).thenAnswer(invocation -> {
             advanceSeconds(30);
             return ProcessingResult.retry(43_200);
         });
@@ -108,7 +109,7 @@ class QuestionRecommendationSqsPollerTest {
     @Test
     void 남은_시간보다_짧은_일반_재시도_대기시간은_그대로_사용한다() {
         receive(message(10), 2);
-        when(worker.process(10, 1)).thenReturn(ProcessingResult.retry(120));
+        when(worker.process(10, 1, QuestionRecommendationJobKind.GENERATE)).thenReturn(ProcessingResult.retry(120));
 
         poller.pollWorkQueue();
 
@@ -120,7 +121,7 @@ class QuestionRecommendationSqsPollerTest {
     @Test
     void 가시성_연장_가능_시간이_없으면_잘못된_연장_요청을_보내지_않는다() {
         receive(message(10), 43_200);
-        when(worker.process(10, 1)).thenReturn(ProcessingResult.retry(43_200));
+        when(worker.process(10, 1, QuestionRecommendationJobKind.GENERATE)).thenReturn(ProcessingResult.retry(43_200));
 
         poller.pollWorkQueue();
 
@@ -131,7 +132,7 @@ class QuestionRecommendationSqsPollerTest {
     @Test
     void 완료된_작업은_가시성을_연장하지_않고_삭제한다() {
         receive(message(10), 0);
-        when(worker.process(10, 1)).thenReturn(ProcessingResult.done());
+        when(worker.process(10, 1, QuestionRecommendationJobKind.GENERATE)).thenReturn(ProcessingResult.done());
 
         poller.pollWorkQueue();
 
@@ -162,6 +163,34 @@ class QuestionRecommendationSqsPollerTest {
         poller.pollDeadLetterQueue();
 
         verify(sqsClient, never()).deleteMessage(any(DeleteMessageRequest.class));
+    }
+
+    @Test
+    void 대체_생성_메시지는_대체_생성_작업으로_처리한다() {
+        receive(replenishMessage(10), 0);
+        when(worker.process(10, 1, QuestionRecommendationJobKind.REPLENISH)).thenReturn(ProcessingResult.done());
+
+        poller.pollWorkQueue();
+
+        verify(worker).process(10, 1, QuestionRecommendationJobKind.REPLENISH);
+        verify(sqsClient).deleteMessage(DeleteMessageRequest.builder()
+                .queueUrl("work-queue").receiptHandle("receipt-10").build());
+    }
+
+    @Test
+    void 대체_생성_DLQ_메시지는_작업_상태를_바꾸지_않고_삭제한다() {
+        receive(replenishMessage(10), 0);
+
+        poller.pollDeadLetterQueue();
+
+        verifyNoInteractions(repository);
+        verify(sqsClient).deleteMessage(DeleteMessageRequest.builder()
+                .queueUrl("dead-letter-queue").receiptHandle("receipt-10").build());
+    }
+
+    private Message replenishMessage(long feedId) {
+        return Message.builder().body("{\"feedId\":" + feedId + ",\"generation\":1,\"kind\":\"REPLENISH\"}")
+                .receiptHandle("receipt-" + feedId).build();
     }
 
     private void receive(Message message, long elapsedSeconds) {
