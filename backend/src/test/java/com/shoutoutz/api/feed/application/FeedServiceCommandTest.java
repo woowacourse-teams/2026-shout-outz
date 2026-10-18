@@ -206,6 +206,55 @@ class FeedServiceCommandTest {
     }
 
     @Test
+    void 추천_질문으로_질문을_작성하면_사용한_추천을_처리한다() {
+        FeedSaveRequest request = new FeedSaveRequest(
+                "질문 제목",
+                "질문 본문",
+                List.of(3L),
+                List.of(),
+                false,
+                FeedType.QUESTION,
+                101L
+        );
+        givenWriter(UserType.WOOWACOURSE_CREW);
+        when(categoryRepository.findAllActiveByIds(request.categoryIds(), FeedType.QUESTION))
+                .thenReturn(List.of(generalCategory(3L)));
+        when(feedQueryRepository.findAllMediaByIds(List.of())).thenReturn(List.of());
+        when(feedRepository.save(any(Feed.class))).thenReturn(Feed.reconstitute(
+                10L, 1L, FeedType.QUESTION, request.title(), request.content(), false, NOW, NOW, null
+        ));
+        when(feedQueryRepository.findById(10L)).thenReturn(Optional.of(item(FeedType.QUESTION)));
+
+        feedService.saveFeed(1L, request);
+
+        verify(questionRecommendationService).markUsed(101L, 10L);
+    }
+
+    @Test
+    void 추천_ID_없이_질문을_작성하면_추천_사용_처리를_하지_않는다() {
+        FeedSaveRequest request = new FeedSaveRequest(
+                "질문 제목",
+                "질문 본문",
+                List.of(3L),
+                List.of(),
+                false,
+                FeedType.QUESTION
+        );
+        givenWriter(UserType.WOOWACOURSE_CREW);
+        when(categoryRepository.findAllActiveByIds(request.categoryIds(), FeedType.QUESTION))
+                .thenReturn(List.of(generalCategory(3L)));
+        when(feedQueryRepository.findAllMediaByIds(List.of())).thenReturn(List.of());
+        when(feedRepository.save(any(Feed.class))).thenReturn(Feed.reconstitute(
+                10L, 1L, FeedType.QUESTION, request.title(), request.content(), false, NOW, NOW, null
+        ));
+        when(feedQueryRepository.findById(10L)).thenReturn(Optional.of(item(FeedType.QUESTION)));
+
+        feedService.saveFeed(1L, request);
+
+        verify(questionRecommendationService, never()).markUsed(anyLong(), anyLong());
+    }
+
+    @Test
     void 질문_제목이나_본문을_수정하면_추천을_다시_생성한다() {
         Feed feed = Feed.reconstitute(
                 10L, 1L, FeedType.QUESTION, "기존 제목", "기존 본문", false, NOW, NOW, null

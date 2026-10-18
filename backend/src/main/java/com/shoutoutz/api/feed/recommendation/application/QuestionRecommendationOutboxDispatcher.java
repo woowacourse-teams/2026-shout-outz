@@ -1,5 +1,6 @@
 package com.shoutoutz.api.feed.recommendation.application;
 
+import com.shoutoutz.api.feed.recommendation.domain.QuestionRecommendationJobKind;
 import com.shoutoutz.api.feed.recommendation.infrastructure.QuestionRecommendationProperties;
 import tools.jackson.databind.ObjectMapper;
 import java.time.Clock;
@@ -51,7 +52,7 @@ public class QuestionRecommendationOutboxDispatcher {
     private void publish(QuestionRecommendationRepository.OutboxMessage message) {
         try {
             String body = objectMapper.writeValueAsString(
-                    new QuestionRecommendationMessage(message.feedId(), message.generation())
+                    new QuestionRecommendationMessage(message.feedId(), message.generation(), message.kind())
             );
             sqsClient.sendMessage(SendMessageRequest.builder()
                     .queueUrl(properties.sqs().queueUrl())
@@ -69,12 +70,21 @@ public class QuestionRecommendationOutboxDispatcher {
                     now
             );
             log.warn(
-                    "질문 추천 Outbox 전달에 실패했습니다. feedId={}, generation={}, attempts={}, reason={}",
-                    message.feedId(), message.generation(), message.attempts(), exception.getClass().getSimpleName()
+                    "질문 추천 Outbox 전달에 실패했습니다. feedId={}, generation={}, kind={}, attempts={}, reason={}",
+                    message.feedId(), message.generation(), message.kind(), message.attempts(),
+                    exception.getClass().getSimpleName()
             );
         }
     }
 
-    public record QuestionRecommendationMessage(long feedId, int generation) {
+    public record QuestionRecommendationMessage(long feedId, int generation, QuestionRecommendationJobKind kind) {
+
+        public QuestionRecommendationMessage {
+            kind = QuestionRecommendationJobKind.fromNullable(kind);
+        }
+
+        public QuestionRecommendationMessage(long feedId, int generation) {
+            this(feedId, generation, QuestionRecommendationJobKind.GENERATE);
+        }
     }
 }

@@ -4,6 +4,7 @@ import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationR
 import com.shoutoutz.api.feed.recommendation.application.dto.GeneratedQuestion;
 import com.shoutoutz.api.feed.recommendation.application.dto.QuestionRecommendationItem;
 import com.shoutoutz.api.feed.recommendation.application.dto.RelatedQuestionRecommendations;
+import com.shoutoutz.api.feed.recommendation.domain.QuestionRecommendationJobKind;
 import com.shoutoutz.api.feed.recommendation.domain.QuestionRecommendationStatus;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -39,6 +40,9 @@ public class QuestionRecommendationRepositoryImpl implements QuestionRecommendat
                             attempt_count = 0,
                             lease_until = NULL,
                             last_error = NULL,
+                            replenished_count = 0,
+                            replenish_attempt_count = 0,
+                            replenish_lease_until = NULL,
                             updated_at = EXCLUDED.updated_at
                         RETURNING generation
                         """,
@@ -93,6 +97,7 @@ public class QuestionRecommendationRepositoryImpl implements QuestionRecommendat
                         FROM question_recommendation_items
                         WHERE feed_id = ?
                           AND generation = ?
+                          AND consumed_at IS NULL
                         ORDER BY display_order
                         """,
                 recommendationItemRowMapper(),
@@ -119,6 +124,7 @@ public class QuestionRecommendationRepositoryImpl implements QuestionRecommendat
                              AND job.generation = item.generation
                             JOIN feeds feed ON feed.id = item.feed_id
                             WHERE job.status = 'READY'
+                              AND item.consumed_at IS NULL
                               AND feed.feed_type = 'QUESTION'
                               AND feed.deleted_at IS NULL
                             ORDER BY item.feed_id, random()
@@ -152,13 +158,14 @@ public class QuestionRecommendationRepositoryImpl implements QuestionRecommendat
                             FOR UPDATE SKIP LOCKED
                             LIMIT ?
                         )
-                        RETURNING outbox.id, outbox.feed_id, outbox.generation, outbox.attempt_count
+                        RETURNING outbox.id, outbox.feed_id, outbox.generation, outbox.attempt_count, outbox.kind
                         """,
                 (resultSet, rowNumber) -> new OutboxMessage(
                         resultSet.getObject("id", UUID.class),
                         resultSet.getLong("feed_id"),
                         resultSet.getInt("generation"),
-                        resultSet.getInt("attempt_count")
+                        resultSet.getInt("attempt_count"),
+                        QuestionRecommendationJobKind.valueOf(resultSet.getString("kind"))
                 ),
                 Timestamp.from(leaseUntil),
                 Timestamp.from(now),
@@ -204,7 +211,7 @@ public class QuestionRecommendationRepositoryImpl implements QuestionRecommendat
                 Timestamp.from(now),
                 message.id()
         );
-        if (exhausted) {
+        if (exhausted && message.kind() == QuestionRecommendationJobKind.GENERATE) {
             jdbcTemplate.update(
                     """
                             UPDATE question_recommendation_jobs
@@ -241,18 +248,7 @@ public class QuestionRecommendationRepositoryImpl implements QuestionRecommendat
             return new GenerationClaim(GenerationClaim.ClaimStatus.CLAIMED, claimed.getFirst());
         }
 
-        List<CurrentJob> currentJobs = jdbcTemplate.query(
-                """
-                        SELECT generation, status
-                        FROM question_recommendation_jobs
-                        WHERE feed_id = ?
-                        """,
-                (resultSet, rowNumber) -> new CurrentJob(
-                        resultSet.getInt("generation"),
-                        QuestionRecommendationStatus.valueOf(resultSet.getString("status"))
-                ),
-                feedId
-        );
+        List<CurrentJob> currentJobs = findCurrentJobs(feedId);
         if (currentJobs.isEmpty() || currentJobs.getFirst().generation() != generation) {
             return new GenerationClaim(GenerationClaim.ClaimStatus.OBSOLETE, null);
         }
@@ -332,6 +328,193 @@ public class QuestionRecommendationRepositoryImpl implements QuestionRecommendat
                 Timestamp.from(now),
                 feedId,
                 generation
+        );
+    }
+
+    @Override
+    public Optional<ConsumedRecommendation> consume(long recommendationId, long consumerFeedId, Instant now) {
+        List<ConsumedRecommendation> consumed = jdbcTemplate.query(
+                """
+                        UPDATE question_recommendation_items item
+                        SET consumed_feed_id = ?, consumed_at = ?
+                        FROM question_recommendation_jobs job
+                        WHERE item.id = ?
+                          AND item.consumed_at IS NULL
+                          AND job.feed_id = item.feed_id
+                          AND job.generation = item.generation
+                        RETURNING item.feed_id, item.generation
+                        """,
+                (resultSet, rowNumber) -> new ConsumedRecommendation(
+                        resultSet.getLong("feed_id"),
+                        resultSet.getInt("generation")
+                ),
+                consumerFeedId,
+                Timestamp.from(now),
+                recommendationId
+        );
+        return consumed.stream().findFirst();
+    }
+
+    @Override
+    public void requestReplenish(long feedId, int generation, UUID outboxId, Instant now) {
+        jdbcTemplate.update(
+                """
+                        INSERT INTO question_recommendation_outbox (
+                            id, feed_id, generation, kind, status, attempt_count,
+                            next_attempt_at, created_at, updated_at
+                        )
+                        VALUES (?, ?, ?, 'REPLENISH', 'PENDING', 0, ?, ?, ?)
+                        ON CONFLICT DO NOTHING
+                        """,
+                outboxId,
+                feedId,
+                generation,
+                Timestamp.from(now),
+                Timestamp.from(now),
+                Timestamp.from(now)
+        );
+    }
+
+    @Override
+    public ReplenishClaim claimReplenish(long feedId, int generation, Instant now, Instant leaseUntil) {
+        List<ReplenishTask> claimed = jdbcTemplate.query(
+                """
+                        UPDATE question_recommendation_jobs
+                        SET replenish_attempt_count = replenish_attempt_count + 1,
+                            replenish_lease_until = ?, updated_at = ?
+                        WHERE feed_id = ? AND generation = ? AND status = 'READY'
+                          AND (replenish_lease_until IS NULL OR replenish_lease_until <= ?)
+                        RETURNING feed_id, generation, source_title, source_content,
+                            replenished_count, replenish_attempt_count
+                        """,
+                (resultSet, rowNumber) -> new ReplenishTask(
+                        resultSet.getLong("feed_id"),
+                        resultSet.getInt("generation"),
+                        resultSet.getString("source_title"),
+                        resultSet.getString("source_content"),
+                        resultSet.getInt("replenished_count"),
+                        resultSet.getInt("replenish_attempt_count")
+                ),
+                Timestamp.from(leaseUntil),
+                Timestamp.from(now),
+                feedId,
+                generation,
+                Timestamp.from(now)
+        );
+        if (!claimed.isEmpty()) {
+            return new ReplenishClaim(GenerationClaim.ClaimStatus.CLAIMED, claimed.getFirst());
+        }
+
+        List<CurrentJob> currentJobs = findCurrentJobs(feedId);
+        if (currentJobs.isEmpty()
+                || currentJobs.getFirst().generation() != generation
+                || currentJobs.getFirst().status() != QuestionRecommendationStatus.READY) {
+            return new ReplenishClaim(GenerationClaim.ClaimStatus.OBSOLETE, null);
+        }
+        return new ReplenishClaim(GenerationClaim.ClaimStatus.BUSY, null);
+    }
+
+    @Override
+    public List<GenerationItem> findGenerationItems(long feedId, int generation) {
+        return jdbcTemplate.query(
+                """
+                        SELECT title, consumed_at IS NOT NULL AS consumed
+                        FROM question_recommendation_items
+                        WHERE feed_id = ? AND generation = ?
+                        ORDER BY display_order
+                        """,
+                (resultSet, rowNumber) -> new GenerationItem(
+                        resultSet.getString("title"),
+                        resultSet.getBoolean("consumed")
+                ),
+                feedId,
+                generation
+        );
+    }
+
+    @Override
+    @Transactional
+    public boolean appendItems(long feedId, int generation, List<GeneratedQuestion> questions, Instant now) {
+        int updated = jdbcTemplate.update(
+                """
+                        UPDATE question_recommendation_jobs
+                        SET replenished_count = replenished_count + ?,
+                            replenish_attempt_count = 0,
+                            replenish_lease_until = NULL,
+                            last_error = NULL,
+                            updated_at = ?
+                        WHERE feed_id = ? AND generation = ? AND status = 'READY'
+                          AND replenish_lease_until IS NOT NULL
+                        """,
+                questions.size(),
+                Timestamp.from(now),
+                feedId,
+                generation
+        );
+        if (updated == 0) {
+            return false;
+        }
+        Integer maxDisplayOrder = jdbcTemplate.queryForObject(
+                """
+                        SELECT COALESCE(MAX(display_order), 0)
+                        FROM question_recommendation_items
+                        WHERE feed_id = ? AND generation = ?
+                        """,
+                Integer.class,
+                feedId,
+                generation
+        );
+        for (int index = 0; index < questions.size(); index++) {
+            GeneratedQuestion question = questions.get(index);
+            jdbcTemplate.update(
+                    """
+                            INSERT INTO question_recommendation_items (
+                                feed_id, generation, display_order, title, content, created_at
+                            )
+                            VALUES (?, ?, ?, ?, ?, ?)
+                            """,
+                    feedId,
+                    generation,
+                    maxDisplayOrder + index + 1,
+                    question.title(),
+                    question.content(),
+                    Timestamp.from(now)
+            );
+        }
+        return true;
+    }
+
+    @Override
+    public void releaseReplenish(long feedId, int generation, String errorCode, Instant now) {
+        jdbcTemplate.update(
+                """
+                        UPDATE question_recommendation_jobs
+                        SET replenish_lease_until = NULL,
+                            replenish_attempt_count = CASE WHEN CAST(? AS VARCHAR) IS NULL THEN 0 ELSE replenish_attempt_count END,
+                            last_error = COALESCE(?, last_error),
+                            updated_at = ?
+                        WHERE feed_id = ? AND generation = ?
+                        """,
+                errorCode,
+                errorCode,
+                Timestamp.from(now),
+                feedId,
+                generation
+        );
+    }
+
+    private List<CurrentJob> findCurrentJobs(long feedId) {
+        return jdbcTemplate.query(
+                """
+                        SELECT generation, status
+                        FROM question_recommendation_jobs
+                        WHERE feed_id = ?
+                        """,
+                (resultSet, rowNumber) -> new CurrentJob(
+                        resultSet.getInt("generation"),
+                        QuestionRecommendationStatus.valueOf(resultSet.getString("status"))
+                ),
+                feedId
         );
     }
 

@@ -3,6 +3,7 @@ package com.shoutoutz.api.feed.recommendation.infrastructure;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationOutboxDispatcher.QuestionRecommendationMessage;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationRepository;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationWorker;
+import com.shoutoutz.api.feed.recommendation.domain.QuestionRecommendationJobKind;
 import java.time.Clock;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -115,7 +116,8 @@ public class QuestionRecommendationSqsPoller {
         try {
             QuestionRecommendationWorker.ProcessingResult result = worker.process(
                     payload.feedId(),
-                    payload.generation()
+                    payload.generation(),
+                    payload.kind()
             );
             if (result.acknowledged()) {
                 delete(properties.sqs().queueUrl(), message);
@@ -157,12 +159,22 @@ public class QuestionRecommendationSqsPoller {
             return;
         }
         try {
-            repository.markGenerationFailed(
-                    payload.feedId(),
-                    payload.generation(),
-                    "MAX_RETRIES_EXCEEDED",
-                    clock.instant()
-            );
+            if (payload.kind() == QuestionRecommendationJobKind.REPLENISH) {
+                // 대체 생성 실패는 남은 추천 노출에 영향을 주지 않도록 job 상태를 유지한다.
+                repository.releaseReplenish(
+                        payload.feedId(),
+                        payload.generation(),
+                        "MAX_RETRIES_EXCEEDED",
+                        clock.instant()
+                );
+            } else {
+                repository.markGenerationFailed(
+                        payload.feedId(),
+                        payload.generation(),
+                        "MAX_RETRIES_EXCEEDED",
+                        clock.instant()
+                );
+            }
             delete(properties.sqs().deadLetterQueueUrl(), message);
         } catch (Exception exception) {
             log.warn("질문 추천 DLQ 메시지의 상태를 저장하지 못했습니다. 재처리하도록 남깁니다. reason={}",

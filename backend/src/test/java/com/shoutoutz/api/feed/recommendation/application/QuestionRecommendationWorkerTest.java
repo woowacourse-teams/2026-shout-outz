@@ -1,14 +1,22 @@
 package com.shoutoutz.api.feed.recommendation.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationRepository.GenerationClaim;
+import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationRepository.GenerationItem;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationRepository.GenerationTask;
+import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationRepository.ReplenishClaim;
+import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationRepository.ReplenishTask;
 import com.shoutoutz.api.feed.recommendation.application.dto.GeneratedQuestion;
+import com.shoutoutz.api.feed.recommendation.domain.QuestionRecommendationJobKind;
 import com.shoutoutz.api.feed.recommendation.infrastructure.QuestionRecommendationProperties;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
@@ -57,13 +65,13 @@ class QuestionRecommendationWorkerTest {
         );
         when(repository.claimGeneration(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
                 .thenReturn(claimed(task));
-        when(generator.generate("질문 제목", "질문 본문", 5)).thenReturn(generated);
+        when(generator.generate("질문 제목", "질문 본문", 5, List.of())).thenReturn(generated);
         when(repository.completeGeneration(FEED_ID, GENERATION, generated, NOW)).thenReturn(true);
 
         QuestionRecommendationWorker.ProcessingResult result = worker.process(FEED_ID, GENERATION);
 
         assertThat(result.acknowledged()).isTrue();
-        verify(generator).generate("질문 제목", "질문 본문", 5);
+        verify(generator).generate("질문 제목", "질문 본문", 5, List.of());
         verify(repository).completeGeneration(FEED_ID, GENERATION, generated, NOW);
     }
 
@@ -72,7 +80,7 @@ class QuestionRecommendationWorkerTest {
         GenerationTask task = new GenerationTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 1);
         when(repository.claimGeneration(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
                 .thenReturn(claimed(task));
-        when(generator.generate("질문 제목", "질문 본문", 5))
+        when(generator.generate("질문 제목", "질문 본문", 5, List.of()))
                 .thenThrow(new IllegalStateException("generator unavailable"));
 
         QuestionRecommendationWorker.ProcessingResult result = worker.process(FEED_ID, GENERATION);
@@ -87,7 +95,7 @@ class QuestionRecommendationWorkerTest {
         GenerationTask task = new GenerationTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 3);
         when(repository.claimGeneration(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
                 .thenReturn(claimed(task));
-        when(generator.generate("질문 제목", "질문 본문", 5))
+        when(generator.generate("질문 제목", "질문 본문", 5, List.of()))
                 .thenThrow(new IllegalStateException("generator unavailable"));
 
         QuestionRecommendationWorker.ProcessingResult result = worker.process(FEED_ID, GENERATION);
@@ -103,7 +111,7 @@ class QuestionRecommendationWorkerTest {
         GenerationTask task = new GenerationTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 1);
         when(repository.claimGeneration(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
                 .thenReturn(claimed(task));
-        when(generator.generate("질문 제목", "질문 본문", 5))
+        when(generator.generate("질문 제목", "질문 본문", 5, List.of()))
                 .thenThrow(new QuestionRecommendationGenerationException(true, 120));
 
         QuestionRecommendationWorker.ProcessingResult result = worker.process(FEED_ID, GENERATION);
@@ -118,7 +126,7 @@ class QuestionRecommendationWorkerTest {
         GenerationTask task = new GenerationTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 1);
         when(repository.claimGeneration(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
                 .thenReturn(claimed(task));
-        when(generator.generate("질문 제목", "질문 본문", 5))
+        when(generator.generate("질문 제목", "질문 본문", 5, List.of()))
                 .thenThrow(new QuestionRecommendationGenerationException(false, 0));
 
         QuestionRecommendationWorker.ProcessingResult result = worker.process(FEED_ID, GENERATION);
@@ -149,7 +157,7 @@ class QuestionRecommendationWorkerTest {
         List<GeneratedQuestion> generated = List.of(new GeneratedQuestion("추천 제목", "추천 본문"));
         when(repository.claimGeneration(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
                 .thenReturn(claimed(task));
-        when(generator.generate("질문 제목", "질문 본문", 5)).thenReturn(generated);
+        when(generator.generate("질문 제목", "질문 본문", 5, List.of())).thenReturn(generated);
         when(repository.completeGeneration(FEED_ID, GENERATION, generated, NOW)).thenReturn(false);
 
         QuestionRecommendationWorker.ProcessingResult result = worker.process(FEED_ID, GENERATION);
@@ -163,7 +171,7 @@ class QuestionRecommendationWorkerTest {
         GenerationTask task = new GenerationTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 1);
         when(repository.claimGeneration(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
                 .thenReturn(claimed(task));
-        when(generator.generate("질문 제목", "질문 본문", 5)).thenAnswer(invocation -> {
+        when(generator.generate("질문 제목", "질문 본문", 5, List.of())).thenAnswer(invocation -> {
             assertThat(MDC.get("traceId")).isEqualTo("recommendation-10-2-1");
             throw new QuestionRecommendationGenerationException(false, 0);
         });
@@ -187,7 +195,7 @@ class QuestionRecommendationWorkerTest {
         GenerationTask task = new GenerationTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 1);
         when(repository.claimGeneration(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
                 .thenReturn(claimed(task));
-        when(generator.generate("질문 제목", "질문 본문", 5)).thenAnswer(invocation -> {
+        when(generator.generate("질문 제목", "질문 본문", 5, List.of())).thenAnswer(invocation -> {
             assertThat(MDC.get("traceId")).isEqualTo("recommendation-10-2-1");
             throw new QuestionRecommendationGenerationException(true, 0);
         });
@@ -210,6 +218,101 @@ class QuestionRecommendationWorkerTest {
         assertThat(busy.retryDelaySeconds()).isEqualTo(180L);
         assertThat(obsolete.acknowledged()).isTrue();
         verifyNoInteractions(generator);
+    }
+
+    @Test
+    void 대체_생성은_미사용_추천의_부족분만큼_기존_추천과_겹치지_않게_생성해_추가한다() {
+        ReplenishTask task = new ReplenishTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 0, 1);
+        List<GenerationItem> items = List.of(
+                new GenerationItem("추천 1", true),
+                new GenerationItem("추천 2", false),
+                new GenerationItem("추천 3", false),
+                new GenerationItem("추천 4", false),
+                new GenerationItem("추천 5", false)
+        );
+        List<GeneratedQuestion> generated = List.of(new GeneratedQuestion("새 추천", "새 추천 본문"));
+        when(repository.claimReplenish(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
+                .thenReturn(replenishClaimed(task));
+        when(repository.findGenerationItems(FEED_ID, GENERATION)).thenReturn(items);
+        when(generator.generate("질문 제목", "질문 본문", 1,
+                List.of("추천 1", "추천 2", "추천 3", "추천 4", "추천 5"))).thenReturn(generated);
+        when(repository.appendItems(FEED_ID, GENERATION, generated, NOW)).thenReturn(true);
+
+        QuestionRecommendationWorker.ProcessingResult result =
+                worker.process(FEED_ID, GENERATION, QuestionRecommendationJobKind.REPLENISH);
+
+        assertThat(result.acknowledged()).isTrue();
+        verify(repository).appendItems(FEED_ID, GENERATION, generated, NOW);
+        verify(repository, never()).completeGeneration(any(Long.class), anyInt(), anyList(), any());
+    }
+
+    @Test
+    void 미사용_추천이_충분하면_대체_생성없이_선점을_해제한다() {
+        ReplenishTask task = new ReplenishTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 0, 1);
+        List<GenerationItem> items = java.util.stream.IntStream.rangeClosed(1, 5)
+                .mapToObj(index -> new GenerationItem("추천 " + index, false))
+                .toList();
+        when(repository.claimReplenish(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
+                .thenReturn(replenishClaimed(task));
+        when(repository.findGenerationItems(FEED_ID, GENERATION)).thenReturn(items);
+
+        QuestionRecommendationWorker.ProcessingResult result =
+                worker.process(FEED_ID, GENERATION, QuestionRecommendationJobKind.REPLENISH);
+
+        assertThat(result.acknowledged()).isTrue();
+        verifyNoInteractions(generator);
+        verify(repository).releaseReplenish(FEED_ID, GENERATION, null, NOW);
+    }
+
+    @Test
+    void 대체_생성_한도를_모두_사용하면_더_생성하지_않는다() {
+        ReplenishTask task = new ReplenishTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 5, 1);
+        when(repository.claimReplenish(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
+                .thenReturn(replenishClaimed(task));
+        when(repository.findGenerationItems(FEED_ID, GENERATION))
+                .thenReturn(List.of(new GenerationItem("추천 1", true)));
+
+        QuestionRecommendationWorker.ProcessingResult result =
+                worker.process(FEED_ID, GENERATION, QuestionRecommendationJobKind.REPLENISH);
+
+        assertThat(result.acknowledged()).isTrue();
+        verifyNoInteractions(generator);
+    }
+
+    @Test
+    void 질문이_수정되어_오래된_대체_생성은_AI를_호출하지_않고_확인한다() {
+        when(repository.claimReplenish(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
+                .thenReturn(new ReplenishClaim(GenerationClaim.ClaimStatus.OBSOLETE, null));
+
+        QuestionRecommendationWorker.ProcessingResult result =
+                worker.process(FEED_ID, GENERATION, QuestionRecommendationJobKind.REPLENISH);
+
+        assertThat(result.acknowledged()).isTrue();
+        verifyNoInteractions(generator);
+    }
+
+    @Test
+    void 대체_생성에_실패해도_작업을_실패_상태로_바꾸지_않고_재시도한다() {
+        ReplenishTask task = new ReplenishTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 0, 1);
+        when(repository.claimReplenish(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
+                .thenReturn(replenishClaimed(task));
+        when(repository.findGenerationItems(FEED_ID, GENERATION))
+                .thenReturn(List.of(new GenerationItem("추천 1", true)));
+        when(generator.generate(anyString(), anyString(), anyInt(), anyList()))
+                .thenThrow(new IllegalStateException("generator unavailable"));
+
+        QuestionRecommendationWorker.ProcessingResult result =
+                worker.process(FEED_ID, GENERATION, QuestionRecommendationJobKind.REPLENISH);
+
+        assertThat(result.acknowledged()).isFalse();
+        assertThat(result.retryDelaySeconds()).isEqualTo(5L);
+        verify(repository).releaseReplenish(FEED_ID, GENERATION, "REPLENISH_FAILED", NOW);
+        verify(repository, never()).markGenerationFailed(any(Long.class), anyInt(), anyString(), any());
+        verify(repository, never()).retryGeneration(any(Long.class), anyInt(), anyString(), any());
+    }
+
+    private ReplenishClaim replenishClaimed(ReplenishTask task) {
+        return new ReplenishClaim(GenerationClaim.ClaimStatus.CLAIMED, task);
     }
 
     private GenerationClaim claimed(GenerationTask task) {

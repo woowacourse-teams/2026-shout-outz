@@ -33,6 +33,7 @@ question-recommendation:
   outbox-poll-interval-millis: ${QUESTION_RECOMMENDATION_OUTBOX_POLL_INTERVAL_MILLIS:5000}
   outbox-initial-delay-millis: ${QUESTION_RECOMMENDATION_OUTBOX_INITIAL_DELAY_MILLIS:1000}
   fallback-enabled: ${QUESTION_RECOMMENDATION_FALLBACK_ENABLED:true}
+  max-replenish-per-generation: ${QUESTION_RECOMMENDATION_MAX_REPLENISH_PER_GENERATION:5}
   sqs:
     enabled: ${QUESTION_RECOMMENDATION_SQS_ENABLED:false}
     queue-url: ${QUESTION_RECOMMENDATION_QUEUE_URL:}
