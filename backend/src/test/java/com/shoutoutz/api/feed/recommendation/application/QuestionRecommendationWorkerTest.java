@@ -311,6 +311,56 @@ class QuestionRecommendationWorkerTest {
         verify(repository, never()).retryGeneration(any(Long.class), anyInt(), anyString(), any());
     }
 
+    @Test
+    void 대체_생성이_마지막_시도까지_실패하면_요청을_종료하고_다음_사용을_위해_시도_횟수를_초기화한다() {
+        ReplenishTask task = new ReplenishTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 0, 3);
+        when(repository.claimReplenish(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
+                .thenReturn(replenishClaimed(task));
+        when(repository.findGenerationItems(FEED_ID, GENERATION))
+                .thenReturn(List.of(new GenerationItem("추천 1", true)));
+        when(generator.generate(anyString(), anyString(), anyInt(), anyList()))
+                .thenThrow(new IllegalStateException("generator unavailable"));
+
+        QuestionRecommendationWorker.ProcessingResult result =
+                worker.process(FEED_ID, GENERATION, QuestionRecommendationJobKind.REPLENISH);
+
+        assertThat(result.acknowledged()).isTrue();
+        verify(repository).failReplenish(FEED_ID, GENERATION, "REPLENISH_FAILED", NOW);
+        verify(repository, never()).releaseReplenish(any(Long.class), anyInt(), anyString(), any());
+        verify(repository, never()).markGenerationFailed(any(Long.class), anyInt(), anyString(), any());
+    }
+
+    @Test
+    void 대체_생성이_재시도_불가능한_오류로_실패하면_바로_요청을_종료한다() {
+        ReplenishTask task = new ReplenishTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 0, 1);
+        when(repository.claimReplenish(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
+                .thenReturn(replenishClaimed(task));
+        when(repository.findGenerationItems(FEED_ID, GENERATION))
+                .thenReturn(List.of(new GenerationItem("추천 1", true)));
+        when(generator.generate(anyString(), anyString(), anyInt(), anyList()))
+                .thenThrow(new QuestionRecommendationGenerationException(false, 0));
+
+        QuestionRecommendationWorker.ProcessingResult result =
+                worker.process(FEED_ID, GENERATION, QuestionRecommendationJobKind.REPLENISH);
+
+        assertThat(result.acknowledged()).isTrue();
+        verify(repository).failReplenish(FEED_ID, GENERATION, "REPLENISH_FAILED", NOW);
+    }
+
+    @Test
+    void 대체_생성_시도_횟수를_이미_초과했으면_AI를_호출하지_않고_요청을_종료한다() {
+        ReplenishTask task = new ReplenishTask(FEED_ID, GENERATION, "질문 제목", "질문 본문", 0, 4);
+        when(repository.claimReplenish(FEED_ID, GENERATION, NOW, NOW.plusSeconds(180)))
+                .thenReturn(replenishClaimed(task));
+
+        QuestionRecommendationWorker.ProcessingResult result =
+                worker.process(FEED_ID, GENERATION, QuestionRecommendationJobKind.REPLENISH);
+
+        assertThat(result.acknowledged()).isTrue();
+        verifyNoInteractions(generator);
+        verify(repository).failReplenish(FEED_ID, GENERATION, "MAX_RETRIES_EXCEEDED", NOW);
+    }
+
     private ReplenishClaim replenishClaimed(ReplenishTask task) {
         return new ReplenishClaim(GenerationClaim.ClaimStatus.CLAIMED, task);
     }

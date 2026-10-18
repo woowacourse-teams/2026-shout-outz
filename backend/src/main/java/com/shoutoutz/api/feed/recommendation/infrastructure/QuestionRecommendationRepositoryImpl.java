@@ -503,6 +503,24 @@ public class QuestionRecommendationRepositoryImpl implements QuestionRecommendat
         );
     }
 
+    @Override
+    public void failReplenish(long feedId, int generation, String errorCode, Instant now) {
+        jdbcTemplate.update(
+                """
+                        UPDATE question_recommendation_jobs
+                        SET replenish_lease_until = NULL,
+                            replenish_attempt_count = 0,
+                            last_error = ?,
+                            updated_at = ?
+                        WHERE feed_id = ? AND generation = ?
+                        """,
+                errorCode,
+                Timestamp.from(now),
+                feedId,
+                generation
+        );
+    }
+
     private List<CurrentJob> findCurrentJobs(long feedId) {
         return jdbcTemplate.query(
                 """

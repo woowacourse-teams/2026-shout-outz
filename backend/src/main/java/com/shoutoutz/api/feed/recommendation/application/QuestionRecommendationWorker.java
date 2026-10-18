@@ -152,10 +152,11 @@ public class QuestionRecommendationWorker {
         ReplenishTask task = claim.task();
         if (task.attempts() > properties.maxGenerationAttempts()) {
             log.warn(
-                    "질문 추천 대체 생성 최대 시도 횟수를 초과하여 DLQ 이동을 기다립니다. feedId={}, generation={}, attempts={}",
+                    "질문 추천 대체 생성 최대 시도 횟수를 초과하여 이번 요청을 종료합니다. feedId={}, generation={}, attempts={}",
                     task.feedId(), task.generation(), task.attempts()
             );
-            return ProcessingResult.retry(GENERATION_LEASE_SECONDS);
+            repository.failReplenish(task.feedId(), task.generation(), "MAX_RETRIES_EXCEEDED", clock.instant());
+            return ProcessingResult.done();
         }
         List<GenerationItem> items = repository.findGenerationItems(task.feedId(), task.generation());
         int deficit = replenishDeficit(task, items);
@@ -200,14 +201,13 @@ public class QuestionRecommendationWorker {
                     task.feedId(), task.generation(), task.attempts(), exception.getClass().getSimpleName(), retryable
             );
             // 대체 생성 실패는 남은 추천 노출에 영향을 주지 않도록 job 상태를 READY로 유지한다.
-            repository.releaseReplenish(task.feedId(), task.generation(), "REPLENISH_FAILED", clock.instant());
-            if (!retryable) {
-                return ProcessingResult.done();
-            }
-            if (task.attempts() < properties.maxGenerationAttempts()) {
+            if (retryable && task.attempts() < properties.maxGenerationAttempts()) {
+                repository.releaseReplenish(task.feedId(), task.generation(), "REPLENISH_FAILED", clock.instant());
                 return ProcessingResult.retry(retryPolicy.delaySeconds(task.attempts(), retryAfterSeconds));
             }
-            return ProcessingResult.retry(GENERATION_LEASE_SECONDS);
+            // 이번 요청은 끝내 실패로 종료하고, 다음 추천 사용 시 다시 시도할 수 있도록 시도 횟수를 초기화한다.
+            repository.failReplenish(task.feedId(), task.generation(), "REPLENISH_FAILED", clock.instant());
+            return ProcessingResult.done();
         } finally {
             try {
                 recordMetrics(sample, QuestionRecommendationJobKind.REPLENISH, outcome);

@@ -178,13 +178,12 @@ class QuestionRecommendationSqsPollerTest {
     }
 
     @Test
-    void 대체_생성_DLQ_메시지는_작업을_실패로_바꾸지_않고_선점만_해제한다() {
+    void 대체_생성_DLQ_메시지는_작업_상태를_바꾸지_않고_삭제한다() {
         receive(replenishMessage(10), 0);
 
         poller.pollDeadLetterQueue();
 
-        verify(repository).releaseReplenish(10, 1, "MAX_RETRIES_EXCEEDED", NOW);
-        verify(repository, never()).markGenerationFailed(10, 1, "MAX_RETRIES_EXCEEDED", NOW);
+        verifyNoInteractions(repository);
         verify(sqsClient).deleteMessage(DeleteMessageRequest.builder()
                 .queueUrl("dead-letter-queue").receiptHandle("receipt-10").build());
     }

@@ -160,13 +160,10 @@ public class QuestionRecommendationSqsPoller {
         }
         try {
             if (payload.kind() == QuestionRecommendationJobKind.REPLENISH) {
-                // 대체 생성 실패는 남은 추천 노출에 영향을 주지 않도록 job 상태를 유지한다.
-                repository.releaseReplenish(
-                        payload.feedId(),
-                        payload.generation(),
-                        "MAX_RETRIES_EXCEEDED",
-                        clock.instant()
-                );
+                // 대체 생성의 최종 실패는 Worker가 직접 정리한다.
+                // 다른 Worker가 처리 중일 수 있으므로 DLQ에서는 상태를 바꾸지 않는다.
+                log.warn("질문 추천 대체 생성 메시지가 DLQ로 이동했습니다. feedId={}, generation={}",
+                        payload.feedId(), payload.generation());
             } else {
                 repository.markGenerationFailed(
                         payload.feedId(),

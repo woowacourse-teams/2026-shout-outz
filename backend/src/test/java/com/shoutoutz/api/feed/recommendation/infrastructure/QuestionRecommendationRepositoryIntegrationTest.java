@@ -142,6 +142,27 @@ class QuestionRecommendationRepositoryIntegrationTest {
                 .isEqualTo(GenerationClaim.ClaimStatus.CLAIMED);
     }
 
+    @Test
+    void 대체_생성이_최종_실패하면_시도_횟수를_초기화해_다음_요청에서_다시_시도할_수_있다() {
+        long sourceFeedId = saveQuestion(insertUser());
+        int generation = readyRecommendations(sourceFeedId, 5);
+        for (int attempt = 0; attempt < 3; attempt++) {
+            repository.claimReplenish(sourceFeedId, generation, NOW, NOW.plusSeconds(180));
+            repository.releaseReplenish(sourceFeedId, generation, "REPLENISH_FAILED", NOW);
+        }
+
+        repository.failReplenish(sourceFeedId, generation, "REPLENISH_FAILED", NOW);
+
+        ReplenishClaim next = repository.claimReplenish(sourceFeedId, generation, NOW, NOW.plusSeconds(180));
+        assertThat(next.status()).isEqualTo(GenerationClaim.ClaimStatus.CLAIMED);
+        assertThat(next.task().attempts()).isOne();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT last_error FROM question_recommendation_jobs WHERE feed_id = ?",
+                String.class,
+                sourceFeedId
+        )).isEqualTo("REPLENISH_FAILED");
+    }
+
     private int readyRecommendations(long feedId, int count) {
         int generation = repository.requestGeneration(feedId, "질문 제목", "질문 본문", UUID.randomUUID(), NOW);
         repository.claimGeneration(feedId, generation, NOW, NOW.plusSeconds(180));

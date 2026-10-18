@@ -151,7 +151,7 @@ http://localhost:8080/docs/openapi3.yaml
 - 무효하거나 이미 사용된 `recommendationId`는 무시하며 질문 등록은 그대로 성공한다. 400을 반환하지 않는다.
 - 사용으로 줄어든 미사용 추천은 원글당 5개를 맞추도록 비동기로 대체 생성한다. REPLENISH Outbox를 거쳐 SQS로 전달하고 Worker가 LLM을 호출한다. 대체 생성 중에도 추천 상태는 `READY`로 유지되어 남은 추천이 계속 노출된다.
 - 질문 수정으로 추천을 재생성하면 진행 중인 대체 생성 결과는 폐기한다.
-- 대체 생성이 최종 실패하면 `last_error`만 기록하고 남은 추천과 `READY` 상태는 유지한다.
+- 대체 생성이 최종 실패하면 `last_error`만 기록하고 남은 추천과 `READY` 상태는 유지한다. 시도 횟수는 초기화되어 다음에 추천이 사용되면 다시 대체 생성을 시도한다.
 - 비용 가드로 generation당 대체 생성 총량을 `question-recommendation.max-replenish-per-generation`(기본 5)으로 제한한다. 이 값을 넘으면 더 생성하지 않는다.
 
 추천 작업을 실행할 환경에는 Gemini 키, OpenAI 키와 SQS 큐 설정이 필요하다. SQS 기본값은 비활성화이며, 활성화하면 Gemini 키를 검사한다. 자동 대체는 기본 활성화이므로 OpenAI 키도 필요하고 누락 시 기동에 실패한다. 로컬에서 작업자까지 실행하려면 다음 환경 변수를 설정한다.

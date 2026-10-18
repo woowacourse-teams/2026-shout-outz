@@ -54,6 +54,8 @@ public interface QuestionRecommendationRepository {
 
     void releaseReplenish(long feedId, int generation, String errorCode, Instant now);
 
+    void failReplenish(long feedId, int generation, String errorCode, Instant now);
+
     record OutboxMessage(
             UUID id,
             long feedId,
