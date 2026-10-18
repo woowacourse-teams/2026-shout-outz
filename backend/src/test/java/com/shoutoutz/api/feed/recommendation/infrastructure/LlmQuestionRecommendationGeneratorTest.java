@@ -101,6 +101,67 @@ class LlmQuestionRecommendationGeneratorTest {
     }
 
     @Test
+    void 제외할_제목을_프롬프트에_포함한다() {
+        when(gemini.generate(any())).thenReturn(VALID);
+
+        generator.generate("원 제목", "원 본문", 1, List.of("기존 추천", "사용된 추천"));
+
+        ArgumentCaptor<LlmRequest> request = ArgumentCaptor.forClass(LlmRequest.class);
+        verify(gemini).generate(request.capture());
+        assertThat(request.getValue().prompt())
+                .contains("의미가 겹치지 않는 새 질문", "[\"기존 추천\",\"사용된 추천\"]");
+    }
+
+    @Test
+    void 제외할_제목이_없으면_제외_지시를_넣지_않는다() {
+        when(gemini.generate(any())).thenReturn(VALID);
+
+        generator.generate("원 제목", "원 본문", 1, List.of());
+
+        ArgumentCaptor<LlmRequest> request = ArgumentCaptor.forClass(LlmRequest.class);
+        verify(gemini).generate(request.capture());
+        assertThat(request.getValue().prompt()).doesNotContain("의미가 겹치지 않는 새 질문");
+    }
+
+    @Test
+    void 제외할_제목과_같은_추천_결과는_대체한다() {
+        when(gemini.generate(any())).thenReturn("""
+                {"questions":[{"title":" 기존 추천 ","content":"본문"}]}
+                """);
+        when(openai.generate(any())).thenReturn(VALID);
+
+        assertThat(generator.generate("제목", "본문", 1, List.of(" 기존 추천")))
+                .containsExactly(new GeneratedQuestion("추천 제목", "추천 본문"));
+        verify(openai).generate(any());
+    }
+
+    @Test
+    void 제외할_제목과_대소문자만_다른_추천_결과도_거부한다() {
+        String excluded = "{\"questions\":[{\"title\":\"Java Stream\",\"content\":\"본문\"}]}";
+        when(gemini.generate(any())).thenReturn(excluded);
+        when(openai.generate(any())).thenReturn(excluded);
+
+        assertThatThrownBy(() -> generator.generate("제목", "본문", 1, List.of("java stream ")))
+                .isInstanceOfSatisfying(QuestionRecommendationGenerationException.class,
+                        exception -> assertThat(exception.retryable()).isTrue());
+    }
+
+    @Test
+    void 대체_추천은_한_개만_생성한다() {
+        when(gemini.generate(any())).thenReturn(VALID);
+
+        assertThat(generator.generate("제목", "본문", 1, List.of("기존 추천")))
+                .containsExactly(new GeneratedQuestion("추천 제목", "추천 본문"));
+        ArgumentCaptor<LlmRequest> request = ArgumentCaptor.forClass(LlmRequest.class);
+        verify(gemini).generate(request.capture());
+        assertThat(request.getValue().prompt()).contains("정확히 1개");
+        Map<?, ?> questions = (Map<?, ?>) ((Map<?, ?>) request.getValue().responseSchema().get("properties"))
+                .get("questions");
+        assertThat(questions.get("minItems")).isEqualTo(1);
+        assertThat(questions.get("maxItems")).isEqualTo(1);
+    }
+
+    @Test
     void 모든_제공자가_영구_실패하면_재시도하지_않는다() {
         when(gemini.generate(any())).thenThrow(failure(LlmProvider.GEMINI, 401, false, 0));
         when(openai.generate(any())).thenThrow(failure(LlmProvider.OPENAI, 403, false, 0));
