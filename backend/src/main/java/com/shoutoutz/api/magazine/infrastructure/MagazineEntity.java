@@ -35,7 +35,7 @@ public class MagazineEntity extends BaseEntity {
     @Column(name = "featured_user_id", nullable = false)
     private long featuredUserId;
 
-    @Column(name = "featured_user_introduction", length = 1000)
+    @Column(name = "featured_user_introduction", length = 200)
     private String featuredUserIntroduction;
 
     @Column(name = "thumbnail_media_id")

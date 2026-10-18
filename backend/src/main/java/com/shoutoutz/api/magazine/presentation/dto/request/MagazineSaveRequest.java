@@ -9,7 +9,7 @@ public record MagazineSaveRequest(
         @NotBlank @CodePointLength(max = 200) String title,
         @CodePointLength(max = 500) String summary,
         @NotNull @Positive Long featuredUserId,
-        @CodePointLength(max = 1000) String featuredUserIntroduction,
+        @CodePointLength(max = 200) String featuredUserIntroduction,
         @Positive Long thumbnailMediaId,
         @CodePointLength(max = 100000) String contentMd
 ) {

@@ -81,6 +81,11 @@ class MagazineMigrationIntegrationTest {
     }
 
     private void assertMigratedData(JdbcTemplate jdbc, ExistingData data) {
+        assertThat(jdbc.queryForObject("""
+                SELECT character_maximum_length FROM information_schema.columns
+                WHERE table_schema = current_schema() AND table_name = 'magazines'
+                  AND column_name = 'featured_user_introduction'
+                """, Integer.class)).isEqualTo(200);
         assertThat(jdbc.queryForMap("SELECT * FROM magazines WHERE id = ?", data.interviewId()))
                 .containsEntry("featured_user_id", data.userId())
                 .containsEntry("author_id", data.userId())

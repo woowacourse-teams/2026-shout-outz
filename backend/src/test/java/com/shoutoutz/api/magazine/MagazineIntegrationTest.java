@@ -324,18 +324,18 @@ class MagazineIntegrationTest {
     }
 
     @Test
-    void 소개문은_이모지를_포함해_1000자까지_입력할_수_있다() throws Exception {
+    void 소개문은_이모지를_포함해_200자까지_입력할_수_있다() throws Exception {
         mockMvc.perform(post("/api/v1/admin/magazines").with(authenticated(adminId, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody("제목", "본문").replace(INTRODUCTION, "😀".repeat(1000))))
+                        .content(requestBody("제목", "본문").replace(INTRODUCTION, "😀".repeat(200))))
                 .andExpect(status().isCreated());
     }
 
     @Test
-    void 소개문이_1000자를_넘으면_400을_반환한다() throws Exception {
+    void 소개문이_200자를_넘으면_400을_반환한다() throws Exception {
         mockMvc.perform(post("/api/v1/admin/magazines").with(authenticated(adminId, UserRole.ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody("제목", "본문").replace(INTRODUCTION, "😀".repeat(1001))))
+                        .content(requestBody("제목", "본문").replace(INTRODUCTION, "😀".repeat(201))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.details[0].field").value("featuredUserIntroduction"));
@@ -818,7 +818,7 @@ class MagazineIntegrationTest {
                     fieldWithPath("summary").type(STRING).optional().description("요약, 최대 500자"),
                     fieldWithPath("featuredUserId").type(NUMBER).description("매거진 대상 사용자 ID"),
                     fieldWithPath("featuredUserIntroduction").type(STRING).optional()
-                            .description("매거진에 직접 작성하는 인터뷰이 소개문, 최대 1000자. 초안은 생략 가능하며 발행 및 발행된 글 수정 시 필수"),
+                            .description("매거진에 직접 작성하는 인터뷰이 소개문, 최대 200자. 초안은 생략 가능하며 발행 및 발행된 글 수정 시 필수"),
                     fieldWithPath("thumbnailMediaId").type(NUMBER).optional().description("MAGAZINE_THUMBNAIL 용도의 READY 미디어 ID"),
                     fieldWithPath("contentMd").type(STRING).optional().description("원본 Markdown, 최대 100000자. 본문 이미지는 MAGAZINE_CONTENT 용도의 media://ID로 참조"));
         }
