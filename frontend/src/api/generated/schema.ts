@@ -1558,17 +1558,28 @@ export interface HomeStatisticsSuccessResponse {
   status: string;
 }
 
-/** InterviewAdminResponse */
-export interface InterviewAdminResponse {
+/** MagazineAdminResponse */
+export interface MagazineAdminResponse {
   data?: {
+    /** 최초 등록 편집자, 다른 관리자가 수정해도 유지 */
+    author: {
+      /** 편집자 프로필 이미지 URL, 없으면 GitHub 아바타 */
+      avatarUrl?: string | null;
+      /** 편집자의 현재 표시 이름, 탈퇴 시 탈퇴한 사용자 */
+      displayName?: string | null;
+      /** 최초 등록 편집자의 현재 핸들, 탈퇴 시 null */
+      handle?: string | null;
+    };
     /** 이미지 원본 참조가 포함된 Markdown */
     contentMd?: string | null;
     /** 생성 시각 */
     createdAt: string;
-    /** 인터뷰 ID */
+    /** 매거진 대상 사용자 ID */
+    featuredUserId: number;
+    /** 매거진에 저장된 인터뷰이 소개문. 기존 글과 소개문이 없는 초안은 null */
+    featuredUserIntroduction?: string | null;
+    /** 매거진 ID */
     id: number;
-    /** 인터뷰 대상 사용자 ID */
-    intervieweeId: number;
     /** 이미지 URL로 변환한 미리보기 Markdown */
     previewContentMd?: string | null;
     /** 최초 발행 시각 */
@@ -1577,7 +1588,7 @@ export interface InterviewAdminResponse {
     status: string;
     /** 요약 */
     summary?: string | null;
-    /** INTERVIEW_THUMBNAIL 용도의 READY 미디어 ID */
+    /** MAGAZINE_THUMBNAIL 용도의 READY 미디어 ID */
     thumbnailMediaId?: number | null;
     /** 대표 이미지 미리보기 URL */
     thumbnailUrl?: string | null;
@@ -1590,18 +1601,18 @@ export interface InterviewAdminResponse {
   status: string;
 }
 
-/** InterviewCommentCreateRequest */
-export interface InterviewCommentCreateRequest {
+/** MagazineCommentCreateRequest */
+export interface MagazineCommentCreateRequest {
   /** 앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준) */
   content: string;
   /** 작성자 정보를 익명으로 공개할지 여부 */
   isAnonymous?: boolean | null;
-  /** 같은 인터뷰의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글 */
+  /** 같은 매거진의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글 */
   parentId?: number | null;
 }
 
-/** InterviewCommentCreateSuccessResponse */
-export interface InterviewCommentCreateSuccessResponse {
+/** MagazineCommentCreateSuccessResponse */
+export interface MagazineCommentCreateSuccessResponse {
   /** 생성된 댓글 */
   data: {
     /** 댓글 작성자 */
@@ -1655,8 +1666,8 @@ export interface InterviewCommentCreateSuccessResponse {
   status: string;
 }
 
-/** InterviewCommentDeleteSuccessResponse */
-export interface InterviewCommentDeleteSuccessResponse {
+/** MagazineCommentDeleteSuccessResponse */
+export interface MagazineCommentDeleteSuccessResponse {
   /** 삭제된 댓글 */
   data: {
     /** 댓글 삭제 여부 */
@@ -1668,9 +1679,9 @@ export interface InterviewCommentDeleteSuccessResponse {
   status: string;
 }
 
-/** InterviewCommentFindAllSuccessResponse */
-export interface InterviewCommentFindAllSuccessResponse {
-  /** 인터뷰 댓글 목록 */
+/** MagazineCommentFindAllSuccessResponse */
+export interface MagazineCommentFindAllSuccessResponse {
+  /** 매거진 댓글 목록 */
   data: {
     /** 댓글 공감 수 */
     agreeCount: number;
@@ -1742,9 +1753,9 @@ export interface InterviewCommentFindAllSuccessResponse {
   status: string;
 }
 
-/** InterviewCommentReactionSuccessResponse */
-export interface InterviewCommentReactionSuccessResponse {
-  /** 인터뷰 댓글 반응 변경 결과 */
+/** MagazineCommentReactionSuccessResponse */
+export interface MagazineCommentReactionSuccessResponse {
+  /** 매거진 댓글 반응 변경 결과 */
   data: {
     /** 요청한 반응의 활성 상태 */
     active: boolean;
@@ -1752,8 +1763,8 @@ export interface InterviewCommentReactionSuccessResponse {
     agreeCount: number;
     /** 댓글 ID */
     commentId: number;
-    /** 인터뷰 ID */
-    interviewId: number;
+    /** 매거진 ID */
+    magazineId: number;
     /** 반응 타입(현재 AGREE) */
     type: string;
   };
@@ -1761,14 +1772,14 @@ export interface InterviewCommentReactionSuccessResponse {
   status: string;
 }
 
-/** InterviewCommentUpdateRequest */
-export interface InterviewCommentUpdateRequest {
+/** MagazineCommentUpdateRequest */
+export interface MagazineCommentUpdateRequest {
   /** 앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준) */
   content: string;
 }
 
-/** InterviewCommentUpdateSuccessResponse */
-export interface InterviewCommentUpdateSuccessResponse {
+/** MagazineCommentUpdateSuccessResponse */
+export interface MagazineCommentUpdateSuccessResponse {
   /** 수정된 댓글 */
   data: {
     /** 댓글 작성자 */
@@ -1824,26 +1835,35 @@ export interface InterviewCommentUpdateSuccessResponse {
   status: string;
 }
 
-/** InterviewFindAllSuccessResponse */
-export interface InterviewFindAllSuccessResponse {
-  /** 인터뷰 목록 */
+/** MagazineFindAllSuccessResponse */
+export interface MagazineFindAllSuccessResponse {
+  /** 매거진 목록 */
   data: {
+    /** 최초 등록 편집자, 다른 관리자가 수정해도 유지 */
+    author: {
+      /** 편집자 프로필 이미지 URL, 없으면 GitHub 아바타 */
+      avatarUrl?: string | null;
+      /** 편집자의 현재 표시 이름, 탈퇴 시 탈퇴한 사용자 */
+      displayName?: string | null;
+      /** 최초 등록 편집자의 현재 핸들, 탈퇴 시 null */
+      handle?: string | null;
+    };
     /** 삭제되지 않은 댓글과 대댓글 수 */
     commentCount: number;
     /** 생성 시각 */
     createdAt: string;
-    /** 인터뷰 ID */
-    id: number;
-    interviewee?: {
+    featuredUser?: {
       /** 프로필 이미지 URL */
       avatarUrl?: string | null;
-      /** 현재 사용자 소개 */
-      bio?: string | null;
       /** 표시 이름 */
       displayName: string;
       /** 사용자 핸들 */
       handle?: string | null;
+      /** 매거진에 직접 작성한 소개문. 회원 프로필 변경과 무관하며 기존 글에 미입력했거나 탈퇴한 경우 null */
+      introduction?: string | null;
     };
+    /** 매거진 ID */
+    id: number;
     /** 좋아요 수 */
     likeCount: number;
     /** 내 좋아요 여부 */
@@ -1875,27 +1895,36 @@ export interface InterviewFindAllSuccessResponse {
   status: string;
 }
 
-/** InterviewFindSuccessResponse */
-export interface InterviewFindSuccessResponse {
+/** MagazineFindSuccessResponse */
+export interface MagazineFindSuccessResponse {
   data?: {
+    /** 최초 등록 편집자, 다른 관리자가 수정해도 유지 */
+    author: {
+      /** 편집자 프로필 이미지 URL, 없으면 GitHub 아바타 */
+      avatarUrl?: string | null;
+      /** 편집자의 현재 표시 이름, 탈퇴 시 탈퇴한 사용자 */
+      displayName?: string | null;
+      /** 최초 등록 편집자의 현재 핸들, 탈퇴 시 null */
+      handle?: string | null;
+    };
     /** 삭제되지 않은 댓글과 대댓글 수 */
     commentCount: number;
     /** 이미지 URL로 변환한 Markdown */
     contentMd: string;
     /** 생성 시각 */
     createdAt: string;
-    /** 인터뷰 ID */
-    id: number;
-    interviewee?: {
+    featuredUser?: {
       /** 프로필 이미지 URL */
       avatarUrl?: string | null;
-      /** 현재 사용자 소개 */
-      bio?: string | null;
       /** 표시 이름 */
       displayName: string;
       /** 사용자 핸들 */
       handle?: string | null;
+      /** 매거진에 직접 작성한 소개문. 회원 프로필 변경과 무관하며 기존 글에 미입력했거나 탈퇴한 경우 null */
+      introduction?: string | null;
     };
+    /** 매거진 ID */
+    id: number;
     /** 좋아요 수 */
     likeCount: number;
     /** 내 좋아요 여부 */
@@ -1917,16 +1946,16 @@ export interface InterviewFindSuccessResponse {
   status: string;
 }
 
-/** InterviewReactionSuccessResponse */
-export interface InterviewReactionSuccessResponse {
-  /** 인터뷰 반응 변경 결과 */
+/** MagazineReactionSuccessResponse */
+export interface MagazineReactionSuccessResponse {
+  /** 매거진 반응 변경 결과 */
   data: {
     /** 요청한 반응의 활성 상태 */
     active: boolean;
-    /** 인터뷰 ID */
-    interviewId: number;
-    /** 인터뷰 좋아요 수 */
+    /** 매거진 좋아요 수 */
     likeCount: number;
+    /** 매거진 ID */
+    magazineId: number;
     /** 반응 타입. 현재 LIKE만 지원하며 향후 확장할 수 있다. */
     type: string;
   };
@@ -1934,15 +1963,17 @@ export interface InterviewReactionSuccessResponse {
   status: string;
 }
 
-/** InterviewSaveRequest */
-export interface InterviewSaveRequest {
-  /** 원본 Markdown, 최대 100000자. 본문 이미지는 INTERVIEW_CONTENT 용도의 media://ID로 참조 */
+/** MagazineSaveRequest */
+export interface MagazineSaveRequest {
+  /** 원본 Markdown, 최대 100000자. 본문 이미지는 MAGAZINE_CONTENT 용도의 media://ID로 참조 */
   contentMd?: string | null;
-  /** 인터뷰 대상 사용자 ID */
-  intervieweeId: number;
+  /** 매거진 대상 사용자 ID */
+  featuredUserId: number;
+  /** 매거진에 직접 작성하는 인터뷰이 소개문, 최대 200자. 초안은 생략 가능하며 발행 및 발행된 글 수정 시 필수 */
+  featuredUserIntroduction?: string | null;
   /** 요약, 최대 500자 */
   summary?: string | null;
-  /** INTERVIEW_THUMBNAIL 용도의 READY 미디어 ID */
+  /** MAGAZINE_THUMBNAIL 용도의 READY 미디어 ID */
   thumbnailMediaId?: number | null;
   /** 제목, 최대 200자 */
   title: string;
@@ -2279,19 +2310,19 @@ export interface NotificationListSuccessResponse {
     feedId?: number | null;
     /** 대상 피드 제목 */
     feedTitle?: string | null;
-    /** 인터뷰 댓글 ID */
-    interviewCommentId?: number | null;
-    /** 대상 인터뷰 ID */
-    interviewId?: number | null;
-    /** 공개 인터뷰 제목 */
-    interviewTitle?: string | null;
     /** 읽음 상태 */
     isRead: boolean;
+    /** 매거진 댓글 ID */
+    magazineCommentId?: number | null;
+    /** 대상 매거진 ID */
+    magazineId?: number | null;
+    /** 공개 매거진 제목 */
+    magazineTitle?: string | null;
     /** 알림 메시지 */
     message: string;
     /** 알림 ID */
     notificationId: number;
-    /** 알림 유형. COMMENT_REPLY(내 댓글의 직접 답글), POST_ACTIVITY(내 피드), COMMENTED_POST_ACTIVITY(댓글을 남긴 피드), QUESTION_ACTIVITY(내 질문), INTERESTED_QUESTION_ACTIVITY(궁금해요를 누른 질문), COMMENTED_QUESTION_ACTIVITY(댓글을 남긴 질문), INTERVIEW_COMMENT_REPLY(인터뷰 댓글 답글), INTERVIEW_ACTIVITY(내가 등록한 인터뷰), COMMENTED_INTERVIEW_ACTIVITY(댓글을 남긴 인터뷰) */
+    /** 알림 유형. COMMENT_REPLY(내 댓글의 직접 답글), POST_ACTIVITY(내 피드), COMMENTED_POST_ACTIVITY(댓글을 남긴 피드), QUESTION_ACTIVITY(내 질문), INTERESTED_QUESTION_ACTIVITY(궁금해요를 누른 질문), COMMENTED_QUESTION_ACTIVITY(댓글을 남긴 질문), MAGAZINE_COMMENT_REPLY(매거진 댓글 답글), MAGAZINE_ACTIVITY(내가 등록한 매거진), COMMENTED_MAGAZINE_ACTIVITY(댓글을 남긴 매거진) */
     notificationType: string;
   }[];
   /** 페이지 정보 */
@@ -2946,12 +2977,12 @@ export interface UserCommentFindAllSuccessResponse {
     createdAt: string;
     /** 피드 댓글이면 이동할 피드 ID. 프로젝트 댓글이면 null */
     feedId?: number | null;
-    /** 인터뷰 댓글의 대상 인터뷰 ID */
-    interviewId?: number | null;
+    /** 매거진 댓글의 대상 매거진 ID */
+    magazineId?: number | null;
     /** 프로젝트 댓글이면 이동할 프로젝트 slug. 피드 댓글이면 null */
     projectSlug?: string | null;
     /** 댓글 대상 종류 */
-    type: 'FEED' | 'PROJECT' | 'INTERVIEW';
+    type: 'FEED' | 'PROJECT' | 'MAGAZINE';
     /** 댓글 최종 수정 시각 */
     updatedAt: string;
   }[];
