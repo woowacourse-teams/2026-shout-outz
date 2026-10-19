@@ -24,10 +24,10 @@ import type {
   HomeBannerFindAllSuccessResponse,
   HomeBannerUpsertRequest,
   HomeStatisticsSuccessResponse,
-  InterviewAdminResponse,
-  InterviewFindAllSuccessResponse,
-  InterviewFindSuccessResponse,
-  InterviewSaveRequest,
+  MagazineAdminResponse,
+  MagazineFindAllSuccessResponse,
+  MagazineFindSuccessResponse,
+  MagazineSaveRequest,
   NewsFindAllSuccessResponse,
   NewsFindDetailSuccessResponse,
   NoticeCreateRequest,
@@ -168,12 +168,12 @@ export type NewsDetailData = Data<NewsFindDetailSuccessResponse>;
 export type NoticeCreateBody = NoticeCreateRequest;
 export type EventCreateBody = EventCreateRequest;
 
-// ── 인터뷰 ──────────────────────────────────────────────────────────────────
+// ── 매거진 ──────────────────────────────────────────────────────────────────
 
-export type InterviewListItemData = Item<Data<InterviewFindAllSuccessResponse>>;
-export type InterviewDetailData = Data<InterviewFindSuccessResponse>;
-export type AdminInterviewData = Data<InterviewAdminResponse>;
-export type InterviewSaveBody = InterviewSaveRequest;
+export type MagazineListItemData = Item<Data<MagazineFindAllSuccessResponse>>;
+export type MagazineDetailData = Data<MagazineFindSuccessResponse>;
+export type AdminMagazineData = Data<MagazineAdminResponse>;
+export type MagazineSaveBody = MagazineSaveRequest;
 
 // ── 관리자 ──────────────────────────────────────────────────────────────────
 

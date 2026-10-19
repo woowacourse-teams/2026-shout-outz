@@ -9,18 +9,18 @@ import {
 import { Link } from '@tanstack/react-router';
 
 import {
-  adminInterviewQuery,
-  adminInterviewsQuery,
+  adminMagazineQuery,
+  adminMagazinesQuery,
   adminQueryKeys,
-  createInterviewMutation,
-  deleteInterviewMutation,
-  publishInterviewMutation,
-  unpublishInterviewMutation,
-  updateInterviewMutation,
+  createMagazineMutation,
+  deleteMagazineMutation,
+  publishMagazineMutation,
+  unpublishMagazineMutation,
+  updateMagazineMutation,
 } from '@/apis/admin';
 import { crewSearchQueryOptions } from '@/api/project';
-import { uploadInterviewContentImage, uploadInterviewThumbnail } from '@/api/media';
-import type { InterviewListItem } from '@/apis/interview';
+import { uploadMagazineContentImage, uploadMagazineThumbnail } from '@/api/media';
+import type { MagazineListItem } from '@/apis/magazine';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
@@ -31,7 +31,7 @@ import { Input } from '@/components/Input';
 import { MarkdownContent } from '@/components/MarkdownContent';
 import { ThumbnailField } from '@/components/projects/ThumbnailField';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import type { AdminInterview, InterviewSaveBody } from '@/types/admin';
+import type { AdminMagazine, MagazineSaveBody } from '@/types/admin';
 import { formatDateTime } from '@/utils/date';
 import { getApiErrorMessage } from '@/utils/error';
 
@@ -41,23 +41,24 @@ const TEXTAREA_CLASS =
 /** 서버 제약과 같은 길이 한도. */
 const TITLE_MAX = 200;
 const SUMMARY_MAX = 500;
+const INTRODUCTION_MAX = 200;
 const CONTENT_MAX = 100_000;
 
-/** 화면에 보여줄 인터뷰 대상. 상세 응답은 ID만 주므로 목록이나 검색 결과에서 이름을 가져온다. */
-interface Interviewee {
+/** 화면에 보여줄 인터뷰이. 상세 응답은 ID만 주므로 목록이나 검색 결과에서 이름을 가져온다. */
+interface FeaturedUser {
   userId: number;
   displayName: string;
   handle?: string | null;
 }
 
 interface Editing {
-  interviewId: number;
+  magazineId: number;
   /** 목록에서 가져온 대상 이름. 상세 응답에는 ID만 있다. */
-  interviewee?: Pick<Interviewee, 'displayName' | 'handle'>;
+  featuredUser?: Pick<FeaturedUser, 'displayName' | 'handle'>;
 }
 
-/** 인터뷰 목록과 초안 등록·수정, 발행 관리. */
-export function InterviewAdminPanel() {
+/** 매거진 목록과 초안 등록·수정, 발행 관리. */
+export function MagazineAdminPanel() {
   const [editing, setEditing] = useState<Editing | null>(null);
   // 등록이 끝나면 key를 바꿔 이미지 필드까지 새로 그린다.
   const [formKey, setFormKey] = useState(0);
@@ -68,40 +69,40 @@ export function InterviewAdminPanel() {
 
   return (
     <div className="flex flex-col gap-10">
-      <InterviewList editingId={editing?.interviewId} onEdit={setEditing} />
+      <MagazineList editingId={editing?.magazineId} onEdit={setEditing} />
       {editing ? (
-        <AsyncBoundary key={editing.interviewId}>
-          <InterviewEditForm editing={editing} onDone={resetForm} />
+        <AsyncBoundary key={editing.magazineId}>
+          <MagazineEditForm editing={editing} onDone={resetForm} />
         </AsyncBoundary>
       ) : (
-        <InterviewForm key={formKey} onDone={resetForm} />
+        <MagazineForm key={formKey} onDone={resetForm} />
       )}
     </div>
   );
 }
 
-function InterviewList({
+function MagazineList({
   editingId,
   onEdit,
 }: {
   editingId?: number;
   onEdit: (editing: Editing) => void;
 }) {
-  const query = useSuspenseInfiniteQuery(adminInterviewsQuery);
-  const interviews = query.data.pages.flatMap((page) => page.data);
+  const query = useSuspenseInfiniteQuery(adminMagazinesQuery);
+  const magazines = query.data.pages.flatMap((page) => page.data);
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-bold">인터뷰 ({query.data.pages[0]?.meta?.totalCount ?? 0})</h2>
-      {interviews.length === 0 ? (
-        <p className="py-6 text-center text-sm text-gray-500">등록된 인터뷰가 없습니다.</p>
+      <h2 className="text-lg font-bold">매거진 ({query.data.pages[0]?.meta?.totalCount ?? 0})</h2>
+      {magazines.length === 0 ? (
+        <p className="py-6 text-center text-sm text-gray-500">등록된 매거진이 없습니다.</p>
       ) : (
         <ul className="flex flex-col divide-y divide-gray-200 rounded-xl border border-gray-200">
-          {interviews.map((interview) => (
-            <InterviewRow
-              key={interview.id}
-              interview={interview}
-              editing={interview.id === editingId}
+          {magazines.map((magazine) => (
+            <MagazineRow
+              key={magazine.id}
+              magazine={magazine}
+              editing={magazine.id === editingId}
               onEdit={onEdit}
             />
           ))}
@@ -113,41 +114,41 @@ function InterviewList({
           disabled={query.isFetchingNextPage}
           onClick={() => void query.fetchNextPage()}
         >
-          {query.isFetchingNextPage ? '불러오는 중…' : '인터뷰 더 보기'}
+          {query.isFetchingNextPage ? '불러오는 중…' : '매거진 더 보기'}
         </Button>
       )}
     </section>
   );
 }
 
-function InterviewRow({
-  interview,
+function MagazineRow({
+  magazine,
   editing,
   onEdit,
 }: {
-  interview: InterviewListItem;
+  magazine: MagazineListItem;
   editing: boolean;
   onEdit: (editing: Editing) => void;
 }) {
   const client = useQueryClient();
   const onSuccess = () => {
-    void client.invalidateQueries({ queryKey: adminQueryKeys.interviews });
-    void client.invalidateQueries({ queryKey: adminQueryKeys.interview(interview.id) });
-    void client.invalidateQueries({ queryKey: ['interviews'] });
-    void client.invalidateQueries({ queryKey: ['interview', interview.id] });
+    void client.invalidateQueries({ queryKey: adminQueryKeys.magazines });
+    void client.invalidateQueries({ queryKey: adminQueryKeys.magazine(magazine.id) });
+    void client.invalidateQueries({ queryKey: ['magazines'] });
+    void client.invalidateQueries({ queryKey: ['magazine', magazine.id] });
   };
-  const publish = useMutation({ ...publishInterviewMutation, onSuccess });
-  const unpublish = useMutation({ ...unpublishInterviewMutation, onSuccess });
-  const remove = useMutation({ ...deleteInterviewMutation, onSuccess });
+  const publish = useMutation({ ...publishMagazineMutation, onSuccess });
+  const unpublish = useMutation({ ...unpublishMagazineMutation, onSuccess });
+  const remove = useMutation({ ...deleteMagazineMutation, onSuccess });
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const published = interview.status === 'PUBLISHED';
+  const published = magazine.status === 'PUBLISHED';
   const pending = publish.isPending || unpublish.isPending || remove.isPending;
   const error = publish.error ?? unpublish.error ?? remove.error;
 
   return (
     <li className="flex flex-col gap-3 p-4 md:flex-row md:items-center">
       <Image
-        src={interview.thumbnailUrl ?? undefined}
+        src={magazine.thumbnailUrl ?? undefined}
         alt=""
         className="aspect-video w-full rounded-lg bg-gray-100 md:w-40"
         fallback={<div className="aspect-video w-full rounded-lg bg-gray-100 md:w-40" />}
@@ -156,15 +157,15 @@ function InterviewRow({
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={published ? 'green' : 'gray'}>{published ? '발행됨' : '초안'}</Badge>
           {editing && <Badge tone="primary">수정 중</Badge>}
-          <span className="truncate font-bold">{interview.title}</span>
+          <span className="truncate font-bold">{magazine.title}</span>
         </div>
         <p className="text-sm text-gray-600">
-          {interview.interviewee?.displayName ?? '인터뷰 대상 없음'}
+          {magazine.featuredUser?.displayName ?? '인터뷰이 없음'}
         </p>
         <p className="text-xs text-gray-500">
-          {published && interview.publishedAt
-            ? `발행 ${formatDateTime(interview.publishedAt)}`
-            : `수정 ${formatDateTime(interview.updatedAt)}`}
+          {published && magazine.publishedAt
+            ? `발행 ${formatDateTime(magazine.publishedAt)}`
+            : `수정 ${formatDateTime(magazine.updatedAt)}`}
         </p>
         {error != null && (
           <p role="alert" className="text-xs text-red-600">
@@ -175,8 +176,8 @@ function InterviewRow({
       <div className="flex flex-wrap gap-2">
         {published && (
           <Link
-            to="/interviews/$interviewId"
-            params={{ interviewId: String(interview.id) }}
+            to="/magazines/$magazineId"
+            params={{ magazineId: String(magazine.id) }}
             className={getButtonStyles({ variant: 'ghost', size: 'sm' })}
           >
             보기
@@ -186,7 +187,7 @@ function InterviewRow({
           variant="outline"
           size="sm"
           disabled={pending}
-          onClick={() => onEdit({ interviewId: interview.id, interviewee: interview.interviewee })}
+          onClick={() => onEdit({ magazineId: magazine.id, featuredUser: magazine.featuredUser })}
         >
           수정
         </Button>
@@ -194,15 +195,13 @@ function InterviewRow({
           variant="outline"
           size="sm"
           disabled={pending}
-          onClick={() =>
-            published ? unpublish.mutate(interview.id) : publish.mutate(interview.id)
-          }
+          onClick={() => (published ? unpublish.mutate(magazine.id) : publish.mutate(magazine.id))}
         >
           {published ? '발행 취소' : '발행'}
         </Button>
         {confirmingDelete ? (
           <>
-            <Button size="sm" disabled={pending} onClick={() => remove.mutate(interview.id)}>
+            <Button size="sm" disabled={pending} onClick={() => remove.mutate(magazine.id)}>
               삭제 확정
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setConfirmingDelete(false)}>
@@ -224,41 +223,48 @@ function InterviewRow({
   );
 }
 
-/** 수정할 인터뷰 원본을 받아 폼을 채운다. */
-function InterviewEditForm({ editing, onDone }: { editing: Editing; onDone: () => void }) {
-  const { data: interview } = useSuspenseQuery(adminInterviewQuery(editing.interviewId));
+/** 수정할 매거진 원본을 받아 폼을 채운다. */
+function MagazineEditForm({ editing, onDone }: { editing: Editing; onDone: () => void }) {
+  const { data: magazine } = useSuspenseQuery(adminMagazineQuery(editing.magazineId));
   return (
-    <InterviewForm
-      interview={interview}
-      interviewee={{
-        userId: interview.intervieweeId,
-        displayName: editing.interviewee?.displayName ?? `사용자 #${interview.intervieweeId}`,
-        handle: editing.interviewee?.handle,
+    <MagazineForm
+      magazine={magazine}
+      featuredUser={{
+        userId: magazine.featuredUserId,
+        displayName: editing.featuredUser?.displayName ?? `사용자 #${magazine.featuredUserId}`,
+        handle: editing.featuredUser?.handle,
       }}
       onDone={onDone}
     />
   );
 }
 
-interface InterviewFormValues {
-  interviewee: Interviewee | null;
+interface MagazineFormValues {
+  featuredUser: FeaturedUser | null;
+  featuredUserIntroduction: string;
   title: string;
   summary: string;
   thumbnailMediaId: number | null;
   contentMd: string;
 }
 
-const EMPTY_FORM: InterviewFormValues = {
-  interviewee: null,
+const EMPTY_FORM: MagazineFormValues = {
+  featuredUser: null,
+  featuredUserIntroduction: '',
   title: '',
   summary: '',
   thumbnailMediaId: null,
   contentMd: '',
 };
 
-function validate(values: InterviewFormValues) {
-  const errors: Partial<Record<keyof InterviewFormValues, string>> = {};
-  if (!values.interviewee) errors.interviewee = '인터뷰 대상을 골라 주세요.';
+/** 소개문은 초안에서는 선택이지만, 발행된 글을 수정할 때는 서버가 필수로 받는다. */
+function validate(values: MagazineFormValues, published: boolean) {
+  const errors: Partial<Record<keyof MagazineFormValues, string>> = {};
+  if (!values.featuredUser) errors.featuredUser = '인터뷰이를 골라 주세요.';
+  if (published && !values.featuredUserIntroduction.trim())
+    errors.featuredUserIntroduction = '발행된 매거진은 인터뷰이 소개를 입력해야 해요.';
+  else if (values.featuredUserIntroduction.length > INTRODUCTION_MAX)
+    errors.featuredUserIntroduction = `인터뷰이 소개는 ${INTRODUCTION_MAX}자까지 입력할 수 있어요.`;
   if (!values.title.trim()) errors.title = '제목을 입력해 주세요.';
   else if (values.title.length > TITLE_MAX)
     errors.title = `제목은 ${TITLE_MAX}자까지 입력할 수 있어요.`;
@@ -270,9 +276,10 @@ function validate(values: InterviewFormValues) {
 }
 
 /** 비어 있는 선택 필드는 null로 보낸다. 수정도 전체 교체라 같은 본문을 쓴다. */
-function toSaveBody(values: InterviewFormValues): InterviewSaveBody {
+function toSaveBody(values: MagazineFormValues): MagazineSaveBody {
   return {
-    intervieweeId: values.interviewee!.userId,
+    featuredUserId: values.featuredUser!.userId,
+    featuredUserIntroduction: values.featuredUserIntroduction.trim() || null,
     title: values.title.trim(),
     summary: values.summary.trim() || null,
     thumbnailMediaId: values.thumbnailMediaId,
@@ -280,54 +287,56 @@ function toSaveBody(values: InterviewFormValues): InterviewSaveBody {
   };
 }
 
-function InterviewForm({
-  interview,
-  interviewee = null,
+function MagazineForm({
+  magazine,
+  featuredUser = null,
   onDone,
 }: {
-  interview?: AdminInterview;
-  interviewee?: Interviewee | null;
+  magazine?: AdminMagazine;
+  featuredUser?: FeaturedUser | null;
   onDone: () => void;
 }) {
   const client = useQueryClient();
-  const [values, setValues] = useState<InterviewFormValues>(() =>
-    interview
+  const [values, setValues] = useState<MagazineFormValues>(() =>
+    magazine
       ? {
-          interviewee,
-          title: interview.title,
-          summary: interview.summary ?? '',
-          thumbnailMediaId: interview.thumbnailMediaId ?? null,
-          contentMd: interview.contentMd ?? '',
+          featuredUser,
+          featuredUserIntroduction: magazine.featuredUserIntroduction ?? '',
+          title: magazine.title,
+          summary: magazine.summary ?? '',
+          thumbnailMediaId: magazine.thumbnailMediaId ?? null,
+          contentMd: magazine.contentMd ?? '',
         }
       : EMPTY_FORM,
   );
   const [errors, setErrors] = useState<ReturnType<typeof validate>>({});
+  const published = magazine?.status === 'PUBLISHED';
   const onSuccess = () => {
-    void client.invalidateQueries({ queryKey: adminQueryKeys.interviews });
-    if (interview) {
-      void client.invalidateQueries({ queryKey: adminQueryKeys.interview(interview.id) });
-      void client.invalidateQueries({ queryKey: ['interview', interview.id] });
+    void client.invalidateQueries({ queryKey: adminQueryKeys.magazines });
+    if (magazine) {
+      void client.invalidateQueries({ queryKey: adminQueryKeys.magazine(magazine.id) });
+      void client.invalidateQueries({ queryKey: ['magazine', magazine.id] });
     }
-    void client.invalidateQueries({ queryKey: ['interviews'] });
+    void client.invalidateQueries({ queryKey: ['magazines'] });
     onDone();
   };
-  const create = useMutation({ ...createInterviewMutation, onSuccess });
-  const update = useMutation({ ...updateInterviewMutation, onSuccess });
-  const save = interview ? update : create;
-  const baselineThumbnail = interview?.thumbnailMediaId ?? null;
+  const create = useMutation({ ...createMagazineMutation, onSuccess });
+  const update = useMutation({ ...updateMagazineMutation, onSuccess });
+  const save = magazine ? update : create;
+  const baselineThumbnail = magazine?.thumbnailMediaId ?? null;
 
-  const setField = <Key extends keyof InterviewFormValues>(
+  const setField = <Key extends keyof MagazineFormValues>(
     field: Key,
-    value: InterviewFormValues[Key],
+    value: MagazineFormValues[Key],
   ) => setValues((current) => ({ ...current, [field]: value }));
 
   return (
     <section className="flex max-w-2xl flex-col gap-5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-bold">
-          {interview ? `인터뷰 수정 #${interview.id}` : '인터뷰 초안 등록'}
+          {magazine ? `매거진 수정 #${magazine.id}` : '매거진 초안 등록'}
         </h2>
-        {interview && (
+        {magazine && (
           <Button variant="ghost" size="sm" onClick={onDone}>
             수정 취소
           </Button>
@@ -338,19 +347,37 @@ function InterviewForm({
         onSubmit={(event) => {
           event.preventDefault();
           if (save.isPending) return;
-          const nextErrors = validate(values);
+          const nextErrors = validate(values, published);
           setErrors(nextErrors);
           if (Object.keys(nextErrors).length > 0) return;
           const body = toSaveBody(values);
-          if (interview) update.mutate({ interviewId: interview.id, body });
+          if (magazine) update.mutate({ magazineId: magazine.id, body });
           else create.mutate(body);
         }}
       >
-        <IntervieweeField
-          value={values.interviewee}
-          onChange={(interviewee) => setField('interviewee', interviewee)}
-          error={errors.interviewee}
+        <FeaturedUserField
+          value={values.featuredUser}
+          onChange={(featuredUser) => setField('featuredUser', featuredUser)}
+          error={errors.featuredUser}
         />
+
+        <Field
+          label={published ? '인터뷰이 소개 *' : '인터뷰이 소개 (발행에 필요)'}
+          error={errors.featuredUserIntroduction}
+        >
+          {(id) => (
+            <textarea
+              id={id}
+              rows={2}
+              maxLength={INTRODUCTION_MAX}
+              value={values.featuredUserIntroduction}
+              onChange={(event) => setField('featuredUserIntroduction', event.target.value)}
+              placeholder="예: 우테코 4기 출신, 전 프론트엔드 코치"
+              className={TEXTAREA_CLASS}
+              aria-invalid={Boolean(errors.featuredUserIntroduction)}
+            />
+          )}
+        </Field>
 
         <Field label="제목 *" error={errors.title}>
           {(id) => (
@@ -378,19 +405,19 @@ function InterviewForm({
         </Field>
 
         <div className="flex flex-col gap-2">
-          {interview?.thumbnailUrl && values.thumbnailMediaId === baselineThumbnail && (
+          {magazine?.thumbnailUrl && values.thumbnailMediaId === baselineThumbnail && (
             <Image
-              src={interview.thumbnailUrl}
-              alt={`${interview.title} 현재 대표 이미지`}
+              src={magazine.thumbnailUrl}
+              alt={`${magazine.title} 현재 대표 이미지`}
               className="aspect-video w-full max-w-xs rounded-lg bg-gray-100"
               fallback={<div className="aspect-video w-full max-w-xs rounded-lg bg-gray-100" />}
             />
           )}
           <ThumbnailField
-            label={interview ? '새 대표 이미지 올리기' : '대표 이미지 (발행에 필요)'}
+            label={magazine ? '새 대표 이미지 올리기' : '대표 이미지 (발행에 필요)'}
             value={values.thumbnailMediaId === baselineThumbnail ? null : values.thumbnailMediaId}
             onChange={(mediaId) => setField('thumbnailMediaId', mediaId)}
-            upload={uploadInterviewThumbnail}
+            upload={uploadMagazineThumbnail}
           />
         </div>
 
@@ -400,13 +427,13 @@ function InterviewForm({
           error={errors.contentMd}
         />
 
-        {interview?.previewContentMd && (
+        {magazine?.previewContentMd && (
           <details className="rounded-lg border border-gray-200 p-4">
             <summary className="cursor-pointer text-sm font-medium text-gray-900">
               저장된 본문 미리보기
             </summary>
             <div className="mt-4">
-              <MarkdownContent>{interview.previewContentMd}</MarkdownContent>
+              <MarkdownContent preserveBlankLines>{magazine.previewContentMd}</MarkdownContent>
             </div>
           </details>
         )}
@@ -417,20 +444,20 @@ function InterviewForm({
           </p>
         )}
         <Button type="submit" size="lg" disabled={save.isPending}>
-          {save.isPending ? '저장 중…' : interview ? '수정 저장' : '초안 등록'}
+          {save.isPending ? '저장 중…' : magazine ? '수정 저장' : '초안 등록'}
         </Button>
       </form>
     </section>
   );
 }
 
-function IntervieweeField({
+function FeaturedUserField({
   value,
   onChange,
   error,
 }: {
-  value: Interviewee | null;
-  onChange: (next: Interviewee | null) => void;
+  value: FeaturedUser | null;
+  onChange: (next: FeaturedUser | null) => void;
   error?: string;
 }) {
   const [keyword, setKeyword] = useState('');
@@ -443,7 +470,7 @@ function IntervieweeField({
   if (value) {
     return (
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-gray-900">인터뷰 대상 *</p>
+        <p className="text-sm font-medium text-gray-900">인터뷰이 *</p>
         <div className="flex items-center gap-3 rounded-lg bg-gray-50 px-4 py-3">
           <span className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-900">
             {value.displayName}
@@ -462,7 +489,7 @@ function IntervieweeField({
   }
 
   return (
-    <Field label="인터뷰 대상 *" error={error}>
+    <Field label="인터뷰이 *" error={error}>
       {(id) => (
         <div className="flex flex-col gap-2">
           <Input
@@ -480,7 +507,7 @@ function IntervieweeField({
             ) : users.length === 0 ? (
               <p className="text-xs text-gray-500">검색 결과가 없습니다.</p>
             ) : (
-              <ul aria-label="인터뷰 대상 검색 결과" className="flex flex-col gap-1">
+              <ul aria-label="인터뷰이 검색 결과" className="flex flex-col gap-1">
                 {users.map((user) => (
                   <li key={user.userId}>
                     <button
@@ -540,7 +567,7 @@ function ContentField({
     setUploading(true);
     setFailed(false);
     try {
-      const mediaId = await uploadInterviewContentImage(file);
+      const mediaId = await uploadMagazineContentImage(file);
       const snippet = `\n![이미지 설명](media://${mediaId} "캡션")\n`;
       onChange(value.slice(0, position) + snippet + value.slice(position));
     } catch {
@@ -584,7 +611,8 @@ function ContentField({
             aria-invalid={Boolean(error)}
           />
           <p className="text-xs leading-5 text-gray-500">
-            이미지 캡션: <code>![설명](media://ID "캡션")</code> · 글자 색:{' '}
+            이미지 캡션: <code>![설명](media://ID "캡션")</code> · 이미지 크기:{' '}
+            <code>![설명|300](...)</code>, <code>|50%</code>, <code>|300x200</code> · 글자 색:{' '}
             <code>&lt;font color="red"&gt;강조&lt;/font&gt;</code>, 다른 태그에도 <code>color</code>{' '}
             속성 사용 가능 (red, blue, green, yellow, gray, primary)
           </p>
