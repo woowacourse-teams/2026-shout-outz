@@ -9,7 +9,7 @@ export const GNB_ITEMS = linkOptions([
   { to: '/', activeOptions: { exact: true }, label: '홈' },
   { to: '/community', label: '커뮤니티' },
   { to: '/projects', label: '프로젝트' },
-  { to: '/interviews', label: '인터뷰' },
+  { to: '/magazines', label: '매거진' },
   { to: '/news', label: '소식' },
 ]);
 
@@ -17,7 +17,7 @@ const NAV_TAB_BY_PATH: Record<string, NavTab> = {
   '/': 'home',
   '/community': 'feeds',
   '/projects': 'projects',
-  '/interviews': 'interviews',
+  '/magazines': 'magazines',
   '/news': 'news',
 };
 

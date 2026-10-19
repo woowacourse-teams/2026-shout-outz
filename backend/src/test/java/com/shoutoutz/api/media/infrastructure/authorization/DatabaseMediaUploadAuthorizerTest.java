@@ -52,8 +52,8 @@ class DatabaseMediaUploadAuthorizerTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = MediaPurpose.class, names = {"INTERVIEW_THUMBNAIL", "INTERVIEW_CONTENT"})
-    void 인터뷰_이미지는_활성_관리자_권한을_검사한다(MediaPurpose purpose) {
+    @EnumSource(value = MediaPurpose.class, names = {"MAGAZINE_THUMBNAIL", "MAGAZINE_CONTENT"})
+    void 매거진_이미지는_활성_관리자_권한을_검사한다(MediaPurpose purpose) {
         when(jdbcTemplate.queryForObject(anyString(), eq(Boolean.class), eq(7L))).thenReturn(true);
 
         authorizer.authorize(7L, purpose);
@@ -64,8 +64,8 @@ class DatabaseMediaUploadAuthorizerTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = MediaPurpose.class, names = {"INTERVIEW_THUMBNAIL", "INTERVIEW_CONTENT"})
-    void 일반_사용자와_비활성_관리자는_인터뷰_이미지를_업로드할_수_없다(MediaPurpose purpose) {
+    @EnumSource(value = MediaPurpose.class, names = {"MAGAZINE_THUMBNAIL", "MAGAZINE_CONTENT"})
+    void 일반_사용자와_비활성_관리자는_매거진_이미지를_업로드할_수_없다(MediaPurpose purpose) {
         when(jdbcTemplate.queryForObject(anyString(), eq(Boolean.class), eq(7L))).thenReturn(false);
 
         assertThatThrownBy(() -> authorizer.authorize(7L, purpose))

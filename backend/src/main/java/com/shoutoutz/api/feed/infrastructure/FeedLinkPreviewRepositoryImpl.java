@@ -94,18 +94,18 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
     }
 
     @Override
-    public void linkInterviewComment(long commentId, String url) {
-        linkComment("interview_comment_link_preview_refs", commentId, url);
+    public void linkMagazineComment(long commentId, String url) {
+        linkComment("magazine_comment_link_preview_refs", commentId, url);
     }
 
     @Override
-    public void unlinkInterviewComment(long commentId) {
-        unlinkComment("interview_comment_link_preview_refs", commentId);
+    public void unlinkMagazineComment(long commentId) {
+        unlinkComment("magazine_comment_link_preview_refs", commentId);
     }
 
     @Override
-    public Map<Long, LinkPreview> findByInterviewCommentIds(List<Long> commentIds) {
-        return findByReferenceIds("interview_comment_link_preview_refs", "comment_id", "commentIds", commentIds);
+    public Map<Long, LinkPreview> findByMagazineCommentIds(List<Long> commentIds) {
+        return findByReferenceIds("magazine_comment_link_preview_refs", "comment_id", "commentIds", commentIds);
     }
 
     /** 하나의 SQL 문에서 작업을 선점해 여러 서버가 같은 URL을 동시에 가져오지 않게 한다. */
@@ -155,9 +155,9 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                               AND p.approval_status = 'APPROVED'
                         )
                         OR EXISTS (
-                            SELECT 1 FROM interview_comment_link_preview_refs r
-                            JOIN interview_comments ic ON ic.id = r.comment_id
-                            JOIN interviews i ON i.id = ic.interview_id
+                            SELECT 1 FROM magazine_comment_link_preview_refs r
+                            JOIN magazine_comments ic ON ic.id = r.comment_id
+                            JOIN magazines i ON i.id = ic.magazine_id
                             WHERE r.cache_id = candidate.id
                               AND ic.deleted_at IS NULL
                               AND i.deleted_at IS NULL
@@ -264,7 +264,7 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                     SELECT 1 FROM project_comment_link_preview_refs r WHERE r.cache_id = c.id
                 )
                 AND NOT EXISTS (
-                    SELECT 1 FROM interview_comment_link_preview_refs r WHERE r.cache_id = c.id
+                    SELECT 1 FROM magazine_comment_link_preview_refs r WHERE r.cache_id = c.id
                 )
                 AND (
                     (c.status = 'READY' AND c.fetched_at < :cutoff)

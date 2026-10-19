@@ -17,7 +17,7 @@ public record UserCommentResponse(
         long agreeCount,
         boolean agreedByMe,
         @JsonInclude(JsonInclude.Include.NON_NULL)
-        Long interviewId
+        Long magazineId
 ) {
 
     public UserCommentResponse(long commentId, UserCommentType type, Long feedId, String projectSlug,
@@ -42,7 +42,7 @@ public record UserCommentResponse(
                 comment.updatedAt(),
                 comment.agreeCount(),
                 comment.agreedByMe(),
-                comment.interviewId()
+                comment.magazineId()
         );
     }
 }

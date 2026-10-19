@@ -58,12 +58,12 @@ class MediaSchemaIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"INTERVIEW_THUMBNAIL", "INTERVIEW_CONTENT"})
-    void 인터뷰_미디어_목적을_저장할_수_있다(String purpose) {
+    @ValueSource(strings = {"MAGAZINE_THUMBNAIL", "MAGAZINE_CONTENT"})
+    void 매거진_미디어_목적을_저장할_수_있다(String purpose) {
         int inserted = jdbcTemplate.update("""
                 INSERT INTO media_metadata (purpose, s3_key, mime_type, size_bytes, status, expires_at)
                 VALUES (?, ?, 'image/webp', 1024, 'PENDING_UPLOAD', now() + interval '5 minutes')
-                """, purpose, "media/interview/" + purpose);
+                """, purpose, "media/magazine/" + purpose);
 
         assertThat(inserted).isEqualTo(1);
     }

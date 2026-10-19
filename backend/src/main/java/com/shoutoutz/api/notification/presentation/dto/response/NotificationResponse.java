@@ -14,9 +14,9 @@ public record NotificationResponse(
         Actor actor,
         boolean isRead,
         Instant createdAt,
-        @JsonInclude(JsonInclude.Include.NON_NULL) Long interviewId,
-        @JsonInclude(JsonInclude.Include.NON_NULL) String interviewTitle,
-        @JsonInclude(JsonInclude.Include.NON_NULL) Long interviewCommentId
+        @JsonInclude(JsonInclude.Include.NON_NULL) Long magazineId,
+        @JsonInclude(JsonInclude.Include.NON_NULL) String magazineTitle,
+        @JsonInclude(JsonInclude.Include.NON_NULL) Long magazineCommentId
 ) {
 
     public NotificationResponse(long notificationId, NotificationType notificationType, String message,

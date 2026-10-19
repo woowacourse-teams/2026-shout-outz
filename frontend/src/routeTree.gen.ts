@@ -20,8 +20,8 @@ import { Route as CommunityRecommendationsRouteImport } from './routes/community
 import { Route as FeedsIndexRouteImport } from './routes/feeds/index'
 import { Route as FeedsFeedIdRouteImport } from './routes/feeds/$feedId'
 import { Route as FeedsNewRouteImport } from './routes/feeds/new'
-import { Route as InterviewsIndexRouteImport } from './routes/interviews/index'
-import { Route as InterviewsInterviewIdRouteImport } from './routes/interviews/$interviewId'
+import { Route as MagazinesIndexRouteImport } from './routes/magazines/index'
+import { Route as MagazinesMagazineIdRouteImport } from './routes/magazines/$magazineId'
 import { Route as MypageVerificationRouteImport } from './routes/mypage/verification'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as NewsNewsIdRouteImport } from './routes/news/$newsId'
@@ -89,14 +89,14 @@ const FeedsNewRoute = FeedsNewRouteImport.update({
   path: '/feeds/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InterviewsIndexRoute = InterviewsIndexRouteImport.update({
-  id: '/interviews/',
-  path: '/interviews/',
+const MagazinesIndexRoute = MagazinesIndexRouteImport.update({
+  id: '/magazines/',
+  path: '/magazines/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InterviewsInterviewIdRoute = InterviewsInterviewIdRouteImport.update({
-  id: '/interviews/$interviewId',
-  path: '/interviews/$interviewId',
+const MagazinesMagazineIdRoute = MagazinesMagazineIdRouteImport.update({
+  id: '/magazines/$magazineId',
+  path: '/magazines/$magazineId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MypageVerificationRoute = MypageVerificationRouteImport.update({
@@ -160,7 +160,7 @@ export interface FileRoutesByFullPath {
   '/community/recommendations': typeof CommunityRecommendationsRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
-  '/interviews/$interviewId': typeof InterviewsInterviewIdRoute
+  '/magazines/$magazineId': typeof MagazinesMagazineIdRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$slug': typeof ProjectsSlugRoute
@@ -168,7 +168,7 @@ export interface FileRoutesByFullPath {
   '/users/$handle': typeof UsersHandleRoute
   '/community/': typeof CommunityIndexRoute
   '/feeds/': typeof FeedsIndexRoute
-  '/interviews/': typeof InterviewsIndexRoute
+  '/magazines/': typeof MagazinesIndexRoute
   '/news/': typeof NewsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/community/$feedId/edit': typeof CommunityFeedIdEditRoute
@@ -185,7 +185,7 @@ export interface FileRoutesByTo {
   '/community/recommendations': typeof CommunityRecommendationsRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
-  '/interviews/$interviewId': typeof InterviewsInterviewIdRoute
+  '/magazines/$magazineId': typeof MagazinesMagazineIdRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$slug': typeof ProjectsSlugRoute
@@ -193,7 +193,7 @@ export interface FileRoutesByTo {
   '/users/$handle': typeof UsersHandleRoute
   '/community': typeof CommunityIndexRoute
   '/feeds': typeof FeedsIndexRoute
-  '/interviews': typeof InterviewsIndexRoute
+  '/magazines': typeof MagazinesIndexRoute
   '/news': typeof NewsIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/community/$feedId/edit': typeof CommunityFeedIdEditRoute
@@ -211,7 +211,7 @@ export interface FileRoutesById {
   '/community/recommendations': typeof CommunityRecommendationsRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
-  '/interviews/$interviewId': typeof InterviewsInterviewIdRoute
+  '/magazines/$magazineId': typeof MagazinesMagazineIdRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$slug': typeof ProjectsSlugRoute
@@ -219,7 +219,7 @@ export interface FileRoutesById {
   '/users/$handle': typeof UsersHandleRoute
   '/community/': typeof CommunityIndexRoute
   '/feeds/': typeof FeedsIndexRoute
-  '/interviews/': typeof InterviewsIndexRoute
+  '/magazines/': typeof MagazinesIndexRoute
   '/news/': typeof NewsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/community/$feedId_/edit': typeof CommunityFeedIdEditRoute
@@ -238,7 +238,7 @@ export interface FileRouteTypes {
     | '/community/recommendations'
     | '/feeds/$feedId'
     | '/feeds/new'
-    | '/interviews/$interviewId'
+    | '/magazines/$magazineId'
     | '/mypage/verification'
     | '/news/$newsId'
     | '/projects/$slug'
@@ -246,7 +246,7 @@ export interface FileRouteTypes {
     | '/users/$handle'
     | '/community/'
     | '/feeds/'
-    | '/interviews/'
+    | '/magazines/'
     | '/news/'
     | '/projects/'
     | '/community/$feedId/edit'
@@ -263,7 +263,7 @@ export interface FileRouteTypes {
     | '/community/recommendations'
     | '/feeds/$feedId'
     | '/feeds/new'
-    | '/interviews/$interviewId'
+    | '/magazines/$magazineId'
     | '/mypage/verification'
     | '/news/$newsId'
     | '/projects/$slug'
@@ -271,7 +271,7 @@ export interface FileRouteTypes {
     | '/users/$handle'
     | '/community'
     | '/feeds'
-    | '/interviews'
+    | '/magazines'
     | '/news'
     | '/projects'
     | '/community/$feedId/edit'
@@ -288,7 +288,7 @@ export interface FileRouteTypes {
     | '/community/recommendations'
     | '/feeds/$feedId'
     | '/feeds/new'
-    | '/interviews/$interviewId'
+    | '/magazines/$magazineId'
     | '/mypage/verification'
     | '/news/$newsId'
     | '/projects/$slug'
@@ -296,7 +296,7 @@ export interface FileRouteTypes {
     | '/users/$handle'
     | '/community/'
     | '/feeds/'
-    | '/interviews/'
+    | '/magazines/'
     | '/news/'
     | '/projects/'
     | '/community/$feedId_/edit'
@@ -314,7 +314,7 @@ export interface RootRouteChildren {
   CommunityRecommendationsRoute: typeof CommunityRecommendationsRoute
   FeedsFeedIdRoute: typeof FeedsFeedIdRoute
   FeedsNewRoute: typeof FeedsNewRoute
-  InterviewsInterviewIdRoute: typeof InterviewsInterviewIdRoute
+  MagazinesMagazineIdRoute: typeof MagazinesMagazineIdRoute
   MypageVerificationRoute: typeof MypageVerificationRoute
   NewsNewsIdRoute: typeof NewsNewsIdRoute
   ProjectsSlugRoute: typeof ProjectsSlugRoute
@@ -322,7 +322,7 @@ export interface RootRouteChildren {
   UsersHandleRoute: typeof UsersHandleRoute
   CommunityIndexRoute: typeof CommunityIndexRoute
   FeedsIndexRoute: typeof FeedsIndexRoute
-  InterviewsIndexRoute: typeof InterviewsIndexRoute
+  MagazinesIndexRoute: typeof MagazinesIndexRoute
   NewsIndexRoute: typeof NewsIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   CommunityFeedIdEditRoute: typeof CommunityFeedIdEditRoute
@@ -409,18 +409,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FeedsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/interviews/': {
-      id: '/interviews/'
-      path: '/interviews'
-      fullPath: '/interviews/'
-      preLoaderRoute: typeof InterviewsIndexRouteImport
+    '/magazines/': {
+      id: '/magazines/'
+      path: '/magazines'
+      fullPath: '/magazines/'
+      preLoaderRoute: typeof MagazinesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/interviews/$interviewId': {
-      id: '/interviews/$interviewId'
-      path: '/interviews/$interviewId'
-      fullPath: '/interviews/$interviewId'
-      preLoaderRoute: typeof InterviewsInterviewIdRouteImport
+    '/magazines/$magazineId': {
+      id: '/magazines/$magazineId'
+      path: '/magazines/$magazineId'
+      fullPath: '/magazines/$magazineId'
+      preLoaderRoute: typeof MagazinesMagazineIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mypage/verification': {
@@ -506,7 +506,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityRecommendationsRoute: CommunityRecommendationsRoute,
   FeedsFeedIdRoute: FeedsFeedIdRoute,
   FeedsNewRoute: FeedsNewRoute,
-  InterviewsInterviewIdRoute: InterviewsInterviewIdRoute,
+  MagazinesMagazineIdRoute: MagazinesMagazineIdRoute,
   MypageVerificationRoute: MypageVerificationRoute,
   NewsNewsIdRoute: NewsNewsIdRoute,
   ProjectsSlugRoute: ProjectsSlugRoute,
@@ -514,7 +514,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsersHandleRoute: UsersHandleRoute,
   CommunityIndexRoute: CommunityIndexRoute,
   FeedsIndexRoute: FeedsIndexRoute,
-  InterviewsIndexRoute: InterviewsIndexRoute,
+  MagazinesIndexRoute: MagazinesIndexRoute,
   NewsIndexRoute: NewsIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   CommunityFeedIdEditRoute: CommunityFeedIdEditRoute,
