@@ -34,7 +34,8 @@ function MagazineDetailContent({ magazineId }: { magazineId: number }) {
   const publishedAt = magazine.publishedAt ?? magazine.createdAt;
 
   return (
-    <article className="min-w-0">
+    // 한 줄이 너무 길어지지 않게 본문 폭을 노션 페이지 폭에 가깝게 맞춘다.
+    <article className="mx-auto max-w-[720px] min-w-0">
       <title>{`${magazine.title} | shout-outz`}</title>
       <Link
         to="/magazines"
