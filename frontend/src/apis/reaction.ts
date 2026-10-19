@@ -15,6 +15,11 @@ export interface CommentAgreeResult {
   agreeCount: number;
 }
 
+export interface MagazineLikeResult {
+  active: boolean;
+  likeCount: number;
+}
+
 export interface ProjectLikeResult {
   active: boolean;
   likeCount: number;
@@ -44,5 +49,27 @@ export async function setProjectLike(slug: string, active: boolean) {
     { method: active ? 'put' : 'delete' },
   );
   if (!response) throw new Error('프로젝트 좋아요 응답이 비어 있습니다.');
+  return response.data;
+}
+
+export async function setMagazineLike(magazineId: number, active: boolean) {
+  const response = await httpClient<ReactionEnvelope<MagazineLikeResult>>(
+    `/api/v1/magazines/${magazineId}/reactions/LIKE`,
+    { method: active ? 'put' : 'delete' },
+  );
+  if (!response) throw new Error('매거진 좋아요 응답이 비어 있습니다.');
+  return response.data;
+}
+
+export async function setMagazineCommentAgree(
+  magazineId: number,
+  commentId: number,
+  active: boolean,
+) {
+  const response = await httpClient<ReactionEnvelope<CommentAgreeResult>>(
+    `/api/v1/magazines/${magazineId}/comments/${commentId}/reactions/AGREE`,
+    { method: active ? 'put' : 'delete' },
+  );
+  if (!response) throw new Error('댓글 공감 응답이 비어 있습니다.');
   return response.data;
 }
