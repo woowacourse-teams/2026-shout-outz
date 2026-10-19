@@ -34,6 +34,17 @@ it('이미지 title은 캡션으로, 태그의 color는 정해둔 색으로 보�
   );
 });
 
+it('빈 줄을 두 줄 이상 넣으면 넘친 줄만큼 빈 문단으로 띄운다', async () => {
+  renderRoute('/magazines/1');
+
+  const paragraph = await screen.findByText('팀원들과 함께 다음 순서로 문제를 해결했습니다.');
+  const spacer = paragraph.nextElementSibling;
+  expect(spacer?.tagName).toBe('P');
+  expect(spacer?.querySelector('br')).toBeInTheDocument();
+  expect(spacer).toHaveTextContent('');
+  expect(spacer?.nextElementSibling?.tagName).toBe('OL');
+});
+
 it('매거진 탭 목록에서 카드를 누르면 상세로 이동한다', async () => {
   renderRoute('/magazines');
 

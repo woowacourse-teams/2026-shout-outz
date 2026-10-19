@@ -89,7 +89,7 @@ function MagazineDetailContent({ magazineId }: { magazineId: number }) {
       </div>
       {magazine.featuredUser && <FeaturedUserIntro featuredUser={magazine.featuredUser} />}
       <div className="mt-7 border-t border-gray-100 pt-8">
-        <MarkdownContent>{magazine.contentMd}</MarkdownContent>
+        <MarkdownContent preserveBlankLines>{magazine.contentMd}</MarkdownContent>
       </div>
     </article>
   );

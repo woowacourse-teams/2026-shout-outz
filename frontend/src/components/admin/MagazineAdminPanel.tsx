@@ -433,7 +433,7 @@ function MagazineForm({
               저장된 본문 미리보기
             </summary>
             <div className="mt-4">
-              <MarkdownContent>{magazine.previewContentMd}</MarkdownContent>
+              <MarkdownContent preserveBlankLines>{magazine.previewContentMd}</MarkdownContent>
             </div>
           </details>
         )}
