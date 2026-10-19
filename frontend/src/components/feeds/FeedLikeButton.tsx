@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { IconHeart, IconHeartFilled } from '@tabler/icons-react';
 
-import { setFeedLike } from '@/apis/reaction';
+import { setFeedLike, setMagazineLike } from '@/apis/reaction';
 import { Button } from '@/components/Button';
 import { analytics } from '@/utils/analytics';
 import { getApiErrorMessage } from '@/utils/error';
@@ -14,12 +14,15 @@ export function FeedLikeButton({
   likedByMe = false,
   label = '좋아요',
   size = 'sm',
+  target = 'feeds',
 }: {
+  /** 좋아요를 누를 대상의 ID. 매거진이면 매거진 ID다. */
   feedId: number;
   likeCount?: number;
   likedByMe?: boolean;
   label?: string;
   size?: 'sm' | 'lg';
+  target?: 'feeds' | 'magazines';
 }) {
   const client = useQueryClient();
   const { requireAuthentication } = useRequireAuthentication();
@@ -35,7 +38,10 @@ export function FeedLikeButton({
       : null;
   const count = currentOverride?.count ?? likeCount;
   const liked = currentOverride?.liked ?? likedByMe;
-  const mutation = useMutation({ mutationFn: (active: boolean) => setFeedLike(feedId, active) });
+  const mutation = useMutation({
+    mutationFn: (active: boolean) =>
+      target === 'magazines' ? setMagazineLike(feedId, active) : setFeedLike(feedId, active),
+  });
 
   const toggle = async () => {
     if (!requireAuthentication() || mutation.isPending) return;
@@ -54,10 +60,15 @@ export function FeedLikeButton({
         count: result.likeCount,
         liked: result.active,
       });
-      analytics.track({ name: 'feed_like_toggled', feedId, liked: result.active });
-      void client.invalidateQueries({ queryKey: ['feed', feedId] });
-      void client.invalidateQueries({ queryKey: ['feeds'] });
-      void client.invalidateQueries({ queryKey: ['users'] });
+      if (target === 'magazines') {
+        void client.invalidateQueries({ queryKey: ['magazine', feedId] });
+        void client.invalidateQueries({ queryKey: ['magazines'] });
+      } else {
+        analytics.track({ name: 'feed_like_toggled', feedId, liked: result.active });
+        void client.invalidateQueries({ queryKey: ['feed', feedId] });
+        void client.invalidateQueries({ queryKey: ['feeds'] });
+        void client.invalidateQueries({ queryKey: ['users'] });
+      }
     } catch {
       setReactionOverride(null);
     }

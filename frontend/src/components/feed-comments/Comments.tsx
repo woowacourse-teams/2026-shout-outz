@@ -9,8 +9,10 @@ import {
 } from '@tanstack/react-query';
 import {
   commentsQuery,
+  commentsQueryKey,
   commentMutation,
   type CommentChange,
+  type CommentTarget,
   type FeedComment,
 } from '@/apis/feed-comment';
 import { sessionQuery } from '@/apis/session';
@@ -33,7 +35,7 @@ import {
   IconThumbUpFilled,
   IconTrash,
 } from '@tabler/icons-react';
-import { setFeedCommentAgree } from '@/apis/reaction';
+import { setFeedCommentAgree, setMagazineCommentAgree } from '@/apis/reaction';
 import { useRequireAuthentication } from '@/hooks/useRequireAuthentication';
 import type { FeedType } from '@/types/feed';
 
@@ -41,17 +43,27 @@ export function Comments({
   feedId,
   feedType = 'POST',
   feedAuthorId = null,
+  target = 'feeds',
 }: {
+  /** 댓글을 다는 대상의 ID. 매거진이면 매거진 ID다. */
   feedId: number;
   feedType?: FeedType;
   feedAuthorId?: number | null;
+  target?: CommentTarget;
 }) {
   return (
     <QueryErrorResetBoundary>
       {({ reset }) => (
         <SessionBoundary
           reset={reset}
-          guest={<GuestComments feedId={feedId} feedType={feedType} feedAuthorId={feedAuthorId} />}
+          guest={
+            <GuestComments
+              feedId={feedId}
+              feedType={feedType}
+              feedAuthorId={feedAuthorId}
+              target={target}
+            />
+          }
         >
           <Suspense
             fallback={
@@ -60,7 +72,12 @@ export function Comments({
               </p>
             }
           >
-            <CommentsWithSession feedId={feedId} feedType={feedType} feedAuthorId={feedAuthorId} />
+            <CommentsWithSession
+              feedId={feedId}
+              feedType={feedType}
+              feedAuthorId={feedAuthorId}
+              target={target}
+            />
           </Suspense>
         </SessionBoundary>
       )}
@@ -106,10 +123,12 @@ function GuestComments({
   feedId,
   feedType,
   feedAuthorId,
+  target,
 }: {
   feedId: number;
   feedType: FeedType;
   feedAuthorId: number | null;
+  target: CommentTarget;
 }) {
   return (
     <AsyncBoundary key={`guest-${feedId}`}>
@@ -117,6 +136,7 @@ function GuestComments({
         feedId={feedId}
         feedType={feedType}
         feedAuthorId={feedAuthorId}
+        target={target}
         viewer={null}
         sessionReady={false}
       />
@@ -128,10 +148,12 @@ function CommentsWithSession({
   feedId,
   feedType,
   feedAuthorId,
+  target,
 }: {
   feedId: number;
   feedType: FeedType;
   feedAuthorId: number | null;
+  target: CommentTarget;
 }) {
   const session = useSuspenseQuery(sessionQuery);
   const viewer = session.data.status === 'AUTHENTICATED' ? (session.data.userId ?? null) : null;
@@ -142,6 +164,7 @@ function CommentsWithSession({
         feedId={feedId}
         feedType={feedType}
         feedAuthorId={feedAuthorId}
+        target={target}
         viewer={viewer}
         sessionReady={!session.isFetching && !session.isError}
       />
@@ -152,18 +175,20 @@ function CommentList({
   feedId,
   feedType,
   feedAuthorId,
+  target,
   viewer,
   sessionReady,
 }: {
   feedId: number;
   feedType: FeedType;
   feedAuthorId: number | null;
+  target: CommentTarget;
   viewer: number | null;
   sessionReady: boolean;
 }) {
-  const query = useSuspenseInfiniteQuery(commentsQuery(feedId, viewer));
+  const query = useSuspenseInfiniteQuery(commentsQuery(feedId, viewer, target));
   const client = useQueryClient();
-  const mutation = useMutation(commentMutation(feedId));
+  const mutation = useMutation(commentMutation(feedId, target));
   const [content, setContent] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [message, setMessage] = useState('');
@@ -213,12 +238,15 @@ function CommentList({
     );
     try {
       await client.invalidateQueries(
-        { queryKey: ['feed-comments', feedId] },
+        { queryKey: commentsQueryKey(target, feedId) },
         { throwOnError: true },
       );
       if (input.method === 'post' || input.method === 'delete') {
-        void client.invalidateQueries({ queryKey: ['feed', feedId] });
-        void client.invalidateQueries({ queryKey: ['feeds'] });
+        // 상세와 목록의 댓글 수를 맞춘다.
+        const [detailKey, listKey] =
+          target === 'magazines' ? ['magazine', 'magazines'] : ['feed', 'feeds'];
+        void client.invalidateQueries({ queryKey: [detailKey, feedId] });
+        void client.invalidateQueries({ queryKey: [listKey] });
       }
       setRefreshError(null);
     } catch (error) {
@@ -342,6 +370,7 @@ function CommentList({
               canReact={sessionReady}
               canReply={!root.deleted && sessionReady && viewer !== null}
               feedId={feedId}
+              target={target}
               pending={mutation.isPending}
               change={change}
             />
@@ -376,6 +405,7 @@ function CommentList({
                       canReact={sessionReady}
                       canReply={false}
                       feedId={feedId}
+                      target={target}
                       pending={mutation.isPending}
                       change={change}
                     />
@@ -418,6 +448,7 @@ function CommentItem({
   canReact,
   canReply,
   feedId,
+  target,
   pending,
   change,
 }: {
@@ -429,6 +460,7 @@ function CommentItem({
   canReact: boolean;
   canReply: boolean;
   feedId: number;
+  target: CommentTarget;
   pending: boolean;
   change: (input: CommentChange, done: () => void) => Promise<void>;
 }) {
@@ -457,7 +489,10 @@ function CommentItem({
   const isOwnAnonymous = item.isAnonymous && item.author.handle != null;
   const authorName = item.isAnonymous && !isOwnAnonymous ? '익명' : item.author.displayName;
   const agreeMutation = useMutation({
-    mutationFn: (active: boolean) => setFeedCommentAgree(feedId, item.id, active),
+    mutationFn: (active: boolean) =>
+      target === 'magazines'
+        ? setMagazineCommentAgree(feedId, item.id, active)
+        : setFeedCommentAgree(feedId, item.id, active),
   });
 
   const toggleAgree = async () => {
@@ -477,13 +512,16 @@ function CommentItem({
         count: result.agreeCount,
         agreed: result.active,
       });
-      analytics.track({
-        name: 'comment_agree_toggled',
-        feedId,
-        isReply: item.parentId != null,
-        agreed: result.active,
-      });
-      void client.invalidateQueries({ queryKey: ['feed-comments', feedId] });
+      // 공감 이벤트는 피드 ID로 집계해서 피드 댓글만 보낸다.
+      if (target === 'feeds') {
+        analytics.track({
+          name: 'comment_agree_toggled',
+          feedId,
+          isReply: item.parentId != null,
+          agreed: result.active,
+        });
+      }
+      void client.invalidateQueries({ queryKey: commentsQueryKey(target, feedId) });
     } catch {
       setReactionOverride(null);
     }

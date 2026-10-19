@@ -2,7 +2,7 @@ import { setupWorker } from 'msw/browser';
 import { http, HttpResponse } from 'msw';
 import { handlers } from '@/api/mock/handlers';
 import { createFeedHandlers } from '@/mocks/handlers';
-import { adminMagazineHandlers, magazineHandlers } from '@/mocks/magazines';
+import { adminMagazineHandlers, createMagazineHandlers } from '@/mocks/magazines';
 
 const MOCK_LOGGED_OUT_KEY = 'shoutoutz:mock-logged-out';
 
@@ -23,7 +23,7 @@ export const worker = setupWorker(
     return new HttpResponse(null, { status: 204 });
   }),
   ...createFeedHandlers({ includeProfile: false, profileCases: true, recommendations: true }),
-  ...magazineHandlers,
+  ...createMagazineHandlers(),
   ...adminMagazineHandlers,
   ...handlers,
 );
