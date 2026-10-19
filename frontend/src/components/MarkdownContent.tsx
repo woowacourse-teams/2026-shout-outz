@@ -2,7 +2,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
-import { resolveTextColor } from '@/utils/markdown';
+import { parseImageSize, resolveTextColor } from '@/utils/markdown';
 
 /** 기본 허용 목록에 글자 색 전용 태그 `<font>`만 더한다. color 속성은 기본으로 모든 태그에 허용된다. */
 const SANITIZE_SCHEMA = {
@@ -57,14 +57,28 @@ export function MarkdownContent({ children }: { children: string }) {
           },
           // `![대체텍스트](주소 "캡션")`의 title을 이미지 아래 캡션으로 보여준다.
           // 이미지가 <p> 안에 그려지므로 figure 대신 block span으로 감싼다.
-          img: ({ node, title, ...props }) => {
+          img: ({ node, title, alt = '', style, ...props }) => {
             void node;
-            if (!title) return <img {...props} loading="lazy" />;
+            const size = parseImageSize(alt);
+            const image = (
+              <img
+                {...props}
+                alt={size.alt}
+                loading="lazy"
+                style={
+                  size.width
+                    ? // 높이를 정하면 비율이 달라질 수 있어 잘리지 않게 맞춘다.
+                      { ...style, width: size.width, height: size.height, objectFit: 'contain' }
+                    : style
+                }
+              />
+            );
+            if (!title?.trim()) return image;
             return (
               <span className="block">
-                <img {...props} loading="lazy" />
+                {image}
                 <span className="mt-2 block text-center text-xs leading-5 text-gray-500">
-                  {title}
+                  {title.trim()}
                 </span>
               </span>
             );

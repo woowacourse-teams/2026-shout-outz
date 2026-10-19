@@ -15,7 +15,7 @@ const CONTENT_MD = `## 자기소개 부탁드려요
 2. 원인을 찾고 테스트를 먼저 작성한다
 3. 수정 후 제보자에게 결과를 알린다
 
-![프로젝트 회고 사진](https://picsum.photos/seed/magazine-retro/960/540 "팀원들과 레벨 3 회고를 마친 날")
+![프로젝트 회고 사진|480](https://picsum.photos/seed/magazine-retro/960/540 "팀원들과 레벨 3 회고를 마친 날")
 
 ## 후배 크루에게 한마디
 

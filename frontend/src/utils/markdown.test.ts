@@ -1,4 +1,4 @@
-import { resolveTextColor, toPlainText } from '@/utils/markdown';
+import { parseImageSize, resolveTextColor, toPlainText } from '@/utils/markdown';
 
 describe('toPlainText', () => {
   test('제목·목록·인용 기호를 걷어내고 줄을 공백 하나로 합친다', () => {
@@ -46,4 +46,19 @@ describe('resolveTextColor', () => {
       expect(resolveTextColor(value)).toBeUndefined();
     },
   );
+});
+
+describe('parseImageSize', () => {
+  it.each([
+    ['회고 사진|300', { alt: '회고 사진', width: '300px', height: undefined }],
+    ['회고 사진 | 300px', { alt: '회고 사진', width: '300px', height: undefined }],
+    ['회고 사진|50%', { alt: '회고 사진', width: '50%', height: undefined }],
+    ['회고 사진|300x200', { alt: '회고 사진', width: '300px', height: '200px' }],
+  ])('%s의 크기를 떼어 낸다', (alt, expected) => {
+    expect(parseImageSize(alt)).toEqual(expected);
+  });
+
+  it.each(['회고 사진', 'A|B 비교', '회고|x200'])('크기가 아닌 %s는 그대로 둔다', (alt) => {
+    expect(parseImageSize(alt)).toEqual({ alt });
+  });
 });

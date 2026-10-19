@@ -55,3 +55,26 @@ export function resolveTextColor(value: string) {
   if (staticPrefix) return STATIC_HUES.includes(hue) ? `var(--static-${hue}-${step})` : undefined;
   return ADAPTIVE_HUES.includes(hue) ? `var(--adaptive-${hue}-${step})` : undefined;
 }
+
+const IMAGE_SIZE = /^(.*?)\s*\|\s*(\d{1,4})(%|px)?(?:\s*x\s*(\d{1,4})(?:px)?)?\s*$/i;
+
+/**
+ * 이미지 대체 텍스트 끝의 `|크기`를 떼어 낸다. 서버가 본문의 `<img>` 태그를 막아서, 크기는
+ * 마크다운 문법 `![설명|300](주소)` 안에 적는다.
+ *
+ * - `설명|300`: 너비 300px
+ * - `설명|50%`: 너비 50%
+ * - `설명|300x200`: 너비 300px, 높이 200px
+ * - `설명|x200`은 지원하지 않는다. 높이만 맞추려면 너비를 함께 적는다.
+ */
+export function parseImageSize(alt: string) {
+  const match = IMAGE_SIZE.exec(alt);
+  if (!match) return { alt };
+
+  const [, text, width, unit, height] = match;
+  return {
+    alt: text!,
+    width: unit === '%' ? `${width}%` : `${width}px`,
+    height: height && unit !== '%' ? `${height}px` : undefined,
+  };
+}
