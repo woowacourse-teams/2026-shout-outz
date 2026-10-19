@@ -1,4 +1,4 @@
-import { parseImageSize, resolveTextColor, toPlainText } from '@/utils/markdown';
+import { parseImageSize, toPlainText } from '@/utils/markdown';
 
 describe('toPlainText', () => {
   test('제목·목록·인용 기호를 걷어내고 줄을 공백 하나로 합친다', () => {
@@ -26,26 +26,6 @@ describe('toPlainText', () => {
       '후기입니다. https://woojin.log/tech',
     );
   });
-});
-
-describe('resolveTextColor', () => {
-  it.each([
-    ['red', 'var(--adaptive-red-600)'],
-    ['Primary', 'var(--adaptive-blue-600)'],
-    ['blue-500', 'var(--adaptive-blue-500)'],
-    ['static-blue-500', 'var(--static-blue-500)'],
-    ['var(--static-blue-500, #3688FF)', 'var(--static-blue-500)'],
-    ['var(--color-green-700)', 'var(--adaptive-green-700)'],
-  ])('%s는 %s로 칠한다', (value, expected) => {
-    expect(resolveTextColor(value)).toBe(expected);
-  });
-
-  it.each(['#3688FF', 'rgb(0,0,0)', 'blue-550', 'static-gray-500', 'purple-500', 'var(--x)'])(
-    '토큰이 아닌 %s는 무시한다',
-    (value) => {
-      expect(resolveTextColor(value)).toBeUndefined();
-    },
-  );
 });
 
 describe('parseImageSize', () => {

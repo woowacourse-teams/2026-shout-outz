@@ -2,12 +2,26 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
-import { parseImageSize, resolveTextColor } from '@/utils/markdown';
+import { parseImageSize } from '@/utils/markdown';
 
 /** 기본 허용 목록에 글자 색 전용 태그 `<font>`만 더한다. color 속성은 기본으로 모든 태그에 허용된다. */
 const SANITIZE_SCHEMA = {
   ...defaultSchema,
   tagNames: [...(defaultSchema.tagNames ?? []), 'font'],
+};
+
+/**
+ * `color="red"` 값을 컬러 토큰으로 바꾼다. sanitize가 style·class는 지우지만 color 속성은 남기므로,
+ * 정해둔 색만 토큰으로 칠하고 나머지 값은 무시한다. 제목·링크에 걸린 기본 글자색보다 우선하도록
+ * important로 둔다.
+ */
+const TEXT_COLOR_CLASSES: Record<string, string> = {
+  red: 'text-red-600!',
+  blue: 'text-blue-600!',
+  green: 'text-green-600!',
+  yellow: 'text-yellow-600!',
+  gray: 'text-gray-500!',
+  primary: 'text-primary-600!',
 };
 
 interface HastNode {
@@ -17,20 +31,18 @@ interface HastNode {
   children?: HastNode[];
 }
 
-/**
- * sanitize를 거친 뒤 모든 태그의 color 속성을 컬러 토큰 색으로 칠하고, `<font>`는 `<span>`으로 그린다.
- * sanitize가 사용자가 쓴 style은 지우므로, 여기서 검증한 토큰 변수만 style로 넣는다. 인라인 스타일이라
- * 제목·링크에 걸린 기본 글자색보다 우선한다.
- */
+/** sanitize를 거친 뒤 모든 태그의 color 속성을 토큰 클래스로 바꾸고, `<font>`는 `<span>`으로 그린다. */
 function rehypeTextColor() {
   const paint = (node: HastNode) => {
     if (node.type === 'element' && node.properties) {
       if (node.tagName === 'font') node.tagName = 'span';
-      const { color } = node.properties;
+      const { color, className } = node.properties;
       if (typeof color === 'string') {
         delete node.properties.color;
-        const resolved = resolveTextColor(color);
-        if (resolved) node.properties.style = `color: ${resolved}`;
+        const colorClass = TEXT_COLOR_CLASSES[color.trim().toLowerCase()];
+        if (colorClass) {
+          node.properties.className = [...(Array.isArray(className) ? className : []), colorClass];
+        }
       }
     }
     node.children?.forEach(paint);

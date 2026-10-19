@@ -27,11 +27,11 @@ it('이미지 title은 캡션으로, 태그의 color는 정해둔 색으로 보�
   renderRoute('/magazines/1');
 
   expect(await screen.findByText('팀원들과 레벨 3 회고를 마친 날')).toBeInTheDocument();
-  expect(screen.getByText('실제 사용자')).toHaveStyle({ color: 'var(--adaptive-red-600)' });
-  expect(screen.getByText('꾸준히')).toHaveStyle({ color: 'var(--adaptive-blue-600)' });
-  expect(screen.getByText('Q. 레벨 3 프로젝트에서 가장 기억에 남는 순간은?')).toHaveStyle({
-    color: 'var(--static-blue-500)',
-  });
+  expect(screen.getByText('실제 사용자')).toHaveClass('text-red-600!');
+  expect(screen.getByText('꾸준히')).toHaveClass('text-primary-600!');
+  expect(screen.getByText('Q. 레벨 3 프로젝트에서 가장 기억에 남는 순간은?')).toHaveClass(
+    'text-blue-600!',
+  );
 });
 
 it('매거진 탭 목록에서 카드를 누르면 상세로 이동한다', async () => {

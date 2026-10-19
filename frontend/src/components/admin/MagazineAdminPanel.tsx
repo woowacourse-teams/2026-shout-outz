@@ -614,8 +614,7 @@ function ContentField({
             이미지 캡션: <code>![설명](media://ID "캡션")</code> · 이미지 크기:{' '}
             <code>![설명|300](...)</code>, <code>|50%</code>, <code>|300x200</code> · 글자 색:{' '}
             <code>&lt;font color="red"&gt;강조&lt;/font&gt;</code>, 다른 태그에도 <code>color</code>{' '}
-            속성 사용 가능. 색 이름(red, blue, green, yellow, gray, primary)이나 컬러 토큰
-            (blue-500, static-blue-500, var(--static-blue-500))만 적용되고 hex 값은 무시돼요.
+            속성 사용 가능 (red, blue, green, yellow, gray, primary)
           </p>
         </div>
       )}
