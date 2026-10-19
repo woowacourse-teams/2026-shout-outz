@@ -67,3 +67,13 @@ it('상단에는 에디터를, 본문 앞에는 인터뷰이와 소개문을 보
   );
   expect(within(intro).getByText('우아한테크코스 8기')).toBeInTheDocument();
 });
+
+it('목록 카드에는 인터뷰이가 아니라 에디터를 보여준다', async () => {
+  renderRoute('/magazines');
+
+  const card = (await screen.findByRole('link', { name: '우진의 레벨 3 회고' })).closest(
+    'article',
+  )!;
+  expect(within(card).getByText('재키')).toBeInTheDocument();
+  expect(within(card).queryByText('우진')).not.toBeInTheDocument();
+});

@@ -35,21 +35,17 @@ export function MagazineCard({ magazine }: { magazine: MagazineListItem }) {
           )}
         </div>
         <div className="mt-5 flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
-          {magazine.featuredUser ? (
-            <div className="flex min-w-0 items-center gap-2">
-              <Avatar
-                size="sm"
-                src={magazine.featuredUser.avatarUrl}
-                name={magazine.featuredUser.displayName}
-                alt=""
-              />
-              <span className="truncate text-xs font-semibold text-gray-900">
-                {magazine.featuredUser.displayName}
-              </span>
-            </div>
-          ) : (
-            <span />
-          )}
+          <div className="flex min-w-0 items-center gap-2">
+            <Avatar
+              size="sm"
+              src={magazine.author.avatarUrl}
+              name={magazine.author.displayName ?? undefined}
+              alt=""
+            />
+            <span className="truncate text-xs font-semibold text-gray-900">
+              {magazine.author.displayName ?? '탈퇴한 사용자'}
+            </span>
+          </div>
           <time dateTime={publishedAt} className="shrink-0 text-xs text-gray-500">
             {formatDotDate(publishedAt)}
           </time>
