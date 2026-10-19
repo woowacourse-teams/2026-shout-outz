@@ -6,6 +6,7 @@ import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
+import { ClientOnly } from '@/components/ClientOnly';
 import { Comments } from '@/components/feed-comments/Comments';
 import { FeedLikeButton } from '@/components/feeds/FeedLikeButton';
 import { Footer } from '@/components/Footer';
@@ -95,30 +96,32 @@ function MagazineDetailContent({ magazineId }: { magazineId: number }) {
       <div className="mt-7 border-t border-gray-100 pt-8">
         <MarkdownContent preserveBlankLines>{magazine.contentMd}</MarkdownContent>
       </div>
-      <div className="mt-10 mb-8 flex justify-center">
-        <FeedLikeButton
-          target="magazines"
-          feedId={magazine.id}
-          likeCount={magazine.likeCount}
-          likedByMe={magazine.likedByMe}
-          size="lg"
-        />
-      </div>
-      <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 pb-5">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1 px-2"
-          aria-label="댓글"
-          onClick={() => document.getElementById('magazine-comments')?.scrollIntoView()}
-        >
-          <IconMessageCircle className="size-4" aria-hidden="true" />
-          <span aria-label="댓글 수">{magazine.commentCount}</span>
-        </Button>
-      </div>
-      <section id="magazine-comments" aria-label="댓글 목록" className="mt-12 px-0 md:px-3">
-        <Comments target="magazines" feedId={magazine.id} />
-      </section>
+      <ClientOnly>
+        <div className="mt-10 mb-8 flex justify-center">
+          <FeedLikeButton
+            target="magazines"
+            feedId={magazine.id}
+            likeCount={magazine.likeCount}
+            likedByMe={magazine.likedByMe}
+            size="lg"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 pb-5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 px-2"
+            aria-label="댓글"
+            onClick={() => document.getElementById('magazine-comments')?.scrollIntoView()}
+          >
+            <IconMessageCircle className="size-4" aria-hidden="true" />
+            <span aria-label="댓글 수">{magazine.commentCount}</span>
+          </Button>
+        </div>
+        <section id="magazine-comments" aria-label="댓글 목록" className="mt-12 px-0 md:px-3">
+          <Comments target="magazines" feedId={magazine.id} />
+        </section>
+      </ClientOnly>
     </article>
   );
 }
