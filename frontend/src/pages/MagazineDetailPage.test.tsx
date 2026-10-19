@@ -2,9 +2,11 @@
  * @jest-environment ./jest.network-environment.js
  * @jest-environment-options {"customExportConditions":["node","node-addons"]}
  */
-import { screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { http, HttpResponse } from 'msw';
+import { Route as MagazineDetailRoute } from '@/routes/magazines/$magazineId';
 import { createMagazineHandlers } from '@/mocks/magazines';
 import { renderRoute, server } from '@/test/renderRoute';
 
@@ -104,4 +106,59 @@ it('매거진에 댓글을 남기면 목록과 댓글 수에 반영된다', asyn
   const list = await screen.findByRole('list', { name: '댓글 목록' });
   expect(await within(list).findByText('인터뷰 잘 읽었어요')).toBeInTheDocument();
   expect(await screen.findByLabelText('댓글 1개')).toBeInTheDocument();
+});
+
+it('매거진별 OG를 중복 없이 표시하고 목록으로 돌아오면 공통 OG로 복원한다', async () => {
+  const router = renderRoute('/magazines/1');
+  await screen.findByRole('heading', { level: 1, name: '우진의 레벨 3 회고' });
+  const content = (property: string) =>
+    document.querySelector(`meta[property="${property}"]`)?.getAttribute('content');
+  expect(document.querySelectorAll('meta[property="og:title"]')).toHaveLength(1);
+  expect(content('og:title')).toBe('우진의 레벨 3 회고');
+  expect(content('og:description')).toBe('실제 사용자를 만나며 배운 점을 들어봤어요.');
+  expect(content('og:image')).toBe('https://picsum.photos/seed/magazine-0/960/540');
+  expect(content('og:type')).toBe('article');
+  expect(content('og:url')).toBe('https://shout-ou.tz/magazines/1');
+  expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute(
+    'href',
+    'https://shout-ou.tz/magazines/1',
+  );
+  expect(document.querySelector('meta[property="og:image:width"]')).toBeNull();
+  await act(() => router.navigate({ to: '/magazines' }));
+  await waitFor(() => expect(content('og:title')).toBe('shout-outz'));
+  expect(document.querySelectorAll('meta[property="og:title"]')).toHaveLength(1);
+  expect(content('og:image')).toBe('https://shout-ou.tz/og-image.jpg');
+  expect(content('og:url')).toBeUndefined();
+});
+
+it('대표 이미지가 없는 매거진은 공통 OG 이미지를 사용한다', async () => {
+  renderRoute('/magazines/4');
+  await screen.findByRole('heading', { level: 1, name: '코드 리뷰로 배운 것들' });
+  expect(document.querySelector('meta[property="og:image"]')).toHaveAttribute(
+    'content',
+    'https://shout-ou.tz/og-image.jpg',
+  );
+  expect(document.querySelector('meta[property="og:title"]')).toHaveAttribute(
+    'content',
+    '코드 리뷰로 배운 것들',
+  );
+});
+
+it('SSG 경로는 첫 페이지 이후의 발행 매거진도 수집한다', async () => {
+  const cursors: Array<string | null> = [];
+  server.use(
+    http.get('*/api/v1/magazines', ({ request }) => {
+      const cursor = new URL(request.url).searchParams.get('cursor');
+      cursors.push(cursor);
+      return HttpResponse.json({
+        status: 'success',
+        data: [{ id: cursor ? 51 : 1 }],
+        meta: { hasNext: !cursor, nextCursor: cursor ? null : 'page2', totalCount: 2 },
+      });
+    }),
+  );
+  expect(MagazineDetailRoute.options.staticData?.prerender).toBe(true);
+  const params = await MagazineDetailRoute.options.staticData!.generateStaticParams!();
+  expect(params).toEqual([{ magazineId: '1' }, { magazineId: '51' }]);
+  expect(cursors).toEqual([null, 'page2']);
 });
