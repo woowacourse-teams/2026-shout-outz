@@ -19,7 +19,11 @@ it('매거진 본문을 마크다운으로 그린다', async () => {
     screen.getByRole('heading', { level: 2, name: '자기소개 부탁드려요' }),
   ).toBeInTheDocument();
   expect(screen.getByText('우진', { selector: 'strong' })).toBeInTheDocument();
-  expect(screen.getByRole('img', { name: '프로젝트 회고 사진' })).toHaveStyle({ width: '480px' });
+  expect(screen.getByRole('img', { name: '프로젝트 회고 사진' })).toHaveStyle({
+    width: '480px',
+    display: 'block',
+    marginInline: 'auto',
+  });
   expect(screen.getAllByRole('listitem')).toHaveLength(5);
 });
 
