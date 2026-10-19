@@ -419,7 +419,7 @@ export const deleteMagazineMutation = mutationOptions({
   retry: false,
 });
 
-/** 요약·본문·대표 이미지가 모두 있어야 발행된다(`MAGAZINE_PUBLISH_INCOMPLETE`). */
+/** 요약·본문·대표 이미지·인터뷰이 소개가 모두 있어야 발행된다(`MAGAZINE_PUBLISH_INCOMPLETE`). */
 export async function publishMagazine(magazineId: number) {
   const body = await httpClient<MagazineAdminResponse>(`${MAGAZINE_PATH}/${magazineId}/publish`, {
     method: 'post',

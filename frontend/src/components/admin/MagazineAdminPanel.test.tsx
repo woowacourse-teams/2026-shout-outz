@@ -84,6 +84,7 @@ test('인터뷰이를 검색해 고르고 초안을 등록한다', async () => {
   await waitFor(() =>
     expect(saved).toEqual({
       featuredUserId: expect.any(Number),
+      featuredUserIntroduction: null,
       title: '새 매거진',
       summary: '요약',
       thumbnailMediaId: null,
@@ -117,9 +118,32 @@ test('수정하면 원본 본문과 이미지 참조를 그대로 전체 교체�
   await waitFor(() =>
     expect(saved).toMatchObject({
       featuredUserId: 101,
+      featuredUserIntroduction: '우아한테크코스 8기',
       title: '고친 제목',
       thumbnailMediaId: 501,
       contentMd: expect.stringContaining('## 자기소개 부탁드려요'),
     }),
   );
+});
+
+test('발행된 매거진은 인터뷰이 소개를 비우면 저장하지 않는다', async () => {
+  const user = userEvent.setup();
+  let requested = false;
+  server.use(
+    http.put('/api/v1/admin/magazines/:magazineId', () => {
+      requested = true;
+      return HttpResponse.json({ status: 'success', data: { id: 1 } });
+    }),
+  );
+  renderRoute('/admin?tab=magazines');
+
+  const row = await rowOf('우진의 레벨 3 회고');
+  await user.click(within(row).getByRole('button', { name: '수정' }));
+  await user.clear(await screen.findByLabelText('인터뷰이 소개 *'));
+  await user.click(screen.getByRole('button', { name: '수정 저장' }));
+
+  expect(
+    await screen.findByText('발행된 매거진은 인터뷰이 소개를 입력해야 해요.'),
+  ).toBeInTheDocument();
+  expect(requested).toBe(false);
 });

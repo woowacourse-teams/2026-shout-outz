@@ -2,7 +2,7 @@
  * @jest-environment ./jest.network-environment.js
  * @jest-environment-options {"customExportConditions":["node","node-addons"]}
  */
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 
 import { magazineHandlers } from '@/mocks/magazines';
 import { renderRoute, server } from '@/test/renderRoute';
@@ -38,4 +38,18 @@ it('매거진 탭 목록에서 카드를 누르면 상세로 이동한다', asyn
     'href',
     '/magazines/3',
   );
+});
+
+it('상단에는 에디터를, 본문 앞에는 인터뷰이와 소개문을 보여준다', async () => {
+  renderRoute('/magazines/1');
+
+  expect(await screen.findByText('에디터')).toBeInTheDocument();
+  expect(screen.getByText('재키')).toBeInTheDocument();
+
+  const intro = screen.getByRole('region', { name: '인터뷰이 소개' });
+  expect(within(intro).getByRole('link', { name: '우진 프로필 보기' })).toHaveAttribute(
+    'href',
+    '/users/crew1',
+  );
+  expect(within(intro).getByText('우아한테크코스 8기')).toBeInTheDocument();
 });

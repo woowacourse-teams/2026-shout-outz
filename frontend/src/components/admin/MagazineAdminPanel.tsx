@@ -41,6 +41,7 @@ const TEXTAREA_CLASS =
 /** 서버 제약과 같은 길이 한도. */
 const TITLE_MAX = 200;
 const SUMMARY_MAX = 500;
+const INTRODUCTION_MAX = 200;
 const CONTENT_MAX = 100_000;
 
 /** 화면에 보여줄 인터뷰이. 상세 응답은 ID만 주므로 목록이나 검색 결과에서 이름을 가져온다. */
@@ -240,6 +241,7 @@ function MagazineEditForm({ editing, onDone }: { editing: Editing; onDone: () =>
 
 interface MagazineFormValues {
   featuredUser: FeaturedUser | null;
+  featuredUserIntroduction: string;
   title: string;
   summary: string;
   thumbnailMediaId: number | null;
@@ -248,15 +250,21 @@ interface MagazineFormValues {
 
 const EMPTY_FORM: MagazineFormValues = {
   featuredUser: null,
+  featuredUserIntroduction: '',
   title: '',
   summary: '',
   thumbnailMediaId: null,
   contentMd: '',
 };
 
-function validate(values: MagazineFormValues) {
+/** 소개문은 초안에서는 선택이지만, 발행된 글을 수정할 때는 서버가 필수로 받는다. */
+function validate(values: MagazineFormValues, published: boolean) {
   const errors: Partial<Record<keyof MagazineFormValues, string>> = {};
   if (!values.featuredUser) errors.featuredUser = '인터뷰이를 골라 주세요.';
+  if (published && !values.featuredUserIntroduction.trim())
+    errors.featuredUserIntroduction = '발행된 매거진은 인터뷰이 소개를 입력해야 해요.';
+  else if (values.featuredUserIntroduction.length > INTRODUCTION_MAX)
+    errors.featuredUserIntroduction = `인터뷰이 소개는 ${INTRODUCTION_MAX}자까지 입력할 수 있어요.`;
   if (!values.title.trim()) errors.title = '제목을 입력해 주세요.';
   else if (values.title.length > TITLE_MAX)
     errors.title = `제목은 ${TITLE_MAX}자까지 입력할 수 있어요.`;
@@ -271,6 +279,7 @@ function validate(values: MagazineFormValues) {
 function toSaveBody(values: MagazineFormValues): MagazineSaveBody {
   return {
     featuredUserId: values.featuredUser!.userId,
+    featuredUserIntroduction: values.featuredUserIntroduction.trim() || null,
     title: values.title.trim(),
     summary: values.summary.trim() || null,
     thumbnailMediaId: values.thumbnailMediaId,
@@ -292,6 +301,7 @@ function MagazineForm({
     magazine
       ? {
           featuredUser,
+          featuredUserIntroduction: magazine.featuredUserIntroduction ?? '',
           title: magazine.title,
           summary: magazine.summary ?? '',
           thumbnailMediaId: magazine.thumbnailMediaId ?? null,
@@ -300,6 +310,7 @@ function MagazineForm({
       : EMPTY_FORM,
   );
   const [errors, setErrors] = useState<ReturnType<typeof validate>>({});
+  const published = magazine?.status === 'PUBLISHED';
   const onSuccess = () => {
     void client.invalidateQueries({ queryKey: adminQueryKeys.magazines });
     if (magazine) {
@@ -336,7 +347,7 @@ function MagazineForm({
         onSubmit={(event) => {
           event.preventDefault();
           if (save.isPending) return;
-          const nextErrors = validate(values);
+          const nextErrors = validate(values, published);
           setErrors(nextErrors);
           if (Object.keys(nextErrors).length > 0) return;
           const body = toSaveBody(values);
@@ -349,6 +360,24 @@ function MagazineForm({
           onChange={(featuredUser) => setField('featuredUser', featuredUser)}
           error={errors.featuredUser}
         />
+
+        <Field
+          label={published ? '인터뷰이 소개 *' : '인터뷰이 소개 (발행에 필요)'}
+          error={errors.featuredUserIntroduction}
+        >
+          {(id) => (
+            <textarea
+              id={id}
+              rows={2}
+              maxLength={INTRODUCTION_MAX}
+              value={values.featuredUserIntroduction}
+              onChange={(event) => setField('featuredUserIntroduction', event.target.value)}
+              placeholder="예: 우테코 4기 출신, 전 프론트엔드 코치"
+              className={TEXTAREA_CLASS}
+              aria-invalid={Boolean(errors.featuredUserIntroduction)}
+            />
+          )}
+        </Field>
 
         <Field label="제목 *" error={errors.title}>
           {(id) => (

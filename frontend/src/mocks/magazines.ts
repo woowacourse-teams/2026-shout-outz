@@ -82,6 +82,8 @@ const adminStatusOf = (magazine: Magazine) =>
 const toAdminMagazine = (magazine: Magazine) => ({
   id: magazine.id,
   featuredUserId: 100 + magazine.id,
+  featuredUserIntroduction: magazine.featuredUser?.introduction ?? null,
+  author: magazine.author,
   title: magazine.title,
   summary: magazine.summary,
   thumbnailMediaId: magazine.thumbnailUrl ? 500 + magazine.id : null,
