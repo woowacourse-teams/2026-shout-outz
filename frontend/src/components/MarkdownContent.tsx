@@ -116,7 +116,15 @@ export function MarkdownContent({
                 style={
                   size.width
                     ? // 높이를 정하면 비율이 달라질 수 있어 잘리지 않게 맞춘다.
-                      { ...style, width: size.width, height: size.height, objectFit: 'contain' }
+                      // 줄인 이미지가 문단 왼쪽에 붙지 않게 블록으로 그려 가운데에 둔다.
+                      {
+                        ...style,
+                        width: size.width,
+                        height: size.height,
+                        objectFit: 'contain',
+                        display: 'block',
+                        marginInline: 'auto',
+                      }
                     : style
                 }
               />

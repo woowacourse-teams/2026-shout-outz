@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import type { Magazine } from '@/apis/magazine';
+import type { FeedComment } from '@/apis/feed-comment';
 
 const CONTENT_MD = `## 자기소개 부탁드려요
 
@@ -51,29 +52,172 @@ export const mockMagazines: Magazine[] = Array.from({ length: 4 }, (_, index) =>
   viewCount: 120 - index * 10,
 }));
 
-export const magazineHandlers = [
-  http.get('/api/v1/magazines', () =>
-    HttpResponse.json({
-      status: 'success',
-      // 목록 응답에는 본문(contentMd) 대신 발행 상태가 있다.
-      data: mockMagazines.map((magazine) => ({
-        ...magazine,
-        contentMd: undefined,
-        status: 'PUBLISHED',
+const COMMENT_AUTHOR = {
+  userId: 1,
+  handle: 'woojin',
+  displayName: '개발용 사용자',
+  userType: 'WOOWACOURSE_CREW',
+  isCurrent: true,
+  cohort: 8,
+  track: 'BACKEND',
+  avatarUrl: null,
+} satisfies FeedComment['author'];
+
+const notFound = () =>
+  HttpResponse.json(
+    { status: 'error', code: 'MAGAZINE_NOT_FOUND', message: '매거진을 찾을 수 없습니다.' },
+    { status: 404 },
+  );
+
+/** 좋아요와 댓글을 핸들러마다 따로 기억한다. 테스트마다 새로 만들어 상태가 넘어가지 않게 한다. */
+export function createMagazineHandlers() {
+  let sequence = 1000;
+  const likes = new Map(
+    mockMagazines.map((magazine) => [
+      magazine.id,
+      { likeCount: magazine.likeCount, likedByMe: magazine.likedByMe ?? false },
+    ]),
+  );
+  const comments = new Map<number, FeedComment[]>(
+    mockMagazines.map((magazine) => [
+      magazine.id,
+      Array.from({ length: magazine.commentCount }, (_, index) => ({
+        id: magazine.id * 100 + index,
+        content: '좋은 인터뷰 감사합니다!',
+        author: COMMENT_AUTHOR,
+        parentId: null,
+        isAnonymous: false,
+        createdAt: '2026-10-15T00:00:00Z',
+        updatedAt: '2026-10-15T00:00:00Z',
+        editable: true,
+        edited: false,
+        deleted: false,
+        agreeCount: 0,
+        agreedByMe: false,
       })),
-      meta: { hasNext: false, nextCursor: null, totalCount: mockMagazines.length },
+    ]),
+  );
+  const withState = (magazine: Magazine) => ({
+    ...magazine,
+    ...likes.get(magazine.id),
+    commentCount: (comments.get(magazine.id) ?? []).filter((item) => !item.deleted).length,
+  });
+  const findComment = (magazineId: number, commentId: number) =>
+    comments.get(magazineId)?.find((item) => item.id === commentId);
+  const setLike = (magazineId: number, active: boolean) => {
+    const state = likes.get(magazineId);
+    if (!state) return notFound();
+    if (state.likedByMe !== active) {
+      state.likedByMe = active;
+      state.likeCount = Math.max(0, state.likeCount + (active ? 1 : -1));
+    }
+    return HttpResponse.json({
+      status: 'success',
+      data: { magazineId, type: 'LIKE', active, likeCount: state.likeCount },
+    });
+  };
+  const setAgree = (magazineId: number, commentId: number, active: boolean) => {
+    const item = findComment(magazineId, commentId);
+    if (!item) return notFound();
+    if (item.agreedByMe !== active) {
+      item.agreedByMe = active;
+      item.agreeCount = Math.max(0, (item.agreeCount ?? 0) + (active ? 1 : -1));
+    }
+    return HttpResponse.json({
+      status: 'success',
+      data: { magazineId, commentId, type: 'AGREE', active, agreeCount: item.agreeCount },
+    });
+  };
+
+  return [
+    http.get('/api/v1/magazines', () =>
+      HttpResponse.json({
+        status: 'success',
+        // 목록 응답에는 본문(contentMd) 대신 발행 상태가 있다.
+        data: mockMagazines.map((magazine) => ({
+          ...withState(magazine),
+          contentMd: undefined,
+          status: 'PUBLISHED',
+        })),
+        meta: { hasNext: false, nextCursor: null, totalCount: mockMagazines.length },
+      }),
+    ),
+    http.get('/api/v1/magazines/:magazineId', ({ params }) => {
+      const magazine = mockMagazines.find((item) => item.id === Number(params.magazineId));
+      return magazine
+        ? HttpResponse.json({ status: 'success', data: withState(magazine) })
+        : notFound();
     }),
-  ),
-  http.get('/api/v1/magazines/:magazineId', ({ params }) => {
-    const magazine = mockMagazines.find((item) => item.id === Number(params.magazineId));
-    return magazine
-      ? HttpResponse.json({ status: 'success', data: magazine })
-      : HttpResponse.json(
-          { status: 'error', code: 'MAGAZINE_NOT_FOUND', message: '인터뷰를 찾을 수 없습니다.' },
-          { status: 404 },
-        );
-  }),
-];
+    http.put('/api/v1/magazines/:magazineId/reactions/LIKE', ({ params }) =>
+      setLike(Number(params.magazineId), true),
+    ),
+    http.delete('/api/v1/magazines/:magazineId/reactions/LIKE', ({ params }) =>
+      setLike(Number(params.magazineId), false),
+    ),
+    http.get('/api/v1/magazines/:magazineId/comments', ({ params }) => {
+      const items = comments.get(Number(params.magazineId));
+      if (!items) return notFound();
+      return HttpResponse.json({
+        status: 'success',
+        data: items,
+        meta: {
+          hasNext: false,
+          nextCursor: null,
+          totalCount: items.filter((item) => !item.deleted).length,
+        },
+      });
+    }),
+    http.post('/api/v1/magazines/:magazineId/comments', async ({ params, request }) => {
+      const items = comments.get(Number(params.magazineId));
+      if (!items) return notFound();
+      const body = (await request.json()) as {
+        content: string;
+        isAnonymous?: boolean;
+        parentId?: number | null;
+      };
+      const now = new Date().toISOString();
+      const item: FeedComment = {
+        id: sequence++,
+        content: body.content.trim(),
+        author: COMMENT_AUTHOR,
+        parentId: body.parentId ?? null,
+        isAnonymous: body.isAnonymous ?? false,
+        createdAt: now,
+        updatedAt: now,
+        editable: true,
+        edited: false,
+        deleted: false,
+        agreeCount: 0,
+        agreedByMe: false,
+      };
+      items.push(item);
+      return HttpResponse.json({ status: 'success', data: item }, { status: 201 });
+    }),
+    http.patch('/api/v1/magazines/:magazineId/comments/:commentId', async ({ params, request }) => {
+      const item = findComment(Number(params.magazineId), Number(params.commentId));
+      if (!item) return notFound();
+      const body = (await request.json()) as { content: string };
+      Object.assign(item, {
+        content: body.content.trim(),
+        edited: true,
+        updatedAt: new Date().toISOString(),
+      });
+      return HttpResponse.json({ status: 'success', data: item });
+    }),
+    http.delete('/api/v1/magazines/:magazineId/comments/:commentId', ({ params }) => {
+      const item = findComment(Number(params.magazineId), Number(params.commentId));
+      if (!item) return notFound();
+      Object.assign(item, { content: null, deleted: true, editable: false });
+      return HttpResponse.json({ status: 'success', data: { id: item.id, deleted: true } });
+    }),
+    http.put('/api/v1/magazines/:magazineId/comments/:commentId/reactions/AGREE', ({ params }) =>
+      setAgree(Number(params.magazineId), Number(params.commentId), true),
+    ),
+    http.delete('/api/v1/magazines/:magazineId/comments/:commentId/reactions/AGREE', ({ params }) =>
+      setAgree(Number(params.magazineId), Number(params.commentId), false),
+    ),
+  ];
+}
 
 /** 관리자 목록에서 마지막 인터뷰는 아직 발행하지 않은 초안으로 보여준다. */
 const adminStatusOf = (magazine: Magazine) =>
@@ -96,12 +240,6 @@ const toAdminMagazine = (magazine: Magazine) => ({
   createdAt: magazine.createdAt,
   updatedAt: magazine.updatedAt,
 });
-
-const notFound = () =>
-  HttpResponse.json(
-    { status: 'error', code: 'MAGAZINE_NOT_FOUND', message: '인터뷰를 찾을 수 없습니다.' },
-    { status: 404 },
-  );
 
 const findMagazine = (magazineId: unknown) =>
   mockMagazines.find((item) => item.id === Number(magazineId));

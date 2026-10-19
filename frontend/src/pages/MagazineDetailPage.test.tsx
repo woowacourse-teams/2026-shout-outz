@@ -3,11 +3,12 @@
  * @jest-environment-options {"customExportConditions":["node","node-addons"]}
  */
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
-import { magazineHandlers } from '@/mocks/magazines';
+import { createMagazineHandlers } from '@/mocks/magazines';
 import { renderRoute, server } from '@/test/renderRoute';
 
-beforeEach(() => server.use(...magazineHandlers));
+beforeEach(() => server.use(...createMagazineHandlers()));
 
 it('매거진 본문을 마크다운으로 그린다', async () => {
   renderRoute('/magazines/1');
@@ -19,7 +20,11 @@ it('매거진 본문을 마크다운으로 그린다', async () => {
     screen.getByRole('heading', { level: 2, name: '자기소개 부탁드려요' }),
   ).toBeInTheDocument();
   expect(screen.getByText('우진', { selector: 'strong' })).toBeInTheDocument();
-  expect(screen.getByRole('img', { name: '프로젝트 회고 사진' })).toHaveStyle({ width: '480px' });
+  expect(screen.getByRole('img', { name: '프로젝트 회고 사진' })).toHaveStyle({
+    width: '480px',
+    display: 'block',
+    marginInline: 'auto',
+  });
   expect(screen.getAllByRole('listitem')).toHaveLength(5);
 });
 
@@ -76,4 +81,27 @@ it('목록 카드에는 인터뷰이가 아니라 에디터를 보여준다', as
   )!;
   expect(within(card).getByText('재키')).toBeInTheDocument();
   expect(within(card).queryByText('우진')).not.toBeInTheDocument();
+});
+
+it('매거진 좋아요를 누르면 좋아요 수가 바뀐다', async () => {
+  renderRoute('/magazines/2');
+
+  const like = await screen.findByRole('button', { name: '좋아요' });
+  expect(within(like).getByLabelText('좋아요 수')).toHaveTextContent('7');
+  await userEvent.click(like);
+
+  const cancel = await screen.findByRole('button', { name: '좋아요 취소' });
+  expect(within(cancel).getByLabelText('좋아요 수')).toHaveTextContent('8');
+});
+
+it('매거진에 댓글을 남기면 목록과 댓글 수에 반영된다', async () => {
+  renderRoute('/magazines/1');
+
+  expect(await screen.findByText('아직 댓글이 없습니다.')).toBeInTheDocument();
+  await userEvent.type(screen.getByLabelText('댓글 남기기'), '인터뷰 잘 읽었어요');
+  await userEvent.click(screen.getByRole('button', { name: '댓글 작성' }));
+
+  const list = await screen.findByRole('list', { name: '댓글 목록' });
+  expect(await within(list).findByText('인터뷰 잘 읽었어요')).toBeInTheDocument();
+  expect(await screen.findByLabelText('댓글 1개')).toBeInTheDocument();
 });
