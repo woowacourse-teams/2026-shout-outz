@@ -157,12 +157,12 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
-                    ,\"message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"feedType\",\"message\"\
-                    :\"feedType은 필수입니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
+                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"feedType\",\"\
+                    message\":\"feedType은 필수입니다.\"},{\"field\":\"displayOrder\",\"\
+                    message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -447,13 +447,13 @@ paths:
                     ,\"siteName\":\"Example\"},\"createdAt\":\"2026-09-11T00:00:00Z\"\
                     ,\"updatedAt\":\"2026-09-11T00:00:00Z\",\"recommendationStatus\"\
                     :\"PENDING\"}}"
-  /api/v1/interviews:
+  /api/v1/magazines:
     get:
       tags:
-      - Interview
-      summary: 공개 인터뷰 목록
-      description: 발행된 인터뷰를 최초 발행 시각 내림차순으로 조회합니다. 비회원도 전문을 읽을 수 있습니다.
-      operationId: interview-list
+      - Magazine
+      summary: 공개 매거진 목록
+      description: 발행된 매거진을 최초 발행 시각 내림차순으로 조회합니다. 비회원도 전문을 읽을 수 있습니다.
+      operationId: magazine-list
       parameters:
       - name: size
         in: query
@@ -469,6 +469,25 @@ paths:
         schema:
           type: string
       responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MagazineFindAllSuccessResponse"
+              examples:
+                magazine-list:
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":30,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/3fd45841-81f2-42f6-bf4b-4718cb007211/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@i752552cf264744b889af\",\"displayName\"\
+                    :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i8ebd279cd5d743a9a644\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"PUBLISHED\"\
+                    ,\"publishedAt\":\"2026-10-18T05:50:00.385619Z\",\"createdAt\"\
+                    :\"2026-10-18T05:50:00.375984Z\",\"updatedAt\":\"2026-10-18T05:50:00.386203Z\"\
+                    ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
+                    :0}],\"meta\":{\"nextCursor\":null,\"hasNext\":false,\"totalCount\"\
+                    :1}}"
         "400":
           description: "400"
           content:
@@ -476,32 +495,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-list-invalid-size-51:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_INVALID_SIZE\"\
+                magazine-list-invalid-cursor:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_INVALID_CURSOR\"\
+                    ,\"message\":\"매거진 목록 커서가 올바르지 않습니다.\"}"
+                magazine-list-invalid-size-0:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_INVALID_SIZE\"\
                     ,\"message\":\"조회 개수는 1 이상 50 이하여야 합니다.\"}"
-                interview-list-invalid-size-0:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_INVALID_SIZE\"\
+                magazine-list-invalid-size-51:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_INVALID_SIZE\"\
                     ,\"message\":\"조회 개수는 1 이상 50 이하여야 합니다.\"}"
-                interview-list-invalid-cursor:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_INVALID_CURSOR\"\
-                    ,\"message\":\"인터뷰 목록 커서가 올바르지 않습니다.\"}"
-        "200":
-          description: "200"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InterviewFindAllSuccessResponse"
-              examples:
-                interview-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":294,\"title\"\
-                    :\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/37ee61b7-bc6f-498b-9696-97274ff1e468/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@iae0a910466d1447da5df\",\"displayName\"\
-                    :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-10-16T02:15:30.416527Z\",\"createdAt\"\
-                    :\"2026-10-16T02:15:30.408140Z\",\"updatedAt\":\"2026-10-16T02:15:30.417055Z\"\
-                    ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
-                    :0}],\"meta\":{\"nextCursor\":null,\"hasNext\":false,\"totalCount\"\
-                    :1}}"
   /api/v1/news:
     get:
       tags:
@@ -1192,13 +1194,13 @@ paths:
                 bug-report-admin-find-all-forbidden:
                   value: "{\"status\":\"error\",\"code\":\"BUG_REPORT_ADMIN_FORBIDDEN\"\
                     ,\"message\":\"관리자만 버그 제보를 관리할 수 있습니다.\"}"
-  /api/v1/admin/interviews:
+  /api/v1/admin/magazines:
     get:
       tags:
-      - Interview Admin
-      summary: 관리자 인터뷰 목록
-      description: 활성 관리자가 초안을 포함한 인터뷰를 생성 시각 내림차순으로 조회합니다.
-      operationId: interview-admin-list
+      - Magazine Admin
+      summary: 관리자 매거진 목록
+      description: 활성 관리자가 초안을 포함한 매거진을 생성 시각 내림차순으로 조회합니다.
+      operationId: magazine-admin-list
       parameters:
       - name: size
         in: query
@@ -1219,31 +1221,18 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=83
+        example: JSESSIONID=76
       responses:
-        "200":
-          description: "200"
+        "401":
+          description: "401"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InterviewFindAllSuccessResponse"
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-admin-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":296,\"title\"\
-                    :\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/41028b70-4090-4145-a66c-1f9d2e3dde57/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@i437ce63ea5804b7fa948\",\"displayName\"\
-                    :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T02:15:30.498239Z\"\
-                    ,\"updatedAt\":\"2026-10-16T02:15:30.498239Z\",\"likeCount\":0,\"\
-                    likedByMe\":false,\"commentCount\":0,\"viewCount\":0},{\"id\"\
-                    :295,\"title\":\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/41028b70-4090-4145-a66c-1f9d2e3dde57/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@i437ce63ea5804b7fa948\",\"displayName\"\
-                    :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T02:15:30.491890Z\"\
-                    ,\"updatedAt\":\"2026-10-16T02:15:30.491890Z\",\"likeCount\":0,\"\
-                    likedByMe\":false,\"commentCount\":0,\"viewCount\":0}],\"meta\"\
-                    :{\"nextCursor\":null,\"hasNext\":false,\"totalCount\":2}}"
+                magazine-admin-list-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
         "400":
           description: "400"
           content:
@@ -1251,11 +1240,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-admin-list-invalid-size-51:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_INVALID_SIZE\"\
+                magazine-admin-list-invalid-size-0:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_INVALID_SIZE\"\
                     ,\"message\":\"조회 개수는 1 이상 50 이하여야 합니다.\"}"
-                interview-admin-list-invalid-size-0:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_INVALID_SIZE\"\
+                magazine-admin-list-invalid-size-51:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_INVALID_SIZE\"\
                     ,\"message\":\"조회 개수는 1 이상 50 이하여야 합니다.\"}"
         "403":
           description: "403"
@@ -1264,25 +1253,42 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-admin-list-forbidden:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
-                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
-        "401":
-          description: "401"
+                magazine-admin-list-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 매거진을 관리할 수 있습니다.\"}"
+        "200":
+          description: "200"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/MagazineFindAllSuccessResponse"
               examples:
-                interview-admin-list-unauthorized:
-                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
-                    :\"인증이 필요합니다.\"}"
+                magazine-admin-list:
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":36,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/4713f52f-570f-4ccb-ad69-b628c61fa09a/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@i3e19187cc7b54d80ade3\",\"displayName\"\
+                    :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i61b0611f2ef24f48b134\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-18T05:50:00.530383Z\"\
+                    ,\"updatedAt\":\"2026-10-18T05:50:00.530383Z\",\"likeCount\":0,\"\
+                    likedByMe\":false,\"commentCount\":0,\"viewCount\":0},{\"id\"\
+                    :35,\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/4713f52f-570f-4ccb-ad69-b628c61fa09a/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@i3e19187cc7b54d80ade3\",\"displayName\"\
+                    :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i61b0611f2ef24f48b134\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-18T05:50:00.522159Z\"\
+                    ,\"updatedAt\":\"2026-10-18T05:50:00.522159Z\",\"likeCount\":0,\"\
+                    likedByMe\":false,\"commentCount\":0,\"viewCount\":0}],\"meta\"\
+                    :{\"nextCursor\":null,\"hasNext\":false,\"totalCount\":2}}"
     post:
       tags:
-      - Interview Admin
-      summary: 인터뷰 초안 등록
-      description: "활성 관리자가 초안을 등록합니다. 요약, 대표 이미지, 본문은 초안에서는 생략할 수 있습니다."
-      operationId: interview-create
+      - Magazine Admin
+      summary: 매거진 초안 등록
+      description: "활성 관리자가 초안을 등록합니다. 요약, 인터뷰이 소개문, 대표 이미지, 본문은 초안에서 생략할 수 있습니다."
+      operationId: magazine-create
       parameters:
       - name: Cookie
         in: header
@@ -1290,47 +1296,53 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=81
+        example: JSESSIONID=74
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: bG3OwGSSJP0XQO4ir-QvRe0EwyxWO5y5vGHoiFWnh2s
+        example: 6KXhybgomefBHYWtW-HPkimSm4dt5mQTXML5zZuWmwM
       requestBody:
         content:
           application/json;charset=UTF-8:
             schema:
-              $ref: "#/components/schemas/InterviewSaveRequest"
+              $ref: "#/components/schemas/MagazineSaveRequest"
             examples:
-              interview-create-forbidden:
-                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :2049,\"thumbnailMediaId\":1042,\"contentMd\":\"본문\"}"
-              interview-create-invalid-media:
-                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :2065,\"thumbnailMediaId\":1058,\"contentMd\":\"![사진](https://example.com/a.png)\"\
+              magazine-create-csrf-invalid:
+                value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :240,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":131,\"contentMd\":\"본문\"}"
+              magazine-create-csrf-missing:
+                value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :161,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":53,\"contentMd\":\"본문\"}"
+              magazine-create:
+                value: "{\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :202,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":93,\"contentMd\":\"![매거진](media://94)\"}"
+              magazine-create-featuredUser-not-found:
+                value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :9223372036854775807,\"featuredUserIntroduction\":\"우아한테크코스 출신 개\
+                  발자의 경험을 소개합니다.\",\"thumbnailMediaId\":65,\"contentMd\":\"본문\"}"
+              magazine-create-unauthorized:
+                value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :188,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":79,\"contentMd\":\"본문\"}"
+              magazine-create-invalid-media:
+                value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :141,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":32,\"contentMd\":\"![사진](https://example.com/a.png)\"\
                   }"
-              interview-create-csrf-missing:
-                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :2081,\"thumbnailMediaId\":1074,\"contentMd\":\"본문\"}"
-              interview-create-csrf-invalid:
-                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :2141,\"thumbnailMediaId\":1134,\"contentMd\":\"본문\"}"
-              interview-create-interviewee-not-found:
-                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :9223372036854775807,\"thumbnailMediaId\":1094,\"contentMd\":\"본\
-                  문\"}"
-              interview-create:
-                value: "{\"title\":\"첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :2135,\"thumbnailMediaId\":1128,\"contentMd\":\"![인터뷰](media://1129)\"\
-                  }"
-              interview-create-unauthorized:
-                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :2121,\"thumbnailMediaId\":1114,\"contentMd\":\"본문\"}"
-              interview-create-validation-failed:
-                value: "{\"title\":\"\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2095,\"\
-                  thumbnailMediaId\":1088,\"contentMd\":\"본문\"}"
+              magazine-create-validation-failed:
+                value: "{\"title\":\"\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :147,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":41,\"contentMd\":\"본문\"}"
+              magazine-create-forbidden:
+                value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :125,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":16,\"contentMd\":\"본문\"}"
       responses:
         "403":
           description: "403"
@@ -1339,29 +1351,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-create-forbidden:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
-                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
-                interview-create-csrf-missing:
+                magazine-create-csrf-invalid:
                   value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
                     message\":\"CSRF Token이 유효하지 않습니다.\"}"
-                interview-create-csrf-invalid:
+                magazine-create-csrf-missing:
                   value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
                     message\":\"CSRF Token이 유효하지 않습니다.\"}"
-        "400":
-          description: "400"
+                magazine-create-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 매거진을 관리할 수 있습니다.\"}"
+        "201":
+          description: "201"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
-                interview-create-invalid-media:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_INVALID_MEDIA\"\
-                    ,\"message\":\"사용할 수 없는 인터뷰 이미지입니다.\"}"
-                interview-create-validation-failed:
-                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"must not be blank\"}]}"
+                magazine-create:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":35,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":202,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i61b0611f2ef24f48b134\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
+                    :93,\"contentMd\":\"![매거진](media://94)\",\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-18T05:50:00.522159Z\"\
+                    ,\"updatedAt\":\"2026-10-18T05:50:00.522159Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/4713f52f-570f-4ccb-ad69-b628c61fa09a/thumbnail\"\
+                    ,\"previewContentMd\":\"![매거진](https://cdn.example.com/test-prefix/magazine/581aa536-fac1-457d-b788-6f883ce90693/display)\"\
+                    }}"
         "404":
           description: "404"
           content:
@@ -1369,25 +1385,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-create-interviewee-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEWEE_NOT_FOUND\"\
-                    ,\"message\":\"인터뷰 대상 사용자를 찾을 수 없습니다.\"}"
-        "201":
-          description: "201"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InterviewAdminResponse"
-              examples:
-                interview-create:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":295,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2135,\"thumbnailMediaId\"\
-                    :1128,\"contentMd\":\"![인터뷰](media://1129)\",\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T02:15:30.491890Z\"\
-                    ,\"updatedAt\":\"2026-10-16T02:15:30.491890Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/41028b70-4090-4145-a66c-1f9d2e3dde57/thumbnail\"\
-                    ,\"previewContentMd\":\"![인터뷰](https://cdn.example.com/test-prefix/interview/cc40a3ec-ce66-45e6-96ca-c0c1a8f617bb/display)\"\
-                    }}"
+                magazine-create-featuredUser-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"FEATURED_USER_NOT_FOUND\"\
+                    ,\"message\":\"매거진 대상 사용자를 찾을 수 없습니다.\"}"
         "401":
           description: "401"
           content:
@@ -1395,9 +1395,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-create-unauthorized:
+                magazine-create-unauthorized:
                   value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
                     :\"인증이 필요합니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-create-invalid-media:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_INVALID_MEDIA\"\
+                    ,\"message\":\"사용할 수 없는 매거진 이미지입니다.\"}"
+                magazine-create-validation-failed:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
+                    message\":\"must not be blank\"}]}"
   /api/v1/admin/projects:
     get:
       tags:
@@ -1691,18 +1705,18 @@ paths:
               examples:
                 auth-signup-invalid-profile:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"bio\",\"\
-                    message\":\"bio는 200자를 초과할 수 없습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
                     ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                    bio\",\"message\":\"bio는 200자를 초과할 수 없습니다.\"},{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 auth-signup-session-missing:
                   value: "{\"status\":\"error\",\"code\":\"OAUTH_SIGNUP_SESSION_NOT_FOUND\"\
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
                     :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
@@ -2145,23 +2159,42 @@ paths:
                 home-statistics-find:
                   value: "{\"status\":\"success\",\"data\":{\"projectCount\":128,\"\
                     feedCount\":341,\"currentCohort\":8,\"ongoingEventCount\":2}}"
-  /api/v1/interviews/{interviewId}:
+  /api/v1/magazines/{magazineId}:
     get:
       tags:
-      - Interview
-      summary: 발행된 인터뷰 상세 조회
+      - Magazine
+      summary: 발행된 매거진 상세 조회
       description: 상세 조회 시 VISITOR_ID 쿠키의 방문자별로 한국 날짜 기준 하루 한 번 조회수를 집계합니다. 응답의 viewCount에
         이번 조회가 반영됩니다.
-      operationId: interview-detail
+      operationId: magazine-detail
       parameters:
-      - name: interviewId
+      - name: magazineId
         in: path
-        description: 인터뷰 ID
+        description: 매거진 ID
         required: true
         schema:
           type: integer
           format: int64
       responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MagazineFindSuccessResponse"
+              examples:
+                magazine-detail:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":30,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/3fd45841-81f2-42f6-bf4b-4718cb007211/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@i752552cf264744b889af\",\"displayName\"\
+                    :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i8ebd279cd5d743a9a644\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"contentMd\":\"\
+                    ![사진](https://cdn.example.com/test-prefix/magazine/f4f0a264-276e-4a40-b874-9159562ac775/display)\"\
+                    ,\"publishedAt\":\"2026-10-18T05:50:00.385619Z\",\"createdAt\"\
+                    :\"2026-10-18T05:50:00.375984Z\",\"updatedAt\":\"2026-10-18T05:50:00.386203Z\"\
+                    ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
+                    :1}}"
         "404":
           description: "404"
           content:
@@ -2169,26 +2202,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-detail-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
-                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
-        "200":
-          description: "200"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InterviewFindSuccessResponse"
-              examples:
-                interview-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":294,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/37ee61b7-bc6f-498b-9696-97274ff1e468/thumbnail\"\
-                    ,\"interviewee\":{\"handle\":\"@iae0a910466d1447da5df\",\"displayName\"\
-                    :\"인터뷰이\",\"bio\":null,\"avatarUrl\":null},\"contentMd\":\"![사\
-                    진](https://cdn.example.com/test-prefix/interview/becdc753-c885-4b65-a29f-f7d089ba54a6/display)\"\
-                    ,\"publishedAt\":\"2026-10-16T02:15:30.416527Z\",\"createdAt\"\
-                    :\"2026-10-16T02:15:30.408140Z\",\"updatedAt\":\"2026-10-16T02:15:30.417055Z\"\
-                    ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
-                    :1}}"
+                magazine-detail-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_NOT_FOUND\",\"\
+                    message\":\"매거진을 찾을 수 없습니다.\"}"
   /api/v1/news/events:
     post:
       tags:
@@ -2312,9 +2328,9 @@ paths:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
-                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
-                    :\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
-                    :\"eventStartAt은 필수입니다.\"}]}"
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\"\
+                    :\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -3478,18 +3494,18 @@ paths:
                     :\"loop\",\"linkType\":null,\"linkUrl\":null,\"displayOrder\"\
                     :0,\"active\":true,\"createdBy\":1,\"createdAt\":\"2026-09-17T00:00:00Z\"\
                     ,\"updatedAt\":\"2026-09-17T00:00:00Z\"}}"
-  /api/v1/admin/interviews/{interviewId}:
+  /api/v1/admin/magazines/{magazineId}:
     get:
       tags:
-      - Interview Admin
-      summary: 인터뷰 원본과 초안 조회
-      description: 활성 관리자가 초안을 포함한 인터뷰 원본을 조회합니다. 본문의 media:// 참조와 이미지 URL로 변환한 미리보기를
+      - Magazine Admin
+      summary: 매거진 원본과 초안 조회
+      description: 활성 관리자가 초안을 포함한 매거진 원본을 조회합니다. 본문의 media:// 참조와 이미지 URL로 변환한 미리보기를
         함께 반환합니다.
-      operationId: interview-admin-detail
+      operationId: magazine-admin-detail
       parameters:
-      - name: interviewId
+      - name: magazineId
         in: path
-        description: 인터뷰 ID
+        description: 매거진 ID
         required: true
         schema:
           type: integer
@@ -3500,28 +3516,8 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=82
+        example: JSESSIONID=75
       responses:
-        "403":
-          description: "403"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-admin-detail-forbidden:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
-                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
-        "401":
-          description: "401"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-admin-detail-unauthorized:
-                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
-                    :\"인증이 필요합니다.\"}"
         "404":
           description: "404"
           content:
@@ -3529,36 +3525,58 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-admin-detail-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
-                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
+                magazine-admin-detail-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_NOT_FOUND\",\"\
+                    message\":\"매거진을 찾을 수 없습니다.\"}"
         "200":
           description: "200"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InterviewAdminResponse"
+                $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
-                interview-admin-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":296,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2135,\"thumbnailMediaId\"\
-                    :1128,\"contentMd\":\"![사진](media://1129)\",\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-16T02:15:30.498239Z\"\
-                    ,\"updatedAt\":\"2026-10-16T02:15:30.498239Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/41028b70-4090-4145-a66c-1f9d2e3dde57/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/interview/cc40a3ec-ce66-45e6-96ca-c0c1a8f617bb/display)\"\
+                magazine-admin-detail:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":36,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":202,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i61b0611f2ef24f48b134\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
+                    :93,\"contentMd\":\"![사진](media://94)\",\"status\":\"DRAFT\",\"\
+                    publishedAt\":null,\"createdAt\":\"2026-10-18T05:50:00.530383Z\"\
+                    ,\"updatedAt\":\"2026-10-18T05:50:00.530383Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/4713f52f-570f-4ccb-ad69-b628c61fa09a/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/581aa536-fac1-457d-b788-6f883ce90693/display)\"\
                     }}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-admin-detail-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-admin-detail-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 매거진을 관리할 수 있습니다.\"}"
     put:
       tags:
-      - Interview Admin
-      summary: 인터뷰 전체 수정
+      - Magazine Admin
+      summary: 매거진 전체 수정
       description: "편집 가능한 필드를 전체 교체하며 생략한 선택 필드는 null로 처리합니다. 발행된 글의 수정은 즉시 공개되며\
-        \ 요약, 대표 이미지, 본문을 비울 수 없습니다."
-      operationId: interview-update
+        \ 요약, 인터뷰이 소개문, 대표 이미지, 본문을 비울 수 없습니다."
+      operationId: magazine-update
       parameters:
-      - name: interviewId
+      - name: magazineId
         in: path
-        description: 인터뷰 ID
+        description: 매거진 ID
         required: true
         schema:
           type: integer
@@ -3569,52 +3587,45 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=67
+        example: JSESSIONID=70
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: 96YDfnTDLhjdAsTI9Pm9xDuo3BvwJ9yg0M-RhpyjEkE
+        example: Iz6x15llpiDwXDKr2ZdLB04g906L0u7A6ghyduiVpYA
       requestBody:
         content:
           application/json;charset=UTF-8:
             schema:
-              $ref: "#/components/schemas/InterviewSaveRequest"
+              $ref: "#/components/schemas/MagazineSaveRequest"
             examples:
-              interview-update-csrf-missing:
-                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :2083,\"thumbnailMediaId\":1076,\"contentMd\":\"본문\"}"
-              interview-update-validation-failed:
-                value: "{\"title\":\"\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2095,\"\
-                  thumbnailMediaId\":1088,\"contentMd\":\"본문\"}"
-              interview-update:
-                value: "{\"title\":\"수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :2093,\"thumbnailMediaId\":1086,\"contentMd\":\"수정 본문\"}"
-              interview-update-forbidden:
-                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :2055,\"thumbnailMediaId\":1048,\"contentMd\":\"본문\"}"
-              interview-update-unauthorized:
-                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :2127,\"thumbnailMediaId\":1120,\"contentMd\":\"본문\"}"
-              interview-update-not-found:
-                value: "{\"title\":\"제목\",\"summary\":\"인터뷰 요약\",\"intervieweeId\"\
-                  :2111,\"thumbnailMediaId\":1104,\"contentMd\":\"본문\"}"
+              magazine-update-validation-failed:
+                value: "{\"title\":\"\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :147,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":41,\"contentMd\":\"본문\"}"
+              magazine-update-csrf-missing:
+                value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :163,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":55,\"contentMd\":\"본문\"}"
+              magazine-update-not-found:
+                value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :232,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":123,\"contentMd\":\"본문\"}"
+              magazine-update-forbidden:
+                value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :131,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":22,\"contentMd\":\"본문\"}"
+              magazine-update-unauthorized:
+                value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :194,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":85,\"contentMd\":\"본문\"}"
+              magazine-update:
+                value: "{\"title\":\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
+                  :175,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":67,\"contentMd\":\"수정 본문\"}"
       responses:
-        "403":
-          description: "403"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-update-csrf-missing:
-                  value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
-                    message\":\"CSRF Token이 유효하지 않습니다.\"}"
-                interview-update-forbidden:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
-                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
         "400":
           description: "400"
           content:
@@ -3622,35 +3633,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-update-validation-failed:
+                magazine-update-validation-failed:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
                     message\":\"must not be blank\"}]}"
-        "200":
-          description: "200"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InterviewAdminResponse"
-              examples:
-                interview-update:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":288,\"title\":\"\
-                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2093,\"thumbnailMediaId\"\
-                    :1086,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
-                    :\"2026-10-16T02:15:30.217775Z\",\"createdAt\":\"2026-10-16T02:15:30.213922Z\"\
-                    ,\"updatedAt\":\"2026-10-16T02:15:30.234754Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/4aeaf65b-a524-4d63-9623-12e18a68b465/thumbnail\"\
-                    ,\"previewContentMd\":\"수정 본문\"}}"
-        "401":
-          description: "401"
+        "403":
+          description: "403"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-update-unauthorized:
-                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
-                    :\"인증이 필요합니다.\"}"
+                magazine-update-csrf-missing:
+                  value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
+                    message\":\"CSRF Token이 유효하지 않습니다.\"}"
+                magazine-update-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 매거진을 관리할 수 있습니다.\"}"
         "404":
           description: "404"
           content:
@@ -3658,20 +3657,47 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-update-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
-                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
+                magazine-update-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_NOT_FOUND\",\"\
+                    message\":\"매거진을 찾을 수 없습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-update-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MagazineAdminResponse"
+              examples:
+                magazine-update:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":28,\"title\":\"\
+                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":175,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@ie990768e6dce4bbea077\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
+                    :67,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
+                    :\"2026-10-18T05:50:00.281436Z\",\"createdAt\":\"2026-10-18T05:50:00.278154Z\"\
+                    ,\"updatedAt\":\"2026-10-18T05:50:00.293534Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/1e679f49-018e-4a56-8285-1cdc1bc68e9e/thumbnail\"\
+                    ,\"previewContentMd\":\"수정 본문\"}}"
     delete:
       tags:
-      - Interview Admin
-      summary: 인터뷰 삭제
-      description: 활성 관리자가 인터뷰를 soft delete합니다. 삭제 후 관리자와 공개 API에서 조회할 수 없으며 응답 본문은
+      - Magazine Admin
+      summary: 매거진 삭제
+      description: 활성 관리자가 매거진을 soft delete합니다. 삭제 후 관리자와 공개 API에서 조회할 수 없으며 응답 본문은
         없습니다.
-      operationId: interview-delete
+      operationId: magazine-delete
       parameters:
-      - name: interviewId
+      - name: magazineId
         in: path
-        description: 인터뷰 ID
+        description: 매거진 ID
         required: true
         schema:
           type: integer
@@ -3682,14 +3708,14 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=69
+        example: JSESSIONID=72
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: mDkeyaPbrA2ZuQ30u2AAbbuXh_Emq-UzOWUAtHli6DY
+        example: u-yasi67CZ9Dbs4S-rPBOy2ClSs4TFKZ5WcpLixGgQM
       responses:
         "401":
           description: "401"
@@ -3698,21 +3724,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-delete-unauthorized:
+                magazine-delete-unauthorized:
                   value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
                     :\"인증이 필요합니다.\"}"
-        "404":
-          description: "404"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-delete-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
-                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
-        "204":
-          description: "204"
         "403":
           description: "403"
           content:
@@ -3720,12 +3734,24 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-delete-csrf-missing:
+                magazine-delete-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 매거진을 관리할 수 있습니다.\"}"
+                magazine-delete-csrf-missing:
                   value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
                     message\":\"CSRF Token이 유효하지 않습니다.\"}"
-                interview-delete-forbidden:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
-                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-delete-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_NOT_FOUND\",\"\
+                    message\":\"매거진을 찾을 수 없습니다.\"}"
+        "204":
+          description: "204"
   /api/v1/admin/projects/{projectId}:
     get:
       tags:
@@ -3959,18 +3985,17 @@ paths:
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:00:00Z\",\"editable\":true,\"isAnonymous\"\
                     :false,\"linkPreview\":null}}"
-  /api/v1/interviews/{interviewId}/comments:
+  /api/v1/magazines/{magazineId}/comments:
     get:
       tags:
-      - Interview Comment
-      summary: 인터뷰 댓글 목록 조회
-      description: 비로그인 또는 로그인 사용자가 발행된 인터뷰의 댓글 목록을 조회한다. size는 루트 댓글 개수이며 각 루트 댓글
-        뒤에 대댓글을 반환한다.
-      operationId: interview-comment-find-all
+      - Magazine Comment
+      summary: 매거진 댓글 목록 조회
+      description: 매거진 댓글 목록 조회
+      operationId: magazine-comment-find-all
       parameters:
-      - name: interviewId
+      - name: magazineId
         in: path
-        description: 댓글을 조회할 인터뷰 ID
+        description: 매거진 ID
         required: true
         schema:
           type: integer
@@ -3997,16 +4022,39 @@ paths:
           type: string
           default: LATEST
       responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-comment-find-all-invalid-sort:
+                  value: "{\"status\":\"error\",\"code\":\"INVALID_COMMENT_SORT\"\
+                    ,\"message\":\"올바르지 않은 댓글 정렬 기준입니다.\"}"
+                magazine-comment-find-all-invalid-size:
+                  value: "{\"status\":\"error\",\"code\":\"INVALID_COMMENT_SIZE\"\
+                    ,\"message\":\"올바르지 않은 댓글 조회 개수입니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-comment-find-all-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_NOT_FOUND\",\"\
+                    message\":\"매거진을 찾을 수 없습니다.\"}"
         "200":
           description: "200"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InterviewCommentFindAllSuccessResponse"
+                $ref: "#/components/schemas/MagazineCommentFindAllSuccessResponse"
               examples:
-                interview-comment-find-all:
+                magazine-comment-find-all:
                   value: "{\"status\":\"success\",\"data\":[{\"id\":501,\"content\"\
-                    :\"좋은 인터뷰네요.\",\"author\":{\"userId\":7,\"handle\":\"@author7\"\
+                    :\"좋은 매거진네요.\",\"author\":{\"userId\":7,\"handle\":\"@author7\"\
                     ,\"displayName\":\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"\
                     isCurrent\":null,\"avatarImageId\":10,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
@@ -4028,39 +4076,16 @@ paths:
                     :false,\"deleted\":true,\"agreeCount\":0,\"agreedByMe\":false,\"\
                     isAnonymous\":false,\"linkPreview\":null}],\"meta\":{\"nextCursor\"\
                     :\"next-cursor\",\"hasNext\":true,\"totalCount\":2}}"
-        "400":
-          description: "400"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-comment-find-all-invalid-sort:
-                  value: "{\"status\":\"error\",\"code\":\"INVALID_COMMENT_SORT\"\
-                    ,\"message\":\"올바르지 않은 댓글 정렬 기준입니다.\"}"
-                interview-comment-find-all-invalid-size:
-                  value: "{\"status\":\"error\",\"code\":\"INVALID_COMMENT_SIZE\"\
-                    ,\"message\":\"올바르지 않은 댓글 조회 개수입니다.\"}"
-        "404":
-          description: "404"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-comment-find-all-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
-                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
     post:
       tags:
-      - Interview Comment
-      summary: 인터뷰 댓글 작성
-      description: 인터뷰 댓글 작성
-      operationId: interview-comment-create
+      - Magazine Comment
+      summary: 매거진 댓글 작성
+      description: 매거진 댓글 작성
+      operationId: magazine-comment-create
       parameters:
-      - name: interviewId
+      - name: magazineId
         in: path
-        description: 인터뷰 ID
+        description: 매거진 ID
         required: true
         schema:
           type: integer
@@ -4083,24 +4108,9 @@ paths:
         content:
           application/json;charset=UTF-8:
             schema:
-              $ref: "#/components/schemas/InterviewCommentCreateRequest"
+              $ref: "#/components/schemas/MagazineCommentCreateRequest"
             examples:
-              interview-comment-create-invalid-parent:
-                value: "{\"content\":\"댓글\",\"parentId\":0}"
-              interview-comment-create:
-                value: |
-                  {
-                    "content": "  좋은 인터뷰네요.  "
-                  }
-              interview-comment-create-interview-not-found:
-                value: "{\"content\":\"댓글\"}"
-              interview-comment-create-depth-exceeded:
-                value: "{\"content\":\"댓글\",\"parentId\":301}"
-              interview-comment-create-unauthorized:
-                value: "{\"content\":\"댓글\"}"
-              interview-comment-create-forbidden:
-                value: "{\"content\":\"댓글\"}"
-              interview-comment-create-validation-failed:
+              magazine-comment-create-validation-failed:
                 value: "{\"content\":\"😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
                   😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
                   😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
@@ -4118,6 +4128,21 @@ paths:
                   😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
                   😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\"\
                   }"
+              magazine-comment-create-unauthorized:
+                value: "{\"content\":\"댓글\"}"
+              magazine-comment-create-depth-exceeded:
+                value: "{\"content\":\"댓글\",\"parentId\":301}"
+              magazine-comment-create:
+                value: |
+                  {
+                    "content": "  좋은 매거진네요.  "
+                  }
+              magazine-comment-create-magazine-not-found:
+                value: "{\"content\":\"댓글\"}"
+              magazine-comment-create-invalid-parent:
+                value: "{\"content\":\"댓글\",\"parentId\":0}"
+              magazine-comment-create-forbidden:
+                value: "{\"content\":\"댓글\"}"
       responses:
         "400":
           description: "400"
@@ -4126,27 +4151,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-comment-create-invalid-parent:
-                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"parentId\"\
-                    ,\"message\":\"parentId는 0보다 커야 합니다.\"}]}"
-                interview-comment-create-depth-exceeded:
-                  value: "{\"status\":\"error\",\"code\":\"COMMENT_DEPTH_EXCEEDED\"\
-                    ,\"message\":\"대댓글은 한 단계까지만 작성할 수 있습니다.\"}"
-                interview-comment-create-validation-failed:
+                magazine-comment-create-validation-failed:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"content\"\
                     ,\"message\":\"댓글 내용은 500자를 초과할 수 없습니다.\"}]}"
+                magazine-comment-create-depth-exceeded:
+                  value: "{\"status\":\"error\",\"code\":\"COMMENT_DEPTH_EXCEEDED\"\
+                    ,\"message\":\"대댓글은 한 단계까지만 작성할 수 있습니다.\"}"
+                magazine-comment-create-invalid-parent:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"parentId\"\
+                    ,\"message\":\"parentId는 0보다 커야 합니다.\"}]}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-comment-create-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
         "201":
           description: "201"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InterviewCommentCreateSuccessResponse"
+                $ref: "#/components/schemas/MagazineCommentCreateSuccessResponse"
               examples:
-                interview-comment-create:
+                magazine-comment-create:
                   value: "{\"status\":\"success\",\"data\":{\"id\":501,\"content\"\
-                    :\"좋은 인터뷰네요.\",\"author\":{\"userId\":7,\"handle\":\"@author7\"\
+                    :\"좋은 매거진네요.\",\"author\":{\"userId\":7,\"handle\":\"@author7\"\
                     ,\"displayName\":\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"\
                     isCurrent\":null,\"avatarUrl\":\"https://cdn.example.com/media/10/display\"\
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
@@ -4159,19 +4194,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-comment-create-interview-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
-                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
-        "401":
-          description: "401"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-comment-create-unauthorized:
-                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
-                    :\"인증이 필요합니다.\"}"
+                magazine-comment-create-magazine-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_NOT_FOUND\",\"\
+                    message\":\"매거진을 찾을 수 없습니다.\"}"
         "403":
           description: "403"
           content:
@@ -4179,9 +4204,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-comment-create-forbidden:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_USER_FORBIDDEN\"\
-                    ,\"message\":\"활성 사용자만 인터뷰의 반응과 댓글을 변경할 수 있습니다.\"}"
+                magazine-comment-create-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_USER_FORBIDDEN\"\
+                    ,\"message\":\"활성 사용자만 매거진의 반응과 댓글을 변경할 수 있습니다.\"}"
   /api/v1/media/{mediaId}/status:
     get:
       tags:
@@ -4537,8 +4562,8 @@ paths:
       tags:
       - User
       summary: 내 댓글 목록 조회
-      description: "로그인한 사용자가 작성한 피드, 프로젝트, 인터뷰 댓글을 최신순으로 조회한다. 삭제되지 않은 공개 대상의 댓글만\
-        \ 반환한다. 이동할 대상은 type에 따라 피드 댓글이면 feedId, 프로젝트 댓글이면 projectSlug, 인터뷰 댓글이면 interviewId로\
+      description: "로그인한 사용자가 작성한 피드, 프로젝트, 매거진 댓글을 최신순으로 조회한다. 삭제되지 않은 공개 대상의 댓글만\
+        \ 반환한다. 이동할 대상은 type에 따라 피드 댓글이면 feedId, 프로젝트 댓글이면 projectSlug, 매거진 댓글이면 magazineId로\
         \ 찾고, 해당하지 않는 쪽은 null이다. 응답의 meta.nextCursor를 다음 요청에 그대로 전달한다."
       operationId: user-comment-find-all
       parameters:
@@ -5150,17 +5175,18 @@ paths:
               examples:
                 admin-home-banner-delete:
                   value: "{\"status\":\"success\",\"data\":{\"id\":100}}"
-  /api/v1/admin/interviews/{interviewId}/publish:
+  /api/v1/admin/magazines/{magazineId}/publish:
     post:
       tags:
-      - Interview Admin
-      summary: 인터뷰 발행
-      description: "요약, 대표 이미지, 본문이 있는 인터뷰를 공개합니다. 재발행해도 최초 발행 시각은 유지됩니다."
-      operationId: interview-publish
+      - Magazine Admin
+      summary: 매거진 발행
+      description: "요약, 인터뷰이 소개문, 대표 이미지, 본문이 있는 매거진을 공개합니다. 재발행해도 최초 발행 시각은 유지됩니다\
+        ."
+      operationId: magazine-publish
       parameters:
-      - name: interviewId
+      - name: magazineId
         in: path
-        description: 인터뷰 ID
+        description: 매거진 ID
         required: true
         schema:
           type: integer
@@ -5171,41 +5197,28 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=66
+        example: JSESSIONID=69
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: NaOpcchCI_KhYt0OghqEoUG57IHg9kXW1HYIE1PRTMY
+        example: 6QJG5o0WnqPVC9VnpBk0pGDsN_U9uA5hEw30TQMAKfs
       responses:
-        "404":
-          description: "404"
+        "403":
+          description: "403"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-publish-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
-                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
-        "200":
-          description: "200"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InterviewAdminResponse"
-              examples:
-                interview-publish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":288,\"title\":\"\
-                    첫 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2093,\"thumbnailMediaId\"\
-                    :1086,\"contentMd\":\"![사진](media://1087)\",\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-10-16T02:15:30.217775Z\",\"createdAt\"\
-                    :\"2026-10-16T02:15:30.213922Z\",\"updatedAt\":\"2026-10-16T02:15:30.218313Z\"\
-                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/interview/4aeaf65b-a524-4d63-9623-12e18a68b465/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/interview/c9c77a2f-2a36-4259-8cea-218a6c12143c/display)\"\
-                    }}"
+                magazine-publish-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 매거진을 관리할 수 있습니다.\"}"
+                magazine-publish-csrf-missing:
+                  value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
+                    message\":\"CSRF Token이 유효하지 않습니다.\"}"
         "400":
           description: "400"
           content:
@@ -5213,9 +5226,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-publish-incomplete:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_PUBLISH_INCOMPLETE\"\
-                    ,\"message\":\"발행하려면 요약, 본문, 대표 이미지가 필요합니다.\"}"
+                magazine-publish-incomplete:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_PUBLISH_INCOMPLETE\"\
+                    ,\"message\":\"발행하려면 요약, 인터뷰이 소개문, 본문, 대표 이미지가 필요합니다.\"}"
         "401":
           description: "401"
           content:
@@ -5223,33 +5236,48 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-publish-unauthorized:
+                magazine-publish-unauthorized:
                   value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
                     :\"인증이 필요합니다.\"}"
-        "403":
-          description: "403"
+        "404":
+          description: "404"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-publish-csrf-missing:
-                  value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
-                    message\":\"CSRF Token이 유효하지 않습니다.\"}"
-                interview-publish-forbidden:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
-                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
-  /api/v1/admin/interviews/{interviewId}/unpublish:
+                magazine-publish-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_NOT_FOUND\",\"\
+                    message\":\"매거진을 찾을 수 없습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MagazineAdminResponse"
+              examples:
+                magazine-publish:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":28,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":175,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@ie990768e6dce4bbea077\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
+                    :67,\"contentMd\":\"![사진](media://68)\",\"status\":\"PUBLISHED\"\
+                    ,\"publishedAt\":\"2026-10-18T05:50:00.281436Z\",\"createdAt\"\
+                    :\"2026-10-18T05:50:00.278154Z\",\"updatedAt\":\"2026-10-18T05:50:00.281748Z\"\
+                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/1e679f49-018e-4a56-8285-1cdc1bc68e9e/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/426a1675-5b93-41fd-bfd8-6c17c5f201ea/display)\"\
+                    }}"
+  /api/v1/admin/magazines/{magazineId}/unpublish:
     post:
       tags:
-      - Interview Admin
-      summary: 인터뷰 발행 취소
+      - Magazine Admin
+      summary: 매거진 발행 취소
       description: "초안으로 전환해 공개 조회와 댓글, 반응을 차단합니다. 최초 발행 시각은 유지됩니다."
-      operationId: interview-unpublish
+      operationId: magazine-unpublish
       parameters:
-      - name: interviewId
+      - name: magazineId
         in: path
-        description: 인터뷰 ID
+        description: 매거진 ID
         required: true
         schema:
           type: integer
@@ -5260,14 +5288,14 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=68
+        example: JSESSIONID=71
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: n-fek5DJjW74p9p06-_QFqJP7MaiRdrFcOOrOEyxdcs
+        example: xT3BF5kGrJeMhEL41hPDIuj8A26R_zMhgVdKfmD5Gr4
       responses:
         "403":
           description: "403"
@@ -5276,10 +5304,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-unpublish-forbidden:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_ADMIN_FORBIDDEN\"\
-                    ,\"message\":\"활성 관리자만 인터뷰를 관리할 수 있습니다.\"}"
-                interview-unpublish-csrf-missing:
+                magazine-unpublish-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"활성 관리자만 매거진을 관리할 수 있습니다.\"}"
+                magazine-unpublish-csrf-missing:
                   value: "{\"status\":\"error\",\"code\":\"CSRF_TOKEN_INVALID\",\"\
                     message\":\"CSRF Token이 유효하지 않습니다.\"}"
         "200":
@@ -5287,26 +5315,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InterviewAdminResponse"
+                $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
-                interview-unpublish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":288,\"title\":\"\
-                    수정된 인터뷰\",\"summary\":\"인터뷰 요약\",\"intervieweeId\":2093,\"thumbnailMediaId\"\
-                    :1086,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
-                    :\"2026-10-16T02:15:30.217775Z\",\"createdAt\":\"2026-10-16T02:15:30.213922Z\"\
-                    ,\"updatedAt\":\"2026-10-16T02:15:30.247109Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/interview/4aeaf65b-a524-4d63-9623-12e18a68b465/thumbnail\"\
+                magazine-unpublish:
+                  value: "{\"status\":\"success\",\"data\":{\"id\":28,\"title\":\"\
+                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":175,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@ie990768e6dce4bbea077\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
+                    :67,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
+                    :\"2026-10-18T05:50:00.281436Z\",\"createdAt\":\"2026-10-18T05:50:00.278154Z\"\
+                    ,\"updatedAt\":\"2026-10-18T05:50:00.307007Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/1e679f49-018e-4a56-8285-1cdc1bc68e9e/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
-        "404":
-          description: "404"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-unpublish-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
-                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
         "401":
           description: "401"
           content:
@@ -5314,9 +5334,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-unpublish-unauthorized:
+                magazine-unpublish-unauthorized:
                   value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
                     :\"인증이 필요합니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-unpublish-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_NOT_FOUND\",\"\
+                    message\":\"매거진을 찾을 수 없습니다.\"}"
   /api/v1/admin/projects/{projectId}/approve:
     post:
       tags:
@@ -5842,17 +5872,17 @@ paths:
                 feed-reaction-remove-reaction-not-found:
                   value: "{\"status\":\"error\",\"code\":\"REACTION_NOT_FOUND\",\"\
                     message\":\"요청한 반응을 찾을 수 없습니다.\"}"
-  /api/v1/interviews/{interviewId}/comments/{commentId}:
+  /api/v1/magazines/{magazineId}/comments/{commentId}:
     delete:
       tags:
-      - Interview Comment
-      summary: 인터뷰 댓글 삭제
-      description: 인터뷰 댓글 삭제
-      operationId: interview-comment-delete
+      - Magazine Comment
+      summary: 매거진 댓글 삭제
+      description: 매거진 댓글 삭제
+      operationId: magazine-comment-delete
       parameters:
-      - name: interviewId
+      - name: magazineId
         in: path
-        description: 인터뷰 ID
+        description: 매거진 ID
         required: true
         schema:
           type: integer
@@ -5879,29 +5909,6 @@ paths:
           type: string
         example: csrf-token
       responses:
-        "401":
-          description: "401"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-comment-delete-unauthorized:
-                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
-                    :\"인증이 필요합니다.\"}"
-        "404":
-          description: "404"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-comment-delete-interview-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
-                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
-                interview-comment-delete-comment-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"COMMENT_NOT_FOUND\",\"\
-                    message\":\"요청한 댓글을 찾을 수 없습니다.\"}"
         "403":
           description: "403"
           content:
@@ -5909,29 +5916,52 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-comment-delete-forbidden:
+                magazine-comment-delete-forbidden:
                   value: "{\"status\":\"error\",\"code\":\"FORBIDDEN\",\"message\"\
                     :\"접근 권한이 없습니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-comment-delete-magazine-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_NOT_FOUND\",\"\
+                    message\":\"매거진을 찾을 수 없습니다.\"}"
+                magazine-comment-delete-comment-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"COMMENT_NOT_FOUND\",\"\
+                    message\":\"요청한 댓글을 찾을 수 없습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-comment-delete-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
         "200":
           description: "200"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InterviewCommentDeleteSuccessResponse"
+                $ref: "#/components/schemas/MagazineCommentDeleteSuccessResponse"
               examples:
-                interview-comment-delete:
+                magazine-comment-delete:
                   value: "{\"status\":\"success\",\"data\":{\"id\":501,\"deleted\"\
                     :true}}"
     patch:
       tags:
-      - Interview Comment
-      summary: 인터뷰 댓글 수정
-      description: 인터뷰 댓글 수정
-      operationId: interview-comment-update
+      - Magazine Comment
+      summary: 매거진 댓글 수정
+      description: 매거진 댓글 수정
+      operationId: magazine-comment-update
       parameters:
-      - name: interviewId
+      - name: magazineId
         in: path
-        description: 인터뷰 ID
+        description: 매거진 ID
         required: true
         schema:
           type: integer
@@ -5961,11 +5991,13 @@ paths:
         content:
           application/json;charset=UTF-8:
             schema:
-              $ref: "#/components/schemas/InterviewCommentUpdateRequest"
+              $ref: "#/components/schemas/MagazineCommentUpdateRequest"
             examples:
-              interview-comment-update-interview-not-found:
+              magazine-comment-update-unauthorized:
                 value: "{\"content\":\"수정된 댓글\"}"
-              interview-comment-update-validation-failed:
+              magazine-comment-update-comment-not-found:
+                value: "{\"content\":\"수정된 댓글\"}"
+              magazine-comment-update-validation-failed:
                 value: "{\"content\":\"😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
                   😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
                   😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
@@ -5983,18 +6015,26 @@ paths:
                   😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\
                   😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\"\
                   }"
-              interview-comment-update-comment-not-found:
+              magazine-comment-update-forbidden:
                 value: "{\"content\":\"수정된 댓글\"}"
-              interview-comment-update:
+              magazine-comment-update-magazine-not-found:
+                value: "{\"content\":\"수정된 댓글\"}"
+              magazine-comment-update:
                 value: |
                   {
                     "content": "  수정된 댓글입니다.  "
                   }
-              interview-comment-update-unauthorized:
-                value: "{\"content\":\"수정된 댓글\"}"
-              interview-comment-update-forbidden:
-                value: "{\"content\":\"수정된 댓글\"}"
       responses:
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-comment-update-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
         "404":
           description: "404"
           content:
@@ -6002,12 +6042,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-comment-update-interview-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
-                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
-                interview-comment-update-comment-not-found:
+                magazine-comment-update-comment-not-found:
                   value: "{\"status\":\"error\",\"code\":\"COMMENT_NOT_FOUND\",\"\
                     message\":\"요청한 댓글을 찾을 수 없습니다.\"}"
+                magazine-comment-update-magazine-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_NOT_FOUND\",\"\
+                    message\":\"매거진을 찾을 수 없습니다.\"}"
         "400":
           description: "400"
           content:
@@ -6015,18 +6055,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-comment-update-validation-failed:
+                magazine-comment-update-validation-failed:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"content\"\
                     ,\"message\":\"댓글 내용은 500자를 초과할 수 없습니다.\"}]}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-comment-update-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"FORBIDDEN\",\"message\"\
+                    :\"접근 권한이 없습니다.\"}"
         "200":
           description: "200"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InterviewCommentUpdateSuccessResponse"
+                $ref: "#/components/schemas/MagazineCommentUpdateSuccessResponse"
               examples:
-                interview-comment-update:
+                magazine-comment-update:
                   value: "{\"status\":\"success\",\"data\":{\"id\":501,\"content\"\
                     :\"수정된 댓글입니다.\",\"author\":{\"userId\":7,\"handle\":\"@author7\"\
                     ,\"displayName\":\"샤라웃 운영팀\",\"userType\":null,\"track\":null,\"\
@@ -6034,45 +6084,24 @@ paths:
                     },\"parentId\":null,\"createdAt\":\"2026-09-14T00:00:00Z\",\"\
                     updatedAt\":\"2026-09-14T00:30:00Z\",\"editable\":true,\"edited\"\
                     :true,\"isAnonymous\":false,\"linkPreview\":null}}"
-        "401":
-          description: "401"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-comment-update-unauthorized:
-                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
-                    :\"인증이 필요합니다.\"}"
-        "403":
-          description: "403"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-comment-update-forbidden:
-                  value: "{\"status\":\"error\",\"code\":\"FORBIDDEN\",\"message\"\
-                    :\"접근 권한이 없습니다.\"}"
-  /api/v1/interviews/{interviewId}/reactions/{type}:
+  /api/v1/magazines/{magazineId}/reactions/{type}:
     put:
       tags:
-      - Interview Reaction
-      summary: 인터뷰 반응 추가
-      description: "현재 로그인한 활성 사용자가 발행된 인터뷰에 type 반응을 추가한다. 현재는 LIKE만 지원하며, 이미 존재하\
-        는 반응이면 현재 상태를 반환한다."
-      operationId: interview-reaction-add
+      - Magazine Reaction
+      summary: 매거진 반응 추가
+      description: 매거진 반응 추가
+      operationId: magazine-reaction-add
       parameters:
-      - name: interviewId
+      - name: magazineId
         in: path
-        description: 인터뷰 ID
+        description: 매거진 ID
         required: true
         schema:
           type: integer
           format: int64
       - name: type
         in: path
-        description: 반응 타입. 현재 LIKE만 지원한다.
+        description: LIKE
         required: true
         schema:
           type: string
@@ -6091,36 +6120,6 @@ paths:
           type: string
         example: csrf-token
       responses:
-        "200":
-          description: "200"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InterviewReactionSuccessResponse"
-              examples:
-                interview-reaction-add:
-                  value: "{\"status\":\"success\",\"data\":{\"interviewId\":100,\"\
-                    type\":\"LIKE\",\"active\":true,\"likeCount\":21}}"
-        "404":
-          description: "404"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-reaction-add-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
-                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
-        "400":
-          description: "400"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-reaction-add-invalid-type:
-                  value: "{\"status\":\"error\",\"code\":\"REACTION_TYPE_INVALID\"\
-                    ,\"message\":\"지원하지 않는 인터뷰 반응 타입입니다.\"}"
         "403":
           description: "403"
           content:
@@ -6128,9 +6127,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-reaction-add-inactive-user:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_USER_FORBIDDEN\"\
-                    ,\"message\":\"활성 사용자만 인터뷰의 반응과 댓글을 변경할 수 있습니다.\"}"
+                magazine-reaction-add-inactive-user:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_USER_FORBIDDEN\"\
+                    ,\"message\":\"활성 사용자만 매거진의 반응과 댓글을 변경할 수 있습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MagazineReactionSuccessResponse"
+              examples:
+                magazine-reaction-add:
+                  value: "{\"status\":\"success\",\"data\":{\"magazineId\":100,\"\
+                    type\":\"LIKE\",\"active\":true,\"likeCount\":21}}"
         "401":
           description: "401"
           content:
@@ -6138,19 +6147,39 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-reaction-add-unauthorized:
+                magazine-reaction-add-unauthorized:
                   value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
                     :\"인증이 필요합니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-reaction-add-invalid-type:
+                  value: "{\"status\":\"error\",\"code\":\"REACTION_TYPE_INVALID\"\
+                    ,\"message\":\"지원하지 않는 매거진 반응 타입입니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-reaction-add-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_NOT_FOUND\",\"\
+                    message\":\"매거진을 찾을 수 없습니다.\"}"
     delete:
       tags:
-      - Interview Reaction
-      summary: 인터뷰 반응 제거
-      description: 인터뷰 반응 제거
-      operationId: interview-reaction-remove
+      - Magazine Reaction
+      summary: 매거진 반응 제거
+      description: 매거진 반응 제거
+      operationId: magazine-reaction-remove
       parameters:
-      - name: interviewId
+      - name: magazineId
         in: path
-        description: 인터뷰 ID
+        description: 매거진 ID
         required: true
         schema:
           type: integer
@@ -6183,22 +6212,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-reaction-remove-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
-                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
-                interview-reaction-remove-reaction-not-found:
+                magazine-reaction-remove-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_NOT_FOUND\",\"\
+                    message\":\"매거진을 찾을 수 없습니다.\"}"
+                magazine-reaction-remove-reaction-not-found:
                   value: "{\"status\":\"error\",\"code\":\"REACTION_NOT_FOUND\",\"\
                     message\":\"요청한 반응을 찾을 수 없습니다.\"}"
-        "401":
-          description: "401"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-reaction-remove-unauthorized:
-                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
-                    :\"인증이 필요합니다.\"}"
         "400":
           description: "400"
           content:
@@ -6206,19 +6225,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-reaction-remove-invalid-type:
+                magazine-reaction-remove-invalid-type:
                   value: "{\"status\":\"error\",\"code\":\"REACTION_TYPE_INVALID\"\
-                    ,\"message\":\"지원하지 않는 인터뷰 반응 타입입니다.\"}"
-        "200":
-          description: "200"
+                    ,\"message\":\"지원하지 않는 매거진 반응 타입입니다.\"}"
+        "401":
+          description: "401"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InterviewReactionSuccessResponse"
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-reaction-remove:
-                  value: "{\"status\":\"success\",\"data\":{\"interviewId\":100,\"\
-                    type\":\"LIKE\",\"active\":false,\"likeCount\":20}}"
+                magazine-reaction-remove-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
         "403":
           description: "403"
           content:
@@ -6226,9 +6245,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-reaction-remove-inactive-user:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_USER_FORBIDDEN\"\
-                    ,\"message\":\"활성 사용자만 인터뷰의 반응과 댓글을 변경할 수 있습니다.\"}"
+                magazine-reaction-remove-inactive-user:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_USER_FORBIDDEN\"\
+                    ,\"message\":\"활성 사용자만 매거진의 반응과 댓글을 변경할 수 있습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MagazineReactionSuccessResponse"
+              examples:
+                magazine-reaction-remove:
+                  value: "{\"status\":\"success\",\"data\":{\"magazineId\":100,\"\
+                    type\":\"LIKE\",\"active\":false,\"likeCount\":20}}"
   /api/v1/news/{newsId}/reactions/{type}:
     put:
       tags:
@@ -6641,18 +6670,18 @@ paths:
                 feed-comment-reaction-remove-reaction-not-found:
                   value: "{\"status\":\"error\",\"code\":\"REACTION_NOT_FOUND\",\"\
                     message\":\"요청한 반응을 찾을 수 없습니다.\"}"
-  /api/v1/interviews/{interviewId}/comments/{commentId}/reactions/{type}:
+  /api/v1/magazines/{magazineId}/comments/{commentId}/reactions/{type}:
     put:
       tags:
-      - Interview Comment Reaction
-      summary: 인터뷰 댓글 반응 추가
-      description: 발행된 인터뷰의 삭제되지 않은 댓글에 현재 로그인 사용자의 AGREE 반응을 추가한다. 이미 존재하는 반응이면 현재
+      - Magazine Comment Reaction
+      summary: 매거진 댓글 반응 추가
+      description: 발행된 매거진의 삭제되지 않은 댓글에 현재 로그인 사용자의 AGREE 반응을 추가한다. 이미 존재하는 반응이면 현재
         상태를 반환한다.
-      operationId: interview-comment-reaction-add
+      operationId: magazine-comment-reaction-add
       parameters:
-      - name: interviewId
+      - name: magazineId
         in: path
-        description: 인터뷰 ID
+        description: 매거진 ID
         required: true
         schema:
           type: integer
@@ -6685,6 +6714,17 @@ paths:
           type: string
         example: csrf-token
       responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MagazineCommentReactionSuccessResponse"
+              examples:
+                magazine-comment-reaction-add:
+                  value: "{\"status\":\"success\",\"data\":{\"magazineId\":100,\"\
+                    commentId\":501,\"type\":\"AGREE\",\"active\":true,\"agreeCount\"\
+                    :7}}"
         "403":
           description: "403"
           content:
@@ -6692,9 +6732,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-comment-reaction-add-forbidden:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_USER_FORBIDDEN\"\
-                    ,\"message\":\"활성 사용자만 인터뷰의 반응과 댓글을 변경할 수 있습니다.\"}"
+                magazine-comment-reaction-add-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_USER_FORBIDDEN\"\
+                    ,\"message\":\"활성 사용자만 매거진의 반응과 댓글을 변경할 수 있습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-comment-reaction-add-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
         "400":
           description: "400"
           content:
@@ -6702,7 +6752,69 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-comment-reaction-add-invalid-type:
+                magazine-comment-reaction-add-invalid-type:
+                  value: "{\"status\":\"error\",\"code\":\"REACTION_TYPE_INVALID\"\
+                    ,\"message\":\"지원하지 않는 댓글 반응 타입입니다.\"}"
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-comment-reaction-add-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_NOT_FOUND\",\"\
+                    message\":\"매거진을 찾을 수 없습니다.\"}"
+    delete:
+      tags:
+      - Magazine Comment Reaction
+      summary: 매거진 댓글 반응 제거
+      description: 매거진 댓글 반응 제거
+      operationId: magazine-comment-reaction-remove
+      parameters:
+      - name: magazineId
+        in: path
+        description: 매거진 ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: commentId
+        in: path
+        description: 댓글 ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: type
+        in: path
+        description: 반응 타입(현재 AGREE)
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      - name: Cookie
+        in: header
+        description: 활성 회원 세션의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=user-session
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                magazine-comment-reaction-remove-invalid-type:
                   value: "{\"status\":\"error\",\"code\":\"REACTION_TYPE_INVALID\"\
                     ,\"message\":\"지원하지 않는 댓글 반응 타입입니다.\"}"
         "401":
@@ -6712,7 +6824,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-comment-reaction-add-unauthorized:
+                magazine-comment-reaction-remove-unauthorized:
                   value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
                     :\"인증이 필요합니다.\"}"
         "404":
@@ -6722,70 +6834,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-comment-reaction-add-not-found:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_NOT_FOUND\",\"\
-                    message\":\"인터뷰를 찾을 수 없습니다.\"}"
-        "200":
-          description: "200"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InterviewCommentReactionSuccessResponse"
-              examples:
-                interview-comment-reaction-add:
-                  value: "{\"status\":\"success\",\"data\":{\"interviewId\":100,\"\
-                    commentId\":501,\"type\":\"AGREE\",\"active\":true,\"agreeCount\"\
-                    :7}}"
-    delete:
-      tags:
-      - Interview Comment Reaction
-      summary: 인터뷰 댓글 반응 제거
-      description: 인터뷰 댓글 반응 제거
-      operationId: interview-comment-reaction-remove
-      parameters:
-      - name: interviewId
-        in: path
-        description: 인터뷰 ID
-        required: true
-        schema:
-          type: integer
-          format: int64
-      - name: commentId
-        in: path
-        description: 댓글 ID
-        required: true
-        schema:
-          type: integer
-          format: int64
-      - name: type
-        in: path
-        description: 반응 타입(현재 AGREE)
-        required: true
-        schema:
-          type: string
-      - name: X-CSRF-Token
-        in: header
-        description: 세션 조회로 발급받은 CSRF 토큰
-        required: true
-        schema:
-          type: string
-        example: csrf-token
-      - name: Cookie
-        in: header
-        description: 활성 회원 세션의 JSESSIONID
-        required: true
-        schema:
-          type: string
-        example: JSESSIONID=user-session
-      responses:
-        "404":
-          description: "404"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-comment-reaction-remove-reaction-not-found:
+                magazine-comment-reaction-remove-reaction-not-found:
                   value: "{\"status\":\"error\",\"code\":\"REACTION_NOT_FOUND\",\"\
                     message\":\"요청한 반응을 찾을 수 없습니다.\"}"
         "200":
@@ -6793,10 +6842,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InterviewCommentReactionSuccessResponse"
+                $ref: "#/components/schemas/MagazineCommentReactionSuccessResponse"
               examples:
-                interview-comment-reaction-remove:
-                  value: "{\"status\":\"success\",\"data\":{\"interviewId\":100,\"\
+                magazine-comment-reaction-remove:
+                  value: "{\"status\":\"success\",\"data\":{\"magazineId\":100,\"\
                     commentId\":501,\"type\":\"AGREE\",\"active\":false,\"agreeCount\"\
                     :6}}"
         "403":
@@ -6806,29 +6855,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               examples:
-                interview-comment-reaction-remove-forbidden:
-                  value: "{\"status\":\"error\",\"code\":\"INTERVIEW_USER_FORBIDDEN\"\
-                    ,\"message\":\"활성 사용자만 인터뷰의 반응과 댓글을 변경할 수 있습니다.\"}"
-        "401":
-          description: "401"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-comment-reaction-remove-unauthorized:
-                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
-                    :\"인증이 필요합니다.\"}"
-        "400":
-          description: "400"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              examples:
-                interview-comment-reaction-remove-invalid-type:
-                  value: "{\"status\":\"error\",\"code\":\"REACTION_TYPE_INVALID\"\
-                    ,\"message\":\"지원하지 않는 댓글 반응 타입입니다.\"}"
+                magazine-comment-reaction-remove-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"MAGAZINE_USER_FORBIDDEN\"\
+                    ,\"message\":\"활성 사용자만 매거진의 반응과 댓글을 변경할 수 있습니다.\"}"
   /api/v1/projects/@{slug}/comments/{commentId}/reactions/{type}:
     put:
       tags:
@@ -6959,128 +6988,6 @@ paths:
                 type: string
 components:
   schemas:
-    InterviewCommentCreateSuccessResponse:
-      title: InterviewCommentCreateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - content
-          - createdAt
-          - editable
-          - id
-          - isAnonymous
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: 생성 시각 (UTC ISO-8601)
-            isAnonymous:
-              type: boolean
-              description: 작성자 정보를 익명으로 공개할지 여부
-            editable:
-              type: boolean
-              description: 현재 사용자가 수정할 수 있는지 여부
-            author:
-              required:
-              - displayName
-              - userId
-              type: object
-              properties:
-                isCurrent:
-                  type: boolean
-                  description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
-                  nullable: true
-                avatarUrl:
-                  type: string
-                  description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                cohort:
-                  type: number
-                  description: 작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외
-                  nullable: true
-                handle:
-                  type: string
-                  description: 작성자 handle
-                  nullable: true
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  nullable: true
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 댓글 작성자
-            id:
-              type: number
-              description: 댓글 ID
-            parentId:
-              type: number
-              description: 부모 댓글 ID
-              nullable: true
-            content:
-              type: string
-              description: 저장된 댓글 내용
-            updatedAt:
-              type: string
-              description: 수정 시각 (UTC ISO-8601)
-            linkPreview:
-              type: object
-              properties:
-                imageUrl:
-                  type: string
-                  description: 외부 페이지 이미지 URL
-                  nullable: true
-                siteName:
-                  type: string
-                  description: 외부 사이트 이름
-                  nullable: true
-                description:
-                  type: string
-                  description: 외부 페이지 설명
-                  nullable: true
-                title:
-                  type: string
-                  description: 외부 페이지 제목. 수집 전·실패 시 null
-                  nullable: true
-                url:
-                  type: string
-                  description: 댓글 본문에서 추출한 첫 URL
-                  nullable: true
-              description: 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null
-          description: 생성된 댓글
-        status:
-          type: string
-          description: 응답 상태
-    InterviewCommentCreateRequest:
-      title: InterviewCommentCreateRequest
-      required:
-      - content
-      type: object
-      properties:
-        isAnonymous:
-          type: boolean
-          description: 작성자 정보를 익명으로 공개할지 여부
-          nullable: true
-        parentId:
-          type: number
-          description: 같은 인터뷰의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글
-          nullable: true
-        content:
-          type: string
-          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
     ProjectCreateRequest:
       title: ProjectCreateRequest
       required:
@@ -7170,150 +7077,6 @@ components:
               type: number
               description: 버그 제보 ID
           description: 생성된 버그 제보
-        status:
-          type: string
-          description: 응답 상태
-    InterviewCommentReactionSuccessResponse:
-      title: InterviewCommentReactionSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - active
-          - agreeCount
-          - commentId
-          - interviewId
-          - type
-          type: object
-          properties:
-            interviewId:
-              type: number
-              description: 인터뷰 ID
-            agreeCount:
-              type: number
-              description: 댓글 공감 수
-            active:
-              type: boolean
-              description: 요청한 반응의 활성 상태
-            commentId:
-              type: number
-              description: 댓글 ID
-            type:
-              type: string
-              description: 반응 타입(현재 AGREE)
-          description: 인터뷰 댓글 반응 변경 결과
-        status:
-          type: string
-          description: 응답 상태
-    InterviewCommentUpdateSuccessResponse:
-      title: InterviewCommentUpdateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - author
-          - content
-          - createdAt
-          - editable
-          - edited
-          - id
-          - isAnonymous
-          - updatedAt
-          type: object
-          properties:
-            createdAt:
-              type: string
-              description: 생성 시각 (UTC ISO-8601)
-            isAnonymous:
-              type: boolean
-              description: 작성자 정보를 익명으로 공개할지 여부
-            edited:
-              type: boolean
-              description: 댓글 내용이 수정된 적이 있는지 여부
-            editable:
-              type: boolean
-              description: 현재 사용자가 수정할 수 있는지 여부
-            author:
-              required:
-              - displayName
-              - userId
-              type: object
-              properties:
-                isCurrent:
-                  type: boolean
-                  description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
-                  nullable: true
-                avatarUrl:
-                  type: string
-                  description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 작성자 표시 이름
-                cohort:
-                  type: number
-                  description: 작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외
-                  nullable: true
-                handle:
-                  type: string
-                  description: 작성자 handle
-                  nullable: true
-                userType:
-                  type: string
-                  description: 작성자 유형
-                  nullable: true
-                track:
-                  type: string
-                  description: 작성자 트랙
-                  nullable: true
-                userId:
-                  type: number
-                  description: 작성자 ID
-              description: 댓글 작성자
-            id:
-              type: number
-              description: 댓글 ID
-            parentId:
-              type: number
-              description: 부모 댓글 ID
-              nullable: true
-            content:
-              type: string
-              description: 저장된 댓글 내용
-            updatedAt:
-              type: string
-              description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
-            linkPreview:
-              type: object
-              properties:
-                imageUrl:
-                  type: string
-                  description: 외부 페이지 이미지 URL
-                  nullable: true
-                siteName:
-                  type: string
-                  description: 외부 사이트 이름
-                  nullable: true
-                description:
-                  type: string
-                  description: 외부 페이지 설명
-                  nullable: true
-                title:
-                  type: string
-                  description: 외부 페이지 제목. 수집 전·실패 시 null
-                  nullable: true
-                url:
-                  type: string
-                  description: 댓글 본문에서 추출한 첫 URL
-                  nullable: true
-              description: 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null
-          description: 수정된 댓글
         status:
           type: string
           description: 응답 상태
@@ -7435,6 +7198,41 @@ components:
         status:
           type: string
           description: 응답 상태
+    MagazineCommentReactionSuccessResponse:
+      title: MagazineCommentReactionSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - agreeCount
+          - commentId
+          - magazineId
+          - type
+          type: object
+          properties:
+            agreeCount:
+              type: number
+              description: 댓글 공감 수
+            active:
+              type: boolean
+              description: 요청한 반응의 활성 상태
+            commentId:
+              type: number
+              description: 댓글 ID
+            type:
+              type: string
+              description: 반응 타입(현재 AGREE)
+            magazineId:
+              type: number
+              description: 매거진 ID
+          description: 매거진 댓글 반응 변경 결과
+        status:
+          type: string
+          description: 응답 상태
     AuthSessionSuccessResponse:
       title: AuthSessionSuccessResponse
       required:
@@ -7551,6 +7349,102 @@ components:
               type: number
               description: 사용자 ID
           description: 사용자 프로필
+        status:
+          type: string
+          description: 응답 상태
+    MagazineCommentCreateRequest:
+      title: MagazineCommentCreateRequest
+      required:
+      - content
+      type: object
+      properties:
+        isAnonymous:
+          type: boolean
+          description: 작성자 정보를 익명으로 공개할지 여부
+          nullable: true
+        parentId:
+          type: number
+          description: 같은 매거진의 삭제되지 않은 루트 댓글 ID. 없으면 루트 댓글
+          nullable: true
+        content:
+          type: string
+          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
+    UserCommentFindAllSuccessResponse:
+      title: UserCommentFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 내가 작성한 댓글 목록
+          items:
+            required:
+            - agreeCount
+            - agreedByMe
+            - commentId
+            - content
+            - createdAt
+            - type
+            - updatedAt
+            type: object
+            properties:
+              createdAt:
+                type: string
+                description: 댓글 작성 시각
+              agreedByMe:
+                type: boolean
+                description: 현재 사용자의 공감 여부
+              feedId:
+                type: number
+                description: 피드 댓글이면 이동할 피드 ID. 프로젝트 댓글이면 null
+                nullable: true
+              agreeCount:
+                type: number
+                description: 댓글 공감 수
+              commentId:
+                type: number
+                description: 댓글 ID
+              magazineId:
+                type: number
+                description: 매거진 댓글의 대상 매거진 ID
+                nullable: true
+              type:
+                type: string
+                description: 댓글 대상 종류
+                enum:
+                - FEED
+                - PROJECT
+                - MAGAZINE
+              content:
+                type: string
+                description: 댓글 내용
+              projectSlug:
+                type: string
+                description: 프로젝트 댓글이면 이동할 프로젝트 slug. 피드 댓글이면 null
+                nullable: true
+              updatedAt:
+                type: string
+                description: 댓글 최종 수정 시각
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 조회용 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: 커서와 size에 무관한 조회 가능한 전체 작성 댓글 수
+          description: 페이지네이션 정보
         status:
           type: string
           description: 응답 상태
@@ -8087,109 +7981,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    NotificationListSuccessResponse:
-      title: NotificationListSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 알림 목록
-          items:
-            required:
-            - createdAt
-            - isRead
-            - message
-            - notificationId
-            - notificationType
-            type: object
-            properties:
-              actor:
-                type: object
-                properties:
-                  avatarUrl:
-                    type: string
-                    description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 사용자 아바타 URL
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 사용자 표시 이름
-                    nullable: true
-                  handle:
-                    type: string
-                    description: 사용자 handle
-                    nullable: true
-                  userId:
-                    type: number
-                    description: 사용자 ID
-                    nullable: true
-                description: 알림을 발생시킨 사용자
-              createdAt:
-                type: string
-                description: 알림 생성 시각
-              interviewId:
-                type: number
-                description: 대상 인터뷰 ID
-                nullable: true
-              feedId:
-                type: number
-                description: 대상 피드 ID
-                nullable: true
-              interviewTitle:
-                type: string
-                description: 공개 인터뷰 제목
-                nullable: true
-              isRead:
-                type: boolean
-                description: 읽음 상태
-              commentId:
-                type: number
-                description: 대상 댓글 ID
-                nullable: true
-              notificationId:
-                type: number
-                description: 알림 ID
-              notificationType:
-                type: string
-                description: "알림 유형. COMMENT_REPLY(내 댓글의 직접 답글), POST_ACTIVITY(내 피\
-                  드), COMMENTED_POST_ACTIVITY(댓글을 남긴 피드), QUESTION_ACTIVITY(내 질문),\
-                  \ INTERESTED_QUESTION_ACTIVITY(궁금해요를 누른 질문), COMMENTED_QUESTION_ACTIVITY(댓\
-                  글을 남긴 질문), INTERVIEW_COMMENT_REPLY(인터뷰 댓글 답글), INTERVIEW_ACTIVITY(내\
-                  가 등록한 인터뷰), COMMENTED_INTERVIEW_ACTIVITY(댓글을 남긴 인터뷰)"
-              feedTitle:
-                type: string
-                description: 대상 피드 제목
-                nullable: true
-              message:
-                type: string
-                description: 알림 메시지
-              interviewCommentId:
-                type: number
-                description: 인터뷰 댓글 ID
-                nullable: true
-        meta:
-          required:
-          - hasNext
-          - totalCount
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-            totalCount:
-              type: number
-              description: 전체 알림 수
-          description: 페이지 정보
-        status:
-          type: string
-          description: 응답 상태
     HomeStatisticsSuccessResponse:
       title: HomeStatisticsSuccessResponse
       required:
@@ -8252,6 +8043,115 @@ components:
         slug:
           type: string
           description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
+    MagazineCommentUpdateSuccessResponse:
+      title: MagazineCommentUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - content
+          - createdAt
+          - editable
+          - edited
+          - id
+          - isAnonymous
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 생성 시각 (UTC ISO-8601)
+            isAnonymous:
+              type: boolean
+              description: 작성자 정보를 익명으로 공개할지 여부
+            edited:
+              type: boolean
+              description: 댓글 내용이 수정된 적이 있는지 여부
+            editable:
+              type: boolean
+              description: 현재 사용자가 수정할 수 있는지 여부
+            author:
+              required:
+              - displayName
+              - userId
+              type: object
+              properties:
+                isCurrent:
+                  type: boolean
+                  description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
+                  nullable: true
+                avatarUrl:
+                  type: string
+                  description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                cohort:
+                  type: number
+                  description: 작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 handle
+                  nullable: true
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  nullable: true
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 댓글 작성자
+            id:
+              type: number
+              description: 댓글 ID
+            parentId:
+              type: number
+              description: 부모 댓글 ID
+              nullable: true
+            content:
+              type: string
+              description: 저장된 댓글 내용
+            updatedAt:
+              type: string
+              description: "수정 시각 (UTC ISO-8601, 변경 없으면 기존 값 유지)"
+            linkPreview:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                  description: 외부 페이지 이미지 URL
+                  nullable: true
+                siteName:
+                  type: string
+                  description: 외부 사이트 이름
+                  nullable: true
+                description:
+                  type: string
+                  description: 외부 페이지 설명
+                  nullable: true
+                title:
+                  type: string
+                  description: 외부 페이지 제목. 수집 전·실패 시 null
+                  nullable: true
+                url:
+                  type: string
+                  description: 댓글 본문에서 추출한 첫 URL
+                  nullable: true
+              description: 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null
+          description: 수정된 댓글
+        status:
+          type: string
+          description: 응답 상태
     ProjectUpdateSuccessResponse:
       title: ProjectUpdateSuccessResponse
       required:
@@ -8314,107 +8214,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    InterviewFindAllSuccessResponse:
-      title: InterviewFindAllSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 인터뷰 목록
-          items:
-            required:
-            - commentCount
-            - createdAt
-            - id
-            - likeCount
-            - likedByMe
-            - status
-            - title
-            - updatedAt
-            - viewCount
-            type: object
-            properties:
-              summary:
-                type: string
-                description: 요약
-                nullable: true
-              publishedAt:
-                type: string
-                description: 최초 발행 시각
-                nullable: true
-              likeCount:
-                type: number
-                description: 좋아요 수
-              title:
-                type: string
-                description: 제목
-              interviewee:
-                required:
-                - displayName
-                type: object
-                properties:
-                  avatarUrl:
-                    type: string
-                    description: 프로필 이미지 URL
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 표시 이름
-                  bio:
-                    type: string
-                    description: 현재 사용자 소개
-                    nullable: true
-                  handle:
-                    type: string
-                    description: 사용자 핸들
-                    nullable: true
-              commentCount:
-                type: number
-                description: 삭제되지 않은 댓글과 대댓글 수
-              createdAt:
-                type: string
-                description: 생성 시각
-              likedByMe:
-                type: boolean
-                description: 내 좋아요 여부
-              id:
-                type: number
-                description: 인터뷰 ID
-              viewCount:
-                type: number
-                description: 누적 조회수
-              status:
-                type: string
-                description: 발행 상태
-              updatedAt:
-                type: string
-                description: 수정 시각
-              thumbnailUrl:
-                type: string
-                description: 대표 이미지 URL
-                nullable: true
-        meta:
-          required:
-          - hasNext
-          - totalCount
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 여부
-            totalCount:
-              type: number
-              description: 전체 개수
-        status:
-          type: string
-          description: 응답 상태
     FeedCommentReactionSuccessResponse:
       title: FeedCommentReactionSuccessResponse
       required:
@@ -8450,6 +8249,105 @@ components:
         status:
           type: string
           description: 응답 상태
+    MagazineFindSuccessResponse:
+      title: MagazineFindSuccessResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - commentCount
+          - contentMd
+          - createdAt
+          - id
+          - likeCount
+          - likedByMe
+          - title
+          - updatedAt
+          - viewCount
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 요약
+              nullable: true
+            publishedAt:
+              type: string
+              description: 최초 발행 시각
+              nullable: true
+            author:
+              type: object
+              properties:
+                avatarUrl:
+                  type: string
+                  description: "편집자 프로필 이미지 URL, 없으면 GitHub 아바타"
+                  nullable: true
+                displayName:
+                  type: string
+                  description: "편집자의 현재 표시 이름, 탈퇴 시 탈퇴한 사용자"
+                  nullable: true
+                handle:
+                  type: string
+                  description: "최초 등록 편집자의 현재 핸들, 탈퇴 시 null"
+                  nullable: true
+              description: "최초 등록 편집자, 다른 관리자가 수정해도 유지"
+            likeCount:
+              type: number
+              description: 좋아요 수
+            contentMd:
+              type: string
+              description: 이미지 URL로 변환한 Markdown
+            title:
+              type: string
+              description: 제목
+            commentCount:
+              type: number
+              description: 삭제되지 않은 댓글과 대댓글 수
+            createdAt:
+              type: string
+              description: 생성 시각
+            featuredUser:
+              required:
+              - displayName
+              type: object
+              properties:
+                avatarUrl:
+                  type: string
+                  description: 프로필 이미지 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 표시 이름
+                handle:
+                  type: string
+                  description: 사용자 핸들
+                  nullable: true
+                introduction:
+                  type: string
+                  description: 매거진에 직접 작성한 소개문. 회원 프로필 변경과 무관하며 기존 글에 미입력했거나 탈퇴한 경우
+                    null
+                  nullable: true
+            likedByMe:
+              type: boolean
+              description: 내 좋아요 여부
+            id:
+              type: number
+              description: 매거진 ID
+            viewCount:
+              type: number
+              description: 누적 조회수
+            updatedAt:
+              type: string
+              description: 수정 시각
+            thumbnailUrl:
+              type: string
+              description: 대표 이미지 URL
+              nullable: true
+        status:
+          type: string
+          description: 응답 상태
     HomeBannerDeleteSuccessResponse:
       title: HomeBannerDeleteSuccessResponse
       required:
@@ -8471,15 +8369,6 @@ components:
           description: 응답 상태
     FeedCommentUpdateRequest:
       title: FeedCommentUpdateRequest
-      required:
-      - content
-      type: object
-      properties:
-        content:
-          type: string
-          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
-    InterviewCommentUpdateRequest:
-      title: InterviewCommentUpdateRequest
       required:
       - content
       type: object
@@ -8870,32 +8759,15 @@ components:
         status:
           type: string
           description: 응답 상태
-    InterviewSaveRequest:
-      title: InterviewSaveRequest
+    MagazineCommentUpdateRequest:
+      title: MagazineCommentUpdateRequest
       required:
-      - intervieweeId
-      - title
+      - content
       type: object
       properties:
-        summary:
+        content:
           type: string
-          description: "요약, 최대 500자"
-          nullable: true
-        intervieweeId:
-          type: number
-          description: 인터뷰 대상 사용자 ID
-        thumbnailMediaId:
-          type: number
-          description: INTERVIEW_THUMBNAIL 용도의 READY 미디어 ID
-          nullable: true
-        contentMd:
-          type: string
-          description: "원본 Markdown, 최대 100000자. 본문 이미지는 INTERVIEW_CONTENT 용도의 media://ID로\
-            \ 참조"
-          nullable: true
-        title:
-          type: string
-          description: "제목, 최대 200자"
+          description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
     NewsUpdateRequest:
       title: NewsUpdateRequest
       required:
@@ -9006,85 +8878,6 @@ components:
         content:
           type: string
           description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
-    UserCommentFindAllSuccessResponse:
-      title: UserCommentFindAllSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 내가 작성한 댓글 목록
-          items:
-            required:
-            - agreeCount
-            - agreedByMe
-            - commentId
-            - content
-            - createdAt
-            - type
-            - updatedAt
-            type: object
-            properties:
-              createdAt:
-                type: string
-                description: 댓글 작성 시각
-              interviewId:
-                type: number
-                description: 인터뷰 댓글의 대상 인터뷰 ID
-                nullable: true
-              agreedByMe:
-                type: boolean
-                description: 현재 사용자의 공감 여부
-              feedId:
-                type: number
-                description: 피드 댓글이면 이동할 피드 ID. 프로젝트 댓글이면 null
-                nullable: true
-              agreeCount:
-                type: number
-                description: 댓글 공감 수
-              commentId:
-                type: number
-                description: 댓글 ID
-              type:
-                type: string
-                description: 댓글 대상 종류
-                enum:
-                - FEED
-                - PROJECT
-                - INTERVIEW
-              content:
-                type: string
-                description: 댓글 내용
-              projectSlug:
-                type: string
-                description: 프로젝트 댓글이면 이동할 프로젝트 slug. 피드 댓글이면 null
-                nullable: true
-              updatedAt:
-                type: string
-                description: 댓글 최종 수정 시각
-        meta:
-          required:
-          - hasNext
-          - totalCount
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 조회용 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-            totalCount:
-              type: number
-              description: 커서와 size에 무관한 조회 가능한 전체 작성 댓글 수
-          description: 페이지네이션 정보
-        status:
-          type: string
-          description: 응답 상태
     FeedFindAllSuccessResponse:
       title: FeedFindAllSuccessResponse
       required:
@@ -9480,6 +9273,109 @@ components:
               type: number
               description: 커서와 size를 제외한 유형·이벤트 상태 조건을 만족하는 전체 소식 수
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    NotificationListSuccessResponse:
+      title: NotificationListSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 알림 목록
+          items:
+            required:
+            - createdAt
+            - isRead
+            - message
+            - notificationId
+            - notificationType
+            type: object
+            properties:
+              actor:
+                type: object
+                properties:
+                  avatarUrl:
+                    type: string
+                    description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 사용자 아바타 URL
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 사용자 표시 이름
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 사용자 handle
+                    nullable: true
+                  userId:
+                    type: number
+                    description: 사용자 ID
+                    nullable: true
+                description: 알림을 발생시킨 사용자
+              createdAt:
+                type: string
+                description: 알림 생성 시각
+              feedId:
+                type: number
+                description: 대상 피드 ID
+                nullable: true
+              magazineTitle:
+                type: string
+                description: 공개 매거진 제목
+                nullable: true
+              isRead:
+                type: boolean
+                description: 읽음 상태
+              commentId:
+                type: number
+                description: 대상 댓글 ID
+                nullable: true
+              magazineCommentId:
+                type: number
+                description: 매거진 댓글 ID
+                nullable: true
+              notificationId:
+                type: number
+                description: 알림 ID
+              notificationType:
+                type: string
+                description: "알림 유형. COMMENT_REPLY(내 댓글의 직접 답글), POST_ACTIVITY(내 피\
+                  드), COMMENTED_POST_ACTIVITY(댓글을 남긴 피드), QUESTION_ACTIVITY(내 질문),\
+                  \ INTERESTED_QUESTION_ACTIVITY(궁금해요를 누른 질문), COMMENTED_QUESTION_ACTIVITY(댓\
+                  글을 남긴 질문), MAGAZINE_COMMENT_REPLY(매거진 댓글 답글), MAGAZINE_ACTIVITY(내\
+                  가 등록한 매거진), COMMENTED_MAGAZINE_ACTIVITY(댓글을 남긴 매거진)"
+              feedTitle:
+                type: string
+                description: 대상 피드 제목
+                nullable: true
+              magazineId:
+                type: number
+                description: 대상 매거진 ID
+                nullable: true
+              message:
+                type: string
+                description: 알림 메시지
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: 전체 알림 수
+          description: 페이지 정보
         status:
           type: string
           description: 응답 상태
@@ -10167,6 +10063,111 @@ components:
         status:
           type: string
           description: 응답 상태
+    MagazineCommentCreateSuccessResponse:
+      title: MagazineCommentCreateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - content
+          - createdAt
+          - editable
+          - id
+          - isAnonymous
+          - updatedAt
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 생성 시각 (UTC ISO-8601)
+            isAnonymous:
+              type: boolean
+              description: 작성자 정보를 익명으로 공개할지 여부
+            editable:
+              type: boolean
+              description: 현재 사용자가 수정할 수 있는지 여부
+            author:
+              required:
+              - displayName
+              - userId
+              type: object
+              properties:
+                isCurrent:
+                  type: boolean
+                  description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
+                  nullable: true
+                avatarUrl:
+                  type: string
+                  description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개 URL
+                  nullable: true
+                displayName:
+                  type: string
+                  description: 작성자 표시 이름
+                cohort:
+                  type: number
+                  description: 작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외
+                  nullable: true
+                handle:
+                  type: string
+                  description: 작성자 handle
+                  nullable: true
+                userType:
+                  type: string
+                  description: 작성자 유형
+                  nullable: true
+                track:
+                  type: string
+                  description: 작성자 트랙
+                  nullable: true
+                userId:
+                  type: number
+                  description: 작성자 ID
+              description: 댓글 작성자
+            id:
+              type: number
+              description: 댓글 ID
+            parentId:
+              type: number
+              description: 부모 댓글 ID
+              nullable: true
+            content:
+              type: string
+              description: 저장된 댓글 내용
+            updatedAt:
+              type: string
+              description: 수정 시각 (UTC ISO-8601)
+            linkPreview:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                  description: 외부 페이지 이미지 URL
+                  nullable: true
+                siteName:
+                  type: string
+                  description: 외부 사이트 이름
+                  nullable: true
+                description:
+                  type: string
+                  description: 외부 페이지 설명
+                  nullable: true
+                title:
+                  type: string
+                  description: 외부 페이지 제목. 수집 전·실패 시 null
+                  nullable: true
+                url:
+                  type: string
+                  description: 댓글 본문에서 추출한 첫 URL
+                  nullable: true
+              description: 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null
+          description: 생성된 댓글
+        status:
+          type: string
+          description: 응답 상태
     BugReportStatusUpdateSuccessResponse:
       title: BugReportStatusUpdateSuccessResponse
       required:
@@ -10378,87 +10379,6 @@ components:
                   nullable: true
               description: 본문 첫 URL의 링크 미리보기. URL이 없으면 null
           description: 피드
-        status:
-          type: string
-          description: 응답 상태
-    InterviewFindSuccessResponse:
-      title: InterviewFindSuccessResponse
-      required:
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - commentCount
-          - contentMd
-          - createdAt
-          - id
-          - likeCount
-          - likedByMe
-          - title
-          - updatedAt
-          - viewCount
-          type: object
-          properties:
-            summary:
-              type: string
-              description: 요약
-              nullable: true
-            publishedAt:
-              type: string
-              description: 최초 발행 시각
-              nullable: true
-            likeCount:
-              type: number
-              description: 좋아요 수
-            contentMd:
-              type: string
-              description: 이미지 URL로 변환한 Markdown
-            title:
-              type: string
-              description: 제목
-            interviewee:
-              required:
-              - displayName
-              type: object
-              properties:
-                avatarUrl:
-                  type: string
-                  description: 프로필 이미지 URL
-                  nullable: true
-                displayName:
-                  type: string
-                  description: 표시 이름
-                bio:
-                  type: string
-                  description: 현재 사용자 소개
-                  nullable: true
-                handle:
-                  type: string
-                  description: 사용자 핸들
-                  nullable: true
-            commentCount:
-              type: number
-              description: 삭제되지 않은 댓글과 대댓글 수
-            createdAt:
-              type: string
-              description: 생성 시각
-            likedByMe:
-              type: boolean
-              description: 내 좋아요 여부
-            id:
-              type: number
-              description: 인터뷰 ID
-            viewCount:
-              type: number
-              description: 누적 조회수
-            updatedAt:
-              type: string
-              description: 수정 시각
-            thumbnailUrl:
-              type: string
-              description: 대표 이미지 URL
-              nullable: true
         status:
           type: string
           description: 응답 상태
@@ -11608,6 +11528,88 @@ components:
         status:
           type: string
           description: 응답 상태
+    MagazineAdminResponse:
+      title: MagazineAdminResponse
+      required:
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - author
+          - createdAt
+          - featuredUserId
+          - id
+          - status
+          - title
+          - updatedAt
+          type: object
+          properties:
+            featuredUserIntroduction:
+              type: string
+              description: 매거진에 저장된 인터뷰이 소개문. 기존 글과 소개문이 없는 초안은 null
+              nullable: true
+            summary:
+              type: string
+              description: 요약
+              nullable: true
+            publishedAt:
+              type: string
+              description: 최초 발행 시각
+              nullable: true
+            author:
+              type: object
+              properties:
+                avatarUrl:
+                  type: string
+                  description: "편집자 프로필 이미지 URL, 없으면 GitHub 아바타"
+                  nullable: true
+                displayName:
+                  type: string
+                  description: "편집자의 현재 표시 이름, 탈퇴 시 탈퇴한 사용자"
+                  nullable: true
+                handle:
+                  type: string
+                  description: "최초 등록 편집자의 현재 핸들, 탈퇴 시 null"
+                  nullable: true
+              description: "최초 등록 편집자, 다른 관리자가 수정해도 유지"
+            thumbnailMediaId:
+              type: number
+              description: MAGAZINE_THUMBNAIL 용도의 READY 미디어 ID
+              nullable: true
+            contentMd:
+              type: string
+              description: 이미지 원본 참조가 포함된 Markdown
+              nullable: true
+            title:
+              type: string
+              description: 제목
+            createdAt:
+              type: string
+              description: 생성 시각
+            featuredUserId:
+              type: number
+              description: 매거진 대상 사용자 ID
+            id:
+              type: number
+              description: 매거진 ID
+            previewContentMd:
+              type: string
+              description: 이미지 URL로 변환한 미리보기 Markdown
+              nullable: true
+            updatedAt:
+              type: string
+              description: 수정 시각
+            status:
+              type: string
+              description: DRAFT 또는 PUBLISHED
+            thumbnailUrl:
+              type: string
+              description: 대표 이미지 미리보기 URL
+              nullable: true
+        status:
+          type: string
+          description: 응답 상태
     FeedCommentCreateSuccessResponse:
       title: FeedCommentCreateSuccessResponse
       required:
@@ -11823,37 +11825,6 @@ components:
                     type: number
                     description: 기술 스택 ID
           description: 기술 스택 목록
-        status:
-          type: string
-          description: 응답 상태
-    InterviewReactionSuccessResponse:
-      title: InterviewReactionSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - active
-          - interviewId
-          - likeCount
-          - type
-          type: object
-          properties:
-            interviewId:
-              type: number
-              description: 인터뷰 ID
-            active:
-              type: boolean
-              description: 요청한 반응의 활성 상태
-            likeCount:
-              type: number
-              description: 인터뷰 좋아요 수
-            type:
-              type: string
-              description: 반응 타입. 현재 LIKE만 지원하며 향후 확장할 수 있다.
-          description: 인터뷰 반응 변경 결과
         status:
           type: string
           description: 응답 상태
@@ -12404,6 +12375,151 @@ components:
         status:
           type: string
           description: 응답 상태
+    MagazineCommentFindAllSuccessResponse:
+      title: MagazineCommentFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 매거진 댓글 목록
+          items:
+            required:
+            - agreeCount
+            - agreedByMe
+            - author
+            - createdAt
+            - deleted
+            - editable
+            - edited
+            - id
+            - isAnonymous
+            - updatedAt
+            type: object
+            properties:
+              edited:
+                type: boolean
+                description: 댓글 내용이 수정된 적이 있는지 여부. 삭제된 댓글은 false
+              editable:
+                type: boolean
+                description: 현재 사용자가 수정할 수 있는지 여부
+              author:
+                type: object
+                properties:
+                  isCurrent:
+                    type: boolean
+                    description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
+                    nullable: true
+                  avatarImageId:
+                    type: number
+                    description: 작성자 프로필 이미지 미디어 ID. 타인의 익명 댓글이면 null
+                    nullable: true
+                  avatarUrl:
+                    type: string
+                    description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개
+                      URL. 타인의 익명 댓글이면 null
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 작성자 표시 이름. 타인의 익명 댓글이면 null
+                    nullable: true
+                  cohort:
+                    type: number
+                    description: 작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 작성자 handle. 타인의 익명 댓글이면 null
+                    nullable: true
+                  userType:
+                    type: string
+                    description: 작성자 유형. 크루 배지 구분을 위해 타인의 익명 댓글에도 포함
+                    nullable: true
+                  track:
+                    type: string
+                    description: 작성자 트랙. 크루가 아니거나 타인의 익명 댓글이면 null
+                    nullable: true
+                  userId:
+                    type: number
+                    description: 작성자 ID. 타인의 익명 댓글이면 null
+                    nullable: true
+                description: 댓글 작성자
+              parentId:
+                type: number
+                description: 부모 루트 댓글 ID
+                nullable: true
+              content:
+                type: string
+                description: 댓글 내용. 삭제된 댓글은 null
+                nullable: true
+              linkPreview:
+                type: object
+                properties:
+                  imageUrl:
+                    type: string
+                    description: 외부 페이지 이미지 URL
+                    nullable: true
+                  siteName:
+                    type: string
+                    description: 외부 사이트 이름
+                    nullable: true
+                  description:
+                    type: string
+                    description: 외부 페이지 설명
+                    nullable: true
+                  title:
+                    type: string
+                    description: 외부 페이지 제목. 수집 전·실패 시 null
+                    nullable: true
+                  url:
+                    type: string
+                    description: 댓글 본문에서 추출한 첫 URL
+                    nullable: true
+                description: 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null
+              createdAt:
+                type: string
+                description: 생성 시각 (UTC ISO-8601)
+              isAnonymous:
+                type: boolean
+                description: 작성자 정보를 익명으로 공개할지 여부
+              deleted:
+                type: boolean
+                description: 댓글이 삭제되었는지 여부
+              agreedByMe:
+                type: boolean
+                description: 현재 사용자의 공감 여부. 비로그인이면 false
+              agreeCount:
+                type: number
+                description: 댓글 공감 수
+              id:
+                type: number
+                description: 댓글 ID
+              updatedAt:
+                type: string
+                description: 수정 시각 (UTC ISO-8601)
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 cursor
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수
+          description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
     MediaStatusSuccessResponse:
       title: MediaStatusSuccessResponse
       required:
@@ -12575,6 +12691,125 @@ components:
         status:
           type: string
           description: 응답 상태
+    MagazineFindAllSuccessResponse:
+      title: MagazineFindAllSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 매거진 목록
+          items:
+            required:
+            - author
+            - commentCount
+            - createdAt
+            - id
+            - likeCount
+            - likedByMe
+            - status
+            - title
+            - updatedAt
+            - viewCount
+            type: object
+            properties:
+              summary:
+                type: string
+                description: 요약
+                nullable: true
+              publishedAt:
+                type: string
+                description: 최초 발행 시각
+                nullable: true
+              author:
+                type: object
+                properties:
+                  avatarUrl:
+                    type: string
+                    description: "편집자 프로필 이미지 URL, 없으면 GitHub 아바타"
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: "편집자의 현재 표시 이름, 탈퇴 시 탈퇴한 사용자"
+                    nullable: true
+                  handle:
+                    type: string
+                    description: "최초 등록 편집자의 현재 핸들, 탈퇴 시 null"
+                    nullable: true
+                description: "최초 등록 편집자, 다른 관리자가 수정해도 유지"
+              likeCount:
+                type: number
+                description: 좋아요 수
+              title:
+                type: string
+                description: 제목
+              commentCount:
+                type: number
+                description: 삭제되지 않은 댓글과 대댓글 수
+              createdAt:
+                type: string
+                description: 생성 시각
+              featuredUser:
+                required:
+                - displayName
+                type: object
+                properties:
+                  avatarUrl:
+                    type: string
+                    description: 프로필 이미지 URL
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: 표시 이름
+                  handle:
+                    type: string
+                    description: 사용자 핸들
+                    nullable: true
+                  introduction:
+                    type: string
+                    description: 매거진에 직접 작성한 소개문. 회원 프로필 변경과 무관하며 기존 글에 미입력했거나 탈퇴한
+                      경우 null
+                    nullable: true
+              likedByMe:
+                type: boolean
+                description: 내 좋아요 여부
+              id:
+                type: number
+                description: 매거진 ID
+              viewCount:
+                type: number
+                description: 누적 조회수
+              status:
+                type: string
+                description: 발행 상태
+              updatedAt:
+                type: string
+                description: 수정 시각
+              thumbnailUrl:
+                type: string
+                description: 대표 이미지 URL
+                nullable: true
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 여부
+            totalCount:
+              type: number
+              description: 전체 개수
+        status:
+          type: string
+          description: 응답 상태
     UserProfileUpdateRequest:
       title: UserProfileUpdateRequest
       required:
@@ -12681,151 +12916,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    InterviewCommentFindAllSuccessResponse:
-      title: InterviewCommentFindAllSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 인터뷰 댓글 목록
-          items:
-            required:
-            - agreeCount
-            - agreedByMe
-            - author
-            - createdAt
-            - deleted
-            - editable
-            - edited
-            - id
-            - isAnonymous
-            - updatedAt
-            type: object
-            properties:
-              edited:
-                type: boolean
-                description: 댓글 내용이 수정된 적이 있는지 여부. 삭제된 댓글은 false
-              editable:
-                type: boolean
-                description: 현재 사용자가 수정할 수 있는지 여부
-              author:
-                type: object
-                properties:
-                  isCurrent:
-                    type: boolean
-                    description: 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null
-                    nullable: true
-                  avatarImageId:
-                    type: number
-                    description: 작성자 프로필 이미지 미디어 ID. 타인의 익명 댓글이면 null
-                    nullable: true
-                  avatarUrl:
-                    type: string
-                    description: 직접 업로드한 이미지가 없으면 GitHub 아바타를 사용하는 작성자 프로필 이미지 공개
-                      URL. 타인의 익명 댓글이면 null
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: 작성자 표시 이름. 타인의 익명 댓글이면 null
-                    nullable: true
-                  cohort:
-                    type: number
-                    description: 작성자 정보가 공개되는 크루의 기수. 타인의 익명 댓글이면 제외
-                    nullable: true
-                  handle:
-                    type: string
-                    description: 작성자 handle. 타인의 익명 댓글이면 null
-                    nullable: true
-                  userType:
-                    type: string
-                    description: 작성자 유형. 크루 배지 구분을 위해 타인의 익명 댓글에도 포함
-                    nullable: true
-                  track:
-                    type: string
-                    description: 작성자 트랙. 크루가 아니거나 타인의 익명 댓글이면 null
-                    nullable: true
-                  userId:
-                    type: number
-                    description: 작성자 ID. 타인의 익명 댓글이면 null
-                    nullable: true
-                description: 댓글 작성자
-              parentId:
-                type: number
-                description: 부모 루트 댓글 ID
-                nullable: true
-              content:
-                type: string
-                description: 댓글 내용. 삭제된 댓글은 null
-                nullable: true
-              linkPreview:
-                type: object
-                properties:
-                  imageUrl:
-                    type: string
-                    description: 외부 페이지 이미지 URL
-                    nullable: true
-                  siteName:
-                    type: string
-                    description: 외부 사이트 이름
-                    nullable: true
-                  description:
-                    type: string
-                    description: 외부 페이지 설명
-                    nullable: true
-                  title:
-                    type: string
-                    description: 외부 페이지 제목. 수집 전·실패 시 null
-                    nullable: true
-                  url:
-                    type: string
-                    description: 댓글 본문에서 추출한 첫 URL
-                    nullable: true
-                description: 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null
-              createdAt:
-                type: string
-                description: 생성 시각 (UTC ISO-8601)
-              isAnonymous:
-                type: boolean
-                description: 작성자 정보를 익명으로 공개할지 여부
-              deleted:
-                type: boolean
-                description: 댓글이 삭제되었는지 여부
-              agreedByMe:
-                type: boolean
-                description: 현재 사용자의 공감 여부. 비로그인이면 false
-              agreeCount:
-                type: number
-                description: 댓글 공감 수
-              id:
-                type: number
-                description: 댓글 ID
-              updatedAt:
-                type: string
-                description: 수정 시각 (UTC ISO-8601)
-        meta:
-          required:
-          - hasNext
-          - totalCount
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 cursor
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-            totalCount:
-              type: number
-              description: 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수
-          description: 페이지네이션 정보
-        status:
-          type: string
-          description: 응답 상태
     NewsDeleteSuccessResponse:
       title: NewsDeleteSuccessResponse
       required:
@@ -12850,67 +12940,6 @@ components:
           type: object
           description: 메타 정보
           nullable: true
-        status:
-          type: string
-          description: 응답 상태
-    InterviewAdminResponse:
-      title: InterviewAdminResponse
-      required:
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - createdAt
-          - id
-          - intervieweeId
-          - status
-          - title
-          - updatedAt
-          type: object
-          properties:
-            summary:
-              type: string
-              description: 요약
-              nullable: true
-            createdAt:
-              type: string
-              description: 생성 시각
-            publishedAt:
-              type: string
-              description: 최초 발행 시각
-              nullable: true
-            intervieweeId:
-              type: number
-              description: 인터뷰 대상 사용자 ID
-            thumbnailMediaId:
-              type: number
-              description: INTERVIEW_THUMBNAIL 용도의 READY 미디어 ID
-              nullable: true
-            id:
-              type: number
-              description: 인터뷰 ID
-            contentMd:
-              type: string
-              description: 이미지 원본 참조가 포함된 Markdown
-              nullable: true
-            title:
-              type: string
-              description: 제목
-            previewContentMd:
-              type: string
-              description: 이미지 URL로 변환한 미리보기 Markdown
-              nullable: true
-            updatedAt:
-              type: string
-              description: 수정 시각
-            status:
-              type: string
-              description: DRAFT 또는 PUBLISHED
-            thumbnailUrl:
-              type: string
-              description: 대표 이미지 미리보기 URL
-              nullable: true
         status:
           type: string
           description: 응답 상태
@@ -13027,6 +13056,29 @@ components:
               description: 검색어와 고른 필터를 모두 적용한 프로젝트 수. 같은 조건의 목록 조회 meta.totalCount와
                 같다.
           description: 필터 옵션
+        status:
+          type: string
+          description: 응답 상태
+    MagazineCommentDeleteSuccessResponse:
+      title: MagazineCommentDeleteSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - deleted
+          - id
+          type: object
+          properties:
+            deleted:
+              type: boolean
+              description: 댓글 삭제 여부
+            id:
+              type: number
+              description: 삭제된 댓글 ID
+          description: 삭제된 댓글
         status:
           type: string
           description: 응답 상태
@@ -13199,8 +13251,8 @@ components:
         status:
           type: string
           description: 응답 상태
-    InterviewCommentDeleteSuccessResponse:
-      title: InterviewCommentDeleteSuccessResponse
+    MagazineReactionSuccessResponse:
+      title: MagazineReactionSuccessResponse
       required:
       - data
       - status
@@ -13208,17 +13260,25 @@ components:
       properties:
         data:
           required:
-          - deleted
-          - id
+          - active
+          - likeCount
+          - magazineId
+          - type
           type: object
           properties:
-            deleted:
+            active:
               type: boolean
-              description: 댓글 삭제 여부
-            id:
+              description: 요청한 반응의 활성 상태
+            likeCount:
               type: number
-              description: 삭제된 댓글 ID
-          description: 삭제된 댓글
+              description: 매거진 좋아요 수
+            type:
+              type: string
+              description: 반응 타입. 현재 LIKE만 지원하며 향후 확장할 수 있다.
+            magazineId:
+              type: number
+              description: 매거진 ID
+          description: 매거진 반응 변경 결과
         status:
           type: string
           description: 응답 상태
@@ -13831,3 +13891,34 @@ components:
         status:
           type: string
           description: 응답 상태
+    MagazineSaveRequest:
+      title: MagazineSaveRequest
+      required:
+      - featuredUserId
+      - title
+      type: object
+      properties:
+        featuredUserIntroduction:
+          type: string
+          description: "매거진에 직접 작성하는 인터뷰이 소개문, 최대 200자. 초안은 생략 가능하며 발행 및 발행된 글 수정\
+            \ 시 필수"
+          nullable: true
+        summary:
+          type: string
+          description: "요약, 최대 500자"
+          nullable: true
+        featuredUserId:
+          type: number
+          description: 매거진 대상 사용자 ID
+        thumbnailMediaId:
+          type: number
+          description: MAGAZINE_THUMBNAIL 용도의 READY 미디어 ID
+          nullable: true
+        contentMd:
+          type: string
+          description: "원본 Markdown, 최대 100000자. 본문 이미지는 MAGAZINE_CONTENT 용도의 media://ID로\
+            \ 참조"
+          nullable: true
+        title:
+          type: string
+          description: "제목, 최대 200자"

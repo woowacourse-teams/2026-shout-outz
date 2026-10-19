@@ -48,12 +48,12 @@ public class NotificationRepositoryImpl implements NotificationRepository, Notif
                                up.display_name AS actor_display_name,
                                up.avatar_image_id AS actor_avatar_image_id,
                                n.is_read,
-                               n.created_at, n.interview_id, i.title AS interview_title, n.interview_comment_id
+                               n.created_at, n.magazine_id, i.title AS magazine_title, n.magazine_comment_id
                         FROM notifications n
                         LEFT JOIN feeds f
                           ON f.id = n.feed_id
                          AND f.deleted_at IS NULL
-                        LEFT JOIN interviews i ON i.id = n.interview_id
+                        LEFT JOIN magazines i ON i.id = n.magazine_id
                           AND i.status = 'PUBLISHED' AND i.deleted_at IS NULL
                         LEFT JOIN users u
                           ON u.id = n.actor_id
@@ -86,9 +86,9 @@ public class NotificationRepositoryImpl implements NotificationRepository, Notif
                         resultSet.getObject("actor_avatar_image_id", Long.class),
                         resultSet.getBoolean("is_read"),
                         resultSet.getTimestamp("created_at").toInstant(),
-                        resultSet.getObject("interview_id", Long.class),
-                        resultSet.getString("interview_title"),
-                        resultSet.getObject("interview_comment_id", Long.class)
+                        resultSet.getObject("magazine_id", Long.class),
+                        resultSet.getString("magazine_title"),
+                        resultSet.getObject("magazine_comment_id", Long.class)
                 )
         );
 
@@ -225,26 +225,26 @@ public class NotificationRepositoryImpl implements NotificationRepository, Notif
     }
 
     @Override
-    public void createForInterviewComment(long interviewId, long commentId, long actorId) {
+    public void createForMagazineComment(long magazineId, long commentId, long actorId) {
         jdbcTemplate.update("""
                 WITH source AS (
-                    SELECT c.id, c.parent_id, c.is_anonymous, i.author_id, i.id AS interview_id
-                    FROM interview_comments c
-                    JOIN interviews i ON i.id = c.interview_id
-                    WHERE c.id = :commentId AND c.interview_id = :interviewId
+                    SELECT c.id, c.parent_id, c.is_anonymous, i.author_id, i.id AS magazine_id
+                    FROM magazine_comments c
+                    JOIN magazines i ON i.id = c.magazine_id
+                    WHERE c.id = :commentId AND c.magazine_id = :magazineId
                       AND c.deleted_at IS NULL AND i.deleted_at IS NULL AND i.status = 'PUBLISHED'
                 ), candidates AS (
-                    SELECT parent.author_id AS recipient_id, 'INTERVIEW_COMMENT_REPLY' AS notification_type,
+                    SELECT parent.author_id AS recipient_id, 'MAGAZINE_COMMENT_REPLY' AS notification_type,
                            '내 댓글에 새로운 답글이 달렸어요.' AS message, 0 AS priority
-                    FROM source s JOIN interview_comments parent ON parent.id = s.parent_id
+                    FROM source s JOIN magazine_comments parent ON parent.id = s.parent_id
                     WHERE parent.deleted_at IS NULL
                     UNION ALL
-                    SELECT s.author_id, 'INTERVIEW_ACTIVITY', '내 인터뷰에 새로운 댓글이 달렸어요.', 1
+                    SELECT s.author_id, 'MAGAZINE_ACTIVITY', '내 매거진에 새로운 댓글이 달렸어요.', 1
                     FROM source s
                     UNION ALL
-                    SELECT c.author_id, 'COMMENTED_INTERVIEW_ACTIVITY',
-                           '댓글을 남긴 인터뷰에 새로운 댓글이 달렸어요.', 2
-                    FROM source s JOIN interview_comments c ON c.interview_id = s.interview_id
+                    SELECT c.author_id, 'COMMENTED_MAGAZINE_ACTIVITY',
+                           '댓글을 남긴 매거진에 새로운 댓글이 달렸어요.', 2
+                    FROM source s JOIN magazine_comments c ON c.magazine_id = s.magazine_id
                     WHERE c.deleted_at IS NULL
                 ), recipients AS (
                     SELECT DISTINCT ON (c.recipient_id) c.recipient_id, c.notification_type, c.message
@@ -252,13 +252,13 @@ public class NotificationRepositoryImpl implements NotificationRepository, Notif
                     WHERE c.recipient_id <> :actorId AND u.status = 'ACTIVE' AND u.deleted_at IS NULL
                     ORDER BY c.recipient_id, c.priority
                 )
-                INSERT INTO notifications(recipient_id, actor_id, interview_id, interview_comment_id,
+                INSERT INTO notifications(recipient_id, actor_id, magazine_id, magazine_comment_id,
                                           notification_type, message)
                 SELECT r.recipient_id, CASE WHEN s.is_anonymous THEN NULL ELSE :actorId END,
-                       s.interview_id, s.id, r.notification_type, r.message
+                       s.magazine_id, s.id, r.notification_type, r.message
                 FROM recipients r CROSS JOIN source s
                 ON CONFLICT DO NOTHING
-                """, new MapSqlParameterSource("interviewId", interviewId)
+                """, new MapSqlParameterSource("magazineId", magazineId)
                 .addValue("commentId", commentId).addValue("actorId", actorId));
     }
 

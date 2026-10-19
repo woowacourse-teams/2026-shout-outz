@@ -122,7 +122,7 @@ public class NotificationService {
                 actor,
                 item.read(),
                 item.createdAt(),
-                item.interviewId(), item.interviewTitle(), item.interviewCommentId()
+                item.magazineId(), item.magazineTitle(), item.magazineCommentId()
         );
     }
 

@@ -79,18 +79,18 @@ openapi3 {
     separatePublicApi = true
 }
 
-// restdocs-api-spec 0.20.1은 INTEGER 경로 파라미터를 int32로 생성하므로 인터뷰의 long ID를 보정한다.
+// restdocs-api-spec 0.20.1은 INTEGER 경로 파라미터를 int32로 생성하므로 매거진의 long ID를 보정한다.
 tasks.matching { it.name == 'openapi3' }.configureEach {
     doLast {
         ['openapi3.yaml', 'openapi3-public.yaml'].each { name ->
             def document = layout.buildDirectory.file("api-spec/${name}").get().asFile
             def specification = io.swagger.v3.core.util.Yaml.mapper()
                     .readValue(document, io.swagger.v3.oas.models.OpenAPI)
-            specification.paths.findAll { path, item -> path.contains('/interviews/') }
+            specification.paths.findAll { path, item -> path.contains('/magazines/') }
                     .values().each { item ->
                 item.readOperations().each { operation ->
                     operation.parameters?.findAll { parameter ->
-                        parameter.in == 'path' && parameter.name in ['interviewId', 'commentId']
+                        parameter.in == 'path' && parameter.name in ['magazineId', 'commentId']
                     }?.each { parameter -> parameter.schema.format = 'int64' }
                 }
             }
