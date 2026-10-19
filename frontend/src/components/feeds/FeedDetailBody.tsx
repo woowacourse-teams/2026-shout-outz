@@ -21,7 +21,8 @@ export function FeedDetailBody({ feed, author }: { feed: Feed; author?: ReactNod
         {feed.title}
       </h1>
       {author && <div className="mt-7">{author}</div>}
-      <div className="mt-7 space-y-6 border-t border-gray-100 pt-8 text-sm leading-6 break-words text-gray-600">
+      {/* 글자 크기는 노션 기준: 본문 16px, 제목 30/24/20px, 코드 85% */}
+      <div className="mt-7 space-y-6 border-t border-gray-100 pt-8 text-base leading-normal break-words text-gray-600 [&_code]:text-[85%] [&_h1]:text-[1.875rem] [&_h1]:leading-[1.3] [&_h1]:font-bold [&_h1]:text-gray-900 [&_h2]:text-2xl [&_h2]:leading-[1.3] [&_h2]:font-bold [&_h2]:text-gray-900 [&_h3]:text-xl [&_h3]:leading-[1.3] [&_h3]:font-bold [&_h3]:text-gray-900">
         <FeedMarkdown content={feed.content} />
       </div>
       {linkPreview?.url && (
