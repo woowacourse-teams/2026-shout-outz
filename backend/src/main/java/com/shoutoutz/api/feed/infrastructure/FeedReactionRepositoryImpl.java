@@ -15,13 +15,22 @@ public class FeedReactionRepositoryImpl implements FeedReactionRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    /**
+     * 반응이 실제로 저장됐을 때만 좋아요 수를 1 올린다. 이미 있는 반응이면 저장도 증가도 하지 않는다.
+     */
     @Override
     public void add(long feedId, long userId, FeedReactionType type) {
         jdbcTemplate.update(
                 """
-                        INSERT INTO feed_reactions (feed_id, user_id, reaction_type)
-                        VALUES (:feedId, :userId, :reactionType)
-                        ON CONFLICT (feed_id, user_id, reaction_type) DO NOTHING
+                        WITH inserted AS (
+                            INSERT INTO feed_reactions (feed_id, user_id, reaction_type)
+                            VALUES (:feedId, :userId, :reactionType)
+                            ON CONFLICT (feed_id, user_id, reaction_type) DO NOTHING
+                            RETURNING feed_id, reaction_type
+                        )
+                        UPDATE feeds
+                        SET like_count = like_count + 1
+                        WHERE id IN (SELECT feed_id FROM inserted WHERE reaction_type = 'LIKE')
                         """,
                 new MapSqlParameterSource()
                         .addValue("feedId", feedId)
@@ -30,20 +39,34 @@ public class FeedReactionRepositoryImpl implements FeedReactionRepository {
         );
     }
 
+    /**
+     * 반응이 실제로 지워졌을 때만 좋아요 수를 1 내린다.
+     */
     @Override
     public boolean remove(long feedId, long userId, FeedReactionType type) {
-        return jdbcTemplate.update(
+        Long deletedCount = jdbcTemplate.queryForObject(
                 """
-                        DELETE FROM feed_reactions
-                        WHERE feed_id = :feedId
-                          AND user_id = :userId
-                          AND reaction_type = :reactionType
+                        WITH deleted AS (
+                            DELETE FROM feed_reactions
+                            WHERE feed_id = :feedId
+                              AND user_id = :userId
+                              AND reaction_type = :reactionType
+                            RETURNING feed_id, reaction_type
+                        ),
+                        decreased AS (
+                            UPDATE feeds
+                            SET like_count = like_count - 1
+                            WHERE id IN (SELECT feed_id FROM deleted WHERE reaction_type = 'LIKE')
+                        )
+                        SELECT COUNT(*) FROM deleted
                         """,
                 new MapSqlParameterSource()
                         .addValue("feedId", feedId)
                         .addValue("userId", userId)
-                        .addValue("reactionType", type.name())
-        ) == 1;
+                        .addValue("reactionType", type.name()),
+                Long.class
+        );
+        return deletedCount != null && deletedCount == 1;
     }
 
     @Override
