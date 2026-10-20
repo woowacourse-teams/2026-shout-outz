@@ -1,8 +1,10 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { magazineQuery } from '@/apis/magazine';
+import { ClientOnly } from '@/components/ClientOnly';
+import { FirstVisitGuide } from '@/components/FirstVisitGuide';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { OpenGraph } from '@/components/OpenGraph';
-import { createRootRoute, Outlet, useLocation } from '@tanstack/react-router';
+import { createRootRoute, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 
 import { ResumeQuestionDraft } from '@/components/recommendations/ResumeQuestionDraft';
@@ -15,6 +17,7 @@ import { DevelopmentBanner } from '@/components/DevelopmentBanner';
 const RootLayout = () => (
   <>
     <RouteOpenGraph />
+    <FirstVisitGuideRoute />
     <AnalyticsIdentifier />
     <ResumeQuestionDraft />
     <DevelopmentBanner />
@@ -49,5 +52,24 @@ function MagazineOpenGraph({ magazineId }: { magazineId: number }) {
       pathname={`/magazines/${magazine.id}`}
       article
     />
+  );
+}
+
+function FirstVisitGuideRoute() {
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const navigate = useNavigate();
+  const mode = /^\/about\/?$/.test(pathname)
+    ? 'visited'
+    : /^\/(?:admin|signup)(?:\/|$)/.test(pathname) || /\/(?:new|edit)\/?$/.test(pathname)
+      ? 'skip'
+      : 'offer';
+  return (
+    <ClientOnly>
+      <FirstVisitGuide
+        key={pathname}
+        mode={mode}
+        onExplore={() => void navigate({ to: '/about' })}
+      />
+    </ClientOnly>
   );
 }
