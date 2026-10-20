@@ -370,6 +370,25 @@ class FeedRepositoryIntegrationTest {
     }
 
     @Test
+    void 인기순은_반응_행을_세지_않고_저장된_좋아요_수와_댓글_수로_정렬한다() {
+        long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
+        long categoryId = insertCategory(true);
+        Instant base = Instant.parse("2026-09-11T00:00:00Z");
+        Feed lowScore = saveFeed(authorId, "점수 낮은 글", base.plus(1, ChronoUnit.HOURS), categoryId);
+        Feed highScore = saveFeed(authorId, "점수 높은 글", base, categoryId);
+        updateStoredCounts(lowScore.getId(), 1, 1);
+        updateStoredCounts(highScore.getId(), 3, 2);
+
+        FeedPage slice = feedQueryRepository.findAll(FeedSort.POPULAR, null, null, null, 10);
+
+        assertThat(slice.items()).extracting(FeedItem::feedId)
+                .containsExactly(highScore.getId(), lowScore.getId());
+        assertThat(slice.items().getFirst().likeCount()).isEqualTo(3L);
+        assertThat(slice.items().getFirst().commentCount()).isEqualTo(2L);
+        assertThat(slice.items().getFirst().popularityScore()).isEqualTo(5L);
+    }
+
+    @Test
     void 피드_조회에_좋아요와_북마크_수와_현재_사용자_반응_여부를_함께_반환한다() {
         long authorId = insertUser("WOOWACOURSE_CREW", "BACKEND", (short) 8);
         long viewerId = insertUser("GENERAL", null, null);
@@ -719,6 +738,16 @@ class FeedRepositoryIntegrationTest {
         );
     }
 
+    private void updateStoredCounts(long feedId, long likeCount, long commentCount) {
+        jdbcTemplate.update(
+                "UPDATE feeds SET like_count = ?, comment_count = ? WHERE id = ?",
+                likeCount,
+                commentCount,
+                feedId
+        );
+    }
+
+    // 실제 좋아요 저장처럼 저장된 좋아요 수도 함께 올린다.
     private void insertLike(long feedId, long userId) {
         jdbcTemplate.update(
                 """
@@ -728,6 +757,7 @@ class FeedRepositoryIntegrationTest {
                 feedId,
                 userId
         );
+        jdbcTemplate.update("UPDATE feeds SET like_count = like_count + 1 WHERE id = ?", feedId);
     }
 
     private void insertBookmark(long feedId, long userId) {
@@ -741,6 +771,7 @@ class FeedRepositoryIntegrationTest {
         );
     }
 
+    // 실제 댓글 저장·삭제처럼 삭제되지 않은 댓글만 저장된 댓글 수에 더한다.
     private void insertComment(long feedId, long userId, boolean deleted) {
         jdbcTemplate.update(
                 """
@@ -751,5 +782,8 @@ class FeedRepositoryIntegrationTest {
                 userId,
                 deleted ? java.sql.Timestamp.from(Instant.parse("2026-09-11T01:00:00Z")) : null
         );
+        if (!deleted) {
+            jdbcTemplate.update("UPDATE feeds SET comment_count = comment_count + 1 WHERE id = ?", feedId);
+        }
     }
 }
