@@ -1,6 +1,7 @@
 package com.shoutoutz.api.comment.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.comment.application.FeedCommentQueryRepository;
 import com.shoutoutz.api.comment.application.dto.FeedCommentCursor;
@@ -8,6 +9,7 @@ import com.shoutoutz.api.comment.application.dto.FeedCommentPage;
 import com.shoutoutz.api.comment.domain.FeedComment;
 import com.shoutoutz.api.comment.domain.FeedCommentRepository;
 import com.shoutoutz.api.comment.domain.FeedCommentSort;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.feed.domain.Feed;
 import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.user.domain.account.User;
@@ -19,6 +21,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +43,9 @@ class FeedCommentRepositoryIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Test
     @DisplayName("피드 댓글을 feed_comments에 저장하고 feedId와 생성 시각을 매핑한다")
@@ -113,6 +119,26 @@ class FeedCommentRepositoryIntegrationTest {
         assertThat(found.getCreatedAt()).isEqualTo(saved.getCreatedAt());
         assertThat(found.getUpdatedAt()).isEqualTo(updated.getUpdatedAt());
         assertThat(found.getUpdatedAt()).isNotEqualTo(found.getCreatedAt());
+        assertThat(commentCountOf(feed.getId())).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("이미 삭제된 댓글의 내용을 수정하면 찾을 수 없음 예외가 나고 삭제 상태는 유지된다")
+    void doesNotRestoreDeletedCommentWhenUpdatingContent() {
+        User author = userRepository.save(User.initialize("@feed-upd-del-" + uniqueSuffix()));
+        Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 제목", "피드 본문", NOW));
+        FeedComment saved = feedCommentRepository.save(
+                FeedComment.create(feed.getId(), author.getId(), null, "기존 댓글")
+        );
+        feedCommentRepository.save(saved.delete(Instant.now()));
+
+        assertThatThrownBy(() -> feedCommentRepository.save(saved.updateContent("수정된 댓글")))
+                .isInstanceOf(EntityNotFoundException.class);
+
+        FeedComment found = feedCommentRepository.findById(saved.getId()).orElseThrow();
+        assertThat(found.isDeleted()).isTrue();
+        assertThat(found.getContent()).isEqualTo("기존 댓글");
+        assertThat(commentCountOf(feed.getId())).isZero();
     }
 
     @Test
@@ -133,6 +159,44 @@ class FeedCommentRepositoryIntegrationTest {
         assertThat(found.getDeletedAt()).isNotNull();
         assertThat(found.getContent()).isEqualTo("삭제할 댓글");
         assertThat(found.getUpdatedAt()).isAfter(saved.getUpdatedAt());
+        assertThat(found.getUpdatedAt()).isEqualTo(found.getDeletedAt());
+    }
+
+    @Test
+    @DisplayName("피드 댓글과 대댓글을 저장하면 피드의 댓글 수를 하나씩 올린다")
+    void increasesFeedCommentCountWhenSaved() {
+        User author = userRepository.save(User.initialize("@feed-count-" + uniqueSuffix()));
+        Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 제목", "피드 본문", NOW));
+
+        FeedComment root = feedCommentRepository.save(
+                FeedComment.create(feed.getId(), author.getId(), null, "루트 댓글")
+        );
+        feedCommentRepository.save(FeedComment.create(feed.getId(), author.getId(), root.getId(), "대댓글"));
+
+        assertThat(commentCountOf(feed.getId())).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("이미 삭제된 댓글을 다시 삭제하면 피드의 댓글 수를 내리지 않는다")
+    void decreasesFeedCommentCountOnlyOnFirstDeletion() {
+        User author = userRepository.save(User.initialize("@feed-count-delete-" + uniqueSuffix()));
+        Feed feed = feedRepository.save(Feed.create(author.getId(), "피드 제목", "피드 본문", NOW));
+        FeedComment deletedTarget = feedCommentRepository.save(
+                FeedComment.create(feed.getId(), author.getId(), null, "삭제할 댓글")
+        );
+        feedCommentRepository.save(FeedComment.create(feed.getId(), author.getId(), null, "남을 댓글"));
+
+        FeedComment firstDeleted = feedCommentRepository.save(deletedTarget.delete(Instant.now()));
+        FeedComment secondDeleted = feedCommentRepository.save(deletedTarget.delete(Instant.now()));
+
+        assertThat(firstDeleted.isDeleted()).isTrue();
+        assertThat(secondDeleted.isDeleted()).isTrue();
+        assertThat(secondDeleted.getDeletedAt()).isEqualTo(firstDeleted.getDeletedAt());
+        assertThat(commentCountOf(feed.getId())).isEqualTo(1L);
+    }
+
+    private long commentCountOf(long feedId) {
+        return jdbcTemplate.queryForObject("SELECT comment_count FROM feeds WHERE id = ?", Long.class, feedId);
     }
 
     @Test
