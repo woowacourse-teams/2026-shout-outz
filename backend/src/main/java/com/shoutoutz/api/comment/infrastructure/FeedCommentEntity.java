@@ -45,12 +45,4 @@ public class FeedCommentEntity extends BaseEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
-
-    public void updateContent(String content) {
-        this.content = content;
-    }
-
-    public void updateDeletedAt(Instant deletedAt) {
-        this.deletedAt = deletedAt;
-    }
 }

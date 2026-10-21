@@ -372,14 +372,14 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                            p.title,
                            p.content,
                            p.is_anonymous,
-                           COALESCE(reactions.like_count, 0) AS like_count,
+                           p.like_count,
                            (
                                SELECT COUNT(*)
                                FROM feed_reactions r
                                WHERE r.feed_id = p.id
                                  AND r.reaction_type = 'BOOKMARK'
                            ) AS bookmark_count,
-                           COALESCE(comments.comment_count, 0) AS comment_count,
+                           p.comment_count,
                            EXISTS (
                                SELECT 1
                                FROM feed_reactions r
@@ -407,18 +407,6 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                     FROM feeds p
                     JOIN users u ON u.id = p.author_id
                     JOIN user_profiles up ON up.user_id = u.id
-                    LEFT JOIN (
-                        SELECT feed_id, COUNT(*) AS like_count
-                        FROM feed_reactions
-                        WHERE reaction_type = 'LIKE'
-                        GROUP BY feed_id
-                    ) reactions ON reactions.feed_id = p.id
-                    LEFT JOIN (
-                        SELECT feed_id, COUNT(*) AS comment_count
-                        FROM feed_comments
-                        WHERE deleted_at IS NULL
-                        GROUP BY feed_id
-                    ) comments ON comments.feed_id = p.id
                     WHERE p.deleted_at IS NULL
                     """);
             case RELEVANCE -> new StringBuilder("""
@@ -601,7 +589,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         if (cursor != null) {
             sql.append("""
                       AND (
-                          COALESCE(reactions.like_count, 0) + COALESCE(comments.comment_count, 0),
+                          p.like_count + p.comment_count,
                           p.created_at,
                           p.id
                       ) < (
@@ -612,7 +600,7 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
             appendCursorParameters(parameters, cursor);
         }
         sql.append("""
-                ORDER BY COALESCE(reactions.like_count, 0) + COALESCE(comments.comment_count, 0) DESC,
+                ORDER BY p.like_count + p.comment_count DESC,
                          p.created_at DESC,
                          p.id DESC
                 """);

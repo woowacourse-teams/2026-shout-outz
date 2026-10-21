@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -88,5 +89,32 @@ public interface FeedCommentJpaRepository extends JpaRepository<FeedCommentEntit
     List<FeedCommentEntity> findReplies(
             @Param("feedId") long feedId,
             @Param("parentIds") List<Long> parentIds
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE FeedCommentEntity comment
+            SET comment.content = :content,
+                comment.updatedAt = :updatedAt
+            WHERE comment.id = :commentId
+              AND comment.deletedAt IS NULL
+            """)
+    int updateContentIfActive(
+            @Param("commentId") long commentId,
+            @Param("content") String content,
+            @Param("updatedAt") Instant updatedAt
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE FeedCommentEntity comment
+            SET comment.deletedAt = :deletedAt,
+                comment.updatedAt = :deletedAt
+            WHERE comment.id = :commentId
+              AND comment.deletedAt IS NULL
+            """)
+    int softDeleteIfActive(
+            @Param("commentId") long commentId,
+            @Param("deletedAt") Instant deletedAt
     );
 }
