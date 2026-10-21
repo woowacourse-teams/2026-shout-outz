@@ -15,6 +15,7 @@ import com.shoutoutz.api.feed.domain.FeedRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -116,7 +117,8 @@ class FeedCommentRepositoryIntegrationTest {
         FeedComment found = feedCommentRepository.findById(saved.getId()).orElseThrow();
 
         assertThat(found.getContent()).isEqualTo("수정된 댓글");
-        assertThat(found.getCreatedAt()).isEqualTo(saved.getCreatedAt());
+        // 저장 직후 시각은 메모리 값(리눅스에서는 나노초)이고, 다시 읽은 시각은 DB 정밀도(마이크로초)다.
+        assertThat(found.getCreatedAt()).isEqualTo(saved.getCreatedAt().truncatedTo(ChronoUnit.MICROS));
         assertThat(found.getUpdatedAt()).isEqualTo(updated.getUpdatedAt());
         assertThat(found.getUpdatedAt()).isNotEqualTo(found.getCreatedAt());
         assertThat(commentCountOf(feed.getId())).isEqualTo(1L);
