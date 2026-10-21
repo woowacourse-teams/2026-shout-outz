@@ -63,6 +63,49 @@ class FeedReactionRepositoryIntegrationTest {
                 .isEqualTo(new FeedReactionCounts(1L, 1L));
     }
 
+    @Test
+    void 좋아요가_실제로_저장될_때만_피드의_좋아요_수를_올린다() {
+        long authorId = insertUser();
+        long otherUserId = insertUser();
+        Feed feed = saveFeed(authorId);
+
+        feedReactionRepository.add(feed.getId(), authorId, FeedReactionType.LIKE);
+        feedReactionRepository.add(feed.getId(), authorId, FeedReactionType.LIKE);
+        feedReactionRepository.add(feed.getId(), otherUserId, FeedReactionType.LIKE);
+        feedReactionRepository.add(feed.getId(), authorId, FeedReactionType.BOOKMARK);
+
+        assertThat(likeCountOf(feed.getId())).isEqualTo(2L);
+    }
+
+    @Test
+    void 좋아요가_실제로_지워질_때만_피드의_좋아요_수를_내린다() {
+        long authorId = insertUser();
+        long otherUserId = insertUser();
+        Feed feed = saveFeed(authorId);
+        feedReactionRepository.add(feed.getId(), authorId, FeedReactionType.LIKE);
+        feedReactionRepository.add(feed.getId(), otherUserId, FeedReactionType.LIKE);
+        feedReactionRepository.add(feed.getId(), authorId, FeedReactionType.BOOKMARK);
+
+        feedReactionRepository.remove(feed.getId(), authorId, FeedReactionType.LIKE);
+        feedReactionRepository.remove(feed.getId(), authorId, FeedReactionType.LIKE);
+        feedReactionRepository.remove(feed.getId(), authorId, FeedReactionType.BOOKMARK);
+
+        assertThat(likeCountOf(feed.getId())).isEqualTo(1L);
+    }
+
+    private Feed saveFeed(long authorId) {
+        return feedRepository.save(Feed.create(
+                authorId,
+                "피드 제목",
+                "피드 본문",
+                Instant.parse("2026-09-11T00:00:00Z")
+        ));
+    }
+
+    private long likeCountOf(long feedId) {
+        return jdbcTemplate.queryForObject("SELECT like_count FROM feeds WHERE id = ?", Long.class, feedId);
+    }
+
     private long insertUser() {
         String token = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
         return jdbcTemplate.queryForObject(
