@@ -279,6 +279,37 @@ sudo systemctl status codedeploy-agent --no-pager
 sudo journalctl -u codedeploy-agent -n 200 --no-pager
 ```
 
+## 트랜잭션 밖 마이그레이션 실패 복구
+
+`.sql.conf`에 `executeInTransaction=false`를 둔 마이그레이션(`CREATE INDEX CONCURRENTLY` 등)은 실패해도 자동으로 되돌려지지 않는다. 배포가 실패하고 앱 로그에 Flyway 오류가 보이면 아래 순서로 복구한다.
+
+```bash
+sudo journalctl -u shout-outz-backend -n 200 --no-pager | grep -i flyway
+```
+
+DB에 접속해 Flyway 기록과 인덱스 상태를 확인한다. 접속 정보는 `/opt/shout-outz/shout-outz.env`에서 읽는다.
+
+```bash
+sudo bash -c 'set -a; . /opt/shout-outz/shout-outz.env; set +a; u=${SPRING_DATASOURCE_URL#jdbc:postgresql://}; h=${u%%:*}; d=${u#*/}; d=${d%%\?*}; PGPASSWORD="$SPRING_DATASOURCE_PASSWORD" exec psql -h "$h" -U "$SPRING_DATASOURCE_USERNAME" -d "$d"'
+```
+
+```sql
+-- 실패 기록이 남았는지
+SELECT installed_rank, version, description, success FROM flyway_schema_history WHERE success = false;
+
+-- 인덱스가 남았는지, 쓸 수 있는 상태인지 (이름은 마이그레이션 파일에서 확인)
+SELECT c.relname, i.indisvalid FROM pg_class c JOIN pg_index i ON i.indexrelid = c.oid WHERE c.relname = '{인덱스 이름}';
+```
+
+| 상태 | 원인 | 복구 |
+| --- | --- | --- |
+| 실패 기록 없음, 인덱스 남음 | 인덱스를 만드는 도중이나 만든 직후 배포가 끊겨 Flyway 기록이 남지 않았다 | 마이그레이션이 `DROP INDEX CONCURRENTLY IF EXISTS`로 시작하면 다시 배포만 한다. 그 줄이 없는 파일이면 먼저 `DROP INDEX CONCURRENTLY {인덱스 이름};`을 실행한다 |
+| 실패 기록 있음 (`success = false`) | 마이그레이션이 오류로 끝났다. Flyway는 실패 기록이 있으면 다음 기동에서 멈춘다 | 실패 기록을 지운다(Flyway `repair`와 같은 효과): `DELETE FROM flyway_schema_history WHERE version = '{버전}' AND success = false;` 그다음 위 줄과 같이 인덱스를 정리하고 다시 배포한다 |
+
+- 인덱스를 지울 때도 `CONCURRENTLY`를 붙여야 운영 중인 표의 쓰기가 막히지 않는다.
+- `CREATE INDEX CONCURRENTLY IF NOT EXISTS`로 바꾸지 않는다. 쓸 수 없는(`indisvalid = false`) 인덱스도 있다고 보고 넘어가서, 망가진 인덱스가 남은 채로 성공 처리된다.
+- 새로 만드는 `CONCURRENTLY` 인덱스 마이그레이션은 `DROP INDEX CONCURRENTLY IF EXISTS`로 시작한다 (`V20261020180140__add_feeds_popular_index.sql`).
+
 ## 요청 로그 분석 (Logs Insights)
 
 `HttpRequestLoggingFilter`가 요청마다 한 줄을 남기고, 이 로그는 Agent를 통해 `/shout-outz/{dev|prod}/app`에 쌓인다. API별 응답 시간은 지표가 아니라 이 로그로 본다.
