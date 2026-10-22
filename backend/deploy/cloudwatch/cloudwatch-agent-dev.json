@@ -33,6 +33,12 @@
             "retention_in_days": 30,
             "timezone": "UTC",
             "multi_line_start_pattern": "^\\d{4}-\\d{2}-\\d{2}T"
+          },
+          {
+            "file_path": "/var/log/nginx/shout-outz-access.log",
+            "log_group_name": "/shout-outz/dev/nginx",
+            "log_stream_name": "{instance_id}",
+            "retention_in_days": 30
           }
         ]
       }
