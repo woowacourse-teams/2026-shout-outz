@@ -190,7 +190,7 @@ SQS poller는 한 번에 가져온 메시지를 순서대로 처리한다. 기�
 
 Bedrock 호출마다 `Bedrock 호출 완료. provider, model, inputTokens, outputTokens, stopReason` 로그를 남기고, 같은 값을 `llm.tokens` 카운터(`provider`, `model`, `type=input|output` 태그)로 쌓는다. 예상 요금은 모델별 토큰 수에 단가를 곱해 계산한다(2026-10-22 청구 내역 기준, GPT-6.1 Sol과 Claude Sonnet 5.5 전역 프로필 모두 100만 토큰당 입력 $2.00, 출력 $10.00. 같은 한국어 요청에서 Claude가 토큰을 약 2배 써서 GPT를 기본으로 둔다). 실제 청구 금액은 Bedrock을 제공한 계정의 Cost Explorer에서 확인한다.
 
-생성 시도 횟수는 `question.recommendation.generation.count` 지표로, 생성 소요 시간은 `question.recommendation.generation` 타이머로 확인할 수 있다. 두 지표 모두 `outcome` 태그를 제공한다. 현재 CloudWatch Prometheus 수집 설정은 HTTP·DB 커넥션 지표만 허용하므로 추천 지표를 장기 보관하려면 수집 필터와 metric declaration도 별도로 추가해야 한다.
+생성 시도 횟수는 `question.recommendation.generation.count` 지표로, 생성 소요 시간은 `question.recommendation.generation` 타이머로 확인할 수 있다. 두 지표 모두 `outcome` 태그를 제공한다. CloudWatch Prometheus 수집 설정은 HTTP, DB 커넥션 지표와 `llm_tokens_total`(prod)만 허용한다. 추천 생성 지표를 장기 보관하려면 수집 필터와 metric declaration을 별도로 추가해야 한다. `llm_tokens_total`은 설정 파일을 서버에 다시 적용해야 CloudWatch에 보이며(`deploy/README.md`의 CloudWatch Agent), 그 전에는 앱 로그의 `Bedrock 호출 완료` 줄을 Logs Insights로 합산해 확인한다.
 
 ### OpenAI 결제와 서버 적용
 
