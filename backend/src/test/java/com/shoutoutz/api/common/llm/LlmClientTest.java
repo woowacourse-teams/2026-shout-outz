@@ -58,6 +58,40 @@ class LlmClientTest {
     }
 
     @Test
+    void geminiSendsTemperatureOnlyWhenRequested() {
+        server.expect(requestTo(GEMINI_URI))
+                .andExpect(content().json("""
+                        {"generationConfig":{"temperature":0.0}}
+                        """))
+                .andRespond(withSuccess("""
+                        {"candidates":[{"finishReason":"STOP","content":{"parts":[{"text":"{}"}]}}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        gemini().generate(new LlmRequest("private prompt", Map.of("type", "object"), 4096, 0.0));
+        server.verify();
+    }
+
+    @Test
+    void openAiIgnoresTemperatureForReasoningModels() {
+        server.expect(requestTo(OPENAI_URI))
+                .andExpect(request -> assertThat(request.getBody().toString()).doesNotContain("temperature"))
+                .andRespond(withSuccess("""
+                        {"status":"completed","output":[{"type":"message","content":[
+                        {"type":"output_text","text":"{}"}]}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        openai().generate(new LlmRequest("private prompt", Map.of("type", "object"), 4096, 0.0));
+        server.verify();
+    }
+
+    @ParameterizedTest
+    @ValueSource(doubles = {-0.1, 2.1})
+    void temperatureOutOfRangeIsRejected(double temperature) {
+        assertThat(catchThrowableOfType(IllegalArgumentException.class,
+                () -> new LlmRequest("prompt", Map.of(), 1, temperature))).isNotNull();
+    }
+
+    @Test
     void openAiUsesResponsesWithStrictSchemaAndDoesNotStoreRequest() {
         server.expect(requestTo(OPENAI_URI)).andExpect(method(HttpMethod.POST))
                 .andExpect(header("Authorization", "Bearer " + SECRET))

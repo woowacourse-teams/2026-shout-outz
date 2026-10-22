@@ -81,7 +81,7 @@ final class FeedRestDocsFields {
                         .description("질문 상세에 포함되는 연관 질문 추천. 추천 작업 생성 전이거나 질문이 아니면 생략")
                         .optional(),
                 new EnumFields(QuestionRecommendationStatus.class).withPath("relatedQuestionRecommendations.status")
-                        .description("추천 생성 상태. PENDING, PROCESSING, READY, FAILED"),
+                        .description("추천 생성 상태. PENDING, PROCESSING, READY, FAILED, SKIPPED"),
                 fieldWithPath("relatedQuestionRecommendations.items").type(ARRAY)
                         .description("READY 상태에서 제공되는 연관 질문 목록(기본 최대 5개). 그 외 상태에서는 빈 배열"),
                 fieldWithPath("relatedQuestionRecommendations.items[].recommendationId").type(NUMBER)

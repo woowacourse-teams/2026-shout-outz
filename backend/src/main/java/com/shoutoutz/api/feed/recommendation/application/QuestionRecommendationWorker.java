@@ -77,6 +77,12 @@ public class QuestionRecommendationWorker {
                 outcome = "obsolete";
             }
             return ProcessingResult.done();
+        } catch (QuestionRecommendationSkippedException exception) {
+            outcome = "skipped";
+            log.info("질문 추천에 적합하지 않은 질문이라 생성을 건너뜁니다. feedId={}, generation={}, reason={}",
+                    task.feedId(), task.generation(), exception.reason());
+            repository.markGenerationSkipped(task.feedId(), task.generation(), exception.reason(), clock.instant());
+            return ProcessingResult.done();
         } catch (RuntimeException exception) {
             outcome = "failure";
             boolean retryable = !(exception instanceof QuestionRecommendationGenerationException failure)
