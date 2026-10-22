@@ -42,7 +42,7 @@ class QuestionRecommendationWorkerTest {
         worker = new QuestionRecommendationWorker(
                 repository,
                 generator,
-                new QuestionRecommendationProperties(5, 3, 5, 5_000, true, null),
+                new QuestionRecommendationProperties(5, 3, 5, 5_000, true, null, null),
                 Clock.fixed(NOW, ZoneOffset.UTC),
                 new SimpleMeterRegistry(),
                 new QuestionRecommendationRetryPolicy(bound -> 0)

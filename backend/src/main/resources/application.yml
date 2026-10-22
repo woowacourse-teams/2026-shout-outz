@@ -33,6 +33,8 @@ question-recommendation:
   outbox-poll-interval-millis: ${QUESTION_RECOMMENDATION_OUTBOX_POLL_INTERVAL_MILLIS:5000}
   outbox-initial-delay-millis: ${QUESTION_RECOMMENDATION_OUTBOX_INITIAL_DELAY_MILLIS:1000}
   fallback-enabled: ${QUESTION_RECOMMENDATION_FALLBACK_ENABLED:true}
+  # 앞에서부터 호출하고 실패하면 다음 제공자로 넘어간다(GEMINI, OPENAI, BEDROCK_GPT, BEDROCK_CLAUDE).
+  providers: ${QUESTION_RECOMMENDATION_PROVIDERS:BEDROCK_GPT,BEDROCK_CLAUDE}
   sqs:
     enabled: ${QUESTION_RECOMMENDATION_SQS_ENABLED:false}
     queue-url: ${QUESTION_RECOMMENDATION_QUEUE_URL:}
@@ -54,6 +56,13 @@ llm:
     connect-timeout: ${OPENAI_CONNECT_TIMEOUT:5s}
     read-timeout: ${OPENAI_READ_TIMEOUT:45s}
     reasoning-effort: ${OPENAI_REASONING_EFFORT:none}
+  # EC2 IAM 역할로 인증하므로 API 키가 없다.
+  bedrock:
+    region: ${BEDROCK_REGION:ap-northeast-2}
+    gpt-model: ${BEDROCK_GPT_MODEL:global.openai.gpt-6.1-sol}
+    claude-model: ${BEDROCK_CLAUDE_MODEL:global.anthropic.claude-sonnet-5-5}
+    connect-timeout: ${BEDROCK_CONNECT_TIMEOUT:5s}
+    read-timeout: ${BEDROCK_READ_TIMEOUT:45s}
 
 github:
   oauth:

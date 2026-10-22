@@ -185,7 +185,7 @@ class LlmClientTest {
 
     @Test
     void missingKeysFailBeforeAnyRequestAndAreNotInPropertiesToString() {
-        var properties = new LlmProperties(null, null);
+        var properties = new LlmProperties(null, null, null);
         var client = new OpenAiLlmClient(builder.build(), properties.openai(), mapper);
         LlmException failure = catchThrowableOfType(() -> client.generate(REQUEST), LlmException.class);
         assertThat(failure.errorCode()).isEqualTo("MISSING_API_KEY");
