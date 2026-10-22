@@ -21,6 +21,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.shoutoutz.api.common.llm.GeminiLlmClient;
 import com.shoutoutz.api.common.llm.LlmProperties;
+import com.shoutoutz.api.common.llm.LlmProvider;
 import com.shoutoutz.api.common.llm.OpenAiLlmClient;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationRepository;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationRepository.GenerationClaim;
@@ -87,7 +88,8 @@ class LlmRecommendationFlowTest {
                 builder.baseUrl("https://api.openai.com").build(),
                 new LlmProperties.OpenAi(OPENAI_KEY, null, null, null, null), mapper);
         QuestionRecommendationProperties properties =
-                new QuestionRecommendationProperties(5, 3, 5, 5000, true, null);
+                new QuestionRecommendationProperties(5, 3, 5, 5000, true, null,
+                        List.of(LlmProvider.GEMINI, LlmProvider.OPENAI));
         LlmQuestionRecommendationGenerator generator =
                 new LlmQuestionRecommendationGenerator(List.of(gemini, openai), properties, mapper);
         worker = new QuestionRecommendationWorker(repository, generator, properties,

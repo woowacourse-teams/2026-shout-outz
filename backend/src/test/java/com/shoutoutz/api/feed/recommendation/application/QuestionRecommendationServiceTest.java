@@ -37,7 +37,7 @@ class QuestionRecommendationServiceTest {
     void setUp() {
         recommendationService = new QuestionRecommendationService(
                 repository,
-                new QuestionRecommendationProperties(5, 5, 5, 5_000, true, null),
+                new QuestionRecommendationProperties(5, 5, 5, 5_000, true, null, null),
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -86,7 +86,8 @@ class QuestionRecommendationServiceTest {
                 new QuestionRecommendationProperties.Sqs(
                         true, "queue-url", "dead-letter-queue-url", "ap-northeast-2", 1_000, 1,
                         Duration.ofMinutes(3)
-                )
+                ),
+                null
         );
         recommendationService = new QuestionRecommendationService(
                 repository,
