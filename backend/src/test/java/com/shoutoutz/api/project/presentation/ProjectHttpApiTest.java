@@ -97,6 +97,7 @@ class ProjectHttpApiTest {
             + "문자열 값은 앞뒤 공백을 자르고, 공백만 있으면 입력하지 않은 것으로 본다 (descriptionMd 제외). "
             + "운영 상태는 deploymentUrl이 있으면 OPERATING, 없으면 CLOSED로 저장한다. "
             + "팀원은 memberHandles로 받은 순서대로 저장한다. "
+            + "teamBlogUrls는 선택 입력이며, 받은 팀 블로그 주소는 블로그 수집 대상으로 등록된다. "
             + "본문 이미지는 descriptionMd에 ![설명](media://{mediaId}) 형식으로 넣는다. "
             + "githubRepositoryUrl은 woowacourse-teams 조직의 리포지토리만 받으며, "
             + "리포지토리 이름 뒤의 경로, 쿼리, 앵커는 버리고 https://github.com/woowacourse-teams/{repo} 형태로 저장한다. "
@@ -111,6 +112,7 @@ class ProjectHttpApiTest {
             + "descriptionMd는 저장 시 media://{mediaId} 형식으로 정규화하며, 상세 조회 응답의 CDN URL은 기존 프로젝트 미디어와 "
             + "매칭되는 경우에만 본문 이미지 참조로 복원한다. 매칭되지 않는 외부 이미지 URL은 허용하지 않는다. "
             + "techTagIds와 memberHandles도 전체 목록을 순서대로 보낸다. "
+            + "teamBlogUrls는 생략하면 기존 주소를 유지하고, 목록을 보내면 그 목록으로 교체하며, null이나 빈 배열이면 모두 해제한다. "
             + "반려된 프로젝트를 수정하면 재심사 요청으로 처리되어 approvalStatus가 PENDING으로 바뀌고, "
             + "그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. "
             + "githubRepositoryUrl은 woowacourse-teams 조직의 리포지토리만 받으며, "
@@ -215,7 +217,13 @@ class ProjectHttpApiTest {
                                                         + "활동 중인 우아한테크코스 크루 또는 코치여야 하며, "
                                                         + "대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다. "
                                                         + "각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다.")
+                                                .attributes(key("itemsType").value("string")),
+                                        fieldWithPath("teamBlogUrls").type(ARRAY)
+                                                .description("팀 블로그 주소 목록 (선택, 최대 3개). 각 주소는 http/https URL 형식이며 2,048자 이하다. "
+                                                        + "호스트는 소문자로 바꾸고 앵커(#…)와 끝 슬래시는 버린 뒤 저장하며, 같은 주소는 하나만 남긴다. "
+                                                        + "생략하거나 null이면 등록하지 않는다. 3개를 넘거나 형식이 틀리면 400이다.")
                                                 .attributes(key("itemsType").value("string"))
+                                                .optional()
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
@@ -289,7 +297,14 @@ class ProjectHttpApiTest {
                         "deploymentUrl", "deploymentUrl은 http 또는 https URL 형식이어야 합니다."),
                 Arguments.of("project-create-invalid-blank-member-handle",
                         "\"@sangjun121\"", "\"   \"",
-                        "memberHandles", "memberHandles에 빈 값을 넣을 수 없습니다.")
+                        "memberHandles", "memberHandles에 빈 값을 넣을 수 없습니다."),
+                Arguments.of("project-create-invalid-team-blog-url",
+                        "\"https://velog.io/@loop\"", "\"velog.io/@loop\"",
+                        "teamBlogUrls", "teamBlogUrls의 주소는 http 또는 https URL 형식이어야 합니다."),
+                Arguments.of("project-create-too-many-team-blog-urls",
+                        "\"https://velog.io/@loop\"",
+                        "\"https://velog.io/@loop\", \"https://a.tistory.com\", \"https://b.tistory.com\"",
+                        "teamBlogUrls", "teamBlogUrls는 3개를 초과할 수 없습니다.")
         );
     }
 
@@ -797,6 +812,8 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data.members[].githubProfileUrl").type(STRING)
                                                 .description("GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다.")
                                                 .optional(),
+                                        fieldWithPath("data.teamBlogUrls").type(ARRAY)
+                                                .description("팀 블로그 주소 목록. 등록 순서대로 반환하며, 없으면 빈 배열이다."),
                                         fieldWithPath("data.createdAt").type(STRING).description("등록 시각"),
                                         fieldWithPath("data.updatedAt").type(STRING).description("수정 시각")
                                 )
@@ -1113,6 +1130,7 @@ class ProjectHttpApiTest {
                         new ProjectMemberProfileResponse(null, null, "Archived Crew", null, null, null,
                                 "https://avatars.githubusercontent.com/u/1", "https://github.com/archived-crew")
                 ),
+                List.of("https://velog.io/@loop", "https://loop-team.tistory.com"),
                 Instant.parse("2026-08-09T02:30:00Z"),
                 Instant.parse("2026-08-09T03:00:00Z")
         );
@@ -1208,7 +1226,13 @@ class ProjectHttpApiTest {
                                                         + "통째로 교체하며 배열 순서가 표시 순서가 된다. "
                                                         + "이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다. "
                                                         + "각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다.")
+                                                .attributes(key("itemsType").value("string")),
+                                        fieldWithPath("teamBlogUrls").type(ARRAY)
+                                                .description("팀 블로그 주소 전체 목록 (선택, 최대 3개). 생략하면 기존 주소를 유지하고, "
+                                                        + "목록을 보내면 그 목록으로 교체하며 배열 순서가 표시 순서가 된다. null이나 빈 배열이면 모두 해제한다. "
+                                                        + "형식과 정규화 규칙은 등록과 같다.")
                                                 .attributes(key("itemsType").value("string"))
+                                                .optional()
                                 )
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
@@ -1312,7 +1336,8 @@ class ProjectHttpApiTest {
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
                   "serviceStatus": "OPERATING",
                   "techTagIds": [1, 2, 3],
-                  "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                  "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                  "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                 }
                 """;
     }
@@ -1330,7 +1355,8 @@ class ProjectHttpApiTest {
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)",
                   "serviceStatus": "OPERATING",
                   "techTagIds": [1, 2, 3],
-                  "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                  "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                  "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                 }
                 """;
     }

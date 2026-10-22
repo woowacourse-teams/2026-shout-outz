@@ -30,6 +30,7 @@ public record ProjectDetail(
         long commentCount,
         List<ProjectTechTag> techTags,
         List<ProjectMemberProfile> members,
+        List<String> teamBlogUrls,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -81,6 +82,38 @@ public record ProjectDetail(
                 commentCount,
                 List.copyOf(techTags),
                 List.copyOf(members),
+                teamBlogUrls,
+                createdAt,
+                updatedAt
+        );
+    }
+
+    public ProjectDetail withTeamBlogUrls(List<String> teamBlogUrls) {
+        return new ProjectDetail(
+                id,
+                slug,
+                title,
+                teamName,
+                tagline,
+                cohort,
+                thumbnailMediaId,
+                descriptionMd,
+                githubRepositoryUrl,
+                deploymentUrl,
+                serviceStatus,
+                approvalStatus,
+                rejectReason,
+                registeredBy,
+                viewCount,
+                starCount,
+                likeCount,
+                bookmarkCount,
+                likedByMe,
+                bookmarkedByMe,
+                commentCount,
+                techTags,
+                members,
+                List.copyOf(teamBlogUrls),
                 createdAt,
                 updatedAt
         );

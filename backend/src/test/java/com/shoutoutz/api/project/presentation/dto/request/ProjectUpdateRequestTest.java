@@ -43,6 +43,49 @@ class ProjectUpdateRequestTest {
     }
 
     @Test
+    void teamBlogUrls를_생략하면_미전달로_구분한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(baseJson(""), ProjectUpdateRequest.class);
+
+        assertThat(request.isTeamBlogUrlsProvided()).isFalse();
+        assertThat(request.teamBlogUrls()).isNull();
+    }
+
+    @Test
+    void teamBlogUrls에_null을_명시하면_전달된_값으로_구분한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("\"teamBlogUrls\": null,"),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(request.isTeamBlogUrlsProvided()).isTrue();
+        assertThat(request.teamBlogUrls()).isNull();
+    }
+
+    @Test
+    void teamBlogUrls를_보내면_앞뒤_공백을_잘라_전달된_값으로_구분한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("\"teamBlogUrls\": [\" https://velog.io/@loop \"],"),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(request.isTeamBlogUrlsProvided()).isTrue();
+        assertThat(request.teamBlogUrls()).containsExactly("https://velog.io/@loop");
+        assertThat(validator.validate(request)).isEmpty();
+    }
+
+    @Test
+    void teamBlogUrls가_3개를_넘으면_검증에_실패한다() throws Exception {
+        ProjectUpdateRequest request = objectMapper.readValue(
+                baseJson("\"teamBlogUrls\": [\"https://a.com\", \"https://b.com\", \"https://c.com\", \"https://d.com\"],"),
+                ProjectUpdateRequest.class
+        );
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("teamBlogUrls");
+    }
+
+    @Test
     void 문자열_필드의_앞뒤_공백을_자른다() throws Exception {
         ProjectUpdateRequest request = objectMapper.readValue("""
                 {
