@@ -10,11 +10,14 @@ import com.shoutoutz.api.common.util.DataResolveUtil;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.ServiceStatus;
+import com.shoutoutz.api.project.domain.TeamBlogUrl;
+import com.shoutoutz.api.project.domain.TeamBlogUrls;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.hibernate.validator.constraints.CodePointLength;
 
@@ -30,6 +33,14 @@ import org.hibernate.validator.constraints.CodePointLength;
  *     <li>필드 생략: 기존 썸네일 유지</li>
  *     <li>미디어 ID 전달: 썸네일 교체</li>
  *     <li>null 전달: 썸네일 제거</li>
+ * </ul>
+ *
+ * <p>teamBlogUrls도 필드의 존재 여부에 따라 다음처럼 처리한다.
+ * 이 필드를 모르는 이전 화면이 수정 요청을 보내도 등록한 블로그가 지워지지 않게 하기 위해서다.</p>
+ * <ul>
+ *     <li>필드 생략: 기존 팀 블로그 주소 유지</li>
+ *     <li>목록 전달: 받은 목록으로 교체 (목록 순서가 노출 순서)</li>
+ *     <li>null 또는 빈 목록 전달: 팀 블로그 주소 모두 해제</li>
  * </ul>
  */
 public final class ProjectUpdateRequest {
@@ -78,6 +89,14 @@ public final class ProjectUpdateRequest {
             @Pattern(regexp = HANDLE_FORMAT_REGEX, message = "memberHandles 형식이 올바르지 않습니다.")
             String> memberHandles;
 
+    @Size(max = TeamBlogUrls.MAX_SIZE, message = "teamBlogUrls는 3개를 초과할 수 없습니다.")
+    private List<
+            @NotBlank(message = "teamBlogUrls에 빈 값을 넣을 수 없습니다.")
+            @CodePointLength(max = 2_048, message = "teamBlogUrls의 주소는 2,048자를 초과할 수 없습니다.")
+            @Pattern(regexp = TeamBlogUrl.REGEX, message = "teamBlogUrls의 주소는 http 또는 https URL 형식이어야 합니다.")
+            String> teamBlogUrls;
+    private boolean teamBlogUrlsProvided;
+
     /**
      * Jackson이 JSON 필드 생략과 명시적 null을 구분할 수 있도록 사용하는 기본 생성자.
      */
@@ -86,7 +105,7 @@ public final class ProjectUpdateRequest {
     }
 
     /**
-     * 테스트와 내부 호출에서 사용하는 전체 필드 생성자.
+     * 테스트와 내부 호출에서 사용하는 생성자. teamBlogUrls는 생략한 것으로 보고 기존 값을 유지한다.
      * 생성자에 thumbnailImageId를 전달한 것은 명시적 입력으로 간주한다.
      */
     public ProjectUpdateRequest(
@@ -114,6 +133,40 @@ public final class ProjectUpdateRequest {
         this.serviceStatus = serviceStatus;
         this.techTagIds = techTagIds;
         this.memberHandles = DataResolveUtil.sanitizeStrings(memberHandles);
+    }
+
+    /**
+     * 테스트와 내부 호출에서 사용하는 전체 필드 생성자.
+     * 생성자에 teamBlogUrls를 전달한 것은 명시적 입력으로 간주한다.
+     */
+    public ProjectUpdateRequest(
+            String title,
+            String teamName,
+            String tagline,
+            Integer cohort,
+            Long thumbnailImageId,
+            String githubRepositoryUrl,
+            String deploymentUrl,
+            String descriptionMd,
+            ServiceStatus serviceStatus,
+            List<Long> techTagIds,
+            List<String> memberHandles,
+            List<String> teamBlogUrls
+    ) {
+        this(
+                title,
+                teamName,
+                tagline,
+                cohort,
+                thumbnailImageId,
+                githubRepositoryUrl,
+                deploymentUrl,
+                descriptionMd,
+                serviceStatus,
+                techTagIds,
+                memberHandles
+        );
+        setTeamBlogUrls(teamBlogUrls);
     }
 
     public String title() {
@@ -175,6 +228,15 @@ public final class ProjectUpdateRequest {
         return memberHandles;
     }
 
+    public List<String> teamBlogUrls() {
+        return teamBlogUrls;
+    }
+
+    @JsonIgnore
+    public boolean isTeamBlogUrlsProvided() {
+        return teamBlogUrlsProvided;
+    }
+
     public void setTitle(String title) {
         this.title = DataResolveUtil.sanitizeString(title);
     }
@@ -219,5 +281,11 @@ public final class ProjectUpdateRequest {
 
     public void setMemberHandles(List<String> memberHandles) {
         this.memberHandles = DataResolveUtil.sanitizeStrings(memberHandles);
+    }
+
+    @JsonSetter(value = "teamBlogUrls", nulls = Nulls.SET)
+    public void setTeamBlogUrls(List<String> teamBlogUrls) {
+        this.teamBlogUrls = DataResolveUtil.sanitizeStrings(teamBlogUrls);
+        this.teamBlogUrlsProvided = true;
     }
 }

@@ -76,7 +76,8 @@ class ProjectCreateRequestTest {
                 "설명",
                 ServiceStatus.OPERATING,
                 List.of(1L),
-                List.of(" @dahye ", "@teammate")
+                List.of(" @dahye ", "@teammate"),
+                null
         );
 
         assertThat(request.title()).isEqualTo("루프");
@@ -96,7 +97,8 @@ class ProjectCreateRequestTest {
                 "https://github.com/woowacourse-teams/2026-loop", null,
                 "    indented code\n",
                 ServiceStatus.OPERATING,
-                List.of(1L), List.of("@teammate")
+                List.of(1L), List.of("@teammate"),
+                null
         );
 
         assertThat(request.descriptionMd()).isEqualTo("    indented code\n");
@@ -109,7 +111,8 @@ class ProjectCreateRequestTest {
                 " " + "가".repeat(100) + " ", "루프팀", "소개", 8, null,
                 "https://github.com/woowacourse-teams/2026-loop", null, "설명",
                 ServiceStatus.CLOSED,
-                List.of(1L), List.of("@teammate")
+                List.of(1L), List.of("@teammate"),
+                null
         );
 
         assertThat(validator.validate(request)).isEmpty();
@@ -122,7 +125,8 @@ class ProjectCreateRequestTest {
                 "루프", "루프팀", "소개", 8, null,
                 "https://github.com/woowacourse-teams/2026-loop", null, "설명",
                 ServiceStatus.CLOSED,
-                List.of(1L), List.of("@teammate", "   ")
+                List.of(1L), List.of("@teammate", "   "),
+                null
         );
 
         assertThat(validator.validate(request))
@@ -137,7 +141,8 @@ class ProjectCreateRequestTest {
                 "루프", "루프팀", "소개", 8, null,
                 "https://github.com/woowacourse-teams/2026-loop", null, "설명",
                 ServiceStatus.CLOSED,
-                List.of(1L), List.of("teammate")
+                List.of(1L), List.of("teammate"),
+                null
         );
 
         assertThat(validator.validate(request))
@@ -171,7 +176,8 @@ class ProjectCreateRequestTest {
                 "루프", "루프팀", "소개", 8, null,
                 githubRepositoryUrl, null, "설명",
                 ServiceStatus.CLOSED,
-                List.of(1L), List.of("@teammate")
+                List.of(1L), List.of("@teammate"),
+                null
         );
     }
 
@@ -191,7 +197,8 @@ class ProjectCreateRequestTest {
                 "설명",
                 serviceStatus,
                 List.of(1L),
-                List.of("@teammate")
+                List.of("@teammate"),
+                null
         );
     }
 }

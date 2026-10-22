@@ -3,16 +3,20 @@ package com.shoutoutz.api.project.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.BlogSourceRepository;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectRepository;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.project.domain.Slug;
+import com.shoutoutz.api.project.domain.TeamBlogUrls;
 import com.shoutoutz.api.cohort.domain.Cohort;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
 import com.shoutoutz.api.user.domain.profile.Track;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +36,9 @@ class ProjectDetailRepositoryIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private BlogSourceRepository blogSourceRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -73,6 +80,52 @@ class ProjectDetailRepositoryIntegrationTest {
                 ProjectMemberProfile.user(member.getId(), member.getHandle().value(), "김도현",
                         Cohort.COHORT_6, Track.FRONTEND, null)
         );
+    }
+
+    @Test
+    @DisplayName("팀 블로그 주소를 받은 목록으로 맞추고, 빠진 주소는 DISABLED로 남기며, 다시 넣으면 되살린다.")
+    void syncsTeamBlogUrls() {
+        long projectId = saveProject(saveUser("blog").getId(), "APPROVED");
+
+        blogSourceRepository.syncServiceInputs(projectId, TeamBlogUrls.of(List.of(
+                "https://velog.io/@loop", "https://loop.tistory.com")));
+        blogSourceRepository.syncServiceInputs(projectId, TeamBlogUrls.of(List.of(
+                "https://medium.com/@loop", "https://velog.io/@loop")));
+
+        assertThat(blogSources(projectId)).containsExactly(
+                Map.of("site_url", "https://loop.tistory.com", "status", "DISABLED"),
+                Map.of("site_url", "https://medium.com/@loop", "status", "CONFIRMED"),
+                Map.of("site_url", "https://velog.io/@loop", "status", "CONFIRMED")
+        );
+        assertThat(projectRepository.findDetailBySlug(slugOf(projectId), null).orElseThrow().teamBlogUrls())
+                .containsExactly("https://medium.com/@loop", "https://velog.io/@loop");
+
+        blogSourceRepository.syncServiceInputs(projectId, TeamBlogUrls.of(List.of("https://loop.tistory.com")));
+
+        assertThat(blogSources(projectId)).containsExactly(
+                Map.of("site_url", "https://loop.tistory.com", "status", "CONFIRMED"),
+                Map.of("site_url", "https://medium.com/@loop", "status", "DISABLED"),
+                Map.of("site_url", "https://velog.io/@loop", "status", "DISABLED")
+        );
+    }
+
+    @Test
+    @DisplayName("팀 입력을 비워도 운영자가 넣은 주소(MANUAL)는 그대로 두고, 상세에 함께 보여 준다.")
+    void keepsManualBlogSourcesWhenTeamClearsInputs() {
+        long projectId = saveProject(saveUser("blog-manual").getId(), "APPROVED");
+        jdbcTemplate.update("""
+                INSERT INTO blog_sources (project_id, site_url, kind, status)
+                VALUES (?, 'https://manual.example.com', 'MANUAL', 'CONFIRMED')
+                """, projectId);
+        blogSourceRepository.syncServiceInputs(projectId, TeamBlogUrls.of(List.of("https://manual.example.com")));
+
+        blogSourceRepository.syncServiceInputs(projectId, TeamBlogUrls.empty());
+
+        assertThat(blogSources(projectId)).containsExactly(
+                Map.of("site_url", "https://manual.example.com", "status", "CONFIRMED")
+        );
+        assertThat(projectRepository.findDetailBySlug(slugOf(projectId), null).orElseThrow().teamBlogUrls())
+                .containsExactly("https://manual.example.com");
     }
 
     @Test
@@ -373,5 +426,14 @@ class ProjectDetailRepositoryIntegrationTest {
 
     private static String profileUrl(String githubLogin) {
         return "https://github.com/" + githubLogin;
+    }
+
+    private List<Map<String, Object>> blogSources(long projectId) {
+        return jdbcTemplate.queryForList("""
+                SELECT site_url, status
+                FROM blog_sources
+                WHERE project_id = ?
+                ORDER BY site_url
+                """, projectId);
     }
 }
