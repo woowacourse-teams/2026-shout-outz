@@ -15,7 +15,7 @@ phases:
       - set -Eeuo pipefail
       - chmod +x backend/gradlew
       - docker rm --force shout-outz-build-db >/dev/null 2>&1 || true
-      - docker run --detach --rm --name shout-outz-build-db --env POSTGRES_DB=shoutoutz --env POSTGRES_USER=shoutoutz --env POSTGRES_PASSWORD=localdev --publish 5432:5432 postgres:17
+      - docker run --detach --rm --name shout-outz-build-db --env POSTGRES_DB=shoutoutz --env POSTGRES_USER=shoutoutz --env POSTGRES_PASSWORD=localdev --publish 5432:5432 pgvector/pgvector:pg17-trixie
       - timeout 60 bash -c 'until docker exec shout-outz-build-db pg_isready -U shoutoutz -d shoutoutz >/dev/null 2>&1; do sleep 2; done'
 
   build:
