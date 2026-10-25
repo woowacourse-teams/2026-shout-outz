@@ -37,18 +37,22 @@ public class LlmQuestionRecommendationGenerator implements QuestionRecommendatio
     ) {
         this.clients = clients.stream().collect(Collectors.toMap(LlmClient::provider, Function.identity()));
         this.properties = properties;
+        for (LlmProvider provider : properties.llmProviders()) {
+            if (!this.clients.containsKey(provider)) {
+                throw new IllegalArgumentException("질문 추천 제공자 " + provider + "의 LLM 클라이언트가 없습니다.");
+            }
+        }
         this.objectMapper = objectMapper;
     }
 
     @Override
     public List<GeneratedQuestion> generate(String title, String content, int count) {
         LlmRequest request = new LlmRequest(prompt(title, content, count), schema(count), 4_096);
-        List<LlmProvider> providers = properties.fallbackEnabled()
-                ? List.of(LlmProvider.GEMINI, LlmProvider.OPENAI) : List.of(LlmProvider.GEMINI);
+        List<LlmProvider> providers = properties.llmProviders();
         boolean retryable = false;
         long retryAfterSeconds = 0;
         for (LlmProvider provider : providers) {
-            boolean fallback = provider != LlmProvider.GEMINI;
+            boolean fallback = provider != providers.getFirst();
             try {
                 List<GeneratedQuestion> questions = decode(clients.get(provider).generate(request), count);
                 log.info("질문 추천 생성 완료. provider={}, fallback={}", provider, fallback);

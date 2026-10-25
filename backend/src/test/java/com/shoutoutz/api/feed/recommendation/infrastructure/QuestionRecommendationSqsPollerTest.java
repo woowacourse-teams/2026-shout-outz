@@ -56,7 +56,8 @@ class QuestionRecommendationSqsPollerTest {
                 new QuestionRecommendationProperties.Sqs(
                         true, "work-queue", "dead-letter-queue", "ap-northeast-2", 1_000, 2,
                         Duration.ofMinutes(3)
-                )
+                ),
+                null
         );
         poller = new QuestionRecommendationSqsPoller(
                 sqsClient, worker, repository, properties, new ObjectMapper(),

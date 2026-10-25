@@ -36,7 +36,8 @@
             "http_server_requests_seconds_max": "Seconds",
             "hikaricp_connections_active": "Count",
             "hikaricp_connections_idle": "Count",
-            "hikaricp_connections_pending": "Count"
+            "hikaricp_connections_pending": "Count",
+            "llm_tokens_total": "Count"
           },
           "metric_declaration": [
             {
@@ -46,6 +47,14 @@
               "metric_selectors": [
                 "^http_server_requests_seconds_(count|sum|max)$",
                 "^hikaricp_connections_(active|idle|pending)$"
+              ]
+            },
+            {
+              "source_labels": ["job"],
+              "label_matcher": "^shout-outz-app$",
+              "dimensions": [["env", "model", "type"]],
+              "metric_selectors": [
+                "^llm_tokens_total$"
               ]
             }
           ]

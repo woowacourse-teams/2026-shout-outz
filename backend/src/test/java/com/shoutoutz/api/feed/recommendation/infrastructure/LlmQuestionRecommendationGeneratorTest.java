@@ -146,9 +146,28 @@ class LlmQuestionRecommendationGeneratorTest {
         verify(openai, never()).generate(any());
     }
 
+    @Test
+    void 설정한_순서대로_제공자를_호출한다() {
+        generator = new LlmQuestionRecommendationGenerator(List.of(gemini, openai),
+                new QuestionRecommendationProperties(5, 5, 5, 5000, true, null,
+                        List.of(LlmProvider.OPENAI, LlmProvider.GEMINI)), objectMapper);
+        when(openai.generate(any())).thenReturn(VALID);
+
+        assertThat(generator.generate("제목", "본문", 1)).hasSize(1);
+        verify(gemini, never()).generate(any());
+    }
+
+    @Test
+    void 설정한_제공자의_클라이언트가_없으면_생성기를_만들_수_없다() {
+        assertThatThrownBy(() -> new LlmQuestionRecommendationGenerator(List.of(gemini, openai),
+                new QuestionRecommendationProperties(5, 5, 5, 5000, true, null, null), objectMapper))
+                .hasMessageContaining("BEDROCK_GPT");
+    }
+
     private LlmQuestionRecommendationGenerator generator(boolean fallbackEnabled) {
         return new LlmQuestionRecommendationGenerator(List.of(gemini, openai),
-                new QuestionRecommendationProperties(5, 5, 5, 5000, fallbackEnabled, null), objectMapper);
+                new QuestionRecommendationProperties(5, 5, 5, 5000, fallbackEnabled, null,
+                        List.of(LlmProvider.GEMINI, LlmProvider.OPENAI)), objectMapper);
     }
 
     private LlmException failure(LlmProvider provider, int status, boolean retryable, long delay) {
