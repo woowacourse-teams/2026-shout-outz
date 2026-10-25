@@ -64,6 +64,18 @@ llm:
     connect-timeout: ${BEDROCK_CONNECT_TIMEOUT:5s}
     read-timeout: ${BEDROCK_READ_TIMEOUT:45s}
 
+# 선배 기록 검색의 문서 조각과 질문을 같은 모델, 차원, 정규화로 임베딩하기 위함.
+# 임베딩 전용 키를 쓴다(질문 추천 LLM 키와 분리, 월 사용 한도 설정).
+resource:
+  embedding:
+    provider: ${RESOURCE_EMBEDDING_PROVIDER:openai}
+    model-id: ${RESOURCE_EMBEDDING_MODEL_ID:text-embedding-3-small}
+    dimensions: ${RESOURCE_EMBEDDING_DIMENSIONS:1024}
+    normalize: ${RESOURCE_EMBEDDING_NORMALIZE:true}
+    api-key: ${RESOURCE_EMBEDDING_API_KEY:}
+    connect-timeout: ${RESOURCE_EMBEDDING_CONNECT_TIMEOUT:5s}
+    read-timeout: ${RESOURCE_EMBEDDING_READ_TIMEOUT:30s}
+
 github:
   oauth:
     client-id: ${GITHUB_OAUTH_CLIENT_ID}
