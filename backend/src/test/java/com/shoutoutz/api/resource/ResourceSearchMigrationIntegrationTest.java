@@ -75,6 +75,61 @@ class ResourceSearchMigrationIntegrationTest {
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
+    @Test
+    void 같은_일을_다룬_두_경험을_카드_하나로_묶는다() {
+        long prExperienceId = insertExperience(insertDocument("problem_solving"), 0);
+        long blogExperienceId = insertExperience(insertDocument("problem_solving"), 0);
+        long cardId = insertCard("card:a");
+        insertCardSource(cardId, prExperienceId, 0);
+        insertCardSource(cardId, blogExperienceId, 1);
+
+        List<Long> sources = jdbc.queryForList(
+                "SELECT experience_id FROM resource_career_card_sources WHERE card_id = ? ORDER BY source_order",
+                Long.class, cardId);
+
+        assertThat(sources).containsExactly(prExperienceId, blogExperienceId);
+    }
+
+    @Test
+    void 경험_하나를_두_카드에_넣지_않는다() {
+        long experienceId = insertExperience(insertDocument("problem_solving"), 0);
+        insertCardSource(insertCard("card:a"), experienceId, 0);
+        long otherCardId = insertCard("card:b");
+
+        assertThatThrownBy(() -> insertCardSource(otherCardId, experienceId, 0))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void 출처_문서를_지우면_카드의_출처_연결만_지워진다() {
+        long documentId = insertDocument("problem_solving");
+        long cardId = insertCard("card:a");
+        insertCardSource(cardId, insertExperience(documentId, 0), 0);
+
+        jdbc.update("DELETE FROM resource_documents WHERE id = ?", documentId);
+
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM resource_career_card_sources WHERE card_id = ?", Integer.class, cardId)).isZero();
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM resource_career_cards WHERE id = ?", Integer.class, cardId)).isOne();
+    }
+
+    private long insertCard(String cardKey) {
+        return jdbc.queryForObject("""
+                INSERT INTO resource_career_cards (card_key, repo, track, template, title, category, problem,
+                                                   solution, resume_bullets, written_by, prompt_version, updated_at)
+                VALUES (?, 'woowacourse-teams/2026-shout-outz', 'BE', 'problem_solving', '링크 미리보기 수집 실패 해결',
+                        '장애 대응', '운영에서 미리보기가 비었습니다.', 'oEmbed API로 바꿨습니다.',
+                        ARRAY['미리보기 실패를 없앰'], 'llm', 'career-v1', now())
+                RETURNING id
+                """, Long.class, cardKey);
+    }
+
+    private void insertCardSource(long cardId, long experienceId, int sourceOrder) {
+        jdbc.update("INSERT INTO resource_career_card_sources (card_id, experience_id, source_order) VALUES (?, ?, ?)",
+                cardId, experienceId, sourceOrder);
+    }
+
     private long insertDocument(String contentType) {
         return jdbc.queryForObject("""
                 INSERT INTO resource_documents (source, external_key, version, title, url, summary, track,
