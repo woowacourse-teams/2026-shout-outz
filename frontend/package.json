@@ -20,7 +20,7 @@
     "build:dev:csr-shell": "webpack --mode=development --config ssg/webpack.config.js && node ssg/.build/generate-static-site.cjs --csr-shell",
     "dev": "webpack serve",
     "start": "serve -s dist",
-    "start:ssr": "SERVE_STATIC=true node server/index.ts",
+    "start:ssr": "SERVE_STATIC=true node ssg/.build/server.cjs",
     "typecheck": "tsc --noEmit",
     "watch": "webpack --watch",
     "test": "jest",
