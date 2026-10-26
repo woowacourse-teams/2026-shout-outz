@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
+import { resolveHtmlPath } from '../ssg/paths';
 import { createPathRouter } from '../ssg/routes';
 
 // 이 파일은 webpack이 ssg/.build/server.cjs로 번들해 실행하므로, 경로는 번들 위치(ssg/.build/) 기준입니다.
@@ -18,13 +19,8 @@ if (!existsSync(CSR_SHELL_PATH)) {
 
 // 빌드로 인해 생성된 HTML 있는 경우 해당 파일 경로를 반환하고, 없는 경우 dist/index.html 사용
 function findPrebuiltHtml(pathname: string): string {
-  const htmlPath = path.resolve(DIST_DIR, ...pathname.split('/').filter(Boolean), 'index.html');
-  const relativePath = path.relative(DIST_DIR, htmlPath);
-
-  if (relativePath.startsWith('..') || path.isAbsolute(relativePath) || !existsSync(htmlPath)) {
-    return CSR_SHELL_PATH;
-  }
-  return htmlPath;
+  const htmlPath = resolveHtmlPath(DIST_DIR, pathname);
+  return htmlPath && existsSync(htmlPath) ? htmlPath : CSR_SHELL_PATH;
 }
 
 const router = createPathRouter();

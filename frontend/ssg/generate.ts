@@ -12,6 +12,7 @@ import {
   type PreloadFiles,
 } from './assets';
 import { collectCsrShellRoutes, collectPrerenderRoutes, createRouteIdMatcher } from './routes';
+import { resolveHtmlPath } from './paths';
 
 const PRERENDER_ORIGIN = 'http://prerender.local';
 
@@ -59,12 +60,11 @@ function normalizeUrl(input: string): string {
   return parsed.pathname === '/' ? '/' : parsed.pathname.replace(/\/+$/, '');
 }
 
-function getOutputPath(distDir: string, url: string): string {
-  const outputPath = path.resolve(distDir, ...url.split('/').filter(Boolean), 'index.html');
-  const relativePath = path.relative(distDir, outputPath);
+function getOutputPath(distDir: string, pathname: string): string {
+  const outputPath = resolveHtmlPath(distDir, pathname);
 
-  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
-    throw new Error(`Prerender output escaped the dist directory: ${url}`);
+  if (!outputPath) {
+    throw new Error(`Prerender output escaped the dist directory: ${pathname}`);
   }
 
   return outputPath;
