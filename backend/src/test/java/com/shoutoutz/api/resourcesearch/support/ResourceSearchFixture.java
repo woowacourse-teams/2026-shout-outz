@@ -9,9 +9,12 @@ public class ResourceSearchFixture {
     public static final String MODEL = "search-test@1024";
 
     private final JdbcTemplate jdbcTemplate;
+    private final boolean hasExperienceTable;
 
     public ResourceSearchFixture(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+        this.hasExperienceTable = Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                "SELECT to_regclass('resource_experiences') IS NOT NULL", Boolean.class));
     }
 
     public long document(String track) {
@@ -38,6 +41,35 @@ public class ResourceSearchFixture {
     }
 
     public long chunk(long documentId, int index, String kind, String text, float[] vector, String model) {
+        if (hasExperienceTable && "experience".equals(kind)) {
+            long experienceId = jdbcTemplate.queryForObject(
+                    """
+                            INSERT INTO resource_experiences (
+                                document_id, experience_index, title, category, problem,
+                                solution, resume_bullet, source, track
+                            )
+                            SELECT id, ?, title, '장애 대응', '작업 유실',
+                                   '작업을 보관하고 재시도', '재시도 흐름 구현', source, track
+                            FROM resource_documents WHERE id = ?
+                            RETURNING resource_experiences.id
+                            """,
+                    Long.class,
+                    index - 1, documentId
+            );
+            return jdbcTemplate.queryForObject(
+                    """
+                            INSERT INTO resource_chunks (
+                                document_id, chunk_index, chunk_kind, chunk_text, token_count,
+                                embedding, embedding_model, source, track, experience_id
+                            )
+                            SELECT id, ?, 'experience', ?, 20, CAST(? AS vector), ?, source, track, ?
+                            FROM resource_documents WHERE id = ?
+                            RETURNING resource_chunks.id
+                            """,
+                    Long.class,
+                    index, text, Arrays.toString(vector), model, experienceId, documentId
+            );
+        }
         return jdbcTemplate.queryForObject(
                 """
                         INSERT INTO resource_chunks (
