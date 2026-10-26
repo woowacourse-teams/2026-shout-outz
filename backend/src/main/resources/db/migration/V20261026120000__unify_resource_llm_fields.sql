@@ -15,14 +15,16 @@ ALTER TABLE resource_documents
     ADD COLUMN key_points   TEXT[] NOT NULL DEFAULT '{}';
 
 -- 경험 1개 = 1행(원재료). 경험 조각이 이 행을 가리키고, 전체 경험 탭은 이 행을 묶은 경험 카드를 읽는다.
+-- title, category, resume_bullet 과 options, decision_reason, limits 는 전체 경험 탭(경험 카드)용 칸이라 비어 있을 수 있다.
+-- 테코톡은 레포가 없어 카드에 들어가지 않으므로 이 칸 없이 경험만 둔다(결정 기록 71번).
 -- options, decision_reason, limits 는 전체 경험 탭의 고정 칸(고려한 다른 방법, 고른 이유와 포기한 것, 측정 범위와 한계)이다.
 -- 거르기 칸(source ~ deleted_at)은 조인 없이 쓰려고 문서 값을 복사해 둔다.
 CREATE TABLE resource_experiences (
     id               BIGSERIAL PRIMARY KEY,
     document_id      BIGINT       NOT NULL REFERENCES resource_documents (id) ON DELETE CASCADE,
     experience_index SMALLINT     NOT NULL CHECK (experience_index BETWEEN 0 AND 2),
-    title            VARCHAR(200) NOT NULL,
-    category         VARCHAR(30)  NOT NULL,
+    title            VARCHAR(200),
+    category         VARCHAR(30),
     problem          TEXT         NOT NULL,
     cause            TEXT,
     solution         TEXT         NOT NULL,
@@ -31,7 +33,7 @@ CREATE TABLE resource_experiences (
     decision_reason  TEXT,
     limits           TEXT,
     tech             TEXT[]       NOT NULL DEFAULT '{}',
-    resume_bullet    TEXT         NOT NULL,
+    resume_bullet    TEXT,
     metrics          TEXT[]       NOT NULL DEFAULT '{}',
     source           VARCHAR(40)  NOT NULL,
     project_id       BIGINT,

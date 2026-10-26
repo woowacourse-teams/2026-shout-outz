@@ -108,6 +108,21 @@ class ResourceSearchMigrationIntegrationTest {
     }
 
     @Test
+    void 카드_칸이_없는_테코톡_경험도_경험_조각과_함께_저장한다() {
+        long documentId = insertDocument("problem_solving");
+        long experienceId = jdbc.queryForObject("""
+                INSERT INTO resource_experiences (document_id, experience_index, problem, solution, source)
+                VALUES (?, 0, '스크린 리더가 버튼을 읽지 못했어요.', 'aria-label 을 붙였어요.', 'youtube-tekotalk')
+                RETURNING id
+                """, Long.class, documentId);
+        insertChunk(documentId, 1, "experience", experienceId);
+
+        String title = jdbc.queryForObject("SELECT title FROM resource_experiences WHERE id = ?", String.class, experienceId);
+
+        assertThat(title).isNull();
+    }
+
+    @Test
     void 다른_문서의_경험을_가리키는_조각은_저장하지_않는다() {
         long documentId = insertDocument("chore");
         long otherExperienceId = insertExperience(insertDocument("chore"), 0);
