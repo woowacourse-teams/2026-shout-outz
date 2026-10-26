@@ -136,7 +136,7 @@ function printGenerationSummary(results: PageGenerationResult[]): void {
 }
 
 async function main(): Promise<void> {
-  const distDir = fileURLToPath(new URL('../../dist/', import.meta.url));
+  const distDir = fileURLToPath(new URL('../dist/', import.meta.url));
   const target = process.argv[2];
 
   if (target === '--csr-shell') {

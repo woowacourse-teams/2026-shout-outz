@@ -21,7 +21,7 @@ export default (_env, argv) => ({
     server: path.resolve(__dirname, '..', 'server', 'index.ts'),
   },
   output: {
-    path: path.resolve(__dirname, '.build'),
+    path: path.resolve(__dirname, '..', '.build'),
     // filename은 초기 entry, chunkFilename은 TanStack Router가 만든 라우트 async chunk에 적용됩니다.
     filename: '[name].cjs',
     chunkFilename: '[name].cjs',

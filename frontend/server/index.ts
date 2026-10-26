@@ -7,9 +7,9 @@ import express from 'express';
 import { resolveHtmlPath } from '../ssg/paths';
 import { createPathRouter } from '../ssg/routes';
 
-// 이 파일은 webpack이 ssg/.build/server.cjs로 번들해 실행하므로, 경로는 번들 위치(ssg/.build/) 기준입니다.
+// 이 파일은 webpack이 .build/server.cjs로 번들해 실행하므로, 경로는 번들 위치(.build/) 기준입니다.
 // 배포 환경처럼 폴더 구조가 다르면 DIST_DIR로 지정합니다.
-const DIST_DIR = process.env.DIST_DIR ?? fileURLToPath(new URL('../../dist/', import.meta.url));
+const DIST_DIR = process.env.DIST_DIR ?? fileURLToPath(new URL('../dist/', import.meta.url));
 const CSR_SHELL_PATH = path.join(DIST_DIR, 'index.html');
 const PORT = Number(process.env.PORT ?? 3000);
 
