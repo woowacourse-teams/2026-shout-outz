@@ -76,6 +76,21 @@ class ResourceSearchMigrationIntegrationTest {
     }
 
     @Test
+    void 같은_기술_주제를_가진_다른_팀_자료를_찾는다() {
+        long mine = insertDocument("problem_solving");
+        long other = insertDocument("problem_solving");
+        jdbc.update("UPDATE resource_documents SET topic = 'cache', repo = 'woowacourse-teams/2026-shout-outz' WHERE id = ?", mine);
+        jdbc.update("UPDATE resource_documents SET topic = 'cache', repo = 'woowacourse-teams/2024-cruru' WHERE id = ?", other);
+
+        List<Long> related = jdbc.queryForList("""
+                SELECT id FROM resource_documents
+                WHERE topic = 'cache' AND repo <> 'woowacourse-teams/2026-shout-outz' AND deleted_at IS NULL
+                """, Long.class);
+
+        assertThat(related).containsExactly(other);
+    }
+
+    @Test
     void 다른_문서의_경험을_가리키는_조각은_저장하지_않는다() {
         long documentId = insertDocument("chore");
         long otherExperienceId = insertExperience(insertDocument("chore"), 0);
