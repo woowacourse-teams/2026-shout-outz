@@ -91,6 +91,23 @@ class ResourceSearchMigrationIntegrationTest {
     }
 
     @Test
+    void 기술_주제_목록에_77개_주제와_직군이_들어_있다() {
+        Integer count = jdbc.queryForObject("SELECT count(*) FROM resource_topic_catalog", Integer.class);
+        String cacheSide = jdbc.queryForObject("SELECT side FROM resource_topic_catalog WHERE id = 'cache'", String.class);
+
+        assertThat(count).isEqualTo(77);
+        assertThat(cacheSide).isEqualTo("backend");
+    }
+
+    @Test
+    void 목록에_없는_기술_주제는_문서에_저장하지_않는다() {
+        long documentId = insertDocument("chore");
+
+        assertThatThrownBy(() -> jdbc.update("UPDATE resource_documents SET topic = 'unknown' WHERE id = ?", documentId))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
     void 다른_문서의_경험을_가리키는_조각은_저장하지_않는다() {
         long documentId = insertDocument("chore");
         long otherExperienceId = insertExperience(insertDocument("chore"), 0);
