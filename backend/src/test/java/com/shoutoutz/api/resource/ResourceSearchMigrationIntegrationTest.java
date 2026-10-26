@@ -76,6 +76,34 @@ class ResourceSearchMigrationIntegrationTest {
     }
 
     @Test
+    void 다른_문서의_경험을_가리키는_조각은_저장하지_않는다() {
+        long documentId = insertDocument("chore");
+        long otherExperienceId = insertExperience(insertDocument("chore"), 0);
+
+        assertThatThrownBy(() -> insertChunk(documentId, 1, "experience", otherExperienceId))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void 경험_하나에_경험_조각을_두_개_저장하지_않는다() {
+        long documentId = insertDocument("chore");
+        long experienceId = insertExperience(documentId, 0);
+        insertChunk(documentId, 1, "experience", experienceId);
+
+        assertThatThrownBy(() -> insertChunk(documentId, 2, "experience", experienceId))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void 문서_하나에_소개_조각을_두_개_저장하지_않는다() {
+        long documentId = insertDocument("chore");
+        insertChunk(documentId, 0, "intro", null);
+
+        assertThatThrownBy(() -> insertChunk(documentId, 1, "intro", null))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
     void 같은_일을_다룬_두_경험을_카드_하나로_묶는다() {
         long prExperienceId = insertExperience(insertDocument("problem_solving"), 0);
         long blogExperienceId = insertExperience(insertDocument("problem_solving"), 0);

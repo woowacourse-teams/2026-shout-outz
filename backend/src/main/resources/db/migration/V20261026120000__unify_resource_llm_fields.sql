@@ -14,7 +14,8 @@ ALTER TABLE resource_documents
     ADD COLUMN score_reason VARCHAR(200),
     ADD COLUMN key_points   TEXT[] NOT NULL DEFAULT '{}';
 
--- 경험 1개 = 1행. 프로젝트 상세 전체 경험 탭이 읽고, 경험 조각이 이 행을 가리킨다.
+-- 경험 1개 = 1행(원재료). 경험 조각이 이 행을 가리키고, 전체 경험 탭은 이 행을 묶은 경험 카드를 읽는다.
+-- options, decision_reason, limits 는 전체 경험 탭의 고정 칸(고려한 다른 방법, 고른 이유와 포기한 것, 측정 범위와 한계)이다.
 -- 거르기 칸(source ~ deleted_at)은 조인 없이 쓰려고 문서 값을 복사해 둔다.
 CREATE TABLE resource_experiences (
     id               BIGSERIAL PRIMARY KEY,
@@ -26,6 +27,9 @@ CREATE TABLE resource_experiences (
     cause            TEXT,
     solution         TEXT         NOT NULL,
     result           TEXT,
+    options          TEXT[]       NOT NULL DEFAULT '{}',
+    decision_reason  TEXT,
+    limits           TEXT,
     tech             TEXT[]       NOT NULL DEFAULT '{}',
     resume_bullet    TEXT         NOT NULL,
     metrics          TEXT[]       NOT NULL DEFAULT '{}',
@@ -34,28 +38,31 @@ CREATE TABLE resource_experiences (
     track            VARCHAR(10),
     cohort           INT,
     deleted_at       TIMESTAMPTZ,
-    CONSTRAINT resource_experiences_document_id_experience_index_key UNIQUE (document_id, experience_index)
+    CONSTRAINT resource_experiences_document_id_experience_index_key UNIQUE (document_id, experience_index),
+    -- 조각이 같은 문서의 경험만 가리키도록 (id, document_id) 를 외래 키 대상으로 둔다
+    CONSTRAINT resource_experiences_id_document_id_key UNIQUE (id, document_id)
 );
 
 CREATE INDEX resource_experiences_project_idx
     ON resource_experiences (project_id, track)
     WHERE deleted_at IS NULL;
 
--- 소개 조각은 문서마다 1개, 경험 조각은 경험마다 1개다. 경험 조각만 experience_id 를 갖는다.
+-- 소개 조각은 문서마다 1개, 경험 조각은 경험마다 1개다. 경험 조각만 experience_id 를 갖고, 그 경험은 같은 문서의 것이어야 한다.
+-- 소개 조각은 experience_id 가 NULL 이라 복합 외래 키 검사를 받지 않는다.
 ALTER TABLE resource_chunks
-    ADD COLUMN experience_id BIGINT REFERENCES resource_experiences (id) ON DELETE CASCADE,
+    ADD COLUMN experience_id BIGINT,
+    ADD CONSTRAINT resource_chunks_experience_document_fkey
+        FOREIGN KEY (experience_id, document_id) REFERENCES resource_experiences (id, document_id) ON DELETE CASCADE,
     ADD CONSTRAINT resource_chunks_chunk_kind_check CHECK (chunk_kind IN ('intro', 'experience')),
     ADD CONSTRAINT resource_chunks_experience_id_check CHECK ((chunk_kind = 'experience') = (experience_id IS NOT NULL));
 
-CREATE INDEX resource_chunks_experience_idx
+CREATE UNIQUE INDEX resource_chunks_experience_idx
     ON resource_chunks (experience_id)
     WHERE experience_id IS NOT NULL;
 
--- 전체 경험 탭의 고정 칸 중 경험에 더하는 3개: 고려한 다른 방법, 고른 이유와 포기한 것, 측정 범위와 한계.
-ALTER TABLE resource_experiences
-    ADD COLUMN options         TEXT[] NOT NULL DEFAULT '{}',
-    ADD COLUMN decision_reason TEXT,
-    ADD COLUMN limits          TEXT;
+CREATE UNIQUE INDEX resource_chunks_intro_idx
+    ON resource_chunks (document_id)
+    WHERE chunk_kind = 'intro';
 
 -- 경험 카드: 같은 일을 다룬 경험(문서마다 1개씩)을 묶은 것. 전체 경험 탭은 경험이 아니라 이 카드를 보여 준다.
 -- 출처가 1개면 경험 칸을 그대로 옮기고(copy), 2개 이상이면 LLM 이 합쳐 쓴다(llm). 운영자가 고친 카드는 locked 로 지킨다.
