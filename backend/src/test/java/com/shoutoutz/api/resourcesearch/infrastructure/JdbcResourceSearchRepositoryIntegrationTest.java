@@ -8,14 +8,15 @@ import static org.assertj.core.api.Assertions.within;
 
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
+import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import com.shoutoutz.api.resourcesearch.support.ResourceSearchFixture;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,11 +40,11 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
     @Test
     void 코사인_유사도순으로_후보를_제한한다() {
-        long distant = fixture.intro(fixture.document("BE"), vector(0, 1));
-        long nearest = fixture.intro(fixture.document("BE"), vector(1, 0));
-        long middle = fixture.intro(fixture.document("BE"), vector(0.8f, 0.6f));
+        long distant = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
+        long nearest = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+        long middle = fixture.intro(fixture.document(ResourceTrack.BE), vector(0.8f, 0.6f));
 
-        List<ResourceSearchCandidate> result = search("BE", 2);
+        List<ResourceSearchCandidate> result = search(ResourceTrack.BE, 2);
 
         assertThat(result).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(nearest, middle);
         assertThat(result.getFirst().chunk().similarityScore()).isCloseTo(1, within(0.000001));
@@ -53,44 +54,44 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
     @Test
     void 트랙은_후보_제한_전에_적용하고_공통과_미분류도_포함한다() {
-        fixture.intro(fixture.document("FE"), vector(1, 0));
-        long backend = fixture.intro(fixture.document("BE"), vector(0.8f, 0.6f));
-        long common = fixture.intro(fixture.document("ALL"), vector(0.6f, 0.8f));
+        fixture.intro(fixture.document(ResourceTrack.FE), vector(1, 0));
+        long backend = fixture.intro(fixture.document(ResourceTrack.BE), vector(0.8f, 0.6f));
+        long common = fixture.intro(fixture.document(ResourceTrack.ALL), vector(0.6f, 0.8f));
         long unknown = fixture.intro(fixture.document(null), vector(0, 1));
 
-        List<ResourceSearchCandidate> result = search("BE", 3);
+        List<ResourceSearchCandidate> result = search(ResourceTrack.BE, 3);
 
         assertThat(result).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(backend, common, unknown);
-        assertThat(result).extracting(ResourceSearchCandidate::track).containsExactly("BE", "ALL", null);
+        assertThat(result).extracting(ResourceSearchCandidate::track).containsExactly(ResourceTrack.BE, ResourceTrack.ALL, null);
     }
 
     @Test
     void ALL과_null_요청은_모든_트랙을_검색한다() {
-        for (String track : List.of("BE", "FE", "AN", "ALL")) {
+        for (ResourceTrack track : List.of(ResourceTrack.BE, ResourceTrack.FE, ResourceTrack.AN, ResourceTrack.ALL)) {
             fixture.intro(fixture.document(track), vector(1, 0));
         }
         fixture.intro(fixture.document(null), vector(1, 0));
 
-        assertThat(search("ALL", 10)).hasSize(5);
+        assertThat(search(ResourceTrack.ALL, 10)).hasSize(5);
         assertThat(search(null, 10)).hasSize(5);
     }
 
     @Test
     void 삭제된_문서와_조각_및_다른_모델을_제외한다() {
-        long deletedDocument = fixture.document("BE");
+        long deletedDocument = fixture.document(ResourceTrack.BE);
         fixture.intro(deletedDocument, vector(1, 0));
         jdbcTemplate.update("UPDATE resource_documents SET deleted_at = now() WHERE id = ?", deletedDocument);
-        long deletedChunk = fixture.intro(fixture.document("BE"), vector(1, 0));
+        long deletedChunk = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
         jdbcTemplate.update("UPDATE resource_chunks SET deleted_at = now() WHERE id = ?", deletedChunk);
-        fixture.chunk(fixture.document("BE"), 0, "intro", "다른 모델", vector(1, 0), "other@1024");
-        long available = fixture.intro(fixture.document("BE"), vector(0, 1));
+        fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "다른 모델", vector(1, 0), "other@1024");
+        long available = fixture.intro(fixture.document(ResourceTrack.BE), vector(0, 1));
 
-        assertThat(search("BE", 10)).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(available);
+        assertThat(search(ResourceTrack.BE, 10)).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(available);
     }
 
     @Test
     void 원본_식별자와_문서_메타데이터를_반환하고_null을_보존한다() {
-        long connected = fixture.document("github-pr", "BE", 42L, "example/backend", "연결된 자료");
+        long connected = fixture.document("github-pr", ResourceTrack.BE, 42L, "example/backend", "연결된 자료");
         fixture.intro(connected, vector(1, 0));
         fixture.intro(fixture.document("blog-post", null, null, null, "독립 블로그"), vector(0, 1));
 
@@ -114,15 +115,15 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
     @Test
     void 같은_유사도는_조각_ID순으로_반환한다() {
-        long first = fixture.intro(fixture.document("BE"), vector(1, 0));
-        long second = fixture.intro(fixture.document("BE"), vector(1, 0));
+        long first = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+        long second = fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
 
         assertThat(search(null, 10)).extracting(candidate -> candidate.chunk().chunkId()).containsExactly(first, second);
     }
 
     @Test
     void 벡터의_크기가_달라도_방향이_같으면_유사도는_같다() {
-        fixture.intro(fixture.document("BE"), vector(4, 0));
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(4, 0));
 
         assertThat(resourceSearchRepository.findNearest(vector(2, 0), MODEL, null, 1)
                 .getFirst().chunk().similarityScore()).isCloseTo(1, within(0.000001));
@@ -131,6 +132,18 @@ class JdbcResourceSearchRepositoryIntegrationTest {
     @Test
     void 해당_모델의_후보가_없으면_빈_목록을_반환한다() {
         assertThat(search(null, 10)).isEmpty();
+    }
+
+    @Test
+    void 알수없는_DB_트랙을_미분류로_숨기지_않는다() {
+        long documentId = fixture.document(ResourceTrack.BE);
+        fixture.intro(documentId, vector(1, 0));
+        jdbcTemplate.update("UPDATE resource_documents SET track = 'UNKNOWN' WHERE id = ?", documentId);
+        jdbcTemplate.update("UPDATE resource_chunks SET track = 'UNKNOWN' WHERE document_id = ?", documentId);
+
+        assertThatThrownBy(() -> search(null, 10))
+                .isInstanceOf(InvalidDataAccessApiUsageException.class)
+                .hasCauseInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -149,7 +162,7 @@ class JdbcResourceSearchRepositoryIntegrationTest {
                 .hasCauseInstanceOf(IllegalArgumentException.class);
     }
 
-    private List<ResourceSearchCandidate> search(String track, int limit) {
+    private List<ResourceSearchCandidate> search(ResourceTrack track, int limit) {
         return resourceSearchRepository.findNearest(vector(1, 0), MODEL, track, limit);
     }
 }

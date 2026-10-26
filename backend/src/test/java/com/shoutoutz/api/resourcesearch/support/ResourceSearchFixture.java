@@ -1,5 +1,6 @@
 package com.shoutoutz.api.resourcesearch.support;
 
+import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.util.Arrays;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,12 +18,16 @@ public class ResourceSearchFixture {
                 "SELECT to_regclass('resource_experiences') IS NOT NULL", Boolean.class));
     }
 
-    public long document(String track) {
+    public long document(ResourceTrack track) {
         return document("github-pr", track, null, null, "작업 유실을 방지한 기록");
     }
 
-    public long document(String source, String track, Long projectId, String repo, String title) {
+    public long document(String source, ResourceTrack track, Long projectId, String repo, String title) {
         String externalKey = UUID.randomUUID().toString();
+        String trackValue = null;
+        if (track != null) {
+            trackValue = track.name();
+        }
         return jdbcTemplate.queryForObject(
                 """
                         INSERT INTO resource_documents (
@@ -32,7 +37,7 @@ public class ResourceSearchFixture {
                         RETURNING id
                         """,
                 Long.class,
-                source, externalKey, title, "https://example.com/" + externalKey, projectId, repo, track
+                source, externalKey, title, "https://example.com/" + externalKey, projectId, repo, trackValue
         );
     }
 

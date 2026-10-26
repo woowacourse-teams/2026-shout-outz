@@ -1,5 +1,6 @@
 package com.shoutoutz.api.resourcesearch.application.dto;
 
+import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.util.List;
 
 public record SearchHit(
@@ -10,7 +11,7 @@ public record SearchHit(
         String title,
         String summary,
         String source,
-        String track,
+        ResourceTrack track,
         String url,
         double similarityScore,
         List<MatchedChunk> matchedChunks

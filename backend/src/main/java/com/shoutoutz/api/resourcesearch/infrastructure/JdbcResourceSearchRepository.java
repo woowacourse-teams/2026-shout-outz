@@ -3,6 +3,7 @@ package com.shoutoutz.api.resourcesearch.infrastructure;
 import com.shoutoutz.api.resourcesearch.application.ResourceSearchRepository;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
+import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
     public List<ResourceSearchCandidate> findNearest(
             float[] queryVector,
             String modelId,
-            String track,
+            ResourceTrack track,
             int candidateLimit
     ) {
         validateVector(queryVector);
@@ -37,18 +38,20 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
                   AND d.deleted_at IS NULL
                   AND c.embedding_model = :modelId
                 """;
-        if (track != null && !"ALL".equals(track)) {
-            sql += " AND (c.track = :track OR c.track = 'ALL' OR c.track IS NULL)";
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("queryVector", Arrays.toString(queryVector))
+                .addValue("modelId", modelId)
+                .addValue("candidateLimit", candidateLimit);
+        if (track != null && track != ResourceTrack.ALL) {
+            sql += " AND (c.track = :track OR c.track = :commonTrack OR c.track IS NULL)";
+            parameters.addValue("track", track.name())
+                    .addValue("commonTrack", ResourceTrack.ALL.name());
         }
         sql += " ORDER BY similarity_score DESC, c.id LIMIT :candidateLimit";
 
         return jdbcTemplate.query(
                 sql,
-                new MapSqlParameterSource()
-                        .addValue("queryVector", Arrays.toString(queryVector))
-                        .addValue("modelId", modelId)
-                        .addValue("track", track)
-                        .addValue("candidateLimit", candidateLimit),
+                parameters,
                 (resultSet, rowNumber) -> new ResourceSearchCandidate(
                         resultSet.getLong("document_id"),
                         resultSet.getString("external_key"),
@@ -57,7 +60,7 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
                         resultSet.getString("title"),
                         resultSet.getString("summary"),
                         resultSet.getString("source"),
-                        resultSet.getString("track"),
+                        toResourceTrack(resultSet.getString("track")),
                         resultSet.getString("url"),
                         new MatchedChunk(
                                 resultSet.getLong("chunk_id"),
@@ -67,6 +70,13 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
                         )
                 )
         );
+    }
+
+    private ResourceTrack toResourceTrack(String track) {
+        if (track == null) {
+            return null;
+        }
+        return ResourceTrack.valueOf(track);
     }
 
     private void validateVector(float[] vector) {

@@ -15,21 +15,24 @@ import com.shoutoutz.api.common.embedding.EmbeddingException;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
+import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataAccessResourceFailureException;
+import tools.jackson.databind.json.JsonMapper;
 
 @ExtendWith(MockitoExtension.class)
-class DefaultResourceSearchServiceTest {
+class VectorResourceSearchServiceTest {
 
     @Mock
     private EmbeddingClient embeddingClient;
@@ -38,7 +41,7 @@ class DefaultResourceSearchServiceTest {
     private ResourceSearchRepository resourceSearchRepository;
 
     @InjectMocks
-    private DefaultResourceSearchService resourceSearchService;
+    private VectorResourceSearchService resourceSearchService;
 
     private float[] vector;
 
@@ -51,13 +54,13 @@ class DefaultResourceSearchServiceTest {
     @Test
     void 질의와_모델_트랙을_전달하고_문서별_최고_점수와_조각을_반환한다() {
         givenEmbedding();
-        when(resourceSearchRepository.findNearest(vector, "model@1024", "BE", 20)).thenReturn(List.of(
+        when(resourceSearchRepository.findNearest(vector, "model@1024", ResourceTrack.BE, 20)).thenReturn(List.of(
                 candidate(1, 11, "intro", 0.7),
                 candidate(2, 21, "experience", 0.8),
                 candidate(1, 12, "experience", 0.9)
         ));
 
-        List<SearchHit> hits = resourceSearchService.search("작업 유실 방지", "BE", 10);
+        List<SearchHit> hits = resourceSearchService.search("작업 유실 방지", ResourceTrack.BE, 10);
 
         verify(embeddingClient).embed("작업 유실 방지");
         assertThat(hits).extracting(SearchHit::documentId).containsExactly(1L, 2L);
@@ -66,7 +69,9 @@ class DefaultResourceSearchServiceTest {
         assertThat(hits.getFirst().matchedChunks()).extracting(MatchedChunk::chunkKind).containsExactly("experience", "intro");
         assertThat(hits.getFirst().externalKey()).isEqualTo("repo#1");
         assertThat(hits.getFirst().repo()).isEqualTo("example/repo");
-        assertThat(hits.getFirst().track()).isEqualTo("ALL");
+        assertThat(hits.getFirst().track()).isEqualTo(ResourceTrack.ALL);
+        assertThat(JsonMapper.builder().build().valueToTree(hits.getFirst()).path("track").asString())
+                .isEqualTo("ALL");
     }
 
     @Test
@@ -133,9 +138,9 @@ class DefaultResourceSearchServiceTest {
     @Test
     void 검색_결과가_없으면_빈_목록을_반환한다() {
         givenEmbedding();
-        when(resourceSearchRepository.findNearest(vector, "model@1024", "ALL", 20)).thenReturn(List.of());
+        when(resourceSearchRepository.findNearest(vector, "model@1024", ResourceTrack.ALL, 20)).thenReturn(List.of());
 
-        assertThat(resourceSearchService.search("질의", "ALL", 5)).isEmpty();
+        assertThat(resourceSearchService.search("질의", ResourceTrack.ALL, 5)).isEmpty();
     }
 
     @ParameterizedTest
@@ -148,17 +153,20 @@ class DefaultResourceSearchServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", " ", "BACKEND", "be", "UNKNOWN"})
-    void 잘못된_트랙은_외부_호출_전에_거절한다(String track) {
-        assertThatThrownBy(() -> resourceSearchService.search("질의", track, 1))
-                .isInstanceOf(IllegalArgumentException.class);
-        verifyNoInteractions(embeddingClient, resourceSearchRepository);
+    @EnumSource(ResourceTrack.class)
+    void 트랙_enum을_조회에_전달한다(ResourceTrack track) {
+        givenEmbedding();
+        when(resourceSearchRepository.findNearest(vector, "model@1024", track, 20)).thenReturn(List.of());
+
+        assertThat(resourceSearchService.search("query", track, 1)).isEmpty();
+
+        verify(resourceSearchRepository).findNearest(vector, "model@1024", track, 20);
     }
 
     @ParameterizedTest
     @ValueSource(ints = {0, -1})
     void 양수가_아닌_문서수는_외부_호출_전에_거절한다(int limit) {
-        assertThatThrownBy(() -> resourceSearchService.search("질의", "BE", limit))
+        assertThatThrownBy(() -> resourceSearchService.search("질의", ResourceTrack.BE, limit))
                 .isInstanceOf(IllegalArgumentException.class);
         verifyNoInteractions(embeddingClient, resourceSearchRepository);
     }
@@ -168,7 +176,7 @@ class DefaultResourceSearchServiceTest {
         EmbeddingException failure = new EmbeddingException(429, "RATE_LIMIT", true);
         when(embeddingClient.embed("질의")).thenThrow(failure);
 
-        assertThatThrownBy(() -> resourceSearchService.search("질의", "BE", 10)).isSameAs(failure);
+        assertThatThrownBy(() -> resourceSearchService.search("질의", ResourceTrack.BE, 10)).isSameAs(failure);
         verifyNoInteractions(resourceSearchRepository);
         verify(embeddingClient, times(1)).embed("질의");
     }
@@ -210,7 +218,7 @@ class DefaultResourceSearchServiceTest {
                 "작업 유실 방지",
                 null,
                 "github-pr",
-                "ALL",
+                ResourceTrack.ALL,
                 "https://example.com/" + documentId,
                 new MatchedChunk(chunkId, kind, "문제: 작업 유실\n해결: 재시도", score)
         );

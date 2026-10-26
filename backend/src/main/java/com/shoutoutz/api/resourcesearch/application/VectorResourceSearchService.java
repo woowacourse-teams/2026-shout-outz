@@ -4,12 +4,12 @@ import com.shoutoutz.api.common.embedding.EmbeddingClient;
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceSearchCandidate;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
+import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,9 +17,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DefaultResourceSearchService implements ResourceSearchService {
+public class VectorResourceSearchService implements ResourceSearchService {
 
-    private static final Set<String> TRACKS = Set.of("BE", "FE", "AN", "ALL");
     private static final int INITIAL_CANDIDATES = 20;
     private static final int MAX_CANDIDATES = 400;
 
@@ -27,8 +26,8 @@ public class DefaultResourceSearchService implements ResourceSearchService {
     private final ResourceSearchRepository resourceSearchRepository;
 
     @Override
-    public List<SearchHit> search(String query, String track, int limit) {
-        validateInput(query, track, limit);
+    public List<SearchHit> search(String query, ResourceTrack track, int limit) {
+        validateInput(query, limit);
         long startedAt = System.nanoTime();
         float[] queryVector = embeddingClient.embed(query);
         String modelId = embeddingClient.modelId();
@@ -63,12 +62,9 @@ public class DefaultResourceSearchService implements ResourceSearchService {
         }
     }
 
-    private void validateInput(String query, String track, int limit) {
+    private void validateInput(String query, int limit) {
         if (query == null || query.isBlank()) {
             throw new IllegalArgumentException("검색어는 비어 있을 수 없습니다.");
-        }
-        if (track != null && !TRACKS.contains(track)) {
-            throw new IllegalArgumentException("검색 트랙은 BE, FE, AN, ALL 또는 null이어야 합니다.");
         }
         if (limit < 1) {
             throw new IllegalArgumentException("검색 문서 수는 1 이상이어야 합니다.");
