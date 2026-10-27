@@ -4,8 +4,10 @@ import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.exception.AuthErrorCode;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import jakarta.servlet.http.HttpSession;
+import java.time.Instant;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +19,13 @@ public class AuthSessionAccessor {
     private static final String PENDING_OAUTH_IDENTITY = "pendingOAuthIdentity";
 
     public void saveLoginAttempt(HttpSession session, OAuthLoginAttempt attempt) {
-        session.setAttribute(LOGIN_ATTEMPT, attempt);
+        synchronized (session) {
+            Object value = session.getAttribute(LOGIN_ATTEMPT);
+            if (value instanceof OAuthLoginAttempt current && !current.isExpired(Instant.now())) {
+                throw new ConflictException(AuthErrorCode.OAUTH_LOGIN_IN_PROGRESS);
+            }
+            session.setAttribute(LOGIN_ATTEMPT, attempt);
+        }
     }
 
     public OAuthLoginAttempt consumeLoginAttempt(HttpSession session, String callbackState) {

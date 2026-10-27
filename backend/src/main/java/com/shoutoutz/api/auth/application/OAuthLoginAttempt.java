@@ -54,9 +54,13 @@ public record OAuthLoginAttempt(
 
     public void validateCallback(String callbackState, Instant validatedAt) {
         validateState(callbackState);
-        if (validatedAt.isAfter(createdAt.plus(VALIDITY))) {
+        if (isExpired(validatedAt)) {
             throw new IllegalArgumentException("OAuth 로그인 시도가 만료되었습니다.");
         }
+    }
+
+    public boolean isExpired(Instant checkedAt) {
+        return checkedAt.isAfter(createdAt.plus(VALIDITY));
     }
 
     public void validateState(String callbackState) {

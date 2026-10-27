@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum AuthErrorCode implements ErrorCode {
+    OAUTH_LOGIN_IN_PROGRESS("이미 OAuth 로그인이 진행 중입니다."),
     OAUTH_LOGIN_SESSION_NOT_FOUND("OAuth 로그인 세션을 찾을 수 없습니다."),
     OAUTH_LOGIN_ATTEMPT_NOT_FOUND("OAuth 로그인 시도를 찾을 수 없습니다."),
     OAUTH_COMPLETION_URI_NOT_ALLOWED("허용되지 않은 OAuth 완료 URI입니다."),
