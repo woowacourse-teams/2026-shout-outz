@@ -26,6 +26,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.ThrottlingException;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolChoice;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 import tools.jackson.databind.ObjectMapper;
 
@@ -75,6 +76,24 @@ class BedrockLlmClientTest {
                 .thenReturn(response(StopReason.END_TURN, ContentBlock.fromText("{\"questions\":[]}")));
 
         assertThat(client.generate(REQUEST)).isEqualTo("{\"questions\":[]}");
+    }
+
+    @Test
+    void Claude는_도구를_강제하지_않고_자동_선택으로_보내며_본문_JSON을_그대로_넘긴다() {
+        BedrockLlmClient claude = new BedrockLlmClient(bedrock, LlmProvider.BEDROCK_CLAUDE,
+                "global.anthropic.claude-sonnet-5-5", new ObjectMapper(), registry);
+        when(bedrock.converse(any(ConverseRequest.class)))
+                .thenReturn(response(StopReason.END_TURN, ContentBlock.fromText("{\"questions\":[]}")));
+
+        assertThat(claude.generate(REQUEST)).isEqualTo("{\"questions\":[]}");
+
+        ArgumentCaptor<ConverseRequest> captor = ArgumentCaptor.forClass(ConverseRequest.class);
+        verify(bedrock).converse(captor.capture());
+        ToolChoice toolChoice = captor.getValue().toolConfig().toolChoice();
+        assertThat(toolChoice.auto()).isNotNull();
+        assertThat(toolChoice.tool()).isNull();
+        assertThat(captor.getValue().toolConfig().tools().getFirst().toolSpec().name())
+                .isEqualTo(BedrockLlmClient.TOOL_NAME);
     }
 
     @Test

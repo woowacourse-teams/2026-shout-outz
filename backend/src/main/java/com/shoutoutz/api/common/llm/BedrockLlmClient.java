@@ -10,6 +10,7 @@ import software.amazon.awssdk.core.SdkNumber;
 import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.bedrockruntime.model.AutoToolChoice;
 import software.amazon.awssdk.services.bedrockruntime.model.BedrockRuntimeException;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole;
@@ -33,6 +34,7 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * Amazon Bedrock Converse API 로 생성한다. 인증은 EC2 IAM 역할(기본 자격 증명)을 쓴다.
  * 응답 형식은 스키마를 입력으로 받는 도구 하나를 강제로 호출하게 해서 JSON 으로 받는다.
+ * Claude 는 도구 강제 지정을 거부하므로 자동 선택으로 보내고, 본문으로 돌려준 JSON 도 받는다.
  */
 public final class BedrockLlmClient implements LlmClient {
     static final String TOOL_NAME = "structured_response";
@@ -103,9 +105,17 @@ public final class BedrockLlmClient implements LlmClient {
                         .maxTokens(Math.max(MIN_OUTPUT_TOKENS, request.maxOutputTokens())).build())
                 .toolConfig(ToolConfiguration.builder()
                         .tools(tool)
-                        .toolChoice(ToolChoice.fromTool(SpecificToolChoice.builder().name(TOOL_NAME).build()))
+                        .toolChoice(toolChoice())
                         .build())
                 .build();
+    }
+
+    private ToolChoice toolChoice() {
+        // Bedrock 의 Claude 는 tool_choice 의 tool, any 를 지원하지 않아 ValidationException 으로 거부한다.
+        if (provider == LlmProvider.BEDROCK_CLAUDE) {
+            return ToolChoice.fromAuto(AutoToolChoice.builder().build());
+        }
+        return ToolChoice.fromTool(SpecificToolChoice.builder().name(TOOL_NAME).build());
     }
 
     private String extract(ConverseResponse response) {
