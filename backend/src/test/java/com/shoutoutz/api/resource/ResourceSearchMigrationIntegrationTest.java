@@ -108,6 +108,42 @@ class ResourceSearchMigrationIntegrationTest {
     }
 
     @Test
+    void 기술_주제와_고른_근거를_함께_저장한다() {
+        long documentId = insertDocument("problem_solving");
+        jdbc.update("UPDATE resource_documents SET topic = 'cache', topic_reason = ? WHERE id = ?",
+                "조회 결과를 Redis 에 캐시한 과정이 중심이에요.", documentId);
+
+        String reason = jdbc.queryForObject(
+                "SELECT topic_reason FROM resource_documents WHERE id = ?", String.class, documentId);
+
+        assertThat(reason).isEqualTo("조회 결과를 Redis 에 캐시한 과정이 중심이에요.");
+    }
+
+    @Test
+    void 이력서_항목을_정해진_순서대로_읽는다() {
+        long second = insertCard("card:a");
+        long first = insertCard("card:b");
+        jdbc.update("UPDATE resource_career_cards SET sort_order = 1 WHERE id = ?", second);
+        jdbc.update("UPDATE resource_career_cards SET sort_order = 0 WHERE id = ?", first);
+
+        List<Long> ordered = jdbc.queryForList("""
+                SELECT id FROM resource_career_cards
+                WHERE repo = 'woowacourse-teams/2026-shout-outz' AND track = 'BE' AND deleted_at IS NULL
+                ORDER BY sort_order
+                """, Long.class);
+
+        assertThat(ordered).containsExactly(first, second);
+    }
+
+    @Test
+    void 이력서_항목_순서는_음수를_저장하지_않는다() {
+        long cardId = insertCard("card:a");
+
+        assertThatThrownBy(() -> jdbc.update("UPDATE resource_career_cards SET sort_order = -1 WHERE id = ?", cardId))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
     void 카드_칸이_없는_테코톡_경험도_경험_조각과_함께_저장한다() {
         long documentId = insertDocument("problem_solving");
         long experienceId = jdbc.queryForObject("""
