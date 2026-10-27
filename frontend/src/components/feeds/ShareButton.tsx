@@ -4,14 +4,14 @@ import { Button } from '@/components/Button';
 import { ShareResultModal } from '@/components/modals/ShareResultModal';
 import { useModal } from '@/hooks/useModal';
 
-export function ShareButton({ url, className }: { url: string; className?: string }) {
+export function ShareButton({ className }: { className?: string }) {
   const { open } = useModal();
 
   const showResult = (copied: boolean) => {
     void open<void>((close) => <ShareResultModal copied={copied} onClose={() => close()} />);
   };
 
-  const copyLink = async () => {
+  const copyLink = async (url: string) => {
     try {
       await navigator.clipboard.writeText(url);
       showResult(true);
@@ -21,8 +21,10 @@ export function ShareButton({ url, className }: { url: string; className?: strin
   };
 
   const share = async () => {
+    const url = window.location.href;
+
     if (!navigator.share) {
-      await copyLink();
+      await copyLink(url);
       return;
     }
 
@@ -30,7 +32,7 @@ export function ShareButton({ url, className }: { url: string; className?: strin
       await navigator.share({ title: document.title, url });
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
-      await copyLink();
+      await copyLink(url);
     }
   };
 
