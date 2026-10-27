@@ -2,6 +2,7 @@ package com.shoutoutz.api.comment.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 import com.shoutoutz.api.comment.application.FeedCommentQueryRepository;
 import com.shoutoutz.api.comment.application.dto.FeedCommentCursor;
@@ -117,8 +118,8 @@ class FeedCommentRepositoryIntegrationTest {
         FeedComment found = feedCommentRepository.findById(saved.getId()).orElseThrow();
 
         assertThat(found.getContent()).isEqualTo("수정된 댓글");
-        // 저장 직후 시각은 메모리 값(리눅스에서는 나노초)이고, 다시 읽은 시각은 DB 정밀도(마이크로초)다.
-        assertThat(found.getCreatedAt()).isEqualTo(saved.getCreatedAt().truncatedTo(ChronoUnit.MICROS));
+        // 저장 직후 시각은 메모리 값(리눅스에서는 나노초)이고, 다시 읽은 시각은 DB 가 마이크로초로 반올림한 값이라 1마이크로초까지 다를 수 있다.
+        assertThat(found.getCreatedAt()).isCloseTo(saved.getCreatedAt(), within(1, ChronoUnit.MICROS));
         assertThat(found.getUpdatedAt()).isEqualTo(updated.getUpdatedAt());
         assertThat(found.getUpdatedAt()).isNotEqualTo(found.getCreatedAt());
         assertThat(commentCountOf(feed.getId())).isEqualTo(1L);
