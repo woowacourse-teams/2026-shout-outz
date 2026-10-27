@@ -60,7 +60,7 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
                         resultSet.getString("title"),
                         resultSet.getString("summary"),
                         resultSet.getString("source"),
-                        toResourceTrack(resultSet.getString("track")),
+                        ResourceTrack.from(resultSet.getString("track")),
                         resultSet.getString("url"),
                         new MatchedChunk(
                                 resultSet.getLong("chunk_id"),
@@ -70,13 +70,6 @@ public class JdbcResourceSearchRepository implements ResourceSearchRepository {
                         )
                 )
         );
-    }
-
-    private ResourceTrack toResourceTrack(String track) {
-        if (track == null) {
-            return null;
-        }
-        return ResourceTrack.valueOf(track);
     }
 
     private void validateVector(float[] vector) {
