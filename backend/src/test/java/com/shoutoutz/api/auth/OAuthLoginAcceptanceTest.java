@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 import com.shoutoutz.api.auth.application.port.GitHubOAuthIdentityPort;
 import com.shoutoutz.api.auth.domain.OAuthAccount;
@@ -24,8 +25,13 @@ import io.restassured.response.Response;
 import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -106,6 +112,134 @@ class OAuthLoginAcceptanceTest {
                 .isNotEqualTo(secondQueryParams.getFirst("state"));
         assertThat(firstQueryParams.getFirst("code_challenge"))
                 .isNotEqualTo(secondQueryParams.getFirst("code_challenge"));
+    }
+
+    @Test
+    @DisplayName("대기 중인 로그인의 중복 시작은 409로 거부하고 첫 Callback은 성공한다")
+    void rejectsDuplicateStartWithoutReplacingWaitingAttempt() {
+        Response authorization = requestAuthorization();
+        String sessionId = authorization.cookie("JSESSIONID");
+        String state = authorizationQueryParams(authorization).getFirst("state");
+        given(gitHubOAuthIdentityPort.fetchIdentity(eq("waiting-code"), anyString()))
+                .willReturn(new OAuthIdentity(OAuthProvider.GITHUB, UUID.randomUUID().toString(), null));
+
+        Response duplicate = requestAuthorization(sessionId);
+
+        assertThat(duplicate.statusCode()).isEqualTo(409);
+        assertThat(duplicate.jsonPath().getString("code")).isEqualTo("OAUTH_LOGIN_IN_PROGRESS");
+        assertThat(duplicate.header("Location")).isNull();
+        assertThat(duplicate.cookie("JSESSIONID")).isNull();
+        assertThat(requestCallback(sessionId, state, "waiting-code").statusCode()).isEqualTo(302);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    @DisplayName("실제 HTTP Callback 처리 중 중복 요청을 거절해도 신규와 기존 로그인은 회전해 완료된다")
+    void rejectsDuplicatesWhileCallbackIsProcessing(boolean existingUser) throws Exception {
+        String providerAccountId = UUID.randomUUID().toString();
+        String expectedStatus = "SIGNUP_REQUIRED";
+        Long expectedUserId = null;
+        if (existingUser) {
+            OAuthSignupAcceptanceResult signup = completeOAuthSignup();
+            providerAccountId = signup.providerAccountId();
+            expectedUserId = signup.userId();
+            expectedStatus = "AUTHENTICATED";
+        }
+        OAuthIdentity identity = new OAuthIdentity(OAuthProvider.GITHUB, providerAccountId, null);
+        Response authorization = requestAuthorization();
+        String sessionId = authorization.cookie("JSESSIONID");
+        String state = authorizationQueryParams(authorization).getFirst("state");
+        CountDownLatch providerEntered = new CountDownLatch(1);
+        CountDownLatch providerRelease = new CountDownLatch(1);
+        given(gitHubOAuthIdentityPort.fetchIdentity(eq("processing-code"), anyString()))
+                .willAnswer(invocation -> {
+                    providerEntered.countDown();
+                    assertThat(providerRelease.await(15, TimeUnit.SECONDS)).isTrue();
+                    return identity;
+                });
+
+        Response completed;
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            var callback = executor.submit(() -> requestCallback(sessionId, state, "processing-code"));
+            try {
+                assertThat(providerEntered.await(10, TimeUnit.SECONDS)).isTrue();
+                Response duplicateStart = requestAuthorization(sessionId);
+                Response duplicateCallback = requestCallback(sessionId, state, "processing-code");
+
+                assertThat(duplicateStart.statusCode()).isEqualTo(409);
+                assertThat(duplicateCallback.statusCode()).isEqualTo(409);
+                assertThat(duplicateStart.jsonPath().getString("code"))
+                        .isEqualTo("OAUTH_LOGIN_IN_PROGRESS");
+                assertThat(duplicateCallback.jsonPath().getString("code"))
+                        .isEqualTo("OAUTH_LOGIN_IN_PROGRESS");
+                assertThat(duplicateStart.cookie("JSESSIONID")).isNull();
+                assertThat(duplicateCallback.cookie("JSESSIONID")).isNull();
+            } finally {
+                providerRelease.countDown();
+            }
+            completed = callback.get(10, TimeUnit.SECONDS);
+        }
+
+        assertThat(completed.statusCode()).isEqualTo(302);
+        String rotatedSessionId = completed.cookie("JSESSIONID");
+        assertThat(rotatedSessionId).isNotBlank().isNotEqualTo(sessionId);
+        verify(gitHubOAuthIdentityPort).fetchIdentity(eq("processing-code"), anyString());
+        Response session = RestAssured.given().port(port)
+                .cookie("JSESSIONID", rotatedSessionId).get(AUTH_SESSION_PATH);
+        assertThat(session.jsonPath().getString("data.status")).isEqualTo(expectedStatus);
+        if (existingUser) {
+            assertThat(session.jsonPath().getLong("data.userId")).isEqualTo(expectedUserId);
+        }
+        Response oldCookieCallback = requestCallback(sessionId, state, "processing-code");
+        assertThat(oldCookieCallback.statusCode()).isEqualTo(400);
+        assertThat(oldCookieCallback.jsonPath().getString("code"))
+                .isEqualTo("OAUTH_LOGIN_SESSION_NOT_FOUND");
+        Response replay = requestCallback(rotatedSessionId, state, "processing-code");
+        assertThat(replay.statusCode()).isEqualTo(400);
+        assertThat(replay.jsonPath().getString("code"))
+                .isEqualTo("OAUTH_LOGIN_ATTEMPT_NOT_FOUND");
+        assertThat(requestAuthorization(rotatedSessionId).statusCode()).isEqualTo(302);
+    }
+
+    @Test
+    @DisplayName("Provider 처리 실패 후 같은 세션에서 OAuth를 다시 시작할 수 있다")
+    void allowsRestartAfterProviderFailure() {
+        Response authorization = requestAuthorization();
+        String sessionId = authorization.cookie("JSESSIONID");
+        String state = authorizationQueryParams(authorization).getFirst("state");
+        given(gitHubOAuthIdentityPort.fetchIdentity(eq("failed-code"), anyString()))
+                .willThrow(new IllegalStateException("GitHub 응답 실패"));
+
+        Response failed = requestCallback(sessionId, state, "failed-code");
+
+        assertThat(failed.statusCode()).isEqualTo(500);
+        assertThat(failed.cookie("JSESSIONID")).isNull();
+        Response restarted = requestAuthorization(sessionId);
+        assertThat(authorizationQueryParams(restarted).getFirst("state")).isNotEqualTo(state);
+        given(gitHubOAuthIdentityPort.fetchIdentity(eq("retry-code"), anyString()))
+                .willReturn(new OAuthIdentity(OAuthProvider.GITHUB, UUID.randomUUID().toString(), null));
+        assertThat(requestCallback(
+                sessionId,
+                authorizationQueryParams(restarted).getFirst("state"),
+                "retry-code"
+        ).statusCode()).isEqualTo(302);
+    }
+
+    @Test
+    @DisplayName("잘못된 state는 전용 오류로 거부하되 첫 로그인 시도를 없애지 않는다")
+    void rejectsWrongStateWithoutConsumingOriginalAttempt() {
+        Response authorization = requestAuthorization();
+        String sessionId = authorization.cookie("JSESSIONID");
+        String state = authorizationQueryParams(authorization).getFirst("state");
+
+        Response invalid = requestCallback(sessionId, "wrong-state", "invalid-code");
+
+        assertThat(invalid.statusCode()).isEqualTo(400);
+        assertThat(invalid.jsonPath().getString("code")).isEqualTo("OAUTH_STATE_MISMATCH");
+        verify(gitHubOAuthIdentityPort, never()).fetchIdentity(eq("invalid-code"), anyString());
+        given(gitHubOAuthIdentityPort.fetchIdentity(eq("valid-code"), anyString()))
+                .willReturn(new OAuthIdentity(OAuthProvider.GITHUB, UUID.randomUUID().toString(), null));
+        assertThat(requestCallback(sessionId, state, "valid-code").statusCode()).isEqualTo(302);
     }
 
     @Test
@@ -202,6 +336,7 @@ class OAuthLoginAcceptanceTest {
         assertThat(sessionResponse.statusCode()).isEqualTo(200);
         assertThat(sessionResponse.jsonPath().getString("data.status"))
                 .isEqualTo("UNAUTHENTICATED");
+        assertThat(requestAuthorization(sessionId).statusCode()).isEqualTo(302);
     }
 
     @Test
@@ -503,6 +638,24 @@ class OAuthLoginAcceptanceTest {
                 .follow(false)
                 .when()
                 .get(GITHUB_AUTHORIZATION_PATH);
+    }
+
+    private Response requestAuthorization(String sessionId) {
+        return RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", sessionId)
+                .redirects().follow(false)
+                .get(GITHUB_AUTHORIZATION_PATH);
+    }
+
+    private Response requestCallback(String sessionId, String state, String code) {
+        return RestAssured.given()
+                .port(port)
+                .cookie("JSESSIONID", sessionId)
+                .queryParam("state", state)
+                .queryParam("code", code)
+                .redirects().follow(false)
+                .get("/login/oauth2/code/github");
     }
 
     private MultiValueMap<String, String> authorizationQueryParams(Response response) {
