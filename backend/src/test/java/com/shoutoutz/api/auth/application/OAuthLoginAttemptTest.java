@@ -3,6 +3,8 @@ package com.shoutoutz.api.auth.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.shoutoutz.api.auth.exception.AuthErrorCode;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -48,7 +50,10 @@ class OAuthLoginAttemptTest {
         assertThatThrownBy(() -> attempt.validateCallback(
                 "other-state",
                 Instant.parse("2026-09-03T00:01:00Z")
-        )).isInstanceOf(IllegalArgumentException.class);
+        ))
+                .isInstanceOf(BadRequestException.class)
+                .satisfies(exception -> assertThat(((BadRequestException) exception).getErrorCode())
+                        .isEqualTo(AuthErrorCode.OAUTH_STATE_MISMATCH));
     }
 
     @Test
@@ -63,7 +68,10 @@ class OAuthLoginAttemptTest {
         assertThatThrownBy(() -> attempt.validateCallback(
                 "state",
                 Instant.parse("2026-09-03T00:05:01Z")
-        )).isInstanceOf(IllegalArgumentException.class);
+        ))
+                .isInstanceOf(BadRequestException.class)
+                .satisfies(exception -> assertThat(((BadRequestException) exception).getErrorCode())
+                        .isEqualTo(AuthErrorCode.OAUTH_LOGIN_ATTEMPT_EXPIRED));
     }
 
     private String createCodeChallenge(String codeVerifier) {

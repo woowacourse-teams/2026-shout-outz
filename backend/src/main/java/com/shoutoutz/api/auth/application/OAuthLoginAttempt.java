@@ -1,5 +1,7 @@
 package com.shoutoutz.api.auth.application;
 
+import com.shoutoutz.api.auth.exception.AuthErrorCode;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -55,7 +57,7 @@ public record OAuthLoginAttempt(
     public void validateCallback(String callbackState, Instant validatedAt) {
         validateState(callbackState);
         if (isExpired(validatedAt)) {
-            throw new IllegalArgumentException("OAuth 로그인 시도가 만료되었습니다.");
+            throw new BadRequestException(AuthErrorCode.OAUTH_LOGIN_ATTEMPT_EXPIRED);
         }
     }
 
@@ -65,7 +67,7 @@ public record OAuthLoginAttempt(
 
     public void validateState(String callbackState) {
         if (!state.equals(callbackState)) {
-            throw new IllegalArgumentException("OAuth state가 일치하지 않습니다.");
+            throw new BadRequestException(AuthErrorCode.OAUTH_STATE_MISMATCH);
         }
     }
 

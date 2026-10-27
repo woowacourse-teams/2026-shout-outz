@@ -2,26 +2,63 @@ package com.shoutoutz.api.auth.presentation.session;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
+import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
+import com.shoutoutz.api.auth.exception.AuthErrorCode;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.user.domain.account.UserRole;
+import jakarta.servlet.http.HttpSession;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 
 class AuthSessionAccessorTest {
 
     private final AuthSessionAccessor authSessionAccessor = new AuthSessionAccessor();
+
+    @Test
+    @DisplayName("Callback이 시도를 소비한 뒤에도 새 로그인 시작을 차단한다")
+    void rejectsStartWhileCallbackIsProcessing() {
+        MockHttpSession session = new MockHttpSession();
+        OAuthLoginAttempt attempt = OAuthLoginAttempt.create();
+        authSessionAccessor.saveLoginAttempt(session, attempt);
+        authSessionAccessor.consumeLoginAttempt(session, attempt.state());
+
+        assertThatThrownBy(() -> authSessionAccessor.saveLoginAttempt(
+                session,
+                OAuthLoginAttempt.create()
+        )).isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    @DisplayName("처리 중인 Callback을 다시 요청하면 중복 처리 오류로 거부한다")
+    void rejectsDuplicateCallbackWhileProcessing() {
+        MockHttpSession session = new MockHttpSession();
+        OAuthLoginAttempt attempt = OAuthLoginAttempt.create();
+        authSessionAccessor.saveLoginAttempt(session, attempt);
+        authSessionAccessor.consumeLoginAttempt(session, attempt.state());
+
+        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session, attempt.state()))
+                .isInstanceOf(ConflictException.class)
+                .satisfies(exception -> assertThat(
+                        ((ConflictException) exception).getErrorCode().name()
+                ).isEqualTo("OAUTH_LOGIN_IN_PROGRESS"));
+    }
 
     @Test
     @DisplayName("진행 중인 OAuth 로그인 시도는 새 시작 요청이 덮어쓰지 않는다")
@@ -108,7 +145,7 @@ class AuthSessionAccessorTest {
         OAuthLoginAttempt attempt = new OAuthLoginAttempt(
                 "state",
                 "code-verifier",
-                Instant.parse("2026-09-03T00:00:00Z")
+                Instant.now()
         );
         authSessionAccessor.saveLoginAttempt(session, attempt);
 
@@ -116,7 +153,7 @@ class AuthSessionAccessorTest {
 
         assertThat(consumed).isEqualTo(attempt);
         assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session, "state"))
-                .isInstanceOf(BadRequestException.class);
+                .isInstanceOf(ConflictException.class);
     }
 
     @Test
@@ -126,17 +163,147 @@ class AuthSessionAccessorTest {
         OAuthLoginAttempt attempt = new OAuthLoginAttempt(
                 "expected-state",
                 "code-verifier",
-                Instant.parse("2026-09-03T00:00:00Z")
+                Instant.now()
         );
         authSessionAccessor.saveLoginAttempt(session, attempt);
 
         assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(
                 session,
                 "other-state"
-        )).isInstanceOf(IllegalArgumentException.class);
+        )).isInstanceOf(BadRequestException.class);
 
         assertThat(authSessionAccessor.consumeLoginAttempt(session, "expected-state"))
                 .isEqualTo(attempt);
+    }
+
+    @Test
+    @DisplayName("로그인 시도를 종료하면 새 로그인을 시작할 수 있다")
+    void allowsRestartAfterAttemptFinishes() {
+        MockHttpSession session = new MockHttpSession();
+        OAuthLoginAttempt attempt = OAuthLoginAttempt.create();
+        authSessionAccessor.saveLoginAttempt(session, attempt);
+        authSessionAccessor.consumeLoginAttempt(session, attempt.state());
+
+        authSessionAccessor.finishLoginAttempt(session, attempt);
+
+        OAuthLoginAttempt replacement = OAuthLoginAttempt.create();
+        authSessionAccessor.saveLoginAttempt(session, replacement);
+        assertThat(authSessionAccessor.consumeLoginAttempt(session, replacement.state()))
+                .isEqualTo(replacement);
+    }
+
+    @Test
+    @DisplayName("만료된 Callback은 만료 오류로 거부하고 새 로그인을 허용한다")
+    void rejectsExpiredCallbackAndAllowsRestart() {
+        Instant createdAt = Instant.parse("2026-10-27T00:00:00Z");
+        AtomicReference<Instant> now = new AtomicReference<>(createdAt);
+        AuthSessionAccessor accessor = accessorWithClock(now);
+        MockHttpSession session = new MockHttpSession();
+        OAuthLoginAttempt attempt = new OAuthLoginAttempt("state", "verifier", createdAt);
+        accessor.saveLoginAttempt(session, attempt);
+        now.set(createdAt.plusSeconds(301));
+
+        assertThatThrownBy(() -> accessor.consumeLoginAttempt(session, attempt.state()))
+                .isInstanceOf(BadRequestException.class)
+                .satisfies(exception -> assertThat(((BadRequestException) exception).getErrorCode())
+                        .isEqualTo(AuthErrorCode.OAUTH_LOGIN_ATTEMPT_EXPIRED));
+
+        OAuthLoginAttempt replacement = new OAuthLoginAttempt("new-state", "verifier", now.get());
+        accessor.saveLoginAttempt(session, replacement);
+        assertThat(accessor.consumeLoginAttempt(session, replacement.state())).isEqualTo(replacement);
+    }
+
+    @Test
+    @DisplayName("만료된 이전 Callback의 정리는 새 로그인 시도를 제거하지 않는다")
+    void preservesReplacementWhenOldCallbackFinishes() {
+        Instant createdAt = Instant.parse("2026-10-27T00:00:00Z");
+        AtomicReference<Instant> now = new AtomicReference<>(createdAt);
+        AuthSessionAccessor accessor = accessorWithClock(now);
+        MockHttpSession session = new MockHttpSession();
+        OAuthLoginAttempt original = new OAuthLoginAttempt("old-state", "verifier", createdAt);
+        accessor.saveLoginAttempt(session, original);
+        accessor.consumeLoginAttempt(session, original.state());
+        now.set(createdAt.plusSeconds(301));
+        OAuthLoginAttempt replacement = new OAuthLoginAttempt("new-state", "verifier", now.get());
+        accessor.saveLoginAttempt(session, replacement);
+
+        accessor.finishLoginAttempt(session, original);
+
+        assertThat(accessor.consumeLoginAttempt(session, replacement.state())).isEqualTo(replacement);
+    }
+
+    @Test
+    @DisplayName("늦은 이전 Callback은 세션을 회전하거나 새 인증 정보를 저장하지 않는다")
+    void rejectsOldCompletionWithoutChangingSession() {
+        Instant createdAt = Instant.parse("2026-10-27T00:00:00Z");
+        AtomicReference<Instant> now = new AtomicReference<>(createdAt);
+        AuthSessionAccessor accessor = accessorWithClock(now);
+        AuthSessionManager manager = new AuthSessionManager(accessor);
+        MockHttpSession session = new MockHttpSession();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setSession(session);
+        String sessionId = session.getId();
+        OAuthLoginAttempt original = new OAuthLoginAttempt("old-state", "verifier", createdAt);
+        accessor.saveLoginAttempt(session, original);
+        accessor.consumeLoginAttempt(session, original.state());
+        now.set(createdAt.plusSeconds(301));
+        OAuthLoginAttempt replacement = new OAuthLoginAttempt("new-state", "verifier", now.get());
+        accessor.saveLoginAttempt(session, replacement);
+
+        assertThatThrownBy(() -> manager.completeOAuthLogin(
+                request,
+                original,
+                OAuthLoginCallbackResult.authenticated(1L, UserRole.USER)
+        )).isInstanceOf(BadRequestException.class);
+
+        assertThat(session.getId()).isEqualTo(sessionId);
+        assertThat(accessor.findAuthentication(session)).isEmpty();
+        assertThat(accessor.consumeLoginAttempt(session, replacement.state())).isEqualTo(replacement);
+    }
+
+    @Test
+    @DisplayName("처리 중 만료된 Callback은 인증 세션을 만들지 않는다")
+    void rejectsCompletionWhenProcessingAttemptExpires() {
+        Instant createdAt = Instant.parse("2026-10-27T00:00:00Z");
+        AtomicReference<Instant> now = new AtomicReference<>(createdAt);
+        AuthSessionAccessor accessor = accessorWithClock(now);
+        AuthSessionManager manager = new AuthSessionManager(accessor);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        HttpSession session = request.getSession();
+        String sessionId = session.getId();
+        OAuthLoginAttempt attempt = new OAuthLoginAttempt("state", "verifier", createdAt);
+        accessor.saveLoginAttempt(session, attempt);
+        accessor.consumeLoginAttempt(session, attempt.state());
+        now.set(createdAt.plusSeconds(301));
+
+        assertThatThrownBy(() -> manager.completeOAuthLogin(
+                request,
+                attempt,
+                OAuthLoginCallbackResult.authenticated(1L, UserRole.USER)
+        ))
+                .isInstanceOf(BadRequestException.class)
+                .satisfies(exception -> assertThat(((BadRequestException) exception).getErrorCode())
+                        .isEqualTo(AuthErrorCode.OAUTH_LOGIN_ATTEMPT_EXPIRED));
+        assertThat(session.getId()).isEqualTo(sessionId);
+        assertThat(accessor.findAuthentication(session)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("외부 통신 중 로그아웃한 세션의 종료 처리는 예외를 던지지 않는다")
+    void ignoresInvalidatedSessionDuringCleanup() {
+        MockHttpSession session = new MockHttpSession();
+        OAuthLoginAttempt attempt = OAuthLoginAttempt.create();
+        authSessionAccessor.saveLoginAttempt(session, attempt);
+        authSessionAccessor.consumeLoginAttempt(session, attempt.state());
+        session.invalidate();
+
+        authSessionAccessor.finishLoginAttempt(session, attempt);
+    }
+
+    private AuthSessionAccessor accessorWithClock(AtomicReference<Instant> now) {
+        Clock clock = mock(Clock.class);
+        given(clock.instant()).willAnswer(invocation -> now.get());
+        return new AuthSessionAccessor(clock);
     }
 
     @Test

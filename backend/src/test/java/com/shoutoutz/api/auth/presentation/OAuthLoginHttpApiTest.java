@@ -30,6 +30,7 @@ class OAuthLoginHttpApiTest {
 
     private static final URI DEFAULT_COMPLETION_URI =
             URI.create("http://localhost:3000/oauth/callback");
+    private static final Instant ATTEMPT_CREATED_AT = Instant.now();
     private static final URI VERCEL_COMPLETION_URI =
             URI.create("https://wooteco-career-qa.vercel.app");
     private final OAuthLoginService oauthLoginService = mock(OAuthLoginService.class);
@@ -137,6 +138,34 @@ class OAuthLoginHttpApiTest {
     }
 
     @Test
+    @DisplayName("로그인 처리에 실패하면 세션을 회전하지 않고 시도를 정리해 재시작을 허용한다")
+    void cleansAttemptAfterLoginFailure() {
+        MockHttpServletRequest request = callbackRequest();
+        MockHttpSession session = (MockHttpSession) request.getSession();
+        String previousSessionId = session.getId();
+        RuntimeException failure = new IllegalStateException("GitHub 응답 실패");
+        given(oauthLoginService.completeGitHubLogin(
+                "authorization-code",
+                "state",
+                loginAttempt()
+        )).willThrow(failure);
+
+        assertThatThrownBy(() -> oauthLoginHttpApi.callbackGitHub(
+                "authorization-code",
+                "state",
+                request
+        )).isSameAs(failure);
+
+        assertThat(session.getId()).isEqualTo(previousSessionId);
+        assertThat(authSessionAccessor.findAuthentication(session)).isEmpty();
+        assertThat(authSessionAccessor.findPendingIdentity(session)).isEmpty();
+        OAuthLoginAttempt replacement = OAuthLoginAttempt.create();
+        authSessionAccessor.saveLoginAttempt(session, replacement);
+        assertThat(authSessionAccessor.consumeLoginAttempt(session, replacement.state()))
+                .isEqualTo(replacement);
+    }
+
+    @Test
     @DisplayName("GitHub OAuth 동의 거절 시 state를 검증하고 로그인 시도를 소비한다")
     void validatesStateAndConsumesAttemptWhenGitHubAuthorizationIsDenied() {
         MockHttpServletRequest request = callbackRequest();
@@ -166,7 +195,7 @@ class OAuthLoginHttpApiTest {
                 "authorization-code",
                 "other-state",
                 request
-        )).isInstanceOf(IllegalArgumentException.class);
+        )).isInstanceOf(BadRequestException.class);
 
         assertThat(authSessionAccessor.consumeLoginAttempt(session, "state"))
                 .isEqualTo(loginAttempt());
@@ -181,7 +210,7 @@ class OAuthLoginHttpApiTest {
         assertThatThrownBy(() -> oauthLoginHttpApi.handleDeniedGitHubAuthorization(
                 "other-state",
                 request
-        )).isInstanceOf(IllegalArgumentException.class);
+        )).isInstanceOf(BadRequestException.class);
 
         assertThat(authSessionAccessor.consumeLoginAttempt(session, "state"))
                 .isEqualTo(loginAttempt());
@@ -197,7 +226,7 @@ class OAuthLoginHttpApiTest {
         return new OAuthLoginAttempt(
                 "state",
                 "code-verifier",
-                Instant.parse("2026-09-03T00:00:00Z")
+                ATTEMPT_CREATED_AT
         );
     }
 
@@ -205,7 +234,7 @@ class OAuthLoginHttpApiTest {
         return new OAuthLoginAttempt(
                 "state",
                 "code-verifier",
-                Instant.parse("2026-09-03T00:00:00Z"),
+                ATTEMPT_CREATED_AT,
                 completionUri
         );
     }

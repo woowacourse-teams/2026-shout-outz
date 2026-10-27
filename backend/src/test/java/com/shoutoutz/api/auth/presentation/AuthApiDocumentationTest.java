@@ -149,7 +149,6 @@ class AuthApiDocumentationTest {
         given(authSessionAccessor.consumeLoginAttempt(any(), any())).willReturn(loginAttempt());
         given(oauthLoginService.completeGitHubLogin("authorization-code", "state", loginAttempt()))
                 .willReturn(OAuthLoginCallbackResult.signupRequired(githubIdentity()));
-        given(authSessionManager.rotateSessionId(any())).willReturn(new org.springframework.mock.web.MockHttpSession());
         given(oauthLoginProperties.completionUri()).willReturn(COMPLETION_URI);
 
         mockMvc.perform(get("/login/oauth2/code/github")

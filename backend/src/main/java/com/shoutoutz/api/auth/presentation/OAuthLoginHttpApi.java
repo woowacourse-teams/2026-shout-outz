@@ -31,9 +31,12 @@ public class OAuthLoginHttpApi {
             HttpSession session
     ) {
         URI completionUri = properties.resolveCompletionUri(returnTo);
-        OAuthLoginStartResult result = returnTo == null
-                ? oauthLoginService.startGitHubLogin()
-                : oauthLoginService.startGitHubLogin(completionUri);
+        OAuthLoginStartResult result;
+        if (returnTo == null) {
+            result = oauthLoginService.startGitHubLogin();
+        } else {
+            result = oauthLoginService.startGitHubLogin(completionUri);
+        }
         authSessionAccessor.saveLoginAttempt(session, result.attempt());
 
         return ResponseEntity.status(HttpStatus.FOUND)
@@ -52,24 +55,17 @@ public class OAuthLoginHttpApi {
     ) {
         HttpSession session = request.getSession(false);
         OAuthLoginAttempt attempt = authSessionAccessor.consumeLoginAttempt(session, state);
-        OAuthLoginCallbackResult result = oauthLoginService.completeGitHubLogin(
-                code,
-                state,
-                attempt
-        );
-
-        if (result.status() == OAuthLoginCallbackResult.Status.AUTHENTICATED) {
-            authSessionManager.establishAuthenticatedSession(
-                    request,
-                    result.userId(),
-                    result.role()
+        try {
+            OAuthLoginCallbackResult result = oauthLoginService.completeGitHubLogin(
+                    code,
+                    state,
+                    attempt
             );
-        } else {
-            HttpSession signupPendingSession = authSessionManager.rotateSessionId(request);
-            authSessionAccessor.savePendingIdentity(signupPendingSession, result.identity());
+            authSessionManager.completeOAuthLogin(request, attempt, result);
+            return redirectToCompletion(attempt.completionUri());
+        } finally {
+            authSessionAccessor.finishLoginAttempt(session, attempt);
         }
-
-        return redirectToCompletion(attempt.completionUri());
     }
 
     @GetMapping(
@@ -82,15 +78,19 @@ public class OAuthLoginHttpApi {
     ) {
         HttpSession session = request.getSession(false);
         OAuthLoginAttempt attempt = authSessionAccessor.consumeLoginAttempt(session, state);
-        oauthLoginService.validateGitHubCallback(state, attempt);
-
-        return redirectToCompletion(attempt.completionUri());
+        try {
+            oauthLoginService.validateGitHubCallback(state, attempt);
+            return redirectToCompletion(attempt.completionUri());
+        } finally {
+            authSessionAccessor.finishLoginAttempt(session, attempt);
+        }
     }
 
     private ResponseEntity<Void> redirectToCompletion(URI completionUri) {
-        URI resolvedCompletionUri = completionUri == null
-                ? properties.completionUri()
-                : properties.resolveCompletionUri(completionUri);
+        URI resolvedCompletionUri = properties.completionUri();
+        if (completionUri != null) {
+            resolvedCompletionUri = properties.resolveCompletionUri(completionUri);
+        }
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(resolvedCompletionUri)
                 .build();
