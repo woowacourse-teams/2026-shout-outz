@@ -54,7 +54,7 @@ public class OAuthLoginHttpApi {
             HttpServletRequest request
     ) {
         HttpSession session = request.getSession(false);
-        OAuthLoginAttempt attempt = authSessionAccessor.consumeLoginAttempt(session, state);
+        OAuthLoginAttempt attempt = authSessionAccessor.beginCallbackProcessing(session, state);
         try {
             OAuthLoginCallbackResult result = oauthLoginService.completeGitHubLogin(
                     code,
@@ -77,7 +77,7 @@ public class OAuthLoginHttpApi {
             HttpServletRequest request
     ) {
         HttpSession session = request.getSession(false);
-        OAuthLoginAttempt attempt = authSessionAccessor.consumeLoginAttempt(session, state);
+        OAuthLoginAttempt attempt = authSessionAccessor.beginCallbackProcessing(session, state);
         try {
             oauthLoginService.validateGitHubCallback(state, attempt);
             return redirectToCompletion(attempt.completionUri());

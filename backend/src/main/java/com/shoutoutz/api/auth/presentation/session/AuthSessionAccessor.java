@@ -40,7 +40,7 @@ public class AuthSessionAccessor {
         }
     }
 
-    public OAuthLoginAttempt consumeLoginAttempt(HttpSession session, String callbackState) {
+    public OAuthLoginAttempt beginCallbackProcessing(HttpSession session, String callbackState) {
         if (session == null) {
             throw new BadRequestException(AuthErrorCode.OAUTH_LOGIN_SESSION_NOT_FOUND);
         }
@@ -68,7 +68,7 @@ public class AuthSessionAccessor {
                 || !progress.attempt().equals(attempt)) {
             throw new BadRequestException(AuthErrorCode.OAUTH_LOGIN_ATTEMPT_NOT_FOUND);
         }
-        attempt.validateCallback(attempt.state(), Instant.now(clock));
+        attempt.validateExpiration(Instant.now(clock));
     }
 
     public void finishLoginAttempt(HttpSession session, OAuthLoginAttempt attempt) {

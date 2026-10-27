@@ -37,7 +37,7 @@ class AuthSessionAccessorTest {
         MockHttpSession session = new MockHttpSession();
         OAuthLoginAttempt attempt = OAuthLoginAttempt.create();
         authSessionAccessor.saveLoginAttempt(session, attempt);
-        authSessionAccessor.consumeLoginAttempt(session, attempt.state());
+        authSessionAccessor.beginCallbackProcessing(session, attempt.state());
 
         assertThatThrownBy(() -> authSessionAccessor.saveLoginAttempt(
                 session,
@@ -51,9 +51,9 @@ class AuthSessionAccessorTest {
         MockHttpSession session = new MockHttpSession();
         OAuthLoginAttempt attempt = OAuthLoginAttempt.create();
         authSessionAccessor.saveLoginAttempt(session, attempt);
-        authSessionAccessor.consumeLoginAttempt(session, attempt.state());
+        authSessionAccessor.beginCallbackProcessing(session, attempt.state());
 
-        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session, attempt.state()))
+        assertThatThrownBy(() -> authSessionAccessor.beginCallbackProcessing(session, attempt.state()))
                 .isInstanceOf(ConflictException.class)
                 .satisfies(exception -> assertThat(
                         ((ConflictException) exception).getErrorCode().name()
@@ -75,7 +75,7 @@ class AuthSessionAccessorTest {
                 .satisfies(exception -> assertThat(
                         ((ConflictException) exception).getErrorCode().name()
                 ).isEqualTo("OAUTH_LOGIN_IN_PROGRESS"));
-        assertThat(authSessionAccessor.consumeLoginAttempt(session, original.state()))
+        assertThat(authSessionAccessor.beginCallbackProcessing(session, original.state()))
                 .isEqualTo(original);
     }
 
@@ -93,7 +93,7 @@ class AuthSessionAccessorTest {
 
         authSessionAccessor.saveLoginAttempt(session, replacement);
 
-        assertThat(authSessionAccessor.consumeLoginAttempt(session, replacement.state()))
+        assertThat(authSessionAccessor.beginCallbackProcessing(session, replacement.state()))
                 .isEqualTo(replacement);
     }
 
@@ -133,14 +133,14 @@ class AuthSessionAccessorTest {
 
             assertThat(accepted).hasSize(1);
             OAuthLoginAttempt stored = accepted.getFirst();
-            assertThat(authSessionAccessor.consumeLoginAttempt(session, stored.state()))
+            assertThat(authSessionAccessor.beginCallbackProcessing(session, stored.state()))
                     .isEqualTo(stored);
         }
     }
 
     @Test
-    @DisplayName("OAuth 로그인 시도는 세션에서 한 번만 가져올 수 있다")
-    void consumesLoginAttemptOnce() {
+    @DisplayName("OAuth 로그인 시도는 한 Callback만 처리할 수 있다")
+    void beginsCallbackProcessingOnce() {
         MockHttpSession session = new MockHttpSession();
         OAuthLoginAttempt attempt = new OAuthLoginAttempt(
                 "state",
@@ -149,10 +149,10 @@ class AuthSessionAccessorTest {
         );
         authSessionAccessor.saveLoginAttempt(session, attempt);
 
-        OAuthLoginAttempt consumed = authSessionAccessor.consumeLoginAttempt(session, "state");
+        OAuthLoginAttempt processing = authSessionAccessor.beginCallbackProcessing(session, "state");
 
-        assertThat(consumed).isEqualTo(attempt);
-        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session, "state"))
+        assertThat(processing).isEqualTo(attempt);
+        assertThatThrownBy(() -> authSessionAccessor.beginCallbackProcessing(session, "state"))
                 .isInstanceOf(ConflictException.class);
     }
 
@@ -167,12 +167,12 @@ class AuthSessionAccessorTest {
         );
         authSessionAccessor.saveLoginAttempt(session, attempt);
 
-        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(
+        assertThatThrownBy(() -> authSessionAccessor.beginCallbackProcessing(
                 session,
                 "other-state"
         )).isInstanceOf(BadRequestException.class);
 
-        assertThat(authSessionAccessor.consumeLoginAttempt(session, "expected-state"))
+        assertThat(authSessionAccessor.beginCallbackProcessing(session, "expected-state"))
                 .isEqualTo(attempt);
     }
 
@@ -182,13 +182,13 @@ class AuthSessionAccessorTest {
         MockHttpSession session = new MockHttpSession();
         OAuthLoginAttempt attempt = OAuthLoginAttempt.create();
         authSessionAccessor.saveLoginAttempt(session, attempt);
-        authSessionAccessor.consumeLoginAttempt(session, attempt.state());
+        authSessionAccessor.beginCallbackProcessing(session, attempt.state());
 
         authSessionAccessor.finishLoginAttempt(session, attempt);
 
         OAuthLoginAttempt replacement = OAuthLoginAttempt.create();
         authSessionAccessor.saveLoginAttempt(session, replacement);
-        assertThat(authSessionAccessor.consumeLoginAttempt(session, replacement.state()))
+        assertThat(authSessionAccessor.beginCallbackProcessing(session, replacement.state()))
                 .isEqualTo(replacement);
     }
 
@@ -203,14 +203,14 @@ class AuthSessionAccessorTest {
         accessor.saveLoginAttempt(session, attempt);
         now.set(createdAt.plusSeconds(301));
 
-        assertThatThrownBy(() -> accessor.consumeLoginAttempt(session, attempt.state()))
+        assertThatThrownBy(() -> accessor.beginCallbackProcessing(session, attempt.state()))
                 .isInstanceOf(BadRequestException.class)
                 .satisfies(exception -> assertThat(((BadRequestException) exception).getErrorCode())
                         .isEqualTo(AuthErrorCode.OAUTH_LOGIN_ATTEMPT_EXPIRED));
 
         OAuthLoginAttempt replacement = new OAuthLoginAttempt("new-state", "verifier", now.get());
         accessor.saveLoginAttempt(session, replacement);
-        assertThat(accessor.consumeLoginAttempt(session, replacement.state())).isEqualTo(replacement);
+        assertThat(accessor.beginCallbackProcessing(session, replacement.state())).isEqualTo(replacement);
     }
 
     @Test
@@ -222,14 +222,14 @@ class AuthSessionAccessorTest {
         MockHttpSession session = new MockHttpSession();
         OAuthLoginAttempt original = new OAuthLoginAttempt("old-state", "verifier", createdAt);
         accessor.saveLoginAttempt(session, original);
-        accessor.consumeLoginAttempt(session, original.state());
+        accessor.beginCallbackProcessing(session, original.state());
         now.set(createdAt.plusSeconds(301));
         OAuthLoginAttempt replacement = new OAuthLoginAttempt("new-state", "verifier", now.get());
         accessor.saveLoginAttempt(session, replacement);
 
         accessor.finishLoginAttempt(session, original);
 
-        assertThat(accessor.consumeLoginAttempt(session, replacement.state())).isEqualTo(replacement);
+        assertThat(accessor.beginCallbackProcessing(session, replacement.state())).isEqualTo(replacement);
     }
 
     @Test
@@ -245,7 +245,7 @@ class AuthSessionAccessorTest {
         String sessionId = session.getId();
         OAuthLoginAttempt original = new OAuthLoginAttempt("old-state", "verifier", createdAt);
         accessor.saveLoginAttempt(session, original);
-        accessor.consumeLoginAttempt(session, original.state());
+        accessor.beginCallbackProcessing(session, original.state());
         now.set(createdAt.plusSeconds(301));
         OAuthLoginAttempt replacement = new OAuthLoginAttempt("new-state", "verifier", now.get());
         accessor.saveLoginAttempt(session, replacement);
@@ -258,7 +258,7 @@ class AuthSessionAccessorTest {
 
         assertThat(session.getId()).isEqualTo(sessionId);
         assertThat(accessor.findAuthentication(session)).isEmpty();
-        assertThat(accessor.consumeLoginAttempt(session, replacement.state())).isEqualTo(replacement);
+        assertThat(accessor.beginCallbackProcessing(session, replacement.state())).isEqualTo(replacement);
     }
 
     @Test
@@ -273,7 +273,7 @@ class AuthSessionAccessorTest {
         String sessionId = session.getId();
         OAuthLoginAttempt attempt = new OAuthLoginAttempt("state", "verifier", createdAt);
         accessor.saveLoginAttempt(session, attempt);
-        accessor.consumeLoginAttempt(session, attempt.state());
+        accessor.beginCallbackProcessing(session, attempt.state());
         now.set(createdAt.plusSeconds(301));
 
         assertThatThrownBy(() -> manager.completeOAuthLogin(
@@ -294,7 +294,7 @@ class AuthSessionAccessorTest {
         MockHttpSession session = new MockHttpSession();
         OAuthLoginAttempt attempt = OAuthLoginAttempt.create();
         authSessionAccessor.saveLoginAttempt(session, attempt);
-        authSessionAccessor.consumeLoginAttempt(session, attempt.state());
+        authSessionAccessor.beginCallbackProcessing(session, attempt.state());
         session.invalidate();
 
         authSessionAccessor.finishLoginAttempt(session, attempt);

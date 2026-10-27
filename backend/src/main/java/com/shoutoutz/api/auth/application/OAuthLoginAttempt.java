@@ -56,6 +56,10 @@ public record OAuthLoginAttempt(
 
     public void validateCallback(String callbackState, Instant validatedAt) {
         validateState(callbackState);
+        validateExpiration(validatedAt);
+    }
+
+    public void validateExpiration(Instant validatedAt) {
         if (isExpired(validatedAt)) {
             throw new BadRequestException(AuthErrorCode.OAUTH_LOGIN_ATTEMPT_EXPIRED);
         }

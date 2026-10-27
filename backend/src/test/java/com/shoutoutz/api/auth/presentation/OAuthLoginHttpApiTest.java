@@ -63,7 +63,7 @@ class OAuthLoginHttpApiTest {
 
         assertThat(response.getHeaders().getLocation())
                 .isEqualTo(URI.create("https://github.com/login/oauth/authorize?client_id=client-id"));
-        assertThat(authSessionAccessor.consumeLoginAttempt(session, "state").completionUri())
+        assertThat(authSessionAccessor.beginCallbackProcessing(session, "state").completionUri())
                 .isEqualTo(VERCEL_COMPLETION_URI);
     }
 
@@ -105,7 +105,7 @@ class OAuthLoginHttpApiTest {
         assertThat(session.getId()).isNotEqualTo(previousSessionId);
         assertThat(authenticatedSession.userId()).isEqualTo(1L);
         assertThat(authenticatedSession.role()).isEqualTo(UserRole.USER);
-        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session, "state"))
+        assertThatThrownBy(() -> authSessionAccessor.beginCallbackProcessing(session, "state"))
                 .isInstanceOf(BadRequestException.class);
         assertThat(response.getHeaders().getLocation())
                 .isEqualTo(URI.create("http://localhost:3000/oauth/callback"));
@@ -133,7 +133,7 @@ class OAuthLoginHttpApiTest {
         assertThat(session.getId()).isNotEqualTo(previousSessionId);
         assertThat(authSessionAccessor.findPendingIdentity(session)).contains(identity);
         assertThat(authSessionAccessor.findAuthentication(session)).isEmpty();
-        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session, "state"))
+        assertThatThrownBy(() -> authSessionAccessor.beginCallbackProcessing(session, "state"))
                 .isInstanceOf(BadRequestException.class);
     }
 
@@ -161,7 +161,7 @@ class OAuthLoginHttpApiTest {
         assertThat(authSessionAccessor.findPendingIdentity(session)).isEmpty();
         OAuthLoginAttempt replacement = OAuthLoginAttempt.create();
         authSessionAccessor.saveLoginAttempt(session, replacement);
-        assertThat(authSessionAccessor.consumeLoginAttempt(session, replacement.state()))
+        assertThat(authSessionAccessor.beginCallbackProcessing(session, replacement.state()))
                 .isEqualTo(replacement);
     }
 
@@ -179,7 +179,7 @@ class OAuthLoginHttpApiTest {
         verify(oauthLoginService).validateGitHubCallback("state", loginAttempt());
         assertThat(authSessionAccessor.findAuthentication(session)).isEmpty();
         assertThat(authSessionAccessor.findPendingIdentity(session)).isEmpty();
-        assertThatThrownBy(() -> authSessionAccessor.consumeLoginAttempt(session, "state"))
+        assertThatThrownBy(() -> authSessionAccessor.beginCallbackProcessing(session, "state"))
                 .isInstanceOf(BadRequestException.class);
         assertThat(response.getHeaders().getLocation())
                 .isEqualTo(URI.create("http://localhost:3000/oauth/callback"));
@@ -197,7 +197,7 @@ class OAuthLoginHttpApiTest {
                 request
         )).isInstanceOf(BadRequestException.class);
 
-        assertThat(authSessionAccessor.consumeLoginAttempt(session, "state"))
+        assertThat(authSessionAccessor.beginCallbackProcessing(session, "state"))
                 .isEqualTo(loginAttempt());
     }
 
@@ -212,7 +212,7 @@ class OAuthLoginHttpApiTest {
                 request
         )).isInstanceOf(BadRequestException.class);
 
-        assertThat(authSessionAccessor.consumeLoginAttempt(session, "state"))
+        assertThat(authSessionAccessor.beginCallbackProcessing(session, "state"))
                 .isEqualTo(loginAttempt());
     }
 

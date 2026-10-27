@@ -197,7 +197,7 @@ class AuthApiDocumentationTest {
             exception = new ConflictException(errorCode);
             expectedStatus = 409;
         }
-        given(authSessionAccessor.consumeLoginAttempt(any(), any())).willThrow(exception);
+        given(authSessionAccessor.beginCallbackProcessing(any(), any())).willThrow(exception);
 
         mockMvc.perform(get("/login/oauth2/code/github")
                         .queryParam("code", "authorization-code")
@@ -227,7 +227,7 @@ class AuthApiDocumentationTest {
     @Test
     @DisplayName("GitHub Callback을 처리하면 서비스 완료 화면으로 이동한다")
     void callbackGitHub() throws Exception {
-        given(authSessionAccessor.consumeLoginAttempt(any(), any())).willReturn(loginAttempt());
+        given(authSessionAccessor.beginCallbackProcessing(any(), any())).willReturn(loginAttempt());
         given(oauthLoginService.completeGitHubLogin("authorization-code", "state", loginAttempt()))
                 .willReturn(OAuthLoginCallbackResult.signupRequired(githubIdentity()));
         given(oauthLoginProperties.completionUri()).willReturn(COMPLETION_URI);
@@ -273,7 +273,7 @@ class AuthApiDocumentationTest {
     @Test
     @DisplayName("OAuth 로그인 세션이 없으면 Callback을 거부한다")
     void rejectCallbackWithoutOAuthLoginSession() throws Exception {
-        given(authSessionAccessor.consumeLoginAttempt(any(), any()))
+        given(authSessionAccessor.beginCallbackProcessing(any(), any()))
                 .willThrow(new BadRequestException(
                         AuthErrorCode.OAUTH_LOGIN_SESSION_NOT_FOUND
                 ));
