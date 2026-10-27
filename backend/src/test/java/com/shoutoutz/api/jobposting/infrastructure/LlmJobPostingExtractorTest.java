@@ -111,20 +111,77 @@ class LlmJobPostingExtractorTest {
     }
 
     @Test
-    @DisplayName("설정한 제공자 하나만 호출한다.")
-    void callsOnlyConfiguredProvider() {
-        when(claude.generate(any())).thenReturn(VALID);
+    @DisplayName("앞 제공자가 성공하면 다음 제공자는 부르지 않는다.")
+    void doesNotCallNextProviderWhenFirstSucceeds() {
+        when(gpt.generate(any())).thenReturn(VALID);
 
-        extractor(LlmProvider.BEDROCK_CLAUDE).extract(CONTENT);
+        extractor(LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE).extract(CONTENT);
 
-        verify(claude).generate(any());
-        verify(gpt, never()).generate(any());
+        verify(claude, never()).generate(any());
+        assertThat(messages()).contains("provider=BEDROCK_GPT, fallback=false");
     }
 
     @Test
-    @DisplayName("설정한 제공자의 클라이언트가 없으면 시작할 때 실패한다.")
+    @DisplayName("앞 제공자 호출이 실패하면 같은 요청으로 다음 제공자를 부른다.")
+    void fallsBackWhenFirstProviderFails() {
+        when(gpt.generate(any())).thenThrow(new LlmException(
+                LlmProvider.BEDROCK_GPT, "gpt", 429, "THROTTLED", true, 0));
+        when(claude.generate(any())).thenReturn(VALID);
+
+        ExtractedJobPosting extracted = extractor(LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE)
+                .extract(CONTENT);
+
+        assertThat(extracted.companyName()).isEqualTo("예시 회사");
+        ArgumentCaptor<LlmRequest> gptRequest = ArgumentCaptor.forClass(LlmRequest.class);
+        ArgumentCaptor<LlmRequest> claudeRequest = ArgumentCaptor.forClass(LlmRequest.class);
+        verify(gpt).generate(gptRequest.capture());
+        verify(claude).generate(claudeRequest.capture());
+        assertThat(claudeRequest.getValue()).isEqualTo(gptRequest.getValue());
+        assertThat(messages()).contains("errorCode=THROTTLED, fallback=false", "provider=BEDROCK_CLAUDE, fallback=true");
+    }
+
+    @Test
+    @DisplayName("앞 제공자의 응답 형식이 틀려도 다음 제공자를 부른다.")
+    void fallsBackWhenFirstResponseIsInvalid() {
+        when(gpt.generate(any())).thenReturn("JSON이 아닌 응답");
+        when(claude.generate(any())).thenReturn(VALID);
+
+        ExtractedJobPosting extracted = extractor(LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE)
+                .extract(CONTENT);
+
+        assertThat(extracted.requirements()).hasSize(2);
+        assertThat(messages()).contains("provider=BEDROCK_GPT, errorCode=INVALID_EXTRACTION, fallback=false");
+    }
+
+    @Test
+    @DisplayName("모든 제공자가 실패하면 마지막 호출 실패를 원인으로 담아 503 예외로 바꾼다.")
+    void convertsToServiceUnavailableWhenAllProvidersFail() {
+        LlmException claudeFailure = new LlmException(
+                LlmProvider.BEDROCK_CLAUDE, "claude", 400, "BAD_REQUEST", false, 0);
+        when(gpt.generate(any())).thenReturn("JSON이 아닌 응답");
+        when(claude.generate(any())).thenThrow(claudeFailure);
+
+        assertThatThrownBy(() -> extractor(LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE).extract(CONTENT))
+                .isInstanceOfSatisfying(ServiceUnavailableException.class, error -> {
+                    assertThat(error.getErrorCode()).isEqualTo(JobPostingErrorCode.JOB_POSTING_EXTRACTION_FAILED);
+                    assertThat(error.getCause()).isSameAs(claudeFailure);
+                });
+    }
+
+    @Test
+    @DisplayName("제공자를 정하지 않으면 GPT 다음 Claude 순서로 부르고, 같은 제공자를 두 번 넣으면 시작할 때 실패한다.")
+    void validatesProviders() {
+        assertThat(new JobPostingExtractionProperties(null).providers())
+                .containsExactly(LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE);
+        assertThatThrownBy(() -> new JobPostingExtractionProperties(
+                List.of(LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_GPT)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("설정한 제공자 중 클라이언트가 없는 것이 있으면 시작할 때 실패한다.")
     void failsWhenConfiguredClientIsMissing() {
-        assertThatThrownBy(() -> extractor(LlmProvider.GEMINI))
+        assertThatThrownBy(() -> extractor(LlmProvider.BEDROCK_GPT, LlmProvider.GEMINI))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -216,9 +273,9 @@ class LlmJobPostingExtractorTest {
         );
     }
 
-    private LlmJobPostingExtractor extractor(LlmProvider provider) {
+    private LlmJobPostingExtractor extractor(LlmProvider... providers) {
         return new LlmJobPostingExtractor(
-                List.of(gpt, claude), new JobPostingExtractionProperties(provider), objectMapper);
+                List.of(gpt, claude), new JobPostingExtractionProperties(List.of(providers)), objectMapper);
     }
 
     private String messages() {
