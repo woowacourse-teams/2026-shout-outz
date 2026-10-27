@@ -12,6 +12,8 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class AdminJobPostingSaveRequestTest {
 
@@ -130,6 +132,27 @@ class AdminJobPostingSaveRequestTest {
         assertThat(violatedPaths(request)).containsExactlyInAnyOrder(
                 "requirements[0].name", "requirements[0].category", "requirements[0].summary",
                 "requirements[1].name");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\u3000\u3000", "\u00A0", "\u2003\n"})
+    @DisplayName("전각 공백 같은 유니코드 공백만 있는 필수 값은 400 으로 거절한다.")
+    void rejectsUnicodeWhitespaceOnlyValues(String whitespace) {
+        AdminJobPostingSaveRequest request = new AdminJobPostingSaveRequest(
+                "https://example.com/jobs/1", whitespace, whitespace, JobRole.BACKEND, null, whitespace, null, null,
+                List.of(new AdminJobPostingSaveRequest.Requirement(whitespace, RequirementCategory.REQUIRED, whitespace))
+        );
+
+        assertThat(violatedPaths(request)).containsExactlyInAnyOrder(
+                "content", "companyName", "title", "requirements[0].name", "requirements[0].summary");
+    }
+
+    @Test
+    @DisplayName("유니코드 공백이 섞여 있어도 글자가 있으면 통과한다.")
+    void acceptsTextWithUnicodeWhitespace() {
+        AdminJobPostingSaveRequest request = withContent("\u3000백엔드\u3000개발자\n");
+
+        assertThat(validator.validate(request)).isEmpty();
     }
 
     private List<String> violatedPaths(AdminJobPostingSaveRequest request) {

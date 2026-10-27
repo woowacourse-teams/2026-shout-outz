@@ -42,4 +42,15 @@ class AdminJobPostingExtractRequestTest {
                 .extracting(violation -> violation.getPropertyPath().toString())
                 .containsExactly("content");
     }
+
+    @Test
+    @DisplayName("원문이 전각 공백 같은 유니코드 공백뿐이면 LLM 을 부르기 전에 거절한다.")
+    void rejectsUnicodeWhitespaceOnlyContent() {
+        AdminJobPostingExtractRequest request = new AdminJobPostingExtractRequest(
+                "https://example.com/jobs/1", "\u3000\u00A0\n");
+
+        assertThat(validator.validate(request))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .containsExactly("content");
+    }
 }

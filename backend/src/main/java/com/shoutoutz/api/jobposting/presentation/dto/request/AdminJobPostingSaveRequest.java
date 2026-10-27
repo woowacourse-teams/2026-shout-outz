@@ -24,11 +24,13 @@ public record AdminJobPostingSaveRequest(
         @Pattern(regexp = JobPostingUrl.REGEX, message = "sourceUrl은 http 또는 https URL 형식이어야 합니다.")
         String sourceUrl,
 
-        @NotBlank(message = "content는 필수입니다.")
+        @NotNull(message = "content는 필수입니다.")
+        @Pattern(regexp = HAS_TEXT, message = "content는 필수입니다.")
         @CodePointLength(max = MAX_CONTENT_LENGTH, message = "content는 10,000자를 초과할 수 없습니다.")
         String content,
 
-        @NotBlank(message = "companyName은 필수입니다.")
+        @NotNull(message = "companyName은 필수입니다.")
+        @Pattern(regexp = HAS_TEXT, message = "companyName은 필수입니다.")
         @CodePointLength(max = 100, message = "companyName은 100자를 초과할 수 없습니다.")
         String companyName,
 
@@ -38,7 +40,8 @@ public record AdminJobPostingSaveRequest(
         @CodePointLength(max = 50, message = "careerRequirement는 50자를 초과할 수 없습니다.")
         String careerRequirement,
 
-        @NotBlank(message = "title은 필수입니다.")
+        @NotNull(message = "title은 필수입니다.")
+        @Pattern(regexp = HAS_TEXT, message = "title은 필수입니다.")
         @CodePointLength(max = 200, message = "title은 200자를 초과할 수 없습니다.")
         String title,
 
@@ -58,6 +61,13 @@ public record AdminJobPostingSaveRequest(
     public static final int MAX_CONTENT_LENGTH = 10_000;
 
     /**
+     * 공백이 아닌 글자가 하나라도 있어야 한다. @NotBlank 는 전각 공백(U+3000) 같은 유니코드 공백을 글자로 봐서,
+     * 그런 공백만 들어오면 도메인 검증에서 500 이 난다. 그래서 필수 문자열은 @NotBlank 대신 @NotNull 과 이 패턴으로
+     * 유니코드 공백까지 공백으로 보고 400 으로 막는다.
+     */
+    public static final String HAS_TEXT = "(?U)(?s).*\\S.*";
+
+    /**
      * 검증 전에 문자열의 앞뒤 공백을 자르고, 비어 있으면 null 로 둔다.
      * 공고 원문은 해시를 만들 때 공백을 따로 정리하므로 그대로 둔다.
      */
@@ -70,14 +80,16 @@ public record AdminJobPostingSaveRequest(
     }
 
     public record Requirement(
-            @NotBlank(message = "requirements의 name은 필수입니다.")
+            @NotNull(message = "requirements의 name은 필수입니다.")
+            @Pattern(regexp = HAS_TEXT, message = "requirements의 name은 필수입니다.")
             @CodePointLength(max = 100, message = "requirements의 name은 100자를 초과할 수 없습니다.")
             String name,
 
             @NotNull(message = "requirements의 category는 필수입니다.")
             RequirementCategory category,
 
-            @NotBlank(message = "requirements의 summary는 필수입니다.")
+            @NotNull(message = "requirements의 summary는 필수입니다.")
+            @Pattern(regexp = HAS_TEXT, message = "requirements의 summary는 필수입니다.")
             @CodePointLength(max = 500, message = "requirements의 summary는 500자를 초과할 수 없습니다.")
             String summary
     ) {

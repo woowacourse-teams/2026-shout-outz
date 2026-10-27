@@ -3,6 +3,7 @@ package com.shoutoutz.api.jobposting.presentation.dto.request;
 import com.shoutoutz.api.common.util.DataResolveUtil;
 import com.shoutoutz.api.jobposting.domain.JobPostingUrl;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import org.hibernate.validator.constraints.CodePointLength;
 
@@ -12,7 +13,8 @@ public record AdminJobPostingExtractRequest(
         @Pattern(regexp = JobPostingUrl.REGEX, message = "sourceUrl은 http 또는 https URL 형식이어야 합니다.")
         String sourceUrl,
 
-        @NotBlank(message = "content는 필수입니다.")
+        @NotNull(message = "content는 필수입니다.")
+        @Pattern(regexp = AdminJobPostingSaveRequest.HAS_TEXT, message = "content는 필수입니다.")
         @CodePointLength(max = AdminJobPostingSaveRequest.MAX_CONTENT_LENGTH, message = "content는 10,000자를 초과할 수 없습니다.")
         String content
 ) {
