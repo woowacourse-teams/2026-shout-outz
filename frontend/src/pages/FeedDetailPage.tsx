@@ -6,6 +6,7 @@ import { Button } from '@/components/Button';
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
+import { ClientOnly } from '@/components/ClientOnly';
 import { FeedDetailBody } from '@/components/feeds/FeedDetailBody';
 import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { FeedLikeButton } from '@/components/feeds/FeedLikeButton';
@@ -70,7 +71,10 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
       {isQuestion &&
         feed.relatedQuestionRecommendations?.status === 'READY' &&
         feed.relatedQuestionRecommendations.items.length > 0 && (
-          <RelatedQuestions key={feed.feedId} items={feed.relatedQuestionRecommendations.items} />
+          // 추천 중 일부를 무작위로 골라 서버와 브라우저의 선택이 달라지므로 브라우저에서만 그립니다.
+          <ClientOnly>
+            <RelatedQuestions key={feed.feedId} items={feed.relatedQuestionRecommendations.items} />
+          </ClientOnly>
         )}
       <div className="mt-10 mb-8 flex justify-center">
         <FeedLikeButton
@@ -101,11 +105,14 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
         aria-label={`${commentLabel} 목록`}
         className="mt-12 px-0 md:px-3"
       >
-        <Comments
-          feedId={feed.feedId}
-          feedType={isQuestion ? 'QUESTION' : 'POST'}
-          feedAuthorId={feed.author.userId ?? null}
-        />
+        {/* 보는 사람(세션)에 따라 목록이 달라지므로 브라우저에서만 그립니다. */}
+        <ClientOnly>
+          <Comments
+            feedId={feed.feedId}
+            feedType={isQuestion ? 'QUESTION' : 'POST'}
+            feedAuthorId={feed.author.userId ?? null}
+          />
+        </ClientOnly>
       </section>
     </article>
   );
