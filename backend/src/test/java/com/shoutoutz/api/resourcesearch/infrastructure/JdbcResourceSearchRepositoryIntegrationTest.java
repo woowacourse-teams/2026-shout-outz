@@ -143,7 +143,8 @@ class JdbcResourceSearchRepositoryIntegrationTest {
 
         assertThatThrownBy(() -> search(null, 10))
                 .isInstanceOf(InvalidDataAccessApiUsageException.class)
-                .hasCauseInstanceOf(IllegalArgumentException.class);
+                .hasCauseInstanceOf(IllegalArgumentException.class)
+                .hasRootCauseMessage("지원하지 않는 자료 트랙입니다: UNKNOWN");
     }
 
     @Test

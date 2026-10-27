@@ -10,6 +10,11 @@ public enum ResourceTrack {
         if (value == null) {
             return null;
         }
-        return valueOf(value);
+        for (ResourceTrack track : values()) {
+            if (track.name().equals(value)) {
+                return track;
+            }
+        }
+        throw new IllegalArgumentException("지원하지 않는 자료 트랙입니다: " + value);
     }
 }

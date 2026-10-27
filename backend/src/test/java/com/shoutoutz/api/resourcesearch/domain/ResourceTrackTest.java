@@ -20,7 +20,8 @@ class ResourceTrackTest {
     @ValueSource(strings = {"UNKNOWN", "be", "", " BE", "BE "})
     void 정해진_이름과_일치하지_않는_문자열은_거절한다(String value) {
         assertThatThrownBy(() -> ResourceTrack.from(value))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("지원하지 않는 자료 트랙입니다: " + value);
     }
 
     @Test
