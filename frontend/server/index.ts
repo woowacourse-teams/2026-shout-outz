@@ -4,7 +4,9 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
+import { getPreloadFiles, injectBuildAssets, loadBuildAssets } from '../ssg/assets';
 import { resolveHtmlPath } from '../ssg/paths';
+import { renderStaticPage } from '../ssg/render';
 import { createPathRouter } from '../ssg/routes';
 
 // 이 파일은 webpack이 .build/server.cjs로 번들해 실행하므로, 경로는 번들 위치(.build/) 기준입니다.
@@ -16,6 +18,9 @@ const PORT = Number(process.env.PORT ?? 3000);
 if (!existsSync(CSR_SHELL_PATH)) {
   throw new Error(`${CSR_SHELL_PATH}가 없습니다. npm run build로 먼저 빌드하세요.`);
 }
+
+// 같은 빌드 dist에서 사용하는 script/CSS/preload 정보
+const buildAssets = loadBuildAssets(path.join(DIST_DIR, 'build-assets.json'));
 
 // 빌드로 인해 생성된 HTML 있는 경우 해당 파일 경로를 반환하고, 없는 경우 dist/index.html 사용
 function findPrebuiltHtml(pathname: string): string {
@@ -53,7 +58,7 @@ if (process.env.SERVE_STATIC === 'true') {
   app.use(express.static(DIST_DIR, { index: false, redirect: false }));
 }
 
-app.get('/{*path}', (req, res) => {
+app.get('/{*path}', async (req, res) => {
   const matches = matchPage(req.path);
 
   // 라우트 목록에 없는 경로: 오타 주소, 뒤에 세그먼트가 더 붙은 주소, 서버로 잘못 들어온 파일 요청(/main.abc.js)
@@ -63,9 +68,25 @@ app.get('/{*path}', (req, res) => {
     return;
   }
 
-  // 매치된 라우트 중 하나라도 staticData.ssr이 켜져 있으면 SSR 대상입니다.
   if (matches.some((match) => match.staticData?.ssr === true)) {
-    // TODO: server/render.tsx의 스트리밍 렌더로 응답합니다. 셸을 보내기 전에 실패하면 아래 SSG·CSR 셸로 넘어갑니다.
+    // TODO: SSG용 렌더(모든 데이터를 기다린 뒤 응답)로 전체 흐름을 먼저 확인합니다.
+    // server/render.tsx의 스트리밍 렌더로 교체합니다.
+    try {
+      const html = injectBuildAssets(
+        await renderStaticPage(req.originalUrl),
+        buildAssets,
+        getPreloadFiles(
+          buildAssets,
+          matches.map((match) => match.routeId),
+        ),
+      );
+      res.setHeader('Cache-Control', 'no-cache');
+      res.send(html);
+      return;
+    } catch (error) {
+      // 렌더에 실패하면 아래 SSG·CSR 셸로 넘어갑니다.
+      console.error(`[ssr] ${req.originalUrl} 렌더 실패`, error);
+    }
   }
 
   res.setHeader('Cache-Control', 'no-cache');

@@ -4,13 +4,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderCsrShell, renderStaticPage } from './render';
-import {
-  getRouteChunkFiles,
-  injectBuildAssets,
-  loadBuildAssets,
-  type BuildAssets,
-  type PreloadFiles,
-} from './assets';
+import { getPreloadFiles, injectBuildAssets, loadBuildAssets, type BuildAssets } from './assets';
 import { collectCsrShellRoutes, collectPrerenderRoutes, createRouteIdMatcher } from './routes';
 import { resolveHtmlPath } from './paths';
 
@@ -33,19 +27,6 @@ interface PageGenerationFailure {
 type PageGenerationResult = PageGenerationSuccess | PageGenerationFailure;
 
 type RouteIdMatcher = (pathname: string) => string[];
-
-// PostHog SDK는 POSTHOG_KEY가 있을 때만 main 실행 직후 동적 import됩니다(src/utils/analytics/index.ts).
-// 키가 없는 빌드에서 preload하면 쓰지 않는 파일을 받게 되므로 같은 조건으로 넣습니다.
-function getPreloadFiles(
-  assets: BuildAssets,
-  url: string,
-  matchRouteIds?: RouteIdMatcher,
-): PreloadFiles {
-  return {
-    critical: matchRouteIds ? getRouteChunkFiles(assets, matchRouteIds(url)) : [],
-    lowPriority: process.env.POSTHOG_KEY ? (assets.importChunks?.['posthog-js'] ?? []) : [],
-  };
-}
 
 function normalizeUrl(input: string): string {
   if (!input.startsWith('/')) {
@@ -85,7 +66,7 @@ async function generatePage(
   const html = injectBuildAssets(
     await renderStaticPage(url),
     assets,
-    getPreloadFiles(assets, url, matchRouteIds),
+    getPreloadFiles(assets, matchRouteIds ? matchRouteIds(url) : []),
   );
   const outputPath = getOutputPath(distDir, url);
 
@@ -109,7 +90,7 @@ async function generateCsrShell(
   const html = injectBuildAssets(
     await renderCsrShell(),
     assets,
-    getPreloadFiles(assets, url, matchRouteIds),
+    getPreloadFiles(assets, matchRouteIds ? matchRouteIds(url) : []),
   );
   const outputPath = getOutputPath(distDir, url);
 
