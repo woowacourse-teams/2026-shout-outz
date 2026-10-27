@@ -6,5 +6,7 @@ declare module '@tanstack/react-router' {
     prerender?: boolean;
     /** 동적 라우트($param 포함)에서 프리렌더할 파라미터 조합을 반환합니다. */
     generateStaticParams?: () => Promise<Array<Record<string, string>>>;
+    /** true인 라우트는 요청마다 SSR 서버(server/index.ts)에서 렌더합니다. */
+    ssr?: boolean;
   }
 }
