@@ -22,17 +22,20 @@ export default (_env, argv) => ({
   },
   output: {
     path: path.resolve(__dirname, '..', '.build'),
-    // filename은 초기 entry, chunkFilename은 TanStack Router가 만든 라우트 async chunk에 적용됩니다.
     filename: '[name].cjs',
-    chunkFilename: '[name].cjs',
-    // 라우트가 삭제되거나 chunk 이름이 바뀌 때 이전 생성물이 남지 않게 합니다.
+    // 서버는 디스크에서 모듈을 읽어 메모리에 두므로 청크를 나눠 받을 이유가 없습니다.
+    // 동적 import(posthog-js 등)까지 번들에 넣어 entry마다 파일 하나만 남깁니다.
+    asyncChunks: false,
+    // 이전 빌드의 생성물이 남지 않게 합니다.
     clean: true,
   },
   plugins: [
     new ForkTsCheckerWebpackPlugin(),
     tanstackRouter({
       target: 'react',
-      autoCodeSplitting: true,
+      // 라우트 청크 분리는 브라우저 다운로드를 줄이려는 것이라 서버 번들에서는 끕니다.
+      // 렌더된 HTML은 분리할 때와 같습니다(브라우저 번들은 webpack.config.js에서 그대로 분리합니다).
+      autoCodeSplitting: false,
     }),
   ],
   module: {
