@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { IconFilter, IconPlus, IconSearch } from '@tabler/icons-react';
 
-import { sessionQuery } from '@/apis/session';
 import { Button, getButtonStyles } from '@/components/Button';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
 import { Footer } from '@/components/Footer';
@@ -13,6 +11,7 @@ import { ProjectList } from '@/components/projects/ProjectList';
 import { Select } from '@/components/Select';
 import { DEFAULT_PROJECT_FILTER, PROJECT_SORTS, PROJECT_SORT_LABELS } from '@/constants/project';
 import { useModal } from '@/hooks/useModal';
+import { useSession } from '@/hooks/useSession';
 import { type ProjectFilter, type ProjectSort } from '@/types/project';
 import { analytics } from '@/utils/analytics';
 
@@ -176,7 +175,7 @@ function ProjectSearchBar({
 }
 
 function ProjectRegistrationLink() {
-  const session = useQuery({ ...sessionQuery, enabled: typeof window !== 'undefined' });
+  const session = useSession();
   if (session.data?.status !== 'AUTHENTICATED') return null;
 
   return (

@@ -1,16 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useLocation, useNavigate } from '@tanstack/react-router';
-import { sessionQuery } from '@/apis/session';
+import { useSession } from '@/hooks/useSession';
 import { clearLoginQuestionDraft, readLoginQuestionDraft } from '@/utils/recommendation';
 
 /** OAuth가 기본 완료 페이지로 돌아온 뒤, 사용자가 시작한 질문 작성을 이어갑니다. */
 export function ResumeQuestionDraft() {
-  const { data: session } = useQuery({
-    ...sessionQuery,
-    enabled: typeof window !== 'undefined',
-    throwOnError: false,
-  });
+  const { data: session } = useSession();
   const pathname = useLocation({ select: (location) => location.pathname });
   const navigate = useNavigate();
   const restoring = useRef(false);

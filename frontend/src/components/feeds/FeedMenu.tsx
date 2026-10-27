@@ -3,7 +3,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import { IconDotsVertical } from '@tabler/icons-react';
 import { useState } from 'react';
 import { deleteFeedMutation } from '@/apis/feed';
-import { sessionQuery } from '@/apis/session';
+import { useSession } from '@/hooks/useSession';
 import { myProfileSummaryQuery } from '@/apis/user';
 import { Button } from '@/components/Button';
 import { Dropdown } from '@/components/Dropdown';
@@ -19,8 +19,9 @@ export function FeedMenu({
   feedId: number;
   feedType?: FeedType;
 }) {
-  const { data: session } = useSuspenseQuery(sessionQuery);
-  if (session.status !== 'AUTHENTICATED' || session.userId == null) return null;
+  // 세션을 확인하기 전(pending)에는 비로그인과 같이 메뉴를 그리지 않습니다.
+  const { data: session } = useSession();
+  if (session?.status !== 'AUTHENTICATED' || session.userId == null) return null;
 
   return (
     <AuthorMenu
