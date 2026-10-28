@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import {
   createFeedMutation,
@@ -17,6 +17,36 @@ import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { getApiErrorMessage } from '@/utils/error';
 import type { QuestionRecommendation } from '@/types/recommendation';
 import { analytics } from '@/utils/analytics';
+import { useFormStore } from '@/hooks/useFormStore';
+import { FormController, FormValue } from '@/components/Form';
+
+interface FeedFormValues {
+  categoryId: string | null;
+  title: string;
+  content: string;
+  isAnonymous: boolean;
+}
+
+// 길이는 코드 포인트로 센다. 서버가 Unicode 기준으로 재므로 이모지·한글이 같은 수로 잡힌다.
+const isTitleTooLong = (title: string) => Array.from(title).length > FEED_TITLE_MAX;
+const isContentTooLong = (content: string) => Array.from(content).length > FEED_CONTENT_MAX;
+
+/** 등록 버튼과 제출에서 함께 쓰는 검사. 구독과 무관하게 값만 받아 계산한다. */
+function isFeedFormInvalid(
+  values: FeedFormValues,
+  generalCategories: readonly { categoryId: number }[],
+) {
+  const hasCategory = generalCategories.some(
+    (category) => String(category.categoryId) === values.categoryId,
+  );
+  return (
+    !values.title.trim() ||
+    !values.content.trim() ||
+    !hasCategory ||
+    isTitleTooLong(values.title) ||
+    isContentTooLong(values.content)
+  );
+}
 
 interface FeedFormProps {
   userId: number;
@@ -40,13 +70,14 @@ export function FeedForm({
   const { data: profile } = useSuspenseQuery(myProfileQuery(userId));
   const { data: categories } = useSuspenseQuery(categoriesQuery(effectiveType));
   const generalCategories = categories.filter((category) => category.type === 'GENERAL');
-  const [categoryId, setCategoryId] = useState<string | null>(() => {
-    const category = initialFeed?.categories.find((item) => item.type === 'GENERAL');
-    return category ? String(category.categoryId) : null;
+  const initialCategory = initialFeed?.categories.find((item) => item.type === 'GENERAL');
+  // 입력값은 폼 저장소에 둔다. 입력해도 이 컴포넌트는 다시 렌더되지 않고, 값을 쓰는 곳만 다시 그려진다.
+  const form = useFormStore<FeedFormValues>({
+    categoryId: initialCategory ? String(initialCategory.categoryId) : null,
+    title: initialFeed?.title ?? initialDraft?.title ?? '',
+    content: initialFeed?.content ?? initialDraft?.content ?? '',
+    isAnonymous: initialFeed?.isAnonymous ?? false,
   });
-  const hasCategory = generalCategories.some(
-    (category) => String(category.categoryId) === categoryId,
-  );
   const client = useQueryClient();
 
   const creating = initialFeed === undefined;
@@ -64,16 +95,12 @@ export function FeedForm({
     initialFeed ? updateFeedMutation(initialFeed.feedId) : createFeedMutation,
   );
   const submitting = useRef(false);
-  const [title, setTitle] = useState(initialFeed?.title ?? initialDraft?.title ?? '');
-  const [content, setContent] = useState(initialFeed?.content ?? initialDraft?.content ?? '');
-  const [isAnonymous, setIsAnonymous] = useState(initialFeed?.isAnonymous ?? false);
-  // 길이는 코드 포인트로 센다. 서버가 Unicode 기준으로 재므로 이모지·한글이 같은 수로 잡힌다.
-  const titleTooLong = Array.from(title).length > FEED_TITLE_MAX;
-  const tooLong = Array.from(content).length > FEED_CONTENT_MAX;
-  const invalid = !title.trim() || !content.trim() || !hasCategory || titleTooLong || tooLong;
 
   async function submit() {
-    if (invalid || submitting.current) return;
+    // 제출은 렌더가 아니라 누를 때 한 번이므로 구독하지 않고 그 순간의 값을 읽는다.
+    const values = form.getValues();
+    if (isFeedFormInvalid(values, generalCategories) || submitting.current) return;
+    const { categoryId, title, content, isAnonymous } = values;
     submitting.current = true;
     try {
       const feed = await mutation.mutateAsync({
@@ -139,26 +166,34 @@ export function FeedForm({
       }}
     >
       <div className="flex items-center gap-2 md:gap-3">
-        <FeedAuthor author={profile} avatarSize="sm" isAnonymous={isAnonymous} />
+        <FormValue form={form} select={(values) => values.isAnonymous}>
+          {(isAnonymous) => (
+            <FeedAuthor author={profile} avatarSize="sm" isAnonymous={isAnonymous} />
+          )}
+        </FormValue>
       </div>
       <div className="space-y-2">
         <label htmlFor="feed-category" className="text-sm font-medium text-gray-900">
           카테고리
         </label>
-        <Select
-          id="feed-category"
-          aria-label="카테고리"
-          placeholder="카테고리를 선택해 주세요"
-          value={categoryId}
-          onValueChange={setCategoryId}
-          disabled={mutation.isPending || generalCategories.length === 0}
-        >
-          {generalCategories.map((category) => (
-            <Select.Item key={category.categoryId} value={String(category.categoryId)}>
-              {category.displayName}
-            </Select.Item>
-          ))}
-        </Select>
+        <FormController form={form} name="categoryId">
+          {({ value, onChange }) => (
+            <Select
+              id="feed-category"
+              aria-label="카테고리"
+              placeholder="카테고리를 선택해 주세요"
+              value={value}
+              onValueChange={onChange}
+              disabled={mutation.isPending || generalCategories.length === 0}
+            >
+              {generalCategories.map((category) => (
+                <Select.Item key={category.categoryId} value={String(category.categoryId)}>
+                  {category.displayName}
+                </Select.Item>
+              ))}
+            </Select>
+          )}
+        </FormController>
         {generalCategories.length === 0 && (
           <p role="status" className="text-sm text-gray-500">
             선택 가능한 카테고리가 없습니다.
@@ -169,83 +204,110 @@ export function FeedForm({
         <label htmlFor="feed-title" className="text-sm font-medium text-gray-900">
           제목
         </label>
-        <input
-          id="feed-title"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder={
-            effectiveType === 'QUESTION'
-              ? '무엇이 궁금한가요?'
-              : '어떤 이야기인지 한 줄로 알려주세요.'
-          }
-          disabled={mutation.isPending}
-          aria-invalid={titleTooLong || undefined}
-          aria-describedby={titleTooLong ? 'feed-title-error' : undefined}
-          className="focus-visible:outline-primary-600 h-11 w-full rounded-lg bg-gray-100 px-4 text-sm text-gray-900 outline-none placeholder:text-gray-500 focus-visible:outline-2"
-        />
-        {titleTooLong && (
-          <p id="feed-title-error" role="alert" className="text-sm text-red-600">
-            {`제목은 ${FEED_TITLE_MAX}자 이하로 입력해 주세요.`}
-          </p>
-        )}
+        <FormController form={form} name="title">
+          {({ value, onChange }) => {
+            const titleTooLong = isTitleTooLong(value);
+            return (
+              <>
+                <input
+                  id="feed-title"
+                  value={value}
+                  onChange={(event) => onChange(event.target.value)}
+                  placeholder={
+                    effectiveType === 'QUESTION'
+                      ? '무엇이 궁금한가요?'
+                      : '어떤 이야기인지 한 줄로 알려주세요.'
+                  }
+                  disabled={mutation.isPending}
+                  aria-invalid={titleTooLong || undefined}
+                  aria-describedby={titleTooLong ? 'feed-title-error' : undefined}
+                  className="focus-visible:outline-primary-600 h-11 w-full rounded-lg bg-gray-100 px-4 text-sm text-gray-900 outline-none placeholder:text-gray-500 focus-visible:outline-2"
+                />
+                {titleTooLong && (
+                  <p id="feed-title-error" role="alert" className="text-sm text-red-600">
+                    {`제목은 ${FEED_TITLE_MAX}자 이하로 입력해 주세요.`}
+                  </p>
+                )}
+              </>
+            );
+          }}
+        </FormController>
       </div>
-      <div className="focus-within:ring-primary-600 rounded-xl border border-gray-200 p-4 focus-within:ring-2 md:p-5">
-        <label htmlFor="feed-content" className="sr-only">
-          피드 내용
-        </label>
-        <textarea
-          id="feed-content"
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
-          placeholder={
-            effectiveType === 'QUESTION'
-              ? '질문 내용을 자세히 적어주세요.'
-              : '크루들과 나누고 싶은 기술 이야기나 경험을 적어보세요.'
-          }
-          rows={8}
-          disabled={mutation.isPending}
-          aria-invalid={tooLong || undefined}
-          aria-describedby={tooLong ? 'feed-content-error' : undefined}
-          className="block w-full resize-y bg-transparent text-sm leading-6 text-gray-900 outline-none placeholder:text-gray-500"
-        />
-      </div>
-      {tooLong && (
-        <p id="feed-content-error" role="alert" className="text-sm text-red-600">
-          {`본문은 ${FEED_CONTENT_MAX}자 이하로 입력해 주세요.`}
-        </p>
-      )}
+      <FormController form={form} name="content">
+        {({ value, onChange }) => {
+          const tooLong = isContentTooLong(value);
+          return (
+            <>
+              <div className="focus-within:ring-primary-600 rounded-xl border border-gray-200 p-4 focus-within:ring-2 md:p-5">
+                <label htmlFor="feed-content" className="sr-only">
+                  피드 내용
+                </label>
+                <textarea
+                  id="feed-content"
+                  value={value}
+                  onChange={(event) => onChange(event.target.value)}
+                  placeholder={
+                    effectiveType === 'QUESTION'
+                      ? '질문 내용을 자세히 적어주세요.'
+                      : '크루들과 나누고 싶은 기술 이야기나 경험을 적어보세요.'
+                  }
+                  rows={8}
+                  disabled={mutation.isPending}
+                  aria-invalid={tooLong || undefined}
+                  aria-describedby={tooLong ? 'feed-content-error' : undefined}
+                  className="block w-full resize-y bg-transparent text-sm leading-6 text-gray-900 outline-none placeholder:text-gray-500"
+                />
+              </div>
+              {tooLong && (
+                <p id="feed-content-error" role="alert" className="text-sm text-red-600">
+                  {`본문은 ${FEED_CONTENT_MAX}자 이하로 입력해 주세요.`}
+                </p>
+              )}
+            </>
+          );
+        }}
+      </FormController>
       {mutation.isError && (
         <p role="alert" className="text-sm text-red-600">
           {getApiErrorMessage(mutation.error)}
         </p>
       )}
       <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
-        <input
-          type="checkbox"
-          checked={isAnonymous}
-          onChange={(event) => setIsAnonymous(event.target.checked)}
-          disabled={mutation.isPending}
-          className="accent-primary-600 size-4"
-        />
+        <FormController form={form} name="isAnonymous">
+          {({ value, onChange }) => (
+            <input
+              type="checkbox"
+              checked={value}
+              onChange={(event) => onChange(event.target.checked)}
+              disabled={mutation.isPending}
+              className="accent-primary-600 size-4"
+            />
+          )}
+        </FormController>
         익명으로 쓰기
       </label>
       <div className="flex gap-2 md:gap-3 md:pt-2">
         <Button variant="outline" onClick={onCancel} disabled={mutation.isPending}>
           취소
         </Button>
-        <Button
-          type="submit"
-          className="flex-1 md:flex-none"
-          disabled={invalid || mutation.isPending}
-        >
-          {mutation.isPending
-            ? '저장 중…'
-            : initialFeed
-              ? '수정 완료'
-              : effectiveType === 'QUESTION'
-                ? '질문 등록하기'
-                : '피드 등록하기'}
-        </Button>
+        {/* 제출 가능 여부가 바뀔 때만 다시 렌더된다. 글자를 칠 때마다 다시 그리지 않는다. */}
+        <FormValue form={form} select={(values) => isFeedFormInvalid(values, generalCategories)}>
+          {(invalid) => (
+            <Button
+              type="submit"
+              className="flex-1 md:flex-none"
+              disabled={invalid || mutation.isPending}
+            >
+              {mutation.isPending
+                ? '저장 중…'
+                : initialFeed
+                  ? '수정 완료'
+                  : effectiveType === 'QUESTION'
+                    ? '질문 등록하기'
+                    : '피드 등록하기'}
+            </Button>
+          )}
+        </FormValue>
       </div>
     </form>
   );
