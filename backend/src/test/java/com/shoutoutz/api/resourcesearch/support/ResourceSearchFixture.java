@@ -10,12 +10,9 @@ public class ResourceSearchFixture {
     public static final String MODEL = "search-test@1024";
 
     private final JdbcTemplate jdbcTemplate;
-    private final boolean hasExperienceTable;
 
     public ResourceSearchFixture(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-        this.hasExperienceTable = Boolean.TRUE.equals(jdbcTemplate.queryForObject(
-                "SELECT to_regclass('resource_experiences') IS NOT NULL", Boolean.class));
     }
 
     public long document(ResourceTrack track) {
@@ -46,7 +43,7 @@ public class ResourceSearchFixture {
     }
 
     public long chunk(long documentId, int index, String kind, String text, float[] vector, String model) {
-        if (hasExperienceTable && "experience".equals(kind)) {
+        if ("experience".equals(kind)) {
             long experienceId = jdbcTemplate.queryForObject(
                     """
                             INSERT INTO resource_experiences (
