@@ -86,6 +86,7 @@ class AdminJobPostingHttpApiTest {
         mockMvc.perform(post("/api/v1/admin/job-postings/extractions")
                         .with(authenticated(UserRole.ADMIN))
                         .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"sourceUrl":"https://career.example.com/jobs/1","content":"[백엔드 개발자] 자격 요건: Java, Spring 경험"}
@@ -102,8 +103,12 @@ class AdminJobPostingHttpApiTest {
                                         관리자가 붙여넣은 공고 글에서 LLM으로 공고 정보와 역량을 뽑는다. 아무것도 저장하지 않는다.
                                         같은 주소로 등록된 공고가 있으면 registeredJobPostingId에 그 ID를 담는다.
                                         LLM 호출이 실패하거나 시간이 초과되면 503(JOB_POSTING_EXTRACTION_FAILED)으로 응답한다.""")
-                                .requestHeaders(headerWithName(HttpHeaders.COOKIE)
-                                        .description("인증된 관리자의 JSESSIONID"))
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("인증된 관리자의 JSESSIONID"),
+                                        headerWithName("X-CSRF-Token")
+                                                .description("세션 조회로 발급받은 CSRF 토큰")
+                                )
                                 .requestSchema(Schema.schema("AdminJobPostingExtractRequest"))
                                 .requestFields(
                                         fieldWithPath("sourceUrl").type(STRING)
@@ -125,6 +130,7 @@ class AdminJobPostingHttpApiTest {
         mockMvc.perform(post("/api/v1/admin/job-postings")
                         .with(authenticated(UserRole.ADMIN))
                         .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -153,8 +159,12 @@ class AdminJobPostingHttpApiTest {
                                         관리자가 확인하고 고친 공고 정보와 역량을 저장한다. LLM을 다시 부르지 않는다.
                                         공고 글은 해시만 만들고 저장하지 않는다. 역량 순서는 보낸 순서를 따른다.
                                         같은 주소의 공고가 이미 있으면 409(JOB_POSTING_DUPLICATE_URL)로 응답한다.""")
-                                .requestHeaders(headerWithName(HttpHeaders.COOKIE)
-                                        .description("인증된 관리자의 JSESSIONID"))
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("인증된 관리자의 JSESSIONID"),
+                                        headerWithName("X-CSRF-Token")
+                                                .description("세션 조회로 발급받은 CSRF 토큰")
+                                )
                                 .requestSchema(Schema.schema("AdminJobPostingSaveRequest"))
                                 .requestFields(saveRequestFields())
                                 .responseSchema(Schema.schema("AdminJobPostingSaveSuccessResponse"))

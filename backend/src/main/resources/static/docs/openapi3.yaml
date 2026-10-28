@@ -1313,6 +1313,13 @@ paths:
         schema:
           type: string
         example: JSESSIONID=admin-session
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
       requestBody:
         content:
           application/json:
@@ -3672,6 +3679,13 @@ paths:
         schema:
           type: string
         example: JSESSIONID=admin-session
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
       requestBody:
         content:
           application/json:
