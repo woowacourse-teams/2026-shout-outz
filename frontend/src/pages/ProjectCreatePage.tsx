@@ -11,7 +11,7 @@ import { Button, getButtonStyles } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
-import { Input } from '@/components/Input';
+import { FormField, FormInput, FormTextarea } from '@/components/Form';
 import { MemberField } from '@/components/projects/MemberField';
 import { Select } from '@/components/Select';
 import { TechTagField } from '@/components/projects/TechTagField';
@@ -33,6 +33,9 @@ import { myProfileQuery } from '@/apis/user';
 import { verificationRequestQuery } from '@/apis/verification';
 import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
 import { analytics } from '@/utils/analytics';
+import { useFormStore } from '@/hooks/useFormStore';
+import { useFormSelector } from '@/hooks/useFormSelector';
+import type { FormStore } from '@/utils/form-store';
 
 const EMPTY_FORM: ProjectFormValues = {
   title: '',
@@ -162,7 +165,8 @@ export function ProjectForm({
 }) {
   const { data: cohorts } = useSuspenseQuery(cohortsQueryOptions());
   const { data: author } = useSuspenseQuery(myProfileQuery(userId));
-  const [values, setValues] = useState<ProjectFormValues>(() =>
+  // 입력값은 폼 저장소에 두어, 입력해도 이 컴포넌트는 다시 렌더되지 않고 바뀐 필드만 다시 그려진다.
+  const form = useFormStore<ProjectFormValues>(() =>
     initialProject ? toFormValues(initialProject, author.handle) : EMPTY_FORM,
   );
   const [errors, setErrors] = useState<ProjectFormErrors>({});
@@ -171,16 +175,12 @@ export function ProjectForm({
   const queryClient = useQueryClient();
   const editing = initialProject !== undefined;
 
-  const setField = <Key extends keyof ProjectFormValues>(
-    field: Key,
-    value: ProjectFormValues[Key],
-  ) => setValues((current) => ({ ...current, [field]: value }));
-
   useEffect(() => {
     if (!editing) analytics.track({ name: 'project_create_started', from: document.referrer });
   }, [editing]);
 
   const submit = () => {
+    const values = form.getValues();
     const nextErrors = validateProjectForm(values);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
@@ -265,34 +265,20 @@ export function ProjectForm({
               }}
             >
               <Field label="프로젝트 이름 *" error={errors.title}>
-                {(id) => (
-                  <Input
-                    id={id}
-                    value={values.title}
-                    onChange={(event) => setField('title', event.target.value)}
-                    placeholder="shout-outz"
-                  />
-                )}
+                {(id) => <FormInput form={form} name="title" id={id} placeholder="shout-outz" />}
               </Field>
 
               <Field label="팀 이름" error={errors.teamName}>
-                {(id) => (
-                  <Input
-                    id={id}
-                    value={values.teamName}
-                    onChange={(event) => setField('teamName', event.target.value)}
-                    placeholder="shout-outz"
-                  />
-                )}
+                {(id) => <FormInput form={form} name="teamName" id={id} placeholder="shout-outz" />}
               </Field>
 
               <Field label="한 줄 소개 *" error={errors.tagline}>
                 {(id) => (
-                  <textarea
+                  <FormTextarea
+                    form={form}
+                    name="tagline"
                     id={id}
                     rows={2}
-                    value={values.tagline}
-                    onChange={(event) => setField('tagline', event.target.value)}
                     placeholder="어떤 문제를 어떻게 풀었는지 한 문장으로 소개해 주세요."
                     className="focus-visible:outline-primary-600 w-full resize-none rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-900 outline-none placeholder:text-gray-500 focus-visible:outline-2"
                   />
@@ -301,33 +287,41 @@ export function ProjectForm({
 
               <Field label="우테코 기수 *" error={errors.cohort}>
                 {(id) => (
-                  <Select
-                    aria-labelledby={`${id}-label`}
-                    placeholder="기수를 선택하세요"
-                    value={values.cohort === null ? null : String(values.cohort)}
-                    onValueChange={(value) => setField('cohort', Number(value))}
-                  >
-                    {cohorts.map(({ cohort, year }) => (
-                      <Select.Item key={cohort} value={String(cohort)}>
-                        {`${cohort}기 (${year})`}
-                      </Select.Item>
-                    ))}
-                  </Select>
+                  <FormField form={form} name="cohort">
+                    {({ value, onChange }) => (
+                      <Select
+                        aria-labelledby={`${id}-label`}
+                        placeholder="기수를 선택하세요"
+                        value={value === null ? null : String(value)}
+                        onValueChange={(next) => onChange(Number(next))}
+                      >
+                        {cohorts.map(({ cohort, year }) => (
+                          <Select.Item key={cohort} value={String(cohort)}>
+                            {`${cohort}기 (${year})`}
+                          </Select.Item>
+                        ))}
+                      </Select>
+                    )}
+                  </FormField>
                 )}
               </Field>
 
-              <ThumbnailField
-                value={values.thumbnailImageId}
-                onChange={(mediaId) => setField('thumbnailImageId', mediaId)}
-                error={errors.thumbnailImageId}
-              />
+              <FormField form={form} name="thumbnailImageId">
+                {({ value, onChange }) => (
+                  <ThumbnailField
+                    value={value}
+                    onChange={onChange}
+                    error={errors.thumbnailImageId}
+                  />
+                )}
+              </FormField>
 
               <Field label="GitHub 레포지토리 URL *" error={errors.githubRepositoryUrl}>
                 {(id) => (
-                  <Input
+                  <FormInput
+                    form={form}
+                    name="githubRepositoryUrl"
                     id={id}
-                    value={values.githubRepositoryUrl}
-                    onChange={(event) => setField('githubRepositoryUrl', event.target.value)}
                     placeholder="https://github.com/woowacourse-teams/2026-shout-outz"
                   />
                 )}
@@ -335,38 +329,26 @@ export function ProjectForm({
 
               <Field label="서비스 배포 URL" error={errors.deploymentUrl}>
                 {(id) => (
-                  <Input
+                  <FormInput
+                    form={form}
+                    name="deploymentUrl"
                     id={id}
-                    value={values.deploymentUrl}
-                    onChange={(event) => setField('deploymentUrl', event.target.value)}
                     placeholder="https://loop.team"
                   />
                 )}
               </Field>
 
               <Field label="서비스 운영 상태" error={errors.serviceStatus}>
-                {() => (
-                  <Select
-                    aria-label="서비스 운영 상태"
-                    value={resolveServiceStatus(values)}
-                    disabled={!values.deploymentUrl.trim()}
-                    onValueChange={(value) =>
-                      setField('serviceStatus', value as 'OPERATING' | 'CLOSED')
-                    }
-                  >
-                    <Select.Item value="OPERATING">운영 중</Select.Item>
-                    <Select.Item value="CLOSED">운영 종료</Select.Item>
-                  </Select>
-                )}
+                {() => <ServiceStatusSelect form={form} />}
               </Field>
 
               <Field label="상세 설명" error={errors.descriptionMd}>
                 {(id) => (
-                  <textarea
+                  <FormTextarea
+                    form={form}
+                    name="descriptionMd"
                     id={id}
                     rows={8}
-                    value={values.descriptionMd}
-                    onChange={(event) => setField('descriptionMd', event.target.value)}
                     placeholder="Markdown으로 프로젝트를 자세히 소개해 주세요."
                     className="focus-visible:outline-primary-600 w-full rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-900 outline-none placeholder:text-gray-500 focus-visible:outline-2"
                   />
@@ -375,11 +357,11 @@ export function ProjectForm({
 
               <div className="flex flex-col gap-2">
                 <p className="text-sm font-medium text-gray-900">기술 스택 *</p>
-                <TechTagField
-                  value={values.techTags}
-                  onChange={(techTags) => setField('techTags', techTags)}
-                  error={errors.techTags}
-                />
+                <FormField form={form} name="techTags">
+                  {({ value, onChange }) => (
+                    <TechTagField value={value} onChange={onChange} error={errors.techTags} />
+                  )}
+                </FormField>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -387,12 +369,16 @@ export function ProjectForm({
                 <p className="text-xs text-gray-500">
                   작성자는 자동으로 포함됩니다. 함께한 팀원이 있다면 추가해 주세요.
                 </p>
-                <MemberField
-                  author={author}
-                  value={values.members}
-                  onChange={(members) => setField('members', members)}
-                  error={errors.members}
-                />
+                <FormField form={form} name="members">
+                  {({ value, onChange }) => (
+                    <MemberField
+                      author={author}
+                      value={value}
+                      onChange={onChange}
+                      error={errors.members}
+                    />
+                  )}
+                </FormField>
               </div>
 
               {(createProject.isError || updateProject.isError) && (
@@ -415,6 +401,24 @@ export function ProjectForm({
 
       <Footer />
     </div>
+  );
+}
+
+/** 배포 URL이 비었는지가 바뀔 때만 다시 렌더된다. URL을 한 글자씩 입력하는 동안에는 그대로다. */
+function ServiceStatusSelect({ form }: { form: FormStore<ProjectFormValues> }) {
+  const hasDeploymentUrl = useFormSelector(form, (values) => values.deploymentUrl.trim() !== '');
+  const serviceStatus = useFormSelector(form, resolveServiceStatus);
+
+  return (
+    <Select
+      aria-label="서비스 운영 상태"
+      value={serviceStatus}
+      disabled={!hasDeploymentUrl}
+      onValueChange={(value) => form.setValue('serviceStatus', value as 'OPERATING' | 'CLOSED')}
+    >
+      <Select.Item value="OPERATING">운영 중</Select.Item>
+      <Select.Item value="CLOSED">운영 종료</Select.Item>
+    </Select>
   );
 }
 
