@@ -38,7 +38,7 @@ class JobPostingContentHashTest {
 
     @ParameterizedTest
     @NullAndEmptySource
-    @ValueSource(strings = {"   ", "\n\t"})
+    @ValueSource(strings = {"   ", "\n\t", "  "})
     @DisplayName("원문이 비어 있으면 도메인 예외를 던진다.")
     void rejectsBlankContent(String content) {
         assertThatThrownBy(() -> JobPostingContentHash.from(content))

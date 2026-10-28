@@ -33,8 +33,10 @@ public record JobPostingContentHash(String value) {
     }
 
     public static JobPostingContentHash from(String content) {
-        validateNotNullOrBlank(content, JOB_POSTING_CONTENT_NULL_OR_BLANK);
+        validateNotNull(content, JOB_POSTING_CONTENT_NULL_OR_BLANK);
         String normalized = WHITESPACES.matcher(content).replaceAll(" ").strip();
+        // isBlank() 는 U+00A0 을 공백으로 보지 않으므로, 정규화한 값으로 검사해야 공백만 있는 원문을 걸러낸다.
+        validateNotNullOrBlank(normalized, JOB_POSTING_CONTENT_NULL_OR_BLANK);
         return new JobPostingContentHash(sha256Hex(normalized));
     }
 
