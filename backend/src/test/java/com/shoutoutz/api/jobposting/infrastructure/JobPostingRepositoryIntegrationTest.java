@@ -1,0 +1,185 @@
+package com.shoutoutz.api.jobposting.infrastructure;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
+
+import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
+import com.shoutoutz.api.jobposting.application.JobPostingAdminQueryRepository;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingCursor;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingPage;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingSummary;
+import com.shoutoutz.api.jobposting.domain.JobPosting;
+import com.shoutoutz.api.jobposting.domain.JobPostingContentHash;
+import com.shoutoutz.api.jobposting.domain.JobPostingErrorCode;
+import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
+import com.shoutoutz.api.jobposting.domain.JobPostingUrl;
+import com.shoutoutz.api.jobposting.domain.JobRequirement;
+import com.shoutoutz.api.jobposting.domain.JobRole;
+import com.shoutoutz.api.jobposting.domain.MatchingStatus;
+import com.shoutoutz.api.jobposting.domain.RequirementCategory;
+import jakarta.persistence.EntityManager;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
+
+@ActiveProfiles("test")
+@SpringBootTest
+@Transactional
+class JobPostingRepositoryIntegrationTest {
+
+    private static final Instant NOW = Instant.parse("2026-10-27T01:00:00Z");
+    private static final String CONTENT = "자격 요건\n- Java 개발 경험";
+
+    @Autowired
+    private JobPostingRepository jobPostingRepository;
+
+    @Autowired
+    private JobPostingAdminQueryRepository jobPostingAdminQueryRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private EntityManager entityManager;
+
+    private long adminId;
+
+    @BeforeEach
+    void setUp() {
+        adminId = insertAdmin();
+    }
+
+    @Test
+    void 공고와_역량_항목을_함께_저장하고_순서대로_조회한다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://Careers.Example.com/jobs/1/", NOW));
+        // 1차 캐시가 아니라 DB 행을 다시 읽어 칸 타입이 도메인 값으로 돌아오는지 확인한다.
+        entityManager.flush();
+        entityManager.clear();
+
+        JobPosting found = jobPostingRepository.findById(saved.getId()).orElseThrow();
+
+        assertThat(found.getSourceUrl().value()).isEqualTo("https://careers.example.com/jobs/1");
+        assertThat(found.getContentHash()).isEqualTo(JobPostingContentHash.from(CONTENT));
+        assertThat(found.getCompanyName()).isEqualTo("예시 회사");
+        assertThat(found.getJobRole()).isEqualTo(JobRole.BACKEND);
+        assertThat(found.getCareerRequirement()).isEqualTo("3년 이상");
+        assertThat(found.getEmploymentType()).isNull();
+        assertThat(found.getDeadline()).isEqualTo(LocalDate.of(2026, 11, 30));
+        assertThat(found.getStatus()).isEqualTo(MatchingStatus.PENDING);
+        assertThat(found.getRegisteredBy()).isEqualTo(adminId);
+        assertThat(found.getCreatedAt()).isEqualTo(NOW);
+        assertThat(found.getRequirements())
+                .extracting(JobRequirement::getDisplayOrder, JobRequirement::getName, JobRequirement::getCategory,
+                        JobRequirement::getStatus)
+                .containsExactly(
+                        tuple(1, "Java", RequirementCategory.REQUIRED,
+                                MatchingStatus.PENDING),
+                        tuple(2, "대용량 트래픽 처리", RequirementCategory.PREFERRED,
+                                MatchingStatus.PENDING));
+        assertThat(found.getRequirements()).allSatisfy(requirement -> assertThat(requirement.getId()).isNotNull());
+    }
+
+    @Test
+    void 역량_항목의_매칭_작업용_칸은_처음_값으로_저장한다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT attempt_count, lease_until, last_error, created_at FROM job_requirements "
+                        + "WHERE job_posting_id = ?",
+                saved.getId());
+
+        assertThat(rows).hasSize(2).allSatisfy(row -> {
+            assertThat(row.get("attempt_count")).isEqualTo(0);
+            assertThat(row.get("lease_until")).isNull();
+            assertThat(row.get("last_error")).isNull();
+            assertThat(row.get("created_at")).isNotNull();
+        });
+    }
+
+    @Test
+    void 없는_공고는_빈_값을_돌려준다() {
+        assertThat(jobPostingRepository.findById(Long.MAX_VALUE)).isEmpty();
+    }
+
+    @Test
+    void 정규화한_주소로_등록된_공고_id를_찾는다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+
+        assertThat(jobPostingRepository.findIdBySourceUrl(new JobPostingUrl("https://Careers.Example.com/jobs/1/#apply")))
+                .contains(saved.getId());
+        assertThat(jobPostingRepository.findIdBySourceUrl(new JobPostingUrl("https://careers.example.com/jobs/2")))
+                .isEmpty();
+    }
+
+    @Test
+    void 같은_주소의_공고를_다시_저장하면_중복_예외로_바꾼다() {
+        jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+
+        assertThatThrownBy(() -> jobPostingRepository.save(posting("https://Careers.Example.com/jobs/1/", NOW)))
+                .isInstanceOfSatisfying(DuplicateEntityException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(JobPostingErrorCode.JOB_POSTING_DUPLICATE_URL));
+    }
+
+    @Test
+    void 공고_목록을_최신_등록순으로_커서를_따라_읽는다() {
+        long first = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW)).getId();
+        long second = jobPostingRepository.save(posting("https://careers.example.com/jobs/2", NOW.plusSeconds(1))).getId();
+        long third = jobPostingRepository.save(posting("https://careers.example.com/jobs/3", NOW.plusSeconds(2))).getId();
+
+        JobPostingPage firstPage = jobPostingAdminQueryRepository.findAll(null, 2);
+        JobPostingPage secondPage = jobPostingAdminQueryRepository.findAll(new JobPostingCursor(second), 2);
+
+        assertThat(firstPage.items()).extracting(JobPostingSummary::id).containsExactly(third, second);
+        assertThat(firstPage.hasNext()).isTrue();
+        assertThat(firstPage.totalCount()).isEqualTo(3);
+        assertThat(secondPage.items()).extracting(JobPostingSummary::id).containsExactly(first);
+        assertThat(secondPage.hasNext()).isFalse();
+        assertThat(secondPage.totalCount()).isEqualTo(3);
+    }
+
+    @Test
+    void 공고_목록의_한_줄에_목록에_보여_줄_값을_담는다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+
+        JobPostingSummary summary = jobPostingAdminQueryRepository.findAll(null, 20).items().getFirst();
+
+        assertThat(summary).isEqualTo(new JobPostingSummary(
+                saved.getId(), "예시 회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, NOW));
+    }
+
+    private JobPosting posting(String url, Instant now) {
+        return JobPosting.register(
+                url,
+                CONTENT,
+                "예시 회사",
+                JobRole.BACKEND,
+                "3년 이상",
+                "백엔드 개발자",
+                null,
+                LocalDate.of(2026, 11, 30),
+                adminId,
+                List.of(
+                        JobRequirement.create(1, "Java", RequirementCategory.REQUIRED, "Java로 서버를 개발해 본 경험"),
+                        JobRequirement.create(2, "대용량 트래픽 처리", RequirementCategory.PREFERRED, "트래픽이 많은 서비스 운영 경험")),
+                now);
+    }
+
+    private long insertAdmin() {
+        String handle = "job-posting-admin-" + UUID.randomUUID().toString().substring(0, 8);
+        return jdbcTemplate.queryForObject(
+                "INSERT INTO users (handle, role) VALUES (?, 'ADMIN') RETURNING id",
+                Long.class,
+                handle
+        );
+    }
+}
