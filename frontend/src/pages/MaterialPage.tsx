@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 
@@ -27,7 +28,7 @@ function MaterialContent({ resourceId }: { resourceId: number }) {
 
   return (
     <article>
-      <title>{`${material.title} | shout-outz`}</title>
+      <Title>{`${material.title} | shout-outz`}</Title>
       <MaterialSummary material={material} Title={PageTitle} variant="page" />
     </article>
   );

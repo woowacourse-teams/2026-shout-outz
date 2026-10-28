@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -26,7 +27,7 @@ export function JobPostingDetail({ jobPostingId }: { jobPostingId: number }) {
 
   return (
     <>
-      <title>{`${jobPosting.title} · ${jobPosting.companyName} | shout-outz`}</title>
+      <Title>{`${jobPosting.title} · ${jobPosting.companyName} | shout-outz`}</Title>
       {/* 오른쪽 "연관 질문" 칸은 없앴다. 본문이 그 자리까지 넓게 쓴다. */}
       <div className="min-w-0">
         <section className="flex flex-col gap-2.5">

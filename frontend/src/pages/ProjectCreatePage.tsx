@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -238,7 +239,7 @@ export function ProjectForm({
 
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>{`프로젝트 ${editing ? '수정' : '등록'} | shout-outz`}</title>
+      <Title>{`프로젝트 ${editing ? '수정' : '등록'} | shout-outz`}</Title>
       <AppGnb />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-12 md:pt-10 md:pb-20">
@@ -471,7 +472,7 @@ export function ProjectForm({
 function ProjectCreateLoginGuide() {
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>프로젝트 등록 | shout-outz</title>
+      <Title>프로젝트 등록 | shout-outz</Title>
       <AppGnb />
       <main className="flex-1">
         <LoginRequiredGuide pageName="프로젝트 등록" fallbackTo="/projects" />
@@ -492,7 +493,7 @@ function ProjectCreateGuard({
 }) {
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>프로젝트 등록 | shout-outz</title>
+      <Title>프로젝트 등록 | shout-outz</Title>
       <AppGnb />
       <main className="mx-auto flex w-full max-w-xl flex-1 items-center px-4 py-12">
         <section className="w-full rounded-xl border border-gray-200 p-6 text-center md:p-8">

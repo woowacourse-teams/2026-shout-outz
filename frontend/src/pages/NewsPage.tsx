@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { newsInfiniteQueryOptions } from '@/api/news';
@@ -32,7 +33,7 @@ export function NewsPage() {
 
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>소식 | shout-outz</title>
+      <Title>소식 | shout-outz</Title>
       <AppGnb aria-label="주요 헤더" />
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 pt-14 pb-30">
         <div className="flex flex-col gap-2 pb-6">

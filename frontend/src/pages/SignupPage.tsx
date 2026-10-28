@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { Suspense, useId, useState } from 'react';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -57,7 +58,7 @@ type VerificationResult = { status: 'requested' | 'failed'; userType: Verificati
 export function SignupPage({ onComplete, completionLabel = '홈으로 가기' }: SignupPageProps) {
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>가입 | shout-outz</title>
+      <Title>가입 | shout-outz</Title>
       <AppGnb />
       <main className="mx-auto flex w-full max-w-md flex-1 items-center px-4 py-12">
         <Suspense

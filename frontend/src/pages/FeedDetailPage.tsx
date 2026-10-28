@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useEffect } from 'react';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -52,7 +53,7 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
 
   return (
     <article className="min-w-0">
-      <title>{`${feed.title} | shout-outz`}</title>
+      <Title>{`${feed.title} | shout-outz`}</Title>
       <Link
         to="/community"
         search={{ sort: 'LATEST', type: isQuestion ? 'QUESTION' : 'POST' }}

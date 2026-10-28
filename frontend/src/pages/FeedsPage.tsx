@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import type { FeedSort, FeedType } from '@/apis/feed';
 import { IconPlus } from '@tabler/icons-react';
 import { Button } from '@/components/Button';
@@ -38,7 +39,7 @@ export function FeedsPage({
 
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>커뮤니티 | shout-outz</title>
+      <Title>커뮤니티 | shout-outz</Title>
       <AppGnb />
       <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-12 px-6 pt-10 pb-30 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <section className="min-w-0">

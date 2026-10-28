@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useId, useState, type ReactNode } from 'react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -24,7 +25,7 @@ export function VerificationRequestPage() {
 
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>우아한테크코스 소속 인증 | shout-outz</title>
+      <Title>우아한테크코스 소속 인증 | shout-outz</Title>
       <AppGnb />
       <main className="mx-auto w-full max-w-xl flex-1 px-4 py-10 md:py-16">
         {session.status === 'AUTHENTICATED' ? (

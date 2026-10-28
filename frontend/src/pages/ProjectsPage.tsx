@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useState } from 'react';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { IconFilter, IconPlus, IconSearch } from '@tabler/icons-react';
@@ -40,7 +41,7 @@ export function ProjectsPage() {
 
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>프로젝트 | shout-outz</title>
+      <Title>프로젝트 | shout-outz</Title>
       <AppGnb />
       <main
         id="projects-content"

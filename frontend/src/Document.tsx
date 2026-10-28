@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from 'react';
 import { OpenGraph } from '@/components/OpenGraph';
+import { TITLE_ANNOUNCER_ID } from '@/components/Title';
 
 // index.html을 대체하는 문서 전체(<html>/<head>/<body>)의 source of truth입니다.
 // 페이지별 <title>/<meta>는 여기서 선언하지 않고, 그걸 필요로 하는 컴포넌트가 직접 렌더링합니다.
@@ -19,7 +20,11 @@ export function Document({ children }: PropsWithChildren) {
         {/* 앱에서는 루트 라우트가 메타데이터를 관리하고, 빈 CSR 셸에는 기본값을 넣습니다. */}
         {!children && <OpenGraph />}
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Title이 내용만 갱신하는 전역 안내 영역입니다. 페이지 전환 중에도 유지합니다. */}
+        <div id={TITLE_ANNOUNCER_ID} className="sr-only" aria-live="polite" aria-atomic="true" />
+      </body>
     </html>
   );
 }

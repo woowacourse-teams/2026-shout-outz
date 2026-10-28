@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
@@ -9,7 +10,7 @@ import { HomeStatistics } from '@/components/home/HomeStatistics';
 export function HomePage() {
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>shout-outz</title>
+      <Title>shout-outz</Title>
       <AppGnb />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pt-6 pb-12 md:gap-8 md:pt-10 md:pb-20">
         <AsyncBoundary>

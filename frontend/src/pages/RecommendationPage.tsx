@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { IconArrowLeft, IconPencil, IconSparkles } from '@tabler/icons-react';
 import { AppGnb } from '@/components/AppGnb';
 import { Footer } from '@/components/Footer';
@@ -15,11 +16,11 @@ interface RecommendationPageProps {
 export function RecommendationPage({ recommendation, onBack, onCreate }: RecommendationPageProps) {
   return (
     <div className="bg-background flex min-h-dvh flex-col">
-      <title>
+      <Title>
         {recommendation
           ? `${recommendation.title} · 추천 질문 | shout-outz`
           : '추천 질문 | shout-outz'}
-      </title>
+      </Title>
       <meta name="robots" content="noindex" />
       <AppGnb />
       <main className="mx-auto w-full max-w-4xl flex-1 px-5 pt-7 pb-10 md:px-12 md:pt-8 md:pb-12">

@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import type { ReactNode } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
@@ -112,7 +113,7 @@ function AdminTabPanel({ tab }: { tab: AdminTab }) {
 function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>관리자 | shout-outz</title>
+      <Title>관리자 | shout-outz</Title>
       <AppGnb />
       {children}
       <Footer />

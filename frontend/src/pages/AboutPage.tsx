@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useState, type ReactNode } from 'react';
 import { IconChevronRight, IconSearch } from '@tabler/icons-react';
 
@@ -60,7 +61,7 @@ export function AboutPage() {
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-12 break-keep text-gray-800 md:pt-10 md:pb-20">
-      <title>서비스 소개 | shout-outz</title>
+      <Title>서비스 소개 | shout-outz</Title>
       <meta name="description" content="우테코 크루들의 프로젝트 경험과 취업 과정을 모았어요." />
       <link rel="canonical" href="https://shout-ou.tz/about" />
 

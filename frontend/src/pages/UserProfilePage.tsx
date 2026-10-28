@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useQuery, useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 
@@ -49,7 +50,7 @@ export function UserProfilePage() {
 
   return (
     <>
-      <title>{`${profile.displayName} | shout-outz`}</title>
+      <Title>{`${profile.displayName} | shout-outz`}</Title>
       <ProfileHeader
         displayName={profile.displayName}
         handle={profile.handle}

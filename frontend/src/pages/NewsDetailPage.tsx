@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { IconArrowLeft } from '@tabler/icons-react';
@@ -34,7 +35,7 @@ export function NewsDetailPage() {
             const unavailable = isHTTPError(error) && error.response.status === 404;
             return (
               <div role="alert" className="space-y-4 py-16 text-center">
-                <title>소식 조회 오류 | shout-outz</title>
+                <Title>소식 조회 오류 | shout-outz</Title>
                 <h1 className="text-xl font-bold">
                   {unavailable
                     ? '소식이 없거나 접근할 수 없습니다.'
@@ -62,7 +63,7 @@ function NewsDetail({ newsId }: { newsId: number }) {
 
   return (
     <article className="min-w-0">
-      <title>{`${news.title} | shout-outz`}</title>
+      <Title>{`${news.title} | shout-outz`}</Title>
       <div className="flex items-center gap-3">
         <Link
           to="/news"

@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
@@ -33,7 +34,7 @@ export function ProjectDetailPage({ slug, tab, onTabChange }: ProjectDetailPageP
               (isHTTPError(error) && error.response.status === 404);
             return (
               <div role="alert" className="space-y-4 py-16 text-center">
-                <title>프로젝트 조회 오류 | shout-outz</title>
+                <Title>프로젝트 조회 오류 | shout-outz</Title>
                 <h1 className="text-xl font-bold">
                   {unavailable
                     ? '프로젝트가 없거나 접근할 수 없습니다.'

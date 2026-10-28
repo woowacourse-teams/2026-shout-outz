@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { IconArrowLeft, IconHeart } from '@tabler/icons-react';
@@ -36,7 +37,7 @@ function MagazineDetailContent({ magazineId }: { magazineId: number }) {
 
   return (
     <article className="min-w-0">
-      <title>{`${magazine.title} | shout-outz`}</title>
+      <Title>{`${magazine.title} | shout-outz`}</Title>
       <Link
         to="/magazines"
         className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900"

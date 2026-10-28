@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useSuspenseQuery } from '@tanstack/react-query';
 
 import { projectDetailQueryOptions } from '@/api/project-detail';
@@ -35,7 +36,7 @@ export function ProjectDetailContent({ slug, tab, onTabChange }: ProjectDetailCo
 
   return (
     <>
-      <title>{project.title} | shout-outz</title>
+      <Title>{`${project.title} | shout-outz`}</Title>
       <meta name="description" content={project.tagline} />
       <ProjectDetailHeader project={project} />
       <Tab

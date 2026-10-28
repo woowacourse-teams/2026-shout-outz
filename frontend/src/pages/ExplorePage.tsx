@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useQuery } from '@tanstack/react-query';
 
 import { popularKeywordsQuery } from '@/apis/explore';
@@ -38,7 +39,7 @@ export function ExplorePage({
 
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
-      <title>{query ? `${query} 검색 결과 | shout-outz` : '탐색 | shout-outz'}</title>
+      <Title>{query ? `${query} 검색 결과 | shout-outz` : '탐색 | shout-outz'}</Title>
       <AppGnb />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-12 pb-18 break-keep md:pt-20 md:pb-28">
         <ExploreHero

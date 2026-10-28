@@ -1,3 +1,4 @@
+import { Title } from '@/components/Title';
 import { useState } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { feedQuery, type FeedType } from '@/apis/feed';
@@ -23,7 +24,7 @@ export function FeedEditorPage(props: FeedEditorPageProps) {
   const title = props.feedId === undefined ? `${label} 작성` : '글 수정';
   return (
     <div className="bg-background flex min-h-dvh flex-col">
-      <title>{`${title} | shout-outz`}</title>
+      <Title>{`${title} | shout-outz`}</Title>
       <AppGnb />
       <main className="flex-1">
         <AsyncBoundary>
