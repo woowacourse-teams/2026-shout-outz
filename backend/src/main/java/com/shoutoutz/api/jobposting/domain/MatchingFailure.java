@@ -12,7 +12,9 @@ public enum MatchingFailure {
     /** 검색에 넘긴 값이 잘못됨 */
     INVALID_QUERY(false),
     /** 분류하지 못한 예외 */
-    UNEXPECTED(false);
+    UNEXPECTED(false),
+    /** 마지막 시도 중에 서버가 꺼져 작업 기한이 지난 뒤 다시 가져온 역량. 시도 횟수를 이미 다 써서 검색하지 않는다 */
+    ATTEMPTS_EXHAUSTED(false);
 
     private final boolean retryable;
 

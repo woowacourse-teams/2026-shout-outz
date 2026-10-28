@@ -15,7 +15,7 @@ class MatchingFailureTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = MatchingFailure.class, names = {"INVALID_QUERY", "UNEXPECTED"})
+    @EnumSource(value = MatchingFailure.class, names = {"INVALID_QUERY", "UNEXPECTED", "ATTEMPTS_EXHAUSTED"})
     void 다시_해도_같은_실패는_다시_시도하지_않는다(MatchingFailure failure) {
         assertThat(failure.retryable()).isFalse();
     }
