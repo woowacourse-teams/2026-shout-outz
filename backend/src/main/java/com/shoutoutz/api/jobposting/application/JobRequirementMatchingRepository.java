@@ -1,8 +1,10 @@
 package com.shoutoutz.api.jobposting.application;
 
 import com.shoutoutz.api.jobposting.application.dto.ClaimedJobRequirement;
+import com.shoutoutz.api.jobposting.application.dto.RequirementRecommendation;
 import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -31,4 +33,12 @@ public interface JobRequirementMatchingRepository {
      * @return 바꿨으면 true, 늦게 끝난 결과라 무시했으면 false
      */
     boolean markFailed(ClaimedJobRequirement requirement, MatchingFailure failure, Instant now);
+
+    /**
+     * 역량의 판정 결과를 저장하고 역량을 완료로 바꾼다. 이전에 저장한 판정 결과는 지우고 새로 넣는다.
+     * 공고의 역량이 모두 완료면 공고도 완료로 바꾼다. 이미 실패한 공고는 실패로 둔다.
+     *
+     * @return 저장했으면 true, 늦게 끝난 결과라 무시했으면 false
+     */
+    boolean complete(ClaimedJobRequirement requirement, List<RequirementRecommendation> recommendations, Instant now);
 }

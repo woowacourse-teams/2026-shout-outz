@@ -3,13 +3,18 @@ package com.shoutoutz.api.jobposting.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.jobposting.application.JobRequirementMatchingRepository;
+import com.shoutoutz.api.jobposting.application.dto.CandidateChunk;
+import com.shoutoutz.api.jobposting.application.dto.CandidateChunk.ChunkKind;
 import com.shoutoutz.api.jobposting.application.dto.ClaimedJobRequirement;
+import com.shoutoutz.api.jobposting.application.dto.RequirementRecommendation;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingFailure;
+import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -208,6 +213,139 @@ class JobRequirementMatchingRepositoryIntegrationTest {
         assertThat(requirement.get("status")).isEqualTo("PROCESSING");
         assertThat(requirement.get("last_error")).isNull();
         assertThat(postingStatus(postingId)).isEqualTo("PROCESSING");
+    }
+
+    @Test
+    void 완료하면_판정_결과와_판정_근거를_저장하고_역량을_완료로_바꾼다() {
+        long postingId = insertPosting("PENDING");
+        long requirementId = insertRequirement(postingId, 1, "PENDING");
+        ClaimedJobRequirement first = repository.claimNext(NOW, LEASE_UNTIL).orElseThrow();
+        repository.scheduleRetry(first, MatchingFailure.SEARCH_FAILED, NOW, NOW);
+        ClaimedJobRequirement claimed = repository.claimNext(NOW, LEASE_UNTIL).orElseThrow();
+
+        boolean completed = repository.complete(claimed, List.of(recommendation("pr-1", RecommendationVerdict.MATCH)),
+                NOW);
+
+        assertThat(completed).isTrue();
+        Map<String, Object> requirement = requirement(requirementId);
+        assertThat(requirement.get("status")).isEqualTo("READY");
+        assertThat(requirement.get("lease_until")).isNull();
+        assertThat(requirement.get("last_error")).isNull();
+        Map<String, Object> saved = jdbcTemplate.queryForMap("""
+                SELECT resource_source, resource_external_key, verdict, reason, description, similarity_score,
+                       jsonb_array_length(evidence) AS evidence_count,
+                       evidence -> 0 ->> 'kind' AS first_kind, evidence -> 0 ->> 'text' AS first_text,
+                       (evidence -> 0 ->> 'similarityScore')::float8 AS first_score
+                FROM requirement_recommendations WHERE job_requirement_id = ?
+                """, requirementId);
+        assertThat(saved).containsEntry("resource_source", "GITHUB_PR")
+                .containsEntry("resource_external_key", "pr-1")
+                .containsEntry("verdict", "MATCH")
+                .containsEntry("reason", "Spring 으로 API 를 만든 경험이 있어요.")
+                .containsEntry("description", "Spring 으로 API 를 만든 PR 이에요.")
+                .containsEntry("similarity_score", 0.8)
+                .containsEntry("evidence_count", 2)
+                .containsEntry("first_kind", "EXPERIENCE")
+                .containsEntry("first_text", "Spring 으로 주문 API 를 만들었다.")
+                .containsEntry("first_score", 0.8);
+    }
+
+    /** 완료된 역량을 다시 분석할 때처럼 이전 판정 결과가 남아 있어도 한 벌만 남는다. */
+    @Test
+    void 완료하면_이전에_저장한_판정_결과는_지우고_새로_넣는다() {
+        long postingId = insertPosting("PENDING");
+        long requirementId = insertRequirement(postingId, 1, "PENDING");
+        jdbcTemplate.update("""
+                INSERT INTO requirement_recommendations (job_requirement_id, resource_source, resource_external_key,
+                                                         verdict, reason, evidence, similarity_score, created_at)
+                VALUES (?, 'GITHUB_PR', 'old', 'MATCH', '이전 판정', '[]'::jsonb, 0.5, now())
+                """, requirementId);
+        ClaimedJobRequirement claimed = repository.claimNext(NOW, LEASE_UNTIL).orElseThrow();
+
+        repository.complete(claimed, List.of(recommendation("pr-1", RecommendationVerdict.MATCH),
+                recommendation("pr-2", RecommendationVerdict.NOT_MATCH)), NOW);
+
+        assertThat(jdbcTemplate.queryForList("""
+                SELECT resource_external_key FROM requirement_recommendations
+                WHERE job_requirement_id = ? ORDER BY resource_external_key
+                """, String.class, requirementId)).containsExactly("pr-1", "pr-2");
+    }
+
+    @Test
+    void 검색된_자료가_없으면_판정_결과_없이_완료한다() {
+        long postingId = insertPosting("PENDING");
+        long requirementId = insertRequirement(postingId, 1, "PENDING");
+        ClaimedJobRequirement claimed = repository.claimNext(NOW, LEASE_UNTIL).orElseThrow();
+
+        assertThat(repository.complete(claimed, List.of(), NOW)).isTrue();
+
+        assertThat(requirement(requirementId).get("status")).isEqualTo("READY");
+        assertThat(recommendationCount(requirementId)).isZero();
+        assertThat(postingStatus(postingId)).isEqualTo("READY");
+    }
+
+    @Test
+    void 남은_역량이_있으면_공고를_분석_중으로_두고_마지막_역량이_끝나면_완료로_바꾼다() {
+        long postingId = insertPosting("PENDING");
+        insertRequirement(postingId, 1, "PENDING");
+        insertRequirement(postingId, 2, "PENDING");
+        ClaimedJobRequirement first = repository.claimNext(NOW, LEASE_UNTIL).orElseThrow();
+        ClaimedJobRequirement second = repository.claimNext(NOW, LEASE_UNTIL).orElseThrow();
+
+        repository.complete(first, List.of(), NOW);
+        assertThat(postingStatus(postingId)).isEqualTo("PROCESSING");
+
+        repository.complete(second, List.of(), NOW);
+        assertThat(postingStatus(postingId)).isEqualTo("READY");
+    }
+
+    @Test
+    void 실패한_공고는_역량이_모두_끝나도_실패로_둔다() {
+        long postingId = insertPosting("PENDING");
+        insertRequirement(postingId, 1, "PENDING");
+        insertRequirement(postingId, 2, "PENDING");
+        ClaimedJobRequirement failed = repository.claimNext(NOW, LEASE_UNTIL).orElseThrow();
+        ClaimedJobRequirement other = repository.claimNext(NOW, LEASE_UNTIL).orElseThrow();
+        repository.markFailed(failed, MatchingFailure.INVALID_QUERY, NOW);
+
+        assertThat(repository.complete(other, List.of(), NOW)).isTrue();
+
+        assertThat(postingStatus(postingId)).isEqualTo("FAILED");
+    }
+
+    @Test
+    void 다른_Worker가_다시_가져간_역량에는_늦게_끝난_판정_결과를_저장하지_않는다() {
+        long postingId = insertPosting("PENDING");
+        long requirementId = insertRequirement(postingId, 1, "PENDING");
+        jdbcTemplate.update("""
+                INSERT INTO requirement_recommendations (job_requirement_id, resource_source, resource_external_key,
+                                                         verdict, reason, evidence, similarity_score, created_at)
+                VALUES (?, 'GITHUB_PR', 'kept', 'MATCH', '이전 판정', '[]'::jsonb, 0.5, now())
+                """, requirementId);
+        ClaimedJobRequirement late = repository.claimNext(NOW, LEASE_UNTIL).orElseThrow();
+        repository.claimNext(LEASE_UNTIL.plusSeconds(1), LEASE_UNTIL.plusSeconds(181)).orElseThrow();
+
+        boolean completed = repository.complete(late, List.of(recommendation("pr-1", RecommendationVerdict.MATCH)),
+                NOW);
+
+        assertThat(completed).isFalse();
+        assertThat(requirement(requirementId).get("status")).isEqualTo("PROCESSING");
+        assertThat(jdbcTemplate.queryForList(
+                "SELECT resource_external_key FROM requirement_recommendations WHERE job_requirement_id = ?",
+                String.class, requirementId)).containsExactly("kept");
+        assertThat(postingStatus(postingId)).isEqualTo("PROCESSING");
+    }
+
+    private RequirementRecommendation recommendation(String externalKey, RecommendationVerdict verdict) {
+        return new RequirementRecommendation("GITHUB_PR", externalKey, verdict, "Spring 으로 API 를 만든 경험이 있어요.",
+                verdict == RecommendationVerdict.NOT_MATCH ? null : "Spring 으로 API 를 만든 PR 이에요.", 0.8,
+                List.of(new CandidateChunk(ChunkKind.EXPERIENCE, "Spring 으로 주문 API 를 만들었다.", 0.8),
+                        new CandidateChunk(ChunkKind.INTRO, "주문 API 를 소개한다.", 0.6)));
+    }
+
+    private int recommendationCount(long requirementId) {
+        return jdbcTemplate.queryForObject("SELECT count(*) FROM requirement_recommendations WHERE job_requirement_id = ?",
+                Integer.class, requirementId);
     }
 
     private long insertPosting(String status) {
