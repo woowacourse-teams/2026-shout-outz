@@ -36,10 +36,14 @@ public record OAuthLoginAttempt(
     }
 
     public static OAuthLoginAttempt create(URI completionUri) {
+        return create(completionUri, Instant.now());
+    }
+
+    public static OAuthLoginAttempt create(URI completionUri, Instant createdAt) {
         return new OAuthLoginAttempt(
                 generateRandomValue(STATE_BYTES),
                 generateRandomValue(CODE_VERIFIER_BYTES),
-                Instant.now(),
+                createdAt,
                 completionUri
         );
     }

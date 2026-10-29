@@ -7,6 +7,7 @@ import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import jakarta.servlet.http.HttpSession;
+import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
@@ -29,14 +30,20 @@ public class AuthSessionAccessor {
         this.clock = clock;
     }
 
-    public void saveLoginAttempt(HttpSession session, OAuthLoginAttempt attempt) {
+    public OAuthLoginAttempt getOrCreateLoginAttempt(HttpSession session, URI completionUri) {
         synchronized (session) {
+            Instant now = Instant.now(clock);
             Object value = session.getAttribute(LOGIN_ATTEMPT);
             if (value instanceof LoginProgress current
-                    && !current.attempt().isExpired(Instant.now(clock))) {
-                throw new ConflictException(AuthErrorCode.OAUTH_LOGIN_IN_PROGRESS);
+                    && !current.attempt().isExpired(now)) {
+                if (current.status() == LoginStatus.PROCESSING) {
+                    throw new ConflictException(AuthErrorCode.OAUTH_LOGIN_IN_PROGRESS);
+                }
+                return current.attempt();
             }
+            OAuthLoginAttempt attempt = OAuthLoginAttempt.create(completionUri, now);
             session.setAttribute(LOGIN_ATTEMPT, new LoginProgress(attempt, LoginStatus.WAITING));
+            return attempt;
         }
     }
 

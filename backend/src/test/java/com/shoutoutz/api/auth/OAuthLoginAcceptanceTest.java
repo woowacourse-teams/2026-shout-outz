@@ -25,6 +25,7 @@ import io.restassured.response.Response;
 import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -115,8 +116,8 @@ class OAuthLoginAcceptanceTest {
     }
 
     @Test
-    @DisplayName("대기 중인 로그인의 중복 시작은 409로 거부하고 첫 Callback은 성공한다")
-    void rejectsDuplicateStartWithoutReplacingWaitingAttempt() {
+    @DisplayName("GitHub 화면에서 돌아와 다시 로그인하면 기존 시도로 이동하고 Callback은 성공한다")
+    void resumesWaitingAttemptWithoutReplacingIt() {
         Response authorization = requestAuthorization();
         String sessionId = authorization.cookie("JSESSIONID");
         String state = authorizationQueryParams(authorization).getFirst("state");
@@ -125,9 +126,8 @@ class OAuthLoginAcceptanceTest {
 
         Response duplicate = requestAuthorization(sessionId);
 
-        assertThat(duplicate.statusCode()).isEqualTo(409);
-        assertThat(duplicate.jsonPath().getString("code")).isEqualTo("OAUTH_LOGIN_IN_PROGRESS");
-        assertThat(duplicate.header("Location")).isNull();
+        assertThat(duplicate.statusCode()).isEqualTo(302);
+        assertThat(duplicate.header("Location")).isEqualTo(authorization.header("Location"));
         assertThat(duplicate.cookie("JSESSIONID")).isNull();
         assertThat(requestCallback(sessionId, state, "waiting-code").statusCode()).isEqualTo(302);
     }
@@ -149,6 +149,9 @@ class OAuthLoginAcceptanceTest {
         Response authorization = requestAuthorization();
         String sessionId = authorization.cookie("JSESSIONID");
         String state = authorizationQueryParams(authorization).getFirst("state");
+        Response resumed = requestAuthorization(sessionId);
+        assertThat(resumed.statusCode()).isEqualTo(302);
+        assertThat(resumed.header("Location")).isEqualTo(authorization.header("Location"));
         CountDownLatch providerEntered = new CountDownLatch(1);
         CountDownLatch providerRelease = new CountDownLatch(1);
         given(gitHubOAuthIdentityPort.fetchIdentity(eq("processing-code"), anyString()))
@@ -165,15 +168,18 @@ class OAuthLoginAcceptanceTest {
                 assertThat(providerEntered.await(10, TimeUnit.SECONDS)).isTrue();
                 Response duplicateStart = requestAuthorization(sessionId);
                 Response duplicateCallback = requestCallback(sessionId, state, "processing-code");
+                Response otherCodeCallback = requestCallback(sessionId, state, "other-code");
 
                 assertThat(duplicateStart.statusCode()).isEqualTo(409);
                 assertThat(duplicateCallback.statusCode()).isEqualTo(409);
+                assertThat(otherCodeCallback.statusCode()).isEqualTo(409);
                 assertThat(duplicateStart.jsonPath().getString("code"))
                         .isEqualTo("OAUTH_LOGIN_IN_PROGRESS");
                 assertThat(duplicateCallback.jsonPath().getString("code"))
                         .isEqualTo("OAUTH_LOGIN_IN_PROGRESS");
                 assertThat(duplicateStart.cookie("JSESSIONID")).isNull();
                 assertThat(duplicateCallback.cookie("JSESSIONID")).isNull();
+                assertThat(otherCodeCallback.cookie("JSESSIONID")).isNull();
             } finally {
                 providerRelease.countDown();
             }
@@ -184,21 +190,61 @@ class OAuthLoginAcceptanceTest {
         String rotatedSessionId = completed.cookie("JSESSIONID");
         assertThat(rotatedSessionId).isNotBlank().isNotEqualTo(sessionId);
         verify(gitHubOAuthIdentityPort).fetchIdentity(eq("processing-code"), anyString());
+        verify(gitHubOAuthIdentityPort, never()).fetchIdentity(eq("other-code"), anyString());
         Response session = RestAssured.given().port(port)
                 .cookie("JSESSIONID", rotatedSessionId).get(AUTH_SESSION_PATH);
         assertThat(session.jsonPath().getString("data.status")).isEqualTo(expectedStatus);
         if (existingUser) {
             assertThat(session.jsonPath().getLong("data.userId")).isEqualTo(expectedUserId);
         }
-        Response oldCookieCallback = requestCallback(sessionId, state, "processing-code");
+        Response oldCookieCallback = requestCallback(sessionId, state, "other-code");
         assertThat(oldCookieCallback.statusCode()).isEqualTo(400);
         assertThat(oldCookieCallback.jsonPath().getString("code"))
                 .isEqualTo("OAUTH_LOGIN_SESSION_NOT_FOUND");
-        Response replay = requestCallback(rotatedSessionId, state, "processing-code");
+        assertThat(oldCookieCallback.cookie("JSESSIONID")).isNull();
+        Response replay = requestCallback(rotatedSessionId, state, "other-code");
         assertThat(replay.statusCode()).isEqualTo(400);
         assertThat(replay.jsonPath().getString("code"))
                 .isEqualTo("OAUTH_LOGIN_ATTEMPT_NOT_FOUND");
+        assertThat(replay.cookie("JSESSIONID")).isNull();
+        Response preserved = RestAssured.given().port(port)
+                .cookie("JSESSIONID", rotatedSessionId).get(AUTH_SESSION_PATH);
+        assertThat(preserved.jsonPath().getString("data.status")).isEqualTo(expectedStatus);
+        assertThat(preserved.jsonPath().getString("data.userId"))
+                .isEqualTo(session.jsonPath().getString("data.userId"));
+        verify(gitHubOAuthIdentityPort, never()).fetchIdentity(eq("other-code"), anyString());
         assertThat(requestAuthorization(rotatedSessionId).statusCode()).isEqualTo(302);
+    }
+
+    @Test
+    @DisplayName("같은 쿠키의 동시 로그인 시작은 동일한 인가 URI를 반환한다")
+    void resumesSameAttemptForConcurrentHttpStarts() throws Exception {
+        String sessionId = RestAssured.given().port(port).get(AUTH_SESSION_PATH).cookie("JSESSIONID");
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        Callable<Response> request = () -> {
+            ready.countDown();
+            assertThat(start.await(5, TimeUnit.SECONDS)).isTrue();
+            return requestAuthorization(sessionId);
+        };
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(request);
+            var second = executor.submit(request);
+            try {
+                assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            } finally {
+                start.countDown();
+            }
+            Response firstResponse = first.get(10, TimeUnit.SECONDS);
+            Response secondResponse = second.get(10, TimeUnit.SECONDS);
+
+            assertThat(firstResponse.statusCode()).isEqualTo(302);
+            assertThat(secondResponse.statusCode()).isEqualTo(302);
+            assertThat(secondResponse.header("Location")).isEqualTo(firstResponse.header("Location"));
+            assertThat(firstResponse.cookie("JSESSIONID")).isNull();
+            assertThat(secondResponse.cookie("JSESSIONID")).isNull();
+        }
     }
 
     @Test

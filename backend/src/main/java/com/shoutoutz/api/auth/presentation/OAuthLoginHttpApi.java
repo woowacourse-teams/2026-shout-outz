@@ -3,7 +3,6 @@ package com.shoutoutz.api.auth.presentation;
 import com.shoutoutz.api.auth.application.OAuthLoginService;
 import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
 import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
-import com.shoutoutz.api.auth.application.command.OAuthLoginStartResult;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,16 +30,11 @@ public class OAuthLoginHttpApi {
             HttpSession session
     ) {
         URI completionUri = properties.resolveCompletionUri(returnTo);
-        OAuthLoginStartResult result;
-        if (returnTo == null) {
-            result = oauthLoginService.startGitHubLogin();
-        } else {
-            result = oauthLoginService.startGitHubLogin(completionUri);
-        }
-        authSessionAccessor.saveLoginAttempt(session, result.attempt());
+        OAuthLoginAttempt attempt = authSessionAccessor.getOrCreateLoginAttempt(session, completionUri);
+        URI authorizationUri = oauthLoginService.generateGitHubAuthorizationUri(attempt);
 
         return ResponseEntity.status(HttpStatus.FOUND)
-                .location(result.authorizationUri())
+                .location(authorizationUri)
                 .build();
     }
 

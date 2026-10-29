@@ -27,7 +27,6 @@ import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
 import com.shoutoutz.api.auth.application.OAuthLoginService;
 import com.shoutoutz.api.auth.application.OAuthSignupService;
 import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
-import com.shoutoutz.api.auth.application.command.OAuthLoginStartResult;
 import com.shoutoutz.api.auth.application.command.OAuthSignupCommand;
 import com.shoutoutz.api.auth.application.command.OAuthSignupResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
@@ -85,8 +84,10 @@ class AuthApiDocumentationTest {
     private static final String AUTHORIZATION_DESCRIPTION =
             "state와 PKCE 값을 생성해 세션에 저장하고 GitHub 인가 화면으로 이동한다. "
                     + "허용 목록에 있는 returnTo가 있으면 Callback 완료 후 해당 프론트엔드로 이동한다. "
-                    + "같은 세션에서 OAuth 대기 또는 Callback 처리 중이면 기존 시도를 유지하고 "
-                    + "409 OAUTH_LOGIN_IN_PROGRESS를 반환한다. 중복 응답은 GitHub로 이동하지 않으며 "
+                    + "같은 세션에 유효한 WAITING 시도가 있으면 기존 state와 PKCE, 생성 시각과 "
+                    + "최초 완료 주소를 유지한 같은 인가 URI로 다시 이동한다. 재시도로 5분 유효기간을 연장하지 않는다. "
+                    + "Callback 처리 중인 PROCESSING 상태에서는 기존 시도를 유지하고 "
+                    + "409 OAUTH_LOGIN_IN_PROGRESS를 반환한다. 이 응답은 GitHub로 이동하지 않으며 "
                     + "클라이언트는 로그인 버튼의 중복 내비게이션도 차단해야 한다. "
                     + "성공, 취소, 처리 실패 후 또는 시도 생성 후 5분이 지나면 다시 시작할 수 있다.";
     private static final String SIGNUP_DESCRIPTION =
@@ -128,8 +129,8 @@ class AuthApiDocumentationTest {
     @Test
     @DisplayName("GitHub 로그인을 시작하면 GitHub 인가 화면으로 이동한다")
     void authorizeGitHub() throws Exception {
-        given(oauthLoginService.startGitHubLogin())
-                .willReturn(new OAuthLoginStartResult(GITHUB_AUTHORIZATION_URI, loginAttempt()));
+        given(authSessionAccessor.getOrCreateLoginAttempt(any(), any())).willReturn(loginAttempt());
+        given(oauthLoginService.generateGitHubAuthorizationUri(loginAttempt())).willReturn(GITHUB_AUTHORIZATION_URI);
 
         mockMvc.perform(get("/oauth2/authorization/github"))
                 .andExpect(status().isFound())
@@ -157,12 +158,10 @@ class AuthApiDocumentationTest {
     }
 
     @Test
-    @DisplayName("같은 세션의 OAuth 중복 시작은 기존 시도를 유지하며 409를 반환한다")
+    @DisplayName("Callback 처리 중 로그인 시작은 기존 시도를 유지하며 409를 반환한다")
     void rejectDuplicateAuthorization() throws Exception {
-        given(oauthLoginService.startGitHubLogin())
-                .willReturn(new OAuthLoginStartResult(GITHUB_AUTHORIZATION_URI, loginAttempt()));
         willThrow(new ConflictException(AuthErrorCode.OAUTH_LOGIN_IN_PROGRESS))
-                .given(authSessionAccessor).saveLoginAttempt(any(), any());
+                .given(authSessionAccessor).getOrCreateLoginAttempt(any(), any());
 
         mockMvc.perform(get("/oauth2/authorization/github")
                         .header(HttpHeaders.COOKIE, "JSESSIONID=session-id"))
