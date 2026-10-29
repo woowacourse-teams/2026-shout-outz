@@ -130,6 +130,9 @@ public class FeedService {
             recommendationStatus = questionRecommendationService.requestGeneration(
                     savedFeed.getId(), request.title(), request.content()
             );
+            if (request.recommendationId() != null) {
+                questionRecommendationService.markUsed(request.recommendationId(), savedFeed.getId());
+            }
         }
 
         return toCommandResponse(request.isAnonymous()
