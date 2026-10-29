@@ -1,5 +1,6 @@
 package com.shoutoutz.api.auth.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -9,6 +10,7 @@ import com.shoutoutz.api.auth.application.port.GitHubOAuthIdentityPort;
 import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.domain.OAuthProvider;
+import java.net.URI;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,6 +34,19 @@ class OAuthLoginServiceTest {
                 identityPort,
                 oauthAccountLoginService
         );
+    }
+
+    @Test
+    @DisplayName("선택된 로그인 시도의 state와 PKCE challenge로 인가 URI를 생성한다")
+    void generatesAuthorizationUriFromSelectedAttempt() {
+        OAuthLoginAttempt attempt = loginAttempt();
+        URI expected = URI.create("https://github.com/login/oauth/authorize?state=state");
+        given(authorizationPort.generateAuthorizationUri(attempt.state(), attempt.codeChallenge()))
+                .willReturn(expected);
+
+        assertThat(oauthLoginService.generateGitHubAuthorizationUri(attempt)).isEqualTo(expected);
+
+        verify(authorizationPort).generateAuthorizationUri(attempt.state(), attempt.codeChallenge());
     }
 
     @Test
