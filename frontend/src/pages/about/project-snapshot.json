@@ -1,0 +1,129 @@
+[
+  {
+    "slug": "knot",
+    "title": "Knot",
+    "tagline": "팀의 결정을 모두의 기억으로, Knot",
+    "cohort": 8,
+    "thumbnailUrl": null,
+    "techTags": [
+      {
+        "id": 1,
+        "displayName": "Java"
+      },
+      {
+        "id": 8,
+        "displayName": "Spring Boot"
+      },
+      {
+        "id": 16,
+        "displayName": "React"
+      },
+      {
+        "id": 3,
+        "displayName": "TypeScript"
+      },
+      {
+        "id": 24,
+        "displayName": "Emotion"
+      },
+      {
+        "id": 155,
+        "displayName": "Tanstack Query"
+      },
+      {
+        "id": 28,
+        "displayName": "Webpack"
+      },
+      {
+        "id": 22,
+        "displayName": "Zustand"
+      }
+    ],
+    "members": [
+      {
+        "displayName": "루덴스",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/96972872?v=4"
+      }
+    ],
+    "likeCount": 1,
+    "commentCount": 0
+  },
+  {
+    "slug": "jarihana",
+    "title": "자리하나?",
+    "tagline": "부트캠프 간 네트워킹 커뮤니티 서비스",
+    "cohort": 8,
+    "thumbnailUrl": "https://d1b6wzgln7vib5.cloudfront.net/shout-outz/media/dev/project-thumbnail/8e8ea448-666a-4c46-958f-8f34a7b72996/display",
+    "techTags": [
+      {
+        "id": 1,
+        "displayName": "Java"
+      },
+      {
+        "id": 149,
+        "displayName": "SpringBoot"
+      },
+      {
+        "id": 10,
+        "displayName": "Spring Data JPA"
+      },
+      {
+        "id": 9,
+        "displayName": "Spring Security"
+      },
+      {
+        "id": 36,
+        "displayName": "PostgreSQL"
+      },
+      {
+        "id": 42,
+        "displayName": "Docker"
+      },
+      {
+        "id": 41,
+        "displayName": "AWS"
+      }
+    ],
+    "members": [
+      {
+        "displayName": "이삭",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/131836965?v=4"
+      },
+      {
+        "displayName": "에덴",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/33351653?v=4"
+      },
+      {
+        "displayName": "파도",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/112858914?v=4"
+      }
+    ],
+    "likeCount": 2,
+    "commentCount": 0
+  },
+  {
+    "slug": "yeogidam",
+    "title": "여기담",
+    "tagline": "릴스 속 장소를 공유 한 번으로 지도에 저장하세요!",
+    "cohort": 8,
+    "thumbnailUrl": "https://d1b6wzgln7vib5.cloudfront.net/shout-outz/media/dev/project-thumbnail/828a8e3d-a74f-4224-bf4e-f84083a8ca19/display",
+    "techTags": [
+      {
+        "id": 1,
+        "displayName": "Java"
+      },
+      {
+        "id": 149,
+        "displayName": "SpringBoot"
+      }
+    ],
+    "members": [
+      {
+        "displayName": "러키",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/120218763?v=4"
+      }
+    ],
+    "likeCount": 2,
+    "commentCount": 0
+  }
+]

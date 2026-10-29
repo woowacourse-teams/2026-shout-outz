@@ -1,40 +1,50 @@
-import { AboutHeader, AboutHero } from '@/components/about/AboutHero';
-import { AboutProjects } from '@/components/about/AboutProjects';
-import { AboutCommunity } from '@/components/about/AboutCommunity';
-import { AboutStories } from '@/components/about/AboutStories';
-import { AboutMission, AboutClosing, AboutFooter } from '@/components/about/AboutClosing';
-import type { AboutSectionProps } from '@/components/about/shared';
+import { useEffect, useRef } from 'react';
+import { aboutBeforeProjects, aboutAfterProjects } from '@/pages/about/markup';
+import { initAbout } from '@/pages/about/interactive';
+import { ProjectCard } from '@/components/projects/ProjectCard';
+import projects from '@/pages/about/project-snapshot.json';
 
-export type { AboutLinkProps } from '@/components/about/shared';
-
-export function AboutPage({ LinkComponent }: AboutSectionProps) {
+export function AboutPage() {
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (root.current) return initAbout(root.current);
+  }, []);
   return (
-    <div
-      id="about-top"
-      className="bg-background [&_a]:focus-visible:outline-primary-500 min-h-dvh font-medium break-keep text-gray-900 [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4"
-    >
-      <title>샤라웃 소개 — 개발과 취업 준비를 함께</title>
+    <>
+      <title>샤라웃 소개 — 경험에서 찾는 다음 힌트</title>
       <meta
         name="description"
-        content="프로젝트를 살펴보고, 개발과 취업 고민을 나누세요. IT 취준생을 위한 커뮤니티, 샤라웃."
+        content="우아한테크코스 크루의 경험과 개발 기록에서 다음 힌트를 찾아보세요."
       />
       <link rel="canonical" href="https://shout-ou.tz/about" />
-      <LinkComponent
-        href="#main"
-        className="bg-primary-500 fixed -top-20 left-4 z-30 rounded-lg p-4 text-white focus:top-3"
-      >
-        본문으로 바로가기
-      </LinkComponent>
-      <AboutHeader LinkComponent={LinkComponent} />
-      <main id="main" className="scroll-mt-28">
-        <AboutHero LinkComponent={LinkComponent} />
-        <AboutProjects LinkComponent={LinkComponent} />
-        <AboutCommunity LinkComponent={LinkComponent} />
-        <AboutStories LinkComponent={LinkComponent} />
-        <AboutMission LinkComponent={LinkComponent} />
-        <AboutClosing LinkComponent={LinkComponent} />
-      </main>
-      <AboutFooter LinkComponent={LinkComponent} />
-    </div>
+      <link rel="stylesheet" href="/about-assets/style.f9f1e8ef69.css" precedence="about" />
+      <link rel="stylesheet" href="/about-assets/technology.e9221c42fa.css" precedence="about" />
+      <div ref={root} className="about-page">
+        <a className="skip" href="#main">
+          본문으로 바로가기
+        </a>
+        <main id="main">
+          <div
+            className="about-content"
+            dangerouslySetInnerHTML={{ __html: aboutBeforeProjects }}
+          />
+          <section id="experience" className="ref-section wrap ref-divider">
+            <div className="ref-heading">
+              <h2>프로젝트를 둘러보세요</h2>
+              <p>크루들이 만든 프로젝트를 살펴보세요.</p>
+            </div>
+            <ul aria-label="프로젝트 예시" className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {projects.map((project) => (
+                <li key={project.slug}>
+                  <ProjectCard {...project} />
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 text-sm text-gray-700">프로토타입에 수집된 프로젝트 스냅샷입니다.</p>
+          </section>
+          <div className="about-content" dangerouslySetInnerHTML={{ __html: aboutAfterProjects }} />
+        </main>
+      </div>
+    </>
   );
 }
