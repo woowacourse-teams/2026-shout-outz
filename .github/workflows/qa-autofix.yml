@@ -42,9 +42,11 @@ jobs:
       contents: read
     steps:
       # PAT로 checkout해야 push와 PR 생성이 다른 워크플로우(dev 타입 검사 등)를 트리거함
+      # 워크플로우를 실행한 브랜치의 스킬·스크립트를 쓴다. 스케줄 실행은 기본 브랜치(develop)에서 돈다.
+      # 수동 실행은 `.github/scripts/qa-autofix-run-branch.sh`로 머지 전 브랜치를 시험할 때 쓴다.
       - uses: actions/checkout@v6
         with:
-          ref: develop
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
           token: ${{ secrets.QA_BOT_TOKEN }}
 
