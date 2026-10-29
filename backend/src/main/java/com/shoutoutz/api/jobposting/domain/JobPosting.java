@@ -1,5 +1,6 @@
 package com.shoutoutz.api.jobposting.domain;
 
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.util.DataResolveUtil;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -119,6 +120,55 @@ public final class JobPosting {
                 now,
                 now
         );
+    }
+
+    /**
+     * 기업이 바꾼 공고를 운영자가 다시 붙여넣었을 때 쓴다. 주소가 다르면 다른 공고이므로 받지 않는다.
+     * 원문 해시가 같으면 공고 정보만 고치고, 역량과 분석 상태는 그대로 둔다. 요청의 역량은 쓰지 않는다.
+     * 해시가 다르면 받은 역량으로 바꾸고 PENDING 으로 되돌려 다시 분석한다.
+     * 숨김 시각, 등록자, 등록 시각은 바꾸지 않는다.
+     */
+    public JobPosting update(
+            String sourceUrl,
+            String content,
+            String companyName,
+            JobRole jobRole,
+            String careerRequirement,
+            String title,
+            String employmentType,
+            LocalDate deadline,
+            List<JobRequirement> requirements,
+            Instant now
+    ) {
+        if (!this.sourceUrl.equals(new JobPostingUrl(sourceUrl))) {
+            throw new BadRequestException(JobPostingErrorCode.JOB_POSTING_URL_MISMATCH);
+        }
+        JobPostingContentHash newContentHash = JobPostingContentHash.from(content);
+        boolean sameContent = this.contentHash.equals(newContentHash);
+        return new JobPosting(
+                id,
+                this.sourceUrl,
+                newContentHash,
+                companyName,
+                jobRole,
+                careerRequirement,
+                title,
+                employmentType,
+                deadline,
+                sameContent ? status : MatchingStatus.PENDING,
+                hiddenAt,
+                registeredBy,
+                sameContent ? this.requirements : requirements,
+                createdAt,
+                now
+        );
+    }
+
+    /**
+     * 원문이 바뀌어 다시 분석해야 하는지 판단할 때 쓴다.
+     */
+    public boolean hasSameContentAs(JobPosting other) {
+        return contentHash.equals(other.contentHash);
     }
 
     public static JobPosting reconstitute(
