@@ -79,10 +79,13 @@ jobs:
             --max-turns 120
             --allowedTools "Read,Edit,Write,Glob,Grep,mcp__notion,Bash(git:*),Bash(gh label list:*),Bash(gh issue create:*),Bash(gh pr create:*),Bash(npm run:*),Bash(npm ci:*)"
 
-      # 시간 초과나 턴 한도로 AI가 중간에 끝나면 아직 `AI 처리중`인 카드를 `실패`로 바꾼다.
+      # AI 단계 결과와 관계없이 실행한다. 단계가 성공으로 끝나도 마무리하지 못한 카드가 있을 수 있다.
+      # 아직 `AI 처리중`인 카드는 `실패`로 바꾸고, `실패` 카드에는 거부된 명령을 댓글로 남긴다.
       - name: Mark stuck cards as failed
-        if: failure() || cancelled()
+        if: always()
         run: node .github/scripts/fail-stuck-qa-cards.mjs ${{ needs.find-cards.outputs.card_ids }}
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          # 시간 초과로 AI 단계가 끊기면 output이 비어 있을 수 있어 기본 저장 위치를 함께 둔다.
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
