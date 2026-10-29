@@ -6,15 +6,21 @@ import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.jobposting.domain.JobPosting;
 import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobPostingUrl;
+import com.shoutoutz.api.jobposting.domain.JobPostingVisibility;
 import com.shoutoutz.api.jobposting.infrastructure.jpa.JobPostingJpaRepository;
 import com.shoutoutz.api.jobposting.infrastructure.jpa.JobRequirementJpaRepository;
 import com.shoutoutz.api.jobposting.infrastructure.mapper.JobPostingMapper;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @RequiredArgsConstructor
@@ -24,6 +30,7 @@ public class JobPostingRepositoryImpl implements JobPostingRepository {
 
     private final JobPostingJpaRepository jobPostingJpaRepository;
     private final JobRequirementJpaRepository jobRequirementJpaRepository;
+    private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Override
     public JobPosting save(JobPosting jobPosting) {
@@ -44,6 +51,43 @@ public class JobPostingRepositoryImpl implements JobPostingRepository {
     @Override
     public Optional<Long> findIdBySourceUrl(JobPostingUrl sourceUrl) {
         return jobPostingJpaRepository.findIdBySourceUrl(sourceUrl.value());
+    }
+
+    /**
+     * 엔티티를 저장하면 Worker 가 SQL 로 바꾼 분석 상태까지 덮어쓰므로, 숨김 시각만 한 문장으로 바꾼다.
+     */
+    @Override
+    public Optional<JobPostingVisibility> updateHiddenAt(long jobPostingId, boolean hidden, Instant now) {
+        List<JobPostingVisibility> updated = jdbcTemplate.query("""
+                UPDATE job_postings
+                SET hidden_at = CASE WHEN :hidden THEN COALESCE(hidden_at, :now) ELSE NULL END,
+                    updated_at = :now
+                WHERE id = :id
+                RETURNING id, hidden_at
+                """, new MapSqlParameterSource()
+                        .addValue("id", jobPostingId)
+                        .addValue("hidden", hidden)
+                        .addValue("now", Timestamp.from(now)),
+                (rs, rowNum) -> {
+                    Timestamp hiddenAt = rs.getTimestamp("hidden_at");
+                    return new JobPostingVisibility(rs.getLong("id"), hiddenAt == null ? null : hiddenAt.toInstant());
+                });
+        return updated.stream().findFirst();
+    }
+
+    /**
+     * 역량 행을 먼저 잠근 뒤 공고를 지운다.
+     * Worker 는 역량 행, 공고 행 순서로 잠그는데, 공고부터 지우면 공고 행을 잡은 채 역량 행을 기다리게 되어 서로 기다리다 멈출 수 있다.
+     * 역량과 추천 자료는 외래 키의 ON DELETE CASCADE 로 함께 지워진다.
+     */
+    @Override
+    @Transactional
+    public boolean deleteById(long jobPostingId) {
+        MapSqlParameterSource posting = new MapSqlParameterSource("id", jobPostingId);
+        jdbcTemplate.queryForList(
+                "SELECT id FROM job_requirements WHERE job_posting_id = :id ORDER BY id FOR UPDATE",
+                posting, Long.class);
+        return jdbcTemplate.update("DELETE FROM job_postings WHERE id = :id", posting) == 1;
     }
 
     /**

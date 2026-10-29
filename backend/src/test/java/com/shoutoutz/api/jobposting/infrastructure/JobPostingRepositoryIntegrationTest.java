@@ -14,11 +14,13 @@ import com.shoutoutz.api.jobposting.domain.JobPostingContentHash;
 import com.shoutoutz.api.jobposting.domain.JobPostingErrorCode;
 import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobPostingUrl;
+import com.shoutoutz.api.jobposting.domain.JobPostingVisibility;
 import com.shoutoutz.api.jobposting.domain.JobRequirement;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import jakarta.persistence.EntityManager;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -155,6 +157,89 @@ class JobPostingRepositoryIntegrationTest {
 
         assertThat(summary).isEqualTo(new JobPostingSummary(
                 saved.getId(), "예시 회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, NOW));
+    }
+
+    @Test
+    void 숨기면_숨김_시각을_채우고_다시_숨겨도_처음_시각을_둔다() {
+        long id = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW)).getId();
+
+        JobPostingVisibility first = jobPostingRepository.updateHiddenAt(id, true, NOW.plusSeconds(60)).orElseThrow();
+        JobPostingVisibility second = jobPostingRepository.updateHiddenAt(id, true, NOW.plusSeconds(120)).orElseThrow();
+
+        assertThat(first).isEqualTo(new JobPostingVisibility(id, NOW.plusSeconds(60)));
+        assertThat(second).isEqualTo(new JobPostingVisibility(id, NOW.plusSeconds(60)));
+        assertThat(second.hidden()).isTrue();
+    }
+
+    @Test
+    void 숨김을_해제하면_숨김_시각을_비우고_숨기지_않은_공고를_해제해도_그대로다() {
+        long id = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW)).getId();
+        jobPostingRepository.updateHiddenAt(id, true, NOW.plusSeconds(60));
+
+        JobPostingVisibility shown = jobPostingRepository.updateHiddenAt(id, false, NOW.plusSeconds(120)).orElseThrow();
+        JobPostingVisibility shownAgain = jobPostingRepository.updateHiddenAt(id, false, NOW.plusSeconds(180)).orElseThrow();
+
+        assertThat(shown).isEqualTo(new JobPostingVisibility(id, null));
+        assertThat(shownAgain.hidden()).isFalse();
+    }
+
+    @Test
+    void 숨김은_공고의_분석_상태와_역량의_매칭_칸을_바꾸지_않는다() {
+        long id = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW)).getId();
+        // Worker 가 SQL 로 바꿔 둔 값이 숨김으로 덮어써지지 않는지 본다.
+        jdbcTemplate.update("UPDATE job_postings SET status = 'PROCESSING' WHERE id = ?", id);
+        jdbcTemplate.update("""
+                UPDATE job_requirements
+                SET status = 'PROCESSING', attempt_count = 2, lease_until = ?, last_error = 'SEARCH_FAILED'
+                WHERE job_posting_id = ?
+                """, Timestamp.from(NOW.plusSeconds(180)), id);
+
+        jobPostingRepository.updateHiddenAt(id, true, NOW.plusSeconds(60));
+
+        assertThat(jdbcTemplate.queryForObject("SELECT status FROM job_postings WHERE id = ?", String.class, id))
+                .isEqualTo("PROCESSING");
+        assertThat(jdbcTemplate.queryForList(
+                "SELECT status, attempt_count, lease_until, last_error FROM job_requirements WHERE job_posting_id = ?",
+                id)).hasSize(2).allSatisfy(row -> {
+            assertThat(row.get("status")).isEqualTo("PROCESSING");
+            assertThat(row.get("attempt_count")).isEqualTo(2);
+            assertThat(row.get("lease_until")).isNotNull();
+            assertThat(row.get("last_error")).isEqualTo("SEARCH_FAILED");
+        });
+    }
+
+    @Test
+    void 없는_공고의_숨김을_바꾸면_빈_값을_돌려준다() {
+        assertThat(jobPostingRepository.updateHiddenAt(Long.MAX_VALUE, true, NOW)).isEmpty();
+    }
+
+    @Test
+    void 공고를_지우면_역량과_추천_자료도_함께_지워진다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+        long requirementId = saved.getRequirements().getFirst().getId();
+        jdbcTemplate.update("""
+                INSERT INTO requirement_recommendations (job_requirement_id, resource_source, resource_external_key,
+                                                         verdict, reason, evidence, similarity_score, created_at)
+                VALUES (?, 'GITHUB_PR', 'pr-1', 'MATCH', '판정 이유', '[]'::jsonb, 0.5, now())
+                """, requirementId);
+
+        boolean deleted = jobPostingRepository.deleteById(saved.getId());
+
+        assertThat(deleted).isTrue();
+        // SQL 로 지워서 같은 트랜잭션의 1차 캐시에는 공고가 남아 있으므로 DB 행을 직접 센다.
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM job_postings WHERE id = ?", Integer.class, saved.getId())).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM job_requirements WHERE job_posting_id = ?", Integer.class, saved.getId()))
+                .isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM requirement_recommendations WHERE job_requirement_id = ?", Integer.class,
+                requirementId)).isZero();
+    }
+
+    @Test
+    void 없는_공고를_지우면_false_를_돌려준다() {
+        assertThat(jobPostingRepository.deleteById(Long.MAX_VALUE)).isFalse();
     }
 
     private JobPosting posting(String url, Instant now) {
