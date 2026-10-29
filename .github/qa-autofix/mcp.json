@@ -4,7 +4,7 @@
         "command": "npx",
         "args": [
           "-y",
-          "@notionhq/notion-mcp-server"
+          "@notionhq/notion-mcp-server@2.6.0"
         ],
         "env": {
           "NOTION_TOKEN": "${NOTION_TOKEN}"
