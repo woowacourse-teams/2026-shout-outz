@@ -7,11 +7,14 @@ import com.shoutoutz.api.common.util.DataResolveUtil;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.ServiceStatus;
+import com.shoutoutz.api.project.domain.TeamBlogUrl;
+import com.shoutoutz.api.project.domain.TeamBlogUrls;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import org.hibernate.validator.constraints.CodePointLength;
 
@@ -57,12 +60,20 @@ public record ProjectCreateRequest(
         List<
                 @NotBlank(message = "memberHandles에 빈 값을 넣을 수 없습니다.")
                 @Pattern(regexp = HANDLE_FORMAT_REGEX, message = "memberHandles 형식이 올바르지 않습니다.")
-                String> memberHandles
+                String> memberHandles,
+
+        @Size(max = TeamBlogUrls.MAX_SIZE, message = "teamBlogUrls는 3개를 초과할 수 없습니다.")
+        List<
+                @NotBlank(message = "teamBlogUrls에 빈 값을 넣을 수 없습니다.")
+                @CodePointLength(max = 2_048, message = "teamBlogUrls의 주소는 2,048자를 초과할 수 없습니다.")
+                @Pattern(regexp = TeamBlogUrl.REGEX, message = "teamBlogUrls의 주소는 http 또는 https URL 형식이어야 합니다.")
+                String> teamBlogUrls
 ) {
 
     /**
      * 검증 전에 문자열의 앞뒤 공백을 자르고, 비어 있으면 null 로 둔다.
      * 배포 URL 입력칸을 비워 보내면 입력하지 않은 것으로 본다.
+     * 팀 블로그 주소는 선택 입력이라, 필드를 빼거나 null 로 보내면 등록하지 않은 것으로 본다.
      * descriptionMd 는 마크다운이라 앞 공백에 의미가 있어 정제하지 않는다.
      */
     public ProjectCreateRequest {
@@ -72,6 +83,7 @@ public record ProjectCreateRequest(
         githubRepositoryUrl = DataResolveUtil.sanitizeString(githubRepositoryUrl);
         deploymentUrl = DataResolveUtil.sanitizeString(deploymentUrl);
         memberHandles = DataResolveUtil.sanitizeStrings(memberHandles);
+        teamBlogUrls = DataResolveUtil.sanitizeStrings(teamBlogUrls);
     }
 
     /**

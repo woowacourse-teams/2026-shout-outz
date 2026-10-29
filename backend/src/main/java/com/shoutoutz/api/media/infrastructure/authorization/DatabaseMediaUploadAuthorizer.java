@@ -45,8 +45,8 @@ public class DatabaseMediaUploadAuthorizer implements MediaUploadAuthorizer {
 
         String authorizationSql = ACTIVE_USER_EXISTS_SQL;
         if (purpose == MediaPurpose.HOME_BANNER
-                || purpose == MediaPurpose.INTERVIEW_THUMBNAIL
-                || purpose == MediaPurpose.INTERVIEW_CONTENT) {
+                || purpose == MediaPurpose.MAGAZINE_THUMBNAIL
+                || purpose == MediaPurpose.MAGAZINE_CONTENT) {
             authorizationSql = ACTIVE_ADMIN_EXISTS_SQL;
         }
         if (!exists(authorizationSql, requesterId)) {

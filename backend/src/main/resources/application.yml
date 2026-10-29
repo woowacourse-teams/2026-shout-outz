@@ -34,6 +34,8 @@ question-recommendation:
   outbox-initial-delay-millis: ${QUESTION_RECOMMENDATION_OUTBOX_INITIAL_DELAY_MILLIS:1000}
   fallback-enabled: ${QUESTION_RECOMMENDATION_FALLBACK_ENABLED:true}
   max-replenish-per-generation: ${QUESTION_RECOMMENDATION_MAX_REPLENISH_PER_GENERATION:5}
+  # 앞에서부터 호출하고 실패하면 다음 제공자로 넘어간다(GEMINI, OPENAI, BEDROCK_GPT, BEDROCK_CLAUDE).
+  providers: ${QUESTION_RECOMMENDATION_PROVIDERS:BEDROCK_GPT,BEDROCK_CLAUDE}
   sqs:
     enabled: ${QUESTION_RECOMMENDATION_SQS_ENABLED:false}
     queue-url: ${QUESTION_RECOMMENDATION_QUEUE_URL:}
@@ -55,6 +57,30 @@ llm:
     connect-timeout: ${OPENAI_CONNECT_TIMEOUT:5s}
     read-timeout: ${OPENAI_READ_TIMEOUT:45s}
     reasoning-effort: ${OPENAI_REASONING_EFFORT:none}
+  # EC2 IAM 역할로 인증하므로 API 키가 없다.
+  bedrock:
+    region: ${BEDROCK_REGION:ap-northeast-2}
+    gpt-model: ${BEDROCK_GPT_MODEL:global.openai.gpt-6.1-sol}
+    claude-model: ${BEDROCK_CLAUDE_MODEL:global.anthropic.claude-sonnet-5-5}
+    connect-timeout: ${BEDROCK_CONNECT_TIMEOUT:5s}
+    read-timeout: ${BEDROCK_READ_TIMEOUT:45s}
+
+job-posting:
+  extraction:
+    # 운영자가 기다리는 요청 안에서 앞에서부터 호출하고 실패하면 다음 제공자로 넘어간다(BEDROCK_GPT, BEDROCK_CLAUDE, GEMINI, OPENAI).
+    providers: ${JOB_POSTING_EXTRACTION_PROVIDERS:BEDROCK_GPT,BEDROCK_CLAUDE}
+
+# 선배 기록 검색의 문서 조각과 질문을 같은 모델, 차원, 정규화로 임베딩하기 위함.
+# 임베딩 전용 키를 쓴다(질문 추천 LLM 키와 분리, 월 사용 한도 설정).
+resource:
+  embedding:
+    provider: ${RESOURCE_EMBEDDING_PROVIDER:openai}
+    model-id: ${RESOURCE_EMBEDDING_MODEL_ID:text-embedding-3-small}
+    dimensions: ${RESOURCE_EMBEDDING_DIMENSIONS:1024}
+    normalize: ${RESOURCE_EMBEDDING_NORMALIZE:true}
+    api-key: ${RESOURCE_EMBEDDING_API_KEY:}
+    connect-timeout: ${RESOURCE_EMBEDDING_CONNECT_TIMEOUT:5s}
+    read-timeout: ${RESOURCE_EMBEDDING_READ_TIMEOUT:30s}
 
 github:
   oauth:

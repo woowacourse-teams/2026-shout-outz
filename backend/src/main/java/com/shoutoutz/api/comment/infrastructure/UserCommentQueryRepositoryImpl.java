@@ -44,13 +44,13 @@ public class UserCommentQueryRepositoryImpl implements UserCommentQueryRepositor
                        created_at,
                        updated_at,
                        agree_count,
-                       agreed_by_me, interview_id
+                       agreed_by_me, magazine_id
                 FROM (
                     SELECT fc.id AS comment_id,
                            'FEED' AS comment_type,
                            1 AS type_order,
                            fc.feed_id AS feed_id,
-                           CAST(NULL AS BIGINT) AS interview_id,
+                           CAST(NULL AS BIGINT) AS magazine_id,
                            CAST(NULL AS VARCHAR) AS project_slug,
                            fc.content,
                            fc.created_at,
@@ -80,7 +80,7 @@ public class UserCommentQueryRepositoryImpl implements UserCommentQueryRepositor
                            'PROJECT' AS comment_type,
                            2 AS type_order,
                            CAST(NULL AS BIGINT) AS feed_id,
-                           CAST(NULL AS BIGINT) AS interview_id,
+                           CAST(NULL AS BIGINT) AS magazine_id,
                            p.slug AS project_slug,
                            pc.content,
                            pc.created_at,
@@ -107,15 +107,15 @@ public class UserCommentQueryRepositoryImpl implements UserCommentQueryRepositor
 
                     UNION ALL
 
-                    SELECT ic.id, 'INTERVIEW', 3, CAST(NULL AS BIGINT), ic.interview_id,
+                    SELECT ic.id, 'MAGAZINE', 3, CAST(NULL AS BIGINT), ic.magazine_id,
                            CAST(NULL AS VARCHAR), ic.content, ic.created_at, ic.updated_at,
-                           (SELECT COUNT(*) FROM interview_comment_reactions r
+                           (SELECT COUNT(*) FROM magazine_comment_reactions r
                             WHERE r.comment_id = ic.id AND r.reaction_type = 'AGREE'),
-                           EXISTS (SELECT 1 FROM interview_comment_reactions r
+                           EXISTS (SELECT 1 FROM magazine_comment_reactions r
                                    WHERE r.comment_id = ic.id AND r.user_id = :viewerId
                                      AND r.reaction_type = 'AGREE')
-                    FROM interview_comments ic
-                    JOIN interviews i ON i.id = ic.interview_id
+                    FROM magazine_comments ic
+                    JOIN magazines i ON i.id = ic.magazine_id
                     WHERE ic.author_id = :authorId AND ic.deleted_at IS NULL
                       AND i.deleted_at IS NULL AND i.status = 'PUBLISHED'
                       AND (ic.is_anonymous = FALSE OR ic.author_id = :viewerId)
@@ -154,7 +154,7 @@ public class UserCommentQueryRepositoryImpl implements UserCommentQueryRepositor
                         resultSet.getTimestamp("updated_at").toInstant(),
                         resultSet.getLong("agree_count"),
                         resultSet.getBoolean("agreed_by_me"),
-                        resultSet.getObject("interview_id", Long.class)
+                        resultSet.getObject("magazine_id", Long.class)
                 )
         );
         return createPage(items, size, countAllByAuthorId(authorId, viewerId));
@@ -180,8 +180,8 @@ public class UserCommentQueryRepositoryImpl implements UserCommentQueryRepositor
                                   AND p.deleted_at IS NULL
                                   AND p.approval_status = 'APPROVED'
                             ) + (
-                                SELECT COUNT(*) FROM interview_comments ic
-                                JOIN interviews i ON i.id = ic.interview_id
+                                SELECT COUNT(*) FROM magazine_comments ic
+                                JOIN magazines i ON i.id = ic.magazine_id
                                 WHERE ic.author_id = :authorId AND ic.deleted_at IS NULL
                                   AND i.deleted_at IS NULL AND i.status = 'PUBLISHED'
                                   AND (ic.is_anonymous = FALSE OR ic.author_id = :viewerId)

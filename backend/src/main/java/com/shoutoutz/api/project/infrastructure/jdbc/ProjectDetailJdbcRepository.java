@@ -25,15 +25,18 @@ public class ProjectDetailJdbcRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final ProjectTechTagAndMemberJdbcRepository techTagAndMemberJdbcRepository;
+    private final BlogSourceJdbcRepository blogSourceJdbcRepository;
 
     public Optional<ProjectDetail> findDetailBySlug(Slug slug, Long viewerId) {
         return findProject(slug, viewerId)
-                .map(this::withTechTagsAndMembers);
+                .map(this::withTechTagsAndMembers)
+                .map(this::withTeamBlogUrls);
     }
 
     public Optional<ProjectDetail> findDetailById(long projectId, Long viewerId) {
         return findProjectById(projectId, viewerId)
-                .map(this::withTechTagsAndMembers);
+                .map(this::withTechTagsAndMembers)
+                .map(this::withTeamBlogUrls);
     }
 
     private ProjectDetail withTechTagsAndMembers(ProjectDetail project) {
@@ -42,6 +45,10 @@ public class ProjectDetailJdbcRepository {
                 techTagAndMemberJdbcRepository.findTechTags(List.of(projectId)).getOrDefault(projectId, List.of()),
                 findMembers(project).getOrDefault(projectId, List.of())
         );
+    }
+
+    private ProjectDetail withTeamBlogUrls(ProjectDetail project) {
+        return project.withTeamBlogUrls(blogSourceJdbcRepository.findConfirmedSiteUrls(project.id()));
     }
 
     private Map<Long, List<ProjectMemberProfile>> findMembers(ProjectDetail project) {
@@ -168,6 +175,7 @@ public class ProjectDetailJdbcRepository {
                         resultSet.getBoolean("liked_by_me"),
                         resultSet.getBoolean("bookmarked_by_me"),
                         resultSet.getLong("comment_count"),
+                        List.of(),
                         List.of(),
                         List.of(),
                         resultSet.getObject("created_at", OffsetDateTime.class).toInstant(),

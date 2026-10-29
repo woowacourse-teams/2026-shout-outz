@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router';
 const FOOTER_LINKS = [
   { to: '/projects', label: '프로젝트 탐색' },
   { to: '/community', label: '커뮤니티' },
-  { to: '/interviews', label: '인터뷰' },
+  { to: '/magazines', label: '매거진' },
   { to: '/news', label: '소식' },
 ] as const;
 

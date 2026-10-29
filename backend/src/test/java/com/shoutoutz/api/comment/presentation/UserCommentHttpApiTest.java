@@ -49,9 +49,9 @@ import org.springframework.test.web.servlet.MockMvc;
 class UserCommentHttpApiTest {
 
     private static final String SUMMARY = "내 댓글 목록 조회";
-    private static final String DESCRIPTION = "로그인한 사용자가 작성한 피드, 프로젝트, 인터뷰 댓글을 최신순으로 조회한다. "
+    private static final String DESCRIPTION = "로그인한 사용자가 작성한 피드, 프로젝트, 매거진 댓글을 최신순으로 조회한다. "
             + "삭제되지 않은 공개 대상의 댓글만 반환한다. 이동할 대상은 type에 따라 "
-            + "피드 댓글이면 feedId, 프로젝트 댓글이면 projectSlug, 인터뷰 댓글이면 interviewId로 찾고, 해당하지 않는 쪽은 null이다. "
+            + "피드 댓글이면 feedId, 프로젝트 댓글이면 projectSlug, 매거진 댓글이면 magazineId로 찾고, 해당하지 않는 쪽은 null이다. "
             + "응답의 meta.nextCursor를 다음 요청에 그대로 전달한다.";
 
     @Autowired
@@ -125,7 +125,7 @@ class UserCommentHttpApiTest {
                                         fieldWithPath("data[].commentId").type(NUMBER).description("댓글 ID"),
                                         new EnumFields(UserCommentType.class).withPath("data[].type")
                                                 .description("댓글 대상 종류"),
-                                        fieldWithPath("data[].interviewId").type(NUMBER).optional().description("인터뷰 댓글의 대상 인터뷰 ID"),
+                                        fieldWithPath("data[].magazineId").type(NUMBER).optional().description("매거진 댓글의 대상 매거진 ID"),
                                         fieldWithPath("data[].feedId").type(NUMBER)
                                                 .description("피드 댓글이면 이동할 피드 ID. 프로젝트 댓글이면 null")
                                                 .optional(),

@@ -124,7 +124,7 @@ sudo chmod 0600 /opt/shout-outz/shout-outz.env
 |------|----------|
 | `/var/log/shout-outz/app.log` | 로그 그룹 `/shout-outz/dev/app`, `/shout-outz/prod/app` (30일 보관) |
 | `mem_used_percent`, `swap_used_percent`, `disk_used_percent` | 지표 네임스페이스 `ShoutOutz` |
-| (prod만) `127.0.0.1:8081/actuator/prometheus`의 API 요청·히카리 풀 지표 | 로그 그룹 `/shout-outz/prod/prometheus`를 거쳐 지표 네임스페이스 `ShoutOutz` |
+| (prod만) `127.0.0.1:8081/actuator/prometheus`의 API 요청·히카리 풀·LLM 토큰 지표 | 로그 그룹 `/shout-outz/prod/prometheus`를 거쳐 지표 네임스페이스 `ShoutOutz` |
 
 공용 AWS 계정이라 기본 네임스페이스 `CWAgent`는 다른 팀 지표와 섞이므로 `ShoutOutz`로 분리한다. 시스템 지표(mem·swap·disk)에는 `InstanceId`가 붙어 dev와 prod 서버가 구분되고, 아래 앱 지표는 `env` 차원으로 구분된다. `multi_line_start_pattern`은 날짜로 시작하는 줄을 로그 한 건의 시작으로 보아, 스택트레이스를 한 건으로 묶는다.
 
@@ -166,8 +166,9 @@ Agent가 1분마다 `127.0.0.1:8081/actuator/prometheus`를 읽어 EMF 로그로
 | `http_server_requests_seconds_max` | API 최대 응답 시간(초) | Maximum |
 | `hikaricp_connections_active` / `idle` | 사용 중·쉬는 커넥션 수 | Maximum / Minimum |
 | `hikaricp_connections_pending` | 커넥션을 기다리는 스레드 수 | Maximum (0보다 크면 풀 부족) |
+| `llm_tokens_total` | Bedrock 추천 질문 호출의 토큰 수. `model`(모델 ID), `type`(`input`, `output`) 차원 | Sum (예상 요금 = 모델별 입력, 출력 토큰 × 단가) |
 
-차원은 `env` 하나다. 커스텀 지표는 차원 조합마다 과금되므로 uri·method·status로 나누지 않고 전체 합산만 보낸다. API별 분석은 아래 [요청 로그 분석](#요청-로그-분석-logs-insights)으로 한다. 수집 단계(`metric_relabel_configs`)에서 위 지표 외에는 버리므로 JVM 등 나머지 지표는 로그로도 쌓이지 않는다.
+차원은 `env` 하나다(`llm_tokens_total`만 요금 계산을 위해 `env`, `model`, `type`, 모델 2개 × 2종류 = 4개 조합). 커스텀 지표는 차원 조합마다 과금되므로 uri·method·status로 나누지 않고 전체 합산만 보낸다. API별 분석은 아래 [요청 로그 분석](#요청-로그-분석-logs-insights)으로 한다. 수집 단계(`metric_relabel_configs`)에서 위 지표 외에는 버리므로 JVM 등 나머지 지표는 로그로도 쌓이지 않는다.
 
 애플리케이션이 8081을 연 상태로 배포된 뒤 적용한다. 위 설치 절차의 `fetch-config` 전에 수집 설정 파일을 같은 디렉터리에 둔다.
 
@@ -180,11 +181,11 @@ sudo install -m 0644 prometheus-prod.yaml /opt/aws/amazon-cloudwatch-agent/etc/p
 적용 후 다음을 확인한다.
 
 ```bash
-curl -s http://127.0.0.1:8081/actuator/prometheus | grep -E "^(http_server_requests|hikaricp_connections)" | head
+curl -s http://127.0.0.1:8081/actuator/prometheus | grep -E "^(http_server_requests|hikaricp_connections|llm_tokens)" | head
 sudo ss -tlnp | grep 8081    # 127.0.0.1:8081 이어야 한다. 0.0.0.0 이나 * 이면 address 설정이 빠진 것이다
 ```
 
-- 콘솔 지표 `ShoutOutz` 네임스페이스에 위 6개 지표가 `env=prod` 차원으로 보이는지 본다.
+- 콘솔 지표 `ShoutOutz` 네임스페이스에 위 6개 지표가 `env=prod` 차원으로 보이는지 본다. `llm_tokens_total`은 질문이 등록돼 추천이 한 번 생성된 뒤에 `env`, `model`, `type` 차원으로 나타난다.
 - 같은 시간대의 `http_server_requests_seconds_count` Sum이 요청 로그의 요청 수와 비슷한지 비교한다. Agent가 uri별로 나뉜 값을 `env` 하나로 합치는 방식은 문서에 명시되어 있지 않으므로 처음 적용할 때 한 번 확인한다.
 - 외부에서 `curl --max-time 5 http://{EIP}:8081/actuator/health`가 타임아웃되는지 본다.
 
@@ -278,6 +279,37 @@ CodeDeploy Agent 로그를 확인한다.
 sudo systemctl status codedeploy-agent --no-pager
 sudo journalctl -u codedeploy-agent -n 200 --no-pager
 ```
+
+## 트랜잭션 밖 마이그레이션 실패 복구
+
+`.sql.conf`에 `executeInTransaction=false`를 둔 마이그레이션(`CREATE INDEX CONCURRENTLY` 등)은 실패해도 자동으로 되돌려지지 않는다. 배포가 실패하고 앱 로그에 Flyway 오류가 보이면 아래 순서로 복구한다.
+
+```bash
+sudo journalctl -u shout-outz-backend -n 200 --no-pager | grep -i flyway
+```
+
+DB에 접속해 Flyway 기록과 인덱스 상태를 확인한다. 접속 정보는 `/opt/shout-outz/shout-outz.env`에서 읽는다.
+
+```bash
+sudo bash -c 'set -a; . /opt/shout-outz/shout-outz.env; set +a; u=${SPRING_DATASOURCE_URL#jdbc:postgresql://}; h=${u%%:*}; d=${u#*/}; d=${d%%\?*}; PGPASSWORD="$SPRING_DATASOURCE_PASSWORD" exec psql -h "$h" -U "$SPRING_DATASOURCE_USERNAME" -d "$d"'
+```
+
+```sql
+-- 실패 기록이 남았는지
+SELECT installed_rank, version, description, success FROM flyway_schema_history WHERE success = false;
+
+-- 인덱스가 남았는지, 쓸 수 있는 상태인지 (이름은 마이그레이션 파일에서 확인)
+SELECT c.relname, i.indisvalid FROM pg_class c JOIN pg_index i ON i.indexrelid = c.oid WHERE c.relname = '{인덱스 이름}';
+```
+
+| 상태 | 원인 | 복구 |
+| --- | --- | --- |
+| 실패 기록 없음, 인덱스 남음 | 인덱스를 만드는 도중이나 만든 직후 배포가 끊겨 Flyway 기록이 남지 않았다 | 마이그레이션이 `DROP INDEX CONCURRENTLY IF EXISTS`로 시작하면 다시 배포만 한다. 그 줄이 없는 파일이면 먼저 `DROP INDEX CONCURRENTLY {인덱스 이름};`을 실행한다 |
+| 실패 기록 있음 (`success = false`) | 마이그레이션이 오류로 끝났다. Flyway는 실패 기록이 있으면 다음 기동에서 멈춘다 | 실패 기록을 지운다(Flyway `repair`와 같은 효과): `DELETE FROM flyway_schema_history WHERE version = '{버전}' AND success = false;` 그다음 위 줄과 같이 인덱스를 정리하고 다시 배포한다 |
+
+- 인덱스를 지울 때도 `CONCURRENTLY`를 붙여야 운영 중인 표의 쓰기가 막히지 않는다.
+- `CREATE INDEX CONCURRENTLY IF NOT EXISTS`로 바꾸지 않는다. 쓸 수 없는(`indisvalid = false`) 인덱스도 있다고 보고 넘어가서, 망가진 인덱스가 남은 채로 성공 처리된다.
+- 새로 만드는 `CONCURRENTLY` 인덱스 마이그레이션은 `DROP INDEX CONCURRENTLY IF EXISTS`로 시작한다 (`V20261020180140__add_feeds_popular_index.sql`).
 
 ## 요청 로그 분석 (Logs Insights)
 

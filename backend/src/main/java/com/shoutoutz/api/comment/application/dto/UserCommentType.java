@@ -3,7 +3,7 @@ package com.shoutoutz.api.comment.application.dto;
 public enum UserCommentType {
     FEED(1),
     PROJECT(2),
-    INTERVIEW(3);
+    MAGAZINE(3);
 
     private final int cursorOrder;
 

@@ -38,6 +38,8 @@ afterAll(() => server.close());
  * 실제 내용은 호출부가 `findBy*`로 기다려야 한다.
  */
 export function renderRoute(entry: string) {
+  // 일반 화면 테스트는 재방문자로 실행합니다. 첫 방문 안내는 전용 테스트에서 검증합니다.
+  localStorage.setItem('shoutoutz:about-guide-seen', 'true');
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });

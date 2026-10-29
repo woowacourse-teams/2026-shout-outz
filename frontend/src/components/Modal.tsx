@@ -6,9 +6,11 @@ export interface ModalProps {
   children: ReactNode;
   onClose: () => void;
   className?: string;
+  labelledBy?: string;
+  describedBy?: string;
 }
 
-export function Modal({ children, onClose, className }: ModalProps) {
+export function Modal({ children, onClose, className, labelledBy, describedBy }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -29,6 +31,8 @@ export function Modal({ children, onClose, className }: ModalProps) {
   return (
     <dialog
       ref={ref}
+      aria-labelledby={labelledBy}
+      aria-describedby={describedBy}
       onClose={onClose}
       onCancel={onClose}
       onClick={(event) => {

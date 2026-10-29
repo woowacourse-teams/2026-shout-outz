@@ -1,6 +1,9 @@
 package com.shoutoutz.api.feed.recommendation.infrastructure;
 
+import com.shoutoutz.api.common.llm.LlmProvider;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.boot.context.properties.bind.DefaultValue;
@@ -13,8 +16,10 @@ public record QuestionRecommendationProperties(
         @DefaultValue("5000") long outboxPollIntervalMillis,
         @DefaultValue("true") boolean fallbackEnabled,
         @DefaultValue("5") int maxReplenishPerGeneration,
-        Sqs sqs
+        Sqs sqs,
+        @DefaultValue({"BEDROCK_GPT", "BEDROCK_CLAUDE"}) List<LlmProvider> providers
 ) {
+    private static final List<LlmProvider> DEFAULT_PROVIDERS = List.of(LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE);
 
     private static final int DEFAULT_MAX_REPLENISH_PER_GENERATION = 5;
 
@@ -31,6 +36,10 @@ public record QuestionRecommendationProperties(
         }
         sqs = sqs == null ? new Sqs(false, null, null, "ap-northeast-2", 1_000, 1,
                 Duration.ofMinutes(3)) : sqs;
+        providers = providers == null || providers.isEmpty() ? DEFAULT_PROVIDERS : List.copyOf(providers);
+        if (new HashSet<>(providers).size() != providers.size()) {
+            throw new IllegalArgumentException("question-recommendation.providers에 같은 제공자를 두 번 넣을 수 없습니다.");
+        }
         if (sqs.enabled() && (isBlank(sqs.queueUrl()) || isBlank(sqs.deadLetterQueueUrl()))) {
             throw new IllegalArgumentException(
                     "SQS 질문 추천을 활성화하려면 queue-url과 dead-letter-queue-url을 설정해야 합니다."
@@ -44,10 +53,16 @@ public record QuestionRecommendationProperties(
             int maxOutboxAttempts,
             long outboxPollIntervalMillis,
             boolean fallbackEnabled,
-            Sqs sqs
+            Sqs sqs,
+            List<LlmProvider> providers
     ) {
         this(count, maxGenerationAttempts, maxOutboxAttempts, outboxPollIntervalMillis, fallbackEnabled,
-                DEFAULT_MAX_REPLENISH_PER_GENERATION, sqs);
+                DEFAULT_MAX_REPLENISH_PER_GENERATION, sqs, providers);
+    }
+
+    /** 실제로 호출할 제공자 순서. 자동 대체가 꺼지면 첫 제공자만 쓴다. */
+    public List<LlmProvider> llmProviders() {
+        return fallbackEnabled ? providers : providers.subList(0, 1);
     }
 
     private static boolean isBlank(String value) {

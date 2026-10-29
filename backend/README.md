@@ -138,7 +138,7 @@ http://localhost:8080/docs/openapi3.yaml
 
 ## 질문 AI 추천
 
-질문(`feedType=QUESTION`)은 생성 후 Outbox를 거쳐 SQS 작업 큐로 전달하고, Worker가 Gemini를 먼저 호출해 연관 질문 5개를 저장한다. Gemini 호출이나 추천 응답 검증에 실패하면 같은 작업에서 OpenAI를 한 번 호출한다. 질문 제목이나 본문을 수정하면 새 추천 작업을 등록한다. 생성·수정 요청은 추천 생성을 기다리지 않으며 응답의 `recommendationStatus`는 `PENDING`, `PROCESSING`, `READY`, `FAILED` 중 하나다.
+질문(`feedType=QUESTION`)은 생성 후 Outbox를 거쳐 SQS 작업 큐로 전달하고, Worker가 `question-recommendation.providers`에 적은 순서대로 LLM을 호출해 연관 질문 5개를 저장한다. 기본 순서는 Amazon Bedrock의 GPT-6.1 Sol, 그다음 Claude Sonnet 5.5다. 앞 제공자 호출이나 추천 응답 검증에 실패하면 같은 작업에서 다음 제공자를 한 번씩 호출한다. 질문 제목이나 본문을 수정하면 새 추천 작업을 등록한다. 생성·수정 요청은 추천 생성을 기다리지 않으며 응답의 `recommendationStatus`는 `PENDING`, `PROCESSING`, `READY`, `FAILED` 중 하나다.
 
 - `GET /api/v1/feeds/{feedId}`의 `relatedQuestionRecommendations`에는 추천 상태와 추천 질문 목록이 담긴다. 생성 완료 전에는 `items`가 빈 배열이고, 완료되면 최대 5개가 제공된다.
 - `POST /api/v1/feeds`와 `PUT /api/v1/feeds/{feedId}`는 질문 추천 작업이 활성화된 환경에서 `recommendationStatus`를 반환한다. 질문 제목이나 본문이 바뀌지 않은 수정은 기존 상태를 유지한다.
@@ -154,26 +154,30 @@ http://localhost:8080/docs/openapi3.yaml
 - 대체 생성이 최종 실패하면 `last_error`만 기록하고 남은 추천과 `READY` 상태는 유지한다. 시도 횟수는 초기화되어 다음에 추천이 사용되면 다시 대체 생성을 시도한다.
 - 비용 가드로 generation당 대체 생성 총량을 `question-recommendation.max-replenish-per-generation`(기본 5)으로 제한한다. 이 값을 넘으면 더 생성하지 않는다.
 
-추천 작업을 실행할 환경에는 Gemini 키, OpenAI 키와 SQS 큐 설정이 필요하다. SQS 기본값은 비활성화이며, 활성화하면 Gemini 키를 검사한다. 자동 대체는 기본 활성화이므로 OpenAI 키도 필요하고 누락 시 기동에 실패한다. 로컬에서 작업자까지 실행하려면 다음 환경 변수를 설정한다.
+추천 작업을 실행할 환경에는 SQS 큐 설정과 Bedrock 호출 권한이 필요하다. Bedrock은 EC2에 붙인 IAM 역할(`team-bedrock-service-shout-outz`)로 인증하므로 API 키가 없다. SQS 기본값은 비활성화이며, 활성화하면 설정한 제공자 중 API 키가 필요한 것(Gemini, OpenAI)의 키를 검사한다. 로컬에는 Bedrock 자격 증명이 없으므로 작업자까지 실행하려면 AWS 자격 증명을 따로 설정하거나 제공자를 Gemini, OpenAI로 바꾼다.
 
 ```bash
 QUESTION_RECOMMENDATION_SQS_ENABLED=true
 QUESTION_RECOMMENDATION_QUEUE_URL=<work-queue-url>
 QUESTION_RECOMMENDATION_DLQ_URL=<dead-letter-queue-url>
-GEMINI_API_KEY=<gemini-api-key>
-OPENAI_API_KEY=<openai-api-key>
+QUESTION_RECOMMENDATION_PROVIDERS=BEDROCK_GPT,BEDROCK_CLAUDE
 QUESTION_RECOMMENDATION_FALLBACK_ENABLED=true
 ```
 
 작업 큐에는 DLQ redrive 정책을 연결하고 `maxReceiveCount`를 `QUESTION_RECOMMENDATION_MAX_GENERATION_ATTEMPTS` 기본값인 5와 맞춘다. 
 큐와 DLQ는 같은 AWS 리전에 두고, 실행 역할에 작업 큐 `SendMessage`, `ReceiveMessage`, `DeleteMessage`, `ChangeMessageVisibility`와 DLQ `ReceiveMessage`, `DeleteMessage` 권한을 부여한다. 
-API 키는 환경 변수나 비밀 저장소로 주입하고 저장소에 기록하지 않는다. 기존 `GEMINI_*` 환경 변수는 그대로 사용한다. YAML 설정 경로는 `question-recommendation.gemini`에서 `llm.gemini`로 이동했고, OpenAI 설정은 `llm.openai`에 있다. 추천 전용 프롬프트·응답 검증은 추천 생성기에, HTTP 요청과 제공자 응답 해석은 `common.llm`에 둔다.
+API 키는 환경 변수나 비밀 저장소로 주입하고 저장소에 기록하지 않는다. 제공자별 설정은 `llm.gemini`, `llm.openai`, `llm.bedrock`에 있다. Gemini, OpenAI 코드는 남아 있어 `QUESTION_RECOMMENDATION_PROVIDERS`만 바꾸면 재배포 없이 되돌릴 수 있다. 외부 API를 쓰지 않을 때는 서버 환경에서 `GEMINI_API_KEY`, `OPENAI_API_KEY`를 빼 둔다. 추천 전용 프롬프트, 응답 검증은 추천 생성기에, 제공자 요청과 응답 해석은 `common.llm`에 둔다.
 
 SQS poller는 한 번에 가져온 메시지를 순서대로 처리한다. 기본 `QUESTION_RECOMMENDATION_SQS_MAX_MESSAGES_PER_POLL=1`을 유지한다. 배치를 크게 잡으면 뒤 메시지의 가시성 시간이 앞 작업 처리에 쓰일 수 있다.
 
 | 환경 변수 | 기본값 | 용도 |
 | --- | --- | --- |
-| `QUESTION_RECOMMENDATION_FALLBACK_ENABLED` | `true` | Gemini 실패 시 OpenAI 호출. `false`이면 Gemini만 사용하며 OpenAI 키 없이 기동 가능 |
+| `QUESTION_RECOMMENDATION_PROVIDERS` | `BEDROCK_GPT,BEDROCK_CLAUDE` | 호출 순서. `GEMINI`, `OPENAI`, `BEDROCK_GPT`, `BEDROCK_CLAUDE` 중에서 고른다 |
+| `QUESTION_RECOMMENDATION_FALLBACK_ENABLED` | `true` | 앞 제공자 실패 시 다음 제공자 호출. `false`이면 첫 제공자만 사용 |
+| `BEDROCK_REGION` | `ap-northeast-2` | Bedrock 호출 리전 |
+| `BEDROCK_GPT_MODEL` | `global.openai.gpt-6.1-sol` | `BEDROCK_GPT` 모델(전역 교차 리전 추론 프로필) |
+| `BEDROCK_CLAUDE_MODEL` | `global.anthropic.claude-sonnet-5-5` | `BEDROCK_CLAUDE` 모델(전역 교차 리전 추론 프로필) |
+| `BEDROCK_CONNECT_TIMEOUT` / `BEDROCK_READ_TIMEOUT` | `5s` / `45s` | 두 값을 합친 시간 안에 Bedrock 호출을 끝낸다. SDK 자체 재시도는 끈다 |
 | `GEMINI_MODEL` | `gemini-3.8-flash` | 기본 제공자 모델 |
 | `GEMINI_CONNECT_TIMEOUT` / `GEMINI_READ_TIMEOUT` | `5s` / `45s` | Gemini 연결·응답 제한 시간 |
 | `OPENAI_MODEL` | `gpt-6-luna` | 대체 제공자 모델 |
@@ -184,15 +188,18 @@ SQS poller는 한 번에 가져온 메시지를 순서대로 처리한다. 기�
 
 ### 장애와 재시도
 
-- 한 번의 생성 시도에서 Gemini 최대 1회, OpenAI 최대 1회를 호출한다. 추천 5개는 한 요청에서 생성한다.
+- 한 번의 생성 시도에서 설정한 제공자를 순서대로 최대 1회씩 호출한다. 추천 5개는 한 요청에서 생성한다.
+- Bedrock은 스키마를 입력으로 받는 도구 하나를 강제로 호출하게 해서 JSON을 받는다. `ThrottlingException`, `ModelNotReadyException`, `ModelErrorException`, HTTP 408, 5xx, 통신 장애, 출력 한도 초과는 재시도하고, 권한 거부, 잘못된 요청, 콘텐츠 필터는 재시도하지 않는다.
 - 두 제공자가 모두 실패하면 재시도 가능한 오류가 있는지 판별한다. HTTP 408·429·5xx, 통신 장애, 불완전하거나 잘못된 추천 응답은 재시도 대상으로 취급한다. 단, OpenAI의 `insufficient_quota`와 `billing_hard_limit_reached`는 HTTP 429여도 영구 오류다. 인증·권한 등 영구 오류만 남으면 DB에 `FAILED`를 기록하고 작업 큐 메시지를 삭제한다.
 - 재시도는 SQS 메시지의 visibility timeout으로 예약한다. 워커 스레드에서 잠들거나 HTTP 호출 안에서 재시도를 중첩하지 않는다. 지연은 5·10·20·40초 순으로 증가하고 최대 20%의 무작위 지연을 추가하며, 기본 상한은 300초다. 제공자의 `Retry-After` 또는 Gemini `RetryInfo`가 더 길면 첫 수신 시점부터 12시간인 SQS 상한의 남은 시간까지만 기다린다.
 - 최대 생성 시도 후에는 SQS redrive 정책에 따라 DLQ로 이동하고, DLQ poller가 DB에 `FAILED`와 `MAX_RETRIES_EXCEEDED`를 기록한 뒤 메시지를 삭제한다. 따라서 DLQ가 비어 있어도 실패한 작업은 DB에 남을 수 있다.
-- SQS가 활성화되면 애플리케이션은 Gemini와 fallback OpenAI의 제한 시간 합이 작업 선점 시간 180초와 설정한 SQS visibility timeout보다 짧은지 확인한다. 둘 중 하나 이상이면 애플리케이션 기동에 실패한다.
+- SQS가 활성화되면 애플리케이션은 설정한 제공자들의 제한 시간 합이 작업 선점 시간 180초와 설정한 SQS visibility timeout보다 짧은지 확인한다. 둘 중 하나 이상이면 애플리케이션 기동에 실패한다.
 
 제공자 호출 실패 로그에는 `provider`, `model`, `httpStatus`, `errorCode`, `retryAfterSeconds`, `fallback`이 남는다. `traceId=recommendation-{feedId}-{generation}-{attempts}`로 워커의 실패·성공 로그를 연결할 수 있다. API 키, 질문, 응답 본문과 제공자가 반환한 원문 오류 메시지는 로그에 기록하지 않는다. 이 로그는 `prod` 프로필의 `/var/log/shout-outz/app.log`에 저장되며 CloudWatch Agent를 적용한 환경에서는 기존 앱 로그 그룹으로 수집된다.
 
-생성 시도 횟수는 `question.recommendation.generation.count` 지표로, 생성 소요 시간은 `question.recommendation.generation` 타이머로 확인할 수 있다. 두 지표 모두 `outcome` 태그를 제공한다. 현재 CloudWatch Prometheus 수집 설정은 HTTP·DB 커넥션 지표만 허용하므로 추천 지표를 장기 보관하려면 수집 필터와 metric declaration도 별도로 추가해야 한다.
+Bedrock 호출마다 `Bedrock 호출 완료. provider, model, inputTokens, outputTokens, stopReason` 로그를 남기고, 같은 값을 `llm.tokens` 카운터(`provider`, `model`, `type=input|output` 태그)로 쌓는다. 예상 요금은 모델별 토큰 수에 단가를 곱해 계산한다(2026-10-22 청구 내역 기준, GPT-6.1 Sol과 Claude Sonnet 5.5 전역 프로필 모두 100만 토큰당 입력 $2.00, 출력 $10.00. 같은 한국어 요청에서 Claude가 토큰을 약 2배 써서 GPT를 기본으로 둔다). 실제 청구 금액은 Bedrock을 제공한 계정의 Cost Explorer에서 확인한다.
+
+생성 시도 횟수는 `question.recommendation.generation.count` 지표로, 생성 소요 시간은 `question.recommendation.generation` 타이머로 확인할 수 있다. 두 지표 모두 `outcome` 태그를 제공한다. CloudWatch Prometheus 수집 설정은 HTTP, DB 커넥션 지표와 `llm_tokens_total`(prod)만 허용한다. 추천 생성 지표를 장기 보관하려면 수집 필터와 metric declaration을 별도로 추가해야 한다. `llm_tokens_total`은 설정 파일을 서버에 다시 적용해야 CloudWatch에 보이며(`deploy/README.md`의 CloudWatch Agent), 그 전에는 앱 로그의 `Bedrock 호출 완료` 줄을 Logs Insights로 합산해 확인한다.
 
 ### OpenAI 결제와 서버 적용
 

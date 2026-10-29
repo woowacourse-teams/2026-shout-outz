@@ -26,6 +26,7 @@ import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
 import com.shoutoutz.api.project.application.dto.UserProjectItem;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.BlogSourceRepository;
 import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.DeploymentUrl;
 import com.shoutoutz.api.project.domain.DescriptionMediaReferences;
@@ -49,6 +50,7 @@ import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.Slug;
+import com.shoutoutz.api.project.domain.TeamBlogUrls;
 import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
@@ -103,6 +105,7 @@ public class ProjectService {
     private final UserProjectQueryRepository userProjectQueryRepository;
     private final MediaUrlResolver mediaUrlResolver;
     private final UserAvatarUrlResolver userAvatarUrlResolver;
+    private final BlogSourceRepository blogSourceRepository;
     private final Clock clock;
 
     @Transactional
@@ -130,8 +133,10 @@ public class ProjectService {
                 .map(this::resolveMemberId)
                 .toList();
         ProjectMembers members = ProjectMembers.of(memberIds);
+        TeamBlogUrls teamBlogUrls = TeamBlogUrls.of(request.teamBlogUrls());
 
         Project savedProject = projectRepository.save(project, request.techTagIds(), members.getUserIds());
+        blogSourceRepository.syncServiceInputs(savedProject.getId(), teamBlogUrls);
         projectApprovalHistoryRepository.save(
                 ProjectApprovalHistory.initial(savedProject.getId(), clock.instant())
         );
@@ -142,6 +147,7 @@ public class ProjectService {
      * 작성자가 프로젝트를 수정한다.
      * 반려된 프로젝트를 수정하면 재심사 요청으로 보고 승인 대기로 되돌린다.
      * 기술 스택과 팀원은 받은 목록으로 통째로 바꾼다.
+     * 팀 블로그 주소는 필드를 보낸 경우에만 받은 목록으로 맞춘다.
      */
     @Transactional
     public ProjectUpdateResponse update(String slug, long loginUserId, ProjectUpdateRequest request) {
@@ -171,8 +177,14 @@ public class ProjectService {
         validateDescriptionMedia(descriptionMd, loginUserId);
         List<Long> memberIds = resolveMemberIds(request.memberHandles(), projectRepository.findMemberIds(projectId));
         ProjectMembers members = ProjectMembers.of(memberIds);
+        TeamBlogUrls teamBlogUrls = request.isTeamBlogUrlsProvided()
+                ? TeamBlogUrls.of(request.teamBlogUrls())
+                : null;
 
         Project savedProject = projectRepository.update(updated, request.techTagIds(), members.getUserIds());
+        if (teamBlogUrls != null) {
+            blogSourceRepository.syncServiceInputs(projectId, teamBlogUrls);
+        }
         if (project.getApprovalStatus() == ApprovalStatus.REJECTED
                 && savedProject.getApprovalStatus() == ApprovalStatus.PENDING) {
             projectApprovalHistoryRepository.save(
