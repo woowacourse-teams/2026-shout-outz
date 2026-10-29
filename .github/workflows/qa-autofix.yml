@@ -63,6 +63,10 @@ jobs:
           git config user.name "qa-autofix-bot"
           git config user.email "qa-autofix-bot@users.noreply.github.com"
 
+      # AI가 이슈·PR 본문을 쓰는 임시 폴더가 커밋되지 않도록 git 추적에서 제외한다.
+      - name: Exclude QA autofix temp files
+        run: echo ".qa-autofix-tmp/" >> .git/info/exclude
+
       - id: claude
         uses: anthropics/claude-code-action@v1
         # AI 단계 실행 시간 한도. 넘기면 이 단계만 실패하고 아래 실패 처리 단계가 실행된다.

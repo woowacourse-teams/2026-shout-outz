@@ -24,7 +24,7 @@ allowed-tools: Read, Edit, Write, Glob, Grep, mcp__notion, Bash(git:*), Bash(gh 
  
 1. **선점**: 작업을 시작하기 전에 `AI 작업 상태`를 `AI 처리중`으로 바꾼다.
 2. **정보 확인**: Notion MCP로 카드 본문과 필드를 읽는다. `작업 범위`, `실제 동작`, `기대 동작` 중 하나라도 비어 있거나 무엇을 고쳐야 할지 특정할 수 없으면, 필요한 정보를 묻는 댓글을 카드에 남긴다. 그다음 상태를 `정보 부족`으로 바꾸고 이 카드를 종료한다.
-3. **이슈**: `.github/ISSUE_TEMPLATE/`에서 카드 내용에 맞는 템플릿(대부분 `bug-issue.md`)을 골라 GitHub 이슈를 만든다. 제목은 `[FE] <요약>`, 라벨은 `🚀FE`와 템플릿의 작업 종류 라벨을 붙이고, 본문에 Notion 카드 링크를 넣는다.
+3. **이슈**: `.github/ISSUE_TEMPLATE/`에서 카드 내용에 맞는 템플릿(대부분 `bug-issue.md`)을 골라 GitHub 이슈를 만든다. 제목은 `[FE] <요약>`, 라벨은 `🚀FE`와 템플릿의 작업 종류 라벨을 붙이고, 본문에 Notion 카드 링크를 넣는다. 본문은 아래 **이슈·PR 본문** 규칙대로 파일로 넘긴다.
 4. **브랜치**: `git fetch origin develop` 후 `git checkout --no-track -b <브랜치> origin/develop`으로 최신 develop에서 브랜치를 만든다. 이름은 `fe-<작업 종류>-<이슈 번호>-<영문 kebab-case 요약>`이다. 작업 종류는 카드 내용이 아니라 실제 변경에 맞게 고른다. 버그 수정은 `fix`, 기능 추가·변경은 `feature`, 동작이 같은 구조 정리는 `refactor`, 설정·문서는 `chore`를 쓴다. 예: `fe-fix-433-like-button-state`, `fe-feature-438-home-write-button`. 커밋 프리픽스와 PR 제목의 작업 종류는 기존 관례대로 `feat`처럼 줄여 쓴다.
 5. **수정**: `frontend/` 폴더 안의 파일만 수정한다. 원인이 백엔드(API 응답, 스펙)에 있다고 판단되면 코드를 고치지 않는다. 대신 근거를 **실패 기록** 규칙대로 남기고 상태를 `실패`로 바꾼다.
 6. **검증**: 저장소 루트에서 아래 명령을 하나씩 실행하고 결과를 PR 본문에 적는다.
@@ -32,7 +32,7 @@ allowed-tools: Read, Edit, Write, Glob, Grep, mcp__notion, Bash(git:*), Bash(gh 
    - `npm run typecheck --prefix frontend`
    - `npm run test --prefix frontend`
 7. **커밋**: `<작업 종류>(frontend): <한국어 요약>` 형식으로 커밋한다. 예: `fix(frontend): 목록의 좋아요 선택 상태 표시 수정`. 커밋 메시지에 이슈 번호와 `Co-Authored-By` 줄을 붙이지 않는다.
-8. **PR**: `develop`을 base로 Draft PR을 만들고, 이슈와 같은 라벨을 붙인다. 제목과 본문은 `.github/PULL_REQUEST_TEMPLATE.md` 형식을 따르고, 본문에 `closed #<이슈 번호>`와 다음 내용을 반드시 포함한다.
+8. **PR**: `develop`을 base로 Draft PR을 만들고, 이슈와 같은 라벨을 붙인다. 제목과 본문은 `.github/PULL_REQUEST_TEMPLATE.md` 형식을 따르고, 본문은 아래 **이슈·PR 본문** 규칙대로 파일로 넘기고, `closed #<이슈 번호>`와 다음 내용을 반드시 포함한다.
    - Notion 카드 링크
    - 추정 원인
    - 변경 내용
@@ -63,6 +63,15 @@ allowed-tools: Read, Edit, Write, Glob, Grep, mcp__notion, Bash(git:*), Bash(gh 
    ````
 
 9. **기록**: 카드의 `PR 링크`에 PR URL을 적고, 상태를 `PR 생성됨`으로 바꾼다.
+
+## 이슈·PR 본문
+
+본문을 `--body "..."`로 명령에 직접 넣지 않는다. 여러 줄이나 백틱이 들어간 명령은 허용 명령에 걸리지 않고 거부된다.
+
+1. Write 도구로 본문을 `.qa-autofix-tmp/` 아래 파일에 쓴다. 예: `.qa-autofix-tmp/issue-<카드 ID>.md`, `.qa-autofix-tmp/pr-<카드 ID>.md`
+2. 명령은 한 줄로 실행하고 `--body-file`로 파일을 넘긴다. 예: `gh issue create --title "[FE] <요약>" --label "🚀FE" --label "🐛 bug" --body-file .qa-autofix-tmp/issue-<카드 ID>.md`
+
+`.qa-autofix-tmp/`는 워크플로우가 git 추적에서 제외해 두었다. 커밋할 때는 `git add frontend/...`처럼 수정한 파일만 지정한다.
 
 ## 실패 기록
 
