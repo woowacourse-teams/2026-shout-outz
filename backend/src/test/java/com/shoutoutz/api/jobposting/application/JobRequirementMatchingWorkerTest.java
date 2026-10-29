@@ -196,6 +196,44 @@ class JobRequirementMatchingWorkerTest {
     }
 
     @Test
+    void 서버_종료로_검색이_멈추면_실패로_남기지_않는다() {
+        ClaimedJobRequirement requirement = claimed(1);
+        when(repository.claimNext(NOW, LEASE_UNTIL)).thenReturn(Optional.of(requirement));
+        when(searcher.search(QUERY, JobRole.BACKEND, 10)).thenAnswer(invocation -> {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("검색이 멈췄습니다.");
+        });
+
+        try {
+            worker.processNext();
+
+            assertThat(Thread.currentThread().isInterrupted()).isTrue();
+        } finally {
+            Thread.interrupted();
+        }
+        verify(repository, never()).markFailed(any(), any(), any());
+        verify(repository, never()).scheduleRetry(any(), any(), any(), any());
+    }
+
+    @Test
+    void 감싸진_InterruptedException으로_멈춰도_실패로_남기지_않고_인터럽트_표시를_되살린다() {
+        ClaimedJobRequirement requirement = claimed(1);
+        when(repository.claimNext(NOW, LEASE_UNTIL)).thenReturn(Optional.of(requirement));
+        when(searcher.search(QUERY, JobRole.BACKEND, 10)).thenThrow(new JobRequirementMatchingException(
+                MatchingFailure.SEARCH_FAILED, new RuntimeException(new InterruptedException())));
+
+        try {
+            worker.processNext();
+
+            assertThat(Thread.currentThread().isInterrupted()).isTrue();
+        } finally {
+            Thread.interrupted();
+        }
+        verify(repository, never()).markFailed(any(), any(), any());
+        verify(repository, never()).scheduleRetry(any(), any(), any(), any());
+    }
+
+    @Test
     void 시도_횟수를_넘긴_역량은_검색하지_않고_ATTEMPTS_EXHAUSTED로_실패로_끝낸다() {
         ClaimedJobRequirement requirement = claimed(4);
         when(repository.claimNext(NOW, LEASE_UNTIL)).thenReturn(Optional.of(requirement));

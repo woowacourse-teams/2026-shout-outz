@@ -56,10 +56,41 @@ public class JobRequirementMatchingWorker {
                         requirement.requirementId(), requirement.attemptCount());
             }
         } catch (JobRequirementMatchingException exception) {
+            if (interrupted(exception)) {
+                logInterrupted(requirement);
+                return;
+            }
             fail(requirement, exception.failure(), exception);
         } catch (RuntimeException exception) {
+            if (interrupted(exception)) {
+                logInterrupted(requirement);
+                return;
+            }
             fail(requirement, MatchingFailure.UNEXPECTED, exception);
         }
+    }
+
+    /**
+     * 서버가 꺼지며 스케줄러가 멈추라는 신호를 보낸 경우다. 역량 탓이 아니라서 실패로 남기지 않고,
+     * 분석 중으로 둔 채 작업 기한이 지나면 다시 가져가게 한다.
+     * 구현체가 InterruptedException 을 감싸면서 인터럽트 표시를 지울 수 있어 원인도 따라가 본다.
+     */
+    private boolean interrupted(RuntimeException exception) {
+        if (Thread.currentThread().isInterrupted()) {
+            return true;
+        }
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void logInterrupted(ClaimedJobRequirement requirement) {
+        log.warn("서버 종료로 멈춘 역량 매칭을 실패로 남기지 않습니다. 작업 기한이 지나면 다시 가져갑니다. requirementId={}, attemptCount={}",
+                requirement.requirementId(), requirement.attemptCount());
     }
 
     private List<RequirementRecommendation> recommend(ClaimedJobRequirement requirement) {
