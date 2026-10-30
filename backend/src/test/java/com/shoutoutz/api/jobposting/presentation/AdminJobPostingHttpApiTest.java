@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
@@ -14,8 +15,11 @@ import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -32,10 +36,13 @@ import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtractRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingSaveRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisibilityUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingExtractResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingFindAllResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingSaveResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingUpdateResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingVisibilityUpdateResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -132,21 +139,7 @@ class AdminJobPostingHttpApiTest {
                         .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
                         .header("X-CSRF-Token", "csrf-token")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "sourceUrl": "https://career.example.com/jobs/1",
-                                  "content": "[백엔드 개발자] 자격 요건: Java, Spring 경험",
-                                  "companyName": "우아한형제들",
-                                  "jobRole": "BACKEND",
-                                  "careerRequirement": "신입",
-                                  "title": "백엔드 개발자",
-                                  "employmentType": "정규직",
-                                  "deadline": "2026-12-31",
-                                  "requirements": [
-                                    {"name": "Java, Spring", "category": "REQUIRED", "summary": "Spring으로 API 서버를 개발한 경험이 필요해요."}
-                                  ]
-                                }
-                                """))
+                        .content(saveRequestBody()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.jobPostingId").value(JOB_POSTING_ID))
                 .andExpect(jsonPath("$.data.status").value("PENDING"))
@@ -275,6 +268,150 @@ class AdminJobPostingHttpApiTest {
                 ));
     }
 
+    @Test
+    void updatesJobPosting() throws Exception {
+        given(jobPostingAdminService.update(eq(JOB_POSTING_ID), eq(UserRole.ADMIN), any(AdminJobPostingSaveRequest.class)))
+                .willReturn(new AdminJobPostingUpdateResponse(JOB_POSTING_ID, MatchingStatus.PENDING, true));
+
+        mockMvc.perform(put("/api/v1/admin/job-postings/{jobPostingId}", JOB_POSTING_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(saveRequestBody()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.jobPostingId").value(JOB_POSTING_ID))
+                .andExpect(jsonPath("$.data.reanalyzed").value(true))
+                .andDo(document(
+                        "admin-job-posting-update",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag(TAG)
+                                .summary("채용공고 변경")
+                                .description("""
+                                        기업이 바꾼 공고를 관리자가 다시 붙여넣어 고친다. 요청은 등록과 같다.
+                                        공고 글의 해시가 같으면 공고 정보만 고치고 역량과 분석 상태는 그대로 둔다. 이때 요청의 역량은 반영하지 않는다(reanalyzed=false).
+                                        해시가 다르면 역량을 요청 목록으로 바꾸고 분석 상태를 PENDING으로 되돌려 다시 분석한다(reanalyzed=true).
+                                        숨김 상태와 등록자, 등록 시각은 바꾸지 않는다.
+                                        주소가 공고의 주소와 다르면 400(JOB_POSTING_URL_MISMATCH), 공고가 없으면 404(JOB_POSTING_NOT_FOUND)로 응답한다.
+                                        관리자가 아니면 403(JOB_POSTING_ADMIN_FORBIDDEN)으로 응답한다.""")
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("인증된 관리자의 JSESSIONID"),
+                                        headerWithName("X-CSRF-Token")
+                                                .description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .pathParameters(parameterWithName("jobPostingId").type(SimpleType.INTEGER)
+                                        .description("채용공고 ID"))
+                                .requestSchema(Schema.schema("AdminJobPostingSaveRequest"))
+                                .requestFields(saveRequestFields())
+                                .responseSchema(Schema.schema("AdminJobPostingUpdateSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("변경한 채용공고"),
+                                        fieldWithPath("data.jobPostingId").type(NUMBER).description("채용공고 ID"),
+                                        new EnumFields(MatchingStatus.class).withPath("data.status")
+                                                .description("변경 후 자료 분석 상태"),
+                                        fieldWithPath("data.reanalyzed").type(BOOLEAN)
+                                                .description("공고 글이 바뀌어 역량을 바꾸고 다시 분석하면 true. false면 요청의 역량은 반영되지 않았다.")
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    void updatesJobPostingVisibility() throws Exception {
+        given(jobPostingAdminService.updateVisibility(
+                eq(JOB_POSTING_ID), eq(UserRole.ADMIN), any(AdminJobPostingVisibilityUpdateRequest.class)))
+                .willReturn(new AdminJobPostingVisibilityUpdateResponse(JOB_POSTING_ID, true, NOW));
+
+        mockMvc.perform(patch("/api/v1/admin/job-postings/{jobPostingId}/visibility", JOB_POSTING_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"hidden": true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.hidden").value(true))
+                .andDo(document(
+                        "admin-job-posting-update-visibility",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag(TAG)
+                                .summary("채용공고 숨김·숨김 해제")
+                                .description("""
+                                        채용공고를 숨기거나 숨김을 해제한다. 분석 상태와 역량은 바꾸지 않는다.
+                                        이미 숨긴 공고를 다시 숨기면 처음 숨긴 시각을 그대로 두고, 숨기지 않은 공고를 해제해도 성공한다.
+                                        hidden이 없으면 400, 공고가 없으면 404(JOB_POSTING_NOT_FOUND)로 응답한다.
+                                        관리자가 아니면 403(JOB_POSTING_ADMIN_FORBIDDEN)으로 응답한다.""")
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("인증된 관리자의 JSESSIONID"),
+                                        headerWithName("X-CSRF-Token")
+                                                .description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .pathParameters(parameterWithName("jobPostingId").type(SimpleType.INTEGER)
+                                        .description("채용공고 ID"))
+                                .requestSchema(Schema.schema("AdminJobPostingVisibilityUpdateRequest"))
+                                .requestFields(
+                                        fieldWithPath("hidden").type(BOOLEAN).description("숨기려면 true, 해제하려면 false")
+                                )
+                                .responseSchema(Schema.schema("AdminJobPostingVisibilityUpdateSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("바뀐 숨김 상태"),
+                                        fieldWithPath("data.jobPostingId").type(NUMBER).description("채용공고 ID"),
+                                        fieldWithPath("data.hidden").type(BOOLEAN).description("숨김 여부"),
+                                        fieldWithPath("data.hiddenAt").type(STRING)
+                                                .description("처음 숨긴 시각. 숨기지 않았으면 null").optional()
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    void rejectsVisibilityUpdateWithoutHidden() throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/job-postings/{jobPostingId}/visibility", JOB_POSTING_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(jobPostingAdminService);
+    }
+
+    @Test
+    void deletesJobPosting() throws Exception {
+        mockMvc.perform(delete("/api/v1/admin/job-postings/{jobPostingId}", JOB_POSTING_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token"))
+                .andExpect(status().isNoContent())
+                .andDo(document(
+                        "admin-job-posting-delete",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag(TAG)
+                                .summary("채용공고 삭제")
+                                .description("""
+                                        채용공고와 역량, 추천 자료를 모두 지운다. 분석 중인 공고도 지울 수 있다.
+                                        공고가 없으면 404(JOB_POSTING_NOT_FOUND)로 응답한다.
+                                        관리자가 아니면 403(JOB_POSTING_ADMIN_FORBIDDEN)으로 응답한다.""")
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("인증된 관리자의 JSESSIONID"),
+                                        headerWithName("X-CSRF-Token")
+                                                .description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .pathParameters(parameterWithName("jobPostingId").type(SimpleType.INTEGER)
+                                        .description("채용공고 ID"))
+                                .build())
+                ));
+
+        verify(jobPostingAdminService).delete(JOB_POSTING_ID, UserRole.ADMIN);
+    }
+
     private static RequestPostProcessor authenticated(UserRole role) {
         return request -> {
             request.setAttribute(
@@ -283,6 +420,24 @@ class AdminJobPostingHttpApiTest {
             );
             return request;
         };
+    }
+
+    private static String saveRequestBody() {
+        return """
+                {
+                  "sourceUrl": "https://career.example.com/jobs/1",
+                  "content": "[백엔드 개발자] 자격 요건: Java, Spring 경험",
+                  "companyName": "우아한형제들",
+                  "jobRole": "BACKEND",
+                  "careerRequirement": "신입",
+                  "title": "백엔드 개발자",
+                  "employmentType": "정규직",
+                  "deadline": "2026-12-31",
+                  "requirements": [
+                    {"name": "Java, Spring", "category": "REQUIRED", "summary": "Spring으로 API 서버를 개발한 경험이 필요해요."}
+                  ]
+                }
+                """;
     }
 
     private static List<FieldDescriptor> extractResponseFields() {
