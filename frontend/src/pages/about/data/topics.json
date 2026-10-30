@@ -1,0 +1,3526 @@
+[
+  {
+    "topic": "Spring 동작 원리(빈, AOP, 프록시)",
+    "synonyms": [
+      "빈",
+      "bean",
+      "aop",
+      "프록시",
+      "proxy",
+      "ioc",
+      "di",
+      "의존성 주입",
+      "spring mvc",
+      "dispatcherservlet",
+      "interceptor",
+      "argumentresolver"
+    ]
+  },
+  {
+    "topic": "예외 처리/입력 검증",
+    "synonyms": [
+      "예외 처리",
+      "exception",
+      "controlleradvice",
+      "bean validation",
+      "@valid",
+      "validated",
+      "입력 검증",
+      "유효성 검사",
+      "validation"
+    ]
+  },
+  {
+    "topic": "인증/인가",
+    "synonyms": [
+      "spring security",
+      "스프링 시큐리티",
+      "인증",
+      "인가",
+      "세션",
+      "session",
+      "쿠키",
+      "cookie",
+      "httponly",
+      "samesite",
+      "csrf",
+      "권한",
+      "로그인 필터",
+      "refresh token",
+      "access token",
+      "jwt",
+      "토큰 재발급",
+      "토큰 인증",
+      "리프레시 토큰",
+      "세션 인증"
+    ]
+  },
+  {
+    "topic": "Kotlin 서버",
+    "synonyms": ["kotlin", "코틀린"]
+  },
+  {
+    "topic": "리액티브(WebFlux)",
+    "synonyms": ["webflux", "reactor", "리액티브", "coroutine", "코루틴"]
+  },
+  {
+    "topic": "Java 언어/JVM",
+    "synonyms": [
+      "java",
+      "jvm",
+      "gc",
+      "garbage collector",
+      "제네릭",
+      "generic",
+      "stream",
+      "record",
+      "클래스 로더",
+      "jcf",
+      "컬렉션",
+      "람다",
+      "optional",
+      "힙",
+      "스택"
+    ]
+  },
+  {
+    "topic": "JavaScript 언어",
+    "synonyms": [
+      "javascript",
+      "실행 컨텍스트",
+      "클로저",
+      "closure",
+      "프로토타입",
+      "prototype",
+      "이벤트 루프",
+      "event loop",
+      "호이스팅",
+      "스코프",
+      "this"
+    ]
+  },
+  {
+    "topic": "객체지향/디자인 패턴",
+    "synonyms": [
+      "객체지향",
+      "oop",
+      "solid",
+      "ocp",
+      "srp",
+      "dip",
+      "디자인 패턴",
+      "전략 패턴",
+      "strategy",
+      "상속",
+      "조합",
+      "mvc",
+      "템플릿 메서드",
+      "facade"
+    ]
+  },
+  {
+    "topic": "CS 기초(OS, 자료구조, 알고리즘)",
+    "synonyms": [
+      "운영체제",
+      "프로세스",
+      "스레드",
+      "스케줄링",
+      "자료구조",
+      "알고리즘",
+      "정렬",
+      "논리 게이트",
+      "메모리",
+      "비트"
+    ]
+  },
+  {
+    "topic": "웹 동작 원리(브라우저, HTTP)",
+    "synonyms": [
+      "브라우저 렌더링",
+      "http",
+      "http/1.1",
+      "http/2",
+      "tcp",
+      "dns",
+      "요청과 응답",
+      "rest",
+      "웹 동작",
+      "네트워크"
+    ]
+  },
+  {
+    "topic": "JPA/Hibernate",
+    "synonyms": ["jpa", "hibernate", "하이버네이트", "spring data jpa", "영속성 컨텍스트"]
+  },
+  {
+    "topic": "QueryDSL/쿼리 빌더",
+    "synonyms": ["querydsl", "jooq", "쿼리dsl"]
+  },
+  {
+    "topic": "DB 설계/정규화",
+    "synonyms": [
+      "mysql",
+      "mariadb",
+      "postgresql",
+      "postgres",
+      "rdbms",
+      "rds",
+      "정규화",
+      "반정규화",
+      "테이블 설계",
+      "스키마 설계",
+      "erd",
+      "외래키",
+      "innodb"
+    ]
+  },
+  {
+    "topic": "쿼리 작성(조인, JPQL)",
+    "synonyms": [
+      "조인",
+      "join",
+      "jpql",
+      "native query",
+      "jdbctemplate",
+      "jdbc",
+      "서브쿼리",
+      "dto projection"
+    ]
+  },
+  {
+    "topic": "인덱스/쿼리 최적화",
+    "synonyms": [
+      "인덱스",
+      "쿼리 최적화",
+      "실행 계획",
+      "explain",
+      "slow query",
+      "슬로우 쿼리",
+      "커버링 인덱스"
+    ],
+    "groups": {
+      "blog": [
+        {
+          "id": "blog-post|post:b68a4a12ff73d1882579fe99c216de7e242d78a3|v1",
+          "source": "blog",
+          "title": "[Moment] 프로젝트 쿼리 실행속도 50초 단축하기",
+          "url": "https://flowerdragon95.tistory.com/266",
+          "date": "2025-10-19",
+          "line": "p6spy, EXPLAIN ANALYZE, 복합 인덱스로 병목을 분석하고 쿼리를 분리하는 과정이라, 대용량 조회를 최적화할 때 참고하기 좋아요.",
+          "project": "모멘트",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:31ee42343ee517773fe82f6070a17e15d1d950ae|v1",
+          "source": "blog",
+          "title": "DB CPU가 터져요 (1편)",
+          "url": "https://codingmasterlsw.tistory.com/62",
+          "date": "2025-09-29",
+          "line": "EXPLAIN ANALYZE, 세컨더리 인덱스, InnoDB 버퍼풀을 살펴보며 DB CPU 과부하 원인을 좁힐 때 참고하기 좋아요.",
+          "project": "피드줍줍",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:e08b442fa6f75e7ab00238d8b1e2b3219de4d4c5|v1",
+          "source": "blog",
+          "title": "[MySQL, SpringBoot] 검색 기능 개선하기(fulltext index, 전문 검색 쿼리, UNION, TestContainers)",
+          "url": "https://seaniiio.tistory.com/14",
+          "date": "2025-09-28",
+          "line": "FULLTEXT 인덱스, ngram, UNION으로 검색 속도를 개선하는 과정이라, LIKE 검색의 병목을 찾을 때 참고하기 좋아요.",
+          "project": "튜립",
+          "slug": "turip"
+        },
+        {
+          "id": "blog-post|post:b5ae19772e8c90d2759bf902a874a46a9838db41|v1",
+          "source": "blog",
+          "title": "서비스 주요 쿼리 성능 점검 및 인덱스 전략",
+          "url": "https://github.com/woowacourse-teams/2025-bottari/wiki/%EC%84%9C%EB%B9%84%EC%8A%A4-%EC%A3%BC%EC%9A%94-%EC%BF%BC%EB%A6%AC-%EC%84%B1%EB%8A%A5-%EC%A0%90%EA%B2%80-%EB%B0%8F-%EC%9D%B8%EB%8D%B1%EC%8A%A4-%EC%A0%84%EB%9E%B5",
+          "date": "2025-09-26",
+          "line": "EXPLAIN, 유니크 인덱스, 전문 검색 인덱스로 조회 병목을 분석하고, 검색과 페이징 쿼리를 최적화할 때 참고하기 좋아요.",
+          "project": "보따리",
+          "slug": "bottari"
+        },
+        {
+          "id": "blog-post|post:07b33221c4695e5715f846ffc514067f299c8d11|v1",
+          "source": "blog",
+          "title": "[오디] 회원 전체가 동시에 탈퇴하는 속도 단축하기 feat) 쿼리 최적화",
+          "url": "https://hellobrocolli.tistory.com/211",
+          "date": "2025-08-16",
+          "line": "IN 절, JPQL, Soft Delete로 반복 쿼리를 줄이는 과정이라, 일괄 삭제를 최적화하고 데이터 규모별 효과를 비교할 때 참고하기 좋아요.",
+          "project": "오디",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:f6d237d9301f2122bde7be85453c455474479336|v1",
+          "source": "blog",
+          "title": "MySQL 쿼리 개선기 - 인덱스를 활용한 정렬보다 Using temporary, Using filesort가 더 빠르다고?",
+          "url": "https://nakhonest.tistory.com/entry/MySQL-%EC%BF%BC%EB%A6%AC-%EA%B0%9C%EC%84%A0%EA%B8%B0-%EC%9D%B8%EB%8D%B1%EC%8A%A4%EB%A5%BC-%ED%99%9C%EC%9A%A9%ED%95%9C-%EC%A0%95%EB%A0%AC%EB%B3%B4%EB%8B%A4-Using-temporary-Using-filesort%EA%B0%80-%EB%8D%94-%EB%B9%A0%EB%A5%B4%EB%8B%A4%EA%B3%A0",
+          "date": "2025-03-16",
+          "line": "MySQL, NL JOIN, 커버링 인덱스로 정렬과 조인 비용을 비교해, 실행 계획을 바탕으로 쿼리를 튜닝할 때 참고하기 좋아요.",
+          "project": "투룻",
+          "slug": "touroot"
+        },
+        {
+          "id": "blog-post|post:b437ee42060c31b8fbafb9aa618a2de536b3218d|v1",
+          "source": "blog",
+          "title": "공간 인덱스 적용기",
+          "url": "https://map-befine-official.github.io/spatial-index",
+          "date": "2023-10-19",
+          "line": "MySQL 공간 인덱스, R-Tree, SRID 4326을 다뤄, 반경 검색 성능과 정확성의 절충을 판단할 때 참고하기 좋아요.",
+          "project": "괜찮을지도",
+          "slug": "map-befine"
+        },
+        {
+          "id": "blog-post|post:ce28655eb2c3b5afdfd13130451aa069f161a452|v1",
+          "source": "blog",
+          "title": "[우테코] 인덱스를 활용한 스탬프크러쉬의 쿼리 성능 개선",
+          "url": "https://engineerinsight.tistory.com/245",
+          "date": "2023-10-07",
+          "line": "MySQL, EXPLAIN ANALYZE, 인덱스로 실행 계획을 비교하는 과정이라, 조회 쿼리의 병목을 찾고 개선할 때 참고하기 좋아요.",
+          "project": "스탬프크러쉬",
+          "slug": "stamp-crush"
+        },
+        {
+          "id": "blog-post|post:229be04524aabc163c972741d2a6d11983e65733|v1",
+          "source": "blog",
+          "title": "[Database] 클러스터링 인덱스와 논 클러스터링 인덱스",
+          "url": "https://kookiencream.tistory.com/133",
+          "date": "2023-09-17",
+          "line": "클러스터링 인덱스, 논클러스터링 인덱스, MySQL InnoDB의 탐색 구조를 이해하고 PK 크기의 영향을 고려할 때 참고하기 좋아요.",
+          "project": "바톤",
+          "slug": "baton"
+        },
+        {
+          "id": "blog-post|post:44cb91cd8d20c4fe414ac4ba53c7a248ee7365be|v1",
+          "source": "blog",
+          "title": "[DB] 인덱스 기본 개념과 클러스터링, 논클러스터링 인덱스",
+          "url": "https://makemepositive.tistory.com/57",
+          "date": "2023-09-17",
+          "line": "B-Tree, 클러스터링 인덱스, 논클러스터링 인덱스의 구조와 비용을 이해하고 인덱스 적용 기준을 정할 때 참고하기 좋아요.",
+          "project": "하루스터디",
+          "slug": "haru-study"
+        },
+        {
+          "id": "blog-post|post:ff2ba412f86c53d61f747c6eb5a4337ef79c1731|v1",
+          "source": "blog",
+          "title": "공간 인덱스로 조회속도 32배 개선하기(요즘 카페 지도 기능 개발)",
+          "url": "https://kong-dev.tistory.com/245",
+          "date": "2023-09-17",
+          "line": "MySQL 공간 인덱스, SRID, ST_CONTAINS로 지도 조회를 최적화하는 과정이라, 공간 쿼리의 풀스캔 원인을 찾을 때 참고하기 좋아요.",
+          "project": "요즘카페",
+          "slug": "yozm-cafe"
+        },
+        {
+          "id": "blog-post|post:2eb8acd42ef0bb79df8599f76187a3cef3a4d3c3|v1",
+          "source": "blog",
+          "title": "혼잡도 조회 속도를 파티셔닝과 인덱스로 개선해보기 | CAR-FFEINE",
+          "url": "https://car-ffeine.github.io/33",
+          "date": "2023-09-11",
+          "line": "List Partitioning, 복합 인덱스로 혼잡도 조회를 개선한 과정이라, 대용량 조회 쿼리를 최적화할 때 참고하기 좋아요.",
+          "project": "카페인",
+          "slug": "car-ffeine"
+        }
+      ],
+      "talk": [
+        {
+          "id": "youtube-tekotalk|yt:WFjxWcr90gg|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 피글렛의 소소한 쿼리 튜닝 팁",
+          "url": "https://www.youtube.com/watch?v=WFjxWcr90gg",
+          "date": "2025-09-26",
+          "line": "EXPLAIN, Composite 인덱스, Covering 인덱스로 느린 쿼리의 원인을 찾고 인덱스 적용 전후를 비교하는 방법을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:1v-V8GAHf3o|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 줄리의 스토리지 엔진과 MySQL",
+          "url": "https://www.youtube.com/watch?v=1v-V8GAHf3o",
+          "date": "2025-09-12",
+          "line": "MySQL, B-tree, LSM tree를 통해 스토리지 엔진의 역할과 읽기, 쓰기 특성을 비교하는 기준을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:FTC58pJZEYo|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 플린트의 MySQL의 전문 검색 인덱스",
+          "url": "https://www.youtube.com/watch?v=FTC58pJZEYo",
+          "date": "2025-09-12",
+          "line": "MySQL 전문 검색, N-gram, 역 인덱스의 원리와 한계를 살펴보며, LIKE를 대체할 검색 방식을 고를 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:MuZ-Mx0N-dA|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 프리, 말론의 B-Tree 인덱스와 클러스터링 인덱스",
+          "url": "https://www.youtube.com/watch?v=MuZ-Mx0N-dA",
+          "date": "2025-07-25",
+          "line": "B-Tree, B+Tree, 클러스터링 인덱스의 구조를 살펴보며 범위 검색과 PK 기반 조회 원리를 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:gcsu7ni3tBc|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 에버의 Mysql 옵티마이저",
+          "url": "https://www.youtube.com/watch?v=gcsu7ni3tBc",
+          "date": "2024-11-29",
+          "line": "MySQL 옵티마이저, EXPLAIN, 커버링 인덱스로 실행 계획을 읽고 쿼리 튜닝의 확인 지점을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:_UI8YDU_mfg|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 초코칩&로키의 인덱스와 스캔 튜닝",
+          "url": "https://www.youtube.com/watch?v=_UI8YDU_mfg",
+          "date": "2024-09-06",
+          "line": "MySQL, 복합 인덱스, 인덱스 레인지 스캔을 다뤄, 조회 조건에 맞는 인덱스를 고르고 성능과 비용을 설명할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:VAhZa30j8hA|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 연어의 DB Partitioning",
+          "url": "https://www.youtube.com/watch?v=VAhZa30j8hA",
+          "date": "2023-10-31",
+          "line": "MySQL, 레인지 파티션, 커버링 인덱스를 다뤄, 파티셔닝이 유리한 조회 조건과 도입 시 주의점을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:w27fZGbtvZ0|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 아코의 MySQL 아키텍처",
+          "url": "https://www.youtube.com/watch?v=w27fZGbtvZ0",
+          "date": "2023-10-13",
+          "line": "MySQL, InnoDB, MVCC를 통해 쿼리 처리 흐름과 캐싱, 동시성 원리를 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:usEsrsaSSuU|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 모디의 MySQL의 실행 계획",
+          "url": "https://www.youtube.com/watch?v=usEsrsaSSuU",
+          "date": "2023-10-06",
+          "line": "MySQL, EXPLAIN, 커버링 인덱스로 실행 계획을 읽는 방법을 살펴보며, 쿼리 성능 병목을 점검할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:ywYdEls88Sw|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 로이스의 Index",
+          "url": "https://www.youtube.com/watch?v=ywYdEls88Sw",
+          "date": "2023-08-04",
+          "line": "MySQL, InnoDB, B-tree로 인덱스의 검색 원리와 성능 차이를 살펴보며, 인덱스를 적용할 기준을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:nvnl9YgnON8|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 매트, 토르의 MySQL 성능 최적화",
+          "url": "https://www.youtube.com/watch?v=nvnl9YgnON8",
+          "date": "2022-11-10",
+          "line": "MySQL, 복합 인덱스, 커버링 인덱스를 다뤄, 실행 계획으로 인덱스 효과를 확인하고 조회 성능을 개선할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:edpYzFgHbqs|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 라라, 제로의 데이터베이스 인덱스",
+          "url": "https://www.youtube.com/watch?v=edpYzFgHbqs",
+          "date": "2022-09-16",
+          "line": "MySQL InnoDB, B-Tree, 카디널리티로 인덱스의 동작과 적용 기준을 살펴봐, 조회 성능과 쓰기 비용을 함께 판단할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        }
+      ],
+      "doc": [
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-jarihana:backend/docs/adr/0025-push-claim-indexed-candidates.md|v1",
+          "source": "doc",
+          "title": "ADR 0025. Push claim은 index로 후보를 좁힌 뒤 JOIN한다",
+          "url": "https://github.com/woowacourse-teams/2026-jarihana/blob/ec3dd7b9b37d7e537129f16b69a9cae928270a25/backend/docs/adr/0025-push-claim-indexed-candidates.md",
+          "date": "2026-10-16",
+          "line": "PostgreSQL 부분 인덱스, MATERIALIZED CTE, SKIP LOCKED로 후보를 먼저 좁혀, 대량 JOIN 병목과 동시성 문제를 함께 개선할 때 참고하기 좋아요.",
+          "project": "자리하나?",
+          "slug": "jarihana"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-Devica:docs/adr/0043-제품-목록-최저가-사전-계산.md|v1",
+          "source": "doc",
+          "title": "43. 제품 목록의 최저가를 제품별 최저가 테이블에 미리 계산해 둔다",
+          "url": "https://github.com/woowacourse-teams/2026-Devica/blob/43f0cfa22f3220d608d9ed893967df663e9467d4/docs/adr/0043-%EC%A0%9C%ED%92%88-%EB%AA%A9%EB%A1%9D-%EC%B5%9C%EC%A0%80%EA%B0%80-%EC%82%AC%EC%A0%84-%EA%B3%84%EC%82%B0.md",
+          "date": "2026-10-17",
+          "line": "EXPLAIN ANALYZE, 사전 집계, 트랜잭션으로 목록 조회 병목을 분석하고 캐시 대신 집계 구조를 바꿀 때 참고하기 좋아요.",
+          "project": "2026-Devica",
+          "slug": null
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-salmonbus:docs/sal150-settlement-io.md|v1",
+          "source": "doc",
+          "title": "SAL-150 정산 읽기/쓰기 절감 검증",
+          "url": "https://github.com/woowacourse-teams/2026-salmonbus/blob/a719c3232154cbe8a55f0e457d95ba6940e15121/docs/sal150-settlement-io.md",
+          "date": "2026-09-30",
+          "line": "PostgreSQL, 배치 처리, EXPLAIN ANALYZE로 정산 성능을 검증한 자료라, DB 읽기와 쓰기 절감을 평가할 때 참고하기 좋아요.",
+          "project": "2026-salmonbus",
+          "slug": null
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2024-code-zap:wiki/Query-Performance-Improvement---Tag-Retrieval.md|v1",
+          "source": "doc",
+          "title": "Query Performance Improvement   Tag Retrieval",
+          "url": "https://github.com/woowacourse-teams/2024-code-zap/wiki/Query-Performance-Improvement---Tag-Retrieval",
+          "date": "2024-10-29",
+          "line": "커버링 인덱스, 서브쿼리, JPQL로 태그 조회를 개선한 과정이라, 반복 쿼리와 대량 IN 조건을 줄일 때 참고하기 좋아요.",
+          "project": "코드잽",
+          "slug": "code-zap"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2022-pickpick:wiki/MySQL-인덱스-최적화.md|v1",
+          "source": "doc",
+          "title": "MySQL 인덱스 최적화",
+          "url": "https://github.com/woowacourse-teams/2022-pickpick/wiki/MySQL-인덱스-최적화",
+          "date": "2022-10-21",
+          "line": "MySQL, EXPLAIN ANALYZE, 복합 인덱스로 실행계획과 성능을 비교해, 쿼리에 맞는 인덱스를 고를 때 참고하기 좋아요.",
+          "project": "줍줍",
+          "slug": "pickpick"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2022-teatime:wiki/Mysql-쿼리최적화.md|v1",
+          "source": "doc",
+          "title": "Mysql 쿼리최적화",
+          "url": "https://github.com/woowacourse-teams/2022-teatime/wiki/Mysql-쿼리최적화",
+          "date": "2022-09-25",
+          "line": "MySQL, EXPLAIN, 복합 인덱스로 실행계획과 성능을 비교한 과정이라, 느린 조회 쿼리의 원인을 찾고 개선할 때 참고하기 좋아요.",
+          "project": "티타임",
+          "slug": "teatime"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2024-code-zap:wiki/쿼리-성능-개선-‐-템플릿-생성.md|v1",
+          "source": "doc",
+          "title": "쿼리 성능 개선 ‐ 템플릿 생성",
+          "url": "https://github.com/woowacourse-teams/2024-code-zap/wiki/쿼리-성능-개선-‐-템플릿-생성",
+          "date": "2024-09-27",
+          "line": "IN 쿼리, 인덱스, 지연 로딩으로 템플릿 생성 성능을 개선한 과정이라, 반복 조회와 불필요한 조인을 줄일 때 참고하기 좋아요.",
+          "project": "코드잽",
+          "slug": "code-zap"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2024-code-zap:wiki/Query-Performance-Improvement-‐-Create-Template.md|v1",
+          "source": "doc",
+          "title": "Query Performance Improvement ‐ Create Template",
+          "url": "https://github.com/woowacourse-teams/2024-code-zap/wiki/Query-Performance-Improvement-‐-Create-Template",
+          "date": "2024-10-29",
+          "line": "IN 조회, 인덱스, EXPLAIN으로 태그 조회를 개선한 과정이라, 생성 요청의 반복 쿼리를 줄일 때 참고하기 좋아요.",
+          "project": "코드잽",
+          "slug": "code-zap"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2022-review-duck:wiki/검색속도-향상을-위한-MySQL-fulltext-index와-match-~-against.md|v1",
+          "source": "doc",
+          "title": "검색속도 향상을 위한 MySQL fulltext index와 match ~ against",
+          "url": "https://github.com/woowacourse-teams/2022-review-duck/wiki/검색속도-향상을-위한-MySQL-fulltext-index와-match-~-against",
+          "date": "2022-10-29",
+          "line": "MySQL FULLTEXT, MATCH AGAINST, N-gram으로 검색 성능을 비교한 자료라, DB 검색 병목을 개선할 때 참고하기 좋아요.",
+          "project": "회고덕",
+          "slug": "review-duck"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2025-bottari:wiki/서비스-주요-쿼리-성능-점검-및-인덱스-전략.md|v1",
+          "source": "doc",
+          "title": "서비스 주요 쿼리 성능 점검 및 인덱스 전략",
+          "url": "https://github.com/woowacourse-teams/2025-bottari/wiki/서비스-주요-쿼리-성능-점검-및-인덱스-전략",
+          "date": "2025-09-26",
+          "line": "EXPLAIN, 유니크 인덱스, 커서 기반 페이징으로 조회 병목을 분석한 사례라, 실행 계획에 근거해 쿼리를 개선할 때 참고하기 좋아요.",
+          "project": "보따리",
+          "slug": "bottari"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2024-coduo:wiki/💘-Database-Performance-Improvement-Story(EN).md|v1",
+          "source": "doc",
+          "title": "💘 Database Performance Improvement Story(EN)",
+          "url": "https://github.com/woowacourse-teams/2024-coduo/wiki/💘-Database-Performance-Improvement-Story(EN)",
+          "date": "2024-10-28",
+          "line": "SQL, 인덱스, 유니크 인덱스를 다루며, 대량 데이터에서 조회 시간을 측정해 인덱스 추가 여부를 판단할 때 참고하기 좋아요.",
+          "project": "2024-coduo",
+          "slug": null
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2024-code-zap:wiki/쿼리-성능-개선-‐-템플릿-수정.md|v1",
+          "source": "doc",
+          "title": "쿼리 성능 개선 ‐ 템플릿 수정",
+          "url": "https://github.com/woowacourse-teams/2024-code-zap/wiki/쿼리-성능-개선-‐-템플릿-수정",
+          "date": "2024-09-27",
+          "line": "JPA, IN 조회, 지연 로딩으로 반복 조회를 줄이는 과정을 다뤄, 수정 요청의 쿼리 병목을 개선할 때 참고하기 좋아요.",
+          "project": "코드잽",
+          "slug": "code-zap"
+        }
+      ],
+      "pr": [
+        {
+          "id": "github-pr|woowacourse-teams/2025-bom-bom#804|v1",
+          "source": "pr",
+          "title": "[BE][BOM-1199] 월간 읽기 랭킹 쿼리 개선",
+          "url": "https://github.com/woowacourse-teams/2025-bom-bom/pull/804",
+          "date": "2026-08-11",
+          "line": "EXPLAIN ANALYZE, 선제 LIMIT, 복합 인덱스로 조인 병목을 분석한 과정이라, 랭킹 조회 쿼리를 최적화할 때 참고하기 좋아요.",
+          "project": "봄봄",
+          "slug": "bom-bom"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2024-touroot#660|v1",
+          "source": "pr",
+          "title": "[Feature] - 태그 필터링 쿼리 개선",
+          "url": "https://github.com/woowacourse-teams/2024-touroot/pull/660",
+          "date": "2025-03-11",
+          "line": "MySQL, 다중 JOIN, 커버링 인덱스로 태그 필터링을 개선한 과정이라, 집계와 정렬 쿼리를 튜닝할 때 참고하기 좋아요.",
+          "project": "투룻",
+          "slug": "touroot"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-Devica#232|v1",
+          "source": "pr",
+          "title": "[REFACTOR] 최저가 인덱스를 추가하고 가격순 상품 목록이 인덱스 순서로 읽도록 변경",
+          "url": "https://github.com/woowacourse-teams/2026-Devica/pull/232",
+          "date": "2026-10-18",
+          "line": "MySQL, InnoDB 보조 인덱스, INNER JOIN으로 가격순 조회를 개선한 과정이라, 인덱스를 못 타는 정렬 쿼리를 고칠 때 참고하기 좋아요.",
+          "project": "2026-Devica",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-jumin#159|v1",
+          "source": "pr",
+          "title": "[TSK-158] 로컬 부하 테스트 및 추천/viewport 로직 개선",
+          "url": "https://github.com/woowacourse-teams/2026-jumin/pull/159",
+          "date": "2026-10-15",
+          "line": "가상 출발점, JIT 비활성화, 사전 계산으로 DB 비용을 줄인 과정이라, 쿼리 최적화와 효과 검증에 참고하기 좋아요.",
+          "project": "주차의 민족",
+          "slug": "jumin"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-salmonbus#67|v1",
+          "source": "pr",
+          "title": "feat(SAL-132): 예보 후보정 관련 집계 로직 변경",
+          "url": "https://github.com/woowacourse-teams/2026-salmonbus/pull/67",
+          "date": "2026-09-21",
+          "line": "PostgreSQL, 집계 테이블, UPSERT로 반복 집계 비용을 줄인 과정이라, DB 읽기 병목과 집계 정합성을 함께 다룰 때 참고하기 좋아요.",
+          "project": "2026-salmonbus",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-zzol#1058|v1",
+          "source": "pr",
+          "title": "[feat] 대시보드 쿼리 성능 테스트 및 최적화",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/pull/1058",
+          "date": "2026-01-14",
+          "line": "EXPLAIN ANALYZE, 복합 인덱스, 비정규화로 병목을 좁혀 가는 과정이라, 인덱스만으로 느린 집계 쿼리를 개선할 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-shout-outz#505|v1",
+          "source": "pr",
+          "title": "[BE/refactor] 피드 인기순 정렬을 저장된 좋아요와 댓글 수로 조회 (#504)",
+          "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/505",
+          "date": "2026-10-21",
+          "line": "반정규화, 인덱스, Flyway로 인기순 조회를 개선한 과정이라, 조회 성능과 데이터 정합성을 함께 챙길 때 참고하기 좋아요.",
+          "project": "샤라웆",
+          "slug": "shout-outz"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-salmonbus#140|v1",
+          "source": "pr",
+          "title": "perf(SAL-220): 차량 최신 성공 관측 조회 최적화",
+          "url": "https://github.com/woowacourse-teams/2026-salmonbus/pull/140",
+          "date": "2026-10-20",
+          "line": "PostgreSQL, 부분 인덱스, generic plan을 다뤄, 매개변수 때문에 인덱스를 활용하지 못하는 쿼리를 개선할 때 참고하기 좋아요.",
+          "project": "2026-salmonbus",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-Devica#228|v1",
+          "source": "pr",
+          "title": "[REFACTOR] 제품 목록의 최저가를 미리 계산해 저장",
+          "url": "https://github.com/woowacourse-teams/2026-Devica/pull/228",
+          "date": "2026-10-15",
+          "line": "사전 계산, LEFT JOIN, MySQL 실행 계획 비교로 목록 집계 병목을 줄이는 방법과 캐시의 한계를 살필 때 참고하기 좋아요.",
+          "project": "2026-Devica",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-salmonbus#95|v1",
+          "source": "pr",
+          "title": "perf(SAL-167): 예보 평가 조회 개선과 대기 및 완료 이력 분리",
+          "url": "https://github.com/woowacourse-teams/2026-salmonbus/pull/95",
+          "date": "2026-10-11",
+          "line": "HOT, 부분 인덱스, vacuum의 관계를 짚어, 상태 변경이 잦은 테이블의 I/O를 줄일 때 참고하기 좋아요.",
+          "project": "2026-salmonbus",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-sssOK#231|v1",
+          "source": "pr",
+          "title": "feat: 미디어 목록 조회 API 커서 페이지네이션 적용",
+          "url": "https://github.com/woowacourse-teams/2026-sssOK/pull/231",
+          "date": "2026-09-21",
+          "line": "Keyset Cursor, 복합 부분 인덱스, 튜플 비교를 다뤄, 무한 스크롤 조회를 실행 계획으로 최적화할 때 참고하기 좋아요.",
+          "project": "쏙",
+          "slug": "sssok"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-jarihana#428|v1",
+          "source": "pr",
+          "title": "fix: 푸시 claim 쿼리의 대량 스캔을 줄인다",
+          "url": "https://github.com/woowacourse-teams/2026-jarihana/pull/428",
+          "date": "2026-10-19",
+          "line": "PostgreSQL, 인덱스 후보 조회, FOR UPDATE SKIP LOCKED로 대량 스캔을 줄인 과정이라, 잠금 정책을 유지하며 쿼리를 최적화할 때 참고하기 좋아요.",
+          "project": "자리하나?",
+          "slug": "jarihana"
+        }
+      ]
+    }
+  },
+  {
+    "topic": "DB 레플리케이션/샤딩",
+    "synonyms": [
+      "replication",
+      "레플리케이션",
+      "리플리케이션",
+      "master-slave",
+      "읽기 전용",
+      "read replica",
+      "샤딩",
+      "sharding",
+      "이중화"
+    ]
+  },
+  {
+    "topic": "DB 마이그레이션",
+    "synonyms": ["flyway", "liquibase", "마이그레이션 스크립트", "db migration"]
+  },
+  {
+    "topic": "NoSQL/검색 엔진",
+    "synonyms": [
+      "mongodb",
+      "mongo",
+      "dynamodb",
+      "nosql",
+      "elasticsearch",
+      "elastic search",
+      "엘라스틱서치",
+      "opensearch",
+      "전문 검색",
+      "full text search",
+      "형태소"
+    ]
+  },
+  {
+    "topic": "N+1 문제",
+    "synonyms": [
+      "n+1",
+      "n + 1",
+      "fetch join",
+      "페치 조인",
+      "batch size",
+      "entitygraph",
+      "지연 로딩"
+    ],
+    "groups": {
+      "blog": [
+        {
+          "id": "blog-post|post:6f001cb53442a28b6abf8cd1d16db0417439b2ac|v1",
+          "source": "blog",
+          "title": "[JPA] 다대다 관계에서 FetchJoin으로 N+1 문제 해결하기",
+          "url": "https://amaran-th.github.io/Spring/[JPA]%20%EB%8B%A4%EB%8C%80%EB%8B%A4%20%EA%B4%80%EA%B3%84%EC%97%90%EC%84%9C%20FetchJoin%EC%9C%BC%EB%A1%9C%20N+1%20%EB%AC%B8%EC%A0%9C%20%ED%95%B4%EA%B2%B0%ED%95%98%EA%B8%B0",
+          "date": "2026-01-01",
+          "line": "JPA, Fetch Join, 지연 로딩을 다루며, 다대다 관계의 N+1 문제를 줄이고 적용 제약을 확인할 때 참고하기 좋아요.",
+          "project": "Kerdy",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:4440c012d8aa10f0b827985bfdc476fb660f2cad|v1",
+          "source": "blog",
+          "title": "ChannelSubscription에서 N＋1 문제 해결하기",
+          "url": "https://github.com/woowacourse-teams/2022-pickpick/wiki/ChannelSubscription%EC%97%90%EC%84%9C-N%EF%BC%8B1-%EB%AC%B8%EC%A0%9C-%ED%95%B4%EA%B2%B0%ED%95%98%EA%B8%B0",
+          "date": "2022-11-13",
+          "line": "JPQL, fetch join, EntityGraph로 N+1을 해결하는 과정을 살펴보고, 연관 엔티티 조회 쿼리를 줄일 때 참고하기 좋아요.",
+          "project": "줍줍",
+          "slug": "pickpick"
+        },
+        {
+          "id": "blog-post|post:023b9cf38dcb60e380775b05246b9ddc04e05657|v1",
+          "source": "blog",
+          "title": "JPA 성능 개선기 3. 페치조인",
+          "url": "https://github.com/woowacourse-teams/2022-teatime/wiki/JPA-%EC%84%B1%EB%8A%A5-%EA%B0%9C%EC%84%A0%EA%B8%B0-3.-%ED%8E%98%EC%B9%98%EC%A1%B0%EC%9D%B8",
+          "date": "2022-10-16",
+          "line": "JPA, 페치 조인, 지연 로딩으로 DTO 변환 시 추가 쿼리가 발생하는 원인과 해결법을 살펴보고, 연관 데이터 조회를 최적화할 때 참고하기 좋아요.",
+          "project": "티타임",
+          "slug": "teatime"
+        },
+        {
+          "id": "blog-post|post:c1fd62fbb7ef74ab24905341e89d00f45b068435|v1",
+          "source": "blog",
+          "title": "JPA 성능 개선기 2. 1 더하기 N 문제 해결하기",
+          "url": "https://github.com/woowacourse-teams/2022-teatime/wiki/JPA-%EC%84%B1%EB%8A%A5-%EA%B0%9C%EC%84%A0%EA%B8%B0-2.-1-%EB%8D%94%ED%95%98%EA%B8%B0-N-%EB%AC%B8%EC%A0%9C-%ED%95%B4%EA%B2%B0%ED%95%98%EA%B8%B0",
+          "date": "2022-10-10",
+          "line": "JPA, 네이티브 SQL, 스칼라 서브쿼리로 존재 여부를 함께 조회해, N+1 쿼리를 줄일 때 참고하기 좋아요.",
+          "project": "티타임",
+          "slug": "teatime"
+        },
+        {
+          "id": "blog-post|post:57f0277dea01598e8a9f05b166f5539f1294872f|v1",
+          "source": "blog",
+          "title": "JPA N+1 문제 찾아 삼만리",
+          "url": "https://gong-check.github.io/dev-blog/BE/%EB%B2%94%EA%B3%A0%EB%9E%98/N+1/nplus1",
+          "date": "2022-09-16",
+          "line": "JPA, StatementInspector, Interceptor로 API별 쿼리를 기록하는 과정이라, N+1 의심 지점을 찾을 때 참고하기 좋아요.",
+          "project": "공첵",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:d62af27f448e015e46ca3d9b3b3615cccd813a53|v1",
+          "source": "blog",
+          "title": "[JPA] 조회 쿼리 N+1 문제 해결",
+          "url": "https://does-log.tistory.com/52",
+          "date": "2022-07-10",
+          "line": "JPA, 페치 조인, @EntityGraph로 추가 조회를 줄이는 과정을 살펴보며, N+1 원인과 해결 방법을 비교할 때 참고하기 좋아요.",
+          "project": "스모디",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:3570ef93c09a92b8612e32562c4633468518d67f|v1",
+          "source": "blog",
+          "title": "하이버네이트 default-batch-fetch-size 가 안되는 현상 😢",
+          "url": "https://2021-pick-git.github.io/default-batch-fetch-size-not-working",
+          "date": "2021-10-22",
+          "line": "Hibernate, 배치 페치, 지연 로딩의 동작 차이를 재현한 글이라, N+1이 설정 후에도 발생할 때 참고하기 좋아요.",
+          "project": "깃들다",
+          "slug": "pick-git"
+        },
+        {
+          "id": "blog-post|post:71fe6d020e312b994ecfcecdbd191874800def38|v1",
+          "source": "blog",
+          "title": "JPA Pagination, 그리고 N + 1 문제",
+          "url": "https://2021-pick-git.github.io/pagination-n-plus-one",
+          "date": "2021-09-28",
+          "line": "JPA, Fetch Join, Batch Size로 페이징을 유지하면서 연관 데이터의 N + 1 문제를 줄일 때 참고하기 좋아요.",
+          "project": "깃들다",
+          "slug": "pick-git"
+        }
+      ],
+      "talk": [
+        {
+          "id": "youtube-tekotalk|yt:ni92wUkAmQI|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 수달의 JPA N+1 문제",
+          "url": "https://www.youtube.com/watch?v=ni92wUkAmQI",
+          "date": "2022-11-08",
+          "line": "JPA, JPQL, fetch join으로 N+1 발생 원리와 해결 방법을 살펴보고, 연관 데이터 조회와 페이징의 주의점을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        }
+      ],
+      "doc": [
+        {
+          "id": "github-wiki|woowacourse-teams/2024-code-zap:wiki/쿼리-성능-개선-‐-태그-조회.md|v1",
+          "source": "doc",
+          "title": "쿼리 성능 개선 ‐ 태그 조회",
+          "url": "https://github.com/woowacourse-teams/2024-code-zap/wiki/쿼리-성능-개선-‐-태그-조회",
+          "date": "2024-09-27",
+          "line": "커버링 인덱스, 서브쿼리, N+1 쿼리 제거로 태그 조회를 개선한 과정이라, 반복 조회와 대량 IN 절을 줄일 때 참고하기 좋아요.",
+          "project": "코드잽",
+          "slug": "code-zap"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2024-code-zap:wiki/쿼리-성능-개선-‐-템플릿-단건-조회.md|v1",
+          "source": "doc",
+          "title": "쿼리 성능 개선 ‐ 템플릿 단건 조회",
+          "url": "https://github.com/woowacourse-teams/2024-code-zap/wiki/쿼리-성능-개선-‐-템플릿-단건-조회",
+          "date": "2024-09-27",
+          "line": "JPQL, JOIN으로 태그별 추가 조회를 줄인 과정이라, 단건 조회의 쿼리 수와 응답 시간을 개선할 때 참고하기 좋아요.",
+          "project": "코드잽",
+          "slug": "code-zap"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2022-teatime:wiki/JPA-성능-개선기-2.-1-더하기-N-문제-해결하기.md|v1",
+          "source": "doc",
+          "title": "JPA 성능 개선기 2. 1 더하기 N 문제 해결하기",
+          "url": "https://github.com/woowacourse-teams/2022-teatime/wiki/JPA-성능-개선기-2.-1-더하기-N-문제-해결하기",
+          "date": "2022-10-10",
+          "line": "네이티브 SQL, 스칼라 서브쿼리, EXISTS로 조회를 합친 과정이라, 존재 여부 조회의 N+1 문제를 해결할 때 참고하기 좋아요.",
+          "project": "티타임",
+          "slug": "teatime"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2024-code-zap:wiki/Query-Performance-Improvement---Single-Template-Retrieval.md|v1",
+          "source": "doc",
+          "title": "Query Performance Improvement   Single Template Retrieval",
+          "url": "https://github.com/woowacourse-teams/2024-code-zap/wiki/Query-Performance-Improvement---Single-Template-Retrieval",
+          "date": "2024-10-29",
+          "line": "SQL JOIN, JPQL로 태그별 추가 조회를 줄이는 과정이라, 단건 조회의 쿼리 수와 응답 시간을 개선할 때 참고하기 좋아요.",
+          "project": "코드잽",
+          "slug": "code-zap"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2025-moment:server/docs/reports/batch-query-pattern-report.md|v1",
+          "source": "doc",
+          "title": "배치 조회 패턴 기술 보고서",
+          "url": "https://github.com/woowacourse-teams/2025-moment/blob/2ff6c5a5cc77174fb5b7d8dae8ba1e6957ae5e55/server/docs/reports/batch-query-pattern-report.md",
+          "date": "2026-02-06",
+          "line": "배치 조회, IN절, GROUP BY로 댓글 좋아요 조회를 묶는 과정이라, N+1 해결과 조회 규모별 대안을 검토할 때 참고하기 좋아요.",
+          "project": "2025-moment",
+          "slug": null
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2022-pickpick:wiki/ChannelSubscription에서-N＋1-문제-해결하기.md|v1",
+          "source": "doc",
+          "title": "ChannelSubscription에서 N＋1 문제 해결하기",
+          "url": "https://github.com/woowacourse-teams/2022-pickpick/wiki/ChannelSubscription에서-N＋1-문제-해결하기",
+          "date": "2022-11-13",
+          "line": "JPA, fetch join, @EntityGraph로 N+1을 해결하는 과정이라, 연관 조회 쿼리를 줄이고 해결책을 비교할 때 참고하기 좋아요.",
+          "project": "줍줍",
+          "slug": "pickpick"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2024-code-zap:wiki/쿼리-성능-개선-‐-템플릿-검색.md|v1",
+          "source": "doc",
+          "title": "쿼리 성능 개선 ‐ 템플릿 검색",
+          "url": "https://github.com/woowacourse-teams/2024-code-zap/wiki/쿼리-성능-개선-‐-템플릿-검색",
+          "date": "2024-10-31",
+          "line": "페치 조인, 일괄 조회, 전문 검색 인덱스로 검색 쿼리 병목을 줄이는 방법을 살펴볼 때 참고하기 좋아요.",
+          "project": "코드잽",
+          "slug": "code-zap"
+        },
+        {
+          "id": "github-discussion|woowacourse-teams/2023-trip-draw/discussions/497|v1",
+          "source": "doc",
+          "title": "여행 및 감상에서 N+1 문제",
+          "url": "https://github.com/woowacourse-teams/2023-trip-draw/discussions/497",
+          "date": "2023-10-16",
+          "line": "N+1, 지연 로딩, FETCH JOIN을 다뤄, 연관 회원 조회로 늘어나는 쿼리의 원인을 찾고 해결할 때 참고하기 좋아요.",
+          "project": "트립드로우",
+          "slug": "trip-draw"
+        },
+        {
+          "id": "github-discussion|woowacourse-teams/2023-trip-draw/discussions/377|v1",
+          "source": "doc",
+          "title": "N + 1 문제 발견",
+          "url": "https://github.com/woowacourse-teams/2023-trip-draw/discussions/377",
+          "date": "2023-09-19",
+          "line": "Fetch Join, Lazy Loading으로 N+1 문제를 해결한 사례라, 연관 엔티티의 반복 조회를 진단할 때 참고하기 좋아요.",
+          "project": "트립드로우",
+          "slug": "trip-draw"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2022-teatime:wiki/JPA-성능-개선기-3.-페치조인.md|v1",
+          "source": "doc",
+          "title": "JPA 성능 개선기 3. 페치조인",
+          "url": "https://github.com/woowacourse-teams/2022-teatime/wiki/JPA-성능-개선기-3.-페치조인",
+          "date": "2022-10-17",
+          "line": "JPA, 지연 로딩, 페치 조인으로 DTO 변환 중 추가 쿼리가 생기는 원인과 해결 방법을 살펴볼 때 참고하기 좋아요.",
+          "project": "티타임",
+          "slug": "teatime"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-ChongChong:backend/docs/adr/0010-choose-per-study-count-queries-for-my-study-list.md|v1",
+          "source": "doc",
+          "title": "0010. 내 스터디 목록에서 스터디별 집계 쿼리를 사용한다",
+          "url": "https://github.com/woowacourse-teams/2026-ChongChong/blob/0f68cd768832a877330606b5199f96bd5c659c3d/backend/docs/adr/0010-choose-per-study-count-queries-for-my-study-list.md",
+          "date": "2026-08-20",
+          "line": "GROUP BY, 프로젝션, N+1의 비용과 복잡성을 비교해, 제한된 데이터 규모에서 집계 방식을 고를 때 참고하기 좋아요.",
+          "project": "총총",
+          "slug": "chongchong"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2024-code-zap:wiki/Query-Performance-Improvement---Template-Search.md|v1",
+          "source": "doc",
+          "title": "Query Performance Improvement   Template Search",
+          "url": "https://github.com/woowacourse-teams/2024-code-zap/wiki/Query-Performance-Improvement---Template-Search",
+          "date": "2024-10-29",
+          "line": "Fetch Join, FULLTEXT 인덱스로 검색 쿼리를 개선한 과정이라, 연관 데이터 조회의 N+1 문제를 줄일 때 참고하기 좋아요.",
+          "project": "코드잽",
+          "slug": "code-zap"
+        }
+      ],
+      "pr": [
+        {
+          "id": "github-pr|woowacourse-teams/2025-PhotoGather#991|v1",
+          "source": "pr",
+          "title": "refactor: Space 관련 리팩터링",
+          "url": "https://github.com/woowacourse-teams/2025-PhotoGather/pull/991",
+          "date": "2025-12-12",
+          "line": "JOIN FETCH, IN 쿼리, GROUP BY로 목록 조회를 개선한 과정이라, N+1 해결과 집계 누락 처리를 설계할 때 참고하기 좋아요.",
+          "project": "2025-PhotoGather",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-festabook#1005|v1",
+          "source": "pr",
+          "title": "[BE] Place 전체 조회 API 개선",
+          "url": "https://github.com/woowacourse-teams/2025-festabook/pull/1005",
+          "date": "2025-10-12",
+          "line": "N+1, fetch join, Grafana k6로 조회 전략을 비교한 과정이라, 성능과 유지보수를 함께 고려할 때 참고하기 좋아요.",
+          "project": "페스타북",
+          "slug": "festabook"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2023-edonymyeon#471|v1",
+          "source": "pr",
+          "title": "#470 회원가입 쿼리 개선",
+          "url": "https://github.com/woowacourse-teams/2023-edonymyeon/pull/471",
+          "date": "2023-10-08",
+          "line": "JdbcTemplate, 배치 INSERT, EntityGraph로 회원가입 쿼리 병목을 줄이는 과정이라, 저장과 조회 성능을 개선할 때 참고하기 좋아요.",
+          "project": "2023-edonymyeon",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-PhotoGather#928|v1",
+          "source": "pr",
+          "title": "refactor: 방명록 조회 시 2N+1 문제 해결",
+          "url": "https://github.com/woowacourse-teams/2025-PhotoGather/pull/928",
+          "date": "2025-11-22",
+          "line": "DTO 프로젝션, 조인, 서브쿼리로 추가 조회를 줄인 과정이라, 페이지네이션의 N+1 문제를 해결할 때 참고하기 좋아요.",
+          "project": "2025-PhotoGather",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2023-fun-eat#838|v1",
+          "source": "pr",
+          "title": "[BE] refactor: 특정 상품에 대한 리뷰 목록 조회 N+1 문제 완전히 해결",
+          "url": "https://github.com/woowacourse-teams/2023-fun-eat/pull/838",
+          "date": "2023-10-27",
+          "line": "N+1, 일괄 조회로 쿼리 수와 메모리 연산의 절충을 살펴보며, 연관 데이터 조회를 최적화할 때 참고하기 좋아요.",
+          "project": "펀잇",
+          "slug": "fun-eat"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2023-yozm-cafe#441|v1",
+          "source": "pr",
+          "title": "n+1 개선",
+          "url": "https://github.com/woowacourse-teams/2023-yozm-cafe/pull/441",
+          "date": "2023-09-13",
+          "line": "fetch join, BatchSize, SQL IN으로 다중 컬렉션 조회를 조합한 사례라, 순서를 유지하며 N+1을 줄일 때 참고하기 좋아요.",
+          "project": "요즘카페",
+          "slug": "yozm-cafe"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2024-mouda#796|v1",
+          "source": "pr",
+          "title": "다락방 별 모임을 조회하는 API의 요청 응답 속도 개선",
+          "url": "https://github.com/woowacourse-teams/2024-mouda/pull/796",
+          "date": "2024-11-25",
+          "line": "IN 조회, N+1 문제, 인덱스를 다룬 사례로, 인덱스 적용 후에도 느린 API의 추가 쿼리를 줄일 때 참고하기 좋아요.",
+          "project": "2024-mouda",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2023-edonymyeon#117|v1",
+          "source": "pr",
+          "title": "refactor/#105 페이징 트러블슈팅",
+          "url": "https://github.com/woowacourse-teams/2023-edonymyeon/pull/117",
+          "date": "2023-07-27",
+          "line": "@BatchSize, @EntityGraph, Slice로 조회 쿼리를 줄이는 과정이라, 무한 스크롤의 N+1 문제를 해결할 때 참고하기 좋아요.",
+          "project": "2023-edonymyeon",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-Fit-toring#711|v1",
+          "source": "pr",
+          "title": "[REFACTOR] 내 멘토링 상세 조회 기능 개선",
+          "url": "https://github.com/woowacourse-teams/2025-Fit-toring/pull/711",
+          "date": "2025-09-23",
+          "line": "FETCH JOIN, N+1 개선 사례로 중복 조회와 반복 쿼리를 줄이는 방법을 배울 수 있어, 상세 조회 최적화에 참고하기 좋아요.",
+          "project": "2025-Fit-toring",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2024-touroot#649|v1",
+          "source": "pr",
+          "title": "[Feature] - TravelogueLike 조회를 fetch join으로 개선",
+          "url": "https://github.com/woowacourse-teams/2024-touroot/pull/649",
+          "date": "2025-01-19",
+          "line": "fetch join, QueryDSL, JMeter로 연관 데이터 조회를 개선한 과정이라, N+1 문제 해결과 성능 검증을 참고하기 좋아요.",
+          "project": "투룻",
+          "slug": "touroot"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2023-naaga#364|v1",
+          "source": "pr",
+          "title": "fix: 나의 통계 조회 시 성능 저하 문제 해결",
+          "url": "https://github.com/woowacourse-teams/2023-naaga/pull/364",
+          "date": "2023-10-03",
+          "line": "N+1, fetch join, LEFT JOIN으로 통계 조회의 연쇄 쿼리를 줄이는 과정이라, 연관관계 조회 성능을 개선할 때 참고하기 좋아요.",
+          "project": "나아가",
+          "slug": "naaga"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2022-mo-rak#547|v1",
+          "source": "pr",
+          "title": "refactor: 투표 쿼리 성능 개선",
+          "url": "https://github.com/woowacourse-teams/2022-mo-rak/pull/547",
+          "date": "2022-11-03",
+          "line": "배치 조회, 반정규화, 인덱스로 투표 조회를 개선한 과정이라, N+1을 줄이고 데이터 정합성을 고려할 때 참고하기 좋아요.",
+          "project": "모락",
+          "slug": "mo-rak"
+        }
+      ]
+    }
+  },
+  {
+    "topic": "페이지네이션/무한 스크롤",
+    "synonyms": [
+      "페이지네이션",
+      "pagination",
+      "페이징",
+      "커서 기반",
+      "cursor",
+      "no offset",
+      "노오프셋",
+      "무한 스크롤",
+      "infinite scroll"
+    ]
+  },
+  {
+    "topic": "캐시(Redis 등)",
+    "synonyms": ["redis", "레디스", "cache", "캐시", "캐싱", "caffeine", "ehcache"]
+  },
+  {
+    "topic": "메시지 큐/이벤트",
+    "synonyms": [
+      "kafka",
+      "카프카",
+      "rabbitmq",
+      "sqs",
+      "메시지 큐",
+      "message queue",
+      "이벤트 기반",
+      "event driven",
+      "비동기 이벤트",
+      "pub/sub",
+      "outbox"
+    ]
+  },
+  {
+    "topic": "실시간 통신(WebSocket/SSE)",
+    "synonyms": [
+      "websocket",
+      "웹소켓",
+      "stomp",
+      "sse",
+      "server-sent events",
+      "실시간 알림",
+      "실시간 채팅",
+      "socket.io"
+    ],
+    "groups": {
+      "blog": [
+        {
+          "id": "blog-post|post:6ee56a50566ce0d58c05241ba4abc703b2e6e2cd|v1",
+          "source": "blog",
+          "title": "SSE에서 트리깅 메시지를 전달하고 GET을 하는 구조를 변경",
+          "url": "https://github.com/woowacourse-teams/2025-bottari/wiki/SSE에서-트리깅-메시지를-전달하고-GET을-하는-구조를-변경",
+          "date": "2026-01-29",
+          "line": "SSE, 멱등 페이로드, 자원별 버전 관리의 트레이드오프를 비교해, 실시간 동기화에서 직접 전송과 재조회를 나눌 때 참고하기 좋아요.",
+          "project": "보따리",
+          "slug": "bottari"
+        },
+        {
+          "id": "blog-post|post:388f9b654850a13e648ad2edf29459e05414f320|v1",
+          "source": "blog",
+          "title": "[Spring] 야구보구의 실시간 기능, 배포 후 발생한 SSE 문제 정리(nginx 설정)",
+          "url": "https://nourzoo.tistory.com/53",
+          "date": "2025-10-05",
+          "line": "SSE, Nginx, HTTP/1.1로 배포 후 스트림 끊김과 인증 오류를 살펴봐서, 실시간 연결 장애를 해결할 때 참고하기 좋아요.",
+          "project": "야구보구",
+          "slug": "yagu-bogu"
+        },
+        {
+          "id": "blog-post|post:148cdfdc5c23650201b10295a77af5de7d3eba26|v1",
+          "source": "blog",
+          "title": "[Spring] 야구보구 홈 화면 SSE(Server-Sent Events)로 실시간 팬 현황 갱신하기",
+          "url": "https://nourzoo.tistory.com/51",
+          "date": "2025-09-15",
+          "line": "SSE, Spring MVC, Nginx로 실시간 팬 현황을 갱신하는 흐름이라, 단방향 알림과 연결 유지를 설계할 때 참고하기 좋아요.",
+          "project": "야구보구",
+          "slug": "yagu-bogu"
+        },
+        {
+          "id": "blog-post|post:d44409d763e06e8ea4c1166bfcb5474c1d38aedb|v1",
+          "source": "blog",
+          "title": "[AN] SSE 클라이언트 구현",
+          "url": "https://github.com/woowacourse-teams/2025-bottari/wiki/%5BAN%5D-SSE-%ED%81%B4%EB%9D%BC%EC%9D%B4%EC%96%B8%ED%8A%B8-%EA%B5%AC%ED%98%84",
+          "date": "2025-09-12",
+          "line": "SSE, okhttp-sse, Flow로 연결과 이벤트 처리를 구성하는 흐름이라, 안드로이드 실시간 통신을 구현할 때 참고하기 좋아요.",
+          "project": "보따리",
+          "slug": "bottari"
+        },
+        {
+          "id": "blog-post|post:7d7a8af03c328f0f876ecffc02f029bfd6ec02b7|v1",
+          "source": "blog",
+          "title": "[SpringBoot] 실시간 알림을 위한 SSE, 트러블 슈팅",
+          "url": "https://astro-yu.github.io/posts/Springboot1",
+          "date": "2025-08-10",
+          "line": "SSE, OSIV, Nginx 설정을 살펴보며 실시간 알림의 DB 커넥션 고갈과 프록시 연결 문제를 해결할 때 참고하기 좋아요.",
+          "project": "모멘트",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:50266089d5b3277975803657cbd0d1d89cfab87a|v1",
+          "source": "blog",
+          "title": "[SSE] SseEmitter로 실시간 주문 상태 업데이트 구현하기",
+          "url": "https://flowerdragon95.tistory.com/264",
+          "date": "2025-08-09",
+          "line": "SSE, Heartbeat, Nginx로 주문 상태를 실시간 전송하는 흐름을 살펴보며, 서버 푸시와 연결 유지를 구현할 때 참고하기 좋아요.",
+          "project": "모멘트",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:949e766066b72679ea7159b94ddcff3e01b567ec|v1",
+          "source": "blog",
+          "title": "팀 보따리 변경 사항 실시간 반영 구현 검토",
+          "url": "https://github.com/woowacourse-teams/2025-bottari/wiki/%ED%8C%80-%EB%B3%B4%EB%94%B0%EB%A6%AC-%EB%B3%80%EA%B2%BD-%EC%82%AC%ED%95%AD-%EC%8B%A4%EC%8B%9C%EA%B0%84-%EB%B0%98%EC%98%81-%EA%B5%AC%ED%98%84-%EA%B2%80%ED%86%A0",
+          "date": "2025-08-07",
+          "line": "Polling, SSE, WebSocket의 차이를 비교하며, 팀원 간 변경 사항을 실시간으로 반영할 통신 방식을 고를 때 참고하기 좋아요.",
+          "project": "보따리",
+          "slug": "bottari"
+        },
+        {
+          "id": "blog-post|post:a86f7fbb0e9aeb1bed32aa6fbe29c04f7888fb38|v1",
+          "source": "blog",
+          "title": "Server-Sent-Event로 팀 프로젝트에 동기화 적용하기",
+          "url": "https://velog.io/@lejinhy/Server-Sent-Event%EB%A1%9C-%ED%8C%80-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%EC%97%90-%EB%8F%99%EA%B8%B0%ED%99%94-%EC%A0%81%EC%9A%A9%ED%95%98%EA%B8%B0",
+          "date": "2025-02-24",
+          "line": "SSE, 스프링 부트, Nginx로 다중 사용자 타이머를 동기화하고 서버 환경의 연결 종료 원인을 찾을 때 참고하기 좋아요.",
+          "project": "코딩해듀오",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:ae5c4f06749ddc3839ffcb4ed46365a46f6ec261|v1",
+          "source": "blog",
+          "title": "💭프로젝트 '오디' 핵심 기능 리팩터링 상상일지 : 웹 소켓 전환 시나리오",
+          "url": "https://hellobrocolli.tistory.com/187",
+          "date": "2024-11-03",
+          "line": "WebSocket, STOMP, Pub/Sub로 폴링을 대체하는 설계라, 클라이언트의 호출 예약 부담을 서버로 옮길 때 참고하기 좋아요.",
+          "project": "오디",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:382edcc2f02a8641b7fd8760303bcdb530964636|v1",
+          "source": "blog",
+          "title": "[땅콩] 땅콩은 어떤 실시간 통신 방식을 사용할까?",
+          "url": "https://rbgksqkr.github.io/woowacourse/real-time-data-transport",
+          "date": "2024-10-29",
+          "line": "폴링, 롱폴링, 웹소켓의 비용을 비교하고 부하를 확인한 과정이라, 서비스에 맞는 실시간 통신 방식을 고를 때 참고하기 좋아요.",
+          "project": "땅콩",
+          "slug": "ddangkong"
+        },
+        {
+          "id": "blog-post|post:4f5b59f7f284fc5d8121f2949648cc632e97ae29|v1",
+          "source": "blog",
+          "title": "Server-Sent Events를 이용한 비동기 통신 구현 및 트러블슈팅",
+          "url": "https://gong-check.github.io/dev-blog/BE/%EC%96%B4%EC%8D%B8%EC%98%A4/sse/sse",
+          "date": "2022-10-04",
+          "line": "SSE, JPA, Nginx를 다루며 실시간 상태 공유를 구현하고 연결 고갈과 배포 환경 문제를 해결할 때 참고하기 좋아요.",
+          "project": "공첵",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:7b4dc1f2071ab02028a2b6a67ebf2e6e96f1b9ca|v1",
+          "source": "blog",
+          "title": "[Spring + SSE] Server-Sent Events를 이용한 실시간 알림",
+          "url": "https://velog.io/@max9106/Spring-SSE-Server-Sent-Events%EB%A5%BC-%EC%9D%B4%EC%9A%A9%ED%95%9C-%EC%8B%A4%EC%8B%9C%EA%B0%84-%EC%95%8C%EB%A6%BC",
+          "date": "2021-09-23",
+          "line": "SSE, Spring으로 실시간 알림을 구현하는 과정이라, 단방향 통신 선택과 재연결 시 알림 유실 대응을 설계할 때 참고하기 좋아요.",
+          "project": "코드봐줘",
+          "slug": null
+        }
+      ],
+      "talk": [
+        {
+          "id": "youtube-tekotalk|yt:19TrHkprQ7U|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 니야의 웹소켓 끊김 대응 전략",
+          "url": "https://www.youtube.com/watch?v=19TrHkprQ7U",
+          "date": "2025-11-18",
+          "line": "웹소켓, StompJS, PerformanceNavigationTiming을 다뤄, 앱 전환, 새로고침 때 재연결과 상태 동기화를 구현할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:pIVOs3bf3Gw|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 다이스의 Server-Sent Events for Android",
+          "url": "https://www.youtube.com/watch?v=pIVOs3bf3Gw",
+          "date": "2025-11-11",
+          "line": "Server-Sent Events, OkHttp, OkHttp-SSE API로 안드로이드 실시간 화면을 구현하는 방법과 선택 근거를 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:ckxmMbwmn98|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 루키의 Spring WebSocket과 STOMP를 활용한 실시간 통신 구조",
+          "url": "https://www.youtube.com/watch?v=ckxmMbwmn98",
+          "date": "2025-10-03",
+          "line": "Spring WebSocket, STOMP, pub/sub로 실시간 통신을 이해하고 서버 내부 메시지 처리 흐름을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:2I3sUiNEykI|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 다이앤의 http부터 웹소켓까지",
+          "url": "https://www.youtube.com/watch?v=2I3sUiNEykI",
+          "date": "2025-10-03",
+          "line": "WebSocket, STOMP, Stomp.js로 실시간 화면을 구현하는 흐름을 익히고, 구독 관리와 REST API 사용 기준을 정할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:9UUi5s_hkBU|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 트레의 스프링에서 STOMP로 채팅 구현하기",
+          "url": "https://www.youtube.com/watch?v=9UUi5s_hkBU",
+          "date": "2024-11-11",
+          "line": "Spring Boot, WebSocket, STOMP로 채팅 서버를 구현하며, 메시지 발행, 구독과 분산 환경의 브로커 구성을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:SwLKZUj9urY|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 레모네의 웹 소켓",
+          "url": "https://www.youtube.com/watch?v=SwLKZUj9urY",
+          "date": "2024-09-06",
+          "line": "웹 소켓, STOMP, SockJS의 동작과 역할을 살펴보며, 실시간 양방향 통신 방식을 고를 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:Fjj4ZmLlrP8|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 주드의 Server Sent Events",
+          "url": "https://www.youtube.com/watch?v=Fjj4ZmLlrP8",
+          "date": "2023-10-20",
+          "line": "Server Sent Events, 폴링, 웹소켓의 차이를 살펴보며 서버 실시간 알림의 구현과 주의점을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:rvss-_t6gzg|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] ✨ 아론의 웹소켓&스프링",
+          "url": "https://www.youtube.com/watch?v=rvss-_t6gzg",
+          "date": "2021-11-10",
+          "line": "웹소켓, Spring, STOMP로 실시간 통신을 구현하는 흐름을 살펴보고, 메시지 처리 방식을 고를 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:MPQHvwPxDUw|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 🧲코일의 Web Socket",
+          "url": "https://www.youtube.com/watch?v=MPQHvwPxDUw",
+          "date": "2020-11-24",
+          "line": "WebSocket, HTTP, STOMP를 다뤄, 실시간 통신의 연결 과정과 프로토콜의 한계를 이해할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:mHMR03kaBHw|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 🕴핀의 Realtime Web",
+          "url": "https://www.youtube.com/watch?v=mHMR03kaBHw",
+          "date": "2020-10-30",
+          "line": "폴링, SSE, 웹 소켓의 동작과 장단점을 비교해, 알림, 채팅 등 실시간 웹 기능에 맞는 통신 방식을 고를 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:v11dxmc5a0I|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 😎유니의 Web polling vs Web push",
+          "url": "https://www.youtube.com/watch?v=v11dxmc5a0I",
+          "date": "2019-11-29",
+          "line": "Web polling, WebSocket, SSE의 동작과 차이를 살펴보며, 실시간 메시지 전달 방식을 고를 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        }
+      ],
+      "doc": [
+        {
+          "id": "github-teamdoc|woowacourse-teams/2025-zzol:backend/docs/adr/0037-fe-be-contract-type-generation.md|v1",
+          "source": "doc",
+          "title": "0037. 조회형 api-mcp 를 폐기하고 FE↔BE WebSocket 계약을 생성 타입과 tsc 로 강제",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/blob/8a9e2971b1b23ac2e48e5e227cc2762ee6b1f243/backend/docs/adr/0037-fe-be-contract-type-generation.md",
+          "date": "2026-10-02",
+          "line": "WebSocket, OpenAPI, tsc로 계약 불일치를 컴파일 오류로 잡는 설계라, FE와 BE 계약 검증을 자동화할 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-setty:server/docs/sse/delivery-request-sse.md|v1",
+          "source": "doc",
+          "title": "배송 요청 SSE 연결 허용 구현 정책",
+          "url": "https://github.com/woowacourse-teams/2026-setty/blob/4282325678d71e3f62d264508ad51101dc32e296/server/docs/sse/delivery-request-sse.md",
+          "date": "2026-10-14",
+          "line": "SSE, 동시성 제어, HTTP 통합 테스트로 재접속 여유와 자원 보호를 함께 고려한 연결 상한을 설계할 때 참고하기 좋아요.",
+          "project": "2026-setty",
+          "slug": null
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2025-zzol:backend/docs/adr/0031-nunchi-game-design.md|v1",
+          "source": "doc",
+          "title": "0031. 눈치게임(Nunchi) 서버 설계 — 순차 카운팅·동시 입력 순위 판정과 FE/BE 조율",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/blob/8a9e2971b1b23ac2e48e5e227cc2762ee6b1f243/backend/docs/adr/0031-nunchi-game-design.md",
+          "date": "2026-10-02",
+          "line": "WebSocket, Redis Stream, 고정 시간 윈도우로 실시간 입력 순위와 충돌을 판정하는 설계를 고민할 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2025-bottari:wiki/SSE에서-트리깅-메시지를-전달하고-GET을-하는-구조를-변경.md|v1",
+          "source": "doc",
+          "title": "SSE에서 트리깅 메시지를 전달하고 GET을 하는 구조를 변경",
+          "url": "https://github.com/woowacourse-teams/2025-bottari/wiki/SSE에서-트리깅-메시지를-전달하고-GET을-하는-구조를-변경",
+          "date": "2026-01-29",
+          "line": "SSE, 멱등 페이로드, 자원별 버전 관리로 전송 전략을 비교해, 실시간 동기화의 조회 비용과 화면 결합도를 조절할 때 참고하기 좋아요.",
+          "project": "보따리",
+          "slug": "bottari"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2025-zzol:backend/docs/adr/0003-ladder-game-design.md|v1",
+          "source": "doc",
+          "title": "0003. LadderGame 게임 서버 설계",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/blob/8a9e2971b1b23ac2e48e5e227cc2762ee6b1f243/backend/docs/adr/0003-ladder-game-design.md",
+          "date": "2026-10-02",
+          "line": "WebSocket, Redis Stream, 임계 구역으로 실시간 게임의 선 배치 충돌과 서버, 클라이언트 역할 분담을 설계할 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2025-zzol:backend/docs/adr/0012-websocket-catalog-discovery.md|v1",
+          "source": "doc",
+          "title": "0012. WebSocket 컨트랙트 디스커버리 — `@WsTopic`/`@WsQueue`/`@WsReceive` + `/dev/ws-catalog`",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/blob/8a9e2971b1b23ac2e48e5e227cc2762ee6b1f243/backend/docs/adr/0012-websocket-catalog-discovery.md",
+          "date": "2026-10-02",
+          "line": "STOMP, JDK reflection, JSON 카탈로그로 통신 계약을 공유하는 설계라, WebSocket 문서화 방식을 고를 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2025-zzol:frontend/docs/adr/20260915-ws-contract-generated-types.md|v1",
+          "source": "doc",
+          "title": "WebSocket 계약은 BE 가 생성한 타입으로 강제한다",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/blob/8a9e2971b1b23ac2e48e5e227cc2762ee6b1f243/frontend/docs/adr/20260915-ws-contract-generated-types.md",
+          "date": "2026-09-28",
+          "line": "STOMP, OpenAPI, openapi-typescript로 계약 타입을 생성해, WebSocket 불일치를 컴파일 단계에서 막을 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2025-zzol:backend/docs/adr/0002-block-stacking-game-design.md|v1",
+          "source": "doc",
+          "title": "0002. BlockStacking 게임 서버 설계",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/blob/8a9e2971b1b23ac2e48e5e227cc2762ee6b1f243/backend/docs/adr/0002-block-stacking-game-design.md",
+          "date": "2026-10-02",
+          "line": "WebSocket, Redis Stream, 낙관적 업데이트를 다뤄, 실시간 게임의 검증 정책과 종료 흐름을 설계할 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-discussion|woowacourse-teams/2025-estime/discussions/439|v1",
+          "source": "doc",
+          "title": "sse의 메시지 데이터 포맷은 'json' vs 문자열 ?",
+          "url": "https://github.com/woowacourse-teams/2025-estime/discussions/439",
+          "date": "2025-08-19",
+          "line": "SSE, JSON의 전송 안정성을 명세로 따져본 논의라, 이벤트 데이터 포맷과 오류 처리 방식을 정할 때 참고하기 좋아요.",
+          "project": "아인슈타임",
+          "slug": "estime"
+        },
+        {
+          "id": "github-discussion|woowacourse-teams/2025-zzol/discussions/218|v1",
+          "source": "doc",
+          "title": "[BE] 웹소켓 응답 처리 방식 논의",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/discussions/218",
+          "date": "2025-07-26",
+          "line": "WebSocket, 도메인 이벤트, 이벤트 리스너로 전송 책임을 분리하는 논의라, 계층 의존성과 디버깅 비용을 고려할 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2025-bottari:wiki/APP-서버---SSE-서버-분리-설계-문서.md|v1",
+          "source": "doc",
+          "title": "APP 서버   SSE 서버 분리 설계 문서",
+          "url": "https://github.com/woowacourse-teams/2025-bottari/wiki/APP-서버---SSE-서버-분리-설계-문서",
+          "date": "2025-10-23",
+          "line": "SSE, Redis Pub/Sub, 독립 스케일 아웃을 다뤄, API 처리와 장기 연결의 자원 경합을 줄이는 서버 설계를 할 때 참고하기 좋아요.",
+          "project": "보따리",
+          "slug": "bottari"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2025-bottari:wiki/팀-보따리-변경-사항-실시간-반영-구현-검토.md|v1",
+          "source": "doc",
+          "title": "팀 보따리 변경 사항 실시간 반영 구현 검토",
+          "url": "https://github.com/woowacourse-teams/2025-bottari/wiki/팀-보따리-변경-사항-실시간-반영-구현-검토",
+          "date": "2025-08-07",
+          "line": "Polling, SSE, WebSocket을 비교해, 변경 알림에 맞는 실시간 통신 방식을 고를 때 참고하기 좋아요.",
+          "project": "보따리",
+          "slug": "bottari"
+        }
+      ],
+      "pr": [
+        {
+          "id": "github-pr|woowacourse-teams/2026-knot#645|v1",
+          "source": "pr",
+          "title": "[BE] NCP 개발 서버 자동 배포 종료 및 SSE 타임아웃 안정화",
+          "url": "https://github.com/woowacourse-teams/2026-knot/pull/645",
+          "date": "2026-10-13",
+          "line": "SSE, Spring MVC의 타임아웃 종료 경쟁을 재현하고 검증한 과정이라, 비동기 응답 종료와 자원 해제 책임을 나눌 때 참고하기 좋아요.",
+          "project": "Knot",
+          "slug": "knot"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-zzol#1746|v1",
+          "source": "pr",
+          "title": "[fix] WebSocket 세션 해제 시 메트릭·매핑 정리 누락",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/pull/1746",
+          "date": "2026-09-03",
+          "line": "WebSocket, STOMP, Redis 스트림으로 세션 정리와 재접속의 경합을 다뤄, 연결 상태 누수와 중복 처리를 해결할 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-estime#860|v1",
+          "source": "pr",
+          "title": "refactor: 투표 변경 SSE 신호 합치기와 캐시 무효화 순서 확정",
+          "url": "https://github.com/woowacourse-teams/2025-estime/pull/860",
+          "date": "2026-08-27",
+          "line": "SSE, 커밋 후 이벤트, 캐시 무효화로 신호 누락과 낡은 조회를 막는 과정이라, 실시간 갱신의 순서를 설계할 때 참고하기 좋아요.",
+          "project": "아인슈타임",
+          "slug": "estime"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-zzol#1644|v1",
+          "source": "pr",
+          "title": "[fix] WebSocket 브로드캐스트 순서 역전 수정 — setPreservePublishOrder 활성화",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/pull/1644",
+          "date": "2026-08-06",
+          "line": "WebSocket, 세션별 직렬화, 결정론적 테스트로 메시지 순서 역전을 분석해, 간헐적 실패의 원인과 회귀 검증 방법을 찾을 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-zzol#977|v1",
+          "source": "pr",
+          "title": "[fix] 웹소켓 자동 재연결 시 재구독 안되는 이슈",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/pull/977",
+          "date": "2025-11-03",
+          "line": "STOMP, SockJS, 지수 백오프로 자동 재연결 후 구독을 복구하는 과정이라, 웹소켓 재구독 오류를 해결할 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-zzol#1738|v1",
+          "source": "pr",
+          "title": "[feat] WS payload 타입을 BE record 에서 생성하고 onData 타입을 destination 에서 추론",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/pull/1738",
+          "date": "2026-09-26",
+          "line": "WebSocket, swagger-core, openapi-typescript로 타입 불일치를 잡은 과정이라, 서버 변경을 프론트 컴파일 검증으로 연결할 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-zzol#1793|v1",
+          "source": "pr",
+          "title": "[fix] 로비 준비 버튼을 WS 연결 전에는 잠근다",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/pull/1793",
+          "date": "2026-09-20",
+          "line": "WebSocket, STOMP, 회귀 테스트로 연결 상태와 버튼을 맞추고, 늦게 도착한 콜백의 상태 덮어쓰기를 막을 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-zzol#983|v1",
+          "source": "pr",
+          "title": "[fix] 방 참여자 목록이 보이지 않는 이슈",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/pull/983",
+          "date": "2025-11-06",
+          "line": "WebSocket, STOMP, useEffect로 구독과 요청의 실행 순서를 제어하는 사례라, 응답은 도착하지만 화면이 갱신되지 않을 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-estime#578|v1",
+          "source": "pr",
+          "title": "SSE 에서 발생하는 IllegalStateException 해결",
+          "url": "https://github.com/woowacourse-teams/2025-estime/pull/578",
+          "date": "2025-09-24",
+          "line": "SSE, Tomcat AsyncContext의 오류 상태를 분석한 과정이라, 연결 종료 뒤 발생하는 예외와 잔존 연결을 정리할 때 참고하기 좋아요.",
+          "project": "아인슈타임",
+          "slug": "estime"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-moment#1148|v1",
+          "source": "pr",
+          "title": "[FIX] SSE 알림 데이터 처리 경계 정리 및 toast 누락 수정",
+          "url": "https://github.com/woowacourse-teams/2025-moment/pull/1148",
+          "date": "2026-06-22",
+          "line": "SSE, 순수 함수, Sentry로 알림 후처리를 정리한 과정이라, 실시간 알림 누락 원인을 찾고 검증할 때 참고하기 좋아요.",
+          "project": "2025-moment",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-knot#582|v1",
+          "source": "pr",
+          "title": "[FE] 탐색 질문 전송 뮤테이션 재구현",
+          "url": "https://github.com/woowacourse-teams/2026-knot/pull/582",
+          "date": "2026-10-11",
+          "line": "SSE, AbortSignal, try/catch로 요청 취소와 스트림 실패를 구분하는 과정이라, 취소가 오류로 처리되는 문제를 해결할 때 참고하기 좋아요.",
+          "project": "Knot",
+          "slug": "knot"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-zzol#707|v1",
+          "source": "pr",
+          "title": "[fix] 웹소켓 끊김 시 방 생존 여부 상태를 활용한 로비 화면 분기 처리",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/pull/707",
+          "date": "2025-09-17",
+          "line": "WebSocket, STOMP 재연결 시 서버 응답 없이 남는 상태를 분석한 사례로, 삭제된 방에 사용자가 머무는 문제를 해결할 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        }
+      ]
+    }
+  },
+  {
+    "topic": "배치/스케줄링",
+    "synonyms": ["spring batch", "배치", "scheduler", "스케줄러", "quartz", "cron"]
+  },
+  {
+    "topic": "동시성 제어/락",
+    "synonyms": [
+      "동시성",
+      "concurrency",
+      "lock",
+      "비관적 락",
+      "낙관적 락",
+      "race condition",
+      "분산 락",
+      "분산락",
+      "distributed lock",
+      "redisson",
+      "네임드 락",
+      "named lock",
+      "레디스 락"
+    ],
+    "groups": {
+      "blog": [
+        {
+          "id": "blog-post|post:6cef62f89fbc187d32e6daadaae8add6e9b4d67d|v1",
+          "source": "blog",
+          "title": "[Database] MySQL(InnoDB) 락(Lock) (2)",
+          "url": "https://soeun2537.tistory.com/127",
+          "date": "2025-10-06",
+          "line": "MySQL(InnoDB), 레코드 락, 갭 락의 쿼리 예시로 잠금 범위와 대기 동작을 살펴보며, 동시성 제어를 이해할 때 참고하기 좋아요.",
+          "project": "페스타북",
+          "slug": "festabook"
+        },
+        {
+          "id": "blog-post|post:7e4151b48b01db12e6333c82f75df8e8759694f2|v1",
+          "source": "blog",
+          "title": "[Database] 락(Lock) (1)",
+          "url": "https://soeun2537.tistory.com/125",
+          "date": "2025-10-04",
+          "line": "공유 락, 배타 락, 내재 락의 역할과 지원 단위를 정리해, DBMS별 락 동작을 공부할 때 참고하기 좋아요.",
+          "project": "페스타북",
+          "slug": "festabook"
+        },
+        {
+          "id": "blog-post|post:aef818587544851c800cbaf19dcabc1a00c98e68|v1",
+          "source": "blog",
+          "title": "[MySQL] INSERT IGNORE 는 데이터 중복 시 왜 새로운 데이터의 삽입을 막을까?",
+          "url": "https://nakhonest.tistory.com/entry/MySQL-INSERT-IGNORE-%EB%8A%94-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EC%A4%91%EB%B3%B5-%EC%8B%9C-%EC%99%9C-%EC%83%88%EB%A1%9C%EC%9A%B4-%EB%8D%B0%EC%9D%B4%ED%84%B0%EC%9D%98-%EC%82%BD%EC%9E%85%EC%9D%84-%EB%A7%89%EC%9D%84%EA%B9%8C",
+          "date": "2024-11-24",
+          "line": "INSERT IGNORE, 갭 락, 역정규화를 다뤄, 중복 삽입의 락 경합을 분석하고 비즈니스에 맞는 해결책을 고를 때 참고하기 좋아요.",
+          "project": "투룻",
+          "slug": "touroot"
+        },
+        {
+          "id": "blog-post|post:f9fca21629d2d4f6d22ba99a1745f91d23c129ee|v1",
+          "source": "blog",
+          "title": "분산락(Named Lock)으로 동시성 관리하기",
+          "url": "https://jeoninpyo726.tistory.com/100",
+          "date": "2023-10-13",
+          "line": "MySQL, Named Lock, REQUIRES_NEW를 활용해 다중 서버 동시성을 제어할 때 락과 트랜잭션 경계를 설계하는 데 참고하기 좋아요.",
+          "project": "동글",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:0a5d8b221630b05b2c29f0cc284137e877040246|v1",
+          "source": "blog",
+          "title": "무한 스크롤 기능에서 동시성 이슈 해결하기",
+          "url": "https://velog.io/@nuyh99/%EB%AC%B4%ED%95%9C-%EC%8A%A4%ED%81%AC%EB%A1%A4-%EA%B8%B0%EB%8A%A5%EC%97%90%EC%84%9C-%EB%8F%99%EC%8B%9C%EC%84%B1-%EC%9D%B4%EC%8A%88-%ED%95%B4%EA%B2%B0%ED%95%98%EA%B8%B0",
+          "date": "2023-10-12",
+          "line": "JPA, Repeatable Read, 낙관적 락으로 무한 스크롤의 중복 응답 원인과 해결책을 살펴봐, 동시성 문제의 트레이드오프를 판단할 때 참고하기 좋아요.",
+          "project": "요즘카페",
+          "slug": "yozm-cafe"
+        },
+        {
+          "id": "blog-post|post:0e4007f3c4320d194d1619f9bba1275343a4fe47|v1",
+          "source": "blog",
+          "title": "동시성 문제 해결을 위한 고민",
+          "url": "https://parkmuhyeun.github.io/woowacourse/2023-10-04-concurrency",
+          "date": "2023-10-04",
+          "line": "JPQL, 낙관적 락, 비관적 락을 비교하며 갱신 분실과 데드락을 살펴보는 글이라, 카운터의 동시성 제어 방법을 고를 때 참고하기 좋아요.",
+          "project": "집사의고민",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:b6c8736059d2e6682a16d60d3d15f98931df8a60|v1",
+          "source": "blog",
+          "title": "LinkedList로 글과 카테고리의 순서 구현했을 때 동시성 제어",
+          "url": "https://jeoninpyo726.tistory.com/86",
+          "date": "2023-09-16",
+          "line": "LinkedList, AOP, 애플리케이션 락으로 순서 저장의 동시성 문제를 살펴봐요, 사용자별 요청 충돌을 제어할 때 참고하기 좋아요.",
+          "project": "동글",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:d073a7acdf503ed32f1ad5cddd907bf5d3cb93d1|v1",
+          "source": "blog",
+          "title": "동시성 문제 해결을 위한 회원가입 기능 개선",
+          "url": "https://jeoninpyo726.tistory.com/84",
+          "date": "2023-09-11",
+          "line": "복합 Unique INDEX, Gap Lock을 비교한 사례로, 중복 회원가입을 막고 동시성 제어 방식을 고를 때 참고하기 좋아요.",
+          "project": "동글",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:5b893c5b36d2f948f2e2b6d708a4f2bf3ba9b314|v1",
+          "source": "blog",
+          "title": "동시성 제어하기",
+          "url": "https://velog.io/@tco0427/%EB%8F%99%EC%8B%9C%EC%84%B1-%EC%A0%9C%EC%96%B4%ED%95%98%EA%B8%B0",
+          "date": "2023-01-17",
+          "line": "synchronized, JPA 비관적 락, 락 타임아웃으로 동시 요청의 정원 초과 원인을 찾고 잠금 전략을 고를 때 참고하기 좋아요.",
+          "project": "모아모아",
+          "slug": "moamoa"
+        },
+        {
+          "id": "blog-post|post:5734b360af77dbaf7a38ed78ed16cd2b7f2f7cd1|v1",
+          "source": "blog",
+          "title": "JPA의 낙관적 락을 사용한 동시성 이슈 해결",
+          "url": "https://dallog.github.io/troubleshooting-of-category-role-concurrency-issue",
+          "date": "2022-11-06",
+          "line": "JPA, 낙관적 락, OPTIMISTIC으로 조회한 권한까지 검증하는 과정을 통해, 동시 요청으로 도메인 제약이 깨질 때 참고하기 좋아요.",
+          "project": "달록",
+          "slug": "dallog"
+        }
+      ],
+      "talk": [
+        {
+          "id": "youtube-tekotalk|yt:At4Gyezw8WA|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 벨로의 Race Condition 이해하기",
+          "url": "https://www.youtube.com/watch?v=At4Gyezw8WA",
+          "date": "2025-09-05",
+          "line": "Race Condition, Read-Modify-Write, 원자적 연산을 통해 동시 요청에서 데이터 오류가 생기는 원리를 이해하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:-VzgLlSXm4g|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 한스의 MySQL의 락",
+          "url": "https://www.youtube.com/watch?v=-VzgLlSXm4g",
+          "date": "2025-07-25",
+          "line": "MySQL, 레코드 락, Gap Lock의 동작을 살펴보며, 인덱스와 조회 조건에 따른 잠금 범위를 이해할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:gbxOmKhzXmM|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 제리의 세마포어",
+          "url": "https://www.youtube.com/watch?v=gbxOmKhzXmM",
+          "date": "2024-11-18",
+          "line": "세마포어, 뮤텍스, 모니터의 동작과 차이를 살펴보며 공유 자원 접근 제어와 동기화 원리를 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:OHJJF1_NkD0|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 메이슨, 아토의 Java Thread",
+          "url": "https://www.youtube.com/watch?v=OHJJF1_NkD0",
+          "date": "2024-10-21",
+          "line": "Java Thread, synchronized, jstack을 다뤄, 스레드 생명주기를 이해하고 덤프로 동시성 문제를 진단할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:IftfkVSzOdI|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 냥인의 InnoDB",
+          "url": "https://www.youtube.com/watch?v=IftfkVSzOdI",
+          "date": "2024-09-27",
+          "line": "InnoDB, MyISAM, MVCC를 살펴보며 MySQL 스토리지 엔진의 차이와 동시성 보장 원리를 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:era8W7q3CeQ|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 우주의 낙관적인 락, 비관적인 락",
+          "url": "https://www.youtube.com/watch?v=era8W7q3CeQ",
+          "date": "2024-09-23",
+          "line": "낙관적인 락, 비관적인 락의 동작과 성능 비교를 통해 충돌 빈도에 맞는 동시성 제어 방식을 고를 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:NL9JQh5bbZ8|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 오션의 뮤텍스와 세마포어",
+          "url": "https://www.youtube.com/watch?v=NL9JQh5bbZ8",
+          "date": "2023-10-27",
+          "line": "뮤텍스, 세마포어, 경쟁 상태를 다뤄, 공유 자원 접근 제어와 작업 순서 동기화에 맞는 방법을 고를 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:EBBS_giQ4AM|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 두둠, 쥬니의 데이터베이스 락",
+          "url": "https://www.youtube.com/watch?v=EBBS_giQ4AM",
+          "date": "2023-10-27",
+          "line": "MySQL 8.0, InnoDB, 넥스트 키 락을 살펴보며 인덱스에 따른 잠금 범위와 데드락 발생 원리를 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:4t8BennljZA|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 베로의 Monitor & Synchronized",
+          "url": "https://www.youtube.com/watch?v=4t8BennljZA",
+          "date": "2023-10-27",
+          "line": "Monitor, synchronized, Intrinsic Lock의 동작을 살펴보며 Java의 스레드 동기화와 가시성을 이해할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:LDi5muN2kgI|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 우르의 Lock & JPA Lock",
+          "url": "https://www.youtube.com/watch?v=LDi5muN2kgI",
+          "date": "2023-08-11",
+          "line": "JPA, 낙관적 Lock, 비관적 Lock의 동작과 쿠폰 발급 테스트를 살펴보며 동시성 제어 전략의 차이를 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:ImWjQ1Bxjrs|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 이브, 배카라의 Synchronization",
+          "url": "https://www.youtube.com/watch?v=ImWjQ1Bxjrs",
+          "date": "2022-11-17",
+          "line": "뮤텍스, 세마포어, 스핀락의 동작을 살펴보며, 공유 자원의 경쟁 상태와 동기화 기법의 차이를 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:ktWcieiNzKs|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 알렉스, 열음의 멀티스레드와 동기화 In Java",
+          "url": "https://www.youtube.com/watch?v=ktWcieiNzKs",
+          "date": "2022-10-13",
+          "line": "Java의 volatile, synchronized, CAS를 살펴보며 멀티스레드 동시성 문제의 원인과 동기화 방식을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        }
+      ],
+      "doc": [
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-DAYNOMY:backend/docs/adr/261019-포트폴리오 원장 변경 잠금 범위.md|v1",
+          "source": "doc",
+          "title": "포트폴리오 원장 변경 전에 포트폴리오 잠금 획득",
+          "url": "https://github.com/woowacourse-teams/2026-DAYNOMY/blob/208fa26e79c25e2ac1befed2e8d1b35586b5a952/backend/docs/adr/261019-%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4%20%EC%9B%90%EC%9E%A5%20%EB%B3%80%EA%B2%BD%20%EC%9E%A0%EA%B8%88%20%EB%B2%94%EC%9C%84.md",
+          "date": "2026-10-20",
+          "line": "비관적 잠금, JPA, TransactionTemplate로 원장 정합성을 지키고 외부 API를 잠금 밖으로 분리할 때 참고하기 좋아요.",
+          "project": "2026-DAYNOMY",
+          "slug": null
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2025-estime:wiki/Participant-중복-생성-문제-해결-기록.md|v1",
+          "source": "doc",
+          "title": "Participant 중복 생성 문제 해결 기록",
+          "url": "https://github.com/woowacourse-teams/2025-estime/wiki/Participant-중복-생성-문제-해결-기록",
+          "date": "2025-10-30",
+          "line": "비관적 락, 유니크 제약 조건, INSERT IGNORE를 비교한 자료라, 중복 삽입 방지와 운영 안정성을 함께 고려할 때 참고하기 좋아요.",
+          "project": "아인슈타임",
+          "slug": "estime"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-jarihana:backend/docs/adr/0020-optimistic-invitation-acceptance.md|v1",
+          "source": "doc",
+          "title": "ADR 0020. 초대 합류는 unique 제약과 낙관적 잠금으로 충돌을 처리한다",
+          "url": "https://github.com/woowacourse-teams/2026-jarihana/blob/ec3dd7b9b37d7e537129f16b69a9cae928270a25/backend/docs/adr/0020-optimistic-invitation-acceptance.md",
+          "date": "2026-10-13",
+          "line": "unique 제약, 낙관적 잠금, 트랜잭션 재시도로 정상 합류와 충돌을 구분해, 동시 요청의 정합성을 설계할 때 참고하기 좋아요.",
+          "project": "자리하나?",
+          "slug": "jarihana"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-pheeeew:BE/docs/adr/0016-consume-challenge-with-conditional-update.md|v1",
+          "source": "doc",
+          "title": "ADR-0016: challenge 소모를 조건부 UPDATE 의 영향 행 수로 판정한다",
+          "url": "https://github.com/woowacourse-teams/2026-pheeeew/blob/d928e1716a4f1b9d668ef0c47a1c15a35e813364/BE/docs/adr/0016-consume-challenge-with-conditional-update.md",
+          "date": "2026-09-14",
+          "line": "조건부 UPDATE, HMAC의 차이를 통해 일회용 값의 재사용과 동시 소모를 막는 설계를 할 때 참고하기 좋아요.",
+          "project": "히유",
+          "slug": "pheeeew"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-rilog:backend/docs/post-view-memory-counter.md|v1",
+          "source": "doc",
+          "title": "조회수 메모리 집계 — #697",
+          "url": "https://github.com/woowacourse-teams/2026-rilog/blob/78a9b28af224a09df306ddc53e67dead45b3d225/backend/docs/post-view-memory-counter.md",
+          "date": "2026-10-17",
+          "line": "Caffeine, ReentrantLock, Future로 조회수 집계의 중복 방지, 동시성 제어와 실패 복구를 설계할 때 참고하기 좋아요.",
+          "project": "Rilog.",
+          "slug": "rilog"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-Chalkak:backend/docs/interviews/기기-등록과-탈퇴의-잠금-순서.md|v1",
+          "source": "doc",
+          "title": "기기 등록과 회원 탈퇴에서 로그인 잠금 순서를 맞추는 이유",
+          "url": "https://github.com/woowacourse-teams/2026-Chalkak/blob/9c33014cd2c293a21f41d2c1347e3478f99fe07e/backend/docs/interviews/%EA%B8%B0%EA%B8%B0-%EB%93%B1%EB%A1%9D%EA%B3%BC-%ED%83%88%ED%87%B4%EC%9D%98-%EC%9E%A0%EA%B8%88-%EC%88%9C%EC%84%9C.md",
+          "date": "2026-10-14",
+          "line": "PostgreSQL, TreeSet으로 잠금 순서를 맞추는 이유를 다뤄, 여러 요청의 교착을 예방하고 검증할 때 참고하기 좋아요.",
+          "project": "찰캌",
+          "slug": "chalkak"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-Chalkak:backend/docs/interviews/푸시-수신-설정의-부분-수정.md|v1",
+          "source": "doc",
+          "title": "푸시 수신 설정은 바꾼 항목만 보낸다",
+          "url": "https://github.com/woowacourse-teams/2026-Chalkak/blob/9c33014cd2c293a21f41d2c1347e3478f99fe07e/backend/docs/interviews/%ED%91%B8%EC%8B%9C-%EC%88%98%EC%8B%A0-%EC%84%A4%EC%A0%95%EC%9D%98-%EB%B6%80%EB%B6%84-%EC%88%98%EC%A0%95.md",
+          "date": "2026-10-14",
+          "line": "부분 수정, Boolean, 행 잠금으로 설정 변경을 다뤄, 오래된 값의 덮어쓰기와 동시 수정 충돌을 막을 때 참고하기 좋아요.",
+          "project": "찰캌",
+          "slug": "chalkak"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-ChongChong:backend/docs/adr/0029-protect-study-membership-limits-with-row-locks.md|v1",
+          "source": "doc",
+          "title": "0029. 스터디 멤버십 상한을 행 잠금과 트랜잭션으로 보호한다",
+          "url": "https://github.com/woowacourse-teams/2026-ChongChong/blob/0f68cd768832a877330606b5199f96bd5c659c3d/backend/docs/adr/0029-protect-study-membership-limits-with-row-locks.md",
+          "date": "2026-09-07",
+          "line": "행 잠금, 트랜잭션, PostgreSQL로 멤버십 상한을 보호하는 설계라, 동시 요청의 잠금 범위와 검증 방법을 정할 때 참고하기 좋아요.",
+          "project": "총총",
+          "slug": "chongchong"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-Harudle:backend/docs/adr/2026-08-28_관리자 사용량 초기화와 한도 변경의 동시성을 어떻게 보장할 것인가_이산.md|v1",
+          "source": "doc",
+          "title": "2026-08-28 관리자 사용량 초기화와 한도 변경의 동시성을 어떻게 보장할 것인가",
+          "url": "https://github.com/woowacourse-teams/2026-Harudle/blob/b38bd72e5814fabaffdb1afe64435a924159cc66/backend/docs/adr/2026-08-28_%EA%B4%80%EB%A6%AC%EC%9E%90%20%EC%82%AC%EC%9A%A9%EB%9F%89%20%EC%B4%88%EA%B8%B0%ED%99%94%EC%99%80%20%ED%95%9C%EB%8F%84%20%EB%B3%80%EA%B2%BD%EC%9D%98%20%EB%8F%99%EC%8B%9C%EC%84%B1%EC%9D%84%20%EC%96%B4%EB%96%BB%EA%B2%8C%20%EB%B3%B4%EC%9E%A5%ED%95%A0%20%EA%B2%83%EC%9D%B8%EA%B0%80_%EC%9D%B4%EC%82%B0.md",
+          "date": "2026-08-28",
+          "line": "비관적 잠금, 잠금 순서 통일로 사용량 초기화와 한도 변경의 정합성을 보장하는 설계를 고를 때 참고하기 좋아요.",
+          "project": "하루들",
+          "slug": "harudle"
+        },
+        {
+          "id": "github-discussion|woowacourse-teams/2024-review-me/discussions/804|v1",
+          "source": "doc",
+          "title": "여러명이 동시에 하이라이트를 수정하려고 한다면 동시성 문제는 없을까?",
+          "url": "https://github.com/woowacourse-teams/2024-review-me/discussions/804",
+          "date": "2024-10-09",
+          "line": "MySQL, 인덱스, 트랜잭션으로 동시 조회와 삭제를 실험한 기록이라, 잠금 대기를 줄이는 방법을 검증할 때 참고하기 좋아요.",
+          "project": "리뷰미",
+          "slug": "review-me"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-pheeeew:BE/docs/adr/0031-sum-group-presses-from-personal-presses.md|v1",
+          "source": "doc",
+          "title": "ADR-0031: 그룹 프레스를 개인 프레스의 멤버십 조인 합산으로 구한다",
+          "url": "https://github.com/woowacourse-teams/2026-pheeeew/blob/d928e1716a4f1b9d668ef0c47a1c15a35e813364/BE/docs/adr/0031-sum-group-presses-from-personal-presses.md",
+          "date": "2026-10-07",
+          "line": "조인 집계, 비정규화를 비교하며 공유 행의 쓰기 경합을 피하는 설계와 멤버십 집계의 대가를 판단할 때 참고하기 좋아요.",
+          "project": "히유",
+          "slug": "pheeeew"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-ChongChong:backend/docs/adr/0047-sync-home-name-to-current-study-memberships.md|v1",
+          "source": "doc",
+          "title": "0047. 홈 이름 변경을 현재 참여 스터디의 멤버 이름에 동기화한다",
+          "url": "https://github.com/woowacourse-teams/2026-ChongChong/blob/0f68cd768832a877330606b5199f96bd5c659c3d/backend/docs/adr/0047-sync-home-name-to-current-study-memberships.md",
+          "date": "2026-10-06",
+          "line": "행 잠금, 단일 트랜잭션으로 이름 동기화를 설계한 자료라, 동시 수정의 일관성과 동기 처리 범위를 정할 때 참고하기 좋아요.",
+          "project": "총총",
+          "slug": "chongchong"
+        }
+      ],
+      "pr": [
+        {
+          "id": "github-pr|woowacourse-teams/2025-zzol#1664|v1",
+          "source": "pr",
+          "title": "[fix] 레이싱게임 결과가 저장되지 않던 문제 수정 — stopAutoMove의 자기-인터럽트 제거",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/pull/1664",
+          "date": "2026-08-17",
+          "line": "FutureTask, 스레드 인터럽트, Redis 락으로 이어지는 저장 실패를 분석한 과정이라, 태스크 취소와 종료 후 저장을 검증할 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-sssOK#454|v1",
+          "source": "pr",
+          "title": "fix: 다운로드 잡 동시 생성 제한 레이스 컨디션 수정",
+          "url": "https://github.com/woowacourse-teams/2026-sssOK/pull/454",
+          "date": "2026-10-12",
+          "line": "READ COMMITTED, 비관적 락, 래치로 사용자별 작업 제한을 검증한 과정이라, 동시 요청의 개수 제한을 설계할 때 참고하기 좋아요.",
+          "project": "쏙",
+          "slug": "sssok"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-sssOK#260|v1",
+          "source": "pr",
+          "title": "fix: 처리 중(PROCESSING) 미디어의 다운로드·삭제·폴더 담기 정상화",
+          "url": "https://github.com/woowacourse-teams/2026-sssOK/pull/260",
+          "date": "2026-09-21",
+          "line": "비관적 락, 상태 분기, 회귀 테스트로 비동기 워커와 삭제가 경합할 때 데이터와 파일의 정합성을 지키는 방법을 참고하기 좋아요.",
+          "project": "쏙",
+          "slug": "sssok"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-bom-bom#757|v1",
+          "source": "pr",
+          "title": "[BOM-1122] feat: 읽기 카운트 증가 제한 추가",
+          "url": "https://github.com/woowacourse-teams/2025-bom-bom/pull/757",
+          "date": "2026-06-27",
+          "line": "Token Bucket, 원자적 UPDATE, REQUIRES_NEW로 정상 읽기를 보호하며 어뷰징과 동시성 문제를 제어할 때 참고하기 좋아요.",
+          "project": "봄봄",
+          "slug": "bom-bom"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-chaekchaek#567|v1",
+          "source": "pr",
+          "title": "[AN] Android와 iOS의 오류 안내 UI와 복구 정책을 통일한다",
+          "url": "https://github.com/woowacourse-teams/2026-chaekchaek/pull/567",
+          "date": "2026-10-21",
+          "line": "Compose, 요청 세대 검사, 소유권 검사로 모바일 오류 복구 중 입력 소실과 재시도 중단을 막을 때 참고하기 좋아요.",
+          "project": "2026-chaekchaek",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-salmonbus#44|v1",
+          "source": "pr",
+          "title": "feat(SAL-85): 호출 장부로 한도를 예약하고 결과를 남긴다",
+          "url": "https://github.com/woowacourse-teams/2026-salmonbus/pull/44",
+          "date": "2026-08-31",
+          "line": "조건부 UPSERT, REQUIRES_NEW, CountDownLatch로 외부 API 한도 예약의 동시성과 실패 경계를 설계할 때 참고하기 좋아요.",
+          "project": "2026-salmonbus",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-knot#773|v1",
+          "source": "pr",
+          "title": "[BE] 전사 작업 DB 대기열과 재시작 복구",
+          "url": "https://github.com/woowacourse-teams/2026-knot/pull/773",
+          "date": "2026-10-18",
+          "line": "FIFO, lease, 독립 트랜잭션으로 DB 대기열과 재시작 복구를 다뤄, 작업 선점과 중복 결과 저장을 설계할 때 참고하기 좋아요.",
+          "project": "Knot",
+          "slug": "knot"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-Chalkak#619|v1",
+          "source": "pr",
+          "title": "fix: CPU가 적은 빌드 환경에서 공지 동시성 테스트가 실패하는 문제 수정",
+          "url": "https://github.com/woowacourse-teams/2026-Chalkak/pull/619",
+          "date": "2026-10-14",
+          "line": "CompletableFuture, 고정 스레드 풀, ActiveProcessorCount로 CPU가 적은 환경의 동시성 테스트 실패를 재현하고 해결할 때 참고하기 좋아요.",
+          "project": "찰캌",
+          "slug": "chalkak"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-zzol#1763|v1",
+          "source": "pr",
+          "title": "[fix] 트라이 재빌드 신호를 병합하고 최소 간격을 둔다",
+          "url": "https://github.com/woowacourse-teams/2025-zzol/pull/1763",
+          "date": "2026-09-06",
+          "line": "AtomicBoolean, 단일 스레드 실행기, 신호 병합으로 재빌드 폭증과 갱신 누락을 함께 막는 방법을 배울 때 참고하기 좋아요.",
+          "project": "쫄",
+          "slug": "zzol"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-Fit-toring#1313|v1",
+          "source": "pr",
+          "title": "[FIX] 예약하기 동시성 이슈 해결(따닥 이슈)",
+          "url": "https://github.com/woowacourse-teams/2025-Fit-toring/pull/1313",
+          "date": "2026-02-24",
+          "line": "가상 컬럼, 복합 유니크 인덱스로 상태별 중복 예약을 막는 과정이라, 동시 삽입의 정합성을 보장할 때 참고하기 좋아요.",
+          "project": "2025-Fit-toring",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-bom-bom#532|v1",
+          "source": "pr",
+          "title": "[BE][BOM-638] fix: 스케줄러 중복 실행 문제 해결",
+          "url": "https://github.com/woowacourse-teams/2025-bom-bom/pull/532",
+          "date": "2025-11-16",
+          "line": "ShedLock, Spring Scheduler로 다중 서버의 스케줄러 중복 실행 원인을 분석한 과정이라, 락 유지 시간을 정할 때 참고하기 좋아요.",
+          "project": "봄봄",
+          "slug": "bom-bom"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-toadzip#227|v1",
+          "source": "pr",
+          "title": "fix(ingest): 실행 소유권 세대 검증과 이전 실행 쓰기 차단 (#216)",
+          "url": "https://github.com/woowacourse-teams/2026-toadzip/pull/227",
+          "date": "2026-09-26",
+          "line": "PostgreSQL advisory lock, FOR SHARE, 세대 검증으로 실행 소유권을 지켜, 잠금 연결이 끊긴 뒤 중복 쓰기를 막을 때 참고하기 좋아요.",
+          "project": "2026-toadzip",
+          "slug": null
+        }
+      ]
+    }
+  },
+  {
+    "topic": "부하/성능 테스트",
+    "synonyms": [
+      "부하 테스트",
+      "성능 테스트",
+      "load test",
+      "k6",
+      "jmeter",
+      "ngrinder",
+      "nGrinder",
+      "gatling",
+      "artillery",
+      "스트레스 테스트",
+      "tps"
+    ]
+  },
+  {
+    "topic": "성능 개선",
+    "synonyms": [
+      "성능 개선",
+      "성능 최적화",
+      "응답 시간",
+      "latency",
+      "병목",
+      "bottleneck",
+      "튜닝",
+      "tuning"
+    ]
+  },
+  {
+    "topic": "비동기 처리",
+    "synonyms": ["비동기", "async", "completablefuture", "virtual thread", "가상 스레드"]
+  },
+  {
+    "topic": "트랜잭션/데드락",
+    "synonyms": [
+      "트랜잭션",
+      "transactional",
+      "격리 수준",
+      "isolation level",
+      "트랜잭션 격리",
+      "데드락",
+      "deadlock",
+      "트랜잭션 전파"
+    ]
+  },
+  {
+    "topic": "커넥션, 스레드 풀 튜닝",
+    "synonyms": [
+      "커넥션 풀",
+      "connection pool",
+      "hikari",
+      "hikaricp",
+      "스레드 풀",
+      "thread pool",
+      "톰캣 스레드",
+      "max-threads"
+    ]
+  },
+  {
+    "topic": "멱등성/중복 요청 방지",
+    "synonyms": [
+      "멱등성",
+      "idempotency",
+      "멱등 키",
+      "중복 요청",
+      "중복 결제",
+      "따닥",
+      "더블 클릭",
+      "중복 방지"
+    ]
+  },
+  {
+    "topic": "단위 테스트(JUnit 등)",
+    "synonyms": [
+      "junit",
+      "단위 테스트",
+      "unit test",
+      "assertj",
+      "mockito",
+      "mockk",
+      "kotest",
+      "tdd",
+      "테스트 코드"
+    ]
+  },
+  {
+    "topic": "통합/인수 테스트",
+    "synonyms": [
+      "통합 테스트",
+      "인수 테스트",
+      "integration test",
+      "acceptance test",
+      "restassured",
+      "rest assured",
+      "e2e",
+      "cypress",
+      "playwright"
+    ]
+  },
+  {
+    "topic": "API 문서화",
+    "synonyms": [
+      "spring rest docs",
+      "restdocs",
+      "rest docs",
+      "swagger",
+      "openapi",
+      "springdoc",
+      "api 문서"
+    ]
+  },
+  {
+    "topic": "정적 분석/코드 품질",
+    "synonyms": [
+      "sonarqube",
+      "sonarcloud",
+      "jacoco",
+      "커버리지",
+      "coverage",
+      "checkstyle",
+      "eslint",
+      "prettier",
+      "ktlint",
+      "spotless",
+      "코드 리뷰"
+    ]
+  },
+  {
+    "topic": "테스트 격리/테스트컨테이너",
+    "synonyms": [
+      "testcontainers",
+      "테스트 컨테이너",
+      "테스트컨테이너",
+      "테스트 격리",
+      "test isolation",
+      "테스트 픽스처",
+      "fixture",
+      "테스트 데이터 초기화"
+    ]
+  },
+  {
+    "topic": "서버 구성(EC2, 네트워크)",
+    "synonyms": [
+      "aws",
+      "ec2",
+      "s3",
+      "rds",
+      "cloudfront",
+      "route53",
+      "route 53",
+      "elb",
+      "alb",
+      "ecs",
+      "lambda",
+      "아마존 웹 서비스",
+      "vpc",
+      "nat gateway",
+      "서브넷",
+      "보안 그룹",
+      "방화벽",
+      "ssh",
+      "linux",
+      "systemd",
+      "tomcat",
+      "health check",
+      "헬스체크"
+    ]
+  },
+  {
+    "topic": "컨테이너(Docker 등)",
+    "synonyms": [
+      "docker",
+      "도커",
+      "docker compose",
+      "docker-compose",
+      "컨테이너",
+      "kubernetes",
+      "k8s",
+      "쿠버네티스",
+      "helm",
+      "eks"
+    ]
+  },
+  {
+    "topic": "CI/CD",
+    "synonyms": [
+      "ci/cd",
+      "cicd",
+      "github actions",
+      "github action",
+      "jenkins",
+      "젠킨스",
+      "배포 자동화",
+      "codedeploy",
+      "argocd"
+    ]
+  },
+  {
+    "topic": "빌드 도구(Gradle, npm)",
+    "synonyms": [
+      "gradle",
+      "maven",
+      "npm",
+      "yarn",
+      "pnpm",
+      "빌드 도구",
+      "의존성 관리",
+      "gradle wrapper"
+    ]
+  },
+  {
+    "topic": "Nginx/리버스 프록시",
+    "synonyms": [
+      "nginx",
+      "엔진엑스",
+      "리버스 프록시",
+      "reverse proxy",
+      "로드 밸런싱",
+      "load balancing",
+      "로드밸런서"
+    ]
+  },
+  {
+    "topic": "보안/HTTPS",
+    "synonyms": [
+      "https",
+      "ssl",
+      "tls",
+      "보안",
+      "xss",
+      "csrf",
+      "cors",
+      "sql injection",
+      "암호화",
+      "letsencrypt"
+    ]
+  },
+  {
+    "topic": "모니터링/관측성",
+    "synonyms": [
+      "모니터링",
+      "monitoring",
+      "prometheus",
+      "프로메테우스",
+      "grafana",
+      "그라파나",
+      "cloudwatch",
+      "datadog",
+      "pinpoint",
+      "actuator",
+      "알람",
+      "apm",
+      "대시보드"
+    ]
+  },
+  {
+    "topic": "로깅/로그 수집",
+    "synonyms": [
+      "로깅",
+      "logging",
+      "logback",
+      "로그 수집",
+      "elk",
+      "kibana",
+      "loki",
+      "mdc",
+      "로그 분석",
+      "sentry"
+    ]
+  },
+  {
+    "topic": "무중단 배포",
+    "synonyms": [
+      "무중단 배포",
+      "무중단배포",
+      "zero downtime",
+      "블루그린",
+      "blue-green",
+      "블루/그린",
+      "롤링 배포",
+      "rolling update",
+      "카나리",
+      "canary",
+      "graceful shutdown",
+      "롤백"
+    ],
+    "groups": {
+      "blog": [
+        {
+          "id": "blog-post|post:3be88cfdac03f53bd6a73fb175920ab8f91df2e5|v1",
+          "source": "blog",
+          "title": "[BE] 무중단 배포 설계 · woowacourse-teams/2025-hEARit · Discussion #697",
+          "url": "https://github.com/woowacourse-teams/2025-hEARit/discussions/697",
+          "date": "2025-10-22",
+          "line": "Nginx, 포트 스위칭, Graceful Reload로 다운타임을 없앤 과정이라, 단일 서버 무중단 배포를 설계할 때 참고하기 좋아요.",
+          "project": "히어릿",
+          "slug": "hearit"
+        },
+        {
+          "id": "blog-post|post:dd5f19fc0f0c6db7113de2ff01b01250f5a4ca66|v1",
+          "source": "blog",
+          "title": "[Infra] Nginx와 Docker로 구현하는 단일 서버 Blue-Green 무중단 배포",
+          "url": "https://nourzoo.tistory.com/48",
+          "date": "2025-08-29",
+          "line": "Nginx, Docker, Blue-Green 배포로 트래픽 전환 구조를 구성하는 과정이라, 보안 그룹 제약 속 무중단 배포를 설계할 때 참고하기 좋아요.",
+          "project": "야구보구",
+          "slug": "yagu-bogu"
+        },
+        {
+          "id": "blog-post|post:ebf0a59e03fd13ea9adbbc87f2d2b9a1c9524b79|v1",
+          "source": "blog",
+          "title": "무중단 배포 과정에서의 불확실성 개선 [2] - AWS CLI의 wait API 적용",
+          "url": "https://pricelees.github.io/woowacourse/level4/improving_deployment/3",
+          "date": "2024-11-12",
+          "line": "AWS CLI, ELB, wait 명령어로 트래픽 중단과 재개를 확인하는 과정이라, 무중단 배포의 대기 조건을 설계할 때 참고하기 좋아요.",
+          "project": "모우다",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:acb61edffd7d5f7c9c4896dda50e5edd360254fc|v1",
+          "source": "blog",
+          "title": "무중단 배포 과정에서의 불확실성 개선 [1] - AWS CLI를 이용한 등록 취소",
+          "url": "https://pricelees.github.io/woowacourse/level4/improving_deployment/2",
+          "date": "2024-11-11",
+          "line": "AWS CLI, Deregistration Delay, graceful shutdown으로 배포 중 트래픽 차단 시점과 종료 대기 시간을 정할 때 참고하기 좋아요.",
+          "project": "모우다",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:df9d2cf2f797890fcb2bfe283d0e1f3231ba50e0|v1",
+          "source": "blog",
+          "title": "무중단 배포 과정에서의 매모리 사용량 개선 - 기존 애플리케이션의 종료 시점 변경",
+          "url": "https://pricelees.github.io/woowacourse/level4/improving_deployment/1",
+          "date": "2024-11-06",
+          "line": "ELB, graceful shutdown, Gradle을 다루며, 무중단 배포 중 메모리 부하를 줄일 종료 순서를 정할 때 참고하기 좋아요.",
+          "project": "모우다",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:2d9d6a38534c5133bcc8622eb43a66d401b99f5e|v1",
+          "source": "blog",
+          "title": "우리도 무중단 배포 할래요.",
+          "url": "https://fram-tech.tistory.com/20",
+          "date": "2024-10-27",
+          "line": "Blue/Green, Docker, Nginx로 추가 인스턴스 없이 무중단 배포를 구성하고, 다중 인스턴스의 전환 시점 문제를 살필 때 참고하기 좋아요.",
+          "project": "코딩해듀오",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:2fb73787940f34ff9940fb9a284b1f9279524515|v1",
+          "source": "blog",
+          "title": "데이터베이스 호환성을 고려한 무중단 배포 진행하기",
+          "url": "https://dev-ws.tistory.com/110",
+          "date": "2023-10-29",
+          "line": "롤링 배포, API 버저닝, MySQL 트리거로 진행 중인 사용자와 데이터 호환성을 고려한 무중단 배포를 설계할 때 참고하기 좋아요.",
+          "project": "하루스터디",
+          "slug": "haru-study"
+        },
+        {
+          "id": "blog-post|post:9efa0c1bc079394de61d0a210487d50cfeb3874a|v1",
+          "source": "blog",
+          "title": "무중단 배포 셋팅하기",
+          "url": "https://github.com/woowacourse-teams/2023-emmsale/wiki/%EB%AC%B4%EC%A4%91%EB%8B%A8-%EB%B0%B0%ED%8F%AC-%EC%85%8B%ED%8C%85%ED%95%98%EA%B8%B0",
+          "date": "2023-10-19",
+          "line": "Blue/Green, Nginx, Docker로 배포 중단 시간을 줄이는 구성과 트래픽 전환 절차를 익힐 때 참고하기 좋아요.",
+          "project": "Kerdy",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:a463aa4b4d1ee9f7868e30a60f9cbef7796a674a|v1",
+          "source": "blog",
+          "title": "[우테코] 스탬프크러쉬의 무중단 배포 자동화 (Zero-Downtime Deployment using Docker, Jenkins, Nginx, Spring Boot)",
+          "url": "https://engineerinsight.tistory.com/248",
+          "date": "2023-10-11",
+          "line": "Docker, Jenkins, Nginx로 단일 서버에서 배포를 자동화하는 과정이라, 헬스 체크와 요청 전환으로 무중단 배포를 구성할 때 참고하기 좋아요.",
+          "project": "스탬프크러쉬",
+          "slug": "stamp-crush"
+        },
+        {
+          "id": "blog-post|post:8b6aac861bdc02de4ce3fdb4922135fa79c6f27c|v1",
+          "source": "blog",
+          "title": "Elastic Beanstalk와 Github Actions를 활용해서 CICD 무중단 배포 구현하기",
+          "url": "https://yangdongjue5510.github.io/2022/12/14/nonStopDeployWithEB",
+          "date": "2022-12-14",
+          "line": "Elastic Beanstalk, GitHub Actions, 추가 배치를 사용한 롤링 배포로 무중단 배포 환경과 자동화 흐름을 구성할 때 참고하기 좋아요.",
+          "project": "F12",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:5601a392fff865309c012567523feaf76b5dcb96|v1",
+          "source": "blog",
+          "title": "무중단 배포",
+          "url": "https://velog.io/@tco0427/%EB%AC%B4%EC%A4%91%EB%8B%A8-%EB%B0%B0%ED%8F%AC",
+          "date": "2022-10-29",
+          "line": "NGINX, 포트 스위칭, 셸 스크립트로 단일 WAS의 무중단 배포를 구성하고 운영 한계를 검토할 때 참고하기 좋아요.",
+          "project": "모아모아",
+          "slug": "moamoa"
+        },
+        {
+          "id": "blog-post|post:0d054c28a1976a50dac2061383f31de6bef4b735|v1",
+          "source": "blog",
+          "title": "달록 무중단 배포 도입기",
+          "url": "https://dallog.github.io/zero-downtime-deployment",
+          "date": "2022-10-26",
+          "line": "블루그린 배포, Nginx, Jenkins로 단일 EC2의 배포 중단을 줄이는 과정이라, 무중단 배포를 도입할 때 참고하기 좋아요.",
+          "project": "달록",
+          "slug": "dallog"
+        }
+      ],
+      "talk": [
+        {
+          "id": "youtube-tekotalk|yt:wN1hnub6gyY|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 비타의 애플리케이션 배포 전략",
+          "url": "https://www.youtube.com/watch?v=wN1hnub6gyY",
+          "date": "2025-11-14",
+          "line": "Blue-Green, Rolling, Canary의 차이와 팀의 선택 과정을 통해 서비스에 맞는 배포 전략을 고를 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:kgvBlruQEKU|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 테니의 무중단 배포",
+          "url": "https://www.youtube.com/watch?v=kgvBlruQEKU",
+          "date": "2024-11-01",
+          "line": "Rolling, Blue/Green, Graceful Shutdown을 알아보고, 배포 방식과 안전한 종료의 고려 사항을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:8sstaLbEBTY|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 홍고, 제이미의 무중단 배포",
+          "url": "https://www.youtube.com/watch?v=8sstaLbEBTY",
+          "date": "2023-10-17",
+          "line": "Blue/Green, Nginx, Spring Boot Actuator로 무중단 배포를 구현하는 과정을 보며 배포 중 서비스 중단을 줄일 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        }
+      ],
+      "doc": [
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-yesulin:design/zero-downtime-deployment-record.md|v1",
+          "source": "doc",
+          "title": "PROD 무중단 배포·롤백 검증 기록 (2026-10-21)",
+          "url": "https://github.com/woowacourse-teams/2026-yesulin/blob/fd923d6f407e8f237cdb758e3bacc588e3db6d27/design/zero-downtime-deployment-record.md",
+          "date": "2026-10-21",
+          "line": "CodeDeploy, ASG, OneAtATime으로 배포 가용성과 롤백을 검증한 기록이라, 무중단 배포 구성과 DB 호환성을 점검할 때 참고하기 좋아요.",
+          "project": "예술in",
+          "slug": "yesulin"
+        },
+        {
+          "id": "github-discussion|woowacourse-teams/2024-review-me/discussions/896|v1",
+          "source": "doc",
+          "title": "무중단 배포 \b작업 검증1",
+          "url": "https://github.com/woowacourse-teams/2024-review-me/discussions/896",
+          "date": "2024-10-21",
+          "line": "JMeter, Docker, graceful shutdown으로 배포 중 요청 누락을 검증한 과정이라, 무중단 배포의 종료 대기 시간을 정할 때 참고하기 좋아요.",
+          "project": "리뷰미",
+          "slug": "review-me"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2022-teatime:wiki/무중단-배포.md|v1",
+          "source": "doc",
+          "title": "무중단 배포",
+          "url": "https://github.com/woowacourse-teams/2022-teatime/wiki/무중단-배포",
+          "date": "2022-10-24",
+          "line": "Nginx, Blue/Green 배포, 헬스 체크로 다운타임을 줄인 과정이라, 서버 증설 없이 배포 중단을 줄일 때 참고하기 좋아요.",
+          "project": "티타임",
+          "slug": "teatime"
+        },
+        {
+          "id": "github-discussion|woowacourse-teams/2024-review-me/discussions/899|v1",
+          "source": "doc",
+          "title": "무중단 배포 작업 결과",
+          "url": "https://github.com/woowacourse-teams/2024-review-me/discussions/899",
+          "date": "2024-10-22",
+          "line": "Blue-Green, iptables, JMeter로 배포 전략 선택과 검증 과정을 살펴보며, 무중단 배포를 설계할 때 참고하기 좋아요.",
+          "project": "리뷰미",
+          "slug": "review-me"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2023-emmsale:wiki/무중단-배포-셋팅하기.md|v1",
+          "source": "doc",
+          "title": "무중단 배포 셋팅하기",
+          "url": "https://github.com/woowacourse-teams/2023-emmsale/wiki/무중단-배포-셋팅하기",
+          "date": "2023-10-19",
+          "line": "Blue/Green, Nginx, Docker로 배포 다운타임을 줄인 과정이라, 무중단 배포 구성과 권한 오류 대응을 참고하기 좋아요.",
+          "project": "2023-emmsale",
+          "slug": null
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-yesulin:backend/docs/operations/deployment.md|v1",
+          "source": "doc",
+          "title": "백엔드 배포",
+          "url": "https://github.com/woowacourse-teams/2026-yesulin/blob/fd923d6f407e8f237cdb758e3bacc588e3db6d27/backend/docs/operations/deployment.md",
+          "date": "2026-10-21",
+          "line": "CodeDeploy, ALB, Expand-Contract로 무중단 배포와 롤백 안전성을 설계할 때 참고하기 좋아요.",
+          "project": "예술in",
+          "slug": "yesulin"
+        },
+        {
+          "id": "github-discussion|woowacourse-teams/2025-hEARit/discussions/697|v1",
+          "source": "doc",
+          "title": "[BE] 무중단 배포 설계",
+          "url": "https://github.com/woowacourse-teams/2025-hEARit/discussions/697",
+          "date": "2025-10-22",
+          "line": "Nginx, 포트 스위칭, Graceful Reload로 단일 서버에서 무중단 배포와 실패 시 서비스 유지를 설계할 때 참고하기 좋아요.",
+          "project": "히어릿",
+          "slug": "hearit"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-knot:docs/implement-plan/blue-green-deployment-automation.md|v1",
+          "source": "doc",
+          "title": "Dev 단일 EC2 Blue-Green 자동 배포 계획",
+          "url": "https://github.com/woowacourse-teams/2026-knot/blob/8deebdc4406b1d1de0faf9810de256cd33ec6da2/docs/implement-plan/blue-green-deployment-automation.md",
+          "date": "2026-10-21",
+          "line": "Blue-Green, CodeDeploy, Nginx로 배포 중 연결 종료 대기가 실패한 원인을 짚어, 모니터링 연결과 실제 요청을 구분할 때 참고하기 좋아요.",
+          "project": "Knot",
+          "slug": "knot"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2025-bottari:wiki/무중단-배포-자동화-파이프라인-구축.md|v1",
+          "source": "doc",
+          "title": "무중단 배포 자동화 파이프라인 구축",
+          "url": "https://github.com/woowacourse-teams/2025-bottari/wiki/무중단-배포-자동화-파이프라인-구축",
+          "date": "2025-10-23",
+          "line": "Nginx, 블루/그린 배포, Docker Compose로 단일 서버에서 배포 중단을 줄이는 구조와 선택 근거를 살펴볼 때 참고하기 좋아요.",
+          "project": "보따리",
+          "slug": "bottari"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2024-coduo:wiki/😈zero‐downtime-deployment-(EN).md|v1",
+          "source": "doc",
+          "title": "😈zero‐downtime deployment (EN)",
+          "url": "https://github.com/woowacourse-teams/2024-coduo/wiki/😈zero‐downtime-deployment-(EN)",
+          "date": "2024-10-28",
+          "line": "Blue/Green, Nginx, Docker로 배포 방식과 비용을 함께 고민한 자료라, 무중단 배포를 설계할 때 참고하기 좋아요.",
+          "project": "2024-coduo",
+          "slug": null
+        },
+        {
+          "id": "github-discussion|woowacourse-teams/2024-review-me/discussions/869|v1",
+          "source": "doc",
+          "title": "무중단 배포 작업 과정2",
+          "url": "https://github.com/woowacourse-teams/2024-review-me/discussions/869",
+          "date": "2024-10-17",
+          "line": "블루-그린 배포, Prometheus, Docker Compose를 다뤄, 모니터링 제약과 배포 중 부하를 고려해 무중단 배포 방식을 고를 때 참고하기 좋아요.",
+          "project": "리뷰미",
+          "slug": "review-me"
+        },
+        {
+          "id": "github-wiki|woowacourse-teams/2022-review-duck:wiki/무중단-배포.md|v1",
+          "source": "doc",
+          "title": "무중단 배포",
+          "url": "https://github.com/woowacourse-teams/2022-review-duck/wiki/무중단-배포",
+          "date": "2022-10-26",
+          "line": "Blue-Green, Nginx, 헬스 체크로 배포를 전환하는 과정이라, 무중단 배포 방식 선택과 서버 분리 설계를 할 때 참고하기 좋아요.",
+          "project": "회고덕",
+          "slug": "review-duck"
+        }
+      ],
+      "pr": [
+        {
+          "id": "github-pr|woowacourse-teams/2026-pheeeew#861|v1",
+          "source": "pr",
+          "title": "infra: 무중단 배포 준비를 위한 개발 서버 compose 분리",
+          "url": "https://github.com/woowacourse-teams/2026-pheeeew/pull/861",
+          "date": "2026-10-21",
+          "line": "Docker Compose, Nginx reload, 외부 네트워크로 배포 의존성을 분리하는 과정이라, 무중단 배포 기반을 설계할 때 참고하기 좋아요.",
+          "project": "히유",
+          "slug": "pheeeew"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-estime#661|v1",
+          "source": "pr",
+          "title": "블루-그린 배포 프로세스의 불완전한 롤백 문제 수정",
+          "url": "https://github.com/woowacourse-teams/2025-estime/pull/661",
+          "date": "2025-10-13",
+          "line": "블루-그린 배포, Nginx, GitHub Actions로 배포 실패 시 자동 롤백과 복구 검증을 설계할 때 참고하기 좋아요.",
+          "project": "아인슈타임",
+          "slug": "estime"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-pheeeew#890|v1",
+          "source": "pr",
+          "title": "infra: 개발 서버 blue green 무중단 배포 적용",
+          "url": "https://github.com/woowacourse-teams/2026-pheeeew/pull/890",
+          "date": "2026-10-22",
+          "line": "Blue-Green, Nginx, Alloy로 배포 전환과 관측 데이터 보호를 설계한 과정이라, 무중단 배포의 실패 지점을 점검할 때 참고하기 좋아요.",
+          "project": "히유",
+          "slug": "pheeeew"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-ChongChong#555|v1",
+          "source": "pr",
+          "title": "[fix] Nginx 프로세스 조회 실패로 인한 무중단 배포 중단 수정",
+          "url": "https://github.com/woowacourse-teams/2026-ChongChong/pull/555",
+          "date": "2026-10-21",
+          "line": "Docker, Nginx, CodeDeploy의 프로세스 조회 오류를 재현하고 검증한 과정이라, 무중단 배포 장애를 해결할 때 참고하기 좋아요.",
+          "project": "총총",
+          "slug": "chongchong"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-estime#711|v1",
+          "source": "pr",
+          "title": "Spring & Docker 사이의 Graceful Shutdown 타임 아웃 불일치 수정",
+          "url": "https://github.com/woowacourse-teams/2025-estime/pull/711",
+          "date": "2025-10-23",
+          "line": "Spring Boot, Docker Compose, Graceful Shutdown으로 배포 중 강제 종료 원인을 찾고 종료 대기 시간을 맞출 때 참고하기 좋아요.",
+          "project": "아인슈타임",
+          "slug": "estime"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2023-haru-study#655|v1",
+          "source": "pr",
+          "title": "[BE] 스터디 동시 진행 기능 업데이트를 위한 무중단 배포 준비",
+          "url": "https://github.com/woowacourse-teams/2023-haru-study/pull/655",
+          "date": "2023-10-18",
+          "line": "API 버저닝, 블루 그린 배포, Nginx로 구버전 사용자까지 고려한 무중단 배포 절차를 설계할 때 참고하기 좋아요.",
+          "project": "하루스터디",
+          "slug": "haru-study"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-knot#895|v1",
+          "source": "pr",
+          "title": "[BE] Dev 단일 EC2 Blue-Green 배포 drain timeout 수정",
+          "url": "https://github.com/woowacourse-teams/2026-knot/pull/895",
+          "date": "2026-10-21",
+          "line": "Nginx, Blue-Green, Alloy로 모니터링 연결과 배포 drain을 분리하는 과정이라, 무중단 배포 롤백 원인을 찾을 때 참고하기 좋아요.",
+          "project": "Knot",
+          "slug": "knot"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2024-ody#698|v1",
+          "source": "pr",
+          "title": "chore: 무중단 배포 적용",
+          "url": "https://github.com/woowacourse-teams/2024-ody/pull/698",
+          "date": "2024-10-11",
+          "line": "Rolling, Blue Green, Actuator 헬스체크를 비교한 자료라, 자원과 권한 제약 속 무중단 배포 전략을 고를 때 참고하기 좋아요.",
+          "project": "2024-ody",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2021-gpu-is-mine#297|v1",
+          "source": "pr",
+          "title": "feat: rolling deployment 방식 무중단 배포 스크립트 작성",
+          "url": "https://github.com/woowacourse-teams/2021-gpu-is-mine/pull/297",
+          "date": "2021-08-11",
+          "line": "Nginx 리버스 프록시, 헬스 체크, Spring 프로파일로 배포 중 요청을 유지하는 전환 절차를 설계할 때 참고하기 좋아요.",
+          "project": "2021-gpu-is-mine",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-knot#893|v1",
+          "source": "pr",
+          "title": "[BE] Dev 단일 EC2 Blue-Green 최초 전환 보완",
+          "url": "https://github.com/woowacourse-teams/2026-knot/pull/893",
+          "date": "2026-10-21",
+          "line": "CodeDeploy, Blue-Green, Nginx로 기존 서비스를 처음 전환할 때, 배포 파일 보존과 실패 복구를 설계할 때 참고하기 좋아요.",
+          "project": "Knot",
+          "slug": "knot"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2024-pokerogue-helper#424|v1",
+          "source": "pr",
+          "title": "[BE-INFRA] 무중단 배포 be/release로 브랜치 변경",
+          "url": "https://github.com/woowacourse-teams/2024-pokerogue-helper/pull/424",
+          "date": "2024-10-25",
+          "line": "SNAT, DNAT를 활용한 무중단 배포 사례로, 요청 전달 뒤 응답 경로를 보장하고 배포 중 가용성을 검증할 때 참고하기 좋아요.",
+          "project": "Pokerogue Helper",
+          "slug": "pokerogue-helper"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2024-momo#413|v1",
+          "source": "pr",
+          "title": "[BE] 프로덕션 서버 무중단 배포 환경 구축",
+          "url": "https://github.com/woowacourse-teams/2024-momo/pull/413",
+          "date": "2024-10-17",
+          "line": "Nginx, Docker, Blue/Green 배포의 전환 흐름과 남은 중단 구간을 살펴보며, 무중단 배포의 한계를 검토할 때 참고하기 좋아요.",
+          "project": "2024-momo",
+          "slug": null
+        }
+      ]
+    }
+  },
+  {
+    "topic": "아키텍처 설계(레이어/헥사고날/DDD)",
+    "synonyms": [
+      "ddd",
+      "도메인 주도",
+      "모듈러 모놀리스",
+      "modular monolith",
+      "modulith",
+      "이벤트 스토밍",
+      "event storming",
+      "유비쿼터스 언어",
+      "구조로 재설계",
+      "이벤트 소싱",
+      "event sourcing",
+      "헥사고날",
+      "hexagonal",
+      "클린 아키텍처",
+      "clean architecture",
+      "레이어드",
+      "layered",
+      "멀티 모듈",
+      "multi module",
+      "모듈 분리",
+      "의존성 역전",
+      "mvvm",
+      "아키텍처"
+    ]
+  },
+  {
+    "topic": "패키지 구조/계층 설계",
+    "synonyms": ["패키지 구조", "package", "계층", "레이어", "의존 방향", "모듈 분리", "dto"]
+  },
+  {
+    "topic": "분산 시스템/장애 격리",
+    "synonyms": [
+      "msa",
+      "마이크로서비스",
+      "microservice",
+      "분산 시스템",
+      "분산 트랜잭션",
+      "saga",
+      "api gateway"
+    ]
+  },
+  {
+    "topic": "REST API 설계",
+    "synonyms": ["rest api", "restful", "api 설계", "http api", "graphql", "grpc"]
+  },
+  {
+    "topic": "소셜 로그인/OAuth",
+    "synonyms": [
+      "소셜 로그인",
+      "카카오 로그인",
+      "구글 로그인",
+      "깃허브 로그인",
+      "oauth",
+      "social login"
+    ]
+  },
+  {
+    "topic": "결제 연동",
+    "synonyms": ["결제", "payment", "토스페이먼츠", "pg 연동", "아임포트", "portone", "포트원"]
+  },
+  {
+    "topic": "LLM/AI 연동",
+    "synonyms": [
+      "llm",
+      "openai",
+      "gpt",
+      "chatgpt",
+      "gemini",
+      "claude",
+      "langchain",
+      "spring ai",
+      "rag",
+      "프롬프트",
+      "prompt",
+      "임베딩",
+      "embedding",
+      "생성형 ai"
+    ]
+  },
+  {
+    "topic": "React 렌더링/훅",
+    "synonyms": [
+      "react",
+      "리액트",
+      "jsx",
+      "리액트 훅",
+      "useeffect",
+      "usestate",
+      "useref",
+      "custom hook",
+      "커스텀 훅",
+      "리렌더",
+      "렌더링"
+    ],
+    "groups": {
+      "blog": [
+        {
+          "id": "blog-post|post:33455db00276d441e6b4d18313c94e4d08858dc5|v1",
+          "source": "blog",
+          "title": "재사용 가능한 글 작성/수정 로직 설계 과정",
+          "url": "https://cho-sim-developer.tistory.com/79",
+          "date": "2024-11-16",
+          "line": "커스텀 훅, TypeScript 제네릭, useCallback으로 글 작성과 수정 로직을 재사용하도록 설계할 때 참고하기 좋아요.",
+          "project": "데벨업",
+          "slug": "devel-up"
+        },
+        {
+          "id": "blog-post|post:68c4c40dcc222918142b93af7eff1c8dd3d2308e|v1",
+          "source": "blog",
+          "title": "[React] 행동대장 서비스로 알아보는 프론트엔드 에러 핸들링 전략과 개선 과정",
+          "url": "https://velog.io/@pakxe/React-%ED%96%89%EB%8F%99%EB%8C%80%EC%9E%A5-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8%EB%A1%9C-%EC%95%8C%EC%95%84%EB%B3%B4%EB%8A%94-%ED%94%84%EB%A1%A0%ED%8A%B8%EC%97%94%EB%93%9C-%EC%97%90%EB%9F%AC-%ED%95%B8%EB%93%A4%EB%A7%81-%EC%A0%84%EB%9E%B5%EA%B3%BC-%EA%B0%9C%EC%84%A0-%EA%B3%BC%EC%A0%95",
+          "date": "2024-10-07",
+          "line": "TanStack Query, 에러 바운더리, 커스텀 에러 객체로 오류 처리를 모으고 상황별 안내 UI를 선택할 때 참고하기 좋아요.",
+          "project": "행동대장",
+          "slug": "haeng-dong"
+        },
+        {
+          "id": "blog-post|post:6b2b08c30142ffd0288ed1fea26b3e7473541707|v1",
+          "source": "blog",
+          "title": "📗 Docs 페이지 구현하기",
+          "url": "https://velog.io/@kky1373/Docs-%ED%8E%98%EC%9D%B4%EC%A7%80-%EA%B5%AC%ED%98%84%ED%95%98%EA%B8%B0",
+          "date": "2024-09-26",
+          "line": "React 훅, URL 해시, WebP를 활용한 Docs 구현 과정이라, 스크롤 상태 충돌과 문서 이미지 최적화를 다룰 때 참고하기 좋아요.",
+          "project": "코딩해듀오",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:0d2582d40901efa5772c3b41312787adeb5aed8f|v1",
+          "source": "blog",
+          "title": "[우테코] Level3 createPortal",
+          "url": "https://chlwlstlf.github.io/woowacourse/woowacourse-level3-createPortal",
+          "date": "2024-07-21",
+          "line": "createPortal, 이벤트 전파 차단으로 모달을 구현하는 예제라, 렌더링 위치와 클릭, 배경 스크롤을 제어할 때 참고하기 좋아요.",
+          "project": "CoReA",
+          "slug": "corea"
+        },
+        {
+          "id": "blog-post|post:b7220b432066b2b2d106b343dbe838ac73a614a8|v1",
+          "source": "blog",
+          "title": "React Transition Group 도입기",
+          "url": "https://gong-check.github.io/dev-blog/FE/%EC%98%A8%EC%8A%A4%ED%83%80/transition-group",
+          "date": "2022-10-10",
+          "line": "React Transition Group, 세션 스토리지로 페이지별 전환 효과를 나누는 과정이라, 이동 맥락에 맞는 애니메이션을 설계할 때 참고하기 좋아요.",
+          "project": "공첵",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:45914dee7e0a3b560ca35a7280b05346c2f43c2d|v1",
+          "source": "blog",
+          "title": "ErrorBoundary로 Toast, ErrorFallback 등 공통적인 에러를 처리해보자",
+          "url": "https://happysisyphe.tistory.com/52",
+          "date": "2022-10-02",
+          "line": "ErrorBoundary, React Query로 공통 에러 처리를 위임하는 방식이라, 요청별 오류 UI와 재시도 흐름을 설계할 때 참고하기 좋아요.",
+          "project": "꼭꼭",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:8209a64579e7f4d7e3e5233269f67e81f7f463a9|v1",
+          "source": "blog",
+          "title": "hook을 통한 관심사 분리",
+          "url": "https://yunjin-kim.com/posts/separation-of-concerns-using-hooks",
+          "date": "2022-09-15",
+          "line": "React 훅, Axios로 UI와 비즈니스 로직을 분리하는 방법을 살펴보며, 훅의 책임과 계층을 나눌 때 참고하기 좋아요.",
+          "project": "레벨로그",
+          "slug": "levellog"
+        },
+        {
+          "id": "blog-post|post:461181a7b2aaa7c5cfa4bd6855e40d12642da45d|v1",
+          "source": "blog",
+          "title": "211005(화) - 커스텀 훅으로 분리",
+          "url": "https://wnsah052.tistory.com/218",
+          "date": "2021-10-05",
+          "line": "커스텀 훅, useHistory로 페이지 이동 로직을 모으는 과정이라, 중복 코드를 줄이고 상태 전달 방식을 정할 때 참고하기 좋아요.",
+          "project": "CVI",
+          "slug": "cvi"
+        },
+        {
+          "id": "blog-post|post:ccdf6b03192cfddfc1f15a52906f35d9bd0fa5d2|v1",
+          "source": "blog",
+          "title": "React에서의 querySelector, 잘 쓰고 있는 걸까?(feat. Ref)",
+          "url": "https://babble-dev.tistory.com/29",
+          "date": "2021-08-24",
+          "line": "React, Ref, querySelector의 사용 범위와 구조 의존성을 살펴보며, DOM 접근 방식과 재사용 가능한 UI를 고민할 때 참고하기 좋아요.",
+          "project": "Babble",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:f8ff033250b3b9268ad1b4b3d9b400e40d76157c|v1",
+          "source": "blog",
+          "title": "React에서 contentEditable 사용하기",
+          "url": "https://yung-developer.tistory.com/109",
+          "date": "2021-08-22",
+          "line": "React, contentEditable, Range로 편집 가능한 요소의 입력값을 관리하고 커서를 끝으로 옮길 때 참고하기 좋아요.",
+          "project": "다라쓰",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:8bf1f5d0383c09915c926055f737cea641886e92|v1",
+          "source": "blog",
+          "title": "React에서의 setState",
+          "url": "https://babble-dev.tistory.com/16",
+          "date": "2021-08-19",
+          "line": "React, useState, 함수형 업데이트의 동작을 살펴보며, 상태에 저장할 함수가 먼저 실행되는 문제를 해결할 때 참고하기 좋아요.",
+          "project": "Babble",
+          "slug": null
+        },
+        {
+          "id": "blog-post|post:02310311d47ce77d59b2fb48d612505322d9969c|v1",
+          "source": "blog",
+          "title": "React에서 setInterval 현명하게 사용하기(feat. useInterval)",
+          "url": "https://babble-dev.tistory.com/14",
+          "date": "2021-08-18",
+          "line": "setInterval, useRef, useInterval을 통해 React에서 주기적 요청이 이전 상태를 참조하는 문제를 해결할 때 참고하기 좋아요.",
+          "project": "Babble",
+          "slug": null
+        }
+      ],
+      "talk": [
+        {
+          "id": "youtube-tekotalk|yt:KI2oWPz6FEQ|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 두부의 React key props",
+          "url": "https://www.youtube.com/watch?v=KI2oWPz6FEQ",
+          "date": "2026-09-13",
+          "line": "React key props, useEffect를 살펴보며 리스트의 식별자 선택 기준과 폼 상태 초기화 방법을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:Sxr1cK48THc|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 퐁쥬의 Error Boundary, 그게 뭔데?",
+          "url": "https://www.youtube.com/watch?v=Sxr1cK48THc",
+          "date": "2025-09-19",
+          "line": "React, Error Boundary, Fallback UI로 오류를 처리하는 원리와 한계를 익히고, 기능별 에러 경계를 정할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:Bt04o-Ok4mE|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 머핀의 useState의 마법",
+          "url": "https://www.youtube.com/watch?v=Bt04o-Ok4mE",
+          "date": "2025-07-25",
+          "line": "useState, JS 클로저, Hook 규칙으로 함수형 컴포넌트의 상태 유지 원리와 훅 호출 순서가 중요한 이유를 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:OsbfJsED4MI|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 아더의 React key",
+          "url": "https://www.youtube.com/watch?v=OsbfJsED4MI",
+          "date": "2025-07-18",
+          "line": "React key, Virtual DOM, nanoid로 항목 식별과 상태 구분 원리를 이해하고, 안정적인 key를 고를 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:gStqsTlBj1E|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 써밋의 useEffect",
+          "url": "https://www.youtube.com/watch?v=gStqsTlBj1E",
+          "date": "2025-07-11",
+          "line": "useEffect, Clean-Up, AbortController로 부수 효과를 관리하는 원리를 익히고, 메모리 누수와 요청 경쟁 상태를 예방할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:VGFVLZtr5sY|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 피터의 React Fiber",
+          "url": "https://www.youtube.com/watch?v=VGFVLZtr5sY",
+          "date": "2025-07-04",
+          "line": "React Fiber, React Hooks, 배치 업데이트의 동작을 살펴보며 상태 변경과 훅 호출 순서의 원리를 면접에서 설명할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:oLfh2UZ4JWU|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 텐텐의 리액트의 렌더링",
+          "url": "https://www.youtube.com/watch?v=oLfh2UZ4JWU",
+          "date": "2024-09-27",
+          "line": "리액트, 가상 DOM, diffing 알고리즘을 통해 렌더링 흐름을 살펴보고, 렌더링과 실제 DOM 업데이트의 차이를 설명할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:wLPHtaSfCmU|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 마루의 리액트 컴포넌트 LIFECYCLE",
+          "url": "https://www.youtube.com/watch?v=wLPHtaSfCmU",
+          "date": "2024-07-26",
+          "line": "리액트, useEffect, useLayoutEffect의 실행 순서를 살펴보며 불필요한 리렌더링과 화면 깜빡임을 줄이는 방법을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:TSCWYBd_nq8|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 바다의 createPortal",
+          "url": "https://www.youtube.com/watch?v=TSCWYBd_nq8",
+          "date": "2024-07-15",
+          "line": "React, createPortal, DOM 트리의 관계를 살펴보며 모달과 드롭다운을 부모 DOM 밖에 렌더링할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:ebKRUxN5otQ|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 헤일리의 Custom Hook",
+          "url": "https://www.youtube.com/watch?v=ebKRUxN5otQ",
+          "date": "2024-07-05",
+          "line": "React, Custom Hook, 단일 책임 원칙을 바탕으로 재사용하지 않는 훅의 의미와 적절한 분리 기준을 익히기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:qXyv_tDhtOI|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 도담의 리액트 사이드 이펙트",
+          "url": "https://www.youtube.com/watch?v=qXyv_tDhtOI",
+          "date": "2023-11-07",
+          "line": "useEffect, 이벤트 핸들러, useLayoutEffect로 사이드 이펙트 처리 기준을 살펴보고, 불필요한 Effect를 줄일 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        },
+        {
+          "id": "youtube-tekotalk|yt:LRlooA5sYhU|v1",
+          "source": "talk",
+          "title": "[10분 테코톡] 라잇의 불변성",
+          "url": "https://www.youtube.com/watch?v=LRlooA5sYhU",
+          "date": "2023-08-08",
+          "line": "React, 얕은 비교, 불변성을 통해 상태 변경과 재렌더링의 관계를 이해하고, 배열, 객체 상태를 안전하게 갱신할 때 참고하기 좋아요.",
+          "project": "우아한테크",
+          "slug": null
+        }
+      ],
+      "doc": [
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-Devica:docs/adr/0025-프론트엔드-구현-방식-변경.md|v1",
+          "source": "doc",
+          "title": "25. 프론트엔드를 React로 구현한다",
+          "url": "https://github.com/woowacourse-teams/2026-Devica/blob/43f0cfa22f3220d608d9ed893967df663e9467d4/docs/adr/0025-%ED%94%84%EB%A1%A0%ED%8A%B8%EC%97%94%EB%93%9C-%EA%B5%AC%ED%98%84-%EB%B0%A9%EC%8B%9D-%EB%B3%80%EA%B2%BD.md",
+          "date": "2026-09-22",
+          "line": "React, Vite, Thymeleaf를 비교한 자료로, 수동 DOM 구현 비용과 배포 부담을 따져 프론트엔드 구현 방식을 고를 때 참고하기 좋아요.",
+          "project": "2026-Devica",
+          "slug": null
+        },
+        {
+          "id": "github-discussion|woowacourse-teams/2023-pium/discussions/247|v1",
+          "source": "doc",
+          "title": "eslint plugin react hooks 설정에 대해",
+          "url": "https://github.com/woowacourse-teams/2023-pium/discussions/247",
+          "date": "2023-08-11",
+          "line": "eslint-plugin-react-hooks, Rules of Hooks, exhaustive-deps로 훅 검사와 의존성 경고 도입을 판단할 때 참고하기 좋아요.",
+          "project": "피움",
+          "slug": "pium"
+        },
+        {
+          "id": "github-teamdoc|woowacourse-teams/2026-to-discount:docs/design/coupon-push-icon.md|v1",
+          "source": "doc",
+          "title": "쿠폰 화면 알림 아이콘 복구",
+          "url": "https://github.com/woowacourse-teams/2026-to-discount/blob/fe860301cc0ea5678bfe5d42f0c22a3e0a93eead/docs/design/coupon-push-icon.md",
+          "date": "2026-10-08",
+          "line": "callback ref, DOM 조회를 비교하며 A/B 화면 전환 시 알림 버튼 연결을 유지하도록 설계할 때 참고하기 좋아요.",
+          "project": "2026-to-discount",
+          "slug": null
+        }
+      ],
+      "pr": [
+        {
+          "id": "github-pr|woowacourse-teams/2026-poudy#418|v1",
+          "source": "pr",
+          "title": "fix : 제품 상세 전성분 본문 누락과 구조화 데이터 중복 수정",
+          "url": "https://github.com/woowacourse-teams/2026-poudy/pull/418",
+          "date": "2026-09-07",
+          "line": "PostHog, React 하이드레이션, JSON-LD로 살펴보는 사례라, 외부 스크립트로 인한 렌더링 오류와 구조화 데이터 중복을 해결할 때 참고하기 좋아요.",
+          "project": "2026-poudy",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-knot#858|v1",
+          "source": "pr",
+          "title": "[FE] 워크스페이스 화면을 옮길 때 본문 스크롤 위치 맞추기",
+          "url": "https://github.com/woowacourse-teams/2026-knot/pull/858",
+          "date": "2026-10-19",
+          "line": "useLayoutEffect, requestAnimationFrame, History API로 요소 스크롤을 복원하는 과정이라, 화면 이동 시 위치 오류를 해결할 때 참고하기 좋아요.",
+          "project": "Knot",
+          "slug": "knot"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-moment#946|v1",
+          "source": "pr",
+          "title": "[REFACTOR] Suspense를 활용한 로딩 상태 관리 리팩토링",
+          "url": "https://github.com/woowacourse-teams/2025-moment/pull/946",
+          "date": "2025-12-05",
+          "line": "Suspense, TanStack Query, ErrorBoundary로 로딩과 에러 처리를 분리하고, 선언적 상태 관리의 적용 범위를 정할 때 참고하기 좋아요.",
+          "project": "2025-moment",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-Fit-toring#982|v1",
+          "source": "pr",
+          "title": "[FIX] 채팅방 상향식 무한스크롤 작동하지 않는 문제 해결",
+          "url": "https://github.com/woowacourse-teams/2025-Fit-toring/pull/982",
+          "date": "2025-10-23",
+          "line": "React 콜백 ref, useEffect, IntersectionObserver로 비동기 DOM 준비 시점 때문에 무한스크롤이 멈출 때 해결하는 방법을 참고하기 좋아요.",
+          "project": "2025-Fit-toring",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-PhotoGather#383|v1",
+          "source": "pr",
+          "title": "fix: space 생성이 여러 번 되는 문제 해결",
+          "url": "https://github.com/woowacourse-teams/2025-PhotoGather/pull/383",
+          "date": "2025-08-16",
+          "line": "useEffect, React 상태 업데이트, async/await를 통해 중복 생성 요청과 화면 이동 시점의 상태 오류를 해결할 때 참고하기 좋아요.",
+          "project": "2025-PhotoGather",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2024-review-me#612|v1",
+          "source": "pr",
+          "title": "[FE] fix : 리뷰 제출 실패 시, ErrorPage가 아닌 모달을 띄우기",
+          "url": "https://github.com/woowacourse-teams/2024-review-me/pull/612",
+          "date": "2024-09-18",
+          "line": "React Query, Error Boundary, Recoil로 제출 실패 시 입력 유실을 막는 과정이라, 상태를 보존하는 오류 처리를 설계할 때 참고하기 좋아요.",
+          "project": "리뷰미",
+          "slug": "review-me"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-knot#892|v1",
+          "source": "pr",
+          "title": "[FE] 화면을 옮긴 직후 GNB 탭을 누르면 이동하지 않는 오류 수정",
+          "url": "https://github.com/woowacourse-teams/2026-knot/pull/892",
+          "date": "2026-10-21",
+          "line": "startTransition, useMatch, matchPath로 살펴보는 사례라, 주소와 화면 갱신 시차로 막히는 탭 이동을 고칠 때 참고하기 좋아요.",
+          "project": "Knot",
+          "slug": "knot"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2026-jarihana#114|v1",
+          "source": "pr",
+          "title": "fix: StrictMode에서 OAuth 콜백 검증이 두 번 실행되지 않게 한다",
+          "url": "https://github.com/woowacourse-teams/2026-jarihana/pull/114",
+          "date": "2026-08-24",
+          "line": "StrictMode, useEffect, Promise로 OAuth 콜백의 로딩 정지 원인을 짚어, 중복 요청 없이 상태를 갱신할 때 참고하기 좋아요.",
+          "project": "자리하나?",
+          "slug": "jarihana"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-Fit-toring#1120|v1",
+          "source": "pr",
+          "title": "[FIX] 2줄 이상 메시지 전송 시 스크롤 위치가 하단으로 이동하지 않는 문제 해결",
+          "url": "https://github.com/woowacourse-teams/2025-Fit-toring/pull/1120",
+          "date": "2025-12-09",
+          "line": "useLayoutEffect, DOM, 커스텀 훅으로 채팅 자동 스크롤을 개선한 과정이라, 렌더링 전후 위치 판단과 화면 튐을 다룰 때 참고하기 좋아요.",
+          "project": "2025-Fit-toring",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-Fit-toring#1102|v1",
+          "source": "pr",
+          "title": "[REFACTOR] 상향식 무한스크롤 컴포넌트 구조 개선으로 IntersectionObserver 등록 타이밍 근본 개선",
+          "url": "https://github.com/woowacourse-teams/2025-Fit-toring/pull/1102",
+          "date": "2025-12-03",
+          "line": "IntersectionObserver, useEffect, 조건부 렌더링으로 살펴보는 사례라, 자식 ref 할당과 옵저버 등록 타이밍 문제를 해결할 때 참고하기 좋아요.",
+          "project": "2025-Fit-toring",
+          "slug": null
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-pick-eat#372|v1",
+          "source": "pr",
+          "title": "[Refactor] 결과 페이지 리디자인",
+          "url": "https://github.com/woowacourse-teams/2025-pick-eat/pull/372",
+          "date": "2025-10-17",
+          "line": "React use, Suspense, Promise.all로 이중 대기를 줄인 과정이라, 데이터 로딩과 대기 화면을 함께 설계할 때 참고하기 좋아요.",
+          "project": "픽잇",
+          "slug": "pick-eat"
+        },
+        {
+          "id": "github-pr|woowacourse-teams/2025-bom-bom#444|v1",
+          "source": "pr",
+          "title": "[FE][BOM-551] fix: 뉴스레터 상세 정보 모달이 열린 상태에서 뒤로가기를 누르면 스크롤이 잠기는 문제 해결",
+          "url": "https://github.com/woowacourse-teams/2025-bom-bom/pull/444",
+          "date": "2025-10-13",
+          "line": "React, useEffect, 클린업으로 뒤로가기 뒤에도 남는 스크롤 잠금을 풀어, 언마운트 시 부수 효과를 정리할 때 참고하기 좋아요.",
+          "project": "봄봄",
+          "slug": "bom-bom"
+        }
+      ]
+    }
+  },
+  {
+    "topic": "컴포넌트 설계",
+    "synonyms": [
+      "컴포넌트 설계",
+      "component design",
+      "합성 컴포넌트",
+      "compound component",
+      "props",
+      "관심사 분리",
+      "재사용 컴포넌트"
+    ]
+  },
+  {
+    "topic": "Next.js/SSR",
+    "synonyms": ["next.js", "nextjs", "ssr", "서버 사이드 렌더링", "ssg", "서버 컴포넌트"]
+  },
+  {
+    "topic": "TypeScript",
+    "synonyms": ["typescript", "타입스크립트"]
+  },
+  {
+    "topic": "상태 관리",
+    "synonyms": [
+      "상태 관리",
+      "상태관리",
+      "recoil",
+      "redux",
+      "zustand",
+      "jotai",
+      "mobx",
+      "context api",
+      "전역 상태"
+    ]
+  },
+  {
+    "topic": "서버 상태(React Query 등)",
+    "synonyms": ["react query", "react-query", "tanstack query", "swr", "서버 상태"]
+  },
+  {
+    "topic": "스타일링(CSS-in-JS 등)",
+    "synonyms": [
+      "styled-components",
+      "emotion",
+      "tailwind",
+      "css-in-js",
+      "scss",
+      "sass",
+      "vanilla-extract"
+    ]
+  },
+  {
+    "topic": "번들러/빌드 최적화",
+    "synonyms": [
+      "webpack",
+      "웹팩",
+      "vite",
+      "rollup",
+      "esbuild",
+      "babel",
+      "번들 사이즈",
+      "번들 최적화",
+      "코드 스플리팅",
+      "code splitting",
+      "tree shaking",
+      "lazy loading"
+    ]
+  },
+  {
+    "topic": "웹 성능 최적화",
+    "synonyms": ["lighthouse", "라이트하우스", "웹 성능", "web vitals", "lcp", "cls"]
+  },
+  {
+    "topic": "접근성",
+    "synonyms": ["접근성", "accessibility", "a11y", "aria", "스크린 리더", "wai-aria", "웹 표준"]
+  },
+  {
+    "topic": "프론트 테스트",
+    "synonyms": [
+      "jest",
+      "testing library",
+      "react testing library",
+      "vitest",
+      "msw",
+      "storybook",
+      "스토리북"
+    ]
+  },
+  {
+    "topic": "디자인 시스템/컴포넌트 라이브러리",
+    "synonyms": [
+      "디자인 시스템",
+      "design system",
+      "컴포넌트 라이브러리",
+      "공통 컴포넌트",
+      "ui 라이브러리"
+    ]
+  },
+  {
+    "topic": "PWA/웹 푸시",
+    "synonyms": ["pwa", "service worker", "서비스 워커", "웹 푸시", "web push", "fcm"]
+  },
+  {
+    "topic": "렌더링 최적화",
+    "synonyms": [
+      "렌더링 최적화",
+      "리렌더링",
+      "re-render",
+      "memo",
+      "usememo",
+      "usecallback",
+      "메모이제이션",
+      "memoization",
+      "가상 스크롤",
+      "virtualization"
+    ]
+  },
+  {
+    "topic": "이미지 최적화",
+    "synonyms": ["webp", "avif", "이미지 압축", "lazy loading", "이미지 최적화", "srcset"]
+  },
+  {
+    "topic": "CDN/브라우저 캐시",
+    "synonyms": [
+      "cdn",
+      "cloudfront",
+      "cache-control",
+      "브라우저 캐시",
+      "contenthash",
+      "캐시 무효화",
+      "invalidation"
+    ]
+  },
+  {
+    "topic": "Android",
+    "synonyms": ["android", "안드로이드", "jetpack compose", "viewmodel", "hilt"]
+  },
+  {
+    "topic": "iOS",
+    "synonyms": ["ios", "swiftui", "uikit", "swift", "rxswift"]
+  },
+  {
+    "topic": "브랜치 전략/협업",
+    "synonyms": [
+      "git flow",
+      "git-flow",
+      "github flow",
+      "브랜치 전략",
+      "코드 컨벤션",
+      "컨벤션",
+      "페어 프로그래밍",
+      "회고"
+    ]
+  },
+  {
+    "topic": "Git/버전 관리",
+    "synonyms": [
+      "git",
+      "merge",
+      "rebase",
+      "cherry-pick",
+      "커밋",
+      "submodule",
+      "서브모듈",
+      "fetch",
+      "pull",
+      "시맨틱 버저닝",
+      "semantic versioning",
+      "릴리스"
+    ]
+  },
+  {
+    "topic": "기획/사용자 테스트",
+    "synonyms": [
+      "기획",
+      "페르소나",
+      "사용자 스토리",
+      "유저 시나리오",
+      "사용자 테스트",
+      "user test",
+      "베타 테스트",
+      "mvp",
+      "프로토타입",
+      "사용자 인터뷰"
+    ]
+  },
+  {
+    "topic": "장애 대응/운영",
+    "synonyms": [
+      "장애",
+      "장애 대응",
+      "트러블슈팅",
+      "troubleshooting",
+      "운영 이슈",
+      "롤백",
+      "rollback",
+      "포스트모템",
+      "postmortem",
+      "핫픽스",
+      "hotfix"
+    ]
+  },
+  {
+    "topic": "사용자 피드백/데이터 기반 개선",
+    "synonyms": [
+      "사용자 피드백",
+      "유저 피드백",
+      "사용자 인터뷰",
+      "a/b 테스트",
+      "ab 테스트",
+      "지표",
+      "데이터 분석",
+      "google analytics",
+      "ga4",
+      "amplitude",
+      "mixpanel",
+      "mau",
+      "dau",
+      "리텐션"
+    ]
+  },
+  {
+    "topic": "파일 업로드/이미지 처리",
+    "synonyms": [
+      "이미지 업로드",
+      "파일 업로드",
+      "presigned url",
+      "이미지 리사이징",
+      "썸네일",
+      "multipart"
+    ]
+  },
+  {
+    "topic": "알림/푸시",
+    "synonyms": [
+      "푸시 알림",
+      "push notification",
+      "알림 기능",
+      "fcm",
+      "firebase cloud messaging",
+      "이메일 발송",
+      "메일 발송"
+    ]
+  }
+]
