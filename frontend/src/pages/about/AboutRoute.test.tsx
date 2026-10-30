@@ -29,3 +29,28 @@ test('/about에서 추천 프로젝트를 누르면 실제 프로젝트 상세�
   await userEvent.click(within(projects).getAllByRole('link')[0]!);
   expect(router.state.location.pathname).toBe('/projects/@rilog');
 });
+
+test('/about의 GNB는 프로젝트만 프로토타입으로 연결하고 나머지 탭은 잠근다', async () => {
+  renderRoute('/about');
+  await loadAboutStylesheets();
+  const nav = await screen.findByRole('navigation', { name: '주요 메뉴' });
+
+  expect(
+    within(nav)
+      .getAllByRole('link')
+      .map((link) => link.textContent),
+  ).toEqual(['프로젝트']);
+  expect(within(nav).getByRole('link', { name: '프로젝트' })).toHaveAttribute(
+    'href',
+    'https://project-after-psi.vercel.app/#/projects',
+  );
+  expect(screen.queryByRole('link', { name: 'shout-outz' })).not.toBeInTheDocument();
+  // jsdom은 inert의 접근성 트리 제외를 구현하지 않으므로 속성을 확인한다.
+  const banner = screen.getByRole('banner');
+  for (const button of within(banner).getAllByRole('button')) {
+    expect(button.closest('[inert]')).not.toBeNull();
+  }
+  for (const label of ['홈', '커뮤니티', '매거진', '소식']) {
+    expect(within(nav).getByText(label)).toHaveAttribute('aria-disabled', 'true');
+  }
+});
