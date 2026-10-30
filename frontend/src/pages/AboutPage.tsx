@@ -18,7 +18,6 @@ import {
   type Topic,
   undot,
 } from '@/pages/about/resources';
-import { TechNotes } from '@/pages/about/TechNotes';
 import { TechStory } from '@/pages/about/TechStory';
 import { TechTalk } from '@/pages/about/TechTalk';
 import { cn } from '@/utils/cn';
@@ -215,8 +214,6 @@ export function AboutPage() {
           </a>
         </div>
       </section>
-
-      <TechNotes />
     </main>
   );
 }
