@@ -19,6 +19,7 @@ import {
   undot,
 } from '@/pages/about/resources';
 import { TechNotes } from '@/pages/about/TechNotes';
+import { TechStory } from '@/pages/about/TechStory';
 import { cn } from '@/utils/cn';
 
 const SUGGESTED_QUERIES = ['동시성', 'N+1', '무중단 배포', '인덱스', 'React 렌더링', 'WebSocket'];
@@ -190,6 +191,8 @@ export function AboutPage() {
         <JobKeywords selected={keywordIndex} onSelect={setKeywordIndex} />
         <AboutMoreLink href={prototypeLinks.job(job.id)}>이 공고 자세히 보기</AboutMoreLink>
       </AboutSection>
+
+      <TechStory />
 
       <section className="py-12 text-center md:py-16">
         <h2 className="text-xl font-bold tracking-tight text-gray-900 md:text-2xl">

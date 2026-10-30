@@ -120,3 +120,21 @@ test('서비스에 있는 화면은 내부 주소로, 없는 화면은 프로토
     screen.getByRole('link', { name: '샤라웃의 실제 이력서와 포트폴리오 열기' }),
   ).toHaveAttribute('href', 'https://project-after-psi.vercel.app/#/projects/@shout-outz');
 });
+
+test('기술 장면의 공고 요구사항을 고르면 연결되는 경험이 바뀐다', async () => {
+  const user = userEvent.setup();
+  const { container } = render(<AboutPage />);
+  expect(container.querySelectorAll('.technology-scope .scene')).toHaveLength(4);
+
+  await user.click(screen.getByRole('button', { name: '조회 성능 개선' }));
+  expect(screen.getByRole('button', { name: '조회 성능 개선' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  expect(screen.getByRole('button', { name: '동시성 제어' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+  expect(container.querySelector('.jd-visual')).toHaveClass('is-matching');
+  expect(container.querySelector('.jd-result h4')).toHaveTextContent('반복 조회를 줄인 쿼리 개선');
+});
