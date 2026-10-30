@@ -32,6 +32,8 @@ export function toAdminProjectFormValues(project: AdminProjectDetail): AdminProj
     thumbnailImageId: project.thumbnailImageId ?? null,
     githubRepositoryUrl: project.githubRepositoryUrl,
     deploymentUrl: project.deploymentUrl ?? '',
+    // 관리자 수정 요청은 팀 블로그 주소를 다루지 않아 폼에도 싣지 않는다.
+    teamBlogUrls: '',
     descriptionMd: project.descriptionMd ?? '',
     techTags: project.techTags,
     members: [],

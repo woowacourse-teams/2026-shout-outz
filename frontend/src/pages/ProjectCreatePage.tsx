@@ -42,6 +42,7 @@ const EMPTY_FORM: ProjectFormValues = {
   thumbnailImageId: null,
   githubRepositoryUrl: '',
   deploymentUrl: '',
+  teamBlogUrls: '',
   descriptionMd: '',
   techTags: [],
   members: [],
@@ -56,6 +57,7 @@ function toFormValues(project: ProjectDetail, authorHandle: string): ProjectForm
     thumbnailImageId: project.thumbnailImageId ?? null,
     githubRepositoryUrl: project.githubRepositoryUrl,
     deploymentUrl: project.deploymentUrl ?? '',
+    teamBlogUrls: project.teamBlogUrls.filter((url) => typeof url === 'string').join('\n'),
     descriptionMd: project.descriptionMd ?? '',
     techTags: project.techTags,
     members: project.members.flatMap((member) =>
@@ -360,7 +362,20 @@ export function ProjectForm({
                 )}
               </Field>
 
-              <Field label="상세 설명" error={errors.descriptionMd}>
+              <Field label="팀 블로그 주소 (최대 3개, 한 줄에 하나씩)" error={errors.teamBlogUrls}>
+                {(id) => (
+                  <textarea
+                    id={id}
+                    rows={3}
+                    value={values.teamBlogUrls}
+                    onChange={(event) => setField('teamBlogUrls', event.target.value)}
+                    placeholder="https://velog.io/@loop"
+                    className="focus-visible:outline-primary-600 w-full resize-none rounded-lg bg-gray-100 px-4 py-3 text-sm text-gray-900 outline-none placeholder:text-gray-500 focus-visible:outline-2"
+                  />
+                )}
+              </Field>
+
+              <Field label="상세 설명"error={errors.descriptionMd}>
                 {(id) => (
                   <textarea
                     id={id}

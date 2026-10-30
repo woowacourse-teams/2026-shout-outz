@@ -10,12 +10,204 @@
  * ---------------------------------------------------------------
  */
 
+/** AdminJobPostingDetailSuccessResponse */
+export interface AdminJobPostingDetailSuccessResponse {
+  /** 채용공고 상세 */
+  data: {
+    /** 경력 조건 */
+    careerRequirement?: string | null;
+    /** 회사명 */
+    companyName: string;
+    /** 등록 시각 */
+    createdAt: string;
+    /** 마감일(yyyy-MM-dd) */
+    deadline?: string | null;
+    /** 고용 형태 */
+    employmentType?: string | null;
+    /** 채용공고 ID */
+    jobPostingId: number;
+    /** 직무 */
+    jobRole:
+      | "BACKEND"
+      | "FRONTEND"
+      | "ANDROID"
+      | "IOS"
+      | "DEVOPS"
+      | "DATA"
+      | "AI"
+      | "ETC";
+    /** 등록한 관리자 ID */
+    registeredBy: number;
+    /** 역량 목록 */
+    requirements: {
+      /** 역량 구분 */
+      category: "REQUIRED" | "PREFERRED" | "DUTY_OR_STACK";
+      /** 표시 순서(1부터) */
+      displayOrder: number;
+      /** 역량 이름 */
+      name: string;
+      /** 역량 ID */
+      requirementId: number;
+      /** 자료 분석 상태 */
+      status: "PENDING" | "PROCESSING" | "READY" | "FAILED";
+      /** 역량 요약 */
+      summary: string;
+    }[];
+    /** 정규화한 채용공고 주소 */
+    sourceUrl: string;
+    /** 자료 분석 상태 */
+    status: "PENDING" | "PROCESSING" | "READY" | "FAILED";
+    /** 공고 제목 */
+    title: string;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** AdminJobPostingExtractRequest */
+export interface AdminJobPostingExtractRequest {
+  /** 공고 글(10,000자 이하). 저장하지 않는다. */
+  content: string;
+  /** 채용공고 주소(http 또는 https, 1,024자 이하) */
+  sourceUrl: string;
+}
+
+/** AdminJobPostingExtractSuccessResponse */
+export interface AdminJobPostingExtractSuccessResponse {
+  /** 추출 결과 */
+  data: {
+    /** 경력 조건. 찾지 못하면 null */
+    careerRequirement?: string | null;
+    /** 회사명. 찾지 못하면 null */
+    companyName?: string | null;
+    /** 마감일(yyyy-MM-dd). 찾지 못하면 null */
+    deadline?: string | null;
+    /** 고용 형태. 찾지 못하면 null */
+    employmentType?: string | null;
+    /** 직무. 목록에 없는 직무는 ETC */
+    jobRole:
+      | "BACKEND"
+      | "FRONTEND"
+      | "ANDROID"
+      | "IOS"
+      | "DEVOPS"
+      | "DATA"
+      | "AI"
+      | "ETC";
+    /** 같은 주소로 이미 등록된 채용공고 ID. 없으면 null */
+    registeredJobPostingId?: number | null;
+    /** 역량 목록(0~50개). 비어 있으면 관리자가 역량을 채운 뒤 등록한다. */
+    requirements: {
+      /** 역량 구분 */
+      category: "REQUIRED" | "PREFERRED" | "DUTY_OR_STACK";
+      /** 역량 이름 */
+      name: string;
+      /** 역량 요약 */
+      summary: string;
+    }[];
+    /** 공고 제목. 찾지 못하면 null */
+    title?: string | null;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** AdminJobPostingFindAllSuccessResponse */
+export interface AdminJobPostingFindAllSuccessResponse {
+  /** 채용공고 목록 */
+  data: {
+    /** 회사명 */
+    companyName: string;
+    /** 등록 시각 */
+    createdAt: string;
+    /** 채용공고 ID */
+    jobPostingId: number;
+    /** 직무 */
+    jobRole:
+      | "BACKEND"
+      | "FRONTEND"
+      | "ANDROID"
+      | "IOS"
+      | "DEVOPS"
+      | "DATA"
+      | "AI"
+      | "ETC";
+    /** 자료 분석 상태 */
+    status: "PENDING" | "PROCESSING" | "READY" | "FAILED";
+    /** 공고 제목 */
+    title: string;
+  }[];
+  /** 페이지네이션 정보 */
+  meta: {
+    /** 다음 페이지 존재 여부 */
+    hasNext: boolean;
+    /** 다음 페이지 커서 */
+    nextCursor?: string | null;
+    /** 전체 채용공고 수 */
+    totalCount: number;
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
+/** AdminJobPostingSaveRequest */
+export interface AdminJobPostingSaveRequest {
+  /** 경력 조건(50자 이하) */
+  careerRequirement?: string | null;
+  /** 회사명(100자 이하) */
+  companyName: string;
+  /** 공고 글(10,000자 이하). 해시만 만들고 저장하지 않는다. */
+  content: string;
+  /** 마감일(yyyy-MM-dd) */
+  deadline?: string | null;
+  /** 고용 형태(30자 이하) */
+  employmentType?: string | null;
+  /** 직무 */
+  jobRole:
+    | "BACKEND"
+    | "FRONTEND"
+    | "ANDROID"
+    | "IOS"
+    | "DEVOPS"
+    | "DATA"
+    | "AI"
+    | "ETC";
+  /** 역량 목록(1~50개) */
+  requirements: {
+    /** 역량 구분 */
+    category: "REQUIRED" | "PREFERRED" | "DUTY_OR_STACK";
+    /** 역량 이름(100자 이하) */
+    name: string;
+    /** 역량 요약(500자 이하) */
+    summary: string;
+  }[];
+  /** 채용공고 주소(http 또는 https, 1,024자 이하) */
+  sourceUrl: string;
+  /** 공고 제목(200자 이하) */
+  title: string;
+}
+
+/** AdminJobPostingSaveSuccessResponse */
+export interface AdminJobPostingSaveSuccessResponse {
+  /** 등록한 채용공고 */
+  data: {
+    /** 등록 시각 */
+    createdAt: string;
+    /** 채용공고 ID */
+    jobPostingId: number;
+    /** 자료 분석 상태 */
+    status: "PENDING" | "PROCESSING" | "READY" | "FAILED";
+  };
+  /** 응답 상태 */
+  status: string;
+}
+
 /** AdminProjectApproveSuccessResponse */
 export interface AdminProjectApproveSuccessResponse {
   /** 승인 결과 */
   data: {
     /** 변경된 승인 상태 */
-    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
     /** 승인 시각 */
     decidedAt: string;
     /** 승인한 관리자 */
@@ -37,7 +229,7 @@ export interface AdminProjectDetailSuccessResponse {
   /** 프로젝트 상세 */
   data: {
     /** 승인 상태 */
-    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
     /** 북마크 수 */
     bookmarkCount: number;
     /** 요청자의 북마크 여부 */
@@ -71,13 +263,15 @@ export interface AdminProjectDetailSuccessResponse {
     /** 반려 사유 */
     rejectReason?: string | null;
     /** 운영 상태 */
-    serviceStatus: 'OPERATING' | 'CLOSED';
+    serviceStatus: "OPERATING" | "CLOSED";
     /** 프로젝트 slug */
     slug: string;
     /** GitHub star 수 */
     starCount?: number | null;
     /** 한 줄 소개 */
     tagline: string;
+    /** 확정된 팀 블로그 주소. 없으면 빈 배열 */
+    teamBlogUrls: (object | boolean | string | number)[];
     /** 팀 이름 */
     teamName: string;
     /** 기술 스택 */
@@ -100,7 +294,7 @@ export interface AdminProjectFindAllSuccessResponse {
   /** 프로젝트 심사 목록 */
   data: {
     /** 승인 상태 */
-    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
     /** 북마크 수 */
     bookmarkCount: number;
     /** 요청자의 북마크 여부 */
@@ -124,7 +318,7 @@ export interface AdminProjectFindAllSuccessResponse {
     /** 반려 사유. REJECTED일 때만 값이 있다. */
     rejectReason?: string | null;
     /** 운영 상태 */
-    serviceStatus: 'OPERATING' | 'CLOSED';
+    serviceStatus: "OPERATING" | "CLOSED";
     /** 프로젝트 slug */
     slug: string;
     /** GitHub star 수 */
@@ -174,7 +368,7 @@ export interface AdminProjectHistorySuccessResponse {
       /** 반려 사유 */
       reason?: string | null;
       /** 변경 후 상태 */
-      toStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+      toStatus: "PENDING" | "APPROVED" | "REJECTED";
     }[];
     /** 프로젝트 ID */
     projectId: number;
@@ -186,7 +380,7 @@ export interface AdminProjectHistorySuccessResponse {
 /** AdminProjectMigrationUpdateRequest */
 export interface AdminProjectMigrationUpdateRequest {
   /** 승인 상태 */
-  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | null;
   /** 기수(1~8) */
   cohort?: number | null;
   /** 생성 시각. ISO 날짜·시각 또는 YYYY-MM-DD */
@@ -198,7 +392,7 @@ export interface AdminProjectMigrationUpdateRequest {
   /** GitHub 저장소 URL */
   githubRepositoryUrl?: string | null;
   /** 서비스 상태 */
-  serviceStatus?: 'OPERATING' | 'CLOSED' | null;
+  serviceStatus?: "OPERATING" | "CLOSED" | null;
   /** 프로젝트 slug */
   slug?: string | null;
   /** GitHub 스타 수. null 허용 */
@@ -247,7 +441,7 @@ export interface AdminProjectRejectSuccessResponse {
   /** 반려 결과 */
   data: {
     /** 변경된 승인 상태 */
-    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
     /** 반려 시각 */
     decidedAt: string;
     /** 반려한 관리자 */
@@ -282,7 +476,7 @@ export interface AdminVerificationRequestApproveSuccessResponse {
     /** 인증 신청 ID */
     requestId: number;
     /** 변경된 신청 상태 */
-    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    status: "PENDING" | "APPROVED" | "REJECTED";
   };
   /** 응답 상태 */
   status: string;
@@ -308,11 +502,11 @@ export interface AdminVerificationRequestFindAllSuccessResponse {
     /** 신청 시각(ISO-8601) */
     requestedAt: string;
     /** 현재 신청 상태 */
-    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    status: "PENDING" | "APPROVED" | "REJECTED";
     /** 신청 트랙. 코치 신청은 null */
-    track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+    track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
     /** 신청 유형 */
-    userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+    userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
   }[];
   /** 페이지네이션 정보 */
   meta: {
@@ -343,13 +537,13 @@ export interface AdminVerificationRequestHistorySuccessResponse {
         userId?: number | null;
       };
       /** 변경 전 상태. 최초 신청이면 null */
-      fromStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+      fromStatus?: "PENDING" | "APPROVED" | "REJECTED" | null;
       /** 이력 ID */
       historyId: number;
       /** 반려 사유. 승인 또는 최초 신청이면 null */
       reason?: string | null;
       /** 변경 후 상태 */
-      toStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+      toStatus: "PENDING" | "APPROVED" | "REJECTED";
     }[];
     /** 인증 신청 ID */
     requestId: number;
@@ -382,7 +576,7 @@ export interface AdminVerificationRequestRejectSuccessResponse {
     /** 인증 신청 ID */
     requestId: number;
     /** 변경된 신청 상태 */
-    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    status: "PENDING" | "APPROVED" | "REJECTED";
   };
   /** 응답 상태 */
   status: string;
@@ -395,9 +589,9 @@ export interface AuthSessionSuccessResponse {
     /** 상태 변경 요청에 사용할 CSRF Token */
     csrfToken: string;
     /** 인증된 사용자 권한 */
-    role?: 'USER' | 'ADMIN' | null;
+    role?: "USER" | "ADMIN" | null;
     /** 세션 인증 상태 */
-    status: 'UNAUTHENTICATED' | 'SIGNUP_REQUIRED' | 'AUTHENTICATED';
+    status: "UNAUTHENTICATED" | "SIGNUP_REQUIRED" | "AUTHENTICATED";
     /** 인증된 사용자 ID */
     userId?: number | null;
   };
@@ -418,7 +612,7 @@ export interface BugReportAdminDetailSuccessResponse {
     /** 제보한 사용자 ID. 비로그인 제보이면 null */
     reporterUserId?: number | null;
     /** 제보 상태 */
-    status: 'OPEN' | 'COMPLETED';
+    status: "OPEN" | "COMPLETED";
     /** 마지막 상태 변경 시각. 변경 전이면 null */
     statusChangedAt?: string | null;
     /** 마지막으로 상태를 변경한 관리자 ID. 변경 전이면 null */
@@ -443,7 +637,7 @@ export interface BugReportAdminFindAllSuccessResponse {
     /** 제보한 사용자 ID. 비로그인 제보이면 null */
     reporterUserId?: number | null;
     /** 제보 상태 */
-    status: 'OPEN' | 'COMPLETED';
+    status: "OPEN" | "COMPLETED";
     /** 마지막 상태 변경 시각. 변경 전이면 null */
     statusChangedAt?: string | null;
     /** 마지막으로 상태를 변경한 관리자 ID. 변경 전이면 null */
@@ -479,7 +673,7 @@ export interface BugReportCreateSuccessResponse {
     /** ISO-8601 생성 시각 */
     createdAt: string;
     /** 제보 상태. 생성 직후 OPEN */
-    status: 'OPEN' | 'COMPLETED';
+    status: "OPEN" | "COMPLETED";
   };
   /** 응답 상태 */
   status: string;
@@ -488,7 +682,7 @@ export interface BugReportCreateSuccessResponse {
 /** BugReportStatusUpdateRequest */
 export interface BugReportStatusUpdateRequest {
   /** 변경할 제보 상태. OPEN 또는 COMPLETED */
-  status: 'OPEN' | 'COMPLETED';
+  status: "OPEN" | "COMPLETED";
 }
 
 /** BugReportStatusUpdateSuccessResponse */
@@ -498,7 +692,7 @@ export interface BugReportStatusUpdateSuccessResponse {
     /** 버그 제보 ID */
     bugReportId: number;
     /** 변경된 제보 상태 */
-    status: 'OPEN' | 'COMPLETED';
+    status: "OPEN" | "COMPLETED";
     /** 마지막 상태 변경 시각. 상태 변경 이력이 없으면 null */
     statusChangedAt?: string | null;
     /** 마지막으로 상태를 변경한 관리자 ID. 상태 변경 이력이 없으면 null */
@@ -521,11 +715,11 @@ export interface CategoryFindAllSuccessResponse {
     /** 표시 순서 */
     displayOrder: number;
     /** 카테고리가 연결된 피드 유형 */
-    feedType: 'POST' | 'QUESTION';
+    feedType: "POST" | "QUESTION";
     /** 카테고리 slug */
     slug: string;
     /** 카테고리 유형 */
-    type: 'GENERAL' | 'EVENT';
+    type: "GENERAL" | "EVENT";
   }[];
   /** 응답 상태 */
   status: string;
@@ -538,11 +732,11 @@ export interface CategorySaveRequest {
   /** 0 이상 32767 이하 표시 순서 */
   displayOrder: number;
   /** 카테고리가 연결될 피드 유형 */
-  feedType: 'POST' | 'QUESTION';
+  feedType: "POST" | "QUESTION";
   /** 영문 소문자, 숫자, 하이픈으로 구성된 고유 slug */
   slug: string;
   /** 카테고리 유형 */
-  type: 'GENERAL' | 'EVENT';
+  type: "GENERAL" | "EVENT";
 }
 
 /** CategorySaveSuccessResponse */
@@ -558,11 +752,11 @@ export interface CategorySaveSuccessResponse {
     /** 표시 순서 */
     displayOrder: number;
     /** 카테고리가 연결된 피드 유형 */
-    feedType: 'POST' | 'QUESTION';
+    feedType: "POST" | "QUESTION";
     /** 카테고리 slug */
     slug: string;
     /** 카테고리 유형 */
-    type: 'GENERAL' | 'EVENT';
+    type: "GENERAL" | "EVENT";
   };
   /** 응답 상태 */
   status: string;
@@ -589,11 +783,11 @@ export interface CategoryUpdateSuccessResponse {
     /** 표시 순서 */
     displayOrder: number;
     /** 카테고리가 연결된 피드 유형 */
-    feedType: 'POST' | 'QUESTION';
+    feedType: "POST" | "QUESTION";
     /** 카테고리 slug */
     slug: string;
     /** 카테고리 유형 */
-    type: 'GENERAL' | 'EVENT';
+    type: "GENERAL" | "EVENT";
   };
   /** 응답 상태 */
   status: string;
@@ -690,7 +884,7 @@ export interface EventCreateSuccessResponse {
     /** 이벤트 시작 시각 */
     eventStartAt: string;
     /** 이벤트 상태 */
-    eventStatus: 'UPCOMING' | 'ONGOING' | 'ENDED';
+    eventStatus: "UPCOMING" | "ONGOING" | "ENDED";
     /** 이벤트 ID */
     id: number;
     /** 고정 여부 */
@@ -704,7 +898,7 @@ export interface EventCreateSuccessResponse {
     /** 이벤트 제목 */
     title: string;
     /** 소식 유형. 이벤트 등록이므로 항상 EVENT다. */
-    type: 'NOTICE' | 'EVENT';
+    type: "NOTICE" | "EVENT";
   };
   /** 응답 상태 */
   status: string;
@@ -963,11 +1157,11 @@ export interface FeedFindAllSuccessResponse {
       /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
       isCurrent?: boolean | null;
       /** 작성자 트랙. 크루가 아니거나 타인의 익명 글이면 null */
-      track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+      track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
       /** 작성자 ID. 타인의 익명 글이면 null */
       userId?: number | null;
       /** 작성자 유형. 크루 배지 구분을 위해 타인의 익명 글에도 포함 */
-      userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+      userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
     };
     /** 북마크 수 */
     bookmarkCount: number;
@@ -980,11 +1174,11 @@ export interface FeedFindAllSuccessResponse {
       /** 카테고리 표시 이름 */
       displayName: string;
       /** 카테고리가 연결된 피드 유형 */
-      feedType: 'POST' | 'QUESTION';
+      feedType: "POST" | "QUESTION";
       /** 카테고리 slug */
       slug: string;
       /** 카테고리 유형 */
-      type: 'GENERAL' | 'EVENT';
+      type: "GENERAL" | "EVENT";
     }[];
     /** 삭제되지 않은 댓글 수 */
     commentCount: number;
@@ -995,7 +1189,7 @@ export interface FeedFindAllSuccessResponse {
     /** 피드 ID */
     feedId: number;
     /** 피드 유형 */
-    feedType: 'POST' | 'QUESTION';
+    feedType: "POST" | "QUESTION";
     /** 작성자 정보를 익명으로 공개할지 여부 */
     isAnonymous: boolean;
     /** 좋아요 수 */
@@ -1075,11 +1269,11 @@ export interface FeedFindSuccessResponse {
       /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
       isCurrent?: boolean | null;
       /** 작성자 트랙. 크루가 아니거나 타인의 익명 글이면 null */
-      track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+      track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
       /** 작성자 ID. 타인의 익명 글이면 null */
       userId?: number | null;
       /** 작성자 유형. 크루 배지 구분을 위해 타인의 익명 글에도 포함 */
-      userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+      userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
     };
     /** 북마크 수 */
     bookmarkCount: number;
@@ -1092,11 +1286,11 @@ export interface FeedFindSuccessResponse {
       /** 카테고리 표시 이름 */
       displayName: string;
       /** 카테고리가 연결된 피드 유형 */
-      feedType: 'POST' | 'QUESTION';
+      feedType: "POST" | "QUESTION";
       /** 카테고리 slug */
       slug: string;
       /** 카테고리 유형 */
-      type: 'GENERAL' | 'EVENT';
+      type: "GENERAL" | "EVENT";
     }[];
     /** 삭제되지 않은 댓글 수 */
     commentCount: number;
@@ -1107,7 +1301,7 @@ export interface FeedFindSuccessResponse {
     /** 피드 ID */
     feedId: number;
     /** 피드 유형 */
-    feedType: 'POST' | 'QUESTION';
+    feedType: "POST" | "QUESTION";
     /** 작성자 정보를 익명으로 공개할지 여부 */
     isAnonymous: boolean;
     /** 좋아요 수 */
@@ -1148,7 +1342,7 @@ export interface FeedFindSuccessResponse {
         title: string;
       }[];
       /** 추천 생성 상태. PENDING, PROCESSING, READY, FAILED */
-      status: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED';
+      status: "PENDING" | "PROCESSING" | "READY" | "FAILED";
     };
     /** 피드 제목 */
     title: string;
@@ -1190,6 +1384,8 @@ export interface FeedSaveRequest {
   isAnonymous?: boolean | null;
   /** 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록 */
   mediaIds: (object | boolean | string | number)[];
+  /** 추천 질문을 통해 작성한 질문일 때 사용한 추천 ID. QUESTION 타입에서만 사용되며, 무효하거나 이미 사용된 ID는 무시됩니다. */
+  recommendationId?: number | null;
   /** 피드 제목(공백 제외 1자 이상, Unicode 최대 100자) */
   title: string;
 }
@@ -1211,11 +1407,11 @@ export interface FeedSaveSuccessResponse {
       /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
       isCurrent?: boolean | null;
       /** 작성자 트랙 */
-      track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+      track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
       /** 작성자 ID */
       userId: number;
       /** 작성자 유형 */
-      userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+      userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
     };
     /** 카테고리 목록 */
     categories: {
@@ -1224,11 +1420,11 @@ export interface FeedSaveSuccessResponse {
       /** 카테고리 표시 이름 */
       displayName: string;
       /** 카테고리가 연결된 피드 유형 */
-      feedType: 'POST' | 'QUESTION';
+      feedType: "POST" | "QUESTION";
       /** 카테고리 slug */
       slug: string;
       /** 카테고리 유형 */
-      type: 'GENERAL' | 'EVENT';
+      type: "GENERAL" | "EVENT";
     }[];
     /** Markdown 본문 */
     content: string;
@@ -1237,7 +1433,7 @@ export interface FeedSaveSuccessResponse {
     /** 피드 ID */
     feedId: number;
     /** 피드 유형 */
-    feedType: 'POST' | 'QUESTION';
+    feedType: "POST" | "QUESTION";
     /** 작성자 정보를 익명으로 공개할지 여부 */
     isAnonymous: boolean;
     /** 본문 첫 URL의 링크 미리보기. URL이 없으면 null */
@@ -1261,7 +1457,7 @@ export interface FeedSaveSuccessResponse {
       url: string;
     }[];
     /** 비동기 질문 추천 생성 상태. 생성 또는 제목·본문 수정 직후에는 PENDING. 일반 피드 또는 추천 기능 비활성화 시 생략 */
-    recommendationStatus?: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED' | null;
+    recommendationStatus?: "PENDING" | "PROCESSING" | "READY" | "FAILED" | null;
     /** 피드 제목 */
     title: string;
     /** ISO-8601 수정 시각 */
@@ -1310,11 +1506,11 @@ export interface FeedUpdateSuccessResponse {
       /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
       isCurrent?: boolean | null;
       /** 작성자 트랙 */
-      track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+      track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
       /** 작성자 ID */
       userId: number;
       /** 작성자 유형 */
-      userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+      userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
     };
     /** 카테고리 목록 */
     categories: {
@@ -1323,11 +1519,11 @@ export interface FeedUpdateSuccessResponse {
       /** 카테고리 표시 이름 */
       displayName: string;
       /** 카테고리가 연결된 피드 유형 */
-      feedType: 'POST' | 'QUESTION';
+      feedType: "POST" | "QUESTION";
       /** 카테고리 slug */
       slug: string;
       /** 카테고리 유형 */
-      type: 'GENERAL' | 'EVENT';
+      type: "GENERAL" | "EVENT";
     }[];
     /** Markdown 본문 */
     content: string;
@@ -1336,7 +1532,7 @@ export interface FeedUpdateSuccessResponse {
     /** 피드 ID */
     feedId: number;
     /** 피드 유형 */
-    feedType: 'POST' | 'QUESTION';
+    feedType: "POST" | "QUESTION";
     /** 작성자 정보를 익명으로 공개할지 여부 */
     isAnonymous: boolean;
     /** 본문 첫 URL의 링크 미리보기. URL이 없으면 null */
@@ -1360,7 +1556,7 @@ export interface FeedUpdateSuccessResponse {
       url: string;
     }[];
     /** 비동기 질문 추천 생성 상태. 생성 또는 제목·본문 수정 직후에는 PENDING. 일반 피드 또는 추천 기능 비활성화 시 생략 */
-    recommendationStatus?: 'PENDING' | 'PROCESSING' | 'READY' | 'FAILED' | null;
+    recommendationStatus?: "PENDING" | "PROCESSING" | "READY" | "FAILED" | null;
     /** 피드 제목 */
     title: string;
     /** ISO-8601 수정 시각 */
@@ -1383,13 +1579,13 @@ export interface HomeBannerAdminFindAllSuccessResponse {
     /** 등록 관리자 ID */
     createdBy: number;
     /** 이동 방식 */
-    destinationType: 'TARGET' | 'URL';
+    destinationType: "TARGET" | "URL";
     /** 표시 순서 */
     displayOrder: number;
     /** 표시용 이미지 URL */
     imageUrl: string;
     /** URL 유형 */
-    linkType?: 'INTERNAL_PATH' | 'EXTERNAL_URL' | null;
+    linkType?: "INTERNAL_PATH" | "EXTERNAL_URL" | null;
     /** 내부 경로 또는 외부 HTTPS URL */
     linkUrl?: string | null;
     /** 미디어 ID */
@@ -1399,7 +1595,7 @@ export interface HomeBannerAdminFindAllSuccessResponse {
     /** 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다. */
     targetSlug?: string | null;
     /** 대상 리소스 유형 */
-    targetType?: 'NEWS' | 'PROJECT' | 'FEED' | null;
+    targetType?: "NEWS" | "PROJECT" | "FEED" | null;
     /** 수정 시각 */
     updatedAt: string;
   }[];
@@ -1420,13 +1616,13 @@ export interface HomeBannerAdminSaveSuccessResponse {
     /** 등록 관리자 ID */
     createdBy: number;
     /** 이동 방식 */
-    destinationType: 'TARGET' | 'URL';
+    destinationType: "TARGET" | "URL";
     /** 표시 순서 */
     displayOrder: number;
     /** 표시용 이미지 URL */
     imageUrl: string;
     /** URL 유형 */
-    linkType?: 'INTERNAL_PATH' | 'EXTERNAL_URL' | null;
+    linkType?: "INTERNAL_PATH" | "EXTERNAL_URL" | null;
     /** 내부 경로 또는 외부 HTTPS URL */
     linkUrl?: string | null;
     /** 미디어 ID */
@@ -1436,7 +1632,7 @@ export interface HomeBannerAdminSaveSuccessResponse {
     /** 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다. */
     targetSlug?: string | null;
     /** 대상 리소스 유형 */
-    targetType?: 'NEWS' | 'PROJECT' | 'FEED' | null;
+    targetType?: "NEWS" | "PROJECT" | "FEED" | null;
     /** 수정 시각 */
     updatedAt: string;
   };
@@ -1457,13 +1653,13 @@ export interface HomeBannerAdminUpdateSuccessResponse {
     /** 등록 관리자 ID */
     createdBy: number;
     /** 이동 방식 */
-    destinationType: 'TARGET' | 'URL';
+    destinationType: "TARGET" | "URL";
     /** 표시 순서 */
     displayOrder: number;
     /** 표시용 이미지 URL */
     imageUrl: string;
     /** URL 유형 */
-    linkType?: 'INTERNAL_PATH' | 'EXTERNAL_URL' | null;
+    linkType?: "INTERNAL_PATH" | "EXTERNAL_URL" | null;
     /** 내부 경로 또는 외부 HTTPS URL */
     linkUrl?: string | null;
     /** 미디어 ID */
@@ -1473,7 +1669,7 @@ export interface HomeBannerAdminUpdateSuccessResponse {
     /** 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다. */
     targetSlug?: string | null;
     /** 대상 리소스 유형 */
-    targetType?: 'NEWS' | 'PROJECT' | 'FEED' | null;
+    targetType?: "NEWS" | "PROJECT" | "FEED" | null;
     /** 수정 시각 */
     updatedAt: string;
   };
@@ -1499,11 +1695,11 @@ export interface HomeBannerFindAllSuccessResponse {
     /** 배너 ID */
     bannerId: number;
     /** 이동 방식 */
-    destinationType: 'TARGET' | 'URL';
+    destinationType: "TARGET" | "URL";
     /** 표시용 이미지 URL */
     imageUrl: string;
     /** URL 유형 */
-    linkType?: 'INTERNAL_PATH' | 'EXTERNAL_URL' | null;
+    linkType?: "INTERNAL_PATH" | "EXTERNAL_URL" | null;
     /** 내부 경로 또는 외부 HTTPS URL */
     linkUrl?: string | null;
     /** 배너 이미지 미디어 ID */
@@ -1513,7 +1709,7 @@ export interface HomeBannerFindAllSuccessResponse {
     /** 대상 프로젝트 slug. 대상이 프로젝트일 때만 값이 있다. */
     targetSlug?: string | null;
     /** 대상 리소스 유형 */
-    targetType?: 'NEWS' | 'PROJECT' | 'FEED' | null;
+    targetType?: "NEWS" | "PROJECT" | "FEED" | null;
   }[];
   /** 응답 상태 */
   status: string;
@@ -1524,11 +1720,11 @@ export interface HomeBannerUpsertRequest {
   /** 즉시 노출 여부 */
   active: boolean;
   /** 이동 방식 */
-  destinationType: 'TARGET' | 'URL';
+  destinationType: "TARGET" | "URL";
   /** 0 이상 표시 순서 */
   displayOrder: number;
   /** URL 유형 */
-  linkType?: 'INTERNAL_PATH' | 'EXTERNAL_URL' | null;
+  linkType?: "INTERNAL_PATH" | "EXTERNAL_URL" | null;
   /** 내부 경로 또는 외부 HTTPS URL */
   linkUrl?: string | null;
   /** READY HOME_BANNER 미디어 ID */
@@ -1538,7 +1734,7 @@ export interface HomeBannerUpsertRequest {
   /** 대상 프로젝트 slug. 대상이 프로젝트일 때만 넣는다. */
   targetSlug?: string | null;
   /** 대상 리소스 유형 */
-  targetType?: 'NEWS' | 'PROJECT' | 'FEED' | null;
+  targetType?: "NEWS" | "PROJECT" | "FEED" | null;
 }
 
 /** HomeStatisticsSuccessResponse */
@@ -1986,7 +2182,7 @@ export interface MediaStatusSuccessResponse {
     /** 미디어 ID */
     mediaId: number;
     /** 미디어 상태 */
-    status: 'PENDING_UPLOAD' | 'PROCESSING' | 'READY' | 'FAILED' | 'EXPIRED';
+    status: "PENDING_UPLOAD" | "PROCESSING" | "READY" | "FAILED" | "EXPIRED";
   };
   /** 응답 상태 (success) */
   status: string;
@@ -2016,7 +2212,7 @@ export interface NewsFindAllSuccessResponse {
     /** 이벤트 시작 시각. 공지인 경우 null */
     eventStartAt?: string | null;
     /** 이벤트 상태. 공지인 경우 null */
-    eventStatus?: 'UPCOMING' | 'ONGOING' | 'ENDED' | null;
+    eventStatus?: "UPCOMING" | "ONGOING" | "ENDED" | null;
     /** 소식 ID */
     id: number;
     /** 고정 여부 */
@@ -2034,7 +2230,7 @@ export interface NewsFindAllSuccessResponse {
     /** 소식 제목 */
     title: string;
     /** 소식 유형 */
-    type: 'NOTICE' | 'EVENT';
+    type: "NOTICE" | "EVENT";
   }[];
   /** 페이지네이션 정보 */
   meta: {
@@ -2084,7 +2280,7 @@ export interface NewsFindDetailSuccessResponse {
     /** 이벤트 시작 시각. 공지인 경우 null */
     eventStartAt?: string | null;
     /** 이벤트 상태. 공지인 경우 null */
-    eventStatus?: 'UPCOMING' | 'ONGOING' | 'ENDED' | null;
+    eventStatus?: "UPCOMING" | "ONGOING" | "ENDED" | null;
     /** 소식 ID */
     id: number;
     /** 고정 여부 */
@@ -2118,7 +2314,7 @@ export interface NewsFindDetailSuccessResponse {
     /** 소식 제목 */
     title: string;
     /** 소식 유형 */
-    type: 'NOTICE' | 'EVENT';
+    type: "NOTICE" | "EVENT";
   };
   /** 응답 상태 */
   status: string;
@@ -2213,7 +2409,7 @@ export interface NewsUpdateSuccessResponse {
     /** 소식 제목 */
     title: string;
     /** 소식 유형 */
-    type: 'NOTICE' | 'EVENT';
+    type: "NOTICE" | "EVENT";
   };
   /** 응답 상태 */
   status: string;
@@ -2281,7 +2477,7 @@ export interface NoticeCreateSuccessResponse {
     /** 공지 제목 */
     title: string;
     /** 소식 유형. 공지 등록이므로 항상 NOTICE다. */
-    type: 'NOTICE' | 'EVENT';
+    type: "NOTICE" | "EVENT";
   };
   /** 응답 상태 */
   status: string;
@@ -2631,9 +2827,11 @@ export interface ProjectCreateRequest {
   /** @[A-Za-z0-9_-]{2,30} 형식의 팀원 handle 목록 (1명 이상). 등록자를 포함할 수 있으며, 활동 중인 우아한테크코스 크루 또는 코치여야 하며, 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다. */
   memberHandles: string[];
   /** 서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반환한다. 이때 오류 응답의 details.field는 serviceStatusValid다. */
-  serviceStatus: 'OPERATING' | 'CLOSED';
+  serviceStatus: "OPERATING" | "CLOSED";
   /** 한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준) */
   tagline: string;
+  /** 팀 블로그 주소 목록 (선택, 최대 3개). 각 주소는 http/https URL 형식이며 2,048자 이하다. 호스트는 소문자로 바꾸고 앵커(#…)와 끝 슬래시는 버린 뒤 저장하며, 같은 주소는 하나만 남긴다. 생략하거나 null이면 등록하지 않는다. 3개를 넘거나 형식이 틀리면 400이다. */
+  teamBlogUrls?: string[] | null;
   /** 팀 이름. 앞뒤 공백을 자른 뒤 50자 이하 (유니코드 코드 포인트 기준) */
   teamName: string;
   /** 선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다. */
@@ -2730,7 +2928,7 @@ export interface ProjectFindAllSuccessResponse {
       /** 프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다. */
       handle?: string | null;
       /** 트랙 */
-      track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+      track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
       /** 사용자 ID. 가입하지 않은 이관 팀원은 null이다. */
       userId?: number | null;
       /** 사용자 유형. 가입하지 않은 이관 팀원과 탈퇴한 팀원은 null이다. */
@@ -2774,7 +2972,7 @@ export interface ProjectFindDetailSuccessResponse {
   /** 프로젝트 상세 */
   data: {
     /** 승인 상태 */
-    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
     /** 북마크 수 */
     bookmarkCount: number;
     /** 요청자의 북마크 여부. 비로그인이면 false다. */
@@ -2819,7 +3017,7 @@ export interface ProjectFindDetailSuccessResponse {
       /** 프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다. */
       handle?: string | null;
       /** 트랙 */
-      track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+      track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
       /** 사용자 ID. 가입하지 않은 이관 팀원은 null이다. */
       userId?: number | null;
       /** 사용자 유형. 가입하지 않은 이관 팀원과 탈퇴한 팀원은 null이다. */
@@ -2828,13 +3026,15 @@ export interface ProjectFindDetailSuccessResponse {
     /** 반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다. */
     rejectReason?: string | null;
     /** 운영 상태 */
-    serviceStatus: 'OPERATING' | 'CLOSED';
+    serviceStatus: "OPERATING" | "CLOSED";
     /** 프로젝트 주소로 쓰이는 slug */
     slug: string;
     /** GitHub star 수. 동기화 전이면 null이다. */
     starCount?: number | null;
     /** 한 줄 소개 */
     tagline: string;
+    /** 팀 블로그 주소 목록. 등록 순서대로 반환하며, 없으면 빈 배열이다. */
+    teamBlogUrls: (object | boolean | string | number)[];
     /** 팀 이름 */
     teamName: string;
     /** 기술 스택 목록. 등록 순서대로 정렬한다. */
@@ -2881,7 +3081,7 @@ export interface ProjectRestoreSuccessResponse {
   /** 복구 결과 */
   data: {
     /** 승인 상태. 삭제 이전 값을 그대로 유지한다. */
-    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
     /** 복구 시각 (UTC) */
     restoredAt: string;
     /** 복구한 프로젝트 slug */
@@ -2906,9 +3106,11 @@ export interface ProjectUpdateRequest {
   /** 팀원 handle 전체 목록 (1명 이상). 등록자를 포함할 수 있으며, 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다. */
   memberHandles: string[];
   /** 서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반환한다. 이때 오류 응답의 details.field는 serviceStatusValid다. */
-  serviceStatus: 'OPERATING' | 'CLOSED';
+  serviceStatus: "OPERATING" | "CLOSED";
   /** 한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준) */
   tagline: string;
+  /** 팀 블로그 주소 전체 목록 (선택, 최대 3개). 생략하면 기존 주소를 유지하고, 목록을 보내면 그 목록으로 교체하며 배열 순서가 표시 순서가 된다. null이나 빈 배열이면 모두 해제한다. 형식과 정규화 규칙은 등록과 같다. */
+  teamBlogUrls?: string[] | null;
   /** 팀 이름. 앞뒤 공백을 자른 뒤 50자 이하 (유니코드 코드 포인트 기준) */
   teamName: string;
   /** 기술 스택 ID 전체 목록. 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 달려 있던 태그는 비활성화됐어도 그대로 둘 수 있다. */
@@ -2924,7 +3126,7 @@ export interface ProjectUpdateSuccessResponse {
   /** 수정 결과 */
   data: {
     /** 수정 후 승인 상태. PENDING 또는 APPROVED이며 REJECTED는 오지 않는다. */
-    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
     /** 수정한 프로젝트 slug */
     slug: string;
   };
@@ -2982,7 +3184,7 @@ export interface UserCommentFindAllSuccessResponse {
     /** 프로젝트 댓글이면 이동할 프로젝트 slug. 피드 댓글이면 null */
     projectSlug?: string | null;
     /** 댓글 대상 종류 */
-    type: 'FEED' | 'PROJECT' | 'MAGAZINE';
+    type: "FEED" | "PROJECT" | "MAGAZINE";
     /** 댓글 최종 수정 시각 */
     updatedAt: string;
   }[];
@@ -3018,11 +3220,11 @@ export interface UserFeedFindAllSuccessResponse {
       /** 작성자가 현재 기수 크루인지 여부. 크루가 아니면 null */
       isCurrent?: boolean | null;
       /** 작성자 트랙. 크루가 아니거나 타인의 익명 글이면 null */
-      track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+      track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
       /** 작성자 ID. 타인의 익명 글이면 null */
       userId?: number | null;
       /** 작성자 유형. 크루 배지 구분을 위해 타인의 익명 글에도 포함 */
-      userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+      userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
     };
     /** 북마크 수 */
     bookmarkCount: number;
@@ -3035,11 +3237,11 @@ export interface UserFeedFindAllSuccessResponse {
       /** 카테고리 표시 이름 */
       displayName: string;
       /** 카테고리가 연결된 피드 유형 */
-      feedType: 'POST' | 'QUESTION';
+      feedType: "POST" | "QUESTION";
       /** 카테고리 slug */
       slug: string;
       /** 카테고리 유형 */
-      type: 'GENERAL' | 'EVENT';
+      type: "GENERAL" | "EVENT";
     }[];
     /** 삭제되지 않은 댓글 수 */
     commentCount: number;
@@ -3050,7 +3252,7 @@ export interface UserFeedFindAllSuccessResponse {
     /** 피드 ID */
     feedId: number;
     /** 피드 유형 */
-    feedType: 'POST' | 'QUESTION';
+    feedType: "POST" | "QUESTION";
     /** 작성자 정보를 익명으로 공개할지 여부 */
     isAnonymous: boolean;
     /** 좋아요 수 */
@@ -3125,11 +3327,11 @@ export interface UserProfileSuccessResponse {
     /** 사용자 handle */
     handle: string;
     /** 우테코 트랙 */
-    track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+    track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
     /** 사용자 ID */
     userId: number;
     /** 사용자 유형 */
-    userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+    userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
   };
   /** 응답 상태 */
   status: string;
@@ -3185,11 +3387,11 @@ export interface UserProfileUpdateSuccessResponse {
     /** 사용자 handle */
     handle: string;
     /** 우테코 트랙 */
-    track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+    track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
     /** 사용자 ID */
     userId: number;
     /** 사용자 유형 */
-    userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+    userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
   };
   /** 응답 상태 */
   status: string;
@@ -3200,7 +3402,7 @@ export interface UserProjectFindAllSuccessResponse {
   /** 사용자가 참여한 프로젝트 목록 */
   data: {
     /** 심사 상태 */
-    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
     /** 북마크 수 */
     bookmarkCount: number;
     /** 요청자의 북마크 여부. 비로그인이면 false다. */
@@ -3226,7 +3428,7 @@ export interface UserProjectFindAllSuccessResponse {
       /** 사용자 handle */
       handle?: string | null;
       /** 트랙 */
-      track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+      track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
       /** 사용자 ID. 이관 팀원은 null이다. */
       userId?: number | null;
       /** 사용자 유형 */
@@ -3235,7 +3437,7 @@ export interface UserProjectFindAllSuccessResponse {
     /** 반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다. */
     rejectReason?: string | null;
     /** 운영 상태 */
-    serviceStatus: 'OPERATING' | 'CLOSED';
+    serviceStatus: "OPERATING" | "CLOSED";
     /** 프로젝트 slug */
     slug: string;
     /** GitHub star 수. 동기화 전이면 null이다. */
@@ -3286,11 +3488,11 @@ export interface UserSearchSuccessResponse {
     /** 사용자 handle */
     handle: string;
     /** 우테코 트랙 */
-    track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+    track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
     /** 사용자 ID */
     userId: number;
     /** 사용자 유형 */
-    userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+    userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
   }[];
   /** 페이지 정보 */
   meta: {
@@ -3312,9 +3514,9 @@ export interface UserVerificationRequestCreateRequest {
   /** 우테코 닉네임(앞뒤 공백 제거 후 50자 이하) */
   nickname: string;
   /** 크루 신청 시 트랙 */
-  track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+  track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
   /** 신청 유형. WOOWACOURSE_CREW 또는 WOOWACOURSE_COACH만 보낼 수 있다. */
-  userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+  userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
 }
 
 /** UserVerificationRequestCreateSuccessResponse */
@@ -3330,11 +3532,11 @@ export interface UserVerificationRequestCreateSuccessResponse {
     /** 신청 시각(ISO-8601) */
     requestedAt: string;
     /** 신청 상태 */
-    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    status: "PENDING" | "APPROVED" | "REJECTED";
     /** 신청 트랙 */
-    track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+    track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
     /** 신청 유형 */
-    userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+    userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
   };
   /** 응답 상태 */
   status: string;
@@ -3357,11 +3559,11 @@ export interface UserVerificationRequestSuccessResponse {
     /** 신청 시각(ISO-8601). 기존 인증 사용자는 null */
     requestedAt?: string | null;
     /** 신청 상태 */
-    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    status: "PENDING" | "APPROVED" | "REJECTED";
     /** 신청 트랙. 코치 신청은 null */
-    track?: 'BACKEND' | 'ANDROID' | 'FRONTEND' | null;
+    track?: "BACKEND" | "ANDROID" | "FRONTEND" | null;
     /** 신청 유형 */
-    userType: 'GENERAL' | 'WOOWACOURSE_CREW' | 'WOOWACOURSE_COACH';
+    userType: "GENERAL" | "WOOWACOURSE_CREW" | "WOOWACOURSE_COACH";
   };
   /** 응답 상태 */
   status: string;
