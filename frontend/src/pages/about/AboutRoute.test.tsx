@@ -3,7 +3,6 @@
  * @jest-environment-options {"customExportConditions":["node","node-addons"]}
  */
 import { act, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { renderRoute } from '@/test/renderRoute';
 
 // precedence를 준 스타일시트는 로드될 때까지 화면을 숨긴 채 보류한다.
@@ -20,14 +19,19 @@ async function loadAboutStylesheets() {
   });
 }
 
-test('/about에서 추천 프로젝트를 누르면 실제 프로젝트 상세로 이동한다', async () => {
-  const router = renderRoute('/about');
+test('/about의 기존 서비스 링크는 프로토타입으로 연결된다', async () => {
+  renderRoute('/about');
   await loadAboutStylesheets();
+  const prototypeUrl = 'https://project-after-psi.vercel.app/#/projects';
   const projects = await screen.findByRole('list', { name: '추천 프로젝트' });
-  expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
-
-  await userEvent.click(within(projects).getAllByRole('link')[0]!);
-  expect(router.state.location.pathname).toBe('/projects/@rilog');
+  for (const link of within(projects).getAllByRole('link'))
+    expect(link).toHaveAttribute('href', prototypeUrl);
+  for (const link of screen.getAllByRole('link'))
+    expect(link.getAttribute('href')).not.toMatch(/^\/(projects|community|magazines|news)(\/|$)/);
+  for (const link of within(
+    screen.getByRole('navigation', { name: '서비스 바로가기' }),
+  ).getAllByRole('link'))
+    expect(link).toHaveAttribute('href', prototypeUrl);
 });
 
 test('/about의 GNB는 프로젝트만 프로토타입으로 연결하고 나머지 탭은 잠근다', async () => {
