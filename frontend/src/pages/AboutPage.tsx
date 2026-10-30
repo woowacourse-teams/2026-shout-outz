@@ -1,14 +1,13 @@
 import { useState, type ReactNode } from 'react';
-import { Link } from '@tanstack/react-router';
 import { IconChevronRight, IconSearch } from '@tabler/icons-react';
 
 import { getButtonStyles } from '@/components/Button';
 import { tabItemBaseStyle, tabItemSizeStyles, tabItemStyles } from '@/components/Tab';
-import { ProjectCardLink } from '@/components/projects/ProjectCardLink';
+import { ProjectCard } from '@/components/projects/ProjectCard';
 import { AboutMoreLink, CareerPreview, MORE_LINK_CLASS } from '@/pages/about/CareerPreview';
 import featuredProjects from '@/pages/about/data/featured-projects.json';
 import jobData from '@/pages/about/data/job.json';
-import { prototypeLinks } from '@/pages/about/links';
+import { PROTOTYPE_URL, prototypeLinks } from '@/pages/about/links';
 import { ResourcePath } from '@/pages/about/ResourcePath';
 import {
   fillScore,
@@ -138,9 +137,9 @@ export function AboutPage() {
               ))}
             </ul>
           </div>
-          <Link to="/projects" className={cn(MORE_LINK_CLASS, 'mx-auto mt-5 font-semibold')}>
+          <a href={PROTOTYPE_URL} className={cn(MORE_LINK_CLASS, 'mx-auto mt-5 font-semibold')}>
             프로젝트 둘러보기 <IconChevronRight className="size-4" aria-hidden="true" />
-          </Link>
+          </a>
         </div>
       </section>
 
@@ -166,13 +165,18 @@ export function AboutPage() {
         >
           {featuredProjects.map((project) => (
             <li key={project.slug} className="min-w-0">
-              <ProjectCardLink project={project} surface="about" />
+              <a
+                href={PROTOTYPE_URL}
+                className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
+              >
+                <ProjectCard {...project} />
+              </a>
             </li>
           ))}
         </ul>
-        <Link to="/projects" className={MORE_LINK_CLASS}>
+        <a href={PROTOTYPE_URL} className={MORE_LINK_CLASS}>
           프로젝트 전체 둘러보기 <IconChevronRight className="size-4" aria-hidden="true" />
-        </Link>
+        </a>
       </AboutSection>
 
       <AboutSection
@@ -203,9 +207,9 @@ export function AboutPage() {
           77개 우테코 팀의 프로젝트와 취업 경험을 둘러보세요.
         </p>
         <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link to="/projects" className={getButtonStyles({ variant: 'primary', size: 'lg' })}>
+          <a href={PROTOTYPE_URL} className={getButtonStyles({ variant: 'primary', size: 'lg' })}>
             프로젝트 둘러보기
-          </Link>
+          </a>
           <a
             href={prototypeLinks.jobs()}
             className={getButtonStyles({ variant: 'outline', size: 'lg' })}

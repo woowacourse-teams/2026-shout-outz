@@ -1,8 +1,7 @@
-import { Link } from '@tanstack/react-router';
 import { IconBrandGithub, IconBulb, IconFileText, IconGitPullRequest } from '@tabler/icons-react';
 
 import { Badge, type BadgeTone } from '@/components/Badge';
-import { prototypeLinks } from '@/pages/about/links';
+import { PROTOTYPE_URL, prototypeLinks } from '@/pages/about/links';
 import {
   STEPS,
   cleanTitle,
@@ -14,7 +13,6 @@ import {
   type MergedResources,
   type ResourceSource,
 } from '@/pages/about/resources';
-import { toProjectSlugParam } from '@/utils/project';
 
 const SOURCE_LABELS: Record<ResourceSource, [string, BadgeTone]> = {
   blog: ['블로그', 'primary'],
@@ -114,13 +112,12 @@ function ResourceCard({ resource }: { resource: MergedResource }) {
         <Badge tone={tone}>{label}</Badge>
         {resource.slug ? (
           <>
-            <Link
-              to="/projects/$slug"
-              params={{ slug: toProjectSlugParam(resource.slug) }}
+            <a
+              href={PROTOTYPE_URL}
               className="text-primary-600 relative z-10 truncate text-xs font-semibold hover:underline"
             >
               {team}
-            </Link>
+            </a>
             <span className="text-xs text-gray-400">{date}</span>
           </>
         ) : (

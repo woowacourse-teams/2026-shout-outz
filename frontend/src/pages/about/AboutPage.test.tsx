@@ -100,17 +100,17 @@ test('공고 역량을 고르면 그 역량의 이유와 자료로 바뀐다', a
   expect(within(jobs).getByRole('button', { name: 'Kotlin, Spring' })).toBeInTheDocument();
 });
 
-test('서비스에 있는 화면은 내부 주소로, 없는 화면은 프로토타입으로 연결한다', () => {
+test('소개 페이지의 프로젝트와 공고를 프로토타입으로 연결한다', () => {
   render(<AboutPage />);
   const projects = screen.getByRole('list', { name: '추천 프로젝트' });
   expect(
     within(projects)
       .getAllByRole('link')
       .map((link) => link.getAttribute('href')),
-  ).toEqual(['/projects/@rilog', '/projects/@shout-outz', '/projects/@harudle']);
+  ).toEqual(Array(3).fill('https://project-after-psi.vercel.app/#/projects'));
   expect(screen.getByRole('link', { name: '프로젝트 전체 둘러보기' })).toHaveAttribute(
     'href',
-    '/projects',
+    'https://project-after-psi.vercel.app/#/projects',
   );
   expect(screen.getByRole('link', { name: '공고 키워드로 찾기' })).toHaveAttribute(
     'href',
