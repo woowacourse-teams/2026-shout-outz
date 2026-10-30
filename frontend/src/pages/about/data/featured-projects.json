@@ -1,0 +1,241 @@
+[
+  {
+    "slug": "rilog",
+    "title": "Rilog.",
+    "tagline": "개발자를 위한 새로운 블로그 플랫폼입니다.",
+    "cohort": 8,
+    "likeCount": 5,
+    "commentCount": 0,
+    "thumbnailUrl": "https://d1b6wzgln7vib5.cloudfront.net/shout-outz/media/dev/project-thumbnail/63c5db29-fda0-4ee0-848d-e8cae34b4adb/display",
+    "techTags": [
+      {
+        "id": 41,
+        "displayName": "AWS"
+      },
+      {
+        "id": 39,
+        "displayName": "H2"
+      },
+      {
+        "id": 53,
+        "displayName": "Grafana"
+      },
+      {
+        "id": 45,
+        "displayName": "GitHub Actions"
+      },
+      {
+        "id": 1,
+        "displayName": "Java"
+      },
+      {
+        "id": 12,
+        "displayName": "JPA / Hibernate"
+      },
+      {
+        "id": 35,
+        "displayName": "MySQL"
+      },
+      {
+        "id": 17,
+        "displayName": "Next.js"
+      },
+      {
+        "id": 44,
+        "displayName": "Nginx"
+      },
+      {
+        "id": 10,
+        "displayName": "Spring Data JPA"
+      },
+      {
+        "id": 55,
+        "displayName": "Sentry"
+      },
+      {
+        "id": 16,
+        "displayName": "React"
+      },
+      {
+        "id": 26,
+        "displayName": "Tailwind CSS"
+      },
+      {
+        "id": 3,
+        "displayName": "TypeScript"
+      },
+      {
+        "id": 42,
+        "displayName": "Docker"
+      },
+      {
+        "id": 65,
+        "displayName": "Gradle"
+      }
+    ],
+    "members": [
+      {
+        "displayName": "러로",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/185534795?v=4"
+      },
+      {
+        "displayName": "송송",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/147616203?v=4"
+      },
+      {
+        "displayName": "아지",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/141705278?v=4"
+      },
+      {
+        "displayName": "파라디",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/46674347?v=4"
+      }
+    ]
+  },
+  {
+    "slug": "shout-outz",
+    "title": "샤라웆",
+    "tagline": "우아한테크코스 크루들의 경험을 나누는 IT 취업 준비 커뮤니티",
+    "cohort": 8,
+    "likeCount": 7,
+    "commentCount": 0,
+    "thumbnailUrl": "https://d1b6wzgln7vib5.cloudfront.net/shout-outz/media/dev/project-thumbnail/a289b624-a2c6-438c-b7eb-b98ebfad3309/display",
+    "techTags": [
+      {
+        "id": 42,
+        "displayName": "Docker"
+      },
+      {
+        "id": 45,
+        "displayName": "GitHub Actions"
+      },
+      {
+        "id": 65,
+        "displayName": "Gradle"
+      },
+      {
+        "id": 1,
+        "displayName": "Java"
+      },
+      {
+        "id": 12,
+        "displayName": "JPA / Hibernate"
+      },
+      {
+        "id": 57,
+        "displayName": "JUnit"
+      },
+      {
+        "id": 44,
+        "displayName": "Nginx"
+      },
+      {
+        "id": 36,
+        "displayName": "PostgreSQL"
+      },
+      {
+        "id": 10,
+        "displayName": "Spring Data JPA"
+      },
+      {
+        "id": 64,
+        "displayName": "Spring REST Docs"
+      },
+      {
+        "id": 8,
+        "displayName": "Spring Boot"
+      },
+      {
+        "id": 63,
+        "displayName": "Swagger"
+      },
+      {
+        "id": 16,
+        "displayName": "React"
+      },
+      {
+        "id": 41,
+        "displayName": "AWS"
+      }
+    ],
+    "members": [
+      {
+        "displayName": "샤를",
+        "avatarUrl": "https://d1b6wzgln7vib5.cloudfront.net/shout-outz/media/dev/user-avatar/63055f3d-8ea8-4019-b1b0-aae504a82141/display"
+      },
+      {
+        "displayName": "라이",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/162431164?v=4"
+      },
+      {
+        "displayName": "라바",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/90428805?v=4"
+      },
+      {
+        "displayName": "재키",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/93702146?v=4"
+      },
+      {
+        "displayName": "클라우디",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/86952779?v=4"
+      }
+    ]
+  },
+  {
+    "slug": "harudle",
+    "title": "하루들",
+    "tagline": "\"우리끼리 통하는 네컷만화\"\n일상을 글 대신에 네컷 만화로 표현하는 것을 돕는 서비스",
+    "cohort": 8,
+    "likeCount": 4,
+    "commentCount": 0,
+    "thumbnailUrl": "https://d1b6wzgln7vib5.cloudfront.net/shout-outz/media/dev/project-thumbnail/6845bbdc-22da-463b-8796-a3e9d00cd08f/display",
+    "techTags": [
+      {
+        "id": 1,
+        "displayName": "Java"
+      },
+      {
+        "id": 3,
+        "displayName": "TypeScript"
+      },
+      {
+        "id": 8,
+        "displayName": "Spring Boot"
+      },
+      {
+        "id": 36,
+        "displayName": "PostgreSQL"
+      },
+      {
+        "id": 41,
+        "displayName": "AWS"
+      },
+      {
+        "id": 42,
+        "displayName": "Docker"
+      }
+    ],
+    "members": [
+      {
+        "displayName": "이산",
+        "avatarUrl": "https://d1b6wzgln7vib5.cloudfront.net/shout-outz/media/dev/user-avatar/83de369a-8943-4fe1-aed6-34fcd3274ed8/display"
+      },
+      {
+        "displayName": "초록",
+        "avatarUrl": "https://d1b6wzgln7vib5.cloudfront.net/shout-outz/media/dev/user-avatar/cbf3407a-108e-4557-a70b-ff1753e75cf2/display"
+      },
+      {
+        "displayName": "이현",
+        "avatarUrl": "https://d1b6wzgln7vib5.cloudfront.net/shout-outz/media/dev/user-avatar/69e96ae8-4c15-4ddb-a859-1ab486630272/display"
+      },
+      {
+        "displayName": "아이큐",
+        "avatarUrl": "https://d1b6wzgln7vib5.cloudfront.net/shout-outz/media/dev/user-avatar/f31c3c4e-5cad-4bd3-bf1f-57944106b129/display"
+      },
+      {
+        "displayName": "캐모",
+        "avatarUrl": "https://d1b6wzgln7vib5.cloudfront.net/shout-outz/media/dev/user-avatar/e0889ef9-7db5-42d7-8e40-bb67a44a817e/display"
+      }
+    ]
+  }
+]

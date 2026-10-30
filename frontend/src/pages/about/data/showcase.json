@@ -1,0 +1,691 @@
+{
+  "slug": "shout-outz",
+  "title": "샤라웆",
+  "tagline": "우아한테크코스 크루들의 경험을 나누는 IT 취업 준비 커뮤니티",
+  "techTags": [
+    {
+      "id": 42,
+      "displayName": "Docker"
+    },
+    {
+      "id": 45,
+      "displayName": "GitHub Actions"
+    },
+    {
+      "id": 65,
+      "displayName": "Gradle"
+    },
+    {
+      "id": 1,
+      "displayName": "Java"
+    },
+    {
+      "id": 12,
+      "displayName": "JPA / Hibernate"
+    },
+    {
+      "id": 57,
+      "displayName": "JUnit"
+    },
+    {
+      "id": 44,
+      "displayName": "Nginx"
+    },
+    {
+      "id": 36,
+      "displayName": "PostgreSQL"
+    },
+    {
+      "id": 10,
+      "displayName": "Spring Data JPA"
+    },
+    {
+      "id": 64,
+      "displayName": "Spring REST Docs"
+    },
+    {
+      "id": 8,
+      "displayName": "Spring Boot"
+    },
+    {
+      "id": 63,
+      "displayName": "Swagger"
+    },
+    {
+      "id": 16,
+      "displayName": "React"
+    },
+    {
+      "id": 41,
+      "displayName": "AWS"
+    }
+  ],
+  "members": [
+    {
+      "handle": "@sangjun121",
+      "displayName": "샤를",
+      "userType": "WOOWACOURSE_CREW",
+      "cohort": 8,
+      "track": "BACKEND",
+      "avatarUrl": "https://d1b6wzgln7vib5.cloudfront.net/shout-outz/media/dev/user-avatar/63055f3d-8ea8-4019-b1b0-aae504a82141/display"
+    },
+    {
+      "handle": "@dhyepark",
+      "displayName": "라이",
+      "userType": "WOOWACOURSE_CREW",
+      "cohort": 8,
+      "track": "BACKEND",
+      "avatarUrl": "https://avatars.githubusercontent.com/u/162431164?v=4"
+    },
+    {
+      "handle": "@kojesung",
+      "displayName": "라바",
+      "userType": "WOOWACOURSE_CREW",
+      "cohort": 8,
+      "track": "FRONTEND",
+      "avatarUrl": "https://avatars.githubusercontent.com/u/90428805?v=4"
+    },
+    {
+      "handle": "@zzaekkii",
+      "displayName": "재키",
+      "userType": "WOOWACOURSE_CREW",
+      "cohort": 8,
+      "track": "BACKEND",
+      "avatarUrl": "https://avatars.githubusercontent.com/u/93702146?v=4"
+    },
+    {
+      "handle": "@bel1c10ud",
+      "displayName": "클라우디",
+      "userType": "WOOWACOURSE_CREW",
+      "cohort": 8,
+      "track": "FRONTEND",
+      "avatarUrl": "https://avatars.githubusercontent.com/u/86952779?v=4"
+    }
+  ],
+  "career": {
+    "tracks": [
+      {
+        "track": "BE",
+        "role": "백엔드 개발",
+        "items": [
+          {
+            "title": "저사양 EC2의 JVM 메모리 반복 종료 대응",
+            "bullets": [
+              "1GB EC2에서 비율 기반 힙 설정이 물리 메모리를 초과하는 문제에 대응해 전체 903MB의 메모리 예산을 산정하고 힙 상한을 -Xmx320m으로 변경함",
+              "Metaspace 부족으로 1분마다 종료되던 dev 서버의 상한을 128MB에서 256MB로 조정하고 배포용 서비스 파일에 반영해 이미지 업로드 후에도 종료되지 않음을 확인함",
+              "DEV 서버에 swap과 서비스 비활성화를 적용하고, disable 상태에서도 요청으로 재실행되는 fwupd를 mask로 변경해 메모리 확보 조치를 보완함"
+            ],
+            "sources": [
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#194#0"],
+                "label": "PR #194",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/194"
+              },
+              {
+                "experience_keys": [
+                  "github-pr|woowacourse-teams/2026-shout-outz#293#0",
+                  "github-pr|woowacourse-teams/2026-shout-outz#293#1"
+                ],
+                "label": "PR #293",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/293"
+              }
+            ],
+            "tech": [
+              "JVM",
+              "MaxRAMPercentage",
+              "-Xmx",
+              "swap",
+              "EC2",
+              "Metaspace",
+              "fwupd",
+              "disable",
+              "mask"
+            ]
+          },
+          {
+            "title": "피드 조회 최적화와 동시성 정합성 검증",
+            "bullets": [
+              "피드 인기순 조회의 좋아요, 댓글 전체 집계를 반정규화와 인덱스 조회로 대체해 로컬 첫 페이지 쿼리를 피드 3,000개에서 3.86ms → 0.11ms, 피드 15,000개에서 18.34ms → 0.32ms로 줄임",
+              "사용자 반응 조회의 전체 스캔을 사용자 기준 인덱스로 개선해 같은 쿼리를 3.5ms → 1.2ms로 줄이고, CONCURRENTLY와 executeInTransaction=false로 운영 중 쓰기를 차단하지 않도록 구성함",
+              "DB 원자적 증감과 실제 변경 여부에 따른 집계 갱신을 8개 스레드의 동시 요청 테스트 7개로 검증하고, 인덱스 생성 중단 후 정상, INVALID 인덱스가 남은 재실행과 Flyway 복구 절차를 마련함"
+            ],
+            "sources": [
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#478#0"],
+                "label": "PR #478",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/478"
+              },
+              {
+                "experience_keys": [
+                  "github-pr|woowacourse-teams/2026-shout-outz#505#0",
+                  "github-pr|woowacourse-teams/2026-shout-outz#505#1",
+                  "github-pr|woowacourse-teams/2026-shout-outz#505#2"
+                ],
+                "label": "PR #505",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/505"
+              }
+            ],
+            "tech": [
+              "사용자 기준 인덱스",
+              "Seq Scan",
+              "Index Only Scan",
+              "CONCURRENTLY",
+              "반정규화",
+              "인덱스",
+              "SQL",
+              "원자적 UPDATE",
+              "동시성 테스트",
+              "Flyway",
+              "DROP INDEX CONCURRENTLY",
+              "IF NOT EXISTS"
+            ]
+          },
+          {
+            "title": "운영 링크 미리보기 오수집과 캐시 복구",
+            "bullets": [
+              "로컬에서 재현되지 않는 유튜브 미리보기 오수집을 운영 curl 응답으로 분석해 봇 확인 페이지가 성공으로 캐시되는 원인을 규명하고, oEmbed 우선 수집으로 운영에서 정상 제목과 썸네일 반환을 확인함",
+              "새 수집 로직만으로 갱신되지 않는 잘못된 캐시를 Flyway 마이그레이션으로 조건부 PENDING 전환해 재수집하도록 함",
+              "링크 미리보기 작업을 막던 PostgreSQL의 Instant 타입 추론 오류를 Timestamp.from 변환으로 수정하고, 저장소 통합 테스트로 수정 전 운영과 동일한 오류를 재현함"
+            ],
+            "sources": [
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#295#0"],
+                "label": "PR #295",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/295"
+              },
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#388#0"],
+                "label": "PR #388",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/388"
+              },
+              {
+                "experience_keys": [
+                  "blog-post|post:1aed78c5f8299d2ccb0930823ac06b000839e761#0",
+                  "blog-post|post:1aed78c5f8299d2ccb0930823ac06b000839e761#1"
+                ],
+                "label": "샤라웃 Ep01. 유튜브 미리보기 정보가 올바르게 수집되지 않은 이유",
+                "type": "blog",
+                "url": "https://rilog.kr/@shout_outz/posts/153"
+              }
+            ],
+            "tech": [
+              "PostgreSQL",
+              "Java",
+              "통합 테스트",
+              "YouTube oEmbed",
+              "Jsoup",
+              "curl",
+              "DB 마이그레이션",
+              "oEmbed API",
+              "HTML",
+              "Flyway"
+            ]
+          },
+          {
+            "title": "AI 추천의 비동기 처리와 장애 대체 설계",
+            "bullets": [
+              "질문 작성 부담 인터뷰와 약 97.3%의 제출 구간 이탈률을 근거로 Outbox, SQS, 기존 Spring 작업자와 외부 LLM API의 비동기 추천 구조를 제안하고, Gemini 실패 시 OpenAI 대체와 지수 백오프, 지터를 구현함",
+              "사용된 추천의 반복 노출을 조건부 UPDATE와 사용 기록, Outbox 요청의 단일 트랜잭션 저장으로 해결하고, SQS와 Worker로 미사용 추천이 5개가 되도록 부족한 개수만 대체 생성하도록 구현함",
+              "추천 노출 상태와 작업 임대를 분리해 생성에 수 초~수십 초가 걸리거나 실패해도 남은 추천 4개를 유지하고, 세대별 대체 생성 총량을 기본 5로 제한함"
+            ],
+            "sources": [
+              {
+                "experience_keys": [
+                  "github-pr|woowacourse-teams/2026-shout-outz#462#0",
+                  "github-pr|woowacourse-teams/2026-shout-outz#462#1"
+                ],
+                "label": "PR #462",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/462"
+              },
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#475#0"],
+                "label": "PR #475",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/475"
+              },
+              {
+                "experience_keys": [
+                  "github-pr|woowacourse-teams/2026-shout-outz#490#0",
+                  "github-pr|woowacourse-teams/2026-shout-outz#490#1"
+                ],
+                "label": "PR #490",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/490"
+              },
+              {
+                "experience_keys": [
+                  "github-discussion|woowacourse-teams/2026-shout-outz/discussions/443#0"
+                ],
+                "label": "[ALL/RFC] 연관된 질문 추천 기능의 구현 전 의사결정 문서",
+                "type": "doc",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/discussions/443"
+              }
+            ],
+            "tech": [
+              "Gemini",
+              "폴링",
+              "OpenAI",
+              "지수 백오프",
+              "지터",
+              "SQS",
+              "Outbox",
+              "조건부 UPDATE",
+              "트랜잭션",
+              "LLM",
+              "작업 임대",
+              "Spring",
+              "Gemini API",
+              "DLQ"
+            ]
+          },
+          {
+            "title": "세션 인증과 OAuth, 배포 보안 강화",
+            "bullets": [
+              "월 60달러 AWS 예산과 단일 서버, 웹 브라우저 요구사항을 기준으로 서버 세션을 선택하고 state 검증, PKCE S256, 세션 ID 회전, CSRF 검증으로 인증 흐름을 보호함",
+              "잘못된 OAuth 콜백이 정상 로그인을 중단하지 않도록 state 일치 시에만 로그인 시도를 소비하고, 완료 주소 허용 목록 검증과 익명 작성자의 정확한 기수 제거로 리다이렉트와 정보 노출을 제한함",
+              "Cross-Site 운영 쿠키를 SameSite=None, Secure=true로 분리하고 nginx, Let's Encrypt로 HTTPS를 구성해 브라우저 차단에 대응하며, 공유 보안 그룹 제약 아래 루프백 바인딩으로 앱 외부 접근을 제한하도록 설정함"
+            ],
+            "sources": [
+              {
+                "experience_keys": [
+                  "github-pr|woowacourse-teams/2026-shout-outz#76#0",
+                  "github-pr|woowacourse-teams/2026-shout-outz#76#1"
+                ],
+                "label": "PR #76",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/76"
+              },
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#171#0"],
+                "label": "PR #171",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/171"
+              },
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#182#0"],
+                "label": "PR #182",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/182"
+              },
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#297#0"],
+                "label": "PR #297",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/297"
+              },
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#332#0"],
+                "label": "PR #332",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/332"
+              },
+              {
+                "experience_keys": [
+                  "github-discussion|woowacourse-teams/2026-shout-outz/discussions/33#0"
+                ],
+                "label": "[BE] 인증 상태 관리 방식(세션 vs JWT) 제안",
+                "type": "doc",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/discussions/33"
+              }
+            ],
+            "tech": [
+              "HttpSession",
+              "PKCE S256",
+              "CSRF 토큰",
+              "세션 ID 회전",
+              "Spring Security",
+              "OAuth",
+              "state 검증",
+              "SameSite",
+              "Secure",
+              "YAML",
+              "nginx",
+              "Let's Encrypt",
+              "certbot",
+              "TLS",
+              "루프백 바인딩",
+              "Vercel",
+              "허용 목록",
+              "Session",
+              "JWT",
+              "RDS",
+              "Redis"
+            ]
+          },
+          {
+            "title": "경로 기반 백엔드 배포 트리거 분리",
+            "bullets": [
+              "프론트엔드 변경에도 백엔드가 재배포되어 약 50초간 요청이 끊기는 문제를 분석하고, GitHub 버전 1 소스 유지 제약에 맞춰 GitHub Actions와 배포 전용 브랜치로 트리거를 분리함",
+              "backend/**, appspec.yml, buildspec.yml 변경 시에만 develop과 main의 최신 커밋을 deploy/dev와 deploy/prod에 반영하는 워크플로우를 추가하고 실제 배포는 기존 AWS 파이프라인에 유지하도록 구성함"
+            ],
+            "sources": [
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#271#0"],
+                "label": "PR #271",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/271"
+              },
+              {
+                "experience_keys": [
+                  "github-discussion|woowacourse-teams/2026-shout-outz/discussions/214#0"
+                ],
+                "label": "[BE] dev 서버 배포 실패 원인과 인프라 개선 제안",
+                "type": "doc",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/discussions/214"
+              },
+              {
+                "experience_keys": [
+                  "github-discussion|woowacourse-teams/2026-shout-outz/discussions/257#0"
+                ],
+                "label": "[BE] 배포 트리거를 deploy 전용 브랜치로 분리해, FE 코드 변경 시 불필요한 배포 방지",
+                "type": "doc",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/discussions/257"
+              }
+            ],
+            "tech": [
+              "GitHub Actions",
+              "AWS 파이프라인",
+              "Git",
+              "GitHub",
+              "AWS",
+              "모노레포",
+              "AWS CodePipeline",
+              "AWS CodeBuild",
+              "AWS CodeDeploy"
+            ]
+          },
+          {
+            "title": "실제 트래픽 기반 부하 테스트와 로그 연결",
+            "bullets": [
+              "Spring 요청 로그 98,963건을 분석해 성공 응답 p50 2ms, p95 12ms를 확인하고, 홍보 당일 최고 1분 요청 비율 1.66%를 근거로 예상 피크 141RPS와 테스트 부하 211RPS를 제안함",
+              "k6에서 로그인 필수 요청 5,213건(22.6%)을 재현하지 못하는 인증 제약을 분석해 loadtest 전용 로그인 API와 운영 프로필 차단 장치를 설계, 제안하고, 실제 서버 인수 테스트로 발급 쿠키의 후속 요청 로그인 상태를 검증함",
+              "loadtest 프로필에 50ms 초과 쿼리 로깅을 적용해 Hikari 지표 유지를 검증하고, nginx와 앱의 요청 ID 규칙을 일치시켜 로컬 컨테이너에서 로그 연결, ID 유지와 생성, 502 기록을 확인함"
+            ],
+            "sources": [
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#453#0"],
+                "label": "PR #453",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/453"
+              },
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#456#0"],
+                "label": "PR #456",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/456"
+              },
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#467#0"],
+                "label": "PR #467",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/467"
+              },
+              {
+                "experience_keys": [
+                  "github-discussion|woowacourse-teams/2026-shout-outz/discussions/445#0",
+                  "github-discussion|woowacourse-teams/2026-shout-outz/discussions/445#1"
+                ],
+                "label": "[BE] 부하 테스트 환경 분리와 예상 트래픽, 목표 수치 제안",
+                "type": "doc",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/discussions/445"
+              },
+              {
+                "experience_keys": [
+                  "github-discussion|woowacourse-teams/2026-shout-outz/discussions/455#0"
+                ],
+                "label": "[BE] 부하 테스트용 로그인 API를 추가하는 이유",
+                "type": "doc",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/discussions/455"
+              }
+            ],
+            "tech": [
+              "nginx",
+              "CloudWatch Agent",
+              "trace ID",
+              "Spring 프로필",
+              "MockMvc",
+              "세션 쿠키",
+              "인수 테스트",
+              "datasource-proxy",
+              "HikariCP",
+              "JPA",
+              "JdbcTemplate",
+              "Spring",
+              "Nginx",
+              "k6",
+              "PostHog",
+              "GitHub OAuth",
+              "세션",
+              "CSRF 토큰"
+            ]
+          },
+          {
+            "title": "S3 이미지 처리 경계와 저장 참조 분리",
+            "bullets": [
+              "공개 이미지 조회의 서버 병목과 자체 저장소 운영 부담을 고려해 S3, presigned URL 기반 저장과 조회를 구축하고, 이후 공개 이미지 조회를 CloudFront URL로 전환함",
+              "초기 서비스 규모와 Lambda의 별도 배포, IAM, 재시도 관리 부담을 비교해 내부 비동기 이미지 워커를 구현하고 최대 스레드 2개와 대기열100개로 처리 자원을 제한함",
+              "본문의 media://{id} 참조와 조회 URL, DB 논리 키와 환경별 S3 prefix를 분리해 저장 구조 의존성을 줄이고, Presigned URL 발급부터 저장, 조회, 삭제까지의 AWS 통합 테스트를 환경변수로 실행 제어하도록 작성함"
+            ],
+            "sources": [
+              {
+                "experience_keys": [
+                  "github-pr|woowacourse-teams/2026-shout-outz#52#0",
+                  "github-pr|woowacourse-teams/2026-shout-outz#52#1"
+                ],
+                "label": "PR #52",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/52"
+              },
+              {
+                "experience_keys": [
+                  "github-pr|woowacourse-teams/2026-shout-outz#111#0",
+                  "github-pr|woowacourse-teams/2026-shout-outz#111#1"
+                ],
+                "label": "PR #111",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/111"
+              },
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#151#0"],
+                "label": "PR #151",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/151"
+              },
+              {
+                "experience_keys": [
+                  "github-teamdoc|woowacourse-teams/2026-shout-outz:docs/backend/adr-015-define-image-storage-and-upload-policy.md#0",
+                  "github-teamdoc|woowacourse-teams/2026-shout-outz:docs/backend/adr-015-define-image-storage-and-upload-policy.md#1"
+                ],
+                "label": "ADR-015: 이미지 저장 및 업로드 기준을 정의",
+                "type": "doc",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/blob/37ddf586e1d48246e52ed4507d6f4d3401ae601d/docs/backend/adr-015-define-image-storage-and-upload-policy.md"
+              }
+            ],
+            "tech": [
+              "S3",
+              "presigned URL",
+              "CDN",
+              "비동기 처리",
+              "메모리 기반 큐",
+              "AWS Lambda",
+              "Presigned URL",
+              "IAM Role",
+              "AWS Profile",
+              "Gradle",
+              "CloudFront",
+              "Presigned GET",
+              "Amazon S3",
+              "Markdown",
+              "트랜잭션 커밋 이벤트",
+              "백프레셔",
+              "EXIF 제거"
+            ]
+          }
+        ]
+      },
+      {
+        "track": "FE",
+        "role": "프론트엔드 개발",
+        "items": [
+          {
+            "title": "API 계약 정비와 캐시, 링크 안전성 개선",
+            "bullets": [
+              "작성, 수정 응답에 이미지 ID가 없어 상세 캐시 갱신 시 첨부 ID가 유실되는 문제에 대응해 캐시 무효화 후 재조회 방식으로 변경함",
+              "수동 API 타입과 서버 계약의 불일치를 정비하기 위해 OpenAPI 생성 타입에서 도메인 타입을 파생하고 선택 필드의 undefined 처리를 보완함",
+              "홈 배너 이동 판단을 단일 유틸로 통합하고 링크 종류와 내부 /, 외부 http(s) 주소 형식을 검증해 부적절한 링크 생성을 차단하고 단위 테스트를 적용함"
+            ],
+            "sources": [
+              {
+                "experience_keys": [
+                  "github-teamdoc|woowacourse-teams/2026-shout-outz:frontend/docs/api-types.md#0",
+                  "github-teamdoc|woowacourse-teams/2026-shout-outz:frontend/docs/api-types.md#1",
+                  "github-teamdoc|woowacourse-teams/2026-shout-outz:frontend/docs/api-types.md#2"
+                ],
+                "label": "API 타입",
+                "type": "doc",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/blob/37ddf586e1d48246e52ed4507d6f4d3401ae601d/frontend/docs/api-types.md"
+              }
+            ],
+            "tech": ["OpenAPI", "파생 타입", "교차 타입", "캐시 무효화", "단위 테스트", "URL 검증"]
+          },
+          {
+            "title": "HTTP 에러 정보 보존과 재시도 책임 분리",
+            "bullets": [
+              "서버 에러를 새 클래스로 재가공하면서 원본 요청 정보가 손실되는 문제를 타입 가드로 대체해 해결하고 ky 에러와 서비스 API 응답 판별 역할을 분리함",
+              "ky와 TanStack Query의 재시도 중첩을 방지하기 위해 ky의 재시도를 GET에 한정하고 Query 재시도 비활성화를 후속 설정 방향으로 정함"
+            ],
+            "sources": [
+              {
+                "experience_keys": [
+                  "github-pr|woowacourse-teams/2026-shout-outz#98#0",
+                  "github-pr|woowacourse-teams/2026-shout-outz#98#1"
+                ],
+                "label": "PR #98",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/98"
+              }
+            ],
+            "tech": ["ky", "TanStack Query", "HTTP", "멱등성", "TypeScript", "타입 가드"]
+          },
+          {
+            "title": "무인 QA 수정 자동화와 검증 실행 오류 해결",
+            "bullets": [
+              "무인 실행과 충돌하는 대화형 규칙을 분리하고 카드 선점, 수정, 검증, Draft PR 생성, Notion 기록을 연결해 실제 실행 1회에서 이슈, Draft PR 생성과 카드 상태, 링크 기록을 확인함",
+              "허용 명령 제한으로 검증 명령이 거부되는 문제에 대응해 스킬에 정확한 npm 검증 명령을 명시하고 드라이런 2회 과정에서 정상 실행을 확인함"
+            ],
+            "sources": [
+              {
+                "experience_keys": [
+                  "github-pr|woowacourse-teams/2026-shout-outz#450#0",
+                  "github-pr|woowacourse-teams/2026-shout-outz#450#1"
+                ],
+                "label": "PR #450",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/450"
+              }
+            ],
+            "tech": ["Claude Code", "MCP", "GitHub Actions", "Notion", "npm"]
+          },
+          {
+            "title": "페이지별 청크 병렬 요청과 재방문 캐시 설계",
+            "bullets": [
+              "main 실행 뒤 라우트 청크를 요청하던 지연을 개선하기 위해 경로별 HTML에 preload를 적용하고 로컬에서 main과 라우트 청크의 동시 요청, 중복 다운로드와 미사용 경고 없음을 확인함",
+              "배포 후 React 캐시 재사용을 위해 관련 모듈을 별도 청크로 분리하고 앱 코드 변경 후 청크 파일명 유지를 검증했으며, 페이지별 다운로드 용량은 거의 유지되고 첫 진입 요청은 1~2개 늘어나는 트레이드오프를 확인함"
+            ],
+            "sources": [
+              {
+                "experience_keys": [
+                  "github-pr|woowacourse-teams/2026-shout-outz#460#0",
+                  "github-pr|woowacourse-teams/2026-shout-outz#460#1"
+                ],
+                "label": "PR #460",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/460"
+              }
+            ],
+            "tech": ["webpack", "preload", "SSG", "CSR", "React", "코드 분할", "캐시"]
+          },
+          {
+            "title": "분석 SDK 지연 로딩과 화면 집계 구조 설계",
+            "bullets": [
+              "앱 번들과 비슷한 크기의 posthog-js SDK를 첫 화면 이후에 지연 로드하고 로드 전 이벤트는 큐에 저장해 순차 전달하도록 설계함",
+              "콘텐츠 식별자별 경로가 별도 화면으로 집계되는 문제에 대응해 경로 패턴과 콘텐츠 파라미터를 분리하고 모니터링 고유값 한도 초과 위험을 줄이도록 설계함"
+            ],
+            "sources": [
+              {
+                "experience_keys": [
+                  "github-pr|woowacourse-teams/2026-shout-outz#191#0",
+                  "github-pr|woowacourse-teams/2026-shout-outz#191#1"
+                ],
+                "label": "PR #191",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/191"
+              }
+            ],
+            "tech": ["PostHog", "posthog-js", "지연 로딩", "이벤트 큐"]
+          },
+          {
+            "title": "외부 상태 동기화와 테마별 컬러 토큰 설계",
+            "bullets": [
+              "사용자 선택과 운영체제 테마를 같은 탭, 다른 탭의 React UI에 동기화하도록 useSyncExternalStore로 외부 이벤트를 구독하고 첫 페인트 전 인라인 스크립트로 테마를 적용해 깜빡임을 예방하도록 설계함",
+              "색상별 지각적 밝기와 다크 모드 대비 차이를 분석해 OKLCH 팔레트 시각 보정, Adaptive Color Token, Static Color, Inverse Color를 제안하고 개선 문서 승인을 받음"
+            ],
+            "sources": [
+              {
+                "experience_keys": ["github-pr|woowacourse-teams/2026-shout-outz#55#0"],
+                "label": "PR #55",
+                "type": "pr",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/55"
+              },
+              {
+                "experience_keys": [
+                  "github-discussion|woowacourse-teams/2026-shout-outz/discussions/34#0"
+                ],
+                "label": "[FE] 컬러 토큰 개선 제안",
+                "type": "doc",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/discussions/34"
+              }
+            ],
+            "tech": [
+              "React",
+              "useSyncExternalStore",
+              "matchMedia",
+              "localStorage",
+              "인라인 스크립트",
+              "Tailwind",
+              "OKLCH",
+              "Adaptive Color Token",
+              "Static Color",
+              "Inverse Color"
+            ]
+          },
+          {
+            "title": "폼 오제출 예방과 버튼 스타일 재사용 설계",
+            "bullets": [
+              "폼 내부 취소 버튼의 의도치 않은 제출을 예방하기 위해 기본 유형을 button으로 두고 제출 시에만 submit을 지정하도록 제안함",
+              "링크의 시맨틱 태그를 유지하면서 버튼 스타일을 재사용할 수 있도록 스타일 정의를 별도로 내보내는 구조를 제안함"
+            ],
+            "sources": [
+              {
+                "experience_keys": [
+                  "github-discussion|woowacourse-teams/2026-shout-outz/discussions/77#0"
+                ],
+                "label": "[RFC] Button 컴포넌트 interface 설계 근거",
+                "type": "doc",
+                "url": "https://github.com/woowacourse-teams/2026-shout-outz/discussions/77"
+              }
+            ],
+            "tech": ["HTML", "TypeScript"]
+          }
+        ]
+      }
+    ]
+  }
+}
