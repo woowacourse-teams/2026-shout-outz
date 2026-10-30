@@ -156,7 +156,17 @@ class JobPostingRepositoryIntegrationTest {
         JobPostingSummary summary = jobPostingAdminQueryRepository.findAll(null, 20).items().getFirst();
 
         assertThat(summary).isEqualTo(new JobPostingSummary(
-                saved.getId(), "예시 회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, NOW));
+                saved.getId(), "예시 회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, null, NOW));
+    }
+
+    @Test
+    void 숨긴_공고는_목록의_한_줄에_숨긴_시각을_담는다() {
+        long id = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW)).getId();
+        jobPostingRepository.updateHiddenAt(id, true, NOW.plusSeconds(60));
+
+        JobPostingSummary summary = jobPostingAdminQueryRepository.findAll(null, 20).items().getFirst();
+
+        assertThat(summary.hiddenAt()).isEqualTo(NOW.plusSeconds(60));
     }
 
     @Test

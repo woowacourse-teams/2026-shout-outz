@@ -6,6 +6,7 @@ import com.shoutoutz.api.jobposting.application.dto.JobPostingPage;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingSummary;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class JobPostingAdminQueryRepositoryImpl implements JobPostingAdminQueryR
                     title,
                     job_role,
                     status,
+                    hidden_at,
                     created_at
                 FROM job_postings
                 WHERE 1 = 1
@@ -50,10 +52,15 @@ public class JobPostingAdminQueryRepositoryImpl implements JobPostingAdminQueryR
                         resultSet.getString("title"),
                         JobRole.valueOf(resultSet.getString("job_role")),
                         MatchingStatus.valueOf(resultSet.getString("status")),
+                        toInstant(resultSet.getObject("hidden_at", OffsetDateTime.class)),
                         resultSet.getObject("created_at", OffsetDateTime.class).toInstant()
                 )
         );
         return createPage(summaries, size, countAll());
+    }
+
+    private Instant toInstant(OffsetDateTime dateTime) {
+        return dateTime == null ? null : dateTime.toInstant();
     }
 
     private long countAll() {

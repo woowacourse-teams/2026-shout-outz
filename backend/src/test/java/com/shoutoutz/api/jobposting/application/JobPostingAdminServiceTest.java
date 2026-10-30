@@ -407,6 +407,6 @@ class JobPostingAdminServiceTest {
     }
 
     private JobPostingSummary summary(long id) {
-        return new JobPostingSummary(id, "회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, NOW);
+        return new JobPostingSummary(id, "회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, null, NOW);
     }
 }
