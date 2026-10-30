@@ -148,6 +148,7 @@ describe('ProjectCreatePage', () => {
         deploymentUrl: FORM.deploymentUrl,
         // 운영 상태를 고르지 않았고 배포 URL이 있으므로 OPERATING으로 보낸다.
         serviceStatus: 'OPERATING',
+        teamBlogUrls: [],
         descriptionMd: FORM.descriptionMd,
         techTagIds: [1],
         memberHandles: ['woojin', 'zzaekkii'],

@@ -30,6 +30,7 @@ const MAX_LENGTHS = {
   tagline: 200,
   githubRepositoryUrl: 2_048,
   deploymentUrl: 2_048,
+  teamBlogUrl: 2_048,
   descriptionMd: 100_000,
 } as const;
 
@@ -43,6 +44,15 @@ export const toProjectSlugParam = (slug: string) => `@${slug}`;
 
 /** URL 파라미터에서 순수 slug를 꺼낸다. `@`가 없는 주소로 들어와도 같은 프로젝트를 찾게 둔다. */
 export const toProjectSlug = (param: string) => param.replace(/^@/, '');
+
+const MAX_TEAM_BLOG_URLS = 3;
+
+/** 한 줄에 하나씩 적힌 팀 블로그 주소를 빈 줄을 버리고 잘라 목록으로 만든다. */
+export const parseTeamBlogUrls = (value: string) =>
+  value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
 
 const isHttpUrl = (value: string) => {
   try {
@@ -101,6 +111,16 @@ export function validateProjectForm(values: ProjectFormValues): ProjectFormError
     errors.deploymentUrl = 'http 또는 https로 시작하는 주소를 입력해 주세요.';
   }
 
+  // 팀 블로그 주소는 선택이지만 최대 3개이고, 각 주소는 링크로 쓸 수 있어야 한다.
+  const teamBlogUrls = parseTeamBlogUrls(values.teamBlogUrls);
+  if (teamBlogUrls.length > MAX_TEAM_BLOG_URLS) {
+    errors.teamBlogUrls = `팀 블로그 주소는 ${MAX_TEAM_BLOG_URLS}개까지 입력할 수 있습니다.`;
+  } else if (teamBlogUrls.some((url) => countCodePoints(url) > MAX_LENGTHS.teamBlogUrl)) {
+    errors.teamBlogUrls = `팀 블로그 주소는 ${MAX_LENGTHS.teamBlogUrl}자까지 입력할 수 있습니다.`;
+  } else if (!teamBlogUrls.every(isHttpUrl)) {
+    errors.teamBlogUrls = 'http 또는 https로 시작하는 주소를 한 줄에 하나씩 입력해 주세요.';
+  }
+
   // 서버가 앞뒤 공백을 자르지 않는 유일한 필드라 입력값 그대로 센다.
   if (countCodePoints(values.descriptionMd) > MAX_LENGTHS.descriptionMd) {
     errors.descriptionMd = `상세 설명은 ${MAX_LENGTHS.descriptionMd.toLocaleString()}자까지 입력할 수 있습니다.`;
@@ -136,6 +156,7 @@ export function toProjectCreateRequest(
     githubRepositoryUrl: values.githubRepositoryUrl.trim(),
     deploymentUrl: values.deploymentUrl.trim() || null,
     serviceStatus: resolveServiceStatus(values),
+    teamBlogUrls: parseTeamBlogUrls(values.teamBlogUrls),
     // 서버가 자르지 않는 필드다. 여기서 자르면 코드블록 들여쓰기처럼 의미 있는 공백이 사라진다.
     descriptionMd: values.descriptionMd,
     techTagIds: values.techTags.map((tag) => tag.id),
@@ -193,6 +214,7 @@ const FORM_FIELDS: Record<keyof ProjectFormValues, true> = {
   thumbnailImageId: true,
   githubRepositoryUrl: true,
   deploymentUrl: true,
+  teamBlogUrls: true,
   descriptionMd: true,
   techTags: true,
   members: true,
