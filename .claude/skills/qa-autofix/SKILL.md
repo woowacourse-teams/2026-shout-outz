@@ -31,7 +31,7 @@ description: Notion QA 카드(상태=AI 대기, 작업 범위=frontend)를 받�
    - `npm run typecheck --prefix frontend`
    - `npm run test --prefix frontend`
 7. **커밋**: `<작업 종류>(frontend): <한국어 요약>` 형식으로 커밋한다. 예: `fix(frontend): 목록의 좋아요 선택 상태 표시 수정`. 커밋 메시지에 이슈 번호와 `Co-Authored-By` 줄을 붙이지 않는다.
-8. **PR**: `develop`을 base로 Draft PR을 만들고, 이슈와 같은 라벨을 붙이고, `--reviewer kojesung,bel1c10ud`로 리뷰어를 지정한다. 제목과 본문은 `.github/PULL_REQUEST_TEMPLATE.md` 형식을 따르고, 본문은 아래 **이슈·PR 본문** 규칙대로 파일로 넘기고, `closed #<이슈 번호>`와 다음 내용을 반드시 포함한다.
+8. **PR**: `develop`을 base로 Draft PR을 만들고, 이슈와 같은 라벨을 붙이고, `.github/qa-autofix/config.jsonc`의 `reviewers`를 `--reviewer <아이디>,<아이디>`로 넘겨 리뷰어를 지정한다. 제목과 본문은 `.github/PULL_REQUEST_TEMPLATE.md` 형식을 따르고, 본문은 아래 **이슈·PR 본문** 규칙대로 파일로 넘기고, `closed #<이슈 번호>`와 다음 내용을 반드시 포함한다.
    - Notion 카드 링크
    - 추정 원인
    - 변경 내용
