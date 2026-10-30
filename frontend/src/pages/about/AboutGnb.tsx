@@ -33,7 +33,7 @@ export function AboutGnb() {
             height={32}
             className="size-7 md:size-8"
           />
-          <span className="text-lg font-bold text-gray-900 md:text-xl">shout-outz</span>
+          <span className="text-lg font-bold text-gray-900 md:text-xl">샤라웃</span>
         </div>
 
         <nav
