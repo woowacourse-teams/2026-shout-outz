@@ -138,3 +138,27 @@ test('기술 장면의 공고 요구사항을 고르면 연결되는 경험이 �
   expect(container.querySelector('.jd-visual')).toHaveClass('is-matching');
   expect(container.querySelector('.jd-result h4')).toHaveTextContent('반복 조회를 줄인 쿼리 개선');
 });
+
+test('AI·백엔드와 프론트엔드 기술 이야기를 보여 주고 렌더링 카드는 카드마다 따로 펼친다', async () => {
+  const user = userEvent.setup();
+  render(<AboutPage />);
+  expect(screen.getByRole('heading', { name: /우리의 기술 이야기/ })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /세 가지 고민/ })).toBeInTheDocument();
+  expect(screen.getByText('08 / BEHIND THE MATCH')).toBeInTheDocument();
+  expect(screen.getByText('09 / UNDER THE HOOD · FRONTEND')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: '역량 추출 API 살펴보기 ↗' })).toHaveAttribute(
+    'href',
+    'https://github.com/woowacourse-teams/2026-shout-outz/pull/526',
+  );
+  expect(screen.getByRole('link', { name: '분석 Worker 살펴보기 ↗' })).toHaveAttribute(
+    'href',
+    'https://github.com/woowacourse-teams/2026-shout-outz/pull/537',
+  );
+  const rendering = screen.getByRole('region', { name: /가장 빨리 보이는 방법으로/ });
+  const summaries = within(rendering).getAllByText('고른 이유와 한 일 보기');
+  expect(summaries).toHaveLength(3);
+
+  await user.click(summaries[1]!);
+  const details = summaries.map((summary) => summary.closest('details')!);
+  expect(details.map((item) => item.open)).toEqual([false, true, false]);
+});

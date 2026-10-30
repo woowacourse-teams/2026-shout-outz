@@ -20,6 +20,7 @@ import {
 } from '@/pages/about/resources';
 import { TechNotes } from '@/pages/about/TechNotes';
 import { TechStory } from '@/pages/about/TechStory';
+import { TechTalk } from '@/pages/about/TechTalk';
 import { cn } from '@/utils/cn';
 
 const SUGGESTED_QUERIES = ['동시성', 'N+1', '무중단 배포', '인덱스', 'React 렌더링', 'WebSocket'];
@@ -193,6 +194,7 @@ export function AboutPage() {
       </AboutSection>
 
       <TechStory />
+      <TechTalk />
 
       <section className="py-12 text-center md:py-16">
         <h2 className="text-xl font-bold tracking-tight text-gray-900 md:text-2xl">

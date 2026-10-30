@@ -1,8 +1,10 @@
 import { useState } from 'react';
 
-// v13 랜딩의 "기록에서 다음 기회까지" 네 장면 시각화. 마크업과 스타일(technology.*.css)은 v13을 그대로 옮겼다.
+import { ABOUT_STYLESHEET } from '@/pages/about/stylesheet';
+import { cn } from '@/utils/cn';
+
+// v13 랜딩의 "기록에서 다음 기회까지" 네 장면 시각화. 마크업과 스타일(ABOUT_STYLESHEET)은 v13을 그대로 옮겼다.
 // 화면 속 프로젝트와 문장은 개발 중인 연결을 설명하는 가상 예시다.
-const STYLESHEET = '/about-assets/technology.ec78a2301d.css';
 
 type Requirement = 'concurrency' | 'performance';
 
@@ -23,7 +25,7 @@ export function TechStory() {
 
   return (
     <div className="about-page">
-      <link rel="stylesheet" href={STYLESHEET} precedence="about" />
+      <link rel="stylesheet" href={ABOUT_STYLESHEET} precedence="about" />
       <div className="technology-scope">
         <svg className="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <defs>
@@ -322,7 +324,7 @@ export function TechStory() {
                     <h3>공고의 한 줄이, 배울 경험으로.</h3>
                     <p>JD에서 뽑은 요구사항도 같은 검색 엔진에 연결합니다.</p>
                   </div>
-                  <div className={`scene-visual jd-visual${matchCount ? 'is-matching' : ''}`}>
+                  <div className={cn('scene-visual jd-visual', matchCount > 0 && 'is-matching')}>
                     <div className="jd-card">
                       <span className="card-label">
                         <svg>
@@ -405,6 +407,13 @@ export function TechStory() {
                   관련성 평가와 추천 설명은 연결 목표를 보여줍니다. 키워드 결합과 후보 재정렬은 개선
                   방향입니다.
                 </p>
+                <a
+                  href="https://github.com/woowacourse-teams/2026-shout-outz/discussions/503"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  도입 배경 읽기 ↗
+                </a>
               </details>
             </div>
           </div>
