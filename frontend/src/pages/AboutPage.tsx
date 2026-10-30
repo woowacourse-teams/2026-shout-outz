@@ -1,8 +1,11 @@
 import { useEffect, useRef } from 'react';
+import { Link } from '@tanstack/react-router';
 import { aboutBeforeProjects, aboutAfterProjects } from '@/pages/about/markup';
 import { initAbout } from '@/pages/about/interactive';
-import { ProjectCard } from '@/components/projects/ProjectCard';
-import projects from '@/pages/about/project-snapshot.json';
+import { AsyncBoundary } from '@/components/AsyncBoundary';
+import { Button } from '@/components/Button';
+import { ClientOnly } from '@/components/ClientOnly';
+import { LatestProjectList } from '@/components/projects/LatestProjectList';
 
 export function AboutPage() {
   const root = useRef<HTMLDivElement>(null);
@@ -33,14 +36,31 @@ export function AboutPage() {
               <h2>프로젝트를 둘러보세요</h2>
               <p>크루들이 만든 프로젝트를 살펴보세요.</p>
             </div>
-            <ul aria-label="프로젝트 예시" className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              {projects.map((project) => (
-                <li key={project.slug}>
-                  <ProjectCard {...project} />
-                </li>
-              ))}
-            </ul>
-            <p className="mt-5 text-sm text-gray-700">프로토타입에 수집된 프로젝트 스냅샷입니다.</p>
+            {/* 좋아요 여부처럼 사용자별로 달라지는 데이터라 정적 HTML에 넣지 않고 브라우저에서 불러옵니다. */}
+            <div className="min-h-80">
+              <ClientOnly>
+                <AsyncBoundary
+                  fallback={
+                    <p role="status" className="py-16 text-center text-gray-500">
+                      프로젝트를 불러오는 중입니다.
+                    </p>
+                  }
+                  errorFallback={(_error, reset) => (
+                    <div role="alert" className="space-y-4 py-16 text-center">
+                      <p className="text-gray-600">프로젝트를 불러오지 못했습니다.</p>
+                      <Button variant="outline" onClick={reset}>
+                        다시 시도
+                      </Button>
+                    </div>
+                  )}
+                >
+                  <LatestProjectList limit={3} surface="about" />
+                </AsyncBoundary>
+              </ClientOnly>
+            </div>
+            <Link to="/projects" className="inline-link mt-5">
+              프로젝트 전체 보기 <span aria-hidden="true">→</span>
+            </Link>
           </section>
           <div className="about-content" dangerouslySetInnerHTML={{ __html: aboutAfterProjects }} />
         </main>

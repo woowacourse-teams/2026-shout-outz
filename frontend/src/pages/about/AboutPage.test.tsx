@@ -6,6 +6,14 @@ import userEvent from '@testing-library/user-event';
 import { AboutPage } from '@/pages/AboutPage';
 import snapshot from '@/pages/about/prototype-snapshot.json';
 
+// 랜딩 상호작용만 검증한다. 라우터와 API가 필요한 프로젝트 목록은 about.test.tsx에서 다룬다.
+jest.mock('@tanstack/react-router', () => ({
+  Link: ({ to, ...props }: { to: string }) => <a href={to} {...props} />,
+}));
+jest.mock('@/components/projects/LatestProjectList', () => ({
+  LatestProjectList: () => <ul aria-label="최신 프로젝트" />,
+}));
+
 test('SSG includes the first example and hydrates without replacing its content', async () => {
   const container = document.createElement('div');
   container.innerHTML = renderToString(<AboutPage />);
@@ -126,15 +134,8 @@ test('공고 역량을 선택하면 해당 스냅샷의 자료와 빈 단계를 
   expect(screen.getAllByText('이 단계 자료는 아직 없어요.').length).toBeGreaterThan(0);
 });
 
-test('프로젝트 예시는 API 요청 없이 정적 HTML과 화면에 표시된다', () => {
-  const html = renderToString(<AboutPage />);
-  expect(html).toContain('팀의 결정을 모두의 기억으로, Knot');
-  expect(html).toContain('자리하나?');
-  expect(html).toContain('여기담');
-  expect(html).not.toContain('프로젝트를 불러오는 중입니다');
+test('프로젝트 목록은 정적 HTML에 넣지 않고 브라우저에서만 그린다', () => {
+  expect(renderToString(<AboutPage />)).not.toContain('최신 프로젝트');
   render(<AboutPage />);
-  const projects = screen.getByRole('list', { name: '프로젝트 예시' });
-  expect(within(projects).getByRole('heading', { name: 'Knot' })).toBeInTheDocument();
-  expect(within(projects).getByRole('heading', { name: '자리하나?' })).toBeInTheDocument();
-  expect(within(projects).getByRole('heading', { name: '여기담' })).toBeInTheDocument();
+  expect(screen.getByRole('list', { name: '최신 프로젝트' })).toBeInTheDocument();
 });
