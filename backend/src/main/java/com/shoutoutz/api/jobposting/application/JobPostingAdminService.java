@@ -18,10 +18,13 @@ import com.shoutoutz.api.jobposting.domain.JobRequirement;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtractRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingSaveRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisibilityUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingExtractResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingFindAllResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingSaveResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingUpdateResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingVisibilityUpdateResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Clock;
 import java.util.List;
@@ -103,6 +106,56 @@ public class JobPostingAdminService {
         JobPosting jobPosting = jobPostingRepository.findById(jobPostingId)
                 .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
         return AdminJobPostingDetailResponse.from(jobPosting);
+    }
+
+    /**
+     * 잠그고 읽기, 고치기, 저장을 한 트랜잭션에서 한다. 잠금은 커밋할 때 풀린다.
+     * 잠그기 전에 같은 트랜잭션에서 공고를 읽으면 그 값이 JPA 1차 캐시에 남아 잠근 뒤에도 쓰이므로, 잠그며 처음 읽는다.
+     */
+    @Transactional
+    public AdminJobPostingUpdateResponse update(
+            long jobPostingId,
+            UserRole role,
+            AdminJobPostingSaveRequest request
+    ) {
+        validateAdmin(role);
+        JobPosting saved = jobPostingRepository.findByIdForUpdate(jobPostingId)
+                .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
+        JobPosting updated = saved.update(
+                request.sourceUrl(),
+                request.content(),
+                request.companyName(),
+                request.jobRole(),
+                request.careerRequirement(),
+                request.title(),
+                request.employmentType(),
+                request.deadline(),
+                toRequirements(request.requirements()),
+                clock.instant()
+        );
+        boolean reanalyzed = !updated.hasSameContentAs(saved);
+        jobPostingRepository.update(updated, reanalyzed);
+        return AdminJobPostingUpdateResponse.of(updated, reanalyzed);
+    }
+
+    @Transactional
+    public AdminJobPostingVisibilityUpdateResponse updateVisibility(
+            long jobPostingId,
+            UserRole role,
+            AdminJobPostingVisibilityUpdateRequest request
+    ) {
+        validateAdmin(role);
+        return jobPostingRepository.updateHiddenAt(jobPostingId, request.hidden(), clock.instant())
+                .map(AdminJobPostingVisibilityUpdateResponse::from)
+                .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
+    }
+
+    @Transactional
+    public void delete(long jobPostingId, UserRole role) {
+        validateAdmin(role);
+        if (!jobPostingRepository.deleteById(jobPostingId)) {
+            throw new EntityNotFoundException(JOB_POSTING_NOT_FOUND);
+        }
     }
 
     /**

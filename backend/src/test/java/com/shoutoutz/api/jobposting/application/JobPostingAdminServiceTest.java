@@ -3,11 +3,14 @@ package com.shoutoutz.api.jobposting.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
@@ -17,9 +20,11 @@ import com.shoutoutz.api.jobposting.application.dto.JobPostingCursor;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingPage;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingSummary;
 import com.shoutoutz.api.jobposting.domain.JobPosting;
+import com.shoutoutz.api.jobposting.domain.JobPostingContentHash;
 import com.shoutoutz.api.jobposting.domain.JobPostingErrorCode;
 import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobPostingUrl;
+import com.shoutoutz.api.jobposting.domain.JobPostingVisibility;
 import com.shoutoutz.api.jobposting.domain.JobRequirement;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
@@ -27,6 +32,9 @@ import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtractRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingSaveRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisibilityUpdateRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingUpdateResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingVisibilityUpdateResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Clock;
 import java.time.Instant;
@@ -209,6 +217,139 @@ class JobPostingAdminServiceTest {
         verifyNoInteractions(jobPostingRepository);
     }
 
+    @Test
+    void 원문이_같으면_공고_정보만_고치고_다시_분석하지_않는다() {
+        when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(analyzed()));
+
+        var response = service.update(100L, UserRole.ADMIN, updateRequest("원문", "백엔드 개발자 (경력)"));
+
+        assertThat(response).isEqualTo(new AdminJobPostingUpdateResponse(100L, MatchingStatus.READY, false));
+        ArgumentCaptor<JobPosting> captor = ArgumentCaptor.forClass(JobPosting.class);
+        verify(jobPostingRepository).update(captor.capture(), eq(false));
+        JobPosting updated = captor.getValue();
+        assertThat(updated.getTitle()).isEqualTo("백엔드 개발자 (경력)");
+        assertThat(updated.getUpdatedAt()).isEqualTo(NOW);
+        assertThat(updated.getRequirements()).extracting(JobRequirement::getId).containsExactly(1000L);
+    }
+
+    @Test
+    void 원문이_바뀌면_받은_역량으로_바꾸고_다시_분석한다() {
+        when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(analyzed()));
+
+        var response = service.update(100L, UserRole.ADMIN, updateRequest("바뀐 원문", "백엔드 개발자"));
+
+        assertThat(response).isEqualTo(new AdminJobPostingUpdateResponse(100L, MatchingStatus.PENDING, true));
+        ArgumentCaptor<JobPosting> captor = ArgumentCaptor.forClass(JobPosting.class);
+        verify(jobPostingRepository).update(captor.capture(), eq(true));
+        assertThat(captor.getValue().getRequirements())
+                .extracting(JobRequirement::getDisplayOrder, JobRequirement::getName, JobRequirement::getStatus)
+                .containsExactly(
+                        Tuple.tuple(1, "Spring", MatchingStatus.PENDING),
+                        Tuple.tuple(2, "Kafka", MatchingStatus.PENDING)
+                );
+    }
+
+    @Test
+    void 공고_주소가_다르면_고치지_않는다() {
+        when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(analyzed()));
+        AdminJobPostingSaveRequest request = new AdminJobPostingSaveRequest(
+                "https://example.com/jobs/2", "원문", "회사", JobRole.BACKEND, "신입", "백엔드 개발자", "정규직",
+                LocalDate.of(2026, 12, 31),
+                List.of(new AdminJobPostingSaveRequest.Requirement("Spring", RequirementCategory.REQUIRED, "설명"))
+        );
+
+        assertThatThrownBy(() -> service.update(100L, UserRole.ADMIN, request))
+                .isInstanceOf(BadRequestException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_URL_MISMATCH);
+        verify(jobPostingRepository, never()).update(any(), anyBoolean());
+    }
+
+    @Test
+    void 없는_공고를_고치면_404를_던진다() {
+        when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(100L, UserRole.ADMIN, saveRequest()))
+                .isInstanceOf(EntityNotFoundException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_NOT_FOUND);
+        verify(jobPostingRepository, never()).update(any(), anyBoolean());
+    }
+
+    @Test
+    void 관리자가_아니면_공고를_고치지_않는다() {
+        assertThatThrownBy(() -> service.update(100L, UserRole.USER, saveRequest()))
+                .isInstanceOf(ForbiddenException.class);
+        verifyNoInteractions(jobPostingRepository);
+    }
+
+    @Test
+    void 공고를_숨기고_숨긴_시각을_돌려준다() {
+        when(jobPostingRepository.updateHiddenAt(100L, true, NOW))
+                .thenReturn(Optional.of(new JobPostingVisibility(100L, NOW)));
+
+        var response = service.updateVisibility(
+                100L, UserRole.ADMIN, new AdminJobPostingVisibilityUpdateRequest(true));
+
+        assertThat(response).isEqualTo(new AdminJobPostingVisibilityUpdateResponse(100L, true, NOW));
+    }
+
+    @Test
+    void 숨김을_해제하면_숨긴_시각을_비워_돌려준다() {
+        when(jobPostingRepository.updateHiddenAt(100L, false, NOW))
+                .thenReturn(Optional.of(new JobPostingVisibility(100L, null)));
+
+        var response = service.updateVisibility(
+                100L, UserRole.ADMIN, new AdminJobPostingVisibilityUpdateRequest(false));
+
+        assertThat(response).isEqualTo(new AdminJobPostingVisibilityUpdateResponse(100L, false, null));
+    }
+
+    @Test
+    void 없는_공고의_숨김을_바꾸면_404를_던진다() {
+        when(jobPostingRepository.updateHiddenAt(100L, true, NOW)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateVisibility(
+                100L, UserRole.ADMIN, new AdminJobPostingVisibilityUpdateRequest(true)))
+                .isInstanceOf(EntityNotFoundException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_NOT_FOUND);
+    }
+
+    @Test
+    void 관리자가_아니면_숨김을_바꾸지_않는다() {
+        assertThatThrownBy(() -> service.updateVisibility(
+                100L, UserRole.USER, new AdminJobPostingVisibilityUpdateRequest(true)))
+                .isInstanceOf(ForbiddenException.class);
+        verifyNoInteractions(jobPostingRepository);
+    }
+
+    @Test
+    void 공고를_지운다() {
+        when(jobPostingRepository.deleteById(100L)).thenReturn(true);
+
+        service.delete(100L, UserRole.ADMIN);
+
+        verify(jobPostingRepository).deleteById(100L);
+    }
+
+    @Test
+    void 없는_공고를_지우면_404를_던진다() {
+        when(jobPostingRepository.deleteById(100L)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.delete(100L, UserRole.ADMIN))
+                .isInstanceOf(EntityNotFoundException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_NOT_FOUND);
+    }
+
+    @Test
+    void 관리자가_아니면_공고를_지우지_않는다() {
+        assertThatThrownBy(() -> service.delete(100L, UserRole.USER))
+                .isInstanceOf(ForbiddenException.class);
+        verifyNoInteractions(jobPostingRepository);
+    }
+
     private ExtractedJobPosting extracted() {
         return new ExtractedJobPosting(
                 "회사", JobRole.BACKEND, "백엔드 개발자", "정규직", "신입", LocalDate.of(2026, 12, 31),
@@ -238,6 +379,30 @@ class JobPostingAdminServiceTest {
                                 MatchingStatus.PENDING)
                 ),
                 NOW, NOW
+        );
+    }
+
+    private AdminJobPostingSaveRequest updateRequest(String content, String title) {
+        return new AdminJobPostingSaveRequest(
+                SOURCE_URL, content, "회사", JobRole.BACKEND, "신입", title, "정규직",
+                LocalDate.of(2026, 12, 31),
+                List.of(
+                        new AdminJobPostingSaveRequest.Requirement("Spring", RequirementCategory.REQUIRED, "설명"),
+                        new AdminJobPostingSaveRequest.Requirement("Kafka", RequirementCategory.PREFERRED, "설명")
+                )
+        );
+    }
+
+    /**
+     * '원문'으로 등록해 분석까지 끝난 공고. 원문이 같은지 보려면 해시가 실제 원문의 해시여야 한다.
+     */
+    private JobPosting analyzed() {
+        return JobPosting.reconstitute(
+                100L, NORMALIZED_URL.value(), JobPostingContentHash.from("원문").value(), "회사", JobRole.BACKEND,
+                "신입", "백엔드 개발자", "정규직", LocalDate.of(2026, 12, 31), MatchingStatus.READY, null, 3L,
+                List.of(JobRequirement.reconstitute(1000L, 1, "Spring", RequirementCategory.REQUIRED, "설명",
+                        MatchingStatus.READY)),
+                NOW.minusSeconds(3600), NOW.minusSeconds(3600)
         );
     }
 
