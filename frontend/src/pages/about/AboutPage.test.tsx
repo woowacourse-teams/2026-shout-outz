@@ -1,30 +1,39 @@
-import { StrictMode, act } from 'react';
+import { StrictMode, act, type ComponentProps } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
 import { AboutPage } from '@/pages/AboutPage';
-import snapshot from '@/pages/about/prototype-snapshot.json';
+import job from '@/pages/about/data/job.json';
+import { undot } from '@/pages/about/resources';
 
-// 랜딩 상호작용만 검증한다. 라우터와 API가 필요한 프로젝트 목록은 about.test.tsx에서 다룬다.
+// 라우터 없이 화면만 검증한다. 실제 라우트 연결은 AboutRoute.test.tsx에서 다룬다.
 jest.mock('@tanstack/react-router', () => ({
-  Link: ({ to, ...props }: { to: string }) => <a href={to} {...props} />,
-}));
-jest.mock('@/components/projects/LatestProjectList', () => ({
-  LatestProjectList: () => <ul aria-label="최신 프로젝트" />,
+  Link: ({
+    to,
+    params,
+    ...props
+  }: ComponentProps<'a'> & { to: string; params?: Record<string, string> }) => (
+    <a
+      href={Object.entries(params ?? {}).reduce(
+        (path, [key, value]) => path.replace(`$${key}`, value),
+        to,
+      )}
+      {...props}
+    />
+  ),
 }));
 
-test('SSG includes the first example and hydrates without replacing its content', async () => {
+const resultsSection = () => screen.getByRole('region', { name: '우테코 경험 전체 보기' });
+
+test('정적 HTML에 기본 검색 결과가 들어 있고 StrictMode hydration에서 내용을 바꾸지 않는다', async () => {
   const container = document.createElement('div');
   container.innerHTML = renderToString(<AboutPage />);
   document.body.append(container);
-  expect(
-    within(container).getByText(snapshot.topicSamples.concurrency.groups[0]!.title),
-  ).toBeInTheDocument();
-  expect(container.querySelector('.ref-job-header img')).toHaveAttribute(
-    'src',
-    '/about-assets/assets/toss-bank.png',
-  );
+  expect(container.textContent).toContain('동시성 제어/락 주제로 찾았어요.');
+  expect(container.textContent).toContain('Rilog.');
+
   const heading = within(container).getByRole('heading', { level: 1 });
   const onRecoverableError = jest.fn();
   let root: ReturnType<typeof hydrateRoot>;
@@ -39,103 +48,75 @@ test('SSG includes the first example and hydrates without replacing its content'
   });
   expect(onRecoverableError).not.toHaveBeenCalled();
   expect(within(container).getByRole('heading', { level: 1 })).toBe(heading);
-  await userEvent.click(within(container).getAllByRole('button', { name: 'N+1' })[0]!);
-  expect(within(container).getByText('N+1 문제')).toBeInTheDocument();
   await act(async () => root.unmount());
   container.remove();
 });
 
-test('StrictMode, independent cards, example selection and remount keep working', async () => {
+test('추천 검색어를 누르면 그 주제의 자료와 검색 화면 링크로 바뀐다', async () => {
   const user = userEvent.setup();
-  const view = render(
-    <StrictMode>
-      <AboutPage />
-    </StrictMode>,
-  );
-  await user.click(screen.getAllByRole('button', { name: 'N+1' })[0]!);
-  expect(screen.getByRole('searchbox', { name: '경험 검색' })).toHaveValue('N+1');
-  await user.click(screen.getByRole('button', { name: snapshot.jobKeywords[1]!.keyword }));
-  expect(screen.getByText(snapshot.jobKeywords[1]!.groups[0]!.title)).toBeInTheDocument();
-  await user.click(screen.getByRole('button', { name: '조회 성능 개선' }));
-  expect(screen.getByRole('heading', { name: /반복 조회를 줄인\s+쿼리 개선/ })).toBeInTheDocument();
-  const summaries = screen.getAllByText('고른 이유와 한 일 보기');
-  await user.click(summaries[0]!);
-  await user.click(summaries[1]!);
-  expect(summaries[0]!.closest('details')).toHaveAttribute('open');
-  expect(summaries[1]!.closest('details')).toHaveAttribute('open');
-  view.unmount();
-  render(
-    <StrictMode>
-      <AboutPage />
-    </StrictMode>,
-  );
-  expect(screen.getByRole('searchbox', { name: '경험 검색' })).toHaveValue('동시성');
-  await user.click(screen.getByRole('button', { name: '조회 성능 개선' }));
-  expect(screen.getByRole('heading', { name: /반복 조회를 줄인\s+쿼리 개선/ })).toBeInTheDocument();
-});
+  render(<AboutPage />);
+  await user.click(screen.getByRole('button', { name: 'N+1' }));
 
-test('events stay inside the mounted page and cleanup detaches old listeners', async () => {
-  const user = userEvent.setup();
-  const first = render(<AboutPage />);
-  const second = render(<AboutPage />);
-  const detachedButton = within(first.container).getByRole('button', { name: '조회 성능 개선' });
-  const detachedPage = first.container.querySelector('.about-page')!;
-  await user.click(detachedButton);
+  expect(screen.getByRole('button', { name: 'N+1' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('button', { name: '동시성' })).toHaveAttribute('aria-pressed', 'false');
+  expect(within(resultsSection()).getByText('N+1 문제')).toBeInTheDocument();
+  expect(screen.getByRole('searchbox', { name: '기술 이야기 검색' })).toHaveValue('N+1');
   expect(
-    within(second.container).queryByRole('heading', { name: /반복 조회를 줄인\s+쿼리 개선/ }),
-  ).not.toBeInTheDocument();
-  first.unmount();
-  detachedPage.querySelector('#jd-result-title')!.textContent = 'unmounted';
-  detachedButton.click();
-  expect(detachedPage.querySelector('#jd-result-title')).toHaveTextContent('unmounted');
+    within(resultsSection()).getByRole('link', { name: /검색 화면에서 더 찾아보기/ }),
+  ).toHaveAttribute('href', 'https://project-after-psi.vercel.app/#/projects/search?q=N%2B1');
 });
 
-test('랜딩 본문의 외부 이동은 프로토타입 링크 하나로 제공한다', () => {
-  const { container } = render(<AboutPage />);
-  const externalLinks = [...container.querySelectorAll('a[href^="http"]')];
-  expect(externalLinks).toHaveLength(1);
-  expect(externalLinks[0]).toHaveAttribute(
+test('직접 검색하면 담아 두지 않은 주제는 검색 화면으로, 없는 주제는 안내로 보여 준다', async () => {
+  const user = userEvent.setup();
+  render(<AboutPage />);
+  const input = screen.getByRole('searchbox', { name: '기술 이야기 검색' });
+
+  await user.clear(input);
+  await user.type(input, 'JPA{Enter}');
+  expect(
+    within(resultsSection()).getByText("'JPA/Hibernate' 주제 자료는 검색 화면에서 볼 수 있어요."),
+  ).toBeInTheDocument();
+
+  await user.clear(input);
+  await user.type(input, '없는주제어{Enter}');
+  expect(
+    within(resultsSection()).getByText("'없는주제어'에 맞는 기술 주제를 아직 못 찾았어요."),
+  ).toBeInTheDocument();
+});
+
+test('공고 역량을 고르면 그 역량의 이유와 자료로 바뀐다', async () => {
+  const user = userEvent.setup();
+  render(<AboutPage />);
+  const jobs = screen.getByRole('region', { name: '채용 공고에 맞는 프로젝트 사례 찾기' });
+  const target = job.keywords[2]!;
+
+  await user.click(within(jobs).getByRole('button', { name: undot(target.keyword) }));
+  expect(within(jobs).getByRole('button', { name: undot(target.keyword) })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  expect(within(jobs).getByText(undot(target.reason))).toBeInTheDocument();
+  // 가운뎃점은 프로토타입처럼 쉼표로 보여 준다.
+  expect(within(jobs).getByRole('button', { name: 'Kotlin, Spring' })).toBeInTheDocument();
+});
+
+test('서비스에 있는 화면은 내부 주소로, 없는 화면은 프로토타입으로 연결한다', () => {
+  render(<AboutPage />);
+  const projects = screen.getByRole('list', { name: '추천 프로젝트' });
+  expect(
+    within(projects)
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href')),
+  ).toEqual(['/projects/@rilog', '/projects/@shout-outz', '/projects/@harudle']);
+  expect(screen.getByRole('link', { name: '프로젝트 전체 둘러보기' })).toHaveAttribute(
     'href',
-    'https://project-after-psi.vercel.app/#/projects',
+    '/projects',
   );
-});
-
-test.each([
-  ['무중단 배포', 'deployment'],
-  ['인덱스', 'index'],
-  ['React 렌더링', 'react'],
-  ['WebSocket', 'websocket'],
-] as const)('추천 검색어 %s를 선택하면 해당 주제의 자료를 보여준다', async (keyword, key) => {
-  const user = userEvent.setup();
-  render(
-    <StrictMode>
-      <AboutPage />
-    </StrictMode>,
+  expect(screen.getByRole('link', { name: '공고 키워드로 찾기' })).toHaveAttribute(
+    'href',
+    'https://project-after-psi.vercel.app/#/projects/jobs',
   );
-  await user.click(screen.getAllByRole('button', { name: keyword })[0]!);
-  expect(screen.getByRole('searchbox', { name: '경험 검색' })).toHaveValue(keyword);
-  expect(document.querySelector('#ref-category')).toHaveTextContent(
-    snapshot.topicSamples[key].category,
-  );
-  const first = snapshot.topicSamples[key].groups[0]!;
-  expect(screen.getAllByText(first.title).length).toBeGreaterThan(0);
-  expect(document.querySelector('#ref-groups a')).toBeNull();
-});
-
-test('공고 역량을 선택하면 해당 스냅샷의 자료와 빈 단계를 표시한다', async () => {
-  const user = userEvent.setup();
-  render(<AboutPage />);
-  for (const keyword of snapshot.jobKeywords) {
-    expect(screen.getByRole('button', { name: keyword.keyword })).toBeInTheDocument();
-  }
-  const redis = snapshot.jobKeywords.find((item) => item.keyword === 'Redis 캐시')!;
-  await user.click(screen.getByRole('button', { name: redis.keyword }));
-  expect(screen.getByText(redis.reason)).toBeInTheDocument();
-  expect(screen.getAllByText('이 단계 자료는 아직 없어요.').length).toBeGreaterThan(0);
-});
-
-test('프로젝트 목록은 정적 HTML에 넣지 않고 브라우저에서만 그린다', () => {
-  expect(renderToString(<AboutPage />)).not.toContain('최신 프로젝트');
-  render(<AboutPage />);
-  expect(screen.getByRole('list', { name: '최신 프로젝트' })).toBeInTheDocument();
+  expect(
+    screen.getByRole('link', { name: '샤라웃의 실제 이력서와 포트폴리오 열기' }),
+  ).toHaveAttribute('href', 'https://project-after-psi.vercel.app/#/projects/@shout-outz');
 });

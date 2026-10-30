@@ -328,3 +328,22 @@
   --color-white: var(--source-white);
   --color-black: var(--source-black);
 }
+
+/* 소개 페이지 첫 문장의 앞 구절이 위로 넘어가며 바뀐다. 줄 높이(1.4em)만큼씩 올린다. */
+@theme {
+  --animate-about-hero-slot: about-hero-slot 7s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+
+  @keyframes about-hero-slot {
+    0%,
+    43% {
+      transform: translateY(0);
+    }
+    50%,
+    93% {
+      transform: translateY(-1.4em);
+    }
+    100% {
+      transform: translateY(-2.8em);
+    }
+  }
+}

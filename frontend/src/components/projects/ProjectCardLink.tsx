@@ -1,12 +1,11 @@
 import { Link } from '@tanstack/react-router';
 
-import { ProjectCard } from '@/components/projects/ProjectCard';
-import { type ProjectSummary } from '@/types/project';
+import { ProjectCard, type ProjectCardProps } from '@/components/projects/ProjectCard';
 import { analytics } from '@/utils/analytics';
 import { toProjectSlugParam } from '@/utils/project';
 
 export interface ProjectCardLinkProps {
-  project: ProjectSummary;
+  project: Omit<ProjectCardProps, 'approvalStatus' | 'rejectReason'> & { slug: string };
   /** 카드를 누른 화면. analytics의 `surface`와 `from`으로 보낸다. */
   surface: string;
 }
