@@ -38,17 +38,21 @@ jobs:
     runs-on: ubuntu-latest
     # Action job 전체 실행 시간 한도. AI 단계(55분)가 끝난 뒤 실패 처리 단계가 돌 시간을 남겨 둔다.
     timeout-minutes: 60
+    # 기본 GITHUB_TOKEN으로 브랜치 push, 이슈·Draft PR 생성을 한다.
+    # GITHUB_TOKEN으로 만든 push와 PR은 다른 워크플로우(dev 타입 검사 등)를 트리거하지 않는다.
+    # QA PR의 검사는 사람이 커밋을 추가하거나 PR을 다시 열 때 돈다.
     permissions:
-      contents: read
+      contents: write
+      issues: write
+      pull-requests: write
     steps:
-      # PAT로 checkout해야 push와 PR 생성이 다른 워크플로우(dev 타입 검사 등)를 트리거함
       # 워크플로우를 실행한 브랜치의 스킬·스크립트를 쓴다. 스케줄 실행은 기본 브랜치(develop)에서 돈다.
       # 수동 실행은 `.github/scripts/qa-autofix-run-branch.sh`로 머지 전 브랜치를 시험할 때 쓴다.
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
-          token: ${{ secrets.QA_BOT_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
@@ -75,10 +79,10 @@ jobs:
         timeout-minutes: 55
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          GH_TOKEN: ${{ secrets.QA_BOT_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          github_token: ${{ secrets.QA_BOT_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: "/qa-autofix ${{ needs.find-cards.outputs.card_ids }}"
           claude_args: |
             --mcp-config .github/qa-autofix/mcp.json
