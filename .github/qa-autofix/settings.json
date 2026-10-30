@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "mcp__notion",
+      "Bash(git:*)",
+      "Bash(gh label list:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh pr create:*)",
+      "Bash(npm run:*)",
+      "Bash(npm ci:*)"
+    ]
+  }
+}

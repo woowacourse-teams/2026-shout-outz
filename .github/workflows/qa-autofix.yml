@@ -1,5 +1,12 @@
 name: QA Autofix
 
+# 설정 위치 (값마다 한 곳에서만 고친다)
+# - Node 버전: frontend/.nvmrc
+# - Notion MCP 패키지 버전, Notion-Version 헤더: .github/qa-autofix/mcp.json
+# - 허용 도구, AI 모델: .github/qa-autofix/settings.json (모델은 `"model"` 키로 지정, 없으면 기본값)
+# - 최대 턴 수, 실행 시간 한도: 이 파일
+# - PR 리뷰어: .claude/skills/qa-autofix/SKILL.md
+
 on:
   schedule:
     - cron: "7,37 * * * *" # 30분 간격 (정각 지연을 피해 7분, 37분)
@@ -80,8 +87,8 @@ jobs:
           prompt: "/qa-autofix ${{ needs.find-cards.outputs.card_ids }}"
           claude_args: |
             --mcp-config .github/qa-autofix/mcp.json
+            --settings .github/qa-autofix/settings.json
             --max-turns 120
-            --allowedTools "Read,Edit,Write,Glob,Grep,mcp__notion,Bash(git:*),Bash(gh label list:*),Bash(gh issue create:*),Bash(gh pr create:*),Bash(npm run:*),Bash(npm ci:*)"
 
       # AI 단계 결과와 관계없이 실행한다. 단계가 성공으로 끝나도 마무리하지 못한 카드가 있을 수 있다.
       # 아직 `AI 처리중`인 카드는 `실패`로 바꾸고, `실패` 카드에는 거부된 명령을 댓글로 남긴다.
