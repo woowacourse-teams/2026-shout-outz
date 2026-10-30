@@ -86,7 +86,10 @@ test('랜딩 본문의 외부 이동은 프로토타입 링크 하나로 제공�
   const { container } = render(<AboutPage />);
   const externalLinks = [...container.querySelectorAll('a[href^="http"]')];
   expect(externalLinks).toHaveLength(1);
-  expect(externalLinks[0]).toHaveAttribute('href', 'https://project-after-psi.vercel.app/#/about');
+  expect(externalLinks[0]).toHaveAttribute(
+    'href',
+    'https://project-after-psi.vercel.app/#/projects',
+  );
 });
 
 test.each([
