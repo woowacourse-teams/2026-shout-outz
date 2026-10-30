@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
+import { isHTTPError } from 'ky';
 import { pipeline } from 'node:stream/promises';
 import { getPreloadFiles, loadBuildAssets } from '../ssg/assets';
 import { resolveHtmlPath } from '../ssg/paths';
@@ -98,8 +99,16 @@ app.get('/{*path}', async (req, res) => {
           buildAssets,
           matches.map((match) => match.routeId),
         ),
+        queries: matches.flatMap(
+          (match) => match.staticData?.ssrQueries?.(match.params as Record<string, string>) ?? [],
+        ),
       });
     } catch (error) {
+      // 서버 렌더 전에 받은 데이터가 없다면(삭제된 글 등) 위의 없는 경로와 같이 CSR 셸 + 404로 응답합니다.
+      if (isHTTPError(error) && error.response.status === 404) {
+        res.status(404).sendFile(CSR_SHELL_PATH);
+        return;
+      }
       // 셸을 만들기 전에 실패하면 아직 응답을 시작하지 않았으므로 아래 SSG·CSR 셸로 넘어갑니다.
       console.error(`[ssr] ${req.originalUrl} 렌더 실패`, error);
     }
