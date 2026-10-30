@@ -180,7 +180,8 @@ class AdminJobPostingHttpApiTest {
         given(jobPostingAdminService.findAll(eq(UserRole.ADMIN), any(AdminJobPostingFindAllRequest.class)))
                 .willReturn(new AdminJobPostingFindAllResponse(
                         List.of(new AdminJobPostingFindAllResponse.Item(
-                                JOB_POSTING_ID, "우아한형제들", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, NOW)),
+                                JOB_POSTING_ID, "우아한형제들", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING,
+                                NOW.plusSeconds(3600), NOW)),
                         new SliceMetaResponse("next-cursor", true, 3L)
                 ));
 
@@ -215,6 +216,8 @@ class AdminJobPostingHttpApiTest {
                                         new EnumFields(JobRole.class).withPath("data[].jobRole").description("직무"),
                                         new EnumFields(MatchingStatus.class).withPath("data[].status")
                                                 .description("자료 분석 상태"),
+                                        fieldWithPath("data[].hiddenAt").type(STRING)
+                                                .description("숨긴 시각. 숨기지 않았으면 null").optional(),
                                         fieldWithPath("data[].createdAt").type(STRING).description("등록 시각"),
                                         fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING).description("다음 페이지 커서")
@@ -239,6 +242,7 @@ class AdminJobPostingHttpApiTest {
                         "정규직",
                         LocalDate.of(2026, 12, 31),
                         MatchingStatus.PENDING,
+                        null,
                         ADMIN_ID,
                         NOW,
                         List.of(new AdminJobPostingDetailResponse.Requirement(
@@ -494,6 +498,7 @@ class AdminJobPostingHttpApiTest {
                 fieldWithPath("data.employmentType").type(STRING).description("고용 형태").optional(),
                 fieldWithPath("data.deadline").type(STRING).description("마감일(yyyy-MM-dd)").optional(),
                 new EnumFields(MatchingStatus.class).withPath("data.status").description("자료 분석 상태"),
+                fieldWithPath("data.hiddenAt").type(STRING).description("숨긴 시각. 숨기지 않았으면 null").optional(),
                 fieldWithPath("data.registeredBy").type(NUMBER).description("등록한 관리자 ID"),
                 fieldWithPath("data.createdAt").type(STRING).description("등록 시각"),
                 fieldWithPath("data.requirements").type(ARRAY).description("역량 목록"),
