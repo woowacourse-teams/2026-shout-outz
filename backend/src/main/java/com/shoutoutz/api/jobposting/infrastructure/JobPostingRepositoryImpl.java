@@ -83,11 +83,48 @@ public class JobPostingRepositoryImpl implements JobPostingRepository {
     @Override
     @Transactional
     public boolean deleteById(long jobPostingId) {
-        MapSqlParameterSource posting = new MapSqlParameterSource("id", jobPostingId);
+        lockRequirements(jobPostingId);
+        return jdbcTemplate.update("DELETE FROM job_postings WHERE id = :id",
+                new MapSqlParameterSource("id", jobPostingId)) == 1;
+    }
+
+    /**
+     * 삭제와 같은 이유로 역량 행, 공고 행 순서로 잠근다.
+     * 역량은 잠근 뒤에 읽어야 Worker 가 막 저장한 상태를 본다.
+     */
+    @Override
+    @Transactional
+    public Optional<JobPosting> findByIdForUpdate(long jobPostingId) {
+        lockRequirements(jobPostingId);
+        return jobPostingJpaRepository.findForUpdate(jobPostingId)
+                .map(posting -> JobPostingMapper.toDomain(
+                        posting,
+                        jobRequirementJpaRepository.findAllByJobPostingIdOrderByDisplayOrderAsc(jobPostingId)));
+    }
+
+    /**
+     * 공고 칸은 잠근 뒤 읽은 값에 변경을 더한 것이라 엔티티로 그대로 저장한다.
+     * 역량은 같은 순서 번호가 겹치지 않도록 먼저 지운 뒤 넣는다.
+     */
+    @Override
+    @Transactional
+    public void update(JobPosting jobPosting, boolean replaceRequirements) {
+        jobPostingJpaRepository.save(JobPostingMapper.toEntity(jobPosting));
+        if (!replaceRequirements) {
+            return;
+        }
+        jdbcTemplate.update("DELETE FROM job_requirements WHERE job_posting_id = :id",
+                new MapSqlParameterSource("id", jobPosting.getId()));
+        jobRequirementJpaRepository.saveAll(JobPostingMapper.toRequirementEntities(jobPosting.getId(), jobPosting));
+    }
+
+    /**
+     * 조회 결과는 쓰지 않는다. 트랜잭션이 끝날 때까지 역량 행을 잡아 두는 것이 목적이다.
+     */
+    private void lockRequirements(long jobPostingId) {
         jdbcTemplate.queryForList(
                 "SELECT id FROM job_requirements WHERE job_posting_id = :id ORDER BY id FOR UPDATE",
-                posting, Long.class);
-        return jdbcTemplate.update("DELETE FROM job_postings WHERE id = :id", posting) == 1;
+                new MapSqlParameterSource("id", jobPostingId), Long.class);
     }
 
     /**

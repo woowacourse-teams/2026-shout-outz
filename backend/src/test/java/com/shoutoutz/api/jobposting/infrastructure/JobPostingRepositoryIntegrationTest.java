@@ -242,6 +242,97 @@ class JobPostingRepositoryIntegrationTest {
         assertThat(jobPostingRepository.deleteById(Long.MAX_VALUE)).isFalse();
     }
 
+    @Test
+    void 원문이_바뀌면_옛_역량과_추천_자료를_지우고_새_역량을_대기로_넣는다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+        long oldRequirementId = saved.getRequirements().getFirst().getId();
+        insertRecommendation(oldRequirementId);
+        jdbcTemplate.update("UPDATE job_postings SET status = 'READY' WHERE id = ?", saved.getId());
+        jdbcTemplate.update("UPDATE job_requirements SET status = 'READY', attempt_count = 1 WHERE job_posting_id = ?",
+                saved.getId());
+        jobPostingRepository.updateHiddenAt(saved.getId(), true, NOW.plusSeconds(30));
+        clearPersistenceContext();
+
+        JobPosting locked = jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow();
+        JobPosting updated = locked.update(
+                "https://careers.example.com/jobs/1", CONTENT + "\n- Kotlin 개발 경험", "예시 회사", JobRole.BACKEND,
+                "3년 이상", "백엔드 개발자", null, LocalDate.of(2026, 12, 31),
+                List.of(JobRequirement.create(1, "Kotlin", RequirementCategory.REQUIRED, "Kotlin 개발 경험")),
+                NOW.plusSeconds(60));
+        jobPostingRepository.update(updated, true);
+        clearPersistenceContext();
+
+        JobPosting found = jobPostingRepository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getStatus()).isEqualTo(MatchingStatus.PENDING);
+        assertThat(found.getContentHash()).isEqualTo(JobPostingContentHash.from(CONTENT + "\n- Kotlin 개발 경험"));
+        assertThat(found.getDeadline()).isEqualTo(LocalDate.of(2026, 12, 31));
+        assertThat(found.getHiddenAt()).isEqualTo(NOW.plusSeconds(30));
+        assertThat(found.getRequirements())
+                .extracting(JobRequirement::getName, JobRequirement::getStatus)
+                .containsExactly(tuple("Kotlin", MatchingStatus.PENDING));
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM requirement_recommendations WHERE job_requirement_id = ?", Integer.class,
+                oldRequirementId)).isZero();
+        assertThat(jdbcTemplate.queryForMap(
+                "SELECT attempt_count, created_at FROM job_requirements WHERE job_posting_id = ?", saved.getId()))
+                .satisfies(row -> {
+                    assertThat(row.get("attempt_count")).isEqualTo(0);
+                    assertThat(((Timestamp) row.get("created_at")).toInstant()).isEqualTo(NOW.plusSeconds(60));
+                });
+    }
+
+    @Test
+    void 원문이_같으면_공고_정보만_바꾸고_역량과_추천_자료와_매칭_칸을_그대로_둔다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+        List<Long> requirementIds = saved.getRequirements().stream().map(JobRequirement::getId).toList();
+        insertRecommendation(requirementIds.getFirst());
+        jdbcTemplate.update("UPDATE job_postings SET status = 'READY' WHERE id = ?", saved.getId());
+        jdbcTemplate.update("UPDATE job_requirements SET status = 'READY', attempt_count = 2 WHERE job_posting_id = ?",
+                saved.getId());
+        clearPersistenceContext();
+
+        JobPosting locked = jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow();
+        JobPosting updated = locked.update(
+                "https://careers.example.com/jobs/1", CONTENT, "바뀐 회사", JobRole.BACKEND, "3년 이상", "백엔드 개발자",
+                null, LocalDate.of(2026, 12, 31), List.of(), NOW.plusSeconds(60));
+        jobPostingRepository.update(updated, false);
+        clearPersistenceContext();
+
+        JobPosting found = jobPostingRepository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getCompanyName()).isEqualTo("바뀐 회사");
+        assertThat(found.getDeadline()).isEqualTo(LocalDate.of(2026, 12, 31));
+        assertThat(found.getStatus()).isEqualTo(MatchingStatus.READY);
+        assertThat(found.getRequirements()).extracting(JobRequirement::getId).isEqualTo(requirementIds);
+        assertThat(jdbcTemplate.queryForList(
+                "SELECT attempt_count FROM job_requirements WHERE job_posting_id = ?", Integer.class, saved.getId()))
+                .containsOnly(2);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM requirement_recommendations WHERE job_requirement_id = ?", Integer.class,
+                requirementIds.getFirst())).isOne();
+    }
+
+    @Test
+    void 없는_공고를_잠그고_읽으면_빈_값을_돌려준다() {
+        assertThat(jobPostingRepository.findByIdForUpdate(Long.MAX_VALUE)).isEmpty();
+    }
+
+    /**
+     * SQL 로 바꾼 값을 JPA 가 1차 캐시의 옛 값으로 읽지 않도록 비운다.
+     * 실제 요청은 트랜잭션마다 캐시가 비어 있어서 처음 읽을 때 DB 값을 본다.
+     */
+    private void clearPersistenceContext() {
+        entityManager.flush();
+        entityManager.clear();
+    }
+
+    private void insertRecommendation(long requirementId) {
+        jdbcTemplate.update("""
+                INSERT INTO requirement_recommendations (job_requirement_id, resource_source, resource_external_key,
+                                                         verdict, reason, evidence, similarity_score, created_at)
+                VALUES (?, 'GITHUB_PR', 'pr-1', 'MATCH', '판정 이유', '[]'::jsonb, 0.5, now())
+                """, requirementId);
+    }
+
     private JobPosting posting(String url, Instant now) {
         return JobPosting.register(
                 url,
