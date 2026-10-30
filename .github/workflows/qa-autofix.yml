@@ -1,5 +1,7 @@
 name: QA Autofix
 
+# 모델, 최대 턴 수, 실행 시간 한도, 리뷰어, 허용 도구는 .github/qa-autofix/config.jsonc에서 고친다.
+
 on:
   schedule:
     - cron: "7,37 * * * *" # 30분 간격 (정각 지연을 피해 7분, 37분)
@@ -16,16 +18,24 @@ jobs:
     outputs:
       card_ids: ${{ steps.find.outputs.card_ids }}
       count: ${{ steps.find.outputs.count }}
+      model: ${{ steps.config.outputs.model }}
+      max_turns: ${{ steps.config.outputs.max_turns }}
+      job_timeout_minutes: ${{ steps.config.outputs.job_timeout_minutes }}
+      ai_timeout_minutes: ${{ steps.config.outputs.ai_timeout_minutes }}
+      allowed_tools: ${{ steps.config.outputs.allowed_tools }}
     steps:
       - uses: actions/checkout@v6
         with:
           sparse-checkout: |
             .github/scripts
+            .github/qa-autofix
             frontend/.nvmrc
           sparse-checkout-cone-mode: false
       - uses: actions/setup-node@v4
         with:
           node-version-file: frontend/.nvmrc
+      - id: config
+        run: node .github/scripts/load-qa-config.mjs
       - id: find
         run: node .github/scripts/find-qa-cards.mjs
         env:
@@ -36,8 +46,8 @@ jobs:
     needs: find-cards
     if: needs.find-cards.outputs.count != '0'
     runs-on: ubuntu-latest
-    # Action job 전체 실행 시간 한도. AI 단계(55분)가 끝난 뒤 실패 처리 단계가 돌 시간을 남겨 둔다.
-    timeout-minutes: 60
+    # job 단위 timeout-minutes에는 env를 쓸 수 없어 find-cards job이 읽은 설정값을 쓴다.
+    timeout-minutes: ${{ fromJSON(needs.find-cards.outputs.job_timeout_minutes) }}
     # 기본 GITHUB_TOKEN으로 브랜치 push, 이슈·Draft PR 생성을 한다.
     # GITHUB_TOKEN으로 만든 push와 PR은 다른 워크플로우(dev 타입 검사 등)를 트리거하지 않는다.
     # QA PR의 검사는 사람이 커밋을 추가하거나 PR을 다시 열 때 돈다.
@@ -75,8 +85,7 @@ jobs:
 
       - id: claude
         uses: anthropics/claude-code-action@v1
-        # AI 단계 실행 시간 한도. 넘기면 이 단계만 실패하고 아래 실패 처리 단계가 실행된다.
-        timeout-minutes: 55
+        timeout-minutes: ${{ fromJSON(needs.find-cards.outputs.ai_timeout_minutes) }}
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -86,8 +95,9 @@ jobs:
           prompt: "/qa-autofix ${{ needs.find-cards.outputs.card_ids }}"
           claude_args: |
             --mcp-config .github/qa-autofix/mcp.json
-            --max-turns 120
-            --allowedTools "Read,Edit,Write,Glob,Grep,mcp__notion,Bash(git:*),Bash(gh label list:*),Bash(gh issue create:*),Bash(gh pr create:*),Bash(npm run:*),Bash(npm ci:*)"
+            --model ${{ needs.find-cards.outputs.model }}
+            --max-turns ${{ needs.find-cards.outputs.max_turns }}
+            --allowedTools "${{ needs.find-cards.outputs.allowed_tools }}"
 
       # AI 단계 결과와 관계없이 실행한다. 단계가 성공으로 끝나도 마무리하지 못한 카드가 있을 수 있다.
       # 아직 `AI 처리중`인 카드는 `실패`로 바꾸고, `실패` 카드에는 거부된 명령을 댓글로 남긴다.

@@ -1,7 +1,6 @@
 ---
 name: qa-autofix
 description: Notion QA 카드(상태=AI 대기, 작업 범위=frontend)를 받아 카드 1개당 브랜치 1개·Draft PR 1개로 frontend 수정 작업을 수행한다. GitHub Actions 폴링 워크플로우에서 카드 ID 목록을 인자로 받아 실행한다.
-allowed-tools: Read, Edit, Write, Glob, Grep, mcp__notion, Bash(git:*), Bash(gh label list:*), Bash(gh issue create:*), Bash(gh pr create:*), Bash(npm run:*), Bash(npm ci:*)
 ---
  
 # QA 자동 수정
@@ -32,7 +31,7 @@ allowed-tools: Read, Edit, Write, Glob, Grep, mcp__notion, Bash(git:*), Bash(gh 
    - `npm run typecheck --prefix frontend`
    - `npm run test --prefix frontend`
 7. **커밋**: `<작업 종류>(frontend): <한국어 요약>` 형식으로 커밋한다. 예: `fix(frontend): 목록의 좋아요 선택 상태 표시 수정`. 커밋 메시지에 이슈 번호와 `Co-Authored-By` 줄을 붙이지 않는다.
-8. **PR**: `develop`을 base로 Draft PR을 만들고, 이슈와 같은 라벨을 붙인다. 제목과 본문은 `.github/PULL_REQUEST_TEMPLATE.md` 형식을 따르고, 본문은 아래 **이슈·PR 본문** 규칙대로 파일로 넘기고, `closed #<이슈 번호>`와 다음 내용을 반드시 포함한다.
+8. **PR**: `develop`을 base로 Draft PR을 만들고, 이슈와 같은 라벨을 붙이고, `.github/qa-autofix/config.jsonc`의 `reviewers`를 `--reviewer <아이디>,<아이디>`로 넘겨 리뷰어를 지정한다. 제목과 본문은 `.github/PULL_REQUEST_TEMPLATE.md` 형식을 따르고, 본문은 아래 **이슈·PR 본문** 규칙대로 파일로 넘기고, `closed #<이슈 번호>`와 다음 내용을 반드시 포함한다.
    - Notion 카드 링크
    - 추정 원인
    - 변경 내용
@@ -89,4 +88,4 @@ allowed-tools: Read, Edit, Write, Glob, Grep, mcp__notion, Bash(git:*), Bash(gh 
 - `main` 또는 `develop`에 직접 push하지 않는다. push는 `git push -u origin <브랜치>`로 한다.
 - 명령은 저장소 루트에서 하나씩 실행한다. `cd`, `&&`, `|`로 묶거나 `npm --prefix ... run`처럼 순서를 바꾸면 허용 명령에 걸리지 않아 거부된다.
 - 사람에게 물어봐야 할 선택지가 생기면 묻지 않고 가장 적절하다고 판단한 방식으로 진행한다. 그 선택은 PR 본문의 **AI 판단 사항**에 고른 방식, 다른 선택지, 고른 이유를 함께 적는다. 예: 문구 표현, 여러 수정 위치 중 하나 선택, 명세에 없는 엣지 케이스 처리.
-- 이슈와 PR에 마일스톤, 프로젝트, 리뷰어는 지정하지 않는다. 개발자가 나중에 직접 붙인다.
+- 이슈와 PR에 마일스톤, 프로젝트는 지정하지 않는다. 개발자가 나중에 직접 붙인다.
