@@ -1,0 +1,23 @@
+{
+  "_comment": "8기 이후 팀 블로그 등록부. 서비스 등록 API(PR #512)가 배포되기 전까지 운영자가 직접 넣는다(kind = MANUAL). 서비스에 등록되지 않은 프로젝트도 레포 기준으로 넣는다(2026-10-22 사용자 결정). 블로그를 빼도 이미 받은 글은 지우지 않는다(결정 기록 18-5).",
+  "updated_at": "2026-10-22",
+  "projects": [
+    {"name": "샤라웆", "repo": "woowacourse-teams/2026-shout-outz", "in_service": true, "blogs": ["https://www.rilog.kr/@shout_outz"]},
+    {"name": "찰캌", "repo": "woowacourse-teams/2026-Chalkak", "in_service": true, "blogs": []},
+    {"name": "하루들", "repo": "woowacourse-teams/2026-Harudle", "in_service": true, "blogs": ["https://www.rilog.kr/@harudle"]},
+    {"name": "총총", "repo": "woowacourse-teams/2026-ChongChong", "in_service": true, "blogs": []},
+    {"name": "히유", "repo": "woowacourse-teams/2026-pheeeew", "in_service": true, "blogs": ["https://www.rilog.kr/@pheeeew"]},
+    {"name": "Rilog.", "repo": "woowacourse-teams/2026-rilog", "in_service": true, "blogs": ["https://www.rilog.kr/@rilog", "https://www.rilog.kr/@official"]},
+    {"name": "맵모리", "repo": "woowacourse-teams/2026-Mapmory", "in_service": true, "blogs": []},
+    {"name": "주차의 민족", "repo": "woowacourse-teams/2026-jumin", "in_service": true, "blogs": ["https://velog.io/@juchabros/posts", "https://www.rilog.kr/@jumin"]},
+    {"name": "가치가챠", "repo": "woowacourse-teams/2026-gachi-gacha", "in_service": true, "blogs": ["https://gachi-gacha.tistory.com/"]},
+    {"name": "예술in", "repo": "woowacourse-teams/2026-yesulin", "in_service": true, "blogs": ["https://velog.io/@yesulin/posts"]},
+    {"name": "쏙", "repo": "woowacourse-teams/2026-sssOK", "in_service": true, "blogs": ["https://www.rilog.kr/@sssok"]},
+    {"name": "여기담", "repo": "woowacourse-teams/2026-Yeogidam", "in_service": true, "blogs": []},
+    {"name": "책책", "repo": "woowacourse-teams/2026-chaekchaek", "in_service": false, "blogs": ["https://www.rilog.kr/@chaekchaek"]},
+    {"name": "거슬러", "repo": "woowacourse-teams/2026-salmonbus", "in_service": false, "blogs": ["https://www.rilog.kr/@gustler"]},
+    {"name": "자취선배", "repo": "woowacourse-teams/2026-jachwi-sunbae", "in_service": false, "blogs": ["https://www.rilog.kr/@jachwi_sunbae"]},
+    {"name": "노트", "repo": "woowacourse-teams/2026-knot", "in_service": false, "blogs": ["https://www.rilog.kr/@knot"]},
+    {"name": "드비카", "repo": "woowacourse-teams/2026-Devica", "in_service": false, "blogs": ["https://www.rilog.kr/@devica"]}
+  ]
+}
