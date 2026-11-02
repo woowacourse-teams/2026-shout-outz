@@ -95,6 +95,7 @@ def collect(repos: list[str], run_id: str, force: bool = False) -> tuple[dict, l
             report["repos"].append(info)
         if i % 10 == 0:
             store.flush()
+            atomic_write(cursor_path, (json.dumps(heads, ensure_ascii=False, sort_keys=True, indent=1) + "\n").encode())
             print(f"[{i}/{len(repos)}] {report['counts']} 실패 {len(report['failures'])}", flush=True)
     store.flush()
     atomic_write(cursor_path, (json.dumps(heads, ensure_ascii=False, sort_keys=True, indent=1) + "\n").encode())

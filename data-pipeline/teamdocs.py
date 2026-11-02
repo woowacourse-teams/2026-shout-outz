@@ -91,11 +91,26 @@ class Store:
         self.source, self.run_id = source, run_id
         self.changes: list[dict] = []  # 이번 실행에서 new, changed, deleted 된 것(매일 파이프라인의 변경 목록)
         self.path = DATA / "raw_objects" / f"{source}.jsonl"
+        # 일지: 원본 파일을 쓴 직후 한 줄씩 덧붙인다. flush 전에 죽어도 다음 실행이 읽어 들여
+        # 같은 내용을 "처음 보는 것"으로 다시 저장하지 않는다(목록에서 빠진 원본 파일이 생기지 않게).
+        self.journal = DATA / "raw_objects" / f".{source}.journal.jsonl"
         self.rows = [json.loads(l) for l in self.path.read_text().splitlines() if l.strip()] if self.path.exists() else []
         self.latest = {}
         for r in self.rows:
             if r.get("is_latest"):
                 self.latest[r["external_key"]] = r
+        if self.journal.exists():  # 지난 실행이 flush 전에 끝남 → 일지의 행을 이어 붙인다
+            for line in self.journal.read_text().splitlines():
+                if not line.strip():
+                    continue
+                row = json.loads(line)
+                prev = self.latest.get(row["external_key"])
+                if prev and prev["version"] >= row["version"]:
+                    continue  # 이미 목록에 들어간 행
+                if prev:
+                    prev["is_latest"] = False
+                self.rows.append(row)
+                self.latest[row["external_key"]] = row
 
     def save(self, key: str, key_path: str, envelope_extra: dict, payload: dict, hash_obj,
              canonical_url: str | None, source_updated_at: str | None) -> str:
@@ -123,6 +138,9 @@ class Store:
                "s3_key": rel, "source": self.source, "source_updated_at": source_updated_at, "version": version}
         self.rows.append(row)
         self.latest[key] = row
+        self.journal.parent.mkdir(parents=True, exist_ok=True)  # 빈 상태에서 처음 저장할 때
+        with open(self.journal, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
         status = "new" if version == 1 else "changed"
         self.changes.append({"source": self.source, "external_key": key, "version": version, "status": status})
         return status
@@ -139,6 +157,7 @@ class Store:
     def flush(self) -> None:
         data = "".join(json.dumps(r, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n" for r in self.rows)
         atomic_write(self.path, data.encode())
+        self.journal.unlink(missing_ok=True)  # 목록에 모두 들어갔으니 일지는 비운다
 
 
 class GH:
