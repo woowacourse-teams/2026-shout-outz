@@ -193,6 +193,49 @@ it('가입 완료 화면에서는 초안을 유지하고 완료 버튼으로 작
   await waitFor(() => expect(readLoginQuestionDraft()).toBeUndefined());
 });
 
+it.each([
+  ['로그인', '/'],
+  ['회원가입', '/signup'],
+])(
+  '%s을 거쳐 돌아와 제목을 고쳐 등록해도 처음 고른 추천 ID를 보낸다',
+  async (_, entry) => {
+    saveLoginQuestionDraft(context);
+    let submitted: Record<string, unknown> | undefined;
+    server.use(
+      http.post('*/api/v1/feeds', async ({ request }) => {
+        submitted = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json(
+          { status: 'success', data: { ...mockFeeds[2], feedId: 103 } },
+          { status: 201 },
+        );
+      }),
+      http.get('*/api/v1/feeds/103', () =>
+        HttpResponse.json({ status: 'success', data: { ...mockFeeds[2], feedId: 103 } }),
+      ),
+    );
+    const user = userEvent.setup();
+    const router = renderRoute(entry);
+    if (entry === '/signup') {
+      await user.click(await screen.findByRole('button', { name: '질문 작성 계속하기' }));
+    }
+    const input = await screen.findByRole('textbox', { name: '제목' });
+    await waitFor(() => expect(readLoginQuestionDraft()).toBeUndefined());
+    await user.clear(input);
+    await user.type(input, '복귀 후 고친 질문');
+    await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+    await user.click(screen.getByRole('option', { name: '진로 고민' }));
+    await user.click(screen.getByRole('button', { name: '질문 등록하기' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/community/103'));
+    expect(submitted).toEqual(
+      expect.objectContaining({
+        title: '복귀 후 고친 질문',
+        feedType: 'QUESTION',
+        recommendationId: recommendation.recommendationId,
+      }),
+    );
+  },
+);
+
 it.each(['PENDING', 'PROCESSING', 'FAILED'])('%s인 추천은 상세에서 숨긴다', async (status) => {
   server.use(
     http.get('*/api/v1/feeds/3', () =>
