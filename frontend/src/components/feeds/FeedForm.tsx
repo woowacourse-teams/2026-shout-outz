@@ -75,16 +75,18 @@ export function FeedForm({
   async function submit() {
     if (invalid || submitting.current) return;
     submitting.current = true;
+    // 추천에서 시작한 질문 작성에만 키를 넣는다. 제목·본문을 고쳐도 원래 추천 ID를 보낸다.
+    const recommendationId =
+      !initialFeed && initialDraft && effectiveType === 'QUESTION'
+        ? initialDraft.recommendationId
+        : undefined;
     try {
       const feed = await mutation.mutateAsync({
         title: title.trim(),
         content,
         isAnonymous,
         ...(!initialFeed ? { feedType: effectiveType } : {}),
-        // 추천에서 시작한 질문 작성에만 키를 넣는다. 제목·본문을 고쳐도 원래 추천 ID를 보낸다.
-        ...(!initialFeed && initialDraft && effectiveType === 'QUESTION'
-          ? { recommendationId: initialDraft.recommendationId }
-          : {}),
+        ...(recommendationId !== undefined ? { recommendationId } : {}),
         categoryIds: [
           Number(categoryId),
           ...(initialFeed?.categories
@@ -100,6 +102,9 @@ export function FeedForm({
       // 그대로 넣으면 바로 이어서 수정할 때 첨부 ID를 잃으므로, 캐시를 비우고 다시 읽게 한다.
       void client.invalidateQueries({ queryKey: feedQuery(feed.feedId).queryKey });
       void client.invalidateQueries({ queryKey: ['feeds'] });
+      // 사용한 추천이 남은 상세 캐시를 지운다. 상세의 연관 추천은 처음 그린 값으로 고정되므로,
+      // 무효화만 하면 돌아갔을 때 캐시에 남은 추천이 그대로 보인다.
+      if (recommendationId !== undefined) client.removeQueries({ queryKey: ['feed'] });
       // TODO 프로필 피드 탭은 ['users', handle, 'feeds']로 따로 캐시된다.
       // api 폴더를 정리할 때 피드 캐시 키를 한 규칙으로 맞추고 이 줄을 없앤다.
       void client.invalidateQueries({ queryKey: ['users'] });
