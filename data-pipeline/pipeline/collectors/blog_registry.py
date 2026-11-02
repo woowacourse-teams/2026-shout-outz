@@ -4,7 +4,8 @@
 만드는 쪽이 어느 서버에 있어도 운영 등록부를 읽을 수 있다(계획 원칙 1).
 - 프로젝트 목록 `GET /api/v1/projects?size=50&cursor=` 로 slug 를 모으고,
   상세 `GET /api/v1/projects/@{slug}` 의 `teamBlogUrls`(확정된 주소만), `githubRepositoryUrl` 을 쓴다.
-- config/team_blogs.json 은 보조: 서비스에 없는 팀의 블로그를 운영자가 직접 넣는 곳. 레포가 같으면 주소를 합친다.
+- 기준은 운영 DB 값 하나다(2026-11-02 사용자 결정). 예전 손으로 만든 등록부(config/team_blogs.json)는 쓰지 않는다.
+  등록부에서 빠진 블로그는 새 글만 받지 않고, 이미 받은 글은 그대로 둔다(결정 18-5).
 - API 가 실패하면 빈 등록부로 착각하지 않도록 예외를 던진다(그날 블로그 단계는 실패, 이미 받은 글은 그대로).
 
 서비스 주소는 SERVICE_API_BASE(기본 운영 https://api.shout-ou.tz).
@@ -17,10 +18,9 @@ import time
 
 import httpx
 
-from pipeline.common import CONFIG, DATA, atomic_write, now
+from pipeline.common import DATA, atomic_write, now
 
 API_BASE = os.environ.get("SERVICE_API_BASE", "https://api.shout-ou.tz").rstrip("/")
-MANUAL = CONFIG / "team_blogs.json"
 DELAY = 0.1
 
 
@@ -73,21 +73,11 @@ def from_service(api_base: str = API_BASE) -> list[dict]:
 
 
 def load(api_base: str = API_BASE) -> dict:
-    """서비스 등록부 + 보조 파일을 합친 오늘의 등록부. 원본 저장소 state/blog_registry.json 에도 남긴다."""
+    """운영 서비스에 등록된 블로그만으로 만든 오늘의 등록부. 원본 저장소 state/blog_registry.json 에도 남긴다."""
     service = from_service(api_base)
-    manual = json.loads(MANUAL.read_text()).get("projects", []) if MANUAL.exists() else []
-    by_key: dict[str, dict] = {}
-    for p in service + [{**m, "from": "manual", "repo": m.get("repo") or None} for m in manual]:
-        if not p["blogs"]:
-            continue
-        key = (p["repo"] or "").lower() or f"name:{p['name']}"  # 비교만 소문자로, 저장은 원래 표기
-        if key in by_key:  # 같은 레포: 주소를 합친다(서비스 이름, 정보 우선)
-            by_key[key]["blogs"] = list(dict.fromkeys(by_key[key]["blogs"] + p["blogs"]))
-            by_key[key]["from"] = "service+manual" if by_key[key]["from"] != p["from"] else p["from"]
-        else:
-            by_key[key] = dict(p)
+    projects = [p for p in service if p["blogs"]]
     reg = {"updated_at": now(), "api_base": api_base, "service_projects": len(service),
-           "service_with_blogs": sum(bool(p["blogs"]) for p in service), "manual_projects": len(manual),
-           "projects": sorted(by_key.values(), key=lambda p: (p["repo"] or "", p["name"] or ""))}
+           "service_with_blogs": len(projects),
+           "projects": sorted(projects, key=lambda p: (p["repo"] or "", p["name"] or ""))}
     atomic_write(DATA / "state" / "blog_registry.json", (json.dumps(reg, ensure_ascii=False, indent=1) + "\n").encode())
     return reg
