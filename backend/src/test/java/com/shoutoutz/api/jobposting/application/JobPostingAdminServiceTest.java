@@ -11,18 +11,23 @@ import static org.mockito.Mockito.when;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
+import com.shoutoutz.api.jobposting.application.dto.CandidateChunk;
+import com.shoutoutz.api.jobposting.application.dto.CandidateChunk.ChunkKind;
 import com.shoutoutz.api.jobposting.application.dto.ExtractedJobPosting;
 import com.shoutoutz.api.jobposting.application.dto.ExtractedJobRequirement;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingCursor;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingPage;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingSummary;
+import com.shoutoutz.api.jobposting.application.dto.RequirementRecommendationDetail;
 import com.shoutoutz.api.jobposting.domain.JobPosting;
 import com.shoutoutz.api.jobposting.domain.JobPostingErrorCode;
 import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobPostingUrl;
 import com.shoutoutz.api.jobposting.domain.JobRequirement;
 import com.shoutoutz.api.jobposting.domain.JobRole;
+import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
+import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtractRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
@@ -33,6 +38,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
@@ -193,6 +199,31 @@ class JobPostingAdminServiceTest {
     }
 
     @Test
+    void 공고_상세의_역량마다_실패_이유와_추천_자료를_읽은_순서대로_담는다() {
+        when(jobPostingRepository.findById(100L)).thenReturn(Optional.of(saved()));
+        when(queryRepository.findLastErrors(100L)).thenReturn(Map.of(1001L, MatchingFailure.JUDGE_FAILED));
+        when(queryRepository.findRecommendations(100L)).thenReturn(List.of(
+                recommendationDetail(1000L, "match", RecommendationVerdict.MATCH),
+                recommendationDetail(1000L, "not-match", RecommendationVerdict.NOT_MATCH)
+        ));
+
+        var response = service.findDetail(100L, UserRole.ADMIN);
+
+        var first = response.requirements().get(0);
+        assertThat(first.lastError()).isNull();
+        assertThat(first.recommendations()).extracting(recommendation -> recommendation.externalKey())
+                .containsExactly("match", "not-match");
+        assertThat(first.recommendations().getFirst().evidence()).singleElement()
+                .satisfies(evidence -> {
+                    assertThat(evidence.kind()).isEqualTo(ChunkKind.EXPERIENCE);
+                    assertThat(evidence.text()).isEqualTo("경험 조각");
+                });
+        var second = response.requirements().get(1);
+        assertThat(second.lastError()).isEqualTo(MatchingFailure.JUDGE_FAILED);
+        assertThat(second.recommendations()).isEmpty();
+    }
+
+    @Test
     void 없는_공고를_조회하면_404를_던진다() {
         when(jobPostingRepository.findById(100L)).thenReturn(Optional.empty());
 
@@ -238,6 +269,15 @@ class JobPostingAdminServiceTest {
                                 MatchingStatus.PENDING)
                 ),
                 NOW, NOW
+        );
+    }
+
+    private RequirementRecommendationDetail recommendationDetail(long requirementId, String externalKey,
+                                                                 RecommendationVerdict verdict) {
+        return new RequirementRecommendationDetail(
+                requirementId, "github-pr", externalKey, "자료 제목", "https://example.com/" + externalKey,
+                verdict, "판정 이유", "설명", 0.7,
+                List.of(new CandidateChunk(ChunkKind.EXPERIENCE, "경험 조각", 0.7))
         );
     }
 

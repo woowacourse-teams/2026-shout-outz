@@ -7,10 +7,13 @@ import com.shoutoutz.api.jobposting.application.dto.JobPostingPage;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingSummary;
 import com.shoutoutz.api.jobposting.application.dto.RequirementRecommendationDetail;
 import com.shoutoutz.api.jobposting.domain.JobRole;
+import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
 import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -106,6 +109,21 @@ public class JobPostingAdminQueryRepositoryImpl implements JobPostingAdminQueryR
                         objectMapper.readValue(resultSet.getString("evidence"), EVIDENCE_TYPE)
                 )
         );
+    }
+
+    @Override
+    public Map<Long, MatchingFailure> findLastErrors(long jobPostingId) {
+        return jdbcTemplate.query("""
+                SELECT id, last_error
+                FROM job_requirements
+                WHERE job_posting_id = :jobPostingId AND last_error IS NOT NULL
+                """,
+                new MapSqlParameterSource("jobPostingId", jobPostingId),
+                (resultSet, rowNumber) -> Map.entry(
+                        resultSet.getLong("id"),
+                        MatchingFailure.valueOf(resultSet.getString("last_error"))
+                )
+        ).stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private long countAll() {

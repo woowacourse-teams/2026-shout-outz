@@ -22,6 +22,7 @@ import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobPostingUrl;
 import com.shoutoutz.api.jobposting.domain.JobRequirement;
 import com.shoutoutz.api.jobposting.domain.JobRole;
+import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
 import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
@@ -269,6 +270,19 @@ class JobPostingRepositoryIntegrationTest {
         assertThat(found)
                 .extracting(RequirementRecommendationDetail::requirementId, RequirementRecommendationDetail::externalKey)
                 .containsExactly(tuple(firstId, "first"), tuple(secondId, "second"));
+    }
+
+    @Test
+    void 마지막_실패_이유가_남은_역량만_읽고_다른_공고의_역량은_읽지_않는다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+        JobPosting other = jobPostingRepository.save(posting("https://careers.example.com/jobs/2", NOW));
+        long failedId = saved.getRequirements().getFirst().getId();
+        jdbcTemplate.update("UPDATE job_requirements SET last_error = 'JUDGE_FAILED' WHERE id = ?", failedId);
+        jdbcTemplate.update("UPDATE job_requirements SET last_error = 'SEARCH_FAILED' WHERE id = ?",
+                other.getRequirements().getFirst().getId());
+
+        assertThat(jobPostingAdminQueryRepository.findLastErrors(saved.getId()))
+                .containsExactly(Map.entry(failedId, MatchingFailure.JUDGE_FAILED));
     }
 
     private void insertDocument(String externalKey, Instant deletedAt) {

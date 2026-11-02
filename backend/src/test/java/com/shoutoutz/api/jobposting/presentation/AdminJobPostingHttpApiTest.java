@@ -26,8 +26,11 @@ import com.epages.restdocs.apispec.SimpleType;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.jobposting.application.JobPostingAdminService;
+import com.shoutoutz.api.jobposting.application.dto.CandidateChunk.ChunkKind;
 import com.shoutoutz.api.jobposting.domain.JobRole;
+import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
+import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtractRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
@@ -245,12 +248,19 @@ class AdminJobPostingHttpApiTest {
                         "백엔드 개발자",
                         "정규직",
                         LocalDate.of(2026, 12, 31),
-                        MatchingStatus.PENDING,
+                        MatchingStatus.READY,
                         ADMIN_ID,
                         NOW,
                         List.of(new AdminJobPostingDetailResponse.Requirement(
                                 1000L, 1, "Java, Spring", RequirementCategory.REQUIRED,
-                                "Spring으로 API 서버를 개발한 경험이 필요해요.", MatchingStatus.PENDING))
+                                "Spring으로 API 서버를 개발한 경험이 필요해요.", MatchingStatus.READY, null,
+                                List.of(new AdminJobPostingDetailResponse.Recommendation(
+                                        "github-pr", "woowacourse/repo#1", "트랜잭션 분리 리뷰",
+                                        "https://github.com/woowacourse/repo/pull/1", RecommendationVerdict.MATCH,
+                                        "Spring API 서버의 트랜잭션을 나눈 경험을 다룬다.",
+                                        "트랜잭션을 나누며 API 응답을 개선한 과정을 볼 수 있어요.", 0.82,
+                                        List.of(new AdminJobPostingDetailResponse.Evidence(
+                                                ChunkKind.EXPERIENCE, "외부 호출을 트랜잭션 밖으로 옮겼다.", 0.82))))))
                 ));
 
         mockMvc.perform(get("/api/v1/admin/job-postings/{jobPostingId}", JOB_POSTING_ID)
@@ -259,12 +269,16 @@ class AdminJobPostingHttpApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.jobPostingId").value(JOB_POSTING_ID))
                 .andExpect(jsonPath("$.data.requirements[0].displayOrder").value(1))
+                .andExpect(jsonPath("$.data.requirements[0].recommendations[0].verdict").value("MATCH"))
+                .andExpect(jsonPath("$.data.requirements[0].recommendations[0].evidence[0].kind").value("EXPERIENCE"))
                 .andDo(document(
                         "admin-job-posting-find-detail",
                         resource(ResourceSnippetParameters.builder()
                                 .tag(TAG)
                                 .summary("채용공고 상세 조회")
-                                .description("관리자가 채용공고 정보와 역량 목록을 조회한다. 없으면 404(JOB_POSTING_NOT_FOUND)로 응답한다.")
+                                .description("""
+                                        관리자가 채용공고 정보와 역량 목록, 역량별 분석 결과를 조회한다. 없으면 404(JOB_POSTING_NOT_FOUND)로 응답한다.
+                                        추천 자료는 NOT_MATCH까지 포함하고, 등급(MATCH, PARTIAL, NOT_MATCH) 순, 같은 등급은 검색 점수가 높은 순이다.""")
                                 .requestHeaders(headerWithName(HttpHeaders.COOKIE)
                                         .description("인증된 관리자의 JSESSIONID"))
                                 .pathParameters(parameterWithName("jobPostingId").type(SimpleType.INTEGER)
@@ -349,7 +363,34 @@ class AdminJobPostingHttpApiTest {
                         .description("역량 구분"),
                 fieldWithPath("data.requirements[].summary").type(STRING).description("역량 요약"),
                 new EnumFields(MatchingStatus.class).withPath("data.requirements[].status")
-                        .description("자료 분석 상태")
+                        .description("자료 분석 상태"),
+                new EnumFields(MatchingFailure.class).withPath("data.requirements[].lastError")
+                        .description("마지막 분석 실패 이유. 없으면 null. status가 PENDING이나 PROCESSING이면 재시도 중인 직전 실패 이유이고, 최종 실패는 status가 FAILED일 때다.")
+                        .optional(),
+                fieldWithPath("data.requirements[].recommendations").type(ARRAY)
+                        .description("판정한 자료 목록. 분석 전이거나 후보가 없으면 빈 배열"),
+                fieldWithPath("data.requirements[].recommendations[].source").type(STRING).description("자료 출처"),
+                fieldWithPath("data.requirements[].recommendations[].externalKey").type(STRING)
+                        .description("출처 안에서 자료를 가리키는 키"),
+                fieldWithPath("data.requirements[].recommendations[].title").type(STRING)
+                        .description("자료 제목. 자료가 없거나 삭제됐으면 null").optional(),
+                fieldWithPath("data.requirements[].recommendations[].url").type(STRING)
+                        .description("자료 링크. 자료가 없거나 삭제됐으면 null").optional(),
+                new EnumFields(RecommendationVerdict.class).withPath("data.requirements[].recommendations[].verdict")
+                        .description("판정 등급"),
+                fieldWithPath("data.requirements[].recommendations[].reason").type(STRING).description("판정 이유"),
+                fieldWithPath("data.requirements[].recommendations[].description").type(STRING)
+                        .description("카드에 보여 줄 설명. NOT_MATCH면 null").optional(),
+                fieldWithPath("data.requirements[].recommendations[].similarityScore").type(NUMBER)
+                        .description("검색 점수"),
+                fieldWithPath("data.requirements[].recommendations[].evidence").type(ARRAY)
+                        .description("판정할 때 LLM에게 보여 준 조각의 복사본"),
+                new EnumFields(ChunkKind.class).withPath("data.requirements[].recommendations[].evidence[].kind")
+                        .description("조각 유형"),
+                fieldWithPath("data.requirements[].recommendations[].evidence[].text").type(STRING)
+                        .description("조각 내용"),
+                fieldWithPath("data.requirements[].recommendations[].evidence[].similarityScore").type(NUMBER)
+                        .description("조각의 검색 점수")
         );
     }
 }
