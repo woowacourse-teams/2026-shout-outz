@@ -11,6 +11,8 @@ public enum MatchingFailure {
     JUDGE_FAILED(true),
     /** 검색에 넘긴 값이 잘못됨 */
     INVALID_QUERY(false),
+    /** 직무 트랙과 공통 트랙에 현재 임베딩 모델로 만든 자료가 없어 후보가 하나도 없음 */
+    NO_CANDIDATES(false),
     /** 분류하지 못한 예외 */
     UNEXPECTED(false),
     /** 마지막 시도 중에 서버가 꺼져 작업 기한이 지난 뒤 다시 가져온 역량. 시도 횟수를 이미 다 써서 검색하지 않는다 */
