@@ -78,6 +78,8 @@ job-posting:
     max-attempts: ${JOB_POSTING_MATCHING_MAX_ATTEMPTS:3}
     retry-delays: ${JOB_POSTING_MATCHING_RETRY_DELAYS:1m,5m}
     search-limit: ${JOB_POSTING_MATCHING_SEARCH_LIMIT:10}
+    # 앞에서부터 호출하고 실패하면 다음 제공자로 넘어간다(BEDROCK_GPT, BEDROCK_CLAUDE, GEMINI, OPENAI).
+    providers: ${JOB_POSTING_MATCHING_PROVIDERS:BEDROCK_GPT,BEDROCK_CLAUDE}
 
 # 선배 기록 검색의 문서 조각과 질문을 같은 모델, 차원, 정규화로 임베딩하기 위함.
 # 임베딩 전용 키를 쓴다(질문 추천 LLM 키와 분리, 월 사용 한도 설정).

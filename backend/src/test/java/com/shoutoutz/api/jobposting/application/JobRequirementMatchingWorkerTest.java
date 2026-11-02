@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.shoutoutz.api.common.llm.LlmProvider;
 import com.shoutoutz.api.jobposting.application.dto.CandidateChunk;
 import com.shoutoutz.api.jobposting.application.dto.CandidateChunk.ChunkKind;
 import com.shoutoutz.api.jobposting.application.dto.ClaimedJobRequirement;
@@ -60,7 +61,8 @@ class JobRequirementMatchingWorkerTest {
                 Duration.ofSeconds(180),
                 3,
                 List.of(Duration.ofMinutes(1), Duration.ofMinutes(5)),
-                10
+                10,
+                List.of(LlmProvider.BEDROCK_GPT)
         );
         worker = new JobRequirementMatchingWorker(
                 repository,

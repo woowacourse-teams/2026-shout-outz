@@ -2,6 +2,7 @@ package com.shoutoutz.api.jobposting.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.shoutoutz.api.common.llm.LlmProvider;
 import com.shoutoutz.api.jobposting.infrastructure.JobRequirementMatchingProperties;
 import java.time.Duration;
 import java.util.List;
@@ -16,7 +17,8 @@ class JobRequirementMatchingRetryPolicyTest {
                     Duration.ofSeconds(180),
                     3,
                     List.of(Duration.ofMinutes(1), Duration.ofMinutes(5)),
-                    10
+                    10,
+                    List.of(LlmProvider.BEDROCK_GPT)
             )
     );
 

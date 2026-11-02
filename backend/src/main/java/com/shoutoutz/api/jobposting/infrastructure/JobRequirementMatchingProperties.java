@@ -1,6 +1,8 @@
 package com.shoutoutz.api.jobposting.infrastructure;
 
+import com.shoutoutz.api.common.llm.LlmProvider;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
@@ -11,6 +13,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param lease       역량을 가져간 뒤 다른 Worker 가 다시 가져가지 못하는 시간. 검색·판정 제한 시간의 합보다 길어야 한다
  * @param retryDelays n 번째 시도가 실패한 뒤 기다리는 시간. 시도가 목록보다 많으면 마지막 값을 쓴다
  * @param searchLimit 역량 하나당 판정에 넘길 최대 후보 자료 수
+ * @param providers   판정 LLM 제공자. 앞에서부터 호출하고 실패하면 다음 제공자로 넘어간다
  */
 @ConfigurationProperties(prefix = "job-posting.matching")
 public record JobRequirementMatchingProperties(
@@ -19,7 +22,8 @@ public record JobRequirementMatchingProperties(
         @DefaultValue("180s") Duration lease,
         @DefaultValue("3") int maxAttempts,
         @DefaultValue({"1m", "5m"}) List<Duration> retryDelays,
-        @DefaultValue("10") int searchLimit
+        @DefaultValue("10") int searchLimit,
+        @DefaultValue({"BEDROCK_GPT", "BEDROCK_CLAUDE"}) List<LlmProvider> providers
 ) {
 
     public JobRequirementMatchingProperties {
@@ -36,6 +40,13 @@ public record JobRequirementMatchingProperties(
         if (searchLimit < 1) {
             throw new IllegalArgumentException("job-posting.matching.search-limit는 1 이상이어야 합니다.");
         }
+        if (providers == null || providers.isEmpty()) {
+            throw new IllegalArgumentException("job-posting.matching.providers를 하나 이상 설정해야 합니다.");
+        }
+        if (new HashSet<>(providers).size() != providers.size()) {
+            throw new IllegalArgumentException("job-posting.matching.providers에 같은 제공자를 두 번 넣을 수 없습니다.");
+        }
+        providers = List.copyOf(providers);
     }
 
     private static void requirePositive(Duration duration, String key) {
