@@ -24,9 +24,9 @@ import httpx
 import trafilatura
 
 from pipeline.collectors import blog_archive as base
+from pipeline.collectors import blog_registry
 
 HERE = Path(__file__).resolve().parents[2]  # data-pipeline/
-REGISTRY = HERE / "config" / "team_blogs.json"
 RILOG_API = "https://api.rilog.kr/v1"
 VELOG_GQL = "https://v2.velog.io/graphql"
 SOURCE = "team-blog-registry"
@@ -162,12 +162,13 @@ def main() -> int:
 
 
 def collect(run_id: str, projects: list[str] | None = None) -> tuple[dict, list]:
-    """등록부의 블로그마다 글 목록을 받고, 이미 받은 글 주소는 접속하지 않는다(처음이면 전부)."""
-    reg = json.loads(REGISTRY.read_text())
-    base.COLLECTOR.update({"name": "blog-team", "version": "1.0.0"})
+    """등록부(서비스 공개 API + 보조 파일)의 블로그마다 글 목록을 받고, 이미 받은 글 주소는 접속하지 않는다."""
+    reg = blog_registry.load()
+    base.COLLECTOR.update({"name": "blog-team", "version": "1.1.0"})  # 1.1.0: 등록부를 서비스에서 매일 읽음
     store = base.Store(run_id)
     stored = {r["external_key"] for r in store.rows if r["source"] == "blog-post"}
     report = {"run_id": run_id, "started_at": base.now(), "registry_updated_at": reg.get("updated_at"),
+              "registry": {k: reg[k] for k in ("api_base", "service_projects", "service_with_blogs", "manual_projects")},
               "blogs": [], "skipped": [], "errors": []}
     with httpx.Client(timeout=25, follow_redirects=True, headers={"User-Agent": base.UA}) as c:
         robots = base.Robots(c)
