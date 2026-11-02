@@ -5,7 +5,7 @@ GraphQL 로 레포마다 글을 묶어 받고(한 쿼리에 글 10개, 글마다
 PR 수집과 같은 토큰 · GraphQL 한도를 쓰므로, 한도가 바닥나면 다시 찰 때까지 기다린다.
 원본 목록은 원천별 파일(raw_objects/github-discussion.jsonl).
 
-실행: uv run python discussions.py [--repos 이름 ...]
+실행: uv run python -m pipeline.collectors.discussions [--repos 이름 ...]
 """
 from __future__ import annotations
 
@@ -17,7 +17,10 @@ import httpx
 
 from datetime import datetime, timedelta
 
-from teamdocs import DATA, OWNER, STATE, Store, atomic_write, now, stamp, token
+from pipeline.common import DATA, OWNER, STATE, atomic_write, now, stamp, token
+from pipeline.store import Store
+
+VERSION = "1.1.0"  # 1.1.0: 최근 수정순, 커서 이후만
 
 GRAPHQL = "https://api.github.com/graphql"
 PAGE = 10
@@ -136,7 +139,7 @@ def collect(repos: list[str], run_id: str, force: bool = False) -> tuple[dict, l
     cursor_path = DATA / CURSOR
     cursors = json.loads(cursor_path.read_text()) if cursor_path.exists() else {}
     gql = GQL(token())
-    store = Store("github-discussion", run_id)
+    store = Store("github-discussion", run_id, VERSION)
     report = {"run_id": run_id, "started_at": now(), "repos": [], "failures": [], "verify_failed": [],
               "counts": {"repos_enabled": 0, "repos_with_discussions": 0, "discussions": 0, "comments": 0, "replies": 0,
                          "saved_new": 0, "saved_changed": 0, "already_present": 0}}

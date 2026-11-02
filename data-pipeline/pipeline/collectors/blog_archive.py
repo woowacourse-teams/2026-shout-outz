@@ -6,7 +6,7 @@
 결정 기록 17번. 사이트가 없거나 글이 지워진 경우(도메인 없음 · 연결 불가 · 404/410 · '없는 페이지' 안내 ·
 메인으로 튕김)는 저장하지 않고 보고서에만 남긴다. robots.txt 를 지키고 요청 사이 1초 이상 쉰다.
 
-실행: uv run python blog_1_7_archive.py [--limit N]
+실행: uv run python -m pipeline.collectors.blog_archive [--limit N]
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ import httpx
 import trafilatura
 
 DATA = Path(os.environ.get("RAW_DATA_REPO") or Path.home() / "Desktop" / "woowacourse-raw-data")  # 매일 파이프라인 1-5
-STATE = Path(__file__).resolve().parent / "state" / "blog_1_7_archive"
+STATE = Path(__file__).resolve().parents[2] / "state" / "blog_1_7_archive"  # data-pipeline/state/
 CACHE_ARTICLES = Path.home() / "Desktop" / "senior-trace" / "data" / "raw" / "moaon" / "articles.json"
 MOAON_API = "https://api.moaon.co.kr"
 UA = "shout-outz-raw-collector/0.1 (woowacourse alumni blog archive; internal research)"

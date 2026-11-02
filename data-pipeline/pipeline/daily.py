@@ -16,26 +16,16 @@ import argparse
 import datetime as dt
 import fcntl
 import json
-import sys
 import time
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))  # 수집 스크립트(teamdocs.py 등)가 data-pipeline/ 바로 아래에 있다
-
-import blog_team  # noqa: E402
-import discussions  # noqa: E402
-import repos as org_repos  # noqa: E402
-import teamdoc_commits  # noqa: E402
-import tekotalk  # noqa: E402
-import teamdocs  # noqa: E402
-import wiki  # noqa: E402
-import wiki_commits  # noqa: E402
-from teamdocs import DATA, STATE, atomic_write, now, stamp  # noqa: E402
+from pipeline.collectors import blog_team, discussions, teamdoc_commits, tekotalk, wiki, wiki_commits
+from pipeline.collectors import repos as org_repos
+from pipeline.collectors import teamdoc as teamdocs
+from pipeline.common import CONFIG, DATA, STATE, atomic_write, now, stamp
 
 # 실행 순서. 레포 목록이 먼저, 커밋 정보는 그 문서를 받은 뒤.
 SOURCES = ("repos", "teamdoc", "wiki", "discussion", "blog", "tekotalk", "teamdoc-commit", "wiki-commit")
-EXCLUSIONS = ROOT / "config" / "exclusions.json"
+EXCLUSIONS = CONFIG / "exclusions.json"
 
 
 def excluded_repos() -> set[str]:

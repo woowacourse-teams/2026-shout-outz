@@ -4,7 +4,7 @@ GitHub API 를 쓰지 않는다: `git ls-remote` 로 wiki 저장소가 있는지
 페이지 파일을 읽는다. Home, 사이드바, 회의록, 짧은 페이지도 모두 받는다(거르기는 추출 단계).
 원본 목록은 원천별 파일(raw_objects/github-wiki.jsonl).
 
-실행: uv run python wiki.py [--repos 이름 ...]
+실행: uv run python -m pipeline.collectors.wiki [--repos 이름 ...]
 """
 from __future__ import annotations
 
@@ -14,7 +14,10 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from teamdocs import DATA, OWNER, STATE, Store, atomic_write, now, stamp
+from pipeline.common import DATA, OWNER, STATE, atomic_write, now, stamp
+from pipeline.store import Store
+
+VERSION = "1.1.0"  # 1.1.0: HEAD 커서로 바뀐 wiki 만 clone, 사라진 페이지 deleted_at
 
 PAGE_EXT = (".md", ".markdown", ".mdown", ".mkdn", ".mediawiki", ".wiki", ".asciidoc", ".adoc", ".asc", ".rst",
             ".textile", ".rdoc", ".org", ".creole", ".pod")
@@ -45,7 +48,7 @@ def collect(repos: list[str], run_id: str, force: bool = False) -> tuple[dict, l
     """HEAD 가 지난번과 같은 wiki 는 clone 하지 않는다. 처음(커서 없음)에는 모두 clone."""
     cursor_path = DATA / CURSOR
     heads = json.loads(cursor_path.read_text()) if cursor_path.exists() else {}
-    store = Store("github-wiki", run_id)
+    store = Store("github-wiki", run_id, VERSION)
     report = {"run_id": run_id, "started_at": now(), "repos": [], "failures": [],
               "counts": {"repos_with_wiki": 0, "pages": 0, "saved_new": 0, "saved_changed": 0, "already_present": 0,
                          "other_files": 0}}

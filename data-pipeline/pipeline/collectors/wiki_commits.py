@@ -5,7 +5,7 @@ GitHub API 를 쓰지 않는다. wiki 저장소를 파일 내용 없이 기록�
 첫 커밋, 마지막 커밋, 커밋 수를 센다. 이메일은 저장하지 않는다.
 이름을 바꾼 페이지는 바뀐 이름으로 처음 나온 커밋이 첫 커밋이 된다(이름 추적은 하지 않음).
 
-실행: uv run python wiki_commits.py [--repos 2022-dallog ...]
+실행: uv run python -m pipeline.collectors.wiki_commits [--repos 2022-dallog ...]
 """
 from __future__ import annotations
 
@@ -19,12 +19,13 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
-import teamdocs as base
-from wiki import git
+from pipeline import common as base
+from pipeline.store import Store
+from pipeline.collectors.wiki import git
 
 SOURCE = "github-wiki-commit"
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+(\.[\w-]+)+")
-base.COLLECTOR.update({"name": SOURCE, "version": "1.0.0"})
+VERSION = "1.1.0"  # 1.1.0: 오늘 바뀐 문서만(only_keys)
 
 
 def history(root: Path, ref: str) -> dict[str, list[dict]]:
@@ -60,8 +61,8 @@ def main() -> int:
 
 def collect(run_id: str, only_keys: set[str] | None = None, repos: list[str] | None = None) -> tuple[dict, list]:
     """only_keys 가 있으면 그 페이지(오늘 바뀐 wiki 페이지)가 있는 wiki 만 clone 한다."""
-    pages = base.Store("github-wiki", run_id)
-    store = base.Store(SOURCE, run_id)
+    pages = Store("github-wiki", run_id)
+    store = Store(SOURCE, run_id, VERSION)
     by_repo: dict[str, list[dict]] = defaultdict(list)
     for row in pages.latest.values():
         if row.get("deleted_at") or (only_keys is not None and row["external_key"] not in only_keys):

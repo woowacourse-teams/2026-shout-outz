@@ -5,7 +5,7 @@ yt-dlp 로 영상 파일은 받지 않고(skip_download) 메타데이터와 자�
 자막 원문은 내부 원본 전용이다(화면에는 요약만, 3-2절).
 원본 목록은 원천별 파일(raw_objects/youtube-tekotalk.jsonl).
 
-실행: uv run python tekotalk.py [--limit N]
+실행: uv run python -m pipeline.collectors.tekotalk [--limit N]
 """
 from __future__ import annotations
 
@@ -19,7 +19,10 @@ from pathlib import Path
 
 import yt_dlp
 
-from teamdocs import DATA, Store, atomic_write, now, stamp
+from pipeline.common import DATA, atomic_write, now, stamp
+from pipeline.store import Store
+
+VERSION = "1.0.0"
 
 PLAYLIST = "https://www.youtube.com/playlist?list=PLgXGHBqgT2TvpJ_p9L_yZKPifgdBOzdVH"
 DELAY = (4.0, 7.0)  # 영상 사이 대기(초), 무작위
@@ -64,7 +67,7 @@ def main() -> int:
 
 def collect(run_id: str, limit: int | None = None, offset: int = 0) -> tuple[dict, list[Store]]:
     """재생목록에서 아직 받지 않은 영상만 받는다(이미 받은 영상 ID 는 접속하지 않음)."""
-    store = Store("youtube-tekotalk", run_id)
+    store = Store("youtube-tekotalk", run_id, VERSION)
     report = {"run_id": run_id, "started_at": now(), "failures": [], "stopped": None,
               "counts": {"playlist": 0, "saved_new": 0, "saved_changed": 0, "already_present": 0,
                          "sub_manual": 0, "sub_auto": 0, "sub_none": 0}}

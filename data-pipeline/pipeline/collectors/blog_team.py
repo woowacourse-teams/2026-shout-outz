@@ -8,7 +8,7 @@
 - 티스토리: sitemap.xml 의 글 주소 → 본문은 페이지 추출.
 - 그 밖: 페이지의 RSS 링크(자동 탐지) → 본문은 페이지 추출.
 
-실행: uv run python blog_team.py [--projects 이름 ...]
+실행: uv run python -m pipeline.collectors.blog_team [--projects 이름 ...]
 """
 from __future__ import annotations
 
@@ -23,9 +23,9 @@ from urllib.parse import urlparse
 import httpx
 import trafilatura
 
-import blog_1_7_archive as base
+from pipeline.collectors import blog_archive as base
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[2]  # data-pipeline/
 REGISTRY = HERE / "config" / "team_blogs.json"
 RILOG_API = "https://api.rilog.kr/v1"
 VELOG_GQL = "https://v2.velog.io/graphql"

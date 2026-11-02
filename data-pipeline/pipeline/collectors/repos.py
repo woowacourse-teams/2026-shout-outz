@@ -6,13 +6,16 @@ woowacourse-teams 의 공개 레포(포크 제외)를 받아 레포마다 원본
 - `pushed_at` 은 해시에 넣지 않는다(push 마다 새 버전이 생기지 않게). 대신 따로 저장해 팀 문서가 미리 거르는 데 쓴다.
 - 결과 목록: 원본 저장소 state/org_repos.json(이름), state/org_repos_pushed.json(이름 → pushed_at).
 
-실행: uv run python repos.py
+실행: uv run python -m pipeline.collectors.repos
 """
 from __future__ import annotations
 
 import json
 
-from teamdocs import API, DATA, GH, OWNER, Store, atomic_write, now, stamp, token
+from pipeline.common import API, DATA, GH, OWNER, atomic_write, now, stamp, token
+from pipeline.store import Store
+
+VERSION = "1.0.0"
 
 HASH_KEYS = ("name", "default_branch", "archived", "disabled", "visibility", "description", "topics",
              "has_wiki", "has_discussions", "homepage")
@@ -21,7 +24,7 @@ KEEP_KEYS = HASH_KEYS + ("full_name", "html_url", "created_at", "updated_at", "p
 
 def collect(run_id: str) -> tuple[dict, list[Store]]:
     gh = GH(token())
-    store = Store("github-repo", run_id)
+    store = Store("github-repo", run_id, VERSION)
     report = {"run_id": run_id, "started_at": now(), "failures": [],
               "counts": {"listed": 0, "forks_skipped": 0, "saved_new": 0, "saved_changed": 0, "already_present": 0,
                          "deleted": 0}}

@@ -6,21 +6,25 @@
 - 첫 커밋: 커밋이 2개 이상일 때만 마지막 페이지를 한 번 더 받아 처음 쓴 시각, 처음 쓴 사람
 이메일 주소는 개인정보라 저장하지 않는다. 이미 같은 기준 커밋으로 받은 문서는 다시 묻지 않는다.
 
-실행: uv run python teamdoc_commits.py [--limit N]
+실행: uv run python -m pipeline.collectors.teamdoc_commits [--limit N]
 """
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import re
 import time
 from urllib.parse import quote
 
-import teamdocs as base
+import httpx
+
+from pipeline import common as base
+from pipeline.store import Store
 
 SOURCE = "github-teamdoc-commit"
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+(\.[\w-]+)+")
-base.COLLECTOR.update({"name": SOURCE, "version": "1.0.0"})
+VERSION = "1.1.0"  # 1.1.0: 오늘 바뀐 문서만(only_keys)
 
 
 def slim(commit: dict) -> dict:
@@ -50,8 +54,8 @@ def main() -> int:
 
 def collect(run_id: str, only_keys: set[str] | None = None, limit: int | None = None) -> tuple[dict, list]:
     """only_keys 가 있으면 그 문서(오늘 바뀐 팀 문서)만 본다. 없으면 모든 최신 문서(같은 기준 커밋은 건너뜀)."""
-    docs = base.Store("github-teamdoc", run_id)
-    store = base.Store(SOURCE, run_id)
+    docs = Store("github-teamdoc", run_id)
+    store = Store(SOURCE, run_id, VERSION)
     gh = base.GH(base.token())
     done_refs = {}
     for r in store.latest.values():
@@ -67,7 +71,7 @@ def collect(run_id: str, only_keys: set[str] | None = None, limit: int | None = 
     for i, row in enumerate(targets, 1):
         report["docs"] += 1
         key = row["external_key"]
-        p = json.loads(base.gzip.decompress((base.DATA / row["s3_key"]).read_bytes()))["payload"]
+        p = json.loads(gzip.decompress((base.DATA / row["s3_key"]).read_bytes()))["payload"]
         repo, path, ref = p["repo"], p["path"], p["commit_sha"]
         if done_refs.get(key) == ref:
             report["skipped_same_ref"] += 1
@@ -107,7 +111,7 @@ def collect(run_id: str, only_keys: set[str] | None = None, limit: int | None = 
             report["saved" if outcome != "already_present" else "already_present"] += 1
             b = "1" if count == 1 else "2-5" if count <= 5 else "6-20" if count <= 20 else "21+"
             report["commit_count_hist"][b] = report["commit_count_hist"].get(b, 0) + 1
-        except (base.httpx.HTTPError, ValueError, KeyError) as e:
+        except (httpx.HTTPError, ValueError, KeyError) as e:
             report["errors"].append({"key": key, "reason": f"{type(e).__name__}: {e}"[:200]})
         time.sleep(base.DELAY)
         if i % 200 == 0:
