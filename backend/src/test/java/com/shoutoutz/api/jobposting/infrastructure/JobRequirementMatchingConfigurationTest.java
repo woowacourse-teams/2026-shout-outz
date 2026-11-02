@@ -3,6 +3,7 @@ package com.shoutoutz.api.jobposting.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,8 +30,12 @@ class JobRequirementMatchingConfigurationTest {
     private final ApplicationContextRunner contextRunner = contextRunner("embedding-key");
 
     private static ApplicationContextRunner contextRunner(String embeddingApiKey) {
+        return contextRunner(embeddingApiKey, true);
+    }
+
+    private static ApplicationContextRunner contextRunner(String embeddingApiKey, boolean hasSearchableChunks) {
         return new ApplicationContextRunner()
-                .withBean(JobRequirementMatchingRepository.class, () -> mock(JobRequirementMatchingRepository.class))
+                .withBean(JobRequirementMatchingRepository.class, () -> repository(hasSearchableChunks))
                 .withBean(RequirementResourceSearcher.class, () -> mock(RequirementResourceSearcher.class))
                 .withBean(RequirementJudge.class, () -> mock(RequirementJudge.class))
                 .withBean(Clock.class, Clock::systemUTC)
@@ -82,6 +87,7 @@ class JobRequirementMatchingConfigurationTest {
     void 끄면_실제_검색과_판정_구현체를_만들지_않고_켜면_주입해_만든다() {
         ApplicationContextRunner realImplementations = new ApplicationContextRunner()
                 .withBean(ResourceSearchService.class, () -> mock(ResourceSearchService.class))
+                .withBean(JobRequirementMatchingRepository.class, () -> repository(true))
                 .withBean("gpt", LlmClient.class, () -> llmClient(LlmProvider.BEDROCK_GPT))
                 .withBean("claude", LlmClient.class, () -> llmClient(LlmProvider.BEDROCK_CLAUDE))
                 .withBean(ObjectMapper.class, ObjectMapper::new)
@@ -148,11 +154,39 @@ class JobRequirementMatchingConfigurationTest {
         assertThatThrownBy(() -> validate(tooShort, llm, embedding)).hasMessageContaining("lease");
     }
 
+    @Test
+    void 현재_임베딩_모델로_만든_자료_조각이_없으면_기동에_실패한다() {
+        JobRequirementMatchingRepository repository = mock(JobRequirementMatchingRepository.class);
+        when(repository.hasSearchableChunks("text-embedding-3-small@1024")).thenReturn(false);
+
+        assertThatThrownBy(() -> validate(properties(Duration.ofSeconds(180), LlmProvider.BEDROCK_GPT),
+                new LlmProperties(null, null, null), embedding("key", Duration.ofSeconds(30)), repository))
+                .hasMessageContaining("text-embedding-3-small@1024로 만든 자료 조각");
+    }
+
+    @Test
+    void 켜져_있을_때만_자료_조각을_검사해_없으면_기동에_실패한다() {
+        contextRunner("embedding-key", false).run(context -> assertThat(context).hasNotFailed());
+        contextRunner("embedding-key", false).withPropertyValues("job-posting.matching.enabled=true")
+                .run(context -> assertThat(context).hasFailed());
+    }
+
     private void validate(JobRequirementMatchingProperties properties, LlmProperties llm, EmbeddingProperties embedding)
             throws Exception {
+        validate(properties, llm, embedding, repository(true));
+    }
+
+    private void validate(JobRequirementMatchingProperties properties, LlmProperties llm, EmbeddingProperties embedding,
+            JobRequirementMatchingRepository repository) throws Exception {
         new JobRequirementMatchingConfiguration()
-                .jobRequirementMatchingSettingsValidator(properties, llm, embedding)
+                .jobRequirementMatchingSettingsValidator(properties, llm, embedding, repository)
                 .afterPropertiesSet();
+    }
+
+    private static JobRequirementMatchingRepository repository(boolean hasSearchableChunks) {
+        JobRequirementMatchingRepository repository = mock(JobRequirementMatchingRepository.class);
+        when(repository.hasSearchableChunks(anyString())).thenReturn(hasSearchableChunks);
+        return repository;
     }
 
     private JobRequirementMatchingProperties properties(Duration lease, LlmProvider... providers) {

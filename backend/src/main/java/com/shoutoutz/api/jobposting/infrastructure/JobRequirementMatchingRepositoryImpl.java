@@ -169,6 +169,21 @@ public class JobRequirementMatchingRepositoryImpl implements JobRequirementMatch
         return true;
     }
 
+    /** 자료 검색(JdbcResourceSearchRepository.findNearest)과 같은 조건으로 확인한다. 조건이 바뀌면 함께 바꾼다. */
+    @Override
+    public boolean hasSearchableChunks(String embeddingModel) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM resource_chunks c
+                    JOIN resource_documents d ON d.id = c.document_id
+                    WHERE c.deleted_at IS NULL
+                      AND d.deleted_at IS NULL
+                      AND c.embedding_model = :embeddingModel
+                )
+                """, new MapSqlParameterSource("embeddingModel", embeddingModel), Boolean.class));
+    }
+
     private MapSqlParameterSource ownedBy(ClaimedJobRequirement requirement) {
         return new MapSqlParameterSource()
                 .addValue("id", requirement.requirementId())

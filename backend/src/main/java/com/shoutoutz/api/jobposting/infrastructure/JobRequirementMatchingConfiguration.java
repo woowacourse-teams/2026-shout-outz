@@ -3,6 +3,7 @@ package com.shoutoutz.api.jobposting.infrastructure;
 import com.shoutoutz.api.common.embedding.EmbeddingProperties;
 import com.shoutoutz.api.common.llm.LlmProperties;
 import com.shoutoutz.api.common.llm.LlmProvider;
+import com.shoutoutz.api.jobposting.application.JobRequirementMatchingRepository;
 import java.time.Duration;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,12 +22,14 @@ public class JobRequirementMatchingConfiguration {
     /**
      * 켠 뒤 역량마다 실패하고 나서야 알게 되지 않도록, 키 누락과 제한 시간 초과를 기동할 때 막는다.
      * 제한 시간의 합이 lease 를 넘으면 처리 중인 역량을 다른 Worker 가 다시 가져갈 수 있다.
+     * 현재 임베딩 모델로 만든 자료 조각이 없으면 모든 역량이 추천 없이 완료로 끝나 되돌릴 수 없어서 함께 막는다.
      */
     @Bean
     InitializingBean jobRequirementMatchingSettingsValidator(
             JobRequirementMatchingProperties properties,
             LlmProperties llmProperties,
-            EmbeddingProperties embeddingProperties
+            EmbeddingProperties embeddingProperties,
+            JobRequirementMatchingRepository repository
     ) {
         return () -> {
             if (embeddingProperties.apiKey() == null || embeddingProperties.apiKey().isBlank()) {
@@ -41,6 +44,10 @@ public class JobRequirementMatchingConfiguration {
             }
             if (budget.compareTo(properties.lease()) >= 0) {
                 throw new IllegalArgumentException("임베딩과 판정 제공자의 제한 시간 합은 job-posting.matching.lease보다 짧아야 합니다.");
+            }
+            if (!repository.hasSearchableChunks(embeddingProperties.label())) {
+                throw new IllegalArgumentException("역량 매칭을 켜려면 임베딩 모델 " + embeddingProperties.label()
+                        + "로 만든 자료 조각이 있어야 합니다.");
             }
         };
     }

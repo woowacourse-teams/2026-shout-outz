@@ -71,6 +71,7 @@ job-posting:
     providers: ${JOB_POSTING_EXTRACTION_PROVIDERS:BEDROCK_GPT,BEDROCK_CLAUDE}
   # 역량마다 맞는 자료를 찾는 Worker. 환경마다 JOB_POSTING_MATCHING_ENABLED로 켠다.
   # lease는 임베딩과 판정 제공자 제한 시간의 합보다 길어야 하며, 켤 때 기동 검사로 확인한다.
+  # 현재 임베딩 모델로 만든 자료 조각이 없으면 서버가 뜨지 않으므로, 자료를 적재한 뒤에 켠다.
   matching:
     enabled: ${JOB_POSTING_MATCHING_ENABLED:false}
     poll-interval: ${JOB_POSTING_MATCHING_POLL_INTERVAL:10s}

@@ -97,6 +97,9 @@ public class JobRequirementMatchingWorker {
         String query = requirement.name() + "\n" + requirement.summary();
         List<ResourceCandidate> candidates = searcher.search(query, requirement.jobRole(), properties.searchLimit());
         if (candidates.isEmpty()) {
+            // 맞는 자료가 정말 없을 때와 자료가 지워졌을 때를 구분할 수 없어, 추천 없이 완료하되 흔적을 남긴다.
+            log.warn("검색된 자료가 없어 추천 없이 완료합니다. requirementId={}, jobRole={}",
+                    requirement.requirementId(), requirement.jobRole());
             return List.of();
         }
         List<RequirementJudgement> judgements = judge.judge(requirement, candidates);
