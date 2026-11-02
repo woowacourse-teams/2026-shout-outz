@@ -12,6 +12,7 @@ export type {
   AnalyticsUser,
   FeedSurface,
   NavTab,
+  RecommendationSurface,
 } from '@/utils/analytics/types';
 
 const MOBILE_MAX_WIDTH = 768;

@@ -4,6 +4,7 @@ import { Footer } from '@/components/Footer';
 import { Button } from '@/components/Button';
 import { FeedMarkdown } from '@/components/feeds/FeedMarkdown';
 import type { QuestionRecommendation } from '@/types/recommendation';
+import { analytics } from '@/utils/analytics';
 
 interface RecommendationPageProps {
   recommendation?: QuestionRecommendation;
@@ -45,7 +46,16 @@ export function RecommendationPage({ recommendation, onBack, onCreate }: Recomme
                 이 내용이 궁금하다면 샤라웃에 질문을 등록하고 함께 이야기해 보세요. 제목과 내용을
                 자유롭게 다듬을 수 있어요.
               </p>
-              <Button className="mt-4 w-full gap-2 sm:w-auto" onClick={onCreate}>
+              <Button
+                className="mt-4 w-full gap-2 sm:w-auto"
+                onClick={() => {
+                  analytics.track({
+                    name: 'recommendation_write_clicked',
+                    recommendationId: recommendation.recommendationId,
+                  });
+                  onCreate();
+                }}
+              >
                 <IconPencil className="size-4" aria-hidden="true" />이 내용으로 질문 작성하기
               </Button>
             </aside>

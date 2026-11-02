@@ -85,6 +85,16 @@ analytics.track({ name: 'feed_detail_opened', feedId: 101, from: 'home' }); // �
 | `feed_sort_changed`     | 최신순·인기순 전환 | `sort`, `surface` (`home`/`feeds`)          | 인기순이 필요한가                           |
 | `comment_submitted`     | 댓글 작성 성공     | —                                           | 댓글이 실제로 달리나                        |
 
+### 추천 질문
+
+노출 → 카드 클릭 → 작성하기 클릭 → `feed_create_submitted`(`feedType=QUESTION`) 순서로 추천 퍼널을 본다. `position`은 0부터 센다.
+
+| 이벤트                         | 발생 시점                                              | 파라미터                                                                | 답하려는 질문                     |
+| ------------------------------ | ------------------------------------------------------ | ----------------------------------------------------------------------- | --------------------------------- |
+| `recommendation_impression`    | 추천 카드가 화면에 들어옴 (카드마다 한 번)             | `recommendationId`, `surface` (`feed_detail`/`feed_list`), `position`   | 추천이 실제로 보이나              |
+| `recommendation_clicked`       | 추천 카드 클릭 (미리보기로 이동)                       | `recommendationId`, `surface`, `position`                               | 추천 클릭률, 어느 위치가 눌리나   |
+| `recommendation_write_clicked` | 미리보기의 "이 내용으로 질문 작성하기" 클릭            | `recommendationId`                                                      | 미리보기에서 작성까지 넘어가나    |
+
 ### 프로젝트
 
 | 이벤트                     | 발생 시점      | 파라미터                                                                    | 답하려는 질문               |
