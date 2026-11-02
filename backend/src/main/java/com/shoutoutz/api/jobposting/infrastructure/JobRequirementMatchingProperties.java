@@ -8,9 +8,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
 /**
- * 역량 매칭 Worker 설정. 실제 검색·판정을 연결하기 전까지 enabled 는 false 로 둔다.
+ * 역량 매칭 Worker 설정. 기본은 꺼져 있고 환경마다 enabled 로 켠다.
  *
- * @param lease       역량을 가져간 뒤 다른 Worker 가 다시 가져가지 못하는 시간. 검색·판정 제한 시간의 합보다 길어야 한다
+ * @param lease       역량을 가져간 뒤 다른 Worker 가 다시 가져가지 못하는 시간. 임베딩과 판정 제공자 제한 시간의 합보다 길어야 한다
  * @param retryDelays n 번째 시도가 실패한 뒤 기다리는 시간. 시도가 목록보다 많으면 마지막 값을 쓴다
  * @param searchLimit 역량 하나당 판정에 넘길 최대 후보 자료 수
  * @param providers   판정 LLM 제공자. 앞에서부터 호출하고 실패하면 다음 제공자로 넘어간다

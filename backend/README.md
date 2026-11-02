@@ -234,6 +234,36 @@ docker compose down -v
 
 `-v` 옵션을 사용하면 저장된 로컬 데이터가 삭제되므로 주의한다.
 
+## 채용공고 역량 추천 분석
+
+등록한 공고의 역량마다 Worker가 자료를 검색하고 LLM으로 판정해 추천 자료를 저장한다. 기본은 꺼져 있고, 환경마다 환경 변수로 켠다.
+
+서버의 환경 변수 파일(`/opt/shout-outz/shout-outz.env`)에 값을 넣고 앱을 다시 시작한다. 값은 기동할 때 한 번만 읽는다.
+
+```bash
+JOB_POSTING_MATCHING_ENABLED=true
+RESOURCE_EMBEDDING_API_KEY=<embedding-api-key>
+```
+
+켜기 전에 확인한다.
+
+- **DB:** 환경 변수의 `SPRING_DATASOURCE_URL`이 그 환경의 DB를 가리키는지 본다. Worker는 연결된 DB의 공고를 처리한다.
+- **자료 적재:** 그 DB에 자료가 적재되어 있고 `resource_chunks.embedding_model`이 임베딩 설정(기본 `text-embedding-3-small@1024`)과 같은지 본다. 자료가 없거나 모델이 다르면 검색 결과가 0개가 되어, 실패 없이 추천 없는 '완료'로 끝난다.
+- **대기 공고:** 켜는 즉시 '대기' 상태의 공고를 모두 처리하므로 그만큼 LLM 비용이 든다.
+- **권한:** 기본 제공자는 Bedrock이라 EC2 IAM 역할에 호출 권한이 있어야 한다. 이 권한은 기동 검사로 확인하지 않는다.
+
+켜져 있으면 기동할 때 임베딩 키, 판정 제공자의 API 키, 제한 시간의 합이 `lease`보다 짧은지 검사하고, 맞지 않으면 기동에 실패한다. 이때는 Worker만이 아니라 API 서버 전체가 뜨지 않으므로, 값을 고치거나 `JOB_POSTING_MATCHING_ENABLED=false`로 되돌린다.
+
+| 환경 변수 | 기본값 | 용도 |
+| --- | --- | --- |
+| `JOB_POSTING_MATCHING_ENABLED` | `false` | Worker 켜고 끄기 |
+| `JOB_POSTING_MATCHING_PROVIDERS` | `BEDROCK_GPT,BEDROCK_CLAUDE` | 판정 제공자 호출 순서. 앞 제공자가 실패하면 다음 제공자를 부른다. `GEMINI`, `OPENAI`, `BEDROCK_GPT`, `BEDROCK_CLAUDE` 중에서 고르며, `GEMINI`, `OPENAI`는 `GEMINI_API_KEY`, `OPENAI_API_KEY`가 필요하다 |
+| `JOB_POSTING_MATCHING_POLL_INTERVAL` | `10s` | 가져올 역량을 확인하는 간격 |
+| `JOB_POSTING_MATCHING_LEASE` | `180s` | 역량을 가져간 뒤 다른 Worker가 다시 가져가지 못하는 시간 |
+| `JOB_POSTING_MATCHING_MAX_ATTEMPTS` | `3` | 역량 하나의 최대 시도 횟수 |
+| `JOB_POSTING_MATCHING_RETRY_DELAYS` | `1m,5m` | 실패한 뒤 다시 시도할 때까지 기다리는 시간 |
+| `JOB_POSTING_MATCHING_SEARCH_LIMIT` | `10` | 역량 하나당 판정할 최대 후보 자료 수 |
+
 ## 환경 변수
 
 로컬 프로필은 `application-local.yml`의 로컬 데이터베이스 설정을 사용한다.
