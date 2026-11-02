@@ -84,18 +84,21 @@ it('목록의 지정 위치에 추천을 넣고, 미리보기에서 작성 폼�
   expect(await screen.findByRole('textbox', { name: '제목' })).toHaveValue(recommendation.title);
   expect(screen.getByRole('textbox', { name: '피드 내용' })).toHaveValue(recommendation.content);
   expect(submitted).toBeUndefined();
+  // 사용자가 추천 제목을 고쳐도 서버에는 원래 추천 ID를 보낸다.
+  await user.clear(screen.getByRole('textbox', { name: '제목' }));
+  await user.type(screen.getByRole('textbox', { name: '제목' }), '내가 고친 질문');
   await user.click(screen.getByRole('combobox', { name: '카테고리' }));
   await user.click(screen.getByRole('option', { name: '진로 고민' }));
   await user.click(screen.getByRole('button', { name: '질문 등록하기' }));
   await waitFor(() => expect(router.state.location.pathname).toBe('/community/103'));
   expect(submitted).toEqual(
     expect.objectContaining({
-      title: recommendation.title,
+      title: '내가 고친 질문',
       content: recommendation.content,
       feedType: 'QUESTION',
+      recommendationId: recommendation.recommendationId,
     }),
   );
-  expect(submitted).not.toHaveProperty('recommendationId');
 });
 
 it('직접 접속하거나 유효한 추천 상태가 없으면 선택 안내를 표시한다', async () => {
