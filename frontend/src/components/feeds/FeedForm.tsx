@@ -22,7 +22,7 @@ interface FeedFormProps {
   userId: number;
   feedType?: FeedType;
   initialFeed?: Feed;
-  initialDraft?: Pick<QuestionRecommendation, 'title' | 'content'>;
+  initialDraft?: Pick<QuestionRecommendation, 'recommendationId' | 'title' | 'content'>;
   onCancel: () => void;
   onSaved: (feedId: number) => void;
 }
@@ -81,6 +81,10 @@ export function FeedForm({
         content,
         isAnonymous,
         ...(!initialFeed ? { feedType: effectiveType } : {}),
+        // 추천에서 시작한 질문 작성에만 키를 넣는다. 제목·본문을 고쳐도 원래 추천 ID를 보낸다.
+        ...(!initialFeed && initialDraft && effectiveType === 'QUESTION'
+          ? { recommendationId: initialDraft.recommendationId }
+          : {}),
         categoryIds: [
           Number(categoryId),
           ...(initialFeed?.categories
