@@ -1,0 +1,17 @@
+[project]
+name = "shoutoutz-raw-collector"
+version = "0.1.0"
+description = "샤라웃 매일 데이터 파이프라인(수집, 정제, LLM 판정, 적재)"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28.1",
+    "lightgbm>=4.7.0",
+    "numpy>=2.5.4",
+    "scikit-learn>=1.9.1",
+    "tiktoken>=0.14.0",
+    "trafilatura>=2.3.1",
+    "yt-dlp>=2026.10.21",
+]
+
+[tool.uv]
+package = false
