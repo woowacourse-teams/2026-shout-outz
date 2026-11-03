@@ -93,6 +93,9 @@ def run_s1(args, run_id: str) -> dict:
                                 "seconds": round(time.time() - t0, 1), "counts": rep.get("counts"),
                                 "failures": (rep.get("failures") or [])[:20], "stopped": rep.get("stopped"),
                                 "verify_failed": (rep.get("verify_failed") or [])[:20],
+                                # 목록은 20개까지만 남기므로 전체 개수는 따로 둔다(알림에서 씀)
+                                "failure_count": len(rep.get("failures") or []),
+                                "verify_failed_count": len(rep.get("verify_failed") or []),
                                 "api_calls": rep.get("api_calls"), "raw_calls": rep.get("raw_calls"),
                                 "graphql_calls": rep.get("graphql_calls"), "graphql_points": rep.get("graphql_points")}
     delta = DATA / "runs" / f"delta-{run_id}.jsonl"

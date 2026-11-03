@@ -10,6 +10,15 @@ import os
 import httpx
 
 
+def _verify_example(row: dict) -> str:
+    """검증 실패 한 건을 사람이 읽을 수 있게 줄인다(글 하나의 댓글, 답글 수 또는 레포의 글 수)."""
+    where = f"{row.get('repo')}#{row['number']}" if row.get("number") is not None else str(row.get("repo"))
+    if "comments_total" in row:
+        return (f"{where} 댓글 {row.get('comments_got')}/{row.get('comments_total')}, "
+                f"답글 {row.get('replies_got')}/{row.get('replies_total')}")
+    return f"{where} {row.get('reason', '')}".strip()
+
+
 def alerts_for(report: dict) -> list[str]:
     """통합 보고서에서 알릴 일을 고른다."""
     out = []
@@ -18,7 +27,17 @@ def alerts_for(report: dict) -> list[str]:
         if v.get("status") == "FAILED":
             out.append(f"{name} 실패: {v.get('error')}")
         elif v.get("status") == "PARTIAL":
-            out.append(f"{name} 일부 실패 {len(v.get('failures') or [])}건" + (f", 멈춤: {v['stopped']}" if v.get("stopped") else ""))
+            failed = v.get("failure_count", len(v.get("failures") or []))
+            verify = v.get("verify_failed_count", len(v.get("verify_failed") or []))
+            parts = []
+            if failed:
+                parts.append(f"수집 실패 {failed}건")
+            if verify:  # 받은 글, 댓글 수가 전체 수와 다름. 어느 글인지 3건까지 보여 준다
+                examples = ", ".join(_verify_example(r) for r in (v.get("verify_failed") or [])[:3])
+                parts.append(f"검증 실패 {verify}건({examples})")
+            if v.get("stopped"):
+                parts.append(f"멈춤: {v['stopped']}")
+            out.append(f"{name} 일부 실패: " + ", ".join(parts))
     h = report.get("handoff") or {}
     if h and h.get("status") not in ("done", "dry_run"):
         out.append(f"건네기 {h.get('status')}: {h.get('note') or h.get('error') or ''}")
