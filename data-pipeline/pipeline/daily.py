@@ -156,7 +156,7 @@ def main() -> int:
                                             push=args.push or None, dry_run=args.dry_run)
     report["notify"] = notify.send(run_id, notify.alerts_for(report), dry_run=args.dry_run)
     print(json.dumps({"run_id": run_id, "status": report["status"], "delta": report["S1"]["delta"],
-                      "handoff": {k: report["handoff"].get(k) for k in ("status", "commit", "pushed", "note")},
+                      "handoff": {k: report["handoff"].get(k) for k in ("status", "commit", "pushed", "note", "gc")},
                       **{k: {kk: v.get(kk) for kk in ("status", "seconds", "counts", "error")}
                          for k, v in report["S1"]["sources"].items()}},
                      ensure_ascii=False, indent=1))
