@@ -91,6 +91,8 @@ test.each(['POST', 'QUESTION'] as const)(
     await waitFor(() =>
       expect(body).toEqual(expect.objectContaining({ feedType, isAnonymous: true })),
     );
+    // 추천을 거치지 않은 일반 작성에는 추천 ID 키 자체가 없어야 한다.
+    expect(body).not.toHaveProperty('recommendationId');
   },
 );
 
