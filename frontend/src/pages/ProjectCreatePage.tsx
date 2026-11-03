@@ -375,7 +375,7 @@ export function ProjectForm({
                 )}
               </Field>
 
-              <Field label="상세 설명"error={errors.descriptionMd}>
+              <Field label="상세 설명" error={errors.descriptionMd}>
                 {(id) => (
                   <textarea
                     id={id}
