@@ -87,9 +87,12 @@ def run_s1(args, run_id: str) -> dict:
             for c in st.changes:
                 if c["status"] in ("new", "changed"):
                     changed.setdefault(c["source"], set()).add(c["external_key"])
-        out["sources"][name] = {"status": "PARTIAL" if rep.get("failures") or rep.get("stopped") else "OK",
+        # 검증 실패(받은 글, 댓글 수가 전체 수와 다름)도 일부 실패로 본다. 저장은 됐지만 빠진 내용이 있을 수 있다
+        partial = rep.get("failures") or rep.get("stopped") or rep.get("verify_failed")
+        out["sources"][name] = {"status": "PARTIAL" if partial else "OK",
                                 "seconds": round(time.time() - t0, 1), "counts": rep.get("counts"),
                                 "failures": (rep.get("failures") or [])[:20], "stopped": rep.get("stopped"),
+                                "verify_failed": (rep.get("verify_failed") or [])[:20],
                                 "api_calls": rep.get("api_calls"), "raw_calls": rep.get("raw_calls"),
                                 "graphql_calls": rep.get("graphql_calls"), "graphql_points": rep.get("graphql_points")}
     delta = DATA / "runs" / f"delta-{run_id}.jsonl"
