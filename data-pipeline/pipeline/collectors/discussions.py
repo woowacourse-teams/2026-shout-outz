@@ -104,6 +104,7 @@ def collect(repos: list[str], run_id: str, force: bool = False) -> tuple[dict, l
         try:
             after, total, got, stopped = None, None, 0, False
             since = None if force or repo not in cursors else _ts(cursors[repo]) - WINDOW
+            newest = cursors.get(repo)  # 레포를 끝까지 받은 뒤에만 커서에 넣는다(계획 1-5)
             while True:
                 d = gql.q(LIST_Q, {"o": OWNER, "n": repo, "after": after})
                 r = d["repository"]
@@ -122,8 +123,8 @@ def collect(repos: list[str], run_id: str, force: bool = False) -> tuple[dict, l
                     if since and _ts(disc["updatedAt"]) < since:
                         stopped = True  # 이 뒤는 모두 더 오래된 글
                         break
-                    if repo not in cursors or disc["updatedAt"] > cursors[repo]:
-                        cursors[repo] = disc["updatedAt"]
+                    if newest is None or disc["updatedAt"] > newest:
+                        newest = disc["updatedAt"]
                     check = complete(gql, disc)
                     if not check["pass"]:
                         report["verify_failed"].append({"repo": repo, "number": disc["number"], **check})
@@ -145,6 +146,8 @@ def collect(repos: list[str], run_id: str, force: bool = False) -> tuple[dict, l
                 if stopped or not conn["pageInfo"]["hasNextPage"]:
                     break
                 after = conn["pageInfo"]["endCursor"]
+            if newest:
+                cursors[repo] = newest  # 중간에 실패하면 여기 오지 않아 다음 날 같은 커서부터 다시 본다
             if total is not None:
                 full_scan = since is None  # 전부 본 경우에만 글 수를 검증할 수 있다
                 report["repos"].append({"repo": repo, "total": total, "got": got, "incremental": not full_scan,
