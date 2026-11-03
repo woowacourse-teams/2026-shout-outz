@@ -57,8 +57,10 @@ class JobRequirementMatchingPropertiesTest {
     }
 
     @Test
-    void 후보_자료_수가_1보다_작으면_실패한다() {
+    void 후보_자료_수가_1보다_작거나_10보다_크면_실패한다() {
         assertThatThrownBy(() -> properties(3, List.of(Duration.ofMinutes(1)), 0))
+                .hasMessageContaining("search-limit");
+        assertThatThrownBy(() -> properties(3, List.of(Duration.ofMinutes(1)), 11))
                 .hasMessageContaining("search-limit");
     }
 

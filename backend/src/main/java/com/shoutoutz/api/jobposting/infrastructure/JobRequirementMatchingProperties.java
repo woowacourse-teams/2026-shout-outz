@@ -12,7 +12,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  *
  * @param lease       역량을 가져간 뒤 다른 Worker 가 다시 가져가지 못하는 시간. 임베딩과 판정 제공자 제한 시간의 합보다 길어야 한다
  * @param retryDelays n 번째 시도가 실패한 뒤 기다리는 시간. 시도가 목록보다 많으면 마지막 값을 쓴다
- * @param searchLimit 역량 하나당 판정에 넘길 최대 후보 자료 수
+ * @param searchLimit 역량 하나당 판정에 넘길 최대 후보 자료 수. 판정 응답이 출력 상한을 넘지 않도록 10개까지만 받는다
  * @param providers   판정 LLM 제공자. 앞에서부터 호출하고 실패하면 다음 제공자로 넘어간다
  */
 @ConfigurationProperties(prefix = "job-posting.matching")
@@ -26,6 +26,12 @@ public record JobRequirementMatchingProperties(
         @DefaultValue({"BEDROCK_GPT", "BEDROCK_CLAUDE"}) List<LlmProvider> providers
 ) {
 
+    /**
+     * 판정은 후보마다 이유와 설명을 한 응답에 담아, 후보가 늘면 판정 출력 상한을 넘어 응답이 잘릴 수 있다.
+     * 늘리려면 LlmRequirementJudge 의 출력 상한도 함께 본다.
+     */
+    static final int MAX_SEARCH_LIMIT = 10;
+
     public JobRequirementMatchingProperties {
         requirePositive(pollInterval, "poll-interval");
         requirePositive(lease, "lease");
@@ -37,8 +43,9 @@ public record JobRequirementMatchingProperties(
         }
         retryDelays.forEach(delay -> requirePositive(delay, "retry-delays"));
         retryDelays = List.copyOf(retryDelays);
-        if (searchLimit < 1) {
-            throw new IllegalArgumentException("job-posting.matching.search-limit는 1 이상이어야 합니다.");
+        if (searchLimit < 1 || searchLimit > MAX_SEARCH_LIMIT) {
+            throw new IllegalArgumentException(
+                    "job-posting.matching.search-limit는 1 이상 " + MAX_SEARCH_LIMIT + " 이하여야 합니다.");
         }
         if (providers == null || providers.isEmpty()) {
             throw new IllegalArgumentException("job-posting.matching.providers를 하나 이상 설정해야 합니다.");
