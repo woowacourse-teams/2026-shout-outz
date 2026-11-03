@@ -9,7 +9,7 @@ const FILLED: ProjectFormValues = {
   thumbnailImageId: 12,
   githubRepositoryUrl: 'https://github.com/woowacourse-teams/2026-loop',
   deploymentUrl: 'https://loop.team',
-  teamBlogUrls: 'https://velog.io/@loop\n https://loop-team.tistory.com \n',
+  teamBlogUrls: ['https://velog.io/@loop', ' https://loop-team.tistory.com ', ''],
   descriptionMd: '## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.',
   techTags: [
     { id: 1, displayName: 'React' },
@@ -64,21 +64,21 @@ describe('validateProjectForm', () => {
 
   describe('팀 블로그 주소', () => {
     it('비어 있어도 된다', () => {
-      expect(validateProjectForm({ ...FILLED, teamBlogUrls: '' })).toEqual({});
+      expect(validateProjectForm({ ...FILLED, teamBlogUrls: [''] })).toEqual({});
     });
 
     it('4개 이상이면 오류를 알린다', () => {
-      const teamBlogUrls = ['a', 'b', 'c', 'd'].map((name) => `https://${name}.com`).join('\n');
+      const teamBlogUrls = ['a', 'b', 'c', 'd'].map((name) => `https://${name}.com`);
       expect(validateProjectForm({ ...FILLED, teamBlogUrls })).toHaveProperty('teamBlogUrls');
     });
 
     it('http 또는 https 주소가 아니면 오류를 알린다', () => {
-      expect(validateProjectForm({ ...FILLED, teamBlogUrls: 'velog.io/@loop' })).toHaveProperty(
+      expect(validateProjectForm({ ...FILLED, teamBlogUrls: ['velog.io/@loop'] })).toHaveProperty(
         'teamBlogUrls',
       );
     });
 
-    it('요청에는 줄마다 잘라 목록으로 싣는다', () => {
+    it('요청에는 빈 칸을 빼고 앞뒤 공백을 잘라 싣는다', () => {
       expect(toProjectCreateRequest(FILLED, 'me').teamBlogUrls).toEqual([
         'https://velog.io/@loop',
         'https://loop-team.tistory.com',

@@ -156,6 +156,35 @@ describe('ProjectCreatePage', () => {
     );
   });
 
+  it('주소 추가 버튼으로 팀 블로그 주소 입력칸을 3개까지 늘리고, 빈 칸은 빼고 보낸다', async () => {
+    const user = userEvent.setup();
+    const received = captureCreateRequest();
+    renderRoute('/projects/new');
+
+    await fillRequiredFields(user, false);
+    await user.type(
+      screen.getByRole('textbox', { name: /팀 블로그 주소/ }),
+      'https://velog.io/@loop',
+    );
+    await user.click(screen.getByRole('button', { name: '주소 추가' }));
+    await user.click(screen.getByRole('button', { name: '주소 추가' }));
+    expect(screen.queryByRole('button', { name: '주소 추가' })).not.toBeInTheDocument();
+
+    await user.type(
+      screen.getByRole('textbox', { name: '팀 블로그 주소 3' }),
+      'https://loop-team.tistory.com',
+    );
+    await submit(user);
+
+    await waitFor(() =>
+      expect(received.body).toEqual(
+        expect.objectContaining({
+          teamBlogUrls: ['https://velog.io/@loop', 'https://loop-team.tistory.com'],
+        }),
+      ),
+    );
+  });
+
   describe('등록 성공', () => {
     it('작성자 한 명만 있어도 등록 요청을 보내고 목 응답을 표시한다', async () => {
       const user = userEvent.setup();
