@@ -1,9 +1,11 @@
 package com.shoutoutz.api.project.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.BlogSourceRepository;
+import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.ProjectDetail;
 import com.shoutoutz.api.project.domain.ProjectMemberProfile;
 import com.shoutoutz.api.project.domain.ProjectRepository;
@@ -20,8 +22,11 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -126,6 +131,88 @@ class ProjectDetailRepositoryIntegrationTest {
         );
         assertThat(projectRepository.findDetailBySlug(slugOf(projectId), null).orElseThrow().teamBlogUrls())
                 .containsExactly("https://manual.example.com");
+    }
+
+    @Test
+    @DisplayName("레포 주소로만 넣어 둔 팀 블로그를 같은 레포의 프로젝트에 이어 붙이고 상세에 함께 보여 준다.")
+    void attachesUnregisteredBlogSources() {
+        long projectId = saveProject(saveUser("blog-attach").getId(), "APPROVED");
+        String repositoryUrl = repositoryUrlOf(projectId);
+        saveUnregisteredBlogSource(repositoryUrl, "https://attach.tistory.com");
+        saveUnregisteredBlogSource("https://github.com/woowacourse-teams/2026-other", "https://other.tistory.com");
+
+        blogSourceRepository.attachUnregistered(projectId, new GithubRepositoryUrl(repositoryUrl));
+
+        assertThat(blogSources(projectId)).containsExactly(
+                Map.of("site_url", "https://attach.tistory.com", "status", "CONFIRMED")
+        );
+        assertThat(projectRepository.findDetailBySlug(slugOf(projectId), null).orElseThrow().teamBlogUrls())
+                .containsExactly("https://attach.tistory.com");
+        assertThat(unregisteredBlogSources("https://github.com/woowacourse-teams/2026-other")).containsExactly(
+                Map.of("site_url", "https://other.tistory.com", "status", "CONFIRMED")
+        );
+    }
+
+    @Test
+    @DisplayName("이어 붙인 뒤 팀이 폼에 같은 블로그 주소를 넣어도 운영자 행 하나만 남는다.")
+    void keepsAttachedBlogSourceWhenTeamInputsSameSiteUrl() {
+        long projectId = saveProject(saveUser("blog-attach-input").getId(), "PENDING");
+        String repositoryUrl = repositoryUrlOf(projectId);
+        saveUnregisteredBlogSource(repositoryUrl, "https://same.tistory.com");
+
+        blogSourceRepository.attachUnregistered(projectId, new GithubRepositoryUrl(repositoryUrl));
+        blogSourceRepository.syncServiceInputs(projectId, TeamBlogUrls.of(List.of("https://same.tistory.com")));
+
+        assertThat(jdbcTemplate.queryForList(
+                "SELECT site_url, kind, status FROM blog_sources WHERE project_id = ?", projectId
+        )).containsExactly(
+                Map.of("site_url", "https://same.tistory.com", "kind", "MANUAL", "status", "CONFIRMED")
+        );
+    }
+
+    @Test
+    @DisplayName("프로젝트에 이미 같은 블로그 주소가 있으면 레포 주소로 넣어 둔 행은 이어 붙이지 않고 DISABLED로 바꾼다.")
+    void disablesUnregisteredBlogSourceWhenProjectAlreadyHasSameSiteUrl() {
+        long projectId = saveProject(saveUser("blog-attach-dup").getId(), "APPROVED");
+        String repositoryUrl = repositoryUrlOf(projectId);
+        blogSourceRepository.syncServiceInputs(projectId, TeamBlogUrls.of(List.of("https://dup.tistory.com")));
+        saveUnregisteredBlogSource(repositoryUrl, "https://dup.tistory.com");
+
+        blogSourceRepository.attachUnregistered(projectId, new GithubRepositoryUrl(repositoryUrl));
+
+        assertThat(blogSources(projectId)).containsExactly(
+                Map.of("site_url", "https://dup.tistory.com", "status", "CONFIRMED")
+        );
+        assertThat(unregisteredBlogSources(repositoryUrl)).containsExactly(
+                Map.of("site_url", "https://dup.tistory.com", "status", "DISABLED")
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "INSERT INTO blog_sources (site_url, kind, status) "
+                    + "VALUES ('https://no-owner.tistory.com', 'MANUAL', 'CONFIRMED')",
+            "INSERT INTO blog_sources (github_repository_url, site_url, kind, status) "
+                    + "VALUES ('https://github.com/woowacourse-teams/2026-loop', 'https://input.tistory.com', "
+                    + "'SERVICE_INPUT', 'CONFIRMED')",
+            "INSERT INTO blog_sources (github_repository_url, site_url, kind, status) "
+                    + "VALUES ('https://github.com/Woowacourse-Teams/2026-Loop', 'https://upper.tistory.com', "
+                    + "'MANUAL', 'CONFIRMED')"
+    })
+    @DisplayName("프로젝트 없는 행은 운영자 입력(MANUAL)이면서 정규화된 레포 주소가 있어야 한다.")
+    void rejectsInvalidUnregisteredBlogSource(String insertSql) {
+        assertThatThrownBy(() -> jdbcTemplate.update(insertSql))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    @DisplayName("프로젝트 없는 행은 같은 레포의 같은 블로그 주소를 한 번만 넣을 수 있다.")
+    void rejectsDuplicatedUnregisteredBlogSource() {
+        saveUnregisteredBlogSource("https://github.com/woowacourse-teams/2026-loop", "https://loop.tistory.com");
+
+        assertThatThrownBy(() -> saveUnregisteredBlogSource(
+                "https://github.com/woowacourse-teams/2026-loop", "https://loop.tistory.com"))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
@@ -426,6 +513,28 @@ class ProjectDetailRepositoryIntegrationTest {
 
     private static String profileUrl(String githubLogin) {
         return "https://github.com/" + githubLogin;
+    }
+
+    private String repositoryUrlOf(long projectId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT github_repository_url FROM projects WHERE id = ?", String.class, projectId);
+    }
+
+    private void saveUnregisteredBlogSource(String repositoryUrl, String siteUrl) {
+        jdbcTemplate.update("""
+                INSERT INTO blog_sources (github_repository_url, site_url, kind, status)
+                VALUES (?, ?, 'MANUAL', 'CONFIRMED')
+                """, repositoryUrl, siteUrl);
+    }
+
+    private List<Map<String, Object>> unregisteredBlogSources(String repositoryUrl) {
+        return jdbcTemplate.queryForList("""
+                SELECT site_url, status
+                FROM blog_sources
+                WHERE project_id IS NULL
+                  AND github_repository_url = ?
+                ORDER BY site_url
+                """, repositoryUrl);
     }
 
     private List<Map<String, Object>> blogSources(long projectId) {

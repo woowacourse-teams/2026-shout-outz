@@ -13,4 +13,12 @@ public interface BlogSourceRepository {
      * 운영자가 넣은 주소(MANUAL)는 건드리지 않는다.
      */
     void syncServiceInputs(long projectId, TeamBlogUrls teamBlogUrls);
+
+    /**
+     * 프로젝트 없이 레포 주소로만 넣어 둔 블로그(MANUAL)를 이 프로젝트에 이어 붙인다.
+     * 서비스에 등록하기 전부터 수집하던 팀 블로그가 등록 뒤에도 같은 행으로 이어지게 한다.
+     * 프로젝트에 이미 같은 블로그 주소가 있으면 그 행이 블로그를 맡으므로, 레포 주소로 넣어 둔 행은 DISABLED 로 바꾼다.
+     * 팀이 폼에 같은 블로그 주소를 넣어도 운영자 행이 남도록, syncServiceInputs 보다 먼저 부른다.
+     */
+    void attachUnregistered(long projectId, GithubRepositoryUrl githubRepositoryUrl);
 }
