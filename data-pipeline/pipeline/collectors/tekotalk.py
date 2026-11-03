@@ -65,7 +65,7 @@ def main() -> int:
     return 0
 
 
-def collect(run_id: str, limit: int | None = None, offset: int = 0) -> tuple[dict, list[Store]]:
+def collect(run_id: str, limit: int | None = None, offset: int = 0, recheck_no_subtitle: bool = False) -> tuple[dict, list[Store]]:
     """재생목록에서 아직 받지 않은 영상만 받는다(이미 받은 영상 ID 는 접속하지 않음)."""
     store = Store("youtube-tekotalk", run_id, VERSION)
     report = {"run_id": run_id, "started_at": now(), "failures": [], "stopped": None,
@@ -79,6 +79,13 @@ def collect(run_id: str, limit: int | None = None, offset: int = 0) -> tuple[dic
     if limit:
         ids = ids[:limit]
     done = {r["external_key"] for r in store.rows}
+    if recheck_no_subtitle:  # 처음 받을 때 자막이 없던 영상은 나중에 자막이 생길 수 있어 다시 본다(주 1회)
+        import gzip as _gz
+        for r in store.latest.values():
+            env = json.loads(_gz.decompress((DATA / r["s3_key"]).read_bytes()))
+            if not (env.get("payload") or {}).get("subtitle"):
+                done.discard(r["external_key"])
+        report["counts"]["to_fetch_incl_no_subtitle"] = sum(1 for i in ids if f"yt:{i}" not in done)
     for i, vid in enumerate(ids, 1):
         if f"yt:{vid}" in done:
             report["counts"]["already_present"] += 1

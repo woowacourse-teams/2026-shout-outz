@@ -22,7 +22,7 @@ from pipeline.common import API, DATA, GH, GQL, OWNER, STATE, atomic_write, now,
 from pipeline.pr_hash import SCHEME, text_hash
 from pipeline.store import Store
 
-VERSION = "2.0.0"  # 2.0.0: 매일 증분(최근 수정순, 커서), pr-v2 판단, patch 저장 안 함
+VERSION = "2.1.0"  # 2.1.0: 첫 조회 크기를 줄이고 넘친 것만 따로 받음(GraphQL 점수 줄이기), 매월 확인 기간 지정
 CURSOR = "state/cursors/github-pr.json"
 WINDOW = timedelta(hours=1)
 FIRST = 20
@@ -40,20 +40,20 @@ query PullRequestUpdated($owner: String!, $name: String!, $first: Int!, $after: 
       nodes {
         number title body url state isDraft merged mergedAt createdAt updatedAt closedAt
         author { login __typename }
-        labels(first: 50) {
+        labels(first: 10) {
           totalCount pageInfo { hasNextPage endCursor }
           nodes { name }
         }
         baseRefName headRefName headRefOid additions deletions changedFiles
-        reviews(first: 50) {
+        reviews(first: 10) {
           totalCount pageInfo { hasNextPage endCursor }
           nodes { id databaseId author { login __typename } state body submittedAt }
         }
-        reviewThreads(first: 100) {
+        reviewThreads(first: 10) {
           totalCount pageInfo { hasNextPage endCursor }
           nodes {
             id isResolved path line
-            comments(first: 20) {
+            comments(first: 5) {
               totalCount pageInfo { hasNextPage endCursor }
               nodes { id databaseId author { login __typename } body createdAt }
             }
@@ -240,7 +240,9 @@ def _files(gh: GH, repo: str, number: int) -> tuple[list, dict]:
     return out[:MAX_FILES], {"url": url, "pages": pages}
 
 
-def collect(repos: list[str], run_id: str, force: bool = False) -> tuple[dict, list[Store]]:
+def collect(repos: list[str], run_id: str, force: bool = False, window_days: int | None = None) -> tuple[dict, list[Store]]:
+    """force 면 커서를 무시하고 다시 본다(매월 1일, 리뷰 수정은 PR updatedAt 을 올리지 않기 때문).
+    window_days 가 있으면 force 일 때 그 기간 안에 수정된 PR 까지만 본다(오래된 PR 의 리뷰 수정은 드물다고 보고)."""
     cursor_path = DATA / CURSOR
     cursors = json.loads(cursor_path.read_text()) if cursor_path.exists() else {}
     gql, gh = GQL(token()), GH(token())
@@ -248,7 +250,10 @@ def collect(repos: list[str], run_id: str, force: bool = False) -> tuple[dict, l
     report = {"run_id": run_id, "started_at": now(), "repos": [], "failures": [],
               "counts": {"seen": 0, "unchanged": 0, "saved_new": 0, "saved_changed": 0, "restored": 0}}
     for i, repo in enumerate(repos, 1):
-        since = None if force or repo not in cursors else _ts(cursors[repo]) - WINDOW
+        if force:
+            since = (datetime.now(_ts(now()).tzinfo) - timedelta(days=window_days)) if window_days else None
+        else:
+            since = None if repo not in cursors else _ts(cursors[repo]) - WINDOW
         newest = cursors.get(repo)
         info = {"repo": repo, "seen": 0, "saved": 0, "full": since is None}
         try:

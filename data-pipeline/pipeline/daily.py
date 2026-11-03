@@ -21,6 +21,8 @@ import time
 from pipeline.collectors import blog_team, discussions, pr, teamdoc_commits, tekotalk, wiki, wiki_commits
 from pipeline.collectors import repos as org_repos
 from pipeline.collectors import teamdoc as teamdocs
+from pipeline import handoff as handoff_mod
+from pipeline import notify
 from pipeline.common import CONFIG, DATA, STATE, atomic_write, now, stamp
 
 # 실행 순서. 레포 목록이 먼저, 커밋 정보는 그 문서를 받은 뒤.
@@ -49,7 +51,7 @@ def run_one(name: str, args, run_id: str, changed: dict[str, set[str]]) -> tuple
     if name == "repos":
         return org_repos.collect(run_id)
     if name == "tekotalk":
-        return tekotalk.collect(run_id, limit=args.tekotalk_limit)
+        return tekotalk.collect(run_id, limit=args.tekotalk_limit, recheck_no_subtitle=args.weekly)
     if name == "blog":
         return blog_team.collect(run_id)
     if name == "teamdoc-commit":
@@ -58,8 +60,10 @@ def run_one(name: str, args, run_id: str, changed: dict[str, set[str]]) -> tuple
         return wiki_commits.collect(run_id)
     repos = args.repos or target_repos(args.scope)
     if name == "pr":
-        return pr.collect(repos, run_id, force=args.full_pr)  # 매월 1일이나 --full-pr 이면 커서와 상관없이 전부
-    return {"teamdoc": teamdocs.collect, "wiki": wiki.collect, "discussion": discussions.collect}[name](repos, run_id)
+        return pr.collect(repos, run_id, force=args.full_pr, window_days=args.full_pr_days)
+    if name == "discussion":
+        return discussions.collect(repos, run_id, force=args.monthly)  # 매월 1일 전체(지워진 글, 수정 확인)
+    return {"teamdoc": teamdocs.collect, "wiki": wiki.collect}[name](repos, run_id)
 
 
 def run_s1(args, run_id: str) -> dict:
@@ -105,12 +109,23 @@ def main() -> int:
     ap.add_argument("--repos", nargs="+")
     ap.add_argument("--refresh-repos", action="store_true", help="월요일이 아니어도 레포 목록을 다시 받는다")
     ap.add_argument("--full-pr", action="store_true", help="PR 을 커서와 상관없이 전부 확인(매월 1일 자동)")
+    ap.add_argument("--full-pr-days", type=int, help="PR 전체 확인 때 이 기간(일) 안에 수정된 PR 까지만 본다")
+    ap.add_argument("--monthly", action="store_true", help="매월 1일 동작(지난 기수 포함, PR, Discussions 전체 확인)")
+    ap.add_argument("--weekly", action="store_true", help="매주 월요일 동작(레포 목록, 테코톡 자막 없던 영상 다시 확인)")
+    ap.add_argument("--dry-run", action="store_true", help="수집은 하되 원본 저장소 commit, push, 알림 전송은 하지 않음")
+    ap.add_argument("--push", action="store_true", help="commit 뒤 push(따로 승인받은 경우만, PIPELINE_PUSH=1 과 같음)")
     ap.add_argument("--run-id")
     ap.add_argument("--tekotalk-limit", type=int)
     args = ap.parse_args()
     args.sources = [s for s in SOURCES if s in args.sources]  # 입력 순서와 상관없이 정해진 순서로
-    if dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).day == 1:
-        args.full_pr = True  # 리뷰, 댓글 수정처럼 PR updatedAt 을 안 올리는 변경을 매월 잡는다
+    today = dt.datetime.now(dt.timezone(dt.timedelta(hours=9)))
+    args.monthly = args.monthly or today.day == 1
+    args.weekly = args.weekly or today.weekday() == 0
+    if args.monthly:
+        args.full_pr = True      # 리뷰 수정은 PR updatedAt 을 올리지 않는다(PR #568 실험)
+        args.scope = "all"       # 지난 기수 레포도 매월 1일
+    if args.weekly:
+        args.refresh_repos = True
 
     STATE.mkdir(exist_ok=True)
     lock = open(STATE / "daily.lock", "w")
@@ -127,9 +142,15 @@ def main() -> int:
     statuses = {s["status"] for s in report["S1"]["sources"].values()}
     report["status"] = "FAILED" if statuses == {"FAILED"} else ("PARTIAL" if statuses - {"OK"} else "OK")
     report["finished_at"] = now()
+    report["flags"] = {"monthly": args.monthly, "weekly": args.weekly, "full_pr": args.full_pr, "dry_run": args.dry_run}
     atomic_write(DATA / "runs" / f"run-{run_id}.json",
                  (json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode())
+    # S7a 건네기: 완료 표시를 실행 기록에 쓰고 같은 commit 에 담는다. push 는 승인받은 경우만.
+    report["handoff"] = handoff_mod.handoff(run_id, report["S1"]["delta"]["by_status"],
+                                            push=args.push or None, dry_run=args.dry_run)
+    report["notify"] = notify.send(run_id, notify.alerts_for(report), dry_run=args.dry_run)
     print(json.dumps({"run_id": run_id, "status": report["status"], "delta": report["S1"]["delta"],
+                      "handoff": {k: report["handoff"].get(k) for k in ("status", "commit", "pushed", "note")},
                       **{k: {kk: v.get(kk) for kk in ("status", "seconds", "counts", "error")}
                          for k, v in report["S1"]["sources"].items()}},
                      ensure_ascii=False, indent=1))
