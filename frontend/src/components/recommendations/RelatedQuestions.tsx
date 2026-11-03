@@ -14,8 +14,13 @@ export function RelatedQuestions({ items }: { items: QuestionRecommendation[] })
         AI가 제안한 질문을 살펴보고, 함께 이야기해 보세요.
       </p>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        {selected.map((item) => (
-          <RecommendationCard key={item.recommendationId} recommendation={item} />
+        {selected.map((item, index) => (
+          <RecommendationCard
+            key={item.recommendationId}
+            recommendation={item}
+            surface="feed_detail"
+            position={index}
+          />
         ))}
       </div>
     </section>
