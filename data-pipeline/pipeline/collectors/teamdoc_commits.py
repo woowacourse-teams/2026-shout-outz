@@ -24,6 +24,7 @@ from pipeline.store import Store
 
 SOURCE = "github-teamdoc-commit"
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+(\.[\w-]+)+")
+DELAY = 0.2  # 요청 사이 쉬는 시간(초)
 VERSION = "1.1.0"  # 1.1.0: 오늘 바뀐 문서만(only_keys)
 
 
@@ -98,7 +99,7 @@ def collect(run_id: str, only_keys: set[str] | None = None, limit: int | None = 
                 else:
                     report["errors"].append({"key": key, "status": fr.status_code, "reason": "첫 커밋"})
                     continue
-                time.sleep(base.DELAY)
+                time.sleep(DELAY)
             payload = {"repo": repo, "path": path, "ref_commit_sha": ref, "commit_count": count,
                        "last_commit": last, "first_commit": first,
                        "request": {"endpoint": "GET /repos/{repo}/commits", "per_page": 1}}
@@ -113,7 +114,7 @@ def collect(run_id: str, only_keys: set[str] | None = None, limit: int | None = 
             report["commit_count_hist"][b] = report["commit_count_hist"].get(b, 0) + 1
         except (httpx.HTTPError, ValueError, KeyError) as e:
             report["errors"].append({"key": key, "reason": f"{type(e).__name__}: {e}"[:200]})
-        time.sleep(base.DELAY)
+        time.sleep(DELAY)
         if i % 200 == 0:
             store.flush()
             print(f"[{base.now()}] {i}/{len(targets)} saved={report['saved']} api={gh.api_calls} "

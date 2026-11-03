@@ -17,12 +17,11 @@ import httpx
 
 from datetime import datetime, timedelta
 
-from pipeline.common import DATA, OWNER, STATE, atomic_write, now, stamp, token
+from pipeline.common import DATA, GQL, OWNER, STATE, atomic_write, now, stamp, token
 from pipeline.store import Store
 
 VERSION = "1.1.0"  # 1.1.0: 최근 수정순, 커서 이후만
 
-GRAPHQL = "https://api.github.com/graphql"
 PAGE = 10
 
 AUTHOR = "author { login __typename }"
@@ -40,48 +39,6 @@ MORE_COMMENTS_Q = ("query($id:ID!,$after:String){ rateLimit{cost remaining reset
                    "comments(first:50, after:$after){ pageInfo{hasNextPage endCursor} nodes{ %s } } } } }" % COMMENT)
 MORE_REPLIES_Q = ("query($id:ID!,$after:String){ rateLimit{cost remaining resetAt} node(id:$id){ ... on DiscussionComment { "
                   "replies(first:50, after:$after){ pageInfo{hasNextPage endCursor} nodes{ %s } } } } }" % REPLY)
-
-
-class GQL:
-    def __init__(self, token: str):
-        self.c = httpx.Client(timeout=90, headers={"Authorization": f"Bearer {token}",
-                                                   "User-Agent": "shout-outz-raw-collector/0.1"})
-        self.calls = 0
-        self.points = 0
-
-    def q(self, query: str, variables: dict) -> dict:
-        for attempt in range(8):
-            try:
-                r = self.c.post(GRAPHQL, json={"query": query, "variables": variables})
-            except httpx.TransportError:
-                time.sleep(min(2 ** attempt, 60))
-                continue
-            self.calls += 1
-            if r.status_code in (403, 429):
-                reset = int(r.headers.get("x-ratelimit-reset", time.time() + 60))
-                wait = int(r.headers.get("retry-after") or 0) or max(60, reset - int(time.time()) + 10)
-                print(f"  GraphQL 한도 대기 {wait}s", flush=True)
-                time.sleep(min(wait, 3700))
-                continue
-            if r.status_code >= 500:
-                time.sleep(min(2 ** attempt, 60))
-                continue
-            d = r.json()
-            errs = d.get("errors") or []
-            if any(e.get("type") == "RATE_LIMITED" for e in errs):
-                reset = int(r.headers.get("x-ratelimit-reset", time.time() + 60))
-                time.sleep(min(max(60, reset - int(time.time()) + 10), 3700))
-                continue
-            if errs:
-                raise RuntimeError(json.dumps(errs, ensure_ascii=False)[:400])
-            rl = d["data"].get("rateLimit") or {}
-            self.points += int(rl.get("cost") or 0)
-            if rl.get("remaining") is not None and int(rl["remaining"]) < 200:
-                reset = int(r.headers.get("x-ratelimit-reset", time.time() + 60))
-                print(f"  GraphQL 남은 한도 {rl['remaining']} → {max(0, reset - int(time.time()))}s 대기", flush=True)
-                time.sleep(min(max(0, reset - int(time.time())) + 10, 3700))
-            return d["data"]
-        raise RuntimeError("GraphQL 요청 반복 실패")
 
 
 def complete(gql: GQL, disc: dict) -> dict:

@@ -20,6 +20,7 @@ TOKEN_FILE = Path.home() / ".config" / "woowacourse-collect-token"
 OWNER = "woowacourse-teams"
 API = "https://api.github.com"
 RAW = "https://raw.githubusercontent.com"
+GRAPHQL = "https://api.github.com/graphql"
 
 
 def now() -> str:
@@ -76,3 +77,45 @@ class GH:
 
 def token() -> str:
     return os.environ.get("GITHUB_TOKEN") or TOKEN_FILE.read_text().strip()
+
+
+class GQL:
+    def __init__(self, token: str):
+        self.c = httpx.Client(timeout=90, headers={"Authorization": f"Bearer {token}",
+                                                   "User-Agent": "shout-outz-raw-collector/0.1"})
+        self.calls = 0
+        self.points = 0
+
+    def q(self, query: str, variables: dict) -> dict:
+        for attempt in range(8):
+            try:
+                r = self.c.post(GRAPHQL, json={"query": query, "variables": variables})
+            except httpx.TransportError:
+                time.sleep(min(2 ** attempt, 60))
+                continue
+            self.calls += 1
+            if r.status_code in (403, 429):
+                reset = int(r.headers.get("x-ratelimit-reset", time.time() + 60))
+                wait = int(r.headers.get("retry-after") or 0) or max(60, reset - int(time.time()) + 10)
+                print(f"  GraphQL 한도 대기 {wait}s", flush=True)
+                time.sleep(min(wait, 3700))
+                continue
+            if r.status_code >= 500:
+                time.sleep(min(2 ** attempt, 60))
+                continue
+            d = r.json()
+            errs = d.get("errors") or []
+            if any(e.get("type") == "RATE_LIMITED" for e in errs):
+                reset = int(r.headers.get("x-ratelimit-reset", time.time() + 60))
+                time.sleep(min(max(60, reset - int(time.time()) + 10), 3700))
+                continue
+            if errs:
+                raise RuntimeError(json.dumps(errs, ensure_ascii=False)[:400])
+            rl = d["data"].get("rateLimit") or {}
+            self.points += int(rl.get("cost") or 0)
+            if rl.get("remaining") is not None and int(rl["remaining"]) < 200:
+                reset = int(r.headers.get("x-ratelimit-reset", time.time() + 60))
+                print(f"  GraphQL 남은 한도 {rl['remaining']} → {max(0, reset - int(time.time()))}s 대기", flush=True)
+                time.sleep(min(max(0, reset - int(time.time())) + 10, 3700))
+            return d["data"]
+        raise RuntimeError("GraphQL 요청 반복 실패")

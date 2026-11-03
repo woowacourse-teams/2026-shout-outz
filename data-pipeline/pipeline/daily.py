@@ -7,7 +7,7 @@
 - 원본 저장소 경로는 RAW_DATA_REPO, GitHub 토큰은 GITHUB_TOKEN(없으면 예전 토큰 파일).
 - 같은 서버에서 두 번 동시에 돌지 않게 잠근다(계획 1-5).
 - 레포 목록(repos)은 월요일이거나 --refresh-repos 이거나 목록이 아직 없을 때만 다시 받는다(계획 4장).
-- 커밋 정보(teamdoc-commit, wiki-commit)는 같은 실행에서 바뀐 문서만 본다.
+- 커밋 정보(teamdoc-commit, wiki-commit)는 아직 그 기준 커밋으로 받지 않은 문서만 본다(실패해도 다음 날 다시 잡힘).
 - 결과: runs/run-{run_id}.json(통합 보고서), runs/delta-{run_id}.jsonl(new, changed, deleted, restored).
 """
 from __future__ import annotations
@@ -18,13 +18,13 @@ import fcntl
 import json
 import time
 
-from pipeline.collectors import blog_team, discussions, teamdoc_commits, tekotalk, wiki, wiki_commits
+from pipeline.collectors import blog_team, discussions, pr, teamdoc_commits, tekotalk, wiki, wiki_commits
 from pipeline.collectors import repos as org_repos
 from pipeline.collectors import teamdoc as teamdocs
 from pipeline.common import CONFIG, DATA, STATE, atomic_write, now, stamp
 
 # 실행 순서. 레포 목록이 먼저, 커밋 정보는 그 문서를 받은 뒤.
-SOURCES = ("repos", "teamdoc", "wiki", "discussion", "blog", "tekotalk", "teamdoc-commit", "wiki-commit")
+SOURCES = ("repos", "pr", "teamdoc", "wiki", "discussion", "blog", "tekotalk", "teamdoc-commit", "wiki-commit")
 EXCLUSIONS = CONFIG / "exclusions.json"
 
 
@@ -53,10 +53,12 @@ def run_one(name: str, args, run_id: str, changed: dict[str, set[str]]) -> tuple
     if name == "blog":
         return blog_team.collect(run_id)
     if name == "teamdoc-commit":
-        return teamdoc_commits.collect(run_id, only_keys=changed.get("github-teamdoc", set()))
+        return teamdoc_commits.collect(run_id)  # 기준 커밋이 다른 문서만(전날 실패분도 다시 잡힘, 원칙 3)
     if name == "wiki-commit":
-        return wiki_commits.collect(run_id, only_keys=changed.get("github-wiki", set()))
+        return wiki_commits.collect(run_id)
     repos = args.repos or target_repos(args.scope)
+    if name == "pr":
+        return pr.collect(repos, run_id, force=args.full_pr)  # 매월 1일이나 --full-pr 이면 커서와 상관없이 전부
     return {"teamdoc": teamdocs.collect, "wiki": wiki.collect, "discussion": discussions.collect}[name](repos, run_id)
 
 
@@ -102,10 +104,13 @@ def main() -> int:
     ap.add_argument("--scope", choices=["daily", "monthly", "all"], default="daily")
     ap.add_argument("--repos", nargs="+")
     ap.add_argument("--refresh-repos", action="store_true", help="월요일이 아니어도 레포 목록을 다시 받는다")
+    ap.add_argument("--full-pr", action="store_true", help="PR 을 커서와 상관없이 전부 확인(매월 1일 자동)")
     ap.add_argument("--run-id")
     ap.add_argument("--tekotalk-limit", type=int)
     args = ap.parse_args()
     args.sources = [s for s in SOURCES if s in args.sources]  # 입력 순서와 상관없이 정해진 순서로
+    if dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).day == 1:
+        args.full_pr = True  # 리뷰, 댓글 수정처럼 PR updatedAt 을 안 올리는 변경을 매월 잡는다
 
     STATE.mkdir(exist_ok=True)
     lock = open(STATE / "daily.lock", "w")

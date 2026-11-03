@@ -92,7 +92,8 @@ def collect(run_id: str, limit: int | None = None, offset: int = 0) -> tuple[dic
                     info = y.extract_info(f"https://www.youtube.com/watch?v={vid}", download=True)
             except Exception as e:  # noqa: BLE001 — yt-dlp 는 여러 예외를 던진다
                 msg = f"{type(e).__name__}: {e}"[:400]
-                if any(k in msg for k in ("Private video", "Video unavailable", "has been removed", "members-only")):
+                if any(k in msg.lower() for k in ("private video", "video unavailable", "video is unavailable",
+                                                  "has been removed", "members-only")):
                     # 비공개 · 삭제 영상은 재생목록에만 남아 있다 → 실패가 아니라 "받을 수 없음"
                     report["counts"]["unavailable"] = report["counts"].get("unavailable", 0) + 1
                     report.setdefault("unavailable", []).append({"id": vid, "reason": msg[:120]})

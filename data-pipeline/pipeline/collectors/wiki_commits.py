@@ -63,6 +63,7 @@ def collect(run_id: str, only_keys: set[str] | None = None, repos: list[str] | N
     """only_keys 가 있으면 그 페이지(오늘 바뀐 wiki 페이지)가 있는 wiki 만 clone 한다."""
     pages = Store("github-wiki", run_id)
     store = Store(SOURCE, run_id, VERSION)
+    done_refs = {r["external_key"]: r.get("ref_wiki_commit_sha") for r in store.latest.values()}
     by_repo: dict[str, list[dict]] = defaultdict(list)
     for row in pages.latest.values():
         if row.get("deleted_at") or (only_keys is not None and row["external_key"] not in only_keys):
@@ -70,6 +71,8 @@ def collect(run_id: str, only_keys: set[str] | None = None, repos: list[str] | N
         p = json.loads(gzip.decompress((base.DATA / row["s3_key"]).read_bytes()))["payload"]
         if repos and p["repo"].split("/")[1] not in repos:
             continue
+        if done_refs.get(row["external_key"]) == p["wiki_commit_sha"]:
+            continue  # 이미 같은 기준 커밋으로 받음(이전 실행이 실패했으면 여기서 다시 잡힌다)
         by_repo[p["repo"]].append({"key": row["external_key"], "path": p["path"], "ref": p["wiki_commit_sha"],
                                    "url": row.get("canonical_url")})
     report = {"run_id": run_id, "started_at": base.now(), "repos": 0, "pages": 0, "saved": 0,
@@ -107,6 +110,7 @@ def collect(run_id: str, only_keys: set[str] | None = None, repos: list[str] | N
                                      payload, {"ref": item["ref"], "last": last["sha"], "first": first["sha"],
                                                "count": count},
                                      item["url"], last["committer"]["date"])
+                store.latest[item["key"]]["ref_wiki_commit_sha"] = item["ref"]
                 report["saved" if outcome != "already_present" else "already_present"] += 1
                 b = "1" if count == 1 else "2-5" if count <= 5 else "6-20" if count <= 20 else "21+"
                 report["commit_count_hist"][b] = report["commit_count_hist"].get(b, 0) + 1

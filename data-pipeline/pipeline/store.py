@@ -36,11 +36,24 @@ class Store:
                 self.rows.append(row)
                 self.latest[row["external_key"]] = row
 
+    def unchanged(self, key: str, text_hash: str) -> bool:
+        """재수집 판단 해시가 지난 최신 버전과 같고 지워지지 않았으면 True(PR, pr-v2)."""
+        prev = self.latest.get(key)
+        return bool(prev and not prev.get("deleted_at") and prev.get("text_hash") == text_hash)
+
+    def touch(self, key: str, at: str) -> None:
+        """바뀌지 않았지만 오늘 봤다는 기록만 남긴다."""
+        if key in self.latest:
+            self.latest[key]["last_seen_at"] = at
+
     def save(self, key: str, key_path: str, envelope_extra: dict, payload: dict, hash_obj,
-             canonical_url: str | None, source_updated_at: str | None) -> str:
+             canonical_url: str | None, source_updated_at: str | None,
+             text_hash: str | None = None, hash_scheme: str | None = None) -> str:
+        """text_hash 가 있으면(PR) 그것으로 바뀜을 판단하고, 없으면 원본 전체 지문(content_hash)으로 판단한다."""
         h = sha256(hash_obj)
         prev = self.latest.get(key)
-        if prev and prev["content_hash"] == h:
+        same = (prev.get("text_hash") == text_hash) if (prev and text_hash) else (prev and prev["content_hash"] == h)
+        if prev and same:
             prev["last_seen_at"] = envelope_extra["fetched_at"]
             if prev.get("deleted_at"):  # 지워졌다가 같은 내용으로 다시 생김 → 되살림
                 prev["deleted_at"] = None
@@ -54,12 +67,16 @@ class Store:
         env = {"source": self.source, "external_key": key, "version": version, "source_updated_at": source_updated_at,
                "collector": {"name": self.source, "version": self.version, "run_id": self.run_id}, "content_hash": h,
                "payload": payload, **envelope_extra}
+        if text_hash:
+            env["hash_scheme"], env["text_hash"] = hash_scheme, text_hash
         atomic_write(DATA / rel, gzip.compress(json.dumps(env, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()))
         if prev:
             prev["is_latest"] = False
         row = {"canonical_url": canonical_url, "content_hash": h, "deleted_at": None, "external_key": key,
                "fetched_at": fetched, "is_latest": True, "last_seen_at": fetched, "run_id": self.run_id,
                "s3_key": rel, "source": self.source, "source_updated_at": source_updated_at, "version": version}
+        if text_hash:
+            row.update({"text_hash": text_hash, "hash_scheme": hash_scheme})
         self.rows.append(row)
         self.latest[key] = row
         self.journal.parent.mkdir(parents=True, exist_ok=True)  # 빈 상태에서 처음 저장할 때
