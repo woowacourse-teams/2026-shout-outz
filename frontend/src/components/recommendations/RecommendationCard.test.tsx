@@ -22,11 +22,12 @@ class FakeIntersectionObserver {
   }
 }
 
-function intersect(isIntersecting: boolean) {
+/** 카드가 화면에 보이는 비율을 바꾼다. 0이면 화면 밖이다. */
+function intersect(intersectionRatio: number) {
   act(() => {
     for (const observer of observers.filter((item) => !item.disconnected)) {
       observer.callback(
-        [{ isIntersecting } as IntersectionObserverEntry],
+        [{ isIntersecting: intersectionRatio > 0, intersectionRatio } as IntersectionObserverEntry],
         {} as IntersectionObserver,
       );
     }
@@ -54,24 +55,29 @@ function show(position = 1) {
   });
   const tree = () => (
     <RouterContextProvider router={router}>
-      <RecommendationCard recommendation={recommendation} surface="feed_detail" position={position} />
+      <RecommendationCard
+        recommendation={recommendation}
+        surface="feed_detail"
+        position={position}
+      />
     </RouterContextProvider>
   );
   const view = render(tree());
   return { router, rerender: () => view.rerender(tree()) };
 }
 
-it('카드가 화면에 들어오면 노출을 한 번만 보내고, 리렌더나 스크롤 왕복으로 다시 보내지 않는다', () => {
+it('카드가 절반 이상 보이면 노출을 한 번만 보내고, 리렌더나 스크롤 왕복으로 다시 보내지 않는다', () => {
   const { rerender } = show();
   expect(events).toEqual([]);
-  intersect(false);
+  intersect(0);
+  intersect(0.3);
   expect(events).toEqual([]);
 
-  intersect(true);
-  intersect(false);
-  intersect(true);
+  intersect(0.5);
+  intersect(0);
+  intersect(1);
   rerender();
-  intersect(true);
+  intersect(1);
 
   expect(events).toEqual([
     {

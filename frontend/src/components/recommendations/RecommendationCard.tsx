@@ -5,6 +5,9 @@ import type { QuestionRecommendation } from '@/types/recommendation';
 import { toPlainText } from '@/utils/markdown';
 import { analytics, type RecommendationSurface } from '@/utils/analytics';
 
+/** 카드가 이 비율 이상 화면에 보이면 노출로 센다. */
+const IMPRESSION_RATIO = 0.5;
+
 interface RecommendationCardProps {
   recommendation: QuestionRecommendation;
   /** 카드가 놓인 화면. */
@@ -24,12 +27,17 @@ export function RecommendationCard({ recommendation, surface, position }: Recomm
   useEffect(() => {
     const element = card.current;
     if (!element || impressed.current || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry?.isIntersecting || impressed.current) return;
-      impressed.current = true;
-      observer.disconnect();
-      analytics.track({ name: 'recommendation_impression', recommendationId, surface, position });
-    });
+    // 카드가 절반 이상 보여야 노출로 센다. observe 직후의 첫 콜백은 threshold와 상관없이 오고
+    // 그때 isIntersecting은 1px만 보여도 true라서, 보이는 비율로 판단한다.
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry || entry.intersectionRatio < IMPRESSION_RATIO || impressed.current) return;
+        impressed.current = true;
+        observer.disconnect();
+        analytics.track({ name: 'recommendation_impression', recommendationId, surface, position });
+      },
+      { threshold: IMPRESSION_RATIO },
+    );
     observer.observe(element);
     return () => observer.disconnect();
   }, [recommendationId, surface, position]);
