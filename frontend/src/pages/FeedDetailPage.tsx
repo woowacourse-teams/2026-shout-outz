@@ -1,4 +1,5 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { IconArrowLeft, IconMessageCircle } from '@tabler/icons-react';
 import { feedQuery } from '@/apis/feed';
@@ -14,6 +15,7 @@ import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { ShareButton } from '@/components/feeds/ShareButton';
 import { Comments } from '@/components/feed-comments/Comments';
 import { RelatedQuestions } from '@/components/recommendations/RelatedQuestions';
+import { useSession } from '@/hooks/useSession';
 import { formatDotDate } from '@/utils/date';
 
 export function FeedDetailPage({ feedId }: { feedId: number }) {
@@ -34,6 +36,17 @@ export function FeedDetailPage({ feedId }: { feedId: number }) {
 
 function FeedDetailContent({ feedId }: { feedId: number }) {
   const { data: feed } = useSuspenseQuery(feedQuery(feedId));
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const isAuthenticated = session?.status === 'AUTHENTICATED';
+
+  // SSR 서버는 쿠키 없이 글을 받아 likedByMe가 비로그인 기준입니다. 브라우저에서 로그인이 확인되면
+  // 쿠키를 붙여 다시 받아, 빈 하트로 그려진 좋아요가 내 상태로 바뀌게 합니다.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void queryClient.invalidateQueries({ queryKey: feedQuery(feedId).queryKey, exact: true });
+  }, [isAuthenticated, feedId, queryClient]);
+
   const isQuestion = feed.feedType === 'QUESTION';
   const commentLabel = isQuestion ? '답변' : '댓글';
 
