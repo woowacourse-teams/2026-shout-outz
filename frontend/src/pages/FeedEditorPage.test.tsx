@@ -16,6 +16,8 @@ import { FeedEditorPage } from '@/pages/FeedEditorPage';
 import { createFeedHandlers, mockFeeds } from '@/mocks/handlers';
 import { routeTree } from '@/routeTree.gen';
 import { fetchFeed, fetchFeeds } from '@/apis/feed';
+import { mockRecommendations } from '@/mocks/recommendations';
+import { analytics } from '@/utils/analytics';
 
 const server = setupServer();
 let client: QueryClient;
@@ -317,6 +319,48 @@ test('질문 탭에서 질문 전용 카테고리로 작성하고 질문 목록�
   await user.click(await screen.findByRole('link', { name: '목록으로' }));
   await waitFor(() => expect(router.state.location.pathname).toBe('/community'));
   expect(router.state.location.search.type).toBe('QUESTION');
+});
+
+test.each([
+  ['추천 질문 초안 없이', undefined],
+  ['추천 질문 초안으로', { recommendation: mockRecommendations[0]!, from: '/community' }],
+])('%s 질문을 등록하고 상세로 이동해도 작성 시작은 한 번만 기록한다', async (_, draft) => {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
+  });
+  const track = jest.spyOn(analytics, 'track');
+  client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  const router = createRouter({
+    routeTree,
+    history: createMemoryHistory({ initialEntries: ['/community'] }),
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <ModalProvider>
+        <RouterProvider router={router} />
+      </ModalProvider>
+    </QueryClientProvider>,
+  );
+  await router.navigate({
+    to: '/community/new',
+    search: { type: 'QUESTION' },
+    state: draft ? { questionDraft: draft } : {},
+  });
+  const user = userEvent.setup();
+  await fillTitle(user, '진로 질문');
+  const content = await screen.findByRole('textbox', { name: '피드 내용' });
+  await user.clear(content);
+  await user.type(content, '어떤 방향이 좋을까요?');
+  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+  await user.click(screen.getByRole('option', { name: '진로 고민' }));
+  await user.click(screen.getByRole('button', { name: '질문 등록하기' }));
+  await waitFor(() => expect(router.state.location.pathname).toBe('/community/100'));
+  await screen.findByRole('link', { name: '목록으로' });
+
+  const names = track.mock.calls.map(([event]) => event.name);
+  expect(names.filter((name) => name === 'feed_create_started')).toHaveLength(1);
+  expect(names.filter((name) => name === 'feed_create_submitted')).toHaveLength(1);
 });
 
 test('수정은 기존 본문과 카테고리를 채우고 저장 결과를 상세에 반영한다', async () => {
