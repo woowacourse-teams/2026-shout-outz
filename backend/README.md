@@ -262,7 +262,7 @@ RESOURCE_EMBEDDING_API_KEY=<embedding-api-key>
 | `JOB_POSTING_MATCHING_LEASE` | `180s` | 역량을 가져간 뒤 다른 Worker가 다시 가져가지 못하는 시간 |
 | `JOB_POSTING_MATCHING_MAX_ATTEMPTS` | `3` | 역량 하나의 최대 시도 횟수 |
 | `JOB_POSTING_MATCHING_RETRY_DELAYS` | `1m,5m` | 실패한 뒤 다시 시도할 때까지 기다리는 시간 |
-| `JOB_POSTING_MATCHING_SEARCH_LIMIT` | `10` | 역량 하나당 판정할 최대 후보 자료 수. 1~10만 받는다(판정 응답이 출력 상한을 넘지 않도록) |
+| `JOB_POSTING_MATCHING_SEARCH_LIMIT` | `10` | 역량 하나당 판정할 최대 후보 자료 수. 1~10만 받는다. 응답이 출력 상한을 넘을 가능성을 줄이려는 값이며 응답 길이를 보장하지는 않는다 |
 
 ## 환경 변수
 

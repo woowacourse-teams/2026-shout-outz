@@ -12,7 +12,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  *
  * @param lease       역량을 가져간 뒤 다른 Worker 가 다시 가져가지 못하는 시간. 임베딩과 판정 제공자 제한 시간의 합보다 길어야 한다
  * @param retryDelays n 번째 시도가 실패한 뒤 기다리는 시간. 시도가 목록보다 많으면 마지막 값을 쓴다
- * @param searchLimit 역량 하나당 판정에 넘길 최대 후보 자료 수. 판정 응답이 출력 상한을 넘지 않도록 10개까지만 받는다
+ * @param searchLimit 역량 하나당 판정에 넘길 최대 후보 자료 수. 판정 응답이 출력 상한을 넘을 가능성을 줄이려고 10개까지만 받는다. 응답 길이를 보장하지는 않는다
  * @param providers   판정 LLM 제공자. 앞에서부터 호출하고 실패하면 다음 제공자로 넘어간다
  */
 @ConfigurationProperties(prefix = "job-posting.matching")
