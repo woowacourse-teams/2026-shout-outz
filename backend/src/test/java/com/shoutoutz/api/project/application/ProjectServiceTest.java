@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -109,6 +110,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -333,6 +335,25 @@ class ProjectServiceTest {
                 100L,
                 TeamBlogUrls.of(List.of("https://velog.io/@loop", "https://loop.tistory.com"))
         );
+    }
+
+    @Test
+    @DisplayName("등록하면 같은 레포 주소로 넣어 둔 팀 블로그를 먼저 이어 붙인 뒤 폼의 팀 블로그 주소를 맞춘다.")
+    void attachesUnregisteredTeamBlogsBeforeSyncingInputsOnCreate() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
+        givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
+        when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(false);
+        when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
+        when(mediaMetadataRepository.findById(THUMBNAIL_ID))
+                .thenReturn(Optional.of(thumbnail(REGISTERED_BY, MediaPurpose.PROJECT_THUMBNAIL, MediaStatus.READY)));
+        when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
+                .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
+
+        projectService.create(REGISTERED_BY, request(6, THUMBNAIL_ID, TECH_TAG_IDS));
+
+        InOrder inOrder = inOrder(blogSourceRepository);
+        inOrder.verify(blogSourceRepository).attachUnregistered(100L, GITHUB_REPOSITORY_URL);
+        inOrder.verify(blogSourceRepository).syncServiceInputs(100L, TeamBlogUrls.empty());
     }
 
     @Test
@@ -1280,6 +1301,20 @@ class ProjectServiceTest {
         projectService.update(SLUG, REGISTERED_BY, updateRequestWithoutThumbnail());
 
         verifyNoInteractions(blogSourceRepository);
+    }
+
+    @Test
+    @DisplayName("수정에서 레포 주소가 바뀌면 바뀐 레포 주소로 넣어 둔 팀 블로그를 이어 붙인다.")
+    void attachesUnregisteredTeamBlogsWhenRepositoryChanges() {
+        givenValidProjectUpdate(existingProject(ApprovalStatus.APPROVED, THUMBNAIL_ID));
+        ProjectUpdateRequest request = updateRequestWithoutThumbnail();
+        request.setGithubRepositoryUrl("https://github.com/woowacourse-teams/2026-loop-renewal");
+
+        projectService.update(SLUG, REGISTERED_BY, request);
+
+        verify(blogSourceRepository).attachUnregistered(
+                PROJECT_ID, new GithubRepositoryUrl("https://github.com/woowacourse-teams/2026-loop-renewal"));
+        verify(blogSourceRepository, never()).syncServiceInputs(anyLong(), any());
     }
 
     @Test

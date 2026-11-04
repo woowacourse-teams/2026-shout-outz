@@ -136,6 +136,7 @@ public class ProjectService {
         TeamBlogUrls teamBlogUrls = TeamBlogUrls.of(request.teamBlogUrls());
 
         Project savedProject = projectRepository.save(project, request.techTagIds(), members.getUserIds());
+        blogSourceRepository.attachUnregistered(savedProject.getId(), savedProject.getGithubRepositoryUrl());
         blogSourceRepository.syncServiceInputs(savedProject.getId(), teamBlogUrls);
         projectApprovalHistoryRepository.save(
                 ProjectApprovalHistory.initial(savedProject.getId(), clock.instant())
@@ -148,6 +149,7 @@ public class ProjectService {
      * 반려된 프로젝트를 수정하면 재심사 요청으로 보고 승인 대기로 되돌린다.
      * 기술 스택과 팀원은 받은 목록으로 통째로 바꾼다.
      * 팀 블로그 주소는 필드를 보낸 경우에만 받은 목록으로 맞춘다.
+     * 레포 주소가 바뀌면, 바뀐 레포 주소로 넣어 둔 프로젝트 없는 팀 블로그를 이 프로젝트에 이어 붙인다.
      */
     @Transactional
     public ProjectUpdateResponse update(String slug, long loginUserId, ProjectUpdateRequest request) {
@@ -182,6 +184,9 @@ public class ProjectService {
                 : null;
 
         Project savedProject = projectRepository.update(updated, request.techTagIds(), members.getUserIds());
+        if (!updated.getGithubRepositoryUrl().equals(project.getGithubRepositoryUrl())) {
+            blogSourceRepository.attachUnregistered(projectId, updated.getGithubRepositoryUrl());
+        }
         if (teamBlogUrls != null) {
             blogSourceRepository.syncServiceInputs(projectId, teamBlogUrls);
         }

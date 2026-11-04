@@ -1,6 +1,7 @@
 package com.shoutoutz.api.project.infrastructure.jdbc;
 
 import com.shoutoutz.api.project.domain.BlogSourceRepository;
+import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
 import com.shoutoutz.api.project.domain.TeamBlogUrls;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -24,6 +25,32 @@ public class BlogSourceJdbcRepository implements BlogSourceRepository {
         List<String> siteUrls = teamBlogUrls.values();
         disableRemoved(projectId, siteUrls);
         confirm(projectId, siteUrls);
+    }
+
+    @Override
+    public void attachUnregistered(long projectId, GithubRepositoryUrl githubRepositoryUrl) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("projectId", projectId)
+                .addValue("githubRepositoryUrl", githubRepositoryUrl.value());
+        jdbcTemplate.update("""
+                UPDATE blog_sources unregistered
+                SET project_id = :projectId, updated_at = now()
+                WHERE unregistered.project_id IS NULL
+                  AND unregistered.github_repository_url = :githubRepositoryUrl
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM blog_sources registered
+                      WHERE registered.project_id = :projectId
+                        AND registered.site_url = unregistered.site_url
+                  )
+                """, parameters);
+        jdbcTemplate.update("""
+                UPDATE blog_sources
+                SET status = 'DISABLED', updated_at = now()
+                WHERE project_id IS NULL
+                  AND github_repository_url = :githubRepositoryUrl
+                  AND status = 'CONFIRMED'
+                """, parameters);
     }
 
     /**
