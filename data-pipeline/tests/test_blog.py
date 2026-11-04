@@ -1,0 +1,390 @@
+"""블로그 수집(03 문서) 시험. 네트워크 없이 가짜 Http 로 돌린다."""
+
+import json
+from datetime import datetime, timedelta, timezone
+
+import requests
+
+from collector.config import Settings
+from collector.index import Index
+from collector.keys import blog_key, raw_path
+from collector.runner import collect
+from collector.sources import blog as blog_mod
+from collector.sources.blog import BlogSource, Target, group_blogs
+from collector.sources.blog_platforms import (detect, find_feed_links, is_rilog_post, is_tistory_post, parse_feed,
+                                              parse_sitemap)
+from collector.store import LocalStore
+
+DAY0 = datetime(2026, 11, 5, 3, 0, tzinfo=timezone.utc)
+SRC = "blog-post"
+
+
+class Resp:
+    def __init__(self, status=200, body=b"", url="", headers=None):
+        self.status_code = status
+        self.content = body.encode("utf-8") if isinstance(body, str) else body
+        self.url = url
+        self.headers = headers or {}
+
+    @property
+    def text(self):
+        return self.content.decode("utf-8")
+
+    def json(self):
+        return json.loads(self.content)
+
+
+class FakeHttp:
+    """주소 → 응답. 값은 Resp, 글(200 본문), 함수(요청 본문을 받아 Resp), 예외. 없는 주소는 404."""
+
+    def __init__(self, routes):
+        self.routes = dict(routes)
+        self.calls = []
+
+    def _answer(self, method, url, payload=None):
+        self.calls.append((method, url))
+        v = self.routes.get(url)
+        if v is None:
+            return Resp(404, "", url)
+        if isinstance(v, Exception):
+            raise v
+        if callable(v):
+            v = v(payload)
+        if isinstance(v, Resp):
+            v.url = v.url or url
+            return v
+        return Resp(200, v, url)
+
+    def get(self, url, **kw):
+        return self._answer("GET", url)
+
+    def post(self, url, json=None, **kw):
+        return self._answer("POST", url, json)
+
+    def count(self, url, method="GET"):
+        return sum(1 for m, u in self.calls if m == method and u == url)
+
+
+def rss(*links):
+    items = "".join(f"<item><title>t</title><link>{u}</link></item>" for u in links)
+    return f'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>b</title>{items}</channel></rss>'
+
+
+def sitemap(*locs):
+    urls = "".join(f"<url><loc>{u}</loc><lastmod>2026-11-01</lastmod></url>" for u in locs)
+    return f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'
+
+
+def run(tmp_path, http, targets, day, only=None):
+    store = LocalStore(str(tmp_path))
+    src = BlogSource(http=http, targets_loader=lambda settings: targets)
+    t = [DAY0 + timedelta(days=day)]
+
+    def clock():
+        t[0] += timedelta(seconds=1)
+        return t[0]
+
+    rep = collect(Settings(store_url=str(tmp_path)), [SRC], only=only, store=store, make_source=lambda n: src, clock=clock)
+    return store, rep.sources[SRC], rep
+
+
+def state(store):
+    return store.read_json("state/blog-post.json")["blogs"]
+
+
+# ---- 플랫폼 규칙 ----
+
+def test_detect_platform_and_root():
+    assert detect("https://abc.tistory.com/m/6").root == "https://abc.tistory.com"
+    v = detect("velog.io/@dev/글")
+    assert (v.name, v.root, v.ident) == ("velog", "https://velog.io/@dev", "dev")
+    r = detect("https://rilog.kr/@team/posts/3")
+    assert (r.name, r.root, r.ident) == ("rilog", "https://www.rilog.kr/@team", "team")
+    assert detect("https://www.rilog.kr/@team").root == "https://www.rilog.kr/@team"
+    g = detect("https://Team.github.io/about/")
+    assert (g.name, g.root, g.unsupported) == ("generic", "https://team.github.io", None)
+    assert detect("https://team.notion.site/x").unsupported
+    assert detect("https://medium.com/@me").unsupported
+    assert detect("https://velog.io/").unsupported
+
+
+def test_feed_and_sitemap_parsers():
+    atom = ('<feed xmlns="http://www.w3.org/2005/Atom"><entry><link rel="alternate" href="/p/1"/></entry>'
+            '<entry><link href="https://b.io/p/2"/></entry></feed>')
+    assert parse_feed(atom.encode(), "https://b.io/atom.xml") == ["https://b.io/p/1", "https://b.io/p/2"]
+    jf = json.dumps({"version": "https://jsonfeed.org/version/1.1", "items": [{"url": "https://b.io/p/3"}]})
+    assert parse_feed(jf.encode(), "https://b.io/feed.json") == ["https://b.io/p/3"]
+    assert parse_feed(b"<html><body>not a feed</body></html>", "https://b.io/") is None
+    assert parse_feed(b'{"name": "wp-json"}', "https://b.io/") is None
+    pages, kids = parse_sitemap(sitemap("https://a.tistory.com/1", "https://a.tistory.com/category").encode())
+    assert pages == ["https://a.tistory.com/1", "https://a.tistory.com/category"] and kids == []
+    assert [is_tistory_post(u) for u in ("https://a.tistory.com/12", "https://a.tistory.com/entry/%EA%B8%80",
+                                         "https://a.tistory.com/category/x", "https://a.tistory.com/tag/y",
+                                         "https://a.tistory.com/guestbook")] == [True, True, False, False, False]
+    assert is_rilog_post("https://www.rilog.kr/@team/posts/3", "team")
+    assert not is_rilog_post("https://www.rilog.kr/@other/posts/3", "team")
+    assert not is_rilog_post("https://www.rilog.kr/@team", "team")
+    html = ('<html><head><link rel="stylesheet" href="/a.css">'
+            '<link rel="alternate" type="application/rss+xml" href="/feed.xml"></head></html>')
+    assert find_feed_links(html, "https://b.io/") == ["https://b.io/feed.xml"]
+
+
+# ---- tistory: 전체 목록 받는 날, 새 글만, 출처, /m 과 인코딩 ----
+
+TIS = "https://abc.tistory.com"
+TARGETS_TIS = [Target(1, "https://abc.tistory.com/m/6", "https://github.com/woowacourse-teams/2026-a"),
+               Target(2, "abc.tistory.com", "https://github.com/woowacourse-teams/2026-a")]
+
+
+def tistory_http(sitemap_posts, rss_posts, gone=()):
+    routes = {
+        f"{TIS}/sitemap.xml": sitemap(*(sitemap_posts + [f"{TIS}/category", f"{TIS}/tag/x", f"{TIS}/guestbook"])),
+        f"{TIS}/rss": rss(*rss_posts),
+    }
+    for u in set(sitemap_posts) | set(rss_posts):
+        routes[u] = f"<html>{u}</html>"
+    for u in gone:
+        routes[u] = Resp(404)
+    return FakeHttp(routes)
+
+
+def test_full_list_day_rule_and_new_posts_only(tmp_path):
+    posts = [f"{TIS}/1", f"{TIS}/2"]
+    http = tistory_http(posts, [f"{TIS}/2"])
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0)
+    # 기록 없음 → 전체 목록(sitemap), 카테고리, 태그 주소는 고르지 않는다
+    assert http.count(f"{TIS}/sitemap.xml") == 1 and http.count(f"{TIS}/rss") == 0
+    assert sr.counts["new"] == 2 and sr.extra["full_list_blogs"] == [TIS]
+    assert state(store)[TIS]["last_full_list"] == "2026-11-05"
+    rec = store.read_json(raw_path(SRC, blog_key(f"{TIS}/1")))
+    assert rec["body_format"] == "html" and rec["platform"] == "tistory" and rec["body"] == f"<html>{TIS}/1</html>"
+    # 같은 블로그가 두 행에 있다 → 한 번만 받고 출처 둘
+    assert [f["blog_source_id"] for f in rec["found_in"]] == [1, 2]
+    assert http.count(f"{TIS}/1") == 1
+    entry = Index(store, SRC).load().get(blog_key(f"{TIS}/1"))
+    assert entry["url"] == f"{TIS}/1" and entry["blog_root"] == TIS
+
+    # 3일 뒤 → 피드만. 피드의 /m 주소는 같은 글이라 다시 받지 않는다
+    http = tistory_http(posts, [f"{TIS}/m/2", f"{TIS}/3"])
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=3)
+    assert http.count(f"{TIS}/sitemap.xml") == 0 and http.count(f"{TIS}/rss") == 1
+    assert sr.counts["new"] == 1 and sr.counts["unchanged"] == 1
+    assert http.count(f"{TIS}/m/2") == 0 and http.count(f"{TIS}/1") == 0
+    assert sr.extra["full_list_blogs"] == []
+    assert state(store)[TIS]["last_full_list"] == "2026-11-05"
+
+    # 8일 뒤 → 다시 전체 목록
+    http = tistory_http(posts + [f"{TIS}/3"], [])
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=8)
+    assert http.count(f"{TIS}/sitemap.xml") == 1
+    assert sr.counts["unchanged"] == 3 and sr.counts["new"] == 0
+    assert state(store)[TIS]["last_full_list"] == "2026-11-13"
+
+
+def test_gone_only_on_full_list_day_with_404(tmp_path):
+    run(tmp_path, tistory_http([f"{TIS}/1", f"{TIS}/2", f"{TIS}/3"], []), TARGETS_TIS, day=0)
+    # 3일 뒤(피드 날): 2 가 목록에 없고 404 여도 사라짐 확인을 하지 않는다
+    http = tistory_http([], [f"{TIS}/1"], gone=[f"{TIS}/2"])
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=3)
+    assert sr.counts["gone"] == 0 and http.count(f"{TIS}/2") == 0
+    # 8일 뒤(전체 목록 날): 2 는 404 → 사라짐, 3 은 목록에서 빠졌지만 200 → 그대로
+    http = tistory_http([f"{TIS}/1"], [], gone=[f"{TIS}/2"])
+    http.routes[f"{TIS}/3"] = "<html>still</html>"
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=8)
+    assert sr.gone_keys == [blog_key(f"{TIS}/2")]
+    idx = Index(store, SRC).load()
+    assert idx.get(blog_key(f"{TIS}/2"))["gone"]["reason"] == "http_404"
+    assert idx.get(blog_key(f"{TIS}/3"))["gone"] is None
+
+
+def test_blog_dropped_from_targets_is_not_checked(tmp_path):
+    run(tmp_path, tistory_http([f"{TIS}/1"], []), TARGETS_TIS, day=0)
+    http = tistory_http([], [], gone=[f"{TIS}/1"])
+    store, sr, _ = run(tmp_path, http, [], day=8)  # 팀이 주소를 지웠다(DISABLED)
+    assert sr.counts["gone"] == 0 and http.count(f"{TIS}/1") == 0
+
+
+# ---- velog ----
+
+VEL = "https://velog.io/@dev"
+TARGETS_VEL = [Target(3, "https://velog.io/@dev/posts", None)]
+ENC = "%EB%AA%A9%EB%A1%9D"  # "목록"
+
+
+def velog_http(graphql_ok=True):
+    def graphql(payload):
+        if not graphql_ok:
+            return Resp(200, json.dumps({"errors": [{"message": "boom"}]}))
+        cursor = payload["variables"]["cursor"]
+        pages = {None: [{"id": "a", "url_slug": "목록", "user": {"username": "dev"}},
+                        {"id": "b", "url_slug": "two", "user": {"username": "dev"}}],
+                 "b": []}
+        return Resp(200, json.dumps({"data": {"posts": pages[cursor]}}))
+    return FakeHttp({
+        "https://v2.velog.io/graphql": graphql,
+        "https://v2.velog.io/rss/@dev": rss(f"{VEL}/{ENC}", f"{VEL}/three"),
+        f"{VEL}/목록": "<html>1</html>", f"{VEL}/{ENC}": "<html>1</html>",
+        f"{VEL}/two": "<html>2</html>", f"{VEL}/three": "<html>3</html>",
+    })
+
+
+def test_velog_graphql_then_rss_dedupes_encoded_url(tmp_path):
+    http = velog_http()
+    store, sr, _ = run(tmp_path, http, TARGETS_VEL, day=0)
+    assert http.count("https://v2.velog.io/graphql", "POST") == 2  # 빈 페이지가 올 때까지
+    assert sr.counts["new"] == 2 and sr.extra["notices"] == []
+    # 3일 뒤 RSS 는 한글 주소를 인코딩해서 준다 → 같은 키라 다시 받지 않는다
+    http = velog_http()
+    store, sr, _ = run(tmp_path, http, TARGETS_VEL, day=3)
+    assert http.count("https://v2.velog.io/graphql", "POST") == 0
+    assert sr.counts == {"new": 1, "changed": 0, "unchanged": 1, "gone": 0, "failed": 0}
+    assert http.count(f"{VEL}/{ENC}") == 0
+
+
+def test_velog_graphql_failure_uses_rss_with_notice(tmp_path):
+    http = velog_http(graphql_ok=False)
+    store, sr, _ = run(tmp_path, http, TARGETS_VEL, day=0)
+    assert http.count("https://v2.velog.io/rss/@dev") == 1
+    assert sr.counts["new"] == 2
+    assert [n["type"] for n in sr.extra["notices"]] == ["full_list_failed"]
+    assert sr.extra["notices"][0]["blog"] == VEL
+    assert sr.extra["full_list_blogs"] == []
+    assert "last_full_list" not in state(store)[VEL]  # 다음 실행이 다시 전체 목록을 시도한다
+
+
+# ---- rilog ----
+
+RIL = "https://www.rilog.kr/@team"
+
+
+def test_rilog_daily_sitemap_markdown_and_gone(tmp_path):
+    targets = [Target(4, "https://rilog.kr/@team", "https://github.com/woowacourse-teams/2026-r")]
+    routes = {
+        "https://www.rilog.kr/sitemap.xml": sitemap(f"{RIL}/posts/1", f"{RIL}/posts/2", "https://www.rilog.kr/@other/posts/9",
+                                                    RIL, "https://www.rilog.kr/about"),
+        f"{RIL}/posts/1/markdown": "# 제목\n본문",
+        f"{RIL}/posts/2/markdown": "# 둘",
+    }
+    http = FakeHttp(routes)
+    store, sr, _ = run(tmp_path, http, targets, day=0)
+    assert sr.counts["new"] == 2
+    rec = store.read_json(raw_path(SRC, blog_key(f"{RIL}/posts/1")))
+    assert rec["body_format"] == "markdown" and rec["body"] == "# 제목\n본문" and rec["url"] == f"{RIL}/posts/1"
+    # 다음 날도 전체 목록(매일). 2 가 sitemap 에서 빠지고 404 → 사라짐
+    routes["https://www.rilog.kr/sitemap.xml"] = sitemap(f"{RIL}/posts/1")
+    routes[f"{RIL}/posts/2"] = Resp(410)
+    http = FakeHttp(routes)
+    store, sr, _ = run(tmp_path, http, targets, day=1)
+    assert sr.extra["full_list_blogs"] == [RIL]
+    assert sr.gone_keys == [blog_key(f"{RIL}/posts/2")]
+    assert Index(store, SRC).load().get(blog_key(f"{RIL}/posts/2"))["gone"]["reason"] == "http_410"
+
+
+# ---- 범용 ----
+
+GEN = "https://team.github.io"
+
+
+def generic_routes():
+    return {
+        f"{GEN}/": '<html><head><link rel="alternate" type="application/atom+xml" href="/atom.xml"></head></html>',
+        f"{GEN}/atom.xml": ('<feed xmlns="http://www.w3.org/2005/Atom"><entry><link href="/2026/a/"/></entry></feed>'),
+        f"{GEN}/2026/a/": "<html>a</html>",
+    }
+
+
+def test_generic_feed_discovery_saved_in_state(tmp_path):
+    targets = [Target(5, "https://team.github.io/about", None)]
+    http = FakeHttp(generic_routes())
+    store, sr, _ = run(tmp_path, http, targets, day=0)
+    assert sr.counts["new"] == 1
+    assert state(store)[GEN] == {"feed_url": f"{GEN}/atom.xml", "last_full_list": "2026-11-05"}
+    assert sr.extra["feed_only_blogs"] == [GEN] and sr.extra["full_list_blogs"] == [GEN]
+    # 다음 날: 남겨 둔 피드 주소를 바로 쓴다(첫 화면을 다시 보지 않는다), 7일이 안 지나 사라짐 확인도 안 한다
+    http = FakeHttp(generic_routes())
+    store, sr, _ = run(tmp_path, http, targets, day=1)
+    assert http.count(f"{GEN}/") == 0 and http.count(f"{GEN}/atom.xml") == 1
+    assert sr.extra["full_list_blogs"] == []
+
+
+def test_unsupported_generic_and_notion(tmp_path):
+    targets = [Target(6, "https://nofeed.example.com", None), Target(7, "https://team.notion.site/blog", None)]
+    http = FakeHttp({"https://nofeed.example.com/": "<html><head></head></html>"})
+    store, sr, rep = run(tmp_path, http, targets, day=0)
+    assert sr.extra["unsupported"] == 2 and sr.extra["targets"] == 2
+    assert sorted(n["type"] for n in sr.extra["notices"]) == ["unsupported", "unsupported"]
+    # 흔한 경로를 모두 봤다
+    for p in ("/feed", "/rss", "/rss.xml", "/feed.xml", "/atom.xml", "/index.xml", "/feed.json"):
+        assert http.count("https://nofeed.example.com" + p) == 1
+    assert not any("notion" in u for _, u in http.calls)
+    assert sr.counts["new"] == 0 and rep.status == "success"
+
+
+# ---- 예의, 실패 ----
+
+def test_robots_disallow_blocks_fetch(tmp_path):
+    http = tistory_http([f"{TIS}/1", f"{TIS}/2"], [])
+    http.routes[f"{TIS}/robots.txt"] = "User-agent: *\nDisallow: /2\n"
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0)
+    assert http.count(f"{TIS}/robots.txt") == 1  # 호스트마다 한 번
+    assert sr.counts["new"] == 1 and sr.counts["failed"] == 1
+    assert sr.failures[0]["reason"] == "robots_disallow" and sr.failures[0]["url"] == f"{TIS}/2"
+    assert http.count(f"{TIS}/2") == 0
+
+
+def test_fetch_failure_reasons(tmp_path):
+    http = tistory_http([f"{TIS}/1", f"{TIS}/2"], [])
+    http.routes[f"{TIS}/1"] = Resp(403)
+    http.routes[f"{TIS}/2"] = requests.Timeout("slow")
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0)
+    assert sr.failure_reasons == {"http_403": 1, "timeout": 1}
+    assert Index(store, SRC).load().get(blog_key(f"{TIS}/1")) is None  # 실패한 글은 다음 실행이 다시 받는다
+
+
+def test_one_blog_listing_failure_does_not_stop_others(tmp_path):
+    targets = TARGETS_TIS + [Target(9, "https://broken.tistory.com", None)]
+    http = tistory_http([f"{TIS}/1"], [])  # broken 블로그는 sitemap, rss 모두 404
+    store, sr, _ = run(tmp_path, http, targets, day=0)
+    assert sr.counts["new"] == 1
+    types = [n["type"] for n in sr.extra["notices"]]
+    assert types == ["full_list_failed", "list_failed"]
+
+
+def test_same_post_from_two_blogs_rows_merges_found_in(tmp_path):
+    # 서로 다른 행이 같은 블로그를 다른 주소 모양으로 등록(목록 1과 목록 2)
+    targets = [Target(1, "https://abc.tistory.com/m/6", "https://github.com/woowacourse-teams/2026-a"),
+               Target(2, "https://abc.tistory.com/category/dev", "https://github.com/woowacourse-teams/2026-b")]
+    blogs = group_blogs(targets)
+    assert list(blogs) == [TIS] and [t.id for t in blogs[TIS].targets] == [1, 2]
+    http = tistory_http([f"{TIS}/1"], [])
+    store, sr, _ = run(tmp_path, http, targets, day=0)
+    rec = store.read_json(raw_path(SRC, blog_key(f"{TIS}/1")))
+    assert rec["found_in"] == [{"blog_source_id": 1, "github_repository_url": "https://github.com/woowacourse-teams/2026-a"},
+                               {"blog_source_id": 2, "github_repository_url": "https://github.com/woowacourse-teams/2026-b"}]
+
+
+# ---- --only ----
+
+def test_only_url_resolves_found_in_from_targets(tmp_path):
+    http = tistory_http([f"{TIS}/1"], [f"{TIS}/1"])
+    http.routes[f"{TIS}/m/7"] = "<html>7</html>"  # 받는 주소는 준 그대로, 키는 /m 을 뗀 것과 같다
+    store, sr, rep = run(tmp_path, http, TARGETS_TIS, day=0, only=[f"{TIS}/m/7"])
+    assert http.count(f"{TIS}/sitemap.xml") == 0 and http.count(f"{TIS}/rss") == 0  # 목록은 받지 않는다
+    assert sr.counts["new"] == 1
+    rec = store.read_json(raw_path(SRC, blog_key(f"{TIS}/7")))
+    assert [f["blog_source_id"] for f in rec["found_in"]] == [1, 2]
+    assert store.read_json("state/blog-post.json") is None  # --only 는 상태를 바꾸지 않는다
+    # 대상에 없는 블로그 주소는 출처 없이 받고 알림
+    http.routes["https://other.tistory.com/1"] = "<html>o</html>"
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=1, only=["https://other.tistory.com/1"])
+    rec = store.read_json(raw_path(SRC, blog_key("https://other.tistory.com/1")))
+    assert rec["found_in"] == [] and sr.extra["notices"][0]["type"] == "only_not_in_targets"
+
+
+def test_default_loader_is_module_function(tmp_path, monkeypatch):
+    monkeypatch.setattr(blog_mod, "load_targets", lambda settings: TARGETS_TIS)
+    store = LocalStore(str(tmp_path))
+    http = tistory_http([f"{TIS}/1"], [])
+    rep = collect(Settings(store_url=str(tmp_path)), [SRC], store=store,
+                  make_source=lambda n: BlogSource(http=http), clock=lambda: DAY0)
+    assert rep.sources[SRC].counts["new"] == 1 and rep.sources[SRC].extra["target_rows"] == 2
