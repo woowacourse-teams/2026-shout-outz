@@ -71,6 +71,8 @@ function toWebRequest(req: express.Request, res: express.Response): Request {
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 app.get('/health', (_req, res) => {
   res.send('ok');
 });
