@@ -406,7 +406,8 @@ class AdminJobPostingHttpApiTest {
     @Test
     void reanalyzesJobPosting() throws Exception {
         given(jobPostingAdminService.reanalyze(
-                eq(JOB_POSTING_ID), eq(UserRole.ADMIN), any(AdminJobPostingReanalysisRequest.class)))
+                eq(JOB_POSTING_ID), eq(UserRole.ADMIN),
+                eq(new AdminJobPostingReanalysisRequest(ReanalysisScope.FAILED))))
                 .willReturn(new AdminJobPostingReanalysisResponse(JOB_POSTING_ID, MatchingStatus.PENDING, 2));
 
         mockMvc.perform(post("/api/v1/admin/job-postings/{jobPostingId}/reanalysis", JOB_POSTING_ID)
@@ -450,7 +451,7 @@ class AdminJobPostingHttpApiTest {
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(OBJECT).description("다시 분석을 받은 채용공고"),
                                         fieldWithPath("data.jobPostingId").type(NUMBER).description("채용공고 ID"),
-                                        new EnumFields(MatchingStatus.class).withPath("data.status")
+                                        fieldWithPath("data.status").type(STRING)
                                                 .description("자료 분석 상태. 항상 PENDING"),
                                         fieldWithPath("data.reanalyzedRequirementCount").type(NUMBER)
                                                 .description("다시 분석 대기로 되돌린 역량 수")

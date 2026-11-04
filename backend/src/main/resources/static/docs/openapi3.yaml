@@ -8124,11 +8124,6 @@ components:
             status:
               type: string
               description: 자료 분석 상태. 항상 PENDING
-              enum:
-              - PENDING
-              - PROCESSING
-              - READY
-              - FAILED
           description: 다시 분석을 받은 채용공고
         status:
           type: string
