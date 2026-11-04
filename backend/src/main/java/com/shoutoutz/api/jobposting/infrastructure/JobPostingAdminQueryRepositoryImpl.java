@@ -10,6 +10,7 @@ import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
 import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ public class JobPostingAdminQueryRepositoryImpl implements JobPostingAdminQueryR
                     title,
                     job_role,
                     status,
+                    hidden_at,
                     created_at
                 FROM job_postings
                 WHERE 1 = 1
@@ -62,6 +64,7 @@ public class JobPostingAdminQueryRepositoryImpl implements JobPostingAdminQueryR
                         resultSet.getString("title"),
                         JobRole.valueOf(resultSet.getString("job_role")),
                         MatchingStatus.valueOf(resultSet.getString("status")),
+                        toInstant(resultSet.getObject("hidden_at", OffsetDateTime.class)),
                         resultSet.getObject("created_at", OffsetDateTime.class).toInstant()
                 )
         );
@@ -124,6 +127,10 @@ public class JobPostingAdminQueryRepositoryImpl implements JobPostingAdminQueryR
                         MatchingFailure.valueOf(resultSet.getString("last_error"))
                 )
         ).stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private Instant toInstant(OffsetDateTime dateTime) {
+        return dateTime == null ? null : dateTime.toInstant();
     }
 
     private long countAll() {

@@ -41,6 +41,8 @@ export interface ProjectFormValues {
   thumbnailImageId: number | null;
   githubRepositoryUrl: string;
   deploymentUrl: string;
+  /** 팀 블로그 주소. 입력칸마다 하나씩 들고, 비어 있는 칸은 요청에서 뺀다. */
+  teamBlogUrls: string[];
   descriptionMd: string;
   /** 칩에 이름을 보여줘야 해서 id만 들고 있지 않는다 */
   techTags: TechTag[];

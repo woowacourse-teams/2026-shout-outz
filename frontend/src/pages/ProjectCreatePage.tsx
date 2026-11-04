@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
+import { IconPlus } from '@tabler/icons-react';
 
 import {
   cohortsQueryOptions,
@@ -22,6 +23,7 @@ import {
   type ProjectFormValues,
 } from '@/types/project';
 import {
+  MAX_TEAM_BLOG_URLS,
   toProjectCreateRequest,
   toProjectFormErrors,
   resolveServiceStatus,
@@ -42,10 +44,18 @@ const EMPTY_FORM: ProjectFormValues = {
   thumbnailImageId: null,
   githubRepositoryUrl: '',
   deploymentUrl: '',
+  // 입력칸 하나를 먼저 보여 준다.
+  teamBlogUrls: [''],
   descriptionMd: '',
   techTags: [],
   members: [],
 };
+
+/** 저장된 주소마다 입력칸을 하나씩 만든다. 주소가 없으면 빈 입력칸 하나를 보여 준다. */
+function toTeamBlogUrlInputs(urls: ProjectDetail['teamBlogUrls']) {
+  const inputs = urls.filter((url) => typeof url === 'string');
+  return inputs.length > 0 ? inputs : [''];
+}
 
 function toFormValues(project: ProjectDetail, authorHandle: string): ProjectFormValues {
   return {
@@ -56,6 +66,7 @@ function toFormValues(project: ProjectDetail, authorHandle: string): ProjectForm
     thumbnailImageId: project.thumbnailImageId ?? null,
     githubRepositoryUrl: project.githubRepositoryUrl,
     deploymentUrl: project.deploymentUrl ?? '',
+    teamBlogUrls: toTeamBlogUrlInputs(project.teamBlogUrls),
     descriptionMd: project.descriptionMd ?? '',
     techTags: project.techTags,
     members: project.members.flatMap((member) =>
@@ -357,6 +368,45 @@ export function ProjectForm({
                     <Select.Item value="OPERATING">운영 중</Select.Item>
                     <Select.Item value="CLOSED">운영 종료</Select.Item>
                   </Select>
+                )}
+              </Field>
+
+              <Field
+                label={`팀 블로그 주소 (최대 ${MAX_TEAM_BLOG_URLS}개)`}
+                error={errors.teamBlogUrls}
+              >
+                {(id) => (
+                  <div className="flex flex-col gap-2">
+                    {values.teamBlogUrls.map((url, index) => (
+                      <Input
+                        key={index}
+                        // 첫 칸은 라벨과 이어지고, 늘어난 칸은 순서로 구분한다.
+                        {...(index === 0
+                          ? { id }
+                          : { 'aria-label': `팀 블로그 주소 ${index + 1}` })}
+                        value={url}
+                        onChange={(event) =>
+                          setField(
+                            'teamBlogUrls',
+                            values.teamBlogUrls.map((current, i) =>
+                              i === index ? event.target.value : current,
+                            ),
+                          )
+                        }
+                        placeholder="https://velog.io/@loop"
+                      />
+                    ))}
+                    {values.teamBlogUrls.length < MAX_TEAM_BLOG_URLS && (
+                      <Button
+                        variant="outline"
+                        className="w-fit gap-1"
+                        onClick={() => setField('teamBlogUrls', [...values.teamBlogUrls, ''])}
+                      >
+                        <IconPlus className="size-4" aria-hidden="true" />
+                        주소 추가
+                      </Button>
+                    )}
+                  </div>
                 )}
               </Field>
 

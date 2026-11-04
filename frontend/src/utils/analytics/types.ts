@@ -27,6 +27,20 @@ export type AnalyticsEvent =
   | { name: 'link_preview_clicked'; feedId: number }
   | { name: 'comment_submitted'; isReply: boolean; isAnonymous: boolean }
   | { name: 'comment_agree_toggled'; feedId: number; isReply: boolean; agreed: boolean }
+  // 추천 질문 퍼널. position은 0부터 센다.
+  | {
+      name: 'recommendation_impression';
+      recommendationId: number;
+      surface: RecommendationSurface;
+      position: number;
+    }
+  | {
+      name: 'recommendation_clicked';
+      recommendationId: number;
+      surface: RecommendationSurface;
+      position: number;
+    }
+  | { name: 'recommendation_write_clicked'; recommendationId: number }
   // 프로젝트
   | { name: 'project_create_started'; from: string }
   | {
@@ -62,6 +76,9 @@ export type NavTab = 'home' | 'feeds' | 'projects' | 'magazines' | 'news';
 
 /** 피드를 보여주는 화면. 같은 행동이라도 어디서 일어났는지 구분한다. */
 export type FeedSurface = 'home' | 'feeds' | 'profile';
+
+/** 추천 질문 카드를 보여주는 화면. 상세의 연관 추천과 질문 목록 사이 슬롯을 구분한다. */
+export type RecommendationSurface = 'feed_detail' | 'feed_list';
 
 export interface AnalyticsUser {
   userId: number;

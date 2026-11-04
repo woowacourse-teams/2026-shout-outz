@@ -148,10 +148,40 @@ describe('ProjectCreatePage', () => {
         deploymentUrl: FORM.deploymentUrl,
         // 운영 상태를 고르지 않았고 배포 URL이 있으므로 OPERATING으로 보낸다.
         serviceStatus: 'OPERATING',
+        teamBlogUrls: [],
         descriptionMd: FORM.descriptionMd,
         techTagIds: [1],
         memberHandles: ['woojin', 'zzaekkii'],
       }),
+    );
+  });
+
+  it('주소 추가 버튼으로 팀 블로그 주소 입력칸을 3개까지 늘리고, 빈 칸은 빼고 보낸다', async () => {
+    const user = userEvent.setup();
+    const received = captureCreateRequest();
+    renderRoute('/projects/new');
+
+    await fillRequiredFields(user, false);
+    await user.type(
+      screen.getByRole('textbox', { name: /팀 블로그 주소/ }),
+      'https://velog.io/@loop',
+    );
+    await user.click(screen.getByRole('button', { name: '주소 추가' }));
+    await user.click(screen.getByRole('button', { name: '주소 추가' }));
+    expect(screen.queryByRole('button', { name: '주소 추가' })).not.toBeInTheDocument();
+
+    await user.type(
+      screen.getByRole('textbox', { name: '팀 블로그 주소 3' }),
+      'https://loop-team.tistory.com',
+    );
+    await submit(user);
+
+    await waitFor(() =>
+      expect(received.body).toEqual(
+        expect.objectContaining({
+          teamBlogUrls: ['https://velog.io/@loop', 'https://loop-team.tistory.com'],
+        }),
+      ),
     );
   });
 

@@ -1,22 +1,61 @@
+import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from '@tanstack/react-router';
 import { IconArrowUpRight, IconSparkles } from '@tabler/icons-react';
 import type { QuestionRecommendation } from '@/types/recommendation';
 import { toPlainText } from '@/utils/markdown';
+import { analytics, type RecommendationSurface } from '@/utils/analytics';
 
-export function RecommendationCard({ recommendation }: { recommendation: QuestionRecommendation }) {
+/** 카드가 이 비율 이상 화면에 보이면 노출로 센다. */
+const IMPRESSION_RATIO = 0.5;
+
+interface RecommendationCardProps {
+  recommendation: QuestionRecommendation;
+  /** 카드가 놓인 화면. */
+  surface: RecommendationSurface;
+  /** 같은 화면의 추천 카드 중 몇 번째인지. 0부터 센다. */
+  position: number;
+}
+
+export function RecommendationCard({ recommendation, surface, position }: RecommendationCardProps) {
   const navigate = useNavigate();
   const from = useLocation({ select: (location) => location.href });
+  const { recommendationId } = recommendation;
+  const card = useRef<HTMLElement>(null);
+  // 카드 하나당 노출은 한 번만 보낸다. 리렌더나 스크롤 왕복으로 다시 보내지 않는다.
+  const impressed = useRef(false);
+
+  useEffect(() => {
+    const element = card.current;
+    if (!element || impressed.current || typeof IntersectionObserver === 'undefined') return;
+    // 카드가 절반 이상 보여야 노출로 센다. observe 직후의 첫 콜백은 threshold와 상관없이 오고
+    // 그때 isIntersecting은 1px만 보여도 true라서, 보이는 비율로 판단한다.
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry || entry.intersectionRatio < IMPRESSION_RATIO || impressed.current) return;
+        impressed.current = true;
+        observer.disconnect();
+        analytics.track({ name: 'recommendation_impression', recommendationId, surface, position });
+      },
+      { threshold: IMPRESSION_RATIO },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [recommendationId, surface, position]);
 
   return (
-    <article className="group border-primary-100 bg-primary-50/40 hover:border-primary-300 relative min-w-0 rounded-lg border p-5 transition-colors md:p-6">
+    <article
+      ref={card}
+      className="group border-primary-100 bg-primary-50/40 hover:border-primary-300 relative min-w-0 rounded-lg border p-5 transition-colors md:p-6"
+    >
       <button
         type="button"
-        onClick={() =>
+        onClick={() => {
+          analytics.track({ name: 'recommendation_clicked', recommendationId, surface, position });
           void navigate({
             to: '/community/recommendations',
             state: { questionRecommendation: { recommendation, from } },
-          })
-        }
+          });
+        }}
         aria-label={`추천 질문: ${recommendation.title}`}
         className="focus-visible:outline-primary-600 absolute inset-0 z-10 cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2"
       />

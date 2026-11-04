@@ -26,6 +26,7 @@ public record AdminJobPostingDetailResponse(
         String employmentType,
         LocalDate deadline,
         MatchingStatus status,
+        Instant hiddenAt,
         long registeredBy,
         Instant createdAt,
         List<Requirement> requirements
@@ -52,6 +53,7 @@ public record AdminJobPostingDetailResponse(
                 jobPosting.getEmploymentType(),
                 jobPosting.getDeadline(),
                 jobPosting.getStatus(),
+                jobPosting.getHiddenAt(),
                 jobPosting.getRegisteredBy(),
                 jobPosting.getCreatedAt(),
                 jobPosting.getRequirements().stream()

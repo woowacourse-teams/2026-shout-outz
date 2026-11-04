@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.common.exception.code.ErrorCode;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.common.exception.custom.DomainValidationException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -201,6 +202,123 @@ class JobPostingTest {
                         10L, "https://careers.example.com/jobs/123", hash, "예시 회사", JobRole.BACKEND, null,
                         "백엔드 개발자", null, null, null, null, 1L, requirements(1), NOW, NOW),
                 JobPostingErrorCode.JOB_POSTING_STATUS_NULL);
+    }
+
+    @Test
+    @DisplayName("원문이 같으면 공고 정보만 고치고, 역량과 분석 상태와 숨김 시각은 그대로 둔다.")
+    void updatesOnlyPostingInfoWhenContentIsSame() {
+        JobPosting saved = savedPosting(MatchingStatus.READY);
+        Instant later = NOW.plusSeconds(3_600);
+
+        JobPosting updated = saved.update(
+                URL, CONTENT, "바뀐 회사", JobRole.FRONTEND, "신입", "프론트엔드 개발자", "계약직",
+                LocalDate.of(2026, 12, 31), requirements(3), later);
+
+        assertThat(updated.getId()).isEqualTo(saved.getId());
+        assertThat(updated.getCompanyName()).isEqualTo("바뀐 회사");
+        assertThat(updated.getJobRole()).isEqualTo(JobRole.FRONTEND);
+        assertThat(updated.getCareerRequirement()).isEqualTo("신입");
+        assertThat(updated.getTitle()).isEqualTo("프론트엔드 개발자");
+        assertThat(updated.getEmploymentType()).isEqualTo("계약직");
+        assertThat(updated.getDeadline()).isEqualTo(LocalDate.of(2026, 12, 31));
+        assertThat(updated.getStatus()).isEqualTo(MatchingStatus.READY);
+        assertThat(updated.getRequirements()).isEqualTo(saved.getRequirements());
+        assertThat(updated.getHiddenAt()).isEqualTo(saved.getHiddenAt());
+        assertThat(updated.getRegisteredBy()).isEqualTo(saved.getRegisteredBy());
+        assertThat(updated.getCreatedAt()).isEqualTo(saved.getCreatedAt());
+        assertThat(updated.getUpdatedAt()).isEqualTo(later);
+        assertThat(updated.hasSameContentAs(saved)).isTrue();
+    }
+
+    @Test
+    @DisplayName("원문이 같으면 받은 역량은 보지 않으므로, 빈 역량 목록이 와도 기존 역량을 그대로 둔다.")
+    void ignoresRequestedRequirementsWhenContentIsSame() {
+        JobPosting saved = savedPosting(MatchingStatus.READY);
+
+        JobPosting updated = saved.update(
+                URL, CONTENT, "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
+                null, List.of(), NOW);
+
+        assertThat(updated.getRequirements()).isEqualTo(saved.getRequirements());
+    }
+
+    @Test
+    @DisplayName("원문의 공백과 줄바꿈만 다르면 같은 원문으로 본다.")
+    void treatsWhitespaceOnlyChangeAsSameContent() {
+        JobPosting saved = savedPosting(MatchingStatus.READY);
+
+        JobPosting updated = saved.update(
+                URL, "  자격 요건   - Java 개발 경험\n", "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
+                null, requirements(3), NOW);
+
+        assertThat(updated.hasSameContentAs(saved)).isTrue();
+        assertThat(updated.getRequirements()).isEqualTo(saved.getRequirements());
+    }
+
+    @Test
+    @DisplayName("원문이 바뀌면 받은 역량으로 바꾸고 PENDING 으로 되돌리며, 숨김 시각과 등록 정보는 그대로 둔다.")
+    void replacesRequirementsWhenContentChanged() {
+        JobPosting saved = savedPosting(MatchingStatus.FAILED);
+        String changedContent = CONTENT + "\n- Kotlin 개발 경험";
+        List<JobRequirement> newRequirements = requirements(3);
+
+        Instant later = NOW.plusSeconds(60);
+
+        JobPosting updated = saved.update(
+                URL, changedContent, "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
+                null, newRequirements, later);
+
+        assertThat(updated.getContentHash()).isEqualTo(JobPostingContentHash.from(changedContent));
+        assertThat(updated.getUpdatedAt()).isEqualTo(later);
+        assertThat(updated.getStatus()).isEqualTo(MatchingStatus.PENDING);
+        assertThat(updated.getRequirements()).isEqualTo(newRequirements);
+        assertThat(updated.getHiddenAt()).isEqualTo(saved.getHiddenAt());
+        assertThat(updated.getRegisteredBy()).isEqualTo(saved.getRegisteredBy());
+        assertThat(updated.getCreatedAt()).isEqualTo(saved.getCreatedAt());
+        assertThat(updated.hasSameContentAs(saved)).isFalse();
+    }
+
+    @Test
+    @DisplayName("정규화하면 같은 주소는 같은 공고로 보고 고친다.")
+    void acceptsEquivalentUrl() {
+        JobPosting saved = savedPosting(MatchingStatus.READY);
+
+        JobPosting updated = saved.update(
+                "https://careers.example.com/jobs/123#apply", CONTENT, "예시 회사", JobRole.BACKEND, null,
+                "백엔드 개발자", null, null, requirements(1), NOW);
+
+        assertThat(updated.getSourceUrl()).isEqualTo(saved.getSourceUrl());
+    }
+
+    @Test
+    @DisplayName("주소가 다르면 다른 공고이므로 고치지 않고 400 예외를 던진다.")
+    void rejectsDifferentUrl() {
+        JobPosting saved = savedPosting(MatchingStatus.READY);
+
+        assertThatThrownBy(() -> saved.update(
+                "https://careers.example.com/jobs/456", CONTENT, "예시 회사", JobRole.BACKEND, null,
+                "백엔드 개발자", null, null, requirements(1), NOW))
+                .isInstanceOfSatisfying(BadRequestException.class,
+                        error -> assertThat(error.getErrorCode()).isEqualTo(JobPostingErrorCode.JOB_POSTING_URL_MISMATCH));
+    }
+
+    @Test
+    @DisplayName("원문이 바뀌었는데 받은 역량이 없으면 도메인 예외를 던진다.")
+    void rejectsEmptyRequirementsWhenContentChanged() {
+        JobPosting saved = savedPosting(MatchingStatus.READY);
+
+        assertErrorCode(
+                () -> saved.update(
+                        URL, CONTENT + " 변경", "예시 회사", JobRole.BACKEND, null, "백엔드 개발자", null,
+                        null, List.of(), NOW),
+                JobPostingErrorCode.JOB_POSTING_INVALID_REQUIREMENT_COUNT);
+    }
+
+    private JobPosting savedPosting(MatchingStatus status) {
+        return JobPosting.reconstitute(
+                10L, "https://careers.example.com/jobs/123", JobPostingContentHash.from(CONTENT).value(), "예시 회사",
+                JobRole.BACKEND, null, "백엔드 개발자", null, null, status, NOW.plusSeconds(30), 1L,
+                requirements(2), NOW, NOW);
     }
 
     private JobPosting register(List<JobRequirement> requirements) {

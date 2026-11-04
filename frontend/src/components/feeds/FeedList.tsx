@@ -32,6 +32,20 @@ export function FeedList({ sort, feedType }: { sort: FeedSort; feedType?: FeedTy
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError]);
 
   const feeds = query.data.pages.flatMap((page) => page.data);
+  // 목록 전체에서 추천 카드가 놓인 순서(0부터). 페이지를 더 불러와도 앞 카드의 순서는 그대로다.
+  const slotPositions = new Map(
+    feedType === 'QUESTION'
+      ? query.data.pages
+          .flatMap((page) =>
+            page.data.flatMap((feed) =>
+              (page.meta.recommendationSlots ?? []).filter(
+                (slot) => slot.afterFeedId === feed.feedId,
+              ),
+            ),
+          )
+          .map((slot, index) => [slot, index] as const)
+      : [],
+  );
 
   return (
     <div className="space-y-3">
@@ -59,6 +73,8 @@ export function FeedList({ sort, feedType }: { sort: FeedSort; feedType?: FeedTy
                       <RecommendationCard
                         key={slot.recommendation.recommendationId}
                         recommendation={slot.recommendation}
+                        surface="feed_list"
+                        position={slotPositions.get(slot) ?? 0}
                       />
                     ))}
               </Fragment>
