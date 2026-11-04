@@ -33,7 +33,9 @@ public final class JobPostingMapper {
     }
 
     /**
-     * 역량 항목은 공고와 함께 만들어지므로 생성·수정 시각은 공고의 값을 쓰고, 매칭 작업용 칸은 처음 값으로 둔다.
+     * 역량 항목은 공고를 등록하거나 원문을 바꾼 시점에 만들어지므로 생성·수정 시각 모두 공고의 수정 시각을 쓴다.
+     * 공고를 고칠 때 공고의 생성 시각을 쓰면 새로 넣은 역량이 처음 등록한 때 만든 것처럼 남는다.
+     * 매칭 작업용 칸은 처음 값으로 둔다.
      */
     public static List<JobRequirementEntity> toRequirementEntities(long jobPostingId, JobPosting jobPosting) {
         return jobPosting.getRequirements().stream()
@@ -46,7 +48,7 @@ public final class JobPostingMapper {
                         .summary(requirement.getSummary())
                         .status(requirement.getStatus())
                         .attemptCount(INITIAL_ATTEMPT_COUNT)
-                        .createdAt(jobPosting.getCreatedAt())
+                        .createdAt(jobPosting.getUpdatedAt())
                         .updatedAt(jobPosting.getUpdatedAt())
                         .build())
                 .toList();
