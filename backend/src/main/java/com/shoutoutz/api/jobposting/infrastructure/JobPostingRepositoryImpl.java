@@ -7,6 +7,7 @@ import com.shoutoutz.api.jobposting.domain.JobPosting;
 import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobPostingUrl;
 import com.shoutoutz.api.jobposting.domain.JobPostingVisibility;
+import com.shoutoutz.api.jobposting.domain.ReanalysisScope;
 import com.shoutoutz.api.jobposting.infrastructure.jpa.JobPostingJpaRepository;
 import com.shoutoutz.api.jobposting.infrastructure.jpa.JobRequirementJpaRepository;
 import com.shoutoutz.api.jobposting.infrastructure.mapper.JobPostingMapper;
@@ -116,6 +117,36 @@ public class JobPostingRepositoryImpl implements JobPostingRepository {
         jdbcTemplate.update("DELETE FROM job_requirements WHERE job_posting_id = :id",
                 new MapSqlParameterSource("id", jobPosting.getId()));
         jobRequirementJpaRepository.saveAll(JobPostingMapper.toRequirementEntities(jobPosting.getId(), jobPosting));
+    }
+
+    /**
+     * Worker 가 SQL 로 바꾸는 매칭 칸(시도 횟수, 작업 기한 등)은 엔티티에 없어서 SQL 로 되돌린다.
+     * 역량 행은 {@link #findByIdForUpdate} 에서 이미 잠갔으므로 Worker 가 그 사이 저장하지 못한다.
+     */
+    @Override
+    @Transactional
+    public int resetForReanalysis(long jobPostingId, ReanalysisScope scope, Instant now) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("id", jobPostingId)
+                .addValue("now", Timestamp.from(now));
+        if (scope == ReanalysisScope.ALL) {
+            jdbcTemplate.update("""
+                    DELETE FROM requirement_recommendations
+                    WHERE job_requirement_id IN (SELECT id FROM job_requirements WHERE job_posting_id = :id)
+                    """, parameters);
+        }
+        int resetCount = jdbcTemplate.update("""
+                UPDATE job_requirements
+                SET status = 'PENDING',
+                    attempt_count = 0,
+                    lease_until = NULL,
+                    next_attempt_at = NULL,
+                    last_error = NULL,
+                    updated_at = :now
+                WHERE job_posting_id = :id
+                """ + (scope == ReanalysisScope.FAILED ? " AND status = 'FAILED'" : ""), parameters);
+        jdbcTemplate.update("UPDATE job_postings SET status = 'PENDING', updated_at = :now WHERE id = :id", parameters);
+        return resetCount;
     }
 
     /**
