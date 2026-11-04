@@ -1,0 +1,21 @@
+# 샤라웃 원본 수집기(08 문서 C10, 7-5). data-pipeline.timer 가 매일 띄운다.
+# 설치: sudo cp deploy/data-pipeline.{service,timer} /etc/systemd/system/ && sudo systemctl daemon-reload
+[Unit]
+Description=샤라웃 원본 수집기 (collect)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/2026-shout-outz/data-pipeline
+# 비밀값은 이 파일에만 둔다(C12). 주인만 읽기(chmod 600)
+EnvironmentFile=/etc/shout-outz/data-pipeline.env
+Environment=PIPELINE_HOST=ec2
+Environment=PIPELINE_TRIGGER=schedule
+ExecStart=/home/ubuntu/2026-shout-outz/data-pipeline/.venv/bin/python -m collector collect
+# 첫 실행은 PR 때문에 5~6시간 걸릴 수 있다(07 문서 3-3). 잠금(C9)은 12시간 뒤 풀린 것으로 본다
+TimeoutStartSec=13h
+# t4g.micro 1GB 에서 다른 프로세스(관리 웹)를 지키려고 위를 막아 둔다
+MemoryMax=700M
+Nice=10
