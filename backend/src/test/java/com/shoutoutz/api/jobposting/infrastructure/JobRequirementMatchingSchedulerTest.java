@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.shoutoutz.api.common.llm.LlmProvider;
 import com.shoutoutz.api.jobposting.application.JobRequirementMatchingWorker;
 import java.time.Duration;
 import java.util.List;
@@ -20,7 +21,7 @@ class JobRequirementMatchingSchedulerTest {
     private final JobRequirementMatchingWorker worker = mock(JobRequirementMatchingWorker.class);
     private final JobRequirementMatchingScheduler scheduler = new JobRequirementMatchingScheduler(worker,
             new JobRequirementMatchingProperties(true, Duration.ofHours(1), Duration.ofSeconds(180), 3,
-                    List.of(Duration.ofMinutes(1), Duration.ofMinutes(5)), 10));
+                    List.of(Duration.ofMinutes(1), Duration.ofMinutes(5)), 10, List.of(LlmProvider.BEDROCK_GPT)));
 
     @AfterEach
     void tearDown() {
@@ -51,7 +52,7 @@ class JobRequirementMatchingSchedulerTest {
     void 멈췄다가_다시_켜면_다시_주기적으로_처리한다() {
         JobRequirementMatchingScheduler restartable = new JobRequirementMatchingScheduler(worker,
                 new JobRequirementMatchingProperties(true, Duration.ofMillis(10), Duration.ofSeconds(180), 3,
-                        List.of(Duration.ofMinutes(1)), 10));
+                        List.of(Duration.ofMinutes(1)), 10, List.of(LlmProvider.BEDROCK_GPT)));
         restartable.start();
         restartable.stop();
         clearInvocations(worker);

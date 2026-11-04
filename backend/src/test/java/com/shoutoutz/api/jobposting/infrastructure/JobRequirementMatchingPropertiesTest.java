@@ -3,6 +3,7 @@ package com.shoutoutz.api.jobposting.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.shoutoutz.api.common.llm.LlmProvider;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ class JobRequirementMatchingPropertiesTest {
         assertThat(properties.maxAttempts()).isEqualTo(3);
         assertThat(properties.retryDelays()).containsExactly(Duration.ofMinutes(1), Duration.ofMinutes(5));
         assertThat(properties.searchLimit()).isEqualTo(10);
+        assertThat(properties.providers()).containsExactly(LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_CLAUDE);
     }
 
     @Test
@@ -55,14 +57,29 @@ class JobRequirementMatchingPropertiesTest {
     }
 
     @Test
-    void 후보_자료_수가_1보다_작으면_실패한다() {
+    void 후보_자료_수가_1보다_작거나_10보다_크면_실패한다() {
         assertThatThrownBy(() -> properties(3, List.of(Duration.ofMinutes(1)), 0))
                 .hasMessageContaining("search-limit");
+        assertThatThrownBy(() -> properties(3, List.of(Duration.ofMinutes(1)), 11))
+                .hasMessageContaining("search-limit");
+    }
+
+    @Test
+    void 판정_제공자가_없거나_중복되면_실패한다() {
+        assertThatThrownBy(() -> properties(List.of())).hasMessageContaining("providers");
+        assertThatThrownBy(() -> properties(List.of(LlmProvider.BEDROCK_GPT, LlmProvider.BEDROCK_GPT)))
+                .hasMessageContaining("providers");
+    }
+
+    private JobRequirementMatchingProperties properties(List<LlmProvider> providers) {
+        return new JobRequirementMatchingProperties(
+                true, Duration.ofSeconds(10), Duration.ofSeconds(180), 3, List.of(Duration.ofMinutes(1)), 10, providers);
     }
 
     private JobRequirementMatchingProperties properties(int maxAttempts, List<Duration> retryDelays, int searchLimit) {
         return new JobRequirementMatchingProperties(
-                true, Duration.ofSeconds(10), Duration.ofSeconds(180), maxAttempts, retryDelays, searchLimit);
+                true, Duration.ofSeconds(10), Duration.ofSeconds(180), maxAttempts, retryDelays, searchLimit,
+                List.of(LlmProvider.BEDROCK_GPT));
     }
 
     private JobRequirementMatchingProperties bind(Map<String, String> values) {

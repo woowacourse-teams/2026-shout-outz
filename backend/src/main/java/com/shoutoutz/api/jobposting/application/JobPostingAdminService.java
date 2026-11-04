@@ -105,7 +105,11 @@ public class JobPostingAdminService {
         validateAdmin(role);
         JobPosting jobPosting = jobPostingRepository.findById(jobPostingId)
                 .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
-        return AdminJobPostingDetailResponse.from(jobPosting);
+        return AdminJobPostingDetailResponse.from(
+                jobPosting,
+                queryRepository.findLastErrors(jobPostingId),
+                queryRepository.findRecommendations(jobPostingId)
+        );
     }
 
     /**

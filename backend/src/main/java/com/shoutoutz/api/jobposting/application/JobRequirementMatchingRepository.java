@@ -41,4 +41,10 @@ public interface JobRequirementMatchingRepository {
      * @return 저장했으면 true, 늦게 끝난 결과라 무시했으면 false
      */
     boolean complete(ClaimedJobRequirement requirement, List<RequirementRecommendation> recommendations, Instant now);
+
+    /**
+     * 이 임베딩 모델로 만든, 지워지지 않은 자료 조각이 하나라도 있는지 본다.
+     * 없으면 검색 결과가 늘 비어 모든 역량이 추천 없이 완료된다.
+     */
+    boolean hasSearchableChunks(String embeddingModel);
 }

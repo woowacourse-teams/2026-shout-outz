@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.shoutoutz.api.common.llm.LlmProvider;
 import com.shoutoutz.api.jobposting.application.dto.CandidateChunk;
 import com.shoutoutz.api.jobposting.application.dto.CandidateChunk.ChunkKind;
 import com.shoutoutz.api.jobposting.application.dto.ClaimedJobRequirement;
@@ -60,7 +61,8 @@ class JobRequirementMatchingWorkerTest {
                 Duration.ofSeconds(180),
                 3,
                 List.of(Duration.ofMinutes(1), Duration.ofMinutes(5)),
-                10
+                10,
+                List.of(LlmProvider.BEDROCK_GPT)
         );
         worker = new JobRequirementMatchingWorker(
                 repository,
@@ -107,7 +109,7 @@ class JobRequirementMatchingWorkerTest {
     }
 
     @Test
-    void 검색_결과가_없으면_판정하지_않고_추천_없이_완료한다() {
+    void 검색_결과가_없으면_판정하지_않고_시도_횟수가_남아도_NO_CANDIDATES로_바로_실패로_끝낸다() {
         ClaimedJobRequirement requirement = claimed(1);
         when(repository.claimNext(NOW, LEASE_UNTIL)).thenReturn(Optional.of(requirement));
         when(searcher.search(QUERY, JobRole.BACKEND, 10)).thenReturn(List.of());
@@ -115,15 +117,20 @@ class JobRequirementMatchingWorkerTest {
         worker.processNext();
 
         verifyNoInteractions(judge);
-        verify(repository).complete(requirement, List.of(), NOW);
+        verify(repository).markFailed(requirement, MatchingFailure.NO_CANDIDATES, NOW);
+        verify(repository, never()).complete(any(), any(), any());
+        verify(repository, never()).scheduleRetry(any(), any(), any(), any());
     }
 
     @Test
     void 늦게_끝나_저장되지_않아도_실패로_기록하지_않는다() {
         ClaimedJobRequirement requirement = claimed(1);
         when(repository.claimNext(NOW, LEASE_UNTIL)).thenReturn(Optional.of(requirement));
-        when(searcher.search(QUERY, JobRole.BACKEND, 10)).thenReturn(List.of());
-        when(repository.complete(requirement, List.of(), NOW)).thenReturn(false);
+        ResourceCandidate candidate = candidate("GITHUB_PR", "pr-1", 0.82);
+        when(searcher.search(QUERY, JobRole.BACKEND, 10)).thenReturn(List.of(candidate));
+        when(judge.judge(requirement, List.of(candidate)))
+                .thenReturn(List.of(judgement("GITHUB_PR", "pr-1", RecommendationVerdict.MATCH)));
+        when(repository.complete(any(), any(), any())).thenReturn(false);
 
         worker.processNext();
 

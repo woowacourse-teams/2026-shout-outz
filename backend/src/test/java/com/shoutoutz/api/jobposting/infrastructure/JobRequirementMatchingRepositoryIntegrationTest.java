@@ -1,5 +1,6 @@
 package com.shoutoutz.api.jobposting.infrastructure;
 
+import static com.shoutoutz.api.resourcesearch.support.ResourceSearchFixture.vector;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.jobposting.application.JobRequirementMatchingRepository;
@@ -11,6 +12,8 @@ import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
+import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
+import com.shoutoutz.api.resourcesearch.support.ResourceSearchFixture;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
@@ -334,6 +337,36 @@ class JobRequirementMatchingRepositoryIntegrationTest {
                 "SELECT resource_external_key FROM requirement_recommendations WHERE job_requirement_id = ?",
                 String.class, requirementId)).containsExactly("kept");
         assertThat(postingStatus(postingId)).isEqualTo("PROCESSING");
+    }
+
+    @Test
+    void 이_임베딩_모델로_만든_자료_조각이_있을_때만_검색할_자료가_있다고_본다() {
+        String model = uniqueModel();
+        ResourceSearchFixture fixture = new ResourceSearchFixture(jdbcTemplate);
+        fixture.intro(fixture.document(ResourceTrack.BE), vector(1, 0));
+
+        assertThat(repository.hasSearchableChunks(model)).isFalse();
+
+        fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "소개", vector(1, 0), model);
+
+        assertThat(repository.hasSearchableChunks(model)).isTrue();
+    }
+
+    @Test
+    void 지워진_자료나_조각만_있으면_검색할_자료가_없다고_본다() {
+        String model = uniqueModel();
+        ResourceSearchFixture fixture = new ResourceSearchFixture(jdbcTemplate);
+        long deletedChunk = fixture.chunk(fixture.document(ResourceTrack.BE), 0, "intro", "소개", vector(1, 0), model);
+        long deletedDocument = fixture.document(ResourceTrack.BE);
+        fixture.chunk(deletedDocument, 0, "intro", "소개", vector(1, 0), model);
+        jdbcTemplate.update("UPDATE resource_chunks SET deleted_at = now() WHERE id = ?", deletedChunk);
+        jdbcTemplate.update("UPDATE resource_documents SET deleted_at = now() WHERE id = ?", deletedDocument);
+
+        assertThat(repository.hasSearchableChunks(model)).isFalse();
+    }
+
+    private String uniqueModel() {
+        return "matching-test-" + UUID.randomUUID().toString().substring(0, 8) + "@1024";
     }
 
     private RequirementRecommendation recommendation(String externalKey, RecommendationVerdict verdict) {

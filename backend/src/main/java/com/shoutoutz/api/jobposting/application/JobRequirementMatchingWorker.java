@@ -97,7 +97,9 @@ public class JobRequirementMatchingWorker {
         String query = requirement.name() + "\n" + requirement.summary();
         List<ResourceCandidate> candidates = searcher.search(query, requirement.jobRole(), properties.searchLimit());
         if (candidates.isEmpty()) {
-            return List.of();
+            // 검색은 점수로 거르지 않아 조각이 하나라도 있으면 후보가 나온다. 0개면 검색할 자료가 없는 것이다.
+            throw new JobRequirementMatchingException(MatchingFailure.NO_CANDIDATES,
+                    new IllegalStateException("검색할 자료가 없습니다. jobRole=" + requirement.jobRole()));
         }
         List<RequirementJudgement> judgements = judge.judge(requirement, candidates);
         return combine(candidates, judgements);
