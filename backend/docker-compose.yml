@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:17
+    image: pgvector/pgvector:pg17-trixie
     container_name: shoutoutz-db
     environment:
       POSTGRES_DB: shoutoutz

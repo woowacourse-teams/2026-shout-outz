@@ -1,14 +1,12 @@
 import { useEffect } from 'react';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { IconSearch } from '@tabler/icons-react';
 
 import { projectListInfiniteQueryOptions } from '@/api/project-list';
 import { Button } from '@/components/Button';
-import { ProjectCard } from '@/components/projects/ProjectCard';
+import { ProjectCardLink } from '@/components/projects/ProjectCardLink';
 import { countProjectFilters } from '@/constants/project';
 import { type ProjectFilter } from '@/types/project';
-import { toProjectSlugParam } from '@/utils/project';
 import { analytics } from '@/utils/analytics';
 
 export interface ProjectListProps {
@@ -41,31 +39,7 @@ export function ProjectList({ filter, onResetFilter }: ProjectListProps) {
       >
         {projects.map((project) => (
           <li key={project.slug} className="min-w-0">
-            <Link
-              to="/projects/$slug"
-              params={{ slug: toProjectSlugParam(project.slug) }}
-              className="focus-visible:outline-primary-600 block rounded-xl focus-visible:outline-2"
-              onClick={() => {
-                analytics.track({ name: 'card_clicked', target: 'project', surface: 'projects' });
-                analytics.track({
-                  name: 'project_detail_opened',
-                  slug: project.slug,
-                  from: 'projects',
-                });
-              }}
-            >
-              <ProjectCard
-                title={project.title}
-                tagline={project.tagline}
-                cohort={project.cohort}
-                likeCount={project.likeCount}
-                likedByMe={project.likedByMe}
-                commentCount={project.commentCount}
-                techTags={project.techTags}
-                thumbnailUrl={project.thumbnailUrl}
-                members={project.members}
-              />
-            </Link>
+            <ProjectCardLink project={project} surface="projects" />
           </li>
         ))}
       </ul>

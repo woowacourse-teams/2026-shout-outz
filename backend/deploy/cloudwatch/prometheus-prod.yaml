@@ -12,5 +12,5 @@ scrape_configs:
     # 수집 단계에서 필요한 지표만 남긴다. 나머지(JVM, GC, Tomcat 등)는 EMF 로그로도 보내지 않는다.
     metric_relabel_configs:
       - source_labels: [__name__]
-        regex: "http_server_requests_seconds_(count|sum|max)|hikaricp_connections_(active|idle|pending)"
+        regex: "http_server_requests_seconds_(count|sum|max)|hikaricp_connections_(active|idle|pending)|llm_tokens_total"
         action: keep

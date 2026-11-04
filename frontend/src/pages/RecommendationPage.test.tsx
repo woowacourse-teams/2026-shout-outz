@@ -9,6 +9,7 @@ import { renderRoute, server } from '@/test/renderRoute';
 import { createFeedHandlers, mockFeeds } from '@/mocks/handlers';
 import { mockRecommendations } from '@/mocks/recommendations';
 import { readLoginQuestionDraft, saveLoginQuestionDraft } from '@/utils/recommendation';
+import { analytics, type AnalyticsEvent } from '@/utils/analytics';
 
 const recommendation = mockRecommendations[0]!;
 const context = { recommendation, from: '/community?type=QUESTION&sort=POPULAR' };
@@ -84,18 +85,46 @@ it('목록의 지정 위치에 추천을 넣고, 미리보기에서 작성 폼�
   expect(await screen.findByRole('textbox', { name: '제목' })).toHaveValue(recommendation.title);
   expect(screen.getByRole('textbox', { name: '피드 내용' })).toHaveValue(recommendation.content);
   expect(submitted).toBeUndefined();
+  // 사용자가 추천 제목을 고쳐도 서버에는 원래 추천 ID를 보낸다.
+  await user.clear(screen.getByRole('textbox', { name: '제목' }));
+  await user.type(screen.getByRole('textbox', { name: '제목' }), '내가 고친 질문');
   await user.click(screen.getByRole('combobox', { name: '카테고리' }));
   await user.click(screen.getByRole('option', { name: '진로 고민' }));
   await user.click(screen.getByRole('button', { name: '질문 등록하기' }));
   await waitFor(() => expect(router.state.location.pathname).toBe('/community/103'));
   expect(submitted).toEqual(
     expect.objectContaining({
-      title: recommendation.title,
+      title: '내가 고친 질문',
       content: recommendation.content,
       feedType: 'QUESTION',
+      recommendationId: recommendation.recommendationId,
     }),
   );
-  expect(submitted).not.toHaveProperty('recommendationId');
+});
+
+it('목록의 추천 카드 클릭과 미리보기의 작성하기 클릭을 추천 퍼널 이벤트로 남긴다', async () => {
+  listWithSlot();
+  const events: AnalyticsEvent[] = [];
+  jest.spyOn(analytics, 'track').mockImplementation((event) => void events.push(event));
+  const user = userEvent.setup();
+  renderRoute('/community?type=QUESTION&sort=POPULAR');
+  await user.click(
+    await screen.findByRole('button', { name: `추천 질문: ${recommendation.title}` }),
+  );
+  await user.click(
+    (await screen.findAllByRole('button', { name: '이 내용으로 질문 작성하기' }))[0]!,
+  );
+  await screen.findByRole('textbox', { name: '제목' });
+  const funnel = events.filter((event) => event.name.startsWith('recommendation_'));
+  expect(funnel).toEqual([
+    {
+      name: 'recommendation_clicked',
+      recommendationId: recommendation.recommendationId,
+      surface: 'feed_list',
+      position: 0,
+    },
+    { name: 'recommendation_write_clicked', recommendationId: recommendation.recommendationId },
+  ]);
 });
 
 it('직접 접속하거나 유효한 추천 상태가 없으면 선택 안내를 표시한다', async () => {

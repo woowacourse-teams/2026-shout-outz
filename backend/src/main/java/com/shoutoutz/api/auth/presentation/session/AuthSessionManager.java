@@ -1,5 +1,9 @@
 package com.shoutoutz.api.auth.presentation.session;
 
+import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
+import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
+import com.shoutoutz.api.auth.exception.AuthErrorCode;
+import com.shoutoutz.api.common.exception.custom.BadRequestException;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -11,6 +15,27 @@ import org.springframework.stereotype.Component;
 public class AuthSessionManager {
 
     private final AuthSessionAccessor authSessionAccessor;
+
+    public void completeOAuthLogin(
+            HttpServletRequest request,
+            OAuthLoginAttempt attempt,
+            OAuthLoginCallbackResult result
+    ) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            throw new BadRequestException(AuthErrorCode.OAUTH_LOGIN_SESSION_NOT_FOUND);
+        }
+        synchronized (session) {
+            authSessionAccessor.validateProcessingAttempt(session, attempt);
+            rotateSessionId(request);
+            if (result.status() == OAuthLoginCallbackResult.Status.AUTHENTICATED) {
+                authSessionAccessor.saveAuthentication(session, result.userId(), result.role());
+            } else {
+                authSessionAccessor.savePendingIdentity(session, result.identity());
+            }
+            authSessionAccessor.finishLoginAttempt(session, attempt);
+        }
+    }
 
     public void establishAuthenticatedSession(
             HttpServletRequest request,

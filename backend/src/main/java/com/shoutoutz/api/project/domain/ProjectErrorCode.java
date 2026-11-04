@@ -52,6 +52,8 @@ public enum ProjectErrorCode implements ErrorCode {
     PROJECT_DUPLICATE_GITHUB_REPOSITORY("이미 등록된 리포지토리입니다."),
     PROJECT_REPOSITORY_NAME_EXTRACTION_FAILED("GitHub 리포지토리 URL에서 리포지토리 이름을 추출할 수 없습니다."),
     PROJECT_INVALID_DEPLOYMENT_URL("서비스 배포 URL 형식이 올바르지 않습니다."),
+    PROJECT_INVALID_TEAM_BLOG_URL("팀 블로그 주소 형식이 올바르지 않습니다."),
+    PROJECT_TOO_MANY_TEAM_BLOG_URLS("팀 블로그 주소는 3개까지 등록할 수 있습니다."),
 
     /**
      * 프로젝트 기술 스택 에러 코드

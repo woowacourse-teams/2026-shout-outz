@@ -36,11 +36,15 @@ export function feedQuery(feedId: number) {
  * 배열 원소 타입을 못 읽은 결과다). 서버가 받는 값은 ID 숫자라 number[]로 좁혀 쓴다.
  *
  * `title`은 작성·수정 모두 필수다(공백 제외 1자 이상, 100자 이하).
+ *
+ * `recommendationId`는 추천 질문에서 시작한 질문 작성에서만 보낸다. 서버는 이 ID로 추천 사용
+ * 여부를 판단해 사용한 추천을 숨기고 새 추천을 만든다. 생성 스키마에는 아직 없어 여기서 더한다.
  */
 export interface SaveFeedInput extends Omit<FeedSaveRequest, 'categoryIds' | 'mediaIds'> {
   categoryIds: number[];
   mediaIds: number[];
   feedType?: FeedType;
+  recommendationId?: number;
 }
 
 /** 제목·본문 길이 한도. 서버 제약과 같은 값을 화면에서도 미리 막는다. */

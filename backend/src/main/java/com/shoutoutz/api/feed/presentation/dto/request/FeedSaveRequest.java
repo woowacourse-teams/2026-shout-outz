@@ -27,12 +27,25 @@ public record FeedSaveRequest(
 
         Boolean isAnonymous,
 
-        FeedType feedType
+        FeedType feedType,
+
+        Long recommendationId
 ) {
 
     public FeedSaveRequest {
         isAnonymous = Boolean.TRUE.equals(isAnonymous);
         feedType = feedType == null ? FeedType.POST : feedType;
+    }
+
+    public FeedSaveRequest(
+            String title,
+            String content,
+            List<Long> categoryIds,
+            List<Long> mediaIds,
+            Boolean isAnonymous,
+            FeedType feedType
+    ) {
+        this(title, content, categoryIds, mediaIds, isAnonymous, feedType, null);
     }
 
     public FeedSaveRequest(

@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
+import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -302,7 +303,8 @@ class FeedHttpApiTest {
                                   "content": "본문입니다.",
                                   "categoryIds": [3],
                                   "mediaIds": [21],
-                                  "feedType": "QUESTION"
+                                  "feedType": "QUESTION",
+                                  "recommendationId": 501
                                 }
                                 """))
                 .andExpect(status().isCreated())
@@ -332,6 +334,9 @@ class FeedHttpApiTest {
                                                 .description("작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록"),
                                         fieldWithPath("feedType").type(STRING)
                                                 .description("피드 유형(QUESTION 또는 POST). 생략하면 POST")
+                                                .optional(),
+                                        fieldWithPath("recommendationId").type(NUMBER)
+                                                .description("추천 질문을 통해 작성한 질문일 때 사용한 추천 ID. QUESTION 타입에서만 사용되며, 무효하거나 이미 사용된 ID는 무시됩니다.")
                                                 .optional()
                                 )
                                 .responseFields(commandSuccessResponseFields("data."))

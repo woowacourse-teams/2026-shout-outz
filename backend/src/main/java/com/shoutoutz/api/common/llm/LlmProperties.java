@@ -6,10 +6,42 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
 @ConfigurationProperties(prefix = "llm")
-public record LlmProperties(Gemini gemini, OpenAi openai) {
+public record LlmProperties(Gemini gemini, OpenAi openai, Bedrock bedrock) {
     public LlmProperties {
         gemini = gemini == null ? new Gemini(null, null, null, null) : gemini;
         openai = openai == null ? new OpenAi(null, null, null, null, null) : openai;
+        bedrock = bedrock == null ? new Bedrock(null, null, null, null, null) : bedrock;
+    }
+
+    /** 제공자 한 번 호출에 쓰는 최대 시간(연결 + 읽기). */
+    public Duration timeout(LlmProvider provider) {
+        return switch (provider) {
+            case GEMINI -> gemini.connectTimeout().plus(gemini.readTimeout());
+            case OPENAI -> openai.connectTimeout().plus(openai.readTimeout());
+            case BEDROCK_GPT, BEDROCK_CLAUDE -> bedrock.connectTimeout().plus(bedrock.readTimeout());
+        };
+    }
+
+    /** API 키가 필요한 제공자인데 키가 없으면 false. Bedrock 은 IAM 역할로 인증해 키가 필요 없다. */
+    public boolean hasCredentials(LlmProvider provider) {
+        return switch (provider) {
+            case GEMINI -> gemini.apiKey() != null && !gemini.apiKey().isBlank();
+            case OPENAI -> openai.apiKey() != null && !openai.apiKey().isBlank();
+            case BEDROCK_GPT, BEDROCK_CLAUDE -> true;
+        };
+    }
+
+    public record Bedrock(@DefaultValue("ap-northeast-2") String region,
+            @DefaultValue("global.openai.gpt-6.1-sol") String gptModel,
+            @DefaultValue("global.anthropic.claude-sonnet-5-5") String claudeModel,
+            @DefaultValue("5s") Duration connectTimeout, @DefaultValue("45s") Duration readTimeout) {
+        public Bedrock {
+            region = defaultModel(region, "ap-northeast-2");
+            gptModel = defaultModel(gptModel, "global.openai.gpt-6.1-sol");
+            claudeModel = defaultModel(claudeModel, "global.anthropic.claude-sonnet-5-5");
+            connectTimeout = timeout(connectTimeout, Duration.ofSeconds(5));
+            readTimeout = timeout(readTimeout, Duration.ofSeconds(45));
+        }
     }
 
     public record Gemini(String apiKey, @DefaultValue("gemini-3.8-flash") String model,

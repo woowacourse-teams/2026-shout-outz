@@ -4,8 +4,12 @@ import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import com.shoutoutz.api.auth.exception.AuthErrorCode;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.user.domain.account.UserRole;
 import jakarta.servlet.http.HttpSession;
+import java.net.URI;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
@@ -16,24 +20,77 @@ public class AuthSessionAccessor {
     private static final String AUTHENTICATION = "authenticatedSession";
     private static final String PENDING_OAUTH_IDENTITY = "pendingOAuthIdentity";
 
-    public void saveLoginAttempt(HttpSession session, OAuthLoginAttempt attempt) {
-        session.setAttribute(LOGIN_ATTEMPT, attempt);
+    private final Clock clock;
+
+    public AuthSessionAccessor() {
+        this(Clock.systemUTC());
     }
 
-    public OAuthLoginAttempt consumeLoginAttempt(HttpSession session, String callbackState) {
+    AuthSessionAccessor(Clock clock) {
+        this.clock = clock;
+    }
+
+    public OAuthLoginAttempt getOrCreateLoginAttempt(HttpSession session, URI completionUri) {
+        synchronized (session) {
+            Instant now = Instant.now(clock);
+            Object value = session.getAttribute(LOGIN_ATTEMPT);
+            if (value instanceof LoginProgress current
+                    && !current.attempt().isExpired(now)) {
+                if (current.status() == LoginStatus.PROCESSING) {
+                    throw new ConflictException(AuthErrorCode.OAUTH_LOGIN_IN_PROGRESS);
+                }
+                return current.attempt();
+            }
+            OAuthLoginAttempt attempt = OAuthLoginAttempt.create(completionUri, now);
+            session.setAttribute(LOGIN_ATTEMPT, new LoginProgress(attempt, LoginStatus.WAITING));
+            return attempt;
+        }
+    }
+
+    public OAuthLoginAttempt beginCallbackProcessing(HttpSession session, String callbackState) {
         if (session == null) {
             throw new BadRequestException(AuthErrorCode.OAUTH_LOGIN_SESSION_NOT_FOUND);
         }
 
         synchronized (session) {
             Object value = session.getAttribute(LOGIN_ATTEMPT);
-            if (!(value instanceof OAuthLoginAttempt attempt)) {
+            if (!(value instanceof LoginProgress progress)) {
                 throw new BadRequestException(AuthErrorCode.OAUTH_LOGIN_ATTEMPT_NOT_FOUND);
             }
 
-            attempt.validateState(callbackState);
-            session.removeAttribute(LOGIN_ATTEMPT);
+            OAuthLoginAttempt attempt = progress.attempt();
+            attempt.validateCallback(callbackState, Instant.now(clock));
+            if (progress.status() == LoginStatus.PROCESSING) {
+                throw new ConflictException(AuthErrorCode.OAUTH_LOGIN_IN_PROGRESS);
+            }
+            session.setAttribute(LOGIN_ATTEMPT, new LoginProgress(attempt, LoginStatus.PROCESSING));
             return attempt;
+        }
+    }
+
+    void validateProcessingAttempt(HttpSession session, OAuthLoginAttempt attempt) {
+        Object value = session.getAttribute(LOGIN_ATTEMPT);
+        if (!(value instanceof LoginProgress progress)
+                || progress.status() != LoginStatus.PROCESSING
+                || !progress.attempt().equals(attempt)) {
+            throw new BadRequestException(AuthErrorCode.OAUTH_LOGIN_ATTEMPT_NOT_FOUND);
+        }
+        attempt.validateExpiration(Instant.now(clock));
+    }
+
+    public void finishLoginAttempt(HttpSession session, OAuthLoginAttempt attempt) {
+        if (session == null) {
+            return;
+        }
+        synchronized (session) {
+            try {
+                Object value = session.getAttribute(LOGIN_ATTEMPT);
+                if (value instanceof LoginProgress progress && progress.attempt().equals(attempt)) {
+                    session.removeAttribute(LOGIN_ATTEMPT);
+                }
+            } catch (IllegalStateException ignored) {
+                // 외부 통신 중 로그아웃으로 세션이 무효화되면 정리할 속성도 없다.
+            }
         }
     }
 
@@ -72,5 +129,13 @@ public class AuthSessionAccessor {
     public boolean requiresCsrfProtection(HttpSession session) {
         return findAuthentication(session).isPresent()
                 || findPendingIdentity(session).isPresent();
+    }
+
+    private enum LoginStatus {
+        WAITING,
+        PROCESSING
+    }
+
+    private record LoginProgress(OAuthLoginAttempt attempt, LoginStatus status) {
     }
 }

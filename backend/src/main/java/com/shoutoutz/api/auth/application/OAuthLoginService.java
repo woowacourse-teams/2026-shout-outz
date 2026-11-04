@@ -3,7 +3,6 @@ package com.shoutoutz.api.auth.application;
 import com.shoutoutz.api.auth.application.port.GitHubOAuthAuthorizationPort;
 import com.shoutoutz.api.auth.application.port.GitHubOAuthIdentityPort;
 import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
-import com.shoutoutz.api.auth.application.command.OAuthLoginStartResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
 import java.net.URI;
 import java.time.Instant;
@@ -18,18 +17,11 @@ public class OAuthLoginService {
     private final GitHubOAuthIdentityPort githubOAuthIdentityPort;
     private final OAuthAccountLoginService oauthAccountLoginService;
 
-    public OAuthLoginStartResult startGitHubLogin() {
-        return startGitHubLogin(null);
-    }
-
-    public OAuthLoginStartResult startGitHubLogin(URI completionUri) {
-        OAuthLoginAttempt attempt = OAuthLoginAttempt.create(completionUri);
-        URI authorizationUri = githubOAuthAuthorizationPort.generateAuthorizationUri(
+    public URI generateGitHubAuthorizationUri(OAuthLoginAttempt attempt) {
+        return githubOAuthAuthorizationPort.generateAuthorizationUri(
                 attempt.state(),
                 attempt.codeChallenge()
         );
-
-        return new OAuthLoginStartResult(authorizationUri, attempt);
     }
 
     public OAuthLoginCallbackResult completeGitHubLogin(

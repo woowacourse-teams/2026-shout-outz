@@ -12,11 +12,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class QuestionRecommendationService {
 
     private static final int LIST_INTERVAL = 5;
@@ -32,6 +34,26 @@ public class QuestionRecommendationService {
         }
         repository.requestGeneration(feedId, title, content, UUID.randomUUID(), clock.instant());
         return QuestionRecommendationStatus.PENDING;
+    }
+
+    @Transactional
+    public void markUsed(long recommendationId, long consumerFeedId) {
+        Optional<QuestionRecommendationRepository.ConsumedRecommendation> consumed =
+                repository.consume(recommendationId, consumerFeedId, clock.instant());
+        if (consumed.isEmpty()) {
+            log.debug("사용할 수 없는 추천 질문입니다. recommendationId={}, feedId={}", recommendationId, consumerFeedId);
+            return;
+        }
+        if (!properties.sqs().enabled()) {
+            return;
+        }
+        QuestionRecommendationRepository.ConsumedRecommendation recommendation = consumed.get();
+        repository.requestReplenish(
+                recommendation.sourceFeedId(),
+                recommendation.generation(),
+                UUID.randomUUID(),
+                clock.instant()
+        );
     }
 
     @Transactional(readOnly = true)

@@ -3,6 +3,7 @@ package com.shoutoutz.api.feed.recommendation.infrastructure;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationOutboxDispatcher.QuestionRecommendationMessage;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationRepository;
 import com.shoutoutz.api.feed.recommendation.application.QuestionRecommendationWorker;
+import com.shoutoutz.api.feed.recommendation.domain.QuestionRecommendationJobKind;
 import java.time.Clock;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -115,7 +116,8 @@ public class QuestionRecommendationSqsPoller {
         try {
             QuestionRecommendationWorker.ProcessingResult result = worker.process(
                     payload.feedId(),
-                    payload.generation()
+                    payload.generation(),
+                    payload.kind()
             );
             if (result.acknowledged()) {
                 delete(properties.sqs().queueUrl(), message);
@@ -157,12 +159,19 @@ public class QuestionRecommendationSqsPoller {
             return;
         }
         try {
-            repository.markGenerationFailed(
-                    payload.feedId(),
-                    payload.generation(),
-                    "MAX_RETRIES_EXCEEDED",
-                    clock.instant()
-            );
+            if (payload.kind() == QuestionRecommendationJobKind.REPLENISH) {
+                // 대체 생성의 최종 실패는 Worker가 직접 정리한다.
+                // 다른 Worker가 처리 중일 수 있으므로 DLQ에서는 상태를 바꾸지 않는다.
+                log.warn("질문 추천 대체 생성 메시지가 DLQ로 이동했습니다. feedId={}, generation={}",
+                        payload.feedId(), payload.generation());
+            } else {
+                repository.markGenerationFailed(
+                        payload.feedId(),
+                        payload.generation(),
+                        "MAX_RETRIES_EXCEEDED",
+                        clock.instant()
+                );
+            }
             delete(properties.sqs().deadLetterQueueUrl(), message);
         } catch (Exception exception) {
             log.warn("질문 추천 DLQ 메시지의 상태를 저장하지 못했습니다. 재처리하도록 남깁니다. reason={}",

@@ -4,6 +4,7 @@ import static com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper.docume
 import static com.epages.restdocs.apispec.ResourceDocumentation.resource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
@@ -26,7 +27,6 @@ import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
 import com.shoutoutz.api.auth.application.OAuthLoginService;
 import com.shoutoutz.api.auth.application.OAuthSignupService;
 import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
-import com.shoutoutz.api.auth.application.command.OAuthLoginStartResult;
 import com.shoutoutz.api.auth.application.command.OAuthSignupCommand;
 import com.shoutoutz.api.auth.application.command.OAuthSignupResult;
 import com.shoutoutz.api.auth.domain.OAuthIdentity;
@@ -38,6 +38,7 @@ import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import com.shoutoutz.api.auth.presentation.session.AuthenticatedSession;
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
 import com.shoutoutz.api.user.domain.account.UserErrorCode;
@@ -45,10 +46,12 @@ import com.shoutoutz.api.user.domain.account.UserRole;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Locale;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -74,7 +77,19 @@ class AuthApiDocumentationTest {
     private static final URI COMPLETION_URI = URI.create("http://localhost:5173");
     private static final String CALLBACK_DESCRIPTION =
             "GitHub 승인 시 code와 state, 거절 시 error=access_denied와 state를 검증한다. "
-                    + "처리 후 로그인 또는 가입 대기 상태를 만들고 프론트엔드로 이동한다.";
+                    + "처리 후 로그인 또는 가입 대기 상태를 만들고 프론트엔드로 이동한다. "
+                    + "state 불일치는 400 OAUTH_STATE_MISMATCH, 5분 초과는 "
+                    + "400 OAUTH_LOGIN_ATTEMPT_EXPIRED, 처리 중 중복 Callback은 "
+                    + "409 OAUTH_LOGIN_IN_PROGRESS를 반환한다.";
+    private static final String AUTHORIZATION_DESCRIPTION =
+            "state와 PKCE 값을 생성해 세션에 저장하고 GitHub 인가 화면으로 이동한다. "
+                    + "허용 목록에 있는 returnTo가 있으면 Callback 완료 후 해당 프론트엔드로 이동한다. "
+                    + "같은 세션에 유효한 WAITING 시도가 있으면 기존 state와 PKCE, 생성 시각과 "
+                    + "최초 완료 주소를 유지한 같은 인가 URI로 다시 이동한다. 재시도로 5분 유효기간을 연장하지 않는다. "
+                    + "Callback 처리 중인 PROCESSING 상태에서는 기존 시도를 유지하고 "
+                    + "409 OAUTH_LOGIN_IN_PROGRESS를 반환한다. 이 응답은 GitHub로 이동하지 않으며 "
+                    + "클라이언트는 로그인 버튼의 중복 내비게이션도 차단해야 한다. "
+                    + "성공, 취소, 처리 실패 후 또는 시도 생성 후 5분이 지나면 다시 시작할 수 있다.";
     private static final String SIGNUP_DESCRIPTION =
             "가입 대기 OAuth 신원에 서비스 사용자와 프로필을 생성하고 인증 세션을 설정한다. "
                     + "일반 사용자(GENERAL)로 가입하며 bio, githubProfileUrl, blogUrl은 선택 입력이다. "
@@ -114,8 +129,8 @@ class AuthApiDocumentationTest {
     @Test
     @DisplayName("GitHub 로그인을 시작하면 GitHub 인가 화면으로 이동한다")
     void authorizeGitHub() throws Exception {
-        given(oauthLoginService.startGitHubLogin())
-                .willReturn(new OAuthLoginStartResult(GITHUB_AUTHORIZATION_URI, loginAttempt()));
+        given(authSessionAccessor.getOrCreateLoginAttempt(any(), any())).willReturn(loginAttempt());
+        given(oauthLoginService.generateGitHubAuthorizationUri(loginAttempt())).willReturn(GITHUB_AUTHORIZATION_URI);
 
         mockMvc.perform(get("/oauth2/authorization/github"))
                 .andExpect(status().isFound())
@@ -125,8 +140,7 @@ class AuthApiDocumentationTest {
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Auth")
                                 .summary("GitHub 로그인 시작")
-                                .description("state와 PKCE 값을 생성해 세션에 저장하고 GitHub 인가 화면으로 이동한다. "
-                                        + "허용 목록에 있는 returnTo가 있으면 Callback 완료 후 해당 프론트엔드로 이동한다.")
+                                .description(AUTHORIZATION_DESCRIPTION)
                                 .queryParameters(
                                         parameterWithName("returnTo")
                                                 .description("OAuth 완료 후 이동할 허용된 프론트엔드 URI")
@@ -144,12 +158,77 @@ class AuthApiDocumentationTest {
     }
 
     @Test
+    @DisplayName("Callback 처리 중 로그인 시작은 기존 시도를 유지하며 409를 반환한다")
+    void rejectDuplicateAuthorization() throws Exception {
+        willThrow(new ConflictException(AuthErrorCode.OAUTH_LOGIN_IN_PROGRESS))
+                .given(authSessionAccessor).getOrCreateLoginAttempt(any(), any());
+
+        mockMvc.perform(get("/oauth2/authorization/github")
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=session-id"))
+                .andExpect(status().isConflict())
+                .andExpect(header().doesNotExist(HttpHeaders.LOCATION))
+                .andExpect(jsonPath("$.status").value("error"))
+                .andExpect(jsonPath("$.code").value("OAUTH_LOGIN_IN_PROGRESS"))
+                .andDo(document(
+                        "auth-github-authorization-in-progress",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("GitHub 로그인 시작")
+                                .description(AUTHORIZATION_DESCRIPTION)
+                                .requestHeaders(headerWithName(HttpHeaders.COOKIE)
+                                        .description("기존 세션이 있으면 브라우저가 전송하는 JSESSIONID")
+                                        .optional())
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = AuthErrorCode.class, names = {
+            "OAUTH_STATE_MISMATCH", "OAUTH_LOGIN_ATTEMPT_EXPIRED", "OAUTH_LOGIN_IN_PROGRESS"
+    })
+    @DisplayName("Callback 검증과 처리 중 중복 오류를 공통 실패 형식으로 반환한다")
+    void rejectInvalidCallback(AuthErrorCode errorCode) throws Exception {
+        RuntimeException exception = new BadRequestException(errorCode);
+        int expectedStatus = 400;
+        if (errorCode == AuthErrorCode.OAUTH_LOGIN_IN_PROGRESS) {
+            exception = new ConflictException(errorCode);
+            expectedStatus = 409;
+        }
+        given(authSessionAccessor.beginCallbackProcessing(any(), any())).willThrow(exception);
+
+        mockMvc.perform(get("/login/oauth2/code/github")
+                        .queryParam("code", "authorization-code")
+                        .queryParam("state", "state")
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=session-id"))
+                .andExpect(status().is(expectedStatus))
+                .andExpect(jsonPath("$.code").value(errorCode.name()))
+                .andDo(document(
+                        "auth-github-callback-" + errorCode.name().toLowerCase(Locale.ROOT),
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("Auth")
+                                .summary("GitHub 로그인 Callback")
+                                .description(CALLBACK_DESCRIPTION)
+                                .privateResource(true)
+                                .queryParameters(
+                                        parameterWithName("code").description("Authorization Code"),
+                                        parameterWithName("state").description("시작 시 발급한 검증값")
+                                )
+                                .requestHeaders(headerWithName(HttpHeaders.COOKIE)
+                                        .description("로그인 시작 시 발급된 JSESSIONID"))
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+    }
+
+    @Test
     @DisplayName("GitHub Callback을 처리하면 서비스 완료 화면으로 이동한다")
     void callbackGitHub() throws Exception {
-        given(authSessionAccessor.consumeLoginAttempt(any(), any())).willReturn(loginAttempt());
+        given(authSessionAccessor.beginCallbackProcessing(any(), any())).willReturn(loginAttempt());
         given(oauthLoginService.completeGitHubLogin("authorization-code", "state", loginAttempt()))
                 .willReturn(OAuthLoginCallbackResult.signupRequired(githubIdentity()));
-        given(authSessionManager.rotateSessionId(any())).willReturn(new org.springframework.mock.web.MockHttpSession());
         given(oauthLoginProperties.completionUri()).willReturn(COMPLETION_URI);
 
         mockMvc.perform(get("/login/oauth2/code/github")
@@ -193,7 +272,7 @@ class AuthApiDocumentationTest {
     @Test
     @DisplayName("OAuth 로그인 세션이 없으면 Callback을 거부한다")
     void rejectCallbackWithoutOAuthLoginSession() throws Exception {
-        given(authSessionAccessor.consumeLoginAttempt(any(), any()))
+        given(authSessionAccessor.beginCallbackProcessing(any(), any()))
                 .willThrow(new BadRequestException(
                         AuthErrorCode.OAUTH_LOGIN_SESSION_NOT_FOUND
                 ));

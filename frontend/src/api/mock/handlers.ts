@@ -239,6 +239,7 @@ export const handlers = [
         githubRepositoryUrl: project.githubRepositoryUrl,
         deploymentUrl: project.deploymentUrl,
         serviceStatus: project.serviceStatus,
+        teamBlogUrls: [],
         approvalStatus: 'APPROVED',
         editable: index === 0,
         rejectReason: null,

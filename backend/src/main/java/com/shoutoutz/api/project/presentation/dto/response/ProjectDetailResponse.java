@@ -37,6 +37,7 @@ public record ProjectDetailResponse(
         long commentCount,
         List<ProjectTechTagResponse> techTags,
         List<ProjectMemberProfileResponse> members,
+        List<String> teamBlogUrls,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -88,6 +89,7 @@ public record ProjectDetailResponse(
                                 userAvatarUrls
                         ))
                         .toList(),
+                detail.teamBlogUrls(),
                 detail.createdAt(),
                 detail.updatedAt()
         );

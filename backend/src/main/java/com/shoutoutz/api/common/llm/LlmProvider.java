@@ -1,5 +1,5 @@
 package com.shoutoutz.api.common.llm;
 
 public enum LlmProvider {
-    GEMINI, OPENAI
+    GEMINI, OPENAI, BEDROCK_GPT, BEDROCK_CLAUDE
 }

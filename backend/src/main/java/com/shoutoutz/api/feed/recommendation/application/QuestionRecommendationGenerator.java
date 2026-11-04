@@ -5,5 +5,9 @@ import java.util.List;
 
 public interface QuestionRecommendationGenerator {
 
-    List<GeneratedQuestion> generate(String title, String content, int count);
+    default List<GeneratedQuestion> generate(String title, String content, int count) {
+        return generate(title, content, count, List.of());
+    }
+
+    List<GeneratedQuestion> generate(String title, String content, int count, List<String> excludedTitles);
 }

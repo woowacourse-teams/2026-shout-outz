@@ -15,6 +15,7 @@ import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.exception.custom.InternalServerErrorException;
 import com.shoutoutz.api.common.exception.custom.NotFoundException;
 import com.shoutoutz.api.common.exception.custom.PersistenceException;
+import com.shoutoutz.api.common.exception.custom.ServiceUnavailableException;
 import com.shoutoutz.api.common.exception.custom.UnauthorizedException;
 import com.shoutoutz.api.common.response.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
@@ -179,6 +180,21 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("외부 서비스 장애 예외로 변환해도 원인 예외를 보존하고 외부 응답 내용을 응답에 노출하지 않는다")
+    void preservesServiceUnavailableCauseWithoutExposingItsMessage() {
+        RuntimeException cause = new RuntimeException("provider response detail");
+        ServiceUnavailableException exception = new ServiceUnavailableException(
+                CommonErrorCode.INTERNAL_SERVER_ERROR, cause);
+
+        ResponseEntity<Object> response = handler.handleCustomException(exception);
+
+        ErrorResponse error = assertError(
+                response, HttpStatus.SERVICE_UNAVAILABLE, CommonErrorCode.INTERNAL_SERVER_ERROR);
+        assertThat(exception.getCause()).isSameAs(cause);
+        assertThat(error.message()).doesNotContain(cause.getMessage());
+    }
+
+    @Test
     @DisplayName("처리되지 않은 예외를 내부 서버 오류 응답으로 변환하고 예외 메시지를 노출하지 않는다")
     void handlesUnexpectedExceptionAsInternalServerErrorWithoutExposingExceptionMessage() {
         ResponseEntity<Object> response = handler.handleAllExceptions(
@@ -245,7 +261,10 @@ class GlobalExceptionHandlerTest {
                 Arguments.of(
                         new PersistenceException(
                                 CommonErrorCode.INTERNAL_SERVER_ERROR, new RuntimeException("database detail")),
-                        HttpStatus.INTERNAL_SERVER_ERROR, CommonErrorCode.INTERNAL_SERVER_ERROR));
+                        HttpStatus.INTERNAL_SERVER_ERROR, CommonErrorCode.INTERNAL_SERVER_ERROR),
+                Arguments.of(
+                        new ServiceUnavailableException(CommonErrorCode.INTERNAL_SERVER_ERROR),
+                        HttpStatus.SERVICE_UNAVAILABLE, CommonErrorCode.INTERNAL_SERVER_ERROR));
     }
 
     private static Stream<Arguments> methodValidationCases() {

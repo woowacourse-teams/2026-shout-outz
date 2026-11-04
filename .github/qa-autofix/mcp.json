@@ -1,0 +1,14 @@
+{
+    "mcpServers": {
+      "notion": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@notionhq/notion-mcp-server@2.6.0"
+        ],
+        "env": {
+          "OPENAPI_MCP_HEADERS": "{\"Authorization\": \"Bearer ${NOTION_TOKEN}\", \"Notion-Version\": \"2025-09-03\"}"
+        }
+      }
+    }
+  }

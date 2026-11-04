@@ -268,6 +268,7 @@ class AdminProjectHttpApiTest {
                         0,
                         List.of(),
                         List.of(),
+                        List.of("https://velog.io/@loop"),
                         NOW,
                         NOW
                 ));
@@ -452,6 +453,7 @@ class AdminProjectHttpApiTest {
                 fieldWithPath("data.commentCount").type(NUMBER).description("댓글 수"),
                 fieldWithPath("data.techTags").type(ARRAY).description("기술 스택"),
                 fieldWithPath("data.members").type(ARRAY).description("프로젝트 팀원"),
+                fieldWithPath("data.teamBlogUrls").type(ARRAY).description("확정된 팀 블로그 주소. 없으면 빈 배열"),
                 fieldWithPath("data.createdAt").type(STRING).description("등록 시각"),
                 fieldWithPath("data.updatedAt").type(STRING).description("수정 시각")
         );

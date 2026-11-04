@@ -8,6 +8,10 @@ spring:
 link-preview:
   enabled: false
 
+job-posting:
+  matching:
+    enabled: false
+
 question-recommendation:
   count: 5
   max-generation-attempts: 5

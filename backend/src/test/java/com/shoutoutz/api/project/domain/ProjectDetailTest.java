@@ -87,6 +87,7 @@ class ProjectDetailTest {
                 0,
                 List.of(),
                 List.of(),
+                List.of(),
                 Instant.parse("2026-08-09T02:30:00Z"),
                 Instant.parse("2026-08-09T03:00:00Z")
         );

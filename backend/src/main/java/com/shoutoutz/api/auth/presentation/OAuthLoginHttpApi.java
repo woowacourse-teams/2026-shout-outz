@@ -3,7 +3,6 @@ package com.shoutoutz.api.auth.presentation;
 import com.shoutoutz.api.auth.application.OAuthLoginService;
 import com.shoutoutz.api.auth.application.OAuthLoginAttempt;
 import com.shoutoutz.api.auth.application.command.OAuthLoginCallbackResult;
-import com.shoutoutz.api.auth.application.command.OAuthLoginStartResult;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionAccessor;
 import com.shoutoutz.api.auth.presentation.session.AuthSessionManager;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,13 +30,11 @@ public class OAuthLoginHttpApi {
             HttpSession session
     ) {
         URI completionUri = properties.resolveCompletionUri(returnTo);
-        OAuthLoginStartResult result = returnTo == null
-                ? oauthLoginService.startGitHubLogin()
-                : oauthLoginService.startGitHubLogin(completionUri);
-        authSessionAccessor.saveLoginAttempt(session, result.attempt());
+        OAuthLoginAttempt attempt = authSessionAccessor.getOrCreateLoginAttempt(session, completionUri);
+        URI authorizationUri = oauthLoginService.generateGitHubAuthorizationUri(attempt);
 
         return ResponseEntity.status(HttpStatus.FOUND)
-                .location(result.authorizationUri())
+                .location(authorizationUri)
                 .build();
     }
 
@@ -51,25 +48,18 @@ public class OAuthLoginHttpApi {
             HttpServletRequest request
     ) {
         HttpSession session = request.getSession(false);
-        OAuthLoginAttempt attempt = authSessionAccessor.consumeLoginAttempt(session, state);
-        OAuthLoginCallbackResult result = oauthLoginService.completeGitHubLogin(
-                code,
-                state,
-                attempt
-        );
-
-        if (result.status() == OAuthLoginCallbackResult.Status.AUTHENTICATED) {
-            authSessionManager.establishAuthenticatedSession(
-                    request,
-                    result.userId(),
-                    result.role()
+        OAuthLoginAttempt attempt = authSessionAccessor.beginCallbackProcessing(session, state);
+        try {
+            OAuthLoginCallbackResult result = oauthLoginService.completeGitHubLogin(
+                    code,
+                    state,
+                    attempt
             );
-        } else {
-            HttpSession signupPendingSession = authSessionManager.rotateSessionId(request);
-            authSessionAccessor.savePendingIdentity(signupPendingSession, result.identity());
+            authSessionManager.completeOAuthLogin(request, attempt, result);
+            return redirectToCompletion(attempt.completionUri());
+        } finally {
+            authSessionAccessor.finishLoginAttempt(session, attempt);
         }
-
-        return redirectToCompletion(attempt.completionUri());
     }
 
     @GetMapping(
@@ -81,16 +71,20 @@ public class OAuthLoginHttpApi {
             HttpServletRequest request
     ) {
         HttpSession session = request.getSession(false);
-        OAuthLoginAttempt attempt = authSessionAccessor.consumeLoginAttempt(session, state);
-        oauthLoginService.validateGitHubCallback(state, attempt);
-
-        return redirectToCompletion(attempt.completionUri());
+        OAuthLoginAttempt attempt = authSessionAccessor.beginCallbackProcessing(session, state);
+        try {
+            oauthLoginService.validateGitHubCallback(state, attempt);
+            return redirectToCompletion(attempt.completionUri());
+        } finally {
+            authSessionAccessor.finishLoginAttempt(session, attempt);
+        }
     }
 
     private ResponseEntity<Void> redirectToCompletion(URI completionUri) {
-        URI resolvedCompletionUri = completionUri == null
-                ? properties.completionUri()
-                : properties.resolveCompletionUri(completionUri);
+        URI resolvedCompletionUri = properties.completionUri();
+        if (completionUri != null) {
+            resolvedCompletionUri = properties.resolveCompletionUri(completionUri);
+        }
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(resolvedCompletionUri)
                 .build();

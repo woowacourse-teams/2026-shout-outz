@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -32,6 +33,7 @@ import com.shoutoutz.api.media.infrastructure.s3.MediaVariant;
 import com.shoutoutz.api.project.application.dto.UserProjectResult;
 import com.shoutoutz.api.project.application.dto.UserProjectItem;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
+import com.shoutoutz.api.project.domain.BlogSourceRepository;
 import com.shoutoutz.api.project.domain.DeletedProject;
 import com.shoutoutz.api.project.domain.DeletionType;
 import com.shoutoutz.api.project.domain.GithubRepositoryUrl;
@@ -59,6 +61,7 @@ import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.project.domain.Slug;
+import com.shoutoutz.api.project.domain.TeamBlogUrls;
 import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
@@ -107,6 +110,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -159,6 +163,9 @@ class ProjectServiceTest {
     @Mock
     private OAuthAccountRepository oauthAccountRepository;
 
+    @Mock
+    private BlogSourceRepository blogSourceRepository;
+
     private ProjectService projectService;
 
     @BeforeEach
@@ -175,6 +182,7 @@ class ProjectServiceTest {
                 userProjectQueryRepository,
                 mediaUrlResolver,
                 new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
+                blogSourceRepository,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
         lenient().when(projectSlugResolver.resolveId(SLUG)).thenReturn(PROJECT_ID);
@@ -303,6 +311,49 @@ class ProjectServiceTest {
         assertThat(historyCaptor.getValue().getProjectId()).isEqualTo(100L);
         assertThat(historyCaptor.getValue().getFromStatus()).isNull();
         assertThat(historyCaptor.getValue().getToStatus()).isEqualTo(ApprovalStatus.PENDING);
+        verify(blogSourceRepository).syncServiceInputs(100L, TeamBlogUrls.empty());
+    }
+
+    @Test
+    @DisplayName("팀 블로그 주소를 보내면 정규화하고 중복을 합친 목록을 블로그 원천 등록부에 맞춘다.")
+    void createsProjectWithTeamBlogUrls() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
+        givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
+        when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(false);
+        when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
+        when(mediaMetadataRepository.findById(THUMBNAIL_ID))
+                .thenReturn(Optional.of(thumbnail(REGISTERED_BY, MediaPurpose.PROJECT_THUMBNAIL, MediaStatus.READY)));
+        when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
+                .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
+
+        projectService.create(REGISTERED_BY, withTeamBlogUrls(
+                request(6, THUMBNAIL_ID, TECH_TAG_IDS),
+                List.of("https://Velog.io/@loop/", "https://velog.io/@loop", "https://loop.tistory.com")
+        ));
+
+        verify(blogSourceRepository).syncServiceInputs(
+                100L,
+                TeamBlogUrls.of(List.of("https://velog.io/@loop", "https://loop.tistory.com"))
+        );
+    }
+
+    @Test
+    @DisplayName("등록하면 같은 레포 주소로 넣어 둔 팀 블로그를 먼저 이어 붙인 뒤 폼의 팀 블로그 주소를 맞춘다.")
+    void attachesUnregisteredTeamBlogsBeforeSyncingInputsOnCreate() {
+        givenRegistrant(UserType.WOOWACOURSE_CREW);
+        givenMember(MEMBER_HANDLE, MEMBER_ID, UserType.WOOWACOURSE_CREW);
+        when(projectRepository.existsBySlug(new Slug("loop"))).thenReturn(false);
+        when(techTagRepository.findAllActiveByIds(TECH_TAG_IDS)).thenReturn(activeTags(1L, 2L));
+        when(mediaMetadataRepository.findById(THUMBNAIL_ID))
+                .thenReturn(Optional.of(thumbnail(REGISTERED_BY, MediaPurpose.PROJECT_THUMBNAIL, MediaStatus.READY)));
+        when(projectRepository.save(any(Project.class), eq(TECH_TAG_IDS), anyList()))
+                .thenAnswer(invocation -> withId(invocation.getArgument(0), 100L));
+
+        projectService.create(REGISTERED_BY, request(6, THUMBNAIL_ID, TECH_TAG_IDS));
+
+        InOrder inOrder = inOrder(blogSourceRepository);
+        inOrder.verify(blogSourceRepository).attachUnregistered(100L, GITHUB_REPOSITORY_URL);
+        inOrder.verify(blogSourceRepository).syncServiceInputs(100L, TeamBlogUrls.empty());
     }
 
     @Test
@@ -1111,6 +1162,7 @@ class ProjectServiceTest {
                 0,
                 List.of(new ProjectTechTag(1L, "React")),
                 members,
+                List.of("https://velog.io/@loop"),
                 NOW,
                 NOW
         );
@@ -1239,6 +1291,54 @@ class ProjectServiceTest {
         verify(projectRepository).update(projectCaptor.capture(), eq(TECH_TAG_IDS), anyList());
         assertThat(projectCaptor.getValue().getThumbnailMediaId()).isEqualTo(THUMBNAIL_ID);
         verifyNoInteractions(mediaMetadataRepository);
+    }
+
+    @Test
+    @DisplayName("수정 요청에서 팀 블로그 주소 필드를 생략하면 등록부를 건드리지 않는다.")
+    void keepsTeamBlogUrlsWhenUpdateOmitsThem() {
+        givenValidProjectUpdate(existingProject(ApprovalStatus.APPROVED, THUMBNAIL_ID));
+
+        projectService.update(SLUG, REGISTERED_BY, updateRequestWithoutThumbnail());
+
+        verifyNoInteractions(blogSourceRepository);
+    }
+
+    @Test
+    @DisplayName("수정에서 레포 주소가 바뀌면 바뀐 레포 주소로 넣어 둔 팀 블로그를 이어 붙인다.")
+    void attachesUnregisteredTeamBlogsWhenRepositoryChanges() {
+        givenValidProjectUpdate(existingProject(ApprovalStatus.APPROVED, THUMBNAIL_ID));
+        ProjectUpdateRequest request = updateRequestWithoutThumbnail();
+        request.setGithubRepositoryUrl("https://github.com/woowacourse-teams/2026-loop-renewal");
+
+        projectService.update(SLUG, REGISTERED_BY, request);
+
+        verify(blogSourceRepository).attachUnregistered(
+                PROJECT_ID, new GithubRepositoryUrl("https://github.com/woowacourse-teams/2026-loop-renewal"));
+        verify(blogSourceRepository, never()).syncServiceInputs(anyLong(), any());
+    }
+
+    @Test
+    @DisplayName("수정 요청에 팀 블로그 주소를 보내면 받은 목록으로 등록부를 맞추고, 빈 목록이면 모두 해제한다.")
+    void syncsTeamBlogUrlsWhenUpdateSendsThem() {
+        givenValidProjectUpdate(existingProject(ApprovalStatus.APPROVED, THUMBNAIL_ID));
+        ProjectUpdateRequest request = updateRequestWithoutThumbnail();
+        request.setTeamBlogUrls(List.of("https://velog.io/@loop"));
+
+        projectService.update(SLUG, REGISTERED_BY, request);
+
+        verify(blogSourceRepository).syncServiceInputs(PROJECT_ID, TeamBlogUrls.of(List.of("https://velog.io/@loop")));
+    }
+
+    @Test
+    @DisplayName("수정 요청에서 팀 블로그 주소에 null을 명시하면 모두 해제한다.")
+    void clearsTeamBlogUrlsWhenUpdateSetsThemToNull() {
+        givenValidProjectUpdate(existingProject(ApprovalStatus.APPROVED, THUMBNAIL_ID));
+        ProjectUpdateRequest request = updateRequestWithoutThumbnail();
+        request.setTeamBlogUrls(null);
+
+        projectService.update(SLUG, REGISTERED_BY, request);
+
+        verify(blogSourceRepository).syncServiceInputs(PROJECT_ID, TeamBlogUrls.empty());
     }
 
     @Test
@@ -1594,7 +1694,25 @@ class ProjectServiceTest {
                 descriptionMd,
                 serviceStatus,
                 techTagIds,
-                memberHandles
+                memberHandles,
+                null
+        );
+    }
+
+    private static ProjectCreateRequest withTeamBlogUrls(ProjectCreateRequest request, List<String> teamBlogUrls) {
+        return new ProjectCreateRequest(
+                request.title(),
+                request.teamName(),
+                request.tagline(),
+                request.cohort(),
+                request.thumbnailImageId(),
+                request.githubRepositoryUrl(),
+                request.deploymentUrl(),
+                request.descriptionMd(),
+                request.serviceStatus(),
+                request.techTagIds(),
+                request.memberHandles(),
+                teamBlogUrls
         );
     }
 

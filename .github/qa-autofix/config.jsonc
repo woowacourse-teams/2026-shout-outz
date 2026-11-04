@@ -1,0 +1,33 @@
+// QA Autofix 실행 설정. 값을 바꾸면 다음 실행부터 반영된다.
+// 워크플로우는 .github/scripts/load-qa-config.mjs로 읽고, 스킬은 리뷰어를 읽는다.
+//
+// 이 파일에 없는 설정은 각 도구가 읽는 파일에 있다.
+// - Node·npm 버전: frontend/.nvmrc (setup-node와 nvm이 읽는다), 허용 범위는 frontend/package.json의 engines
+// - Notion MCP 패키지 버전, Notion-Version 헤더: .github/qa-autofix/mcp.json
+{
+  // AI 모델
+  "model": "claude-opus-5-5",
+  // AI가 도구를 호출하며 주고받는 최대 횟수
+  "maxTurns": 120,
+  // autofix job 전체 실행 시간 한도(분). AI 단계가 끝난 뒤 실패 처리 단계가 돌 시간을 남겨 둔다.
+  "jobTimeoutMinutes": 60,
+  // AI 단계 실행 시간 한도(분). 넘기면 이 단계만 실패하고 실패 처리 단계가 실행된다.
+  "aiTimeoutMinutes": 55,
+  // Draft PR 리뷰어(GitHub 아이디)
+  "reviewers": ["kojesung", "bel1c10ud"],
+  // AI가 확인 없이 쓸 수 있는 도구
+  "allowedTools": [
+    "Read",
+    "Edit",
+    "Write",
+    "Glob",
+    "Grep",
+    "mcp__notion",
+    "Bash(git:*)",
+    "Bash(gh label list:*)",
+    "Bash(gh issue create:*)",
+    "Bash(gh pr create:*)",
+    "Bash(npm run:*)",
+    "Bash(npm ci:*)"
+  ]
+}

@@ -158,11 +158,11 @@ paths:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
-                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"feedType\",\"\
-                    message\":\"feedType은 필수입니다.\"},{\"field\":\"displayOrder\",\"\
-                    message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"}]}"
+                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"feedType\"\
+                    ,\"message\":\"feedType은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"type\"\
+                    ,\"message\":\"type은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -391,7 +391,8 @@ paths:
                     "content": "본문입니다.",
                     "categoryIds": [3],
                     "mediaIds": [21],
-                    "feedType": "QUESTION"
+                    "feedType": "QUESTION",
+                    "recommendationId": 501
                   }
       responses:
         "403":
@@ -477,14 +478,14 @@ paths:
                 $ref: "#/components/schemas/MagazineFindAllSuccessResponse"
               examples:
                 magazine-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":30,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/3fd45841-81f2-42f6-bf4b-4718cb007211/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@i752552cf264744b889af\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":910,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/ac0afae1-6001-4071-afbe-cca89d47c6fd/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@iac1b1ab8f28844f2b042\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i8ebd279cd5d743a9a644\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i4c0561e7cf2b41e6bf8c\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-10-18T05:50:00.385619Z\",\"createdAt\"\
-                    :\"2026-10-18T05:50:00.375984Z\",\"updatedAt\":\"2026-10-18T05:50:00.386203Z\"\
+                    ,\"publishedAt\":\"2026-11-04T05:51:42.649036Z\",\"createdAt\"\
+                    :\"2026-11-04T05:51:42.626558Z\",\"updatedAt\":\"2026-11-04T05:51:42.650264Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :0}],\"meta\":{\"nextCursor\":null,\"hasNext\":false,\"totalCount\"\
                     :1}}"
@@ -727,11 +728,12 @@ paths:
         \ 소문자로 바꾸고, 영문자와 숫자가 아닌 문자가 이어진 구간을 하이픈 하나로 바꾼 뒤 앞 연도와 앞뒤 하이픈을 떼서 만든다 (예:\
         \ 2026-my_app -> my-app). 문자열 값은 앞뒤 공백을 자르고, 공백만 있으면 입력하지 않은 것으로 본다 (descriptionMd\
         \ 제외). 운영 상태는 deploymentUrl이 있으면 OPERATING, 없으면 CLOSED로 저장한다. 팀원은 memberHandles로\
-        \ 받은 순서대로 저장한다. 본문 이미지는 descriptionMd에 ![설명](media://{mediaId}) 형식으로 넣는다.\
-        \ githubRepositoryUrl은 woowacourse-teams 조직의 리포지토리만 받으며, 리포지토리 이름 뒤의 경로, 쿼\
-        리, 앵커는 버리고 https://github.com/woowacourse-teams/{repo} 형태로 저장한다. 요청값, 기술 스\
-        택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나 리포지토리 이름으로 slug를 만들 수 없으면 400, 로그인하지 않았으면 401,\
-        \ 크루나 코치가 아니면 403, 이미 등록된 리포지토리이거나 앞 연도나 특수문자만 달라 slug가 겹치면 409를 반환한다."
+        \ 받은 순서대로 저장한다. teamBlogUrls는 선택 입력이며, 받은 팀 블로그 주소는 블로그 수집 대상으로 등록된다. 본문 이\
+        미지는 descriptionMd에 ![설명](media://{mediaId}) 형식으로 넣는다. githubRepositoryUrl은\
+        \ woowacourse-teams 조직의 리포지토리만 받으며, 리포지토리 이름 뒤의 경로, 쿼리, 앵커는 버리고 https://github.com/woowacourse-teams/{repo}\
+        \ 형태로 저장한다. 요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나 리포지토리 이름으로 slug를 만들 수 없으\
+        면 400, 로그인하지 않았으면 401, 크루나 코치가 아니면 403, 이미 등록된 리포지토리이거나 앞 연도나 특수문자만 달라 slug가\
+        \ 겹치면 409를 반환한다."
       operationId: project-create
       parameters:
       - name: X-CSRF-Token
@@ -760,7 +762,40 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
+                  }
+              project-create-invalid-team-blog-url:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailImageId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["velog.io/@loop", "https://loop-team.tistory.com"]
+                  }
+              project-create-too-many-team-blog-urls:
+                value: |
+                  {
+                    "title": "루프 (Loop)",
+                    "teamName": "루프팀",
+                    "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
+                    "cohort": 6,
+                    "thumbnailImageId": 12,
+                    "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
+                    "deploymentUrl": "https://loop.team",
+                    "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
+                    "serviceStatus": "OPERATING",
+                    "techTagIds": [1, 2, 3],
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://a.tistory.com", "https://b.tistory.com", "https://loop-team.tistory.com"]
                   }
               project-create-invalid-deployment-url:
                 value: |
@@ -775,7 +810,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-create-duplicate:
                 value: |
@@ -790,7 +826,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-create-forbidden:
                 value: |
@@ -805,7 +842,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-create-invalid-blank-title:
                 value: |
@@ -820,7 +858,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-create-invalid-description-media:
                 value: |
@@ -835,7 +874,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-create-invalid-slug:
                 value: |
@@ -850,7 +890,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-create-invalid-service-status:
                 value: |
@@ -865,7 +906,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-create-invalid-blank-member-handle:
                 value: |
@@ -880,7 +922,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "   "]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "   "],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-create-invalid-service-status-missing:
                 value: "{\n  \"title\": \"루프 (Loop)\",\n  \"teamName\": \"루프팀\",\n\
@@ -890,7 +933,8 @@ paths:
                   : \"https://loop.team\",\n  \"descriptionMd\": \"## 문제\\n회고 도구와\
                   \ 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)\",\n  \n  \"techTagIds\"\
                   : [1, 2, 3],\n  \"memberHandles\": [\"@dhyepark\", \"@zzaekkii\"\
-                  , \"@sangjun121\"]\n}\n"
+                  , \"@sangjun121\"],\n  \"teamBlogUrls\": [\"https://velog.io/@loop\"\
+                  , \"https://loop-team.tistory.com\"]\n}\n"
               project-create:
                 value: |
                   {
@@ -904,7 +948,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-create-invalid:
                 value: "{\n  \n  \"teamName\": \"루프팀\",\n  \"tagline\": \"스프린트 회고와\
@@ -914,6 +959,7 @@ paths:
                   : \"## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)\"\
                   ,\n  \"serviceStatus\": \"OPERATING\",\n  \"techTagIds\": [1, 2,\
                   \ 3],\n  \"memberHandles\": [\"@dhyepark\", \"@zzaekkii\", \"@sangjun121\"\
+                  ],\n  \"teamBlogUrls\": [\"https://velog.io/@loop\", \"https://loop-team.tistory.com\"\
                   ]\n}\n"
               project-create-invalid-thumbnail:
                 value: |
@@ -928,7 +974,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-create-invalid-member:
                 value: |
@@ -943,7 +990,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-create-unauthorized:
                 value: |
@@ -958,7 +1006,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-create-invalid-tech-tag:
                 value: |
@@ -973,7 +1022,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-create-invalid-github-repository-url:
                 value: |
@@ -988,7 +1038,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\n\n![회고 화면](media://21)",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
       responses:
         "400":
@@ -1002,6 +1053,15 @@ paths:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"title\",\"\
                     message\":\"title은 100자를 초과할 수 없습니다.\"}]}"
+                project-create-invalid-team-blog-url:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"teamBlogUrls\"\
+                    ,\"message\":\"teamBlogUrls의 주소는 http 또는 https URL 형식이어야 합니다.\"\
+                    }]}"
+                project-create-too-many-team-blog-urls:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"teamBlogUrls\"\
+                    ,\"message\":\"teamBlogUrls는 3개를 초과할 수 없습니다.\"}]}"
                 project-create-invalid-deployment-url:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"deploymentUrl\"\
@@ -1194,6 +1254,105 @@ paths:
                 bug-report-admin-find-all-forbidden:
                   value: "{\"status\":\"error\",\"code\":\"BUG_REPORT_ADMIN_FORBIDDEN\"\
                     ,\"message\":\"관리자만 버그 제보를 관리할 수 있습니다.\"}"
+  /api/v1/admin/job-postings:
+    get:
+      tags:
+      - Admin Job Posting
+      summary: 채용공고 목록 조회
+      description: 관리자가 등록한 채용공고를 최신 등록순으로 조회한다.
+      operationId: admin-job-posting-find-all
+      parameters:
+      - name: size
+        in: query
+        description: "조회 개수(1~100), 기본값 20"
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      - name: cursor
+        in: query
+        description: 다음 페이지 조회용 커서. 올바르지 않으면 400(JOB_POSTING_ADMIN_CURSOR_INVALID)
+        required: false
+        schema:
+          type: string
+      - name: Cookie
+        in: header
+        description: 인증된 관리자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminJobPostingFindAllSuccessResponse"
+              examples:
+                admin-job-posting-find-all:
+                  value: "{\"status\":\"success\",\"data\":[{\"jobPostingId\":100,\"\
+                    companyName\":\"우아한형제들\",\"title\":\"백엔드 개발자\",\"jobRole\":\"\
+                    BACKEND\",\"status\":\"PENDING\",\"hiddenAt\":\"2026-10-27T01:00:00Z\"\
+                    ,\"createdAt\":\"2026-10-27T00:00:00Z\"}],\"meta\":{\"nextCursor\"\
+                    :\"next-cursor\",\"hasNext\":true,\"totalCount\":3}}"
+    post:
+      tags:
+      - Admin Job Posting
+      summary: 채용공고 등록
+      description: |-
+        관리자가 확인하고 고친 공고 정보와 역량을 저장한다. LLM을 다시 부르지 않는다.
+        공고 글은 해시만 만들고 저장하지 않는다. 역량 순서는 보낸 순서를 따른다.
+        같은 주소의 공고가 이미 있으면 409(JOB_POSTING_DUPLICATE_URL)로 응답한다.
+      operationId: admin-job-posting-register
+      parameters:
+      - name: Cookie
+        in: header
+        description: 인증된 관리자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminJobPostingSaveRequest"
+            examples:
+              admin-job-posting-register:
+                value: |
+                  {
+                    "sourceUrl": "https://career.example.com/jobs/1",
+                    "content": "[백엔드 개발자] 자격 요건: Java, Spring 경험",
+                    "companyName": "우아한형제들",
+                    "jobRole": "BACKEND",
+                    "careerRequirement": "신입",
+                    "title": "백엔드 개발자",
+                    "employmentType": "정규직",
+                    "deadline": "2026-12-31",
+                    "requirements": [
+                      {"name": "Java, Spring", "category": "REQUIRED", "summary": "Spring으로 API 서버를 개발한 경험이 필요해요."}
+                    ]
+                  }
+      responses:
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminJobPostingSaveSuccessResponse"
+              examples:
+                admin-job-posting-register:
+                  value: "{\"status\":\"success\",\"data\":{\"jobPostingId\":100,\"\
+                    status\":\"PENDING\",\"createdAt\":\"2026-10-27T00:00:00Z\"}}"
   /api/v1/admin/magazines:
     get:
       tags:
@@ -1221,7 +1380,7 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=76
+        example: JSESSIONID=89
       responses:
         "401":
           description: "401"
@@ -1264,23 +1423,23 @@ paths:
                 $ref: "#/components/schemas/MagazineFindAllSuccessResponse"
               examples:
                 magazine-admin-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":36,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/4713f52f-570f-4ccb-ad69-b628c61fa09a/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@i3e19187cc7b54d80ade3\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":916,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/a8766051-1dd5-413c-a00a-681a371bcabd/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@ie7c66d137f0a4a9ea316\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i61b0611f2ef24f48b134\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i14d9cd978c22486f9b46\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-18T05:50:00.530383Z\"\
-                    ,\"updatedAt\":\"2026-10-18T05:50:00.530383Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-04T05:51:42.896677Z\"\
+                    ,\"updatedAt\":\"2026-11-04T05:51:42.896677Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0},{\"id\"\
-                    :35,\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/4713f52f-570f-4ccb-ad69-b628c61fa09a/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@i3e19187cc7b54d80ade3\",\"displayName\"\
+                    :915,\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/a8766051-1dd5-413c-a00a-681a371bcabd/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@ie7c66d137f0a4a9ea316\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i61b0611f2ef24f48b134\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i14d9cd978c22486f9b46\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-18T05:50:00.522159Z\"\
-                    ,\"updatedAt\":\"2026-10-18T05:50:00.522159Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-04T05:51:42.882127Z\"\
+                    ,\"updatedAt\":\"2026-11-04T05:51:42.882127Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0}],\"meta\"\
                     :{\"nextCursor\":null,\"hasNext\":false,\"totalCount\":2}}"
     post:
@@ -1296,14 +1455,14 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=74
+        example: JSESSIONID=87
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: 6KXhybgomefBHYWtW-HPkimSm4dt5mQTXML5zZuWmwM
+        example: br3EsLDywD0wQ-_A0HdswefNlcuIzZaUOAJBL4Ae3CA
       requestBody:
         content:
           application/json;charset=UTF-8:
@@ -1312,37 +1471,38 @@ paths:
             examples:
               magazine-create-csrf-invalid:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :240,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":131,\"contentMd\":\"본문\"}"
+                  :14012,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":2450,\"contentMd\":\"본문\"}"
               magazine-create-csrf-missing:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :161,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":53,\"contentMd\":\"본문\"}"
+                  :13933,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":2372,\"contentMd\":\"본문\"}"
               magazine-create:
                 value: "{\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :202,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":93,\"contentMd\":\"![매거진](media://94)\"}"
+                  :13974,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":2412,\"contentMd\":\"![매거진](media://2413)\"\
+                  }"
               magazine-create-featuredUser-not-found:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
                   :9223372036854775807,\"featuredUserIntroduction\":\"우아한테크코스 출신 개\
-                  발자의 경험을 소개합니다.\",\"thumbnailMediaId\":65,\"contentMd\":\"본문\"}"
+                  발자의 경험을 소개합니다.\",\"thumbnailMediaId\":2384,\"contentMd\":\"본문\"}"
               magazine-create-unauthorized:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :188,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":79,\"contentMd\":\"본문\"}"
+                  :13960,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":2398,\"contentMd\":\"본문\"}"
               magazine-create-invalid-media:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :141,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":32,\"contentMd\":\"![사진](https://example.com/a.png)\"\
+                  :13913,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":2351,\"contentMd\":\"![사진](https://example.com/a.png)\"\
                   }"
               magazine-create-validation-failed:
                 value: "{\"title\":\"\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :147,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":41,\"contentMd\":\"본문\"}"
+                  :13919,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":2360,\"contentMd\":\"본문\"}"
               magazine-create-forbidden:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :125,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":16,\"contentMd\":\"본문\"}"
+                  :13897,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":2335,\"contentMd\":\"본문\"}"
       responses:
         "403":
           description: "403"
@@ -1368,15 +1528,15 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-create:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":35,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":202,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i61b0611f2ef24f48b134\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":915,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":13974,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i14d9cd978c22486f9b46\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :93,\"contentMd\":\"![매거진](media://94)\",\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-10-18T05:50:00.522159Z\"\
-                    ,\"updatedAt\":\"2026-10-18T05:50:00.522159Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/4713f52f-570f-4ccb-ad69-b628c61fa09a/thumbnail\"\
-                    ,\"previewContentMd\":\"![매거진](https://cdn.example.com/test-prefix/magazine/581aa536-fac1-457d-b788-6f883ce90693/display)\"\
+                    :2412,\"contentMd\":\"![매거진](media://2413)\",\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-04T05:51:42.882127Z\"\
+                    ,\"updatedAt\":\"2026-11-04T05:51:42.882127Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/a8766051-1dd5-413c-a00a-681a371bcabd/thumbnail\"\
+                    ,\"previewContentMd\":\"![매거진](https://cdn.example.com/test-prefix/magazine/caa7c5fd-5670-4378-b69e-94c771e66065/display)\"\
                     }}"
         "404":
           description: "404"
@@ -1705,19 +1865,19 @@ paths:
               examples:
                 auth-signup-invalid-profile:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"bio\",\"\
+                    message\":\"bio는 200자를 초과할 수 없습니다.\"},{\"field\":\"githubProfileUrl\"\
                     ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    bio\",\"message\":\"bio는 200자를 초과할 수 없습니다.\"},{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 auth-signup-session-missing:
                   value: "{\"status\":\"error\",\"code\":\"OAUTH_SIGNUP_SESSION_NOT_FOUND\"\
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
                     ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
-                    :\"handle 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1805,9 +1965,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -2184,15 +2344,15 @@ paths:
                 $ref: "#/components/schemas/MagazineFindSuccessResponse"
               examples:
                 magazine-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":30,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/3fd45841-81f2-42f6-bf4b-4718cb007211/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@i752552cf264744b889af\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":910,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/ac0afae1-6001-4071-afbe-cca89d47c6fd/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@iac1b1ab8f28844f2b042\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i8ebd279cd5d743a9a644\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i4c0561e7cf2b41e6bf8c\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"contentMd\":\"\
-                    ![사진](https://cdn.example.com/test-prefix/magazine/f4f0a264-276e-4a40-b874-9159562ac775/display)\"\
-                    ,\"publishedAt\":\"2026-10-18T05:50:00.385619Z\",\"createdAt\"\
-                    :\"2026-10-18T05:50:00.375984Z\",\"updatedAt\":\"2026-10-18T05:50:00.386203Z\"\
+                    ![사진](https://cdn.example.com/test-prefix/magazine/18989aa8-a9ce-44b4-b3f2-d6e93bb1e8ea/display)\"\
+                    ,\"publishedAt\":\"2026-11-04T05:51:42.649036Z\",\"createdAt\"\
+                    :\"2026-11-04T05:51:42.626558Z\",\"updatedAt\":\"2026-11-04T05:51:42.650264Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :1}}"
         "404":
@@ -2719,7 +2879,8 @@ paths:
                     displayName\":\"Archived Crew\",\"userType\":null,\"cohort\":null,\"\
                     track\":null,\"avatarUrl\":\"https://avatars.githubusercontent.com/u/1\"\
                     ,\"githubProfileUrl\":\"https://github.com/archived-crew\"}],\"\
-                    createdAt\":\"2026-08-09T02:30:00Z\",\"updatedAt\":\"2026-08-09T03:00:00Z\"\
+                    teamBlogUrls\":[\"https://velog.io/@loop\",\"https://loop-team.tistory.com\"\
+                    ],\"createdAt\":\"2026-08-09T02:30:00Z\",\"updatedAt\":\"2026-08-09T03:00:00Z\"\
                     }}"
     put:
       tags:
@@ -2730,8 +2891,9 @@ paths:
         \ 생략하면 기존 이미지를 유지하고, 새 ID를 보내면 교체하며, null을 명시하면 제거한다. descriptionMd는 저장 시\
         \ media://{mediaId} 형식으로 정규화하며, 상세 조회 응답의 CDN URL은 기존 프로젝트 미디어와 매칭되는 경우에만\
         \ 본문 이미지 참조로 복원한다. 매칭되지 않는 외부 이미지 URL은 허용하지 않는다. techTagIds와 memberHandles도\
-        \ 전체 목록을 순서대로 보낸다. 반려된 프로젝트를 수정하면 재심사 요청으로 처리되어 approvalStatus가 PENDING으로\
-        \ 바뀌고, 그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. githubRepositoryUrl은\
+        \ 전체 목록을 순서대로 보낸다. teamBlogUrls는 생략하면 기존 주소를 유지하고, 목록을 보내면 그 목록으로 교체하며, null이\
+        나 빈 배열이면 모두 해제한다. 반려된 프로젝트를 수정하면 재심사 요청으로 처리되어 approvalStatus가 PENDING으로 바\
+        뀌고, 그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. githubRepositoryUrl은\
         \ woowacourse-teams 조직의 리포지토리만 받으며, 리포지토리 이름 뒤의 경로, 쿼리, 앵커는 버리고 https://github.com/woowacourse-teams/{repo}\
         \ 형태로 저장한다. 요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나, deploymentUrl 없이 serviceStatus를\
         \ OPERATING으로 보내면 400, 로그인하지 않았으면 401, 없거나 형식이 틀린 slug이거나, 삭제됐거나 다른 사람의 프로\
@@ -2770,7 +2932,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-update-duplicate:
                 value: |
@@ -2785,7 +2948,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-update-invalid:
                 value: "{\n  \"title\": \"루프 (Loop)\",\n  \"teamName\": \"루프팀\",\n\
@@ -2795,6 +2959,7 @@ paths:
                   : \"https://loop.team\",\n  \"descriptionMd\": \"## 문제\\n회고 도구와\
                   \ 액션 아이템 관리가 흩어져 있습니다.\",\n  \n  \"techTagIds\": [1, 2, 3],\n  \"\
                   memberHandles\": [\"@dhyepark\", \"@zzaekkii\", \"@sangjun121\"\
+                  ],\n  \"teamBlogUrls\": [\"https://velog.io/@loop\", \"https://loop-team.tistory.com\"\
                   ]\n}\n"
               project-update-not-found:
                 value: |
@@ -2809,7 +2974,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-update:
                 value: |
@@ -2824,7 +2990,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
               project-update-unauthorized:
                 value: |
@@ -2839,7 +3006,8 @@ paths:
                     "descriptionMd": "## 문제\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
                     "serviceStatus": "OPERATING",
                     "techTagIds": [1, 2, 3],
-                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"]
+                    "memberHandles": ["@dhyepark", "@zzaekkii", "@sangjun121"],
+                    "teamBlogUrls": ["https://velog.io/@loop", "https://loop-team.tistory.com"]
                   }
       responses:
         "400":
@@ -3162,9 +3330,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -3494,6 +3662,203 @@ paths:
                     :\"loop\",\"linkType\":null,\"linkUrl\":null,\"displayOrder\"\
                     :0,\"active\":true,\"createdBy\":1,\"createdAt\":\"2026-09-17T00:00:00Z\"\
                     ,\"updatedAt\":\"2026-09-17T00:00:00Z\"}}"
+  /api/v1/admin/job-postings/extractions:
+    post:
+      tags:
+      - Admin Job Posting
+      summary: 채용공고 정보와 역량 추출
+      description: |-
+        관리자가 붙여넣은 공고 글에서 LLM으로 공고 정보와 역량을 뽑는다. 아무것도 저장하지 않는다.
+        같은 주소로 등록된 공고가 있으면 registeredJobPostingId에 그 ID를 담는다.
+        LLM 호출이 실패하거나 시간이 초과되면 503(JOB_POSTING_EXTRACTION_FAILED)으로 응답한다.
+      operationId: admin-job-posting-extract
+      parameters:
+      - name: Cookie
+        in: header
+        description: 인증된 관리자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminJobPostingExtractRequest"
+            examples:
+              admin-job-posting-extract:
+                value: |
+                  {"sourceUrl":"https://career.example.com/jobs/1","content":"[백엔드 개발자] 자격 요건: Java, Spring 경험"}
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminJobPostingExtractSuccessResponse"
+              examples:
+                admin-job-posting-extract:
+                  value: "{\"status\":\"success\",\"data\":{\"companyName\":\"우아한형\
+                    제들\",\"jobRole\":\"BACKEND\",\"title\":\"백엔드 개발자\",\"employmentType\"\
+                    :\"정규직\",\"careerRequirement\":\"신입\",\"deadline\":\"2026-12-31\"\
+                    ,\"requirements\":[{\"name\":\"Java, Spring\",\"category\":\"\
+                    REQUIRED\",\"summary\":\"Spring으로 API 서버를 개발한 경험이 필요해요.\"}],\"\
+                    registeredJobPostingId\":null}}"
+  /api/v1/admin/job-postings/{jobPostingId}:
+    get:
+      tags:
+      - Admin Job Posting
+      summary: 채용공고 상세 조회
+      description: |-
+        관리자가 채용공고 정보와 역량 목록, 역량별 분석 결과를 조회한다. 없으면 404(JOB_POSTING_NOT_FOUND)로 응답한다.
+        추천 자료는 NOT_MATCH까지 포함하고, 등급(MATCH, PARTIAL, NOT_MATCH) 순, 같은 등급은 검색 점수가 높은 순이다.
+      operationId: admin-job-posting-find-detail
+      parameters:
+      - name: jobPostingId
+        in: path
+        description: 채용공고 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: Cookie
+        in: header
+        description: 인증된 관리자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminJobPostingDetailSuccessResponse"
+              examples:
+                admin-job-posting-find-detail:
+                  value: "{\"status\":\"success\",\"data\":{\"jobPostingId\":100,\"\
+                    sourceUrl\":\"https://career.example.com/jobs/1\",\"companyName\"\
+                    :\"우아한형제들\",\"jobRole\":\"BACKEND\",\"careerRequirement\":\"신입\
+                    \",\"title\":\"백엔드 개발자\",\"employmentType\":\"정규직\",\"deadline\"\
+                    :\"2026-12-31\",\"status\":\"READY\",\"hiddenAt\":null,\"registeredBy\"\
+                    :7,\"createdAt\":\"2026-10-27T00:00:00Z\",\"requirements\":[{\"\
+                    requirementId\":1000,\"displayOrder\":1,\"name\":\"Java, Spring\"\
+                    ,\"category\":\"REQUIRED\",\"summary\":\"Spring으로 API 서버를 개발한\
+                    \ 경험이 필요해요.\",\"status\":\"READY\",\"lastError\":null,\"recommendations\"\
+                    :[{\"source\":\"github-pr\",\"externalKey\":\"woowacourse/repo#1\"\
+                    ,\"title\":\"트랜잭션 분리 리뷰\",\"url\":\"https://github.com/woowacourse/repo/pull/1\"\
+                    ,\"verdict\":\"MATCH\",\"reason\":\"Spring API 서버의 트랜잭션을 나눈 경험\
+                    을 다룬다.\",\"description\":\"트랜잭션을 나누며 API 응답을 개선한 과정을 볼 수 있어요.\"\
+                    ,\"similarityScore\":0.82,\"evidence\":[{\"kind\":\"EXPERIENCE\"\
+                    ,\"text\":\"외부 호출을 트랜잭션 밖으로 옮겼다.\",\"similarityScore\":0.82}]}]}]}}"
+    put:
+      tags:
+      - Admin Job Posting
+      summary: 채용공고 변경
+      description: |-
+        기업이 바꾼 공고를 관리자가 다시 붙여넣어 고친다. 요청은 등록과 같다.
+        공고 글의 해시가 같으면 공고 정보만 고치고 역량과 분석 상태는 그대로 둔다. 이때 요청의 역량은 반영하지 않는다(reanalyzed=false).
+        해시가 다르면 역량을 요청 목록으로 바꾸고 분석 상태를 PENDING으로 되돌려 다시 분석한다(reanalyzed=true).
+        숨김 상태와 등록자, 등록 시각은 바꾸지 않는다.
+        주소가 공고의 주소와 다르면 400(JOB_POSTING_URL_MISMATCH), 공고가 없으면 404(JOB_POSTING_NOT_FOUND)로 응답한다.
+        관리자가 아니면 403(JOB_POSTING_ADMIN_FORBIDDEN)으로 응답한다.
+      operationId: admin-job-posting-update
+      parameters:
+      - name: jobPostingId
+        in: path
+        description: 채용공고 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: Cookie
+        in: header
+        description: 인증된 관리자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminJobPostingSaveRequest"
+            examples:
+              admin-job-posting-update:
+                value: |
+                  {
+                    "sourceUrl": "https://career.example.com/jobs/1",
+                    "content": "[백엔드 개발자] 자격 요건: Java, Spring 경험",
+                    "companyName": "우아한형제들",
+                    "jobRole": "BACKEND",
+                    "careerRequirement": "신입",
+                    "title": "백엔드 개발자",
+                    "employmentType": "정규직",
+                    "deadline": "2026-12-31",
+                    "requirements": [
+                      {"name": "Java, Spring", "category": "REQUIRED", "summary": "Spring으로 API 서버를 개발한 경험이 필요해요."}
+                    ]
+                  }
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminJobPostingUpdateSuccessResponse"
+              examples:
+                admin-job-posting-update:
+                  value: "{\"status\":\"success\",\"data\":{\"jobPostingId\":100,\"\
+                    status\":\"PENDING\",\"reanalyzed\":true}}"
+    delete:
+      tags:
+      - Admin Job Posting
+      summary: 채용공고 삭제
+      description: |-
+        채용공고와 역량, 추천 자료를 모두 지운다. 분석 중인 공고도 지울 수 있다.
+        공고가 없으면 404(JOB_POSTING_NOT_FOUND)로 응답한다.
+        관리자가 아니면 403(JOB_POSTING_ADMIN_FORBIDDEN)으로 응답한다.
+      operationId: admin-job-posting-delete
+      parameters:
+      - name: jobPostingId
+        in: path
+        description: 채용공고 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: Cookie
+        in: header
+        description: 인증된 관리자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      responses:
+        "204":
+          description: "204"
   /api/v1/admin/magazines/{magazineId}:
     get:
       tags:
@@ -3516,7 +3881,7 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=75
+        example: JSESSIONID=88
       responses:
         "404":
           description: "404"
@@ -3536,15 +3901,15 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-admin-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":36,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":202,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i61b0611f2ef24f48b134\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":916,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":13974,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i14d9cd978c22486f9b46\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :93,\"contentMd\":\"![사진](media://94)\",\"status\":\"DRAFT\",\"\
-                    publishedAt\":null,\"createdAt\":\"2026-10-18T05:50:00.530383Z\"\
-                    ,\"updatedAt\":\"2026-10-18T05:50:00.530383Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/4713f52f-570f-4ccb-ad69-b628c61fa09a/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/581aa536-fac1-457d-b788-6f883ce90693/display)\"\
+                    :2412,\"contentMd\":\"![사진](media://2413)\",\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-04T05:51:42.896677Z\"\
+                    ,\"updatedAt\":\"2026-11-04T05:51:42.896677Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/a8766051-1dd5-413c-a00a-681a371bcabd/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/caa7c5fd-5670-4378-b69e-94c771e66065/display)\"\
                     }}"
         "401":
           description: "401"
@@ -3587,14 +3952,14 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=70
+        example: JSESSIONID=83
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: Iz6x15llpiDwXDKr2ZdLB04g906L0u7A6ghyduiVpYA
+        example: t99euFJGd_gRBoG_m7x0xj5jUwGSCDawPrJ83sndgOc
       requestBody:
         content:
           application/json;charset=UTF-8:
@@ -3603,28 +3968,28 @@ paths:
             examples:
               magazine-update-validation-failed:
                 value: "{\"title\":\"\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :147,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":41,\"contentMd\":\"본문\"}"
+                  :13919,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":2360,\"contentMd\":\"본문\"}"
               magazine-update-csrf-missing:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :163,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":55,\"contentMd\":\"본문\"}"
+                  :13935,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":2374,\"contentMd\":\"본문\"}"
               magazine-update-not-found:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :232,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":123,\"contentMd\":\"본문\"}"
+                  :14004,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":2442,\"contentMd\":\"본문\"}"
               magazine-update-forbidden:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :131,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":22,\"contentMd\":\"본문\"}"
+                  :13903,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":2341,\"contentMd\":\"본문\"}"
               magazine-update-unauthorized:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :194,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":85,\"contentMd\":\"본문\"}"
+                  :13966,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":2404,\"contentMd\":\"본문\"}"
               magazine-update:
                 value: "{\"title\":\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :175,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
-                  ,\"thumbnailMediaId\":67,\"contentMd\":\"수정 본문\"}"
+                  :13947,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":2386,\"contentMd\":\"수정 본문\"}"
       responses:
         "400":
           description: "400"
@@ -3678,14 +4043,14 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-update:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":28,\"title\":\"\
-                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":175,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@ie990768e6dce4bbea077\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":908,\"title\":\"\
+                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":13947,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i29d4ee60a97146ff84b4\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :67,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
-                    :\"2026-10-18T05:50:00.281436Z\",\"createdAt\":\"2026-10-18T05:50:00.278154Z\"\
-                    ,\"updatedAt\":\"2026-10-18T05:50:00.293534Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/1e679f49-018e-4a56-8285-1cdc1bc68e9e/thumbnail\"\
+                    :2386,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
+                    :\"2026-11-04T05:51:42.460883Z\",\"createdAt\":\"2026-11-04T05:51:42.454535Z\"\
+                    ,\"updatedAt\":\"2026-11-04T05:51:42.486039Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/9b53d3e4-53e3-4170-8a8c-1e1464b80b5d/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
     delete:
       tags:
@@ -3708,14 +4073,14 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=72
+        example: JSESSIONID=85
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: u-yasi67CZ9Dbs4S-rPBOy2ClSs4TFKZ5WcpLixGgQM
+        example: y_Jqf-9Ho0XGGpN0j9jBbL0o5yU8f-73VZQql9C6Fo0
       responses:
         "401":
           description: "401"
@@ -3785,7 +4150,8 @@ paths:
                     :\"PENDING\",\"rejectReason\":null,\"viewCount\":0,\"starCount\"\
                     :null,\"likeCount\":0,\"bookmarkCount\":0,\"likedByMe\":false,\"\
                     bookmarkedByMe\":false,\"commentCount\":0,\"techTags\":[],\"members\"\
-                    :[],\"createdAt\":\"2026-09-20T00:00:00Z\",\"updatedAt\":\"2026-09-20T00:00:00Z\"\
+                    :[],\"teamBlogUrls\":[\"https://velog.io/@loop\"],\"createdAt\"\
+                    :\"2026-09-20T00:00:00Z\",\"updatedAt\":\"2026-09-20T00:00:00Z\"\
                     }}"
   /api/v1/auth/signup/handle-availability:
     get:
@@ -5175,6 +5541,59 @@ paths:
               examples:
                 admin-home-banner-delete:
                   value: "{\"status\":\"success\",\"data\":{\"id\":100}}"
+  /api/v1/admin/job-postings/{jobPostingId}/visibility:
+    patch:
+      tags:
+      - Admin Job Posting
+      summary: 채용공고 숨김·숨김 해제
+      description: |-
+        채용공고를 숨기거나 숨김을 해제한다. 분석 상태와 역량은 바꾸지 않는다.
+        이미 숨긴 공고를 다시 숨기면 처음 숨긴 시각을 그대로 두고, 숨기지 않은 공고를 해제해도 성공한다.
+        hidden이 없으면 400, 공고가 없으면 404(JOB_POSTING_NOT_FOUND)로 응답한다.
+        관리자가 아니면 403(JOB_POSTING_ADMIN_FORBIDDEN)으로 응답한다.
+      operationId: admin-job-posting-update-visibility
+      parameters:
+      - name: jobPostingId
+        in: path
+        description: 채용공고 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: Cookie
+        in: header
+        description: 인증된 관리자의 JSESSIONID
+        required: true
+        schema:
+          type: string
+        example: JSESSIONID=admin-session
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminJobPostingVisibilityUpdateRequest"
+            examples:
+              admin-job-posting-update-visibility:
+                value: |
+                  {"hidden": true}
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminJobPostingVisibilityUpdateSuccessResponse"
+              examples:
+                admin-job-posting-update-visibility:
+                  value: "{\"status\":\"success\",\"data\":{\"jobPostingId\":100,\"\
+                    hidden\":true,\"hiddenAt\":\"2026-10-27T00:00:00Z\"}}"
   /api/v1/admin/magazines/{magazineId}/publish:
     post:
       tags:
@@ -5197,14 +5616,14 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=69
+        example: JSESSIONID=82
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: 6QJG5o0WnqPVC9VnpBk0pGDsN_U9uA5hEw30TQMAKfs
+        example: qiLnfZVEgqZLwH4pvVZktnxa5CsfaDJpU0ZiKL1qmRo
       responses:
         "403":
           description: "403"
@@ -5257,15 +5676,15 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-publish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":28,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":175,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@ie990768e6dce4bbea077\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":908,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":13947,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i29d4ee60a97146ff84b4\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :67,\"contentMd\":\"![사진](media://68)\",\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-10-18T05:50:00.281436Z\",\"createdAt\"\
-                    :\"2026-10-18T05:50:00.278154Z\",\"updatedAt\":\"2026-10-18T05:50:00.281748Z\"\
-                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/1e679f49-018e-4a56-8285-1cdc1bc68e9e/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/426a1675-5b93-41fd-bfd8-6c17c5f201ea/display)\"\
+                    :2386,\"contentMd\":\"![사진](media://2387)\",\"status\":\"PUBLISHED\"\
+                    ,\"publishedAt\":\"2026-11-04T05:51:42.460883Z\",\"createdAt\"\
+                    :\"2026-11-04T05:51:42.454535Z\",\"updatedAt\":\"2026-11-04T05:51:42.461395Z\"\
+                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/9b53d3e4-53e3-4170-8a8c-1e1464b80b5d/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/6e47e3a7-24f0-4976-bd2a-0dbb065bcf34/display)\"\
                     }}"
   /api/v1/admin/magazines/{magazineId}/unpublish:
     post:
@@ -5288,14 +5707,14 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=71
+        example: JSESSIONID=84
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: xT3BF5kGrJeMhEL41hPDIuj8A26R_zMhgVdKfmD5Gr4
+        example: PvuRpwTe0CGG4D3vDVUaCe2xLALaqtnb3W63_FY-W3Y
       responses:
         "403":
           description: "403"
@@ -5318,14 +5737,14 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-unpublish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":28,\"title\":\"\
-                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":175,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@ie990768e6dce4bbea077\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":908,\"title\":\"\
+                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":13947,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i29d4ee60a97146ff84b4\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :67,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
-                    :\"2026-10-18T05:50:00.281436Z\",\"createdAt\":\"2026-10-18T05:50:00.278154Z\"\
-                    ,\"updatedAt\":\"2026-10-18T05:50:00.307007Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/1e679f49-018e-4a56-8285-1cdc1bc68e9e/thumbnail\"\
+                    :2386,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
+                    :\"2026-11-04T05:51:42.460883Z\",\"createdAt\":\"2026-11-04T05:51:42.454535Z\"\
+                    ,\"updatedAt\":\"2026-11-04T05:51:42.510781Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/9b53d3e4-53e3-4170-8a8c-1e1464b80b5d/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
         "401":
           description: "401"
@@ -6964,8 +7383,12 @@ paths:
       tags:
       - Auth
       summary: GitHub 로그인 시작
-      description: state와 PKCE 값을 생성해 세션에 저장하고 GitHub 인가 화면으로 이동한다. 허용 목록에 있는 returnTo가
-        있으면 Callback 완료 후 해당 프론트엔드로 이동한다.
+      description: "state와 PKCE 값을 생성해 세션에 저장하고 GitHub 인가 화면으로 이동한다. 허용 목록에 있는 returnTo가\
+        \ 있으면 Callback 완료 후 해당 프론트엔드로 이동한다. 같은 세션에 유효한 WAITING 시도가 있으면 기존 state와 PKCE,\
+        \ 생성 시각과 최초 완료 주소를 유지한 같은 인가 URI로 다시 이동한다. 재시도로 5분 유효기간을 연장하지 않는다. Callback\
+        \ 처리 중인 PROCESSING 상태에서는 기존 시도를 유지하고 409 OAUTH_LOGIN_IN_PROGRESS를 반환한다. 이\
+        \ 응답은 GitHub로 이동하지 않으며 클라이언트는 로그인 버튼의 중복 내비게이션도 차단해야 한다. 성공, 취소, 처리 실패 후 또\
+        는 시도 생성 후 5분이 지나면 다시 시작할 수 있다."
       operationId: auth-github-authorization
       parameters:
       - name: returnTo
@@ -6974,7 +7397,24 @@ paths:
         required: false
         schema:
           type: string
+      - name: Cookie
+        in: header
+        description: 기존 세션이 있으면 브라우저가 전송하는 JSESSIONID
+        required: false
+        schema:
+          type: string
+        example: JSESSIONID=session-id
       responses:
+        "409":
+          description: "409"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                auth-github-authorization-in-progress:
+                  value: "{\"status\":\"error\",\"code\":\"OAUTH_LOGIN_IN_PROGRESS\"\
+                    ,\"message\":\"이미 OAuth 로그인이 진행 중입니다.\"}"
         "302":
           description: "302"
           headers:
@@ -6988,68 +7428,6 @@ paths:
                 type: string
 components:
   schemas:
-    ProjectCreateRequest:
-      title: ProjectCreateRequest
-      required:
-      - cohort
-      - githubRepositoryUrl
-      - memberHandles
-      - serviceStatus
-      - tagline
-      - teamName
-      - techTagIds
-      - title
-      type: object
-      properties:
-        teamName:
-          type: string
-          description: 팀 이름. 앞뒤 공백을 자른 뒤 50자 이하 (유니코드 코드 포인트 기준)
-        thumbnailImageId:
-          type: number
-          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID
-          nullable: true
-        techTagIds:
-          type: array
-          description: "선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다."
-          items:
-            type: number
-        memberHandles:
-          type: array
-          description: "@[A-Za-z0-9_-]{2,30} 형식의 팀원 handle 목록 (1명 이상). 등록자를 포함할 수\
-            \ 있으며, 활동 중인 우아한테크코스 크루 또는 코치여야 하며, 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서\
-            가 표시 순서가 된다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다."
-          items:
-            type: string
-        serviceStatus:
-          type: string
-          description: "서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반\
-            환한다. 이때 오류 응답의 details.field는 serviceStatusValid다."
-          enum:
-          - OPERATING
-          - CLOSED
-        descriptionMd:
-          type: string
-          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
-            \ 형식으로 넣으며, 본인이 업로드한 PROJECT_DESCRIPTION 용도의 처리 완료 이미지만 쓸 수 있다."
-          nullable: true
-        deploymentUrl:
-          type: string
-          description: 서비스 배포 URL (http/https). 빈 문자열이나 공백만 있으면 입력하지 않은 것으로 본다.
-          nullable: true
-        githubRepositoryUrl:
-          type: string
-          description: "https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하\
-            ). 다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, 경로(/tree/main), 쿼리(?tab=readme),\
-            \ 앵커(#readme)는 허용하고 버린 뒤 저장한다. 리포지토리 이름으로 slug를 만든다."
-        cohort:
-          type: number
-          description: 우아한테크코스 기수 (1~8)
-        tagline:
-          type: string
-          description: 한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준)
-        title:
-          type: string
-          description: 프로젝트 이름. 앞뒤 공백을 자른 뒤 100자 이하 (유니코드 코드 포인트 기준)
     BugReportCreateSuccessResponse:
       title: BugReportCreateSuccessResponse
       required:
@@ -7556,6 +7934,33 @@ components:
         status:
           type: string
           description: 응답 상태
+    AdminJobPostingVisibilityUpdateSuccessResponse:
+      title: AdminJobPostingVisibilityUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - hidden
+          - jobPostingId
+          type: object
+          properties:
+            hiddenAt:
+              type: string
+              description: 처음 숨긴 시각. 숨기지 않았으면 null
+              nullable: true
+            hidden:
+              type: boolean
+              description: 숨김 여부
+            jobPostingId:
+              type: number
+              description: 채용공고 ID
+          description: 바뀐 숨김 상태
+        status:
+          type: string
+          description: 응답 상태
     ProjectCreateSuccessResponse:
       title: ProjectCreateSuccessResponse
       required:
@@ -8043,6 +8448,33 @@ components:
         slug:
           type: string
           description: "영문 소문자, 숫자, 하이픈으로 구성된 고유 slug"
+    ProjectUpdateSuccessResponse:
+      title: ProjectUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - approvalStatus
+          - slug
+          type: object
+          properties:
+            approvalStatus:
+              type: string
+              description: 수정 후 승인 상태. PENDING 또는 APPROVED이며 REJECTED는 오지 않는다.
+              enum:
+              - PENDING
+              - APPROVED
+              - REJECTED
+            slug:
+              type: string
+              description: 수정한 프로젝트 slug
+          description: 수정 결과
+        status:
+          type: string
+          description: 응답 상태
     MagazineCommentUpdateSuccessResponse:
       title: MagazineCommentUpdateSuccessResponse
       required:
@@ -8149,33 +8581,6 @@ components:
                   nullable: true
               description: 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null
           description: 수정된 댓글
-        status:
-          type: string
-          description: 응답 상태
-    ProjectUpdateSuccessResponse:
-      title: ProjectUpdateSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - approvalStatus
-          - slug
-          type: object
-          properties:
-            approvalStatus:
-              type: string
-              description: 수정 후 승인 상태. PENDING 또는 APPROVED이며 REJECTED는 오지 않는다.
-              enum:
-              - PENDING
-              - APPROVED
-              - REJECTED
-            slug:
-              type: string
-              description: 수정한 프로젝트 slug
-          description: 수정 결과
         status:
           type: string
           description: 응답 상태
@@ -8865,6 +9270,76 @@ components:
         content:
           type: string
           description: "변경할 Markdown 본문(공백 제외 1자 이상, Unicode 최대 5,000자)"
+    AdminJobPostingSaveRequest:
+      title: AdminJobPostingSaveRequest
+      required:
+      - companyName
+      - content
+      - jobRole
+      - requirements
+      - sourceUrl
+      - title
+      type: object
+      properties:
+        sourceUrl:
+          type: string
+          description: "채용공고 주소(http 또는 https, 1,024자 이하)"
+        requirements:
+          type: array
+          description: 역량 목록(1~50개)
+          items:
+            required:
+            - category
+            - name
+            - summary
+            type: object
+            properties:
+              summary:
+                type: string
+                description: 역량 요약(500자 이하)
+              name:
+                type: string
+                description: 역량 이름(100자 이하)
+              category:
+                type: string
+                description: 역량 구분
+                enum:
+                - REQUIRED
+                - PREFERRED
+                - DUTY_OR_STACK
+        employmentType:
+          type: string
+          description: 고용 형태(30자 이하)
+          nullable: true
+        companyName:
+          type: string
+          description: 회사명(100자 이하)
+        jobRole:
+          type: string
+          description: 직무
+          enum:
+          - BACKEND
+          - FRONTEND
+          - ANDROID
+          - IOS
+          - DEVOPS
+          - DATA
+          - AI
+          - ETC
+        deadline:
+          type: string
+          description: 마감일(yyyy-MM-dd)
+          nullable: true
+        title:
+          type: string
+          description: 공고 제목(200자 이하)
+        careerRequirement:
+          type: string
+          description: 경력 조건(50자 이하)
+          nullable: true
+        content:
+          type: string
+          description: "공고 글(10,000자 이하). 해시만 만들고 저장하지 않는다."
     ProjectCommentCreateRequest:
       title: ProjectCommentCreateRequest
       required:
@@ -9273,6 +9748,210 @@ components:
               type: number
               description: 커서와 size를 제외한 유형·이벤트 상태 조건을 만족하는 전체 소식 수
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    ProjectFindDetailSuccessResponse:
+      title: ProjectFindDetailSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - approvalStatus
+          - bookmarkCount
+          - bookmarkedByMe
+          - cohort
+          - commentCount
+          - createdAt
+          - descriptionMedia
+          - editable
+          - githubRepositoryUrl
+          - likeCount
+          - likedByMe
+          - members
+          - serviceStatus
+          - slug
+          - tagline
+          - teamBlogUrls
+          - teamName
+          - techTags
+          - title
+          - updatedAt
+          - viewCount
+          type: object
+          properties:
+            teamName:
+              type: string
+              description: 팀 이름
+            bookmarkedByMe:
+              type: boolean
+              description: 요청자의 북마크 여부. 비로그인이면 false다.
+            cohort:
+              type: number
+              description: 우아한테크코스 기수
+            likeCount:
+              type: number
+              description: 좋아요 수
+            title:
+              type: string
+              description: 프로젝트 이름
+            createdAt:
+              type: string
+              description: 등록 시각
+            rejectReason:
+              type: string
+              description: 반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다.
+              nullable: true
+            serviceStatus:
+              type: string
+              description: 운영 상태
+              enum:
+              - OPERATING
+              - CLOSED
+            members:
+              type: array
+              description: 팀원 목록. 저장된 순서대로 반환한다.
+              items:
+                required:
+                - displayName
+                type: object
+                properties:
+                  avatarUrl:
+                    type: string
+                    description: "프로필 이미지 URL. 가입한 팀원은 CloudFront 공개 이미지 URL을 우선하고\
+                      , 없으면 연결된 GitHub 프로필 이미지 URL을 사용하며, 가입하지 않은 이관 팀원은 저장된 GitHub\
+                      \ 프로필 이미지 URL을 사용한다."
+                    nullable: true
+                  displayName:
+                    type: string
+                    description: "표시 이름. 탈퇴한 팀원은 '탈퇴한 사용자', 가입하지 않은 이관 팀원은 GitHub\
+                      \ 이름(없으면 GitHub 아이디)이다."
+                  githubProfileUrl:
+                    type: string
+                    description: GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다.
+                    nullable: true
+                  cohort:
+                    type: number
+                    description: 기수. 크루가 아닌 팀원과 이관 팀원은 null이다.
+                    nullable: true
+                  handle:
+                    type: string
+                    description: 프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.
+                    nullable: true
+                  userType:
+                    type: string
+                    description: 사용자 유형. 가입하지 않은 이관 팀원과 탈퇴한 팀원은 null이다.
+                    nullable: true
+                  track:
+                    type: string
+                    description: 트랙
+                    nullable: true
+                    enum:
+                    - BACKEND
+                    - ANDROID
+                    - FRONTEND
+                  userId:
+                    type: number
+                    description: 사용자 ID. 가입하지 않은 이관 팀원은 null이다.
+                    nullable: true
+            descriptionMd:
+              type: string
+              description: 프로젝트 설명 마크다운. 본문 이미지 참조는 공개 URL로 변환되어 있다.
+              nullable: true
+            imageUrl:
+              type: string
+              description: CloudFront에서 제공하는 공개 이미지 URL
+              nullable: true
+            viewCount:
+              type: number
+              description: 조회수
+            slug:
+              type: string
+              description: 프로젝트 주소로 쓰이는 slug
+            updatedAt:
+              type: string
+              description: 수정 시각
+            approvalStatus:
+              type: string
+              description: 승인 상태
+              enum:
+              - PENDING
+              - APPROVED
+              - REJECTED
+            techTags:
+              type: array
+              description: 기술 스택 목록. 등록 순서대로 정렬한다.
+              items:
+                required:
+                - displayName
+                - id
+                type: object
+                properties:
+                  displayName:
+                    type: string
+                    description: 기술 스택 이름
+                  id:
+                    type: number
+                    description: 기술 스택 ID
+            editable:
+              type: boolean
+              description: 요청자가 등록자 본인인지 여부. 수정·삭제할 수 있는 사용자에게만 true다. 비로그인이거나 이전
+                기수에서 이관된 프로젝트면 false다.
+            deploymentUrl:
+              type: string
+              description: 서비스 배포 URL
+              nullable: true
+            commentCount:
+              type: number
+              description: 삭제되지 않은 댓글 수 (대댓글 포함)
+            thumbnailImageId:
+              type: number
+              description: 프로젝트 썸네일 미디어 ID
+              nullable: true
+            starCount:
+              type: number
+              description: GitHub star 수. 동기화 전이면 null이다.
+              nullable: true
+            likedByMe:
+              type: boolean
+              description: 요청자의 좋아요 여부. 비로그인이면 false다.
+            githubRepositoryUrl:
+              type: string
+              description: GitHub 리포지토리 URL
+            bookmarkCount:
+              type: number
+              description: 북마크 수
+            tagline:
+              type: string
+              description: 한 줄 소개
+            descriptionMedia:
+              type: array
+              description: 본문 이미지의 미디어 ID와 공개 URL 매핑
+              items:
+                required:
+                - mediaId
+                - url
+                type: object
+                properties:
+                  mediaId:
+                    type: number
+                    description: 본문 이미지 미디어 ID
+                  url:
+                    type: string
+                    description: 본문 이미지 공개 URL
+            teamBlogUrls:
+              type: array
+              description: "팀 블로그 주소 목록. 등록 순서대로 반환하며, 없으면 빈 배열이다."
+              items:
+                oneOf:
+                - type: object
+                - type: boolean
+                - type: string
+                - type: number
+          description: 프로젝트 상세
         status:
           type: string
           description: 응답 상태
@@ -9854,72 +10533,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    ProjectUpdateRequest:
-      title: ProjectUpdateRequest
-      required:
-      - cohort
-      - githubRepositoryUrl
-      - memberHandles
-      - serviceStatus
-      - tagline
-      - teamName
-      - techTagIds
-      - title
-      type: object
-      properties:
-        teamName:
-          type: string
-          description: 팀 이름. 앞뒤 공백을 자른 뒤 50자 이하 (유니코드 코드 포인트 기준)
-        thumbnailImageId:
-          type: number
-          description: "본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. 필드를 생략하면 기존 썸\
-            네일을 유지하고, null을 보내면 제거한다."
-          nullable: true
-        techTagIds:
-          type: array
-          description: 기술 스택 ID 전체 목록. 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 달려 있던 태그는 비활성화됐어도
-            그대로 둘 수 있다.
-          items:
-            type: number
-        memberHandles:
-          type: array
-          description: "팀원 handle 전체 목록 (1명 이상). 등록자를 포함할 수 있으며, 통째로 교체하며 배열 순서가 표\
-            시 순서가 된다. 이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은\
-            \ 400이다."
-          items:
-            type: string
-        serviceStatus:
-          type: string
-          description: "서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반\
-            환한다. 이때 오류 응답의 details.field는 serviceStatusValid다."
-          enum:
-          - OPERATING
-          - CLOSED
-        descriptionMd:
-          type: string
-          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
-            \ 형식으로 넣으며, 상세 조회 응답의 CDN URL을 그대로 보내도 기존 본문 이미지 참조를 유지한다."
-          nullable: true
-        deploymentUrl:
-          type: string
-          description: 서비스 배포 URL (http/https). 비우려면 null로 보낸다. 빈 문자열이나 공백만 있어도 비운
-            것으로 본다.
-          nullable: true
-        githubRepositoryUrl:
-          type: string
-          description: "https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하\
-            ). 다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, 경로(/tree/main), 쿼리(?tab=readme),\
-            \ 앵커(#readme)는 허용하고 버린 뒤 저장한다. 바꿀 수 있지만 다른 프로젝트가 등록한 리포지토리로는 바꿀 수 없다.\
-            \ slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다."
-        cohort:
-          type: number
-          description: 우아한테크코스 기수 (1~8)
-        tagline:
-          type: string
-          description: 한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준)
-        title:
-          type: string
-          description: 프로젝트 이름. 앞뒤 공백을 자른 뒤 100자 이하 (유니코드 코드 포인트 기준)
     AdminProjectHistorySuccessResponse:
       title: AdminProjectHistorySuccessResponse
       required:
@@ -9975,47 +10588,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    FeedSaveRequest:
-      title: FeedSaveRequest
-      required:
-      - categoryIds
-      - content
-      - mediaIds
-      - title
-      type: object
-      properties:
-        categoryIds:
-          type: array
-          description: "활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        isAnonymous:
-          type: boolean
-          description: 작성자 정보를 익명으로 공개할지 여부
-          nullable: true
-        feedType:
-          type: string
-          description: 피드 유형(QUESTION 또는 POST). 생략하면 POST
-          nullable: true
-        mediaIds:
-          type: array
-          description: 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록
-          items:
-            oneOf:
-            - type: object
-            - type: boolean
-            - type: string
-            - type: number
-        title:
-          type: string
-          description: "피드 제목(공백 제외 1자 이상, Unicode 최대 100자)"
-        content:
-          type: string
-          description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 5,000자)"
     CategoryFindAllSuccessResponse:
       title: CategoryFindAllSuccessResponse
       required:
@@ -10060,6 +10632,82 @@ components:
               categoryId:
                 type: number
                 description: 카테고리 ID
+        status:
+          type: string
+          description: 응답 상태
+    AdminJobPostingExtractSuccessResponse:
+      title: AdminJobPostingExtractSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - jobRole
+          - requirements
+          type: object
+          properties:
+            requirements:
+              type: array
+              description: 역량 목록(0~50개). 비어 있으면 관리자가 역량을 채운 뒤 등록한다.
+              items:
+                required:
+                - category
+                - name
+                - summary
+                type: object
+                properties:
+                  summary:
+                    type: string
+                    description: 역량 요약
+                  name:
+                    type: string
+                    description: 역량 이름
+                  category:
+                    type: string
+                    description: 역량 구분
+                    enum:
+                    - REQUIRED
+                    - PREFERRED
+                    - DUTY_OR_STACK
+            registeredJobPostingId:
+              type: number
+              description: 같은 주소로 이미 등록된 채용공고 ID. 없으면 null
+              nullable: true
+            employmentType:
+              type: string
+              description: 고용 형태. 찾지 못하면 null
+              nullable: true
+            companyName:
+              type: string
+              description: 회사명. 찾지 못하면 null
+              nullable: true
+            jobRole:
+              type: string
+              description: 직무. 목록에 없는 직무는 ETC
+              enum:
+              - BACKEND
+              - FRONTEND
+              - ANDROID
+              - IOS
+              - DEVOPS
+              - DATA
+              - AI
+              - ETC
+            deadline:
+              type: string
+              description: 마감일(yyyy-MM-dd). 찾지 못하면 null
+              nullable: true
+            title:
+              type: string
+              description: 공고 제목. 찾지 못하면 null
+              nullable: true
+            careerRequirement:
+              type: string
+              description: 경력 조건. 찾지 못하면 null
+              nullable: true
+          description: 추출 결과
         status:
           type: string
           description: 응답 상태
@@ -10165,6 +10813,203 @@ components:
                   nullable: true
               description: 댓글 본문에서 추출한 첫 URL의 링크 미리보기. URL이 없으면 null
           description: 생성된 댓글
+        status:
+          type: string
+          description: 응답 상태
+    AdminJobPostingDetailSuccessResponse:
+      title: AdminJobPostingDetailSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - companyName
+          - createdAt
+          - jobPostingId
+          - jobRole
+          - registeredBy
+          - requirements
+          - sourceUrl
+          - status
+          - title
+          type: object
+          properties:
+            hiddenAt:
+              type: string
+              description: 숨긴 시각. 숨기지 않았으면 null
+              nullable: true
+            requirements:
+              type: array
+              description: 역량 목록
+              items:
+                required:
+                - category
+                - displayOrder
+                - name
+                - recommendations
+                - requirementId
+                - status
+                - summary
+                type: object
+                properties:
+                  summary:
+                    type: string
+                    description: 역량 요약
+                  lastError:
+                    type: string
+                    description: "마지막 분석 실패 이유. 없으면 null. status가 PENDING이나 PROCESSING이\
+                      면 재시도 중인 직전 실패 이유이고, 최종 실패는 status가 FAILED일 때다."
+                    nullable: true
+                    enum:
+                    - SEARCH_FAILED
+                    - JUDGE_FAILED
+                    - INVALID_QUERY
+                    - NO_CANDIDATES
+                    - UNEXPECTED
+                    - ATTEMPTS_EXHAUSTED
+                  name:
+                    type: string
+                    description: 역량 이름
+                  displayOrder:
+                    type: number
+                    description: 표시 순서(1부터)
+                  category:
+                    type: string
+                    description: 역량 구분
+                    enum:
+                    - REQUIRED
+                    - PREFERRED
+                    - DUTY_OR_STACK
+                  requirementId:
+                    type: number
+                    description: 역량 ID
+                  recommendations:
+                    type: array
+                    description: 판정한 자료 목록. 분석 전이거나 후보가 없으면 빈 배열
+                    items:
+                      required:
+                      - evidence
+                      - externalKey
+                      - reason
+                      - similarityScore
+                      - source
+                      - verdict
+                      type: object
+                      properties:
+                        reason:
+                          type: string
+                          description: 판정 이유
+                        externalKey:
+                          type: string
+                          description: 출처 안에서 자료를 가리키는 키
+                        evidence:
+                          type: array
+                          description: 판정할 때 LLM에게 보여 준 조각의 복사본
+                          items:
+                            required:
+                            - kind
+                            - similarityScore
+                            - text
+                            type: object
+                            properties:
+                              kind:
+                                type: string
+                                description: 조각 유형
+                                enum:
+                                - EXPERIENCE
+                                - INTRO
+                              text:
+                                type: string
+                                description: 조각 내용
+                              similarityScore:
+                                type: number
+                                description: 조각의 검색 점수
+                        verdict:
+                          type: string
+                          description: 판정 등급
+                          enum:
+                          - MATCH
+                          - PARTIAL
+                          - NOT_MATCH
+                        description:
+                          type: string
+                          description: 카드에 보여 줄 설명. NOT_MATCH면 null
+                          nullable: true
+                        source:
+                          type: string
+                          description: 자료 출처
+                        title:
+                          type: string
+                          description: 자료 제목. 자료가 없거나 삭제됐으면 null
+                          nullable: true
+                        url:
+                          type: string
+                          description: 자료 링크. 자료가 없거나 삭제됐으면 null
+                          nullable: true
+                        similarityScore:
+                          type: number
+                          description: 검색 점수
+                  status:
+                    type: string
+                    description: 자료 분석 상태
+                    enum:
+                    - PENDING
+                    - PROCESSING
+                    - READY
+                    - FAILED
+            registeredBy:
+              type: number
+              description: 등록한 관리자 ID
+            employmentType:
+              type: string
+              description: 고용 형태
+              nullable: true
+            companyName:
+              type: string
+              description: 회사명
+            title:
+              type: string
+              description: 공고 제목
+            careerRequirement:
+              type: string
+              description: 경력 조건
+              nullable: true
+            sourceUrl:
+              type: string
+              description: 정규화한 채용공고 주소
+            createdAt:
+              type: string
+              description: 등록 시각
+            jobPostingId:
+              type: number
+              description: 채용공고 ID
+            jobRole:
+              type: string
+              description: 직무
+              enum:
+              - BACKEND
+              - FRONTEND
+              - ANDROID
+              - IOS
+              - DEVOPS
+              - DATA
+              - AI
+              - ETC
+            deadline:
+              type: string
+              description: 마감일(yyyy-MM-dd)
+              nullable: true
+            status:
+              type: string
+              description: 자료 분석 상태
+              enum:
+              - PENDING
+              - PROCESSING
+              - READY
+              - FAILED
+          description: 채용공고 상세
         status:
           type: string
           description: 응답 상태
@@ -11153,154 +11998,6 @@ components:
         content:
           type: string
           description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
-    AdminProjectDetailSuccessResponse:
-      title: AdminProjectDetailSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - approvalStatus
-          - bookmarkCount
-          - bookmarkedByMe
-          - cohort
-          - commentCount
-          - createdAt
-          - descriptionMedia
-          - githubRepositoryUrl
-          - id
-          - likeCount
-          - likedByMe
-          - members
-          - serviceStatus
-          - slug
-          - tagline
-          - teamName
-          - techTags
-          - title
-          - updatedAt
-          - viewCount
-          type: object
-          properties:
-            teamName:
-              type: string
-              description: 팀 이름
-            registeredBy:
-              type: number
-              description: 프로젝트 등록자 ID
-              nullable: true
-            bookmarkedByMe:
-              type: boolean
-              description: 요청자의 북마크 여부
-            cohort:
-              type: number
-              description: 우아한테크코스 기수
-            likeCount:
-              type: number
-              description: 좋아요 수
-            title:
-              type: string
-              description: 프로젝트 이름
-            createdAt:
-              type: string
-              description: 등록 시각
-            rejectReason:
-              type: string
-              description: 반려 사유
-              nullable: true
-            serviceStatus:
-              type: string
-              description: 운영 상태
-              enum:
-              - OPERATING
-              - CLOSED
-            members:
-              type: array
-              description: 프로젝트 팀원
-              items:
-                oneOf:
-                - type: object
-                - type: boolean
-                - type: string
-                - type: number
-            descriptionMd:
-              type: string
-              description: 프로젝트 설명
-              nullable: true
-            imageUrl:
-              type: string
-              description: 프로젝트 썸네일 URL
-              nullable: true
-            viewCount:
-              type: number
-              description: 조회 수
-            id:
-              type: number
-              description: 프로젝트 ID
-            slug:
-              type: string
-              description: 프로젝트 slug
-            updatedAt:
-              type: string
-              description: 수정 시각
-            approvalStatus:
-              type: string
-              description: 승인 상태
-              enum:
-              - PENDING
-              - APPROVED
-              - REJECTED
-            techTags:
-              type: array
-              description: 기술 스택
-              items:
-                oneOf:
-                - type: object
-                - type: boolean
-                - type: string
-                - type: number
-            deploymentUrl:
-              type: string
-              description: 배포 URL
-              nullable: true
-            commentCount:
-              type: number
-              description: 댓글 수
-            thumbnailImageId:
-              type: number
-              description: 프로젝트 썸네일 이미지 ID
-              nullable: true
-            starCount:
-              type: number
-              description: GitHub star 수
-              nullable: true
-            likedByMe:
-              type: boolean
-              description: 요청자의 좋아요 여부
-            githubRepositoryUrl:
-              type: string
-              description: GitHub 저장소 URL
-            bookmarkCount:
-              type: number
-              description: 북마크 수
-            tagline:
-              type: string
-              description: 한 줄 소개
-            descriptionMedia:
-              type: array
-              description: 본문 이미지
-              items:
-                oneOf:
-                - type: object
-                - type: boolean
-                - type: string
-                - type: number
-          description: 프로젝트 상세
-        status:
-          type: string
-          description: 응답 상태
     ErrorResponse:
       title: ErrorResponse
       required:
@@ -11332,6 +12029,79 @@ components:
         status:
           type: string
           description: 응답 상태
+    ProjectUpdateRequest:
+      title: ProjectUpdateRequest
+      required:
+      - cohort
+      - githubRepositoryUrl
+      - memberHandles
+      - serviceStatus
+      - tagline
+      - teamName
+      - techTagIds
+      - title
+      type: object
+      properties:
+        teamName:
+          type: string
+          description: 팀 이름. 앞뒤 공백을 자른 뒤 50자 이하 (유니코드 코드 포인트 기준)
+        thumbnailImageId:
+          type: number
+          description: "본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. 필드를 생략하면 기존 썸\
+            네일을 유지하고, null을 보내면 제거한다."
+          nullable: true
+        techTagIds:
+          type: array
+          description: 기술 스택 ID 전체 목록. 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 달려 있던 태그는 비활성화됐어도
+            그대로 둘 수 있다.
+          items:
+            type: number
+        memberHandles:
+          type: array
+          description: "팀원 handle 전체 목록 (1명 이상). 등록자를 포함할 수 있으며, 통째로 교체하며 배열 순서가 표\
+            시 순서가 된다. 이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은\
+            \ 400이다."
+          items:
+            type: string
+        serviceStatus:
+          type: string
+          description: "서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반\
+            환한다. 이때 오류 응답의 details.field는 serviceStatusValid다."
+          enum:
+          - OPERATING
+          - CLOSED
+        descriptionMd:
+          type: string
+          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
+            \ 형식으로 넣으며, 상세 조회 응답의 CDN URL을 그대로 보내도 기존 본문 이미지 참조를 유지한다."
+          nullable: true
+        deploymentUrl:
+          type: string
+          description: 서비스 배포 URL (http/https). 비우려면 null로 보낸다. 빈 문자열이나 공백만 있어도 비운
+            것으로 본다.
+          nullable: true
+        githubRepositoryUrl:
+          type: string
+          description: "https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하\
+            ). 다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, 경로(/tree/main), 쿼리(?tab=readme),\
+            \ 앵커(#readme)는 허용하고 버린 뒤 저장한다. 바꿀 수 있지만 다른 프로젝트가 등록한 리포지토리로는 바꿀 수 없다.\
+            \ slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다."
+        cohort:
+          type: number
+          description: 우아한테크코스 기수 (1~8)
+        tagline:
+          type: string
+          description: 한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준)
+        title:
+          type: string
+          description: 프로젝트 이름. 앞뒤 공백을 자른 뒤 100자 이하 (유니코드 코드 포인트 기준)
+        teamBlogUrls:
+          type: array
+          description: "팀 블로그 주소 전체 목록 (선택, 최대 3개). 생략하면 기존 주소를 유지하고, 목록을 보내면 그 목록\
+            으로 교체하며 배열 순서가 표시 순서가 된다. null이나 빈 배열이면 모두 해제한다. 형식과 정규화 규칙은 등록과 같다."
+          nullable: true
+          items:
+            type: string
     AdminVerificationRequestApproveSuccessResponse:
       title: AdminVerificationRequestApproveSuccessResponse
       required:
@@ -11525,6 +12295,164 @@ components:
               type: number
               description: 상태 필터에 해당하는 전체 제보 수
           description: 커서 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    AdminProjectDetailSuccessResponse:
+      title: AdminProjectDetailSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - approvalStatus
+          - bookmarkCount
+          - bookmarkedByMe
+          - cohort
+          - commentCount
+          - createdAt
+          - descriptionMedia
+          - githubRepositoryUrl
+          - id
+          - likeCount
+          - likedByMe
+          - members
+          - serviceStatus
+          - slug
+          - tagline
+          - teamBlogUrls
+          - teamName
+          - techTags
+          - title
+          - updatedAt
+          - viewCount
+          type: object
+          properties:
+            teamName:
+              type: string
+              description: 팀 이름
+            registeredBy:
+              type: number
+              description: 프로젝트 등록자 ID
+              nullable: true
+            bookmarkedByMe:
+              type: boolean
+              description: 요청자의 북마크 여부
+            cohort:
+              type: number
+              description: 우아한테크코스 기수
+            likeCount:
+              type: number
+              description: 좋아요 수
+            title:
+              type: string
+              description: 프로젝트 이름
+            createdAt:
+              type: string
+              description: 등록 시각
+            rejectReason:
+              type: string
+              description: 반려 사유
+              nullable: true
+            serviceStatus:
+              type: string
+              description: 운영 상태
+              enum:
+              - OPERATING
+              - CLOSED
+            members:
+              type: array
+              description: 프로젝트 팀원
+              items:
+                oneOf:
+                - type: object
+                - type: boolean
+                - type: string
+                - type: number
+            descriptionMd:
+              type: string
+              description: 프로젝트 설명
+              nullable: true
+            imageUrl:
+              type: string
+              description: 프로젝트 썸네일 URL
+              nullable: true
+            viewCount:
+              type: number
+              description: 조회 수
+            id:
+              type: number
+              description: 프로젝트 ID
+            slug:
+              type: string
+              description: 프로젝트 slug
+            updatedAt:
+              type: string
+              description: 수정 시각
+            approvalStatus:
+              type: string
+              description: 승인 상태
+              enum:
+              - PENDING
+              - APPROVED
+              - REJECTED
+            techTags:
+              type: array
+              description: 기술 스택
+              items:
+                oneOf:
+                - type: object
+                - type: boolean
+                - type: string
+                - type: number
+            deploymentUrl:
+              type: string
+              description: 배포 URL
+              nullable: true
+            commentCount:
+              type: number
+              description: 댓글 수
+            thumbnailImageId:
+              type: number
+              description: 프로젝트 썸네일 이미지 ID
+              nullable: true
+            starCount:
+              type: number
+              description: GitHub star 수
+              nullable: true
+            likedByMe:
+              type: boolean
+              description: 요청자의 좋아요 여부
+            githubRepositoryUrl:
+              type: string
+              description: GitHub 저장소 URL
+            bookmarkCount:
+              type: number
+              description: 북마크 수
+            tagline:
+              type: string
+              description: 한 줄 소개
+            descriptionMedia:
+              type: array
+              description: 본문 이미지
+              items:
+                oneOf:
+                - type: object
+                - type: boolean
+                - type: string
+                - type: number
+            teamBlogUrls:
+              type: array
+              description: 확정된 팀 블로그 주소. 없으면 빈 배열
+              items:
+                oneOf:
+                - type: object
+                - type: boolean
+                - type: string
+                - type: number
+          description: 프로젝트 상세
         status:
           type: string
           description: 응답 상태
@@ -11738,6 +12666,52 @@ components:
         status:
           type: string
           description: 응답 상태
+    FeedSaveRequest:
+      title: FeedSaveRequest
+      required:
+      - categoryIds
+      - content
+      - mediaIds
+      - title
+      type: object
+      properties:
+        categoryIds:
+          type: array
+          description: "활성 카테고리 ID 목록(일반 1개, 이벤트 개수 제한 없음, 중복 불가)"
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        isAnonymous:
+          type: boolean
+          description: 작성자 정보를 익명으로 공개할지 여부
+          nullable: true
+        feedType:
+          type: string
+          description: 피드 유형(QUESTION 또는 POST). 생략하면 POST
+          nullable: true
+        mediaIds:
+          type: array
+          description: 작성자가 업로드한 READY FEED_CONTENT 미디어 ID 목록
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
+        recommendationId:
+          type: number
+          description: "추천 질문을 통해 작성한 질문일 때 사용한 추천 ID. QUESTION 타입에서만 사용되며, 무효하거나\
+            \ 이미 사용된 ID는 무시됩니다."
+          nullable: true
+        title:
+          type: string
+          description: "피드 제목(공백 제외 1자 이상, Unicode 최대 100자)"
+        content:
+          type: string
+          description: "Markdown 본문(공백 제외 1자 이상, Unicode 최대 5,000자)"
     EventCreateRequest:
       title: EventCreateRequest
       required:
@@ -12132,200 +13106,76 @@ components:
         status:
           type: string
           description: 응답 상태
-    ProjectFindDetailSuccessResponse:
-      title: ProjectFindDetailSuccessResponse
+    ProjectCreateRequest:
+      title: ProjectCreateRequest
       required:
-      - data
-      - status
+      - cohort
+      - githubRepositoryUrl
+      - memberHandles
+      - serviceStatus
+      - tagline
+      - teamName
+      - techTagIds
+      - title
       type: object
       properties:
-        data:
-          required:
-          - approvalStatus
-          - bookmarkCount
-          - bookmarkedByMe
-          - cohort
-          - commentCount
-          - createdAt
-          - descriptionMedia
-          - editable
-          - githubRepositoryUrl
-          - likeCount
-          - likedByMe
-          - members
-          - serviceStatus
-          - slug
-          - tagline
-          - teamName
-          - techTags
-          - title
-          - updatedAt
-          - viewCount
-          type: object
-          properties:
-            teamName:
-              type: string
-              description: 팀 이름
-            bookmarkedByMe:
-              type: boolean
-              description: 요청자의 북마크 여부. 비로그인이면 false다.
-            cohort:
-              type: number
-              description: 우아한테크코스 기수
-            likeCount:
-              type: number
-              description: 좋아요 수
-            title:
-              type: string
-              description: 프로젝트 이름
-            createdAt:
-              type: string
-              description: 등록 시각
-            rejectReason:
-              type: string
-              description: 반려 사유. REJECTED일 때만 값이 있고 그 외에는 null이다.
-              nullable: true
-            serviceStatus:
-              type: string
-              description: 운영 상태
-              enum:
-              - OPERATING
-              - CLOSED
-            members:
-              type: array
-              description: 팀원 목록. 저장된 순서대로 반환한다.
-              items:
-                required:
-                - displayName
-                type: object
-                properties:
-                  avatarUrl:
-                    type: string
-                    description: "프로필 이미지 URL. 가입한 팀원은 CloudFront 공개 이미지 URL을 우선하고\
-                      , 없으면 연결된 GitHub 프로필 이미지 URL을 사용하며, 가입하지 않은 이관 팀원은 저장된 GitHub\
-                      \ 프로필 이미지 URL을 사용한다."
-                    nullable: true
-                  displayName:
-                    type: string
-                    description: "표시 이름. 탈퇴한 팀원은 '탈퇴한 사용자', 가입하지 않은 이관 팀원은 GitHub\
-                      \ 이름(없으면 GitHub 아이디)이다."
-                  githubProfileUrl:
-                    type: string
-                    description: GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다.
-                    nullable: true
-                  cohort:
-                    type: number
-                    description: 기수. 크루가 아닌 팀원과 이관 팀원은 null이다.
-                    nullable: true
-                  handle:
-                    type: string
-                    description: 프로필 페이지 이동용 handle. 가입하지 않은 이관 팀원은 null이다.
-                    nullable: true
-                  userType:
-                    type: string
-                    description: 사용자 유형. 가입하지 않은 이관 팀원과 탈퇴한 팀원은 null이다.
-                    nullable: true
-                  track:
-                    type: string
-                    description: 트랙
-                    nullable: true
-                    enum:
-                    - BACKEND
-                    - ANDROID
-                    - FRONTEND
-                  userId:
-                    type: number
-                    description: 사용자 ID. 가입하지 않은 이관 팀원은 null이다.
-                    nullable: true
-            descriptionMd:
-              type: string
-              description: 프로젝트 설명 마크다운. 본문 이미지 참조는 공개 URL로 변환되어 있다.
-              nullable: true
-            imageUrl:
-              type: string
-              description: CloudFront에서 제공하는 공개 이미지 URL
-              nullable: true
-            viewCount:
-              type: number
-              description: 조회수
-            slug:
-              type: string
-              description: 프로젝트 주소로 쓰이는 slug
-            updatedAt:
-              type: string
-              description: 수정 시각
-            approvalStatus:
-              type: string
-              description: 승인 상태
-              enum:
-              - PENDING
-              - APPROVED
-              - REJECTED
-            techTags:
-              type: array
-              description: 기술 스택 목록. 등록 순서대로 정렬한다.
-              items:
-                required:
-                - displayName
-                - id
-                type: object
-                properties:
-                  displayName:
-                    type: string
-                    description: 기술 스택 이름
-                  id:
-                    type: number
-                    description: 기술 스택 ID
-            editable:
-              type: boolean
-              description: 요청자가 등록자 본인인지 여부. 수정·삭제할 수 있는 사용자에게만 true다. 비로그인이거나 이전
-                기수에서 이관된 프로젝트면 false다.
-            deploymentUrl:
-              type: string
-              description: 서비스 배포 URL
-              nullable: true
-            commentCount:
-              type: number
-              description: 삭제되지 않은 댓글 수 (대댓글 포함)
-            thumbnailImageId:
-              type: number
-              description: 프로젝트 썸네일 미디어 ID
-              nullable: true
-            starCount:
-              type: number
-              description: GitHub star 수. 동기화 전이면 null이다.
-              nullable: true
-            likedByMe:
-              type: boolean
-              description: 요청자의 좋아요 여부. 비로그인이면 false다.
-            githubRepositoryUrl:
-              type: string
-              description: GitHub 리포지토리 URL
-            bookmarkCount:
-              type: number
-              description: 북마크 수
-            tagline:
-              type: string
-              description: 한 줄 소개
-            descriptionMedia:
-              type: array
-              description: 본문 이미지의 미디어 ID와 공개 URL 매핑
-              items:
-                required:
-                - mediaId
-                - url
-                type: object
-                properties:
-                  mediaId:
-                    type: number
-                    description: 본문 이미지 미디어 ID
-                  url:
-                    type: string
-                    description: 본문 이미지 공개 URL
-          description: 프로젝트 상세
-        status:
+        teamName:
           type: string
-          description: 응답 상태
+          description: 팀 이름. 앞뒤 공백을 자른 뒤 50자 이하 (유니코드 코드 포인트 기준)
+        thumbnailImageId:
+          type: number
+          description: 본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID
+          nullable: true
+        techTagIds:
+          type: array
+          description: "선택 가능한 기술 스택 ID 목록. 중복할 수 없으며, 배열 순서가 표시 순서가 된다."
+          items:
+            type: number
+        memberHandles:
+          type: array
+          description: "@[A-Za-z0-9_-]{2,30} 형식의 팀원 handle 목록 (1명 이상). 등록자를 포함할 수\
+            \ 있으며, 활동 중인 우아한테크코스 크루 또는 코치여야 하며, 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서\
+            가 표시 순서가 된다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다."
+          items:
+            type: string
+        serviceStatus:
+          type: string
+          description: "서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반\
+            환한다. 이때 오류 응답의 details.field는 serviceStatusValid다."
+          enum:
+          - OPERATING
+          - CLOSED
+        descriptionMd:
+          type: string
+          description: "프로젝트 설명 마크다운 (100,000자 이하). 이미지는 ![설명](media://{mediaId})\
+            \ 형식으로 넣으며, 본인이 업로드한 PROJECT_DESCRIPTION 용도의 처리 완료 이미지만 쓸 수 있다."
+          nullable: true
+        deploymentUrl:
+          type: string
+          description: 서비스 배포 URL (http/https). 빈 문자열이나 공백만 있으면 입력하지 않은 것으로 본다.
+          nullable: true
+        githubRepositoryUrl:
+          type: string
+          description: "https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하\
+            ). 다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, 경로(/tree/main), 쿼리(?tab=readme),\
+            \ 앵커(#readme)는 허용하고 버린 뒤 저장한다. 리포지토리 이름으로 slug를 만든다."
+        cohort:
+          type: number
+          description: 우아한테크코스 기수 (1~8)
+        tagline:
+          type: string
+          description: 한 줄 소개. 앞뒤 공백을 자른 뒤 200자 이하 (유니코드 코드 포인트 기준)
+        title:
+          type: string
+          description: 프로젝트 이름. 앞뒤 공백을 자른 뒤 100자 이하 (유니코드 코드 포인트 기준)
+        teamBlogUrls:
+          type: array
+          description: "팀 블로그 주소 목록 (선택, 최대 3개). 각 주소는 http/https URL 형식이며 2,048자\
+            \ 이하다. 호스트는 소문자로 바꾸고 앵커(#…)와 끝 슬래시는 버린 뒤 저장하며, 같은 주소는 하나만 남긴다. 생략하거나 null이\
+            면 등록하지 않는다. 3개를 넘거나 형식이 틀리면 400이다."
+          nullable: true
+          items:
+            type: string
     CategorySaveSuccessResponse:
       title: CategorySaveSuccessResponse
       required:
@@ -13113,6 +13963,38 @@ components:
         status:
           type: string
           description: 응답 상태
+    AdminJobPostingUpdateSuccessResponse:
+      title: AdminJobPostingUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - jobPostingId
+          - reanalyzed
+          - status
+          type: object
+          properties:
+            jobPostingId:
+              type: number
+              description: 채용공고 ID
+            reanalyzed:
+              type: boolean
+              description: 공고 글이 바뀌어 역량을 바꾸고 다시 분석하면 true. false면 요청의 역량은 반영되지 않았다.
+            status:
+              type: string
+              description: 변경 후 자료 분석 상태
+              enum:
+              - PENDING
+              - PROCESSING
+              - READY
+              - FAILED
+          description: 변경한 채용공고
+        status:
+          type: string
+          description: 응답 상태
     UserSearchSuccessResponse:
       title: UserSearchSuccessResponse
       required:
@@ -13279,6 +14161,83 @@ components:
               type: number
               description: 매거진 ID
           description: 매거진 반응 변경 결과
+        status:
+          type: string
+          description: 응답 상태
+    AdminJobPostingFindAllSuccessResponse:
+      title: AdminJobPostingFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 채용공고 목록
+          items:
+            required:
+            - companyName
+            - createdAt
+            - jobPostingId
+            - jobRole
+            - status
+            - title
+            type: object
+            properties:
+              hiddenAt:
+                type: string
+                description: 숨긴 시각. 숨기지 않았으면 null
+                nullable: true
+              createdAt:
+                type: string
+                description: 등록 시각
+              jobPostingId:
+                type: number
+                description: 채용공고 ID
+              companyName:
+                type: string
+                description: 회사명
+              jobRole:
+                type: string
+                description: 직무
+                enum:
+                - BACKEND
+                - FRONTEND
+                - ANDROID
+                - IOS
+                - DEVOPS
+                - DATA
+                - AI
+                - ETC
+              title:
+                type: string
+                description: 공고 제목
+              status:
+                type: string
+                description: 자료 분석 상태
+                enum:
+                - PENDING
+                - PROCESSING
+                - READY
+                - FAILED
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: 전체 채용공고 수
+          description: 페이지네이션 정보
         status:
           type: string
           description: 응답 상태
@@ -13472,6 +14431,38 @@ components:
         status:
           type: string
           description: 응답 상태
+    AdminJobPostingSaveSuccessResponse:
+      title: AdminJobPostingSaveSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - createdAt
+          - jobPostingId
+          - status
+          type: object
+          properties:
+            createdAt:
+              type: string
+              description: 등록 시각
+            jobPostingId:
+              type: number
+              description: 채용공고 ID
+            status:
+              type: string
+              description: 자료 분석 상태
+              enum:
+              - PENDING
+              - PROCESSING
+              - READY
+              - FAILED
+          description: 등록한 채용공고
+        status:
+          type: string
+          description: 응답 상태
     ProjectCommentReactionSuccessResponse:
       title: ProjectCommentReactionSuccessResponse
       required:
@@ -13507,6 +14498,15 @@ components:
         status:
           type: string
           description: 응답 상태
+    AdminJobPostingVisibilityUpdateRequest:
+      title: AdminJobPostingVisibilityUpdateRequest
+      required:
+      - hidden
+      type: object
+      properties:
+        hidden:
+          type: boolean
+          description: "숨기려면 true, 해제하려면 false"
     CohortFindAllSuccessResponse:
       title: CohortFindAllSuccessResponse
       required:
@@ -13538,6 +14538,19 @@ components:
         status:
           type: string
           description: 응답 상태
+    AdminJobPostingExtractRequest:
+      title: AdminJobPostingExtractRequest
+      required:
+      - content
+      - sourceUrl
+      type: object
+      properties:
+        sourceUrl:
+          type: string
+          description: "채용공고 주소(http 또는 https, 1,024자 이하)"
+        content:
+          type: string
+          description: "공고 글(10,000자 이하). 저장하지 않는다."
     ProjectViewRecordSuccessResponse:
       title: ProjectViewRecordSuccessResponse
       required:

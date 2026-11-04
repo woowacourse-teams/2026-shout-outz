@@ -1,0 +1,258 @@
+{
+  "id": "tossbank-server-product",
+  "company": "토스뱅크",
+  "title": "Server Developer (Product)",
+  "logo": "https://static.toss.im/tds/favicon/favicon-196x196.png",
+  "keywords": [
+    {
+      "keyword": "Kotlin·Spring",
+      "reason": "\"Kotlin/Java로 Spring Framework 기반의 서비스를 개발한 경험\"에 따라 Kotlin과 Spring 기반 개발 역량 필요.",
+      "groups": {
+        "pr": [
+          {
+            "id": "pr:woowacourse-teams/2025-ah-madda#858",
+            "source": "pr",
+            "title": "[BE] 도메인 비핵심 기능(비DIP 대상) 스레드 분리",
+            "url": "https://github.com/woowacourse-teams/2025-ah-madda/pull/858",
+            "date": "2025-10-15",
+            "line": "비핵심 인프라 로직을 별도 스레드풀(bulkheadExecutor)로 분리해 장애 격리한 패턴을 스레드풀 설계 참고로 쓰기 좋아요.",
+            "project": "아맞다",
+            "slug": "ah-madda"
+          },
+          {
+            "id": "pr:woowacourse-teams/2025-ah-madda#854",
+            "source": "pr",
+            "title": "[BE] ThreadPoolTaskExecutor의 thread 설정 변경 및 graceful shutdown 고려",
+            "url": "https://github.com/woowacourse-teams/2025-ah-madda/pull/854",
+            "date": "2025-10-14",
+            "line": "ThreadPoolTaskExecutor의 core/max/queue 설정과 graceful shutdown 고려사항을 운영 관점 설계 예시로 참고하기 좋아요.",
+            "project": "아맞다",
+            "slug": "ah-madda"
+          }
+        ],
+        "blog": [
+          {
+            "id": "blog:moaon:443",
+            "source": "blog",
+            "title": "비효율적인 Blocking 코드를 WebClient를 통해 개선하기 - BingheCompany 🇰🇷",
+            "url": "https://2021-pick-git.github.io/webflux/",
+            "date": "2020-12-31",
+            "line": "Blocking 호출을 WebClient·WebFlux로 개선해 응답 속도를 높인 성능 최적화 사례로 공부하기 좋아요.",
+            "project": "깃들다",
+            "slug": "pick-git"
+          },
+          {
+            "id": "blog:moaon:540",
+            "source": "blog",
+            "title": "외부 API 호출을 30% 가량 빠르게(1) - 기본 로직",
+            "url": "https://velog.io/@dragonsu/%EC%99%B8%EB%B6%80-API-%ED%98%B8%EC%B6%9C%EC%9D%84-30-%EA%B0%80%EB%9F%89-%EB%B9%A0%EB%A5%B4%EA%B2%8C1-%EA%B8%B0%EB%B3%B8-%EB%A1%9C%EC%A7%81",
+            "date": "2023-12-31",
+            "line": "CompletableFuture로 외부 API 병렬화해 응답 시간을 ~30% 줄인 방법이라 비동기 호출 기본 패턴 참고에 좋아요.",
+            "project": "CoReA",
+            "slug": "corea"
+          },
+          {
+            "id": "blog:moaon:541",
+            "source": "blog",
+            "title": "외부(깃허브) 호출을 비동기로 30% 가량 빠르게(2) - 스레드 튜닝, 측정",
+            "url": "https://velog.io/@dragonsu/%EC%99%B8%EB%B6%80%EA%B9%83%ED%97%88%EB%B8%8C-%ED%98%B8%EC%B6%9C%EC%9D%84-%EB%B9%84%EB%8F%99%EA%B8%B0%EB%A1%9C-30-%EA%B0%80%EB%9F%89-%EB%B9%A0%EB%A5%B4%EA%B2%8C2-%EC%8A%A4%EB%A0%88%EB%93%9C-%ED%8A%9C%EB%8B%9D-%EC%B8%A1%EC%A0%95",
+            "date": "2023-12-31",
+            "line": "스레드풀 튜닝과 측정으로 외부 호출을 30~50% 개선한 실전 팁이라 성능 튜닝 근거로 활용하기 좋아요.",
+            "project": "CoReA",
+            "slug": "corea"
+          },
+          {
+            "id": "blog:moaon:758",
+            "source": "blog",
+            "title": "WebFlux 의존성 없이 HTTPInterface 사용하기 (RestClient)",
+            "url": "https://songjb.tistory.com/17",
+            "date": "2022-12-31",
+            "line": "WebFlux 없이 Spring RestClient로 HTTP Interface를 쓰는 대안을 정리해 의존성 최소화 사례로 참고하기 좋아요.",
+            "project": "Diggin' Room",
+            "slug": null
+          }
+        ],
+        "talk": [
+          {
+            "id": "talk:yt:4x1QRyMIjGU",
+            "source": "talk",
+            "title": "[10분 테코톡] 🐅호돌의 Spring Webflux",
+            "url": "https://www.youtube.com/watch?v=4x1QRyMIjGU",
+            "date": "2020-10-26",
+            "line": "Spring WebFlux, Spring MVC, Reactor를 비교하며 논블로킹 처리와 리액티브 프로그래밍의 기초를 익히기 좋아요.",
+            "project": "우아한테크",
+            "slug": null
+          },
+          {
+            "id": "talk:yt:u_UeOEk0FKU",
+            "source": "talk",
+            "title": "[10분 테코톡] 채넛의 Kotlin Flow",
+            "url": "https://www.youtube.com/watch?v=u_UeOEk0FKU",
+            "date": "2025-11-21",
+            "line": "Kotlin Flow, Cold Flow, Hot Flow의 동작과 차이를 살펴보며 비동기 데이터 스트림의 기본을 익히기 좋아요.",
+            "project": "우아한테크",
+            "slug": null
+          }
+        ],
+        "doc": [
+          {
+            "id": "doc:woowacourse-teams/2026-jumin:server/loadtest/README.md",
+            "source": "doc",
+            "title": "API 부하 테스트",
+            "url": "https://github.com/woowacourse-teams/2026-jumin/blob/develop/server/loadtest/README.md",
+            "date": "",
+            "line": "지도 API 대상의 k6 기반 부하 테스트 계획과 기준을 상세히 적어 부하 테스트 시나리오 작성에 참고하기 좋아요.",
+            "project": "주차의 민족",
+            "slug": "jumin"
+          },
+          {
+            "id": "doc:woowacourse-teams/2026-to-discount:api/docs/performance-metrics.md",
+            "source": "doc",
+            "title": "API 성능 지표 제공",
+            "url": "https://github.com/woowacourse-teams/2026-to-discount/blob/main/api/docs/performance-metrics.md",
+            "date": "",
+            "line": "Actuator·Micrometer로 수집할 핵심 API·JVM 지표 목록이라 성능 모니터링 설계할 때 참고돼요.",
+            "project": "2026-to-discount",
+            "slug": null
+          }
+        ]
+      }
+    },
+    {
+      "keyword": "대용량 트래픽 처리",
+      "reason": "\"대용량 트래픽을 빠르고 안정적으로 처리할 수 있도록 튼튼하고 안전한 시스템을 개발\"해야 하기 때문에.",
+      "groups": {
+        "pr": [
+          {
+            "id": "pr:woowacourse-teams/2025-zzol#853",
+            "source": "pr",
+            "title": "[chore] 스레드 풀 설정 및 관련 매트릭 추가",
+            "url": "https://github.com/woowacourse-teams/2025-zzol/pull/853",
+            "date": "2025-10-11",
+            "line": "스레드풀 재조정과 웹소켓/메시지 지연 메트릭 추가로 부하 대응·모니터링 전략을 배울 때 유용해요.",
+            "project": "쫄",
+            "slug": "zzol"
+          },
+          {
+            "id": "pr:woowacourse-teams/2025-feed-zupzup#995",
+            "source": "pr",
+            "title": "[BE] refactor: 피드백 이미지 비동기/병렬 다운로드 및 백프레셔 제어",
+            "url": "https://github.com/woowacourse-teams/2025-feed-zupzup/pull/995",
+            "date": "2025-11-14",
+            "line": "S3 이미지 병렬 다운로드와 BlockingQueue로 배압 제어해 OOM 방지한 Producer-Consumer 설계 예시로 좋아요.",
+            "project": "2025-feed-zupzup",
+            "slug": null
+          }
+        ],
+        "blog": [
+          {
+            "id": "blog:ext:9bd9cea67f4fb1a9",
+            "source": "blog",
+            "title": "부하 테스트로 발견한 N+1문제를 TestContainer로 CI 테스트에 고정하기",
+            "url": "https://icecupregular.tistory.com/50",
+            "date": "2026-10-14",
+            "line": "부하테스트로 N+1 문제를 발견하고 TestContainer로 CI 회귀검증을 고정한 실전 사례를 볼 때 유용해요.",
+            "project": "ringout",
+            "slug": null
+          },
+          {
+            "id": "blog:ext:bc677778ec033b93",
+            "source": "blog",
+            "title": "[백엔드] 부하테스트와 실행 계획 세우기",
+            "url": "https://www.rilog.kr/@jachwi_sunbae/posts/54",
+            "date": "2026-09-06",
+            "line": "부하테스트 목표 수립부터 실행 계획·성공 기준을 세우는 과정이 정리되어 있어 테스트 설계할 때 참고하기 좋아요.",
+            "project": "jachwi-sunbae",
+            "slug": null
+          }
+        ],
+        "talk": [],
+        "doc": [
+          {
+            "id": "doc:woowacourse-teams/2026-poudy:load-tests/results/product-read-679-2026-10-15/README.md",
+            "source": "doc",
+            "title": "2차 개선 결과 — 같은 요청, 줄어든 DB 부담 (2026-10-15)",
+            "url": "https://github.com/woowacourse-teams/2026-poudy/blob/dev/load-tests/results/product-read-679-2026-10-15/README.md",
+            "date": "",
+            "line": "같은 부하에서 DB CPU와 p95를 크게 줄인 개선 결과와 측정 방식을 보고 성능 최적화 사례로 보세요.",
+            "project": "2026-poudy",
+            "slug": null
+          },
+          {
+            "id": "doc:woowacourse-teams/2026-yesulin:ops/loadtest/dev-auditions/improvement-plan.md",
+            "source": "doc",
+            "title": "공고 조회 개선 순서",
+            "url": "https://github.com/woowacourse-teams/2026-yesulin/blob/dev/ops/loadtest/dev-auditions/improvement-plan.md",
+            "date": "",
+            "line": "100 RPS 목표하에서 병목을 단계별로 찾고 COUNT 쿼리 줄이기 등 순차 개선 계획을 설계할 때 유용해요.",
+            "project": "예술in",
+            "slug": "yesulin"
+          }
+        ]
+      }
+    },
+    {
+      "keyword": "이벤트 스트리밍(Kafka)",
+      "reason": "공고에 \"Redis와 Kafka를 다뤄본 경험이 있는 분이면 좋아요\" 및 Kafka 사용 명시.",
+      "groups": {
+        "pr": [
+          {
+            "id": "pr:woowacourse-teams/2025-estime#809",
+            "source": "pr",
+            "title": "플랫폼 알림(생성, 리마인드, 마감) 신뢰성 개선: 인메모리 스케줄러/즉시 전송 흐름을 Outbox로 통합",
+            "url": "https://github.com/woowacourse-teams/2025-estime/pull/809",
+            "date": "2026-01-08",
+            "line": "예약형·즉시형 알림을 DB Outbox로 통합해 신뢰성 높인 설계로 알림 신뢰성 사례로 참고하세요.",
+            "project": "아인슈타임",
+            "slug": "estime"
+          },
+          {
+            "id": "pr:woowacourse-teams/2026-setty#365",
+            "source": "pr",
+            "title": "refactor: Spring Modulith 이벤트 발행 기록으로 모듈 간 이벤트 처리를 분리한다",
+            "url": "https://github.com/woowacourse-teams/2026-setty/pull/365",
+            "date": "2026-10-01",
+            "line": "모듈 간 이벤트를 비동기 재발행으로 분리해 트랜잭션 결합 문제를 해소한 설계 개선 사례로 참고하기 좋아요.",
+            "project": "2026-setty",
+            "slug": null
+          },
+          {
+            "id": "pr:woowacourse-teams/2026-setty#349",
+            "source": "pr",
+            "title": "refactor: 배송 인바운드 이벤트를 주문 트랜잭션과 분리해 처리한다",
+            "url": "https://github.com/woowacourse-teams/2026-setty/pull/349",
+            "date": "2026-09-30",
+            "line": "배송 인바운드 처리를 주문 트랜잭션과 분리해 AFTER_COMMIT·REQUIRES_NEW로 격리한 변경이라 트랜잭션 경계 설계 예제로 좋습니다.",
+            "project": "2026-setty",
+            "slug": null
+          }
+        ],
+        "blog": [
+          {
+            "id": "blog:moaon:183",
+            "source": "blog",
+            "title": "JobQueue 처리 기술 도입기",
+            "url": "https://nauni.tistory.com/274",
+            "date": "2020-12-31",
+            "line": "Redis·RabbitMQ·Kafka 비교와 RabbitMQ 선정 이유를 통해 적절한 메시지 큐 선택 시 참고하기 좋아요.",
+            "project": "GPU 내껀데",
+            "slug": null
+          }
+        ],
+        "talk": [],
+        "doc": [
+          {
+            "id": "doc:woowacourse-teams/2026-pheeeew:BE/docs/adr/0004-skip-transaction-on-idempotent-save.md",
+            "source": "doc",
+            "title": "ADR-0004: 멱등 저장 경로에는 트랜잭션을 두지 않는다",
+            "url": "https://github.com/woowacourse-teams/2026-pheeeew/blob/main/BE/docs/adr/0004-skip-transaction-on-idempotent-save.md",
+            "date": "",
+            "line": "멱등 저장에서 트랜잭션 제거로 삽입 실패 시 재조회가 안전한 이유를 설명하니 트랜잭션 설계 근거로 참고하세요.",
+            "project": "히유",
+            "slug": "pheeeew"
+          }
+        ]
+      }
+    }
+  ]
+}
