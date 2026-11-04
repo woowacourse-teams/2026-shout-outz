@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
@@ -32,12 +34,15 @@ import com.shoutoutz.api.jobposting.domain.JobRequirement;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
+import com.shoutoutz.api.jobposting.domain.ReanalysisScope;
 import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtractRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingReanalysisRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingSaveRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisibilityUpdateRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingReanalysisResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingUpdateResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingVisibilityUpdateResponse;
 import com.shoutoutz.api.user.domain.account.UserRole;
@@ -48,10 +53,13 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -381,6 +389,79 @@ class JobPostingAdminServiceTest {
         verifyNoInteractions(jobPostingRepository);
     }
 
+    @Test
+    void 실패한_공고는_다른_역량이_분석_중이어도_실패한_역량만_다시_분석한다() {
+        when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(postingWith(
+                MatchingStatus.FAILED, MatchingStatus.READY, MatchingStatus.FAILED, MatchingStatus.PROCESSING)));
+        when(jobPostingRepository.resetForReanalysis(100L, ReanalysisScope.FAILED, NOW)).thenReturn(1);
+
+        var response = service.reanalyze(
+                100L, UserRole.ADMIN, new AdminJobPostingReanalysisRequest(ReanalysisScope.FAILED));
+
+        assertThat(response).isEqualTo(new AdminJobPostingReanalysisResponse(100L, MatchingStatus.PENDING, 1));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MatchingStatus.class, names = {"READY", "FAILED"})
+    void 분석_중인_역량이_없으면_모든_역량을_다시_분석한다(MatchingStatus postingStatus) {
+        when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(postingWith(
+                postingStatus, MatchingStatus.READY, MatchingStatus.FAILED)));
+        when(jobPostingRepository.resetForReanalysis(100L, ReanalysisScope.ALL, NOW)).thenReturn(2);
+
+        var response = service.reanalyze(
+                100L, UserRole.ADMIN, new AdminJobPostingReanalysisRequest(ReanalysisScope.ALL));
+
+        assertThat(response).isEqualTo(new AdminJobPostingReanalysisResponse(100L, MatchingStatus.PENDING, 2));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MatchingStatus.class, names = {"PENDING", "PROCESSING", "READY"})
+    void 실패하지_않은_공고는_실패한_역량_다시_분석을_거절한다(MatchingStatus postingStatus) {
+        when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(postingWith(
+                postingStatus, MatchingStatus.READY, MatchingStatus.FAILED)));
+
+        assertThatThrownBy(() -> service.reanalyze(
+                100L, UserRole.ADMIN, new AdminJobPostingReanalysisRequest(ReanalysisScope.FAILED)))
+                .isInstanceOf(ConflictException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_NOT_FAILED);
+        verify(jobPostingRepository, never()).resetForReanalysis(anyLong(), any(), any());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MatchingStatus.class, names = {"PENDING", "PROCESSING"})
+    void 분석_중인_역량이_있으면_모든_역량_다시_분석을_거절한다(MatchingStatus requirementStatus) {
+        when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(postingWith(
+                MatchingStatus.FAILED, MatchingStatus.FAILED, requirementStatus)));
+
+        assertThatThrownBy(() -> service.reanalyze(
+                100L, UserRole.ADMIN, new AdminJobPostingReanalysisRequest(ReanalysisScope.ALL)))
+                .isInstanceOf(ConflictException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_ANALYSIS_IN_PROGRESS);
+        verify(jobPostingRepository, never()).resetForReanalysis(anyLong(), any(), any());
+    }
+
+    @Test
+    void 없는_공고를_다시_분석하면_404를_던진다() {
+        when(jobPostingRepository.findByIdForUpdate(100L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.reanalyze(
+                100L, UserRole.ADMIN, new AdminJobPostingReanalysisRequest(ReanalysisScope.ALL)))
+                .isInstanceOf(EntityNotFoundException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_NOT_FOUND);
+        verify(jobPostingRepository, never()).resetForReanalysis(anyLong(), any(), any());
+    }
+
+    @Test
+    void 관리자가_아니면_다시_분석하지_않는다() {
+        assertThatThrownBy(() -> service.reanalyze(
+                100L, UserRole.USER, new AdminJobPostingReanalysisRequest(ReanalysisScope.ALL)))
+                .isInstanceOf(ForbiddenException.class);
+        verifyNoInteractions(jobPostingRepository);
+    }
+
     private ExtractedJobPosting extracted() {
         return new ExtractedJobPosting(
                 "회사", JobRole.BACKEND, "백엔드 개발자", "정규직", "신입", LocalDate.of(2026, 12, 31),
@@ -409,6 +490,21 @@ class JobPostingAdminServiceTest {
                         JobRequirement.reconstitute(1001L, 2, "Kafka", RequirementCategory.PREFERRED, "설명",
                                 MatchingStatus.PENDING)
                 ),
+                NOW, NOW
+        );
+    }
+
+    /**
+     * 역량 id 는 1000 부터 차례로 붙는다.
+     */
+    private JobPosting postingWith(MatchingStatus postingStatus, MatchingStatus... requirementStatuses) {
+        return JobPosting.reconstitute(
+                100L, NORMALIZED_URL.value(), "a".repeat(64), "회사", JobRole.BACKEND, "신입", "백엔드 개발자",
+                "정규직", LocalDate.of(2026, 12, 31), postingStatus, null, 3L,
+                IntStream.range(0, requirementStatuses.length)
+                        .mapToObj(index -> JobRequirement.reconstitute(1000L + index, index + 1, "역량" + index,
+                                RequirementCategory.REQUIRED, "설명", requirementStatuses[index]))
+                        .toList(),
                 NOW, NOW
         );
     }

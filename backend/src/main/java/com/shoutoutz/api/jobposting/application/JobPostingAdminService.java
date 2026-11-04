@@ -1,9 +1,12 @@
 package com.shoutoutz.api.jobposting.application;
 
 import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_ADMIN_FORBIDDEN;
+import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_ANALYSIS_IN_PROGRESS;
 import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_DUPLICATE_URL;
+import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_NOT_FAILED;
 import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_NOT_FOUND;
 
+import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
@@ -15,13 +18,16 @@ import com.shoutoutz.api.jobposting.domain.JobPosting;
 import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobPostingUrl;
 import com.shoutoutz.api.jobposting.domain.JobRequirement;
+import com.shoutoutz.api.jobposting.domain.ReanalysisScope;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtractRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingReanalysisRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingSaveRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisibilityUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingExtractResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingFindAllResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingReanalysisResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingSaveResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingUpdateResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingVisibilityUpdateResponse;
@@ -154,6 +160,24 @@ public class JobPostingAdminService {
                 .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
     }
 
+    /**
+     * 잠그고 허용 조건 확인, 되돌리기를 한 트랜잭션에서 한다. 잠금은 커밋할 때 풀린다.
+     * 되돌리기는 SQL 로 DB 만 바꾸고, 앞서 읽은 공고 객체는 바꾸기 전 상태로 남는다. 그래서 응답 상태는 그 객체에서 꺼내지 않고 PENDING 으로 넣는다.
+     */
+    @Transactional
+    public AdminJobPostingReanalysisResponse reanalyze(
+            long jobPostingId,
+            UserRole role,
+            AdminJobPostingReanalysisRequest request
+    ) {
+        validateAdmin(role);
+        JobPosting saved = jobPostingRepository.findByIdForUpdate(jobPostingId)
+                .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
+        validateReanalyzable(saved, request.scope());
+        int reanalyzedCount = jobPostingRepository.resetForReanalysis(jobPostingId, request.scope(), clock.instant());
+        return AdminJobPostingReanalysisResponse.pending(jobPostingId, reanalyzedCount);
+    }
+
     @Transactional
     public void delete(long jobPostingId, UserRole role) {
         validateAdmin(role);
@@ -177,6 +201,15 @@ public class JobPostingAdminService {
                     );
                 })
                 .toList();
+    }
+
+    private void validateReanalyzable(JobPosting jobPosting, ReanalysisScope scope) {
+        if (scope == ReanalysisScope.FAILED && !jobPosting.isFailed()) {
+            throw new ConflictException(JOB_POSTING_NOT_FAILED);
+        }
+        if (scope == ReanalysisScope.ALL && jobPosting.hasRequirementInProgress()) {
+            throw new ConflictException(JOB_POSTING_ANALYSIS_IN_PROGRESS);
+        }
     }
 
     private void validateAdmin(UserRole role) {
