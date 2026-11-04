@@ -139,6 +139,7 @@ public class JobPostingRepositoryImpl implements JobPostingRepository {
                 UPDATE job_requirements
                 SET status = 'PENDING',
                     attempt_count = 0,
+                    claim_token = NULL,
                     lease_until = NULL,
                     next_attempt_at = NULL,
                     last_error = NULL,

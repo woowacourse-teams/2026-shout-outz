@@ -9,14 +9,14 @@ import java.util.Optional;
 
 /**
  * 역량 매칭 작업의 상태를 바꾼다. 여러 서버가 같은 역량을 동시에 가져가지 않도록 가져오기는 한 SQL 문으로 선점한다.
- * 결과를 저장하는 메서드는 가져갈 때의 시도 횟수와 다르면 아무것도 바꾸지 않는다.
- * 작업 기한이 지나 다른 Worker 가 다시 가져간 역량에 늦게 끝난 결과를 덮어쓰지 않기 위해서다.
+ * 결과를 저장하는 메서드는 가져갈 때 받은 claimToken 과 다르면 아무것도 바꾸지 않는다.
+ * 작업 기한이 지나 다른 Worker 가 다시 가져갔거나 운영자가 다시 분석한 역량에, 늦게 끝난 결과를 덮어쓰지 않기 위해서다.
  */
 public interface JobRequirementMatchingRepository {
 
     /**
      * 대기 중이고 다시 시도할 시각이 지난 역량, 또는 분석 중인데 작업 기한이 지난 역량 하나를 가져간다.
-     * 시도 횟수를 하나 올리고, 공고가 대기 중이면 분석 중으로 바꾼다.
+     * 시도 횟수를 하나 올리고 claimToken 을 새로 만들며, 공고가 대기 중이면 분석 중으로 바꾼다.
      */
     Optional<ClaimedJobRequirement> claimNext(Instant now, Instant leaseUntil);
 

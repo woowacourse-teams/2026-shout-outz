@@ -29,8 +29,8 @@ public interface JobPostingRepository {
     /**
      * {@link #findByIdForUpdate} 로 잠근 공고의 역량을 다시 분석 대기로 되돌리고, 되돌린 역량 수를 돌려준다.
      * FAILED 범위는 실패한 역량만 되돌리고, ALL 범위는 모든 역량을 되돌리며 그 공고의 추천 자료를 지운다.
-     * 되돌린 역량은 시도 횟수를 0으로 하고 작업 기한, 다음 시도 시각, 마지막 오류를 비운다. 역량 id 는 그대로다. 공고는 PENDING 으로 바꾼다.
-     * 허용 조건은 부르는 쪽이 같은 트랜잭션 안에서 확인한다. 분석 중인 역량을 되돌리면 그 역량을 처리하던 Worker 의 옛 결과가 저장될 수 있다.
+     * 되돌린 역량은 시도 횟수를 0으로 하고 claimToken, 작업 기한, 다음 시도 시각, 마지막 오류를 비운다. 역량 id 는 그대로다.
+     * 공고는 PENDING 으로 바꾼다. 허용 조건은 부르는 쪽이 같은 트랜잭션 안에서 확인한다.
      */
     int resetForReanalysis(long jobPostingId, ReanalysisScope scope, Instant now);
 

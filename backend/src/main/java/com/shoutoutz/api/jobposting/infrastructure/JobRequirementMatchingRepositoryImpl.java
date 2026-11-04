@@ -10,6 +10,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -33,6 +34,7 @@ public class JobRequirementMatchingRepositoryImpl implements JobRequirementMatch
                     UPDATE job_requirements r
                     SET status = 'PROCESSING',
                         attempt_count = r.attempt_count + 1,
+                        claim_token = gen_random_uuid(),
                         lease_until = :leaseUntil,
                         next_attempt_at = NULL,
                         updated_at = :now
@@ -49,7 +51,7 @@ public class JobRequirementMatchingRepositoryImpl implements JobRequirementMatch
                         LIMIT 1
                         FOR UPDATE SKIP LOCKED
                     )
-                    RETURNING r.id, r.job_posting_id, r.attempt_count, r.name, r.category, r.summary
+                    RETURNING r.id, r.job_posting_id, r.attempt_count, r.claim_token, r.name, r.category, r.summary
                 ),
                 started_posting AS (
                     UPDATE job_postings p
@@ -57,7 +59,7 @@ public class JobRequirementMatchingRepositoryImpl implements JobRequirementMatch
                     FROM claimed c
                     WHERE p.id = c.job_posting_id AND p.status = 'PENDING'
                 )
-                SELECT c.id, c.job_posting_id, c.attempt_count, c.name, c.category, c.summary, p.job_role
+                SELECT c.id, c.job_posting_id, c.attempt_count, c.claim_token, c.name, c.category, c.summary, p.job_role
                 FROM claimed c
                 JOIN job_postings p ON p.id = c.job_posting_id
                 """, new MapSqlParameterSource()
@@ -67,6 +69,7 @@ public class JobRequirementMatchingRepositoryImpl implements JobRequirementMatch
                         rs.getLong("id"),
                         rs.getLong("job_posting_id"),
                         rs.getInt("attempt_count"),
+                        rs.getObject("claim_token", UUID.class),
                         JobRole.valueOf(rs.getString("job_role")),
                         rs.getString("name"),
                         RequirementCategory.valueOf(rs.getString("category")),
@@ -81,7 +84,7 @@ public class JobRequirementMatchingRepositoryImpl implements JobRequirementMatch
                 UPDATE job_requirements
                 SET status = 'PENDING', lease_until = NULL, next_attempt_at = :nextAttemptAt,
                     last_error = :lastError, updated_at = :now
-                WHERE id = :id AND status = 'PROCESSING' AND attempt_count = :attemptCount
+                WHERE id = :id AND status = 'PROCESSING' AND claim_token = :claimToken
                 """, ownedBy(requirement)
                         .addValue("nextAttemptAt", Timestamp.from(nextAttemptAt))
                         .addValue("lastError", failure.name())
@@ -97,7 +100,7 @@ public class JobRequirementMatchingRepositoryImpl implements JobRequirementMatch
                     UPDATE job_requirements
                     SET status = 'FAILED', lease_until = NULL, next_attempt_at = NULL,
                         last_error = :lastError, updated_at = :now
-                    WHERE id = :id AND status = 'PROCESSING' AND attempt_count = :attemptCount
+                    WHERE id = :id AND status = 'PROCESSING' AND claim_token = :claimToken
                     RETURNING job_posting_id
                 ),
                 failed_posting AS (
@@ -126,7 +129,7 @@ public class JobRequirementMatchingRepositoryImpl implements JobRequirementMatch
         int updated = jdbcTemplate.update("""
                 UPDATE job_requirements
                 SET status = 'READY', lease_until = NULL, next_attempt_at = NULL, last_error = NULL, updated_at = :now
-                WHERE id = :id AND status = 'PROCESSING' AND attempt_count = :attemptCount
+                WHERE id = :id AND status = 'PROCESSING' AND claim_token = :claimToken
                 """, ownedBy(requirement).addValue("now", Timestamp.from(now)));
         if (updated == 0) {
             return false;
@@ -187,6 +190,6 @@ public class JobRequirementMatchingRepositoryImpl implements JobRequirementMatch
     private MapSqlParameterSource ownedBy(ClaimedJobRequirement requirement) {
         return new MapSqlParameterSource()
                 .addValue("id", requirement.requirementId())
-                .addValue("attemptCount", requirement.attemptCount());
+                .addValue("claimToken", requirement.claimToken());
     }
 }
