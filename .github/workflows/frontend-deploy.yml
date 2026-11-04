@@ -109,6 +109,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f dist/index.html || { echo "::error::dist/index.html 없음"; exit 1; }
+          test -f .build/server.cjs || { echo "::error::.build/server.cjs 없음"; exit 1; }
 
           echo "파일 수: $(find dist -type f | wc -l)"
           du -sh dist
@@ -137,6 +138,12 @@ jobs:
             mkdir -p "artifact/$SOURCE_BRANCH"
             cp -R "$GITHUB_WORKSPACE/frontend/dist/." "artifact/$SOURCE_BRANCH/"
             git add -A "artifact/$SOURCE_BRANCH"
+
+            # SSR 서버 번들. artifact/는 S3에 그대로 올라가므로, 서버 코드가 공개되지 않게 밖에 둔다.
+            rm -rf "server/$SOURCE_BRANCH"
+            mkdir -p "server/$SOURCE_BRANCH"
+            cp "$GITHUB_WORKSPACE/frontend/.build/server.cjs" "server/$SOURCE_BRANCH/"
+            git add -A "server/$SOURCE_BRANCH"
           }
 
           commit_artifact() {
