@@ -41,6 +41,10 @@ public class JobPostingAdminQueryRepositoryImpl implements JobPostingAdminQueryR
                     title,
                     job_role,
                     status,
+                    (SELECT COUNT(*)
+                     FROM job_requirements
+                     WHERE job_requirements.job_posting_id = job_postings.id
+                       AND job_requirements.status = 'FAILED') AS failed_requirement_count,
                     hidden_at,
                     created_at
                 FROM job_postings
@@ -64,6 +68,7 @@ public class JobPostingAdminQueryRepositoryImpl implements JobPostingAdminQueryR
                         resultSet.getString("title"),
                         JobRole.valueOf(resultSet.getString("job_role")),
                         MatchingStatus.valueOf(resultSet.getString("status")),
+                        resultSet.getInt("failed_requirement_count"),
                         toInstant(resultSet.getObject("hidden_at", OffsetDateTime.class)),
                         resultSet.getObject("created_at", OffsetDateTime.class).toInstant()
                 )

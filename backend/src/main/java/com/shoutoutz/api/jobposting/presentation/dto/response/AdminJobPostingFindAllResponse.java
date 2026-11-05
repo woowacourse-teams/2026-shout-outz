@@ -29,6 +29,7 @@ public record AdminJobPostingFindAllResponse(
             String title,
             JobRole jobRole,
             MatchingStatus status,
+            int failedRequirementCount,
             Instant hiddenAt,
             Instant createdAt
     ) {
@@ -40,6 +41,7 @@ public record AdminJobPostingFindAllResponse(
                     summary.title(),
                     summary.jobRole(),
                     summary.status(),
+                    summary.failedRequirementCount(),
                     summary.hiddenAt(),
                     summary.createdAt()
             );

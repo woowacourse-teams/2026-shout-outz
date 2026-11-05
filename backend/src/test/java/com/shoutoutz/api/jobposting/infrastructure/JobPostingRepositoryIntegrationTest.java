@@ -168,7 +168,26 @@ class JobPostingRepositoryIntegrationTest {
         JobPostingSummary summary = jobPostingAdminQueryRepository.findAll(null, 20).items().getFirst();
 
         assertThat(summary).isEqualTo(new JobPostingSummary(
-                saved.getId(), "예시 회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, null, NOW));
+                saved.getId(), "예시 회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, 0, null, NOW));
+    }
+
+    @Test
+    void 공고_목록의_한_줄에_최종_실패한_역량_수만_센다() {
+        long failedPosting = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW)).getId();
+        long otherPosting = jobPostingRepository.save(posting("https://careers.example.com/jobs/2", NOW.plusSeconds(1))).getId();
+        jdbcTemplate.update("UPDATE job_postings SET status = 'FAILED' WHERE id = ?", failedPosting);
+        jdbcTemplate.update("UPDATE job_requirements SET status = 'FAILED' WHERE job_posting_id = ? AND display_order = 1",
+                failedPosting);
+        jdbcTemplate.update("""
+                UPDATE job_requirements SET status = 'PENDING', last_error = 'SEARCH_FAILED'
+                WHERE job_posting_id = ? AND display_order = 2
+                """, failedPosting);
+        jdbcTemplate.update("UPDATE job_requirements SET status = 'FAILED' WHERE job_posting_id = ?", otherPosting);
+
+        List<JobPostingSummary> items = jobPostingAdminQueryRepository.findAll(null, 20).items();
+
+        assertThat(items).extracting(JobPostingSummary::id, JobPostingSummary::failedRequirementCount)
+                .containsExactly(tuple(otherPosting, 2), tuple(failedPosting, 1));
     }
 
     @Test
