@@ -54,7 +54,7 @@ uv run --group dev pytest -q
 | 인스턴스 | t4g.micro(ARM, 메모리 1GB), 디스크 20GB | AWS 콘솔 인스턴스 세부 정보 |
 | OS, 사용자 | Amazon Linux 2023, `ec2-user` | `grep PRETTY_NAME /etc/os-release`, `whoami` |
 | 미리 떠 있는 것 | 보안 에이전트(약 110MB), docker, codedeploy. 처음 볼 때 여유 메모리 약 430MB, 스왑 없음 | `free -h`, `ps aux --sort=-rss \| head` |
-| 기본 Python | 3.9(수집기는 3.12 가 필요하다. uv 가 따로 받는다) | `python3 --version` |
+| 기본 Python | 3.9(수집기는 3.12 로 고정, `.python-version`. uv 가 따로 받는다) | `python3 --version` |
 | IAM 역할 | 원본 저장소 S3 폴더를 목록 보기, 읽기, 쓰기, 지우기 할 수 있는 역할. 수집기는 액세스 키를 쓰지 않고 이 역할로 S3 에 접근한다 | 아래 2번 |
 | 보안 그룹 | 22번 포트가 내 IP 에 열려 있어야 접속된다 | 접속이 멈추다 `Operation timed out` 이면 이것 |
 | 바깥 연결 | GitHub, YouTube Data API, 블로그들, 서비스 DB 에 나갈 수 있어야 한다 | 아래 2번 |
@@ -98,7 +98,7 @@ sudo dnf install -y git nano
 curl -LsSf https://astral.sh/uv/install.sh | sh                    # ~/.local/bin/uv
 git clone -b main https://github.com/woowacourse-teams/2026-shout-outz.git ~/2026-shout-outz
 cd ~/2026-shout-outz/data-pipeline
-~/.local/bin/uv sync --no-dev                                      # Python 3.12 와 라이브러리를 .venv 에
+~/.local/bin/uv sync --no-dev                                      # Python 3.12(.python-version)와 라이브러리를 .venv 에
 .venv/bin/python -c "import sys, boto3, requests, psycopg; print(sys.version.split()[0], 'ok')"   # 3.12.x ok
 ```
 
@@ -176,6 +176,8 @@ systemctl list-timers data-pipeline.timer                          # 다음 실�
 
 ```bash
 cd ~/2026-shout-outz && git switch main && git pull && cd data-pipeline && ~/.local/bin/uv sync --no-dev
+# .venv 의 Python 이 3.12 가 아니면 가상 환경을 다시 만든다
+.venv/bin/python --version | grep -q ' 3\.12' || { rm -rf .venv && ~/.local/bin/uv sync --no-dev; }
 # systemd 파일이 바뀌었을 때만
 sudo cp deploy/data-pipeline.service deploy/data-pipeline.timer /etc/systemd/system/ && sudo systemctl daemon-reload
 ```
@@ -190,5 +192,6 @@ sudo cp deploy/data-pipeline.service deploy/data-pipeline.timer /etc/systemd/sys
 | S3 에서 `AccessDenied` | EC2 에 IAM 역할이 없거나 권한이 모자람 | 2번의 역할 이름 확인 |
 | 상태가 `skipped`, `lock_held_by` 가 나옴 | 다른 실행이 돌고 있음(`systemctl status data-pipeline.service`) | 끝나기를 기다린다. 멈춘 실행이 남긴 잠금은 12시간 뒤 풀린다 |
 | 상태가 `skipped`, `lock_held_by` 에 `unreadable` | 잠금 파일이 깨짐 | 도는 실행이 없는지 확인한 뒤 `aws s3 rm "$PIPELINE_STORE/state/lock.json"` |
+| `.venv/bin/python --version` 이 3.12 가 아님(오류 경로에 `python3.15` 등) | `.python-version` 이 없던 때 uv 가 가장 최신 Python 을 받음(2026-11-05 겪음). 시험은 3.12 에서만 했다 | `rm -rf .venv && ~/.local/bin/uv sync --no-dev` 뒤 `.venv/bin/python --version` 이 3.12 인지 확인 |
 | `uv: command not found` | 새 셸에 PATH 가 아직 없음 | `~/.local/bin/uv` 로 부르거나 다시 접속 |
 | 로그에 `Killed`, 서비스가 `oom-kill` | 메모리 부족 | 3번 스왑 확인(`free -h`), `journalctl -u data-pipeline.service` 확인 |
