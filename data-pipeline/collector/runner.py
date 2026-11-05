@@ -136,6 +136,19 @@ def is_changed(item: Item, entry: dict) -> bool:
 
 
 def run_source(source: Source, ctx: Context) -> None:
+    try:
+        _run_source(source, ctx)
+    except BaseException:
+        # Ctrl+C, systemd 의 멈춤(SIGTERM) 등으로 중간에 끝나도 받은 데까지 색인을 남긴다.
+        # 원본을 먼저 쓰고 색인을 고치므로(C4) 색인에 있는 키는 원본도 있다. 다음 실행은 나머지만 받는다
+        try:
+            ctx.index.save()
+        except Exception:
+            log.exception("%s 멈춘 뒤 색인 저장 실패", source.name)
+        raise
+
+
+def _run_source(source: Source, ctx: Context) -> None:
     rep, index = ctx.report, ctx.index
     seen: set[str] = set()
     complete: set[str] = set()
@@ -239,6 +252,7 @@ def collect(settings: Settings, sources: list[str] | None = None, only: list[str
         run.scope["lock_held_by"] = held
         run.finish(clock(), "skipped")
         return run
+    rep = None
     try:
         run.write()
         for name in names:
@@ -258,6 +272,16 @@ def collect(settings: Settings, sources: list[str] | None = None, only: list[str
             log.info("%s 끝: %s", name, rep.counts)
             run.write()  # 원천 하나가 끝날 때마다(4-3)
         run.finish(clock())
+    except BaseException as exc:
+        # Ctrl+C, SIGTERM 으로 멈춤: 보고서가 running 으로 남지 않게 failure 와 멈춘 원천의 interrupted 오류를 남긴다
+        if rep is not None and rep.finished is None:
+            rep.error(exc, "interrupted", clock())
+            rep.finished = clock()
+        try:
+            run.finish(clock(), "failure")
+        except Exception:
+            log.exception("멈춘 실행의 보고서 쓰기 실패")
+        raise
     finally:
         lock.release(store, run_id)
     return run

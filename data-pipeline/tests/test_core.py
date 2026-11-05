@@ -382,3 +382,26 @@ def test_settings_require_pipeline_store(monkeypatch):
         pass
     monkeypatch.setenv("PIPELINE_STORE", "./somewhere")
     assert Settings.from_env().store_url == "./somewhere"
+
+
+def test_interrupted_run_finishes_report_saves_index_and_releases_lock(tmp_path):
+    class Interrupted(FakeSource):
+        def fetch(self, ctx, item):
+            if item.key == "k2":
+                raise KeyboardInterrupt("signal 15")
+            return super().fetch(ctx, item)
+
+    store = LocalStore(str(tmp_path))
+    try:
+        run(tmp_path, Interrupted({"k1": "t1", "k2": "t2", "k3": "t3"}))
+        assert False
+    except KeyboardInterrupt:
+        pass
+    reports = store.list("reports/")
+    data = store.read_json(reports[-1])
+    assert data["status"] == "failure" and "finished_at" in data
+    assert data["sources"]["github-pr"]["errors"][0]["type"] == "interrupted"
+    assert store.read_bytes("state/lock.json") is None
+    assert Index(store, "github-pr").load().get("k1") is not None  # 받은 데까지 색인에 남는다
+    _, rep = run(tmp_path, FakeSource({"k1": "t1", "k2": "t2", "k3": "t3"}))
+    assert rep.sources["github-pr"].counts["new"] == 2 and rep.sources["github-pr"].counts["unchanged"] == 1

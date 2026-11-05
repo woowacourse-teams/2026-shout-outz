@@ -10,12 +10,19 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import signal
 import sys
 
 from .config import GITHUB_SOURCES, SOURCES, Settings
 
 
+def _stop(signum, frame):
+    """systemd 가 멈출 때(SIGTERM, 13시간 넘김 포함) Ctrl+C 와 같이 끝내, 보고서와 잠금을 정리하게 한다."""
+    raise KeyboardInterrupt(f"signal {signum}")
+
+
 def main(argv: list[str] | None = None) -> int:
+    signal.signal(signal.SIGTERM, _stop)
     p = argparse.ArgumentParser(prog="python -m collector", description="샤라웃 원본 수집기")
     sub = p.add_subparsers(dest="cmd", required=True)
 
