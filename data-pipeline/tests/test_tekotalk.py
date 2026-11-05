@@ -42,6 +42,8 @@ class FakeYouTube:
         self.playlist, self.videos = playlist, videos
         self.calls = []
         self.fail_page = None  # 이 쪽 번호(0부터)에서 500
+        self.sticky_end = False  # 실제 YouTube 처럼 마지막 쪽 뒤에도 같은 다음 쪽 표시와 빈 쪽을 계속 준다
+        self.loop_token = False  # 항목이 있는 쪽인데 같은 다음 쪽 표시를 계속 준다
 
     def get(self, url, params=None, headers=None, **kw):
         assert headers["X-Goog-Api-Key"] == "k" and "key" not in params  # 키는 머리글로만
@@ -54,8 +56,14 @@ class FakeYouTube:
                 return Resp(500, {"error": {"message": "backend error"}})
             rows = self.playlist[page * PAGE:(page + 1) * PAGE]
             body = {"items": [{"contentDetails": {"videoId": v}, "status": {"privacyStatus": p}} for v, p in rows]}
-            if (page + 1) * PAGE < len(self.playlist):
+            last = (len(self.playlist) - 1) // PAGE
+            if self.loop_token:
+                body["items"] = body["items"] or [{"contentDetails": {"videoId": "v000"}, "status": {"privacyStatus": "public"}}]
+                body["nextPageToken"] = "1"
+            elif (page + 1) * PAGE < len(self.playlist):
                 body["nextPageToken"] = str(page + 1)
+            elif self.sticky_end:
+                body["nextPageToken"] = str(last + 1)
             return Resp(200, body)
         if name == "videos":
             ids = params["id"].split(",")
@@ -195,3 +203,30 @@ def test_only_skips_known_and_fetches_unknown(tmp_path):
     assert sr.counts["unchanged"] == 1 and sr.counts["new"] == 1
     assert [p["id"] for n, p in yt.calls if n == "videos"] == ["x1"]  # 아는 키는 다시 받지 않는다(자막을 덮어쓰지 않게)
     assert yt.count("playlistItems") == 0
+
+
+
+def test_youtube_keeps_giving_next_token_after_last_page(tmp_path):
+    """2026-11-05 EC2 실측: 마지막 쪽 뒤에도 같은 다음 쪽 표시와 빈 쪽이 계속 온다. 빈 쪽에서 끝낸다."""
+    playlist, videos = world(119)
+    yt = FakeYouTube(playlist, videos)
+    yt.sticky_end = True
+    store, rep, sr = run(tmp_path, yt)
+    assert yt.count("playlistItems") == 4  # 3쪽 + 빈 쪽 1번
+    assert sr.counts["new"] == 119 and sr.errors == [] and sr.extra["playlist_total"] == 119
+    # 사라짐 확인도 그대로 한다(목록을 끝까지 받았다)
+    yt2 = FakeYouTube(playlist[1:], videos)
+    yt2.sticky_end = True
+    del yt2.videos["v000"]
+    store, rep, sr = run(tmp_path, yt2)
+    assert sr.gone_keys == ["yt:v000"]
+
+
+def test_repeating_token_with_items_is_incomplete_list(tmp_path):
+    playlist, videos = world(60)
+    yt = FakeYouTube(playlist, videos)
+    yt.loop_token = True
+    store, rep, sr = run(tmp_path, yt)
+    assert yt.count("playlistItems") == 2  # 첫 쪽(다음 표시 "1"), "1" 쪽이 같은 표시 "1" 을 다시 줘서 멈춤
+    assert sr.errors and sr.errors[0]["type"] == "list_incomplete"
+    assert sr.counts["gone"] == 0

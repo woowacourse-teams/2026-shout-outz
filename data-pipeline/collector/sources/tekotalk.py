@@ -24,6 +24,7 @@ log = logging.getLogger("collector.tekotalk")
 PLAYLIST_ID = "PLgXGHBqgT2TvpJ_p9L_yZKPifgdBOzdVH"  # "#우아한테크코스 테코톡"(T1)
 API = "https://www.googleapis.com/youtube/v3"
 BATCH = 50  # playlistItems, videos 모두 한 번에 50까지
+MAX_PAGES = 200  # 재생목록 쪽 상한(50 x 200 = 1만 편). 넘으면 목록을 다 받지 못한 것으로 본다
 # 받을 수 있는 영상. unlisted(일부 공개)는 주소를 알면 볼 수 있으므로 받는다. private, 삭제 영상은 건너뛴다
 VIEWABLE = {"public", "unlisted"}
 
@@ -91,6 +92,7 @@ class TekotalkSource(Source):
         items: list[Item] = []
         total = 0
         token = None
+        pages, tokens_seen = 0, set()
         params = {"part": "contentDetails,status", "playlistId": PLAYLIST_ID, "maxResults": BATCH,
                   "fields": "nextPageToken,items(contentDetails/videoId,status/privacyStatus)"}
         while True:
@@ -111,9 +113,20 @@ class TekotalkSource(Source):
                 if not vid or privacy not in VIEWABLE:
                     continue  # 비공개, 삭제 영상: 기록 없이 건너뜀(T7)
                 items.append(Item(tekotalk_key(vid), None, group=PLAYLIST_ID, data=vid))
-            token = data.get("nextPageToken")
-            if not token:
+            next_token = data.get("nextPageToken")
+            # YouTube 는 마지막 쪽 뒤에도 다음 쪽 표시를 주고, 그 쪽은 비어 있으며 같은 표시를 계속 준다
+            # (2026-11-05 EC2 실측: 729편 재생목록에서 16쪽부터 항목 0, 같은 표시 반복). 빈 쪽이 오면 끝으로 본다
+            if not next_token or not data.get("items"):
                 break
+            pages += 1
+            if next_token in tokens_seen or pages >= MAX_PAGES:
+                # 항목이 있는데 같은 표시가 다시 오거나 쪽이 너무 많으면 끝까지 받았는지 알 수 없다.
+                # 받은 데까지만 새 영상을 받고, 사라짐 확인은 하지 않는다
+                ctx.report.error(RuntimeError(f"재생목록 쪽 넘김이 끝나지 않음({pages}쪽)"), "list_incomplete", ctx.now)
+                ctx.report.extra["playlist_total"] = total
+                return Listing(items, set())
+            tokens_seen.add(next_token)
+            token = next_token
         ctx.report.extra["playlist_total"] = total
         return Listing(items, {PLAYLIST_ID})
 
