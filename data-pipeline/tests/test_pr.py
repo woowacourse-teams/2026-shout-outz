@@ -62,6 +62,9 @@ class FakeGitHub:
 
     def rest_json(self, path, params=None, ok404=False):
         name = path.rsplit("/", 1)[-1]
+        renamed = getattr(self, "renamed", {})
+        if name in renamed:  # 이름을 바꾼 레포: GitHub 이 새 레포로 넘겨 준다
+            return {"name": renamed[name], "owner": {"login": "woowacourse-teams"}}
         return {"name": name} if name in self.existing else None
 
     def _thread(self, t):
@@ -270,3 +273,18 @@ def test_only(tmp_path):
     assert counts(sr) == {"changed": 1, "unchanged": 1, "failed": 1}
     assert sr.failures[0]["reason"] == "not_merged"
     assert not any(q == LIST_QUERY for q, _ in gh.queries)
+
+
+
+def test_renamed_repo_old_keys_are_gone(tmp_path):
+    """레포 이름을 바꾸면 옛 이름의 키는 repo_renamed 로 사라지고, 새 이름의 PR 은 새 PR 이 된다(07 문서 7장)."""
+    gh = FakeGitHub({"2026-A": {1: make_pr(1)}, "2026-B": {7: make_pr(7)}})
+    run(tmp_path, gh)
+    gh.world["2026-New"] = gh.world.pop("2026-B")
+    gh.existing.discard("2026-B")
+    gh.existing.add("2026-New")
+    gh.renamed = {"2026-B": "2026-New"}
+    store, _, sr = run(tmp_path, gh)
+    idx = Index(store, "github-pr").load()
+    assert idx.get(pr_key("2026-B", 7))["gone"]["reason"] == "repo_renamed"
+    assert idx.get(pr_key("2026-New", 7))["gone"] is None

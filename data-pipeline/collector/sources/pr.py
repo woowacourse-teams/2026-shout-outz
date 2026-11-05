@@ -96,7 +96,7 @@ class PrSource(Source):
         self.repos_checked = 0
         self.repos_failed: list[dict] = []
         self.missing_repos: set[str] = set()   # 조직 목록을 끝까지 받았는데 거기 없는, 색인에만 있는 레포
-        self._repo_exists: dict[str, bool] = {}
+        self._repo_exists: dict[str, str | None] = {}  # 조직 목록에서 빠진 레포 → 사라짐 이유(그대로 있으면 None)
 
     def gh(self, ctx: Context):
         return self._github or ctx.github
@@ -243,10 +243,18 @@ class PrSource(Source):
     def confirm_gone(self, ctx: Context, entry: dict) -> str | None:
         repo, number = parse_key(entry["external_key"])
         if repo in self.missing_repos:
+            # 조직 목록에서 빠진 레포를 직접 물어 본다. 404 면 repo_not_found. 이름을 바꿨거나 옮겼으면 GitHub 이 새 레포로
+            # 넘겨 줘 이름이 다르게 오므로 repo_renamed(07 문서 7장, 다른 GitHub 원천의 _repos.repo_gone_reason 과 같은 판단)
             if repo not in self._repo_exists:
-                self._repo_exists[repo] = self.gh(ctx).rest_json(f"/repos/{ORG}/{repo}", ok404=True) is not None
-            if not self._repo_exists[repo]:
-                return "repo_not_found"
+                data = self.gh(ctx).rest_json(f"/repos/{ORG}/{repo}", ok404=True)
+                if data is None:
+                    self._repo_exists[repo] = "repo_not_found"
+                elif data.get("name") != repo or (data.get("owner") or {}).get("login", ORG) != ORG:
+                    self._repo_exists[repo] = "repo_renamed"
+                else:
+                    self._repo_exists[repo] = None
+            if self._repo_exists[repo]:
+                return self._repo_exists[repo]
         data = self.gql(ctx, LOOKUP_QUERY, {"owner": ORG, "name": repo, "number": number})
         if ((data.get("repository") or {}).get("pullRequest")) is None:
             return "not_found"
