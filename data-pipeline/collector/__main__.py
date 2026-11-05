@@ -52,7 +52,11 @@ def main(argv: list[str] | None = None) -> int:
     from .store import open_store
     store = open_store(settings.store_url)
     if a.sub == "script":
-        sys.stdout.write(subtitles.make_script(store, only=a.only, all_missing=a.all_missing))
+        try:
+            text = subtitles.make_script(store, only=a.only, all_missing=a.all_missing)
+        except ValueError as exc:  # 영상 ID 모양이 아님
+            p.error(str(exc))
+        sys.stdout.write(text)
         return 0
     run = subtitles.import_result(settings, store, a.file)
     print(json.dumps({"run_id": run.run_id, "status": run.status,

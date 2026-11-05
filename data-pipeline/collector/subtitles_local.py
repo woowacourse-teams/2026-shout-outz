@@ -58,12 +58,16 @@ def pick(files: dict[str, Path], manual_langs: set[str]) -> tuple[str, str, Path
 
 def make_venv(base: Path) -> tuple[Path, Path]:
     tmp = Path(tempfile.mkdtemp(prefix=".tekotalk-subtitles-venv-", dir=base))
-    print(f"임시 가상 환경 만드는 중: {tmp}", flush=True)
-    venv.create(tmp, with_pip=True)
-    py = tmp / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
-    print("최신 yt-dlp 설치 중...", flush=True)
-    subprocess.run([str(py), "-m", "pip", "install", "--quiet", "--upgrade", "pip", "yt-dlp[default]"], check=True)
-    out = subprocess.run([str(py), "-m", "yt_dlp", "--version"], capture_output=True, text=True)
+    try:  # 만들다 실패해도(Ctrl+C 포함) 임시 가상 환경이 쌓이지 않게 지운다
+        print(f"임시 가상 환경 만드는 중: {tmp}", flush=True)
+        venv.create(tmp, with_pip=True)
+        py = tmp / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
+        print("최신 yt-dlp 설치 중...", flush=True)
+        subprocess.run([str(py), "-m", "pip", "install", "--quiet", "--upgrade", "pip", "yt-dlp[default]"], check=True)
+        out = subprocess.run([str(py), "-m", "yt_dlp", "--version"], capture_output=True, text=True)
+    except BaseException:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise
     print(f"yt-dlp {out.stdout.strip()} 준비됨", flush=True)
     return tmp, py
 
@@ -134,8 +138,9 @@ def main() -> int:
     print(f"영상 {len(ids)}편의 한국어 자막을 받습니다. 결과 파일: {out}", flush=True)
 
     venv_dir, py = make_venv(base)
-    work = Path(tempfile.mkdtemp(prefix=".tekotalk-subtitles-work-", dir=base))
+    work = None
     try:
+        work = Path(tempfile.mkdtemp(prefix=".tekotalk-subtitles-work-", dir=base))
         for n, vid in enumerate(ids, 1):
             print(f"[{n}/{len(ids)}] {vid} 받는 중...", flush=True)
             sub, reason, bot = fetch_one(py, vid, work)
@@ -156,7 +161,8 @@ def main() -> int:
                 print(f"  건너뜀: {reason}", flush=True)
             save(out, made_at, results, skipped)  # 중간에 멈춰도 받은 데까지 남도록 매번 쓴다
     finally:
-        shutil.rmtree(work, ignore_errors=True)
+        if work is not None:
+            shutil.rmtree(work, ignore_errors=True)
         shutil.rmtree(venv_dir, ignore_errors=True)
 
     print("", flush=True)

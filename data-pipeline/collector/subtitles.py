@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Callable
@@ -28,6 +29,8 @@ SOURCE = "youtube-tekotalk"
 TEMPLATE = Path(__file__).with_name("subtitles_local.py")
 PLACEHOLDER = "VIDEO_IDS = []\n"
 RESULT_KIND = "tekotalk-subtitles"
+# YouTube 영상 ID 모양. 스크립트(파이썬 파일)에 값을 넣으므로, 이 모양이 아니면 넣지 않는다(줄바꿈 등으로 코드가 끼어들지 않게)
+VIDEO_ID = re.compile(r"[A-Za-z0-9_-]{11}")
 
 
 def _video_id(value: str) -> str:
@@ -40,11 +43,16 @@ def make_script(store: Store, only: list[str] | None = None, all_missing: bool =
     notes: list[str] = []
     if all_missing:
         ids = [_video_id(e["external_key"]) for e in index.alive() if not e.get("has_subtitle")]
-        ids.sort()
+        bad = [v for v in ids if not VIDEO_ID.fullmatch(v)]
+        if bad:
+            notes.append(f"# 뺌(영상 ID 모양이 아님): {len(bad)}편")
+        ids = sorted(v for v in ids if VIDEO_ID.fullmatch(v))
     else:
         ids = []
         for v in dict.fromkeys(only or []):
-            vid = _video_id(v)
+            vid = _video_id(v.strip())
+            if not VIDEO_ID.fullmatch(vid):
+                raise ValueError(f"영상 ID 모양이 아닙니다(영문, 숫자, -, _ 11자): {vid!r}")
             entry = index.get(tekotalk_key(vid))
             if entry is None:
                 notes.append(f"# 뺌(색인에 없음, 매일 수집이 아직 받지 않은 영상): {vid}")
@@ -94,9 +102,13 @@ def _fill(store: Store, index: Index, rep: SourceReport, skipped: list[dict], re
         if not _valid(sub):
             skipped.append({"external_key": key, "reason": "invalid_subtitle"})
             continue
-        record = store.read_json(entry["path"])
-        if record is None:
-            rep.fail(key, "raw_missing")
+        try:
+            record = store.read_json(entry["path"])
+        except ValueError:  # 깨진 원본 한 건 때문에 뒤의 자막까지 멈추지 않게, 그 줄만 실패로 남긴다
+            rep.fail(key, "raw_unreadable")
+            continue
+        if not isinstance(record, dict):
+            rep.fail(key, "raw_missing" if record is None else "raw_unreadable")
             continue
         version = entry.get("version", 0) + 1
         record["version"] = version
