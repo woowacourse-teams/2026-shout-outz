@@ -502,3 +502,19 @@ def test_too_large_post_is_a_failure(tmp_path):
     http.routes[f"{TIS}/1"] = ResponseTooLarge("big")
     store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0)
     assert sr.failure_reasons == {"too_large": 1}
+
+
+def test_retry_urls_kept_when_targets_cannot_be_read(tmp_path):
+    """서비스 DB 에서 대상 목록을 못 읽은 날에 다시 받을 글 주소를 지우지 않는다."""
+    http = tistory_http([f"{TIS}/1", f"{TIS}/2"], [])
+    http.routes[f"{TIS}/2"] = Resp(503)
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0)
+    assert state(store)[TIS]["retry_urls"] == [f"{TIS}/2"]
+
+    store = LocalStore(str(tmp_path))
+    def broken(settings):
+        raise RuntimeError("DB 접속 실패")
+    src = BlogSource(http=tistory_http([], []), targets_loader=broken)
+    collect(Settings(store_url=str(tmp_path)), [SRC], store=store, make_source=lambda n: src,
+            clock=lambda: DAY0 + timedelta(days=1))
+    assert state(store)[TIS]["retry_urls"] == [f"{TIS}/2"]

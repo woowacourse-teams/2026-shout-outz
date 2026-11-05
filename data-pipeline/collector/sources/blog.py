@@ -140,6 +140,7 @@ class BlogSource(Source):
         self.unsupported: set[str] = set()
         self.retry: dict[str, dict[str, None]] = {}  # 블로그 첫 주소 → 이번에 받기 실패한 글 주소(순서 유지)
         self.retried = 0
+        self.handled: set[str] = set()  # 이번 실행에서 목록을 받으려 한 블로그(retry_urls 를 고칠 블로그)
 
     # ---- 도구 ----
 
@@ -361,6 +362,7 @@ class BlogSource(Source):
                 self._notice("unsupported", root, blog.platform.unsupported)
                 continue
             st = states.setdefault(root, {})
+            self.handled.add(root)
             for url in st.get("retry_urls") or []:  # 지난 실행에서 받기에 실패한 글. 목록이 실패해도 다시 받는다
                 self.retried += 1
                 self._add(items, url, blog)
@@ -452,8 +454,11 @@ class BlogSource(Source):
 
     def finish(self, ctx: Context) -> None:
         if not ctx.only:
-            # 이번에 실패한 글만 남긴다. 지난 retry_urls 중 받은 글(이제 아는 키)은 빠진다
+            # 이번에 실패한 글만 남긴다. 지난 retry_urls 중 받은 글(이제 아는 키)은 빠진다.
+            # 이번에 다루지 않은 블로그(대상 목록을 못 읽은 날, 대상에서 빠진 블로그)의 retry_urls 는 그대로 둔다
             for root, st in (ctx.state.data.get("blogs") or {}).items():
+                if root not in self.handled:
+                    continue
                 failed = list(self.retry.get(root, {}))
                 if failed:
                     st["retry_urls"] = failed
