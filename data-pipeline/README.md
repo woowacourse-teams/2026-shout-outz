@@ -44,15 +44,25 @@ uv run --group dev pytest -q
 
 ## EC2 에 올리기(사용자가 직접)
 
+수집용 EC2 는 Amazon Linux 2023(ARM, t4g.micro), 사용자 `ec2-user` 다. 기본 Python 이 3.9 라서 uv 가 Python 3.12 를 따로 받아 `.venv` 를 만든다.
+
 EC2 에는 원본 저장소 S3 폴더(`PIPELINE_STORE`)를 읽고 쓰고 지울 수 있는 IAM 역할이 붙어 있어야 한다(목록 보기, 읽기, 쓰기, 지우기). 수집기는 액세스 키를 쓰지 않고 이 역할로 S3 에 접근한다.
 
 ```bash
-sudo apt install -y python3-venv git
-git clone https://github.com/woowacourse-teams/2026-shout-outz.git ~/2026-shout-outz
-cd ~/2026-shout-outz && git switch <브랜치> && cd data-pipeline
+sudo dnf install -y git nano
+git clone -b <브랜치> https://github.com/woowacourse-teams/2026-shout-outz.git ~/2026-shout-outz
+cd ~/2026-shout-outz/data-pipeline
 curl -LsSf https://astral.sh/uv/install.sh | sh && ~/.local/bin/uv sync --no-dev
 sudo mkdir -p /etc/shout-outz && sudo cp deploy/data-pipeline.env.example /etc/shout-outz/data-pipeline.env
-sudo chmod 600 /etc/shout-outz/data-pipeline.env && sudo nano /etc/shout-outz/data-pipeline.env
+# 주인(ec2-user)만 읽기. systemd 는 root 로 읽고, 손으로 돌릴 때는 ec2-user 가 읽는다
+sudo chown ec2-user:ec2-user /etc/shout-outz/data-pipeline.env && sudo chmod 600 /etc/shout-outz/data-pipeline.env
+nano /etc/shout-outz/data-pipeline.env
+
+# 손으로 한 번 돌려 보기(원천 하나씩). 매일 실행과 같은 환경 변수를 읽는다
+set -a && . /etc/shout-outz/data-pipeline.env && set +a
+PIPELINE_HOST=ec2 .venv/bin/python -m collector collect --source youtube-tekotalk
+
+# 매일 실행 켜기
 sudo cp deploy/data-pipeline.service deploy/data-pipeline.timer /etc/systemd/system/
 sudo systemctl daemon-reload && sudo systemctl enable --now data-pipeline.timer
 systemctl list-timers data-pipeline.timer        # 다음 실행 시각
