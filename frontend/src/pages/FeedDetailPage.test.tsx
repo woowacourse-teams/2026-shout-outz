@@ -5,6 +5,7 @@ import { createMemoryHistory, createRouter, RouterContextProvider } from '@tanst
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { FeedDetailPage } from '@/pages/FeedDetailPage';
+import { feedQuery, fetchFeed, type Feed } from '@/apis/feed';
 import { createFeedHandlers } from '@/mocks/handlers';
 import { routeTree } from '@/routeTree.gen';
 
@@ -31,8 +32,9 @@ afterEach(() => {
 });
 afterAll(() => server.close());
 
-function show(feedId: number) {
+function show(feedId: number, prefilled?: Feed) {
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  if (prefilled) client.setQueryData(feedQuery(feedId).queryKey, prefilled);
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: [`/community/${feedId}`] }),
@@ -103,4 +105,19 @@ test('상세 조회에 실패하면 오류 경계를 표시한다', async () => 
   } finally {
     errors.mockRestore();
   }
+});
+
+test('서버 렌더로 받은 비로그인 기준 좋아요 상태를 로그인 확인 뒤 다시 받아 채운다', async () => {
+  const feed = await fetchFeed(1);
+  server.use(
+    http.get('*/api/v1/feeds/1', () =>
+      HttpResponse.json({ status: 'success', data: { ...feed, likedByMe: true } }),
+    ),
+  );
+
+  // SSR 서버가 쿠키 없이 받아 $_TSR로 넘긴 캐시와 같은 상태
+  show(1, { ...feed, likedByMe: false });
+  expect(screen.getByRole('button', { name: '좋아요' })).toBeInTheDocument();
+
+  expect(await screen.findByRole('button', { name: '좋아요 취소' })).toBeInTheDocument();
 });

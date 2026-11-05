@@ -72,6 +72,18 @@ export function getRouteChunkFiles(assets: BuildAssets, routeIds: string[]): str
   return [...new Set(routeIds.flatMap((routeId) => assets.routeChunks?.[routeId] ?? []))];
 }
 
+// 페이지 HTML의 <head>에 미리 받아 둘(preload) 청크 목록을 정합니다.
+// - critical: 이 페이지의 라우트 청크입니다. preload가 없으면 main.js가 실행된 뒤에야 요청되어 늦어집니다.
+// - lowPriority: PostHog SDK 청크입니다. main 실행 직후 import('posthog-js')로 요청되지만 첫 화면에는 필요 없어
+//   낮은 우선순위로 받습니다. SDK는 빌드에 POSTHOG_KEY가 있을 때만 불러오므로(src/utils/analytics/index.ts)
+//   같은 조건일 때만 넣습니다.
+export function getPreloadFiles(assets: BuildAssets, routeIds: string[]): PreloadFiles {
+  return {
+    critical: getRouteChunkFiles(assets, routeIds),
+    lowPriority: process.env.POSTHOG_KEY ? (assets.importChunks?.['posthog-js'] ?? []) : [],
+  };
+}
+
 function toPreloadLinks(files: string[], attributes = ''): string {
   return files
     .map((file) => `<link rel="preload" as="script" href="${file}"${attributes}>`)

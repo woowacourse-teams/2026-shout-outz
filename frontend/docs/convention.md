@@ -76,6 +76,28 @@ SSG 관련 정보는 Route의 `staticData`에 정의한다.
 
 SSG 빌드 레이어는 각 Route의 `staticData`를 수집해 prerender할 경로를 결정한다.
 
+SSR 관련 정보도 Route의 `staticData`에 정의한다.
+
+- `ssr`: 요청마다 SSR 서버(`server/index.ts`)에서 서버 렌더할지 여부
+- `ssrQueries`: 서버 렌더 전에 채워 둘 쿼리 목록. path params를 받아 쿼리 옵션 배열을 반환한다
+
+```tsx
+export const Route = createFileRoute('/community/$feedId')({
+  staticData: {
+    ssr: true,
+    ssrQueries: ({ feedId }) => [feedQuery(Number(feedId))],
+  },
+  component: FeedDetailRoute,
+});
+```
+
+SSR 서버는 매치된 Route의 `ssrQueries`를 서버 렌더 전에 `ensureQueryData`로 채운다. 페이지는 같은 쿼리를 `useSuspenseQuery`로 읽으므로 서버 렌더 중에 다시 요청하지 않고, 채운 데이터는 `$_TSR`로 브라우저에 전달된다.
+
+- `loader` 대신 `staticData`를 쓰는 이유: `loader`는 브라우저의 라우트 이동에서도 실행되어 데이터를 받을 때까지 이동을 미룬다. `ssrQueries`는 SSR 서버에서만 읽으므로 브라우저 이동은 지금처럼 Suspense fallback으로 바로 넘어간다.
+- 셸(`<head>`, 상태 코드)에 필요한 쿼리만 적는다. 나머지는 페이지의 `useSuspenseQuery`가 서버 렌더 중에 요청하고 스트리밍으로 이어 보낸다.
+- 페이지가 쓰는 것과 같은 쿼리 함수를 반환한다. query key가 다르면 캐시를 찾지 못해 서버 렌더 중에 다시 요청한다.
+- 쿼리가 404로 실패하면 SSR 서버는 CSR 셸을 404 상태 코드로 응답한다. 그 밖의 실패는 SSG·CSR 셸로 대체한다.
+
 ### `pages`
 
 페이지 단위 UI와 페이지에 필요한 데이터 조합을 담당한다.
