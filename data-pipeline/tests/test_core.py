@@ -365,3 +365,20 @@ def test_default_sources_are_registered():
     from collector.config import SOURCES
     for name in SOURCES:
         assert sources.make(name).name == name
+
+
+def test_settings_require_pipeline_store(monkeypatch):
+    monkeypatch.delenv("PIPELINE_STORE", raising=False)
+    try:
+        Settings.from_env()
+        assert False
+    except RuntimeError as exc:
+        assert "PIPELINE_STORE" in str(exc)
+    monkeypatch.setenv("PIPELINE_STORE", "  ")
+    try:
+        Settings.from_env()
+        assert False
+    except RuntimeError:
+        pass
+    monkeypatch.setenv("PIPELINE_STORE", "./somewhere")
+    assert Settings.from_env().store_url == "./somewhere"

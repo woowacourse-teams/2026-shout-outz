@@ -16,7 +16,7 @@
 └─ reports/{run_id}.json                     실행 보고서
 ```
 
-`PIPELINE_STORE` 는 S3 주소(`s3://techcourse-project-2026/shout-outz/data-pipeline`) 또는 로컬 폴더다. 둘 다 같은 모양이다.
+`PIPELINE_STORE` 는 S3 주소(`s3://techcourse-project-2026/shout-outz/data-pipeline`) 또는 로컬 폴더다. 둘 다 같은 모양이다. 꼭 적어야 한다(없으면 실행하지 않는다. 기본 폴더에 조용히 쓰고 성공으로 끝나는 일을 막으려고).
 
 ## 명령
 
@@ -43,6 +43,8 @@ uv run --group dev pytest -q
 ```
 
 ## EC2 에 올리기(사용자가 직접)
+
+EC2 에는 원본 저장소 S3 폴더(`PIPELINE_STORE`)를 읽고 쓰고 지울 수 있는 IAM 역할이 붙어 있어야 한다(목록 보기, 읽기, 쓰기, 지우기). 수집기는 액세스 키를 쓰지 않고 이 역할로 S3 에 접근한다.
 
 ```bash
 sudo apt install -y python3-venv git

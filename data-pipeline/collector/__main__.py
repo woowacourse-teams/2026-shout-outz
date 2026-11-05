@@ -35,7 +35,10 @@ def main(argv: list[str] | None = None) -> int:
 
     a = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s", stream=sys.stderr)
-    settings = Settings.from_env()
+    try:
+        settings = Settings.from_env()
+    except RuntimeError as exc:  # PIPELINE_STORE 없음
+        p.error(str(exc))
 
     if a.cmd == "collect":
         if a.only and (not a.source or len(a.source) != 1):

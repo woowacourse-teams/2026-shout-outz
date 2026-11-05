@@ -33,9 +33,14 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> "Settings":
+        """PIPELINE_STORE 는 꼭 있어야 한다. 기본값으로 로컬 폴더에 쓰면, EC2 의 .env 에서 값이 빠졌을 때
+        S3 에는 아무것도 쌓이지 않는데 실행은 성공으로 끝난다(08 문서 6-1)."""
         e = os.environ.get
+        store_url = (e("PIPELINE_STORE") or "").strip()
+        if not store_url:
+            raise RuntimeError("PIPELINE_STORE 가 없습니다. S3 주소(s3://버킷/앞머리)나 로컬 폴더를 적어 주세요(08 문서 6-1)")
         return cls(
-            store_url=e("PIPELINE_STORE") or "./local-store",
+            store_url=store_url,
             host=e("PIPELINE_HOST") or "home",
             trigger=e("PIPELINE_TRIGGER") or "cli",
             github_token=e("GITHUB_TOKEN") or None,
