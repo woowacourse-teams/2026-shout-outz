@@ -5,9 +5,11 @@
     3. 키 만들기          keys.blog_key(인코딩 풀기, tistory /m 떼기, 정규화, sha1)
     4. 글 받기            처음 보는 키만(runner 가 아는 키를 거른다, 바뀜 표시 없음)
     5. 사라짐 확인        전체 목록을 받은 블로그에서 목록에 없는 아는 키의 주소가 404, 410 이면
-    6. 상태 저장          state/blog-post.json: 블로그별 마지막 전체 목록 날짜, 찾은 피드 주소
+    6. 상태 저장          state/blog-post.json: 블로그별 마지막 전체 목록 날짜, 찾은 피드 주소, 다시 받을 글 주소
 
-상태 모양: {"blogs": {"<블로그 첫 주소>": {"last_full_list": "YYYY-MM-DD", "feed_url": "..."}}}
+상태 모양: {"blogs": {"<블로그 첫 주소>": {"last_full_list": "YYYY-MM-DD", "feed_url": "...", "retry_urls": [...]}}}
+retry_urls: 받기에 실패한 글 주소. 다음 실행의 받을 목록에 더한다(전체 목록 날에 실패한 옛 글이 피드에 없어 7일을 기다리지 않게).
+  robots 가 막은 글, 404, 410 은 넣지 않는다(다시 받아도 같다). 받으면 빠진다.
 """
 
 from __future__ import annotations
@@ -20,19 +22,22 @@ from urllib.parse import urlsplit
 import requests
 
 from ..config import USER_AGENT
-from ..http import Http
+from ..http import Http, ResponseTooLarge
 from ..keys import blog_key
 from ..runner import Context, FetchError, Item, Listing, Source
 from .blog_platforms import (COMMON_FEED_PATHS, GENERIC, RILOG, RILOG_SITEMAP, TISTORY, VELOG, VELOG_GRAPHQL,
-                             VELOG_PAGE, VELOG_QUERY, VELOG_RSS, Platform, detect, find_feed_links, is_rilog_post,
-                             is_tistory_post, parse_feed, parse_sitemap, rilog_markdown_url, robots_from,
+                             VELOG_PAGE, VELOG_QUERY, VELOG_RSS, Platform, detect, find_feed_links, is_fetchable_url,
+                             is_rilog_post, is_tistory_post, parse_feed, parse_sitemap, rilog_markdown_url, robots_from,
                              velog_post_url)
 
 log = logging.getLogger("collector.blog")
 
 FULL_LIST_DAYS = 7     # 마지막 전체 목록에서 이만큼 지났으면 전체 목록(03 문서 3-2)
 HOST_DELAY = 1.0       # 같은 호스트 1초에 1번 이하(03 문서 5-6)
-MAX_SITEMAPS = 50      # sitemap 묶음(sitemapindex)에서 따라갈 하위 sitemap 수 상한
+MAX_SITEMAPS = 50      # sitemap 묶음(sitemapindex)에서 따라갈 하위 sitemap 수 상한(한 블로그 전체)
+MAX_SITEMAP_DEPTH = 3  # 묶음 안의 묶음을 따라갈 깊이 상한(서로 가리키는 묶음에서 멈추려고)
+MAX_BYTES = 20 * 1024 * 1024  # 응답 하나의 크기 상한(20MB). 넘으면 그 블로그 목록이나 그 글만 실패
+NO_RETRY = {"robots_disallow", "http_404", "http_410"}  # 다시 받아도 같은 실패라 retry_urls 에 넣지 않는다
 MAX_VELOG_PAGES = 200  # GraphQL 페이지 상한(50편 x 200 = 1만 편). 커서가 돌면 멈추려고
 
 # 목록 1: 서비스에 등록한 8기 팀(승인 상태는 보지 않음). 목록 2: 프로젝트 없는 행 중 2026- 레포(03 문서 2-1, 2-3)
@@ -133,13 +138,15 @@ class BlogSource(Source):
         self.full_list_blogs: list[str] = []
         self.feed_only_blogs: list[str] = []
         self.unsupported: set[str] = set()
+        self.retry: dict[str, dict[str, None]] = {}  # 블로그 첫 주소 → 이번에 받기 실패한 글 주소(순서 유지)
+        self.retried = 0
 
     # ---- 도구 ----
 
     @property
     def http(self) -> Http:
         if self._http is None:
-            self._http = Http(host_delay=HOST_DELAY)
+            self._http = Http(host_delay=HOST_DELAY, max_bytes=MAX_BYTES)
         return self._http
 
     def _targets(self, ctx: Context) -> list[Target]:
@@ -185,18 +192,34 @@ class BlogSource(Source):
         return links
 
     def _sitemap(self, url: str) -> list[str]:
-        """sitemap 의 페이지 주소. sitemapindex 면 하위 sitemap 을 따라간다."""
-        try:
-            pages, children = parse_sitemap(self._get(url).content)
-        except ListError:
-            raise
-        except Exception as exc:
-            raise ListError(f"sitemap 을 읽지 못함: {url}: {exc}") from exc
-        for child in children[:MAX_SITEMAPS]:
+        """sitemap 의 페이지 주소. sitemapindex 면 하위 sitemap 을 따라간다(묶음 안의 묶음도 MAX_SITEMAP_DEPTH 까지).
+
+        하나라도 못 읽으면 전체 목록 실패(ListError)다. 일부만 받은 목록을 전체 목록으로 기록하지 않으려고.
+        """
+        pages: list[str] = []
+        budget = [MAX_SITEMAPS]
+        seen: set[str] = set()
+
+        def walk(u: str, depth: int) -> None:
+            if u in seen:
+                return
+            seen.add(u)
             try:
-                pages += parse_sitemap(self._get(child).content)[0]
+                got, children = parse_sitemap(self._get(u).content)
+            except ListError:
+                raise
             except Exception as exc:
-                raise ListError(f"하위 sitemap 을 읽지 못함: {child}: {exc}") from exc
+                raise ListError(f"sitemap 을 읽지 못함: {u}: {exc}") from exc
+            pages.extend(got)
+            if children and depth >= MAX_SITEMAP_DEPTH:
+                raise ListError(f"sitemap 묶음이 {MAX_SITEMAP_DEPTH}단계보다 깊음: {u}")
+            for child in children:
+                if budget[0] <= 0:
+                    raise ListError(f"하위 sitemap 이 {MAX_SITEMAPS}개보다 많음: {url}")
+                budget[0] -= 1
+                walk(child, depth + 1)
+
+        walk(url, 0)
         return pages
 
     # ---- 플랫폼별 목록 ----
@@ -217,9 +240,11 @@ class BlogSource(Source):
                 raise ListError(f"GraphQL 요청 실패: {type(exc).__name__}") from exc
             if data is None:
                 raise ListError(f"GraphQL http_{r.status_code}")
-            posts = (data.get("data") or {}).get("posts") if isinstance(data, dict) else None
+            if not isinstance(data, dict):  # 공식 API 가 아니라 모양이 바뀔 수 있다(6장)
+                raise ListError(f"GraphQL 응답 모양이 다름: {str(data)[:200]}")
+            posts = (data.get("data") or {}).get("posts") if isinstance(data.get("data"), dict) else None
             if data.get("errors") or not isinstance(posts, list):
-                raise ListError(f"GraphQL 응답 오류: {str(data.get('errors'))[:200]}")
+                raise ListError(f"GraphQL 응답 오류: {str(data.get('errors') or data)[:200]}")
             if not posts:
                 return urls
             try:
@@ -229,8 +254,8 @@ class BlogSource(Source):
                 cursor = posts[-1]["id"]
             except (AttributeError, KeyError, TypeError) as exc:  # 공식 API 가 아니라 모양이 바뀔 수 있다(6장)
                 raise ListError(f"GraphQL 응답 모양이 다름: {exc!r}") from exc
-            if cursor in seen:
-                return urls
+            if cursor in seen:  # 같은 커서가 다시 왔다: 끝까지 받았는지 알 수 없으므로 전체 목록 실패로 본다
+                raise ListError("GraphQL 커서가 반복됨")
             seen.add(cursor)
         raise ListError("GraphQL 페이지가 너무 많음")
 
@@ -244,8 +269,11 @@ class BlogSource(Source):
             raise ListError(f"rilog sitemap 실패: {self._rilog}")
         return self._rilog
 
-    def _discover_feed(self, root: str) -> str | None:
-        """범용 블로그 피드 찾기(03 문서 3-4): 첫 화면 <link rel="alternate">, 그다음 흔한 경로."""
+    def _discover_feed(self, root: str) -> tuple[str, list[str]] | None:
+        """범용 블로그 피드 찾기(03 문서 3-4): 첫 화면 <link rel="alternate">, 그다음 흔한 경로.
+
+        찾은 피드 주소와 그 피드의 글 주소를 함께 돌려준다(같은 피드를 한 번 더 요청하지 않으려고).
+        """
         candidates: list[str] = []
         try:
             r = self._get(root + "/")
@@ -259,8 +287,7 @@ class BlogSource(Source):
                 continue
             tried.add(url)
             try:
-                self._feed(url)
-                return url
+                return url, self._feed(url)
             except ListError:
                 continue
         return None
@@ -308,14 +335,13 @@ class BlogSource(Source):
             except ListError as exc:
                 log.info("남겨 둔 피드를 받지 못해 다시 찾음: %s", exc)
         if urls is None:
-            feed_url = self._discover_feed(blog.root)
-            if not feed_url:
+            found = self._discover_feed(blog.root)
+            if not found:
                 st.pop("feed_url", None)
                 self.unsupported.add(blog.root)
                 self._notice("unsupported", blog.root, "피드를 찾지 못해 지원 안 함")
                 return [], False
-            st["feed_url"] = feed_url
-            urls = self._feed(feed_url)
+            st["feed_url"], urls = found
         self.feed_only_blogs.append(blog.root)  # 범용은 피드에 보이는 글만 받는다(3-4 한계)
         if full_day:  # 범용은 목록이 피드뿐이라, 7일마다 피드에 없는 아는 키를 확인한다(5-5)
             st["last_full_list"] = today.isoformat()
@@ -335,6 +361,9 @@ class BlogSource(Source):
                 self._notice("unsupported", root, blog.platform.unsupported)
                 continue
             st = states.setdefault(root, {})
+            for url in st.get("retry_urls") or []:  # 지난 실행에서 받기에 실패한 글. 목록이 실패해도 다시 받는다
+                self.retried += 1
+                self._add(items, url, blog)
             try:
                 urls, full = self._list_blog(blog, st, today)
             except Exception as exc:  # 블로그 하나가 막혀도 나머지는 계속한다(08 문서 8장)
@@ -349,6 +378,9 @@ class BlogSource(Source):
         return Listing(list(items.values()), complete)
 
     def _add(self, items: dict[str, Item], url: str, blog: Blog) -> None:
+        if not is_fetchable_url(url):  # http(s) 가 아니거나 내부 주소(127.0.0.1, 169.254.169.254 등)
+            self._notice("url_rejected", blog.root, f"받지 않는 주소라 뺌: {url[:200]}")
+            return
         key = blog_key(url)
         item = items.get(key)
         if item is None:
@@ -364,6 +396,8 @@ class BlogSource(Source):
         items: dict[str, Item] = {}
         for value in values:
             url = value.strip()
+            if "://" not in url:  # abc.tistory.com/7 처럼 적어도 detect 와 같이 https 로 본다
+                url = "https://" + url
             p = detect(url)
             blog = self.blogs.get(p.root)
             if blog is None:
@@ -381,6 +415,8 @@ class BlogSource(Source):
             raise FetchError(why, url=d["url"])
         try:
             r = self.http.get(target)
+        except ResponseTooLarge:
+            raise FetchError("too_large", url=d["url"])
         except requests.Timeout:
             raise FetchError("timeout", url=d["url"])
         except requests.RequestException as exc:
@@ -390,6 +426,15 @@ class BlogSource(Source):
         # 받은 그대로 저장한다. 본문 뽑기는 ② 정제에서(03 문서 5-3)
         return {"url": d["url"], "blog_root": d["blog_root"], "platform": d["platform"], "found_in": d["found_in"],
                 "body_format": "markdown" if markdown else "html", "body": decode_text(r)}
+
+    def fetch_many(self, ctx: Context, items: list[Item]):
+        """한 건씩 받으면서, 다시 받아 볼 만한 실패를 블로그별로 모은다(retry_urls)."""
+        for item, got in super().fetch_many(ctx, items):
+            if isinstance(got, BaseException):
+                reason = got.reason if isinstance(got, FetchError) else None
+                if reason not in NO_RETRY:
+                    self.retry.setdefault(item.data["blog_root"], {})[item.data["url"]] = None
+            yield item, got
 
     def index_fields(self, record: dict) -> dict:
         return {"url": record["url"], "blog_root": record["blog_root"]}
@@ -407,6 +452,13 @@ class BlogSource(Source):
 
     def finish(self, ctx: Context) -> None:
         if not ctx.only:
+            # 이번에 실패한 글만 남긴다. 지난 retry_urls 중 받은 글(이제 아는 키)은 빠진다
+            for root, st in (ctx.state.data.get("blogs") or {}).items():
+                failed = list(self.retry.get(root, {}))
+                if failed:
+                    st["retry_urls"] = failed
+                else:
+                    st.pop("retry_urls", None)
             ctx.state.save()
         ctx.report.extra.update({
             "targets": len(self.blogs),
@@ -414,5 +466,6 @@ class BlogSource(Source):
             "full_list_blogs": sorted(self.full_list_blogs),
             "feed_only_blogs": sorted(self.feed_only_blogs),
             "unsupported": len(self.unsupported),
+            "retried": self.retried,
             "notices": self.notices,
         })

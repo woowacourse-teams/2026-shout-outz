@@ -4,12 +4,14 @@
 - 피드(RSS, Atom, JSON Feed) 읽기, sitemap 읽기, 글 주소 고르기(3-2, 3-3)
 - 범용 블로그 첫 화면의 <link rel="alternate"> 찾기(3-4)
 - robots.txt 읽기(5-6)
+- 받아도 되는 주소인지(http, https 이고 내부 주소가 아님)
 
 외부 라이브러리 없이 표준 라이브러리(xml.etree, html.parser, urllib.robotparser)만 쓴다.
 """
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import re
 import xml.etree.ElementTree as ET
@@ -43,6 +45,8 @@ UNSUPPORTED_HOSTS = {
 
 TISTORY_POST = re.compile(r"/(?:\d+|entry/[^/]+)/?")
 RILOG_POST = re.compile(r"/@([^/]+)/posts/(\d+)/?")
+XML_BASE = "{http://www.w3.org/XML/1998/namespace}base"
+SITEMAP_ROOTS = ("urlset", "sitemapindex")
 FEED_TYPES = {"application/rss+xml", "application/atom+xml", "application/rdf+xml", "application/feed+json",
               "application/json", "application/xml", "text/xml"}
 
@@ -130,12 +134,16 @@ def parse_feed(content: bytes, base_url: str) -> list[str] | None:
             if u:
                 links.append(urljoin(base_url, u))
     elif kind == "feed":
+        # Atom 의 상대 주소는 xml:base(피드, 항목, 링크 순으로 겹쳐 적용)를 기준으로 푼다(RFC 4287)
+        feed_base = urljoin(base_url, root.attrib.get(XML_BASE, ""))
         for entry in root:
             if _local(entry.tag) != "entry":
                 continue
+            entry_base = urljoin(feed_base, entry.attrib.get(XML_BASE, ""))
             for c in entry:
                 if _local(c.tag) == "link" and c.attrib.get("rel", "alternate") == "alternate" and c.attrib.get("href"):
-                    links.append(urljoin(base_url, c.attrib["href"].strip()))
+                    link_base = urljoin(entry_base, c.attrib.get(XML_BASE, ""))
+                    links.append(urljoin(link_base, c.attrib["href"].strip()))
                     break
     else:
         return None
@@ -143,8 +151,13 @@ def parse_feed(content: bytes, base_url: str) -> list[str] | None:
 
 
 def parse_sitemap(content: bytes) -> tuple[list[str], list[str]]:
-    """sitemap 에서 (페이지 주소, 하위 sitemap 주소). XML 이 아니면 ET.ParseError."""
+    """sitemap 에서 (페이지 주소, 하위 sitemap 주소). XML 이 아니면 ET.ParseError, sitemap 이 아닌 XML 이면 ValueError.
+
+    오류 문서 같은 다른 XML 을 빈 sitemap 으로 읽으면 "전체 목록을 받았는데 글이 0개" 가 되어 전체 목록 날짜가 잘못 남는다.
+    """
     root = ET.fromstring(content)
+    if _local(root.tag) not in SITEMAP_ROOTS:
+        raise ValueError(f"sitemap 이 아닌 XML(루트 {_local(root.tag)})")
     child = "sitemap" if _local(root.tag) == "sitemapindex" else "url"
     locs = []
     for el in root:
@@ -154,6 +167,28 @@ def parse_sitemap(content: bytes) -> tuple[list[str], list[str]]:
             if _local(c.tag) == "loc" and (c.text or "").strip():
                 locs.append(c.text.strip())
     return (locs, []) if child == "url" else ([], locs)
+
+
+def is_fetchable_url(url: str) -> bool:
+    """받아도 되는 주소인지. http, https 만, localhost 와 내부(사설, 루프백, 링크 로컬 등) IP 주소는 받지 않는다.
+
+    피드나 sitemap 에 적힌 주소를 그대로 요청하므로, 수집용 EC2 의 내부 주소(예: 169.254.169.254 메타데이터)로
+    요청이 가지 않게 막는다. 도메인 이름은 DNS 를 따로 풀어 보지 않는다.
+    """
+    try:
+        p = urlsplit(url)
+        host = (p.hostname or "").lower()
+    except ValueError:
+        return False
+    if p.scheme not in ("http", "https") or not host:
+        return False
+    if host == "localhost" or host.endswith(".localhost"):
+        return False
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return True  # IP 가 아닌 도메인
+    return ip.is_global
 
 
 def is_tistory_post(url: str) -> bool:

@@ -388,3 +388,117 @@ def test_default_loader_is_module_function(tmp_path, monkeypatch):
     rep = collect(Settings(store_url=str(tmp_path)), [SRC], store=store,
                   make_source=lambda n: BlogSource(http=http), clock=lambda: DAY0)
     assert rep.sources[SRC].counts["new"] == 1 and rep.sources[SRC].extra["target_rows"] == 2
+
+
+# ---- 리뷰 반영(2026-11-05) ----
+
+def test_generic_feed_is_requested_once_when_discovered(tmp_path):
+    http = FakeHttp(generic_routes())
+    run(tmp_path, http, [Target(5, "https://team.github.io/about", None)], day=0)
+    assert http.count(f"{GEN}/atom.xml") == 1
+
+
+def test_parsers_sitemap_root_and_atom_xml_base():
+    try:
+        parse_sitemap(b"<error><message>blocked</message></error>")
+        assert False
+    except ValueError:
+        pass
+    idx = (b'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+           b'<sitemap><loc>https://a.tistory.com/s1.xml</loc></sitemap></sitemapindex>')
+    assert parse_sitemap(idx) == ([], ["https://a.tistory.com/s1.xml"])
+    feed = (b'<feed xmlns="http://www.w3.org/2005/Atom" xml:base="https://ex.org/blog/">'
+            b'<entry xml:base="posts/"><link href="one"/></entry><entry><link href="two"/></entry></feed>')
+    assert parse_feed(feed, "https://ex.org/atom.xml") == ["https://ex.org/blog/posts/one", "https://ex.org/blog/two"]
+
+
+def sitemap_index(*locs):
+    items = "".join(f"<sitemap><loc>{u}</loc></sitemap>" for u in locs)
+    return f'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{items}</sitemapindex>'
+
+
+def test_nested_sitemap_index_is_followed(tmp_path):
+    http = tistory_http([], [])
+    http.routes[f"{TIS}/sitemap.xml"] = sitemap_index(f"{TIS}/s-a.xml")
+    http.routes[f"{TIS}/s-a.xml"] = sitemap_index(f"{TIS}/s-b.xml")
+    http.routes[f"{TIS}/s-b.xml"] = sitemap(f"{TIS}/1", f"{TIS}/category")
+    http.routes[f"{TIS}/1"] = "<html>1</html>"
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0)
+    assert sr.counts["new"] == 1 and sr.extra["full_list_blogs"] == [TIS]
+
+
+def test_non_sitemap_xml_is_full_list_failure(tmp_path):
+    http = tistory_http([], [f"{TIS}/1"])
+    http.routes[f"{TIS}/sitemap.xml"] = "<error>blocked</error>"
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0)
+    assert [n["type"] for n in sr.extra["notices"]] == ["full_list_failed"]
+    assert http.count(f"{TIS}/rss") == 1 and sr.counts["new"] == 1
+    assert "last_full_list" not in state(store)[TIS]
+
+
+def test_velog_odd_graphql_shapes_fall_back_to_rss(tmp_path):
+    for answer in ([], None):
+        def graphql(payload, answer=answer):
+            if answer is None:  # 커서가 반복된다: 같은 페이지만 계속 온다
+                return Resp(200, json.dumps({"data": {"posts": [{"id": "a", "url_slug": "x", "user": {"username": "dev"}}]}}))
+            return Resp(200, json.dumps(answer))
+        http = velog_http()
+        http.routes["https://v2.velog.io/graphql"] = graphql
+        store, sr, _ = run(tmp_path / str(answer), http, TARGETS_VEL, day=0)
+        assert [n["type"] for n in sr.extra["notices"]] == ["full_list_failed"]
+        assert http.count("https://v2.velog.io/rss/@dev") == 1
+        assert "last_full_list" not in state(store)[VEL]
+
+
+def test_internal_addresses_in_feed_are_not_fetched(tmp_path):
+    http = tistory_http([f"{TIS}/1", "http://169.254.169.254/latest/meta-data", "file:///etc/passwd",
+                         "http://localhost:8080/x"], [])
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0)
+    assert sr.counts["new"] == 1
+    assert not any("169.254" in u or "localhost" in u for _, u in http.calls)
+    assert sum(1 for n in sr.extra["notices"] if n["type"] == "url_rejected") == 0  # tistory 는 글 주소 모양만 고른다
+    # 범용 피드에 내부 주소가 있으면 빼고 알린다
+    routes = generic_routes()
+    routes[f"{GEN}/atom.xml"] = ('<feed xmlns="http://www.w3.org/2005/Atom"><entry><link href="/2026/a/"/></entry>'
+                                 '<entry><link href="http://127.0.0.1:9000/secret"/></entry></feed>')
+    http = FakeHttp(routes)
+    store, sr, _ = run(tmp_path / "gen", http, [Target(5, "https://team.github.io", None)], day=0)
+    assert sr.counts["new"] == 1 and not any("127.0.0.1" in u for _, u in http.calls)
+    assert [n["type"] for n in sr.extra["notices"]] == ["url_rejected"]
+
+
+def test_only_url_without_scheme(tmp_path):
+    http = tistory_http([], [])
+    http.routes[f"{TIS}/7"] = "<html>7</html>"
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0, only=["abc.tistory.com/7"])
+    assert sr.counts["new"] == 1 and http.count(f"{TIS}/7") == 1
+
+
+def test_failed_post_on_full_list_day_is_retried_next_day(tmp_path):
+    posts = [f"{TIS}/1", f"{TIS}/2", f"{TIS}/3"]
+    http = tistory_http(posts, [])
+    http.routes[f"{TIS}/2"] = Resp(503)
+    http.routes[f"{TIS}/3"] = Resp(404)  # 404 는 다시 받지 않는다
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0)
+    assert sr.counts["new"] == 1 and sr.counts["failed"] == 2
+    assert state(store)[TIS]["retry_urls"] == [f"{TIS}/2"]
+    # 다음 날(피드 날): 피드에 없는 옛 글 2 를 다시 받는다
+    http = tistory_http([], [f"{TIS}/4"])
+    http.routes[f"{TIS}/2"] = "<html>2</html>"
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=1)
+    assert http.count(f"{TIS}/2") == 1 and http.count(f"{TIS}/3") == 0
+    assert sr.counts["new"] == 2 and sr.extra["retried"] == 1
+    assert "retry_urls" not in state(store)[TIS]
+    assert state(store)[TIS]["last_full_list"] == "2026-11-05"
+    # 그다음 날에는 다시 받지 않는다
+    http = tistory_http([], [])
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=2)
+    assert http.count(f"{TIS}/2") == 0 and sr.extra["retried"] == 0
+
+
+def test_too_large_post_is_a_failure(tmp_path):
+    from collector.http import ResponseTooLarge
+    http = tistory_http([f"{TIS}/1"], [])
+    http.routes[f"{TIS}/1"] = ResponseTooLarge("big")
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0)
+    assert sr.failure_reasons == {"too_large": 1}

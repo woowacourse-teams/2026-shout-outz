@@ -329,3 +329,39 @@ def test_secondary_limit_without_retry_after_waits_then_gives_up():
     except GitHubError:
         pass
     assert slept == [] and http.n == 1  # 보통 403 은 기다리지 않는다
+
+
+def test_http_max_bytes_stops_reading():
+    import requests
+    from collector.http import Http, ResponseTooLarge
+
+    def make(body, headers=None):
+        r = requests.Response()
+        r.status_code, r.url = 200, "https://a.example/x"
+        r.headers.update(headers or {})
+        r.raw = __import__("io").BytesIO(body)
+        return r
+
+    class Session:
+        def __init__(self, resp):
+            self.headers, self.resp, self.kw = {}, resp, None
+        def request(self, method, url, **kw):
+            self.kw = kw
+            return self.resp
+
+    s = Session(make(b"x" * 10))
+    r = Http(session=s, max_bytes=10).get("https://a.example/x")
+    assert r.content == b"x" * 10 and r.text == "x" * 10 and s.kw["stream"] is True
+    for resp in (make(b"x" * 11), make(b"", {"Content-Length": "999"})):
+        try:
+            Http(session=Session(resp), max_bytes=10).get("https://a.example/x")
+            assert False
+        except ResponseTooLarge:
+            pass
+
+
+def test_default_sources_are_registered():
+    from collector import sources
+    from collector.config import SOURCES
+    for name in SOURCES:
+        assert sources.make(name).name == name
