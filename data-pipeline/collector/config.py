@@ -38,7 +38,7 @@ class Settings:
         e = os.environ.get
         store_url = (e("PIPELINE_STORE") or "").strip()
         if not store_url:
-            raise RuntimeError("PIPELINE_STORE 가 없습니다. S3 주소(s3://버킷/앞머리)나 로컬 폴더를 적어 주세요(08 문서 6-1)")
+            raise RuntimeError("PIPELINE_STORE 가 없어요. 원본을 쌓을 곳(S3 주소 s3://버킷/앞머리 또는 로컬 폴더)을 환경 변수 파일에 적어 주세요")
         return cls(
             store_url=store_url,
             host=e("PIPELINE_HOST") or "home",

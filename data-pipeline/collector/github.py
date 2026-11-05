@@ -30,7 +30,7 @@ class GitHubError(Exception):
 class GitHub:
     def __init__(self, token: str | None, http: Http | None = None, sleep=time.sleep, clock=time.time) -> None:
         if not token:
-            raise RuntimeError("GITHUB_TOKEN 이 없습니다(08 문서 C12)")
+            raise RuntimeError("GITHUB_TOKEN 이 없어요. GitHub 원천(코드 마크다운, 위키, 디스커션, PR)을 받으려면 팀 계정 토큰을 환경 변수 파일에 넣어 주세요")
         self.token = token
         self.http = http or Http()
         self.sleep, self.clock = sleep, clock

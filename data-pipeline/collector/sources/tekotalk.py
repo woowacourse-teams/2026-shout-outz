@@ -69,7 +69,7 @@ class TekotalkSource(Source):
     def _get(self, ctx: Context, path: str, params: dict) -> dict:
         key = ctx.settings.youtube_api_key
         if not key:
-            raise RuntimeError("YOUTUBE_API_KEY 가 없습니다(08 문서 C12, 04 문서 7-3)")
+            raise RuntimeError("YOUTUBE_API_KEY 가 없어요. 테코톡 영상 목록을 받으려면 YouTube Data API v3 키를 환경 변수 파일에 넣어 주세요")
         http = self._http or ctx.http
         ctx.report.extra["api_units"] = ctx.report.extra.get("api_units", 0) + 1  # list 호출은 1단위
         r = http.get(f"{API}/{path}", params=params, headers={"X-Goog-Api-Key": key})
@@ -136,7 +136,7 @@ class TekotalkSource(Source):
         다시 받으면 자막 없는 새 버전이 자막 있는 버전을 덮어쓰므로, 아는 키는 받지 않고 unchanged 로 센다.
         """
         if not ctx.settings.youtube_api_key:
-            raise RuntimeError("YOUTUBE_API_KEY 가 없습니다(08 문서 C12, 04 문서 7-3)")
+            raise RuntimeError("YOUTUBE_API_KEY 가 없어요. 테코톡 영상 목록을 받으려면 YouTube Data API v3 키를 환경 변수 파일에 넣어 주세요")
         out = []
         for v in values:
             vid = v[3:] if v.startswith("yt:") else v
