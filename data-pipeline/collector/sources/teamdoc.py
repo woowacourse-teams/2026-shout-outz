@@ -4,6 +4,8 @@
 바뀜 표시: 파일 blob sha.
 한 건 받기: 트리를 받은 커밋에 고정한 raw 본문 + 그 파일의 마지막 커밋(REST 1번).
 사라짐: 트리가 잘리지 않은 레포에서 경로가 없으면 not_in_tree. 레포가 없어지면 repo_not_found.
+기본 브랜치가 404 면 레포를 다시 물어, 기본 브랜치가 그대로일 때만 빈 레포로 본다. 그 사이 바뀌었으면 그 레포는
+목록 실패로 두어 사라짐 판단을 건너뛴다(아는 문서를 모두 not_in_tree 로 잘못 남기지 않게).
 """
 
 from __future__ import annotations
@@ -57,6 +59,8 @@ class TeamdocSource(RepoSource):
             name = r["name"]
             try:
                 got = self._repo_items(gh, name, r.get("default_branch"))
+                if got is None:
+                    self._check_empty(gh, name, r.get("default_branch"))
             except Exception as exc:
                 self.repo_failed(name, exc)
                 continue
@@ -77,6 +81,14 @@ class TeamdocSource(RepoSource):
             return None
         b = gh.rest_json(f"/repos/{ORG}/{repo}/branches/{quote(branch)}", ok404=True)
         return None if b is None else b["commit"]["sha"]
+
+    def _check_empty(self, gh, repo: str, branch: str | None) -> None:
+        """기본 브랜치를 찾지 못했을 때, 정말 빈 레포인지 확인한다. 아니면 예외(그 레포만 목록 실패)."""
+        info = gh.rest_json(f"/repos/{ORG}/{repo}", ok404=True)
+        if info is None:
+            raise RuntimeError("레포 목록을 받은 뒤 레포가 없어짐")
+        if info.get("default_branch") != branch:
+            raise RuntimeError(f"기본 브랜치가 바뀜: {branch} → {info.get('default_branch')}")
 
     def _repo_items(self, gh, repo: str, branch: str | None):
         commit = self._head(gh, repo, branch)
@@ -103,6 +115,8 @@ class TeamdocSource(RepoSource):
     def fetch(self, ctx: Context, item: Item) -> dict:
         gh = self.gh(ctx)
         d = item.data
+        if not d["path"].lower().endswith(".md"):  # --only 로 받아도 목록과 같이 .md 만(06 문서 D8)
+            raise FetchError("not_markdown", f"https://github.com/{ORG}/{d['repo']}")
         if "commit" not in d:  # --only: 목록 없이 받으므로 기본 브랜치 커밋과 파일 sha 를 여기서 알아낸다
             d = self._resolve(gh, d["repo"], d["path"])
         repo, commit, path = d["repo"], d["commit"], d["path"]

@@ -213,3 +213,39 @@ def test_raw_failure_is_counted(tmp_path):
     store, rep, sr = run(tmp_path, gh)
     assert counts(sr) == {"new": 1, "failed": 1}
     assert sr.failures[0]["reason"] == "http_404" and "raw.githubusercontent.com" in sr.failures[0]["url"]
+
+
+class BranchGone(FakeGitHub):
+    """기본 브랜치 조회가 404. exists 에 레포 정보를 두면 다시 물을 때 그 값을 준다."""
+
+    def rest_json(self, path, params=None, ok404=False):
+        if path == f"/repos/woowacourse-teams/{REPO}/branches/main":
+            self.calls.append(path)
+            return None
+        return super().rest_json(path, params, ok404)
+
+
+def test_default_branch_changed_mid_run_is_repo_failure_not_gone(tmp_path):
+    gh = FakeGitHub()
+    blob(gh, "README.md", b"v1")
+    run(tmp_path, gh)
+    gh2 = BranchGone()
+    gh2.exists[REPO] = {"name": REPO, "owner": {"login": "woowacourse-teams"}, "default_branch": "develop"}
+    store, rep, sr = run(tmp_path, gh2)
+    assert counts(sr) == {} and sr.extra["repos_failed"][0]["repo"] == REPO
+    assert "기본 브랜치가 바뀜" in sr.extra["repos_failed"][0]["reason"]
+    assert Index(store, "github-teamdoc").load().get(teamdoc_key(REPO, "README.md"))["gone"] is None
+
+
+def test_empty_repo_has_no_documents(tmp_path):
+    gh = BranchGone()
+    gh.exists[REPO] = {"name": REPO, "owner": {"login": "woowacourse-teams"}, "default_branch": "main"}
+    store, rep, sr = run(tmp_path, gh)
+    assert counts(sr) == {} and sr.extra["repos_failed"] == [] and rep.status == "success"
+
+
+def test_only_rejects_non_markdown(tmp_path):
+    gh = FakeGitHub()
+    store, rep, sr = run(tmp_path, gh, only=[teamdoc_key(REPO, "logo.png")])
+    assert sr.failure_reasons == {"not_markdown": 1}
+    assert not [c for c in gh.calls if c.startswith("raw:")]

@@ -198,6 +198,8 @@ class WikiSource(RepoSource):
 
     def fetch(self, ctx: Context, item: Item) -> dict:
         repo, path = item.data["repo"], item.data["path"]
+        if not path.lower().endswith(".md"):  # --only 로 받아도 목록과 같이 .md 만(06 문서 D13)
+            raise FetchError("not_markdown", f"https://github.com/{ORG}/{repo}/wiki")
         try:
             clone = self._clone(ctx, repo)
             commit = self._git(ctx, ["rev-parse", "HEAD"], cwd=clone).decode().strip()

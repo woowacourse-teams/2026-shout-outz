@@ -211,6 +211,8 @@ def test_repo_removed_from_org(tmp_path):
 
 def test_only_fetches_one_file(tmp_path):
     wiki, gh, git = make_wiki(tmp_path)
-    store, rep, sr = run(tmp_path, gh, git, only=[wiki_key(REPO, "Home.md"), wiki_key(REPO, "없는.md")])
-    assert counts(sr) == {"new": 1, "failed": 1} and sr.failure_reasons == {"not_in_wiki": 1}
+    store, rep, sr = run(tmp_path, gh, git, only=[wiki_key(REPO, "Home.md"), wiki_key(REPO, "없는.md"),
+                                                  wiki_key(REPO, "images/logo.png")])
+    assert counts(sr) == {"new": 1, "failed": 2}
+    assert sr.failure_reasons == {"not_in_wiki": 1, "not_markdown": 1}
     assert store.read_json("state/github-wiki.json") is None  # --only 는 상태를 고치지 않는다
