@@ -31,6 +31,7 @@ uv run python -m collector subtitles import subtitles-result.json               
 ```
 
 - 원천 이름: `youtube-tekotalk`, `blog-post`, `github-teamdoc`, `github-wiki`, `github-discussion`, `github-pr`
+- 테코톡 `--only` 는 영상 ID 나 `yt:` 키를 받는다. 영상 ID 는 `-` 로 시작할 수 있어(`-gbqPuHzLj0`) 그대로 적으면 명령줄 옵션으로 읽히므로 `yt:-gbqPuHzLj0` 처럼 키로 적는다
 - 환경 변수: `deploy/data-pipeline.env.example`
 - 끝나면 표준 출력에 실행 id, 상태, 원천별 숫자가 나오고, 자세한 것은 `reports/{run_id}.json` 에 남는다.
 
