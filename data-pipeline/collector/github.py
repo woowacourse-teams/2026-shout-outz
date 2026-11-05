@@ -2,7 +2,8 @@
 
 - 권한 없는 fine-grained 토큰(GITHUB_TOKEN). REST, GraphQL, raw, git 요청 모두에 붙인다.
 - 한 번에 하나씩. 남은 한도가 바닥나면 초기화 시각(X-RateLimit-Reset)까지 기다렸다가 이어 받는다.
-- 보조 한도(403/429 + Retry-After)도 기다렸다 다시 보낸다.
+- 보조 한도(403/429 + Retry-After)도 기다렸다 다시 보낸다. Retry-After 가 없는 보조 한도는 GitHub 권고대로
+  1분부터 두 배씩 늘려 기다리고, SECONDARY_RETRIES 번 넘게 막히면 그대로 실패로 돌려준다.
 """
 
 from __future__ import annotations
@@ -13,9 +14,11 @@ import re
 import time
 
 from .config import ORG, USER_AGENT
-from .http import Http
+from .http import Http, retry_after_seconds
 
 API = "https://api.github.com"
+SECONDARY_WAIT = 60.0   # Retry-After 없는 보조 한도의 첫 대기(GitHub 문서: 적어도 1분)
+SECONDARY_RETRIES = 5   # 한도로 막혀 다시 보내는 횟수 상한(Retry-After 없는 보조 한도면 60, 120, 240, 480, 960초)
 
 
 class GitHubError(Exception):
@@ -46,25 +49,33 @@ class GitHub:
         self.waited_sec += seconds
         self.sleep(seconds)
 
-    def _limited(self, r) -> float | None:
+    def _limited(self, r, secondary_tries: int = 0) -> float | None:
         """한도 때문에 막혔으면 기다릴 초, 아니면 None."""
         if r.status_code not in (403, 429):
             return None
-        if r.headers.get("Retry-After"):
-            return float(r.headers["Retry-After"])
+        wait = retry_after_seconds(r.headers.get("Retry-After"))
+        if wait is not None:
+            return wait
         if r.headers.get("X-RateLimit-Remaining") == "0" and r.headers.get("X-RateLimit-Reset"):
             return float(r.headers["X-RateLimit-Reset"]) - self.clock() + 1
-        return None
+        if r.status_code == 429 or "secondary rate limit" in (getattr(r, "text", "") or "").lower():
+            return SECONDARY_WAIT * (2 ** secondary_tries)
+        return None  # 권한 없음 같은 보통 403
 
     def _send(self, method: str, url: str, **kw):
+        headers = self._headers(kw.pop("headers", None))
+        tries = 0
         while True:
-            r = self.http.request(method, url, headers=self._headers(kw.pop("headers", None)), **kw)
-            wait = self._limited(r)
+            r = self.http.request(method, url, headers=headers, **kw)
+            wait = self._limited(r, tries)
             if wait is None:
                 # 다음 요청부터 막히지 않도록, 남은 한도가 0이면 미리 기다린다
                 if r.headers.get("X-RateLimit-Remaining") == "0" and r.headers.get("X-RateLimit-Reset"):
                     self._wait(float(r.headers["X-RateLimit-Reset"]) - self.clock() + 1)
                 return r
+            if tries >= SECONDARY_RETRIES:
+                return r  # 계속 막히면 실패로 돌려준다(호출한 쪽이 GitHubError 로 남김)
+            tries += 1
             self._wait(wait)
 
     def rest(self, path_or_url: str, params: dict | None = None, ok404: bool = False):

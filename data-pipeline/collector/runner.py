@@ -201,11 +201,15 @@ def run_source(source: Source, ctx: Context) -> None:
                 rep.add("gone")
                 rep.gone_keys.append(key)
 
+    # 색인을 먼저 저장한다. finish 가 상태(위키 커밋 등)를 먼저 저장했는데 색인 저장이 실패하면,
+    # 다음 실행이 그 상태를 보고 받은 문서를 다시 보지 않게 된다(08 문서 4-5)
+    index.save()
     try:
         source.finish(ctx)
     except Exception as exc:
         rep.error(exc, "finish_failed", ctx.now)
-    index.save()
+    if index._pending:
+        index.save()  # finish 가 색인을 고쳤으면 한 번 더
 
 
 def code_version() -> str:
@@ -241,10 +245,11 @@ def collect(settings: Settings, sources: list[str] | None = None, only: list[str
             now = clock()
             rep = SourceReport(name, now, previous_failures(store, name, exclude_run=run_id))
             run.sources[name] = rep
-            ctx = Context(settings=settings, store=store, index=Index(store, name).load(),
-                          state=State(store, name).load(), report=rep, now=now, only=only, repos=repos)
             log.info("%s 시작", name)
             try:
+                # 색인, 상태 읽기도 원천별 try 안에서 한다. 깨진 파일이 있어도 그 원천만 오류로 남기고 보고서를 끝까지 쓴다
+                ctx = Context(settings=settings, store=store, index=Index(store, name).load(),
+                              state=State(store, name).load(), report=rep, now=now, only=only, repos=repos)
                 run_source(make_source(name), ctx)
             except Exception as exc:
                 log.exception("%s 실패", name)

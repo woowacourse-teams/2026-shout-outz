@@ -245,3 +245,87 @@ def test_graphql_waits_on_rate_limited_200():
     gh = GitHub("t", http=FakeHttp(), sleep=slept.append, clock=lambda: 100)
     assert gh.graphql("{ ok }") == {"ok": 1}
     assert slept == [31.0] and gh.waited_sec == 31.0
+
+
+def test_unreadable_lock_skips_and_is_kept(tmp_path):
+    store = LocalStore(str(tmp_path))
+    store.write_bytes("state/lock.json", b"{broken")
+    _, rep = run(tmp_path, FakeSource({"k1": "t1"}))
+    assert rep.status == "skipped" and "unreadable" in rep.scope["lock_held_by"]
+    assert store.read_bytes("state/lock.json") == b"{broken"  # 사람이 확인하도록 지우지 않는다
+
+
+def test_local_create_exclusive_leaves_no_temp(tmp_path):
+    store = LocalStore(str(tmp_path))
+    assert store.create_exclusive("state/lock.json", b"{}")
+    assert not store.create_exclusive("state/lock.json", b"{}")
+    assert store.list("state") == ["state/lock.json"]
+    assert [p.name for p in (tmp_path / "state").iterdir()] == ["lock.json"]
+
+
+def test_broken_index_is_source_error_and_run_finishes(tmp_path):
+    store = LocalStore(str(tmp_path))
+    store.write_bytes("index/github-pr.jsonl", b"not json\n")
+    _, rep = run(tmp_path, FakeSource({"k1": "t1"}))
+    sr = rep.sources["github-pr"]
+    assert sr.errors and sr.errors[0]["type"] == "unexpected"
+    assert rep.status == "failure" and rep.finished is not None
+    assert store.read_bytes("state/lock.json") is None
+
+
+def test_index_saved_before_finish(tmp_path):
+    seen = {}
+
+    class Checks(FakeSource):
+        def finish(self, ctx):
+            seen["lines"] = (ctx.store.read_bytes("index/github-pr.jsonl") or b"").decode().count("\n")
+            raise RuntimeError("상태 저장 실패")
+
+    _, rep = run(tmp_path, Checks({"k1": "t1", "k2": "t2"}))
+    assert seen["lines"] == 2
+    assert rep.sources["github-pr"].errors[0]["type"] == "finish_failed"
+
+
+def test_retry_after_accepts_http_date():
+    from collector.http import retry_after_seconds
+    now = datetime(2026, 11, 5, 3, 0, 0, tzinfo=timezone.utc)
+    assert retry_after_seconds("120", now) == 120
+    assert retry_after_seconds("Thu, 05 Nov 2026 03:00:30 GMT", now) == 30
+    assert retry_after_seconds("Thu, 05 Nov 2026 02:00:00 GMT", now) == 0
+    assert retry_after_seconds("soon", now) is None and retry_after_seconds(None, now) is None
+
+
+def test_secondary_limit_without_retry_after_waits_then_gives_up():
+    from collector.github import GitHub, GitHubError, SECONDARY_RETRIES
+
+    class R:
+        status_code, headers, text = 403, {}, '{"message": "You have exceeded a secondary rate limit"}'
+
+    class Plain403(R):
+        text = '{"message": "Resource not accessible"}'
+
+    class FakeHttp:
+        def __init__(self, resp):
+            self.resp, self.n = resp, 0
+        def request(self, method, url, **kw):
+            self.n += 1
+            return self.resp
+
+    slept = []
+    http = FakeHttp(R())
+    gh = GitHub("t", http=http, sleep=slept.append, clock=lambda: 0)
+    try:
+        gh.rest("/x")
+        assert False
+    except GitHubError as exc:
+        assert exc.status == 403
+    assert slept == [60.0 * 2 ** i for i in range(SECONDARY_RETRIES)] and http.n == SECONDARY_RETRIES + 1
+
+    slept.clear()
+    http = FakeHttp(Plain403())
+    gh = GitHub("t", http=http, sleep=slept.append, clock=lambda: 0)
+    try:
+        gh.rest("/x")
+    except GitHubError:
+        pass
+    assert slept == [] and http.n == 1  # 보통 403 은 기다리지 않는다

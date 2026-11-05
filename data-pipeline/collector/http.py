@@ -6,11 +6,29 @@
 from __future__ import annotations
 
 import time
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from urllib.parse import urlsplit
 
 import requests
 
 from .config import USER_AGENT
+
+
+def retry_after_seconds(value: str | None, now: datetime | None = None) -> float | None:
+    """Retry-After 값을 기다릴 초로. 초(숫자)와 날짜(HTTP-date) 둘 다 된다(RFC 9110 10.2.3). 읽지 못하면 None."""
+    if not value:
+        return None
+    value = value.strip()
+    if value.isdigit():
+        return float(value)
+    try:
+        when = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return max(0.0, (when - (now or datetime.now(timezone.utc))).total_seconds())
 
 
 class Http:
@@ -51,8 +69,8 @@ class Http:
                 continue
             if r.status_code in (429, 500, 502, 503, 504) and attempt < self.retries:
                 attempt += 1
-                retry_after = r.headers.get("Retry-After")
-                self.sleep(float(retry_after) if retry_after and retry_after.isdigit() else 2 ** attempt)
+                wait = retry_after_seconds(r.headers.get("Retry-After"))
+                self.sleep(wait if wait is not None else 2 ** attempt)
                 continue
             return r
 

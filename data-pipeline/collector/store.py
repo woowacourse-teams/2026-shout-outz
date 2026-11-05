@@ -59,12 +59,17 @@ class LocalStore(Store):
     def create_exclusive(self, path: str, data: bytes) -> bool:
         p = self._p(path)
         p.parent.mkdir(parents=True, exist_ok=True)
+        # 임시 파일에 다 쓴 뒤 하드 링크로 등록한다. 링크는 대상이 있으면 실패하므로 "없을 때만" 이 원자적이고,
+        # 쓰다 멈춰도 빈 잠금 파일이 남지 않는다
+        tmp = p.with_name(f"{p.name}.{os.getpid()}.tmp")
         try:
-            with open(p, "xb") as f:
-                f.write(data)
+            tmp.write_bytes(data)
+            os.link(tmp, p)
             return True
         except FileExistsError:
             return False
+        finally:
+            tmp.unlink(missing_ok=True)
 
     def list(self, prefix: str) -> list[str]:
         base = self._p(prefix)
