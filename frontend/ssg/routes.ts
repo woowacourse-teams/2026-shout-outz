@@ -16,7 +16,8 @@ export interface PrerenderRouteCollection {
   failures: PrerenderRouteFailure[];
 }
 
-function createPathRouter() {
+// SSG, SSR 파이프라인에서 사용할 경로 매칭용 라우터
+export function createPathRouter() {
   return createRouter({
     routeTree,
     pathParamsAllowedCharacters: [...PATH_PARAMS_ALLOWED_CHARACTERS],

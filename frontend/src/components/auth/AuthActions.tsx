@@ -13,13 +13,14 @@ import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { UserHandle } from '@/components/users/UserHandle';
 import { UserAffiliation } from '@/components/users/UserAffiliation';
 import { useModal } from '@/hooks/useModal';
+import { useSession } from '@/hooks/useSession';
 import { getApiErrorMessage } from '@/utils/error';
 
 export function AuthActions() {
   const { open } = useModal();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const session = useQuery({ ...sessionQuery, enabled: typeof window !== 'undefined' });
+  const session = useSession();
   const authenticated = session.data?.status === 'AUTHENTICATED' && session.data.userId !== null;
   const profile = useQuery({
     ...myProfileSummaryQuery(session.data?.userId ?? 0),

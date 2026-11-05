@@ -1,4 +1,5 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { IconArrowLeft, IconMessageCircle } from '@tabler/icons-react';
 import { feedQuery } from '@/apis/feed';
@@ -6,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Footer } from '@/components/Footer';
 import { AppGnb } from '@/components/AppGnb';
 import { AsyncBoundary } from '@/components/AsyncBoundary';
+import { ClientOnly } from '@/components/ClientOnly';
 import { FeedDetailBody } from '@/components/feeds/FeedDetailBody';
 import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { FeedLikeButton } from '@/components/feeds/FeedLikeButton';
@@ -13,6 +15,7 @@ import { FeedMenu } from '@/components/feeds/FeedMenu';
 import { ShareButton } from '@/components/feeds/ShareButton';
 import { Comments } from '@/components/feed-comments/Comments';
 import { RelatedQuestions } from '@/components/recommendations/RelatedQuestions';
+import { useSession } from '@/hooks/useSession';
 import { formatDotDate } from '@/utils/date';
 
 export function FeedDetailPage({ feedId }: { feedId: number }) {
@@ -33,6 +36,17 @@ export function FeedDetailPage({ feedId }: { feedId: number }) {
 
 function FeedDetailContent({ feedId }: { feedId: number }) {
   const { data: feed } = useSuspenseQuery(feedQuery(feedId));
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const isAuthenticated = session?.status === 'AUTHENTICATED';
+
+  // SSR 서버는 쿠키 없이 글을 받아 likedByMe가 비로그인 기준입니다. 브라우저에서 로그인이 확인되면
+  // 쿠키를 붙여 다시 받아, 빈 하트로 그려진 좋아요가 내 상태로 바뀌게 합니다.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void queryClient.invalidateQueries({ queryKey: feedQuery(feedId).queryKey, exact: true });
+  }, [isAuthenticated, feedId, queryClient]);
+
   const isQuestion = feed.feedType === 'QUESTION';
   const commentLabel = isQuestion ? '답변' : '댓글';
 
@@ -53,7 +67,7 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
           <div className="relative flex items-center pr-24 sm:pr-64">
             <FeedAuthor author={feed.author} isAnonymous={feed.isAnonymous} />
             <div className="absolute top-1/2 right-0 z-10 flex -translate-y-1/2 items-center gap-2">
-              <ShareButton url={window.location.href} />
+              <ShareButton />
               {feed.author.handle && (
                 <AsyncBoundary>
                   <FeedMenu
@@ -70,7 +84,10 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
       {isQuestion &&
         feed.relatedQuestionRecommendations?.status === 'READY' &&
         feed.relatedQuestionRecommendations.items.length > 0 && (
-          <RelatedQuestions key={feed.feedId} items={feed.relatedQuestionRecommendations.items} />
+          // 추천 중 일부를 무작위로 골라 서버와 브라우저의 선택이 달라지므로 브라우저에서만 그립니다.
+          <ClientOnly>
+            <RelatedQuestions key={feed.feedId} items={feed.relatedQuestionRecommendations.items} />
+          </ClientOnly>
         )}
       <div className="mt-10 mb-8 flex justify-center">
         <FeedLikeButton
@@ -101,11 +118,14 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
         aria-label={`${commentLabel} 목록`}
         className="mt-12 px-0 md:px-3"
       >
-        <Comments
-          feedId={feed.feedId}
-          feedType={isQuestion ? 'QUESTION' : 'POST'}
-          feedAuthorId={feed.author.userId ?? null}
-        />
+        {/* 보는 사람(세션)에 따라 목록이 달라지므로 브라우저에서만 그립니다. */}
+        <ClientOnly>
+          <Comments
+            feedId={feed.feedId}
+            feedType={isQuestion ? 'QUESTION' : 'POST'}
+            feedAuthorId={feed.author.userId ?? null}
+          />
+        </ClientOnly>
       </section>
     </article>
   );
