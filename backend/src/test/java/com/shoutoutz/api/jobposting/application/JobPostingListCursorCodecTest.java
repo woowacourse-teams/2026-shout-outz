@@ -50,9 +50,12 @@ class JobPostingListCursorCodecTest {
             "LATEST|2026-11-05T02:30:00Z|100|1",
             "LATEST|not-an-instant|100",
             "LATEST|2026-11-05T02:30:00Z|0",
-            "LATEST|2026-11-05T02:30:00Z|abc"
+            "LATEST|2026-11-05T02:30:00Z|abc",
+            "LATEST|+294277-01-01T00:00:00Z|100",
+            "LATEST|+1000000000-12-31T23:59:59.999999999Z|100",
+            "LATEST|-4713-12-31T23:59:59Z|100"
     })
-    @DisplayName("형식이 깨진 커서는 400을 던진다.")
+    @DisplayName("형식이 깨졌거나 DB가 담을 수 없는 시각의 커서는 400을 던진다.")
     void rejectsMalformedCursor(String payload) {
         assertInvalidCursor(encode(payload));
     }

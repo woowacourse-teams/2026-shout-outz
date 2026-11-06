@@ -21,6 +21,8 @@ public final class JobPostingListCursorCodec {
     private static final String DELIMITER = "|";
     private static final String DELIMITER_REGEX = "\\|";
     private static final int LATEST_PARTS = 3;
+    private static final Instant MIN_POSTGRES_TIMESTAMP = Instant.parse("-4712-01-01T00:00:00Z");
+    private static final Instant MAX_POSTGRES_TIMESTAMP = Instant.parse("+294276-12-31T23:59:59.999999Z");
 
     private JobPostingListCursorCodec() {
     }
@@ -33,6 +35,7 @@ public final class JobPostingListCursorCodec {
 
     /**
      * 커서를 해독한다. 형식이 깨졌거나, 요청한 정렬 기준과 커서의 정렬 기준이 다르면 400 에러를 던진다.
+     * 등록 시각이 PostgreSQL 이 담을 수 없는 범위면 조회에서 500 이 나므로 형식 오류와 같이 400 으로 막는다.
      * 정렬을 바꾸면 이전 커서의 위치 기준이 맞지 않으므로, 커서 없이 처음부터 다시 조회해야 한다.
      */
     public static JobPostingListCursor decode(String encodedCursor, JobPostingSort expectedSort) {
@@ -43,9 +46,17 @@ public final class JobPostingListCursorCodec {
             if (sort != expectedSort || parts.length != LATEST_PARTS) {
                 throw new IllegalArgumentException();
             }
-            return JobPostingListCursor.latest(Instant.parse(parts[1]), Long.parseLong(parts[2]));
+            Instant createdAt = Instant.parse(parts[1]);
+            validateTimestampRange(createdAt);
+            return JobPostingListCursor.latest(createdAt, Long.parseLong(parts[2]));
         } catch (RuntimeException exception) {
             throw new BadRequestException(JobPostingErrorCode.JOB_POSTING_CURSOR_INVALID, exception);
+        }
+    }
+
+    private static void validateTimestampRange(Instant createdAt) {
+        if (createdAt.isBefore(MIN_POSTGRES_TIMESTAMP) || createdAt.isAfter(MAX_POSTGRES_TIMESTAMP)) {
+            throw new IllegalArgumentException();
         }
     }
 }
