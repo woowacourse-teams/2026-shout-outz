@@ -157,12 +157,12 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"feedType\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"feedType\"\
                     ,\"message\":\"feedType은 필수입니다.\"},{\"field\":\"slug\",\"message\"\
-                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"type\",\"message\":\"type은\
-                    \ 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"displayOrder는\
-                    \ 0 이상이어야 합니다.\"}]}"
+                    :\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\",\"message\"\
+                    :\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\":\"type은\
+                    \ 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -544,14 +544,14 @@ paths:
                 $ref: "#/components/schemas/MagazineFindAllSuccessResponse"
               examples:
                 magazine-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":1280,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/921e3f4e-3eee-4a0d-ab19-44322536d237/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@i14dbfc43f5d04a11834d\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":1313,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/4df452dc-95ea-46a0-9be2-9f5a3cc0fd80/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@id1a48fd96490406bb946\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i494420d9ba3f40f19bf3\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i383be3e0b9dc4532b6e2\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-11-06T04:14:49.117467Z\",\"createdAt\"\
-                    :\"2026-11-06T04:14:49.097123Z\",\"updatedAt\":\"2026-11-06T04:14:49.119101Z\"\
+                    ,\"publishedAt\":\"2026-11-06T04:37:10.505913Z\",\"createdAt\"\
+                    :\"2026-11-06T04:37:10.485731Z\",\"updatedAt\":\"2026-11-06T04:37:10.506905Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :0}],\"meta\":{\"nextCursor\":null,\"hasNext\":false,\"totalCount\"\
                     :1}}"
@@ -1489,23 +1489,23 @@ paths:
                 $ref: "#/components/schemas/MagazineFindAllSuccessResponse"
               examples:
                 magazine-admin-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":1286,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/ced5cd07-3ad9-4aff-be21-c3674ca68b87/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@i5e5a0d3795384e50b180\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":1319,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/2068537e-e68f-47c0-8dea-1e87321ae224/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@ia1504444a6ef4cd796fa\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@ib59590af84f3432290b4\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i37a10fca43b740bcacfa\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-06T04:14:49.433177Z\"\
-                    ,\"updatedAt\":\"2026-11-06T04:14:49.433177Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-06T04:37:10.785758Z\"\
+                    ,\"updatedAt\":\"2026-11-06T04:37:10.785758Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0},{\"id\"\
-                    :1285,\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/ced5cd07-3ad9-4aff-be21-c3674ca68b87/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@i5e5a0d3795384e50b180\",\"displayName\"\
+                    :1318,\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/2068537e-e68f-47c0-8dea-1e87321ae224/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@ia1504444a6ef4cd796fa\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@ib59590af84f3432290b4\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i37a10fca43b740bcacfa\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-06T04:14:49.414116Z\"\
-                    ,\"updatedAt\":\"2026-11-06T04:14:49.414116Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-06T04:37:10.772626Z\"\
+                    ,\"updatedAt\":\"2026-11-06T04:37:10.772626Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0}],\"meta\"\
                     :{\"nextCursor\":null,\"hasNext\":false,\"totalCount\":2}}"
     post:
@@ -1528,7 +1528,7 @@ paths:
         required: true
         schema:
           type: string
-        example: fUbI-lhuOP57hs253-ANYjrncN4OHiIFgMtKQMXW2Ik
+        example: vmXbQ-sRWGiASQVJrCsh2SZ4fl6BIaA5h6wTahLU0rk
       requestBody:
         content:
           application/json;charset=UTF-8:
@@ -1537,38 +1537,38 @@ paths:
             examples:
               magazine-create-csrf-invalid:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :17613,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":3439,\"contentMd\":\"본문\"}"
+                  :17785,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":3568,\"contentMd\":\"본문\"}"
               magazine-create-csrf-missing:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :17534,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":3361,\"contentMd\":\"본문\"}"
+                  :17706,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":3490,\"contentMd\":\"본문\"}"
               magazine-create:
                 value: "{\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :17575,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":3401,\"contentMd\":\"![매거진](media://3402)\"\
+                  :17747,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":3530,\"contentMd\":\"![매거진](media://3531)\"\
                   }"
               magazine-create-featuredUser-not-found:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
                   :9223372036854775807,\"featuredUserIntroduction\":\"우아한테크코스 출신 개\
-                  발자의 경험을 소개합니다.\",\"thumbnailMediaId\":3373,\"contentMd\":\"본문\"}"
+                  발자의 경험을 소개합니다.\",\"thumbnailMediaId\":3502,\"contentMd\":\"본문\"}"
               magazine-create-unauthorized:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :17561,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":3387,\"contentMd\":\"본문\"}"
+                  :17733,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":3516,\"contentMd\":\"본문\"}"
               magazine-create-invalid-media:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :17514,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":3340,\"contentMd\":\"![사진](https://example.com/a.png)\"\
+                  :17686,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":3469,\"contentMd\":\"![사진](https://example.com/a.png)\"\
                   }"
               magazine-create-validation-failed:
                 value: "{\"title\":\"\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :17520,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":3349,\"contentMd\":\"본문\"}"
+                  :17692,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":3478,\"contentMd\":\"본문\"}"
               magazine-create-forbidden:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :17498,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":3324,\"contentMd\":\"본문\"}"
+                  :17670,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":3453,\"contentMd\":\"본문\"}"
       responses:
         "403":
           description: "403"
@@ -1594,15 +1594,15 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-create:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":1285,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":17575,\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1318,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":17747,\"\
                     featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
-                    :{\"handle\":\"@ib59590af84f3432290b4\",\"displayName\":\"편집자\"\
-                    ,\"avatarUrl\":null},\"thumbnailMediaId\":3401,\"contentMd\":\"\
-                    ![매거진](media://3402)\",\"status\":\"DRAFT\",\"publishedAt\":null,\"\
-                    createdAt\":\"2026-11-06T04:14:49.414116Z\",\"updatedAt\":\"2026-11-06T04:14:49.414116Z\"\
-                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/ced5cd07-3ad9-4aff-be21-c3674ca68b87/thumbnail\"\
-                    ,\"previewContentMd\":\"![매거진](https://cdn.example.com/test-prefix/magazine/52f435a6-3c01-4734-ac72-0054f2f55680/display)\"\
+                    :{\"handle\":\"@i37a10fca43b740bcacfa\",\"displayName\":\"편집자\"\
+                    ,\"avatarUrl\":null},\"thumbnailMediaId\":3530,\"contentMd\":\"\
+                    ![매거진](media://3531)\",\"status\":\"DRAFT\",\"publishedAt\":null,\"\
+                    createdAt\":\"2026-11-06T04:37:10.772626Z\",\"updatedAt\":\"2026-11-06T04:37:10.772626Z\"\
+                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/2068537e-e68f-47c0-8dea-1e87321ae224/thumbnail\"\
+                    ,\"previewContentMd\":\"![매거진](https://cdn.example.com/test-prefix/magazine/4072f80d-0769-4437-b953-632b2a68bfd9/display)\"\
                     }}"
         "404":
           description: "404"
@@ -1931,19 +1931,19 @@ paths:
               examples:
                 auth-signup-invalid-profile:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
-                    bio\",\"message\":\"bio는 200자를 초과할 수 없습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"bio\",\"\
+                    message\":\"bio는 200자를 초과할 수 없습니다.\"},{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
                 auth-signup-session-missing:
                   value: "{\"status\":\"error\",\"code\":\"OAUTH_SIGNUP_SESSION_NOT_FOUND\"\
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
-                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
-                    message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
+                    message\":\"handle은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -2031,9 +2031,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -2385,6 +2385,44 @@ paths:
                 home-statistics-find:
                   value: "{\"status\":\"success\",\"data\":{\"projectCount\":128,\"\
                     feedCount\":341,\"currentCohort\":8,\"ongoingEventCount\":2}}"
+  /api/v1/job-postings/{jobPostingId}:
+    get:
+      tags:
+      - Job Posting
+      summary: 채용공고 상세 조회
+      description: |-
+        채용공고 정보와 역량 목록, 역량마다 추천 자료 수를 조회한다. 로그인 없이 볼 수 있다.
+        역량은 묶지 않고 공고에 적힌 순서(displayOrder)대로 한 목록으로 준다. 필수, 우대, 업무·기술 스택 구분은 category로 한다.
+        추천 자료 수는 MATCH, PARTIAL 판정 중 지금 볼 수 있는 자료만 센다.
+        없거나, 분석이 끝나지 않았거나, 숨겼거나, 마감된(마감일 당일은 볼 수 있음, 한국 날짜 기준) 공고는 404(JOB_POSTING_NOT_FOUND)로 응답한다.
+      operationId: job-posting-find-detail
+      parameters:
+      - name: jobPostingId
+        in: path
+        description: 채용공고 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobPostingDetailSuccessResponse"
+              examples:
+                job-posting-find-detail:
+                  value: "{\"status\":\"success\",\"data\":{\"jobPostingId\":100,\"\
+                    companyName\":\"토스뱅크\",\"jobRole\":\"BACKEND\",\"employmentType\"\
+                    :\"정규직\",\"careerRequirement\":\"경력 3년 이상\",\"title\":\"Server\
+                    \ Developer\",\"deadline\":\"2026-11-30\",\"sourceUrl\":\"https://careers.example.com/jobs/100\"\
+                    ,\"requirements\":[{\"requirementId\":11,\"displayOrder\":1,\"\
+                    name\":\"Kotlin, Spring\",\"category\":\"REQUIRED\",\"summary\"\
+                    :\"Kotlin과 Spring으로 서버를 개발한 경험이 필요해요.\",\"recommendationCount\"\
+                    :5},{\"requirementId\":12,\"displayOrder\":2,\"name\":\"Kafka\"\
+                    ,\"category\":\"PREFERRED\",\"summary\":\"메시지 큐를 운영해 본 경험이 있으면\
+                    \ 좋아요.\",\"recommendationCount\":0}]}}"
   /api/v1/magazines/{magazineId}:
     get:
       tags:
@@ -2410,15 +2448,15 @@ paths:
                 $ref: "#/components/schemas/MagazineFindSuccessResponse"
               examples:
                 magazine-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":1280,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/921e3f4e-3eee-4a0d-ab19-44322536d237/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@i14dbfc43f5d04a11834d\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1313,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/4df452dc-95ea-46a0-9be2-9f5a3cc0fd80/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@id1a48fd96490406bb946\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i494420d9ba3f40f19bf3\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i383be3e0b9dc4532b6e2\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"contentMd\":\"\
-                    ![사진](https://cdn.example.com/test-prefix/magazine/320e3cd1-8baf-4767-adea-bdfff0997d97/display)\"\
-                    ,\"publishedAt\":\"2026-11-06T04:14:49.117467Z\",\"createdAt\"\
-                    :\"2026-11-06T04:14:49.097123Z\",\"updatedAt\":\"2026-11-06T04:14:49.119101Z\"\
+                    ![사진](https://cdn.example.com/test-prefix/magazine/d454afcc-ddff-4abe-a441-9f52e3f570cd/display)\"\
+                    ,\"publishedAt\":\"2026-11-06T04:37:10.505913Z\",\"createdAt\"\
+                    :\"2026-11-06T04:37:10.485731Z\",\"updatedAt\":\"2026-11-06T04:37:10.506905Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :1}}"
         "404":
@@ -3396,9 +3434,9 @@ paths:
               examples:
                 user-profile-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"blogUrl\"\
-                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    blogUrl\",\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 user-profile-update-display-name-immutable:
                   value: "{\"status\":\"error\",\"code\":\"PROFILE_DISPLAY_NAME_IMMUTABLE\"\
                     ,\"message\":\"인증된 우아한테크코스 사용자는 표시 이름을 변경할 수 없습니다.\"}"
@@ -3967,15 +4005,15 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-admin-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":1286,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":17575,\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1319,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":17747,\"\
                     featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
-                    :{\"handle\":\"@ib59590af84f3432290b4\",\"displayName\":\"편집자\"\
-                    ,\"avatarUrl\":null},\"thumbnailMediaId\":3401,\"contentMd\":\"\
-                    ![사진](media://3402)\",\"status\":\"DRAFT\",\"publishedAt\":null,\"\
-                    createdAt\":\"2026-11-06T04:14:49.433177Z\",\"updatedAt\":\"2026-11-06T04:14:49.433177Z\"\
-                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/ced5cd07-3ad9-4aff-be21-c3674ca68b87/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/52f435a6-3c01-4734-ac72-0054f2f55680/display)\"\
+                    :{\"handle\":\"@i37a10fca43b740bcacfa\",\"displayName\":\"편집자\"\
+                    ,\"avatarUrl\":null},\"thumbnailMediaId\":3530,\"contentMd\":\"\
+                    ![사진](media://3531)\",\"status\":\"DRAFT\",\"publishedAt\":null,\"\
+                    createdAt\":\"2026-11-06T04:37:10.785758Z\",\"updatedAt\":\"2026-11-06T04:37:10.785758Z\"\
+                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/2068537e-e68f-47c0-8dea-1e87321ae224/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/4072f80d-0769-4437-b953-632b2a68bfd9/display)\"\
                     }}"
         "401":
           description: "401"
@@ -4025,7 +4063,7 @@ paths:
         required: true
         schema:
           type: string
-        example: 7xrW_iFIqKnPRCvBfY8F5ADhlVnQfcR1kjevONYOX1Y
+        example: _4Y0nr-w71WGvUChgWoHcOCBYsr13z264il3tFgSf10
       requestBody:
         content:
           application/json;charset=UTF-8:
@@ -4034,28 +4072,28 @@ paths:
             examples:
               magazine-update-validation-failed:
                 value: "{\"title\":\"\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :17520,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":3349,\"contentMd\":\"본문\"}"
+                  :17692,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":3478,\"contentMd\":\"본문\"}"
               magazine-update-csrf-missing:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :17536,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":3363,\"contentMd\":\"본문\"}"
+                  :17708,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":3492,\"contentMd\":\"본문\"}"
               magazine-update-not-found:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :17605,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":3431,\"contentMd\":\"본문\"}"
+                  :17777,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":3560,\"contentMd\":\"본문\"}"
               magazine-update-forbidden:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :17504,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":3330,\"contentMd\":\"본문\"}"
+                  :17676,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":3459,\"contentMd\":\"본문\"}"
               magazine-update-unauthorized:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :17567,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":3393,\"contentMd\":\"본문\"}"
+                  :17739,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":3522,\"contentMd\":\"본문\"}"
               magazine-update:
                 value: "{\"title\":\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :17548,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":3375,\"contentMd\":\"수정 본문\"}"
+                  :17720,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":3504,\"contentMd\":\"수정 본문\"}"
       responses:
         "400":
           description: "400"
@@ -4109,14 +4147,14 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-update:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":1278,\"title\"\
-                    :\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":17548,\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1311,\"title\"\
+                    :\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":17720,\"\
                     featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
-                    :{\"handle\":\"@if3d2394775a144caabeb\",\"displayName\":\"편집자\"\
-                    ,\"avatarUrl\":null},\"thumbnailMediaId\":3375,\"contentMd\":\"\
-                    수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\":\"2026-11-06T04:14:48.911195Z\"\
-                    ,\"createdAt\":\"2026-11-06T04:14:48.902680Z\",\"updatedAt\":\"\
-                    2026-11-06T04:14:48.939085Z\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/7c61a3ef-3fbc-4d60-8bf7-3991d8a58562/thumbnail\"\
+                    :{\"handle\":\"@ia031d79ff9854687861a\",\"displayName\":\"편집자\"\
+                    ,\"avatarUrl\":null},\"thumbnailMediaId\":3504,\"contentMd\":\"\
+                    수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\":\"2026-11-06T04:37:10.286060Z\"\
+                    ,\"createdAt\":\"2026-11-06T04:37:10.278637Z\",\"updatedAt\":\"\
+                    2026-11-06T04:37:10.315206Z\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/822abd65-907a-4f45-974f-caa1799c7b57/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
     delete:
       tags:
@@ -4146,7 +4184,7 @@ paths:
         required: true
         schema:
           type: string
-        example: K7nppoPpu6bYxssRc__ceHFoKmkW1iNkGW4Ni2CR2R4
+        example: Tt9epbTUQKLkjpM-qoWvt2EXkOW3ZtwgGXbp5wI5xoM
       responses:
         "401":
           description: "401"
@@ -5689,7 +5727,7 @@ paths:
         required: true
         schema:
           type: string
-        example: 2UL7DElFpWqytIdewqTrUt5DCwjyrxEmHjhqEo7sVgg
+        example: XLPDNXl6oRs_PKTA-R8OlsldOk8JQAFJ2ZkIPz6VHNM
       responses:
         "403":
           description: "403"
@@ -5742,16 +5780,16 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-publish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":1278,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":17548,\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1311,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":17720,\"\
                     featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
-                    :{\"handle\":\"@if3d2394775a144caabeb\",\"displayName\":\"편집자\"\
-                    ,\"avatarUrl\":null},\"thumbnailMediaId\":3375,\"contentMd\":\"\
-                    ![사진](media://3376)\",\"status\":\"PUBLISHED\",\"publishedAt\"\
-                    :\"2026-11-06T04:14:48.911195Z\",\"createdAt\":\"2026-11-06T04:14:48.902680Z\"\
-                    ,\"updatedAt\":\"2026-11-06T04:14:48.912124Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/7c61a3ef-3fbc-4d60-8bf7-3991d8a58562/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/44ee2cf5-7c57-405f-a52f-938c0f3f8395/display)\"\
+                    :{\"handle\":\"@ia031d79ff9854687861a\",\"displayName\":\"편집자\"\
+                    ,\"avatarUrl\":null},\"thumbnailMediaId\":3504,\"contentMd\":\"\
+                    ![사진](media://3505)\",\"status\":\"PUBLISHED\",\"publishedAt\"\
+                    :\"2026-11-06T04:37:10.286060Z\",\"createdAt\":\"2026-11-06T04:37:10.278637Z\"\
+                    ,\"updatedAt\":\"2026-11-06T04:37:10.286655Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/822abd65-907a-4f45-974f-caa1799c7b57/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/edc96e91-0a95-4398-8ddf-c6c69117d6a5/display)\"\
                     }}"
   /api/v1/admin/magazines/{magazineId}/unpublish:
     post:
@@ -5781,7 +5819,7 @@ paths:
         required: true
         schema:
           type: string
-        example: jRjk4phiTC9UHqHH9gZjKMhPlreY82yyjfxeoi9R9Kk
+        example: SiQwzVPpF-nDdw9PlxksI1hYW2Lt2VCnKKM8dwdZZ2o
       responses:
         "403":
           description: "403"
@@ -5804,14 +5842,14 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-unpublish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":1278,\"title\"\
-                    :\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":17548,\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1311,\"title\"\
+                    :\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":17720,\"\
                     featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
-                    :{\"handle\":\"@if3d2394775a144caabeb\",\"displayName\":\"편집자\"\
-                    ,\"avatarUrl\":null},\"thumbnailMediaId\":3375,\"contentMd\":\"\
-                    수정 본문\",\"status\":\"DRAFT\",\"publishedAt\":\"2026-11-06T04:14:48.911195Z\"\
-                    ,\"createdAt\":\"2026-11-06T04:14:48.902680Z\",\"updatedAt\":\"\
-                    2026-11-06T04:14:48.966169Z\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/7c61a3ef-3fbc-4d60-8bf7-3991d8a58562/thumbnail\"\
+                    :{\"handle\":\"@ia031d79ff9854687861a\",\"displayName\":\"편집자\"\
+                    ,\"avatarUrl\":null},\"thumbnailMediaId\":3504,\"contentMd\":\"\
+                    수정 본문\",\"status\":\"DRAFT\",\"publishedAt\":\"2026-11-06T04:37:10.286060Z\"\
+                    ,\"createdAt\":\"2026-11-06T04:37:10.278637Z\",\"updatedAt\":\"\
+                    2026-11-06T04:37:10.344183Z\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/822abd65-907a-4f45-974f-caa1799c7b57/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
         "401":
           description: "401"
@@ -15083,6 +15121,98 @@ components:
               type: number
               description: 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    JobPostingDetailSuccessResponse:
+      title: JobPostingDetailSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - companyName
+          - jobPostingId
+          - jobRole
+          - requirements
+          - sourceUrl
+          - title
+          type: object
+          properties:
+            sourceUrl:
+              type: string
+              description: 공고 원문 주소
+            requirements:
+              type: array
+              description: 역량 목록. 공고에 적힌 순서대로
+              items:
+                required:
+                - category
+                - displayOrder
+                - name
+                - recommendationCount
+                - requirementId
+                - summary
+                type: object
+                properties:
+                  summary:
+                    type: string
+                    description: 역량 한 줄 설명
+                  recommendationCount:
+                    type: number
+                    description: 추천 자료 수. 없으면 0
+                  name:
+                    type: string
+                    description: 역량 이름
+                  displayOrder:
+                    type: number
+                    description: 공고에 적힌 순서(1부터)
+                  category:
+                    type: string
+                    description: 역량 구분
+                    enum:
+                    - REQUIRED
+                    - PREFERRED
+                    - DUTY_OR_STACK
+                  requirementId:
+                    type: number
+                    description: 역량 ID
+            jobPostingId:
+              type: number
+              description: 채용공고 ID
+            employmentType:
+              type: string
+              description: 고용 형태
+              nullable: true
+            companyName:
+              type: string
+              description: 회사명
+            jobRole:
+              type: string
+              description: 직군
+              enum:
+              - BACKEND
+              - FRONTEND
+              - ANDROID
+              - IOS
+              - DEVOPS
+              - DATA
+              - AI
+              - ETC
+            deadline:
+              type: string
+              description: 마감일(yyyy-MM-dd). 없으면 null이고 상시 채용
+              nullable: true
+            title:
+              type: string
+              description: 공고 제목
+            careerRequirement:
+              type: string
+              description: 경력 조건
+              nullable: true
+          description: 채용공고 상세
         status:
           type: string
           description: 응답 상태

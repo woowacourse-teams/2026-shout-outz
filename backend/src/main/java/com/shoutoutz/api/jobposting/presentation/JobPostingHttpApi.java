@@ -3,6 +3,7 @@ package com.shoutoutz.api.jobposting.presentation;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.jobposting.application.JobPostingService;
 import com.shoutoutz.api.jobposting.presentation.dto.request.JobPostingFindAllRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingFindAllResponse;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,5 +31,10 @@ public class JobPostingHttpApi {
     ) {
         JobPostingFindAllResponse response = jobPostingService.findAll(request);
         return ResponseEntity.ok(SuccessResponse.success(response.items(), response.meta()));
+    }
+
+    @GetMapping("/{jobPostingId}")
+    public ResponseEntity<SuccessResponse<JobPostingDetailResponse>> findDetail(@PathVariable long jobPostingId) {
+        return ResponseEntity.ok(SuccessResponse.success(jobPostingService.findDetail(jobPostingId)));
     }
 }
