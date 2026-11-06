@@ -1,7 +1,7 @@
 package com.shoutoutz.api.jobposting.presentation.dto.response;
 
 import com.shoutoutz.api.common.response.SliceMetaResponse;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingSummary;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminSummary;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
 import java.time.Instant;
@@ -16,7 +16,7 @@ public record AdminJobPostingFindAllResponse(
         items = List.copyOf(items);
     }
 
-    public static AdminJobPostingFindAllResponse from(List<JobPostingSummary> summaries, SliceMetaResponse meta) {
+    public static AdminJobPostingFindAllResponse from(List<JobPostingAdminSummary> summaries, SliceMetaResponse meta) {
         return new AdminJobPostingFindAllResponse(
                 summaries.stream().map(Item::from).toList(),
                 meta
@@ -34,7 +34,7 @@ public record AdminJobPostingFindAllResponse(
             Instant createdAt
     ) {
 
-        private static Item from(JobPostingSummary summary) {
+        private static Item from(JobPostingAdminSummary summary) {
             return new Item(
                     summary.id(),
                     summary.companyName(),
