@@ -94,7 +94,18 @@ class Context:
         if self._github is None:
             from .github import GitHub
             self._github = GitHub(self.settings.github_token)
+            self._github.on_wait = self._on_wait
+            self._github.on_wait_done = self._on_wait_done
         return self._github
+
+    def _on_wait(self, until: datetime, seconds: float) -> None:
+        """GitHub 한도 대기를 시작함. 보고서에 적어 관리 웹이 멈춘 것이 아니라 기다리는 중임을 보이게 한다."""
+        self.report.waiting = {"reason": "github_rate_limit", "until": iso(until), "seconds": round(seconds)}
+        self.save()
+
+    def _on_wait_done(self) -> None:
+        self.report.waiting = None
+        self.save()
 
     def now_iso(self) -> str:
         return iso(self.now)

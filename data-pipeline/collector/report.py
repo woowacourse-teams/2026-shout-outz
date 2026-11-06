@@ -80,6 +80,7 @@ class SourceReport:
         # 모니터링 칸. runner 의 Context 가 채운다. 자막 저장(subtitles import)은 기본값 그대로 쓴다
         self.phase = "list"
         self.current: str | None = None
+        self.waiting: dict | None = None  # 한도 대기 중이면 {"reason", "until", "seconds"}
         self.progress = {"listed": 0, "to_fetch": 0, "fetched": 0}
         self.timing = {f"{p}_sec": 0.0 for p in PHASES}
         self.requests = {"http": 0, "github_rest": 0, "github_graphql_points": 0}
@@ -134,6 +135,7 @@ class SourceReport:
         out.update({
             "phase": "done" if self.finished else self.phase,
             "current": None if self.finished else self.current,
+            "waiting": None if self.finished else self.waiting,
             "progress": dict(self.progress),
             "timing": {k: round(v, 1) for k, v in self.timing.items()},
             "requests": dict(self.requests),

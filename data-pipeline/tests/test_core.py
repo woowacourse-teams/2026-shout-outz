@@ -643,3 +643,26 @@ def test_mid_run_save_failure_does_not_stop_collection(tmp_path):
     final = store.read_json(f"reports/{rep.run_id}.json")["sources"]["github-pr"]
     assert final["phase"] == "done"
     assert any("보고서 중간 저장 실패" in r["message"] and "S3 PutObject 500" in r["message"] for r in final["log_tail"])
+
+
+def test_github_rate_limit_wait_is_logged_and_reported(tmp_path, caplog):
+    """한도 대기에 들어가면 경고 로그를 남기고, 기다리는 동안 보고서에 waiting 이 적혔다가 끝나면 지워진다."""
+    import logging
+    from collector.github import GitHub
+    from collector.runner import Context
+    from collector.report import SourceReport
+
+    store = LocalStore(str(tmp_path))
+    saved = []
+    rep = SourceReport("github-pr", T0)
+    ctx = Context(settings=Settings(store_url=str(tmp_path), github_token="t"), store=store,
+                  index=Index(store, "github-pr"), state=None, report=rep, now=T0,
+                  save_report=lambda: saved.append(rep.to_json().get("waiting")))
+    gh = ctx.github
+    seen_during = []
+    gh.sleep = lambda s: seen_during.append(rep.waiting)
+    with caplog.at_level(logging.WARNING, logger="collector.github"):
+        gh._wait(1800)
+    assert "GitHub 한도 대기 30분" in caplog.text and "(한국 시각)에 이어 받음" in caplog.text
+    assert seen_during[0]["reason"] == "github_rate_limit" and seen_during[0]["seconds"] == 1800
+    assert saved[0]["until"] and saved[-1] is None and rep.waiting is None

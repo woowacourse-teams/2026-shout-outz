@@ -4,19 +4,26 @@
 - 한 번에 하나씩. 남은 한도가 바닥나면 초기화 시각(X-RateLimit-Reset)까지 기다렸다가 이어 받는다.
 - 보조 한도(403/429 + Retry-After)도 기다렸다 다시 보낸다. Retry-After 가 없는 보조 한도는 GitHub 권고대로
   1분부터 두 배씩 늘려 기다리고, SECONDARY_RETRIES 번 넘게 막히면 그대로 실패로 돌려준다.
+- 한도 때문에 기다릴 때는 "GitHub 한도 대기, HH:MM(한국 시각)에 이어 받음" 경고 로그를 남기고 on_wait 를 불러
+  보고서에 대기 중임을 적는다(2026-11-06). 기다리는 동안 진행 숫자가 멈춰 있어 멈춘 것처럼 보였기 때문이다.
 """
 
 from __future__ import annotations
 
 import base64
+import logging
 import os
 import re
 import time
+from datetime import datetime, timedelta, timezone
+from typing import Callable
 
 from .config import ORG, USER_AGENT
 from .http import Http, retry_after_seconds
 
 API = "https://api.github.com"
+KST = timezone(timedelta(hours=9))
+log = logging.getLogger("collector.github")
 SECONDARY_WAIT = 60.0   # Retry-After 없는 보조 한도의 첫 대기(GitHub 문서: 적어도 1분)
 SECONDARY_RETRIES = 5   # 한도로 막혀 다시 보내는 횟수 상한(Retry-After 없는 보조 한도면 60, 120, 240, 480, 960초)
 
@@ -37,6 +44,9 @@ class GitHub:
         self.rest_calls = 0
         self.graphql_points = 0
         self.waited_sec = 0.0
+        # 한도 대기 알림(runner 의 Context 가 넣는다). on_wait(이어 받을 시각, 기다릴 초), on_wait_done()
+        self.on_wait: Callable[[datetime, float], None] | None = None
+        self.on_wait_done: Callable[[], None] | None = None
 
     def _headers(self, extra: dict | None = None) -> dict:
         h = {"Authorization": f"Bearer {self.token}", "Accept": "application/vnd.github+json",
@@ -47,7 +57,16 @@ class GitHub:
     def _wait(self, seconds: float) -> None:
         seconds = max(1.0, seconds)
         self.waited_sec += seconds
-        self.sleep(seconds)
+        until = datetime.now(timezone.utc) + timedelta(seconds=seconds)
+        minutes = f"{seconds / 60:.0f}분" if seconds >= 60 else f"{seconds:.0f}초"
+        log.warning("GitHub 한도 대기 %s, %s(한국 시각)에 이어 받음", minutes, until.astimezone(KST).strftime("%H:%M"))
+        if self.on_wait:
+            self.on_wait(until, seconds)
+        try:
+            self.sleep(seconds)
+        finally:
+            if self.on_wait_done:
+                self.on_wait_done()
 
     def _limited(self, r, secondary_tries: int = 0) -> float | None:
         """한도 때문에 막혔으면 기다릴 초, 아니면 None."""
