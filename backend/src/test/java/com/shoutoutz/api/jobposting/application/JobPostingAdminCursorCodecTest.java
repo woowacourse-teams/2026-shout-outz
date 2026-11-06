@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingCursor;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminCursor;
 import com.shoutoutz.api.jobposting.domain.JobPostingErrorCode;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -12,13 +12,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-class JobPostingCursorCodecTest {
+class JobPostingAdminCursorCodecTest {
 
-    private final JobPostingCursorCodec codec = new JobPostingCursorCodec();
+    private final JobPostingAdminCursorCodec codec = new JobPostingAdminCursorCodec();
 
     @Test
     void 공고_ID를_커서로_변환하고_복원한다() {
-        JobPostingCursor expected = new JobPostingCursor(42L);
+        JobPostingAdminCursor expected = new JobPostingAdminCursor(42L);
 
         assertThat(codec.decode(codec.encode(expected))).isEqualTo(expected);
     }

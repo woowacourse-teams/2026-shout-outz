@@ -18,9 +18,9 @@ import com.shoutoutz.api.jobposting.application.dto.CandidateChunk;
 import com.shoutoutz.api.jobposting.application.dto.CandidateChunk.ChunkKind;
 import com.shoutoutz.api.jobposting.application.dto.ExtractedJobPosting;
 import com.shoutoutz.api.jobposting.application.dto.ExtractedJobRequirement;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingCursor;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingPage;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingSummary;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminCursor;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminPage;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminSummary;
 import com.shoutoutz.api.jobposting.application.dto.RequirementRecommendationDetail;
 import com.shoutoutz.api.jobposting.domain.JobPosting;
 import com.shoutoutz.api.jobposting.domain.JobPostingContentHash;
@@ -72,7 +72,7 @@ class JobPostingAdminServiceTest {
     @Mock
     private JobPostingExtractor extractor;
 
-    private final JobPostingCursorCodec cursorCodec = new JobPostingCursorCodec();
+    private final JobPostingAdminCursorCodec cursorCodec = new JobPostingAdminCursorCodec();
 
     private JobPostingAdminService service;
 
@@ -164,7 +164,7 @@ class JobPostingAdminServiceTest {
 
     @Test
     void 다음_페이지가_있으면_마지막_공고_ID로_커서를_만든다() {
-        when(queryRepository.findAll(null, 2)).thenReturn(new JobPostingPage(
+        when(queryRepository.findAll(null, 2)).thenReturn(new JobPostingAdminPage(
                 List.of(summary(9L), summary(8L)), true, 5L));
 
         var response = service.findAll(UserRole.ADMIN, new AdminJobPostingFindAllRequest(2, null));
@@ -172,13 +172,13 @@ class JobPostingAdminServiceTest {
         assertThat(response.items()).extracting(item -> item.jobPostingId()).containsExactly(9L, 8L);
         assertThat(response.meta().hasNext()).isTrue();
         assertThat(response.meta().totalCount()).isEqualTo(5L);
-        assertThat(cursorCodec.decode(response.meta().nextCursor())).isEqualTo(new JobPostingCursor(8L));
+        assertThat(cursorCodec.decode(response.meta().nextCursor())).isEqualTo(new JobPostingAdminCursor(8L));
     }
 
     @Test
     void 커서를_풀어_다음_위치부터_조회하고_마지막_페이지면_커서를_비운다() {
-        String cursor = cursorCodec.encode(new JobPostingCursor(8L));
-        when(queryRepository.findAll(new JobPostingCursor(8L), 20)).thenReturn(new JobPostingPage(
+        String cursor = cursorCodec.encode(new JobPostingAdminCursor(8L));
+        when(queryRepository.findAll(new JobPostingAdminCursor(8L), 20)).thenReturn(new JobPostingAdminPage(
                 List.of(summary(7L)), false, 5L));
 
         var response = service.findAll(UserRole.ADMIN, new AdminJobPostingFindAllRequest(null, cursor));
@@ -446,7 +446,7 @@ class JobPostingAdminServiceTest {
         );
     }
 
-    private JobPostingSummary summary(long id) {
-        return new JobPostingSummary(id, "회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, null, NOW);
+    private JobPostingAdminSummary summary(long id) {
+        return new JobPostingAdminSummary(id, "회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, 0, null, NOW);
     }
 }
