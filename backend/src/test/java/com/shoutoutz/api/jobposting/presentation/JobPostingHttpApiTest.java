@@ -27,11 +27,14 @@ import com.shoutoutz.api.jobposting.application.JobPostingService;
 import com.shoutoutz.api.jobposting.domain.JobPostingErrorCode;
 import com.shoutoutz.api.jobposting.domain.JobPostingSort;
 import com.shoutoutz.api.jobposting.domain.JobRole;
+import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import com.shoutoutz.api.jobposting.presentation.dto.request.JobPostingFindAllRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingFindAllResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingListMetaResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.JobRequirementRecommendationResponse;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +54,9 @@ class JobPostingHttpApiTest {
 
     private static final String TAG = "Job Posting";
     private static final long JOB_POSTING_ID = 100L;
+    private static final long REQUIREMENT_ID = 11L;
+    private static final String RECOMMENDATIONS_URL =
+            "/api/v1/job-postings/{jobPostingId}/requirements/{requirementId}/recommendations";
 
     @Autowired
     private MockMvc mockMvc;
@@ -192,6 +198,88 @@ class JobPostingHttpApiTest {
                                 )
                                 .build())
                 ));
+    }
+
+    @Test
+    void findsRequirementRecommendations() throws Exception {
+        given(jobPostingService.findRecommendations(JOB_POSTING_ID, REQUIREMENT_ID)).willReturn(List.of(
+                new JobRequirementRecommendationResponse(RecommendationVerdict.MATCH, "github-pr",
+                        "주문 API 동시성 제어", "https://github.com/woowacourse-teams/example/pull/1",
+                        "Spring 트랜잭션과 락으로 동시 주문을 막은 과정을 다룬다.", Instant.parse("2026-07-01T00:00:00Z"),
+                        "problem_solving", "샤웃아웃즈", "dahye"),
+                new JobRequirementRecommendationResponse(RecommendationVerdict.PARTIAL, "youtube-tekotalk",
+                        "Kotlin 코루틴 입문", "https://www.youtube.com/watch?v=example",
+                        "Kotlin 문법 일부를 설명한다.", Instant.parse("2025-03-10T00:00:00Z"),
+                        null, null, "크루")));
+
+        mockMvc.perform(get(RECOMMENDATIONS_URL, JOB_POSTING_ID, REQUIREMENT_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].verdict").value("MATCH"))
+                .andExpect(jsonPath("$.data[0].publishedAt").value("2026-07-01T00:00:00Z"))
+                .andExpect(jsonPath("$.data[1].verdict").value("PARTIAL"))
+                .andExpect(jsonPath("$.data[1].contentType").isEmpty())
+                .andDo(document(
+                        "job-posting-find-requirement-recommendations",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag(TAG)
+                                .summary("채용공고 역량별 추천 자료 조회")
+                                .description("""
+                                        역량 하나에 추천된 자료를 한 번에 모두 조회한다. 페이지를 나누지 않는다. 로그인 없이 볼 수 있다.
+                                        MATCH(딱 맞는 자료), PARTIAL(함께 보면 좋은 자료) 판정만 주고, MATCH를 먼저, 같은 판정 안에서는 관련도가 높은 순(같으면 추천 ID 순)으로 준다.
+                                        삭제됐거나 자료 정보가 없어 열 수 없는 자료는 뺀다. 자료가 없으면 빈 목록이다.
+                                        개수는 상세 조회의 recommendationCount와 같다.
+                                        source, contentType은 코드 그대로 주고 화면 문구(출처 이름, 배지)는 프론트가 정한다.
+                                        볼 수 없는 공고(없음, 분석이 끝나지 않음, 숨김, 마감)는 404(JOB_POSTING_NOT_FOUND), 이 공고의 역량이 아니면 404(JOB_REQUIREMENT_NOT_FOUND)로 응답한다.""")
+                                .pathParameters(
+                                        parameterWithName("jobPostingId").type(SimpleType.INTEGER).description("채용공고 ID"),
+                                        parameterWithName("requirementId").type(SimpleType.INTEGER)
+                                                .description("역량 ID. 이 공고의 역량이어야 한다"))
+                                .responseSchema(Schema.schema("JobRequirementRecommendationsSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(ARRAY).description("추천 자료 목록"),
+                                        fieldWithPath("data[].verdict").type(STRING)
+                                                .description("판정. MATCH(딱 맞는 자료), PARTIAL(함께 보면 좋은 자료)"),
+                                        fieldWithPath("data[].source").type(STRING).description(
+                                                "출처. github-pr(PR), github-teamdoc(팀 문서), github-wiki(위키), "
+                                                        + "github-discussion(디스커션), blog-post(블로그 글), youtube-tekotalk(테코톡)"),
+                                        fieldWithPath("data[].title").type(STRING).description("자료 제목"),
+                                        fieldWithPath("data[].url").type(STRING).description("자료 주소"),
+                                        fieldWithPath("data[].description").type(STRING)
+                                                .description("이 자료가 역량과 어떻게 이어지는지 설명"),
+                                        fieldWithPath("data[].publishedAt").type(STRING)
+                                                .description("ISO-8601 작성 시각. 모르면 null").optional(),
+                                        fieldWithPath("data[].contentType").type(STRING).description(
+                                                "자료 성격. 없으면 null(블로그·테코톡은 항상 null). problem_solving(문제 해결), "
+                                                        + "tech_decision(기술 결정), implementation(구현), chore(잡무), design(설계), "
+                                                        + "operation(운영), experiment(실험), convention(컨벤션), plan(계획), other(기타)")
+                                                .optional(),
+                                        fieldWithPath("data[].teamName").type(STRING)
+                                                .description("팀 이름. 연결된 프로젝트가 없거나 삭제됐으면 null").optional(),
+                                        fieldWithPath("data[].authorDisplay").type(STRING)
+                                                .description("작성자 표시 이름. 없으면 null").optional()
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    void returnsNotFoundForRequirementOfOtherPosting() throws Exception {
+        given(jobPostingService.findRecommendations(JOB_POSTING_ID, REQUIREMENT_ID))
+                .willThrow(new EntityNotFoundException(JobPostingErrorCode.JOB_REQUIREMENT_NOT_FOUND));
+
+        mockMvc.perform(get(RECOMMENDATIONS_URL, JOB_POSTING_ID, REQUIREMENT_ID))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("JOB_REQUIREMENT_NOT_FOUND"));
+    }
+
+    @Test
+    void rejectsNonNumericRequirementId() throws Exception {
+        mockMvc.perform(get(RECOMMENDATIONS_URL, JOB_POSTING_ID, "not-a-number"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        verifyNoInteractions(jobPostingService);
     }
 
     @Test

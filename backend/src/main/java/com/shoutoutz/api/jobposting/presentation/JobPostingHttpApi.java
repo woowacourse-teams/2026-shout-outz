@@ -5,6 +5,7 @@ import com.shoutoutz.api.jobposting.application.JobPostingService;
 import com.shoutoutz.api.jobposting.presentation.dto.request.JobPostingFindAllRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingFindAllResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.JobRequirementRecommendationResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -36,5 +37,14 @@ public class JobPostingHttpApi {
     @GetMapping("/{jobPostingId}")
     public ResponseEntity<SuccessResponse<JobPostingDetailResponse>> findDetail(@PathVariable long jobPostingId) {
         return ResponseEntity.ok(SuccessResponse.success(jobPostingService.findDetail(jobPostingId)));
+    }
+
+    @GetMapping("/{jobPostingId}/requirements/{requirementId}/recommendations")
+    public ResponseEntity<SuccessResponse<List<JobRequirementRecommendationResponse>>> findRecommendations(
+            @PathVariable long jobPostingId,
+            @PathVariable long requirementId
+    ) {
+        return ResponseEntity.ok(SuccessResponse.success(
+                jobPostingService.findRecommendations(jobPostingId, requirementId)));
     }
 }
