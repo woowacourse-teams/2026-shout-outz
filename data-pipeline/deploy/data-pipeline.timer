@@ -1,0 +1,13 @@
+# 매일 새벽 3시(한국 시각)에 수집기를 띄운다(08 문서 C10).
+# 켜기: sudo systemctl enable --now data-pipeline.timer
+[Unit]
+Description=샤라웃 원본 수집기 매일 실행
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 Asia/Seoul
+# 서버가 꺼져 있어 놓친 실행은 켜진 뒤 한 번 돌린다
+Persistent=true
+Unit=data-pipeline.service
+
+[Install]
+WantedBy=timers.target
