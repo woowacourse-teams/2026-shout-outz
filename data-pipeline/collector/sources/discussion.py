@@ -137,6 +137,7 @@ class DiscussionSource(RepoSource):
             if not r.get("has_discussions") and name not in known:
                 continue
             self.repos_queried += 1
+            ctx.begin_group(name)
             try:
                 repo_items = self._repo_items(gh, name)
             except Exception as exc:

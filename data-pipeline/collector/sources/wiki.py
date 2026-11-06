@@ -141,6 +141,7 @@ class WikiSource(RepoSource):
         complete: set[str] = set()
         for r in repos:
             name = r["name"]
+            ctx.begin_group(name)
             try:
                 head = self._ls_remote(ctx, name)
                 if head is None:

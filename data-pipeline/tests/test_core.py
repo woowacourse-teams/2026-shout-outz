@@ -405,3 +405,241 @@ def test_interrupted_run_finishes_report_saves_index_and_releases_lock(tmp_path)
     assert Index(store, "github-pr").load().get("k1") is not None  # 받은 데까지 색인에 남는다
     _, rep = run(tmp_path, FakeSource({"k1": "t1", "k2": "t2", "k3": "t3"}))
     assert rep.sources["github-pr"].counts["new"] == 2 and rep.sources["github-pr"].counts["unchanged"] == 1
+
+
+# 모니터링 칸(phase, current, progress, timing, requests, waits, slowest, peak_rss, log_tail, 중간 저장)
+
+class ManualClock:
+    """원천이 직접 시간을 넘기는 시계(부를 때마다 흐르지 않는다)."""
+
+    def __init__(self, t):
+        self.t = t
+
+    def __call__(self):
+        return self.t
+
+    def advance(self, sec):
+        self.t += timedelta(seconds=sec)
+
+
+class SnapshotStore(LocalStore):
+    """보고서를 쓸 때마다 그 모양을 남긴다. fail 이 참을 돌려주면 그 보고서 쓰기를 실패시킨다."""
+
+    def __init__(self, root, fail=None):
+        super().__init__(root)
+        self.snaps, self.fail = [], fail
+
+    def write_bytes(self, path, data, content_type="application/json"):
+        if path.startswith("reports/"):
+            snap = json.loads(data.decode("utf-8"))
+            if self.fail and self.fail(snap):
+                raise OSError("S3 PutObject 500")
+            self.snaps.append(snap)
+        super().write_bytes(path, data, content_type)
+
+
+def run_mon(tmp_path, src, clock, store=None, **kw):
+    _RUNS[0] += 1
+    store = store or SnapshotStore(str(tmp_path))
+    rep = collect(Settings(store_url=str(tmp_path)), ["github-pr"], store=store, make_source=lambda n: src,
+                  clock=clock, **kw)
+    return store, rep, rep.sources["github-pr"]
+
+
+class TimedSource(FakeSource):
+    """묶음마다 목록에 list_sec, 한 건 받기에 fetch_sec 초가 걸리는 원천. groups: {묶음: [키...]}."""
+
+    def __init__(self, clock, groups, list_sec=10, fetch_sec=5, gone_sec=0, finish_sec=0):
+        super().__init__({k: "t1" for ks in groups.values() for k in ks})
+        self.clock, self.groups = clock, groups
+        self.list_sec, self.fetch_sec, self.gone_sec, self.finish_sec = list_sec, fetch_sec, gone_sec, finish_sec
+        self.group_of_key = {k: g for g, ks in groups.items() for k in ks}
+
+    def list_items(self, ctx):
+        items = []
+        for g, keys in self.groups.items():
+            ctx.begin_group(g)
+            self.clock.advance(self.list_sec(g) if callable(self.list_sec) else self.list_sec)
+            items += [Item(k, {"updated_at": "t1"}, group=g) for k in keys]
+        return Listing(items, set(self.groups))
+
+    def fetch(self, ctx, item):
+        self.clock.advance(self.fetch_sec)
+        return super().fetch(ctx, item)
+
+    def group_of(self, entry):
+        return self.group_of_key.get(entry["external_key"], "gone-repo")
+
+    def confirm_gone(self, ctx, entry):
+        self.clock.advance(self.gone_sec)
+        return None
+
+    def finish(self, ctx):
+        self.clock.advance(self.finish_sec)
+
+
+def test_report_saved_on_phase_change_and_every_60_seconds(tmp_path):
+    clock = ManualClock(T0 + timedelta(days=_RUNS[0] + 1))
+    src = TimedSource(clock, {"r1": [], "r2": [f"k{i}" for i in range(10)]}, list_sec=70, fetch_sec=25)
+    store, rep, sr = run_mon(tmp_path, src, clock)
+    snaps = [s["sources"]["github-pr"] for s in store.snaps if "github-pr" in s["sources"]]
+    phases = [s["phase"] for s in snaps]
+    # 단계가 바뀔 때마다 저장하고, 끝나면 done
+    for p in ("list", "fetch", "gone", "finish"):
+        assert p in phases
+    assert phases[-1] == "done" and snaps[-1]["current"] is None
+    assert phases == sorted(phases, key=["list", "fetch", "gone", "finish", "done"].index)
+    # 목록 받기 중: r1 이 70초 걸려 r2 를 시작할 때 저장되고, current 는 r2
+    assert any(s["phase"] == "list" and s["current"] == "r2" for s in snaps)
+    # 받기 중: 25초씩 10건(250초). 60초가 지날 때마다만 저장(3건마다 = 75초)
+    mid = [s for s in store.snaps if s["sources"] and s["sources"]["github-pr"]["phase"] == "fetch"]
+    fetched = [s["sources"]["github-pr"]["progress"]["fetched"] for s in mid]
+    assert fetched == [0, 3, 6, 9]
+    times = [datetime.fromisoformat(s["updated_at"].replace("Z", "+00:00")) for s in mid]
+    assert all(b - a >= timedelta(seconds=60) for a, b in zip(times, times[1:]))
+    assert mid[1]["sources"]["github-pr"]["current"] == "r2"
+    assert snaps[-1]["progress"] == {"listed": 10, "to_fetch": 10, "fetched": 10}
+
+
+def test_report_not_saved_more_often_than_60_seconds(tmp_path):
+    clock = ManualClock(T0 + timedelta(days=_RUNS[0] + 1))
+    src = TimedSource(clock, {"r": [f"k{i}" for i in range(30)]}, list_sec=1, fetch_sec=1)  # 받기 30초
+    store, _, _ = run_mon(tmp_path, src, clock)
+    # 원천 끝(done)과 실행 끝(status 확정)에 한 번씩 쓰는 것은 원래대로
+    assert [s["sources"]["github-pr"]["phase"] for s in store.snaps if s["sources"]] == ["list", "fetch", "gone", "finish", "done", "done"]
+
+
+def test_timing_adds_up_to_duration(tmp_path):
+    clock = ManualClock(T0 + timedelta(days=_RUNS[0] + 1))
+    src = TimedSource(clock, {"a": ["k1", "k2"], "b": ["k3"]}, list_sec=10, fetch_sec=5, gone_sec=7, finish_sec=3)
+    run_mon(tmp_path, src, clock)
+    src.groups = {"a": ["k1"], "b": ["k3"]}  # k2 가 목록에서 빠져 사라짐 확인
+    src.world = {"k1": "t1", "k3": "t1"}
+    store, rep, sr = run_mon(tmp_path, src, clock)
+    data = store.read_json(f"reports/{rep.run_id}.json")["sources"]["github-pr"]
+    assert data["timing"] == {"list_sec": 20.0, "fetch_sec": 0.0, "gone_sec": 7.0, "finish_sec": 3.0}
+    assert abs(sum(data["timing"].values()) - data["duration_sec"]) <= 1.0
+    # 첫 실행: 받기 3건
+    first = store.read_json(sorted(store.list("reports/"))[-2])["sources"]["github-pr"]
+    assert first["timing"]["fetch_sec"] == 15.0
+    assert abs(sum(first["timing"].values()) - first["duration_sec"]) <= 1.0
+
+
+def test_requests_and_waits_from_http_and_github(tmp_path):
+    from types import SimpleNamespace as NS
+    http = NS(calls=5, polite_sec=1.5, retry_sec=2.0)
+    gh_http = NS(calls=10, polite_sec=0.0, retry_sec=1.0)
+    gh = NS(rest_calls=3, graphql_points=7, waited_sec=4.0, http=gh_http)
+
+    class WithClients(FakeSource):
+        def __init__(self, world):
+            super().__init__(world)
+            self._http, self._github = http, gh
+
+        def list_items(self, ctx):
+            ctx._http = http  # 원천과 Context 가 같은 객체를 가져도 한 번만 센다
+            ctx._github = gh
+            return super().list_items(ctx)
+
+    _, _, sr = run_mon(tmp_path, WithClients({"k1": "t1"}), clock_from(T0 + timedelta(days=_RUNS[0] + 1)))
+    data = sr.to_json()
+    assert data["requests"] == {"http": 15, "github_rest": 3, "github_graphql_points": 7}
+    assert data["waits"] == {"rate_limit_sec": 4.0, "polite_sec": 1.5, "retry_sec": 3.0}
+
+    # 가짜에 칸이 없거나 숫자가 아니면 0
+    _, _, sr = run_mon(tmp_path, FakeSource({"k1": "t1"}), clock_from(T0 + timedelta(days=_RUNS[0] + 1)))
+    assert sr.to_json()["requests"] == {"http": 0, "github_rest": 0, "github_graphql_points": 0}
+    assert sr.to_json()["waits"] == {"rate_limit_sec": 0.0, "polite_sec": 0.0, "retry_sec": 0.0}
+
+
+def test_http_counts_polite_and_retry_waits():
+    from collector.http import Http
+
+    class R:
+        def __init__(self, status):
+            self.status_code, self.headers = status, {}
+        def close(self):
+            pass
+
+    class Session:
+        def __init__(self, statuses):
+            self.headers, self.statuses = {}, list(statuses)
+        def request(self, method, url, **kw):
+            return R(self.statuses.pop(0))
+
+    slept = []
+    h = Http(host_delay=1.0, sleep=slept.append, session=Session([200, 200]))
+    h.get("https://a.example/1")
+    h.get("https://a.example/2")
+    assert h.calls == 2 and 0.9 < h.polite_sec <= 1.0 and h.retry_sec == 0.0
+
+    h = Http(sleep=slept.append, session=Session([503, 502, 200]))
+    assert h.get("https://b.example/").status_code == 200
+    assert h.calls == 3 and h.retry_sec == 2 + 4 and h.polite_sec == 0.0
+
+
+def test_slowest_top_10_by_group(tmp_path):
+    clock = ManualClock(T0 + timedelta(days=_RUNS[0] + 1))
+    groups = {f"r{i:02d}": [f"k{i}"] for i in range(12)}
+    src = TimedSource(clock, groups, list_sec=lambda g: int(g[1:]), fetch_sec=100)
+    src.groups["r00"] = ["k0", "k0b", "k0c"]  # r00 은 목록 0초, 받기 3건 300초
+    src.world.update({"k0b": "t1", "k0c": "t1"})
+    src.group_of_key.update({"k0b": "r00", "k0c": "r00"})
+    _, _, sr = run_mon(tmp_path, src, clock)
+    top = sr.to_json()["slowest"]
+    assert len(top) == 10
+    assert top[0] == {"group": "r00", "sec": 300.0, "docs": 3}
+    assert top[1] == {"group": "r11", "sec": 111.0, "docs": 1}
+    assert [t["sec"] for t in top] == sorted((t["sec"] for t in top), reverse=True)
+    assert {"r01", "r02"}.isdisjoint(t["group"] for t in top)
+
+
+def test_log_tail_keeps_last_50_warnings(tmp_path):
+    import logging
+    lg = logging.getLogger("collector.test")
+
+    class Noisy(FakeSource):
+        def list_items(self, ctx):
+            lg.info("정보는 남기지 않음")
+            for i in range(60):
+                lg.warning("경고 %d", i)
+            lg.warning("긴 경고 " + "가" * 1000)
+            try:
+                raise ValueError("나쁜 값")
+            except ValueError:
+                lg.exception("목록 일부 실패")
+            return super().list_items(ctx)
+
+    _, _, sr = run_mon(tmp_path, Noisy({"k1": "t1"}), clock_from(T0 + timedelta(days=_RUNS[0] + 1)))
+    tail = sr.to_json()["log_tail"]
+    assert len(tail) == 50
+    assert tail[0]["message"] == "경고 12" and tail[0]["level"] == "WARNING"
+    assert len(tail[-2]["message"]) == 500
+    last = tail[-1]
+    assert last["level"] == "ERROR" and last["message"].startswith("목록 일부 실패 | ")
+    assert "ValueError: 나쁜 값" in last["message"] and "test_core.py" in last["message"]
+    assert len(last["at"]) == 20 and last["at"].endswith("Z")
+    # 다음 원천, 다음 실행에는 섞이지 않는다
+    _, _, sr = run_mon(tmp_path, FakeSource({"k1": "t1"}), clock_from(T0 + timedelta(days=_RUNS[0] + 1)))
+    assert sr.to_json()["log_tail"] == []
+
+
+def test_peak_rss_and_run_fields(tmp_path):
+    store, rep, sr = run_mon(tmp_path, FakeSource({"k1": "t1"}), clock_from(T0 + timedelta(days=_RUNS[0] + 1)))
+    data = store.read_json(f"reports/{rep.run_id}.json")
+    s = data["sources"]["github-pr"]
+    assert s["peak_rss_mb"] > 0 and s["peak_rss_children_mb"] >= 0
+    assert data["peak_rss_mb"] > 0 and data["updated_at"] >= data["finished_at"]
+    assert {"phase", "current", "progress", "timing", "requests", "waits", "slowest", "peak_rss_mb",
+            "peak_rss_children_mb", "log_tail"} <= set(s)
+
+
+def test_mid_run_save_failure_does_not_stop_collection(tmp_path):
+    clock = ManualClock(T0 + timedelta(days=_RUNS[0] + 1))
+    src = TimedSource(clock, {"r": [f"k{i}" for i in range(6)]}, list_sec=1, fetch_sec=30)
+    store = SnapshotStore(str(tmp_path), fail=lambda s: (s["sources"].get("github-pr") or {}).get("phase") in ("fetch", "gone", "finish"))
+    store, rep, sr = run_mon(tmp_path, src, clock, store=store)
+    assert sr.counts["new"] == 6 and rep.status == "success"
+    final = store.read_json(f"reports/{rep.run_id}.json")["sources"]["github-pr"]
+    assert final["phase"] == "done"
+    assert any("보고서 중간 저장 실패" in r["message"] and "S3 PutObject 500" in r["message"] for r in final["log_tail"])

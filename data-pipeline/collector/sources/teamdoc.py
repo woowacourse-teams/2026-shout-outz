@@ -57,6 +57,7 @@ class TeamdocSource(RepoSource):
         complete: set[str] = set()
         for r in repos:
             name = r["name"]
+            ctx.begin_group(name)
             try:
                 got = self._repo_items(gh, name, r.get("default_branch"))
                 if got is None:

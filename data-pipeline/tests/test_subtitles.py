@@ -155,3 +155,13 @@ def test_import_bad_file_is_error(tmp_path):
     assert rep.status == "failure"
     assert rep.sources["youtube-tekotalk"].errors[0]["type"] == "bad_file"
     assert store.read_bytes("state/lock.json") is None
+
+
+def test_import_report_has_monitoring_defaults(tmp_path):
+    store = collected(tmp_path / "s", 1)
+    run = do_import(tmp_path, store, result_file(tmp_path, [{"video_id": "v0000000000", "subtitle": SUB}]))
+    data = store.read_json(run.path)
+    s = data["sources"]["youtube-tekotalk"]
+    assert s["changed"] == 1 and s["phase"] == "done" and s["current"] is None
+    assert s["progress"] == {"listed": 0, "to_fetch": 0, "fetched": 0} and s["slowest"] == []
+    assert "updated_at" in data and "peak_rss_mb" in data

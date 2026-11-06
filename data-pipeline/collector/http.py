@@ -46,6 +46,8 @@ class Http:
         self.sleep = sleep
         self._last: dict[str, float] = {}
         self.calls = 0
+        self.polite_sec = 0.0  # 같은 호스트 간격을 지키느라 기다린 초(보고서 waits)
+        self.retry_sec = 0.0   # 오류 뒤 다시 보내려고 기다린 초(보고서 waits)
         self.max_bytes = max_bytes  # 있으면 본문을 나눠 읽다가 넘는 순간 멈춘다
 
     def _polite(self, url: str) -> None:
@@ -56,6 +58,7 @@ class Http:
         if last is not None:
             wait = self.host_delay - (time.monotonic() - last)
             if wait > 0:
+                self.polite_sec += wait
                 self.sleep(wait)
         self._last[host] = time.monotonic()
 
@@ -92,15 +95,19 @@ class Http:
                 if attempt >= self.retries:
                     raise
                 attempt += 1
-                self.sleep(2 ** attempt)
+                self._backoff(2 ** attempt)
                 continue
             if r.status_code in (429, 500, 502, 503, 504) and attempt < self.retries:
                 attempt += 1
                 wait = retry_after_seconds(r.headers.get("Retry-After"))
                 r.close()
-                self.sleep(wait if wait is not None else 2 ** attempt)
+                self._backoff(wait if wait is not None else 2 ** attempt)
                 continue
             return self._read_capped(r) if self.max_bytes else r
+
+    def _backoff(self, seconds: float) -> None:
+        self.retry_sec += seconds
+        self.sleep(seconds)
 
     def get(self, url: str, **kw) -> requests.Response:
         return self.request("GET", url, **kw)

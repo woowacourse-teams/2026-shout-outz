@@ -89,6 +89,7 @@ class TekotalkSource(Source):
     # Source -------------------------------------------------------------
 
     def list_items(self, ctx: Context) -> Listing:
+        ctx.begin_group(PLAYLIST_ID)  # 보고서 current, slowest 의 묶음은 재생목록
         items: list[Item] = []
         total = 0
         token = None

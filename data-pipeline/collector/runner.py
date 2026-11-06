@@ -10,6 +10,9 @@
     5. 새 키, 바뀐 키: 한 건 받기 → raw 쓰기 → 색인 고치기(200건마다 중간 저장)
     6. 목록을 끝까지 받은 묶음에서 목록에 없는 키: 사라짐 확인 → 색인 gone
     7. 색인, 상태 저장, 보고서 쓰기, 잠금 풀기
+
+보고서는 원천이 도는 동안에도 단계가 바뀔 때(list, fetch, gone, finish)와 마지막 저장 뒤 SAVE_EVERY 초가 지났을 때
+덮어쓴다(Context.set_phase, Context.tick). 원천은 레포나 블로그 목록을 받기 시작할 때 ctx.begin_group 을 부른다.
 """
 
 from __future__ import annotations
@@ -17,7 +20,7 @@ from __future__ import annotations
 import logging
 import subprocess
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable
 
@@ -26,11 +29,13 @@ from .config import SOURCES, Settings
 from .http import Http
 from .index import Index
 from .keys import raw_path
-from .report import RunReport, SourceReport, iso, new_run_id, previous_failures
+from .report import LogTail, RunReport, SourceReport, iso, new_run_id, peak_rss_mb, previous_failures
 from .state import State
 from .store import Store, open_store
 
 log = logging.getLogger("collector")
+
+SAVE_EVERY = timedelta(seconds=60)  # 원천이 도는 동안 보고서를 덮어쓰는 최소 간격(S3 PUT 을 너무 자주 하지 않게)
 
 
 @dataclass
@@ -70,6 +75,13 @@ class Context:
     repos: list[str] | None = None
     _http: Http | None = None
     _github: Any = None
+    clock: Callable[[], datetime] = lock.now_utc
+    save_report: Callable[[], None] | None = None  # 보고서 중간 저장(실패해도 예외를 내지 않는 함수)
+    _source: Any = None
+    _phase_t: datetime | None = None   # 지금 단계를 시작한 시각
+    _mark: datetime | None = None      # 묶음 시간을 마지막으로 잰 시각
+    _group: str | None = None          # 목록 받기에서 지금 열려 있는 묶음
+    _saved_t: datetime | None = None   # 보고서를 마지막으로 저장한 시각
 
     @property
     def http(self) -> Http:
@@ -86,6 +98,102 @@ class Context:
 
     def now_iso(self) -> str:
         return iso(self.now)
+
+    # 모니터링(보고서 phase, current, progress, timing, slowest, 중간 저장)
+
+    def begin_group(self, name: str) -> None:
+        """원천이 묶음(레포, 블로그) 하나의 목록을 받기 시작할 때 부른다. 앞 묶음의 시간을 닫고 current 를 바꾼다."""
+        t = self.clock()
+        self._spend(t, self._group)
+        self._group = name
+        self.report.current = name
+        self.tick(t)
+
+    def fetched(self, item: "Item") -> None:
+        """받기 한 건을 처리함(성공, 실패 모두). 지난 처리 뒤 걸린 시간을 그 건의 묶음에 더한다."""
+        t = self.clock()
+        self.report.progress["fetched"] += 1
+        self._spend(t, item.group, 1)
+        if item.group is not None:
+            self.report.current = item.group
+        self.tick(t)
+
+    def set_phase(self, phase: str) -> None:
+        """단계를 바꾸고 보고서를 저장한다."""
+        t = self.clock()
+        self._close(t)
+        self.report.phase = phase
+        self.report.current = None
+        self.save(t)
+
+    def end(self) -> None:
+        """원천이 끝남(오류, 멈춤 포함). 지금 단계 시간을 닫고 요청 수, 메모리를 모은다. 저장은 collect 가 한다."""
+        if self._phase_t is not None:
+            self._close(self.clock())
+            self._phase_t = None
+        self.refresh_usage()
+
+    def tick(self, t: datetime | None = None) -> None:
+        """마지막 저장 뒤 SAVE_EVERY 가 지났으면 저장한다."""
+        t = t or self.clock()
+        if self._saved_t is None or t - self._saved_t >= SAVE_EVERY:
+            self.save(t)
+
+    def save(self, t: datetime | None = None) -> None:
+        self.refresh_usage()
+        self._saved_t = t or self.clock()
+        if self.save_report:
+            self.save_report()
+
+    def _start(self, source: "Source") -> None:
+        t = self.clock()
+        self._source = source
+        self._phase_t = self._mark = self._saved_t = t
+        self.report.phase = "list"
+
+    def _spend(self, t: datetime, group: str | None, docs: int = 0) -> None:
+        if group is not None and self._mark is not None:
+            self.report.add_group(group, (t - self._mark).total_seconds(), docs)
+        self._mark = t
+
+    def _close(self, t: datetime) -> None:
+        if self.report.phase == "list":
+            self._spend(t, self._group)  # 목록 받기에서 마지막으로 열린 묶음
+        self._group = None
+        self._mark = t
+        if self._phase_t is not None:
+            self.report.add_time(self.report.phase, (t - self._phase_t).total_seconds())
+        self._phase_t = t
+
+    def refresh_usage(self) -> None:
+        """이 원천이 쓴 Http, GitHub 객체에서 요청 수와 대기 시간을 모은다. 같은 객체는 한 번만 센다."""
+        src = self._source
+        ghs = _unique([self._github, getattr(src, "_gh", None), getattr(src, "_github", None)])
+        https = _unique([self._http, getattr(src, "_http", None), *(getattr(g, "http", None) for g in ghs)])
+        rep = self.report
+        rep.requests = {"http": sum(_num(h, "calls") for h in https),
+                        "github_rest": sum(_num(g, "rest_calls") for g in ghs),
+                        "github_graphql_points": sum(_num(g, "graphql_points") for g in ghs)}
+        rep.waits = {"rate_limit_sec": float(sum(_num(g, "waited_sec") for g in ghs)),
+                     "polite_sec": float(sum(_num(h, "polite_sec") for h in https)),
+                     "retry_sec": float(sum(_num(h, "retry_sec") for h in https))}
+        rep.peak_rss_mb = peak_rss_mb()
+        rep.peak_rss_children_mb = peak_rss_mb(children=True)
+
+
+def _unique(objs) -> list:
+    out, seen = [], set()
+    for o in objs:
+        if o is not None and id(o) not in seen:
+            seen.add(id(o))
+            out.append(o)
+    return out
+
+
+def _num(obj, name: str) -> float:
+    """숫자 칸이면 그 값, 없거나 숫자가 아니면 0(시험의 가짜 객체는 calls 가 목록이기도 하다)."""
+    v = getattr(obj, name, 0)
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else 0
 
 
 class Source:
@@ -150,6 +258,7 @@ def run_source(source: Source, ctx: Context) -> None:
 
 def _run_source(source: Source, ctx: Context) -> None:
     rep, index = ctx.report, ctx.index
+    ctx._start(source)
     seen: set[str] = set()
     complete: set[str] = set()
     try:
@@ -162,6 +271,7 @@ def _run_source(source: Source, ctx: Context) -> None:
         log.exception("%s 목록 받기 실패", source.name)
         rep.error(exc, "list_failed", ctx.now)
         items = []
+    rep.progress["listed"] = len(items)
 
     to_fetch: list[Item] = []
     for item in items:
@@ -175,8 +285,11 @@ def _run_source(source: Source, ctx: Context) -> None:
             rep.add("unchanged")
             continue
         to_fetch.append(item)
+    rep.progress["to_fetch"] = len(to_fetch)
 
+    ctx.set_phase("fetch")
     for item, got in source.fetch_many(ctx, to_fetch):
+        ctx.fetched(item)
         if isinstance(got, FetchError):
             rep.fail(item.key, got.reason, got.url)
             continue
@@ -198,11 +311,15 @@ def _run_source(source: Source, ctx: Context) -> None:
                    "fetched_at": record["fetched_at"], "gone": None, **fields})
         rep.add("changed" if entry else "new")
 
+    ctx.set_phase("gone")
     if not ctx.only:
         for entry in list(index.alive()):
             key = entry["external_key"]
-            if key in seen or source.group_of(entry) not in complete:
+            group = source.group_of(entry)
+            if key in seen or group not in complete:
                 continue
+            rep.current = group
+            ctx.tick()
             try:
                 reason = source.confirm_gone(ctx, entry)
             except Exception as exc:
@@ -216,6 +333,7 @@ def _run_source(source: Source, ctx: Context) -> None:
 
     # 색인을 먼저 저장한다. finish 가 상태(위키 커밋 등)를 먼저 저장했는데 색인 저장이 실패하면,
     # 다음 실행이 그 상태를 보고 받은 문서를 다시 보지 않게 된다(08 문서 4-5)
+    ctx.set_phase("finish")
     index.save()
     try:
         source.finish(ctx)
@@ -244,7 +362,14 @@ def collect(settings: Settings, sources: list[str] | None = None, only: list[str
     started = clock()
     run_id = new_run_id(started, settings.host)
     scope = {"sources": names, "only": only, "repos": repos}
-    run = RunReport(store, run_id, settings.trigger, settings.host, code_version(), scope, started)
+    run = RunReport(store, run_id, settings.trigger, settings.host, code_version(), scope, started, clock=clock)
+
+    def save_quietly() -> None:
+        # 중간 저장이 실패해도(S3 오류 등) 수집은 계속한다. 원천이 끝날 때 다시 쓴다
+        try:
+            run.write()
+        except Exception:
+            log.warning("보고서 중간 저장 실패", exc_info=True)
 
     got, held = lock.acquire(store, run_id, settings.host, started)
     if not got:
@@ -260,14 +385,25 @@ def collect(settings: Settings, sources: list[str] | None = None, only: list[str
             rep = SourceReport(name, now, previous_failures(store, name, exclude_run=run_id))
             run.sources[name] = rep
             log.info("%s 시작", name)
+            tail = LogTail(rep.log_tail)
+            logging.getLogger().addHandler(tail)  # 이 원천이 도는 동안의 WARNING 이상 로그(라이브러리 로그 포함)
+            ctx = None
+            save_quietly()  # 원천이 시작됐음을 바로 보이게
             try:
                 # 색인, 상태 읽기도 원천별 try 안에서 한다. 깨진 파일이 있어도 그 원천만 오류로 남기고 보고서를 끝까지 쓴다
                 ctx = Context(settings=settings, store=store, index=Index(store, name).load(),
-                              state=State(store, name).load(), report=rep, now=now, only=only, repos=repos)
+                              state=State(store, name).load(), report=rep, now=now, only=only, repos=repos,
+                              clock=clock, save_report=save_quietly)
                 run_source(make_source(name), ctx)
             except Exception as exc:
                 log.exception("%s 실패", name)
                 rep.error(exc, "unexpected", clock())
+            finally:
+                logging.getLogger().removeHandler(tail)
+                if ctx is not None:
+                    ctx.end()
+                else:
+                    rep.peak_rss_mb, rep.peak_rss_children_mb = peak_rss_mb(), peak_rss_mb(children=True)
             rep.finished = clock()
             log.info("%s 끝: %s", name, rep.counts)
             run.write()  # 원천 하나가 끝날 때마다(4-3)

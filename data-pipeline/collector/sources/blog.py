@@ -361,6 +361,7 @@ class BlogSource(Source):
                 self.unsupported.add(root)
                 self._notice("unsupported", root, blog.platform.unsupported)
                 continue
+            ctx.begin_group(root)
             st = states.setdefault(root, {})
             self.handled.add(root)
             for url in st.get("retry_urls") or []:  # 지난 실행에서 받기에 실패한 글. 목록이 실패해도 다시 받는다

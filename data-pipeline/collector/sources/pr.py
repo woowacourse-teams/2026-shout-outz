@@ -124,6 +124,7 @@ class PrSource(Source):
         items: list[Item] = []
         complete: set[str] = set(self.missing_repos)
         for name in names:
+            ctx.begin_group(name)
             try:
                 repo, numbers = self.list_repo(ctx, name)
             except Exception as exc:  # 이 레포만 건너뛴다. 받은 쪽까지의 PR 도 쓰지 않는다(사라짐 판단도 하지 않음)
