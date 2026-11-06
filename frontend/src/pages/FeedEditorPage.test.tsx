@@ -365,6 +365,115 @@ test.each([
   expect(names.filter((name) => name === 'feed_create_submitted')).toHaveLength(1);
 });
 
+function renderQuestionCreate(state: Record<string, unknown>) {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
+  });
+  client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  const router = createRouter({
+    routeTree,
+    history: createMemoryHistory({ initialEntries: ['/community'] }),
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <ModalProvider>
+        <RouterProvider router={router} />
+      </ModalProvider>
+    </QueryClientProvider>,
+  );
+  void router.navigate({ to: '/community/new', search: { type: 'QUESTION' }, state });
+  return router;
+}
+
+const recommendationDraft = { recommendation: mockRecommendations[0]!, from: '/community' };
+
+test.each([
+  ['초안 없이 들어오면 button', {}, { entry: 'button' }],
+  [
+    '미리보기의 작성 버튼으로 들어오면 recommendation',
+    { questionDraft: recommendationDraft, questionDraftFromPreview: true },
+    { entry: 'recommendation', recommendationId: 9001 },
+  ],
+  [
+    '로그인 뒤 초안으로 돌아오면 login_resume',
+    { questionDraft: recommendationDraft },
+    { entry: 'login_resume', recommendationId: 9001 },
+  ],
+])('작성 시작 이벤트에 진입 경로를 남긴다: %s', async (_, state, expected) => {
+  const track = jest.spyOn(analytics, 'track');
+  renderQuestionCreate(state);
+  await screen.findByRole('textbox', { name: '피드 내용' });
+
+  const started = track.mock.calls
+    .map(([event]) => event)
+    .filter((event) => event.name === 'feed_create_started');
+  expect(started).toEqual([{ name: 'feed_create_started', feedType: 'QUESTION', ...expected }]);
+});
+
+test('추천 초안을 그대로 등록하면 수정하지 않았다고 기록한다', async () => {
+  const track = jest.spyOn(analytics, 'track');
+  const router = renderQuestionCreate({
+    questionDraft: recommendationDraft,
+    questionDraftFromPreview: true,
+  });
+  const user = userEvent.setup();
+  await screen.findByRole('textbox', { name: '피드 내용' });
+  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+  await user.click(screen.getByRole('option', { name: '진로 고민' }));
+  await user.click(screen.getByRole('button', { name: '질문 등록하기' }));
+  await waitFor(() => expect(router.state.location.pathname).toBe('/community/100'));
+
+  expect(track).toHaveBeenCalledWith(
+    expect.objectContaining({
+      name: 'feed_create_submitted',
+      recommendationId: 9001,
+      titleEdited: false,
+      contentEdited: false,
+    }),
+  );
+});
+
+test('추천 초안의 제목만 고쳐 등록하면 제목 수정만 기록한다', async () => {
+  const track = jest.spyOn(analytics, 'track');
+  const router = renderQuestionCreate({ questionDraft: recommendationDraft });
+  const user = userEvent.setup();
+  await screen.findByRole('textbox', { name: '피드 내용' });
+  await fillTitle(user, '고친 제목');
+  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+  await user.click(screen.getByRole('option', { name: '진로 고민' }));
+  await user.click(screen.getByRole('button', { name: '질문 등록하기' }));
+  await waitFor(() => expect(router.state.location.pathname).toBe('/community/100'));
+
+  expect(track).toHaveBeenCalledWith(
+    expect.objectContaining({
+      name: 'feed_create_submitted',
+      recommendationId: 9001,
+      titleEdited: true,
+      contentEdited: false,
+    }),
+  );
+});
+
+test('일반 작성 등록에는 추천 관련 값을 넣지 않는다', async () => {
+  const track = jest.spyOn(analytics, 'track');
+  const router = renderQuestionCreate({});
+  const user = userEvent.setup();
+  await fillTitle(user, '진로 질문');
+  await user.type(await screen.findByRole('textbox', { name: '피드 내용' }), '내용');
+  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+  await user.click(screen.getByRole('option', { name: '진로 고민' }));
+  await user.click(screen.getByRole('button', { name: '질문 등록하기' }));
+  await waitFor(() => expect(router.state.location.pathname).toBe('/community/100'));
+
+  const submitted = track.mock.calls
+    .map(([event]) => event)
+    .find((event) => event.name === 'feed_create_submitted');
+  expect(submitted).not.toHaveProperty('recommendationId');
+  expect(submitted).not.toHaveProperty('titleEdited');
+  expect(submitted).not.toHaveProperty('contentEdited');
+});
+
 test('수정은 기존 본문과 카테고리를 채우고 저장 결과를 상세에 반영한다', async () => {
   const user = userEvent.setup();
   const { onSaved } = show(1);

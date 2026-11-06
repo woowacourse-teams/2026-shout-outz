@@ -12,12 +12,22 @@ export type AnalyticsEvent =
       cohort: number | null;
     }
   // 피드
-  | { name: 'feed_create_started'; from: string; feedType: FeedType }
+  | {
+      name: 'feed_create_started';
+      entry: FeedCreateEntry;
+      /** 추천을 거친 작성(entry가 recommendation·login_resume)에만 넣는다. */
+      recommendationId?: number;
+      feedType: FeedType;
+    }
   | {
       name: 'feed_create_submitted';
       categoryCount: number;
       mediaCount: number;
       feedType: FeedType;
+      /** 아래 세 값은 추천을 거친 작성에만 넣는다. 수정 여부는 추천 원문과 비교한 값이다. */
+      recommendationId?: number;
+      titleEdited?: boolean;
+      contentEdited?: boolean;
     }
   | { name: 'feed_create_failed'; reason: string; feedType: FeedType }
   | { name: 'feed_detail_opened'; feedId: number; from: FeedSurface }
@@ -71,6 +81,14 @@ export type AnalyticsEvent =
   | { name: 'nav_tab_clicked'; tab: NavTab; from: string }
   | { name: 'section_more_clicked'; target: 'feeds' | 'news' }
   | { name: 'card_clicked'; target: 'feed' | 'project' | 'news'; surface: string };
+
+/**
+ * 작성 화면에 들어온 경로.
+ * - recommendation: 추천 미리보기의 작성 버튼
+ * - login_resume: 추천으로 작성을 시작했다가 로그인(가입) 뒤 작성 화면으로 돌아옴
+ * - button: 그 밖의 일반 글쓰기 버튼
+ */
+export type FeedCreateEntry = 'recommendation' | 'login_resume' | 'button';
 
 export type NavTab = 'home' | 'feeds' | 'projects' | 'magazines' | 'news';
 

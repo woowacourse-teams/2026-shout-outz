@@ -10,11 +10,14 @@ import { FeedForm } from '@/components/feeds/FeedForm';
 import type { RecommendationNavigation } from '@/types/recommendation';
 import { saveLoginQuestionDraft } from '@/utils/recommendation';
 import { GithubLoginButton } from '@/components/auth/GithubLoginButton';
+import type { FeedCreateEntry } from '@/utils/analytics';
 
 interface FeedEditorPageProps {
   feedId?: number;
   feedType?: FeedType;
   initialDraft?: RecommendationNavigation;
+  /** 작성 화면에 들어온 경로. 작성 이벤트에만 쓴다. */
+  entry?: FeedCreateEntry;
   onCancel: () => void;
   onSaved: (feedId: number) => void;
 }
@@ -85,6 +88,7 @@ function AuthenticatedForm(props: FeedEditorPageProps) {
       userId={session.userId}
       feedType={props.feedType ?? 'POST'}
       initialDraft={props.initialDraft?.recommendation}
+      entry={props.entry}
       onCancel={props.onCancel}
       onSaved={props.onSaved}
     />
@@ -104,7 +108,9 @@ function EditForm({
   userId,
   onCancel,
   onSaved,
-}: Omit<Required<FeedEditorPageProps>, 'feedType' | 'initialDraft'> & { userId: number }) {
+}: Omit<Required<FeedEditorPageProps>, 'feedType' | 'initialDraft' | 'entry'> & {
+  userId: number;
+}) {
   const { data: feed } = useSuspenseQuery(feedQuery(feedId));
   return (
     <FeedForm

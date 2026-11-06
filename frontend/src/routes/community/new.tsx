@@ -27,11 +27,20 @@ function FeedCreateRoute() {
   });
   const [state, setState] = useState(current);
   if (current && current !== state) setState(current);
-  const draft = type === 'QUESTION' ? readRecommendationNavigation(state?.questionDraft) : undefined;
+  const draft =
+    type === 'QUESTION' ? readRecommendationNavigation(state?.questionDraft) : undefined;
+  // 미리보기의 작성 버튼만 questionDraftFromPreview를 붙인다. 그 표시 없이 초안을 들고 오는 길은
+  // 로그인(가입) 뒤 복귀(ResumeQuestionDraft, 가입 완료)뿐이다.
+  const entry = !draft
+    ? 'button'
+    : state?.questionDraftFromPreview
+      ? 'recommendation'
+      : 'login_resume';
   return (
     <FeedEditorPage
       feedType={type}
       initialDraft={draft}
+      entry={entry}
       onCancel={() => {
         clearLoginQuestionDraft();
         if (draft && state?.questionDraftFromPreview && state.__TSR_index > 0) {
