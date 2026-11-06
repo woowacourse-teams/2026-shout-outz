@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -319,6 +320,7 @@ class JobRequirementMatchingWorkerTest {
                 1L,
                 10L,
                 attemptCount,
+                UUID.fromString("00000000-0000-0000-0000-000000000001"),
                 JobRole.BACKEND,
                 "Spring 기반 API 개발 경험",
                 RequirementCategory.REQUIRED,

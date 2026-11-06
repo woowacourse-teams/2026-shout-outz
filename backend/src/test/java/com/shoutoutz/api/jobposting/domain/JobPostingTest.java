@@ -316,6 +316,43 @@ class JobPostingTest {
                 JobPostingErrorCode.JOB_POSTING_INVALID_REQUIREMENT_COUNT);
     }
 
+    @ParameterizedTest
+    @EnumSource(MatchingStatus.class)
+    @DisplayName("공고 상태가 FAILED 일 때만 실패한 공고로 본다.")
+    void judgesFailedPosting(MatchingStatus status) {
+        JobPosting posting = savedPosting(status);
+
+        assertThat(posting.isFailed()).isEqualTo(status == MatchingStatus.FAILED);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MatchingStatus.class, names = {"PENDING", "PROCESSING"})
+    @DisplayName("대기나 분석 중인 역량이 하나라도 있으면 분석 중인 역량이 있다고 본다.")
+    void detectsRequirementInProgress(MatchingStatus inProgress) {
+        JobPosting posting = postingWithRequirementStatuses(MatchingStatus.READY, MatchingStatus.FAILED, inProgress);
+
+        assertThat(posting.hasRequirementInProgress()).isTrue();
+    }
+
+    @Test
+    @DisplayName("역량이 모두 완료나 실패로 끝났으면 분석 중인 역량이 없다고 본다.")
+    void detectsNoRequirementInProgress() {
+        JobPosting posting = postingWithRequirementStatuses(MatchingStatus.READY, MatchingStatus.FAILED);
+
+        assertThat(posting.hasRequirementInProgress()).isFalse();
+    }
+
+    private JobPosting postingWithRequirementStatuses(MatchingStatus... statuses) {
+        List<JobRequirement> requirements = IntStream.range(0, statuses.length)
+                .mapToObj(index -> JobRequirement.reconstitute(
+                        100L + index, index + 1, "역량 " + index, RequirementCategory.REQUIRED, "역량 요약", statuses[index]))
+                .toList();
+        return JobPosting.reconstitute(
+                10L, "https://careers.example.com/jobs/123", JobPostingContentHash.from(CONTENT).value(), "예시 회사",
+                JobRole.BACKEND, null, "백엔드 개발자", null, null, MatchingStatus.FAILED, null, 1L,
+                requirements, NOW, NOW);
+    }
+
     @Test
     @DisplayName("분석이 끝났고 숨기지 않았고 마감일이 없는 공고는 사용자에게 보인다.")
     void visibleWhenReadyAndNotHiddenAndNoDeadline() {

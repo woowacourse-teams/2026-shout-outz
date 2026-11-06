@@ -173,6 +173,25 @@ public final class JobPosting {
     }
 
     /**
+     * 실패한 역량만 다시 분석할 수 있는지 판단할 때 쓴다.
+     * 같은 공고의 다른 역량이 아직 분석 중이어도 허용한다. 되돌리는 건 실패한 역량뿐이라 분석 중인 역량은 그대로 이어진다.
+     */
+    public boolean isFailed() {
+        return status == MatchingStatus.FAILED;
+    }
+
+    /**
+     * 모든 역량을 다시 분석할 수 있는지 판단할 때 쓴다.
+     * 분석 중인 역량은 되돌리지 않고 분석이 끝난 뒤 다시 요청하게 한다. 되돌리면 진행 중이던 분석 결과를 버리고 처음부터 다시 하게 된다.
+     */
+    public boolean hasRequirementInProgress() {
+        return requirements.stream()
+                .map(JobRequirement::getStatus)
+                .anyMatch(requirementStatus -> requirementStatus == MatchingStatus.PENDING
+                        || requirementStatus == MatchingStatus.PROCESSING);
+    }
+
+    /**
      * 사용자에게 보여 줄 공고인지 판단한다.
      * 분석이 끝났고(READY), 숨기지 않았고, 마감일이 없거나 오늘(한국 날짜)까지인 공고만 보여 준다.
      */

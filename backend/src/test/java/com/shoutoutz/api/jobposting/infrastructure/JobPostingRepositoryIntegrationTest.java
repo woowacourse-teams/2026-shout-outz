@@ -25,12 +25,14 @@ import com.shoutoutz.api.jobposting.domain.JobRequirement;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
+import com.shoutoutz.api.jobposting.domain.ReanalysisScope;
 import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import jakarta.persistence.EntityManager;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -353,6 +355,138 @@ class JobPostingRepositoryIntegrationTest {
     }
 
     @Test
+    void 실패한_역량만_다시_분석하면_실패한_역량만_대기로_되돌리고_분석_중인_역량은_그대로_둔다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+        long failedId = saved.getRequirements().get(0).getId();
+        long processingId = saved.getRequirements().get(1).getId();
+        jdbcTemplate.update("UPDATE job_postings SET status = 'FAILED' WHERE id = ?", saved.getId());
+        setMatchingColumns(failedId, "FAILED", 3, NOW, NOW, "JUDGE_FAILED");
+        // 검색 실패 뒤 두 번째 시도를 처리하는 중인 역량
+        setMatchingColumns(processingId, "PROCESSING", 2, NOW.plusSeconds(180), null, "SEARCH_FAILED");
+        clearPersistenceContext();
+
+        jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow();
+        int resetCount = jobPostingRepository.resetForReanalysis(
+                saved.getId(), ReanalysisScope.FAILED, NOW.plusSeconds(60));
+
+        assertThat(resetCount).isOne();
+        assertThat(matchingColumns(failedId)).containsExactly("PENDING", 0, null, null, null);
+        assertThat(claimToken(failedId)).isNull();
+        assertThat(matchingColumns(processingId))
+                .containsExactly("PROCESSING", 2, Timestamp.from(NOW.plusSeconds(180)), null, "SEARCH_FAILED");
+        assertThat(claimToken(processingId)).isNotNull();
+        assertThat(postingStatus(saved.getId())).isEqualTo("PENDING");
+        assertThat(updatedAt("job_requirements", failedId)).isEqualTo(NOW.plusSeconds(60));
+        assertThat(updatedAt("job_requirements", processingId)).isEqualTo(NOW);
+        assertThat(updatedAt("job_postings", saved.getId())).isEqualTo(NOW.plusSeconds(60));
+    }
+
+    @Test
+    void 실패한_역량만_다시_분석하면_완료된_역량과_그_추천_자료는_그대로_둔다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+        long readyId = saved.getRequirements().get(0).getId();
+        long failedId = saved.getRequirements().get(1).getId();
+        jdbcTemplate.update("UPDATE job_postings SET status = 'FAILED' WHERE id = ?", saved.getId());
+        setMatchingColumns(readyId, "READY", 2, null, null, null);
+        setMatchingColumns(failedId, "FAILED", 3, NOW, NOW, "NO_CANDIDATES");
+        insertRecommendation(readyId);
+        clearPersistenceContext();
+
+        jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow();
+        int resetCount = jobPostingRepository.resetForReanalysis(
+                saved.getId(), ReanalysisScope.FAILED, NOW.plusSeconds(60));
+
+        assertThat(resetCount).isOne();
+        assertThat(matchingColumns(readyId)).containsExactly("READY", 2, null, null, null);
+        assertThat(recommendationCount(readyId)).isOne();
+        assertThat(updatedAt("job_requirements", readyId)).isEqualTo(NOW);
+        assertThat(matchingColumns(failedId)).containsExactly("PENDING", 0, null, null, null);
+    }
+
+    @Test
+    void 전체를_다시_분석하면_모든_역량을_id는_그대로_대기로_되돌리고_그_공고의_추천_자료만_지운다() {
+        JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
+        long readyId = saved.getRequirements().get(0).getId();
+        long failedId = saved.getRequirements().get(1).getId();
+        jdbcTemplate.update("UPDATE job_postings SET status = 'FAILED' WHERE id = ?", saved.getId());
+        setMatchingColumns(readyId, "READY", 1, null, null, null);
+        setMatchingColumns(failedId, "FAILED", 3, NOW, NOW, "UNEXPECTED");
+        insertRecommendation(readyId);
+        JobPosting other = jobPostingRepository.save(posting("https://careers.example.com/jobs/2", NOW));
+        long otherRequirementId = other.getRequirements().getFirst().getId();
+        jdbcTemplate.update("UPDATE job_postings SET status = 'READY' WHERE id = ?", other.getId());
+        setMatchingColumns(otherRequirementId, "READY", 2, null, null, null);
+        insertRecommendation(otherRequirementId);
+        clearPersistenceContext();
+
+        jobPostingRepository.findByIdForUpdate(saved.getId()).orElseThrow();
+        int resetCount = jobPostingRepository.resetForReanalysis(
+                saved.getId(), ReanalysisScope.ALL, NOW.plusSeconds(60));
+        clearPersistenceContext();
+
+        assertThat(resetCount).isEqualTo(2);
+        assertThat(matchingColumns(readyId)).containsExactly("PENDING", 0, null, null, null);
+        assertThat(matchingColumns(failedId)).containsExactly("PENDING", 0, null, null, null);
+        assertThat(claimToken(readyId)).isNull();
+        assertThat(claimToken(failedId)).isNull();
+        assertThat(jobPostingRepository.findById(saved.getId()).orElseThrow().getRequirements())
+                .extracting(JobRequirement::getId)
+                .containsExactly(readyId, failedId);
+        assertThat(recommendationCount(readyId)).isZero();
+        assertThat(postingStatus(saved.getId())).isEqualTo("PENDING");
+        assertThat(updatedAt("job_requirements", readyId)).isEqualTo(NOW.plusSeconds(60));
+        assertThat(updatedAt("job_requirements", failedId)).isEqualTo(NOW.plusSeconds(60));
+        assertThat(updatedAt("job_postings", saved.getId())).isEqualTo(NOW.plusSeconds(60));
+        assertThat(matchingColumns(otherRequirementId)).containsExactly("READY", 2, null, null, null);
+        assertThat(recommendationCount(otherRequirementId)).isOne();
+        assertThat(postingStatus(other.getId())).isEqualTo("READY");
+    }
+
+    /** 가져간 적이 있는 역량처럼 claimToken 도 채운다. */
+    private void setMatchingColumns(long requirementId, String status, int attemptCount, Instant leaseUntil,
+                                    Instant nextAttemptAt, String lastError) {
+        jdbcTemplate.update("""
+                UPDATE job_requirements
+                SET status = ?, attempt_count = ?, claim_token = gen_random_uuid(), lease_until = ?,
+                    next_attempt_at = ?, last_error = ?
+                WHERE id = ?
+                """, status, attemptCount, leaseUntil == null ? null : Timestamp.from(leaseUntil),
+                nextAttemptAt == null ? null : Timestamp.from(nextAttemptAt), lastError, requirementId);
+    }
+
+    private UUID claimToken(long requirementId) {
+        return jdbcTemplate.queryForObject("SELECT claim_token FROM job_requirements WHERE id = ?", UUID.class,
+                requirementId);
+    }
+
+    private List<Object> matchingColumns(long requirementId) {
+        Map<String, Object> row = jdbcTemplate.queryForMap("""
+                SELECT status, attempt_count, lease_until, next_attempt_at, last_error
+                FROM job_requirements WHERE id = ?
+                """, requirementId);
+        return Arrays.asList(row.get("status"), row.get("attempt_count"), row.get("lease_until"),
+                row.get("next_attempt_at"), row.get("last_error"));
+    }
+
+    /**
+     * 테이블 이름은 테스트 안에서 정한 상수만 넘긴다.
+     */
+    private Instant updatedAt(String table, long id) {
+        return jdbcTemplate.queryForObject(
+                "SELECT updated_at FROM " + table + " WHERE id = ?", Timestamp.class, id).toInstant();
+    }
+
+    private String postingStatus(long jobPostingId) {
+        return jdbcTemplate.queryForObject("SELECT status FROM job_postings WHERE id = ?", String.class, jobPostingId);
+    }
+
+    private int recommendationCount(long requirementId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM requirement_recommendations WHERE job_requirement_id = ?", Integer.class,
+                requirementId);
+    }
+
+    @Test
     void 없는_공고를_잠그고_읽으면_빈_값을_돌려준다() {
         assertThat(jobPostingRepository.findByIdForUpdate(Long.MAX_VALUE)).isEmpty();
     }
@@ -443,13 +577,15 @@ class JobPostingRepositoryIntegrationTest {
     void 역량_완료_때_저장한_판정_근거를_그대로_읽는다() {
         JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
         JobRequirement requirement = saved.getRequirements().getFirst();
-        jdbcTemplate.update("UPDATE job_requirements SET status = 'PROCESSING', attempt_count = 1 WHERE id = ?",
-                requirement.getId());
+        UUID claimToken = UUID.randomUUID();
+        jdbcTemplate.update(
+                "UPDATE job_requirements SET status = 'PROCESSING', attempt_count = 1, claim_token = ? WHERE id = ?",
+                claimToken, requirement.getId());
         List<CandidateChunk> evidence = List.of(
                 new CandidateChunk(ChunkKind.EXPERIENCE, "따옴표 \" 와\n줄바꿈이 있는 조각", 0.0001),
                 new CandidateChunk(ChunkKind.INTRO, "소개 조각", 0.5));
         ClaimedJobRequirement claimed = new ClaimedJobRequirement(requirement.getId(), saved.getId(), 1,
-                JobRole.BACKEND, requirement.getName(), requirement.getCategory(), requirement.getSummary());
+                claimToken, JobRole.BACKEND, requirement.getName(), requirement.getCategory(), requirement.getSummary());
 
         jobRequirementMatchingRepository.complete(claimed, List.of(new RequirementRecommendation(
                 SOURCE, "resource-1", RecommendationVerdict.MATCH, "판정 이유", "설명", 0.7, evidence)), NOW);

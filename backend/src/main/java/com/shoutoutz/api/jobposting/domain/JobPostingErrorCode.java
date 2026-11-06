@@ -17,6 +17,8 @@ public enum JobPostingErrorCode implements ErrorCode {
     JOB_POSTING_EXTRACTION_FAILED("채용공고에서 정보를 뽑지 못했습니다. 잠시 후 다시 시도해주세요."),
     JOB_POSTING_ADMIN_CURSOR_INVALID("채용공고 목록 조회 커서가 올바르지 않습니다. 커서 없이 다시 조회해주세요."),
     JOB_POSTING_CURSOR_INVALID("채용공고 목록을 더 불러오지 못했습니다. 새로고침 후 다시 시도해주세요."),
+    JOB_POSTING_NOT_FAILED("분석에 실패한 공고만 실패한 역량을 다시 분석할 수 있습니다."),
+    JOB_POSTING_ANALYSIS_IN_PROGRESS("분석 중인 역량이 있어 전체를 다시 분석할 수 없습니다. 분석이 끝난 뒤 다시 시도해주세요."),
 
     JOB_POSTING_INVALID_ID_SIZE("채용공고 ID는 0보다 커야 합니다."),
     JOB_POSTING_INVALID_URL("채용공고 주소는 http 또는 https로 시작하는 1024자 이하의 주소여야 합니다."),

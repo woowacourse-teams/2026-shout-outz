@@ -34,15 +34,18 @@ import com.shoutoutz.api.jobposting.application.dto.CandidateChunk.ChunkKind;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
+import com.shoutoutz.api.jobposting.domain.ReanalysisScope;
 import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingExtractRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingFindAllRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingReanalysisRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingSaveRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.request.AdminJobPostingVisibilityUpdateRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingExtractResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingFindAllResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingReanalysisResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingSaveResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingUpdateResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.AdminJobPostingVisibilityUpdateResponse;
@@ -398,6 +401,91 @@ class AdminJobPostingHttpApiTest {
                         .header("X-CSRF-Token", "csrf-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(jobPostingAdminService);
+    }
+
+    @Test
+    void reanalyzesJobPosting() throws Exception {
+        given(jobPostingAdminService.reanalyze(
+                eq(JOB_POSTING_ID), eq(UserRole.ADMIN),
+                eq(new AdminJobPostingReanalysisRequest(ReanalysisScope.FAILED))))
+                .willReturn(new AdminJobPostingReanalysisResponse(JOB_POSTING_ID, MatchingStatus.PENDING, 2));
+
+        mockMvc.perform(post("/api/v1/admin/job-postings/{jobPostingId}/reanalysis", JOB_POSTING_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"scope": "FAILED"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PENDING"))
+                .andExpect(jsonPath("$.data.reanalyzedRequirementCount").value(2))
+                .andDo(document(
+                        "admin-job-posting-reanalyze",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag(TAG)
+                                .summary("채용공고 다시 분석")
+                                .description("""
+                                        공고의 역량을 다시 분석 대기로 되돌린다. 역량은 그대로 두고 Worker 가 검색부터 다시 분석한다.
+                                        되돌린 역량은 시도 횟수를 0으로 하고 마지막 실패 이유를 비우며, 공고는 PENDING 이 된다.
+                                        FAILED: 실패한 역량만 되돌린다. 공고가 FAILED 일 때만 할 수 있고, 다른 역량이 분석 중이어도 된다. 아니면 409(JOB_POSTING_NOT_FAILED).
+                                        ALL: 모든 역량을 되돌리고 추천 자료를 지운다. 우테코 자료가 새로 적재됐을 때 쓴다. 대기·분석 중인 역량이 있으면 409(JOB_POSTING_ANALYSIS_IN_PROGRESS).
+                                        scope 가 없거나 잘못된 값이면 400, 공고가 없으면 404(JOB_POSTING_NOT_FOUND)로 응답한다.
+                                        관리자가 아니면 403(JOB_POSTING_ADMIN_FORBIDDEN)으로 응답한다.""")
+                                .requestHeaders(
+                                        headerWithName(HttpHeaders.COOKIE)
+                                                .description("인증된 관리자의 JSESSIONID"),
+                                        headerWithName("X-CSRF-Token")
+                                                .description("세션 조회로 발급받은 CSRF 토큰")
+                                )
+                                .pathParameters(parameterWithName("jobPostingId").type(SimpleType.INTEGER)
+                                        .description("채용공고 ID"))
+                                .requestSchema(Schema.schema("AdminJobPostingReanalysisRequest"))
+                                .requestFields(
+                                        new EnumFields(ReanalysisScope.class).withPath("scope")
+                                                .description("다시 분석할 범위. FAILED는 실패한 역량만, ALL은 모든 역량")
+                                )
+                                .responseSchema(Schema.schema("AdminJobPostingReanalysisSuccessResponse"))
+                                .responseFields(
+                                        fieldWithPath("status").type(STRING).description("응답 상태"),
+                                        fieldWithPath("data").type(OBJECT).description("다시 분석을 받은 채용공고"),
+                                        fieldWithPath("data.jobPostingId").type(NUMBER).description("채용공고 ID"),
+                                        fieldWithPath("data.status").type(STRING)
+                                                .description("자료 분석 상태. 항상 PENDING"),
+                                        fieldWithPath("data.reanalyzedRequirementCount").type(NUMBER)
+                                                .description("다시 분석 대기로 되돌린 역량 수")
+                                )
+                                .build())
+                ));
+    }
+
+    @Test
+    void rejectsReanalysisWithoutScope() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/job-postings/{jobPostingId}/reanalysis", JOB_POSTING_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(jobPostingAdminService);
+    }
+
+    @Test
+    void rejectsReanalysisWithUnknownScope() throws Exception {
+        mockMvc.perform(post("/api/v1/admin/job-postings/{jobPostingId}/reanalysis", JOB_POSTING_ID)
+                        .with(authenticated(UserRole.ADMIN))
+                        .header(HttpHeaders.COOKIE, "JSESSIONID=admin-session")
+                        .header("X-CSRF-Token", "csrf-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"scope": "PARTIAL"}
+                                """))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(jobPostingAdminService);
