@@ -1,12 +1,18 @@
 package com.shoutoutz.api.jobposting.application;
 
+import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_NOT_FOUND;
+
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListCursor;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListItem;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListPage;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingSearchCondition;
+import com.shoutoutz.api.jobposting.domain.JobPosting;
+import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobPostingSort;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.presentation.dto.request.JobPostingFindAllRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingFindAllResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingListMetaResponse;
 import java.time.Clock;
@@ -29,6 +35,7 @@ public class JobPostingService {
      */
     private static final ZoneId DEADLINE_ZONE = ZoneId.of("Asia/Seoul");
 
+    private final JobPostingRepository jobPostingRepository;
     private final JobPostingQueryRepository queryRepository;
     private final Clock clock;
 
@@ -37,7 +44,7 @@ public class JobPostingService {
      */
     @Transactional(readOnly = true)
     public JobPostingFindAllResponse findAll(JobPostingFindAllRequest request) {
-        LocalDate today = LocalDate.now(clock.withZone(DEADLINE_ZONE));
+        LocalDate today = today();
         JobPostingListCursor cursor = request.cursor() == null
                 ? null
                 : JobPostingListCursorCodec.decode(request.cursor(), request.resolvedSort());
@@ -58,6 +65,24 @@ public class JobPostingService {
                 countsByJobRole
         );
         return JobPostingFindAllResponse.from(page.items(), meta);
+    }
+
+    /**
+     * 사용자에게 보여 줄 수 없는 공고(분석 안 끝남, 숨김, 마감)는 없는 공고처럼 404 로 응답한다.
+     */
+    @Transactional(readOnly = true)
+    public JobPostingDetailResponse findDetail(long jobPostingId) {
+        JobPosting jobPosting = jobPostingRepository.findById(jobPostingId)
+                .filter(posting -> posting.isVisibleOn(today()))
+                .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
+        return JobPostingDetailResponse.from(
+                jobPosting,
+                queryRepository.countRecommendationsByRequirement(jobPostingId)
+        );
+    }
+
+    private LocalDate today() {
+        return LocalDate.now(clock.withZone(DEADLINE_ZONE));
     }
 
     /**

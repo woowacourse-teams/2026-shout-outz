@@ -8,14 +8,22 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.shoutoutz.api.common.exception.custom.BadRequestException;
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListCursor;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListItem;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListPage;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingSearchCondition;
+import com.shoutoutz.api.jobposting.domain.JobPosting;
+import com.shoutoutz.api.jobposting.domain.JobPostingContentHash;
 import com.shoutoutz.api.jobposting.domain.JobPostingErrorCode;
+import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobPostingSort;
+import com.shoutoutz.api.jobposting.domain.JobRequirement;
 import com.shoutoutz.api.jobposting.domain.JobRole;
+import com.shoutoutz.api.jobposting.domain.MatchingStatus;
+import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import com.shoutoutz.api.jobposting.presentation.dto.request.JobPostingFindAllRequest;
+import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingFindAllResponse;
 import java.time.Clock;
 import java.time.Instant;
@@ -23,6 +31,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,6 +49,11 @@ class JobPostingServiceTest {
     private static final Instant NOW = Instant.parse("2026-11-04T15:30:00Z");
     private static final LocalDate KOREA_TODAY = LocalDate.of(2026, 11, 5);
     private static final Instant CREATED_AT = Instant.parse("2026-11-01T01:00:00Z");
+    private static final long JOB_POSTING_ID = 100L;
+    private static final String SOURCE_URL = "https://careers.example.com/jobs/100";
+
+    @Mock
+    private JobPostingRepository jobPostingRepository;
 
     @Mock
     private JobPostingQueryRepository queryRepository;
@@ -48,7 +62,7 @@ class JobPostingServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new JobPostingService(queryRepository, Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new JobPostingService(jobPostingRepository, queryRepository, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     @Test
@@ -124,6 +138,88 @@ class JobPostingServiceTest {
         assertThat(response.meta().totalCount()).isEqualTo(1L);
         assertThat(response.meta().allCount()).isEqualTo(5L);
         assertThat(response.meta().jobRoleCounts()).hasSize(JobRole.values().length);
+    }
+
+    @Test
+    @DisplayName("상세는 공고 정보와 역량을 순서대로 담고, 추천 자료가 없는 역량의 자료 수는 0이다.")
+    void findsDetail() {
+        given(posting(MatchingStatus.READY, null, null));
+        when(queryRepository.countRecommendationsByRequirement(JOB_POSTING_ID)).thenReturn(Map.of(11L, 3L));
+
+        JobPostingDetailResponse response = service.findDetail(JOB_POSTING_ID);
+
+        assertThat(response).isEqualTo(new JobPostingDetailResponse(
+                JOB_POSTING_ID, "토스뱅크", JobRole.BACKEND, "정규직", "3년 이상", "Server Developer", null,
+                SOURCE_URL,
+                List.of(
+                        new JobPostingDetailResponse.Requirement(
+                                11L, 1, "Kotlin, Spring", RequirementCategory.REQUIRED, "Spring 서버 개발 경험", 3L),
+                        new JobPostingDetailResponse.Requirement(
+                                12L, 2, "Kafka", RequirementCategory.PREFERRED, "메시지 큐 운영 경험", 0L))));
+    }
+
+    @Test
+    @DisplayName("마감일이 한국 날짜로 오늘이면 상세를 보여 준다.")
+    void findsDetailOnKoreaDeadline() {
+        given(posting(MatchingStatus.READY, null, KOREA_TODAY));
+
+        assertThat(service.findDetail(JOB_POSTING_ID).deadline()).isEqualTo(KOREA_TODAY);
+    }
+
+    @Test
+    @DisplayName("없는 공고는 404다.")
+    void rejectsMissingDetail() {
+        when(jobPostingRepository.findById(JOB_POSTING_ID)).thenReturn(Optional.empty());
+
+        assertNotFound();
+    }
+
+    @Test
+    @DisplayName("분석이 안 끝난 공고는 404이고 자료 수를 세지 않는다.")
+    void rejectsNotReadyDetail() {
+        assertInvisible(posting(MatchingStatus.PROCESSING, null, null));
+    }
+
+    @Test
+    @DisplayName("숨긴 공고는 404이고 자료 수를 세지 않는다.")
+    void rejectsHiddenDetail() {
+        assertInvisible(posting(MatchingStatus.READY, NOW, null));
+    }
+
+    @Test
+    @DisplayName("한국 날짜로 마감이 지난 공고는 404이고 자료 수를 세지 않는다.")
+    void rejectsClosedDetail() {
+        assertInvisible(posting(MatchingStatus.READY, null, KOREA_TODAY.minusDays(1)));
+    }
+
+    private void assertInvisible(JobPosting posting) {
+        given(posting);
+
+        assertNotFound();
+        verifyNoInteractions(queryRepository);
+    }
+
+    private void given(JobPosting posting) {
+        when(jobPostingRepository.findById(JOB_POSTING_ID)).thenReturn(Optional.of(posting));
+    }
+
+    private void assertNotFound() {
+        assertThatThrownBy(() -> service.findDetail(JOB_POSTING_ID))
+                .isInstanceOf(EntityNotFoundException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_NOT_FOUND);
+    }
+
+    private JobPosting posting(MatchingStatus status, Instant hiddenAt, LocalDate deadline) {
+        return JobPosting.reconstitute(
+                JOB_POSTING_ID, SOURCE_URL, JobPostingContentHash.from("공고 원문").value(), "토스뱅크",
+                JobRole.BACKEND, "3년 이상", "Server Developer", "정규직", deadline, status, hiddenAt, 1L,
+                List.of(
+                        JobRequirement.reconstitute(11L, 1, "Kotlin, Spring", RequirementCategory.REQUIRED,
+                                "Spring 서버 개발 경험", MatchingStatus.READY),
+                        JobRequirement.reconstitute(12L, 2, "Kafka", RequirementCategory.PREFERRED,
+                                "메시지 큐 운영 경험", MatchingStatus.READY)),
+                CREATED_AT, CREATED_AT);
     }
 
     private void givenPage(JobPostingListPage page) {
