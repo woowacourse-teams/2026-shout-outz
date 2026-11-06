@@ -2,9 +2,9 @@ package com.shoutoutz.api.jobposting.infrastructure;
 
 import com.shoutoutz.api.jobposting.application.JobPostingAdminQueryRepository;
 import com.shoutoutz.api.jobposting.application.dto.CandidateChunk;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingCursor;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingPage;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingSummary;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminCursor;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminPage;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminSummary;
 import com.shoutoutz.api.jobposting.application.dto.RequirementRecommendationDetail;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingFailure;
@@ -33,7 +33,7 @@ public class JobPostingAdminQueryRepositoryImpl implements JobPostingAdminQueryR
     private final ObjectMapper objectMapper;
 
     @Override
-    public JobPostingPage findAll(JobPostingCursor cursor, int size) {
+    public JobPostingAdminPage findAll(JobPostingAdminCursor cursor, int size) {
         StringBuilder sql = new StringBuilder("""
                 SELECT
                     id,
@@ -41,6 +41,10 @@ public class JobPostingAdminQueryRepositoryImpl implements JobPostingAdminQueryR
                     title,
                     job_role,
                     status,
+                    (SELECT COUNT(*)
+                     FROM job_requirements
+                     WHERE job_requirements.job_posting_id = job_postings.id
+                       AND job_requirements.status = 'FAILED') AS failed_requirement_count,
                     hidden_at,
                     created_at
                 FROM job_postings
@@ -55,15 +59,16 @@ public class JobPostingAdminQueryRepositoryImpl implements JobPostingAdminQueryR
         sql.append("ORDER BY id DESC\n");
         sql.append("LIMIT :limit");
 
-        List<JobPostingSummary> summaries = jdbcTemplate.query(
+        List<JobPostingAdminSummary> summaries = jdbcTemplate.query(
                 sql.toString(),
                 parameters,
-                (resultSet, rowNumber) -> new JobPostingSummary(
+                (resultSet, rowNumber) -> new JobPostingAdminSummary(
                         resultSet.getLong("id"),
                         resultSet.getString("company_name"),
                         resultSet.getString("title"),
                         JobRole.valueOf(resultSet.getString("job_role")),
                         MatchingStatus.valueOf(resultSet.getString("status")),
+                        resultSet.getInt("failed_requirement_count"),
                         toInstant(resultSet.getObject("hidden_at", OffsetDateTime.class)),
                         resultSet.getObject("created_at", OffsetDateTime.class).toInstant()
                 )
@@ -138,10 +143,10 @@ public class JobPostingAdminQueryRepositoryImpl implements JobPostingAdminQueryR
                 "SELECT COUNT(*) FROM job_postings", new MapSqlParameterSource(), Long.class);
     }
 
-    private JobPostingPage createPage(List<JobPostingSummary> summaries, int size, long totalCount) {
+    private JobPostingAdminPage createPage(List<JobPostingAdminSummary> summaries, int size, long totalCount) {
         if (summaries.size() <= size) {
-            return new JobPostingPage(summaries, false, totalCount);
+            return new JobPostingAdminPage(summaries, false, totalCount);
         }
-        return new JobPostingPage(summaries.subList(0, size), true, totalCount);
+        return new JobPostingAdminPage(summaries.subList(0, size), true, totalCount);
     }
 }

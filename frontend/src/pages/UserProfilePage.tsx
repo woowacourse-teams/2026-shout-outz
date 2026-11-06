@@ -13,12 +13,12 @@ import { ProfileTabs } from '@/components/users/ProfileTabs';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { DEFAULT_PROFILE_TAB } from '@/constants/user';
 import { type ProfileTab, type UserProfile } from '@/types/user';
-import { sessionQuery } from '@/apis/session';
 import { myProfileSummaryQuery } from '@/apis/user';
 import { verificationRequestQuery } from '@/apis/verification';
 import { Button, getButtonStyles } from '@/components/Button';
 import { ProfileEditModal } from '@/components/modals/ProfileEditModal';
 import { useModal } from '@/hooks/useModal';
+import { useSession } from '@/hooks/useSession';
 import { analytics } from '@/utils/analytics';
 import { toProjectSlugParam } from '@/utils/project';
 
@@ -79,7 +79,7 @@ export function UserProfilePage() {
 
 function MyProfileActions({ profile }: { profile: UserProfile }) {
   const { open } = useModal();
-  const session = useQuery({ ...sessionQuery, enabled: typeof window !== 'undefined' });
+  const session = useSession();
   const authenticated = session.data?.status === 'AUTHENTICATED' && session.data.userId !== null;
   const me = useQuery({
     ...myProfileSummaryQuery(session.data?.userId ?? 0),

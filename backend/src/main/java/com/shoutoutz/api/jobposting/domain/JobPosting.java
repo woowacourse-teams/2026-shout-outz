@@ -5,6 +5,7 @@ import com.shoutoutz.api.common.util.DataResolveUtil;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import lombok.Getter;
 
 /**
@@ -188,6 +189,24 @@ public final class JobPosting {
                 .map(JobRequirement::getStatus)
                 .anyMatch(requirementStatus -> requirementStatus == MatchingStatus.PENDING
                         || requirementStatus == MatchingStatus.PROCESSING);
+    }
+
+    /**
+     * 사용자에게 보여 줄 공고인지 판단한다.
+     * 분석이 끝났고(READY), 숨기지 않았고, 마감일이 없거나 오늘(한국 날짜)까지인 공고만 보여 준다.
+     */
+    public boolean isVisibleOn(LocalDate today) {
+        return status == MatchingStatus.READY
+                && hiddenAt == null
+                && (deadline == null || !deadline.isBefore(today));
+    }
+
+    /**
+     * 이 공고의 역량인지 판단한다.
+     */
+    public boolean hasRequirement(long requirementId) {
+        return requirements.stream()
+                .anyMatch(requirement -> Objects.equals(requirement.getId(), requirementId));
     }
 
     public static JobPosting reconstitute(

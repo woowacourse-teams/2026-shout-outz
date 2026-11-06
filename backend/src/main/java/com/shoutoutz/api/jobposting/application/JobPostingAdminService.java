@@ -12,8 +12,8 @@ import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.exception.custom.ForbiddenException;
 import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.jobposting.application.dto.ExtractedJobPosting;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingCursor;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingPage;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminCursor;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminPage;
 import com.shoutoutz.api.jobposting.domain.JobPosting;
 import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobPostingUrl;
@@ -46,7 +46,7 @@ public class JobPostingAdminService {
     private final JobPostingRepository jobPostingRepository;
     private final JobPostingAdminQueryRepository queryRepository;
     private final JobPostingExtractor extractor;
-    private final JobPostingCursorCodec cursorCodec;
+    private final JobPostingAdminCursorCodec cursorCodec;
     private final Clock clock;
 
     /**
@@ -93,12 +93,12 @@ public class JobPostingAdminService {
     @Transactional(readOnly = true)
     public AdminJobPostingFindAllResponse findAll(UserRole role, AdminJobPostingFindAllRequest request) {
         validateAdmin(role);
-        JobPostingPage page = queryRepository.findAll(
+        JobPostingAdminPage page = queryRepository.findAll(
                 cursorCodec.decode(request.cursor()),
                 request.resolvedSize()
         );
         String nextCursor = page.hasNext()
-                ? cursorCodec.encode(new JobPostingCursor(page.items().getLast().id()))
+                ? cursorCodec.encode(new JobPostingAdminCursor(page.items().getLast().id()))
                 : null;
         return AdminJobPostingFindAllResponse.from(
                 page.items(),

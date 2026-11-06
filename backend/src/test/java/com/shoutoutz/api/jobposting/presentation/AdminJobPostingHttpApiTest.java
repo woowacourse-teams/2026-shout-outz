@@ -186,8 +186,8 @@ class AdminJobPostingHttpApiTest {
         given(jobPostingAdminService.findAll(eq(UserRole.ADMIN), any(AdminJobPostingFindAllRequest.class)))
                 .willReturn(new AdminJobPostingFindAllResponse(
                         List.of(new AdminJobPostingFindAllResponse.Item(
-                                JOB_POSTING_ID, "우아한형제들", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING,
-                                NOW.plusSeconds(3600), NOW)),
+                                JOB_POSTING_ID, "우아한형제들", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.FAILED,
+                                2, NOW.plusSeconds(3600), NOW)),
                         new SliceMetaResponse("next-cursor", true, 3L)
                 ));
 
@@ -197,6 +197,7 @@ class AdminJobPostingHttpApiTest {
                         .queryParam("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].jobPostingId").value(JOB_POSTING_ID))
+                .andExpect(jsonPath("$.data[0].failedRequirementCount").value(2))
                 .andExpect(jsonPath("$.meta.nextCursor").value("next-cursor"))
                 .andDo(document(
                         "admin-job-posting-find-all",
@@ -222,6 +223,8 @@ class AdminJobPostingHttpApiTest {
                                         new EnumFields(JobRole.class).withPath("data[].jobRole").description("직무"),
                                         new EnumFields(MatchingStatus.class).withPath("data[].status")
                                                 .description("자료 분석 상태"),
+                                        fieldWithPath("data[].failedRequirementCount").type(NUMBER)
+                                                .description("최종 실패한 역량 수. 다시 시도할 예정인 역량은 세지 않는다"),
                                         fieldWithPath("data[].hiddenAt").type(STRING)
                                                 .description("숨긴 시각. 숨기지 않았으면 null").optional(),
                                         fieldWithPath("data[].createdAt").type(STRING).description("등록 시각"),

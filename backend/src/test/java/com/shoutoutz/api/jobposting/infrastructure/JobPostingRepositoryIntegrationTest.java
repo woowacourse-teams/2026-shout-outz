@@ -10,9 +10,9 @@ import com.shoutoutz.api.jobposting.application.JobRequirementMatchingRepository
 import com.shoutoutz.api.jobposting.application.dto.CandidateChunk;
 import com.shoutoutz.api.jobposting.application.dto.CandidateChunk.ChunkKind;
 import com.shoutoutz.api.jobposting.application.dto.ClaimedJobRequirement;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingCursor;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingPage;
-import com.shoutoutz.api.jobposting.application.dto.JobPostingSummary;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminCursor;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminPage;
+import com.shoutoutz.api.jobposting.application.dto.JobPostingAdminSummary;
 import com.shoutoutz.api.jobposting.application.dto.RequirementRecommendation;
 import com.shoutoutz.api.jobposting.application.dto.RequirementRecommendationDetail;
 import com.shoutoutz.api.jobposting.domain.JobPosting;
@@ -152,13 +152,13 @@ class JobPostingRepositoryIntegrationTest {
         long second = jobPostingRepository.save(posting("https://careers.example.com/jobs/2", NOW.plusSeconds(1))).getId();
         long third = jobPostingRepository.save(posting("https://careers.example.com/jobs/3", NOW.plusSeconds(2))).getId();
 
-        JobPostingPage firstPage = jobPostingAdminQueryRepository.findAll(null, 2);
-        JobPostingPage secondPage = jobPostingAdminQueryRepository.findAll(new JobPostingCursor(second), 2);
+        JobPostingAdminPage firstPage = jobPostingAdminQueryRepository.findAll(null, 2);
+        JobPostingAdminPage secondPage = jobPostingAdminQueryRepository.findAll(new JobPostingAdminCursor(second), 2);
 
-        assertThat(firstPage.items()).extracting(JobPostingSummary::id).containsExactly(third, second);
+        assertThat(firstPage.items()).extracting(JobPostingAdminSummary::id).containsExactly(third, second);
         assertThat(firstPage.hasNext()).isTrue();
         assertThat(firstPage.totalCount()).isEqualTo(3);
-        assertThat(secondPage.items()).extracting(JobPostingSummary::id).containsExactly(first);
+        assertThat(secondPage.items()).extracting(JobPostingAdminSummary::id).containsExactly(first);
         assertThat(secondPage.hasNext()).isFalse();
         assertThat(secondPage.totalCount()).isEqualTo(3);
     }
@@ -167,10 +167,29 @@ class JobPostingRepositoryIntegrationTest {
     void 공고_목록의_한_줄에_목록에_보여_줄_값을_담는다() {
         JobPosting saved = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW));
 
-        JobPostingSummary summary = jobPostingAdminQueryRepository.findAll(null, 20).items().getFirst();
+        JobPostingAdminSummary summary = jobPostingAdminQueryRepository.findAll(null, 20).items().getFirst();
 
-        assertThat(summary).isEqualTo(new JobPostingSummary(
-                saved.getId(), "예시 회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, null, NOW));
+        assertThat(summary).isEqualTo(new JobPostingAdminSummary(
+                saved.getId(), "예시 회사", "백엔드 개발자", JobRole.BACKEND, MatchingStatus.PENDING, 0, null, NOW));
+    }
+
+    @Test
+    void 공고_목록의_한_줄에_최종_실패한_역량_수만_센다() {
+        long failedPosting = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW)).getId();
+        long otherPosting = jobPostingRepository.save(posting("https://careers.example.com/jobs/2", NOW.plusSeconds(1))).getId();
+        jdbcTemplate.update("UPDATE job_postings SET status = 'FAILED' WHERE id = ?", failedPosting);
+        jdbcTemplate.update("UPDATE job_requirements SET status = 'FAILED' WHERE job_posting_id = ? AND display_order = 1",
+                failedPosting);
+        jdbcTemplate.update("""
+                UPDATE job_requirements SET status = 'PENDING', last_error = 'SEARCH_FAILED'
+                WHERE job_posting_id = ? AND display_order = 2
+                """, failedPosting);
+        jdbcTemplate.update("UPDATE job_requirements SET status = 'FAILED' WHERE job_posting_id = ?", otherPosting);
+
+        List<JobPostingAdminSummary> items = jobPostingAdminQueryRepository.findAll(null, 20).items();
+
+        assertThat(items).extracting(JobPostingAdminSummary::id, JobPostingAdminSummary::failedRequirementCount)
+                .containsExactly(tuple(otherPosting, 2), tuple(failedPosting, 1));
     }
 
     @Test
@@ -178,7 +197,7 @@ class JobPostingRepositoryIntegrationTest {
         long id = jobPostingRepository.save(posting("https://careers.example.com/jobs/1", NOW)).getId();
         jobPostingRepository.updateHiddenAt(id, true, NOW.plusSeconds(60));
 
-        JobPostingSummary summary = jobPostingAdminQueryRepository.findAll(null, 20).items().getFirst();
+        JobPostingAdminSummary summary = jobPostingAdminQueryRepository.findAll(null, 20).items().getFirst();
 
         assertThat(summary.hiddenAt()).isEqualTo(NOW.plusSeconds(60));
     }

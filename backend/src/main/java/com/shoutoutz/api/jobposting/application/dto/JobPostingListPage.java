@@ -2,9 +2,9 @@ package com.shoutoutz.api.jobposting.application.dto;
 
 import java.util.List;
 
-public record JobPostingPage(List<JobPostingSummary> items, boolean hasNext, long totalCount) {
+public record JobPostingListPage(List<JobPostingListItem> items, boolean hasNext) {
 
-    public JobPostingPage {
+    public JobPostingListPage {
         items = List.copyOf(items);
     }
 }

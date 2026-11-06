@@ -157,12 +157,12 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"type\",\"\
-                    message\":\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"\
-                    slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayOrder\",\"message\"\
-                    :\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"feedType\",\"message\"\
-                    :\"feedType은 필수입니다.\"},{\"field\":\"displayName\",\"message\"\
-                    :\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"type\",\"message\"\
+                    :\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug 형식이\
+                    \ 올바르지 않습니다.\"},{\"field\":\"feedType\",\"message\":\"feedType은\
+                    \ 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"displayOrder는\
+                    \ 0 이상이어야 합니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -448,6 +448,72 @@ paths:
                     ,\"siteName\":\"Example\"},\"createdAt\":\"2026-09-11T00:00:00Z\"\
                     ,\"updatedAt\":\"2026-09-11T00:00:00Z\",\"recommendationStatus\"\
                     :\"PENDING\"}}"
+  /api/v1/job-postings:
+    get:
+      tags:
+      - Job Posting
+      summary: 채용공고 목록 조회
+      description: |-
+        분석이 끝났고, 숨기지 않았고, 마감되지 않은(마감일 당일 포함, 한국 날짜 기준) 채용공고를 최신 등록순으로 조회한다. 로그인 없이 볼 수 있다.
+        직군 탭 개수(jobRoleCounts)와 allCount는 검색어만 반영하고 직군 조건은 반영하지 않는다.
+        jobRole, sort, size, keyword 값이 올바르지 않으면 400(VALIDATION_FAILED)으로 응답한다.
+      operationId: job-posting-find-all
+      parameters:
+      - name: jobRole
+        in: query
+        description: "직군(BACKEND, FRONTEND, ANDROID, IOS, DEVOPS, DATA, AI, ETC).\
+          \ 없으면 전체 직군"
+        required: false
+        schema:
+          type: string
+      - name: keyword
+        in: query
+        description: "검색어(100자 이하). 회사 이름, 공고 제목, 역량 이름에서 대소문자 구분 없이 찾는다"
+        required: false
+        schema:
+          type: string
+      - name: sort
+        in: query
+        description: 정렬. 지금은 LATEST(최신 등록순)만 있다
+        required: false
+        schema:
+          type: string
+          default: LATEST
+      - name: cursor
+        in: query
+        description: 다음 페이지 조회용 커서. 올바르지 않거나 정렬과 맞지 않으면 400(JOB_POSTING_CURSOR_INVALID)
+        required: false
+        schema:
+          type: string
+      - name: size
+        in: query
+        description: "조회 개수(1~50), 기본값 20"
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 20
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobPostingFindAllSuccessResponse"
+              examples:
+                job-posting-find-all:
+                  value: "{\"status\":\"success\",\"data\":[{\"jobPostingId\":100,\"\
+                    companyName\":\"토스뱅크\",\"jobRole\":\"BACKEND\",\"employmentType\"\
+                    :\"정규직\",\"careerRequirement\":\"경력 3년 이상\",\"title\":\"Server\
+                    \ Developer\",\"deadline\":\"2026-11-30\",\"requirementCount\"\
+                    :5,\"requirementNames\":[\"Kotlin, Spring\",\"데이터 모델링\",\"대용량\
+                    \ 트래픽 처리\"]}],\"meta\":{\"nextCursor\":\"next-cursor\",\"hasNext\"\
+                    :true,\"totalCount\":3,\"jobRoleCounts\":[{\"jobRole\":\"BACKEND\"\
+                    ,\"count\":3},{\"jobRole\":\"FRONTEND\",\"count\":2},{\"jobRole\"\
+                    :\"ANDROID\",\"count\":0},{\"jobRole\":\"IOS\",\"count\":0},{\"\
+                    jobRole\":\"DEVOPS\",\"count\":0},{\"jobRole\":\"DATA\",\"count\"\
+                    :0},{\"jobRole\":\"AI\",\"count\":0},{\"jobRole\":\"ETC\",\"count\"\
+                    :0}],\"allCount\":5}}"
   /api/v1/magazines:
     get:
       tags:
@@ -478,14 +544,14 @@ paths:
                 $ref: "#/components/schemas/MagazineFindAllSuccessResponse"
               examples:
                 magazine-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":965,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/1e69f3f8-aad3-4a3a-93db-12fa1b625968/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@id6aa57144c6d43949af5\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":1500,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/a9019cd4-8ada-4e9c-a67d-aea78d95f419/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@i9cabec9c12bf405cb96a\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i4a3671c6c9104226ab88\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i950a7e7594f4446e8903\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-11-04T07:37:09.293428Z\",\"createdAt\"\
-                    :\"2026-11-04T07:37:09.277825Z\",\"updatedAt\":\"2026-11-04T07:37:09.294232Z\"\
+                    ,\"publishedAt\":\"2026-11-06T06:56:54.376536Z\",\"createdAt\"\
+                    :\"2026-11-06T06:56:54.355859Z\",\"updatedAt\":\"2026-11-06T06:56:54.377484Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :0}],\"meta\":{\"nextCursor\":null,\"hasNext\":false,\"totalCount\"\
                     :1}}"
@@ -1294,9 +1360,10 @@ paths:
                 admin-job-posting-find-all:
                   value: "{\"status\":\"success\",\"data\":[{\"jobPostingId\":100,\"\
                     companyName\":\"우아한형제들\",\"title\":\"백엔드 개발자\",\"jobRole\":\"\
-                    BACKEND\",\"status\":\"PENDING\",\"hiddenAt\":\"2026-10-27T01:00:00Z\"\
-                    ,\"createdAt\":\"2026-10-27T00:00:00Z\"}],\"meta\":{\"nextCursor\"\
-                    :\"next-cursor\",\"hasNext\":true,\"totalCount\":3}}"
+                    BACKEND\",\"status\":\"FAILED\",\"failedRequirementCount\":2,\"\
+                    hiddenAt\":\"2026-10-27T01:00:00Z\",\"createdAt\":\"2026-10-27T00:00:00Z\"\
+                    }],\"meta\":{\"nextCursor\":\"next-cursor\",\"hasNext\":true,\"\
+                    totalCount\":3}}"
     post:
       tags:
       - Admin Job Posting
@@ -1380,7 +1447,7 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=89
+        example: JSESSIONID=36
       responses:
         "401":
           description: "401"
@@ -1423,23 +1490,23 @@ paths:
                 $ref: "#/components/schemas/MagazineFindAllSuccessResponse"
               examples:
                 magazine-admin-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":971,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/56d66234-9631-41fb-810e-3407efaa3bc3/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@i569089bdc7764a799887\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":1506,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/f8a3107d-f413-44a4-ac0f-40da66d46853/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@ida7f2e3bc1074bc8acf2\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i905cd323770e4587b820\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i5b8afea6743947f88174\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-04T07:37:09.552105Z\"\
-                    ,\"updatedAt\":\"2026-11-04T07:37:09.552105Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-06T06:56:54.651098Z\"\
+                    ,\"updatedAt\":\"2026-11-06T06:56:54.651098Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0},{\"id\"\
-                    :970,\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/56d66234-9631-41fb-810e-3407efaa3bc3/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@i569089bdc7764a799887\",\"displayName\"\
+                    :1505,\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/f8a3107d-f413-44a4-ac0f-40da66d46853/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@ida7f2e3bc1074bc8acf2\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i905cd323770e4587b820\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i5b8afea6743947f88174\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-04T07:37:09.539085Z\"\
-                    ,\"updatedAt\":\"2026-11-04T07:37:09.539085Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-06T06:56:54.635863Z\"\
+                    ,\"updatedAt\":\"2026-11-06T06:56:54.635863Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0}],\"meta\"\
                     :{\"nextCursor\":null,\"hasNext\":false,\"totalCount\":2}}"
     post:
@@ -1455,14 +1522,14 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=87
+        example: JSESSIONID=34
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: 2kHCrtIR7Gzi-g1Eg3Kucet5j4GY7jXhDyrfCkSUTIM
+        example: 6ehM5g8Fs_BYE5fWuo0EvVewu75z6CYfjpa81RrZnsw
       requestBody:
         content:
           application/json;charset=UTF-8:
@@ -1471,38 +1538,38 @@ paths:
             examples:
               magazine-create-csrf-invalid:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :14650,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":2595,\"contentMd\":\"본문\"}"
+                  :19028,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":4224,\"contentMd\":\"본문\"}"
               magazine-create-csrf-missing:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :14571,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":2517,\"contentMd\":\"본문\"}"
+                  :18949,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":4146,\"contentMd\":\"본문\"}"
               magazine-create:
                 value: "{\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :14612,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":2557,\"contentMd\":\"![매거진](media://2558)\"\
+                  :18990,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":4186,\"contentMd\":\"![매거진](media://4187)\"\
                   }"
               magazine-create-featuredUser-not-found:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
                   :9223372036854775807,\"featuredUserIntroduction\":\"우아한테크코스 출신 개\
-                  발자의 경험을 소개합니다.\",\"thumbnailMediaId\":2529,\"contentMd\":\"본문\"}"
+                  발자의 경험을 소개합니다.\",\"thumbnailMediaId\":4158,\"contentMd\":\"본문\"}"
               magazine-create-unauthorized:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :14598,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":2543,\"contentMd\":\"본문\"}"
+                  :18976,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":4172,\"contentMd\":\"본문\"}"
               magazine-create-invalid-media:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :14551,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":2496,\"contentMd\":\"![사진](https://example.com/a.png)\"\
+                  :18929,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":4125,\"contentMd\":\"![사진](https://example.com/a.png)\"\
                   }"
               magazine-create-validation-failed:
                 value: "{\"title\":\"\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :14557,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":2505,\"contentMd\":\"본문\"}"
+                  :18935,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":4134,\"contentMd\":\"본문\"}"
               magazine-create-forbidden:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :14535,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":2480,\"contentMd\":\"본문\"}"
+                  :18913,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":4109,\"contentMd\":\"본문\"}"
       responses:
         "403":
           description: "403"
@@ -1528,15 +1595,15 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-create:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":970,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":14612,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i905cd323770e4587b820\"\
-                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :2557,\"contentMd\":\"![매거진](media://2558)\",\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-04T07:37:09.539085Z\"\
-                    ,\"updatedAt\":\"2026-11-04T07:37:09.539085Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/56d66234-9631-41fb-810e-3407efaa3bc3/thumbnail\"\
-                    ,\"previewContentMd\":\"![매거진](https://cdn.example.com/test-prefix/magazine/5d6b1dc5-c564-44eb-ac13-45850812a3f0/display)\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1505,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":18990,\"\
+                    featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
+                    :{\"handle\":\"@i5b8afea6743947f88174\",\"displayName\":\"편집자\"\
+                    ,\"avatarUrl\":null},\"thumbnailMediaId\":4186,\"contentMd\":\"\
+                    ![매거진](media://4187)\",\"status\":\"DRAFT\",\"publishedAt\":null,\"\
+                    createdAt\":\"2026-11-06T06:56:54.635863Z\",\"updatedAt\":\"2026-11-06T06:56:54.635863Z\"\
+                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/f8a3107d-f413-44a4-ac0f-40da66d46853/thumbnail\"\
+                    ,\"previewContentMd\":\"![매거진](https://cdn.example.com/test-prefix/magazine/79294ac6-290c-42cc-b4d2-18b18ace8449/display)\"\
                     }}"
         "404":
           description: "404"
@@ -1865,19 +1932,19 @@ paths:
               examples:
                 auth-signup-invalid-profile:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"bio\",\"\
-                    message\":\"bio는 200자를 초과할 수 없습니다.\"},{\"field\":\"blogUrl\",\"\
-                    message\":\"blogUrl 형식이 올바르지 않습니다.\"},{\"field\":\"githubProfileUrl\"\
-                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"githubProfileUrl\"\
+                    ,\"message\":\"githubProfileUrl 형식이 올바르지 않습니다.\"},{\"field\":\"\
+                    bio\",\"message\":\"bio는 200자를 초과할 수 없습니다.\"},{\"field\":\"blogUrl\"\
+                    ,\"message\":\"blogUrl 형식이 올바르지 않습니다.\"}]}"
                 auth-signup-session-missing:
                   value: "{\"status\":\"error\",\"code\":\"OAUTH_SIGNUP_SESSION_NOT_FOUND\"\
                     ,\"message\":\"가입 대기 OAuth 신원을 찾을 수 없습니다.\"}"
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"message\"\
+                    :\"handle 형식이 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -1965,9 +2032,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -2319,6 +2386,44 @@ paths:
                 home-statistics-find:
                   value: "{\"status\":\"success\",\"data\":{\"projectCount\":128,\"\
                     feedCount\":341,\"currentCohort\":8,\"ongoingEventCount\":2}}"
+  /api/v1/job-postings/{jobPostingId}:
+    get:
+      tags:
+      - Job Posting
+      summary: 채용공고 상세 조회
+      description: |-
+        채용공고 정보와 역량 목록, 역량마다 추천 자료 수를 조회한다. 로그인 없이 볼 수 있다.
+        역량은 묶지 않고 공고에 적힌 순서(displayOrder)대로 한 목록으로 준다. 필수, 우대, 업무·기술 스택 구분은 category로 한다.
+        추천 자료 수는 MATCH(딱 맞는 자료), PARTIAL(함께 보면 좋은 자료) 판정 중 지금 볼 수 있는 자료만 센다.
+        없거나, 분석이 끝나지 않았거나, 숨겼거나, 마감된(마감일 당일은 볼 수 있음, 한국 날짜 기준) 공고는 404(JOB_POSTING_NOT_FOUND)로 응답한다.
+      operationId: job-posting-find-detail
+      parameters:
+      - name: jobPostingId
+        in: path
+        description: 채용공고 ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobPostingDetailSuccessResponse"
+              examples:
+                job-posting-find-detail:
+                  value: "{\"status\":\"success\",\"data\":{\"jobPostingId\":100,\"\
+                    companyName\":\"토스뱅크\",\"jobRole\":\"BACKEND\",\"employmentType\"\
+                    :\"정규직\",\"careerRequirement\":\"경력 3년 이상\",\"title\":\"Server\
+                    \ Developer\",\"deadline\":\"2026-11-30\",\"sourceUrl\":\"https://careers.example.com/jobs/100\"\
+                    ,\"requirements\":[{\"requirementId\":11,\"displayOrder\":1,\"\
+                    name\":\"Kotlin, Spring\",\"category\":\"REQUIRED\",\"summary\"\
+                    :\"Kotlin과 Spring으로 서버를 개발한 경험이 필요해요.\",\"recommendationCount\"\
+                    :5},{\"requirementId\":12,\"displayOrder\":2,\"name\":\"Kafka\"\
+                    ,\"category\":\"PREFERRED\",\"summary\":\"메시지 큐를 운영해 본 경험이 있으면\
+                    \ 좋아요.\",\"recommendationCount\":0}]}}"
   /api/v1/magazines/{magazineId}:
     get:
       tags:
@@ -2344,15 +2449,15 @@ paths:
                 $ref: "#/components/schemas/MagazineFindSuccessResponse"
               examples:
                 magazine-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":965,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/1e69f3f8-aad3-4a3a-93db-12fa1b625968/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@id6aa57144c6d43949af5\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1500,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/a9019cd4-8ada-4e9c-a67d-aea78d95f419/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@i9cabec9c12bf405cb96a\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i4a3671c6c9104226ab88\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@i950a7e7594f4446e8903\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"contentMd\":\"\
-                    ![사진](https://cdn.example.com/test-prefix/magazine/5d4a9c9c-1d30-4aab-922c-51e1e586b966/display)\"\
-                    ,\"publishedAt\":\"2026-11-04T07:37:09.293428Z\",\"createdAt\"\
-                    :\"2026-11-04T07:37:09.277825Z\",\"updatedAt\":\"2026-11-04T07:37:09.294232Z\"\
+                    ![사진](https://cdn.example.com/test-prefix/magazine/2ac9dafa-f25a-4b3c-ae4e-d3ce44b0e433/display)\"\
+                    ,\"publishedAt\":\"2026-11-06T06:56:54.376536Z\",\"createdAt\"\
+                    :\"2026-11-06T06:56:54.355859Z\",\"updatedAt\":\"2026-11-06T06:56:54.377484Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :1}}"
         "404":
@@ -2487,10 +2592,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
-                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
+                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -3727,7 +3832,7 @@ paths:
         required: true
         schema:
           type: integer
-          format: int32
+          format: int64
       - name: Cookie
         in: header
         description: 인증된 관리자의 JSESSIONID
@@ -3778,7 +3883,7 @@ paths:
         required: true
         schema:
           type: integer
-          format: int32
+          format: int64
       - name: Cookie
         in: header
         description: 인증된 관리자의 JSESSIONID
@@ -3841,7 +3946,7 @@ paths:
         required: true
         schema:
           type: integer
-          format: int32
+          format: int64
       - name: Cookie
         in: header
         description: 인증된 관리자의 JSESSIONID
@@ -3881,7 +3986,7 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=88
+        example: JSESSIONID=35
       responses:
         "404":
           description: "404"
@@ -3901,15 +4006,15 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-admin-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":971,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":14612,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i905cd323770e4587b820\"\
-                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :2557,\"contentMd\":\"![사진](media://2558)\",\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-04T07:37:09.552105Z\"\
-                    ,\"updatedAt\":\"2026-11-04T07:37:09.552105Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/56d66234-9631-41fb-810e-3407efaa3bc3/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/5d6b1dc5-c564-44eb-ac13-45850812a3f0/display)\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1506,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":18990,\"\
+                    featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
+                    :{\"handle\":\"@i5b8afea6743947f88174\",\"displayName\":\"편집자\"\
+                    ,\"avatarUrl\":null},\"thumbnailMediaId\":4186,\"contentMd\":\"\
+                    ![사진](media://4187)\",\"status\":\"DRAFT\",\"publishedAt\":null,\"\
+                    createdAt\":\"2026-11-06T06:56:54.651098Z\",\"updatedAt\":\"2026-11-06T06:56:54.651098Z\"\
+                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/f8a3107d-f413-44a4-ac0f-40da66d46853/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/79294ac6-290c-42cc-b4d2-18b18ace8449/display)\"\
                     }}"
         "401":
           description: "401"
@@ -3952,14 +4057,14 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=83
+        example: JSESSIONID=30
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: JId4IqwwFSz0E9Zo26IbNTHO1z0BXku5CRb2M5VrihU
+        example: F997duiFRrW_xabxyXtEPWn6GeEVae4EnU37vKKxjmA
       requestBody:
         content:
           application/json;charset=UTF-8:
@@ -3968,28 +4073,28 @@ paths:
             examples:
               magazine-update-validation-failed:
                 value: "{\"title\":\"\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :14557,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":2505,\"contentMd\":\"본문\"}"
+                  :18935,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":4134,\"contentMd\":\"본문\"}"
               magazine-update-csrf-missing:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :14573,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":2519,\"contentMd\":\"본문\"}"
+                  :18951,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":4148,\"contentMd\":\"본문\"}"
               magazine-update-not-found:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :14642,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":2587,\"contentMd\":\"본문\"}"
+                  :19020,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":4216,\"contentMd\":\"본문\"}"
               magazine-update-forbidden:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :14541,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":2486,\"contentMd\":\"본문\"}"
+                  :18919,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":4115,\"contentMd\":\"본문\"}"
               magazine-update-unauthorized:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :14604,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":2549,\"contentMd\":\"본문\"}"
+                  :18982,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":4178,\"contentMd\":\"본문\"}"
               magazine-update:
                 value: "{\"title\":\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :14585,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":2531,\"contentMd\":\"수정 본문\"}"
+                  :18963,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
+                  .\",\"thumbnailMediaId\":4160,\"contentMd\":\"수정 본문\"}"
       responses:
         "400":
           description: "400"
@@ -4043,14 +4148,14 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-update:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":963,\"title\":\"\
-                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":14585,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i497919283f4846a48032\"\
-                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :2531,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
-                    :\"2026-11-04T07:37:09.132417Z\",\"createdAt\":\"2026-11-04T07:37:09.126658Z\"\
-                    ,\"updatedAt\":\"2026-11-04T07:37:09.153150Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/b5f771d9-3dad-4189-969d-b4913dab1878/thumbnail\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1498,\"title\"\
+                    :\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":18963,\"\
+                    featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
+                    :{\"handle\":\"@i468da9bd24484f81a174\",\"displayName\":\"편집자\"\
+                    ,\"avatarUrl\":null},\"thumbnailMediaId\":4160,\"contentMd\":\"\
+                    수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\":\"2026-11-06T06:56:54.170531Z\"\
+                    ,\"createdAt\":\"2026-11-06T06:56:54.162516Z\",\"updatedAt\":\"\
+                    2026-11-06T06:56:54.203601Z\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/a2fdd56a-639a-419a-aa61-ba6a342670b1/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
     delete:
       tags:
@@ -4073,14 +4178,14 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=85
+        example: JSESSIONID=32
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: vnP0fdMjhWYbOXJ3gFtr9W1Lc2gAb0n05u-zpFBYY5o
+        example: aus7_lcv1WkqxjJ8ocInjB1sZqf3OrpRjeIZvWacf2w
       responses:
         "401":
           description: "401"
@@ -5561,7 +5666,7 @@ paths:
         required: true
         schema:
           type: integer
-          format: int32
+          format: int64
       - name: Cookie
         in: header
         description: 인증된 관리자의 JSESSIONID
@@ -5614,7 +5719,7 @@ paths:
         required: true
         schema:
           type: integer
-          format: int32
+          format: int64
       - name: Cookie
         in: header
         description: 인증된 관리자의 JSESSIONID
@@ -5671,14 +5776,14 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=82
+        example: JSESSIONID=29
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: rf7Q834YoMJWuz2dQFbC9c6qIAMxfX8OI2ntIV0w82E
+        example: X7vRbrqW0KUzTNCsLDX_u78GChlpL_RadkXLeHIqQHY
       responses:
         "403":
           description: "403"
@@ -5731,15 +5836,16 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-publish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":963,\"title\":\"\
-                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":14585,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i497919283f4846a48032\"\
-                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :2531,\"contentMd\":\"![사진](media://2532)\",\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-11-04T07:37:09.132417Z\",\"createdAt\"\
-                    :\"2026-11-04T07:37:09.126658Z\",\"updatedAt\":\"2026-11-04T07:37:09.132898Z\"\
-                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/b5f771d9-3dad-4189-969d-b4913dab1878/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/44bd5802-51fd-44aa-918f-879024bc1fee/display)\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1498,\"title\"\
+                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":18963,\"\
+                    featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
+                    :{\"handle\":\"@i468da9bd24484f81a174\",\"displayName\":\"편집자\"\
+                    ,\"avatarUrl\":null},\"thumbnailMediaId\":4160,\"contentMd\":\"\
+                    ![사진](media://4161)\",\"status\":\"PUBLISHED\",\"publishedAt\"\
+                    :\"2026-11-06T06:56:54.170531Z\",\"createdAt\":\"2026-11-06T06:56:54.162516Z\"\
+                    ,\"updatedAt\":\"2026-11-06T06:56:54.171310Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/a2fdd56a-639a-419a-aa61-ba6a342670b1/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/d4af1960-d3fb-4627-b971-1149afedda6f/display)\"\
                     }}"
   /api/v1/admin/magazines/{magazineId}/unpublish:
     post:
@@ -5762,14 +5868,14 @@ paths:
         required: true
         schema:
           type: string
-        example: JSESSIONID=84
+        example: JSESSIONID=31
       - name: X-CSRF-Token
         in: header
         description: 세션 조회로 발급받은 CSRF 토큰
         required: true
         schema:
           type: string
-        example: suSLvzX1hXk4aq4VYISZaYh_ww90XkLuCnaz-EuSGl0
+        example: 455SQPKEOGtWuN7MqgLVle4HMmKyCFiFzP3Xm_gBkJ8
       responses:
         "403":
           description: "403"
@@ -5792,14 +5898,14 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-unpublish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":963,\"title\":\"\
-                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":14585,\"featuredUserIntroduction\"\
-                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@i497919283f4846a48032\"\
-                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
-                    :2531,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
-                    :\"2026-11-04T07:37:09.132417Z\",\"createdAt\":\"2026-11-04T07:37:09.126658Z\"\
-                    ,\"updatedAt\":\"2026-11-04T07:37:09.176074Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/b5f771d9-3dad-4189-969d-b4913dab1878/thumbnail\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":1498,\"title\"\
+                    :\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":18963,\"\
+                    featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
+                    :{\"handle\":\"@i468da9bd24484f81a174\",\"displayName\":\"편집자\"\
+                    ,\"avatarUrl\":null},\"thumbnailMediaId\":4160,\"contentMd\":\"\
+                    수정 본문\",\"status\":\"DRAFT\",\"publishedAt\":\"2026-11-06T06:56:54.170531Z\"\
+                    ,\"createdAt\":\"2026-11-06T06:56:54.162516Z\",\"updatedAt\":\"\
+                    2026-11-06T06:56:54.231369Z\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/a2fdd56a-639a-419a-aa61-ba6a342670b1/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
         "401":
           description: "401"
@@ -7041,6 +7147,53 @@ paths:
                 project-reaction-remove-reaction-not-found:
                   value: "{\"status\":\"error\",\"code\":\"REACTION_NOT_FOUND\",\"\
                     message\":\"요청한 반응을 찾을 수 없습니다.\"}"
+  /api/v1/job-postings/{jobPostingId}/requirements/{requirementId}/recommendations:
+    get:
+      tags:
+      - Job Posting
+      summary: 채용공고 역량별 추천 자료 조회
+      description: |-
+        역량 하나에 추천된 자료를 한 번에 모두 조회한다. 페이지를 나누지 않는다. 로그인 없이 볼 수 있다.
+        MATCH(딱 맞는 자료), PARTIAL(함께 보면 좋은 자료) 판정만 주고, MATCH를 먼저, 같은 판정 안에서는 관련도가 높은 순(같으면 추천 ID 순)으로 준다.
+        삭제됐거나 자료 정보가 없어 열 수 없는 자료는 뺀다. 자료가 없으면 빈 목록이다.
+        개수는 상세 조회의 recommendationCount와 같다.
+        source, contentType은 코드 그대로 주고 화면 문구(출처 이름, 배지)는 프론트가 정한다.
+        볼 수 없는 공고(없음, 분석이 끝나지 않음, 숨김, 마감)는 404(JOB_POSTING_NOT_FOUND), 이 공고의 역량이 아니면 404(JOB_REQUIREMENT_NOT_FOUND)로 응답한다.
+      operationId: job-posting-find-requirement-recommendations
+      parameters:
+      - name: jobPostingId
+        in: path
+        description: 채용공고 ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: requirementId
+        in: path
+        description: 역량 ID. 이 공고의 역량이어야 한다
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobRequirementRecommendationsSuccessResponse"
+              examples:
+                job-posting-find-requirement-recommendations:
+                  value: "{\"status\":\"success\",\"data\":[{\"verdict\":\"MATCH\"\
+                    ,\"source\":\"github-pr\",\"title\":\"주문 API 동시성 제어\",\"url\"\
+                    :\"https://github.com/woowacourse-teams/example/pull/1\",\"description\"\
+                    :\"Spring 트랜잭션과 락으로 동시 주문을 막은 과정을 다룬다.\",\"publishedAt\":\"2026-07-01T00:00:00Z\"\
+                    ,\"contentType\":\"problem_solving\",\"teamName\":\"샤웃아웃즈\",\"\
+                    authorDisplay\":\"dahye\"},{\"verdict\":\"PARTIAL\",\"source\"\
+                    :\"youtube-tekotalk\",\"title\":\"Kotlin 코루틴 입문\",\"url\":\"https://www.youtube.com/watch?v=example\"\
+                    ,\"description\":\"Kotlin 문법 일부를 설명한다.\",\"publishedAt\":\"2025-03-10T00:00:00Z\"\
+                    ,\"contentType\":null,\"teamName\":null,\"authorDisplay\":\"크루\
+                    \"}]}"
   /api/v1/feeds/{feedId}/comments/{commentId}/reactions/{type}:
     put:
       tags:
@@ -7785,6 +7938,121 @@ components:
         status:
           type: string
           description: 응답 상태
+    JobPostingFindAllSuccessResponse:
+      title: JobPostingFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 채용공고 목록
+          items:
+            required:
+            - companyName
+            - jobPostingId
+            - jobRole
+            - requirementCount
+            - requirementNames
+            - title
+            type: object
+            properties:
+              jobPostingId:
+                type: number
+                description: 채용공고 ID
+              requirementCount:
+                type: number
+                description: 역량 수
+              employmentType:
+                type: string
+                description: 고용 형태
+                nullable: true
+              companyName:
+                type: string
+                description: 회사명
+              jobRole:
+                type: string
+                description: 직군
+                enum:
+                - BACKEND
+                - FRONTEND
+                - ANDROID
+                - IOS
+                - DEVOPS
+                - DATA
+                - AI
+                - ETC
+              requirementNames:
+                type: array
+                description: 역량 이름. 역량 순서대로 앞 3개
+                items:
+                  oneOf:
+                  - type: object
+                  - type: boolean
+                  - type: string
+                  - type: number
+              deadline:
+                type: string
+                description: 마감일(yyyy-MM-dd). 없으면 null이고 상시 채용
+                nullable: true
+              title:
+                type: string
+                description: 공고 제목
+              careerRequirement:
+                type: string
+                description: 경력 조건
+                nullable: true
+        meta:
+          required:
+          - allCount
+          - hasNext
+          - jobRoleCounts
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서. 마지막 페이지면 null
+              nullable: true
+            jobRoleCounts:
+              type: array
+              description: 직군별 공고 수. 모든 직군을 담고 공고가 없으면 0
+              items:
+                required:
+                - count
+                - jobRole
+                type: object
+                properties:
+                  count:
+                    type: number
+                    description: 공고 수
+                  jobRole:
+                    type: string
+                    description: 직군
+                    enum:
+                    - BACKEND
+                    - FRONTEND
+                    - ANDROID
+                    - IOS
+                    - DEVOPS
+                    - DATA
+                    - AI
+                    - ETC
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            allCount:
+              type: number
+              description: 직군 조건을 뺀 전체 공고 수
+            totalCount:
+              type: number
+              description: 지금 고른 직군의 공고 수. 직군을 고르지 않았으면 allCount와 같다
+          description: 페이지네이션과 직군별 개수
+        status:
+          type: string
+          description: 응답 상태
     MagazineCommentCreateRequest:
       title: MagazineCommentCreateRequest
       required:
@@ -8098,33 +8366,6 @@ components:
           type: object
           description: 메타 정보
           nullable: true
-        status:
-          type: string
-          description: 응답 상태
-    AdminJobPostingReanalysisSuccessResponse:
-      title: AdminJobPostingReanalysisSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - jobPostingId
-          - reanalyzedRequirementCount
-          - status
-          type: object
-          properties:
-            reanalyzedRequirementCount:
-              type: number
-              description: 다시 분석 대기로 되돌린 역량 수
-            jobPostingId:
-              type: number
-              description: 채용공고 ID
-            status:
-              type: string
-              description: 자료 분석 상태. 항상 PENDING
-          description: 다시 분석을 받은 채용공고
         status:
           type: string
           description: 응답 상태
@@ -8891,6 +9132,87 @@ components:
           type: object
           description: 메타 정보
           nullable: true
+        status:
+          type: string
+          description: 응답 상태
+    AdminJobPostingFindAllSuccessResponse:
+      title: AdminJobPostingFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 채용공고 목록
+          items:
+            required:
+            - companyName
+            - createdAt
+            - failedRequirementCount
+            - jobPostingId
+            - jobRole
+            - status
+            - title
+            type: object
+            properties:
+              hiddenAt:
+                type: string
+                description: 숨긴 시각. 숨기지 않았으면 null
+                nullable: true
+              createdAt:
+                type: string
+                description: 등록 시각
+              jobPostingId:
+                type: number
+                description: 채용공고 ID
+              companyName:
+                type: string
+                description: 회사명
+              jobRole:
+                type: string
+                description: 직무
+                enum:
+                - BACKEND
+                - FRONTEND
+                - ANDROID
+                - IOS
+                - DEVOPS
+                - DATA
+                - AI
+                - ETC
+              title:
+                type: string
+                description: 공고 제목
+              failedRequirementCount:
+                type: number
+                description: 최종 실패한 역량 수. 다시 시도할 예정인 역량은 세지 않는다
+              status:
+                type: string
+                description: 자료 분석 상태
+                enum:
+                - PENDING
+                - PROCESSING
+                - READY
+                - FAILED
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 커서
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: 전체 채용공고 수
+          description: 페이지네이션 정보
         status:
           type: string
           description: 응답 상태
@@ -10793,6 +11115,33 @@ components:
         status:
           type: string
           description: 응답 상태
+    AdminJobPostingReanalysisSuccessResponse:
+      title: AdminJobPostingReanalysisSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - jobPostingId
+          - reanalyzedRequirementCount
+          - status
+          type: object
+          properties:
+            reanalyzedRequirementCount:
+              type: number
+              description: 다시 분석 대기로 되돌린 역량 수
+            jobPostingId:
+              type: number
+              description: 채용공고 ID
+            status:
+              type: string
+              description: 자료 분석 상태. 항상 PENDING
+          description: 다시 분석을 받은 채용공고
+        status:
+          type: string
+          description: 응답 상태
     MagazineCommentCreateSuccessResponse:
       title: MagazineCommentCreateSuccessResponse
       required:
@@ -11318,6 +11667,64 @@ components:
         reason:
           type: string
           description: 반려 사유(앞뒤 공백 제거 후 1~100자)
+    JobRequirementRecommendationsSuccessResponse:
+      title: JobRequirementRecommendationsSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 추천 자료 목록
+          items:
+            required:
+            - description
+            - source
+            - title
+            - url
+            - verdict
+            type: object
+            properties:
+              teamName:
+                type: string
+                description: 팀 이름. 연결된 프로젝트가 없거나 삭제됐으면 null
+                nullable: true
+              publishedAt:
+                type: string
+                description: ISO-8601 작성 시각. 모르면 null
+                nullable: true
+              verdict:
+                type: string
+                description: "판정. MATCH(딱 맞는 자료), PARTIAL(함께 보면 좋은 자료)"
+              description:
+                type: string
+                description: 이 자료가 역량과 어떻게 이어지는지 설명
+              authorDisplay:
+                type: string
+                description: 작성자 표시 이름. 없으면 null
+                nullable: true
+              source:
+                type: string
+                description: "출처. github-pr(PR), github-teamdoc(팀 문서), github-wiki(위\
+                  키), github-discussion(디스커션), blog-post(블로그 글), youtube-tekotalk(테\
+                  코톡)"
+              title:
+                type: string
+                description: 자료 제목
+              contentType:
+                type: string
+                description: "자료 성격. 없으면 null(블로그·테코톡은 항상 null). problem_solving(문\
+                  제 해결), tech_decision(기술 결정), implementation(구현), chore(잡무), design(설\
+                  계), operation(운영), experiment(실험), convention(컨벤션), plan(계획), other(기\
+                  타)"
+                nullable: true
+              url:
+                type: string
+                description: 자료 주소
+        status:
+          type: string
+          description: 응답 상태
     FeedCommentDeleteSuccessResponse:
       title: FeedCommentDeleteSuccessResponse
       required:
@@ -14258,83 +14665,6 @@ components:
         status:
           type: string
           description: 응답 상태
-    AdminJobPostingFindAllSuccessResponse:
-      title: AdminJobPostingFindAllSuccessResponse
-      required:
-      - data
-      - meta
-      - status
-      type: object
-      properties:
-        data:
-          type: array
-          description: 채용공고 목록
-          items:
-            required:
-            - companyName
-            - createdAt
-            - jobPostingId
-            - jobRole
-            - status
-            - title
-            type: object
-            properties:
-              hiddenAt:
-                type: string
-                description: 숨긴 시각. 숨기지 않았으면 null
-                nullable: true
-              createdAt:
-                type: string
-                description: 등록 시각
-              jobPostingId:
-                type: number
-                description: 채용공고 ID
-              companyName:
-                type: string
-                description: 회사명
-              jobRole:
-                type: string
-                description: 직무
-                enum:
-                - BACKEND
-                - FRONTEND
-                - ANDROID
-                - IOS
-                - DEVOPS
-                - DATA
-                - AI
-                - ETC
-              title:
-                type: string
-                description: 공고 제목
-              status:
-                type: string
-                description: 자료 분석 상태
-                enum:
-                - PENDING
-                - PROCESSING
-                - READY
-                - FAILED
-        meta:
-          required:
-          - hasNext
-          - totalCount
-          type: object
-          properties:
-            nextCursor:
-              type: string
-              description: 다음 페이지 커서
-              nullable: true
-            hasNext:
-              type: boolean
-              description: 다음 페이지 존재 여부
-            totalCount:
-              type: number
-              description: 전체 채용공고 수
-          description: 페이지네이션 정보
-        status:
-          type: string
-          description: 응답 상태
     ProjectFindAllSuccessResponse:
       title: ProjectFindAllSuccessResponse
       required:
@@ -14995,6 +15325,98 @@ components:
               type: number
               description: 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    JobPostingDetailSuccessResponse:
+      title: JobPostingDetailSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - companyName
+          - jobPostingId
+          - jobRole
+          - requirements
+          - sourceUrl
+          - title
+          type: object
+          properties:
+            sourceUrl:
+              type: string
+              description: 공고 원문 주소
+            requirements:
+              type: array
+              description: 역량 목록. 공고에 적힌 순서대로
+              items:
+                required:
+                - category
+                - displayOrder
+                - name
+                - recommendationCount
+                - requirementId
+                - summary
+                type: object
+                properties:
+                  summary:
+                    type: string
+                    description: 역량 한 줄 설명
+                  recommendationCount:
+                    type: number
+                    description: 추천 자료 수. 없으면 0
+                  name:
+                    type: string
+                    description: 역량 이름
+                  displayOrder:
+                    type: number
+                    description: 공고에 적힌 순서(1부터)
+                  category:
+                    type: string
+                    description: 역량 구분
+                    enum:
+                    - REQUIRED
+                    - PREFERRED
+                    - DUTY_OR_STACK
+                  requirementId:
+                    type: number
+                    description: 역량 ID
+            jobPostingId:
+              type: number
+              description: 채용공고 ID
+            employmentType:
+              type: string
+              description: 고용 형태
+              nullable: true
+            companyName:
+              type: string
+              description: 회사명
+            jobRole:
+              type: string
+              description: 직군
+              enum:
+              - BACKEND
+              - FRONTEND
+              - ANDROID
+              - IOS
+              - DEVOPS
+              - DATA
+              - AI
+              - ETC
+            deadline:
+              type: string
+              description: 마감일(yyyy-MM-dd). 없으면 null이고 상시 채용
+              nullable: true
+            title:
+              type: string
+              description: 공고 제목
+            careerRequirement:
+              type: string
+              description: 경력 조건
+              nullable: true
+          description: 채용공고 상세
         status:
           type: string
           description: 응답 상태
