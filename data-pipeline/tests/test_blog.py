@@ -164,12 +164,12 @@ def test_full_list_day_rule_and_new_posts_only(tmp_path):
     entry = Index(store, SRC).load().get(blog_key(f"{TIS}/1"))
     assert entry["url"] == f"{TIS}/1" and entry["blog_root"] == TIS
 
-    # 3일 뒤 → 피드만. 피드의 /m 주소는 같은 글이라 다시 받지 않는다
-    http = tistory_http(posts, [f"{TIS}/m/2", f"{TIS}/3"])
+    # 3일 뒤 → 피드만. 이미 받은 글(2)은 다시 받지 않는다
+    http = tistory_http(posts, [f"{TIS}/2", f"{TIS}/3"])
     store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=3)
     assert http.count(f"{TIS}/sitemap.xml") == 0 and http.count(f"{TIS}/rss") == 1
     assert sr.counts["new"] == 1 and sr.counts["unchanged"] == 1
-    assert http.count(f"{TIS}/m/2") == 0 and http.count(f"{TIS}/1") == 0
+    assert http.count(f"{TIS}/2") == 0 and http.count(f"{TIS}/1") == 0
     assert sr.extra["full_list_blogs"] == []
     assert state(store)[TIS]["last_full_list"] == "2026-11-05"
 
@@ -367,11 +367,11 @@ def test_same_post_from_two_blogs_rows_merges_found_in(tmp_path):
 
 def test_only_url_resolves_found_in_from_targets(tmp_path):
     http = tistory_http([f"{TIS}/1"], [f"{TIS}/1"])
-    http.routes[f"{TIS}/m/7"] = "<html>7</html>"  # 받는 주소는 준 그대로, 키는 /m 을 뗀 것과 같다
+    http.routes[f"{TIS}/m/7"] = "<html>7</html>"  # 받는 주소도 키도 준 그대로(CLAUDE.md 6단계는 /m 을 떼지 않는다)
     store, sr, rep = run(tmp_path, http, TARGETS_TIS, day=0, only=[f"{TIS}/m/7"])
     assert http.count(f"{TIS}/sitemap.xml") == 0 and http.count(f"{TIS}/rss") == 0  # 목록은 받지 않는다
     assert sr.counts["new"] == 1
-    rec = store.read_json(raw_path(SRC, blog_key(f"{TIS}/7")))
+    rec = store.read_json(raw_path(SRC, blog_key(f"{TIS}/m/7")))
     assert [f["blog_source_id"] for f in rec["found_in"]] == [1, 2]
     assert store.read_json("state/blog-post.json") is None  # --only 는 상태를 바꾸지 않는다
     # 대상에 없는 블로그 주소는 출처 없이 받고 알림

@@ -28,6 +28,7 @@ uv run python -m collector collect --source blog-post --only https://team.tistor
 uv run python -m collector collect --source github-pr --repos 2026-Chalkak                       # 레포 몇 개로 시험
 uv run python -m collector subtitles script --all-missing > subtitles_local.py                   # 집 컴퓨터용 자막 스크립트
 uv run python -m collector subtitles import subtitles-result.json                                # 자막 결과 저장
+uv run python -m collector bundle import blog-1_7-bundle.jsonl.gz                               # 원본 묶음 넣기(1~7기 블로그 등)
 ```
 
 - 원천 이름: `youtube-tekotalk`, `blog-post`, `github-teamdoc`, `github-wiki`, `github-discussion`, `github-pr`

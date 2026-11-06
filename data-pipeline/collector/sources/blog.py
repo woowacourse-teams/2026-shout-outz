@@ -2,7 +2,7 @@
 
     1. 대상 블로그 읽기   서비스 DB blog_sources(읽기만, load_targets)
     2. 글 목록 받기       블로그마다: 전체 목록 받는 날이면 전체 목록, 아니면 피드(3-2)
-    3. 키 만들기          keys.blog_key(인코딩 풀기, tistory /m 떼기, 정규화, sha1)
+    3. 키 만들기          keys.blog_key(CLAUDE.md 정규화 6단계 그대로, sha1). velog GraphQL 주소는 RSS 모양으로 맞춰 받는다
     4. 글 받기            처음 보는 키만(runner 가 아는 키를 거른다, 바뀜 표시 없음)
     5. 사라짐 확인        전체 목록을 받은 블로그에서 목록에 없는 아는 키의 주소가 404, 410 이면
     6. 상태 저장          state/blog-post.json: 블로그별 마지막 전체 목록 날짜, 찾은 피드 주소, 다시 받을 글 주소

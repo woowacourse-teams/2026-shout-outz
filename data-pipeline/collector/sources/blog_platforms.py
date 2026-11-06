@@ -17,7 +17,7 @@ import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from html.parser import HTMLParser
-from urllib.parse import unquote, urljoin, urlsplit
+from urllib.parse import quote, unquote, urljoin, urlsplit
 from urllib.robotparser import RobotFileParser
 
 TISTORY, VELOG, RILOG, GENERIC = "tistory", "velog", "rilog", "generic"
@@ -209,7 +209,13 @@ def rilog_markdown_url(post_url: str) -> str:
 
 
 def velog_post_url(username: str, url_slug: str) -> str:
-    return f"https://velog.io/@{username}/{url_slug}"
+    """velog GraphQL 의 글 주소를 RSS 와 같은 모양으로 만든다.
+
+    GraphQL 은 slug 를 한글 그대로, RSS 는 한글만 퍼센트 인코딩해서 준다. 키는 주소를 받은 그대로 쓰므로(CLAUDE.md 6단계)
+    모양이 다르면 같은 글이 키 두 개가 된다. 그래서 GraphQL 쪽을 RSS 처럼 ASCII 가 아닌 글자만 인코딩한다.
+    """
+    slug = "".join(ch if ord(ch) < 128 else quote(ch) for ch in url_slug)
+    return f"https://velog.io/@{username}/{slug}"
 
 
 class _AlternateLinks(HTMLParser):

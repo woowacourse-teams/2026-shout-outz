@@ -76,9 +76,11 @@ def test_blog_key_rules():
     sha = lambda u: "post:" + hashlib.sha1(u.encode()).hexdigest()
     assert blog_key("  http://WWW.Example.com/a/b/?z=1&utm_source=x&a=2&category=dev#top ") == sha("https://example.com/a/b?a=2&z=1")
     assert blog_key("https://example.com") == sha("https://example.com/")
-    assert blog_key("https://velog.io/@t/%EB%AA%A9%EB%A1%9D") == sha("https://velog.io/@t/목록")
-    assert blog_key("https://abc.tistory.com/m/6") == blog_key("https://abc.tistory.com/6")
-    assert blog_key("https://example.com/m/6") == sha("https://example.com/m/6")
+    # CLAUDE.md 6단계 그대로: 인코딩은 받은 그대로, tistory /m 도 그대로(운영 DB 키와 같게)
+    assert blog_key("https://velog.io/@t/%EB%AA%A9%EB%A1%9D") == sha("https://velog.io/@t/%EB%AA%A9%EB%A1%9D")
+    assert blog_key("https://abc.tistory.com/m/6") == sha("https://abc.tistory.com/m/6")
+    # CLAUDE.md 의 예시 키
+    assert blog_key("https://shinjungoh.tistory.com/entry/%EC%9A%B0%ED%85%8C%EC%BD%94-7%EA%B8%B0-%ED%8F%AC%EA%B2%8C%EB%8D%94%EA%B0%80-%EC%9D%BC%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95") == "post:8738139d847566747c42198b6b03dba5c4df2952"
 
 
 def test_first_run_then_daily(tmp_path):

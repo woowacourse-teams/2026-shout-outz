@@ -3,6 +3,7 @@
     python -m collector collect [--source S ...] [--only V ...] [--repos R ...]
     python -m collector subtitles script (--all-missing | --only ID ...)   > subtitles_local.py
     python -m collector subtitles import <결과 파일>
+    python -m collector bundle import <묶음 파일>                         원본 묶음 넣기(1~7기 블로그 등)
 """
 
 from __future__ import annotations
@@ -40,6 +41,11 @@ def main(argv: list[str] | None = None) -> int:
     si = ssub.add_parser("import", help="스크립트 결과 파일을 원본에 저장")
     si.add_argument("file")
 
+    b = sub.add_parser("bundle", help="원본 묶음(JSON Lines, .gz 가능)을 원본 저장소에 넣기(1~7기 블로그 등)")
+    bsub = b.add_subparsers(dest="sub", required=True)
+    bi = bsub.add_parser("import", help="묶음 파일의 원본을 넣는다. 이미 아는 키는 건너뛴다")
+    bi.add_argument("file")
+
     a = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s", stream=sys.stderr)
     try:
@@ -58,9 +64,19 @@ def main(argv: list[str] | None = None) -> int:
                           "sources": {k: v.counts for k, v in run.sources.items()}}, ensure_ascii=False))
         return 0 if run.status in ("success", "skipped") else 1
 
-    from . import subtitles
     from .store import open_store
     store = open_store(settings.store_url)
+    if a.cmd == "bundle":
+        from pathlib import Path
+        from .bundle import import_bundle
+        if not Path(a.file).is_file():
+            p.error(f"묶음 파일이 없어요: {a.file}")
+        run = import_bundle(settings, store, a.file)
+        print(json.dumps({"run_id": run.run_id, "status": run.status,
+                          "sources": {k: v.counts for k, v in run.sources.items()}}, ensure_ascii=False))
+        return 0 if run.status in ("success", "skipped") else 1
+
+    from . import subtitles
     if a.sub == "script":
         try:
             text = subtitles.make_script(store, only=a.only, all_missing=a.all_missing)

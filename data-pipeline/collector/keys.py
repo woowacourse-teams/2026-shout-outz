@@ -1,14 +1,17 @@
 """키와 경로 규칙.
 
 - 원본 파일 경로: raw/{source}/{external_key 의 sha1}.json(08 문서 C2)
-- 블로그 글 키: ../CLAUDE.md 의 주소 정규화 6단계와 03 문서 4-2, 4-3(경로 인코딩 풀기, tistory /m 떼기)
+- 블로그 글 키: ../CLAUDE.md 의 주소 정규화 6단계 그대로(2026-11-06). 운영 DB 의 키가 이 6단계로 만들어져 있어,
+  한 글자라도 다르게 만들면 같은 글이 새 행이 된다. 처음에는 경로 인코딩 풀기와 tistory /m 떼기를 더했는데,
+  예전 키 1,048건 중 1~7기 388건이 어긋나 되돌렸다. 같은 글이 다른 모양 주소로 오는 velog 는 수집할 때 주소를 맞춘다
+  (sources/blog_platforms.velog_post_url)
 - GitHub 원천 키: ../CLAUDE.md 형식. 레포 이름은 API 의 name 그대로(대소문자 포함)
 """
 
 from __future__ import annotations
 
 import hashlib
-from urllib.parse import unquote, urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit
 
 from .config import ORG
 
@@ -27,9 +30,7 @@ def normalize_blog_url(url: str) -> str:
     s = url.strip()
     parts = urlsplit(s)
     host = (parts.hostname or "").lower()
-    path = unquote(parts.path)
-    if host.endswith(".tistory.com") and (path == "/m" or path.startswith("/m/")):
-        path = path[2:] or "/"
+    path = parts.path  # 인코딩은 받은 그대로 둔다(6단계에 없음)
     if host.startswith("www."):
         host = host[4:]
     netloc = host + (f":{parts.port}" if parts.port else "")
