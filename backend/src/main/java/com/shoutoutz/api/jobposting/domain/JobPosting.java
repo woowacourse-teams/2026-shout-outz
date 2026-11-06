@@ -5,6 +5,7 @@ import com.shoutoutz.api.common.util.DataResolveUtil;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import lombok.Getter;
 
 /**
@@ -179,6 +180,14 @@ public final class JobPosting {
         return status == MatchingStatus.READY
                 && hiddenAt == null
                 && (deadline == null || !deadline.isBefore(today));
+    }
+
+    /**
+     * 이 공고의 역량인지 판단한다.
+     */
+    public boolean hasRequirement(long requirementId) {
+        return requirements.stream()
+                .anyMatch(requirement -> Objects.equals(requirement.getId(), requirementId));
     }
 
     public static JobPosting reconstitute(

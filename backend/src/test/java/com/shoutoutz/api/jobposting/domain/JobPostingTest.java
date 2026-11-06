@@ -357,6 +357,26 @@ class JobPostingTest {
         assertThat(posting.isVisibleOn(TODAY)).isFalse();
     }
 
+    @Test
+    @DisplayName("공고에 담긴 역량 ID면 이 공고의 역량이고, 아니면 아니다.")
+    void hasRequirement() {
+        JobPosting posting = JobPosting.reconstitute(
+                10L, "https://careers.example.com/jobs/123", JobPostingContentHash.from(CONTENT).value(), "예시 회사",
+                JobRole.BACKEND, null, "백엔드 개발자", null, null, MatchingStatus.READY, null, 1L,
+                List.of(JobRequirement.reconstitute(
+                        11L, 1, "역량 1", RequirementCategory.REQUIRED, "역량 요약 1", MatchingStatus.READY)),
+                NOW, NOW);
+
+        assertThat(posting.hasRequirement(11L)).isTrue();
+        assertThat(posting.hasRequirement(99L)).isFalse();
+    }
+
+    @Test
+    @DisplayName("아직 저장하지 않아 ID가 없는 역량은 어떤 역량 ID와도 같지 않다.")
+    void unsavedRequirementMatchesNoId() {
+        assertThat(register(requirements(1)).hasRequirement(1L)).isFalse();
+    }
+
     private JobPosting postingWith(MatchingStatus status, Instant hiddenAt, LocalDate deadline) {
         return JobPosting.reconstitute(
                 10L, "https://careers.example.com/jobs/123", JobPostingContentHash.from(CONTENT).value(), "예시 회사",

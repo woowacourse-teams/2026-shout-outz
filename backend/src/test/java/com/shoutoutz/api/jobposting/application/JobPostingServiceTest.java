@@ -13,6 +13,7 @@ import com.shoutoutz.api.jobposting.application.dto.JobPostingListCursor;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListItem;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListPage;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingSearchCondition;
+import com.shoutoutz.api.jobposting.application.dto.RecommendedResource;
 import com.shoutoutz.api.jobposting.domain.JobPosting;
 import com.shoutoutz.api.jobposting.domain.JobPostingContentHash;
 import com.shoutoutz.api.jobposting.domain.JobPostingErrorCode;
@@ -21,10 +22,12 @@ import com.shoutoutz.api.jobposting.domain.JobPostingSort;
 import com.shoutoutz.api.jobposting.domain.JobRequirement;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
+import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import com.shoutoutz.api.jobposting.presentation.dto.request.JobPostingFindAllRequest;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingFindAllResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.JobRequirementRecommendationResponse;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -190,6 +193,60 @@ class JobPostingServiceTest {
     @DisplayName("한국 날짜로 마감이 지난 공고는 404이고 자료 수를 세지 않는다.")
     void rejectsClosedDetail() {
         assertInvisible(posting(MatchingStatus.READY, null, KOREA_TODAY.minusDays(1)));
+    }
+
+    @Test
+    @DisplayName("역량별 자료는 저장소가 준 순서대로 카드 칸을 담는다.")
+    void findsRecommendations() {
+        given(posting(MatchingStatus.READY, null, null));
+        when(queryRepository.findRecommendations(11L)).thenReturn(List.of(
+                new RecommendedResource(RecommendationVerdict.MATCH, "github-pr", "스레드 분리", "https://github.com/pr/1",
+                        "스레드풀을 나눈 설계를 볼 수 있어요.", CREATED_AT, "implementation", "아맞다", "크루"),
+                new RecommendedResource(RecommendationVerdict.PARTIAL, "youtube-tekotalk", "호돌의 Spring WebFlux",
+                        "https://youtube.com/watch?v=1", "리액티브 웹의 개념을 배울 수 있어요.", null, null, null, "호돌")));
+
+        List<JobRequirementRecommendationResponse> response = service.findRecommendations(JOB_POSTING_ID, 11L);
+
+        assertThat(response).containsExactly(
+                new JobRequirementRecommendationResponse(RecommendationVerdict.MATCH, "github-pr", "스레드 분리",
+                        "https://github.com/pr/1", "스레드풀을 나눈 설계를 볼 수 있어요.", CREATED_AT, "implementation",
+                        "아맞다", "크루"),
+                new JobRequirementRecommendationResponse(RecommendationVerdict.PARTIAL, "youtube-tekotalk",
+                        "호돌의 Spring WebFlux", "https://youtube.com/watch?v=1", "리액티브 웹의 개념을 배울 수 있어요.",
+                        null, null, null, "호돌"));
+    }
+
+    @Test
+    @DisplayName("공고의 역량이지만 추천 자료가 없으면 빈 목록이다.")
+    void returnsEmptyRecommendations() {
+        given(posting(MatchingStatus.READY, null, null));
+        when(queryRepository.findRecommendations(12L)).thenReturn(List.of());
+
+        assertThat(service.findRecommendations(JOB_POSTING_ID, 12L)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("볼 수 없는 공고의 역량별 자료는 공고 404이고 자료를 읽지 않는다.")
+    void rejectsRecommendationsOfInvisiblePosting() {
+        given(posting(MatchingStatus.READY, NOW, null));
+
+        assertThatThrownBy(() -> service.findRecommendations(JOB_POSTING_ID, 11L))
+                .isInstanceOf(EntityNotFoundException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_POSTING_NOT_FOUND);
+        verifyNoInteractions(queryRepository);
+    }
+
+    @Test
+    @DisplayName("공고의 역량이 아니면 역량 404이고 자료를 읽지 않는다.")
+    void rejectsRequirementOfOtherPosting() {
+        given(posting(MatchingStatus.READY, null, null));
+
+        assertThatThrownBy(() -> service.findRecommendations(JOB_POSTING_ID, 99L))
+                .isInstanceOf(EntityNotFoundException.class)
+                .extracting("errorCode")
+                .isEqualTo(JobPostingErrorCode.JOB_REQUIREMENT_NOT_FOUND);
+        verifyNoInteractions(queryRepository);
     }
 
     private void assertInvisible(JobPosting posting) {

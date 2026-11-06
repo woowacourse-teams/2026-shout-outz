@@ -1,6 +1,7 @@
 package com.shoutoutz.api.jobposting.application;
 
 import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_POSTING_NOT_FOUND;
+import static com.shoutoutz.api.jobposting.domain.JobPostingErrorCode.JOB_REQUIREMENT_NOT_FOUND;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListCursor;
@@ -15,9 +16,11 @@ import com.shoutoutz.api.jobposting.presentation.dto.request.JobPostingFindAllRe
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingDetailResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingFindAllResponse;
 import com.shoutoutz.api.jobposting.presentation.dto.response.JobPostingListMetaResponse;
+import com.shoutoutz.api.jobposting.presentation.dto.response.JobRequirementRecommendationResponse;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -72,13 +75,31 @@ public class JobPostingService {
      */
     @Transactional(readOnly = true)
     public JobPostingDetailResponse findDetail(long jobPostingId) {
-        JobPosting jobPosting = jobPostingRepository.findById(jobPostingId)
-                .filter(posting -> posting.isVisibleOn(today()))
-                .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
+        JobPosting jobPosting = findVisible(jobPostingId);
         return JobPostingDetailResponse.from(
                 jobPosting,
                 queryRepository.countRecommendationsByRequirement(jobPostingId)
         );
+    }
+
+    /**
+     * 공고를 볼 수 없으면 공고 404, 공고는 보이는데 그 공고의 역량이 아니면 역량 404 로 응답한다.
+     */
+    @Transactional(readOnly = true)
+    public List<JobRequirementRecommendationResponse> findRecommendations(long jobPostingId, long requirementId) {
+        JobPosting jobPosting = findVisible(jobPostingId);
+        if (!jobPosting.hasRequirement(requirementId)) {
+            throw new EntityNotFoundException(JOB_REQUIREMENT_NOT_FOUND);
+        }
+        return queryRepository.findRecommendations(requirementId).stream()
+                .map(JobRequirementRecommendationResponse::from)
+                .toList();
+    }
+
+    private JobPosting findVisible(long jobPostingId) {
+        return jobPostingRepository.findById(jobPostingId)
+                .filter(posting -> posting.isVisibleOn(today()))
+                .orElseThrow(() -> new EntityNotFoundException(JOB_POSTING_NOT_FOUND));
     }
 
     private LocalDate today() {
