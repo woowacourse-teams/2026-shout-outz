@@ -52,7 +52,7 @@ export function Gnb({ trailing, className, ...props }: GnbProps) {
             height={32}
             className="size-7 md:size-8"
           />
-          <span className="text-lg font-bold text-gray-900 md:text-xl">shout-outz</span>
+          <span className="text-lg font-bold text-gray-900 md:text-xl">샤라웃</span>
         </Link>
 
         <nav className="order-last flex h-11 w-full items-center gap-4 border-t border-gray-100 md:order-none md:ml-9 md:h-18 md:w-auto md:gap-2 md:border-t-0">
