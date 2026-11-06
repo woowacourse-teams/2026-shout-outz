@@ -169,6 +169,11 @@ class JobPostingQueryRepositoryIntegrationTest {
         visiblePosting(posting(JobRole.BACKEND, "예시 회사", "성장률 1000 팀", null, List.of("Java"), NOW));
 
         assertThat(ids(findAll(null, "100%", null, 20))).containsExactly(matched);
+
+        long underscore = visiblePosting(posting(JobRole.BACKEND, "예시 회사", "server_api 팀", null, List.of("Java"), NOW));
+        visiblePosting(posting(JobRole.BACKEND, "예시 회사", "serverXapi 팀", null, List.of("Java"), NOW));
+
+        assertThat(ids(findAll(null, "server_api", null, 20))).containsExactly(underscore);
     }
 
     @Test

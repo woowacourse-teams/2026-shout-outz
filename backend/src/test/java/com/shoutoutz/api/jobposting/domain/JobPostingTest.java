@@ -333,6 +333,14 @@ class JobPostingTest {
     }
 
     @Test
+    @DisplayName("마감일이 아직 오지 않은 공고는 사용자에게 보인다.")
+    void visibleBeforeDeadline() {
+        JobPosting posting = postingWith(MatchingStatus.READY, null, TODAY.plusDays(1));
+
+        assertThat(posting.isVisibleOn(TODAY)).isTrue();
+    }
+
+    @Test
     @DisplayName("마감일이 지난 공고는 사용자에게 보이지 않는다.")
     void notVisibleAfterDeadline() {
         JobPosting posting = postingWith(MatchingStatus.READY, null, TODAY.minusDays(1));
