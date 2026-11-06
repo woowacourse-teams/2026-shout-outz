@@ -162,7 +162,7 @@ class JobPostingHttpApiTest {
                                 .description("""
                                         채용공고 정보와 역량 목록, 역량마다 추천 자료 수를 조회한다. 로그인 없이 볼 수 있다.
                                         역량은 묶지 않고 공고에 적힌 순서(displayOrder)대로 한 목록으로 준다. 필수, 우대, 업무·기술 스택 구분은 category로 한다.
-                                        추천 자료 수는 MATCH, PARTIAL 판정 중 지금 볼 수 있는 자료만 센다.
+                                        추천 자료 수는 MATCH(딱 맞는 자료), PARTIAL(함께 보면 좋은 자료) 판정 중 지금 볼 수 있는 자료만 센다.
                                         없거나, 분석이 끝나지 않았거나, 숨겼거나, 마감된(마감일 당일은 볼 수 있음, 한국 날짜 기준) 공고는 404(JOB_POSTING_NOT_FOUND)로 응답한다.""")
                                 .pathParameters(parameterWithName("jobPostingId").type(SimpleType.INTEGER)
                                         .description("채용공고 ID"))
