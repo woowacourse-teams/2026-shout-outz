@@ -11,7 +11,7 @@
     6. 목록을 끝까지 받은 묶음에서 목록에 없는 키: 사라짐 확인 → 색인 gone
     7. 색인, 상태 저장, 보고서 쓰기, 잠금 풀기
 
-보고서는 원천이 도는 동안에도 단계가 바뀔 때(list, fetch, gone, finish)와 마지막 저장 뒤 SAVE_EVERY 초가 지났을 때
+보고서는 원천이 도는 동안에도 단계가 바뀔 때(list, fetch, gone, finish)와 마지막 저장 뒤 SAVE_EVERY(15초)가 지났을 때
 덮어쓴다(Context.set_phase, Context.tick). 원천은 레포나 블로그 목록을 받기 시작할 때 ctx.begin_group 을 부른다.
 """
 
@@ -35,7 +35,7 @@ from .store import Store, open_store
 
 log = logging.getLogger("collector")
 
-SAVE_EVERY = timedelta(seconds=60)  # 원천이 도는 동안 보고서를 덮어쓰는 최소 간격(S3 PUT 을 너무 자주 하지 않게)
+SAVE_EVERY = timedelta(seconds=15)  # 원천이 도는 동안 보고서를 덮어쓰는 최소 간격. 관리 웹이 10초마다 다시 그리므로 15초(2026-11-06, 처음 60초)
 
 
 @dataclass

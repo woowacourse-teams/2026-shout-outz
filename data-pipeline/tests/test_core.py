@@ -478,9 +478,9 @@ class TimedSource(FakeSource):
         self.clock.advance(self.finish_sec)
 
 
-def test_report_saved_on_phase_change_and_every_60_seconds(tmp_path):
+def test_report_saved_on_phase_change_and_every_save_interval(tmp_path):
     clock = ManualClock(T0 + timedelta(days=_RUNS[0] + 1))
-    src = TimedSource(clock, {"r1": [], "r2": [f"k{i}" for i in range(10)]}, list_sec=70, fetch_sec=25)
+    src = TimedSource(clock, {"r1": [], "r2": [f"k{i}" for i in range(10)]}, list_sec=70, fetch_sec=6)
     store, rep, sr = run_mon(tmp_path, src, clock)
     snaps = [s["sources"]["github-pr"] for s in store.snaps if "github-pr" in s["sources"]]
     phases = [s["phase"] for s in snaps]
@@ -491,19 +491,20 @@ def test_report_saved_on_phase_change_and_every_60_seconds(tmp_path):
     assert phases == sorted(phases, key=["list", "fetch", "gone", "finish", "done"].index)
     # 목록 받기 중: r1 이 70초 걸려 r2 를 시작할 때 저장되고, current 는 r2
     assert any(s["phase"] == "list" and s["current"] == "r2" for s in snaps)
-    # 받기 중: 25초씩 10건(250초). 60초가 지날 때마다만 저장(3건마다 = 75초)
+    # 받기 중: 6초씩 10건(60초). SAVE_EVERY(15초)가 지날 때마다만 저장(3건마다 = 18초)
     mid = [s for s in store.snaps if s["sources"] and s["sources"]["github-pr"]["phase"] == "fetch"]
     fetched = [s["sources"]["github-pr"]["progress"]["fetched"] for s in mid]
     assert fetched == [0, 3, 6, 9]
     times = [datetime.fromisoformat(s["updated_at"].replace("Z", "+00:00")) for s in mid]
-    assert all(b - a >= timedelta(seconds=60) for a, b in zip(times, times[1:]))
+    from collector.runner import SAVE_EVERY
+    assert all(b - a >= SAVE_EVERY for a, b in zip(times, times[1:]))
     assert mid[1]["sources"]["github-pr"]["current"] == "r2"
     assert snaps[-1]["progress"] == {"listed": 10, "to_fetch": 10, "fetched": 10}
 
 
-def test_report_not_saved_more_often_than_60_seconds(tmp_path):
+def test_report_not_saved_more_often_than_save_interval(tmp_path):
     clock = ManualClock(T0 + timedelta(days=_RUNS[0] + 1))
-    src = TimedSource(clock, {"r": [f"k{i}" for i in range(30)]}, list_sec=1, fetch_sec=1)  # 받기 30초
+    src = TimedSource(clock, {"r": [f"k{i}" for i in range(10)]}, list_sec=1, fetch_sec=1)  # 받기 10초(15초보다 짧음)
     store, _, _ = run_mon(tmp_path, src, clock)
     # 원천 끝(done)과 실행 끝(status 확정)에 한 번씩 쓰는 것은 원래대로
     assert [s["sources"]["github-pr"]["phase"] for s in store.snaps if s["sources"]] == ["list", "fetch", "gone", "finish", "done", "done"]
