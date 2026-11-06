@@ -10,6 +10,7 @@ export type {
   AnalyticsClient,
   AnalyticsEvent,
   AnalyticsUser,
+  FeedCreateEntry,
   FeedSurface,
   NavTab,
   RecommendationSurface,

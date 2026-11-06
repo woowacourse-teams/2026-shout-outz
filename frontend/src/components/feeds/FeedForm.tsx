@@ -16,13 +16,15 @@ import { Button } from '@/components/Button';
 import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { getApiErrorMessage } from '@/utils/error';
 import type { QuestionRecommendation } from '@/types/recommendation';
-import { analytics } from '@/utils/analytics';
+import { analytics, type FeedCreateEntry } from '@/utils/analytics';
 
 interface FeedFormProps {
   userId: number;
   feedType?: FeedType;
   initialFeed?: Feed;
   initialDraft?: Pick<QuestionRecommendation, 'recommendationId' | 'title' | 'content'>;
+  /** 작성 화면에 들어온 경로. 작성 이벤트에만 쓴다. */
+  entry?: FeedCreateEntry;
   onCancel: () => void;
   onSaved: (feedId: number) => void;
 }
@@ -32,6 +34,7 @@ export function FeedForm({
   feedType = 'POST',
   initialFeed,
   initialDraft,
+  entry = 'button',
   onCancel,
   onSaved,
 }: FeedFormProps) {
@@ -50,15 +53,24 @@ export function FeedForm({
   const client = useQueryClient();
 
   const creating = initialFeed === undefined;
+  // 추천에서 시작한 질문 작성에만 키를 넣는다. 제목·본문을 고쳐도 원래 추천 ID를 보낸다.
+  const recommendationId =
+    creating && initialDraft && effectiveType === 'QUESTION'
+      ? initialDraft.recommendationId
+      : undefined;
+  // 추천 초안이 없으면 진입 경로가 무엇이든 일반 작성으로 기록한다.
+  const trackedEntry: FeedCreateEntry = recommendationId === undefined ? 'button' : entry;
   useEffect(() => {
     if (creating) {
       analytics.track({
         name: 'feed_create_started',
-        from: document.referrer,
+        entry: trackedEntry,
+        // trackedEntry가 button이 아니면 recommendationId가 항상 있다.
+        ...(trackedEntry !== 'button' ? { recommendationId } : {}),
         feedType: effectiveType,
       });
     }
-  }, [creating, effectiveType]);
+  }, [creating, effectiveType, trackedEntry, recommendationId]);
 
   const mutation = useMutation(
     initialFeed ? updateFeedMutation(initialFeed.feedId) : createFeedMutation,
@@ -75,11 +87,6 @@ export function FeedForm({
   async function submit() {
     if (invalid || submitting.current) return;
     submitting.current = true;
-    // 추천에서 시작한 질문 작성에만 키를 넣는다. 제목·본문을 고쳐도 원래 추천 ID를 보낸다.
-    const recommendationId =
-      !initialFeed && initialDraft && effectiveType === 'QUESTION'
-        ? initialDraft.recommendationId
-        : undefined;
     try {
       const feed = await mutation.mutateAsync({
         title: title.trim(),
@@ -114,6 +121,14 @@ export function FeedForm({
           categoryCount: feed.categories.length,
           mediaCount: feed.media.length,
           feedType: effectiveType,
+          // 제목은 앞뒤 공백을 잘라 보내므로 원문도 잘라서 비교한다. 본문은 보낸 그대로 비교한다.
+          ...(recommendationId !== undefined && initialDraft
+            ? {
+                recommendationId,
+                titleEdited: title.trim() !== initialDraft.title.trim(),
+                contentEdited: content !== initialDraft.content,
+              }
+            : {}),
         });
       }
       onSaved(feed.feedId);

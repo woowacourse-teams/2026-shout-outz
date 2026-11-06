@@ -78,12 +78,16 @@ analytics.track({ name: 'feed_detail_opened', feedId: 101, from: 'home' }); // �
 
 | 이벤트                  | 발생 시점          | 파라미터                                    | 답하려는 질문                               |
 | ----------------------- | ------------------ | ------------------------------------------- | ------------------------------------------- |
-| `feed_create_started`   | 작성 화면 진입     | `from` (경로 패턴)                          | 작성 시작 대비 완료율                       |
-| `feed_create_submitted` | 작성 성공          | `categoryCount`, `mediaCount`               | 이미지·카테고리를 실제로 쓰나               |
+| `feed_create_started`   | 작성 화면 진입     | `entry`, `recommendationId`\*               | 작성 시작 대비 완료율                       |
+| `feed_create_submitted` | 작성 성공          | `categoryCount`, `mediaCount`, 추천 값\*    | 이미지·카테고리를 실제로 쓰나               |
 | `feed_create_failed`    | 작성 실패          | `reason`                                    | 작성이 어디서 깨지나                        |
 | `feed_detail_opened`    | 피드 상세 진입     | `feedId`, `from` (`home`/`feeds`/`profile`) | 어느 경로로 피드를 읽나, 어떤 피드가 읽히나 |
 | `feed_sort_changed`     | 최신순·인기순 전환 | `sort`, `surface` (`home`/`feeds`)          | 인기순이 필요한가                           |
 | `comment_submitted`     | 댓글 작성 성공     | —                                           | 댓글이 실제로 달리나                        |
+
+`entry`는 작성 화면에 들어온 경로다. 미리보기의 작성 버튼이면 `recommendation`, 추천으로 시작했다가 로그인(가입) 뒤 돌아오면 `login_resume`, 그 밖에는 `button`이다.
+
+\* 추천 질문 초안으로 작성할 때만 넣는다. `feed_create_started`에는 `recommendationId`를, `feed_create_submitted`에는 `recommendationId`, `titleEdited`, `contentEdited`를 넣는다. `titleEdited`·`contentEdited`는 제출한 제목(앞뒤 공백 제외)과 본문을 추천 원문과 비교한 값이다.
 
 ### 추천 질문
 
