@@ -2,8 +2,10 @@ package com.shoutoutz.api.jobposting.application;
 
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListPage;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingSearchCondition;
+import com.shoutoutz.api.jobposting.application.dto.RecommendedResource;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -27,4 +29,10 @@ public interface JobPostingQueryRepository {
      * 키는 역량 ID 이고, 추천할 자료가 없는 역량은 결과에 없다.
      */
     Map<Long, Long> countRecommendationsByRequirement(long jobPostingId);
+
+    /**
+     * 역량의 추천 자료를 읽는다. 자료 수와 같은 기준(MATCH, PARTIAL, 지금 있는 자료)이고,
+     * MATCH 먼저, 같은 판정은 검색 점수가 높은 순이다.
+     */
+    List<RecommendedResource> findRecommendations(long requirementId);
 }

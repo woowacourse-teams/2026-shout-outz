@@ -4,7 +4,9 @@ import com.shoutoutz.api.jobposting.application.JobPostingQueryRepository;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListItem;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListPage;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingSearchCondition;
+import com.shoutoutz.api.jobposting.application.dto.RecommendedResource;
 import com.shoutoutz.api.jobposting.domain.JobRole;
+import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -51,6 +53,20 @@ public class JobPostingQueryRepositoryImpl implements JobPostingQueryRepository 
                         AND r.name ILIKE :keywordPattern ESCAPE '\\'
                   )
               )
+            """;
+
+    /**
+     * 사용자에게 보여 줄 추천 자료. 자료 수와 자료 목록이 같은 기준을 쓰도록 둘이 함께 쓴다.
+     * MATCH, PARTIAL 판정만 남기고, 삭제됐거나 자료 행이 없는 추천은 열 수 없어 뺀다.
+     * WHERE 로 끝나므로 쓰는 쪽은 조건을 AND 로 이어 붙인다.
+     */
+    private static final String RECOMMENDED_RESOURCES = """
+            FROM requirement_recommendations recommendation
+            JOIN resource_documents document
+                ON document.source = recommendation.resource_source
+                AND document.external_key = recommendation.resource_external_key
+                AND document.deleted_at IS NULL
+            WHERE recommendation.verdict IN ('MATCH', 'PARTIAL')
             """;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -117,14 +133,10 @@ public class JobPostingQueryRepositoryImpl implements JobPostingQueryRepository 
         Map<Long, Long> counts = new HashMap<>();
         jdbcTemplate.query("""
                         SELECT recommendation.job_requirement_id, COUNT(*) AS recommendation_count
-                        FROM requirement_recommendations recommendation
-                        JOIN job_requirements requirement ON requirement.id = recommendation.job_requirement_id
-                        JOIN resource_documents document
-                            ON document.source = recommendation.resource_source
-                            AND document.external_key = recommendation.resource_external_key
-                            AND document.deleted_at IS NULL
-                        WHERE requirement.job_posting_id = :jobPostingId
-                          AND recommendation.verdict IN ('MATCH', 'PARTIAL')
+                        """ + RECOMMENDED_RESOURCES + """
+                          AND recommendation.job_requirement_id IN (
+                              SELECT id FROM job_requirements WHERE job_posting_id = :jobPostingId
+                          )
                         GROUP BY recommendation.job_requirement_id
                         """,
                 new MapSqlParameterSource("jobPostingId", jobPostingId),
@@ -132,6 +144,49 @@ public class JobPostingQueryRepositoryImpl implements JobPostingQueryRepository 
                     counts.put(resultSet.getLong("job_requirement_id"), resultSet.getLong("recommendation_count"));
                 });
         return counts;
+    }
+
+    @Override
+    public List<RecommendedResource> findRecommendations(long requirementId) {
+        return jdbcTemplate.query("""
+                        SELECT
+                            recommendation.verdict,
+                            recommendation.resource_source,
+                            document.title,
+                            document.url,
+                            recommendation.description,
+                            document.published_at,
+                            document.content_type,
+                            (
+                                SELECT project.team_name
+                                FROM projects project
+                                WHERE project.id = document.project_id
+                                  AND project.deleted_at IS NULL
+                            ) AS team_name,
+                            document.author_display
+                        """ + RECOMMENDED_RESOURCES + """
+                          AND recommendation.job_requirement_id = :requirementId
+                        ORDER BY
+                            CASE recommendation.verdict WHEN 'MATCH' THEN 0 ELSE 1 END,
+                            recommendation.similarity_score DESC,
+                            recommendation.id
+                        """,
+                new MapSqlParameterSource("requirementId", requirementId),
+                (resultSet, rowNumber) -> new RecommendedResource(
+                        RecommendationVerdict.valueOf(resultSet.getString("verdict")),
+                        resultSet.getString("resource_source"),
+                        resultSet.getString("title"),
+                        resultSet.getString("url"),
+                        resultSet.getString("description"),
+                        toInstant(resultSet.getObject("published_at", OffsetDateTime.class)),
+                        resultSet.getString("content_type"),
+                        resultSet.getString("team_name"),
+                        resultSet.getString("author_display")
+                ));
+    }
+
+    private static Instant toInstant(OffsetDateTime dateTime) {
+        return dateTime == null ? null : dateTime.toInstant();
     }
 
     private void appendKeywordCondition(StringBuilder sql, MapSqlParameterSource parameters, String keyword) {

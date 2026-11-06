@@ -7,11 +7,13 @@ import com.shoutoutz.api.jobposting.application.dto.JobPostingListCursor;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListItem;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingListPage;
 import com.shoutoutz.api.jobposting.application.dto.JobPostingSearchCondition;
+import com.shoutoutz.api.jobposting.application.dto.RecommendedResource;
 import com.shoutoutz.api.jobposting.domain.JobPosting;
 import com.shoutoutz.api.jobposting.domain.JobPostingRepository;
 import com.shoutoutz.api.jobposting.domain.JobRequirement;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingStatus;
+import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -232,7 +234,7 @@ class JobPostingQueryRepositoryIntegrationTest {
     @Test
     void 역량별_자료_수는_출처와_자료_키가_모두_같은_자료만_센다() {
         long id = visiblePosting(NOW);
-        insertDocument("BLOG", "same-key", false);
+        insertDocument("blog-post", "same-key", false);
         insertRecommendation(requirementIds(id).getFirst(), "same-key", "MATCH");
 
         assertThat(jobPostingQueryRepository.countRecommendationsByRequirement(id)).isEmpty();
@@ -246,6 +248,87 @@ class JobPostingQueryRepositoryIntegrationTest {
         insertRecommendation(requirementIds(otherId).getFirst(), "match", "MATCH");
 
         assertThat(jobPostingQueryRepository.countRecommendationsByRequirement(id)).isEmpty();
+    }
+
+    @Test
+    void 역량별_자료는_MATCH를_먼저_같은_판정은_검색_점수가_높은_순으로_읽는다() {
+        long requirementId = requirementIds(visiblePosting(NOW)).getFirst();
+        for (String key : List.of("match-low", "match-high", "partial-highest", "not-match", "deleted")) {
+            insertDocument(key, "deleted".equals(key));
+        }
+        insertRecommendation(requirementId, "match-low", "MATCH", 0.5);
+        insertRecommendation(requirementId, "match-high", "MATCH", 0.9);
+        insertRecommendation(requirementId, "partial-highest", "PARTIAL", 0.99);
+        insertRecommendation(requirementId, "not-match", "NOT_MATCH", 0.95);
+        insertRecommendation(requirementId, "deleted", "MATCH", 0.95);
+        insertRecommendation(requirementId, "missing", "MATCH", 0.95);
+
+        List<RecommendedResource> resources = jobPostingQueryRepository.findRecommendations(requirementId);
+
+        assertThat(resources).extracting(RecommendedResource::url).containsExactly(
+                "https://example.com/match-high", "https://example.com/match-low", "https://example.com/partial-highest");
+        assertThat(resources).extracting(RecommendedResource::verdict).containsExactly(
+                RecommendationVerdict.MATCH, RecommendationVerdict.MATCH, RecommendationVerdict.PARTIAL);
+    }
+
+    @Test
+    void 판정과_검색_점수가_같으면_먼저_저장한_추천부터_읽는다() {
+        long requirementId = requirementIds(visiblePosting(NOW)).getFirst();
+        insertDocument("first", false);
+        insertDocument("second", false);
+        insertRecommendation(requirementId, "first", "MATCH", 0.9);
+        insertRecommendation(requirementId, "second", "MATCH", 0.9);
+
+        assertThat(jobPostingQueryRepository.findRecommendations(requirementId))
+                .extracting(RecommendedResource::url)
+                .containsExactly("https://example.com/first", "https://example.com/second");
+    }
+
+    @Test
+    void 역량별_자료는_그_역량의_추천만_읽는다() {
+        List<Long> requirementIds = requirementIds(visiblePosting(posting(JobRole.BACKEND, "예시 회사", "백엔드 개발자",
+                null, List.of("Java", "Redis"), NOW)));
+        insertDocument("match", false);
+        insertRecommendation(requirementIds.get(1), "match", "MATCH");
+
+        assertThat(jobPostingQueryRepository.findRecommendations(requirementIds.get(0))).isEmpty();
+    }
+
+    @Test
+    void 역량별_자료에_카드_칸을_담고_팀_이름은_연결된_프로젝트에서_가져온다() {
+        long requirementId = requirementIds(visiblePosting(NOW)).getFirst();
+        long projectId = insertProject("아맞다", false);
+        jdbcTemplate.update("""
+                INSERT INTO resource_documents (source, external_key, version, title, url, prompt_version, updated_at,
+                                                project_id, published_at, content_type, author_display)
+                VALUES ('github-pr', 'pr-1', 1, '도메인 비핵심 기능 스레드 분리', 'https://github.com/example/pull/1', 'v1',
+                        now(), ?, '2025-10-15T00:00:00Z', 'implementation', '크루')
+                """, projectId);
+        jdbcTemplate.update("""
+                INSERT INTO requirement_recommendations (job_requirement_id, resource_source, resource_external_key,
+                                                         verdict, reason, description, evidence, similarity_score, created_at)
+                VALUES (?, 'github-pr', 'pr-1', 'MATCH', '판정 이유', '스레드풀을 나눈 설계를 볼 수 있어요.', '[]'::jsonb, 0.8, now())
+                """, requirementId);
+
+        assertThat(jobPostingQueryRepository.findRecommendations(requirementId)).containsExactly(new RecommendedResource(
+                RecommendationVerdict.MATCH, "github-pr", "도메인 비핵심 기능 스레드 분리", "https://github.com/example/pull/1",
+                "스레드풀을 나눈 설계를 볼 수 있어요.", Instant.parse("2025-10-15T00:00:00Z"), "implementation", "아맞다", "크루"));
+    }
+
+    @Test
+    void 연결된_프로젝트가_없거나_삭제됐으면_팀_이름은_null이다() {
+        long requirementId = requirementIds(visiblePosting(NOW)).getFirst();
+        long deletedProjectId = insertProject("사라진 팀", true);
+        insertDocument("no-project", false);
+        insertDocument("deleted-project", false);
+        jdbcTemplate.update("UPDATE resource_documents SET project_id = ? WHERE external_key = 'deleted-project'",
+                deletedProjectId);
+        insertRecommendation(requirementId, "no-project", "MATCH", 0.9);
+        insertRecommendation(requirementId, "deleted-project", "MATCH", 0.8);
+
+        assertThat(jobPostingQueryRepository.findRecommendations(requirementId))
+                .extracting(RecommendedResource::teamName)
+                .containsExactly(null, null);
     }
 
     private JobPostingListPage findAll(JobRole jobRole, String keyword, JobPostingListCursor cursor, int size) {
@@ -306,24 +389,38 @@ class JobPostingQueryRepositoryIntegrationTest {
     }
 
     private void insertDocument(String externalKey, boolean deleted) {
-        insertDocument("GITHUB_PR", externalKey, deleted);
+        insertDocument("github-pr", externalKey, deleted);
     }
 
     private void insertDocument(String source, String externalKey, boolean deleted) {
         jdbcTemplate.update("""
                 INSERT INTO resource_documents (source, external_key, version, title, url, prompt_version, updated_at,
                                                 deleted_at)
-                VALUES (?, ?, 1, '자료 제목', 'https://github.com/example/pr/1', 'v1', now(),
-                        CASE WHEN ? THEN now() END)
-                """, source, externalKey, deleted);
+                VALUES (?, ?, 1, '자료 제목', ?, 'v1', now(), CASE WHEN ? THEN now() END)
+                """, source, externalKey, "https://example.com/" + externalKey, deleted);
     }
 
     private void insertRecommendation(long requirementId, String externalKey, String verdict) {
+        insertRecommendation(requirementId, externalKey, verdict, 0.5);
+    }
+
+    private void insertRecommendation(long requirementId, String externalKey, String verdict, double similarityScore) {
         jdbcTemplate.update("""
                 INSERT INTO requirement_recommendations (job_requirement_id, resource_source, resource_external_key,
-                                                         verdict, reason, evidence, similarity_score, created_at)
-                VALUES (?, 'GITHUB_PR', ?, ?, '판정 이유', '[]'::jsonb, 0.5, now())
-                """, requirementId, externalKey, verdict);
+                                                         verdict, reason, description, evidence, similarity_score,
+                                                         created_at)
+                VALUES (?, 'github-pr', ?, ?, '판정 이유', '추천 설명', '[]'::jsonb, ?, now())
+                """, requirementId, externalKey, verdict, similarityScore);
+    }
+
+    private long insertProject(String teamName, boolean deleted) {
+        String slug = "project-" + UUID.randomUUID().toString().substring(0, 8);
+        return jdbcTemplate.queryForObject("""
+                INSERT INTO projects (cohort, team_name, slug, title, tagline, github_repository_url, service_status,
+                                      approval_status, deleted_at)
+                VALUES (7, ?, ?, '프로젝트', '한 줄 소개', ?, 'OPERATING', 'APPROVED', CASE WHEN ? THEN now() END)
+                RETURNING id
+                """, Long.class, teamName, slug, "https://github.com/example/" + slug, deleted);
     }
 
     private long insertAdmin() {
