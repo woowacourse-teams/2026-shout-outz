@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,6 +109,28 @@ public class JobPostingQueryRepositoryImpl implements JobPostingQueryRepository 
         jdbcTemplate.query(sql.toString(), parameters, resultSet -> {
             counts.put(JobRole.valueOf(resultSet.getString("job_role")), resultSet.getLong("posting_count"));
         });
+        return counts;
+    }
+
+    @Override
+    public Map<Long, Long> countRecommendationsByRequirement(long jobPostingId) {
+        Map<Long, Long> counts = new HashMap<>();
+        jdbcTemplate.query("""
+                        SELECT recommendation.job_requirement_id, COUNT(*) AS recommendation_count
+                        FROM requirement_recommendations recommendation
+                        JOIN job_requirements requirement ON requirement.id = recommendation.job_requirement_id
+                        JOIN resource_documents document
+                            ON document.source = recommendation.resource_source
+                            AND document.external_key = recommendation.resource_external_key
+                            AND document.deleted_at IS NULL
+                        WHERE requirement.job_posting_id = :jobPostingId
+                          AND recommendation.verdict IN ('MATCH', 'PARTIAL')
+                        GROUP BY recommendation.job_requirement_id
+                        """,
+                new MapSqlParameterSource("jobPostingId", jobPostingId),
+                resultSet -> {
+                    counts.put(resultSet.getLong("job_requirement_id"), resultSet.getLong("recommendation_count"));
+                });
         return counts;
     }
 

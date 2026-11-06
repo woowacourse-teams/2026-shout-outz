@@ -21,4 +21,10 @@ public interface JobPostingQueryRepository {
      * 검색어에 맞는 공고 수를 직군별로 센다. 직군 조건은 걸지 않는다. 공고가 없는 직군은 결과에 없다.
      */
     Map<JobRole, Long> countByJobRole(String keyword, LocalDate today);
+
+    /**
+     * 공고의 역량마다 사용자에게 추천할 자료 수를 센다. MATCH, PARTIAL 판정만 세고, 삭제된 자료는 뺀다.
+     * 키는 역량 ID 이고, 추천할 자료가 없는 역량은 결과에 없다.
+     */
+    Map<Long, Long> countRecommendationsByRequirement(long jobPostingId);
 }

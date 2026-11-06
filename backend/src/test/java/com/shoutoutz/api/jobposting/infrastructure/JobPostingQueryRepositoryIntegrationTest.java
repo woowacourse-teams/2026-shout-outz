@@ -206,6 +206,48 @@ class JobPostingQueryRepositoryIntegrationTest {
         assertThat(counts).containsExactlyInAnyOrderEntriesOf(Map.of(JobRole.BACKEND, 1L, JobRole.ANDROID, 1L));
     }
 
+    @Test
+    void 역량별_자료_수는_MATCH와_PARTIAL만_세고_삭제되거나_없는_자료는_뺀다() {
+        long id = visiblePosting(posting(JobRole.BACKEND, "예시 회사", "백엔드 개발자", null,
+                List.of("Java", "Redis", "Kafka"), NOW));
+        List<Long> requirementIds = requirementIds(id);
+        insertDocument("match", false);
+        insertDocument("partial", false);
+        insertDocument("not-match", false);
+        insertDocument("deleted", true);
+        insertRecommendation(requirementIds.get(0), "match", "MATCH");
+        insertRecommendation(requirementIds.get(0), "partial", "PARTIAL");
+        insertRecommendation(requirementIds.get(0), "not-match", "NOT_MATCH");
+        insertRecommendation(requirementIds.get(0), "deleted", "MATCH");
+        insertRecommendation(requirementIds.get(0), "missing", "MATCH");
+        insertRecommendation(requirementIds.get(1), "partial", "PARTIAL");
+
+        Map<Long, Long> counts = jobPostingQueryRepository.countRecommendationsByRequirement(id);
+
+        assertThat(counts).containsExactlyInAnyOrderEntriesOf(Map.of(
+                requirementIds.get(0), 2L,
+                requirementIds.get(1), 1L));
+    }
+
+    @Test
+    void 역량별_자료_수는_출처와_자료_키가_모두_같은_자료만_센다() {
+        long id = visiblePosting(NOW);
+        insertDocument("BLOG", "same-key", false);
+        insertRecommendation(requirementIds(id).getFirst(), "same-key", "MATCH");
+
+        assertThat(jobPostingQueryRepository.countRecommendationsByRequirement(id)).isEmpty();
+    }
+
+    @Test
+    void 역량별_자료_수는_그_공고의_역량만_센다() {
+        long id = visiblePosting(NOW);
+        long otherId = visiblePosting(NOW);
+        insertDocument("match", false);
+        insertRecommendation(requirementIds(otherId).getFirst(), "match", "MATCH");
+
+        assertThat(jobPostingQueryRepository.countRecommendationsByRequirement(id)).isEmpty();
+    }
+
     private JobPostingListPage findAll(JobRole jobRole, String keyword, JobPostingListCursor cursor, int size) {
         return jobPostingQueryRepository.findAll(new JobPostingSearchCondition(jobRole, keyword, TODAY, cursor, size));
     }
@@ -255,6 +297,33 @@ class JobPostingQueryRepositoryIntegrationTest {
                 adminId,
                 requirements,
                 createdAt);
+    }
+
+    private List<Long> requirementIds(long jobPostingId) {
+        return jdbcTemplate.queryForList(
+                "SELECT id FROM job_requirements WHERE job_posting_id = ? ORDER BY display_order",
+                Long.class, jobPostingId);
+    }
+
+    private void insertDocument(String externalKey, boolean deleted) {
+        insertDocument("GITHUB_PR", externalKey, deleted);
+    }
+
+    private void insertDocument(String source, String externalKey, boolean deleted) {
+        jdbcTemplate.update("""
+                INSERT INTO resource_documents (source, external_key, version, title, url, prompt_version, updated_at,
+                                                deleted_at)
+                VALUES (?, ?, 1, '자료 제목', 'https://github.com/example/pr/1', 'v1', now(),
+                        CASE WHEN ? THEN now() END)
+                """, source, externalKey, deleted);
+    }
+
+    private void insertRecommendation(long requirementId, String externalKey, String verdict) {
+        jdbcTemplate.update("""
+                INSERT INTO requirement_recommendations (job_requirement_id, resource_source, resource_external_key,
+                                                         verdict, reason, evidence, similarity_score, created_at)
+                VALUES (?, 'GITHUB_PR', ?, ?, '판정 이유', '[]'::jsonb, 0.5, now())
+                """, requirementId, externalKey, verdict);
     }
 
     private long insertAdmin() {
