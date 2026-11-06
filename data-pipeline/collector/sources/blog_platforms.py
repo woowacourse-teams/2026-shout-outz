@@ -5,6 +5,7 @@
 - 범용 블로그 첫 화면의 <link rel="alternate"> 찾기(3-4)
 - robots.txt 읽기(5-6)
 - 받아도 되는 주소인지(http, https 이고 내부 주소가 아님)
+- 받은 응답이 글 페이지인지(빈 껍데기 페이지 가리기, 5-3)
 
 외부 라이브러리 없이 표준 라이브러리(xml.etree, html.parser, urllib.robotparser)만 쓴다.
 """
@@ -206,6 +207,34 @@ def rilog_markdown_url(post_url: str) -> str:
     """rilog 본문은 글 주소 뒤에 /markdown 을 붙여 받는다(03 문서 3-3)."""
     p = urlsplit(post_url)
     return f"https://www.rilog.kr{p.path.rstrip('/')}/markdown"
+
+
+OG_TITLE = re.compile(r"""<meta\b[^>]*\bproperty\s*=\s*["']og:title["']""", re.I)
+
+
+def shell_page_reason(platform: str, body: str) -> str | None:
+    """받은 응답이 글이 아닌 빈 껍데기 페이지면 그 까닭, 글이면 None(03 문서 5-3, 2026-11-06).
+
+    200 이어도 글 대신 빈 페이지가 오는 일이 있다(velog: <title> 이 "velog" 뿐이고 og:title, released_at 이 없는 33KB 페이지).
+    플랫폼마다 정상 글에 늘 있는 표시를 본다. 둘 중 하나만 있어도 글로 본다(정상 글을 실패로 잘못 보지 않게).
+    1~7기 묶음으로 잰 값(2026-11-06): tistory 290편, velog 136편 모두 og:title 이 있다.
+    - tistory: og:title 또는 article:published_time
+    - velog: og:title 또는 페이지 JSON 의 released_at
+    - rilog(/markdown): 앞머리(---)에 title
+    - 그 밖(범용): 일반 규칙으로 가리기 어려워 보지 않는다. 빠져나온 빈 껍데기는 ② 정제가 "원본에 글이 없음" 실패로 남긴다
+    """
+    if platform == TISTORY:
+        if not OG_TITLE.search(body) and "article:published_time" not in body:
+            return "og:title, article:published_time 이 없음"
+    elif platform == VELOG:
+        if not OG_TITLE.search(body) and "released_at" not in body:
+            return "og:title, released_at 이 없음"
+    elif platform == RILOG:
+        text = body.lstrip("\ufeff")
+        end = text.find("\n---", 3) if text.startswith("---") else -1
+        if end < 0 or not re.search(r"^title\s*:", text[3:end], re.M):
+            return "앞머리에 title 이 없음"
+    return None
 
 
 def velog_post_url(username: str, url_slug: str) -> str:

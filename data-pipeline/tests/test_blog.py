@@ -11,7 +11,7 @@ from collector.keys import blog_key, raw_path
 from collector.runner import collect
 from collector.sources import blog as blog_mod
 from collector.sources.blog import BlogSource, Target, group_blogs
-from collector.sources.blog_platforms import (detect, find_feed_links, is_rilog_post, is_tistory_post, parse_feed,
+from collector.sources.blog_platforms import (detect, shell_page_reason, find_feed_links, is_rilog_post, is_tistory_post, parse_feed,
                                               parse_sitemap)
 from collector.store import LocalStore
 
@@ -136,13 +136,18 @@ TARGETS_TIS = [Target(1, "https://abc.tistory.com/m/6", "https://github.com/woow
                Target(2, "abc.tistory.com", "https://github.com/woowacourse-teams/2026-a")]
 
 
+def page(s):
+    """글 페이지(og:title 이 있는 HTML). 빈 껍데기 확인(03 문서 5-3)을 지나도록."""
+    return f'<html><head><meta property="og:title" content="t"></head>{s}</html>'
+
+
 def tistory_http(sitemap_posts, rss_posts, gone=()):
     routes = {
         f"{TIS}/sitemap.xml": sitemap(*(sitemap_posts + [f"{TIS}/category", f"{TIS}/tag/x", f"{TIS}/guestbook"])),
         f"{TIS}/rss": rss(*rss_posts),
     }
     for u in set(sitemap_posts) | set(rss_posts):
-        routes[u] = f"<html>{u}</html>"
+        routes[u] = page(u)
     for u in gone:
         routes[u] = Resp(404)
     return FakeHttp(routes)
@@ -157,7 +162,7 @@ def test_full_list_day_rule_and_new_posts_only(tmp_path):
     assert sr.counts["new"] == 2 and sr.extra["full_list_blogs"] == [TIS]
     assert state(store)[TIS]["last_full_list"] == "2026-11-05"
     rec = store.read_json(raw_path(SRC, blog_key(f"{TIS}/1")))
-    assert rec["body_format"] == "html" and rec["platform"] == "tistory" and rec["body"] == f"<html>{TIS}/1</html>"
+    assert rec["body_format"] == "html" and rec["platform"] == "tistory" and rec["body"] == page(f"{TIS}/1")
     # 같은 블로그가 두 행에 있다 → 한 번만 받고 출처 둘
     assert [f["blog_source_id"] for f in rec["found_in"]] == [1, 2]
     assert http.count(f"{TIS}/1") == 1
@@ -223,8 +228,8 @@ def velog_http(graphql_ok=True):
     return FakeHttp({
         "https://v2.velog.io/graphql": graphql,
         "https://v2.velog.io/rss/@dev": rss(f"{VEL}/{ENC}", f"{VEL}/three"),
-        f"{VEL}/목록": "<html>1</html>", f"{VEL}/{ENC}": "<html>1</html>",
-        f"{VEL}/two": "<html>2</html>", f"{VEL}/three": "<html>3</html>",
+        f"{VEL}/목록": page(1), f"{VEL}/{ENC}": page(1),
+        f"{VEL}/two": page(2), f"{VEL}/three": page(3),
     })
 
 
@@ -262,14 +267,14 @@ def test_rilog_daily_sitemap_markdown_and_gone(tmp_path):
     routes = {
         "https://www.rilog.kr/sitemap.xml": sitemap(f"{RIL}/posts/1", f"{RIL}/posts/2", "https://www.rilog.kr/@other/posts/9",
                                                     RIL, "https://www.rilog.kr/about"),
-        f"{RIL}/posts/1/markdown": "# 제목\n본문",
-        f"{RIL}/posts/2/markdown": "# 둘",
+        f"{RIL}/posts/1/markdown": '---\ntitle: "제목"\n---\n본문',
+        f"{RIL}/posts/2/markdown": '---\ntitle: "둘"\n---\n',
     }
     http = FakeHttp(routes)
     store, sr, _ = run(tmp_path, http, targets, day=0)
     assert sr.counts["new"] == 2
     rec = store.read_json(raw_path(SRC, blog_key(f"{RIL}/posts/1")))
-    assert rec["body_format"] == "markdown" and rec["body"] == "# 제목\n본문" and rec["url"] == f"{RIL}/posts/1"
+    assert rec["body_format"] == "markdown" and rec["body"] == '---\ntitle: "제목"\n---\n본문' and rec["url"] == f"{RIL}/posts/1"
     # 다음 날도 전체 목록(매일). 2 가 sitemap 에서 빠지고 404 → 사라짐
     routes["https://www.rilog.kr/sitemap.xml"] = sitemap(f"{RIL}/posts/1")
     routes[f"{RIL}/posts/2"] = Resp(410)
@@ -367,7 +372,7 @@ def test_same_post_from_two_blogs_rows_merges_found_in(tmp_path):
 
 def test_only_url_resolves_found_in_from_targets(tmp_path):
     http = tistory_http([f"{TIS}/1"], [f"{TIS}/1"])
-    http.routes[f"{TIS}/m/7"] = "<html>7</html>"  # 받는 주소도 키도 준 그대로(CLAUDE.md 6단계는 /m 을 떼지 않는다)
+    http.routes[f"{TIS}/m/7"] = page(7)  # 받는 주소도 키도 준 그대로(CLAUDE.md 6단계는 /m 을 떼지 않는다)
     store, sr, rep = run(tmp_path, http, TARGETS_TIS, day=0, only=[f"{TIS}/m/7"])
     assert http.count(f"{TIS}/sitemap.xml") == 0 and http.count(f"{TIS}/rss") == 0  # 목록은 받지 않는다
     assert sr.counts["new"] == 1
@@ -375,7 +380,7 @@ def test_only_url_resolves_found_in_from_targets(tmp_path):
     assert [f["blog_source_id"] for f in rec["found_in"]] == [1, 2]
     assert store.read_json("state/blog-post.json") is None  # --only 는 상태를 바꾸지 않는다
     # 대상에 없는 블로그 주소는 출처 없이 받고 알림
-    http.routes["https://other.tistory.com/1"] = "<html>o</html>"
+    http.routes["https://other.tistory.com/1"] = page("o")
     store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=1, only=["https://other.tistory.com/1"])
     rec = store.read_json(raw_path(SRC, blog_key("https://other.tistory.com/1")))
     assert rec["found_in"] == [] and sr.extra["notices"][0]["type"] == "only_not_in_targets"
@@ -422,7 +427,7 @@ def test_nested_sitemap_index_is_followed(tmp_path):
     http.routes[f"{TIS}/sitemap.xml"] = sitemap_index(f"{TIS}/s-a.xml")
     http.routes[f"{TIS}/s-a.xml"] = sitemap_index(f"{TIS}/s-b.xml")
     http.routes[f"{TIS}/s-b.xml"] = sitemap(f"{TIS}/1", f"{TIS}/category")
-    http.routes[f"{TIS}/1"] = "<html>1</html>"
+    http.routes[f"{TIS}/1"] = page(1)
     store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0)
     assert sr.counts["new"] == 1 and sr.extra["full_list_blogs"] == [TIS]
 
@@ -469,7 +474,7 @@ def test_internal_addresses_in_feed_are_not_fetched(tmp_path):
 
 def test_only_url_without_scheme(tmp_path):
     http = tistory_http([], [])
-    http.routes[f"{TIS}/7"] = "<html>7</html>"
+    http.routes[f"{TIS}/7"] = page(7)
     store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0, only=["abc.tistory.com/7"])
     assert sr.counts["new"] == 1 and http.count(f"{TIS}/7") == 1
 
@@ -484,7 +489,7 @@ def test_failed_post_on_full_list_day_is_retried_next_day(tmp_path):
     assert state(store)[TIS]["retry_urls"] == [f"{TIS}/2"]
     # 다음 날(피드 날): 피드에 없는 옛 글 2 를 다시 받는다
     http = tistory_http([], [f"{TIS}/4"])
-    http.routes[f"{TIS}/2"] = "<html>2</html>"
+    http.routes[f"{TIS}/2"] = page(2)
     store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=1)
     assert http.count(f"{TIS}/2") == 1 and http.count(f"{TIS}/3") == 0
     assert sr.counts["new"] == 2 and sr.extra["retried"] == 1
@@ -518,3 +523,51 @@ def test_retry_urls_kept_when_targets_cannot_be_read(tmp_path):
     collect(Settings(store_url=str(tmp_path)), [SRC], store=store, make_source=lambda n: src,
             clock=lambda: DAY0 + timedelta(days=1))
     assert state(store)[TIS]["retry_urls"] == [f"{TIS}/2"]
+
+
+# ---- 빈 껍데기 페이지(03 문서 5-3, 2026-11-06) ----
+
+def test_shell_page_reason_per_platform():
+    velog_shell = "<html><head><title>velog</title></head><body><div id=root></div></body></html>"
+    assert shell_page_reason("velog", velog_shell)
+    assert shell_page_reason("velog", page("글")) is None
+    assert shell_page_reason("velog", '<script>{"released_at":"2026-11-01T00:00:00Z"}</script>') is None
+    assert shell_page_reason("velog", "<meta content='t' property='og:title'>") is None  # 속성 순서, 따옴표가 달라도
+    assert shell_page_reason("tistory", "<html></html>")
+    assert shell_page_reason("tistory", '<meta property="article:published_time" content="2026">') is None
+    assert shell_page_reason("rilog", "# 제목\n본문")                       # 앞머리 없음
+    assert shell_page_reason("rilog", '---\nauthor: "a"\n---\n본문')         # 앞머리에 title 없음
+    assert shell_page_reason("rilog", '---\ntitle: "t"\n---\n본문') is None
+    assert shell_page_reason("generic", "<html></html>") is None              # 범용은 보지 않는다(② 정제의 안전망)
+
+
+def test_shell_page_is_a_failure_and_retried_next_day(tmp_path):
+    http = tistory_http([f"{TIS}/1", f"{TIS}/2"], [])
+    http.routes[f"{TIS}/2"] = "<html><head><title>tistory</title></head></html>"
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0)
+    assert sr.counts["new"] == 1 and sr.failure_reasons == {"not_a_post": 1}
+    assert store.read_json(raw_path(SRC, blog_key(f"{TIS}/2"))) is None      # 저장하지 않는다
+    assert state(store)[TIS]["retry_urls"] == [f"{TIS}/2"]
+    http = tistory_http([], [])
+    http.routes[f"{TIS}/2"] = page(2)
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=1)
+    assert sr.counts["new"] == 1 and "retry_urls" not in state(store)[TIS]
+
+
+def test_only_overwrites_known_blog_post(tmp_path):
+    """이미 저장된 글(예: 확인이 생기기 전에 저장된 빈 껍데기)을 --only 로 다시 받으면 새 버전으로 덮어쓴다."""
+    http = tistory_http([f"{TIS}/1"], [])
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=0)
+    key = blog_key(f"{TIS}/1")
+    assert store.read_json(raw_path(SRC, key))["version"] == 1
+    http.routes[f"{TIS}/1"] = page("고친 글")
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=1, only=[f"{TIS}/1"])
+    assert sr.counts["changed"] == 1 and sr.counts["unchanged"] == 0
+    rec = store.read_json(raw_path(SRC, key))
+    assert rec["version"] == 2 and rec["body"] == page("고친 글")
+    assert Index(store, SRC).load().get(key)["version"] == 2
+    # --only 로 받은 것도 빈 껍데기면 덮어쓰지 않는다
+    http.routes[f"{TIS}/1"] = "<html></html>"
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=2, only=[f"{TIS}/1"])
+    assert sr.failure_reasons == {"not_a_post": 1}
+    assert store.read_json(raw_path(SRC, key))["version"] == 2

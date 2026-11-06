@@ -209,6 +209,8 @@ def _num(obj, name: str) -> float:
 
 class Source:
     name = ""
+    # --only 로 받은 아는 문서를 바뀜 표시가 같아도 새 버전으로 덮어쓸지. 바뀜 표시가 내용을 따라가지 않는 원천(블로그)만 켠다
+    only_overwrites = False
 
     def list_items(self, ctx: Context) -> Listing:
         raise NotImplementedError
@@ -311,7 +313,8 @@ def _run_source(source: Source, ctx: Context) -> None:
         body = got
         entry = index.get(item.key)
         fields = source.index_fields(body)
-        if entry and ctx.only and not entry.get("gone") and fields and all(entry.get(k) == v for k, v in fields.items()):
+        if (entry and ctx.only and not source.only_overwrites and not entry.get("gone") and fields
+                and all(entry.get(k) == v for k, v in fields.items())):
             rep.add("unchanged")  # --only 로 받아 봤지만 바뀜 표시가 같다
             continue
         version = (entry or {}).get("version", 0) + 1

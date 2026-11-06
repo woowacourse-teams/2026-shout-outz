@@ -3,7 +3,8 @@
     1. 대상 블로그 읽기   서비스 DB blog_sources(읽기만, load_targets)
     2. 글 목록 받기       블로그마다: 전체 목록 받는 날이면 전체 목록, 아니면 피드(3-2)
     3. 키 만들기          keys.blog_key(CLAUDE.md 정규화 6단계 그대로, sha1). velog GraphQL 주소는 RSS 모양으로 맞춰 받는다
-    4. 글 받기            처음 보는 키만(runner 가 아는 키를 거른다, 바뀜 표시 없음)
+    4. 글 받기            처음 보는 키만(runner 가 아는 키를 거른다, 바뀜 표시 없음). 빈 껍데기 페이지면 받기 실패(not_a_post)
+                          --only 로 준 글은 이미 받은 글이어도 다시 받아 덮어쓴다(only_overwrites)
     5. 사라짐 확인        전체 목록을 받은 블로그에서 목록에 없는 아는 키의 주소가 404, 410 이면
     6. 상태 저장          state/blog-post.json: 블로그별 마지막 전체 목록 날짜, 찾은 피드 주소, 다시 받을 글 주소
 
@@ -28,7 +29,7 @@ from ..runner import Context, FetchError, Item, Listing, Source
 from .blog_platforms import (COMMON_FEED_PATHS, GENERIC, RILOG, RILOG_SITEMAP, TISTORY, VELOG, VELOG_GRAPHQL,
                              VELOG_PAGE, VELOG_QUERY, VELOG_RSS, Platform, detect, find_feed_links, is_fetchable_url,
                              is_rilog_post, is_tistory_post, parse_feed, parse_sitemap, rilog_markdown_url, robots_from,
-                             velog_post_url)
+                             shell_page_reason, velog_post_url)
 
 log = logging.getLogger("collector.blog")
 
@@ -127,6 +128,9 @@ def decode_text(r) -> str:
 
 class BlogSource(Source):
     name = "blog-post"
+    # 블로그 바뀜 표시(글 주소, 블로그 첫 주소)는 다시 받아도 늘 같다. 그래서 --only 로 다시 받은 글은 덮어쓴다.
+    # 이미 저장된 빈 껍데기나 잘못 받은 원본을 고칠 길이 이것뿐이다(03 문서 5-3, 2026-11-06)
+    only_overwrites = True
 
     def __init__(self, http=None, targets_loader=None) -> None:
         self._http = http
@@ -426,9 +430,14 @@ class BlogSource(Source):
             raise FetchError(f"error_{type(exc).__name__}", url=d["url"])
         if r.status_code != 200:
             raise FetchError(f"http_{r.status_code}", url=d["url"])
+        body = decode_text(r)
+        why = shell_page_reason(d["platform"], body)
+        if why:  # 글 대신 빈 껍데기: 저장하지 않고 받기 실패, retry_urls 로 다음 실행이 다시 받는다(5-3)
+            log.warning("글이 아닌 페이지(%s): %s", why, d["url"])
+            raise FetchError("not_a_post", url=d["url"])
         # 받은 그대로 저장한다. 본문 뽑기는 ② 정제에서(03 문서 5-3)
         return {"url": d["url"], "blog_root": d["blog_root"], "platform": d["platform"], "found_in": d["found_in"],
-                "body_format": "markdown" if markdown else "html", "body": decode_text(r)}
+                "body_format": "markdown" if markdown else "html", "body": body}
 
     def fetch_many(self, ctx: Context, items: list[Item]):
         """한 건씩 받으면서, 다시 받아 볼 만한 실패를 블로그별로 모은다(retry_urls)."""
