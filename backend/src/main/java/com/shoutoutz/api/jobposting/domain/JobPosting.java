@@ -171,6 +171,16 @@ public final class JobPosting {
         return contentHash.equals(other.contentHash);
     }
 
+    /**
+     * 사용자에게 보여 줄 공고인지 판단한다.
+     * 분석이 끝났고(READY), 숨기지 않았고, 마감일이 없거나 오늘(한국 날짜)까지인 공고만 보여 준다.
+     */
+    public boolean isVisibleOn(LocalDate today) {
+        return status == MatchingStatus.READY
+                && hiddenAt == null
+                && (deadline == null || !deadline.isBefore(today));
+    }
+
     public static JobPosting reconstitute(
             long id,
             String sourceUrl,

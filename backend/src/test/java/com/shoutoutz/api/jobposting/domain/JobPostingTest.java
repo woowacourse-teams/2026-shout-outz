@@ -15,6 +15,7 @@ import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -23,6 +24,7 @@ class JobPostingTest {
     private static final String URL = "https://Careers.Example.com/jobs/123/";
     private static final String CONTENT = "자격 요건\n- Java 개발 경험";
     private static final Instant NOW = Instant.parse("2026-10-27T01:00:00Z");
+    private static final LocalDate TODAY = LocalDate.of(2026, 11, 5);
 
     @Test
     @DisplayName("새 공고는 주소를 정규화하고, 원문은 해시만 남기며, PENDING 상태로 만든다.")
@@ -314,11 +316,56 @@ class JobPostingTest {
                 JobPostingErrorCode.JOB_POSTING_INVALID_REQUIREMENT_COUNT);
     }
 
-    private JobPosting savedPosting(MatchingStatus status) {
+    @Test
+    @DisplayName("분석이 끝났고 숨기지 않았고 마감일이 없는 공고는 사용자에게 보인다.")
+    void visibleWhenReadyAndNotHiddenAndNoDeadline() {
+        JobPosting posting = postingWith(MatchingStatus.READY, null, null);
+
+        assertThat(posting.isVisibleOn(TODAY)).isTrue();
+    }
+
+    @Test
+    @DisplayName("마감일 당일까지는 사용자에게 보인다.")
+    void visibleOnDeadline() {
+        JobPosting posting = postingWith(MatchingStatus.READY, null, TODAY);
+
+        assertThat(posting.isVisibleOn(TODAY)).isTrue();
+    }
+
+    @Test
+    @DisplayName("마감일이 지난 공고는 사용자에게 보이지 않는다.")
+    void notVisibleAfterDeadline() {
+        JobPosting posting = postingWith(MatchingStatus.READY, null, TODAY.minusDays(1));
+
+        assertThat(posting.isVisibleOn(TODAY)).isFalse();
+    }
+
+    @Test
+    @DisplayName("숨긴 공고는 사용자에게 보이지 않는다.")
+    void notVisibleWhenHidden() {
+        JobPosting posting = postingWith(MatchingStatus.READY, NOW, null);
+
+        assertThat(posting.isVisibleOn(TODAY)).isFalse();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MatchingStatus.class, names = "READY", mode = EnumSource.Mode.EXCLUDE)
+    @DisplayName("분석이 끝나지 않은 공고는 사용자에게 보이지 않는다.")
+    void notVisibleWhenNotReady(MatchingStatus status) {
+        JobPosting posting = postingWith(status, null, null);
+
+        assertThat(posting.isVisibleOn(TODAY)).isFalse();
+    }
+
+    private JobPosting postingWith(MatchingStatus status, Instant hiddenAt, LocalDate deadline) {
         return JobPosting.reconstitute(
                 10L, "https://careers.example.com/jobs/123", JobPostingContentHash.from(CONTENT).value(), "예시 회사",
-                JobRole.BACKEND, null, "백엔드 개발자", null, null, status, NOW.plusSeconds(30), 1L,
+                JobRole.BACKEND, null, "백엔드 개발자", null, deadline, status, hiddenAt, 1L,
                 requirements(2), NOW, NOW);
+    }
+
+    private JobPosting savedPosting(MatchingStatus status) {
+        return postingWith(status, NOW.plusSeconds(30), null);
     }
 
     private JobPosting register(List<JobRequirement> requirements) {

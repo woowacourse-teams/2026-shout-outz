@@ -16,6 +16,7 @@ public enum JobPostingErrorCode implements ErrorCode {
     JOB_POSTING_URL_MISMATCH("채용공고 주소는 바꿀 수 없습니다. 다른 주소의 공고는 새로 등록해주세요."),
     JOB_POSTING_EXTRACTION_FAILED("채용공고에서 정보를 뽑지 못했습니다. 잠시 후 다시 시도해주세요."),
     JOB_POSTING_ADMIN_CURSOR_INVALID("채용공고 목록 조회 커서가 올바르지 않습니다. 커서 없이 다시 조회해주세요."),
+    JOB_POSTING_CURSOR_INVALID("채용공고 목록을 더 불러오지 못했습니다. 새로고침 후 다시 시도해주세요."),
 
     JOB_POSTING_INVALID_ID_SIZE("채용공고 ID는 0보다 커야 합니다."),
     JOB_POSTING_INVALID_URL("채용공고 주소는 http 또는 https로 시작하는 1024자 이하의 주소여야 합니다."),
