@@ -5,7 +5,7 @@ import '@/styles/index.css';
 import { Document } from '@/Document';
 import { getApiOrigin } from '@/utils/auth';
 import { App } from '@/App';
-import { createAppRouter } from './router';
+import { createAppRouter } from '../rendering/router';
 import { analytics } from '@/utils/analytics';
 import { connectRouterPageViews } from '@/utils/analytics/connect';
 import * as Sentry from '@sentry/react';
@@ -33,35 +33,30 @@ const errorHandlers = {
   onRecoverableError: Sentry.reactErrorHandler(),
 };
 
-// document 자체가 React Root입니다. render.tsx가 그리는 트리와 정확히 같은
-// <Document><App/></Document>를 그리고, 이 문서가 실제로 프리렌더됐는지에 따라 마운트 방식만
-// 갈립니다(App은 이 분기를 모릅니다 - src/App.tsx 참고).
 async function bootstrap() {
-  // API_ORIGIN을 지정하면 실제 서버에 붙는다는 뜻이라 목을 띄우지 않는다.
-  // .env의 API_ORIGIN을 비워 두면(기본값) 지금까지처럼 MSW가 모든 요청을 가로챈다.
+  // API_ORIGIN ? 실제 서버 : MSW
   if (process.env.NODE_ENV === 'development' && !getApiOrigin()) {
     const { worker } = await import('@/mocks/browser');
     await worker.start({ onUnhandledRequest: 'bypass' });
   }
-  // 라우터가 첫 경로를 해석하는 렌더보다 먼저 연결해야 최초 진입도 페이지뷰로 잡히기 때문에 순서 주의해야 함
-  connectRouterPageViews(router, analytics);
+  connectRouterPageViews(router, analytics); // 라우터보다 먼저 모니터링 도구 연결
 
-  const routerHydrationState = window.$_TSR;
   const tree = (
     <Document>
       <App router={router} queryClient={queryClient} />
     </Document>
   );
 
+  const routerHydrationState = window.$_TSR;
+
+  // $_TSR이 없는 경우엔 createRoot
   if (!routerHydrationState) {
-    // $_TSR이 없는 순수 CSR(dev 서버 등)에서는 하이드레이션 없이 새로 그립니다.
     createRoot(document, errorHandlers).render(tree);
     return;
   }
 
-  // Router 매치 상태와 React Query 캐시를 복원한 뒤 React 트리를 하이드레이트합니다.
-  await hydrate(router).finally(() => routerHydrationState.h());
-  hydrateRoot(document, tree, errorHandlers);
+  await hydrate(router).finally(() => routerHydrationState.h()); // 청크 실행 / $_TSR queryClient로 옮기기 / 브라우저 라우터 매치 등등 .. 선행 작업
+  hydrateRoot(document, tree, errorHandlers); // 렌더
 }
 
 void bootstrap();

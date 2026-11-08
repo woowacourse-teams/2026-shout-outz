@@ -2,20 +2,15 @@
 import { existsSync, readFileSync } from 'node:fs';
 
 export type BuildAssets = {
-  /** main entry를 이루는 script입니다. splitChunks가 framework 등을 떼어내면 여러 개가 됩니다. */
-  scripts: string[];
+  scripts: string[]; // 진입점에서 import문을 따라가 수집 된 청크들(framework, lib, bundle, ...)
   styles?: string[];
-  /** 라우트 id별로 그 라우트 컴포넌트를 그리는 데 필요한 청크 파일 경로입니다. */
-  routeChunks?: Record<string, string[]>;
-  /** 동적 import 경로별로 그 import가 만든 청크 파일 경로입니다(예: 'posthog-js'). */
-  importChunks?: Record<string, string[]>;
+  routeChunks?: Record<string, string[]>; // "/community/$feedId": ["1.chunk.js", "2.chunk.js", "3.chunk.js", ...]
+  importChunks?: Record<string, string[]>; // 동적 import 경로별 만들어진 청크 ex) "posthog-js": ["/posthog.chunk.js"]
 };
 
 export type PreloadFiles = {
-  /** 첫 화면을 그리는 데 필요한 청크입니다. */
-  critical?: string[];
-  /** 첫 화면에는 필요 없지만 main 실행 직후 바로 요청되는 청크입니다. 라우트 청크와 대역폭을 다투지 않게 낮은 우선순위로 받습니다. */
-  lowPriority?: string[];
+  critical?: string[]; // 첫 화면에 필요한 청크
+  lowPriority?: string[]; // 첫 화면에 필요하지 않은 나머지 청크들
 };
 
 function isBuildAssets(value: unknown): value is BuildAssets {

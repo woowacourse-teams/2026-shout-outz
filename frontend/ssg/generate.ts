@@ -4,9 +4,14 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderCsrShell, renderStaticPage } from './render';
-import { getPreloadFiles, injectBuildAssets, loadBuildAssets, type BuildAssets } from './assets';
+import {
+  getPreloadFiles,
+  injectBuildAssets,
+  loadBuildAssets,
+  type BuildAssets,
+} from '../rendering/buildAssets';
 import { collectCsrShellRoutes, collectPrerenderRoutes, createRouteIdMatcher } from './routes';
-import { resolveHtmlPath } from './paths';
+import { resolveHtmlPath } from '../rendering/htmlPath';
 
 const PRERENDER_ORIGIN = 'http://prerender.local';
 

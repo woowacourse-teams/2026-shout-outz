@@ -2,9 +2,7 @@ import { readFileSync } from 'node:fs';
 
 const PLUGIN_NAME = 'BuildAssetsPlugin';
 const ROUTE_ID_PATTERN = /createFileRoute\(\s*['"]([^'"]+)['"]\s*\)/;
-// TanStack Router의 autoCodeSplitting은 라우트 파일을 `?tsr-split=component` 같은 쿼리로 다시 import해
-// 별도 청크를 만듭니다. 이 쿼리가 붙은 import만 라우트 청크로 봅니다.
-const ROUTE_SPLIT_QUERY = 'tsr-split=';
+const ROUTE_SPLIT_QUERY = 'tsr-split='; // TanstackRouter의 autoCodeSplitting 옵션에 의해 붙는 라우트 청크 prefix
 
 function readRouteId(routeFilePath) {
   const routeId = readFileSync(routeFilePath, 'utf-8').match(ROUTE_ID_PATTERN)?.[1];

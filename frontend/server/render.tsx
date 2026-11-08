@@ -6,8 +6,8 @@ import { QueryClient } from '@tanstack/react-query';
 import type { StaticDataRouteOption } from '@tanstack/react-router';
 import { createRequestHandler, renderRouterToStream } from '@tanstack/react-router/ssr/server';
 import { preinit, preload } from 'react-dom';
-import type { BuildAssets, PreloadFiles } from '../ssg/assets';
-import { createAppRouter } from '../ssg/router';
+import type { BuildAssets, PreloadFiles } from '../rendering/buildAssets';
+import { createAppRouter } from '../rendering/router';
 import { App } from '@/App';
 import { Document } from '@/Document';
 

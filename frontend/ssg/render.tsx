@@ -8,7 +8,7 @@ import {
   attachRouterServerSsrUtils,
   transformPipeableStreamWithRouter,
 } from '@tanstack/react-router/ssr/server';
-import { createAppRouter } from './router';
+import { createAppRouter } from '../rendering/router';
 import { App } from '@/App';
 import { Document } from '@/Document';
 

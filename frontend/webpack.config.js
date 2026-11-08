@@ -7,7 +7,7 @@ import CopyPlugin from 'copy-webpack-plugin';
 import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import { tanstackRouter } from '@tanstack/router-plugin/webpack';
-import { BuildAssetsPlugin } from './ssg/build-assets-plugin.js';
+import { BuildAssetsPlugin } from './rendering/build-assets-plugin.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -110,7 +110,7 @@ const config = {
       'CURRENT_COHORT',
     ],
   },
-  entry: './ssg/client.tsx',
+  entry: './browser/client.tsx',
   // Sentry 업로드용 소스맵을 생성하고 번들에는 소스맵 URL을 첨부하지 않는다.
   devtool: isProduction ? 'hidden-source-map' : undefined,
   // 타입 검사 플러그인의 디렉터리 감시에도 적용해 의존성과 생성물을 제외합니다.

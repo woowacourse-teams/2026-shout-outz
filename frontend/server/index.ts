@@ -6,8 +6,8 @@ import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { isHTTPError } from 'ky';
 import { pipeline } from 'node:stream/promises';
-import { getPreloadFiles, loadBuildAssets } from '../ssg/assets';
-import { resolveHtmlPath } from '../ssg/paths';
+import { getPreloadFiles, loadBuildAssets } from '../rendering/buildAssets';
+import { resolveHtmlPath } from '../rendering/htmlPath';
 import { createPathRouter } from '../ssg/routes';
 import { renderStreamingPage } from './render';
 
