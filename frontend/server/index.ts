@@ -8,8 +8,9 @@ import { isHTTPError } from 'ky';
 import { pipeline } from 'node:stream/promises';
 import { getPreloadFiles, loadBuildAssets } from '../rendering/buildAssets';
 import { resolveHtmlPath } from '../rendering/htmlPath';
-import { createPathRouter } from '../ssg/routes';
+import { matchPage } from './matchPage';
 import { renderStreamingPage } from './render';
+import { toWebRequest } from './webRequest';
 
 // 이 파일은 webpack이 .build/server.cjs로 번들해 실행하므로, 경로는 번들 위치(.build/) 기준입니다.
 // 배포 환경처럼 폴더 구조가 다르면 DIST_DIR로 지정합니다.
@@ -28,45 +29,6 @@ const buildAssets = loadBuildAssets(path.join(DIST_DIR, 'build-assets.json'));
 function findPrebuiltHtml(pathname: string): string {
   const htmlPath = resolveHtmlPath(DIST_DIR, pathname);
   return htmlPath && existsSync(htmlPath) ? htmlPath : CSR_SHELL_PATH;
-}
-
-const router = createPathRouter();
-
-function countPathSegments(pathname: string): number {
-  return pathname.split('/').filter(Boolean).length;
-}
-
-// 경로 전체가 라우트에 맞으면 매치된 라우트 목록(루트부터)을, 아니면 null을 돌려줍니다.
-// 라우터는 /community/123/extra처럼 뒤가 남는 경로도 가장 깊게 맞은 라우트(/community/$feedId)까지
-// 매치해 돌려주므로, 그 매치가 요청 경로의 세그먼트를 모두 덮었는지 비교합니다.
-// 맞는 라우트가 하나도 없으면 루트 라우트만 남습니다.
-function matchPage(pathname: string) {
-  const matches = router.matchRoutes(pathname);
-  const deepest = matches.at(-1);
-
-  if (matches.length <= 1 || !deepest) return null;
-  if (countPathSegments(deepest.pathname) !== countPathSegments(pathname)) return null;
-  return matches;
-}
-
-// TanStack Router의 요청 핸들러는 웹 표준 Request를 받으므로 express 요청을 옮겨 담습니다.
-// 사용자가 응답을 다 받기 전에 연결을 끊으면 signal로 알려 서버 렌더를 멈추게 합니다.
-function toWebRequest(req: express.Request, res: express.Response): Request {
-  const controller = new AbortController();
-  res.on('close', () => {
-    if (!res.writableFinished) controller.abort();
-  });
-
-  const headers = new Headers();
-  for (const [key, value] of Object.entries(req.headers)) {
-    if (Array.isArray(value)) value.forEach((item) => headers.append(key, item));
-    else if (value !== undefined) headers.set(key, value);
-  }
-
-  return new Request(new URL(req.originalUrl, `${req.protocol}://${req.get('host')}`), {
-    headers,
-    signal: controller.signal,
-  });
 }
 
 const app = express();

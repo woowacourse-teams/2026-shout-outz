@@ -1,6 +1,5 @@
-import { routeTree } from '@/routeTree.gen';
-import { createMemoryHistory, createRouter, type AnyRoute } from '@tanstack/react-router';
-import { PATH_PARAMS_ALLOWED_CHARACTERS } from '@/constants/router';
+import type { AnyRoute } from '@tanstack/react-router';
+import { createPathRouter, type PathRouter } from '../rendering/pathRouter';
 
 function normalizePrerenderPath(pathname: string): string {
   return pathname === '/' ? pathname : pathname.replace(/\/+$/, '');
@@ -15,17 +14,6 @@ export interface PrerenderRouteCollection {
   routes: string[];
   failures: PrerenderRouteFailure[];
 }
-
-// SSG, SSR 파이프라인에서 사용할 경로 매칭용 라우터
-export function createPathRouter() {
-  return createRouter({
-    routeTree,
-    pathParamsAllowedCharacters: [...PATH_PARAMS_ALLOWED_CHARACTERS],
-    history: createMemoryHistory({ initialEntries: ['/'] }),
-  });
-}
-
-type PathRouter = ReturnType<typeof createPathRouter>;
 
 function buildStaticPath(router: PathRouter, route: AnyRoute): string {
   // buildLocation으로 라우터의 경로 조립 규칙을 적용한 뒤, index route의 fullPath에
