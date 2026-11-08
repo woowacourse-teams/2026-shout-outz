@@ -4,12 +4,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderCsrShell, renderStaticPage } from './render';
-import {
-  getPreloadFiles,
-  injectBuildAssets,
-  loadBuildAssets,
-  type BuildAssets,
-} from '../rendering/buildAssets';
+import { getPreloadFiles, loadBuildAssets, type BuildAssets } from '../rendering/buildAssets';
 import { collectCsrShellRoutes, collectPrerenderRoutes, createRouteIdMatcher } from './routes';
 import { resolveHtmlPath } from '../rendering/htmlPath';
 
@@ -68,11 +63,10 @@ async function generatePage(
   matchRouteIds: RouteIdMatcher,
 ): Promise<PageGenerationSuccess> {
   const url = normalizeUrl(inputUrl);
-  const html = injectBuildAssets(
-    await renderStaticPage(url),
-    assets,
-    getPreloadFiles(assets, matchRouteIds ? matchRouteIds(url) : []),
-  );
+  const html = await renderStaticPage(url, {
+    buildAssets: assets,
+    preloadFiles: getPreloadFiles(assets, matchRouteIds ? matchRouteIds(url) : []),
+  });
   const outputPath = getOutputPath(distDir, url);
 
   writeHtml(outputPath, html);
@@ -92,11 +86,10 @@ async function generateCsrShell(
   assets: BuildAssets,
   matchRouteIds?: RouteIdMatcher,
 ): Promise<void> {
-  const html = injectBuildAssets(
-    await renderCsrShell(),
-    assets,
-    getPreloadFiles(assets, matchRouteIds ? matchRouteIds(url) : []),
-  );
+  const html = await renderCsrShell({
+    buildAssets: assets,
+    preloadFiles: getPreloadFiles(assets, matchRouteIds ? matchRouteIds(url) : []),
+  });
   const outputPath = getOutputPath(distDir, url);
 
   writeHtml(outputPath, html);

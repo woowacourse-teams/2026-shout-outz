@@ -36,16 +36,6 @@ function isChunkFilesRecord(value: unknown): value is Record<string, string[]> {
   return Object.values(value).every(isFileList);
 }
 
-function insertBefore(html: string, marker: string, insertion: string): string {
-  const index = html.indexOf(marker);
-
-  if (index === -1) {
-    throw new Error(`injectBuildAssets: "${marker}"를 HTML에서 찾지 못했습니다.`);
-  }
-
-  return `${html.slice(0, index)}${insertion}${html.slice(index)}`;
-}
-
 export function loadBuildAssets(manifestPath: string): BuildAssets {
   if (!existsSync(manifestPath)) {
     throw new Error(
@@ -77,42 +67,4 @@ export function getPreloadFiles(assets: BuildAssets, routeIds: string[]): Preloa
     critical: getRouteChunkFiles(assets, routeIds),
     lowPriority: process.env.POSTHOG_KEY ? (assets.importChunks?.['posthog-js'] ?? []) : [],
   };
-}
-
-function toPreloadLinks(files: string[], attributes = ''): string {
-  return files
-    .map((file) => `<link rel="preload" as="script" href="${file}"${attributes}>`)
-    .join('');
-}
-
-export function injectBuildAssets(
-  html: string,
-  assets: BuildAssets,
-  { critical = [], lowPriority = [] }: PreloadFiles = {},
-): string {
-  let result = html;
-
-  // 라우트 청크는 main이 실행된 뒤에야 webpack 런타임이 <script>로 요청합니다. <head>에서 미리 받아 두면
-  // main과 병렬로 내려받고, 런타임의 요청은 브라우저 캐시에서 바로 끝납니다.
-  // webpack은 청크 <script>에 crossorigin을 붙이지 않으므로 preload에도 붙이지 않아야 캐시가 재사용됩니다.
-  const preloadLinks =
-    toPreloadLinks(critical) + toPreloadLinks(lowPriority, ' fetchpriority="low"');
-  if (preloadLinks) {
-    result = insertBefore(result, '</head>', preloadLinks);
-  }
-
-  // CSS는 렌더 차단 리소스라 <head>에 두어 FOUC를 방지합니다.
-  const styleLinks = (assets.styles ?? [])
-    .map((file) => `<link rel="stylesheet" href="${file}">`)
-    .join('');
-  if (styleLinks) {
-    result = insertBefore(result, '</head>', styleLinks);
-  }
-
-  // module script는 받는 대로 병렬로 내려받고 문서 순서대로 실행됩니다. webpack 런타임이 entry를 이루는
-  // 청크가 모두 도착했는지 확인한 뒤 main을 시작하므로 순서에 의존하지 않습니다.
-  const scriptTags = assets.scripts
-    .map((file) => `<script type="module" src="${file}"></script>`)
-    .join('');
-  return insertBefore(result, '</body>', scriptTags);
 }

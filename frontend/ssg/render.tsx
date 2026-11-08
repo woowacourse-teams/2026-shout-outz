@@ -8,6 +8,7 @@ import {
   attachRouterServerSsrUtils,
   transformPipeableStreamWithRouter,
 } from '@tanstack/react-router/ssr/server';
+import { BuildAssetLinks, withBuildScripts, type PageAssets } from '../rendering/BuildAssetTags';
 import { createAppRouter } from '../rendering/router';
 import { App } from '@/App';
 import { Document } from '@/Document';
@@ -39,14 +40,24 @@ async function renderToStream(node: ReactNode, context: string): Promise<Readabl
 
 // App(라우터) 없이 Document만 렌더링한 CSR fallback 셸입니다. SSG로 커버되지 않는 경로에서
 // 브라우저가 client entry를 내려받아 처음부터 클라이언트 렌더링을 시작하는 진입점입니다.
-export async function renderCsrShell(): Promise<string> {
-  return streamToString(await renderToStream(<Document />, 'CSR shell'));
+export async function renderCsrShell({ buildAssets, preloadFiles }: PageAssets): Promise<string> {
+  const stream = await renderToStream(
+    <>
+      <BuildAssetLinks buildAssets={buildAssets} preloadFiles={preloadFiles} />
+      <Document />
+    </>,
+    'CSR shell',
+  );
+  return streamToString(withBuildScripts(stream, buildAssets.scripts));
 }
 
 // prerenderToNodeStream은 API 호출을 포함한 모든 Suspense 콘텐츠가 끝날 때까지 기다린 뒤 HTML을 만듭니다.
 // transformPipeableStreamWithRouter는 그 결과 스트림에서 </body> 직전을 찾아 TanStack Router의
 // $_TSR 하이드레이션 데이터를 끼워 넣습니다(Document가 문서 전체를 그려야만 </body>를 찾을 수 있습니다).
-export async function renderStaticPage(url: string): Promise<string> {
+export async function renderStaticPage(
+  url: string,
+  { buildAssets, preloadFiles }: PageAssets,
+): Promise<string> {
   const queryClient = new QueryClient();
   const router = createAppRouter(queryClient);
 
@@ -62,9 +73,12 @@ export async function renderStaticPage(url: string): Promise<string> {
     await router.load();
 
     const stream = await renderToStream(
-      <Document>
-        <App router={router} queryClient={queryClient} />
-      </Document>,
+      <>
+        <BuildAssetLinks buildAssets={buildAssets} preloadFiles={preloadFiles} />
+        <Document>
+          <App router={router} queryClient={queryClient} />
+        </Document>
+      </>,
       url,
     );
 
@@ -72,7 +86,10 @@ export async function renderStaticPage(url: string): Promise<string> {
     // React Query 데이터는 위 렌더 과정에서 채워지므로 렌더가 끝난 다음 직렬화해야 합니다.
     await router.serverSsr?.dehydrate();
 
-    return streamToString(transformPipeableStreamWithRouter(router, stream, {}));
+    // $_TSR이 </body> 앞에 먼저 들어간 뒤 main script를 그 뒤에 넣어, main이 $_TSR을 읽고 시작하게 합니다.
+    return streamToString(
+      withBuildScripts(transformPipeableStreamWithRouter(router, stream, {}), buildAssets.scripts),
+    );
   } catch (error) {
     router.serverSsr?.cleanup();
     throw error;
