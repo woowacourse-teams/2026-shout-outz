@@ -17,7 +17,7 @@ export function recommendationToMaterial(recommendation: JobRequirementRecommend
   const videoId = kind === 'TECH_TALK' ? youtubeId(recommendation.url) : undefined;
 
   return {
-    id: recommendation.resourceId,
+    id: String(recommendation.resourceId),
     kind,
     title: recommendation.title,
     url: recommendation.url,

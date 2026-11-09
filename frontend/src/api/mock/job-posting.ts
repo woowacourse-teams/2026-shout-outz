@@ -8,7 +8,7 @@ import type {
   JobRequirementRecommendation,
   JobRole,
 } from '@/apis/job-posting';
-import { collectMaterials } from '@/api/mock/explore';
+import { collectMaterials, mockResourceIdOf } from '@/api/mock/explore';
 
 // 서버의 사용자 채용공고 API 명세(목록, 상세, 역량별 자료)에 맞춘 목 응답이다.
 // 공고와 역량은 프로토타입 예시이고, 역량별 자료는 소개 페이지에 저장해 둔 실제 자료를 주제로 묶어 돌려준다.
@@ -152,7 +152,7 @@ const recommendationsOf = (requirement: MockRequirement): JobRequirementRecommen
   collectMaterials(requirement.topics)
     .slice(0, RECOMMENDATION_LIMIT)
     .map((material, index) => ({
-      resourceId: material.id,
+      resourceId: mockResourceIdOf(material.id),
       verdict: index < 3 ? 'MATCH' : 'PARTIAL',
       source: SOURCE_BY_KIND[material.kind],
       title: material.title,

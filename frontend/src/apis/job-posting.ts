@@ -64,9 +64,8 @@ export interface JobPostingDetail {
 
 /** 역량별 추천 자료. source, contentType은 데이터 파이프라인 코드 그대로다. */
 export interface JobRequirementRecommendation {
-  // MOCK-API: 백엔드와 resourceId로 추가하기로 합의했고 서버 반영 전이다.
-  // ASSUMPTION: 타입은 정해지지 않아 탐색 자료 ID(예: blog-post|post:…|v1)와 같은 문자열로 둔다. 자료 요약 모달이 이 ID로 요약을 불러온다.
-  resourceId: string;
+  // MOCK-API: 백엔드와 resourceId(long)로 추가하기로 합의했고 서버 반영 전이다. 자료 요약 모달이 이 ID로 요약을 불러온다.
+  resourceId: number;
   verdict: RecommendationVerdict;
   /** blog-post, github-pr, github-wiki, youtube-tekotalk 등 */
   source: string;

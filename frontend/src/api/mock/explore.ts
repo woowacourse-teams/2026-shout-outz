@@ -167,6 +167,10 @@ export const collectMaterials = (names: string[]) => {
 
 const allMaterials = collectMaterials(topics.map((topic) => topic.topic));
 
+/** 채용공고 추천 자료의 resourceId(long) 목. 전체 자료 목록에서의 순서(1부터)를 쓴다. */
+export const mockResourceIdOf = (materialId: string) =>
+  allMaterials.findIndex((item) => item.id === materialId) + 1;
+
 export const getExploreHome = (): ExploreHome => ({
   recentBlogs: allMaterials.filter((material) => material.kind === 'BLOG').slice(0, 4),
   recentTechTalks: allMaterials.filter((material) => material.kind === 'TECH_TALK').slice(0, 2),
@@ -278,7 +282,10 @@ const SAMPLE_DETAILS: Record<Exclude<MaterialKind, 'TECH_TALK'>, DetailFields> =
 };
 
 export const getMaterialDetail = (materialId: string): MaterialDetail | undefined => {
-  const material = allMaterials.find((item) => item.id === materialId);
+  // 채용공고 추천 자료는 숫자 resourceId로 요약을 연다.
+  const material = /^[1-9]\d*$/.test(materialId)
+    ? allMaterials[Number(materialId) - 1]
+    : allMaterials.find((item) => item.id === materialId);
   if (!material) return undefined;
   if (material.kind === 'TECH_TALK')
     return { ...material, techTags: [], learnings: [], experiences: [] };

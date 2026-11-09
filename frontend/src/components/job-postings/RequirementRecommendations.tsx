@@ -53,12 +53,10 @@ export function RequirementRecommendations({
   const byId = new Map<string, { material: Material; requirementNames: string[] }>();
   results.forEach((result, index) => {
     for (const recommendation of result.data ?? []) {
-      const entry = byId.get(recommendation.resourceId) ?? {
-        material: recommendationToMaterial(recommendation),
-        requirementNames: [],
-      };
+      const material = recommendationToMaterial(recommendation);
+      const entry = byId.get(material.id) ?? { material, requirementNames: [] };
       entry.requirementNames.push(requirements[index]!.name);
-      byId.set(recommendation.resourceId, entry);
+      byId.set(material.id, entry);
     }
   });
   const entries = [...byId.values()];
