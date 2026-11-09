@@ -10,17 +10,14 @@ const KIND_BY_SOURCE: Record<string, MaterialKind> = {
   'youtube-tekotalk': 'TECH_TALK',
 };
 
-/**
- * 역량별 추천 자료를 탐색 화면의 자료 목록 모양으로 바꾼다. 같은 목록 컴포넌트를 그대로 쓰기 위해서다.
- * 추천 자료에는 ID가 없어 원문 주소를 ID로 쓴다.
- */
+/** 역량별 추천 자료를 탐색 화면의 자료 모양으로 바꾼다. 같은 목록과 자료 요약 모달을 그대로 쓰기 위해서다. */
 export function recommendationToMaterial(recommendation: JobRequirementRecommendation): Material {
-  // ASSUMPTION: 화면이 모르는 source 코드는 블로그로 보여 준다.
+  // 화면이 모르는 source 코드는 블로그로 보여 준다.
   const kind = KIND_BY_SOURCE[recommendation.source] ?? 'BLOG';
   const videoId = kind === 'TECH_TALK' ? youtubeId(recommendation.url) : undefined;
 
   return {
-    id: recommendation.url,
+    id: recommendation.resourceId,
     kind,
     title: recommendation.title,
     url: recommendation.url,

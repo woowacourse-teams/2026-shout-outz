@@ -8,14 +8,12 @@ import { cn } from '@/utils/cn';
 
 interface MaterialListProps {
   materials: Material[];
-  /** true면 자료 요약 대신 원문을 새 탭으로 연다. 요약 API가 없는 자료에서 쓴다. */
-  openOriginal?: boolean;
   /** 한 줄 소개 아래에 덧붙일 내용 */
   renderExtra?: (material: Material) => ReactNode;
 }
 
-/** 블로그·PR·팀 문서 목록. 기본은 항목을 누르면 자료 요약을 연다. */
-export function MaterialList({ materials, openOriginal = false, renderExtra }: MaterialListProps) {
+/** 블로그·PR·팀 문서 목록. 항목을 누르면 자료 요약을 연다. */
+export function MaterialList({ materials, renderExtra }: MaterialListProps) {
   const itemClass =
     'focus-visible:outline-primary-600 group flex w-full cursor-pointer flex-col gap-2.5 py-6 text-left focus-visible:outline-2';
 
@@ -38,24 +36,13 @@ export function MaterialList({ materials, openOriginal = false, renderExtra }: M
 
         return (
           <li key={material.id} className="border-t border-gray-100">
-            {openOriginal ? (
-              <a
-                href={material.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={itemClass}
-              >
-                {content}
-              </a>
-            ) : (
-              <button
-                type="button"
-                className={itemClass}
-                onClick={() => openMaterialSummary(material)}
-              >
-                {content}
-              </button>
-            )}
+            <button
+              type="button"
+              className={itemClass}
+              onClick={() => openMaterialSummary(material)}
+            >
+              {content}
+            </button>
           </li>
         );
       })}

@@ -49,21 +49,20 @@ export function RequirementRecommendations({
     );
   }
 
-  // 원문 주소가 같은 자료는 한 번만 담고, 어떤 역량에서 나왔는지 모은다.
-  const byUrl = new Map<string, { material: Material; requirementNames: string[] }>();
+  // 같은 자료는 한 번만 담고, 어떤 역량에서 나왔는지 모은다.
+  const byId = new Map<string, { material: Material; requirementNames: string[] }>();
   results.forEach((result, index) => {
     for (const recommendation of result.data ?? []) {
-      const entry = byUrl.get(recommendation.url) ?? {
+      const entry = byId.get(recommendation.resourceId) ?? {
         material: recommendationToMaterial(recommendation),
         requirementNames: [],
       };
       entry.requirementNames.push(requirements[index]!.name);
-      byUrl.set(recommendation.url, entry);
+      byId.set(recommendation.resourceId, entry);
     }
   });
-  const entries = [...byUrl.values()];
-  const requirementNamesOf = (material: Material) =>
-    byUrl.get(material.url)?.requirementNames ?? [];
+  const entries = [...byId.values()];
+  const requirementNamesOf = (material: Material) => byId.get(material.id)?.requirementNames ?? [];
 
   const groups: { kind: Exclude<KindFilter, 'ALL'>; title: string; materials: Material[] }[] = [
     {
@@ -130,10 +129,8 @@ export function RequirementRecommendations({
               <TechTalkList talks={group.materials} columns={3} />
             </div>
           ) : (
-            // ASSUMPTION: 추천 자료에는 요약 API용 ID가 없어 자료 요약 대신 원문을 새 탭으로 연다.
             <MaterialList
               materials={group.materials}
-              openOriginal
               renderExtra={(material) => (
                 <span className="text-xs text-gray-400">
                   관련 역량 · {requirementNamesOf(material).join(', ')}

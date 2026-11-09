@@ -28,7 +28,6 @@ export function JobPostingList({ keyword }: { keyword: string }) {
 
   if (keyword && jobPostings.length === 0) {
     return (
-      // ASSUMPTION: 프로토타입에 검색 결과가 없는 화면이 없어 키워드 탭과 같은 빈 상태 안내를 둔다.
       <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-10 text-center">
         <p className="font-semibold text-gray-900">
           &apos;{keyword}&apos;에 맞는 공고를 아직 못 찾았어요.
@@ -58,7 +57,7 @@ export function JobPostingList({ keyword }: { keyword: string }) {
         </p>
       )}
       <div ref={sentinel} />
-      {/* ASSUMPTION: 프로토타입에 다음 페이지 처리가 없어 매거진 목록처럼 스크롤 끝에서 이어 불러오고, 실패하면 버튼으로 다시 시도한다. */}
+      {/* 매거진 목록처럼 스크롤 끝에서 다음 페이지를 이어 불러오고, 실패하면 버튼으로 다시 시도한다. */}
       {hasNextPage && (
         <div className="mt-5 grid">
           <Button

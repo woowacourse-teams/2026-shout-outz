@@ -152,6 +152,7 @@ const recommendationsOf = (requirement: MockRequirement): JobRequirementRecommen
   collectMaterials(requirement.topics)
     .slice(0, RECOMMENDATION_LIMIT)
     .map((material, index) => ({
+      resourceId: material.id,
       verdict: index < 3 ? 'MATCH' : 'PARTIAL',
       source: SOURCE_BY_KIND[material.kind],
       title: material.title,

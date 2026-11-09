@@ -36,8 +36,6 @@ describe('JobPostingDetailPage', () => {
     );
 
     const documents = await screen.findByRole('region', { name: /^PR과 팀 문서/ });
-    const [firstLink] = within(documents).getAllByRole('link');
-    expect(firstLink).toHaveAttribute('target', '_blank');
     expect(
       within(documents).getAllByText('관련 역량 · React, Next.js, TypeScript').length,
     ).toBeGreaterThan(0);
@@ -60,6 +58,21 @@ describe('JobPostingDetailPage', () => {
     expect(
       await screen.findByText('역량을 하나 이상 고르면 관련 자료를 보여 드려요.'),
     ).toBeVisible();
+  });
+
+  it('추천 자료를 누르면 다른 화면처럼 자료 요약 모달을 연다', async () => {
+    const user = userEvent.setup();
+    renderRoute('/job-postings/2');
+
+    const documents = await screen.findByRole('region', { name: /^PR과 팀 문서/ });
+    await user.click(within(documents).getAllByRole('button', { name: /^PR/ })[0]!);
+
+    const summary = await screen.findByRole('dialog');
+    expect(within(summary).getByRole('link', { name: /^원문 보기:/ })).toHaveAttribute(
+      'target',
+      '_blank',
+    );
+    expect(await within(summary).findByRole('heading', { name: '기술 태그' })).toBeVisible();
   });
 
   it('자료가 없는 역량만 고르면 안내를 보여준다', async () => {

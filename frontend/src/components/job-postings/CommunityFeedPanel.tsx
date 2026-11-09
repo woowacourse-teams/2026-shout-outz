@@ -9,7 +9,7 @@ export function CommunityFeedPanel({ jobPostingId }: { jobPostingId: number }) {
   const { data: feeds } = useQuery(jobPostingCommunityFeedsQuery(jobPostingId));
   const [collapsed, setCollapsed] = useState(false);
 
-  // ASSUMPTION: 고민 목록을 못 불러오거나 비어 있으면 패널을 숨긴다. 상세의 핵심은 왼쪽 자료라서다.
+  // 고민 목록을 못 불러오거나 비어 있으면 패널을 숨긴다.
   if (!feeds || feeds.length === 0) return null;
 
   return (
