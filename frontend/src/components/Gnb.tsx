@@ -7,6 +7,8 @@ import { analytics, toPathPattern, type NavTab } from '@/utils/analytics';
 
 export const GNB_ITEMS = linkOptions([
   { to: '/', activeOptions: { exact: true }, label: '홈' },
+  // 탐색 화면을 만드는 동안 홈과 함께 둔다.
+  { to: '/explore', label: '탐색' },
   { to: '/community', label: '커뮤니티' },
   { to: '/projects', label: '프로젝트' },
   { to: '/magazines', label: '매거진' },
@@ -15,6 +17,7 @@ export const GNB_ITEMS = linkOptions([
 
 const NAV_TAB_BY_PATH: Record<string, NavTab> = {
   '/': 'home',
+  '/explore': 'explore',
   '/community': 'feeds',
   '/projects': 'projects',
   '/magazines': 'magazines',

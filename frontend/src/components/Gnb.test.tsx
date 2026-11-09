@@ -10,7 +10,15 @@ import {
 import { Gnb, GNB_ITEMS, type GnbProps } from '@/components/Gnb';
 import { tabItemStyles } from '@/components/Tab';
 
-const ROUTE_PATHS = ['/', '/community', '/projects', '/projects/$projectId', '/magazines', '/news'];
+const ROUTE_PATHS = [
+  '/',
+  '/explore',
+  '/community',
+  '/projects',
+  '/projects/$projectId',
+  '/magazines',
+  '/news',
+];
 
 const renderGnb = async (path: string, props: GnbProps = {}) => {
   const rootRoute = createRootRoute({ component: () => <Gnb {...props} /> });
@@ -61,6 +69,11 @@ describe('Gnb', () => {
     it('홈은 정확히 일치할 때만 활성이다', async () => {
       await renderGnb('/');
       expect(activeLabels()).toEqual(['홈']);
+    });
+
+    it('탐색 화면에서는 탐색이 활성이다', async () => {
+      await renderGnb('/explore');
+      expect(activeLabels()).toEqual(['탐색']);
     });
 
     it('하위 경로에서도 상위 항목이 활성이다', async () => {
