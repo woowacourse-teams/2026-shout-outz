@@ -12,8 +12,7 @@ import { matchPage } from './matchPage';
 import { renderStreamingPage } from './render';
 import { toWebRequest } from './webRequest';
 
-// 이 파일은 webpack이 .build/server.cjs로 번들해 실행하므로, 경로는 번들 위치(.build/) 기준입니다.
-// 배포 환경처럼 폴더 구조가 다르면 DIST_DIR로 지정합니다.
+// 로컬과 배포 파일에서 기준 경로가 다른 것을 맞춰주기 위함
 const DIST_DIR = process.env.DIST_DIR ?? fileURLToPath(new URL('../dist/', import.meta.url));
 const CSR_SHELL_PATH = path.join(DIST_DIR, 'index.html');
 const PORT = Number(process.env.PORT ?? 3000);
@@ -25,7 +24,7 @@ if (!existsSync(CSR_SHELL_PATH)) {
 // 같은 빌드 dist에서 사용하는 script/CSS/preload 정보
 const buildAssets = loadBuildAssets(path.join(DIST_DIR, 'build-assets.json'));
 
-// 빌드로 인해 생성된 HTML 있는 경우 해당 파일 경로를 반환하고, 없는 경우 dist/index.html 사용
+// 서버에서는 렌더가 실패했을 때 사용
 function findPrebuiltHtml(pathname: string): string {
   const htmlPath = resolveHtmlPath(DIST_DIR, pathname);
   return htmlPath && existsSync(htmlPath) ? htmlPath : CSR_SHELL_PATH;

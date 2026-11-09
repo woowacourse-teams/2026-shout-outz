@@ -1,7 +1,8 @@
 import type { AnyRoute } from '@tanstack/react-router';
 import { createPathRouter, type PathRouter } from '../rendering/pathRouter';
 
-function normalizePrerenderPath(pathname: string): string {
+// 라우터의 trailing slash 정책(never)에 맞춰 경로 끝의 '/'를 뗍니다. '/'는 그대로 둡니다.
+export function removeTrailingSlash(pathname: string): string {
   return pathname === '/' ? pathname : pathname.replace(/\/+$/, '');
 }
 
@@ -21,7 +22,7 @@ function buildStaticPath(router: PathRouter, route: AnyRoute): string {
   const location = router.buildLocation({
     to: route.fullPath,
   } as unknown as Parameters<typeof router.buildLocation>[0]);
-  return normalizePrerenderPath(location.pathname);
+  return removeTrailingSlash(location.pathname);
 }
 
 // 경로에 매치되는 라우트 id를 루트부터 순서대로 돌려줍니다. 페이지별 HTML에 넣을 라우트 청크를
@@ -80,7 +81,7 @@ export async function collectPrerenderRoutes(): Promise<PrerenderRouteCollection
           to: route.fullPath,
           params,
         } as unknown as Parameters<typeof router.buildLocation>[0]);
-        routes.add(normalizePrerenderPath(location.pathname));
+        routes.add(removeTrailingSlash(location.pathname));
       }
     } catch (error) {
       failures.push({ route: route.fullPath, error });

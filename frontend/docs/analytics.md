@@ -39,7 +39,7 @@ export interface AnalyticsClient {
 
 - **로그인 여부는 따로 알리지 않는다.** `identify`에 넘긴 값으로 판단해 모든 이벤트에 자동으로 붙는다.
 - **`identify`는 값이 바뀔 때만 도구에 전달된다.** 같은 사용자로 여러 번 불러도 한 번만 나간다. 세션 조회가 화면마다 다시 일어나도 호출부가 신경 쓸 필요가 없다. 새로고침하면 상태가 초기화되므로 페이지 로드마다 한 번은 알려야 한다.
-- **초기화는 클라이언트 진입점에서만** 한다(`ssg/client.tsx`). `ssg/render.tsx`는 Node에서 같은 트리를 그리므로, 렌더 중에 `window`를 만지면 SSG 빌드가 깨진다.
+- **초기화는 클라이언트 진입점에서만** 한다(`browser/client.tsx`). `ssg/render.tsx`(SSG)와 `server/render.tsx`(SSR)는 Node에서 같은 트리를 서버 렌더하므로, 렌더 중에 `window`를 만지면 SSG 빌드와 SSR 응답이 깨진다.
 - **페이지 이동은 라우터 구독으로** 잡는다. SPA라서 최초 로딩 외의 이동은 도구가 자동으로 알지 못한다.
 - **측정 ID는 `webpack.config.js`의 `EnvironmentPlugin`으로** 주입한다(`API_ORIGIN`과 같은 방식). 값이 없으면 콘솔 어댑터만 동작한다.
 

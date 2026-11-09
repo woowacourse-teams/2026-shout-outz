@@ -53,7 +53,7 @@ export function loadBuildAssets(manifestPath: string): BuildAssets {
 }
 
 // 매치된 라우트들이 쓰는 청크를 중복 없이 모읍니다. 매니페스트에 없는 라우트(분리된 청크가 없는 루트 등)는 건너뜁니다.
-export function getRouteChunkFiles(assets: BuildAssets, routeIds: string[]): string[] {
+function getRouteChunkFiles(assets: BuildAssets, routeIds: string[]): string[] {
   return [...new Set(routeIds.flatMap((routeId) => assets.routeChunks?.[routeId] ?? []))];
 }
 

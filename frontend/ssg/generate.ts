@@ -5,7 +5,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderCsrShell, renderStaticPage } from './render';
 import { getPreloadFiles, loadBuildAssets, type BuildAssets } from '../rendering/buildAssets';
-import { collectCsrShellRoutes, collectPrerenderRoutes, createRouteIdMatcher } from './routes';
+import {
+  collectCsrShellRoutes,
+  collectPrerenderRoutes,
+  createRouteIdMatcher,
+  removeTrailingSlash,
+} from './routes';
 import { resolveHtmlPath } from '../rendering/htmlPath';
 
 const PRERENDER_ORIGIN = 'http://prerender.local';
@@ -38,7 +43,7 @@ function normalizeUrl(input: string): string {
     throw new Error(`Prerender URL must be a local pathname: ${input}`);
   }
 
-  return parsed.pathname === '/' ? '/' : parsed.pathname.replace(/\/+$/, '');
+  return removeTrailingSlash(parsed.pathname);
 }
 
 function getOutputPath(distDir: string, pathname: string): string {
@@ -65,7 +70,7 @@ async function generatePage(
   const url = normalizeUrl(inputUrl);
   const html = await renderStaticPage(url, {
     buildAssets: assets,
-    preloadFiles: getPreloadFiles(assets, matchRouteIds ? matchRouteIds(url) : []),
+    preloadFiles: getPreloadFiles(assets, matchRouteIds(url)),
   });
   const outputPath = getOutputPath(distDir, url);
 

@@ -98,6 +98,15 @@ SSR 서버는 매치된 Route의 `ssrQueries`를 서버 렌더 전에 `ensureQue
 - 페이지가 쓰는 것과 같은 쿼리 함수를 반환한다. query key가 다르면 캐시를 찾지 못해 서버 렌더 중에 다시 요청한다.
 - 쿼리가 404로 실패하면 SSR 서버는 CSR 셸을 404 상태 코드로 응답한다. 그 밖의 실패는 SSG·CSR 셸로 대체한다.
 
+`staticData` 타입은 읽는 쪽에서 선언한다. `prerender`·`generateStaticParams`는 `ssg/staticData.d.ts`, `ssr`·`ssrQueries`는 `server/staticData.d.ts`에 있다.
+
+렌더링 코드는 그 파일을 누가 import하는지에 따라 폴더를 나눈다. `src`는 이 폴더들을 import하지 않는다.
+
+- `browser/`: 브라우저 entry(`client.tsx`). 브라우저 렌더와 하이드레이션을 시작한다
+- `ssg/`: 빌드 때만 실행되는 HTML 생성(SSG 페이지, 경로별 CSR 셸)
+- `server/`: 요청마다 서버 렌더하는 SSR 서버
+- `rendering/`: 위 폴더들이 함께 쓰는 코드(라우터 생성, 빌드 자산 읽기·삽입, HTML 경로 계산)
+
 ### `pages`
 
 페이지 단위 UI와 페이지에 필요한 데이터 조합을 담당한다.
