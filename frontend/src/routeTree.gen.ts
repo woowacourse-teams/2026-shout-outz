@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as CommunityIndexRouteImport } from './routes/community/index'
 import { Route as CommunityFeedIdRouteImport } from './routes/community/$feedId'
@@ -46,6 +47,11 @@ const AboutRoute = AboutRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExploreRoute = ExploreRouteImport.update({
+  id: '/explore',
+  path: '/explore',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/explore': typeof ExploreRoute
   '/signup': typeof SignupRoute
   '/community/$feedId': typeof CommunityFeedIdRoute
   '/community/new': typeof CommunityNewRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/explore': typeof ExploreRoute
   '/signup': typeof SignupRoute
   '/community/$feedId': typeof CommunityFeedIdRoute
   '/community/new': typeof CommunityNewRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/explore': typeof ExploreRoute
   '/signup': typeof SignupRoute
   '/community/$feedId': typeof CommunityFeedIdRoute
   '/community/new': typeof CommunityNewRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/explore'
     | '/signup'
     | '/community/$feedId'
     | '/community/new'
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/explore'
     | '/signup'
     | '/community/$feedId'
     | '/community/new'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/explore'
     | '/signup'
     | '/community/$feedId'
     | '/community/new'
@@ -308,6 +320,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
+  ExploreRoute: typeof ExploreRoute
   SignupRoute: typeof SignupRoute
   CommunityFeedIdRoute: typeof CommunityFeedIdRoute
   CommunityNewRoute: typeof CommunityNewRoute
@@ -351,6 +364,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explore': {
+      id: '/explore'
+      path: '/explore'
+      fullPath: '/explore'
+      preLoaderRoute: typeof ExploreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -500,6 +520,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
+  ExploreRoute: ExploreRoute,
   SignupRoute: SignupRoute,
   CommunityFeedIdRoute: CommunityFeedIdRoute,
   CommunityNewRoute: CommunityNewRoute,

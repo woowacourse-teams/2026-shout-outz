@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 
 import { adminHandlers } from '@/api/mock/admin';
+import { exploreHandlers } from '@/api/mock/explore';
 import { homeBanners } from '@/api/mock/home';
 import { getFeedList } from '@/api/mock/feed';
 import { getNewsDetail, getNewsList } from '@/api/mock/news';
@@ -436,4 +437,5 @@ export const handlers = [
 
   ...adminHandlers,
   ...notificationHandlers,
+  ...exploreHandlers,
 ];
