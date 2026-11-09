@@ -21,6 +21,7 @@ import { Route as CommunityRecommendationsRouteImport } from './routes/community
 import { Route as FeedsIndexRouteImport } from './routes/feeds/index'
 import { Route as FeedsFeedIdRouteImport } from './routes/feeds/$feedId'
 import { Route as FeedsNewRouteImport } from './routes/feeds/new'
+import { Route as JobPostingsJobPostingIdRouteImport } from './routes/job-postings/$jobPostingId'
 import { Route as MagazinesIndexRouteImport } from './routes/magazines/index'
 import { Route as MagazinesMagazineIdRouteImport } from './routes/magazines/$magazineId'
 import { Route as MypageVerificationRouteImport } from './routes/mypage/verification'
@@ -95,6 +96,11 @@ const FeedsNewRoute = FeedsNewRouteImport.update({
   path: '/feeds/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JobPostingsJobPostingIdRoute = JobPostingsJobPostingIdRouteImport.update({
+  id: '/job-postings/$jobPostingId',
+  path: '/job-postings/$jobPostingId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MagazinesIndexRoute = MagazinesIndexRouteImport.update({
   id: '/magazines/',
   path: '/magazines/',
@@ -167,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/community/recommendations': typeof CommunityRecommendationsRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
+  '/job-postings/$jobPostingId': typeof JobPostingsJobPostingIdRoute
   '/magazines/$magazineId': typeof MagazinesMagazineIdRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByTo {
   '/community/recommendations': typeof CommunityRecommendationsRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
+  '/job-postings/$jobPostingId': typeof JobPostingsJobPostingIdRoute
   '/magazines/$magazineId': typeof MagazinesMagazineIdRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/community/recommendations': typeof CommunityRecommendationsRoute
   '/feeds/$feedId': typeof FeedsFeedIdRoute
   '/feeds/new': typeof FeedsNewRoute
+  '/job-postings/$jobPostingId': typeof JobPostingsJobPostingIdRoute
   '/magazines/$magazineId': typeof MagazinesMagazineIdRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
@@ -248,6 +257,7 @@ export interface FileRouteTypes {
     | '/community/recommendations'
     | '/feeds/$feedId'
     | '/feeds/new'
+    | '/job-postings/$jobPostingId'
     | '/magazines/$magazineId'
     | '/mypage/verification'
     | '/news/$newsId'
@@ -274,6 +284,7 @@ export interface FileRouteTypes {
     | '/community/recommendations'
     | '/feeds/$feedId'
     | '/feeds/new'
+    | '/job-postings/$jobPostingId'
     | '/magazines/$magazineId'
     | '/mypage/verification'
     | '/news/$newsId'
@@ -300,6 +311,7 @@ export interface FileRouteTypes {
     | '/community/recommendations'
     | '/feeds/$feedId'
     | '/feeds/new'
+    | '/job-postings/$jobPostingId'
     | '/magazines/$magazineId'
     | '/mypage/verification'
     | '/news/$newsId'
@@ -327,6 +339,7 @@ export interface RootRouteChildren {
   CommunityRecommendationsRoute: typeof CommunityRecommendationsRoute
   FeedsFeedIdRoute: typeof FeedsFeedIdRoute
   FeedsNewRoute: typeof FeedsNewRoute
+  JobPostingsJobPostingIdRoute: typeof JobPostingsJobPostingIdRoute
   MagazinesMagazineIdRoute: typeof MagazinesMagazineIdRoute
   MypageVerificationRoute: typeof MypageVerificationRoute
   NewsNewsIdRoute: typeof NewsNewsIdRoute
@@ -429,6 +442,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FeedsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/job-postings/$jobPostingId': {
+      id: '/job-postings/$jobPostingId'
+      path: '/job-postings/$jobPostingId'
+      fullPath: '/job-postings/$jobPostingId'
+      preLoaderRoute: typeof JobPostingsJobPostingIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/magazines/': {
       id: '/magazines/'
       path: '/magazines'
@@ -527,6 +547,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommunityRecommendationsRoute: CommunityRecommendationsRoute,
   FeedsFeedIdRoute: FeedsFeedIdRoute,
   FeedsNewRoute: FeedsNewRoute,
+  JobPostingsJobPostingIdRoute: JobPostingsJobPostingIdRoute,
   MagazinesMagazineIdRoute: MagazinesMagazineIdRoute,
   MypageVerificationRoute: MypageVerificationRoute,
   NewsNewsIdRoute: NewsNewsIdRoute,
