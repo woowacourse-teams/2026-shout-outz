@@ -17,7 +17,6 @@ export function ExploreHome({ onSearch }: { onSearch: (query: string) => void })
         <h2 id="explore-recommend" className="text-xl font-bold">
           이런 컨텐츠는 어때요?
         </h2>
-        {/* ASSUMPTION: 프로토타입은 블로그 목록과 280px 테코톡 열이다. 토큰으로 맞추려고 2:1 그리드로 나눈다. */}
         <div className="mt-6 grid gap-10 lg:grid-cols-3">
           <div className="min-w-0 lg:col-span-2">
             <h3 className="mb-5 text-sm font-bold text-gray-700">최근 올라온 크루 블로그</h3>
