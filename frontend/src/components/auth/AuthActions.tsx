@@ -4,7 +4,7 @@ import { useNavigate } from '@tanstack/react-router';
 
 import { logoutMutation, sessionQuery } from '@/apis/session';
 import { myProfileQuery, myProfileSummaryQuery } from '@/apis/user';
-import { IconUser } from '@tabler/icons-react';
+import { IconBrandGithubFilled, IconUser } from '@tabler/icons-react';
 import { Dropdown } from '@/components/Dropdown';
 import { Avatar } from '@/components/Avatar';
 import { AuthSheet } from '@/components/auth/AuthSheet';
@@ -52,10 +52,11 @@ export function AuthActions() {
   if (authenticated || session.data?.status === 'SIGNUP_REQUIRED') {
     return (
       <div className="flex items-center gap-2">
+        {/* PROTOTYPE-DIFF: 프로토타입 GNB에는 알림 버튼이 없지만 기존 알림 기능을 유지하려고 남긴다. */}
         {authenticated && <NotificationBell />}
         <Dropdown
           aria-label="내 계정 메뉴"
-          triggerClassName="h-10 gap-2 px-2"
+          triggerClassName="rounded-full px-0"
           menuClassName="w-64"
           trigger={
             <>
@@ -110,9 +111,12 @@ export function AuthActions() {
 
   return (
     <Button
+      variant="ghost"
       size="sm"
+      className="gap-1.5 px-1 font-semibold text-gray-900"
       onClick={() => void open<void>((close) => <AuthSheet onClose={() => close()} />)}
     >
+      <IconBrandGithubFilled className="size-4" aria-hidden="true" />
       로그인
     </Button>
   );

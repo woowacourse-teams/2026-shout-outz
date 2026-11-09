@@ -54,9 +54,10 @@ test('상세 직접 진입 시 API 정보와 공통 레이아웃을 표시한다
     'rel',
     'noopener noreferrer',
   );
-  expect(
-    within(screen.getByRole('banner')).getByRole('link', { name: '프로젝트' }),
-  ).toHaveAttribute('aria-current', 'page');
+  expect(within(screen.getByRole('banner')).getByRole('link', { name: '탐색' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
   expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   expect(screen.queryByLabelText('프로젝트 반응')).not.toBeInTheDocument();

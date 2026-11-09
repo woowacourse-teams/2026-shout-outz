@@ -8,9 +8,16 @@ import {
 } from '@tanstack/react-router';
 
 import { Gnb, GNB_ITEMS, type GnbProps } from '@/components/Gnb';
-import { tabItemStyles } from '@/components/Tab';
 
-const ROUTE_PATHS = ['/', '/community', '/projects', '/projects/$projectId', '/magazines', '/news'];
+const ROUTE_PATHS = [
+  '/',
+  '/community',
+  '/community/$feedId',
+  '/projects',
+  '/projects/$projectId',
+  '/magazines',
+  '/news',
+];
 
 const renderGnb = async (path: string, props: GnbProps = {}) => {
   const rootRoute = createRootRoute({ component: () => <Gnb {...props} /> });
@@ -58,15 +65,25 @@ describe('Gnb', () => {
       expect(activeLabels()).toEqual(['커뮤니티']);
     });
 
-    it('홈은 정확히 일치할 때만 활성이다', async () => {
+    it('탐색은 홈 경로와 정확히 일치할 때 활성이다', async () => {
       await renderGnb('/');
-      expect(activeLabels()).toEqual(['홈']);
+      expect(activeLabels()).toEqual(['탐색']);
     });
 
     it('하위 경로에서도 상위 항목이 활성이다', async () => {
-      await renderGnb('/projects/1');
+      await renderGnb('/community/1');
 
-      expect(activeLabels()).toEqual(['프로젝트']);
+      expect(activeLabels()).toEqual(['커뮤니티']);
+    });
+
+    it('프로젝트 목록에서는 탐색이 활성이다', async () => {
+      await renderGnb('/projects');
+      expect(activeLabels()).toEqual(['탐색']);
+    });
+
+    it('프로젝트 상세에서도 탐색이 활성이다', async () => {
+      await renderGnb('/projects/1');
+      expect(activeLabels()).toEqual(['탐색']);
     });
   });
 
@@ -77,16 +94,6 @@ describe('Gnb', () => {
       const nav = screen.getByRole('navigation');
 
       expect(within(nav).getAllByRole('link')).toHaveLength(GNB_ITEMS.length);
-    });
-
-    it('md 오버라이드가 Tab의 weak variant와 같은 값을 쓴다', async () => {
-      await renderGnb('/');
-
-      const { className } = itemNamed('커뮤니티');
-
-      tabItemStyles.weak.split(' ').forEach((tabClassName) => {
-        expect(className).toContain(`md:${tabClassName}`);
-      });
     });
 
     it('trailing에 넘긴 내용을 렌더한다', async () => {
