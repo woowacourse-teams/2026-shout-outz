@@ -33,7 +33,7 @@ function ExploreRoute() {
   return (
     <ExplorePage
       tab={currentTab}
-      // ASSUMPTION: 탭마다 찾는 대상이 달라 탭을 바꾸면 검색어를 비운다.
+      // 탭마다 찾는 대상이 달라 탭을 바꾸면 검색어를 비운다.
       onTabChange={(nextTab) => void navigate({ search: searchOf(nextTab) })}
       query={q ?? ''}
       onSearch={(query) => void navigate({ search: searchOf(currentTab, query) })}

@@ -22,9 +22,15 @@ interface MockRequirement {
 interface MockJobPosting {
   jobPostingId: number;
   companyName: string;
+  /** 목 로고 배경색 */
+  logoColor: string;
+  /** 목 로고 글자색. 기본은 흰색 */
+  logoTextColor?: string;
   jobRole: JobRole;
   title: string;
-  deadline: string | null;
+  tags: string[];
+  /** 오늘부터 며칠 뒤 마감인지. null이면 상시 채용이다. 화면에서 늘 D-n이 보이도록 오늘 기준으로 만든다. */
+  deadlineInDays: number | null;
   sourceUrl: string;
   requirements: MockRequirement[];
 }
@@ -33,9 +39,11 @@ const JOB_POSTINGS: MockJobPosting[] = [
   {
     jobPostingId: 1,
     companyName: '토스뱅크',
+    logoColor: '#0064FF',
     jobRole: 'BACKEND',
     title: 'Server Developer (Product)',
-    deadline: null,
+    tags: ['Server', 'Kotlin', 'Spring', 'Product'],
+    deadlineInDays: null,
     sourceUrl: 'https://toss.im/career/jobs',
     requirements: [
       { name: 'Kotlin, Spring', topics: ['N+1 문제'] },
@@ -50,9 +58,11 @@ const JOB_POSTINGS: MockJobPosting[] = [
   {
     jobPostingId: 2,
     companyName: '토스증권',
+    logoColor: '#3182F6',
     jobRole: 'FRONTEND',
     title: 'Frontend Developer',
-    deadline: null,
+    tags: ['Frontend', 'TypeScript', 'JavaScript'],
+    deadlineInDays: null,
     sourceUrl: 'https://toss.im/career/jobs',
     requirements: [
       { name: 'React, Next.js, TypeScript', topics: ['React 렌더링/훅'] },
@@ -64,7 +74,68 @@ const JOB_POSTINGS: MockJobPosting[] = [
       { name: '협업, CI, 코드 리뷰, 테스트 자동화', topics: ['무중단 배포'] },
     ],
   },
+  {
+    jobPostingId: 3,
+    companyName: '우아한형제들',
+    logoColor: '#2AC1BC',
+    jobRole: 'BACKEND',
+    title: '배달 서비스 백엔드 신입 개발자',
+    tags: ['Java', 'Spring', 'MySQL'],
+    deadlineInDays: 3,
+    sourceUrl: 'https://career.woowahan.com',
+    requirements: [
+      { name: 'Java, Spring', topics: ['N+1 문제'] },
+      { name: '대용량 트래픽 처리', topics: ['동시성 제어/락'] },
+      { name: '쿼리 성능 개선', topics: ['인덱스/쿼리 최적화'] },
+      { name: '배포 자동화', topics: ['무중단 배포'] },
+    ],
+  },
+  {
+    jobPostingId: 4,
+    companyName: '당근',
+    logoColor: '#FF6F0F',
+    jobRole: 'FRONTEND',
+    title: 'Web Frontend Engineer',
+    tags: ['React', 'TypeScript', 'Web'],
+    deadlineInDays: 0,
+    sourceUrl: 'https://about.daangn.com/jobs',
+    requirements: [
+      { name: 'React, TypeScript', topics: ['React 렌더링/훅'] },
+      { name: '실시간 채팅', topics: ['실시간 통신(WebSocket/SSE)'] },
+      { name: '웹 접근성', topics: [] },
+    ],
+  },
+  {
+    jobPostingId: 5,
+    companyName: '카카오',
+    logoColor: '#FEE500',
+    logoTextColor: '#191919',
+    jobRole: 'ANDROID',
+    title: 'Android Developer',
+    tags: ['Android', 'Kotlin', 'Compose'],
+    deadlineInDays: 14,
+    sourceUrl: 'https://careers.kakao.com',
+    requirements: [
+      { name: 'Kotlin, Jetpack Compose', topics: [] },
+      { name: '비동기 처리', topics: ['동시성 제어/락'] },
+      { name: '실시간 메시지', topics: ['실시간 통신(WebSocket/SSE)'] },
+    ],
+  },
 ];
+
+/** 오늘부터 days일 뒤를 YYYY-MM-DD로 만든다. */
+const dateAfter = (days: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+
+/** 회사 첫 글자를 넣은 목 로고. 실제 로고 이미지 대신 쓴다. */
+const logoOf = ({ companyName, logoColor, logoTextColor = '#fff' }: MockJobPosting) =>
+  `data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="10" fill="${logoColor}"/><text x="24" y="31" font-family="sans-serif" font-size="20" font-weight="700" text-anchor="middle" fill="${logoTextColor}">${companyName[0]}</text></svg>`,
+  )}`;
 
 const RECOMMENDATION_LIMIT = 6;
 
@@ -95,11 +166,13 @@ const recommendationsOf = (requirement: MockRequirement): JobRequirementRecommen
 const toListItem = (posting: MockJobPosting): JobPostingListItem => ({
   jobPostingId: posting.jobPostingId,
   companyName: posting.companyName,
+  companyLogoUrl: logoOf(posting),
+  tags: posting.tags,
   jobRole: posting.jobRole,
   employmentType: '정규직',
   careerRequirement: '신입',
   title: posting.title,
-  deadline: posting.deadline,
+  deadline: posting.deadlineInDays === null ? null : dateAfter(posting.deadlineInDays),
   requirementCount: posting.requirements.length,
   requirementNames: posting.requirements.map((requirement) => requirement.name),
 });

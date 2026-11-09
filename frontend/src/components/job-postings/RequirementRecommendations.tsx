@@ -29,10 +29,7 @@ export function RequirementRecommendations({
   });
 
   if (requirements.length === 0) {
-    return (
-      // ASSUMPTION: 역량을 모두 해제할 수 있게 두고, 그때는 고르라는 안내를 보여 준다.
-      <Notice>역량을 하나 이상 고르면 관련 자료를 보여 드려요.</Notice>
-    );
+    return <Notice>역량을 하나 이상 고르면 관련 자료를 보여 드려요.</Notice>;
   }
 
   const failed = results.find((result) => result.isError);
@@ -117,10 +114,7 @@ export function RequirementRecommendations({
         ))}
       </div>
 
-      {visible.length === 0 && (
-        // ASSUMPTION: 프로토타입에 자료가 없는 경우의 화면이 없어 안내 문구를 둔다.
-        <Notice>고른 역량에 맞는 자료가 아직 없어요.</Notice>
-      )}
+      {visible.length === 0 && <Notice>고른 역량에 맞는 자료가 아직 없어요.</Notice>}
 
       {visible.map((group) => (
         <section key={group.kind} aria-labelledby={`job-recommendation-${group.kind}`}>

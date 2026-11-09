@@ -19,7 +19,6 @@ export function CommunityFeedPanel({ jobPostingId }: { jobPostingId: number }) {
           <h2 id="job-community-title" className="text-base font-bold tracking-tight">
             커뮤니티에서 나온 고민 <span className="font-medium text-gray-400">{feeds.length}</span>
           </h2>
-          {/* ASSUMPTION: 접기 버튼을 누르면 설명과 목록을 숨기고, 다시 누르면 펼친다. */}
           <button
             type="button"
             aria-expanded={!collapsed}

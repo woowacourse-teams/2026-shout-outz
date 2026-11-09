@@ -15,6 +15,10 @@ export type RecommendationVerdict = 'MATCH' | 'PARTIAL';
 export interface JobPostingListItem {
   jobPostingId: number;
   companyName: string;
+  // MOCK-API: companyLogoUrl, tags는 서버 명세에 없는 필드다. 프로토타입 카드에 회사 로고와 해시태그가 있어 추가했다. 서버에 추가를 요청해야 한다.
+  companyLogoUrl: string | null;
+  /** 카드에 보여 줄 해시태그. 예: Server, Kotlin */
+  tags: string[];
   jobRole: JobRole;
   employmentType: string | null;
   careerRequirement: string | null;
@@ -45,6 +49,8 @@ export interface JobRequirement {
 export interface JobPostingDetail {
   jobPostingId: number;
   companyName: string;
+  // MOCK-API: 서버 명세에 없는 필드다. 목록과 같은 이유로 추가했다.
+  companyLogoUrl: string | null;
   jobRole: JobRole;
   employmentType: string | null;
   careerRequirement: string | null;

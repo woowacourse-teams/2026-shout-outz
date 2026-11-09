@@ -19,7 +19,7 @@ const parseDate = (value: string) => {
   return new Date(year!, month! - 1, day!);
 };
 
-// ASSUMPTION: 프로토타입은 마감일 없는 공고의 "상시"만 있다. 마감일이 있으면 남은 날을 D-n(당일은 D-day)으로 보여 준다.
+/** 카드 배지. 마감일이 없으면 상시, 있으면 남은 날을 D-n(당일은 D-day)으로 보여 준다. */
 export function deadlineBadge(deadline: string | null, today = new Date()) {
   if (!deadline) return '상시';
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -27,7 +27,7 @@ export function deadlineBadge(deadline: string | null, today = new Date()) {
   return days <= 0 ? 'D-day' : `D-${days}`;
 }
 
-// ASSUMPTION: 상세 제목 아래 "상시 채용" 자리에, 마감일이 있으면 "2026년 12월 31일 마감"을 보여 준다.
+/** 상세 제목 아래 문구. 마감일이 있으면 "2026년 12월 31일 마감"이다. */
 export function deadlineText(deadline: string | null) {
   if (!deadline) return '상시 채용';
   const date = parseDate(deadline);

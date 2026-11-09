@@ -7,9 +7,6 @@ import { deadlineBadge, JOB_ROLE_LABELS } from '@/components/job-postings/jobPos
 const CARD = 'flex h-full flex-col rounded-2xl border border-gray-200 p-5';
 const DEADLINE_BADGE = 'ml-auto shrink-0 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-bold';
 
-// ASSUMPTION: 프로토타입 카드의 해시태그(#Server #Kotlin)에 맞는 값이 API에 없어, 공고가 찾는 역량 이름을 앞에서 3개까지 태그로 보여 준다.
-const TAG_COUNT = 3;
-
 export function JobPostingCard({ jobPosting }: { jobPosting: JobPostingListItem }) {
   return (
     <Link
@@ -18,7 +15,11 @@ export function JobPostingCard({ jobPosting }: { jobPosting: JobPostingListItem 
       className={`${CARD} focus-visible:outline-primary-600 transition-colors hover:bg-gray-50 focus-visible:outline-2`}
     >
       <div className="flex items-center gap-3">
-        <CompanyLogo companyName={jobPosting.companyName} className="size-12 rounded-xl" />
+        <CompanyLogo
+          companyName={jobPosting.companyName}
+          logoUrl={jobPosting.companyLogoUrl}
+          className="size-12 rounded-xl"
+        />
         <div className="min-w-0">
           <p className="truncate text-sm text-gray-700">{jobPosting.companyName}</p>
           <p className="text-primary-600 mt-0.5 flex flex-wrap gap-x-2 text-xs font-medium">
@@ -31,10 +32,10 @@ export function JobPostingCard({ jobPosting }: { jobPosting: JobPostingListItem 
         </span>
       </div>
       <h2 className="mt-4 text-lg font-bold text-gray-900">{jobPosting.title}</h2>
-      {jobPosting.requirementNames.length > 0 && (
+      {jobPosting.tags.length > 0 && (
         <p className="mt-1.5 flex flex-wrap gap-x-3 text-sm text-gray-500">
-          {jobPosting.requirementNames.slice(0, TAG_COUNT).map((name) => (
-            <span key={name}>#{name}</span>
+          {jobPosting.tags.map((tag) => (
+            <span key={tag}>#{tag}</span>
           ))}
         </p>
       )}
@@ -45,7 +46,7 @@ export function JobPostingCard({ jobPosting }: { jobPosting: JobPostingListItem 
   );
 }
 
-// ASSUMPTION: 프로토타입 목록 끝의 "곧 추가될 공고예요" 카드는 공고가 더 들어올 예정이라는 안내로 보고, 검색하지 않은 목록 끝에 항상 둔다.
+/** 공고가 더 들어올 예정이라는 안내 카드. 검색하지 않은 목록 끝에 항상 둔다. */
 export function UpcomingJobPostingCard() {
   return (
     <div aria-hidden="true" className={`${CARD} opacity-50`}>

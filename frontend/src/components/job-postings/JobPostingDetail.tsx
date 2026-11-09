@@ -11,7 +11,7 @@ import { cn } from '@/utils/cn';
 /** 채용공고 상세(문서형). 공고 정보, 찾는 역량, 역량별 추천 자료, 커뮤니티 고민 */
 export function JobPostingDetail({ jobPostingId }: { jobPostingId: number }) {
   const { data: jobPosting } = useSuspenseQuery(jobPostingQuery(jobPostingId));
-  // ASSUMPTION: 프로토타입처럼 처음에는 공고의 첫 번째 역량을 골라 둔다.
+  // 처음에는 공고의 첫 번째 역량을 골라 둔다.
   const [selectedIds, setSelectedIds] = useState<number[]>(() =>
     jobPosting.requirements.slice(0, 1).map((requirement) => requirement.requirementId),
   );
@@ -36,6 +36,7 @@ export function JobPostingDetail({ jobPostingId }: { jobPostingId: number }) {
             <div className="flex items-center gap-5 md:gap-7">
               <CompanyLogo
                 companyName={jobPosting.companyName}
+                logoUrl={jobPosting.companyLogoUrl}
                 className="size-20 bg-gray-100 md:size-28"
               />
               <div className="flex min-w-0 flex-col gap-2">

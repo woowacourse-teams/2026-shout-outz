@@ -152,6 +152,14 @@ describe('ExplorePage 채용공고 탭', () => {
     ).toHaveAttribute('href', '/job-postings/1');
     expect(within(cards).getByRole('link', { name: /Frontend Developer/ })).toBeVisible();
     expect(within(cards).getByText('곧 추가될 공고예요')).toBeInTheDocument();
+    expect(within(cards).getAllByText('상시')).toHaveLength(2);
+    expect(within(cards).getByText('D-3')).toBeVisible();
+    expect(within(cards).getByText('D-day')).toBeVisible();
+    expect(within(cards).getByRole('img', { name: '토스뱅크 로고' })).toHaveAttribute(
+      'src',
+      expect.stringContaining('data:image/svg+xml'),
+    );
+    expect(within(cards).getByText('#Product')).toBeVisible();
     expect(screen.getByRole('searchbox', { name: '채용공고 검색' })).toBeVisible();
   });
 
