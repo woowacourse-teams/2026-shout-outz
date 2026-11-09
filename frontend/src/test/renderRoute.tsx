@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
 import { render } from '@testing-library/react';
 import { setupServer } from 'msw/node';
+import { OverlayProvider } from 'overlay-kit';
 
 import { handlers } from '@/api/mock/handlers';
 import { ModalProvider } from '@/components/ModalProvider';
@@ -54,7 +55,9 @@ export function renderRoute(entry: string) {
   render(
     <QueryClientProvider client={queryClient}>
       <ModalProvider>
-        <RouterProvider router={router} />
+        <OverlayProvider>
+          <RouterProvider router={router} />
+        </OverlayProvider>
       </ModalProvider>
     </QueryClientProvider>,
   );
