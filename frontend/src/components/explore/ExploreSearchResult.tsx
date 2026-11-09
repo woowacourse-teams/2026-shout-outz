@@ -1,5 +1,4 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { IconChevronRight } from '@tabler/icons-react';
 import { useState, type ReactNode } from 'react';
 
 import { exploreSearchQuery, type Material } from '@/apis/explore';
@@ -8,7 +7,7 @@ import { Tab } from '@/components/Tab';
 
 type KindFilter = 'ALL' | 'BLOG' | 'DOCUMENT' | 'TECH_TALK';
 
-// ASSUMPTION: '전체'에서는 종류마다 앞의 몇 개만 보여 주고, '모두 보기'를 누르면 그 종류 탭으로 바꾼다.
+// '전체'에서는 종류마다 앞의 몇 개만 보여 준다.
 const PREVIEW_COUNT = { BLOG: 8, DOCUMENT: 8, TECH_TALK: 6 } as const;
 
 /** 검색어로 찾은 주제의 블로그·테코톡·PR과 팀 문서 */
@@ -70,16 +69,15 @@ export function ExploreSearchResult({ query }: { query: string }) {
 
       <div className="mt-5">
         {total === 0 && (
-          // ASSUMPTION: 프로토타입에 자료가 없는 주제의 화면이 없어 빈 상태 안내를 임의로 둔다.
           <EmptyResult title={`'${data.topics.join(', ')}' 주제로 모은 자료가 아직 없어요.`}>
             다른 주제의 자료를 먼저 살펴보세요.
           </EmptyResult>
         )}
         {visible.map((group, index) => {
-          const preview = filter === 'ALL';
-          const materials = preview
-            ? group.materials.slice(0, PREVIEW_COUNT[group.kind])
-            : group.materials;
+          const materials =
+            filter === 'ALL'
+              ? group.materials.slice(0, PREVIEW_COUNT[group.kind])
+              : group.materials;
 
           return (
             <section
@@ -87,21 +85,11 @@ export function ExploreSearchResult({ query }: { query: string }) {
               aria-labelledby={`explore-result-${group.kind}`}
               className={index > 0 ? 'mt-12' : undefined}
             >
-              <div className="mb-5 flex items-center justify-between gap-3">
+              <div className="mb-5">
                 <h2 id={`explore-result-${group.kind}`} className="text-sm font-bold text-gray-700">
                   {group.title}{' '}
                   <span className="font-medium text-gray-400">{group.materials.length}</span>
                 </h2>
-                {preview && (
-                  <button
-                    type="button"
-                    className="focus-visible:outline-primary-600 inline-flex shrink-0 cursor-pointer items-center gap-0.5 rounded-sm text-sm font-semibold whitespace-nowrap text-gray-500 hover:text-gray-900 focus-visible:outline-2"
-                    onClick={() => setFilter(group.kind)}
-                  >
-                    모두 보기
-                    <IconChevronRight className="size-3.5" aria-hidden="true" />
-                  </button>
-                )}
               </div>
               {group.kind === 'TECH_TALK' ? (
                 <TechTalkList talks={materials} columns={3} />

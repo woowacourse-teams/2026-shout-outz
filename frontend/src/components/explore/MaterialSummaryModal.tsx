@@ -53,13 +53,16 @@ export function MaterialSummaryModal({
         <DialogContent
           aria-describedby={undefined}
           // DESIGN-TOKEN: 화면 위아래로 56px씩 띄운 높이 안에서 스크롤하도록 계산식으로 높이를 제한한다.
-          className="top-14 max-h-[calc(100dvh-7rem)] translate-y-0 overflow-y-auto rounded-2xl px-7 pt-7 pb-12 shadow-2xl sm:max-w-150"
+          // 바깥은 모서리를 자르기만 하고 스크롤은 안쪽에서 한다. 둥근 요소 자체가 스크롤되면 스크롤바가 오른쪽 모서리를 덮어 직각으로 보인다.
+          className="top-14 flex max-h-[calc(100dvh-7rem)] translate-y-0 flex-col overflow-hidden rounded-2xl shadow-2xl sm:max-w-150"
         >
-          <MaterialSummary
-            material={material}
-            Title={DialogTitle}
-            closeButton={(children) => <DialogClose asChild>{children}</DialogClose>}
-          />
+          <div className="overflow-y-auto px-7 pt-7 pb-12">
+            <MaterialSummary
+              material={material}
+              Title={DialogTitle}
+              closeButton={(children) => <DialogClose asChild>{children}</DialogClose>}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     );
@@ -116,7 +119,6 @@ function MaterialSummary({ material, Title, closeButton }: MaterialSummaryProps)
             </button>,
           )}
         />
-        {/* ASSUMPTION: 프로토타입 22px 제목은 text-xl(20px)과 text-2xl(24px) 사이라 text-2xl로 맞춘다. */}
         <Title className="flex items-start gap-2 text-2xl leading-snug font-extrabold tracking-tight">
           <MaterialIcon material={material} className="mt-[calc((1lh-18px)/2)]" />
           <span className="min-w-0">{material.title}</span>

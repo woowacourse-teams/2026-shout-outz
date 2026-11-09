@@ -66,7 +66,7 @@ function ProjectLogo({ project }: { project: NonNullable<Material['project']> })
         loading="lazy"
       />
     );
-  // ASSUMPTION: 팀 로고가 없으면 프로토타입의 자리 표시처럼 회색 사각형을 둔다.
+  // 팀 로고가 없으면 회색 사각형으로 자리를 잡는다.
   return (
     <span
       aria-hidden="true"
@@ -120,7 +120,7 @@ export function MaterialIcon({
       />
     );
 
-  // ASSUMPTION: 파비콘을 모르는 블로그는 프로토타입의 자리 표시처럼 회색 사각형을 둔다.
+  // 파비콘을 모르는 블로그는 회색 사각형으로 자리를 잡는다.
   return (
     <span
       aria-hidden="true"

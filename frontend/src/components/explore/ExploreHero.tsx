@@ -62,7 +62,7 @@ export function ExploreHero({ query, onSearch }: ExploreHeroProps) {
         <Tab.Item value="keyword" className="data-[status=active]:font-semibold">
           키워드
         </Tab.Item>
-        {/* ASSUMPTION: 채용공고·프로젝트 탭은 아직 화면이 없어 보이기만 하고 누를 수 없게 둔다. */}
+        {/* 채용공고·프로젝트 탭은 아직 화면이 없어 보이기만 하고 누를 수 없게 둔다. */}
         <Tab.Item value="job" disabled className="disabled:cursor-not-allowed disabled:opacity-50">
           채용공고
         </Tab.Item>
