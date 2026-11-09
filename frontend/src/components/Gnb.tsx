@@ -23,7 +23,6 @@ const NAV_TAB_BY_PATH: Record<string, NavTab> = {
  * 링크 경로와 달라도 함께 활성으로 보여 줄 경로.
  * 프로토타입에서 프로젝트는 탐색 안의 탭이고, 프로젝트 상세에서도 탐색이 활성이다.
  */
-// ASSUMPTION: 탐색 화면이 아직 없어 탐색은 지금의 홈(`/`)으로 보내고, 프로젝트 경로에서도 활성으로 둔다.
 const EXTRA_ACTIVE_PATHS: Partial<Record<string, string[]>> = {
   '/': ['/projects'],
 };
@@ -39,9 +38,7 @@ export interface GnbProps extends ComponentProps<'header'> {
 const NAV_ITEM = cn(
   tabItemBaseStyle,
   tabItemStyles.underline,
-  // PROTOTYPE-DIFF: 프로토타입 모바일 밑줄은 2px이지만 Tab underline variant(3px)를 그대로 쓴다.
   '-mb-px px-0 py-3 text-sm data-[status=active]:font-bold',
-  // ASSUMPTION: 프로토타입 데스크톱 글자 크기 15px은 text-sm(14px)과 text-base(16px) 사이라 text-base로 맞춘다.
   'md:mb-0 md:border-b-0 md:py-0 md:text-base',
 );
 
@@ -49,7 +46,6 @@ export function Gnb({ trailing, className, ...props }: GnbProps) {
   const pathname = useLocation({ select: (location) => location.pathname });
 
   return (
-    // DESIGN-ISSUE: 프로토타입은 헤더 배경이 투명이라 sticky로 붙으면 스크롤한 본문이 메뉴 뒤로 비친다. 배경색을 유지한다.
     <header className={cn('bg-background sticky top-0 z-50', className)} {...props}>
       <div className="mx-auto flex max-w-6xl flex-wrap items-center md:flex-nowrap md:px-4">
         <div className="flex h-14 flex-1 items-center pl-4 md:h-16 md:pl-0">
