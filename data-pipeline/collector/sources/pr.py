@@ -26,9 +26,9 @@ BATCH = 25         # 한 질의에 묶는 PR 수(07 문서 5-4, 25개 14점 측�
 THREAD_PAGE = 50   # 리뷰 스레드 한 쪽 크기. 100 이면 25개 묶음이 26점, 50 이면 14점(2026-11-04 dryRun 측정). 넘는 것은 이어 받는다
 
 PAGE = "pageInfo { hasNextPage endCursor }"
-COMMENT = "author { login } body createdAt updatedAt"
-REVIEW = "author { login } state body submittedAt updatedAt"
-THREAD_COMMENT = "author { login } body diffHunk createdAt updatedAt"
+COMMENT = "author { login __typename } body createdAt updatedAt"
+REVIEW = "author { login __typename } state body submittedAt updatedAt"
+THREAD_COMMENT = "author { login __typename } body diffHunk createdAt updatedAt"
 FILE = "path additions deletions changeType"
 
 # PR 안의 연결: (이름, 한 쪽 크기, 노드 항목). 저장할 때는 nodes 만 한 목록으로 합친다
@@ -40,7 +40,7 @@ CONNECTIONS = [
     ("files", 100, FILE),
 ]
 
-PR_FIELDS = ("number title body url author { login } createdAt mergedAt updatedAt baseRefName headRefName "
+PR_FIELDS = ("number title body url author { login __typename } createdAt mergedAt updatedAt baseRefName headRefName "
              "additions deletions changedFiles "
              + " ".join(f"{name}(first: {size}) {{ {PAGE} nodes {{ {nodes} }} }}" for name, size, nodes in CONNECTIONS))
 

@@ -362,6 +362,54 @@ def test_http_max_bytes_stops_reading():
             pass
 
 
+def test_http_stops_a_slow_response_and_retries():
+    """서버가 아주 느리게 조금씩 보내도 요청 하나가 max_seconds 를 넘으면 멈추고, 다른 시간 초과처럼 다시 보낸다."""
+    import requests
+    from collector.http import Http, ResponseTooSlow
+
+    now = [0.0]
+
+    class Slow:
+        status_code, url, headers = 200, "https://a.example/x", {}
+        _content_consumed = False
+        def __init__(self, chunks, step):
+            self.chunks, self.step, self.closed = chunks, step, False
+        def iter_content(self, size):
+            for c in self.chunks:
+                now[0] += self.step  # 조각마다 시간이 흐른다
+                yield c
+        def close(self):
+            self.closed = True
+
+    class Session:
+        def __init__(self, resps):
+            self.headers, self.resps = {}, list(resps)
+        def request(self, method, url, **kw):
+            assert kw["stream"] is True
+            return self.resps.pop(0)
+
+    slow = [Slow([b"a"] * 100, 2.0) for _ in range(4)]   # 2초에 한 조각, 끝나지 않을 만큼 느림
+    h = Http(session=Session(slow), max_seconds=60, clock=lambda: now[0], sleep=lambda s: None)
+    try:
+        h.get("https://a.example/x")
+        assert False
+    except ResponseTooSlow:
+        pass
+    assert isinstance(ResponseTooSlow("x"), requests.Timeout) and h.calls == 4 and all(r.closed for r in slow)
+
+    fine = requests.Response()   # 제때 오는 응답은 그대로 받는다
+    fine.status_code, fine.url, fine.raw = 200, "https://a.example/x", __import__("io").BytesIO(b"abc")
+    r = Http(session=Session([fine]), max_seconds=60).get("https://a.example/x")
+    assert r.content == b"abc" and r.text == "abc"
+
+
+def test_author_type_is_queried():
+    """정제가 봇 글을 작성자 종류(__typename)로 가린다(09 문서 R12-1). 모든 작성자 칸에서 함께 받는다."""
+    from collector.sources import discussion, pr
+    for q in (pr.COMMENT, pr.REVIEW, pr.THREAD_COMMENT, pr.PR_FIELDS, discussion.REPLY_FIELDS, discussion.COMMENT_FIELDS):
+        assert "author { login __typename }" in q and "author { login }" not in q
+
+
 def test_default_sources_are_registered():
     from collector import sources
     from collector.config import SOURCES
@@ -571,12 +619,12 @@ def test_http_counts_polite_and_retry_waits():
             return R(self.statuses.pop(0))
 
     slept = []
-    h = Http(host_delay=1.0, sleep=slept.append, session=Session([200, 200]))
+    h = Http(host_delay=1.0, sleep=slept.append, session=Session([200, 200]), max_seconds=None)
     h.get("https://a.example/1")
     h.get("https://a.example/2")
     assert h.calls == 2 and 0.9 < h.polite_sec <= 1.0 and h.retry_sec == 0.0
 
-    h = Http(sleep=slept.append, session=Session([503, 502, 200]))
+    h = Http(sleep=slept.append, session=Session([503, 502, 200]), max_seconds=None)
     assert h.get("https://b.example/").status_code == 200
     assert h.calls == 3 and h.retry_sec == 2 + 4 and h.polite_sec == 0.0
 

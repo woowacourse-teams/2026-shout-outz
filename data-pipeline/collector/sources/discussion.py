@@ -21,11 +21,11 @@ from ._repos import RepoSource, known_repos, missing_repos, target_repos, to_fet
 
 DISCUSSIONS_PAGE, COMMENTS_PAGE, REPLIES_PAGE = 50, 20, 10
 
-REPLY_FIELDS = "author { login } body createdAt updatedAt"
-COMMENT_FIELDS = f"""id author {{ login }} body createdAt updatedAt isAnswer
+REPLY_FIELDS = "author { login __typename } body createdAt updatedAt"
+COMMENT_FIELDS = f"""id author {{ login __typename }} body createdAt updatedAt isAnswer
   replies(first: {REPLIES_PAGE}) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ {REPLY_FIELDS} }} }}"""
 DISCUSSION_FIELDS = f"""id number title body url createdAt updatedAt upvoteCount
-  category {{ name }} author {{ login }} answer {{ author {{ login }} createdAt url }}
+  category {{ name }} author {{ login __typename }} answer {{ author {{ login __typename }} createdAt url }}
   comments(first: {COMMENTS_PAGE}) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ {COMMENT_FIELDS} }} }}"""
 
 LIST_QUERY = f"""query($owner: String!, $name: String!, $after: String) {{
