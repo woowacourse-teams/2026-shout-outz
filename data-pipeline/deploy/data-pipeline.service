@@ -17,6 +17,8 @@ Environment=PIPELINE_TRIGGER=schedule
 ExecStart=/home/ec2-user/2026-shout-outz/data-pipeline/.venv/bin/python -m collector collect
 # 첫 실행은 PR 때문에 5~6시간 걸릴 수 있다(07 문서 3-3). 잠금(C9)은 12시간 뒤 풀린 것으로 본다
 TimeoutStartSec=13h
-# t4g.micro 1GB 에서 다른 프로세스(관리 웹)를 지키려고 위를 막아 둔다
-MemoryMax=700M
+# t4g.micro 1GB 에서 다른 프로세스(관리 웹)를 지키려고 위를 막아 둔다. 수집기 최대 약 240MB(11-09 측정).
+# 2026-11-09: 700MB 와 스왑 허용은 EC2 전체를 스왑으로 굳게 할 수 있어, 넘으면 수집기만 꺼지도록 낮추고 스왑을 막는다
+MemoryMax=400M
+MemorySwapMax=0
 Nice=10
