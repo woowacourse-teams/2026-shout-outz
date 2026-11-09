@@ -13,23 +13,23 @@ export function ExploreHome({ onSearch }: { onSearch: (query: string) => void })
 
   return (
     <>
-      <section aria-labelledby="explore-recommend" className="mt-14">
+      <section aria-labelledby="explore-recommend" className="mt-11 md:mt-14">
         <h2 id="explore-recommend" className="text-xl font-bold">
           이런 컨텐츠는 어때요?
         </h2>
-        <div className="mt-6 grid gap-10 lg:grid-cols-3">
-          <div className="min-w-0 lg:col-span-2">
+        <div className="mt-6 grid gap-8 md:grid-cols-3 md:gap-10">
+          <div className="min-w-0 md:col-span-2">
             <h3 className="mb-5 text-sm font-bold text-gray-700">최근 올라온 크루 블로그</h3>
             <MaterialList materials={data.recentBlogs} />
           </div>
           <div className="min-w-0">
-            <h3 className="mb-5 text-sm font-bold text-gray-700">새로 나온 테코톡</h3>
+            <h3 className="mb-5 text-sm font-bold text-gray-700">최근 올라온 테코톡</h3>
             <TechTalkList talks={data.recentTechTalks} columns={1} />
           </div>
         </div>
       </section>
 
-      <div className="mt-14 flex flex-col gap-12">
+      <div className="mt-11 flex flex-col gap-12 md:mt-14">
         <KeywordSection
           id="explore-popular"
           title="많이 다룬 키워드"
@@ -71,7 +71,7 @@ export function ExploreHome({ onSearch }: { onSearch: (query: string) => void })
           <div className="mt-5 grid gap-x-10 gap-y-8 md:grid-cols-2">
             {data.topicFields.map((field) => (
               <div key={field.name} className="flex min-w-0 flex-col gap-3">
-                <h3 className="border-b border-gray-900 pb-2 text-sm font-bold">
+                <h3 className="pb-2 text-sm font-bold">
                   {field.name}{' '}
                   <span className="font-medium text-gray-400">{field.topics.length}</span>
                 </h3>

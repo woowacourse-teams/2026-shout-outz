@@ -29,8 +29,8 @@ interface ExploreHeroProps {
 export function ExploreHero({ query, onSearch }: ExploreHeroProps) {
   return (
     <section className="text-center">
-      {/* DESIGN-TOKEN: 화면 너비에 따라 26px~40px로 바뀌는 제목 크기는 토큰에 없다. 소개 페이지 히어로와 같은 값이다. */}
-      <h1 className="text-[clamp(26px,3.4vw,40px)] leading-[1.4] font-extrabold tracking-tight text-gray-900">
+      {/* DESIGN-TOKEN: 데스크톱에서 화면 너비에 따라 26px~40px로 바뀌는 제목 크기는 토큰에 없다. 소개 페이지 히어로와 같은 값이다. */}
+      <h1 className="text-2xl leading-[1.4] font-extrabold tracking-tight text-gray-900 md:text-[clamp(26px,3.4vw,40px)]">
         <span className="sr-only">
           프로젝트를 만들거나 취업을 준비할 때, 우테코 크루들은 어떻게 했을까요?
         </span>
@@ -80,7 +80,7 @@ export function ExploreHero({ query, onSearch }: ExploreHeroProps) {
 
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
         <span className="mr-1 text-xs font-medium text-gray-500">이런 주제를 찾아보세요</span>
-        <ul aria-label="추천 검색어" className="flex flex-wrap justify-center gap-2">
+        <ul aria-label="추천 검색어" className="flex flex-wrap gap-2">
           {SUGGESTED_QUERIES.map((suggestion) => (
             <li key={suggestion}>
               <button
@@ -126,7 +126,11 @@ function SearchForm({ query, onSearch }: ExploreHeroProps) {
       </div>
       <button
         type="submit"
-        className={getButtonStyles({ variant: 'primary', size: 'lg', className: 'shrink-0' })}
+        className={getButtonStyles({
+          variant: 'primary',
+          size: 'lg',
+          className: 'shrink-0 px-4.5 md:px-6',
+        })}
       >
         검색
       </button>
