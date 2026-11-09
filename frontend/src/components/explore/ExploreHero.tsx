@@ -7,26 +7,49 @@ import { cn } from '@/utils/cn';
 
 const HERO_LINES = ['프로젝트를 만들 때,', '취업을 준비할 때,', '프로젝트를 만들 때,'];
 
-export const SUGGESTED_QUERIES = [
-  'LLM',
-  '동시성',
-  '부하 테스트',
-  '무중단 배포',
-  '쿼리 최적화',
-  '모니터링',
-  '웹 성능',
-  '인증/인가',
-];
+export type ExploreTab = 'keyword' | 'job';
+
+/** 탭마다 검색창 문구와 추천 검색어가 다르다. */
+const SEARCH_BY_TAB: Record<
+  ExploreTab,
+  { label: string; placeholder: string; suggestionLabel: string; suggestions: string[] }
+> = {
+  keyword: {
+    label: '기술 이야기 검색',
+    placeholder: '예: LLM, 동시성, 무중단 배포',
+    suggestionLabel: '이런 주제를 찾아보세요',
+    suggestions: [
+      'LLM',
+      '동시성',
+      '부하 테스트',
+      '무중단 배포',
+      '쿼리 최적화',
+      '모니터링',
+      '웹 성능',
+      '인증/인가',
+    ],
+  },
+  job: {
+    label: '채용공고 검색',
+    placeholder: '회사, 직무, 기술로 검색 (예: 토스, 프론트엔드, Kafka)',
+    suggestionLabel: '이런 공고를 찾아보세요',
+    suggestions: ['토스뱅크', '토스증권', 'Kotlin', 'Spring', 'TypeScript'],
+  },
+};
 
 export const chipClass = cn(tabItemBaseStyle, tabItemSizeStyles.sm, tabItemStyles.chip);
 
 interface ExploreHeroProps {
+  tab: ExploreTab;
+  onTabChange: (tab: ExploreTab) => void;
   query: string;
   onSearch: (query: string) => void;
 }
 
 /** 탐색 화면 첫 영역. 문구, 찾는 방법 탭, 검색창, 추천 검색어 */
-export function ExploreHero({ query, onSearch }: ExploreHeroProps) {
+export function ExploreHero({ tab, onTabChange, query, onSearch }: ExploreHeroProps) {
+  const search = SEARCH_BY_TAB[tab];
+
   return (
     <section className="text-center">
       {/* DESIGN-TOKEN: 데스크톱에서 화면 너비에 따라 26px~40px로 바뀌는 제목 크기는 토큰에 없다. 소개 페이지 히어로와 같은 값이다. */}
@@ -55,17 +78,18 @@ export function ExploreHero({ query, onSearch }: ExploreHeroProps) {
 
       <Tab
         variant="weak"
-        value="keyword"
+        value={tab}
+        onChange={(value) => onTabChange(value as ExploreTab)}
         aria-label="찾는 방법"
         className="mt-7 max-w-full overflow-x-auto rounded-xl bg-gray-50 p-1"
       >
         <Tab.Item value="keyword" className="data-[status=active]:font-semibold">
           키워드
         </Tab.Item>
-        {/* 채용공고·프로젝트 탭은 아직 화면이 없어 보이기만 하고 누를 수 없게 둔다. */}
-        <Tab.Item value="job" disabled className="disabled:cursor-not-allowed disabled:opacity-50">
+        <Tab.Item value="job" className="data-[status=active]:font-semibold">
           채용공고
         </Tab.Item>
+        {/* 프로젝트 탭은 아직 화면이 없어 보이기만 하고 누를 수 없게 둔다. */}
         <Tab.Item
           value="project"
           disabled
@@ -75,13 +99,19 @@ export function ExploreHero({ query, onSearch }: ExploreHeroProps) {
         </Tab.Item>
       </Tab>
 
-      {/* 검색어가 바뀌면 입력창을 새 검색어로 다시 채운다. */}
-      <SearchForm key={query} query={query} onSearch={onSearch} />
+      {/* 탭이나 검색어가 바뀌면 입력창을 새 값으로 다시 채운다. */}
+      <SearchForm
+        key={`${tab}:${query}`}
+        query={query}
+        label={search.label}
+        placeholder={search.placeholder}
+        onSearch={onSearch}
+      />
 
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-        <span className="mr-1 text-xs font-medium text-gray-500">이런 주제를 찾아보세요</span>
+        <span className="mr-1 text-xs font-medium text-gray-500">{search.suggestionLabel}</span>
         <ul aria-label="추천 검색어" className="flex flex-wrap gap-2">
-          {SUGGESTED_QUERIES.map((suggestion) => (
+          {search.suggestions.map((suggestion) => (
             <li key={suggestion}>
               <button
                 type="button"
@@ -100,7 +130,14 @@ export function ExploreHero({ query, onSearch }: ExploreHeroProps) {
   );
 }
 
-function SearchForm({ query, onSearch }: ExploreHeroProps) {
+interface SearchFormProps {
+  query: string;
+  label: string;
+  placeholder: string;
+  onSearch: (query: string) => void;
+}
+
+function SearchForm({ query, label, placeholder, onSearch }: SearchFormProps) {
   const [input, setInput] = useState(query);
 
   return (
@@ -117,10 +154,10 @@ function SearchForm({ query, onSearch }: ExploreHeroProps) {
         <input
           type="search"
           name="q"
-          aria-label="기술 이야기 검색"
+          aria-label={label}
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder="예: LLM, 동시성, 무중단 배포"
+          placeholder={placeholder}
           className="min-w-0 flex-1 bg-transparent text-base text-gray-900 outline-none placeholder:text-gray-400"
         />
       </div>
