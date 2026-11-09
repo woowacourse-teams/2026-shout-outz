@@ -25,16 +25,6 @@ export function hostnameOf(url: string) {
   }
 }
 
-/** 한 줄 소개처럼 "읽으면 무엇을 얻는지"를 형광펜으로 강조한다. */
-export function Highlight({ children }: { children: ReactNode }) {
-  return (
-    // DESIGN-TOKEN: 글자 아래쪽만 칠하는 형광펜 그라디언트는 1회성 그래픽 값이라 arbitrary value로 쓴다.
-    <span className="bg-[linear-gradient(transparent_60%,var(--color-primary-100)_60%)] [box-decoration-break:clone] px-0.5">
-      {children}
-    </span>
-  );
-}
-
 /** 종류 배지 · 팀 · 날짜 한 줄 */
 export function MaterialMeta({ material, trailing }: { material: Material; trailing?: ReactNode }) {
   const [label, tone] = MATERIAL_KIND_LABELS[material.kind];

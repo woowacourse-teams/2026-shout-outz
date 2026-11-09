@@ -1,12 +1,7 @@
 import type { Material } from '@/apis/explore';
 import { Badge } from '@/components/Badge';
 import { openMaterialSummary } from '@/components/explore/MaterialSummaryModal';
-import {
-  formatMaterialDate,
-  Highlight,
-  MaterialIcon,
-  MaterialMeta,
-} from '@/components/explore/MaterialParts';
+import { formatMaterialDate, MaterialIcon, MaterialMeta } from '@/components/explore/MaterialParts';
 import { cn } from '@/utils/cn';
 
 /** 블로그·PR·팀 문서 목록. 항목을 누르면 자료 요약을 연다. */
@@ -26,9 +21,7 @@ export function MaterialList({ materials }: { materials: Material[] }) {
               <span className="min-w-0">{material.title}</span>
             </h3>
             {material.summary && (
-              <p className="text-base leading-relaxed text-gray-800">
-                <Highlight>{material.summary}</Highlight>
-              </p>
+              <p className="text-base leading-relaxed text-gray-800">{material.summary}</p>
             )}
           </button>
         </li>

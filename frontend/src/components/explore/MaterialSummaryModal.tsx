@@ -4,12 +4,7 @@ import { overlay } from 'overlay-kit';
 import type { ComponentType, ReactNode } from 'react';
 
 import { materialDetailQuery, type Material, type MaterialDetail } from '@/apis/explore';
-import {
-  Highlight,
-  hostnameOf,
-  MaterialIcon,
-  MaterialMeta,
-} from '@/components/explore/MaterialParts';
+import { hostnameOf, MaterialIcon, MaterialMeta } from '@/components/explore/MaterialParts';
 import { Badge } from '@/components/Badge';
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
@@ -138,9 +133,7 @@ function MaterialSummary({ material, Title, closeButton }: MaterialSummaryProps)
 
       {material.summary && (
         <SummarySection title="한줄 소개">
-          <p className="text-base leading-relaxed font-medium">
-            <Highlight>{material.summary}</Highlight>
-          </p>
+          <p className="text-base leading-relaxed font-medium">{material.summary}</p>
         </SummarySection>
       )}
 
