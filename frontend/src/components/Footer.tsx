@@ -1,7 +1,8 @@
 import { Link } from '@tanstack/react-router';
 
 const FOOTER_LINKS = [
-  { to: '/projects', label: '프로젝트 탐색' },
+  { to: '/about', label: '서비스 소개' },
+  { to: '/', label: '탐색' },
   { to: '/community', label: '커뮤니티' },
   { to: '/magazines', label: '매거진' },
   { to: '/news', label: '소식' },
@@ -10,15 +11,12 @@ const FOOTER_LINKS = [
 export function Footer({ linksHref }: { linksHref?: string } = {}) {
   return (
     <footer className="border-t border-gray-200 bg-gray-50">
-      <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-8 md:flex-row md:justify-between md:py-12">
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 md:flex-row md:justify-between">
         <div>
           <p className="text-lg font-bold">shout-outz</p>
-          <p className="mt-3 text-sm leading-relaxed text-gray-500">
-            IT 취준생을 위한, 취업 커뮤니티
-          </p>
+          <p className="mt-2 text-sm text-gray-500">IT 취준생을 위한, 취업 커뮤니티</p>
         </div>
-        <nav aria-label="서비스 바로가기">
-          <p className="mb-3 hidden text-sm font-semibold md:block">서비스 바로가기</p>
+        <nav aria-label="서비스 바로가기" className="flex items-center">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
             {FOOTER_LINKS.map((link) =>
               linksHref ? (
@@ -42,7 +40,7 @@ export function Footer({ linksHref }: { linksHref?: string } = {}) {
           </div>
         </nav>
       </div>
-      <p className="mx-auto max-w-6xl px-4 pb-8 text-xs text-gray-400 md:pb-12">
+      <p className="mx-auto max-w-6xl px-4 pb-8 text-xs text-gray-400">
         © 2026 shout-outz. All rights reserved.
       </p>
     </footer>
