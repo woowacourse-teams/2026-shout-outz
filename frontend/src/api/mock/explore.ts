@@ -8,6 +8,7 @@ import type {
   MaterialKind,
   TopicField,
 } from '@/apis/explore';
+import { blogFaviconOf } from '@/components/explore/MaterialParts';
 import { matchTopics, teamName, topics, youtubeId, type Resource } from '@/pages/about/resources';
 
 // MOCK-API: 탐색 API가 생기기 전까지 쓰는 목 응답이다.
@@ -131,25 +132,6 @@ const KIND_BY_SOURCE: Record<Resource['source'], MaterialKind> = {
   talk: 'TECH_TALK',
 };
 
-const BLOG_FAVICONS = [
-  ['tistory.com', '/about-assets/assets/tistory.svg'],
-  ['velog.io', '/about-assets/assets/velog.ico'],
-  ['rilog.kr', '/about-assets/assets/rilog.svg'],
-] as const;
-
-const faviconOf = (url: string) => {
-  try {
-    const { hostname } = new URL(url);
-    return (
-      BLOG_FAVICONS.find(
-        ([domain]) => hostname === domain || hostname.endsWith(`.${domain}`),
-      )?.[1] ?? null
-    );
-  } catch {
-    return null;
-  }
-};
-
 const toMaterial = (resource: Resource): Material => {
   const kind = KIND_BY_SOURCE[resource.source];
   const videoId = kind === 'TECH_TALK' ? youtubeId(resource.url) : undefined;
@@ -163,7 +145,7 @@ const toMaterial = (resource: Resource): Material => {
     publishedAt: resource.date ?? null,
     summary: resource.line ?? null,
     project: kind === 'TECH_TALK' || !team ? null : { name: team, logoUrl: null },
-    faviconUrl: kind === 'BLOG' ? faviconOf(resource.url) : null,
+    faviconUrl: kind === 'BLOG' ? blogFaviconOf(resource.url) : null,
     speaker: kind === 'TECH_TALK' ? (/\]\s*(.+?)의\s/.exec(resource.title)?.[1] ?? null) : null,
     thumbnailUrl: videoId ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : null,
   };
@@ -173,7 +155,7 @@ const byNewest = (a: Material, b: Material) =>
   (b.publishedAt ?? '').localeCompare(a.publishedAt ?? '');
 
 /** 주제 여러 개의 자료를 중복 없이 모은다. */
-const collect = (names: string[]) => {
+export const collectMaterials = (names: string[]) => {
   const byId = new Map<string, Material>();
   for (const topic of topics.filter((item) => names.includes(item.topic))) {
     for (const resources of Object.values(topic.groups ?? {})) {
@@ -183,7 +165,7 @@ const collect = (names: string[]) => {
   return [...byId.values()].sort(byNewest);
 };
 
-const allMaterials = collect(topics.map((topic) => topic.topic));
+const allMaterials = collectMaterials(topics.map((topic) => topic.topic));
 
 export const getExploreHome = (): ExploreHome => ({
   recentBlogs: allMaterials.filter((material) => material.kind === 'BLOG').slice(0, 4),
@@ -194,7 +176,7 @@ export const getExploreHome = (): ExploreHome => ({
 
 export const searchExplore = (query: string): ExploreSearchResult => {
   const matched = matchTopics(query).map((topic) => topic.topic);
-  const materials = collect(matched);
+  const materials = collectMaterials(matched);
 
   return {
     query,
