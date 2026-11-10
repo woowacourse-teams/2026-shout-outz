@@ -46,7 +46,7 @@ class SearchKeywordServiceTest {
             "2026-11-09T15:30:00Z, 2026-11-04",
             "2026-11-09T14:59:59Z, 2026-11-03"
     })
-    @DisplayName("인기 검색어 집계 기간(한국 날짜로 오늘 포함 7일)보다 오래된 기록을 옮긴다")
+    @DisplayName("한국 날짜로 오늘 포함 7일보다 오래된 방문자별 기록을 날짜별 집계로 옮긴다")
     void archivesRecordsOlderThanWindow(Instant now, LocalDate expectedCutoff) {
         SearchKeywordService service = new SearchKeywordService(searchKeywordRepository, Clock.fixed(now, ZoneOffset.UTC));
 

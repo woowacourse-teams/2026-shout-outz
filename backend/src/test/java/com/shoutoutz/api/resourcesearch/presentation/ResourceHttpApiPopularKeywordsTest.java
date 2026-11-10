@@ -37,31 +37,30 @@ class ResourceHttpApiPopularKeywordsTest {
     @DisplayName("인기 검색어 8개를 준다")
     void findsPopularKeywords() throws Exception {
         given(resourceQueryService.findPopularKeywords()).willReturn(List.of(
-                new PopularKeywordResponse("Redis"), new PopularKeywordResponse("JPA"),
-                new PopularKeywordResponse("Kotlin"), new PopularKeywordResponse("LLM"),
-                new PopularKeywordResponse("동시성"), new PopularKeywordResponse("부하 테스트"),
-                new PopularKeywordResponse("무중단 배포"), new PopularKeywordResponse("쿼리 최적화")));
+                new PopularKeywordResponse("LLM"), new PopularKeywordResponse("동시성"),
+                new PopularKeywordResponse("부하 테스트"), new PopularKeywordResponse("무중단 배포"),
+                new PopularKeywordResponse("쿼리 최적화"), new PopularKeywordResponse("모니터링"),
+                new PopularKeywordResponse("웹 성능"), new PopularKeywordResponse("인증/인가")));
 
         mockMvc.perform(get("/api/v1/resources/popular-keywords"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(8))
-                .andExpect(jsonPath("$.data[0].keyword").value("Redis"))
+                .andExpect(jsonPath("$.data[0].keyword").value("LLM"))
                 .andDo(document(
                         "resource-popular-keywords",
                         resource(ResourceSnippetParameters.builder()
                                 .tag("Resource")
                                 .summary("인기 검색어 조회")
                                 .description("""
-                                        검색창 아래 칩에 보여줄 인기 검색어 8개를 준다. 로그인 없이 볼 수 있다.
-                                        최근 7일(한국 날짜, 오늘 포함) 동안 5번 이상 검색된 검색어 중 자료의 기술 태그나 기술 주제 이름에 있는 것만 후보로 둔다.
-                                        같은 방문자가 같은 날 여러 번 검색해도 한 번으로 센다. 많이 검색된 순, 같으면 최근에 검색된 순, 그다음 이름순이다.
-                                        8개가 안 되면 기본 칩(LLM, 동시성, 부하 테스트, 무중단 배포, 쿼리 최적화, 모니터링, 웹 성능, 인증/인가)으로 채운다.""")
+                                        검색창 아래 칩에 보여줄 검색어 8개를 준다. 로그인 없이 볼 수 있다.
+                                        지금은 정해 둔 목록(LLM, 동시성, 부하 테스트, 무중단 배포, 쿼리 최적화, 모니터링, 웹 성능, 인증/인가)을 순서대로 준다.
+                                        검색어 기록은 계속 쌓고 있으며, 나중에 실제 인기순으로 바뀌어도 응답 형식은 같다.""")
                                 .responseSchema(Schema.schema("PopularKeywordsSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(ARRAY).description("인기 검색어. 항상 8개"),
                                         fieldWithPath("data[].keyword").type(STRING)
-                                                .description("칩에 보여줄 검색어. 기술 태그나 주제 이름의 원래 표기")
+                                                .description("칩에 보여줄 검색어")
                                 )
                                 .build())
                 ));

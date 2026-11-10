@@ -4,8 +4,6 @@ import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
-import com.shoutoutz.api.resourcesearch.domain.KeywordSearchCount;
-import com.shoutoutz.api.resourcesearch.domain.PopularKeywords;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import com.shoutoutz.api.resourcesearch.domain.SearchKeyword;
@@ -17,15 +15,13 @@ import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceDetail
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSearchResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSectionResponse;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
-import java.time.Clock;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,14 +31,15 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ResourceQueryService {
 
-    private static final ZoneId SEARCH_DATE_ZONE = ZoneId.of("Asia/Seoul");
+    private static final List<PopularKeywordResponse> POPULAR_KEYWORDS = Stream.of(
+                    "LLM", "동시성", "부하 테스트", "무중단 배포", "쿼리 최적화", "모니터링", "웹 성능", "인증/인가")
+            .map(PopularKeywordResponse::new)
+            .toList();
 
     private final SectionedResourceSearchService sectionedResourceSearchService;
     private final ResourceCardQueryRepository resourceCardQueryRepository;
     private final ResourceDetailQueryRepository resourceDetailQueryRepository;
     private final SearchKeywordService searchKeywordService;
-    private final PopularKeywordQueryRepository popularKeywordQueryRepository;
-    private final Clock clock;
 
     public ResourceSearchResponse search(ResourceSearchRequest request, VisitorKey visitorKey) {
         recordKeyword(SearchKeyword.from(request.keyword()), visitorKey);
@@ -68,13 +65,7 @@ public class ResourceQueryService {
     }
 
     public List<PopularKeywordResponse> findPopularKeywords() {
-        LocalDate today = LocalDate.now(clock.withZone(SEARCH_DATE_ZONE));
-        LocalDate windowStart = today.minusDays(PopularKeywords.WINDOW_DAYS - 1);
-        List<KeywordSearchCount> counts =
-                popularKeywordQueryRepository.findCounts(windowStart, PopularKeywords.MIN_SEARCH_COUNT);
-        return PopularKeywords.select(counts).values().stream()
-                .map(PopularKeywordResponse::new)
-                .toList();
+        return POPULAR_KEYWORDS;
     }
 
     private void recordKeyword(SearchKeyword keyword, VisitorKey visitorKey) {
