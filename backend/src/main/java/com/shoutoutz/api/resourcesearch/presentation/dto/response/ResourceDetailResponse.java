@@ -17,7 +17,8 @@ public record ResourceDetailResponse(
         ResourceTopicResponse topic,
         List<String> keyPoints,
         List<String> techTags,
-        List<ResourceExperienceResponse> experiences
+        List<ResourceExperienceResponse> experiences,
+        ResourceLinkPreviewResponse linkPreview
 ) {
 
     public ResourceDetailResponse {
@@ -41,7 +42,8 @@ public record ResourceDetailResponse(
                 ResourceTopicResponse.from(detail.topic()),
                 detail.keyPoints(),
                 detail.techTags(),
-                detail.experiences().stream().map(ResourceExperienceResponse::from).toList()
+                detail.experiences().stream().map(ResourceExperienceResponse::from).toList(),
+                ResourceLinkPreviewResponse.from(detail.linkPreview())
         );
     }
 }

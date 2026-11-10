@@ -1412,10 +1412,14 @@ paths:
                     ,\"platform\":\"tistory\",\"contentType\":null,\"team\":{\"name\"\
                     :\"페스타북\",\"projectSlug\":\"festabook\",\"logoMediaId\":31},\"\
                     topic\":{\"topicId\":\"concurrency\",\"name\":\"동시성 제어/락\"},\"\
-                    keyPoints\":[\"레코드 락, 갭 락, 넥스트 키 락의 잠금 범위를 알아봐요.\"],\"techTags\":[\"MySQL\",\"InnoDB\"],\"experiences\"\
-                    :[{\"problem\":\"대기가 길어졌어요.\",\"cause\":\"넥스트 키 락이 넓게 걸렸어요.\"\
-                    ,\"solution\":\"기본 키 단건 조회로 바꿨어요.\",\"result\":null,\"techs\"\
-                    :[\"MySQL\",\"InnoDB\"]}]}}"
+                    keyPoints\":[\"레코드 락, 갭 락, 넥스트 키 락의 잠금 범위를 알아봐요.\"],\"techTags\"\
+                    :[\"MySQL\",\"InnoDB\"],\"experiences\":[{\"problem\":\"대기가 길어\
+                    졌어요.\",\"cause\":\"넥스트 키 락이 넓게 걸렸어요.\",\"solution\":\"기본 키 단건\
+                    \ 조회로 바꿨어요.\",\"result\":null,\"techs\":[\"MySQL\",\"InnoDB\"\
+                    ]}],\"linkPreview\":{\"title\":\"[Database] MySQL(InnoDB) 락(Lock)\
+                    \ (2)\",\"description\":\"MySQL의 락 종류를 정리합니다.\",\"imageUrl\":\"\
+                    https://img1.daumcdn.net/thumb/og.png\",\"siteName\":\"Tistory\"\
+                    }}}"
   /api/v1/tech-tags:
     get:
       tags:
@@ -8102,22 +8106,6 @@ components:
               type: string
               description: 한줄 소개
               nullable: true
-            resourceId:
-              type: number
-              description: 자료 ID
-            publishedAt:
-              type: string
-              description: 원문 게시 시각(UTC)
-              nullable: true
-            keyPoints:
-              type: array
-              description: 이 자료에서 배울 점. 없으면 빈 배열
-              items:
-                oneOf:
-                - type: object
-                - type: boolean
-                - type: string
-                - type: number
             techTags:
               type: array
               description: 자료에 붙은 기술 태그. 원래 표기 그대로. 없으면 빈 배열
@@ -8127,18 +8115,13 @@ components:
                 - type: boolean
                 - type: string
                 - type: number
-            topic:
-              type: object
-              properties:
-                topicId:
-                  type: string
-                  description: 기술 주제 ID
-                  nullable: true
-                name:
-                  type: string
-                  description: 기술 주제 이름
-                  nullable: true
-              description: 자료의 기술 주제. 없으면 null
+            resourceId:
+              type: number
+              description: 자료 ID
+            publishedAt:
+              type: string
+              description: 원문 게시 시각(UTC)
+              nullable: true
             team:
               type: object
               properties:
@@ -8194,12 +8177,6 @@ components:
                       - type: boolean
                       - type: string
                       - type: number
-            contentType:
-              type: string
-              description: "PR과 팀 문서의 종류(problem_solving, tech_decision, implementation,\
-                \ chore, design, operation, experiment, convention, plan, other).\
-                \ 블로그와 테코톡은 null"
-              nullable: true
             platform:
               type: string
               description: 블로그 플랫폼. 블로그가 아니면 null
@@ -8207,6 +8184,53 @@ components:
             url:
               type: string
               description: 원문 주소
+            linkPreview:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                  description: 썸네일 주소(og:image)
+                  nullable: true
+                siteName:
+                  type: string
+                  description: 사이트 이름(og:site_name)
+                  nullable: true
+                description:
+                  type: string
+                  description: 원문 설명(og:description)
+                  nullable: true
+                title:
+                  type: string
+                  description: 원문 제목(og:title)
+                  nullable: true
+              description: 원문 링크 미리보기. 아직 모으지 못했거나 실패했으면 null
+            keyPoints:
+              type: array
+              description: 이 자료에서 배울 점. 없으면 빈 배열
+              items:
+                oneOf:
+                - type: object
+                - type: boolean
+                - type: string
+                - type: number
+            topic:
+              type: object
+              properties:
+                topicId:
+                  type: string
+                  description: 기술 주제 ID
+                  nullable: true
+                name:
+                  type: string
+                  description: 기술 주제 이름
+                  nullable: true
+              description: 자료의 기술 주제. 없으면 null
+            contentType:
+              type: string
+              description: "PR과 팀 문서의 종류(problem_solving, tech_decision, implementation,\
+                \ chore, design, operation, experiment, convention, plan, other).\
+                \ 블로그와 테코톡은 null"
+              nullable: true
           description: 자료 상세
         status:
           type: string

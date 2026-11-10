@@ -22,6 +22,7 @@ import com.shoutoutz.api.resourcesearch.application.ResourceQueryService;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceDetailResponse;
+import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceLinkPreviewResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceExperienceResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceTopicResponse;
 import java.time.Instant;
@@ -57,13 +58,16 @@ class ResourceHttpApiDetailTest {
                 List.of("레코드 락, 갭 락, 넥스트 키 락의 잠금 범위를 알아봐요."),
                 List.of("MySQL", "InnoDB"),
                 List.of(new ResourceExperienceResponse("대기가 길어졌어요.", "넥스트 키 락이 넓게 걸렸어요.",
-                        "기본 키 단건 조회로 바꿨어요.", null, List.of("MySQL", "InnoDB")))));
+                        "기본 키 단건 조회로 바꿨어요.", null, List.of("MySQL", "InnoDB"))),
+                new ResourceLinkPreviewResponse("[Database] MySQL(InnoDB) 락(Lock) (2)", "MySQL의 락 종류를 정리합니다.",
+                        "https://img1.daumcdn.net/thumb/og.png", "Tistory")));
 
         mockMvc.perform(get("/api/v1/resources/{resourceId}", 101L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.resourceId").value(101L))
                 .andExpect(jsonPath("$.data.topic.topicId").value("concurrency"))
                 .andExpect(jsonPath("$.data.experiences[0].techs[0]").value("MySQL"))
+                .andExpect(jsonPath("$.data.linkPreview.siteName").value("Tistory"))
                 .andDo(document(
                         "resource-detail",
                         resource(ResourceSnippetParameters.builder()
@@ -103,7 +107,13 @@ class ResourceHttpApiDetailTest {
                                         fieldWithPath("data.experiences[].cause").type(STRING).description("원인").optional(),
                                         fieldWithPath("data.experiences[].solution").type(STRING).description("해결"),
                                         fieldWithPath("data.experiences[].result").type(STRING).description("결과").optional(),
-                                        fieldWithPath("data.experiences[].techs").type(ARRAY).description("쓴 기술. 없으면 빈 배열")
+                                        fieldWithPath("data.experiences[].techs").type(ARRAY).description("쓴 기술. 없으면 빈 배열"),
+                                        fieldWithPath("data.linkPreview").type(OBJECT)
+                                                .description("원문 링크 미리보기. 아직 모으지 못했거나 실패했으면 null").optional(),
+                                        fieldWithPath("data.linkPreview.title").type(STRING).description("원문 제목(og:title)").optional(),
+                                        fieldWithPath("data.linkPreview.description").type(STRING).description("원문 설명(og:description)").optional(),
+                                        fieldWithPath("data.linkPreview.imageUrl").type(STRING).description("썸네일 주소(og:image)").optional(),
+                                        fieldWithPath("data.linkPreview.siteName").type(STRING).description("사이트 이름(og:site_name)").optional()
                                 )
                                 .build())
                 ));

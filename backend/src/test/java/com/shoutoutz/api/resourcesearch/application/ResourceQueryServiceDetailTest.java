@@ -8,9 +8,11 @@ import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceDetail;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceExperience;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceLinkPreview;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceTopic;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceDetailResponse;
+import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceLinkPreviewResponse;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +37,8 @@ class ResourceQueryServiceDetailTest {
         ResourceCard card = new ResourceCard(101L, "github-pr", "제목", "https://example.com", "소개", null, null, null);
         given(resourceDetailQueryRepository.findById(101L)).willReturn(Optional.of(new ResourceDetail(
                 card, "problem_solving", new ResourceTopic("concurrency", "동시성 제어/락"),
-                List.of("배울 점"), List.of("Redis", "Redisson"), List.of(new ResourceExperience("문제", null, "해결", null, List.of("Redis"))))));
+                List.of("배울 점"), List.of("Redis", "Redisson"), List.of(new ResourceExperience("문제", null, "해결", null, List.of("Redis"))),
+                new ResourceLinkPreview("미리보기 제목", null, "https://example.com/og.png", "Example"))));
 
         ResourceDetailResponse response = resourceQueryService.findDetail(101L);
 
@@ -46,6 +49,8 @@ class ResourceQueryServiceDetailTest {
         assertThat(response.techTags()).containsExactly("Redis", "Redisson");
         assertThat(response.experiences()).singleElement()
                 .satisfies(experience -> assertThat(experience.techs()).containsExactly("Redis"));
+        assertThat(response.linkPreview()).isEqualTo(
+                new ResourceLinkPreviewResponse("미리보기 제목", null, "https://example.com/og.png", "Example"));
     }
 
     @Test

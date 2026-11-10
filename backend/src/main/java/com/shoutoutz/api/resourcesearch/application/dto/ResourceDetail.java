@@ -8,7 +8,8 @@ public record ResourceDetail(
         ResourceTopic topic,
         List<String> keyPoints,
         List<String> techTags,
-        List<ResourceExperience> experiences
+        List<ResourceExperience> experiences,
+        ResourceLinkPreview linkPreview
 ) {
 
     public ResourceDetail {

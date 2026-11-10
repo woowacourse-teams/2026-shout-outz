@@ -6,6 +6,7 @@ import com.shoutoutz.api.resourcesearch.application.ResourceDetailQueryRepositor
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceDetail;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceExperience;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceLinkPreview;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceTopic;
 import com.shoutoutz.api.resourcesearch.support.ResourceDocumentFixture;
 import java.sql.Timestamp;
@@ -90,6 +91,39 @@ class ResourceDetailQueryRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("모은 링크 미리보기가 있으면 함께 준다")
+    void findsReadyLinkPreview() {
+        long id = fixture.document("blog-post").save();
+        linkPreview(id, "READY", "원문 제목", "https://example.com/og.png");
+
+        ResourceDetail detail = resourceDetailQueryRepository.findById(id).orElseThrow();
+
+        assertThat(detail.linkPreview())
+                .isEqualTo(new ResourceLinkPreview("원문 제목", "원문 설명", "https://example.com/og.png", "Example"));
+    }
+
+    @Test
+    @DisplayName("링크 미리보기를 아직 모으지 못했거나 연결 전이면 null로 둔다")
+    void leavesLinkPreviewEmptyUntilReady() {
+        long pending = fixture.document("blog-post").save();
+        linkPreview(pending, "PENDING", null, null);
+        long unlinked = fixture.document("blog-post").save();
+
+        assertThat(resourceDetailQueryRepository.findById(pending).orElseThrow().linkPreview()).isNull();
+        assertThat(resourceDetailQueryRepository.findById(unlinked).orElseThrow().linkPreview()).isNull();
+    }
+
+    @Test
+    @DisplayName("연결된 미리보기의 주소가 지금 원문 주소와 다르면 보여주지 않는다")
+    void hidesLinkPreviewOfOutdatedUrl() {
+        long id = fixture.document("blog-post").save();
+        linkPreview(id, "READY", "옛 제목", null);
+        jdbcTemplate.update("UPDATE resource_documents SET url = 'https://example.com/moved' WHERE id = ?", id);
+
+        assertThat(resourceDetailQueryRepository.findById(id).orElseThrow().linkPreview()).isNull();
+    }
+
+    @Test
     @DisplayName("삭제된 자료나 없는 자료는 찾지 못한다")
     void returnsEmptyForDeletedOrMissing() {
         long deleted = fixture.document("blog-post").deleted().save();
@@ -106,5 +140,15 @@ class ResourceDetailQueryRepositoryIntegrationTest {
                 ) SELECT id, ?, ?, ?, ?, ?, ?, source, ? FROM resource_documents WHERE id = ?
                 """, index, problem, cause, solution, result, tech,
                 deleted ? Timestamp.from(Instant.now()) : null, documentId);
+    }
+
+    private void linkPreview(long documentId, String status, String title, String imageUrl) {
+        String url = jdbcTemplate.queryForObject("SELECT url FROM resource_documents WHERE id = ?", String.class, documentId);
+        Long cacheId = jdbcTemplate.queryForObject("""
+                INSERT INTO link_preview_cache (url_hash, url, status, title, description, image_url, site_name)
+                VALUES (encode(sha256(convert_to(?, 'UTF8')), 'hex'), ?, ?, ?, '원문 설명', ?, 'Example')
+                RETURNING id
+                """, Long.class, url, url, status, title, imageUrl);
+        jdbcTemplate.update("INSERT INTO resource_link_preview_refs (document_id, cache_id) VALUES (?, ?)", documentId, cacheId);
     }
 }
