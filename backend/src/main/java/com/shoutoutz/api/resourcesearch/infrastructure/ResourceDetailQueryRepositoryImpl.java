@@ -4,6 +4,7 @@ import static com.shoutoutz.api.resourcesearch.infrastructure.ResourceCardQueryR
 import static com.shoutoutz.api.resourcesearch.infrastructure.ResourceCardQueryRepositoryImpl.VISIBLE_PROJECT_JOIN;
 
 import com.shoutoutz.api.resourcesearch.application.ResourceDetailQueryRepository;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceDetail;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceExperience;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceLinkPreview;
@@ -42,17 +43,17 @@ public class ResourceDetailQueryRepositoryImpl implements ResourceDetailQueryRep
                   AND d.deleted_at IS NULL
                 """.formatted(CARD_COLUMNS, VISIBLE_PROJECT_JOIN);
         MapSqlParameterSource parameters = new MapSqlParameterSource("resourceId", resourceId);
-        return jdbcTemplate.query(sql, parameters, (resultSet, rowNumber) -> new ResourceDetail(
+        return jdbcTemplate.query(sql, parameters, (resultSet, rowNumber) -> new DetailRow(
                         ResourceCardQueryRepositoryImpl.mapCard(resultSet),
                         resultSet.getString("content_type"),
                         topicOf(resultSet),
                         textsOf(resultSet.getArray("key_points")),
                         textsOf(resultSet.getArray("tech_tags")),
-                        findExperiences(resourceId),
                         linkPreviewOf(resultSet)
                 ))
                 .stream()
-                .findFirst();
+                .findFirst()
+                .map(row -> row.toDetail(findExperiences(resourceId)));
     }
 
     private List<ResourceExperience> findExperiences(long resourceId) {
@@ -102,5 +103,27 @@ public class ResourceDetailQueryRepositoryImpl implements ResourceDetailQueryRep
             return List.of();
         }
         return Arrays.asList((String[]) array.getArray());
+    }
+
+    private record DetailRow(
+            ResourceCard card,
+            String contentType,
+            ResourceTopic topic,
+            List<String> keyPoints,
+            List<String> techTags,
+            ResourceLinkPreview linkPreview
+    ) {
+
+        private ResourceDetail toDetail(List<ResourceExperience> experiences) {
+            return new ResourceDetail(
+                    card,
+                    contentType,
+                    topic,
+                    keyPoints,
+                    techTags,
+                    experiences,
+                    linkPreview
+            );
+        }
     }
 }
