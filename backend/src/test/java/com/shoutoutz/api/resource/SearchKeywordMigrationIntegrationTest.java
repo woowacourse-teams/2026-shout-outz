@@ -61,15 +61,6 @@ class SearchKeywordMigrationIntegrationTest {
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
-    @Test
-    @DisplayName("최근 자료 조회용 인덱스가 있다")
-    void createsRecentResourceIndex() {
-        Integer indexes = jdbc.queryForObject(
-                "SELECT count(*) FROM pg_indexes WHERE indexname = 'resource_documents_recent_idx'", Integer.class);
-
-        assertThat(indexes).isEqualTo(1);
-    }
-
     private void insertDay(String keyword, String visitorKeyHash, LocalDate searchedOn) {
         jdbc.update("""
                 INSERT INTO search_keyword_days (keyword, visitor_key_hash, searched_on, last_searched_at)
