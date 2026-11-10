@@ -98,19 +98,15 @@ describe('JobPostingDetailPage', () => {
     expect(screen.queryByRole('region', { name: /^PR과 팀 문서/ })).not.toBeInTheDocument();
   });
 
-  it('커뮤니티 고민을 보여주고 접을 수 있다', async () => {
-    const user = userEvent.setup();
+  it('연관 질문을 보여준다', async () => {
     renderRoute('/job-postings/2');
 
-    const panel = await screen.findByRole('complementary', { name: /커뮤니티에서 나온 고민/ });
+    const panel = await screen.findByRole('complementary', { name: '연관 질문' });
     expect(within(panel).getByRole('link', { name: /금융권 취업 방향성/ })).toHaveAttribute(
       'href',
       '/community/1',
     );
-
-    await user.click(within(panel).getByRole('button', { name: '커뮤니티 패널 접기' }));
-    expect(within(panel).queryByRole('link')).not.toBeInTheDocument();
-    expect(within(panel).getByRole('button', { name: '커뮤니티 패널 펼치기' })).toBeVisible();
+    expect(within(panel).getAllByLabelText('답변 4개')[0]).toBeVisible();
   });
 
   it('없는 공고면 오류를 보여준다', async () => {
