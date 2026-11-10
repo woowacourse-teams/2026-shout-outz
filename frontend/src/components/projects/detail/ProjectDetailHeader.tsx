@@ -1,7 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 
-import { getButtonStyles } from '@/components/Button';
 import { ProjectLikeButton } from '@/components/projects/ProjectLikeButton';
 import type { ProjectDetail } from '@/types/project';
 import { toProjectSlugParam } from '@/utils/project';
@@ -16,8 +15,8 @@ export function ProjectDetailHeader({ project }: { project: ProjectDetail }) {
   ].filter((link) => link.url);
 
   return (
-    <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-7">
-      <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-100 md:size-28">
+    <div className="flex items-start gap-3.5 md:items-center md:gap-7">
+      <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-100 md:size-28">
         {thumbnail && thumbnail !== failedUrl ? (
           <img
             src={thumbnail}
@@ -30,11 +29,11 @@ export function ProjectDetailHeader({ project }: { project: ProjectDetail }) {
         )}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <h1 className="text-2xl font-extrabold break-words text-gray-900 md:text-3xl">
+        <h1 className="text-2xl leading-tight font-extrabold break-words text-gray-900 md:text-3xl">
           {project.title}
         </h1>
-        <p className="text-base break-words text-gray-600">{project.tagline}</p>
-        {links.length > 0 && (
+        <p className="text-sm break-words text-gray-600 md:text-base">{project.tagline}</p>
+        {(links.length > 0 || project.editable) && (
           <div className="mt-0.5 flex flex-wrap gap-x-5 gap-y-1">
             {links.map((link) => (
               <a
@@ -42,31 +41,32 @@ export function ProjectDetailHeader({ project }: { project: ProjectDetail }) {
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="focus-visible:outline-primary-600 rounded-sm text-sm text-gray-600 hover:text-gray-900 hover:underline focus-visible:outline-2"
+                className={LINK_CLASS_NAME}
               >
                 {link.label}
               </a>
             ))}
+            {/* PROTOTYPE-DIFF: 프로토타입에는 없지만 참여 크루가 수정할 수 있게 링크 줄 끝에 둔다. */}
+            {project.editable && (
+              <Link
+                to="/projects/$slug/edit"
+                params={{ slug: toProjectSlugParam(project.slug) }}
+                className={LINK_CLASS_NAME}
+              >
+                프로젝트 수정
+              </Link>
+            )}
           </div>
         )}
       </div>
-      {/* PROTOTYPE-DIFF: 프로토타입에는 없지만 기존 상세에 있던 프로젝트 수정과 좋아요를 그대로 둔다. */}
-      <div className="flex shrink-0 items-center gap-2">
-        {project.editable && (
-          <Link
-            to="/projects/$slug/edit"
-            params={{ slug: toProjectSlugParam(project.slug) }}
-            className={getButtonStyles({ variant: 'outline', size: 'sm' })}
-          >
-            프로젝트 수정
-          </Link>
-        )}
-        <ProjectLikeButton
-          slug={project.slug}
-          likeCount={project.likeCount}
-          likedByMe={project.likedByMe}
-        />
-      </div>
+      <ProjectLikeButton
+        slug={project.slug}
+        likeCount={project.likeCount}
+        likedByMe={project.likedByMe}
+      />
     </div>
   );
 }
+
+const LINK_CLASS_NAME =
+  'focus-visible:outline-primary-600 rounded-sm text-sm whitespace-nowrap text-gray-600 underline decoration-gray-200 underline-offset-3 hover:text-gray-900 hover:decoration-gray-400 focus-visible:outline-2';
