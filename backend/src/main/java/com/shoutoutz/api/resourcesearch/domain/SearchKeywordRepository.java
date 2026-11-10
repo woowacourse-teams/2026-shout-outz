@@ -7,4 +7,6 @@ import java.time.LocalDate;
 public interface SearchKeywordRepository {
 
     void record(SearchKeyword keyword, VisitorKey visitorKey, LocalDate searchedOn, Instant searchedAt);
+
+    void archiveBefore(LocalDate cutoff);
 }

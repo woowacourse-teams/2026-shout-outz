@@ -12,6 +12,10 @@ job-posting:
   matching:
     enabled: false
 
+search-keyword:
+  archive:
+    enabled: false
+
 question-recommendation:
   count: 5
   max-generation-attempts: 5

@@ -39,4 +39,19 @@ class SearchKeywordServiceTest {
 
         verify(searchKeywordRepository).record(keyword, VISITOR, expectedDate, now);
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "2026-11-10T03:00:00Z, 2026-11-04",
+            "2026-11-09T15:30:00Z, 2026-11-04",
+            "2026-11-09T14:59:59Z, 2026-11-03"
+    })
+    @DisplayName("인기 검색어 집계 기간(한국 날짜로 오늘 포함 7일)보다 오래된 기록을 옮긴다")
+    void archivesRecordsOlderThanWindow(Instant now, LocalDate expectedCutoff) {
+        SearchKeywordService service = new SearchKeywordService(searchKeywordRepository, Clock.fixed(now, ZoneOffset.UTC));
+
+        service.archiveExpired();
+
+        verify(searchKeywordRepository).archiveBefore(expectedCutoff);
+    }
 }

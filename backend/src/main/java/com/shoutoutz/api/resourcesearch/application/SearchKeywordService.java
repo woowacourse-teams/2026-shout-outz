@@ -1,5 +1,6 @@
 package com.shoutoutz.api.resourcesearch.application;
 
+import com.shoutoutz.api.resourcesearch.domain.PopularKeywords;
 import com.shoutoutz.api.resourcesearch.domain.SearchKeyword;
 import com.shoutoutz.api.resourcesearch.domain.SearchKeywordRepository;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
@@ -23,5 +24,10 @@ public class SearchKeywordService {
         Instant searchedAt = clock.instant();
         LocalDate searchedOn = LocalDate.ofInstant(searchedAt, SEARCH_DATE_ZONE);
         searchKeywordRepository.record(keyword, visitorKey, searchedOn, searchedAt);
+    }
+
+    public void archiveExpired() {
+        LocalDate today = LocalDate.ofInstant(clock.instant(), SEARCH_DATE_ZONE);
+        searchKeywordRepository.archiveBefore(today.minusDays(PopularKeywords.WINDOW_DAYS - 1));
     }
 }

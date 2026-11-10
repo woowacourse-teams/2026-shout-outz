@@ -33,4 +33,24 @@ public class SearchKeywordRepositoryImpl implements SearchKeywordRepository {
                         .addValue("searchedAt", Timestamp.from(searchedAt))
         );
     }
+
+    @Override
+    public void archiveBefore(LocalDate cutoff) {
+        jdbcTemplate.update(
+                """
+                        WITH expired AS (
+                            DELETE FROM search_keyword_days
+                            WHERE searched_on < :cutoff
+                            RETURNING keyword, searched_on
+                        )
+                        INSERT INTO search_keyword_daily_counts (keyword, searched_on, visitor_count)
+                        SELECT keyword, searched_on, count(*)
+                        FROM expired
+                        GROUP BY keyword, searched_on
+                        ON CONFLICT (keyword, searched_on) DO UPDATE
+                        SET visitor_count = search_keyword_daily_counts.visitor_count + EXCLUDED.visitor_count
+                        """,
+                new MapSqlParameterSource("cutoff", cutoff)
+        );
+    }
 }
