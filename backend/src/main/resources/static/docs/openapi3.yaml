@@ -1354,7 +1354,7 @@ paths:
                     ,\"platform\":\"tistory\",\"contentType\":null,\"team\":{\"name\"\
                     :\"페스타북\",\"projectSlug\":\"festabook\",\"logoMediaId\":31},\"\
                     topic\":{\"topicId\":\"concurrency\",\"name\":\"동시성 제어/락\"},\"\
-                    keyPoints\":[\"레코드 락, 갭 락, 넥스트 키 락의 잠금 범위를 알아봐요.\"],\"experiences\"\
+                    keyPoints\":[\"레코드 락, 갭 락, 넥스트 키 락의 잠금 범위를 알아봐요.\"],\"techTags\":[\"MySQL\",\"InnoDB\"],\"experiences\"\
                     :[{\"problem\":\"대기가 길어졌어요.\",\"cause\":\"넥스트 키 락이 넓게 걸렸어요.\"\
                     ,\"solution\":\"기본 키 단건 조회로 바꿨어요.\",\"result\":null,\"techs\"\
                     :[\"MySQL\",\"InnoDB\"]}]}}"
@@ -8035,6 +8035,7 @@ components:
           - keyPoints
           - resourceId
           - source
+          - techTags
           - title
           - url
           type: object
@@ -8053,6 +8054,15 @@ components:
             keyPoints:
               type: array
               description: 이 자료에서 배울 점. 없으면 빈 배열
+              items:
+                oneOf:
+                - type: object
+                - type: boolean
+                - type: string
+                - type: number
+            techTags:
+              type: array
+              description: 자료에 붙은 기술 태그. 원래 표기 그대로. 없으면 빈 배열
               items:
                 oneOf:
                 - type: object

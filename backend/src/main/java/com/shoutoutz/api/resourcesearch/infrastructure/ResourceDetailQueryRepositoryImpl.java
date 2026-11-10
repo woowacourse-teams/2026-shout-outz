@@ -27,7 +27,7 @@ public class ResourceDetailQueryRepositoryImpl implements ResourceDetailQueryRep
     @Override
     public Optional<ResourceDetail> findById(long resourceId) {
         String sql = """
-                SELECT %s, d.content_type, d.key_points, t.id AS topic_id, t.name AS topic_name
+                SELECT %s, d.content_type, d.key_points, d.tech_tags, t.id AS topic_id, t.name AS topic_name
                 FROM resource_documents d
                 %s
                 LEFT JOIN resource_topic_catalog t ON t.id = d.topic
@@ -40,6 +40,7 @@ public class ResourceDetailQueryRepositoryImpl implements ResourceDetailQueryRep
                         resultSet.getString("content_type"),
                         topicOf(resultSet),
                         textsOf(resultSet.getArray("key_points")),
+                        textsOf(resultSet.getArray("tech_tags")),
                         findExperiences(resourceId)
                 ))
                 .stream()

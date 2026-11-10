@@ -55,6 +55,7 @@ class ResourceHttpApiDetailTest {
                 new ResourceTeamResponse("페스타북", "festabook", 31L),
                 new ResourceTopicResponse("concurrency", "동시성 제어/락"),
                 List.of("레코드 락, 갭 락, 넥스트 키 락의 잠금 범위를 알아봐요."),
+                List.of("MySQL", "InnoDB"),
                 List.of(new ResourceExperienceResponse("대기가 길어졌어요.", "넥스트 키 락이 넓게 걸렸어요.",
                         "기본 키 단건 조회로 바꿨어요.", null, List.of("MySQL", "InnoDB")))));
 
@@ -96,6 +97,7 @@ class ResourceHttpApiDetailTest {
                                         fieldWithPath("data.topic.topicId").type(STRING).description("기술 주제 ID").optional(),
                                         fieldWithPath("data.topic.name").type(STRING).description("기술 주제 이름").optional(),
                                         fieldWithPath("data.keyPoints").type(ARRAY).description("이 자료에서 배울 점. 없으면 빈 배열"),
+                                        fieldWithPath("data.techTags").type(ARRAY).description("자료에 붙은 기술 태그. 원래 표기 그대로. 없으면 빈 배열"),
                                         fieldWithPath("data.experiences").type(ARRAY).description("어떤 문제를 어떻게 풀었나. 없으면 빈 배열"),
                                         fieldWithPath("data.experiences[].problem").type(STRING).description("문제"),
                                         fieldWithPath("data.experiences[].cause").type(STRING).description("원인").optional(),

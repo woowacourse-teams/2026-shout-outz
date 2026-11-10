@@ -7,11 +7,13 @@ public record ResourceDetail(
         String contentType,
         ResourceTopic topic,
         List<String> keyPoints,
+        List<String> techTags,
         List<ResourceExperience> experiences
 ) {
 
     public ResourceDetail {
         keyPoints = List.copyOf(keyPoints);
+        techTags = List.copyOf(techTags);
         experiences = List.copyOf(experiences);
     }
 }

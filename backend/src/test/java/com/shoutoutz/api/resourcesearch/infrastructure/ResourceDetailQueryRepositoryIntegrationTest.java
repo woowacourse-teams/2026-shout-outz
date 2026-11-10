@@ -39,7 +39,7 @@ class ResourceDetailQueryRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("자료의 카드 정보와 종류, 기술 주제, 배울 점을 준다")
+    @DisplayName("자료의 카드 정보와 종류, 기술 주제, 배울 점, 기술 태그를 준다")
     void findsDetail() {
         long projectId = fixture.approvedProject("zzol", "쫄");
         long id = fixture.document("github-pr")
@@ -47,6 +47,7 @@ class ResourceDetailQueryRepositoryIntegrationTest {
                 .contentType("problem_solving")
                 .topic("concurrency")
                 .keyPoints("락 범위를 줄이는 방법", "재시도 흐름")
+                .techTags("Redis", "Redisson")
                 .save();
 
         ResourceDetail detail = resourceDetailQueryRepository.findById(id).orElseThrow();
@@ -56,6 +57,7 @@ class ResourceDetailQueryRepositoryIntegrationTest {
         assertThat(detail.contentType()).isEqualTo("problem_solving");
         assertThat(detail.topic()).isEqualTo(new ResourceTopic("concurrency", "동시성 제어/락"));
         assertThat(detail.keyPoints()).containsExactly("락 범위를 줄이는 방법", "재시도 흐름");
+        assertThat(detail.techTags()).containsExactly("Redis", "Redisson");
         assertThat(detail.experiences()).isEmpty();
     }
 
@@ -84,6 +86,7 @@ class ResourceDetailQueryRepositoryIntegrationTest {
         assertThat(detail.topic()).isNull();
         assertThat(detail.contentType()).isNull();
         assertThat(detail.keyPoints()).isEmpty();
+        assertThat(detail.techTags()).isEmpty();
     }
 
     @Test

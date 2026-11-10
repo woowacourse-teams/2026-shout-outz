@@ -35,7 +35,7 @@ class ResourceQueryServiceDetailTest {
         ResourceCard card = new ResourceCard(101L, "github-pr", "제목", "https://example.com", "소개", null, null, null);
         given(resourceDetailQueryRepository.findById(101L)).willReturn(Optional.of(new ResourceDetail(
                 card, "problem_solving", new ResourceTopic("concurrency", "동시성 제어/락"),
-                List.of("배울 점"), List.of(new ResourceExperience("문제", null, "해결", null, List.of("Redis"))))));
+                List.of("배울 점"), List.of("Redis", "Redisson"), List.of(new ResourceExperience("문제", null, "해결", null, List.of("Redis"))))));
 
         ResourceDetailResponse response = resourceQueryService.findDetail(101L);
 
@@ -43,6 +43,7 @@ class ResourceQueryServiceDetailTest {
         assertThat(response.contentType()).isEqualTo("problem_solving");
         assertThat(response.topic().topicId()).isEqualTo("concurrency");
         assertThat(response.keyPoints()).containsExactly("배울 점");
+        assertThat(response.techTags()).containsExactly("Redis", "Redisson");
         assertThat(response.experiences()).singleElement()
                 .satisfies(experience -> assertThat(experience.techs()).containsExactly("Redis"));
     }

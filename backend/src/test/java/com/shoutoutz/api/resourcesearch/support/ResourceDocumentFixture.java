@@ -84,6 +84,7 @@ public class ResourceDocumentFixture {
         private String contentType;
         private String topic;
         private String[] keyPoints = {};
+        private String[] techTags = {};
         private boolean deleted;
 
         private DocumentBuilder(String source) {
@@ -130,6 +131,11 @@ public class ResourceDocumentFixture {
             return this;
         }
 
+        public DocumentBuilder techTags(String... techTags) {
+            this.techTags = techTags;
+            return this;
+        }
+
         public DocumentBuilder deleted() {
             this.deleted = true;
             return this;
@@ -141,14 +147,14 @@ public class ResourceDocumentFixture {
                     """
                             INSERT INTO resource_documents (
                                 source, external_key, version, title, url, summary, project_id, published_at,
-                                content_type, topic, key_points, prompt_version, extra, updated_at, deleted_at
-                            ) VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, 'test-v1', CAST(? AS jsonb), now(), ?)
+                                content_type, topic, key_points, tech_tags, prompt_version, extra, updated_at, deleted_at
+                            ) VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'test-v1', CAST(? AS jsonb), now(), ?)
                             RETURNING id
                             """,
                     Long.class,
                     source, externalKey, title, "https://example.com/" + externalKey, summary, projectId,
                     publishedAt == null ? null : Timestamp.from(publishedAt),
-                    contentType, topic, keyPoints, extra,
+                    contentType, topic, keyPoints, techTags, extra,
                     deleted ? Timestamp.from(Instant.now()) : null
             );
         }

@@ -17,11 +17,13 @@ public record ResourceDetailResponse(
         ResourceTeamResponse team,
         ResourceTopicResponse topic,
         List<String> keyPoints,
+        List<String> techTags,
         List<ResourceExperienceResponse> experiences
 ) {
 
     public ResourceDetailResponse {
         keyPoints = List.copyOf(keyPoints);
+        techTags = List.copyOf(techTags);
         experiences = List.copyOf(experiences);
     }
 
@@ -39,6 +41,7 @@ public record ResourceDetailResponse(
                 ResourceTeamResponse.from(card.team()),
                 ResourceTopicResponse.from(detail.topic()),
                 detail.keyPoints(),
+                detail.techTags(),
                 detail.experiences().stream().map(ResourceExperienceResponse::from).toList()
         );
     }
