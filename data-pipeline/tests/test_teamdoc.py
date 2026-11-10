@@ -181,7 +181,8 @@ def test_repo_renamed_is_gone(tmp_path):
     gh.exists[REPO] = {"name": "2026-Chalkak-new", "owner": {"login": "woowacourse-teams"}}
     store, rep, sr = run(tmp_path, gh)
     assert sr.gone_keys == [teamdoc_key(REPO, "a.md")]
-    assert Index(store, "github-teamdoc").load().get(teamdoc_key(REPO, "a.md"))["gone"]["reason"] == "repo_renamed"
+    gone = Index(store, "github-teamdoc").load().get(teamdoc_key(REPO, "a.md"))["gone"]
+    assert gone["reason"] == "repo_renamed" and gone["renamed_to"] == "2026-Chalkak-new"  # 새 이름도 남긴다(R18-8)
 
 
 def test_repos_narrowing_does_not_touch_other_repos(tmp_path):

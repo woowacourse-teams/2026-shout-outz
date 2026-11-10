@@ -287,4 +287,5 @@ def test_renamed_repo_old_keys_are_gone(tmp_path):
     store, _, sr = run(tmp_path, gh)
     idx = Index(store, "github-pr").load()
     assert idx.get(pr_key("2026-B", 7))["gone"]["reason"] == "repo_renamed"
+    assert idx.get(pr_key("2026-B", 7))["gone"]["renamed_to"] == "2026-New"  # 새 이름도 남긴다(R18-8)
     assert idx.get(pr_key("2026-New", 7))["gone"] is None

@@ -571,3 +571,55 @@ def test_only_overwrites_known_blog_post(tmp_path):
     store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=2, only=[f"{TIS}/1"])
     assert sr.failure_reasons == {"not_a_post": 1}
     assert store.read_json(raw_path(SRC, key))["version"] == 2
+
+
+# ---- 사라진 글 다시 확인(09 문서 R18-9, 2026-11-10) ----
+
+def gone_setup(tmp_path):
+    """0일에 글 1, 2 를 받고, 8일(전체 목록 날)에 2 가 목록에서 빠지고 404 라 사라짐."""
+    run(tmp_path, tistory_http([f"{TIS}/1", f"{TIS}/2"], []), TARGETS_TIS, day=0)
+    store, sr, _ = run(tmp_path, tistory_http([f"{TIS}/1"], [], gone=[f"{TIS}/2"]), TARGETS_TIS, day=8)
+    assert sr.gone_keys == [blog_key(f"{TIS}/2")] and sr.extra["gone_rechecked"] == 0  # 사라진 그 실행에서는 다시 보지 않는다
+    return blog_key(f"{TIS}/2")
+
+
+def test_gone_post_that_opens_again_is_restored(tmp_path):
+    key = gone_setup(tmp_path)
+    http = tistory_http([], [])
+    http.routes[f"{TIS}/2"] = page(2)          # 다시 열린다
+    store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=9)
+    assert sr.extra["gone_rechecked"] == 1 and sr.extra["returned_keys"] == [key]
+    assert Index(store, SRC).load().get(key)["gone"] is None
+    assert sr.counts["new"] == 0               # 본문은 다시 받지 않는다
+
+
+def test_gone_post_recheck_schedule(tmp_path):
+    key = gone_setup(tmp_path)
+    def day(n, http=None):
+        http = http or tistory_http([], [], gone=[f"{TIS}/2"])
+        store, sr, _ = run(tmp_path, http, TARGETS_TIS, day=n)
+        return store, sr, http
+    for n in (9, 10, 11):                        # 사라진 뒤 3일은 실행마다
+        store, sr, http = day(n)
+        assert sr.extra["gone_rechecked"] == 1 and http.count(f"{TIS}/2") == 1
+    gone = Index(store, SRC).load().get(key)["gone"]
+    assert gone["reason"] == "http_404" and gone["checked_at"].startswith("2026-11-16")
+    _, sr, http = day(14)                         # 그 뒤로는 마지막 확인에서 7일이 지나야
+    assert sr.extra["gone_rechecked"] == 0 and http.count(f"{TIS}/2") == 0
+    _, sr, http = day(18)
+    assert sr.extra["gone_rechecked"] == 1
+    # 빈 껍데기로 열리면 되살리지 않는다
+    http = tistory_http([], [])
+    http.routes[f"{TIS}/2"] = "<html></html>"
+    _, sr, _ = day(25, http)
+    assert sr.extra["returned_keys"] == []
+
+
+def test_gone_post_of_other_blog_is_not_rechecked(tmp_path):
+    """대상 블로그가 아닌 글(1~7기 묶음 등)은 다시 보지 않는다."""
+    key = gone_setup(tmp_path)
+    other = [Target(9, "https://other.tistory.com", None)]
+    http = FakeHttp({"https://other.tistory.com/sitemap.xml": sitemap(), "https://other.tistory.com/rss": rss()})
+    http.routes[f"{TIS}/2"] = page(2)
+    store, sr, _ = run(tmp_path, http, other, day=9)
+    assert sr.extra["gone_rechecked"] == 0 and Index(store, SRC).load().get(key)["gone"]

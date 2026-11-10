@@ -6,6 +6,7 @@
     4. 글 받기            처음 보는 키만(runner 가 아는 키를 거른다, 바뀜 표시 없음). 빈 껍데기 페이지면 받기 실패(not_a_post)
                           --only 로 준 글은 이미 받은 글이어도 다시 받아 덮어쓴다(only_overwrites)
     5. 사라짐 확인        전체 목록을 받은 블로그에서 목록에 없는 아는 키의 주소가 404, 410 이면
+    5-1. 다시 확인        사라짐으로 기록한 글을 3일은 매일, 그 뒤 주 1회 다시 열어 정상 글이면 사라짐 표시를 지운다(R18-9)
     6. 상태 저장          state/blog-post.json: 블로그별 마지막 전체 목록 날짜, 찾은 피드 주소, 다시 받을 글 주소
 
 상태 모양: {"blogs": {"<블로그 첫 주소>": {"last_full_list": "YYYY-MM-DD", "feed_url": "...", "retry_urls": [...]}}}
@@ -17,7 +18,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime, timedelta
 from urllib.parse import urlsplit
 
 import requests
@@ -39,6 +40,8 @@ MAX_SITEMAPS = 50      # sitemap 묶음(sitemapindex)에서 따라갈 하위 sit
 MAX_SITEMAP_DEPTH = 3  # 묶음 안의 묶음을 따라갈 깊이 상한(서로 가리키는 묶음에서 멈추려고)
 MAX_BYTES = 20 * 1024 * 1024  # 응답 하나의 크기 상한(20MB). 넘으면 그 블로그 목록이나 그 글만 실패
 NO_RETRY = {"robots_disallow", "http_404", "http_410"}  # 다시 받아도 같은 실패라 retry_urls 에 넣지 않는다
+RECHECK_DAILY_DAYS = 3   # 사라짐 기록 뒤 이 날수 동안은 매일 다시 열어 본다(R18-9)
+RECHECK_EVERY_DAYS = 7   # 그 뒤로는 이 날수마다
 MAX_VELOG_PAGES = 200  # GraphQL 페이지 상한(50편 x 200 = 1만 편). 커서가 돌면 멈추려고
 
 # 목록 1: 서비스에 등록한 8기 팀(승인 상태는 보지 않음). 목록 2: 프로젝트 없는 행 중 2026- 레포(03 문서 2-1, 2-3)
@@ -113,6 +116,15 @@ def group_blogs(targets: list[Target]) -> dict[str, Blog]:
         if all(x.id != t.id for x in blog.targets):
             blog.targets.append(t)
     return blogs
+
+
+def _parse(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
 
 
 def decode_text(r) -> str:
@@ -461,6 +473,54 @@ class BlogSource(Source):
             return None
         r = self.http.get(url)
         return f"http_{r.status_code}" if r.status_code in (404, 410) else None
+
+    def recheck_gone(self, ctx: Context) -> None:
+        """사라짐으로 기록한 글을 다시 열어 본다(2026-11-10, 09 문서 R18-9).
+
+        사라진 그날 서비스에서 내리기로 해서, 블로그 서버가 잠깐 404 를 낸 것만으로 글이 영영 내려가면 안 된다. 범용 블로그의
+        옛 글은 피드에 다시 나오지 않아 되살아나도 알아채지 못하므로 직접 열어 본다.
+        - 대상: 이번 실행의 대상 블로그(서비스 DB, 8기 이상)의 글. 1~7기 묶음 글은 대상 블로그가 아니라 보지 않는다
+        - 때: 사라짐 기록 뒤 3일 동안은 실행마다, 그 뒤로는 마지막 확인에서 7일이 지났을 때
+        - 정상 글로 열리면(200, 빈 껍데기 아님) 사라짐 표시를 지운다. 본문은 다시 받지 않는다(5-4)
+        - 404, 410 이나 일시 오류(시간 초과, 5xx)면 그대로 두고 다시 확인한 시각만 남긴다
+        """
+        roots = set(self.blogs)
+        if not roots:
+            return
+        now = ctx.now
+        checked, returned = 0, []
+        for entry in [e for e in ctx.index.entries.values() if e.get("gone") and e.get("blog_root") in roots]:
+            gone, url = entry["gone"], entry.get("url")
+            gone_at = _parse(gone.get("at"))
+            last = _parse(gone.get("checked_at")) or gone_at
+            if not url or gone_at is None or gone.get("at") == ctx.now_iso():
+                continue  # 이번 실행에서 사라짐으로 기록한 글은 다음 실행부터 본다
+            fresh = now - gone_at <= timedelta(days=RECHECK_DAILY_DAYS)
+            if not fresh and last is not None and now - last < timedelta(days=RECHECK_EVERY_DAYS):
+                continue
+            checked += 1
+            ctx.tick()
+            if self._is_post_back(url):
+                ctx.index.clear_gone(entry["external_key"])
+                returned.append(entry["external_key"])
+                log.info("사라졌던 글이 다시 열림: %s", url)
+            else:
+                ctx.index.note_gone_check(entry["external_key"], ctx.now_iso())
+        ctx.report.extra["gone_rechecked"] = checked
+        ctx.report.extra["returned_keys"] = returned
+
+    def _is_post_back(self, url: str) -> bool:
+        """글 주소가 정상 글로 열리는지. 막힘, 오류, 404 는 모두 아니오(다음 확인 때 다시 본다)."""
+        p = detect(url)
+        markdown = p.name == RILOG
+        target = rilog_markdown_url(url) if markdown else url
+        if self._robots_block(target):
+            return False
+        try:
+            r = self.http.get(target)
+        except (requests.RequestException, ResponseTooLarge):
+            return False
+        return r.status_code == 200 and shell_page_reason(p.name, decode_text(r)) is None
 
     def finish(self, ctx: Context) -> None:
         if not ctx.only:

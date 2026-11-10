@@ -60,6 +60,18 @@ def to_fetch_error(exc: Exception, url: str | None = None) -> Exception:
     return exc
 
 
+
+def repo_gone_from(data: dict | None, repo: str) -> str | dict | None:
+    """`GET /repos/{org}/{repo}` 응답으로 레포가 사라졌는지. 이름이 바뀌었으면 새 이름(같은 조직이면 레포 이름, 다른 곳으로
+    옮겼으면 owner/이름)을 renamed_to 로 남긴다(R18-8)."""
+    if data is None:
+        return "repo_not_found"
+    owner = (data.get("owner") or {}).get("login", ORG)
+    if data.get("name") != repo or owner != ORG:
+        new = data.get("name") if owner == ORG else data.get("full_name") or f"{owner}/{data.get('name')}"
+        return {"reason": "repo_renamed", "renamed_to": new}
+    return None
+
 class RepoSource(Source):
     """세 원천 공통: GitHub 클라이언트 주입, 레포 단위 사라짐 확인, 보고서 칸."""
 
@@ -79,23 +91,17 @@ class RepoSource(Source):
         log.warning("%s %s 목록 받기 실패: %r", self.name, repo, exc)
         self.repos_failed.append({"repo": repo, "reason": f"{type(exc).__name__}: {exc}"[:300]})
 
-    def repo_gone_reason(self, ctx: Context, repo: str) -> str | None:
+    def repo_gone_reason(self, ctx: Context, repo: str) -> str | dict | None:
         """조직 목록에서 빠진 레포를 직접 물어 본다. 레포마다 한 번만 묻는다.
 
         - 404: repo_not_found
         - 다른 이름으로 옮겨 감(이름 바꾸기, 이전): GitHub 이 새 레포로 넘겨 주므로 응답의 이름이 다르다. 키의 레포 이름으로는
-          더 찾을 수 없으므로 repo_renamed(06 문서 7장 "레포 이름을 바꾸면 원래 키 사라짐")
+          더 찾을 수 없으므로 repo_renamed(06 문서 7장 "레포 이름을 바꾸면 원래 키 사라짐"). 새 이름도 renamed_to 로 남긴다
+          (2026-11-10, R18-8: 정제가 옛 키와 새 키를 이어 DB 행을 지우지 않고 옮기게)
         - 그대로 있음: None(목록에서 잠깐 빠진 것으로 보고 사라짐으로 기록하지 않는다)
         """
         if repo not in self._repo_gone:
-            data = self.gh(ctx).rest_json(f"/repos/{ORG}/{repo}", ok404=True)
-            if data is None:
-                reason = "repo_not_found"
-            elif data.get("name") != repo or (data.get("owner") or {}).get("login") != ORG:
-                reason = "repo_renamed"
-            else:
-                reason = None
-            self._repo_gone[repo] = reason
+            self._repo_gone[repo] = repo_gone_from(self.gh(ctx).rest_json(f"/repos/{ORG}/{repo}", ok404=True), repo)
         return self._repo_gone[repo]
 
     def report_extra(self, ctx: Context, **more) -> None:

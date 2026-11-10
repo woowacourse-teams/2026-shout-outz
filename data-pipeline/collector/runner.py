@@ -242,9 +242,15 @@ class Source:
         """색인 한 줄이 속한 사라짐 확인 묶음."""
         return None
 
-    def confirm_gone(self, ctx: Context, entry: dict) -> str | None:
-        """목록에 없는 아는 키가 정말 사라졌는지. 사라졌으면 이유(예: http_404), 아니면 None."""
+    def confirm_gone(self, ctx: Context, entry: dict) -> str | dict | None:
+        """목록에 없는 아는 키가 정말 사라졌는지. 사라졌으면 이유(예: http_404), 아니면 None.
+
+        이유에 값을 더 남길 때는 dict(예: {"reason": "repo_renamed", "renamed_to": "2026-New"}).
+        """
         return None
+
+    def recheck_gone(self, ctx: Context) -> None:
+        """사라짐으로 기록한 문서를 다시 열어 봐 되살아났으면 사라짐 표시를 지운다. 기본은 하지 않음(블로그만, R18-9)."""
 
     def finish(self, ctx: Context) -> None:
         """상태 저장, 보고서 원천별 칸 채우기 등."""
@@ -341,9 +347,15 @@ def _run_source(source: Source, ctx: Context) -> None:
                 rep.fail(key, f"gone_check_{type(exc).__name__}")
                 continue
             if reason:
-                index.mark_gone(key, ctx.now_iso(), reason)
+                extra = dict(reason) if isinstance(reason, dict) else {"reason": reason}
+                index.mark_gone(key, ctx.now_iso(), extra.pop("reason"), **extra)
                 rep.add("gone")
                 rep.gone_keys.append(key)
+        try:
+            source.recheck_gone(ctx)
+        except Exception as exc:  # 다시 확인은 덤이라 실패해도 원천 전체를 오류로 만들지 않는다
+            log.exception("%s 사라진 문서 다시 확인 실패", source.name)
+            rep.fail("(gone_recheck)", f"gone_recheck_{type(exc).__name__}")
 
     # 색인을 먼저 저장한다. finish 가 상태(위키 커밋 등)를 먼저 저장했는데 색인 저장이 실패하면,
     # 다음 실행이 그 상태를 보고 받은 문서를 다시 보지 않게 된다(08 문서 4-5)

@@ -40,9 +40,17 @@ class Index:
         self.entries[entry["external_key"]] = entry
         self._touch()
 
-    def mark_gone(self, key: str, at: str, reason: str) -> None:
-        self.entries[key]["gone"] = {"at": at, "reason": reason}
+    def mark_gone(self, key: str, at: str, reason: str, **extra) -> None:
+        """사라짐 기록. extra 는 이유에 딸린 값(예: 레포 이름이 바뀌면 renamed_to, 2026-11-10 R18-8)."""
+        self.entries[key]["gone"] = {"at": at, "reason": reason, **extra}
         self._touch()
+
+    def note_gone_check(self, key: str, at: str) -> None:
+        """사라진 문서를 다시 열어 봤지만 아직 없을 때, 다시 확인한 시각만 남긴다(블로그, R18-9)."""
+        gone = self.entries[key].get("gone")
+        if gone:
+            gone["checked_at"] = at
+            self._touch()
 
     def clear_gone(self, key: str) -> None:
         if self.entries[key].get("gone"):
