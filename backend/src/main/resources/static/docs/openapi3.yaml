@@ -1321,6 +1321,64 @@ paths:
                     :\"포트폴리오 원장 변경 전에 포트폴리오 잠금 획득\",\"url\":\"https://github.com/woowacourse-teams/2026-DAYNOMY/blob/main/docs/adr.md\"\
                     ,\"summary\":\"비관적 잠금으로 원장 정합성을 지켜요.\",\"publishedAt\":\"2026-10-20T05:12:00Z\"\
                     ,\"platform\":null,\"team\":null}]},\"talks\":{\"items\":[]}}}"
+  /api/v1/resources/topics:
+    get:
+      tags:
+      - Resource
+      summary: 기술 주제 분야별 조회
+      description: |-
+        검색 첫 화면의 '분야별 키워드'에 보여줄 기술 주제 전체를 분야별로 묶어 준다. 로그인 없이 볼 수 있다.
+        분야는 BACKEND, FRONTEND, COMMON, MOBILE 순서로 항상 4개를 준다. 주제가 없는 분야는 빈 배열이다.
+        분야 안의 주제는 이름의 가나다순이다. 영문은 대소문자를 가리지 않고 한글보다 앞에 온다.
+        자료가 없는 주제도 포함한다.
+      operationId: resource-topics
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceTopicsSuccessResponse"
+              examples:
+                resource-topics:
+                  value: "{\"status\":\"success\",\"data\":[{\"side\":\"BACKEND\"\
+                    ,\"topics\":[{\"topicId\":\"jpa\",\"name\":\"JPA/Hibernate\"},{\"\
+                    topicId\":\"concurrency\",\"name\":\"동시성 제어/락\"}]},{\"side\":\"\
+                    FRONTEND\",\"topics\":[{\"topicId\":\"react_rendering\",\"name\"\
+                    :\"React 렌더링/훅\"}]},{\"side\":\"COMMON\",\"topics\":[{\"topicId\"\
+                    :\"cicd\",\"name\":\"CI/CD\"}]},{\"side\":\"MOBILE\",\"topics\"\
+                    :[{\"topicId\":\"android\",\"name\":\"Android\"}]}]}"
+  /api/v1/resources/topics/popular:
+    get:
+      tags:
+      - Resource
+      summary: 많이 다룬 기술 주제 조회
+      description: |-
+        검색 첫 화면의 '많이 다룬 키워드'에 보여줄 기술 주제를 준다. 로그인 없이 볼 수 있다.
+        삭제되지 않은 자료(블로그, PR과 팀 문서, 테코톡)가 많은 순, 같으면 이름의 가나다순이다.
+        자료가 없는 주제는 넣지 않는다. size가 1~20이 아니면 400(VALIDATION_FAILED)으로 응답한다.
+      operationId: resource-topics-popular
+      parameters:
+      - name: size
+        in: query
+        description: "조회 개수(1~20), 기본값 10"
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceTopicsPopularSuccessResponse"
+              examples:
+                resource-topics-popular:
+                  value: "{\"status\":\"success\",\"data\":[{\"topicId\":\"cicd\"\
+                    ,\"name\":\"CI/CD\",\"resourceCount\":128},{\"topicId\":\"monitoring\"\
+                    ,\"name\":\"모니터링/관측성\",\"resourceCount\":97}]}"
   /api/v1/resources/{resourceId}:
     get:
       tags:
@@ -8321,6 +8379,72 @@ components:
                         type: string
                         description: 원문 주소
           description: 섹션별 검색 결과
+        status:
+          type: string
+          description: 응답 상태
+    ResourceTopicsPopularSuccessResponse:
+      title: ResourceTopicsPopularSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 많이 다룬 주제 목록
+          items:
+            required:
+            - name
+            - resourceCount
+            - topicId
+            type: object
+            properties:
+              topicId:
+                type: string
+                description: 기술 주제 ID
+              resourceCount:
+                type: number
+                description: 이 주제의 자료 수
+              name:
+                type: string
+                description: 기술 주제 이름
+        status:
+          type: string
+          description: 응답 상태
+    ResourceTopicsSuccessResponse:
+      title: ResourceTopicsSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 분야 목록
+          items:
+            required:
+            - side
+            - topics
+            type: object
+            properties:
+              side:
+                type: string
+                description: "분야. BACKEND, FRONTEND, COMMON, MOBILE 중 하나"
+              topics:
+                type: array
+                description: 분야의 주제 목록
+                items:
+                  required:
+                  - name
+                  - topicId
+                  type: object
+                  properties:
+                    topicId:
+                      type: string
+                      description: 기술 주제 ID
+                    name:
+                      type: string
+                      description: 기술 주제 이름
         status:
           type: string
           description: 응답 상태
