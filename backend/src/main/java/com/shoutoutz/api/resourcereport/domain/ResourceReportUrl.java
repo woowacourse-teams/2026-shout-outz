@@ -14,6 +14,10 @@ public record ResourceReportUrl(String value) {
 
     private static final int MAX_LENGTH = 500;
     private static final Pattern GITHUB_CONTENT_URL = Pattern.compile("^https://github\\.com/[\\w.-]+/[\\w.-]+/.+$");
+    /** 경로의 . 이나 .. 조각. 브라우저는 %2e 도 점으로 본다. */
+    private static final Pattern DOT_SEGMENT = Pattern.compile("(?i)/(?:\\.|%2e){1,2}(?=/|$)");
+    /** 브라우저가 / 로 읽는 \ 와, 주소를 읽기 전에 지우는 탭, 줄바꿈 같은 제어 문자 */
+    private static final Pattern BACKSLASH_OR_CONTROL = Pattern.compile("[\\\\\\p{Cntrl}]");
 
     /**
      * @param rawUrl        사용자가 입력한 주소
@@ -23,7 +27,8 @@ public record ResourceReportUrl(String value) {
         String normalized = normalize(rawUrl);
         if (normalized.isEmpty()
                 || normalized.codePointCount(0, normalized.length()) > MAX_LENGTH
-                || !GITHUB_CONTENT_URL.matcher(normalized).matches()) {
+                || !GITHUB_CONTENT_URL.matcher(normalized).matches()
+                || isRewrittenByBrowser(normalized)) {
             throw new BadRequestException(ResourceReportErrorCode.RESOURCE_REPORT_URL_INVALID);
         }
         if (!isInRepository(normalized, repositoryUrl)) {
@@ -60,6 +65,15 @@ public record ResourceReportUrl(String value) {
             return query;
         }
         return Math.min(query, fragment);
+    }
+
+    /**
+     * 브라우저는 주소를 열기 전에 탭과 줄바꿈을 지우고, \ 를 / 로 읽고, . 과 .. 조각을 풀어 쓴다.
+     * 'https://github.com/woowacourse-teams/repo/../other/pull/1' 은 리포지토리 접두사 검사를 지나도
+     * 다른 리포지토리로 열리므로 이런 주소는 받지 않는다.
+     */
+    private static boolean isRewrittenByBrowser(String url) {
+        return DOT_SEGMENT.matcher(url).find() || BACKSLASH_OR_CONTROL.matcher(url).find();
     }
 
     private static boolean isInRepository(String url, String repositoryUrl) {

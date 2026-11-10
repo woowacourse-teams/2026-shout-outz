@@ -58,6 +58,35 @@ class ResourceReportUrlTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
+            "https://github.com/woowacourse-teams/2026-shout-outz/../other-repo/pull/1",
+            "https://github.com/woowacourse-teams/2026-shout-outz/%2e%2e/other-repo/pull/1",
+            "https://github.com/woowacourse-teams/2026-shout-outz/%2E./other-repo/pull/1",
+            "https://github.com/woowacourse-teams/2026-shout-outz/..",
+            "https://github.com/woowacourse-teams/2026-shout-outz/./pull/1",
+            "https://github.com/woowacourse-teams/2026-shout-outz/..\\other-repo/pull/1",
+            "https://github.com/woowacourse-teams/2026-shout-outz/.\t./other-repo/pull/1"
+    })
+    @DisplayName("브라우저가 다른 경로로 풀어 여는 주소는 리포지토리 접두사가 맞아도 거부한다")
+    void rejectsUrlRewrittenByBrowser(String input) {
+        assertThatThrownBy(() -> ResourceReportUrl.of(input, REPOSITORY_URL))
+                .isInstanceOf(BadRequestException.class)
+                .extracting("errorCode")
+                .isEqualTo(ResourceReportErrorCode.RESOURCE_REPORT_URL_INVALID);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "https://github.com/woowacourse-teams/2026-shout-outz/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
+            "https://github.com/woowacourse-teams/2026-shout-outz/compare/main...feature",
+            "https://github.com/woowacourse-teams/2026-shout-outz/blob/main/docs/v1..v2.md"
+    })
+    @DisplayName("점이 들어간 파일이나 브랜치 이름은 점 조각이 아니므로 받는다")
+    void acceptsNamesWithDots(String input) {
+        assertThat(ResourceReportUrl.of(input, REPOSITORY_URL).value()).isEqualTo(input);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
             "https://github.com/woowacourse-teams/2026-other-team/pull/1",
             "https://github.com/woowacourse-teams/2026-shout-outz-fork/pull/1",
             "https://github.com/someone/2026-shout-outz/pull/1"
