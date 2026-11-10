@@ -3,9 +3,9 @@ import { useState, type ReactNode } from 'react';
 
 import type { Material } from '@/apis/explore';
 import { requirementRecommendationsQuery, type JobRequirement } from '@/apis/job-posting';
+import { DotTab } from '@/components/explore/DotTab';
 import { MaterialList, TechTalkList } from '@/components/explore/MaterialList';
 import { recommendationToMaterial } from '@/components/job-postings/recommendationMaterial';
-import { cn } from '@/utils/cn';
 import { getApiErrorMessage } from '@/utils/error';
 
 type KindFilter = 'ALL' | 'BLOG' | 'DOCUMENT' | 'TECH_TALK';
@@ -92,22 +92,22 @@ export function RequirementRecommendations({
         aria-label="자료 종류"
         className="-mb-3 flex flex-wrap items-center gap-4.5"
       >
-        <KindTab
+        <DotTab
           selected={filter === 'ALL'}
           count={entries.length}
           onSelect={() => setFilter('ALL')}
         >
           전체
-        </KindTab>
+        </DotTab>
         {groups.map((group) => (
-          <KindTab
+          <DotTab
             key={group.kind}
             selected={filter === group.kind}
             count={group.materials.length}
             onSelect={() => setFilter(group.kind)}
           >
             {group.title}
-          </KindTab>
+          </DotTab>
         ))}
       </div>
 
@@ -139,38 +139,6 @@ export function RequirementRecommendations({
         </section>
       ))}
     </div>
-  );
-}
-
-function KindTab({
-  selected,
-  count,
-  onSelect,
-  children,
-}: {
-  selected: boolean;
-  count: number;
-  onSelect: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={selected}
-      onClick={onSelect}
-      className={cn(
-        'focus-visible:outline-primary-600 inline-flex cursor-pointer items-center gap-1.5 rounded-sm text-sm focus-visible:outline-2',
-        selected ? 'font-semibold text-gray-900' : 'font-medium text-gray-400 hover:text-gray-700',
-      )}
-    >
-      <span
-        aria-hidden="true"
-        className={cn('size-1.5 rounded-full', selected ? 'bg-gray-900' : 'bg-transparent')}
-      />
-      {children}
-      <span className="font-medium text-gray-400">{count}</span>
-    </button>
   );
 }
 
