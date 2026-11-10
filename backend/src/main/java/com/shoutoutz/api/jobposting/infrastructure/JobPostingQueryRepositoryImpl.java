@@ -150,6 +150,7 @@ public class JobPostingQueryRepositoryImpl implements JobPostingQueryRepository 
     public List<RecommendedResource> findRecommendations(long requirementId) {
         return jdbcTemplate.query("""
                         SELECT
+                            document.id AS resource_id,
                             recommendation.verdict,
                             recommendation.resource_source,
                             document.title,
@@ -173,6 +174,7 @@ public class JobPostingQueryRepositoryImpl implements JobPostingQueryRepository 
                         """,
                 new MapSqlParameterSource("requirementId", requirementId),
                 (resultSet, rowNumber) -> new RecommendedResource(
+                        resultSet.getLong("resource_id"),
                         RecommendationVerdict.valueOf(resultSet.getString("verdict")),
                         resultSet.getString("resource_source"),
                         resultSet.getString("title"),

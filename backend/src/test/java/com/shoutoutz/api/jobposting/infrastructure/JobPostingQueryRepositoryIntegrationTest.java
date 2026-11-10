@@ -303,12 +303,13 @@ class JobPostingQueryRepositoryIntegrationTest {
     void 역량별_자료에_카드_칸을_담고_팀_이름은_연결된_프로젝트에서_가져온다() {
         long requirementId = requirementIds(visiblePosting(NOW)).getFirst();
         long projectId = insertProject("아맞다", false);
-        jdbcTemplate.update("""
+        long resourceId = jdbcTemplate.queryForObject("""
                 INSERT INTO resource_documents (source, external_key, version, title, url, prompt_version, updated_at,
                                                 project_id, published_at, content_type, author_display)
                 VALUES ('github-pr', 'pr-1', 1, '도메인 비핵심 기능 스레드 분리', 'https://github.com/example/pull/1', 'v1',
                         now(), ?, '2025-10-15T00:00:00Z', 'implementation', '크루')
-                """, projectId);
+                RETURNING id
+                """, Long.class, projectId);
         jdbcTemplate.update("""
                 INSERT INTO requirement_recommendations (job_requirement_id, resource_source, resource_external_key,
                                                          verdict, reason, description, evidence, similarity_score, created_at)
@@ -316,7 +317,7 @@ class JobPostingQueryRepositoryIntegrationTest {
                 """, requirementId);
 
         assertThat(jobPostingQueryRepository.findRecommendations(requirementId)).containsExactly(new RecommendedResource(
-                RecommendationVerdict.MATCH, "github-pr", "도메인 비핵심 기능 스레드 분리", "https://github.com/example/pull/1",
+                resourceId, RecommendationVerdict.MATCH, "github-pr", "도메인 비핵심 기능 스레드 분리", "https://github.com/example/pull/1",
                 "스레드풀을 나눈 설계를 볼 수 있어요.", Instant.parse("2025-10-15T00:00:00Z"), "implementation", "아맞다", "크루"));
     }
 
