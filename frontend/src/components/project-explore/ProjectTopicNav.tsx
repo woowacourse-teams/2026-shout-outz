@@ -33,7 +33,7 @@ export function ProjectTopicNav({ topic, onTopicChange }: ProjectTopicNavProps) 
     <nav aria-label="기술 주제">
       <p className="px-3 pb-2 text-sm font-bold text-gray-900">직군</p>
       <ul className="flex flex-col gap-0.5 rounded-xl bg-gray-50 p-1">
-        {/* PROTOTYPE-DIFF: 데스크톱 프로토타입 직군 목록에는 공통이 없지만, 모바일 바텀시트와 같게 공통도 고를 수 있게 둔다. */}
+        {/* 모바일 바텀시트와 같게 공통도 고를 수 있게 둔다. */}
         {[{ code: 'ALL' as const, shortName: '전체' }, ...data.groups].map((group) => (
           <li key={group.code}>
             <button

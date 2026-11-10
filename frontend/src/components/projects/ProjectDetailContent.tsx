@@ -36,7 +36,6 @@ export function ProjectDetailContent({ slug, tab, onTabChange }: ProjectDetailCo
       <title>{project.title} | shout-outz</title>
       <meta name="description" content={project.tagline} />
       <ProjectDetailHeader project={project} />
-      {/* PROTOTYPE-DIFF: 기존 Tab(underline)을 써서 탭 간격과 밑줄 두께가 프로토타입(28px 간격, 2px 밑줄)과 조금 다르다. */}
       <Tab
         variant="underline"
         size="sm"

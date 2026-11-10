@@ -43,7 +43,7 @@ export function ExplorePage({
           onSearch={onSearch}
           {...(tab === 'project' && {
             activeSuggestion: topic,
-            // ASSUMPTION: 프로젝트 탭의 추천 검색어는 "이런 주제를 찾아보세요"라 검색어 대신 기술 주제 필터로 건다. 같은 것을 다시 누르면 푼다.
+            // 프로젝트 탭의 추천 검색어는 "이런 주제를 찾아보세요"라 검색어 대신 기술 주제 필터로 건다. 같은 것을 다시 누르면 푼다.
             onSuggestionSelect: (suggestion: string) =>
               onTopicChange(suggestion === topic ? null : suggestion),
           })}
