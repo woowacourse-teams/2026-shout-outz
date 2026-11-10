@@ -71,7 +71,7 @@ it('목록의 지정 위치에 추천을 넣고, 미리보기에서 작성 폼�
   );
   const router = renderRoute('/community?type=QUESTION&sort=POPULAR');
   const link = await screen.findByRole('button', { name: `추천 질문: ${recommendation.title}` });
-  const fifth = screen.getByRole('link', { name: '기존 질문 5' }).closest('article')!;
+  const fifth = screen.getByRole('link', { name: '기존 질문 5' }).closest('li')!;
   expect(fifth.nextElementSibling).toContainElement(link);
   await user.click(link);
   expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(recommendation.title);
