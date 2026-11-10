@@ -22,7 +22,7 @@ export function FeedDetailPage({ feedId }: { feedId: number }) {
   return (
     <div className="bg-background flex min-h-dvh flex-col">
       <AppGnb />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-16 md:px-6 md:pt-10 md:pb-28">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-6 pt-10 pb-28">
         <section className="min-w-0" aria-label="커뮤니티 글 상세">
           <AsyncBoundary key={feedId}>
             <FeedDetailContent feedId={feedId} />
@@ -91,7 +91,6 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
             <RelatedQuestions key={feed.feedId} items={feed.relatedQuestionRecommendations.items} />
           </ClientOnly>
         )}
-      {/* PROTOTYPE-DIFF: 좋아요 버튼은 매거진 상세에서도 써서 기존 모양을 둔다. 프로토타입은 조금 더 작은 흰 알약(아이콘 16px, 글자 14px)이다. */}
       <div className="mt-8 flex justify-center">
         <FeedLikeButton
           feedId={feed.feedId}
@@ -120,8 +119,6 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
         <h2 className="mb-3.5 text-xl font-bold text-gray-900">
           {commentLabel} <span className="text-primary-600">{feed.commentCount ?? 0}</span>
         </h2>
-        {/* PROTOTYPE-DIFF: 댓글 영역은 매거진 상세에서도 써서 기존 모양을 둔다. 프로토타입은 비로그인일 때
-            "로그인하고 답변을 남겨 보세요" 입력 줄과 등록 버튼, "아직 답변이 없어요. 첫 번째 답변을 남겨 보세요." 안내다. */}
         {/* 보는 사람(세션)에 따라 목록이 달라지므로 브라우저에서만 그립니다. */}
         <ClientOnly>
           <Comments

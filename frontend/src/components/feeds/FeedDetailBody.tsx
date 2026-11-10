@@ -16,7 +16,7 @@ export function FeedDetailBody({ feed, author }: { feed: Feed; author?: ReactNod
         {feed.categories.map((category) => category.displayName).join(' · ') ||
           (feed.feedType === 'QUESTION' ? '질문' : '이야기')}
       </p>
-      <h1 className="mt-2.5 text-2xl leading-tight font-extrabold tracking-tight break-words text-gray-900 md:text-3xl">
+      <h1 className="mt-2.5 text-3xl leading-tight font-extrabold tracking-tight break-words text-gray-900">
         {feed.feedType === 'QUESTION' && <span className="text-primary-600 mr-2">Q.</span>}
         {feed.title}
       </h1>
@@ -26,7 +26,6 @@ export function FeedDetailBody({ feed, author }: { feed: Feed; author?: ReactNod
         <FeedMarkdown content={feed.content} />
       </div>
       {linkPreview?.url && (
-        // PROTOTYPE-DIFF: 링크 미리보기는 댓글에서도 써서 기존 모양을 둔다. 프로토타입은 회색 테두리 카드에 왼쪽 아이콘 칸이 있다.
         <div className="mt-5">
           <LinkPreview
             {...linkPreview}

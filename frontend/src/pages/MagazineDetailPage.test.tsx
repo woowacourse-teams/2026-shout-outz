@@ -99,7 +99,7 @@ it('매거진 좋아요를 누르면 좋아요 수가 바뀐다', async () => {
 it('매거진에 댓글을 남기면 목록과 댓글 수에 반영된다', async () => {
   renderRoute('/magazines/1');
 
-  expect(await screen.findByText('아직 댓글이 없습니다.')).toBeInTheDocument();
+  expect(await screen.findByText('아직 댓글이 없어요.')).toBeInTheDocument();
   await userEvent.type(screen.getByLabelText('댓글 남기기'), '인터뷰 잘 읽었어요');
   await userEvent.click(screen.getByRole('button', { name: '댓글 작성' }));
 
