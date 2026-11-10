@@ -58,7 +58,7 @@ export function PopularFeedList({ feedType }: { feedType?: FeedType }) {
             </h2>
             <p className="text-xs text-gray-500">크루들이 요즘 많이 본 이야기예요.</p>
           </div>
-          {/* ASSUMPTION: "모두 보기"는 피드 목록을 인기순으로 연다. */}
+          {/* "모두 보기"는 피드 목록을 인기순으로 연다. */}
           <Link
             to="/community"
             search={{ type: 'POST', sort: 'POPULAR' }}

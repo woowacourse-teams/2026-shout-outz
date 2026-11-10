@@ -73,13 +73,13 @@ export function FeedList({ sort, feedType }: { sort: FeedSort; feedType?: FeedTy
                     page.meta.recommendationSlots
                       ?.filter((slot) => slot.afterFeedId === feed.feedId)
                       .map((slot) => (
-                        // PROTOTYPE-DIFF: 추천 질문 카드는 글 상세의 관련 질문에서도 써서 기존 카드를 그대로 둔다.
-                        // 프로토타입은 테두리 없는 파란 배경, 큰 제목, 본문 없음, "이 질문 이어서 하기 →" 문구다.
+                        // 추천 질문 카드는 글 상세의 관련 질문과 같은 모양을 쓰되, 목록에서는 테두리만 뺀다.
                         <li key={slot.recommendation.recommendationId} className="py-2">
                           <RecommendationCard
                             recommendation={slot.recommendation}
                             surface="feed_list"
                             position={slotPositions.get(slot) ?? 0}
+                            className="border-0"
                           />
                         </li>
                       ))}

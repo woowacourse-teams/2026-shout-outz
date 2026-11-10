@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from '@tanstack/react-router';
 import { IconArrowUpRight, IconSparkles } from '@tabler/icons-react';
 import type { QuestionRecommendation } from '@/types/recommendation';
 import { toPlainText } from '@/utils/markdown';
+import { cn } from '@/utils/cn';
 import { analytics, type RecommendationSurface } from '@/utils/analytics';
 
 /** 카드가 이 비율 이상 화면에 보이면 노출로 센다. */
@@ -14,9 +15,15 @@ interface RecommendationCardProps {
   surface: RecommendationSurface;
   /** 같은 화면의 추천 카드 중 몇 번째인지. 0부터 센다. */
   position: number;
+  className?: string;
 }
 
-export function RecommendationCard({ recommendation, surface, position }: RecommendationCardProps) {
+export function RecommendationCard({
+  recommendation,
+  surface,
+  position,
+  className,
+}: RecommendationCardProps) {
   const navigate = useNavigate();
   const from = useLocation({ select: (location) => location.href });
   const { recommendationId } = recommendation;
@@ -45,7 +52,10 @@ export function RecommendationCard({ recommendation, surface, position }: Recomm
   return (
     <article
       ref={card}
-      className="group border-primary-100 bg-primary-50/40 hover:border-primary-300 relative min-w-0 rounded-lg border p-5 transition-colors md:p-6"
+      className={cn(
+        'group border-primary-100 bg-primary-50/40 hover:border-primary-300 relative min-w-0 rounded-lg border p-5 transition-colors md:p-6',
+        className,
+      )}
     >
       <button
         type="button"

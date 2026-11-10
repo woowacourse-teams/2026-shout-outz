@@ -54,7 +54,6 @@ export function FeedListItem({ feed, surface }: { feed: Feed; surface: FeedSurfa
       <p className="line-clamp-2 text-sm leading-6 break-words text-gray-600">
         {toPlainText(feed.content)}
       </p>
-      {/* ASSUMPTION: 프로토타입 목록에는 이미지가 있는 글이 없어, 기존 카드처럼 첫 이미지와 남은 장수를 보여 준다. */}
       {firstMedia && (
         <div className="pointer-events-none relative w-36">
           <Image
