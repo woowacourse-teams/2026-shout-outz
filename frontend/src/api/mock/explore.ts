@@ -28,7 +28,7 @@ const POPULAR_TOPICS = [
   'Android',
 ];
 
-const TOPIC_FIELDS: TopicField[] = [
+export const TOPIC_FIELDS: TopicField[] = [
   {
     name: '백엔드',
     topics: [
