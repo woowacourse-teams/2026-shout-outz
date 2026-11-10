@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
 import com.epages.restdocs.apispec.Schema;
+import com.epages.restdocs.apispec.SimpleType;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.resourcesearch.application.ResourceQueryService;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
@@ -70,7 +71,7 @@ class ResourceHttpApiDetailTest {
                                 .description("""
                                         검색 결과나 최근 자료 카드를 눌렀을 때 이동하는 자료 상세 화면의 정리 내용을 준다. 로그인 없이 볼 수 있다.
                                         없거나 삭제된 자료면 404(RESOURCE_NOT_FOUND), resourceId가 1 이상의 정수가 아니면 400(VALIDATION_FAILED)으로 응답한다.""")
-                                .pathParameters(parameterWithName("resourceId").description("자료 ID"))
+                                .pathParameters(parameterWithName("resourceId").type(SimpleType.INTEGER).description("자료 ID"))
                                 .responseSchema(Schema.schema("ResourceDetailSuccessResponse"))
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
