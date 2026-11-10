@@ -222,7 +222,7 @@ describe('ExplorePage 프로젝트 탭', () => {
     expect(topic).toHaveAttribute('aria-pressed', 'true');
 
     await user.click(topic);
-    expect(await screen.findByRole('heading', { name: '프로젝트 3' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: '프로젝트 13' })).toBeVisible();
   });
 
   it('추천 주제를 누르면 기술 주제로 거른다', async () => {
@@ -256,7 +256,7 @@ describe('ExplorePage 프로젝트 탭', () => {
     await waitFor(() =>
       expect(within(cards).getAllByRole('link')[0]).toHaveAccessibleName(/Dropit/),
     );
-    expect(within(cards).getAllByRole('link')[1]).toHaveAccessibleName(/Shout-outz/);
+    expect(within(cards).getAllByRole('link')[1]).toHaveAccessibleName(/여기담/);
   });
 
   it('모바일 바텀시트에서 직군을 거쳐 주제를 고른다', async () => {
@@ -276,7 +276,7 @@ describe('ExplorePage 프로젝트 탭', () => {
     expect(await screen.findByRole('heading', { name: '프로젝트 1' })).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: '기술 주제 해제' }));
-    expect(await screen.findByRole('heading', { name: '프로젝트 3' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: '프로젝트 13' })).toBeVisible();
   });
 
   it('맞는 프로젝트가 없으면 안내를 보여준다', async () => {

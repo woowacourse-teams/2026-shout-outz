@@ -48,6 +48,16 @@ const PROJECT_TOPICS: Record<string, string[]> = {
     'CI/CD',
   ],
   'code-review-bot': ['LLM/AI 연동', 'CI/CD', '로깅/로그 수집', 'Android'],
+  'jachwi-sunbae': ['동시성 제어/락', 'JPA/Hibernate', '인덱스/쿼리 최적화'],
+  devica: ['동시성 제어/락', '인덱스/쿼리 최적화', '웹 성능 최적화'],
+  knot: ['동시성 제어/락', 'JPA/Hibernate', 'CI/CD'],
+  jarihana: ['동시성 제어/락', '실시간 통신(WebSocket/SSE)', 'React 렌더링/훅'],
+  yeogidam: ['동시성 제어/락', 'Android'],
+  ssok: ['동시성 제어/락', '번들러/빌드 최적화', '무중단 배포'],
+  artin: ['동시성 제어/락', '웹 성능 최적화', 'React 렌더링/훅'],
+  'gachi-gacha': ['동시성 제어/락', 'JPA/Hibernate', 'DB 설계/정규화'],
+  mohaeng: ['Android'],
+  jupjup: ['인증/인가', 'DB 설계/정규화'],
 };
 
 const topicsOf = (slug: string) => PROJECT_TOPICS[slug] ?? [];

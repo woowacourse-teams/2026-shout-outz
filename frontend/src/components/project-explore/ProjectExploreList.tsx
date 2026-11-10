@@ -2,7 +2,7 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { IconChevronDown } from '@tabler/icons-react';
 
 import { exploreProjectsQuery, type ExploreProjectFilter } from '@/apis/project-explore';
-import { ProjectCardLink } from '@/components/projects/ProjectCardLink';
+import { ExploreProjectCard } from '@/components/project-explore/ExploreProjectCard';
 import type { ProjectSort } from '@/types/project';
 import { cn } from '@/utils/cn';
 
@@ -21,14 +21,27 @@ export function ProjectExploreList({ filter, onSortChange }: ProjectExploreListP
   const query = useSuspenseInfiniteQuery(exploreProjectsQuery(filter));
   const projects = query.data.pages.flatMap((page) => page.projects);
   const totalCount = query.data.pages[0]?.meta.totalCount ?? projects.length;
+  // ASSUMPTION: 프로토타입은 기술 주제만 보여 준다. 검색어와 주제가 함께 걸리면 둘 다 " · "로 잇는다.
+  const searchedBy = [filter.keyword.trim(), filter.topic].filter(Boolean).join(' · ');
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xl font-bold text-gray-900">
-          프로젝트 <span className="font-medium text-gray-400">{totalCount}</span>
-        </h2>
-        <div role="group" aria-label="정렬" className="flex items-center text-sm text-gray-500">
+      <div className="flex items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h2 className="text-xl font-bold text-gray-900">
+            프로젝트 <span className="font-medium text-gray-400">{totalCount}</span>
+          </h2>
+          {searchedBy && (
+            <p className="mt-1 text-sm break-keep text-gray-500">
+              <b className="font-semibold text-gray-900">{searchedBy}</b> 키워드로 찾은 결과
+            </p>
+          )}
+        </div>
+        <div
+          role="group"
+          aria-label="정렬"
+          className="flex shrink-0 items-center text-sm text-gray-500"
+        >
           {SORT_OPTIONS.map(({ sort, label }, index) => (
             <span key={sort} className="flex items-center">
               {index > 0 && (
@@ -66,7 +79,7 @@ export function ProjectExploreList({ filter, onSortChange }: ProjectExploreListP
         >
           {projects.map((project) => (
             <li key={project.slug} className="min-w-0">
-              <ProjectCardLink project={project} surface="explore" />
+              <ExploreProjectCard {...project} />
             </li>
           ))}
         </ul>

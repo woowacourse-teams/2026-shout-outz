@@ -120,7 +120,7 @@ describe('필터 선택지 다시 불러오기', () => {
 
     await openFilterModal(user);
     const list = await screen.findByRole('list', { name: '기술 스택 필터' });
-    expect(screen.getByRole('button', { name: '3개 프로젝트 보기' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '13개 프로젝트 보기' })).toBeInTheDocument();
 
     await user.click(within(list).getByRole('checkbox', { name: /React/ }));
 
@@ -129,7 +129,7 @@ describe('필터 선택지 다시 불러오기', () => {
     expect(screen.queryByText('필터를 불러오는 중…')).not.toBeInTheDocument();
 
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: '2개 프로젝트 보기' })).toBeInTheDocument(),
+      expect(screen.getByRole('button', { name: '12개 프로젝트 보기' })).toBeInTheDocument(),
     );
   });
 });
