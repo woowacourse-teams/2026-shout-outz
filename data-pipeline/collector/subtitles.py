@@ -104,7 +104,8 @@ def _fill(store: Store, index: Index, rep: SourceReport, skipped: list[dict], re
             continue
         try:
             record = store.read_json(entry["path"])
-        except ValueError:  # 깨진 원본 한 건 때문에 뒤의 자막까지 멈추지 않게, 그 줄만 실패로 남긴다
+        except Exception as exc:  # 깨진 원본이나 S3 읽기 오류 한 건 때문에 뒤의 자막까지 멈추지 않게, 그 줄만 실패로(PR #586 리뷰)
+            log.warning("원본을 읽지 못함 %s: %r", key, exc)
             rep.fail(key, "raw_unreadable")
             continue
         if not isinstance(record, dict):

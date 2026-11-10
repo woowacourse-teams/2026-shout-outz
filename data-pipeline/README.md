@@ -127,9 +127,12 @@ ls -l /etc/shout-outz/data-pipeline.env                            # -rw------- 
 | `GITHUB_TOKEN` | 팀 GitHub 계정의 fine-grained 토큰. Repository access 는 Public repositories, Permissions 는 고르지 않는다(06 문서 5-8). 만료일을 적어 두고 그 전에 바꾼다 | GitHub 원천 네 개가 오류 |
 | `YOUTUBE_API_KEY` | YouTube Data API v3 키(04 문서 7-3) | 테코톡이 오류 |
 | `SERVICE_DB_HOST`, `SERVICE_DB_PORT`, `SERVICE_DB_NAME`, `SERVICE_DB_USER` | 서비스 DB 읽기 전용 접속 정보(03 문서 2-2) | 블로그가 오류 |
-| `SERVICE_DB_PASSWORD` | 읽기 전용 계정 비밀번호. 비우면 EC2 역할로 RDS IAM 인증 토큰을 만든다 | |
+| `SERVICE_DB_PASSWORD` | 읽기 전용 계정 비밀번호. 비우면 EC2 역할로 RDS IAM 인증 토큰을 만든다(아래 전제가 모두 갖춰져야 한다) | |
 
 값이 아직 없는 원천은 비워 두고 다른 원천부터 시험해도 된다. 그 원천만 오류로 남고 나머지는 돈다.
+
+- **비밀번호를 비워 RDS IAM 인증을 쓸 때의 전제:** RDS 인스턴스에서 IAM 데이터베이스 인증이 켜져 있어야 하고, DB 사용자에게 `rds_iam` 역할이 있어야 하며(PostgreSQL: `GRANT rds_iam TO <사용자>;`), EC2 역할에 그 DB 사용자로의 `rds-db:connect` 권한이 있어야 한다. 하나라도 없으면 블로그 대상 목록을 읽지 못한다. 셋을 갖추기 어려우면 비밀번호를 넣는다.
+- **값 적는 법:** 이 파일은 systemd(`EnvironmentFile`) 와 셸(`set -a && . 파일`) 이 함께 읽는다. 값에 `$`, 공백, 따옴표, `#` 가 없게 한다. 셸은 `$` 를 변수로 풀어 쓰지만 systemd 는 그대로 읽어서, 손으로 돌릴 때와 매일 실행이 서로 다른 값을 쓸 수 있다. 비밀번호에 이런 글자가 꼭 들어가야 하면 두 쪽에서 같은 값으로 읽히는지 `echo` 와 `systemctl show data-pipeline -p Environment` 로 확인한다.
 
 ### 6. 손으로 원천 하나씩 돌려 보기
 

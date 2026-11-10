@@ -8,7 +8,7 @@ from __future__ import annotations
 import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 import requests
 
@@ -35,6 +35,17 @@ class ResponseTooLarge(requests.RequestException):
     """응답 본문이 max_bytes 를 넘음. 1GB EC2 에서 큰 응답 하나가 수집 전체를 멈추지 않게 한다."""
 
 
+class RedirectBlocked(requests.RequestException):
+    """받지 않는 주소(내부 주소 등)로 넘기려는 리다이렉트를 따라가지 않음(2026-11-11, PR #586 리뷰).
+
+    처음 주소만 검사하면 글 주소가 302 로 169.254.169.254 같은 내부 주소로 넘길 때 그대로 따라가 응답을 저장한다.
+    """
+
+
+REDIRECT_CODES = (301, 302, 303, 307, 308)
+MAX_REDIRECTS = 5
+
+
 class ResponseTooSlow(requests.Timeout):
     """응답 하나를 받는 데 max_seconds 를 넘음(2026-11-09).
 
@@ -49,7 +60,8 @@ MAX_SECONDS = 120.0  # 응답 하나(연결부터 본문 끝까지)의 전체 �
 
 class Http:
     def __init__(self, host_delay: float = 0.0, timeout: float = 30.0, retries: int = 3, sleep=time.sleep, session=None,
-                 max_bytes: int | None = None, max_seconds: float | None = MAX_SECONDS, clock=time.monotonic) -> None:
+                 max_bytes: int | None = None, max_seconds: float | None = MAX_SECONDS, clock=time.monotonic,
+                 url_guard=None) -> None:
         self.s = session or requests.Session()
         self.s.headers["User-Agent"] = USER_AGENT
         self.host_delay = host_delay
@@ -63,6 +75,7 @@ class Http:
         self.max_bytes = max_bytes  # 있으면 본문을 나눠 읽다가 넘는 순간 멈춘다
         self.max_seconds = max_seconds  # 있으면 본문을 나눠 읽다가 요청부터 이만큼 지나면 멈춘다
         self.clock = clock
+        self.url_guard = url_guard  # 있으면 리다이렉트를 하나씩 따라가며 넘겨 갈 주소마다 이 검사를 통과해야 한다
 
     def _polite(self, url: str) -> None:
         if not self.host_delay:
@@ -110,7 +123,7 @@ class Http:
             self.calls += 1
             started = self.clock()
             try:
-                r = self.s.request(method, url, **kw)
+                r = self._send(method, url, **kw)
                 if read_here and r.status_code not in (429, 500, 502, 503, 504):
                     r = self._read_capped(r, started)
             except (requests.ConnectionError, requests.Timeout):
@@ -128,6 +141,26 @@ class Http:
             if read_here and not getattr(r, "_content_consumed", True):
                 r = self._read_capped(r, started)  # 다시 보낼 만한 상태 코드인데 횟수를 다 쓴 응답
             return r
+
+    def _send(self, method: str, url: str, **kw) -> requests.Response:
+        """요청 하나. url_guard 가 있으면 리다이렉트를 직접 따라가며 넘겨 갈 주소마다 검사한다."""
+        if not self.url_guard:
+            return self.s.request(method, url, **kw)
+        kw["allow_redirects"] = False
+        for _ in range(MAX_REDIRECTS + 1):
+            r = self.s.request(method, url, **kw)
+            location = r.headers.get("Location") if r.status_code in REDIRECT_CODES else None
+            if not location:
+                return r
+            nxt = urljoin(getattr(r, "url", None) or url, location)
+            r.close()
+            if not self.url_guard(nxt):
+                raise RedirectBlocked(f"받지 않는 주소로 넘기려 함: {url[:200]} -> {nxt[:200]}")
+            if r.status_code == 303 or (r.status_code in (301, 302) and method == "POST"):
+                method, kw = "GET", {k: v for k, v in kw.items() if k not in ("data", "json")}
+            url = nxt
+            self._polite(url)
+        raise requests.TooManyRedirects(f"리다이렉트가 {MAX_REDIRECTS}번을 넘음: {url[:200]}")
 
     def _backoff(self, seconds: float) -> None:
         self.retry_sec += seconds

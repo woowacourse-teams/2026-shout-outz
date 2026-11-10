@@ -11,7 +11,7 @@ from collector.keys import blog_key, raw_path
 from collector.runner import collect
 from collector.sources import blog as blog_mod
 from collector.sources.blog import BlogSource, Target, group_blogs
-from collector.sources.blog_platforms import (detect, shell_page_reason, find_feed_links, is_rilog_post, is_tistory_post, parse_feed,
+from collector.sources.blog_platforms import (detect, is_fetchable_url, shell_page_reason, find_feed_links, is_rilog_post, is_tistory_post, parse_feed,
                                               parse_sitemap)
 from collector.store import LocalStore
 
@@ -623,3 +623,62 @@ def test_gone_post_of_other_blog_is_not_rechecked(tmp_path):
     http.routes[f"{TIS}/2"] = page(2)
     store, sr, _ = run(tmp_path, http, other, day=9)
     assert sr.extra["gone_rechecked"] == 0 and Index(store, SRC).load().get(key)["gone"]
+
+
+
+# ---- PR #586 리뷰(2026-11-11) ----
+
+def test_fetchable_url_rejects_shorthand_ip_and_dotted_localhost():
+    for bad in ("http://127.1/x", "http://2130706433/x", "http://0x7f.1/x", "http://localhost./x", "http://a.localhost./x",
+                "http://169.254.169.254./latest", "https://abc.tistory.com:bad/3"):
+        assert not is_fetchable_url(bad), bad
+    for ok in ("https://abc.tistory.com/3", "https://8.8.8.8/x", "https://blog.example.com:8443/a", "https://deadbeef.io/x"):
+        assert is_fetchable_url(ok), ok
+
+
+def test_bad_port_url_in_feed_does_not_break_listing(tmp_path):
+    routes = generic_routes()
+    routes[f"{GEN}/atom.xml"] = ('<feed xmlns="http://www.w3.org/2005/Atom"><entry><link href="/2026/a/"/></entry>'
+                                 '<entry><link href="https://team.github.io:bad/2026/b/"/></entry></feed>')
+    store, sr, _ = run(tmp_path, FakeHttp(routes), [Target(5, "https://team.github.io", None)], day=0)
+    assert sr.counts["new"] == 1 and [n["type"] for n in sr.extra["notices"]] == ["url_rejected"]
+
+
+def test_generic_blog_keeps_registered_scheme_and_port():
+    assert detect("http://old-blog.example.com/posts/1").root == "http://old-blog.example.com"
+    assert detect("https://blog.example.com:8443/a").root == "https://blog.example.com:8443"
+    assert detect("blog.example.com").root == "https://blog.example.com"   # 스킴이 없으면 https
+    assert detect("http://abc.tistory.com/1").root == "https://abc.tistory.com"  # 플랫폼은 그대로 https
+
+
+def test_redirect_to_internal_address_is_not_followed():
+    """처음 주소만 검사하면 302 로 내부 주소에 넘겨 갈 수 있다. 넘겨 갈 주소마다 검사한다."""
+    import io
+    from collector.http import Http, RedirectBlocked
+
+    def resp(status, url, location=None, body=b"ok"):
+        r = requests.Response()
+        r.status_code, r.url, r.raw = status, url, io.BytesIO(body)
+        if location:
+            r.headers["Location"] = location
+        return r
+
+    class Session:
+        def __init__(self, answers):
+            self.headers, self.answers, self.calls = {}, dict(answers), []
+        def request(self, method, url, **kw):
+            self.calls.append((url, kw.get("allow_redirects")))
+            return self.answers[url]
+
+    s = Session({"https://evil.example/1": resp(302, "https://evil.example/1", "http://169.254.169.254/latest/meta-data")})
+    try:
+        Http(session=s, url_guard=is_fetchable_url).get("https://evil.example/1")
+        assert False
+    except RedirectBlocked:
+        pass
+    assert s.calls == [("https://evil.example/1", False)]   # 내부 주소로는 요청하지 않는다
+
+    s = Session({"https://a.example/1": resp(301, "https://a.example/1", "/2"),
+                 "https://a.example/2": resp(200, "https://a.example/2", body=b"post")})
+    r = Http(session=s, url_guard=is_fetchable_url).get("https://a.example/1")
+    assert r.status_code == 200 and r.content == b"post" and [u for u, _ in s.calls] == ["https://a.example/1", "https://a.example/2"]

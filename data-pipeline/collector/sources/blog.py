@@ -39,7 +39,7 @@ HOST_DELAY = 1.0       # 같은 호스트 1초에 1번 이하(03 문서 5-6)
 MAX_SITEMAPS = 50      # sitemap 묶음(sitemapindex)에서 따라갈 하위 sitemap 수 상한(한 블로그 전체)
 MAX_SITEMAP_DEPTH = 3  # 묶음 안의 묶음을 따라갈 깊이 상한(서로 가리키는 묶음에서 멈추려고)
 MAX_BYTES = 20 * 1024 * 1024  # 응답 하나의 크기 상한(20MB). 넘으면 그 블로그 목록이나 그 글만 실패
-NO_RETRY = {"robots_disallow", "http_404", "http_410"}  # 다시 받아도 같은 실패라 retry_urls 에 넣지 않는다
+NO_RETRY = {"robots_disallow", "http_404", "http_410", "error_RedirectBlocked"}  # 다시 받아도 같은 실패라 retry_urls 에 넣지 않는다
 RECHECK_DAILY_DAYS = 3   # 사라짐 기록 뒤 이 날수 동안은 매일 다시 열어 본다(R18-9)
 RECHECK_EVERY_DAYS = 7   # 그 뒤로는 이 날수마다
 MAX_VELOG_PAGES = 200  # GraphQL 페이지 상한(50편 x 200 = 1만 편). 커서가 돌면 멈추려고
@@ -163,7 +163,7 @@ class BlogSource(Source):
     @property
     def http(self) -> Http:
         if self._http is None:
-            self._http = Http(host_delay=HOST_DELAY, max_bytes=MAX_BYTES)
+            self._http = Http(host_delay=HOST_DELAY, max_bytes=MAX_BYTES, url_guard=is_fetchable_url)  # 리다이렉트도 검사(PR #586 리뷰)
         return self._http
 
     def _targets(self, ctx: Context) -> list[Target]:
@@ -400,7 +400,11 @@ class BlogSource(Source):
         if not is_fetchable_url(url):  # http(s) 가 아니거나 내부 주소(127.0.0.1, 169.254.169.254 등)
             self._notice("url_rejected", blog.root, f"받지 않는 주소라 뺌: {url[:200]}")
             return
-        key = blog_key(url)
+        try:
+            key = blog_key(url)
+        except ValueError:  # 포트가 숫자가 아닌 주소 등. 그 주소만 빼고 목록은 계속(PR #586 리뷰)
+            self._notice("url_rejected", blog.root, f"읽을 수 없는 주소라 뺌: {url[:200]}")
+            return
         item = items.get(key)
         if item is None:
             items[key] = Item(key, None, group=blog.root, data={

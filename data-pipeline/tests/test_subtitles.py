@@ -83,6 +83,21 @@ def test_import_unreadable_raw_does_not_stop_others(tmp_path):
     assert store.read_json(raw_path("youtube-tekotalk", "yt:v0000000001"))["subtitle"]["vtt"] == SUB["vtt"]
 
 
+def test_import_storage_error_on_one_raw_does_not_stop_others(tmp_path, monkeypatch):
+    """S3 읽기 오류(JSON 오류가 아닌 것)도 그 영상만 실패로 남기고 계속한다(PR #586 리뷰)."""
+    store = collected(tmp_path / "s", 2)
+    original = store.read_json
+    def flaky(path):
+        if "yt:v0000000000" in path or path == raw_path("youtube-tekotalk", "yt:v0000000000"):
+            raise RuntimeError("S3 가 잠깐 응답하지 않음")
+        return original(path)
+    monkeypatch.setattr(store, "read_json", flaky)
+    rep = do_import(tmp_path, store, result_file(tmp_path, [{"video_id": "v0000000000", "subtitle": SUB},
+                                                            {"video_id": "v0000000001", "subtitle": SUB}]))
+    sr = rep.sources["youtube-tekotalk"]
+    assert sr.counts["changed"] == 1 and sr.failure_reasons == {"raw_unreadable": 1}
+
+
 def test_template_runs_without_ids(capsys):
     from collector import subtitles_local
     assert subtitles_local.VIDEO_IDS == []

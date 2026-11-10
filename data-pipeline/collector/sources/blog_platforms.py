@@ -15,6 +15,7 @@ from __future__ import annotations
 import ipaddress
 import json
 import re
+import socket
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from html.parser import HTMLParser
@@ -90,7 +91,13 @@ def detect(url: str) -> Platform:
             return Platform(domain.split(".")[0], f"https://{host}", unsupported=why)
     if not host:
         return Platform(GENERIC, s, unsupported="주소에서 호스트를 알 수 없음")
-    return Platform(GENERIC, f"https://{host}", host)
+    # 범용 블로그는 등록된 스킴과 포트를 지킨다. https 가 없는 블로그를 https 로 바꾸면 피드를 못 찾는다(PR #586 리뷰)
+    scheme = parts.scheme if parts.scheme in ("http", "https") else "https"
+    try:
+        port = f":{parts.port}" if parts.port else ""
+    except ValueError:
+        port = ""
+    return Platform(GENERIC, f"{scheme}://{host}{port}", host)
 
 
 def _local(tag) -> str:
@@ -178,7 +185,8 @@ def is_fetchable_url(url: str) -> bool:
     """
     try:
         p = urlsplit(url)
-        host = (p.hostname or "").lower()
+        host = (p.hostname or "").lower().rstrip(".")  # 끝에 점이 붙은 이름(localhost.)도 같은 이름
+        p.port  # 포트가 숫자가 아니면 여기서 ValueError
     except ValueError:
         return False
     if p.scheme not in ("http", "https") or not host:
@@ -188,7 +196,13 @@ def is_fetchable_url(url: str) -> bool:
     try:
         ip = ipaddress.ip_address(host)
     except ValueError:
-        return True  # IP 가 아닌 도메인
+        # 127.1, 2130706433, 0x7f.1 처럼 줄여 쓴 IPv4 도 운영체제는 127.0.0.1 로 읽는다(PR #586 리뷰). 같은 규칙으로 읽어 본다
+        if not re.fullmatch(r"[0-9a-fx.]+", host):
+            return True  # IP 가 아닌 도메인
+        try:
+            ip = ipaddress.IPv4Address(socket.inet_aton(host))
+        except OSError:
+            return True
     return ip.is_global
 
 
