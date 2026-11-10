@@ -125,6 +125,17 @@ class FeedLinkPreviewRepositoryIntegrationTest {
     }
 
     @Test
+    void 기술_자료가_참조하는_캐시는_기준_시각_이전이어도_삭제하지_않는다() {
+        Instant cutoff = BASE.plus(1, ChronoUnit.DAYS);
+        long referencedByResource = insertCache("READY", 0, null, null, BASE);
+        linkToResource(referencedByResource);
+
+        linkPreviewRepository.deleteUnusedBefore(cutoff);
+
+        assertThat(existsCache(referencedByResource)).isTrue();
+    }
+
+    @Test
     void 피드_댓글과_프로젝트_댓글을_같은_캐시에_연결하고_각각_조회한다() {
         long feedCommentId = insertFeedComment();
         long projectCommentId = insertProjectComment();
@@ -183,6 +194,20 @@ class FeedLinkPreviewRepositoryIntegrationTest {
         jdbcTemplate.update(
                 "INSERT INTO feed_link_preview_refs (feed_id, cache_id) VALUES (?, ?)",
                 feed.getId(),
+                cacheId
+        );
+    }
+
+    private void linkToResource(long cacheId) {
+        Long documentId = jdbcTemplate.queryForObject("""
+                INSERT INTO resource_documents (
+                    source, external_key, version, title, url, prompt_version, updated_at
+                ) VALUES ('blog-post', ?, 1, '링크 미리보기 자료', 'https://example.com/resource', 'test-v1', now())
+                RETURNING id
+                """, Long.class, "link-preview-" + cacheId);
+        jdbcTemplate.update(
+                "INSERT INTO resource_link_preview_refs (document_id, cache_id) VALUES (?, ?)",
+                documentId,
                 cacheId
         );
     }

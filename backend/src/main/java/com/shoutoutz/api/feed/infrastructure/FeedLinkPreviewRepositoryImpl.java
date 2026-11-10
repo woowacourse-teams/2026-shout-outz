@@ -266,6 +266,9 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                 AND NOT EXISTS (
                     SELECT 1 FROM magazine_comment_link_preview_refs r WHERE r.cache_id = c.id
                 )
+                AND NOT EXISTS (
+                    SELECT 1 FROM resource_link_preview_refs r WHERE r.cache_id = c.id
+                )
                 AND (
                     (c.status = 'READY' AND c.fetched_at < :cutoff)
                     OR (c.status IN ('PENDING', 'FAILED') AND c.next_attempt_at < :cutoff)
