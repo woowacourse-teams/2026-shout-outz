@@ -74,12 +74,13 @@ class CareerCardTest {
     }
 
     @Test
-    @DisplayName("이력서 문장과 고려한 방법이 없으면 빈 목록으로 둔다")
+    @DisplayName("이력서 문장, 기술, 고려한 방법이 없으면 빈 목록으로 둔다")
     void nullListsBecomeEmpty() {
-        CareerCard card = new CareerCard(1L, "BE", "build", "분류", "제목", null, "목표", null, null, null, "구현",
+        CareerCard card = new CareerCard(1L, "BE", "build", "분류", "제목", null, null, "목표", null, null, null, "구현",
                 null, null);
 
         assertThat(card.resumeBullets()).isEmpty();
+        assertThat(card.techs()).isEmpty();
         assertThat(card.options()).isEmpty();
     }
 
@@ -93,7 +94,7 @@ class CareerCardTest {
             String result,
             String limits
     ) {
-        return new CareerCard(1L, "BE", template, "분류", "제목", List.of("문장"), problem, cause, options,
-                decisionReason, solution, result, limits);
+        return new CareerCard(1L, "BE", template, "분류", "제목", List.of("문장"), List.of("Spring"), problem, cause,
+                options, decisionReason, solution, result, limits);
     }
 }

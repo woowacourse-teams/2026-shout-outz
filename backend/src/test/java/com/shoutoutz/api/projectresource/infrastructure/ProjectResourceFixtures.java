@@ -70,11 +70,11 @@ final class ProjectResourceFixtures {
     long careerCard(long projectId, String track, String template, int sortOrder, boolean deleted) {
         return jdbcTemplate.queryForObject("""
                 INSERT INTO resource_career_cards (card_key, project_id, repo, track, template, title, category, problem,
-                                                   cause, options, solution, result, resume_bullets, written_by,
+                                                   cause, options, solution, result, resume_bullets, tech, written_by,
                                                    prompt_version, updated_at, sort_order, deleted_at)
                 VALUES (?, ?, 'woowacourse-teams/repo', ?, ?, ?, '장애 대응', '문제', '원인',
                         string_to_array('방법 A|방법 B', '|'), '해결', '결과', string_to_array('문장 1|문장 2', '|'),
-                        'copy', 'v1', now(), ?, CASE WHEN ? THEN now() END)
+                        string_to_array('Spring|JPA', '|'), 'copy', 'v1', now(), ?, CASE WHEN ? THEN now() END)
                 RETURNING id
                 """, Long.class, "card-" + UUID.randomUUID().toString().substring(0, 12), projectId, track, template,
                 "카드 " + track + " " + sortOrder, sortOrder, deleted);

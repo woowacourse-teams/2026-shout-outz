@@ -9,6 +9,7 @@ import java.util.List;
  * @param jobRole       직군: BE, FE, AN
  * @param template      problem_solving, tech_decision, build
  * @param resumeBullets 이력서 문장
+ * @param techs         카드에 쓴 기술. 이력서 머리의 기술 태그를 고를 때 쓴다
  * @param options       고려한 다른 방법
  */
 public record CareerCard(
@@ -18,6 +19,7 @@ public record CareerCard(
         String category,
         String title,
         List<String> resumeBullets,
+        List<String> techs,
         String problem,
         String cause,
         List<String> options,
@@ -29,6 +31,7 @@ public record CareerCard(
 
     public CareerCard {
         resumeBullets = resumeBullets == null ? List.of() : List.copyOf(resumeBullets);
+        techs = techs == null ? List.of() : List.copyOf(techs);
         options = options == null ? List.of() : List.copyOf(options);
     }
 

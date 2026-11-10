@@ -189,6 +189,7 @@ class ProjectResourceServiceTest {
                 "장애 대응",
                 "카드 11",
                 List.of("이력서 문장"),
+                List.of("oEmbed", "Flyway"),
                 List.of(
                         new ProjectCareerCardResponse.Section("해결하려던 문제", "문제"),
                         new ProjectCareerCardResponse.Section("해결 과정", "해결")
@@ -222,7 +223,7 @@ class ProjectResourceServiceTest {
 
     private static CareerCard careerCard(long cardId, String jobRole) {
         return new CareerCard(cardId, jobRole, "problem_solving", "장애 대응", "카드 " + cardId, List.of("이력서 문장"),
-                "문제", null, List.of(), null, "해결", null, null);
+                List.of("oEmbed", "Flyway"), "문제", null, List.of(), null, "해결", null, null);
     }
 
     private void givenPublicProject() {

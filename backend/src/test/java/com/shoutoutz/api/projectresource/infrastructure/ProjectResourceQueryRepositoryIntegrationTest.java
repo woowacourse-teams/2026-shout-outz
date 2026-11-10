@@ -257,6 +257,7 @@ class ProjectResourceQueryRepositoryIntegrationTest {
         assertThat(first.template()).isEqualTo("tech_decision");
         assertThat(first.category()).isEqualTo("장애 대응");
         assertThat(first.resumeBullets()).containsExactly("문장 1", "문장 2");
+        assertThat(first.techs()).containsExactly("Spring", "JPA");
         assertThat(first.options()).containsExactly("방법 A", "방법 B");
         assertThat(first.problem()).isEqualTo("문제");
         assertThat(first.decisionReason()).isNull();

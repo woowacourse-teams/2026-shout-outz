@@ -75,6 +75,7 @@ class ProjectResourceApiDocumentationTest {
                 "장애 대응",
                 "운영 링크 미리보기 오수집과 캐시 복구",
                 List.of("봇 확인 페이지가 성공으로 캐시되는 원인을 규명하고 oEmbed 우선 수집으로 정상 제목과 썸네일 반환을 확인함"),
+                List.of("oEmbed", "Jsoup", "Flyway"),
                 List.of(
                         new ProjectCareerCardResponse.Section("해결하려던 문제", "운영에서만 유튜브 미리보기가 일반 문구로 저장됐다."),
                         new ProjectCareerCardResponse.Section("원인", "봇 확인 페이지가 성공 응답으로 캐시됐다."),
@@ -148,6 +149,8 @@ class ProjectResourceApiDocumentationTest {
                 fieldWithPath("data[].category").type(STRING).description("분류(예: 장애 대응, 쿼리 최적화)"),
                 fieldWithPath("data[].title").type(STRING).description("카드 제목"),
                 fieldWithPath("data[].resumeBullets").type(ARRAY).description("이력서 문장"),
+                fieldWithPath("data[].techs").type(ARRAY).description(
+                        "카드에 쓴 기술. 이력서 머리의 기술 태그는 프로젝트 기술 스택 중 그 직군 카드들의 기술과 이름이 겹치는 것을 프론트가 고른다(겹치는 게 없으면 전부)"),
                 fieldWithPath("data[].sections").type(ARRAY)
                         .description("포트폴리오 글. template별 소제목 순서이고 빈 칸은 빠진다"),
                 fieldWithPath("data[].sections[].heading").type(STRING).description("소제목"),

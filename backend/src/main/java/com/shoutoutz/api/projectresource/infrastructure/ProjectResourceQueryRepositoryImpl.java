@@ -95,7 +95,7 @@ public class ProjectResourceQueryRepositoryImpl implements ProjectResourceQueryR
      * 이 프로젝트의 경력 카드. 직군은 BE, FE, AN 순이고, 직군 안에서는 이력서에서 강한 순서(sort_order)다.
      */
     private static final String FIND_CAREER_CARDS_SQL = """
-            SELECT card.id, card.track, card.template, card.category, card.title, card.resume_bullets,
+            SELECT card.id, card.track, card.template, card.category, card.title, card.resume_bullets, card.tech,
                    card.problem, card.cause, card.options, card.decision_reason, card.solution, card.result, card.limits
             FROM resource_career_cards card
             WHERE card.project_id = :projectId
@@ -253,6 +253,7 @@ public class ProjectResourceQueryRepositoryImpl implements ProjectResourceQueryR
                         resultSet.getString("category"),
                         resultSet.getString("title"),
                         textArray(resultSet, "resume_bullets"),
+                        textArray(resultSet, "tech"),
                         resultSet.getString("problem"),
                         resultSet.getString("cause"),
                         textArray(resultSet, "options"),
