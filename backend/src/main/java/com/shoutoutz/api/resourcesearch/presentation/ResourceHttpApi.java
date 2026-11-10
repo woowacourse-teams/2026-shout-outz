@@ -3,10 +3,12 @@ package com.shoutoutz.api.resourcesearch.presentation;
 import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.resourcesearch.application.ResourceQueryService;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceSearchRequest;
+import com.shoutoutz.api.resourcesearch.presentation.dto.response.PopularKeywordResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSearchResponse;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
 import com.shoutoutz.api.visitor.presentation.Visitor;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,5 +29,10 @@ public class ResourceHttpApi {
             @Visitor VisitorKey visitorKey
     ) {
         return ResponseEntity.ok(SuccessResponse.success(resourceQueryService.search(request, visitorKey)));
+    }
+
+    @GetMapping("/popular-keywords")
+    public ResponseEntity<SuccessResponse<List<PopularKeywordResponse>>> findPopularKeywords() {
+        return ResponseEntity.ok(SuccessResponse.success(resourceQueryService.findPopularKeywords()));
     }
 }
