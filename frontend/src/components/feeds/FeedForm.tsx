@@ -150,9 +150,8 @@ export function FeedForm({
         void submit();
       }}
     >
-      {/* PROTOTYPE-DIFF: 프로토타입에는 작성자 표시가 없어 뺐다. 익명 선택은 기존 기능이라 버튼 줄 왼쪽에 남긴다. */}
       <div className="flex flex-col gap-2">
-        {/* ASSUMPTION: 프로토타입은 첫 카테고리가 골라져 있지만, 잘못된 분류로 올라가지 않게 처음에는 아무것도 고르지 않는다. */}
+        {/* 잘못된 분류로 올라가지 않게 처음에는 카테고리를 고르지 않는다. */}
         <p id="feed-category-label" className="text-sm font-bold text-gray-900">
           카테고리
         </p>

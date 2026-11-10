@@ -268,7 +268,6 @@ function CommentList({
             e.preventDefault();
             submitComment();
           }}
-          // ASSUMPTION: 프로토타입은 입력 중 모양만 있어, 입력 전에는 비로그인 입력칸과 같은 회색 칸으로 둔다.
           className="focus-within:border-primary-600 focus-within:bg-background focus-within:ring-primary-50 flex flex-col rounded-xl border border-gray-200 bg-gray-50 pt-4 pr-3 pb-3 pl-4 focus-within:ring-3"
         >
           <label className="sr-only" htmlFor={`new-comment-${feedId}`}>
@@ -288,12 +287,10 @@ function CommentList({
               }
             }}
             disabled={mutation.isPending}
-            // ASSUMPTION: 로그인 상태의 안내 문구는 프로토타입에 없어 비로그인 문구에 맞춘다.
             placeholder={`${itemLabel}을 남겨 보세요`}
             className="field-sizing-content min-h-12 w-full resize-none bg-transparent text-sm leading-relaxed text-gray-900 outline-none placeholder:text-gray-400"
           />
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            {/* PROTOTYPE-DIFF: 프로토타입 입력칸에는 익명 선택이 없지만 기존 기능이라 남긴다. 글자 수 표시는 뺐다. */}
             <label className="flex items-center gap-1.5 text-xs text-gray-500">
               <input
                 type="checkbox"
