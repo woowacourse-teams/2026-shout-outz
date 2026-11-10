@@ -22,3 +22,18 @@ it('같은 상세 화면에서 리렌더해도 선택한 두 질문이 유지된
     titles,
   );
 });
+
+it('상세의 추천 카드는 목록 카드와 달리 작성 안내 문구 없이 본문 요약까지만 보여준다', () => {
+  const router = createRouter({
+    routeTree,
+    history: createMemoryHistory({ initialEntries: ['/community/3'] }),
+  });
+  render(
+    <RouterContextProvider router={router}>
+      <RelatedQuestions items={[...mockRecommendations]} />
+    </RouterContextProvider>,
+  );
+
+  expect(screen.getAllByText('AI 추천 질문')).toHaveLength(2);
+  expect(screen.queryByText('궁금하다면 질문해 보세요')).not.toBeInTheDocument();
+});

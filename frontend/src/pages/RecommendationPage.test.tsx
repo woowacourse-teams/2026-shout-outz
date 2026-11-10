@@ -76,7 +76,7 @@ it('목록의 지정 위치에 추천을 넣고, 미리보기에서 작성 폼�
   await user.click(link);
   expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(recommendation.title);
   expect(screen.getByLabelText('미등록 추천 질문 안내')).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: '공유' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '친구에게 공유' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '저도 궁금해요' })).not.toBeInTheDocument();
   expect(submitted).toBeUndefined();
   expect(router.state.location.href).toBe('/community/recommendations');

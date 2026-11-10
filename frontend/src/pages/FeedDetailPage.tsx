@@ -22,7 +22,7 @@ export function FeedDetailPage({ feedId }: { feedId: number }) {
   return (
     <div className="bg-background flex min-h-dvh flex-col">
       <AppGnb />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-5 pt-7 pb-16 md:px-12 md:pt-8 md:pb-20">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-16 md:px-6 md:pt-10 md:pb-28">
         <section className="min-w-0" aria-label="커뮤니티 글 상세">
           <AsyncBoundary key={feedId}>
             <FeedDetailContent feedId={feedId} />
@@ -56,7 +56,7 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
       <Link
         to="/community"
         search={{ sort: 'LATEST', type: isQuestion ? 'QUESTION' : 'POST' }}
-        className="mb-7 inline-flex items-center gap-2 text-xs text-gray-500 hover:text-gray-900"
+        className="mb-7 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900"
       >
         <IconArrowLeft className="size-4" aria-hidden="true" />
         목록으로
@@ -64,9 +64,11 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
       <FeedDetailBody
         feed={feed}
         author={
-          <div className="relative flex items-center pr-24 sm:pr-64">
-            <FeedAuthor author={feed.author} isAnonymous={feed.isAnonymous} />
-            <div className="absolute top-1/2 right-0 z-10 flex -translate-y-1/2 items-center gap-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <FeedAuthor author={feed.author} isAnonymous={feed.isAnonymous} />
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
               <ShareButton />
               {feed.author.handle && (
                 <AsyncBoundary>
@@ -89,7 +91,8 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
             <RelatedQuestions key={feed.feedId} items={feed.relatedQuestionRecommendations.items} />
           </ClientOnly>
         )}
-      <div className="mt-10 mb-8 flex justify-center">
+      {/* PROTOTYPE-DIFF: 좋아요 버튼은 매거진 상세에서도 써서 기존 모양을 둔다. 프로토타입은 조금 더 작은 흰 알약(아이콘 16px, 글자 14px)이다. */}
+      <div className="mt-8 flex justify-center">
         <FeedLikeButton
           feedId={feed.feedId}
           likeCount={feed.likeCount}
@@ -98,11 +101,11 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
           size="lg"
         />
       </div>
-      <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 pb-5">
+      <div className="mt-7 flex flex-wrap items-center gap-2 border-b border-gray-100 py-3.5">
         <Button
           variant="ghost"
           size="sm"
-          className="gap-1 px-2"
+          className="h-auto gap-1 px-0 text-xs text-gray-500 hover:bg-transparent hover:text-gray-900"
           aria-label={commentLabel}
           onClick={() => document.getElementById('feed-comments')?.scrollIntoView()}
         >
@@ -113,11 +116,12 @@ function FeedDetailContent({ feedId }: { feedId: number }) {
           {formatDotDate(feed.createdAt)}
         </time>
       </div>
-      <section
-        id="feed-comments"
-        aria-label={`${commentLabel} 목록`}
-        className="mt-12 px-0 md:px-3"
-      >
+      <section id="feed-comments" aria-label={`${commentLabel} 목록`} className="mt-9">
+        <h2 className="mb-3.5 text-xl font-bold text-gray-900">
+          {commentLabel} <span className="text-primary-600">{feed.commentCount ?? 0}</span>
+        </h2>
+        {/* PROTOTYPE-DIFF: 댓글 영역은 매거진 상세에서도 써서 기존 모양을 둔다. 프로토타입은 비로그인일 때
+            "로그인하고 답변을 남겨 보세요" 입력 줄과 등록 버튼, "아직 답변이 없어요. 첫 번째 답변을 남겨 보세요." 안내다. */}
         {/* 보는 사람(세션)에 따라 목록이 달라지므로 브라우저에서만 그립니다. */}
         <ClientOnly>
           <Comments

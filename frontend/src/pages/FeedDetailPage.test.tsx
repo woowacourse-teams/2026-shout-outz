@@ -75,18 +75,16 @@ test('기수 숫자가 내려온 피드 작성자는 기수를 표시한다', as
   expect(within(author).getByText('6기 프론트엔드 크루')).toBeInTheDocument();
 });
 
-test('질문 피드의 공유 안내를 본문 위에 두고 좋아요 문구를 표시한다', async () => {
+test('질문 피드의 공유 버튼을 본문 위에 두고 좋아요 문구와 답변 수 제목을 표시한다', async () => {
   show(3);
-  const share = await screen.findByRole('button', { name: '공유' });
+  const share = await screen.findByRole('button', { name: '친구에게 공유' });
   const body = await screen.findByText('프로젝트에서 가장 기억에 남는 트러블슈팅은 무엇인가요?');
-  expect(share).toHaveTextContent('친구에게 공유해보세요!');
-  expect(share.parentElement).toHaveClass('absolute');
-  expect(share.parentElement?.parentElement).toHaveClass('relative');
   expect(share.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(screen.getByRole('button', { name: '저도 궁금해요' })).toHaveTextContent('저도 궁금해요');
   expect(await screen.findByRole('textbox', { name: '답변 남기기' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '답변 작성' })).toHaveTextContent('답변 등록하기');
   expect(screen.getByRole('button', { name: '답변' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { level: 2, name: /^답변 \d+$/ })).toBeInTheDocument();
 });
 
 test('상세 조회에 실패하면 오류 경계를 표시한다', async () => {

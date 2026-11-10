@@ -15,6 +15,8 @@ interface RecommendationCardProps {
   surface: RecommendationSurface;
   /** 같은 화면의 추천 카드 중 몇 번째인지. 0부터 센다. */
   position: number;
+  /** list: 커뮤니티 목록 사이의 파란 카드. detail: 글 상세 관련 질문의 흰 카드. */
+  variant?: 'list' | 'detail';
   className?: string;
 }
 
@@ -22,8 +24,10 @@ export function RecommendationCard({
   recommendation,
   surface,
   position,
+  variant = 'list',
   className,
 }: RecommendationCardProps) {
+  const isDetail = variant === 'detail';
   const navigate = useNavigate();
   const from = useLocation({ select: (location) => location.href });
   const { recommendationId } = recommendation;
@@ -53,7 +57,10 @@ export function RecommendationCard({
     <article
       ref={card}
       className={cn(
-        'group border-primary-100 bg-primary-50/40 hover:border-primary-300 relative min-w-0 rounded-lg border p-5 transition-colors md:p-6',
+        'group relative min-w-0 border transition-colors',
+        isDetail
+          ? 'bg-background flex flex-col gap-2.5 rounded-xl border-gray-200 p-5 hover:border-gray-300'
+          : 'border-primary-100 bg-primary-50/40 hover:border-primary-300 rounded-lg p-5 md:p-6',
         className,
       )}
     >
@@ -67,25 +74,48 @@ export function RecommendationCard({
           });
         }}
         aria-label={`추천 질문: ${recommendation.title}`}
-        className="focus-visible:outline-primary-600 absolute inset-0 z-10 cursor-pointer rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2"
+        className={cn(
+          'focus-visible:outline-primary-600 absolute inset-0 z-10 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2',
+          isDetail ? 'rounded-xl' : 'rounded-lg',
+        )}
       />
-      <div className="mb-3 flex items-center justify-between gap-2 text-xs font-medium">
-        <span className="text-primary-600 inline-flex items-center gap-1.5">
-          <IconSparkles className="size-4" aria-hidden="true" />
-          AI 추천 질문
-        </span>
-        <span className="text-gray-500">아직 등록되지 않았어요</span>
-      </div>
-      <h3 className="group-hover:text-primary-600 text-base leading-6 font-semibold break-words text-gray-900">
-        <span className="text-primary-600 mr-1.5">Q.</span>
-        {recommendation.title}
-      </h3>
-      <p className="mt-2 line-clamp-2 text-sm leading-6 break-words text-gray-600">
-        {toPlainText(recommendation.content)}
-      </p>
-      <div className="text-primary-600 mt-4 flex items-center gap-1 text-xs font-medium">
-        궁금하다면 질문해 보세요 <IconArrowUpRight className="size-3.5" aria-hidden="true" />
-      </div>
+      {isDetail ? (
+        <>
+          <div className="flex items-center justify-between gap-2 text-xs">
+            <span className="bg-primary-50 text-primary-600 rounded-sm px-2 py-0.5 font-bold">
+              AI 추천 질문
+            </span>
+            <span className="text-gray-400">아직 등록되지 않았어요</span>
+          </div>
+          <h3 className="group-hover:text-primary-600 text-base font-bold break-words text-gray-900">
+            <span className="text-primary-600 mr-1.5">Q.</span>
+            {recommendation.title}
+          </h3>
+          <p className="line-clamp-3 text-sm leading-relaxed break-words text-gray-600">
+            {toPlainText(recommendation.content)}
+          </p>
+        </>
+      ) : (
+        <>
+          <div className="mb-3 flex items-center justify-between gap-2 text-xs font-medium">
+            <span className="text-primary-600 inline-flex items-center gap-1.5">
+              <IconSparkles className="size-4" aria-hidden="true" />
+              AI 추천 질문
+            </span>
+            <span className="text-gray-500">아직 등록되지 않았어요</span>
+          </div>
+          <h3 className="group-hover:text-primary-600 text-base leading-6 font-semibold break-words text-gray-900">
+            <span className="text-primary-600 mr-1.5">Q.</span>
+            {recommendation.title}
+          </h3>
+          <p className="mt-2 line-clamp-2 text-sm leading-6 break-words text-gray-600">
+            {toPlainText(recommendation.content)}
+          </p>
+          <div className="text-primary-600 mt-4 flex items-center gap-1 text-xs font-medium">
+            궁금하다면 질문해 보세요 <IconArrowUpRight className="size-3.5" aria-hidden="true" />
+          </div>
+        </>
+      )}
     </article>
   );
 }

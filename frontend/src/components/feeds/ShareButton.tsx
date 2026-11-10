@@ -1,8 +1,8 @@
 import { IconShare } from '@tabler/icons-react';
 
-import { Button } from '@/components/Button';
 import { ShareResultModal } from '@/components/modals/ShareResultModal';
 import { useModal } from '@/hooks/useModal';
+import { cn } from '@/utils/cn';
 
 export function ShareButton({ className }: { className?: string }) {
   const { open } = useModal();
@@ -37,18 +37,16 @@ export function ShareButton({ className }: { className?: string }) {
   };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      className={`relative h-auto min-h-16 gap-3 rounded-2xl border-blue-200 bg-blue-50 px-4 py-3 text-left shadow-sm after:absolute after:right-7 after:-bottom-2 after:size-4 after:rotate-45 after:border-r after:border-b after:border-blue-200 after:bg-blue-50 after:transition-colors hover:bg-blue-100 hover:after:bg-blue-100 max-sm:min-h-8 max-sm:rounded-full max-sm:p-2 max-sm:after:hidden ${className ?? ''}`}
-      aria-label="공유"
+    <button
+      type="button"
+      className={cn(
+        'text-primary-600 hover:text-primary-700 focus-visible:outline-primary-600 inline-flex cursor-pointer items-center gap-1.5 rounded-sm text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2',
+        className,
+      )}
       onClick={() => void share()}
     >
-      <span className="hidden text-xs leading-5 font-semibold sm:block">
-        <span className="block text-gray-700">“이건 내 친구가 딱인데?”</span>
-        <span className="text-primary-600">친구에게 공유해보세요!</span>
-      </span>
-      <IconShare className="text-primary-600 size-5 shrink-0" aria-hidden="true" />
-    </Button>
+      <IconShare className="size-4" aria-hidden="true" />
+      친구에게 공유
+    </button>
   );
 }
