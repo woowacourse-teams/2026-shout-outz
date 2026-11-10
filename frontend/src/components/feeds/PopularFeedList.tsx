@@ -8,6 +8,8 @@ import {
 } from '@tabler/icons-react';
 import { feedsQuery } from '@/apis/feed';
 import type { Feed, FeedType } from '@/apis/feed';
+import { Avatar } from '@/components/Avatar';
+import { UserAffiliation } from '@/components/users/UserAffiliation';
 import { formatRelativeTime } from '@/utils/date';
 import { analytics } from '@/utils/analytics';
 import { cn } from '@/utils/cn';
@@ -42,23 +44,14 @@ export function PopularFeedList({ feedType }: { feedType?: FeedType }) {
   );
   const feeds = data.pages[0]?.data ?? [];
   const isQuestion = feedType === 'QUESTION';
-  const label = `인기 ${isQuestion ? '질문' : '피드'}`;
+  const label = isQuestion ? '인기 질문' : '인기글';
 
   return (
-    // DESIGN-ISSUE: 프로토타입은 질문 화면의 인기 피드(왼쪽 구분선, 설명, 모두 보기, 작성자·반응 글자)와
-    // 피드 화면의 인기 질문(구분선·설명 없음, 날짜, 아이콘 반응 수) 모양이 달라 각각 따랐다. 한 모양으로 맞추길 제안한다.
-    <aside aria-label={label} className={cn(!isQuestion && 'border-l border-gray-200 pl-6')}>
-      {isQuestion ? (
-        <h2 className="pb-3 text-base font-bold text-gray-900">{label}</h2>
-      ) : (
-        <div className="flex items-start justify-between gap-3 pb-3">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-sm font-bold text-gray-900">
-              {label} <span className="font-medium text-gray-400">{feeds.length}</span>
-            </h2>
-            <p className="text-xs text-gray-500">크루들이 요즘 많이 본 이야기예요.</p>
-          </div>
-          {/* "모두 보기"는 피드 목록을 인기순으로 연다. */}
+    <aside aria-label={label} className="border-l border-gray-200 pl-6">
+      <div className="flex items-center justify-between gap-2 pb-3">
+        <h2 className="text-sm font-bold tracking-tight text-gray-900">{label}</h2>
+        {/* "모두 보기"는 피드 목록을 인기순으로 연다. */}
+        {!isQuestion && (
           <Link
             to="/community"
             search={{ type: 'POST', sort: 'POPULAR' }}
@@ -67,64 +60,73 @@ export function PopularFeedList({ feedType }: { feedType?: FeedType }) {
             모두 보기
             <IconChevronRight className="size-3.5" aria-hidden="true" />
           </Link>
-        </div>
-      )}
+        )}
+      </div>
       <ul>
-        {feeds.map((feed) =>
-          isQuestion ? (
-            <li key={feed.feedId} className="relative border-t border-gray-100 py-3.5">
-              <DetailLink feed={feed} />
-              <p className="flex items-center gap-2 text-xs text-gray-400">
-                <span className="font-semibold text-gray-600">{categoryOf(feed)}</span>
-                <time dateTime={feed.createdAt}>{formatRelativeTime(feed.createdAt)}</time>
-              </p>
-              <h3 className="mt-1.5 line-clamp-2 text-sm font-bold break-words text-gray-900">
-                <span className="text-primary-600 mr-1.5">Q.</span>
-                {feed.title}
-              </h3>
-              <div className="mt-1.5 flex items-center gap-3 text-xs text-gray-500">
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1',
-                    feed.likedByMe && 'text-primary-600',
-                  )}
-                  aria-label={`궁금해요 ${feed.likeCount ?? 0}개${feed.likedByMe ? ', 내가 누름' : ''}`}
-                >
-                  {feed.likedByMe ? (
-                    <IconHeartFilled className="size-4" aria-hidden="true" />
-                  ) : (
-                    <IconHeart className="size-4" aria-hidden="true" />
-                  )}
-                  {feed.likeCount ?? 0}
-                </span>
-                <span
-                  className="inline-flex items-center gap-1"
-                  aria-label={`답변 ${feed.commentCount ?? 0}개`}
-                >
-                  <IconMessageCircle className="size-4" aria-hidden="true" />
-                  {feed.commentCount ?? 0}
-                </span>
-              </div>
-            </li>
-          ) : (
+        {feeds.map((feed) => {
+          const isQuestionFeed = feed.feedType === 'QUESTION';
+          const likeCount = feed.likeCount ?? 0;
+          const commentCount = feed.commentCount ?? 0;
+          return (
             <li
               key={feed.feedId}
               className="relative flex flex-col gap-1.5 border-t border-gray-100 py-4"
             >
               <DetailLink feed={feed} />
               <p className="text-xs font-medium text-gray-500">
-                <span className="text-primary-600">피드</span> · {categoryOf(feed)}
+                <span className="text-primary-600">{isQuestionFeed ? '질문' : '피드'}</span> ·{' '}
+                {categoryOf(feed)} ·{' '}
+                <time dateTime={feed.createdAt}>{formatRelativeTime(feed.createdAt)}</time>
               </p>
-              <h3 className="line-clamp-3 text-sm font-bold break-words text-gray-900">
+              <h3 className="line-clamp-3 text-sm leading-snug font-bold tracking-tight break-keep text-gray-900">
+                {isQuestionFeed && <span className="text-primary-600">Q. </span>}
                 {feed.title}
               </h3>
-              <p className="text-xs text-gray-400">
-                {feed.author.handle ? feed.author.displayName : '익명'} · 좋아요{' '}
-                {feed.likeCount ?? 0} · 댓글 {feed.commentCount ?? 0}
-              </p>
+              <div className="flex min-w-0 items-center gap-2 text-xs text-gray-500">
+                <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                  <Avatar
+                    size="xs"
+                    anonymous={!feed.author.handle}
+                    src={feed.author.handle ? feed.author.avatarUrl : undefined}
+                    name={feed.author.displayName ?? undefined}
+                    alt=""
+                  />
+                  <span className="min-w-0 truncate font-semibold text-gray-600">
+                    {feed.author.handle ? feed.author.displayName : '익명'}
+                  </span>
+                  <UserAffiliation
+                    {...feed.author}
+                    anonymous={!feed.author.handle}
+                    className="min-w-0 flex-1 truncate leading-normal whitespace-nowrap"
+                  />
+                </span>
+                <span className="flex shrink-0 gap-2.5">
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1',
+                      feed.likedByMe && 'text-primary-600',
+                    )}
+                    aria-label={`${isQuestionFeed ? '궁금해요' : '좋아요'} ${likeCount}개${feed.likedByMe ? ', 내가 누름' : ''}`}
+                  >
+                    {feed.likedByMe ? (
+                      <IconHeartFilled className="size-3.5" aria-hidden="true" />
+                    ) : (
+                      <IconHeart className="size-3.5" aria-hidden="true" />
+                    )}
+                    {likeCount}
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-1"
+                    aria-label={`${isQuestionFeed ? '답변' : '댓글'} ${commentCount}개`}
+                  >
+                    <IconMessageCircle className="size-3.5" aria-hidden="true" />
+                    {commentCount}
+                  </span>
+                </span>
+              </div>
             </li>
-          ),
-        )}
+          );
+        })}
       </ul>
       {feeds.length === 0 && (
         <p className="border-t border-gray-100 py-8 text-center text-sm text-gray-500">

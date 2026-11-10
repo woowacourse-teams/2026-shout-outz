@@ -107,7 +107,7 @@ test('피드 목록 카드는 전체가 상세 페이지로 이동하고 반응 
   expect(within(first).getByLabelText('댓글 1개')).toBeInTheDocument();
   expect(within(first).queryByRole('button', { name: /좋아요|댓글|공유/ })).not.toBeInTheDocument();
 });
-test('인기 피드는 상세 링크 하나와 작성자, 좋아요·댓글 수를 글자로 보여준다', async () => {
+test('인기글은 상세 링크 하나와 작성자, 좋아요·댓글 수를 보여준다', async () => {
   const feed = { ...mockFeeds[0]!, feedType: 'POST' as const, likeCount: 10, commentCount: 1 };
   server.use(
     http.get('*/api/v1/feeds', () =>
@@ -119,8 +119,8 @@ test('인기 피드는 상세 링크 하나와 작성자, 좋아요·댓글 수�
     ),
   );
   show(<PopularFeedList feedType="POST" />);
-  const aside = await screen.findByRole('complementary', { name: '인기 피드' });
-  expect(within(aside).getByRole('heading', { name: '인기 피드 1' })).toBeInTheDocument();
+  const aside = await screen.findByRole('complementary', { name: '인기글' });
+  expect(within(aside).getByRole('heading', { name: '인기글' })).toBeInTheDocument();
   expect(within(aside).getByRole('link', { name: /모두 보기/ })).toHaveAttribute(
     'href',
     '/community?type=POST&sort=POPULAR',
@@ -133,7 +133,9 @@ test('인기 피드는 상세 링크 하나와 작성자, 좋아요·댓글 수�
     'href',
     `/community/${feed.feedId}`,
   );
-  expect(item).toHaveTextContent(`${feed.author.displayName} · 좋아요 10 · 댓글 1`);
+  expect(item).toHaveTextContent(feed.author.displayName!);
+  expect(within(item).getByLabelText('좋아요 10개')).toBeInTheDocument();
+  expect(within(item).getByLabelText('댓글 1개')).toBeInTheDocument();
   expect(item).not.toHaveTextContent(feed.content);
 });
 test('인기 질문은 상세 링크와 궁금해요·답변 수를 보여준다', async () => {
@@ -628,7 +630,7 @@ test('목록에서 소속 아이콘의 호버와 탭으로 설명을 표시한�
 test.each([
   ['일반', 'POST'],
   ['일반', 'QUESTION'],
-  // 인기 피드는 반응 수를 글자로만 보여 줘 내가 누른 표시가 없다.
+  ['인기', 'POST'],
   ['인기', 'QUESTION'],
 ] as const)('%s %s 목록에 내가 누른 좋아요를 표시한다', async (kind, type) => {
   server.use(

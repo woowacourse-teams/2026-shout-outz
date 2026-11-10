@@ -40,7 +40,7 @@ export function FeedsPage({
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <title>커뮤니티 | shout-outz</title>
       <AppGnb />
-      <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-12 px-4 pt-6 pb-12 md:px-6 md:pt-10 md:pb-30 lg:grid-cols-[minmax(0,1fr)_17rem]">
+      <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-12 px-6 pt-10 pb-30 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <section className="min-w-0">
           <div className="flex items-end justify-between gap-4 pb-6">
             <div className="flex min-w-0 flex-col gap-2">
