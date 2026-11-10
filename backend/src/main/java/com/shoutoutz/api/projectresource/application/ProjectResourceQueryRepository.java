@@ -1,16 +1,19 @@
 package com.shoutoutz.api.projectresource.application;
 
+import com.shoutoutz.api.projectresource.domain.CareerCard;
 import com.shoutoutz.api.projectresource.domain.ProjectResourceJobRole;
 import com.shoutoutz.api.projectresource.domain.ResourceCount;
 import com.shoutoutz.api.projectresource.domain.ResourceTopic;
 import com.shoutoutz.api.projectresource.domain.TopicProject;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
- * 프로젝트 기술 이야기 조회. 삭제된 자료는 읽지 않고, 관리자가 받아들인 필요 없어요 제보가 있는 자료는
- * 이 팀 자료와 다른 팀 자료에서 뺀다.
+ * 프로젝트 기술 이야기와 전체 경험 조회. 삭제된 자료는 읽지 않고, 관리자가 받아들인 필요 없어요 제보가 있는 자료는
+ * 이 팀 자료, 다른 팀 자료, 경력 카드 근거에서 뺀다.
  */
 public interface ProjectResourceQueryRepository {
 
@@ -42,4 +45,15 @@ public interface ProjectResourceQueryRepository {
      * 그 주제의 다른 팀 자료. 공개된 다른 프로젝트의 자료와 프로젝트에 이어지지 않은 자료를 점수 높은 순으로 limit 건까지 읽는다.
      */
     List<ResourceCard> findOtherTeamResources(long projectId, String topicId, ProjectResourceJobRole jobRole, int limit);
+
+    /**
+     * 이 프로젝트의 삭제되지 않은 경력 카드. 직군 BE, FE, AN 순이고 직군 안에서는 sort_order 순이다.
+     */
+    List<CareerCard> findCareerCards(long projectId);
+
+    /**
+     * 카드별 근거 자료를 source_order 순으로 읽는다. 삭제된 경험과 자료, 받아들인 필요 없어요 제보 자료는 뺀다.
+     * 근거가 하나도 남지 않은 카드는 결과에 없다.
+     */
+    Map<Long, List<ResourceCard>> findCareerCardSources(Collection<Long> cardIds);
 }

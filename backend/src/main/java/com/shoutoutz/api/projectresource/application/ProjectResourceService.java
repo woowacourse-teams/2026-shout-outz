@@ -6,11 +6,16 @@ import static com.shoutoutz.api.projectresource.domain.ProjectResourceErrorCode.
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.project.application.ProjectSlugResolver;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.projectresource.domain.CareerCard;
 import com.shoutoutz.api.projectresource.domain.ProjectResourceJobRole;
 import com.shoutoutz.api.projectresource.domain.ProjectResourceTopics;
 import com.shoutoutz.api.projectresource.domain.ResourceTopic;
+import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectCareerCardResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectResourceTopicsResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectTopicResourcesResponse;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +65,26 @@ public class ProjectResourceService {
                         OTHER_TEAM_RESOURCE_LIMIT
                 )
         );
+    }
+
+    /**
+     * 전체 경험 탭의 경력 카드. 근거가 하나도 남지 않은 카드는 숨긴다.
+     * 원천에서 사라진 콘텐츠는 카드 출처까지 내린다는 원칙(2026-11-09)과 같은 방향이다.
+     */
+    @Transactional(readOnly = true)
+    public List<ProjectCareerCardResponse> findCareerCards(String slug) {
+        long projectId = findPublicProjectId(slug);
+        List<CareerCard> cards = projectResourceQueryRepository.findCareerCards(projectId);
+        if (cards.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, List<ResourceCard>> sourcesByCard = projectResourceQueryRepository.findCareerCardSources(
+                cards.stream().map(CareerCard::cardId).toList()
+        );
+        return cards.stream()
+                .filter(card -> !sourcesByCard.getOrDefault(card.cardId(), List.of()).isEmpty())
+                .map(card -> ProjectCareerCardResponse.of(card, sourcesByCard.get(card.cardId())))
+                .toList();
     }
 
     /**

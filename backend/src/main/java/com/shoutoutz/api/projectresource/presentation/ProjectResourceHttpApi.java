@@ -4,9 +4,11 @@ import com.shoutoutz.api.common.response.SuccessResponse;
 import com.shoutoutz.api.projectresource.application.ProjectResourceService;
 import com.shoutoutz.api.projectresource.presentation.dto.request.ProjectResourceTopicsRequest;
 import com.shoutoutz.api.projectresource.presentation.dto.request.ProjectTopicResourcesRequest;
+import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectCareerCardResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectResourceTopicsResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectTopicResourcesResponse;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +35,16 @@ public class ProjectResourceHttpApi {
         return ResponseEntity.ok(SuccessResponse.success(
                 projectResourceService.findTopics(slug, request.resolvedJobRole())
         ));
+    }
+
+    /**
+     * 프로젝트 상세 전체 경험 탭. 직군별 경력 카드와 포트폴리오 글, 근거 자료를 한 번에 준다.
+     */
+    @GetMapping("/career-cards")
+    public ResponseEntity<SuccessResponse<List<ProjectCareerCardResponse>>> findCareerCards(
+            @PathVariable String slug
+    ) {
+        return ResponseEntity.ok(SuccessResponse.success(projectResourceService.findCareerCards(slug)));
     }
 
     @GetMapping("/resources")

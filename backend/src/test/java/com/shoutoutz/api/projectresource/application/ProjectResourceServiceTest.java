@@ -14,16 +14,19 @@ import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.project.application.ProjectSlugResolver;
 import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.project.domain.ProjectRepository;
+import com.shoutoutz.api.projectresource.domain.CareerCard;
 import com.shoutoutz.api.projectresource.domain.ProjectResourceErrorCode;
 import com.shoutoutz.api.projectresource.domain.ProjectResourceJobRole;
 import com.shoutoutz.api.projectresource.domain.ResourceCount;
 import com.shoutoutz.api.projectresource.domain.ResourceTopic;
+import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectCareerCardResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectResourceTopicsResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectTopicResourcesResponse;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -166,6 +169,60 @@ class ProjectResourceServiceTest {
                 .extracting("errorCode")
                 .isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND);
         verify(projectResourceQueryRepository, never()).findTopic(anyString());
+    }
+
+    @Test
+    @DisplayName("경력 카드에 포트폴리오 글과 근거를 붙이고, 근거가 하나도 남지 않은 카드는 숨긴다")
+    void findsCareerCards() {
+        givenPublicProject();
+        CareerCard withSources = careerCard(11L, "BE");
+        CareerCard withoutSources = careerCard(12L, "FE");
+        ResourceCard pr = card(31L, "github-pr", new ResourceCard.Team("샤라웃", SLUG, null));
+        given(projectResourceQueryRepository.findCareerCards(PROJECT_ID)).willReturn(List.of(withSources, withoutSources));
+        given(projectResourceQueryRepository.findCareerCardSources(List.of(11L, 12L))).willReturn(Map.of(11L, List.of(pr)));
+
+        List<ProjectCareerCardResponse> response = projectResourceService.findCareerCards(SLUG);
+
+        assertThat(response).containsExactly(new ProjectCareerCardResponse(
+                11L,
+                "BE",
+                "장애 대응",
+                "카드 11",
+                List.of("이력서 문장"),
+                List.of(
+                        new ProjectCareerCardResponse.Section("해결하려던 문제", "문제"),
+                        new ProjectCareerCardResponse.Section("해결 과정", "해결")
+                ),
+                List.of(ResourceCardResponse.from(pr))
+        ));
+    }
+
+    @Test
+    @DisplayName("경력 카드가 없으면 근거를 읽지 않고 빈 목록을 준다")
+    void findsNoCareerCards() {
+        givenPublicProject();
+        given(projectResourceQueryRepository.findCareerCards(PROJECT_ID)).willReturn(List.of());
+
+        assertThat(projectResourceService.findCareerCards(SLUG)).isEmpty();
+        verify(projectResourceQueryRepository, never()).findCareerCardSources(any());
+    }
+
+    @Test
+    @DisplayName("공개되지 않은 프로젝트의 경력 카드는 없는 프로젝트로 본다")
+    void rejectsCareerCardsOfNonPublicProject() {
+        given(projectSlugResolver.resolveId(SLUG)).willReturn(PROJECT_ID);
+        given(projectRepository.existsPublicById(PROJECT_ID)).willReturn(false);
+
+        assertThatThrownBy(() -> projectResourceService.findCareerCards(SLUG))
+                .isInstanceOf(EntityNotFoundException.class)
+                .extracting("errorCode")
+                .isEqualTo(ProjectErrorCode.PROJECT_NOT_FOUND);
+        verify(projectResourceQueryRepository, never()).findCareerCards(anyLong());
+    }
+
+    private static CareerCard careerCard(long cardId, String jobRole) {
+        return new CareerCard(cardId, jobRole, "problem_solving", "장애 대응", "카드 " + cardId, List.of("이력서 문장"),
+                "문제", null, List.of(), null, "해결", null, null);
     }
 
     private void givenPublicProject() {
