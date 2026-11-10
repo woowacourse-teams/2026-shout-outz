@@ -1,16 +1,19 @@
 package com.shoutoutz.api.resourcesearch.application;
 
+import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
 import com.shoutoutz.api.resourcesearch.domain.KeywordSearchCount;
 import com.shoutoutz.api.resourcesearch.domain.PopularKeywords;
+import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import com.shoutoutz.api.resourcesearch.domain.SearchKeyword;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceRecentRequest;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceSearchRequest;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.PopularKeywordResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
+import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceDetailResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSearchResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSectionResponse;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
@@ -36,6 +39,7 @@ public class ResourceQueryService {
 
     private final SectionedResourceSearchService sectionedResourceSearchService;
     private final ResourceCardQueryRepository resourceCardQueryRepository;
+    private final ResourceDetailQueryRepository resourceDetailQueryRepository;
     private final SearchKeywordService searchKeywordService;
     private final PopularKeywordQueryRepository popularKeywordQueryRepository;
     private final Clock clock;
@@ -55,6 +59,12 @@ public class ResourceQueryService {
         return resourceCardQueryRepository.findRecent(request.kind(), request.resolvedSize()).stream()
                 .map(ResourceCardResponse::from)
                 .toList();
+    }
+
+    public ResourceDetailResponse findDetail(long resourceId) {
+        return resourceDetailQueryRepository.findById(resourceId)
+                .map(ResourceDetailResponse::from)
+                .orElseThrow(() -> new EntityNotFoundException(ResourceSearchErrorCode.RESOURCE_NOT_FOUND));
     }
 
     public List<PopularKeywordResponse> findPopularKeywords() {

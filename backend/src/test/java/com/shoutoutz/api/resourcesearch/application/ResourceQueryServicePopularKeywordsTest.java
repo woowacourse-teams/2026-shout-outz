@@ -28,6 +28,9 @@ class ResourceQueryServicePopularKeywordsTest {
     private ResourceCardQueryRepository resourceCardQueryRepository;
 
     @Mock
+    private ResourceDetailQueryRepository resourceDetailQueryRepository;
+
+    @Mock
     private SearchKeywordService searchKeywordService;
 
     @Mock
@@ -49,6 +52,7 @@ class ResourceQueryServicePopularKeywordsTest {
         return new ResourceQueryService(
                 sectionedResourceSearchService,
                 resourceCardQueryRepository,
+                resourceDetailQueryRepository,
                 searchKeywordService,
                 popularKeywordQueryRepository,
                 Clock.fixed(NOW, ZoneOffset.UTC)

@@ -6,15 +6,18 @@ import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceRecentR
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceSearchRequest;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.PopularKeywordResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
+import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceDetailResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSearchResponse;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
 import com.shoutoutz.api.visitor.presentation.Visitor;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -38,6 +41,11 @@ public class ResourceHttpApi {
             @Valid @ModelAttribute ResourceRecentRequest request
     ) {
         return ResponseEntity.ok(SuccessResponse.success(resourceQueryService.findRecent(request)));
+    }
+
+    @GetMapping("/{resourceId}")
+    public ResponseEntity<SuccessResponse<ResourceDetailResponse>> findDetail(@PathVariable @Positive long resourceId) {
+        return ResponseEntity.ok(SuccessResponse.success(resourceQueryService.findDetail(resourceId)));
     }
 
     @GetMapping("/popular-keywords")
