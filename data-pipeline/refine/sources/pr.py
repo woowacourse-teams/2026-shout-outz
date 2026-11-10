@@ -16,7 +16,7 @@ from __future__ import annotations
 import re
 
 from ..model import Draft, RefineFailure, strip_struct_lines
-from ..text import COMMENT, clean_markdown, clean_title, readable_chars, to_utc
+from ..text import clean_markdown, clean_title, readable_chars, remove_comments, to_utc
 from ..titles import strip_title
 from . import Refiner
 from .discussion import UNKNOWN, chars, check_author, is_bot, login
@@ -104,7 +104,7 @@ class PrRefiner(Refiner):
         bot_parts = bot_chars = 0
         body_md, removed_chars = remove_bot_blocks(p.get("body") or "")
         bot_chars += removed_chars
-        body_md = drop_empty_sections(COMMENT.sub("", body_md.replace("\r\n", "\n").replace("\r", "\n")))
+        body_md = drop_empty_sections(remove_comments(body_md.replace("\r\n", "\n").replace("\r", "\n")))
         pr_body = clean_markdown(body_md)
 
         parts: list[dict] = []

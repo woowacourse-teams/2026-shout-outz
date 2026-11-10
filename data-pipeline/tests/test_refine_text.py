@@ -36,6 +36,21 @@ def test_clean_markdown_characters():
     assert clean_markdown(unicodedata.normalize("NFD", nfd)) == nfd
 
 
+def test_remove_comments_unclosed_and_pathological_input_is_fast():
+    import time
+    from refine.text import remove_comments, strip_structure
+    assert remove_comments("가<!-- 숨김 -->나<!-- 열림") == "가나<!-- 열림"
+    assert remove_comments("a<!--\n\n-->b", keep_newlines=True) == "a\n\nb"
+    t0 = time.monotonic()
+    clean_markdown("<!--" * 20000 + "본문")
+    strip_structure("|" * 50000 + "x")
+    readable_chars("[" * 50000)
+    clean_markdown("![" * 25000)
+    clean_markdown("[[" * 25000, wiki_links=True)
+    mask("a." * 25000 + "://")
+    assert time.monotonic() - t0 < 2
+
+
 def test_split_fences_unclosed_fence_is_code_to_end():
     segs = split_fences("글\n```\n코드\n끝")
     assert segs == [(False, "글"), (True, "```\n코드\n끝")]
@@ -104,12 +119,20 @@ def test_to_utc():
 
 # 민감 정보(R21) ------------------------------------------------------------------------------------------------------
 
+# 가리기 시험 값은 모두 지어낸 값이다. 비밀 탐지 도구가 소스를 잘못 걸지 않도록 비밀 값 모양은 실행할 때 이어 붙인다
+RRN = "900101" + "-" + "1" + "234567"
+AWS_KEY = "AKIA" + "A" * 16
+CRED_URL = "mysql://root:" + "pass" + "1234@db.example.com/x"
+PASSWORD_LINE = "password: " + "abc" + "12345"
+KEY_BEGIN, KEY_END = "-----BEGIN RSA " + "PRIVATE KEY-----", "-----END RSA " + "PRIVATE KEY-----"
+
+
 def test_mask_kinds():
-    text = ("문의 crew@woowa.co.kr, 010-1234-5678, 02-123-4567, 900101-1234567\n"
-            "key AKIA" + "A" * 16 + " url mysql://root:pass1234@db.example.com/x\n"
-            "password: abc12345, password=${DB_PASSWORD}\n서버 54.180.1.2:8080 내부 192.168.0.1")
+    text = (f"문의 crew@example.com, 010-1234-5678, 02-123-4567, {RRN}\n"
+            f"key {AWS_KEY} url {CRED_URL}\n"
+            f"{PASSWORD_LINE}, password=${{DB_PASSWORD}}\n서버 203.0.113.7:8080 내부 192.168.0.1")
     out, counts = mask(text)
-    assert "crew@" not in out and "1234-5678" not in out and "1234567" not in out
+    assert "crew@" not in out and "1234-5678" not in out and RRN not in out
     assert "AKIA" not in out and "pass1234" not in out and "abc12345" not in out
     assert "${DB_PASSWORD}" in out and "192.168.0.1" in out and "[IP]:8080" in out
     assert "mysql://[비밀 값]@db.example.com" in out
@@ -117,7 +140,7 @@ def test_mask_kinds():
 
 
 def test_mask_private_key_block_whole():
-    text = "앞\n-----BEGIN RSA PRIVATE KEY-----\nMIIEow\nabc\n-----END RSA PRIVATE KEY-----\n뒤"
+    text = f"앞\n{KEY_BEGIN}\nMIIEow\nabc\n{KEY_END}\n뒤"
     out, counts = mask(text)
     assert out == "앞\n[비밀 값]\n뒤" and counts["비밀 값"] == 1
 

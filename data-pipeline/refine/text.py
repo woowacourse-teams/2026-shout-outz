@@ -95,12 +95,32 @@ COMMENT = re.compile(r"<!--.*?-->", re.S)
 IMG_TAG = re.compile(r"<img\b[^>]*>", re.I)
 ALT_ATTR = re.compile(r"""\balt\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>"']+))""", re.I)
 # ![대체 글자](주소 "제목") 꼴. 주소 안의 괄호 한 겹까지 받는다
-MD_IMAGE = re.compile(r"!\[([^\]\n]*)\]\((?:[^()\n]|\([^()\n]*\))*\)")
+MD_IMAGE = re.compile(r"!\[([^\[\]\n]*)\]\((?:[^()\n]|\([^()\n]*\))*\)")
 BR = re.compile(r"<br\s*/?>", re.I)
 # 태그 이름은 영문자로 시작한다. <https://…> 같은 자동 링크와 "< 비교 >" 는 걸리지 않는다
 TAG = re.compile(r"</?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?/?>")
 FRONT_MATTER = re.compile(r"\A---[ \t]*\n.*?\n---[ \t]*(?:\n|\Z)", re.S)
-WIKI_LINK = re.compile(r"\[\[([^\]|\n]+?)(?:\|[^\]\n]+)?\]\]")
+WIKI_LINK = re.compile(r"\[\[([^\[\]|\n]+?)(?:\|[^\[\]\n]+)?\]\]")
+
+
+def remove_comments(text: str, keep_newlines: bool = False) -> str:
+    """HTML 주석(<!-- … -->)을 지운다. 정규식 <!--.*?--> 와 같은 결과지만 앞에서부터 한 번만 훑는다.
+    닫히지 않은 <!-- 가 많은 글에서 정규식은 시작점마다 끝까지 다시 훑어 시간이 제곱으로 늘어난다(공개 레포의 글은 믿을 수 없다).
+    닫히지 않은 <!-- 뒤는 그대로 둔다. keep_newlines 면 주석 안의 줄바꿈 수만큼 줄을 남긴다(줄 번호를 지키려고)."""
+    out, pos = [], 0
+    while True:
+        i = text.find("<!--", pos)
+        if i < 0:
+            break
+        j = text.find("-->", i + 4)
+        if j < 0:
+            break
+        out.append(text[pos:i])
+        if keep_newlines:
+            out.append("\n" * text.count("\n", i, j + 3))
+        pos = j + 3
+    out.append(text[pos:])
+    return "".join(out)
 
 
 def image_text(alt: str | None) -> str:
@@ -116,7 +136,7 @@ def _img_tag(m: re.Match) -> str:
 
 def _clean_prose(text: str, wiki_links: bool) -> str:
     """코드 블록 밖 글 한 조각. 한 줄 코드(`…`) 안은 태그와 이미지를 건드리지 않는다."""
-    text = COMMENT.sub("", text)
+    text = remove_comments(text)
     out = []
     for code, piece in _split_inline_code(text):
         if code:
@@ -245,9 +265,10 @@ def readable_chars(text: str) -> tuple[int, int]:
     해시(0~9, a~f 로만 된 32자 이상 덩어리, 커밋 번호나 검증 값)를 빼고 센다. 코드 블록 안 글자는 센다."""
     hex_chars = sum(len(m.group(0)) for m in HEX_RUN.finditer(text))
     t = HEX_RUN.sub("", text)
-    t = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", t)
-    t = re.sub(r"\[이미지:[^\]]*\]", "", t)
-    t = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", t)
+    # 링크와 이미지 글자에는 [ 가 다시 나오지 않는다고 본다. 여는 [ 만 많은 글에서 시작점마다 줄 끝까지 다시 훑지 않게
+    t = re.sub(r"!\[[^\[\]\n]*\]\([^()\n]*\)", "", t)
+    t = re.sub(r"\[이미지:[^\[\]\n]*\]", "", t)
+    t = re.sub(r"\[([^\[\]\n]*)\]\([^()\n]*\)", r"\1", t)
     t = re.sub(r"https?://\S+", "", t)
     t = re.sub(r"[#*>|`_~=\[\]()\\-]", "", t)
     return len(re.sub(r"\s", "", t)), hex_chars
@@ -260,13 +281,13 @@ def alnum_chars(text: str | None) -> int:
 
 def strip_structure(text: str) -> str:
     """구조 줄(제목, 빈 목록과 체크박스, 표 틀, 가로줄, 빈 인용, 빈 코드 울타리)과 주석, 앞머리를 걷어 낸 내용 줄(R15-2, R15-3)."""
-    t = COMMENT.sub("", text)
+    t = remove_comments(text)
     t = re.sub(r"\A---\n.*?\n---\n", "", t, flags=re.S)
     out = []
     for ln in t.split("\n"):
         x = ln.strip()
         if (not x or re.match(r"^#{1,6}\s", x) or re.match(r"^([-*+]|\d+[.)])\s*(\[[ xX]?\])?\s*:?\s*$", x)
-                or re.match(r"^\|?[\s:|-]*\|[\s:|-]*$", x) or re.match(r"^([-*_]\s*){3,}$", x)
+                or ("|" in x and re.fullmatch(r"[\s:|-]+", x)) or re.match(r"^([-*_]\s*){3,}$", x)
                 or re.match(r"^(>\s*)+$", x) or re.match(r"^(```|~~~)\w*$", x)):
             continue
         out.append(x)

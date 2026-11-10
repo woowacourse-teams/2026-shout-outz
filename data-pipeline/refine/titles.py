@@ -14,6 +14,8 @@ from __future__ import annotations
 import html
 import re
 
+from .text import remove_comments, split_fences
+
 # 이모지 문자(그림 문자, 기호, 화살표, 기술 기호, 도형, 잡다한 기호, 피부색, 태그, 폭 없는 이음, 꼴 선택, 키캡)
 EMOJI_CHARS = (r"[\U0001F000-\U0001FAFF☀-➿⬀-⯿←-⇿⌀-⏿■-◿"
                r"‼⁉™ℹ〰〽㊗㊙©®‍️⃣"
@@ -97,8 +99,8 @@ def strip_title(title: str) -> tuple[str, list[dict], str | None]:
 def first_h1(text: str) -> tuple[str, int] | None:
     """본문의 첫 1단계 제목(# 제목, === 밑줄 제목, <h1>) 중 서식, 링크, 이미지를 걷어 낸 뒤 글자나 숫자가 남는 첫 번째와
     그 줄 번호(1부터). 코드 블록과 HTML 주석 안의 # 줄은 보지 않는다(2-3, R9-1)."""
-    t = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group(0).count("\n"), text, flags=re.S)
-    t = re.sub(r"^(```|~~~).*?^\1", lambda m: "\n" * m.group(0).count("\n"), t, flags=re.S | re.M)
+    t = remove_comments(text, keep_newlines=True)
+    t = "\n".join("\n" * seg.count("\n") if code else seg for code, seg in split_fences(t))  # 코드 블록은 줄 수만 남긴다
     lines = t.split("\n")
     cands = []
     for i, ln in enumerate(lines):

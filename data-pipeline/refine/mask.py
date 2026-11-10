@@ -27,7 +27,7 @@ TOKENS = [
     re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"),  # JWT
 ]
 # 아이디와 비밀번호가 든 주소: scheme://아이디:비밀번호@호스트 → scheme://[비밀 값]@호스트
-CREDENTIAL_URL = re.compile(r"\b([a-z][a-z0-9+.-]*://)([^/\s:@<>\"']+:[^/\s@<>\"']+)@(?=[^\s/<>\"']+)", re.I)
+CREDENTIAL_URL = re.compile(r"\b([a-z][a-z0-9+.-]{0,30}://)([^/\s:@<>\"']+:[^/\s@<>\"']+)@(?=[^\s/<>\"']+)", re.I)
 # 비밀번호 자리가 자리 표시(password, pw, ${…}, <…>, ****)면 두다
 CREDENTIAL_PLACEHOLDER = re.compile(r"^(?:\$\{.*|<.*|\{\{.*|password|passwd|pass|pw|pwd|secret|\*+|x+)$", re.I)
 # 비밀번호나 비밀 키를 적은 줄의 값. 자리 표시(${…}, <…>, your_password 등)와 코드 모양은 두고, 숫자가 섞인 값만 가린다
