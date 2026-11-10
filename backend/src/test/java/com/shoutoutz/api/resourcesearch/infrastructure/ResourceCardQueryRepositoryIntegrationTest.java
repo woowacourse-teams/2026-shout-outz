@@ -89,16 +89,16 @@ class ResourceCardQueryRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("승인되지 않았거나 삭제된 프로젝트는 등록되지 않은 팀으로 본다")
-    void treatsHiddenProjectsAsUnregistered() {
+    @DisplayName("승인되지 않았거나 삭제된 프로젝트의 자료는 수집 때 저장한 팀 이름도 보여주지 않는다")
+    void hidesTeamOfHiddenProjects() {
         long pending = fixture.pendingProject("pending-team", "대기 팀");
         long deleted = fixture.deletedProject("deleted-team", "삭제 팀");
         long pendingDoc = fixture.document("blog-post").projectId(pending).extra("{\"project_name\": \"대기 팀\"}").save();
-        long deletedDoc = fixture.document("github-pr").projectId(deleted).save();
+        long deletedDoc = fixture.document("github-pr").projectId(deleted).extra("{\"project_name\": \"삭제 팀\"}").save();
 
         List<ResourceCard> cards = resourceCardQueryRepository.findByIds(List.of(pendingDoc, deletedDoc));
 
-        assertThat(cards.get(0).team()).isEqualTo(new ResourceCard.Team("대기 팀", null, null));
+        assertThat(cards.get(0).team()).isNull();
         assertThat(cards.get(1).team()).isNull();
     }
 

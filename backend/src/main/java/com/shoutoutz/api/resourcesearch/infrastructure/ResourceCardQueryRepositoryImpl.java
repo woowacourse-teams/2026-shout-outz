@@ -24,7 +24,7 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
     static final String CARD_COLUMNS = """
             d.id, d.source, d.title, d.url, d.summary, d.published_at,
             d.extra ->> 'platform' AS platform,
-            d.extra ->> 'project_name' AS collected_team_name,
+            CASE WHEN d.project_id IS NULL THEN d.extra ->> 'project_name' END AS collected_team_name,
             p.team_name, p.slug, p.thumbnail_media_id
             """;
 
