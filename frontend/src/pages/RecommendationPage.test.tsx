@@ -83,14 +83,13 @@ it('목록의 지정 위치에 추천을 넣고, 미리보기에서 작성 폼�
   expect(sessionStorage.length).toBe(0);
   await user.click(screen.getAllByRole('button', { name: '이 내용으로 질문 작성하기' })[0]!);
   expect(await screen.findByRole('textbox', { name: '제목' })).toHaveValue(recommendation.title);
-  expect(screen.getByRole('textbox', { name: '피드 내용' })).toHaveValue(recommendation.content);
+  expect(screen.getByRole('textbox', { name: '내용' })).toHaveValue(recommendation.content);
   expect(submitted).toBeUndefined();
   // 사용자가 추천 제목을 고쳐도 서버에는 원래 추천 ID를 보낸다.
   await user.clear(screen.getByRole('textbox', { name: '제목' }));
   await user.type(screen.getByRole('textbox', { name: '제목' }), '내가 고친 질문');
-  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
-  await user.click(screen.getByRole('option', { name: '진로 고민' }));
-  await user.click(screen.getByRole('button', { name: '질문 등록하기' }));
+  await user.click(screen.getByRole('radio', { name: '진로 고민' }));
+  await user.click(screen.getByRole('button', { name: '등록하기' }));
   await waitFor(() => expect(router.state.location.pathname).toBe('/community/103'));
   expect(submitted).toEqual(
     expect.objectContaining({
