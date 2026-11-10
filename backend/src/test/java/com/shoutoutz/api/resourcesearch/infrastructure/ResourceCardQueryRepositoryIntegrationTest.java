@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.resourcesearch.application.ResourceCardQueryRepository;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
-import com.shoutoutz.api.resourcesearch.application.dto.ResourceTeam;
 import com.shoutoutz.api.resourcesearch.support.ResourceDocumentFixture;
 import java.time.Instant;
 import java.util.List;
@@ -74,9 +73,9 @@ class ResourceCardQueryRepositoryIntegrationTest {
         long projectId = fixture.approvedProjectWithLogo("festabook", "페스타북");
         long id = fixture.document("blog-post").projectId(projectId).save();
 
-        ResourceTeam team = resourceCardQueryRepository.findByIds(List.of(id)).getFirst().team();
+        ResourceCard.Team team = resourceCardQueryRepository.findByIds(List.of(id)).getFirst().team();
 
-        assertThat(team).isEqualTo(new ResourceTeam("페스타북", "festabook", fixture.logoMediaIdOf(projectId)));
+        assertThat(team).isEqualTo(new ResourceCard.Team("페스타북", "festabook", fixture.logoMediaIdOf(projectId)));
     }
 
     @Test
@@ -84,9 +83,9 @@ class ResourceCardQueryRepositoryIntegrationTest {
     void mapsUnregisteredBlogTeamFromExtra() {
         long id = fixture.document("blog-post").extra("{\"project_name\": \"모모\"}").save();
 
-        ResourceTeam team = resourceCardQueryRepository.findByIds(List.of(id)).getFirst().team();
+        ResourceCard.Team team = resourceCardQueryRepository.findByIds(List.of(id)).getFirst().team();
 
-        assertThat(team).isEqualTo(new ResourceTeam("모모", null, null));
+        assertThat(team).isEqualTo(new ResourceCard.Team("모모", null, null));
     }
 
     @Test
@@ -99,7 +98,7 @@ class ResourceCardQueryRepositoryIntegrationTest {
 
         List<ResourceCard> cards = resourceCardQueryRepository.findByIds(List.of(pendingDoc, deletedDoc));
 
-        assertThat(cards.get(0).team()).isEqualTo(new ResourceTeam("대기 팀", null, null));
+        assertThat(cards.get(0).team()).isEqualTo(new ResourceCard.Team("대기 팀", null, null));
         assertThat(cards.get(1).team()).isNull();
     }
 

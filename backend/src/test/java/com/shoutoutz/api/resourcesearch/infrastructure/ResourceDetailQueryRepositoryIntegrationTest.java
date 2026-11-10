@@ -3,9 +3,9 @@ package com.shoutoutz.api.resourcesearch.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.resourcesearch.application.ResourceDetailQueryRepository;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceDetail;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceExperience;
-import com.shoutoutz.api.resourcesearch.application.dto.ResourceTeam;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceTopic;
 import com.shoutoutz.api.resourcesearch.support.ResourceDocumentFixture;
 import java.sql.Timestamp;
@@ -53,7 +53,7 @@ class ResourceDetailQueryRepositoryIntegrationTest {
         ResourceDetail detail = resourceDetailQueryRepository.findById(id).orElseThrow();
 
         assertThat(detail.card().resourceId()).isEqualTo(id);
-        assertThat(detail.card().team()).isEqualTo(new ResourceTeam("쫄", "zzol", null));
+        assertThat(detail.card().team()).isEqualTo(new ResourceCard.Team("쫄", "zzol", null));
         assertThat(detail.contentType()).isEqualTo("problem_solving");
         assertThat(detail.topic()).isEqualTo(new ResourceTopic("concurrency", "동시성 제어/락"));
         assertThat(detail.keyPoints()).containsExactly("락 범위를 줄이는 방법", "재시도 흐름");

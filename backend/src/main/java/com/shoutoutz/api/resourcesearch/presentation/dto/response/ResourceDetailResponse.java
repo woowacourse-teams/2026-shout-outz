@@ -1,6 +1,5 @@
 package com.shoutoutz.api.resourcesearch.presentation.dto.response;
 
-import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceDetail;
 import java.time.Instant;
 import java.util.List;
@@ -14,7 +13,7 @@ public record ResourceDetailResponse(
         Instant publishedAt,
         String platform,
         String contentType,
-        ResourceTeamResponse team,
+        ResourceCardResponse.Team team,
         ResourceTopicResponse topic,
         List<String> keyPoints,
         List<String> techTags,
@@ -28,7 +27,7 @@ public record ResourceDetailResponse(
     }
 
     public static ResourceDetailResponse from(ResourceDetail detail) {
-        ResourceCard card = detail.card();
+        ResourceCardResponse card = ResourceCardResponse.from(detail.card());
         return new ResourceDetailResponse(
                 card.resourceId(),
                 card.source(),
@@ -38,7 +37,7 @@ public record ResourceDetailResponse(
                 card.publishedAt(),
                 card.platform(),
                 detail.contentType(),
-                ResourceTeamResponse.from(card.team()),
+                card.team(),
                 ResourceTopicResponse.from(detail.topic()),
                 detail.keyPoints(),
                 detail.techTags(),

@@ -2,7 +2,6 @@ package com.shoutoutz.api.resourcesearch.infrastructure;
 
 import com.shoutoutz.api.resourcesearch.application.ResourceCardQueryRepository;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
-import com.shoutoutz.api.resourcesearch.application.dto.ResourceTeam;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -105,13 +104,24 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
                 resultSet.getString("summary"),
                 toInstant(resultSet.getTimestamp("published_at")),
                 resultSet.getString("platform"),
-                ResourceTeam.resolve(
-                        resultSet.getString("team_name"),
-                        resultSet.getString("slug"),
-                        resultSet.getObject("thumbnail_media_id", Long.class),
-                        resultSet.getString("collected_team_name")
-                )
+                teamOf(resultSet)
         );
+    }
+
+    private static ResourceCard.Team teamOf(ResultSet resultSet) throws SQLException {
+        String projectSlug = resultSet.getString("slug");
+        if (projectSlug != null) {
+            return new ResourceCard.Team(
+                    resultSet.getString("team_name"),
+                    projectSlug,
+                    resultSet.getObject("thumbnail_media_id", Long.class)
+            );
+        }
+        String collectedTeamName = resultSet.getString("collected_team_name");
+        if (collectedTeamName == null || collectedTeamName.isBlank()) {
+            return null;
+        }
+        return new ResourceCard.Team(collectedTeamName, null, null);
     }
 
     private static Instant toInstant(Timestamp timestamp) {

@@ -20,9 +20,9 @@ import com.epages.restdocs.apispec.SimpleType;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.resourcesearch.application.ResourceQueryService;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
+import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceDetailResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceExperienceResponse;
-import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceTeamResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceTopicResponse;
 import java.time.Instant;
 import java.util.List;
@@ -52,7 +52,7 @@ class ResourceHttpApiDetailTest {
         given(resourceQueryService.findDetail(101L)).willReturn(new ResourceDetailResponse(
                 101L, "blog-post", "[Database] MySQL(InnoDB) 락(Lock) (2)", "https://soeun2537.tistory.com/127",
                 "잠금 범위와 대기 동작을 살펴봐요.", Instant.parse("2025-10-06T03:00:00Z"), "tistory", null,
-                new ResourceTeamResponse("페스타북", "festabook", 31L),
+                new ResourceCardResponse.Team("페스타북", "festabook", 31L),
                 new ResourceTopicResponse("concurrency", "동시성 제어/락"),
                 List.of("레코드 락, 갭 락, 넥스트 키 락의 잠금 범위를 알아봐요."),
                 List.of("MySQL", "InnoDB"),

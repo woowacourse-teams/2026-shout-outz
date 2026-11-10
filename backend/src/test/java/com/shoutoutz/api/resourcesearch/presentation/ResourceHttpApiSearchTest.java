@@ -23,7 +23,6 @@ import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceSearchR
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSearchResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSectionResponse;
-import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceTeamResponse;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
 import java.time.Instant;
 import java.util.List;
@@ -59,7 +58,7 @@ class ResourceHttpApiSearchTest {
                                 101L, "blog-post", "[Database] MySQL(InnoDB) 락(Lock) (2)",
                                 "https://soeun2537.tistory.com/127", "잠금 범위와 대기 동작을 살펴봐요.",
                                 Instant.parse("2025-10-06T03:00:00Z"), "tistory",
-                                new ResourceTeamResponse("페스타북", "festabook", 31L)))),
+                                new ResourceCardResponse.Team("페스타북", "festabook", 31L)))),
                         new ResourceSectionResponse(List.of(new ResourceCardResponse(
                                 3412L, "github-teamdoc", "포트폴리오 원장 변경 전에 포트폴리오 잠금 획득",
                                 "https://github.com/woowacourse-teams/2026-DAYNOMY/blob/main/docs/adr.md",

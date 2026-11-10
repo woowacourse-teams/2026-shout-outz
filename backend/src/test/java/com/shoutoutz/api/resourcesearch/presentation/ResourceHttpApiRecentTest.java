@@ -21,7 +21,6 @@ import com.shoutoutz.api.resourcesearch.application.ResourceQueryService;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceRecentRequest;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
-import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceTeamResponse;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -51,7 +50,7 @@ class ResourceHttpApiRecentTest {
                 new ResourceCardResponse(1201L, "blog-post", "CSR, SSR, SSG, ISR..? 난 ISR로 할래 #1",
                         "https://rilog.kr/@rilog/posts/219", "정기 콘텐츠를 재배포 없이 갱신하는 구조를 설계할 때 참고하기 좋아요.",
                         Instant.parse("2026-10-20T01:00:00Z"), "github",
-                        new ResourceTeamResponse("Rilog.", "rilog", 44L))));
+                        new ResourceCardResponse.Team("Rilog.", "rilog", 44L))));
 
         mockMvc.perform(get("/api/v1/resources/recent").queryParam("kind", "BLOG").queryParam("size", "4"))
                 .andExpect(status().isOk())
