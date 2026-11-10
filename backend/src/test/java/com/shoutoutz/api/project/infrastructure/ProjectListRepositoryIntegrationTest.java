@@ -81,7 +81,7 @@ class ProjectListRepositoryIntegrationTest {
         saveProject("APPROVED", 8, BASE_TIME.plus(2, ChronoUnit.HOURS));
 
         ProjectPage page = findAll(new ProjectSearchCondition(
-                token, List.of(6, 7), List.of(), ProjectSort.LATEST, 50, null));
+                token, List.of(6, 7), List.of(), null, ProjectSort.LATEST, 50, null));
 
         assertThat(ids(page)).containsExactly(cohort7, cohort6);
         assertThat(page.totalCount()).isEqualTo(2);
@@ -100,9 +100,9 @@ class ProjectListRepositoryIntegrationTest {
         saveProjectTag(reactOnly, react);
 
         ProjectPage bothTags = findAll(new ProjectSearchCondition(
-                token, List.of(), List.of(react, spring), ProjectSort.LATEST, 50, null));
+                token, List.of(), List.of(react, spring), null, ProjectSort.LATEST, 50, null));
         ProjectPage reactTag = findAll(new ProjectSearchCondition(
-                token, List.of(), List.of(react), ProjectSort.LATEST, 50, null));
+                token, List.of(), List.of(react), null, ProjectSort.LATEST, 50, null));
 
         assertThat(ids(bothTags)).containsExactly(both);
         assertThat(ids(reactTag)).containsExactly(reactOnly, both);
@@ -166,7 +166,7 @@ class ProjectListRepositoryIntegrationTest {
         like(oneLikeOlder, 1);
         like(oneLikeNewer, 1);
 
-        ProjectPage page = findAll(new ProjectSearchCondition(token, List.of(), List.of(), ProjectSort.POPULAR, 50, null));
+        ProjectPage page = findAll(new ProjectSearchCondition(token, List.of(), List.of(), null, ProjectSort.POPULAR, 50, null));
 
         assertThat(ids(page)).containsExactly(twoLikes, oneLikeNewer, oneLikeOlder, noLikesNewest);
     }
@@ -183,13 +183,13 @@ class ProjectListRepositoryIntegrationTest {
         like(first, 1);
         like(second, 1);
         like(third, 1);
-        List<Long> expected = ids(findAll(new ProjectSearchCondition(token, List.of(), List.of(), sort, 50, null)));
+        List<Long> expected = ids(findAll(new ProjectSearchCondition(token, List.of(), List.of(), null, sort, 50, null)));
 
         List<Long> collected = new ArrayList<>();
         ProjectCursor cursor = null;
         ProjectPage page;
         do {
-            page = findAll(new ProjectSearchCondition(token, List.of(), List.of(), sort, 2, cursor));
+            page = findAll(new ProjectSearchCondition(token, List.of(), List.of(), null, sort, 2, cursor));
             assertThat(page.items()).hasSizeLessThanOrEqualTo(2);
             assertThat(page.totalCount()).isEqualTo(5);
             collected.addAll(ids(page));
@@ -298,7 +298,7 @@ class ProjectListRepositoryIntegrationTest {
         saveProject("검색어가 없는 제목", "소개", "APPROVED", 6, BASE_TIME);
 
         ProjectFilterOptions options = findFilterOptions(List.of(6), List.of());
-        ProjectPage page = findAll(new ProjectSearchCondition(token, List.of(6), List.of(), ProjectSort.LATEST, 50, null));
+        ProjectPage page = findAll(new ProjectSearchCondition(token, List.of(6), List.of(), null, ProjectSort.LATEST, 50, null));
 
         assertThat(options.matchedProjectCount()).isEqualTo(1).isEqualTo(page.totalCount());
     }
@@ -379,17 +379,82 @@ class ProjectListRepositoryIntegrationTest {
                 .collect(Collectors.toMap(count -> count.cohort().getValue(), CohortCount::projectCount));
     }
 
+    @Test
+    @DisplayName("기술 주제를 고르면 그 주제의 팀 자료가 있는 프로젝트만 조회하고, 내려간 자료, 받아들인 제보 자료, 테코톡만 있으면 뺀다.")
+    void filtersByTopic() {
+        long withTopic = saveProject("APPROVED", 6, BASE_TIME);
+        long otherTopic = saveProject("APPROVED", 6, BASE_TIME.plus(1, ChronoUnit.HOURS));
+        long onlyDeleted = saveProject("APPROVED", 6, BASE_TIME.plus(2, ChronoUnit.HOURS));
+        long onlyRemoved = saveProject("APPROVED", 6, BASE_TIME.plus(3, ChronoUnit.HOURS));
+        long onlyTalk = saveProject("APPROVED", 6, BASE_TIME.plus(4, ChronoUnit.HOURS));
+        saveTopicResource(withTopic, "github-pr", "concurrency", false);
+        saveTopicResource(otherTopic, "github-pr", "n_plus_one", false);
+        saveTopicResource(onlyDeleted, "github-pr", "concurrency", true);
+        String removedKey = saveTopicResource(onlyRemoved, "github-teamdoc", "concurrency", false);
+        acceptRemoval(onlyRemoved, "github-teamdoc", removedKey);
+        saveTopicResource(onlyTalk, "youtube-tekotalk", "concurrency", false);
+
+        ProjectPage page = findAll(topicCondition(token, "concurrency"));
+
+        assertThat(ids(page)).containsExactly(withTopic);
+        assertThat(page.totalCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("기술 주제 조건은 다른 조건과 함께 걸리고, 없는 주제 id 면 빈 목록이다.")
+    void combinesTopicWithOtherFilters() {
+        long cohort6 = saveProject("APPROVED", 6, BASE_TIME);
+        long cohort7 = saveProject("APPROVED", 7, BASE_TIME.plus(1, ChronoUnit.HOURS));
+        saveTopicResource(cohort6, "blog-post", "concurrency", false);
+        saveTopicResource(cohort7, "github-pr", "concurrency", false);
+
+        ProjectPage cohort7Only = findAll(new ProjectSearchCondition(
+                token, List.of(7), List.of(), "concurrency", ProjectSort.LATEST, 50, null));
+        ProjectPage bothCohorts = findAll(topicCondition(token, "concurrency"));
+        ProjectPage unknownTopic = findAll(topicCondition(token, "unknown"));
+
+        assertThat(ids(cohort7Only)).containsExactly(cohort7);
+        assertThat(ids(bothCohorts)).containsExactly(cohort7, cohort6);
+        assertThat(ids(unknownTopic)).isEmpty();
+        assertThat(unknownTopic.totalCount()).isZero();
+    }
+
     private static Map<Long, Long> techTagCounts(ProjectFilterOptions options) {
         return options.techTags().stream()
                 .collect(Collectors.toMap(TechTagCount::id, TechTagCount::projectCount));
     }
 
     private static ProjectSearchCondition condition(String keyword) {
-        return new ProjectSearchCondition(keyword, List.of(), List.of(), ProjectSort.LATEST, 50, null);
+        return new ProjectSearchCondition(keyword, List.of(), List.of(), null, ProjectSort.LATEST, 50, null);
+    }
+
+    private static ProjectSearchCondition topicCondition(String keyword, String topicId) {
+        return new ProjectSearchCondition(keyword, List.of(), List.of(), topicId, ProjectSort.LATEST, 50, null);
     }
 
     private static List<Long> ids(ProjectPage page) {
         return page.items().stream().map(ProjectSummary::id).toList();
+    }
+
+    /**
+     * 프로젝트의 기술 주제 자료를 넣고 external_key 를 돌려준다.
+     */
+    private String saveTopicResource(long projectId, String source, String topic, boolean deleted) {
+        String externalKey = "topic-" + UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO resource_documents (source, external_key, version, title, url, project_id, topic,
+                                                prompt_version, updated_at, deleted_at)
+                VALUES (?, ?, 1, '제목', 'https://example.com', ?, ?, 'v1', now(), CASE WHEN ? THEN now() END)
+                """, source, externalKey, projectId, topic, deleted);
+        return externalKey;
+    }
+
+    private void acceptRemoval(long projectId, String source, String externalKey) {
+        jdbcTemplate.update("""
+                INSERT INTO resource_reports (project_id, user_id, kind, resource_source, resource_external_key, status,
+                                              created_at, updated_at)
+                VALUES (?, ?, 'REMOVE', ?, ?, 'ACCEPTED', now(), now())
+                """, projectId, saveUser("reporter").getId(), source, externalKey);
     }
 
     private long saveProject(String approvalStatus, int cohort, Instant createdAt) {

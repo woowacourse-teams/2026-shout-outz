@@ -17,6 +17,7 @@ import com.shoutoutz.api.project.domain.ProjectSort;
 import com.shoutoutz.api.project.domain.ProjectSummary;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.ServiceStatus;
+import com.shoutoutz.api.projectresource.infrastructure.TeamResourceSql;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -245,7 +246,8 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
 
     public ProjectPage findAll(ProjectSearchCondition condition, Long viewerId) {
         MapSqlParameterSource parameters = new MapSqlParameterSource();
-        String filteredProjectsSql = filteredProjectsSql(condition.filter(), parameters);
+        String filteredProjectsSql = filteredProjectsSql(condition.filter(), parameters)
+                + topicCondition(condition.topicId(), parameters);
         parameters.addValue("viewerId", viewerId, Types.BIGINT);
 
         List<ProjectSummary> fetched = jdbcTemplate.query(
@@ -476,6 +478,20 @@ public class ProjectListJdbcRepository implements UserProjectQueryRepository {
             parameters.addValue("keywordPattern", "%" + escapeLikePattern(condition.keyword()) + "%");
         }
         return sql.toString();
+    }
+
+    /**
+     * 탐색 화면에서 고른 기술 주제의 팀 자료가 있는 프로젝트만 남긴다.
+     * 기술 이야기 탭과 같은 자료 규칙(TeamResourceSql)을 써서, 고른 프로젝트의 기술 이야기 탭에 그 주제가 보이게 한다.
+     * 필터 선택지별 수에는 주제를 넣지 않으므로 목록 조회에서만 붙인다.
+     */
+    private static String topicCondition(String topicId, MapSqlParameterSource parameters) {
+        if (topicId == null) {
+            return "";
+        }
+        parameters.addValue("topicId", topicId);
+        TeamResourceSql.addTeamSources(parameters);
+        return TeamResourceSql.HAS_TOPIC_CONDITION;
     }
 
     /**

@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.util.LinkedHashSet;
 import java.util.List;
 import org.hibernate.validator.constraints.CodePointLength;
@@ -15,6 +16,7 @@ import org.hibernate.validator.constraints.CodePointLength;
 /**
  * 프로젝트 목록 조회에 사용하는 HTTP 요청 파라미터
  * 모든 파라미터는 선택값이다. 형식은 어노테이션으로 검증하고, 어노테이션으로 검증할 수 없는 기수는 resolvedCohorts()에서 변환한다.
+ * topicId 는 탐색 화면 프로젝트 탭에서 고른 기술 주제 id(resource_topic_catalog.id)다. 없는 id 면 빈 목록이 된다.
  * 바인딩 도중 예외가 나지 않도록 생성자에서는 공백만 정리한다.
  */
 public record ProjectFindAllRequest(
@@ -24,6 +26,9 @@ public record ProjectFindAllRequest(
         List<@NotNull(message = "cohorts에 빈 값을 넣을 수 없습니다.") Integer> cohorts,
 
         List<@NotNull(message = "techTagIds에 빈 값을 넣을 수 없습니다.") Long> techTagIds,
+
+        @Size(max = 40, message = "topicId는 40자 이하여야 합니다.")
+        String topicId,
 
         @Pattern(regexp = "LATEST|POPULAR", message = "sort는 LATEST 또는 POPULAR여야 합니다.")
         String sort,
@@ -42,6 +47,7 @@ public record ProjectFindAllRequest(
      */
     public ProjectFindAllRequest {
         keyword = blankToNull(keyword);
+        topicId = blankToNull(topicId);
         sort = blankToNull(sort);
         cursor = blankToNull(cursor);
     }
