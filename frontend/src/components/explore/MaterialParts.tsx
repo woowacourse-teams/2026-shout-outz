@@ -17,6 +17,26 @@ export function formatMaterialDate(value: string | null) {
   return match ? `${match[1]}년 ${Number(match[2])}월 ${Number(match[3])}일` : '';
 }
 
+const BLOG_FAVICONS = [
+  ['tistory.com', '/about-assets/assets/tistory.svg'],
+  ['velog.io', '/about-assets/assets/velog.ico'],
+  ['rilog.kr', '/about-assets/assets/rilog.svg'],
+] as const;
+
+/** 아는 블로그 서비스의 파비콘. 모르는 주소면 null이다. */
+export function blogFaviconOf(url: string) {
+  try {
+    const { hostname } = new URL(url);
+    return (
+      BLOG_FAVICONS.find(
+        ([domain]) => hostname === domain || hostname.endsWith(`.${domain}`),
+      )?.[1] ?? null
+    );
+  } catch {
+    return null;
+  }
+}
+
 export function hostnameOf(url: string) {
   try {
     return new URL(url).hostname;

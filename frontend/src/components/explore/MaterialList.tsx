@@ -1,20 +1,27 @@
+import type { ReactNode } from 'react';
+
 import type { Material } from '@/apis/explore';
 import { Badge } from '@/components/Badge';
 import { openMaterialSummary } from '@/components/explore/MaterialSummaryModal';
 import { formatMaterialDate, MaterialIcon, MaterialMeta } from '@/components/explore/MaterialParts';
 import { cn } from '@/utils/cn';
 
+interface MaterialListProps {
+  materials: Material[];
+  /** 한 줄 소개 아래에 덧붙일 내용 */
+  renderExtra?: (material: Material) => ReactNode;
+}
+
 /** 블로그·PR·팀 문서 목록. 항목을 누르면 자료 요약을 연다. */
-export function MaterialList({ materials }: { materials: Material[] }) {
+export function MaterialList({ materials, renderExtra }: MaterialListProps) {
+  const itemClass =
+    'focus-visible:outline-primary-600 group flex w-full cursor-pointer flex-col gap-2.5 py-6 text-left focus-visible:outline-2';
+
   return (
     <ul className="flex flex-col">
-      {materials.map((material) => (
-        <li key={material.id} className="border-t border-gray-100">
-          <button
-            type="button"
-            className="focus-visible:outline-primary-600 group flex w-full cursor-pointer flex-col gap-2.5 py-6 text-left focus-visible:outline-2"
-            onClick={() => openMaterialSummary(material)}
-          >
+      {materials.map((material) => {
+        const content = (
+          <>
             <MaterialMeta material={material} />
             <h3 className="flex items-start gap-2 text-lg leading-snug font-bold tracking-tight text-gray-900 group-hover:underline">
               <MaterialIcon material={material} className="mt-[calc((1lh-18px)/2)]" />
@@ -23,9 +30,22 @@ export function MaterialList({ materials }: { materials: Material[] }) {
             {material.summary && (
               <p className="text-base leading-relaxed text-gray-800">{material.summary}</p>
             )}
-          </button>
-        </li>
-      ))}
+            {renderExtra?.(material)}
+          </>
+        );
+
+        return (
+          <li key={material.id} className="border-t border-gray-100">
+            <button
+              type="button"
+              className={itemClass}
+              onClick={() => openMaterialSummary(material)}
+            >
+              {content}
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 }

@@ -29,7 +29,7 @@ describe('ExplorePage', () => {
     expect(screen.getByText('전체 77개 주제를 분야별로 모았어요.')).toBeVisible();
   });
 
-  it('채용공고와 프로젝트 탭은 보이지만 누를 수 없다', async () => {
+  it('프로젝트 탭은 보이지만 누를 수 없다', async () => {
     renderRoute('/explore');
 
     const tabs = await screen.findByRole('tablist', { name: '찾는 방법' });
@@ -37,7 +37,7 @@ describe('ExplorePage', () => {
       'aria-selected',
       'true',
     );
-    expect(within(tabs).getByRole('tab', { name: '채용공고' })).toBeDisabled();
+    expect(within(tabs).getByRole('tab', { name: '채용공고' })).toBeEnabled();
     expect(within(tabs).getByRole('tab', { name: '프로젝트' })).toBeDisabled();
   });
 
@@ -135,5 +135,50 @@ describe('ExplorePage', () => {
     expect(
       within(summary).queryByRole('heading', { name: /어떤 문제를 어떻게 풀었나/ }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('ExplorePage 채용공고 탭', () => {
+  it('채용공고 탭을 누르면 공고 카드 목록을 보여준다', async () => {
+    const user = userEvent.setup();
+    renderRoute('/explore');
+
+    const tabs = await screen.findByRole('tablist', { name: '찾는 방법' });
+    await user.click(within(tabs).getByRole('tab', { name: '채용공고' }));
+
+    const cards = await screen.findByRole('list', { name: '공고' });
+    expect(
+      within(cards).getByRole('link', { name: /Server Developer \(Product\)/ }),
+    ).toHaveAttribute('href', '/job-postings/1');
+    expect(within(cards).getByRole('link', { name: /Frontend Developer/ })).toBeVisible();
+    expect(within(cards).getByText('곧 추가될 공고예요')).toBeInTheDocument();
+    expect(within(cards).getAllByText('상시')).toHaveLength(2);
+    expect(within(cards).getByText('D-3')).toBeVisible();
+    expect(within(cards).getByText('D-day')).toBeVisible();
+    expect(within(cards).getByRole('img', { name: '토스뱅크 로고' })).toHaveAttribute(
+      'src',
+      expect.stringContaining('data:image/svg+xml'),
+    );
+    expect(within(cards).getByText('#Product')).toBeVisible();
+    expect(screen.getByRole('searchbox', { name: '채용공고 검색' })).toBeVisible();
+  });
+
+  it('추천 검색어로 공고를 찾으면 맞는 공고만 보여준다', async () => {
+    const user = userEvent.setup();
+    renderRoute('/explore?tab=job');
+
+    const suggestions = await screen.findByRole('list', { name: '추천 검색어' });
+    await user.click(within(suggestions).getByRole('button', { name: '토스증권' }));
+
+    const cards = await screen.findByRole('list', { name: '공고' });
+    expect(await within(cards).findAllByRole('link')).toHaveLength(1);
+    expect(within(cards).getByRole('link', { name: /Frontend Developer/ })).toBeVisible();
+    expect(within(cards).queryByText('곧 추가될 공고예요')).not.toBeInTheDocument();
+  });
+
+  it('맞는 공고가 없으면 안내를 보여준다', async () => {
+    renderRoute('/explore?tab=job&q=없는회사123');
+
+    expect(await screen.findByText("'없는회사123'에 맞는 공고를 아직 못 찾았어요.")).toBeVisible();
   });
 });
