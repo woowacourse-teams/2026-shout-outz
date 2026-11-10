@@ -66,6 +66,34 @@ class FeedLinkPreviewRepositoryIntegrationTest {
     }
 
     @Test
+    void 기술_자료만_참조하는_캐시도_선점한다() {
+        long cacheId = insertCache("PENDING", 0, BASE, null, null);
+        linkToResource(cacheId);
+        Instant now = BASE.plus(1, ChronoUnit.MINUTES);
+
+        Optional<FetchJob> job = linkPreviewRepository.claimDue(now, now.minus(7, ChronoUnit.DAYS));
+
+        assertThat(job).hasValueSatisfying(claimed -> assertThat(claimed.id()).isEqualTo(cacheId));
+        assertThat(findCache(cacheId).get("status")).isEqualTo("PROCESSING");
+    }
+
+    @Test
+    void 삭제된_기술_자료만_참조하는_캐시는_선점하지_않는다() {
+        long cacheId = insertCache("PENDING", 0, BASE, null, null);
+        linkToResource(cacheId);
+        jdbcTemplate.update("""
+                UPDATE resource_documents SET deleted_at = now()
+                WHERE id IN (SELECT document_id FROM resource_link_preview_refs WHERE cache_id = ?)
+                """, cacheId);
+        Instant now = BASE.plus(1, ChronoUnit.MINUTES);
+
+        Optional<FetchJob> job = linkPreviewRepository.claimDue(now, now.minus(7, ChronoUnit.DAYS));
+
+        assertThat(job).isEmpty();
+        assertThat(findCache(cacheId).get("status")).isEqualTo("PENDING");
+    }
+
+    @Test
     void 처리할_때가_된_작업이_없으면_선점하지_않는다() {
         long cacheId = insertCache("PENDING", 0, BASE.plus(1, ChronoUnit.DAYS), null, null);
         linkToFeed(cacheId);
