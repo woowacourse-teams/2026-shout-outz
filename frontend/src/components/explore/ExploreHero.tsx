@@ -7,7 +7,7 @@ import { cn } from '@/utils/cn';
 
 const HERO_LINES = ['프로젝트를 만들 때,', '취업을 준비할 때,', '프로젝트를 만들 때,'];
 
-export type ExploreTab = 'keyword' | 'job';
+export type ExploreTab = 'keyword' | 'job' | 'project';
 
 /** 탭마다 검색창 문구와 추천 검색어가 다르다. */
 const SEARCH_BY_TAB: Record<
@@ -35,6 +35,19 @@ const SEARCH_BY_TAB: Record<
     suggestionLabel: '이런 공고를 찾아보세요',
     suggestions: ['토스뱅크', '토스증권', 'Kotlin', 'Spring', 'TypeScript'],
   },
+  project: {
+    label: '프로젝트 검색',
+    placeholder: '프로젝트 이름, 소개, 기술로 찾아보세요',
+    suggestionLabel: '이런 주제를 찾아보세요',
+    suggestions: [
+      'JPA/Hibernate',
+      '동시성 제어/락',
+      '인덱스/쿼리 최적화',
+      'DB 설계/정규화',
+      '트랜잭션/데드락',
+      '웹 성능 최적화',
+    ],
+  },
 };
 
 export const chipClass = cn(tabItemBaseStyle, tabItemSizeStyles.sm, tabItemStyles.chip);
@@ -44,10 +57,21 @@ interface ExploreHeroProps {
   onTabChange: (tab: ExploreTab) => void;
   query: string;
   onSearch: (query: string) => void;
+  /** 추천 검색어 중 눌린 것. 없으면 검색어와 같은 것을 눌린 것으로 본다. */
+  activeSuggestion?: string | null;
+  /** 추천 검색어를 눌렀을 때. 없으면 그 말로 검색한다. */
+  onSuggestionSelect?: (suggestion: string) => void;
 }
 
 /** 탐색 화면 첫 영역. 문구, 찾는 방법 탭, 검색창, 추천 검색어 */
-export function ExploreHero({ tab, onTabChange, query, onSearch }: ExploreHeroProps) {
+export function ExploreHero({
+  tab,
+  onTabChange,
+  query,
+  onSearch,
+  activeSuggestion = query,
+  onSuggestionSelect = onSearch,
+}: ExploreHeroProps) {
   const search = SEARCH_BY_TAB[tab];
 
   return (
@@ -89,12 +113,7 @@ export function ExploreHero({ tab, onTabChange, query, onSearch }: ExploreHeroPr
         <Tab.Item value="job" className="data-[status=active]:font-semibold">
           채용공고
         </Tab.Item>
-        {/* 프로젝트 탭은 아직 화면이 없어 보이기만 하고 누를 수 없게 둔다. */}
-        <Tab.Item
-          value="project"
-          disabled
-          className="disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <Tab.Item value="project" className="data-[status=active]:font-semibold">
           프로젝트
         </Tab.Item>
       </Tab>
@@ -115,10 +134,10 @@ export function ExploreHero({ tab, onTabChange, query, onSearch }: ExploreHeroPr
             <li key={suggestion}>
               <button
                 type="button"
-                data-status={suggestion === query ? 'active' : 'inactive'}
-                aria-pressed={suggestion === query}
+                data-status={suggestion === activeSuggestion ? 'active' : 'inactive'}
+                aria-pressed={suggestion === activeSuggestion}
                 className={chipClass}
-                onClick={() => onSearch(suggestion)}
+                onClick={() => onSuggestionSelect(suggestion)}
               >
                 {suggestion}
               </button>
