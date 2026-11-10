@@ -7,6 +7,7 @@ import com.shoutoutz.api.resourcesearch.domain.KeywordSearchCount;
 import com.shoutoutz.api.resourcesearch.domain.PopularKeywords;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import com.shoutoutz.api.resourcesearch.domain.SearchKeyword;
+import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceRecentRequest;
 import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceSearchRequest;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.PopularKeywordResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
@@ -48,6 +49,12 @@ public class ResourceQueryService {
                 sectionOf(hits, ResourceSection.DOCUMENT, cards),
                 sectionOf(hits, ResourceSection.TALK, cards)
         );
+    }
+
+    public List<ResourceCardResponse> findRecent(ResourceRecentRequest request) {
+        return resourceCardQueryRepository.findRecent(request.kind(), request.resolvedSize()).stream()
+                .map(ResourceCardResponse::from)
+                .toList();
     }
 
     public List<PopularKeywordResponse> findPopularKeywords() {

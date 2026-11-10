@@ -3,6 +3,7 @@ package com.shoutoutz.api.resourcesearch.infrastructure;
 import com.shoutoutz.api.resourcesearch.application.ResourceCardQueryRepository;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceTeam;
+import com.shoutoutz.api.resourcesearch.domain.ResourceSection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -42,15 +43,57 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
         if (resourceIds.isEmpty()) {
             return List.of();
         }
+        String sql = """
+                SELECT %s
+                FROM resource_documents d
+                %s
+                WHERE d.id IN (:resourceIds)
+                  AND d.deleted_at IS NULL
+                """.formatted(CARD_COLUMNS, VISIBLE_PROJECT_JOIN);
         List<ResourceCard> cards = jdbcTemplate.query(
-                "SELECT " + CARD_COLUMNS + " FROM resource_documents d " + VISIBLE_PROJECT_JOIN + """
-                        WHERE d.id IN (:resourceIds)
-                          AND d.deleted_at IS NULL
-                        """,
+                sql,
                 new MapSqlParameterSource("resourceIds", resourceIds),
                 (resultSet, rowNumber) -> mapCard(resultSet)
         );
         return inRequestedOrder(resourceIds, cards);
+    }
+
+    @Override
+    public List<ResourceCard> findRecent(ResourceSection kind, int size) {
+        String sql = """
+                SELECT %s
+                FROM (
+                    SELECT d.*,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY %s
+                               ORDER BY d.published_at DESC, d.id DESC
+                           ) AS author_rank
+                    FROM resource_documents d
+                    WHERE d.source IN (:sources)
+                      AND d.deleted_at IS NULL
+                      AND d.published_at IS NOT NULL
+                      AND NULLIF(btrim(d.summary), '') IS NOT NULL
+                ) d
+                %s
+                WHERE d.author_rank = 1
+                ORDER BY d.published_at DESC, d.id DESC
+                LIMIT :size
+                """.formatted(CARD_COLUMNS, onePerAuthorKey(kind), VISIBLE_PROJECT_JOIN);
+        return jdbcTemplate.query(
+                sql,
+                new MapSqlParameterSource()
+                        .addValue("sources", kind.sources())
+                        .addValue("size", size),
+                (resultSet, rowNumber) -> mapCard(resultSet)
+        );
+    }
+
+    private String onePerAuthorKey(ResourceSection kind) {
+        return switch (kind) {
+            case BLOG -> "COALESCE('project:' || d.project_id, 'team:' || NULLIF(btrim(d.extra ->> 'project_name'), ''), 'resource:' || d.id)";
+            case TALK -> "COALESCE('speaker:' || NULLIF(btrim(d.extra ->> 'speaker'), ''), 'resource:' || d.id)";
+            case DOCUMENT -> throw new IllegalArgumentException("최근 자료는 블로그와 테코톡만 조회할 수 있습니다.");
+        };
     }
 
     static ResourceCard mapCard(ResultSet resultSet) throws SQLException {
