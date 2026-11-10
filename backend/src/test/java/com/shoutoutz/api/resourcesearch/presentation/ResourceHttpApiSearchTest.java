@@ -10,6 +10,7 @@ import static org.springframework.restdocs.payload.JsonFieldType.ARRAY;
 import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
+import static org.springframework.restdocs.payload.PayloadDocumentation.applyPathPrefix;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -25,6 +26,7 @@ import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSearch
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceSectionResponse;
 import com.shoutoutz.api.visitor.domain.VisitorKey;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,6 +35,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -94,28 +97,7 @@ class ResourceHttpApiSearchTest {
                                                 .optional()
                                 )
                                 .responseSchema(Schema.schema("ResourceSearchSuccessResponse"))
-                                .responseFields(
-                                        fieldWithPath("status").type(STRING).description("응답 상태"),
-                                        fieldWithPath("data").type(OBJECT).description("섹션별 검색 결과"),
-                                        fieldWithPath("data.blogs.items").type(ARRAY).description("블로그(blog-post), 최대 20건"),
-                                        fieldWithPath("data.documents.items").type(ARRAY)
-                                                .description("PR과 팀 문서(github-pr, github-teamdoc, github-wiki, github-discussion), 최대 20건"),
-                                        fieldWithPath("data.talks.items").type(ARRAY).description("테코톡(youtube-tekotalk), 최대 6건"),
-                                        fieldWithPath("data.*.items[].resourceId").type(NUMBER).description("자료 ID. 자료 상세 조회에 쓴다"),
-                                        fieldWithPath("data.*.items[].source").type(STRING).description("자료 원천"),
-                                        fieldWithPath("data.*.items[].title").type(STRING).description("자료 제목"),
-                                        fieldWithPath("data.*.items[].url").type(STRING).description("원문 주소"),
-                                        fieldWithPath("data.*.items[].summary").type(STRING).description("한줄 소개").optional(),
-                                        fieldWithPath("data.*.items[].publishedAt").type(STRING).description("원문 게시 시각(UTC)").optional(),
-                                        fieldWithPath("data.*.items[].platform").type(STRING).description("블로그 플랫폼. 블로그가 아니면 null").optional(),
-                                        fieldWithPath("data.*.items[].team").type(OBJECT)
-                                                .description("자료를 만든 팀. 팀이 없거나 알 수 없으면 null").optional(),
-                                        fieldWithPath("data.*.items[].team.name").type(STRING).description("팀 이름").optional(),
-                                        fieldWithPath("data.*.items[].team.projectSlug").type(STRING)
-                                                .description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),
-                                        fieldWithPath("data.*.items[].team.logoMediaId").type(NUMBER)
-                                                .description("프로젝트 썸네일 미디어 ID. 없으면 null").optional()
-                                )
+                                .responseFields(searchResponseFields())
                                 .build())
                 ));
     }
@@ -167,5 +149,38 @@ class ResourceHttpApiSearchTest {
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
 
         verifyNoInteractions(resourceQueryService);
+    }
+
+    private List<FieldDescriptor> searchResponseFields() {
+        List<FieldDescriptor> fields = new ArrayList<>(List.of(
+                fieldWithPath("status").type(STRING).description("응답 상태"),
+                fieldWithPath("data").type(OBJECT).description("섹션별 검색 결과"),
+                fieldWithPath("data.blogs.items").type(ARRAY).description("블로그(blog-post), 최대 20건"),
+                fieldWithPath("data.documents.items").type(ARRAY)
+                        .description("PR과 팀 문서(github-pr, github-teamdoc, github-wiki, github-discussion), 최대 20건"),
+                fieldWithPath("data.talks.items").type(ARRAY).description("테코톡(youtube-tekotalk), 최대 6건")
+        ));
+        fields.addAll(applyPathPrefix("data.blogs.items[].", cardFields()));
+        fields.addAll(applyPathPrefix("data.documents.items[].", cardFields()));
+        fields.addAll(applyPathPrefix("data.talks.items[].", cardFields()).stream()
+                .map(FieldDescriptor::optional)
+                .toList());
+        return List.copyOf(fields);
+    }
+
+    private List<FieldDescriptor> cardFields() {
+        return List.of(
+                fieldWithPath("resourceId").type(NUMBER).description("자료 ID. 자료 상세 조회에 쓴다"),
+                fieldWithPath("source").type(STRING).description("자료 원천"),
+                fieldWithPath("title").type(STRING).description("자료 제목"),
+                fieldWithPath("url").type(STRING).description("원문 주소"),
+                fieldWithPath("summary").type(STRING).description("한줄 소개").optional(),
+                fieldWithPath("publishedAt").type(STRING).description("원문 게시 시각(UTC)").optional(),
+                fieldWithPath("platform").type(STRING).description("블로그 플랫폼. 블로그가 아니면 null").optional(),
+                fieldWithPath("team").type(OBJECT).description("자료를 만든 팀. 팀이 없거나 알 수 없으면 null").optional(),
+                fieldWithPath("team.name").type(STRING).description("팀 이름").optional(),
+                fieldWithPath("team.projectSlug").type(STRING).description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),
+                fieldWithPath("team.logoMediaId").type(NUMBER).description("프로젝트 썸네일 미디어 ID. 없으면 null").optional()
+        );
     }
 }
