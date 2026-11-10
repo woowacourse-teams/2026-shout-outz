@@ -88,13 +88,17 @@ def _parse(ts: str | None) -> datetime | None:
 
 def pick_run_id(store: Store, now: datetime, host: str) -> tuple[str, str | None]:
     """--after-collect: 가장 최근 수집 실행의 run_id 를 같은 실행 묶음으로 쓴다(R20-1, R20-7).
-    AFTER_COLLECT_HOURS 안에 시작했고 아직 그 run_id 의 정제 보고서가 없을 때만. 아니면 새 run_id."""
+    AFTER_COLLECT_HOURS 안에 시작했고 아직 그 run_id 의 정제 보고서가 없을 때만. 아니면 새 run_id.
+    잠금 때문에 건너뛴 수집 실행은 수집을 하지 않았으니 넘기고 그 앞 실행을 본다. 매일 실행이 도는 동안 관리 웹의
+    "지금 실행" 이 건너뛰어 더 늦은 보고서를 남겨도, 매일 실행의 정제가 자기 수집 실행에 붙게 하려는 것이다."""
     for path in reversed(store.list("reports/")):
         try:
             rep = store.read_json(path) or {}
         except ValueError:
             continue
         if (rep.get("scope") or {}).get("command"):  # 자막 저장, 묶음 넣기는 수집 실행이 아니다
+            continue
+        if rep.get("status") == "skipped":
             continue
         started = _parse(rep.get("started_at"))
         run_id = rep.get("run_id")
@@ -641,13 +645,18 @@ def run_refine(settings: Settings, sources: list[str] | None = None, only: list[
     scope = {"command": "refine run", "sources": names, "only": len(only) if only else None,
              "only_keys": list(only[:100]) if only else None, "limit": limit, "after_collect": after_collect,
              "joined_collect_run": joined}
-    report = RefineReport(store, run_id, settings.trigger, settings.host, code_version(), scope, started, clock=clock)
     got, held = lock.acquire(store, run_id, settings.host, started)
     if not got:
         log.warning("다른 실행이 잠금을 잡고 있어 건너뜀: %s", held)
+        if joined:
+            # 정제하지 못했으니 그 수집 실행에 붙이지 않는다. 건너뜀 보고서를 그 run_id 로 남기면
+            # 잠금이 풀린 뒤 그 수집 실행을 정제하는 실행이 이미 정제한 것으로 보고 새 run_id 를 쓰게 된다
+            run_id, scope["joined_collect_run"] = new_run_id(started, settings.host), None
+        report = RefineReport(store, run_id, settings.trigger, settings.host, code_version(), scope, started, clock=clock)
         report.scope["lock_held_by"] = held
         report.finish(clock(), "skipped")
         return report
+    report = RefineReport(store, run_id, settings.trigger, settings.host, code_version(), scope, started, clock=clock)
     run = Run(settings, store, report, clock, run_id, MAX_PER_RUN if limit is None else max(0, int(limit)))
     team_in_scope = [n for n in names if n in TEAMDOC_SOURCES]
     current = None

@@ -55,7 +55,7 @@ uv run python -m collector bundle import blog-1_7-bundle.jsonl.gz               
 uv run python -m refine run                                    # 고른 문서만 정제. 한 번에 최대 1만 건
 uv run python -m refine run --source github-pr --limit 500     # 원천 하나, 건수 제한(나눠 돌리기)
 uv run python -m refine run --source github-pr --only 'woowacourse-teams/2026-Chalkak#912'   # 그 문서만 다시(아침 다시 돌리기)
-uv run python -m refine run --after-collect                    # 가장 최근 수집 실행과 같은 run_id 로 묶기(매일 실행이 쓴다)
+uv run python -m refine run --after-collect                    # 가장 최근 수집 실행과 같은 run_id 로 묶기(수집 뒤 이어 돌릴 때 쓴다)
 uv run python -m refine preview --source github-teamdoc        # 지금 규칙으로 정제만 해 본 결과. 정제 문서는 건드리지 않는다
 ```
 
@@ -65,6 +65,8 @@ uv run python -m refine preview --source github-teamdoc        # 지금 규칙�
 - 순서: 테코톡 → 블로그 → 디스커션 → 위키 → 코드 마크다운 → PR(작은 원천부터). 같은 레포 사본은 팀 문서 세 원천을 다 정제한 뒤와
   PR 다음에, 이번에 문서가 바뀐 레포만 다시 정한다
 - `--only` 는 `--source` 하나와 함께 쓴다(코드 마크다운과 위키의 키 모양이 겹칠 수 있다)
+- `--after-collect`: 12시간 안에 시작했고 아직 정제 보고서가 없는 가장 최근 수집 실행의 run_id 를 쓴다. 잠금 때문에 건너뛴 수집 실행은 넘기고,
+  정제가 잠금 때문에 건너뛰면 건너뜀 보고서는 새 run_id 로 남긴다(잠금이 풀린 뒤의 정제가 그 수집 실행에 붙을 수 있게)
 - 끝나면 표준 출력에 실행 id, 상태, 원천별 숫자가 나온다. `remaining` 은 1만 건 상한 때문에 다음 실행으로 넘긴 수다
 - 규칙을 고칠 때: 고친 원천만 `refine/config.py` 의 `RULES_VERSION` 을 올린다. 올리기 전에 `preview` 로 새로 제외될 문서,
   제외가 풀릴 문서, 해시가 바뀔 문서를 본다. 라이브러리 판(`trafilatura`, `markdownify`, `lxml`)을 바꾸는 것도 같다

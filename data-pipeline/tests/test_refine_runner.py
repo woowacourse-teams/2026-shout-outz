@@ -304,6 +304,43 @@ def test_limit_only_after_collect_and_lock(tmp_path):
     assert rep.status == "skipped" and rep.scope["lock_held_by"]["run_id"] == "other"
 
 
+def test_after_collect_passes_over_runs_skipped_by_lock(tmp_path):
+    """잠금 때문에 건너뛴 수집 실행에는 붙지 않고, 잠금 때문에 건너뛴 정제는 수집 실행의 run_id 를 차지하지 않는다."""
+    store = LocalStore(str(tmp_path))
+    raw = Raw(store, "github-teamdoc")
+    k = key_md("2026-zeta", "docs/a.md")
+    raw.put(k, codemd("2026-zeta", "docs/a.md", "# 문서\n" + LONG), sha="a")
+
+    def at(h, m=0):
+        return datetime(2026, 12, 1, h, m, tzinfo=timezone.utc)
+
+    def collect_report(run_id, started, status, **scope):
+        store.write_json(f"reports/{run_id}.json", {"run_id": run_id, "started_at": started.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                                    "status": status, "scope": scope})
+
+    def refine(now):
+        return run_refine(Settings(store_url=str(tmp_path)), ["github-teamdoc"], store=store, after_collect=True,
+                          clock=lambda: now)
+
+    # 매일 실행이 수집하는 동안 누른 "지금 실행" 의 수집이 건너뛰어 더 늦은 보고서를 남겨도, 매일 실행의 정제는 자기 수집 실행에 붙는다
+    daily = "2026-12-01T03-00-00Z-ec2-aaaa"
+    collect_report(daily, at(3), "success")
+    collect_report("2026-12-01T03-05-00Z-ec2-bbbb", at(3, 5), "skipped", lock_held_by={"run_id": daily})
+    assert refine(at(4)).run_id == daily
+    # "지금 실행" 의 수집이 도는 동안 다른 정제가 잠금 때문에 건너뛰면, 건너뜀 보고서는 새 run_id 로 남는다
+    manual = "2026-12-01T05-00-00Z-ec2-cccc"
+    collect_report(manual, at(5), "running")
+    assert lock.acquire(store, manual, "ec2", at(5))[0]
+    rep = refine(at(5, 10))
+    assert rep.status == "skipped" and rep.run_id != manual and rep.scope["joined_collect_run"] is None
+    assert store.read_bytes(f"refine/reports/{manual}.json") is None
+    # 수집이 끝나 잠금이 풀린 뒤의 정제는 그 수집 실행에 붙는다
+    lock.release(store, manual)
+    collect_report(manual, at(5), "success")
+    rep = refine(at(5, 30))
+    assert rep.run_id == manual and rep.status == "success"
+
+
 def test_preview_does_not_write_docs(tmp_path, monkeypatch):
     store = LocalStore(str(tmp_path))
     raw = Raw(store, "github-teamdoc")
