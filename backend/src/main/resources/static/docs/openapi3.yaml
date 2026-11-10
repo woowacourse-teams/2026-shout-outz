@@ -157,12 +157,12 @@ paths:
               examples:
                 category-save-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"slug\",\"\
-                    message\":\"slug 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 0 이상이어야 합니다.\"},{\"field\":\"displayName\"\
                     ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"feedType\"\
                     ,\"message\":\"feedType은 필수입니다.\"},{\"field\":\"type\",\"message\"\
-                    :\"type은 필수입니다.\"},{\"field\":\"displayOrder\",\"message\":\"\
-                    displayOrder는 0 이상이어야 합니다.\"}]}"
+                    :\"type은 필수입니다.\"},{\"field\":\"slug\",\"message\":\"slug 형식이\
+                    \ 올바르지 않습니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -544,14 +544,14 @@ paths:
                 $ref: "#/components/schemas/MagazineFindAllSuccessResponse"
               examples:
                 magazine-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":1548,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/82003062-4fec-4697-927d-c1d7d0bd3684/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@id301647464a04215b833\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":30,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/32a8f3e4-10ee-4a35-bd96-dac84dd91fa6/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@i113684fe5af34f8bbca6\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i39aca588053d44fa9019\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@ica924cf051eb441eb67d\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"PUBLISHED\"\
-                    ,\"publishedAt\":\"2026-11-09T08:50:34.179961Z\",\"createdAt\"\
-                    :\"2026-11-09T08:50:34.161533Z\",\"updatedAt\":\"2026-11-09T08:50:34.180798Z\"\
+                    ,\"publishedAt\":\"2026-11-10T09:41:13.373512Z\",\"createdAt\"\
+                    :\"2026-11-10T09:41:13.350558Z\",\"updatedAt\":\"2026-11-10T09:41:13.374444Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :0}],\"meta\":{\"nextCursor\":null,\"hasNext\":false,\"totalCount\"\
                     :1}}"
@@ -1490,23 +1490,23 @@ paths:
                 $ref: "#/components/schemas/MagazineFindAllSuccessResponse"
               examples:
                 magazine-admin-list:
-                  value: "{\"status\":\"success\",\"data\":[{\"id\":1554,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/48a97fd3-1e05-4162-a81f-af6f35e7fa9a/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@idffe8e3ef6bb46288e31\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":[{\"id\":36,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/f9855cf3-5c6a-49bc-886c-981a22938f5d/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@i33285baebba14a74ac50\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i3997d598a1114e0894d6\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@idc9ecb9b6cf147db8c22\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-09T08:50:34.445494Z\"\
-                    ,\"updatedAt\":\"2026-11-09T08:50:34.445494Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-10T09:41:13.670260Z\"\
+                    ,\"updatedAt\":\"2026-11-10T09:41:13.670260Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0},{\"id\"\
-                    :1553,\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/48a97fd3-1e05-4162-a81f-af6f35e7fa9a/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@idffe8e3ef6bb46288e31\",\"displayName\"\
+                    :35,\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/f9855cf3-5c6a-49bc-886c-981a22938f5d/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@i33285baebba14a74ac50\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i3997d598a1114e0894d6\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@idc9ecb9b6cf147db8c22\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"status\":\"DRAFT\"\
-                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-09T08:50:34.430559Z\"\
-                    ,\"updatedAt\":\"2026-11-09T08:50:34.430559Z\",\"likeCount\":0,\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-10T09:41:13.657516Z\"\
+                    ,\"updatedAt\":\"2026-11-10T09:41:13.657516Z\",\"likeCount\":0,\"\
                     likedByMe\":false,\"commentCount\":0,\"viewCount\":0}],\"meta\"\
                     :{\"nextCursor\":null,\"hasNext\":false,\"totalCount\":2}}"
     post:
@@ -1529,7 +1529,7 @@ paths:
         required: true
         schema:
           type: string
-        example: fVGgk9rrbOio35DPDptyaREfUJCQ91Hxfn7B0RJwoEk
+        example: rMPqjbF6zeuY2GtU90VHI2iuIMIYubeZclvZqDyW2Lw
       requestBody:
         content:
           application/json;charset=UTF-8:
@@ -1538,38 +1538,37 @@ paths:
             examples:
               magazine-create-csrf-invalid:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :19945,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":4364,\"contentMd\":\"본문\"}"
+                  :417,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":131,\"contentMd\":\"본문\"}"
               magazine-create-csrf-missing:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :19866,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":4286,\"contentMd\":\"본문\"}"
+                  :338,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":53,\"contentMd\":\"본문\"}"
               magazine-create:
                 value: "{\"title\":\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :19907,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":4326,\"contentMd\":\"![매거진](media://4327)\"\
-                  }"
+                  :379,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":93,\"contentMd\":\"![매거진](media://94)\"}"
               magazine-create-featuredUser-not-found:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
                   :9223372036854775807,\"featuredUserIntroduction\":\"우아한테크코스 출신 개\
-                  발자의 경험을 소개합니다.\",\"thumbnailMediaId\":4298,\"contentMd\":\"본문\"}"
+                  발자의 경험을 소개합니다.\",\"thumbnailMediaId\":65,\"contentMd\":\"본문\"}"
               magazine-create-unauthorized:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :19893,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":4312,\"contentMd\":\"본문\"}"
+                  :365,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":79,\"contentMd\":\"본문\"}"
               magazine-create-invalid-media:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :19846,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":4265,\"contentMd\":\"![사진](https://example.com/a.png)\"\
+                  :318,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":32,\"contentMd\":\"![사진](https://example.com/a.png)\"\
                   }"
               magazine-create-validation-failed:
                 value: "{\"title\":\"\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :19852,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":4274,\"contentMd\":\"본문\"}"
+                  :324,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":41,\"contentMd\":\"본문\"}"
               magazine-create-forbidden:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :19830,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":4249,\"contentMd\":\"본문\"}"
+                  :302,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":16,\"contentMd\":\"본문\"}"
       responses:
         "403":
           description: "403"
@@ -1595,15 +1594,15 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-create:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":1553,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":19907,\"\
-                    featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
-                    :{\"handle\":\"@i3997d598a1114e0894d6\",\"displayName\":\"편집자\"\
-                    ,\"avatarUrl\":null},\"thumbnailMediaId\":4326,\"contentMd\":\"\
-                    ![매거진](media://4327)\",\"status\":\"DRAFT\",\"publishedAt\":null,\"\
-                    createdAt\":\"2026-11-09T08:50:34.430559Z\",\"updatedAt\":\"2026-11-09T08:50:34.430559Z\"\
-                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/48a97fd3-1e05-4162-a81f-af6f35e7fa9a/thumbnail\"\
-                    ,\"previewContentMd\":\"![매거진](https://cdn.example.com/test-prefix/magazine/84a68d7d-246a-4d5d-845c-576e2ea5fb9f/display)\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":35,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":379,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@idc9ecb9b6cf147db8c22\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
+                    :93,\"contentMd\":\"![매거진](media://94)\",\"status\":\"DRAFT\"\
+                    ,\"publishedAt\":null,\"createdAt\":\"2026-11-10T09:41:13.657516Z\"\
+                    ,\"updatedAt\":\"2026-11-10T09:41:13.657516Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/f9855cf3-5c6a-49bc-886c-981a22938f5d/thumbnail\"\
+                    ,\"previewContentMd\":\"![매거진](https://cdn.example.com/test-prefix/magazine/cfc66cc3-c457-41ff-85f4-7703f93918f2/display)\"\
                     }}"
         "404":
           description: "404"
@@ -1694,6 +1693,99 @@ paths:
                     :\"2026-09-20T00:00:00Z\",\"updatedAt\":\"2026-09-20T00:00:00Z\"\
                     }],\"meta\":{\"nextCursor\":\"next-cursor\",\"hasNext\":true,\"\
                     totalCount\":3}}"
+  /api/v1/admin/resource-reports:
+    get:
+      tags:
+      - ResourceReport
+      summary: 자료 제보 목록 조회
+      description: "관리자가 받은 자료 제보를 최신순으로 조회한다. status 기본값은 OPEN이며 OPEN, ACCEPTED,\
+        \ REJECTED, ALL을 지원한다. kind로 REMOVE, ADD를 거를 수 있다. size 기본값은 20이고 1~100을 허\
+        용한다. 다음 페이지는 응답 meta.nextCursor를 cursor로 전달해 조회한다. totalCount는 상태, 종류 조건에\
+        \ 해당하는 전체 제보 수다. 필요 없어요 제보가 가리키는 자료가 내려갔으면 resource는 null이다. 관리자 로그인 세션이 없\
+        으면 401, 관리자 권한이 없으면 403 RESOURCE_REPORT_ADMIN_FORBIDDEN, 조건이 유효하지 않으면 400\
+        \ VALIDATION_FAILED, cursor가 유효하지 않으면 400 RESOURCE_REPORT_ADMIN_CURSOR_INVALID를\
+        \ 반환한다."
+      operationId: resource-report-admin-find-all
+      parameters:
+      - name: status
+        in: query
+        description: "조회할 상태. OPEN, ACCEPTED, REJECTED, ALL 중 하나. 생략하면 OPEN"
+        required: false
+        schema:
+          type: string
+      - name: kind
+        in: query
+        description: "조회할 제보 종류. REMOVE, ADD 중 하나. 생략하면 모두"
+        required: false
+        schema:
+          type: string
+      - name: size
+        in: query
+        description: "한 페이지의 제보 수. 기본값 20, 최솟값 1, 최댓값 100"
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: cursor
+        in: query
+        description: 이전 응답의 meta.nextCursor 값. 첫 페이지에서는 생략
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceReportAdminFindAllSuccessResponse"
+              examples:
+                resource-report-admin-find-all:
+                  value: "{\"status\":\"success\",\"data\":[{\"reportId\":41,\"kind\"\
+                    :\"REMOVE\",\"project\":{\"slug\":\"shout-outz\",\"title\":\"샤\
+                    라웃\"},\"resource\":{\"resourceId\":3412,\"source\":\"github-pr\"\
+                    ,\"title\":\"[BE] 추천 질문 생성을 비동기 작업으로 분리\",\"url\":\"https://github.com/woowacourse-teams/2026-shout-outz/pull/512\"\
+                    },\"url\":null,\"memo\":\"단순 설정 변경이라 배울 거리가 없어요\",\"reporterUserId\"\
+                    :17,\"status\":\"OPEN\",\"createdAt\":\"2026-11-10T02:00:00Z\"\
+                    },{\"reportId\":40,\"kind\":\"ADD\",\"project\":{\"slug\":\"shout-outz\"\
+                    ,\"title\":\"샤라웃\"},\"resource\":null,\"url\":\"https://github.com/woowacourse-teams/2026-shout-outz/pull/123\"\
+                    ,\"memo\":null,\"reporterUserId\":17,\"status\":\"OPEN\",\"createdAt\"\
+                    :\"2026-11-10T01:59:00Z\"}],\"meta\":{\"nextCursor\":\"MjAyNi0xMS0xMFQwMjowMDowMFp8NDE\"\
+                    ,\"hasNext\":true,\"totalCount\":5}}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-admin-find-all-invalid-cursor:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_REPORT_ADMIN_CURSOR_INVALID\"\
+                    ,\"message\":\"자료 제보 목록 조회 커서가 올바르지 않습니다. 커서 없이 다시 조회해주세요.\"}"
+                resource-report-admin-find-all-invalid-filter:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"kind\",\"\
+                    message\":\"kind는 REMOVE, ADD 중 하나여야 합니다.\"}]}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-admin-find-all-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-admin-find-all-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_REPORT_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 자료 제보를 관리할 수 있습니다.\"}"
   /api/v1/admin/verification-requests:
     get:
       tags:
@@ -1942,9 +2034,9 @@ paths:
                 auth-signup-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
                     message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"handle\"\
-                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"handle\",\"\
-                    message\":\"handle은 필수입니다.\"}]}"
+                    ,\"message\":\"handle 형식이 올바르지 않습니다.\"},{\"field\":\"handle\"\
+                    ,\"message\":\"handle은 필수입니다.\"},{\"field\":\"displayName\",\"\
+                    message\":\"displayName은 필수입니다.\"}]}"
         "409":
           description: "409"
           content:
@@ -2032,9 +2124,9 @@ paths:
               examples:
                 category-update-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayName\"\
-                    ,\"message\":\"displayName은 필수입니다.\"},{\"field\":\"displayOrder\"\
-                    ,\"message\":\"displayOrder는 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"displayOrder\"\
+                    ,\"message\":\"displayOrder는 필수입니다.\"},{\"field\":\"displayName\"\
+                    ,\"message\":\"displayName은 필수입니다.\"}]}"
         "404":
           description: "404"
           content:
@@ -2449,15 +2541,15 @@ paths:
                 $ref: "#/components/schemas/MagazineFindSuccessResponse"
               examples:
                 magazine-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":1548,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/82003062-4fec-4697-927d-c1d7d0bd3684/thumbnail\"\
-                    ,\"featuredUser\":{\"handle\":\"@id301647464a04215b833\",\"displayName\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":30,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/32a8f3e4-10ee-4a35-bd96-dac84dd91fa6/thumbnail\"\
+                    ,\"featuredUser\":{\"handle\":\"@i113684fe5af34f8bbca6\",\"displayName\"\
                     :\"소개 회원\",\"introduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"\
-                    avatarUrl\":null},\"author\":{\"handle\":\"@i39aca588053d44fa9019\"\
+                    avatarUrl\":null},\"author\":{\"handle\":\"@ica924cf051eb441eb67d\"\
                     ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"contentMd\":\"\
-                    ![사진](https://cdn.example.com/test-prefix/magazine/d0d97480-d37e-4690-a4d0-c838460de4ec/display)\"\
-                    ,\"publishedAt\":\"2026-11-09T08:50:34.179961Z\",\"createdAt\"\
-                    :\"2026-11-09T08:50:34.161533Z\",\"updatedAt\":\"2026-11-09T08:50:34.180798Z\"\
+                    ![사진](https://cdn.example.com/test-prefix/magazine/44128e5c-1f9c-4147-a0a8-9f0c321b80a0/display)\"\
+                    ,\"publishedAt\":\"2026-11-10T09:41:13.373512Z\",\"createdAt\"\
+                    :\"2026-11-10T09:41:13.350558Z\",\"updatedAt\":\"2026-11-10T09:41:13.374444Z\"\
                     ,\"likeCount\":0,\"likedByMe\":false,\"commentCount\":0,\"viewCount\"\
                     :1}}"
         "404":
@@ -2592,10 +2684,10 @@ paths:
               examples:
                 news-event-create-required-invalid:
                   value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
-                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventEndAt\"\
-                    ,\"message\":\"eventEndAt은 필수입니다.\"},{\"field\":\"title\",\"message\"\
-                    :\"title은 필수입니다.\"},{\"field\":\"eventStartAt\",\"message\":\"\
-                    eventStartAt은 필수입니다.\"}]}"
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"eventStartAt\"\
+                    ,\"message\":\"eventStartAt은 필수입니다.\"},{\"field\":\"title\",\"\
+                    message\":\"title은 필수입니다.\"},{\"field\":\"eventEndAt\",\"message\"\
+                    :\"eventEndAt은 필수입니다.\"}]}"
                 news-event-create-period-order-invalid:
                   value: "{\"status\":\"error\",\"code\":\"NEWS_EVENT_PERIOD_INVALID\"\
                     ,\"message\":\"이벤트 시작 시각은 종료 시각보다 늦을 수 없습니다.\"}"
@@ -4006,15 +4098,15 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-admin-detail:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":1554,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":19907,\"\
-                    featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
-                    :{\"handle\":\"@i3997d598a1114e0894d6\",\"displayName\":\"편집자\"\
-                    ,\"avatarUrl\":null},\"thumbnailMediaId\":4326,\"contentMd\":\"\
-                    ![사진](media://4327)\",\"status\":\"DRAFT\",\"publishedAt\":null,\"\
-                    createdAt\":\"2026-11-09T08:50:34.445494Z\",\"updatedAt\":\"2026-11-09T08:50:34.445494Z\"\
-                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/48a97fd3-1e05-4162-a81f-af6f35e7fa9a/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/84a68d7d-246a-4d5d-845c-576e2ea5fb9f/display)\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":36,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":379,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@idc9ecb9b6cf147db8c22\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
+                    :93,\"contentMd\":\"![사진](media://94)\",\"status\":\"DRAFT\",\"\
+                    publishedAt\":null,\"createdAt\":\"2026-11-10T09:41:13.670260Z\"\
+                    ,\"updatedAt\":\"2026-11-10T09:41:13.670260Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/f9855cf3-5c6a-49bc-886c-981a22938f5d/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/cfc66cc3-c457-41ff-85f4-7703f93918f2/display)\"\
                     }}"
         "401":
           description: "401"
@@ -4064,7 +4156,7 @@ paths:
         required: true
         schema:
           type: string
-        example: zoX6u0OloQRmifL2HMP2ZDxRYDkfJyQi7QnQuaozT_U
+        example: itFzR-INJ2UnSNm-tNGNqZ2uzgESCW8mU9XEAE8qlkU
       requestBody:
         content:
           application/json;charset=UTF-8:
@@ -4073,28 +4165,28 @@ paths:
             examples:
               magazine-update-validation-failed:
                 value: "{\"title\":\"\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :19852,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":4274,\"contentMd\":\"본문\"}"
+                  :324,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":41,\"contentMd\":\"본문\"}"
               magazine-update-csrf-missing:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :19868,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":4288,\"contentMd\":\"본문\"}"
+                  :340,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":55,\"contentMd\":\"본문\"}"
               magazine-update-not-found:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :19937,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":4356,\"contentMd\":\"본문\"}"
+                  :409,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":123,\"contentMd\":\"본문\"}"
               magazine-update-forbidden:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :19836,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":4255,\"contentMd\":\"본문\"}"
+                  :308,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":22,\"contentMd\":\"본문\"}"
               magazine-update-unauthorized:
                 value: "{\"title\":\"제목\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :19899,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":4318,\"contentMd\":\"본문\"}"
+                  :371,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":85,\"contentMd\":\"본문\"}"
               magazine-update:
                 value: "{\"title\":\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\"\
-                  :19880,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다\
-                  .\",\"thumbnailMediaId\":4300,\"contentMd\":\"수정 본문\"}"
+                  :352,\"featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\"\
+                  ,\"thumbnailMediaId\":67,\"contentMd\":\"수정 본문\"}"
       responses:
         "400":
           description: "400"
@@ -4148,14 +4240,14 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-update:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":1546,\"title\"\
-                    :\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":19880,\"\
-                    featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
-                    :{\"handle\":\"@idd055e184dab430db25a\",\"displayName\":\"편집자\"\
-                    ,\"avatarUrl\":null},\"thumbnailMediaId\":4300,\"contentMd\":\"\
-                    수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\":\"2026-11-09T08:50:33.984311Z\"\
-                    ,\"createdAt\":\"2026-11-09T08:50:33.977341Z\",\"updatedAt\":\"\
-                    2026-11-09T08:50:34.010115Z\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/f27f9a62-58e5-44f9-9260-1e990fb26e6c/thumbnail\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":28,\"title\":\"\
+                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":352,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@ib4670565abf547fabf20\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
+                    :67,\"contentMd\":\"수정 본문\",\"status\":\"PUBLISHED\",\"publishedAt\"\
+                    :\"2026-11-10T09:41:13.118924Z\",\"createdAt\":\"2026-11-10T09:41:13.111314Z\"\
+                    ,\"updatedAt\":\"2026-11-10T09:41:13.153553Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/2d473e21-e6e7-486e-a771-a5220de4fe97/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
     delete:
       tags:
@@ -4185,7 +4277,7 @@ paths:
         required: true
         schema:
           type: string
-        example: gKWhOxqh-RsmKMsxOzLJaz4XIoGQmw2PYgWYz2EHOZc
+        example: DXj1P_rx1bm7rt1_tqNDWO5ihxsSbURz-LM9c9ENo0M
       responses:
         "401":
           description: "401"
@@ -5783,7 +5875,7 @@ paths:
         required: true
         schema:
           type: string
-        example: -X90EuphjM9RvnJvjX3a2yDWGt25qqzEKuilKX-Q4YU
+        example: Fke2wL0CY0IBWkn17oWuVMulIVnnmWbMi4-C2pT0ooc
       responses:
         "403":
           description: "403"
@@ -5836,16 +5928,15 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-publish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":1546,\"title\"\
-                    :\"첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":19880,\"\
-                    featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
-                    :{\"handle\":\"@idd055e184dab430db25a\",\"displayName\":\"편집자\"\
-                    ,\"avatarUrl\":null},\"thumbnailMediaId\":4300,\"contentMd\":\"\
-                    ![사진](media://4301)\",\"status\":\"PUBLISHED\",\"publishedAt\"\
-                    :\"2026-11-09T08:50:33.984311Z\",\"createdAt\":\"2026-11-09T08:50:33.977341Z\"\
-                    ,\"updatedAt\":\"2026-11-09T08:50:33.984874Z\",\"thumbnailUrl\"\
-                    :\"https://cdn.example.com/test-prefix/magazine/f27f9a62-58e5-44f9-9260-1e990fb26e6c/thumbnail\"\
-                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/de54831a-6c15-42f6-a500-2e1e29d965ea/display)\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":28,\"title\":\"\
+                    첫 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":352,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@ib4670565abf547fabf20\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
+                    :67,\"contentMd\":\"![사진](media://68)\",\"status\":\"PUBLISHED\"\
+                    ,\"publishedAt\":\"2026-11-10T09:41:13.118924Z\",\"createdAt\"\
+                    :\"2026-11-10T09:41:13.111314Z\",\"updatedAt\":\"2026-11-10T09:41:13.120072Z\"\
+                    ,\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/2d473e21-e6e7-486e-a771-a5220de4fe97/thumbnail\"\
+                    ,\"previewContentMd\":\"![사진](https://cdn.example.com/test-prefix/magazine/e7e82984-46f2-45eb-ba52-d90c10349960/display)\"\
                     }}"
   /api/v1/admin/magazines/{magazineId}/unpublish:
     post:
@@ -5875,7 +5966,7 @@ paths:
         required: true
         schema:
           type: string
-        example: cv91MhUg84gqa6GjtzgqDRyHpeyAqnAYA-5migTfXKY
+        example: d5jsA06JkhRVKZa232klcL8MoUTmr-XHzf5qO9wYXp4
       responses:
         "403":
           description: "403"
@@ -5898,14 +5989,14 @@ paths:
                 $ref: "#/components/schemas/MagazineAdminResponse"
               examples:
                 magazine-unpublish:
-                  value: "{\"status\":\"success\",\"data\":{\"id\":1546,\"title\"\
-                    :\"수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":19880,\"\
-                    featuredUserIntroduction\":\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\"\
-                    :{\"handle\":\"@idd055e184dab430db25a\",\"displayName\":\"편집자\"\
-                    ,\"avatarUrl\":null},\"thumbnailMediaId\":4300,\"contentMd\":\"\
-                    수정 본문\",\"status\":\"DRAFT\",\"publishedAt\":\"2026-11-09T08:50:33.984311Z\"\
-                    ,\"createdAt\":\"2026-11-09T08:50:33.977341Z\",\"updatedAt\":\"\
-                    2026-11-09T08:50:34.041589Z\",\"thumbnailUrl\":\"https://cdn.example.com/test-prefix/magazine/f27f9a62-58e5-44f9-9260-1e990fb26e6c/thumbnail\"\
+                  value: "{\"status\":\"success\",\"data\":{\"id\":28,\"title\":\"\
+                    수정된 매거진\",\"summary\":\"매거진 요약\",\"featuredUserId\":352,\"featuredUserIntroduction\"\
+                    :\"우아한테크코스 출신 개발자의 경험을 소개합니다.\",\"author\":{\"handle\":\"@ib4670565abf547fabf20\"\
+                    ,\"displayName\":\"편집자\",\"avatarUrl\":null},\"thumbnailMediaId\"\
+                    :67,\"contentMd\":\"수정 본문\",\"status\":\"DRAFT\",\"publishedAt\"\
+                    :\"2026-11-10T09:41:13.118924Z\",\"createdAt\":\"2026-11-10T09:41:13.111314Z\"\
+                    ,\"updatedAt\":\"2026-11-10T09:41:13.186416Z\",\"thumbnailUrl\"\
+                    :\"https://cdn.example.com/test-prefix/magazine/2d473e21-e6e7-486e-a771-a5220de4fe97/thumbnail\"\
                     ,\"previewContentMd\":\"수정 본문\"}}"
         "401":
           description: "401"
@@ -6074,6 +6165,112 @@ paths:
                     :\"REJECTED\",\"reason\":\"설명을 보완해주세요.\",\"decidedBy\":{\"userId\"\
                     :7,\"handle\":\"@admin\"},\"decidedAt\":\"2026-09-20T00:00:00Z\"\
                     }}"
+  /api/v1/admin/resource-reports/{reportId}/status:
+    patch:
+      tags:
+      - ResourceReport
+      summary: 자료 제보 처리
+      description: "관리자가 자료 제보를 반영함(ACCEPTED), 반영 안 함(REJECTED), 확인 전(OPEN) 상태로 바꾼\
+        다. 상태가 실제로 바뀌면 처리 시각과 관리자 ID를 기록하고, 같은 상태로 바꾸면 그대로 둔다. 관리자 로그인 세션이 없으면 401,\
+        \ 관리자 권한이 없으면 403 RESOURCE_REPORT_ADMIN_FORBIDDEN, 상태가 없거나 올바르지 않으면 400 VALIDATION_FAILED,\
+        \ 제보가 없으면 404 RESOURCE_REPORT_NOT_FOUND를 반환한다."
+      operationId: resource-report-admin-update-status
+      parameters:
+      - name: reportId
+        in: path
+        description: 자료 제보 ID
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/ResourceReportStatusUpdateRequest"
+            examples:
+              resource-report-admin-update-status-not-found:
+                value: |
+                  {
+                    "status": "ACCEPTED"
+                  }
+              resource-report-admin-update-status-unauthorized:
+                value: |
+                  {
+                    "status": "ACCEPTED"
+                  }
+              resource-report-admin-update-status-invalid:
+                value: "{}"
+              resource-report-admin-update-status-forbidden:
+                value: |
+                  {
+                    "status": "ACCEPTED"
+                  }
+              resource-report-admin-update-status:
+                value: |
+                  {
+                    "status": "ACCEPTED"
+                  }
+      responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-admin-update-status-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_REPORT_NOT_FOUND\"\
+                    ,\"message\":\"자료 제보를 찾을 수 없습니다.\"}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-admin-update-status-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-admin-update-status-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"status\"\
+                    ,\"message\":\"status는 필수입니다.\"}]}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-admin-update-status-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_REPORT_ADMIN_FORBIDDEN\"\
+                    ,\"message\":\"관리자만 자료 제보를 관리할 수 있습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceReportStatusUpdateSuccessResponse"
+              examples:
+                resource-report-admin-update-status:
+                  value: "{\"status\":\"success\",\"data\":{\"reportId\":41,\"status\"\
+                    :\"ACCEPTED\",\"handledAt\":\"2026-11-11T01:00:00Z\",\"handledByUserId\"\
+                    :7}}"
   /api/v1/admin/verification-requests/{requestId}/approve:
     post:
       tags:
@@ -7147,6 +7344,290 @@ paths:
                 project-reaction-remove-reaction-not-found:
                   value: "{\"status\":\"error\",\"code\":\"REACTION_NOT_FOUND\",\"\
                     message\":\"요청한 반응을 찾을 수 없습니다.\"}"
+  /api/v1/projects/@{slug}/resource-reports/additions:
+    post:
+      tags:
+      - ResourceReport
+      summary: 빠진 자료 제보
+      description: "프로젝트 팀원이 기술 이야기나 전체 경험 근거에 빠진 PR이나 팀 문서의 GitHub 주소를 알려 준다. 로그인\
+        이 필요하며 그 프로젝트 팀원만 보낼 수 있다. 주소는 이 프로젝트 리포지토리(https://github.com/woowacourse-teams/{repo})\
+        \ 아래여야 하며, 쿼리와 # 뒤, 끝 슬래시를 떼고 저장한다. 같은 사람이 같은 주소를 다시 보내면 새로 만들지 않고 처음 제보 ID를\
+        \ 돌려준다. 로그인하지 않았으면 401, 팀원이 아니면 403 RESOURCE_REPORT_FORBIDDEN, 프로젝트가 없거나 공\
+        개되지 않았으면 404 PROJECT_NOT_FOUND, GitHub의 PR이나 문서 주소가 아니면 400 RESOURCE_REPORT_URL_INVALID,\
+        \ 이 프로젝트 리포지토리 주소가 아니면 400 RESOURCE_REPORT_URL_OUTSIDE_REPOSITORY, url이 비었\
+        거나 길이가 500자를 넘으면 400 VALIDATION_FAILED를 반환한다."
+      operationId: resource-report-addition
+      parameters:
+      - name: slug
+        in: path
+        description: 프로젝트 slug. 경로에서는 앞에 @를 붙인다.
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/ResourceAdditionReportRequest"
+            examples:
+              resource-report-addition-outside-repository:
+                value: |
+                  {
+                    "url": "https://github.com/woowacourse-teams/2026-other/pull/1",
+                    "memo": "캐시 도입 전후 성능을 비교한 PR이에요"
+                  }
+              resource-report-addition-unauthorized:
+                value: |
+                  {
+                    "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/123",
+                    "memo": "캐시 도입 전후 성능을 비교한 PR이에요"
+                  }
+              resource-report-addition:
+                value: |
+                  {
+                    "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/123",
+                    "memo": "캐시 도입 전후 성능을 비교한 PR이에요"
+                  }
+              resource-report-addition-forbidden:
+                value: |
+                  {
+                    "url": "https://github.com/woowacourse-teams/2026-shout-outz/pull/123",
+                    "memo": "캐시 도입 전후 성능을 비교한 PR이에요"
+                  }
+              resource-report-addition-invalid:
+                value: |
+                  {
+                    "url": "   ",
+                    "memo": "캐시 도입 전후 성능을 비교한 PR이에요"
+                  }
+      responses:
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-addition-outside-repository:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_REPORT_URL_OUTSIDE_REPOSITORY\"\
+                    ,\"message\":\"이 프로젝트 리포지토리의 PR이나 문서 주소를 넣어 주세요.\"}"
+                resource-report-addition-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"url\",\"\
+                    message\":\"url은 필수입니다.\"}]}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-addition-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceAdditionReportSuccessResponse"
+              examples:
+                resource-report-addition:
+                  value: "{\"status\":\"success\",\"data\":{\"reportId\":41}}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-addition-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_REPORT_FORBIDDEN\"\
+                    ,\"message\":\"이 프로젝트 팀원만 자료를 제보할 수 있습니다.\"}"
+  /api/v1/projects/@{slug}/resource-reports/me:
+    get:
+      tags:
+      - ResourceReport
+      summary: 내가 보낸 자료 제보 조회
+      description: "로그인한 사용자가 이 프로젝트에 보낸 자료 제보를 최신순으로 조회한다. 프론트는 필요 없어요 제보의 resourceId로\
+        \ '필요 없어요 보냄'을 표시한다. 팀원이 아니어도 부를 수 있고 보낸 제보가 없으면 빈 목록이다. 필요 없어요 제보가 가리키는 자\
+        료가 내려갔으면 resourceId는 null이다. 로그인하지 않았으면 401, 프로젝트가 없거나 공개되지 않았으면 404 PROJECT_NOT_FOUND를\
+        \ 반환한다."
+      operationId: resource-report-find-mine
+      parameters:
+      - name: slug
+        in: path
+        description: 프로젝트 slug. 경로에서는 앞에 @를 붙인다.
+        required: true
+        schema:
+          type: string
+      responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-find-mine-project-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"PROJECT_NOT_FOUND\",\"\
+                    message\":\"프로젝트를 찾을 수 없습니다.\"}"
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyResourceReportFindSuccessResponse"
+              examples:
+                resource-report-find-mine:
+                  value: "{\"status\":\"success\",\"data\":[{\"reportId\":42,\"kind\"\
+                    :\"ADD\",\"resourceId\":null,\"url\":\"https://github.com/woowacourse-teams/2026-shout-outz/pull/123\"\
+                    ,\"status\":\"OPEN\",\"createdAt\":\"2026-11-10T02:05:00Z\"},{\"\
+                    reportId\":41,\"kind\":\"REMOVE\",\"resourceId\":3412,\"url\"\
+                    :null,\"status\":\"OPEN\",\"createdAt\":\"2026-11-10T02:00:00Z\"\
+                    }]}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-find-mine-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+  /api/v1/projects/@{slug}/resource-reports/removals:
+    post:
+      tags:
+      - ResourceReport
+      summary: 필요 없는 자료 제보
+      description: "프로젝트 팀원이 자기 프로젝트 기술 이야기에서 필요 없는 PR이나 팀 문서를 골라 제보한다. 로그인이 필요하며\
+        \ 그 프로젝트 팀원(서비스에 등록된 팀원, 가입해서 맞춰진 이관 프로젝트 팀원)만 보낼 수 있다. 크루 인증 여부는 보지 않는다.\
+        \ resourceIds는 1~100개이며 같은 자료는 한 번만 제보한다. 모든 자료가 이 프로젝트의 삭제되지 않은 PR이나 팀 문서\
+        (github-pr, github-teamdoc, github-wiki, github-discussion)여야 하고, 하나라도 아니면\
+        \ 아무것도 저장하지 않는다. 같은 사람이 같은 자료를 다시 보내면 새로 만들지 않고 처음 제보 ID를 돌려준다. 로그인하지 않았으면\
+        \ 401, 팀원이 아니면 403 RESOURCE_REPORT_FORBIDDEN, 프로젝트가 없거나 공개되지 않았으면 404 PROJECT_NOT_FOUND,\
+        \ 자료가 없거나 내려갔으면 404 RESOURCE_REPORT_RESOURCE_NOT_FOUND, 다른 프로젝트 자료나 블로그, 테\
+        코톡이면 400 RESOURCE_REPORT_RESOURCE_NOT_REMOVABLE, 입력값이 올바르지 않으면 400 VALIDATION_FAILED를\
+        \ 반환한다."
+      operationId: resource-report-removal
+      parameters:
+      - name: slug
+        in: path
+        description: 프로젝트 slug. 경로에서는 앞에 @를 붙인다.
+        required: true
+        schema:
+          type: string
+      - name: X-CSRF-Token
+        in: header
+        description: 세션 조회로 발급받은 CSRF 토큰
+        required: true
+        schema:
+          type: string
+        example: csrf-token
+      requestBody:
+        content:
+          application/json;charset=UTF-8:
+            schema:
+              $ref: "#/components/schemas/ResourceRemovalReportRequest"
+            examples:
+              resource-report-removal-resource-not-found:
+                value: |
+                  {
+                    "resourceIds": [3412, 3413],
+                    "memo": "단순 설정 변경이라 배울 거리가 없어요"
+                  }
+              resource-report-removal:
+                value: |
+                  {
+                    "resourceIds": [3412, 3413],
+                    "memo": "단순 설정 변경이라 배울 거리가 없어요"
+                  }
+              resource-report-removal-not-removable:
+                value: |
+                  {
+                    "resourceIds": [3412, 3413],
+                    "memo": "단순 설정 변경이라 배울 거리가 없어요"
+                  }
+              resource-report-removal-unauthorized:
+                value: |
+                  {
+                    "resourceIds": [3412, 3413],
+                    "memo": "단순 설정 변경이라 배울 거리가 없어요"
+                  }
+              resource-report-removal-invalid:
+                value: |
+                  {
+                    "resourceIds": []
+                  }
+              resource-report-removal-forbidden:
+                value: |
+                  {
+                    "resourceIds": [3412, 3413],
+                    "memo": "단순 설정 변경이라 배울 거리가 없어요"
+                  }
+      responses:
+        "404":
+          description: "404"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-removal-resource-not-found:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_REPORT_RESOURCE_NOT_FOUND\"\
+                    ,\"message\":\"제보할 자료를 찾을 수 없습니다.\"}"
+        "201":
+          description: "201"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceRemovalReportSuccessResponse"
+              examples:
+                resource-report-removal:
+                  value: "{\"status\":\"success\",\"data\":[{\"reportId\":41,\"resourceId\"\
+                    :3412},{\"reportId\":42,\"resourceId\":3413}]}"
+        "400":
+          description: "400"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-removal-not-removable:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_REPORT_RESOURCE_NOT_REMOVABLE\"\
+                    ,\"message\":\"이 프로젝트의 PR이나 팀 문서만 필요 없다고 제보할 수 있습니다.\"}"
+                resource-report-removal-invalid:
+                  value: "{\"status\":\"error\",\"code\":\"VALIDATION_FAILED\",\"\
+                    message\":\"입력값을 확인해주세요.\",\"details\":[{\"field\":\"resourceIds\"\
+                    ,\"message\":\"resourceIds는 1개 이상 100개 이하여야 합니다.\"}]}"
+        "401":
+          description: "401"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-removal-unauthorized:
+                  value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
+                    :\"인증이 필요합니다.\"}"
+        "403":
+          description: "403"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                resource-report-removal-forbidden:
+                  value: "{\"status\":\"error\",\"code\":\"RESOURCE_REPORT_FORBIDDEN\"\
+                    ,\"message\":\"이 프로젝트 팀원만 자료를 제보할 수 있습니다.\"}"
   /api/v1/job-postings/{jobPostingId}/requirements/{requirementId}/recommendations:
     get:
       tags:
@@ -7637,6 +8118,25 @@ paths:
                 type: string
 components:
   schemas:
+    ResourceRemovalReportRequest:
+      title: ResourceRemovalReportRequest
+      required:
+      - resourceIds
+      type: object
+      properties:
+        memo:
+          type: string
+          description: 제보 이유. 공백 제거 후 500자 이하. 고른 자료 모두에 붙는다
+          nullable: true
+        resourceIds:
+          type: array
+          description: 필요 없다고 제보할 자료 ID 목록. 1~100개. 같은 ID는 한 번만 제보한다
+          items:
+            oneOf:
+            - type: object
+            - type: boolean
+            - type: string
+            - type: number
     BugReportCreateSuccessResponse:
       title: BugReportCreateSuccessResponse
       required:
@@ -9619,6 +10119,110 @@ components:
           type: string
           description: 이벤트 종료 시각. 공지는 null
           nullable: true
+    ResourceReportAdminFindAllSuccessResponse:
+      title: ResourceReportAdminFindAllSuccessResponse
+      required:
+      - data
+      - meta
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 자료 제보 목록. 최신순
+          items:
+            required:
+            - createdAt
+            - kind
+            - project
+            - reportId
+            - reporterUserId
+            - status
+            type: object
+            properties:
+              createdAt:
+                type: string
+                description: ISO-8601 제보 시각
+              reportId:
+                type: number
+                description: 제보 ID
+              resource:
+                type: object
+                properties:
+                  resourceId:
+                    type: number
+                    description: 자료 ID
+                    nullable: true
+                  source:
+                    type: string
+                    description: "자료 원천(github-pr, github-teamdoc, github-wiki, github-discussion)"
+                    nullable: true
+                  title:
+                    type: string
+                    description: 자료 제목
+                    nullable: true
+                  url:
+                    type: string
+                    description: 자료 원문 주소
+                    nullable: true
+                description: 필요 없어요 제보가 가리키는 자료. 추가해 주세요 제보이거나 자료가 내려갔으면 null
+              kind:
+                type: string
+                description: "제보 종류. REMOVE는 필요 없어요, ADD는 추가해 주세요"
+                enum:
+                - REMOVE
+                - ADD
+              memo:
+                type: string
+                description: 제보 이유. 없으면 null
+                nullable: true
+              project:
+                required:
+                - slug
+                - title
+                type: object
+                properties:
+                  title:
+                    type: string
+                    description: 프로젝트 이름
+                  slug:
+                    type: string
+                    description: 프로젝트 slug
+                description: 제보한 프로젝트
+              reporterUserId:
+                type: number
+                description: 제보한 사용자 ID
+              url:
+                type: string
+                description: 추가해 주세요 제보로 알려 준 주소. 필요 없어요 제보이면 null
+                nullable: true
+              status:
+                type: string
+                description: 처리 상태
+                enum:
+                - OPEN
+                - ACCEPTED
+                - REJECTED
+        meta:
+          required:
+          - hasNext
+          - totalCount
+          type: object
+          properties:
+            nextCursor:
+              type: string
+              description: 다음 페이지 요청에 사용할 커서. 다음 페이지가 없으면 null
+              nullable: true
+            hasNext:
+              type: boolean
+              description: 다음 페이지 존재 여부
+            totalCount:
+              type: number
+              description: "상태, 종류 조건에 해당하는 전체 제보 수"
+          description: 커서 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
     FeedTitleSuggestionsSuccessResponse:
       title: FeedTitleSuggestionsSuccessResponse
       required:
@@ -9758,6 +10362,19 @@ components:
         content:
           type: string
           description: "앞뒤 공백을 제거한 뒤 저장하는 댓글 내용 (1~500자, Unicode code point 기준)"
+    ResourceAdditionReportRequest:
+      title: ResourceAdditionReportRequest
+      required:
+      - url
+      type: object
+      properties:
+        memo:
+          type: string
+          description: 왜 들어가면 좋은지. 공백 제거 후 500자 이하
+          nullable: true
+        url:
+          type: string
+          description: "빠진 PR이나 팀 문서의 GitHub 주소. 이 프로젝트 리포지토리 아래, 500자 이하"
     FeedFindAllSuccessResponse:
       title: FeedFindAllSuccessResponse
       required:
@@ -10938,6 +11555,41 @@ components:
         status:
           type: string
           description: 응답 상태
+    ResourceReportStatusUpdateSuccessResponse:
+      title: ResourceReportStatusUpdateSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - reportId
+          - status
+          type: object
+          properties:
+            reportId:
+              type: number
+              description: 제보 ID
+            handledByUserId:
+              type: number
+              description: 마지막으로 상태를 바꾼 관리자 ID. 바꾼 적이 없으면 null
+              nullable: true
+            handledAt:
+              type: string
+              description: 마지막으로 상태를 바꾼 시각. 바꾼 적이 없으면 null
+              nullable: true
+            status:
+              type: string
+              description: 바뀐 처리 상태
+              enum:
+              - OPEN
+              - ACCEPTED
+              - REJECTED
+          description: 처리한 자료 제보
+        status:
+          type: string
+          description: 응답 상태
     AdminProjectHistorySuccessResponse:
       title: AdminProjectHistorySuccessResponse
       required:
@@ -10990,6 +11642,54 @@ components:
               type: number
               description: 프로젝트 ID
           description: 프로젝트 심사 이력
+        status:
+          type: string
+          description: 응답 상태
+    MyResourceReportFindSuccessResponse:
+      title: MyResourceReportFindSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 내가 보낸 제보. 최신순
+          items:
+            required:
+            - createdAt
+            - kind
+            - reportId
+            - status
+            type: object
+            properties:
+              createdAt:
+                type: string
+                description: ISO-8601 제보 시각
+              resourceId:
+                type: number
+                description: 필요 없어요 제보가 가리키는 자료 ID. 추가해 주세요 제보이거나 자료가 내려갔으면 null
+                nullable: true
+              reportId:
+                type: number
+                description: 제보 ID
+              kind:
+                type: string
+                description: "제보 종류. REMOVE는 필요 없어요, ADD는 추가해 주세요"
+                enum:
+                - REMOVE
+                - ADD
+              url:
+                type: string
+                description: 추가해 주세요 제보로 알려 준 주소. 필요 없어요 제보이면 null
+                nullable: true
+              status:
+                type: string
+                description: 처리 상태
+                enum:
+                - OPEN
+                - ACCEPTED
+                - REJECTED
         status:
           type: string
           description: 응답 상태
@@ -13600,6 +14300,38 @@ components:
         status:
           type: string
           description: 응답 상태
+    ResourceAdditionReportSuccessResponse:
+      title: ResourceAdditionReportSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - reportId
+          type: object
+          properties:
+            reportId:
+              type: number
+              description: 제보 ID. 이미 보낸 주소면 처음 제보 ID
+          description: 접수한 제보
+        status:
+          type: string
+          description: 응답 상태
+    ResourceReportStatusUpdateRequest:
+      title: ResourceReportStatusUpdateRequest
+      required:
+      - status
+      type: object
+      properties:
+        status:
+          type: string
+          description: "바꿀 처리 상태. OPEN, ACCEPTED, REJECTED"
+          enum:
+          - OPEN
+          - ACCEPTED
+          - REJECTED
     ProjectCreateRequest:
       title: ProjectCreateRequest
       required:
@@ -13670,55 +14402,6 @@ components:
           nullable: true
           items:
             type: string
-    CategorySaveSuccessResponse:
-      title: CategorySaveSuccessResponse
-      required:
-      - data
-      - status
-      type: object
-      properties:
-        data:
-          required:
-          - active
-          - categoryId
-          - displayName
-          - displayOrder
-          - feedType
-          - slug
-          - type
-          type: object
-          properties:
-            displayName:
-              type: string
-              description: 표시 이름
-            feedType:
-              type: string
-              description: 카테고리가 연결된 피드 유형
-              enum:
-              - POST
-              - QUESTION
-            displayOrder:
-              type: number
-              description: 표시 순서
-            active:
-              type: boolean
-              description: 활성 여부
-            type:
-              type: string
-              description: 카테고리 유형
-              enum:
-              - GENERAL
-              - EVENT
-            slug:
-              type: string
-              description: 카테고리 slug
-            categoryId:
-              type: number
-              description: 카테고리 ID
-          description: 카테고리
-        status:
-          type: string
-          description: 응답 상태
     MagazineCommentFindAllSuccessResponse:
       title: MagazineCommentFindAllSuccessResponse
       required:
@@ -13861,6 +14544,55 @@ components:
               type: number
               description: 커서와 size에 무관한 삭제되지 않은 루트 댓글과 답글의 전체 수
           description: 페이지네이션 정보
+        status:
+          type: string
+          description: 응답 상태
+    CategorySaveSuccessResponse:
+      title: CategorySaveSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - active
+          - categoryId
+          - displayName
+          - displayOrder
+          - feedType
+          - slug
+          - type
+          type: object
+          properties:
+            displayName:
+              type: string
+              description: 표시 이름
+            feedType:
+              type: string
+              description: 카테고리가 연결된 피드 유형
+              enum:
+              - POST
+              - QUESTION
+            displayOrder:
+              type: number
+              description: 표시 순서
+            active:
+              type: boolean
+              description: 활성 여부
+            type:
+              type: string
+              description: 카테고리 유형
+              enum:
+              - GENERAL
+              - EVENT
+            slug:
+              type: string
+              description: 카테고리 slug
+            categoryId:
+              type: number
+              description: 카테고리 ID
+          description: 카테고리
         status:
           type: string
           description: 응답 상태
@@ -14163,6 +14895,31 @@ components:
             totalCount:
               type: number
               description: 전체 개수
+        status:
+          type: string
+          description: 응답 상태
+    ResourceRemovalReportSuccessResponse:
+      title: ResourceRemovalReportSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 접수한 제보. 중복을 뺀 요청 순서
+          items:
+            required:
+            - reportId
+            - resourceId
+            type: object
+            properties:
+              resourceId:
+                type: number
+                description: 제보한 자료 ID
+              reportId:
+                type: number
+                description: 제보 ID. 이미 보낸 자료면 처음 제보 ID
         status:
           type: string
           description: 응답 상태
