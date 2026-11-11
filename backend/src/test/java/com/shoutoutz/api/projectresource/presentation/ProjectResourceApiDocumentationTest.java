@@ -29,6 +29,7 @@ import com.shoutoutz.api.project.domain.ProjectErrorCode;
 import com.shoutoutz.api.projectresource.application.ProjectResourceService;
 import com.shoutoutz.api.projectresource.domain.ProjectResourceErrorCode;
 import com.shoutoutz.api.projectresource.domain.ProjectResourceJobRole;
+import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectCareerCardResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectResourceTopicsResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectTopicResourcesResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
@@ -52,6 +53,9 @@ class ProjectResourceApiDocumentationTest {
     private static final String SLUG = "shout-outz";
     private static final String TOPICS_PATH = "/api/v1/projects/@{slug}/resource-topics";
     private static final String RESOURCES_PATH = "/api/v1/projects/@{slug}/resources";
+    private static final String CAREER_CARDS_PATH = "/api/v1/projects/@{slug}/career-cards";
+
+    private static final String CAREER_CARDS_DESCRIPTION = "프로젝트 상세 전체 경험 탭의 경력 카드를 조회한다. 로그인 없이 부를 수 있다. 직군 BE, FE, AN 순이고 직군 안에서는 이력서에서 강한 순서(sort_order)다. 카드마다 분류, 제목, 이력서 문장과 포트폴리오 글(sections), 근거 자료를 준다. sections는 template별 소제목 순서이고 빈 칸은 빠진다(problem_solving: 해결하려던 문제, 원인, 해결 과정, 확인한 결과, 측정 범위와 고려한 점 / tech_decision: 해결하려던 문제, 원인, 고려한 방법, 선택한 방법과 이유, 적용한 내용, 확인한 결과, 측정 범위와 고려한 점 / build: 목표, 구현한 내용, 확인한 결과, 측정 범위와 고려한 점). 근거 자료는 기술 자료 검색 결과 카드와 같고 source_order 순(PR, 팀 문서, 블로그)이다. 삭제된 카드, 경험, 자료와 관리자가 받아들인 필요 없어요 제보 자료는 빼며, 근거가 하나도 남지 않은 카드는 주지 않는다. 프로젝트가 없거나 공개되지 않았으면 404 PROJECT_NOT_FOUND를 반환한다.";
 
     private static final String TOPICS_DESCRIPTION = "프로젝트 상세 기술 이야기 탭의 자료 수, 직군 탭, 분야별 기술 주제 목록을 조회한다. 로그인 없이 부를 수 있다. jobRole 기본값은 ALL이며 ALL, BE, FE, AN을 지원한다. totalCount, kindCounts, jobRoles는 jobRole과 상관없이 이 프로젝트 전체 기준이고, fields만 고른 직군 탭에 보일 주제다. 직군 탭은 그 직군 주제와 공통 주제에서 자료 직군이 그 직군, ALL, 없음인 자료를 센다. 관리자가 받아들인 필요 없어요 제보가 있는 자료는 세지 않는다. 분야와 주제는 자료가 많은 순, 같으면 이름순이다. jobRole이 올바르지 않으면 400 VALIDATION_FAILED, 프로젝트가 없거나 공개되지 않았으면 404 PROJECT_NOT_FOUND를 반환한다.";
     private static final String RESOURCES_DESCRIPTION = "기술 이야기 탭에서 고른 주제의 이 팀 자료, 테코톡, 다른 팀 자료를 조회한다. 로그인 없이 부를 수 있다. topicId는 주제 목록 응답의 topicId다. jobRole을 주면 이 팀 자료와 다른 팀 자료를 그 직군, ALL, 직군 없는 자료로 거르고 테코톡은 거르지 않는다. resources는 전부이며 블로그 먼저, 그다음 점수 높은 순, 같으면 최신순이다. talks는 전부이며 최신 발표순이다. otherTeamResources는 공개된 다른 프로젝트와 프로젝트에 이어지지 않은 자료 중 점수 높은 순(점수가 없으면 85점) 상위 20건이다. 몇 개를 보여 줄지는 프론트가 정한다. 관리자가 받아들인 필요 없어요 제보가 있는 자료는 뺀다. 자료 카드는 기술 자료 검색 결과 카드와 같다. topicId가 없거나 jobRole이 올바르지 않으면 400 VALIDATION_FAILED, 프로젝트가 없거나 공개되지 않았으면 404 PROJECT_NOT_FOUND, 카탈로그에 없는 주제면 404 RESOURCE_TOPIC_NOT_FOUND를 반환한다.";
@@ -61,6 +65,110 @@ class ProjectResourceApiDocumentationTest {
 
     @MockitoBean
     private ProjectResourceService projectResourceService;
+
+    @Test
+    @DisplayName("전체 경험 탭의 경력 카드를 포트폴리오 글, 근거 자료와 함께 조회한다")
+    void findCareerCards() throws Exception {
+        given(projectResourceService.findCareerCards(SLUG)).willReturn(List.of(new ProjectCareerCardResponse(
+                12L,
+                "BE",
+                "장애 대응",
+                "운영 링크 미리보기 오수집과 캐시 복구",
+                List.of("봇 확인 페이지가 성공으로 캐시되는 원인을 규명하고 oEmbed 우선 수집으로 정상 제목과 썸네일 반환을 확인함"),
+                List.of("oEmbed", "Jsoup", "Flyway"),
+                List.of(
+                        new ProjectCareerCardResponse.Section("해결하려던 문제", "운영에서만 유튜브 미리보기가 일반 문구로 저장됐다."),
+                        new ProjectCareerCardResponse.Section("원인", "봇 확인 페이지가 성공 응답으로 캐시됐다."),
+                        new ProjectCareerCardResponse.Section("해결 과정", "유튜브 링크는 oEmbed API를 먼저 쓰도록 바꿨다."),
+                        new ProjectCareerCardResponse.Section("확인한 결과", "운영에서 정상 제목과 썸네일을 받았다.")
+                ),
+                List.of(
+                        new ResourceCardResponse(
+                                3412L,
+                                "github-pr",
+                                "[BE/fix] 유튜브 링크 미리보기를 oEmbed로 먼저 수집 (#512)",
+                                "https://github.com/woowacourse-teams/2026-shout-outz/pull/513",
+                                "oEmbed로 유튜브 미리보기를 먼저 수집할 때 참고하기 좋아요.",
+                                Instant.parse("2026-10-20T05:12:00Z"),
+                                null,
+                                new ResourceCardResponse.Team("샤라웃", SLUG, 31L)
+                        ),
+                        new ResourceCardResponse(
+                                3420L,
+                                "blog-post",
+                                "운영에서만 깨지는 링크 미리보기 추적기",
+                                "https://example.com/link-preview",
+                                null,
+                                null,
+                                "tistory",
+                                new ResourceCardResponse.Team("샤라웃", SLUG, 31L)
+                        )
+                )
+        )));
+
+        mockMvc.perform(get(CAREER_CARDS_PATH, SLUG))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].cardId").value(12))
+                .andExpect(jsonPath("$.data[0].sections[0].heading").value("해결하려던 문제"))
+                .andExpect(jsonPath("$.data[0].sources[0].resourceId").value(3412))
+                .andDo(document(
+                        "project-career-cards",
+                        resource(careerCardsSuccessResponse())
+                ));
+    }
+
+    @Test
+    @DisplayName("없거나 공개되지 않은 프로젝트의 경력 카드는 조회할 수 없다")
+    void rejectCareerCardsOfMissingProject() throws Exception {
+        given(projectResourceService.findCareerCards(SLUG))
+                .willThrow(new EntityNotFoundException(ProjectErrorCode.PROJECT_NOT_FOUND));
+
+        mockMvc.perform(get(CAREER_CARDS_PATH, SLUG))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("PROJECT_NOT_FOUND"))
+                .andDo(document(
+                        "project-career-cards-project-not-found",
+                        resource(ResourceSnippetParameters.builder()
+                                .tag("ProjectResource")
+                                .summary("프로젝트 전체 경험 조회")
+                                .description(CAREER_CARDS_DESCRIPTION)
+                                .pathParameters(slugParameter())
+                                .responseSchema(Schema.schema("ErrorResponse"))
+                                .responseFields(RestDocsFields.errorResponse())
+                                .build())
+                ));
+    }
+
+    private ResourceSnippetParameters careerCardsSuccessResponse() {
+        List<FieldDescriptor> fields = new ArrayList<>(List.of(
+                fieldWithPath("status").type(STRING).description("응답 상태"),
+                fieldWithPath("data").type(ARRAY)
+                        .description("경력 카드. 직군 BE, FE, AN 순, 직군 안에서는 sort_order 순. 카드가 없으면 빈 배열"),
+                fieldWithPath("data[].cardId").type(NUMBER).description("경력 카드 ID"),
+                fieldWithPath("data[].jobRole").type(STRING).description("직군. BE, FE, AN"),
+                fieldWithPath("data[].category").type(STRING).description("분류(예: 장애 대응, 쿼리 최적화)"),
+                fieldWithPath("data[].title").type(STRING).description("카드 제목"),
+                fieldWithPath("data[].resumeBullets").type(ARRAY).description("이력서 문장"),
+                fieldWithPath("data[].techs").type(ARRAY).description(
+                        "카드에 쓴 기술. 이력서 머리의 기술 태그는 프로젝트 기술 스택 중 그 직군 카드들의 기술과 이름이 겹치는 것을 프론트가 고른다(겹치는 게 없으면 전부)"),
+                fieldWithPath("data[].sections").type(ARRAY)
+                        .description("포트폴리오 글. template별 소제목 순서이고 빈 칸은 빠진다"),
+                fieldWithPath("data[].sections[].heading").type(STRING).description("소제목"),
+                fieldWithPath("data[].sections[].body").type(STRING)
+                        .description("본문. 고려한 방법은 방법들을 쉼표로 이어 붙인다"),
+                fieldWithPath("data[].sources").type(ARRAY)
+                        .description("근거 자료. source_order 순(PR, 팀 문서, 블로그). PR 번호는 PR 주소 끝(/pull/{번호})에서 읽는다")
+        ));
+        fields.addAll(cardFields("data[].sources[]"));
+        return ResourceSnippetParameters.builder()
+                .tag("ProjectResource")
+                .summary("프로젝트 전체 경험 조회")
+                .description(CAREER_CARDS_DESCRIPTION)
+                .pathParameters(slugParameter())
+                .responseSchema(Schema.schema("ProjectCareerCardsSuccessResponse"))
+                .responseFields(fields)
+                .build();
+    }
 
     @Test
     @DisplayName("기술 이야기 탭의 자료 수, 직군 탭, 분야별 주제 목록을 조회한다")

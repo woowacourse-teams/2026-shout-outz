@@ -3,6 +3,7 @@ package com.shoutoutz.api.projectresource.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.shoutoutz.api.projectresource.application.ProjectResourceQueryRepository;
+import com.shoutoutz.api.projectresource.domain.CareerCard;
 import com.shoutoutz.api.projectresource.domain.ProjectResourceJobRole;
 import com.shoutoutz.api.projectresource.domain.ResourceCount;
 import com.shoutoutz.api.projectresource.domain.ResourceTopic;
@@ -10,6 +11,7 @@ import com.shoutoutz.api.projectresource.domain.TopicProject;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -234,6 +236,62 @@ class ProjectResourceQueryRepositoryIntegrationTest {
                 new TopicProject(TOPIC, projectId),
                 new TopicProject(OTHER_TOPIC, otherProjectId)
         );
+    }
+
+    @Test
+    @DisplayName("경력 카드는 직군 BE, FE, AN 순, 직군 안에서는 sort_order 순으로 읽고, 삭제된 카드와 다른 프로젝트 카드는 뺀다")
+    void findsCareerCardsInJobRoleAndSortOrder() {
+        long otherProjectId = fixtures.publicProject("다른 팀");
+        long frontend = fixtures.careerCard(projectId, "FE", "build", 0, false);
+        long backendSecond = fixtures.careerCard(projectId, "BE", "problem_solving", 1, false);
+        long backendFirst = fixtures.careerCard(projectId, "BE", "tech_decision", 0, false);
+        long android = fixtures.careerCard(projectId, "AN", "build", 0, false);
+        fixtures.careerCard(projectId, "BE", "build", 2, true);
+        fixtures.careerCard(otherProjectId, "BE", "build", 0, false);
+
+        List<CareerCard> cards = projectResourceQueryRepository.findCareerCards(projectId);
+
+        assertThat(cards).extracting(CareerCard::cardId).containsExactly(backendFirst, backendSecond, frontend, android);
+        CareerCard first = cards.getFirst();
+        assertThat(first.jobRole()).isEqualTo("BE");
+        assertThat(first.template()).isEqualTo("tech_decision");
+        assertThat(first.category()).isEqualTo("장애 대응");
+        assertThat(first.resumeBullets()).containsExactly("문장 1", "문장 2");
+        assertThat(first.techs()).containsExactly("Spring", "JPA");
+        assertThat(first.options()).containsExactly("방법 A", "방법 B");
+        assertThat(first.problem()).isEqualTo("문제");
+        assertThat(first.decisionReason()).isNull();
+        assertThat(first.limits()).isNull();
+    }
+
+    @Test
+    @DisplayName("카드 근거를 source_order 순으로 읽고, 삭제된 경험과 자료, 받아들인 제보 자료는 빼며, 근거가 없는 카드는 결과에 없다")
+    void findsCareerCardSources() {
+        long card = fixtures.careerCard(projectId, "BE", "problem_solving", 0, false);
+        long removedOnlyCard = fixtures.careerCard(projectId, "BE", "problem_solving", 1, false);
+        long blog = fixtures.document("blog-post", "card-blog").project(projectId).topic(TOPIC).insert();
+        long pr = fixtures.document("github-pr", "card-pr").project(projectId).topic(TOPIC).insert();
+        long doc = fixtures.document("github-teamdoc", "card-doc").project(projectId).topic(TOPIC).insert();
+        long deletedDocument = fixtures.document("github-pr", "card-deleted").project(projectId).deleted().insert();
+        long goneExperienceDocument = fixtures.document("github-pr", "card-gone").project(projectId).insert();
+        long removed = fixtures.document("github-pr", "card-removed").project(projectId).insert();
+        fixtures.removalReport(projectId, "github-pr", "card-removed", "ACCEPTED");
+        fixtures.cardSource(card, fixtures.experience(blog, false), 2);
+        fixtures.cardSource(card, fixtures.experience(pr, false), 0);
+        fixtures.cardSource(card, fixtures.experience(doc, false), 1);
+        fixtures.cardSource(card, fixtures.experience(deletedDocument, false), 3);
+        fixtures.cardSource(card, fixtures.experience(goneExperienceDocument, true), 4);
+        fixtures.cardSource(removedOnlyCard, fixtures.experience(removed, false), 0);
+
+        Map<Long, List<ResourceCard>> sources = projectResourceQueryRepository.findCareerCardSources(
+                List.of(card, removedOnlyCard)
+        );
+
+        assertThat(sources).containsOnlyKeys(card);
+        assertThat(sources.get(card)).extracting(ResourceCard::resourceId).containsExactly(pr, doc, blog);
+        assertThat(sources.get(card).getFirst().team())
+                .isEqualTo(new ResourceCard.Team("샤라웃", fixtures.slugOf(projectId), null));
+        assertThat(projectResourceQueryRepository.findCareerCardSources(List.of())).isEmpty();
     }
 
     private long idOf(String externalKey) {

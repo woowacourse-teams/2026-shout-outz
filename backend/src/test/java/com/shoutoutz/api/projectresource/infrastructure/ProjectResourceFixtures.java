@@ -64,6 +64,41 @@ final class ProjectResourceFixtures {
         return new Document(source, externalKey);
     }
 
+    /**
+     * 경력 카드를 넣는다. 이력서 문장과 고려한 방법은 '|' 로 이어 받은 값을 배열로 넣는다.
+     */
+    long careerCard(long projectId, String track, String template, int sortOrder, boolean deleted) {
+        return jdbcTemplate.queryForObject("""
+                INSERT INTO resource_career_cards (card_key, project_id, repo, track, template, title, category, problem,
+                                                   cause, options, solution, result, resume_bullets, tech, written_by,
+                                                   prompt_version, updated_at, sort_order, deleted_at)
+                VALUES (?, ?, 'woowacourse-teams/repo', ?, ?, ?, '장애 대응', '문제', '원인',
+                        string_to_array('방법 A|방법 B', '|'), '해결', '결과', string_to_array('문장 1|문장 2', '|'),
+                        string_to_array('Spring|JPA', '|'), 'copy', 'v1', now(), ?, CASE WHEN ? THEN now() END)
+                RETURNING id
+                """, Long.class, "card-" + UUID.randomUUID().toString().substring(0, 12), projectId, track, template,
+                "카드 " + track + " " + sortOrder, sortOrder, deleted);
+    }
+
+    long experience(long documentId, boolean deleted) {
+        return jdbcTemplate.queryForObject("""
+                INSERT INTO resource_experiences (document_id, experience_index, problem, solution, source, deleted_at)
+                SELECT id, 0, '문제', '해결', source, CASE WHEN ? THEN now() END
+                FROM resource_documents
+                WHERE id = ?
+                RETURNING id
+                """, Long.class, deleted, documentId);
+    }
+
+    void cardSource(long cardId, long experienceId, int sourceOrder) {
+        jdbcTemplate.update(
+                "INSERT INTO resource_career_card_sources (card_id, experience_id, source_order) VALUES (?, ?, ?)",
+                cardId,
+                experienceId,
+                sourceOrder
+        );
+    }
+
     final class Document {
 
         private final String source;
