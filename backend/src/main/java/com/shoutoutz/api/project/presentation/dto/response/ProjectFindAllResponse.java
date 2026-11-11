@@ -18,7 +18,7 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
             String nextCursor,
             Map<Long, URI> mediaUrls
     ) {
-        return of(page, nextCursor, mediaUrls, Map.of(), null);
+        return of(page, nextCursor, mediaUrls, Map.of(), null, null);
     }
 
     public static ProjectFindAllResponse of(
@@ -26,13 +26,14 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
             String nextCursor,
             Map<Long, URI> mediaUrls,
             Map<Long, String> userAvatarUrls,
-            ResourceTopic matchedTopic
+            ResourceTopic matchedTopic,
+            String searchId
     ) {
         return new ProjectFindAllResponse(
                 page.items().stream()
                         .map(item -> Item.from(item, mediaUrls, userAvatarUrls))
                         .toList(),
-                new Meta(nextCursor, page.hasNext(), page.totalCount(), MatchedTopic.from(matchedTopic))
+                new Meta(nextCursor, page.hasNext(), page.totalCount(), MatchedTopic.from(matchedTopic), searchId)
         );
     }
 
@@ -40,12 +41,14 @@ public record ProjectFindAllResponse(List<Item> items, Meta meta) {
      * 목록 공통 페이지 정보에 검색어 해석 결과를 더한 메타 정보
      *
      * @param matchedTopic 검색어를 기술 주제로 해석해 그 주제로 조회했을 때의 주제. 아니면 null
+     * @param searchId     검색어로 조회할 때 만든 검색 id. 서버 검색 로그와 화면의 클릭 기록을 잇는다. 검색어가 없으면 null
      */
     public record Meta(
             String nextCursor,
             boolean hasNext,
             long totalCount,
-            MatchedTopic matchedTopic
+            MatchedTopic matchedTopic,
+            String searchId
     ) {
     }
 

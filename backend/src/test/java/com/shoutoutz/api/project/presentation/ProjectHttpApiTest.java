@@ -474,7 +474,8 @@ class ProjectHttpApiTest {
                                 new ProjectMemberProfileResponse(null, null, "Archived Crew", null, null, null,
                                         "https://avatars.githubusercontent.com/u/1", "https://github.com/archived-crew")
                         ))),
-                new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L, null)
+                new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L, null,
+                        "9f1c2a7e-5b3d-4c8a-9e21-7d4b6a0c1f35")
         ));
 
         mockMvc.perform(get("/api/v1/projects")
@@ -610,6 +611,11 @@ class ProjectHttpApiTest {
                                                 .optional(),
                                         fieldWithPath("meta.matchedTopic.side").type(STRING)
                                                 .description("기술 주제 직군 (backend, frontend, mobile, common)")
+                                                .optional(),
+                                        fieldWithPath("meta.searchId").type(STRING)
+                                                .description("검색어로 조회할 때마다 새로 만드는 검색 id. 서버 검색 로그와 화면의 결과 클릭 기록을 "
+                                                        + "잇는 데 쓴다. 다음 페이지 요청에도 새 id가 나오므로, 클릭 기록에는 첫 페이지의 id를 쓴다. "
+                                                        + "검색어가 없으면 null")
                                                 .optional()
                                 )
                                 .build())
@@ -623,7 +629,7 @@ class ProjectHttpApiTest {
     @DisplayName("파라미터를 보내지 않으면 모두 입력하지 않은 값으로 조회한다.")
     void findsProjectsWithoutParameters() throws Exception {
         given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(
-                new ProjectFindAllResponse(List.of(), new ProjectFindAllResponse.Meta(null, false, 0L, null)));
+                new ProjectFindAllResponse(List.of(), new ProjectFindAllResponse.Meta(null, false, 0L, null, null)));
 
         mockMvc.perform(get("/api/v1/projects"))
                 .andExpect(status().isOk())
@@ -639,7 +645,8 @@ class ProjectHttpApiTest {
         given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(new ProjectFindAllResponse(
                 List.of(),
                 new ProjectFindAllResponse.Meta(null, false, 0L,
-                        new ProjectFindAllResponse.MatchedTopic("concurrency", "동시성 제어/락", "backend"))
+                        new ProjectFindAllResponse.MatchedTopic("concurrency", "동시성 제어/락", "backend"),
+                        "9f1c2a7e-5b3d-4c8a-9e21-7d4b6a0c1f35")
         ));
 
         mockMvc.perform(get("/api/v1/projects").queryParam("keyword", "동시성"))

@@ -94,10 +94,13 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -114,6 +117,8 @@ public class ProjectService {
      */
     private static final int DIRECT_SEARCH_RESOURCES = 100;
     private static final int DIRECT_SEARCH_PROJECTS = 30;
+    private static final int LOGGED_PROJECTS = 10;
+    private static final Pattern WHITESPACES = Pattern.compile("\\s+");
 
     private final ProjectRepository projectRepository;
     private final ProjectSlugResolver projectSlugResolver;
@@ -243,6 +248,7 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public ProjectFindAllResponse findAll(ProjectFindAllRequest request, Long viewerId) {
+        long startedAt = System.nanoTime();
         ProjectSort sort = request.resolvedSort();
         ResolvedKeyword resolved = resolveKeyword(new ProjectSearchCondition(
                 request.keyword(),
@@ -260,13 +266,55 @@ public class ProjectService {
         ProjectCursor nextCursor = page.nextCursor(sort);
         Map<Long, URI> mediaUrls = resolveProjectMediaUrls(page.items());
         Map<Long, String> userAvatarUrls = resolveProjectSummaryUserAvatarUrls(page.items());
+        String searchId = null;
+        if (request.keyword() != null) {
+            searchId = UUID.randomUUID().toString();
+            logSearch(searchId, request, resolved, page, System.nanoTime() - startedAt);
+        }
         return ProjectFindAllResponse.of(
                 page,
                 nextCursor == null ? null : ProjectCursorCodec.encode(nextCursor),
                 mediaUrls,
                 userAvatarUrls,
-                resolved.matchedTopic()
+                resolved.matchedTopic(),
+                searchId
         );
+    }
+
+    /**
+     * 검색 품질을 나중에 실제 사용 기록으로 평가하기 위해, 검색어로 조회할 때마다 한 줄을 남긴다.
+     * 화면의 결과 클릭 기록과는 searchId로 잇는다. 줄바꿈과 따옴표를 정리해 검색어가 로그 형식을 깨지 못하게 한다.
+     */
+    private void logSearch(
+            String searchId,
+            ProjectFindAllRequest request,
+            ResolvedKeyword resolved,
+            ProjectPage page,
+            long elapsedNanos
+    ) {
+        String keyword = WHITESPACES.matcher(request.keyword().strip()).replaceAll(" ")
+                .toLowerCase(Locale.ROOT)
+                .replace("\"", "'");
+        List<Long> topProjectIds = page.items().stream()
+                .map(ProjectSummary::id)
+                .limit(LOGGED_PROJECTS)
+                .toList();
+        log.info("project_search searchId={} keyword=\"{}\" match={} topicId={} sort={} firstPage={} "
+                        + "cohorts={} techTagIds={} totalCount={} topProjectIds={} "
+                        + "resourceSearchMs={} resourceSearchFailed={} totalMs={}",
+                searchId,
+                keyword,
+                resolved.match(),
+                resolved.condition().topicId(),
+                request.resolvedSort(),
+                request.cursor() == null,
+                request.resolvedCohorts(),
+                request.resolvedTechTagIds(),
+                page.totalCount(),
+                topProjectIds,
+                resolved.resourceSearchMillis(),
+                resolved.resourceSearchFailed(),
+                elapsedNanos / 1_000_000);
     }
 
     /**
@@ -276,55 +324,98 @@ public class ProjectService {
      * 둘 다 아니면 글자 일치와 자료 검색으로 직접 찾는다.
      */
     private ResolvedKeyword resolveKeyword(ProjectSearchCondition condition) {
-        if (condition.keyword() == null || condition.topicId() != null) {
-            return new ResolvedKeyword(condition, null);
+        if (condition.keyword() == null) {
+            return ResolvedKeyword.of(condition, KeywordMatch.NONE);
+        }
+        if (condition.topicId() != null) {
+            return ResolvedKeyword.of(condition, KeywordMatch.IN_TOPIC);
         }
         NormalizedKeyword keyword = NormalizedKeyword.of(condition.keyword());
         if (keyword.isEmpty()) {
-            return new ResolvedKeyword(condition, null);
+            return ResolvedKeyword.of(condition, KeywordMatch.PLAIN);
         }
         List<Long> titleMatchedIds = projectRepository.findPublicProjectTitles().stream()
                 .filter(project -> NormalizedKeyword.of(project.title()).equals(keyword))
                 .map(PublicProjectTitle::id)
                 .toList();
         if (!titleMatchedIds.isEmpty()) {
-            return new ResolvedKeyword(condition.onlyProjects(titleMatchedIds), null);
+            return ResolvedKeyword.of(condition.onlyProjects(titleMatchedIds), KeywordMatch.PROJECT_NAME);
         }
         Optional<ResourceTopic> matchedTopic = topicAliases.match(keyword)
                 .flatMap(projectResourceQueryRepository::findTopic);
         if (matchedTopic.isPresent()) {
-            return new ResolvedKeyword(condition.inTopic(matchedTopic.get().topicId()), matchedTopic.get());
+            return new ResolvedKeyword(
+                    condition.inTopic(matchedTopic.get().topicId()),
+                    KeywordMatch.TOPIC,
+                    matchedTopic.get(),
+                    null,
+                    false
+            );
         }
-        List<Long> resourceProjectIds = searchResourceProjectIds(condition.keyword());
+        long resourceSearchStartedAt = System.nanoTime();
+        ResourceSearchResult resourceSearch = searchResourceProjectIds(condition.keyword());
         KeywordCandidates candidates = new KeywordCandidates(
-                projectRepository.findKeywordCandidates(condition.filter(), resourceProjectIds),
-                resourceProjectIds
+                projectRepository.findKeywordCandidates(condition.filter(), resourceSearch.projectIds()),
+                resourceSearch.projectIds()
         );
-        return new ResolvedKeyword(condition.onlyProjects(candidates.rankedIds(DIRECT_SEARCH_PROJECTS)), null);
+        return new ResolvedKeyword(
+                condition.onlyProjects(candidates.rankedIds(DIRECT_SEARCH_PROJECTS)),
+                KeywordMatch.SEARCH,
+                null,
+                (System.nanoTime() - resourceSearchStartedAt) / 1_000_000,
+                resourceSearch.failed()
+        );
     }
 
     /**
      * 자료 검색에 처음 나온 순서대로의 프로젝트 id. 팀이 없는 자료(테코톡 등)는 건너뛴다.
      * 외부 임베딩 호출이 실패하면 자료 검색 없이 글자 일치 결과만 보여 주고, 실패는 로그로 남긴다.
      */
-    private List<Long> searchResourceProjectIds(String keyword) {
+    private ResourceSearchResult searchResourceProjectIds(String keyword) {
         try {
-            return resourceSearchService.search(keyword, null, DIRECT_SEARCH_RESOURCES).stream()
+            List<Long> projectIds = resourceSearchService.search(keyword, null, DIRECT_SEARCH_RESOURCES).stream()
                     .map(SearchHit::projectId)
                     .filter(Objects::nonNull)
                     .distinct()
                     .toList();
+            return new ResourceSearchResult(projectIds, false);
         } catch (EmbeddingException exception) {
             log.warn("Project direct search without resource search: errorCode={}, httpStatus={}",
                     exception.errorCode(), exception.httpStatus());
-            return List.of();
+            return new ResourceSearchResult(List.of(), true);
         }
     }
 
     /**
-     * @param matchedTopic 검색어를 기술 주제로 해석했을 때의 주제. 아니면 null
+     * 검색어를 어떤 경로로 해석했는지. 검색 로그에서 경로별 클릭률과 재검색률을 나눠 보는 기준이다.
      */
-    private record ResolvedKeyword(ProjectSearchCondition condition, ResourceTopic matchedTopic) {
+    private enum KeywordMatch {
+        NONE,
+        IN_TOPIC,
+        PLAIN,
+        PROJECT_NAME,
+        TOPIC,
+        SEARCH
+    }
+
+    /**
+     * @param matchedTopic         검색어를 기술 주제로 해석했을 때의 주제. 아니면 null
+     * @param resourceSearchMillis 직접 검색의 자료 검색과 후보 조회 시간. 직접 검색이 아니면 null
+     */
+    private record ResolvedKeyword(
+            ProjectSearchCondition condition,
+            KeywordMatch match,
+            ResourceTopic matchedTopic,
+            Long resourceSearchMillis,
+            boolean resourceSearchFailed
+    ) {
+
+        static ResolvedKeyword of(ProjectSearchCondition condition, KeywordMatch match) {
+            return new ResolvedKeyword(condition, match, null, null, false);
+        }
+    }
+
+    private record ResourceSearchResult(List<Long> projectIds, boolean failed) {
     }
 
     /**

@@ -123,8 +123,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class ProjectServiceTest {
 
     private static final long REGISTERED_BY = 7L;
@@ -803,7 +805,7 @@ class ProjectServiceTest {
 
     @Test
     @DisplayName("자료 검색의 임베딩 호출이 실패하면 글자 일치 프로젝트만으로 직접 검색 결과를 만든다.")
-    void findsKeywordMatchesOnlyWhenEmbeddingFails() {
+    void findsKeywordMatchesOnlyWhenEmbeddingFails(CapturedOutput output) {
         when(projectRepository.findPublicProjectTitles()).thenReturn(List.of());
         when(resourceSearchService.search("eda", null, 100))
                 .thenThrow(new EmbeddingException(null, "TRANSPORT_ERROR", true));
@@ -817,6 +819,45 @@ class ProjectServiceTest {
         ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
         verify(projectRepository).findAll(conditionCaptor.capture());
         assertThat(conditionCaptor.getValue().projectIds()).containsExactly(2L);
+        assertThat(output).contains("resourceSearchFailed=true");
+    }
+
+    @Test
+    @DisplayName("검색어로 조회하면 검색 id를 응답에 담고, 같은 id로 해석 경로와 결과를 한 줄 로그로 남긴다.")
+    void logsKeywordSearchWithSearchId(CapturedOutput output) {
+        when(projectRepository.findPublicProjectTitles()).thenReturn(List.of());
+        when(resourceSearchService.search("EDA", null, 100)).thenReturn(List.of(searchHit(10L)));
+        when(projectRepository.findKeywordCandidates(new ProjectFilterCondition("EDA", List.of(), List.of()), List.of(10L)))
+                .thenReturn(List.of(new KeywordCandidate(10L, false)));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(summary(10L, 0L, NOW)), false, 1));
+
+        ProjectFindAllResponse response = projectService.findAll(
+                new ProjectFindAllRequest(" EDA ", null, null, null, "RELEVANCE", null, null));
+
+        assertThat(response.meta().searchId()).isNotBlank();
+        assertThat(output).contains(
+                "project_search searchId=" + response.meta().searchId(),
+                "keyword=\"eda\"",
+                "match=SEARCH",
+                "firstPage=true",
+                "totalCount=1",
+                "topProjectIds=[10]",
+                "resourceSearchFailed=false"
+        );
+    }
+
+    @Test
+    @DisplayName("검색어가 없으면 검색 id를 만들지 않고 검색 로그도 남기지 않는다.")
+    void doesNotLogWithoutKeyword(CapturedOutput output) {
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        ProjectFindAllResponse response = projectService.findAll(
+                new ProjectFindAllRequest(null, null, null, null, null, null, null));
+
+        assertThat(response.meta().searchId()).isNull();
+        assertThat(output).doesNotContain("project_search");
     }
 
     @Test
