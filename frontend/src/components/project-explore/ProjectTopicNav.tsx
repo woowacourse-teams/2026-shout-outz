@@ -65,7 +65,7 @@ export function ProjectTopicNav({ topic, onTopicChange }: ProjectTopicNavProps) 
                 const selected = item.name === topic;
                 return (
                   <li key={item.name}>
-                    {/* ASSUMPTION: 고른 주제는 직군 목록과 같은 파란 강조로 보여 주고, 다시 누르면 푼다. */}
+                    {/* 고른 주제는 직군 목록과 같은 파란 강조로 보여 주고, 다시 누르면 푼다. */}
                     <button
                       type="button"
                       aria-pressed={selected}
