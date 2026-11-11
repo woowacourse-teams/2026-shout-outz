@@ -26,15 +26,15 @@ export function FeedEditorPage(props: FeedEditorPageProps) {
     <div className="bg-background flex min-h-dvh flex-col">
       <title>{`${title} | shout-outz`}</title>
       <AppGnb />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-7 md:pt-10 md:pb-20">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 md:gap-7">
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-            <p className="hidden text-sm text-gray-600 md:block">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-6 pt-12 pb-24">
+        <div className="flex w-full flex-col gap-8">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">{title}</h1>
+            <p className="text-base text-gray-600">
               {props.feedId !== undefined
                 ? '작성한 내용을 수정해보세요.'
                 : props.feedType === 'QUESTION'
-                  ? '크루에게 묻고 싶은 내용을 자유롭게 작성해보세요.'
+                  ? '크루에게 묻고 싶은 내용을 자유롭게 작성해 보세요.'
                   : '나누고 싶은 기술 아티클, 트러블슈팅 경험, 프로젝트 회고를 자유롭게 공유해보세요.'}
             </p>
           </div>

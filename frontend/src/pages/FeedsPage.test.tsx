@@ -107,20 +107,52 @@ test('피드 목록 카드는 전체가 상세 페이지로 이동하고 반응 
   expect(within(first).getByLabelText('댓글 1개')).toBeInTheDocument();
   expect(within(first).queryByRole('button', { name: /좋아요|댓글|공유/ })).not.toBeInTheDocument();
 });
-test('인기 피드는 목록 카드와 같은 링크와 반응 정보를 보여준다', async () => {
+test('인기글은 상세 링크 하나와 작성자, 좋아요·댓글 수를 보여준다', async () => {
+  const feed = { ...mockFeeds[0]!, feedType: 'POST' as const, likeCount: 10, commentCount: 1 };
+  server.use(
+    http.get('*/api/v1/feeds', () =>
+      HttpResponse.json({
+        status: 'success',
+        data: [feed],
+        meta: { hasNext: false, nextCursor: null },
+      }),
+    ),
+  );
+  show(<PopularFeedList feedType="POST" />);
+  const aside = await screen.findByRole('complementary', { name: '인기글' });
+  expect(within(aside).getByRole('heading', { name: '인기글' })).toBeInTheDocument();
+  expect(within(aside).getByRole('link', { name: /모두 보기/ })).toHaveAttribute(
+    'href',
+    '/community?type=POST&sort=POPULAR',
+  );
+
+  const [item] = within(within(aside).getByRole('list')).getAllByRole('listitem');
+  if (!item) throw new Error('인기 피드가 없습니다.');
+  expect(within(item).getAllByRole('link')).toHaveLength(1);
+  expect(within(item).getByRole('link', { name: feed.title })).toHaveAttribute(
+    'href',
+    `/community/${feed.feedId}`,
+  );
+  expect(item).toHaveTextContent(feed.author.displayName!);
+  expect(within(item).getByLabelText('좋아요 10개')).toBeInTheDocument();
+  expect(within(item).getByLabelText('댓글 1개')).toBeInTheDocument();
+  expect(item).not.toHaveTextContent(feed.content);
+});
+test('인기 질문은 상세 링크와 궁금해요·답변 수를 보여준다', async () => {
   // 목 핸들러는 인기순을 최신순의 역순으로 준다.
   const feed = mockFeeds.at(-1)!;
-  show(<PopularFeedList />);
-  const firstItem = within(await screen.findByRole('list')).getAllByRole('listitem')[0]!;
+  show(<PopularFeedList feedType="QUESTION" />);
+  const aside = await screen.findByRole('complementary', { name: '인기 질문' });
+  const [item] = within(within(aside).getByRole('list')).getAllByRole('listitem');
+  if (!item) throw new Error('인기 질문이 없습니다.');
 
-  const [detailLink] = within(firstItem).getAllByRole('link');
-  expect(within(firstItem).getAllByRole('link')).toHaveLength(1);
-  expect(detailLink).toHaveAttribute('href', `/community/${feed.feedId}`);
-  expect(firstItem).toHaveTextContent(feed.title);
-  expect(firstItem).toHaveTextContent(feed.content);
-  expect(within(firstItem).getByLabelText('궁금해요 12개')).toBeInTheDocument();
-  expect(within(firstItem).getByLabelText('답변 0개')).toBeInTheDocument();
-  expect(within(firstItem).queryByRole('button', { name: '피드 메뉴' })).not.toBeInTheDocument();
+  expect(within(item).getAllByRole('link')).toHaveLength(1);
+  expect(within(item).getByRole('link', { name: feed.title })).toHaveAttribute(
+    'href',
+    `/community/${feed.feedId}`,
+  );
+  expect(within(item).getByLabelText('궁금해요 12개')).toBeInTheDocument();
+  expect(within(item).getByLabelText('답변 0개')).toBeInTheDocument();
 });
 test('카드는 첫 이미지와 남은 장수만 보여준다', async () => {
   server.use(
@@ -537,7 +569,7 @@ test('답변 대기순을 서버에 전달하고 본인 익명 질문을 표시�
   const card = await screen.findByRole('article');
   expect(requestedSort).toBe('WAITING');
   expect(requestedType).toBe('QUESTION');
-  expect(within(card).getByText('답변을 기다리고 있어요')).toBeInTheDocument();
+  expect(within(card).getByText('답변 대기')).toBeInTheDocument();
   expect(within(card).getByText('정우진')).toBeInTheDocument();
   expect(within(card).getByText('익명으로 작성한 글입니다')).toBeInTheDocument();
   expect(within(card).queryByRole('link', { name: /프로필 보기/ })).not.toBeInTheDocument();
@@ -582,21 +614,18 @@ test.each(['LATEST', 'POPULAR', 'WAITING'] as const)('질문 %s 빈 목록을 �
   ).toBeInTheDocument();
 });
 
-test.each(['일반', '인기'])(
-  '%s 목록에서 소속 아이콘의 호버와 탭으로 설명을 표시한다',
-  async (kind) => {
-    const user = userEvent.setup();
-    show(kind === '일반' ? <FeedList sort="LATEST" /> : <PopularFeedList />);
-    const icons = await screen.findAllByRole('button', { name: '우아한테크코스 소속' });
-    const icon = icons[0]!;
-    await user.hover(icon);
-    expect(screen.getByRole('tooltip')).toHaveTextContent('소속 인증을 완료한 사용자');
-    await user.unhover(icon);
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-    await user.pointer([{ keys: '[TouchA>]', target: icon }, { keys: '[/TouchA]' }]);
-    expect(screen.getByRole('tooltip')).toBeInTheDocument();
-  },
-);
+test('목록에서 소속 아이콘의 호버와 탭으로 설명을 표시한다', async () => {
+  const user = userEvent.setup();
+  show(<FeedList sort="LATEST" />);
+  const icons = await screen.findAllByRole('button', { name: '우아한테크코스 소속' });
+  const icon = icons[0]!;
+  await user.hover(icon);
+  expect(screen.getByRole('tooltip')).toHaveTextContent('소속 인증을 완료한 사용자');
+  await user.unhover(icon);
+  expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+  await user.pointer([{ keys: '[TouchA>]', target: icon }, { keys: '[/TouchA]' }]);
+  expect(screen.getByRole('tooltip')).toBeInTheDocument();
+});
 
 test.each([
   ['일반', 'POST'],
@@ -623,4 +652,24 @@ test.each([
   expect(
     await screen.findByLabelText(`${type === 'QUESTION' ? '궁금해요' : '좋아요'} 13개, 내가 누름`),
   ).toBeInTheDocument();
+});
+
+test('답변이 있는 질문은 답변 수 배지를, 피드는 배지 없이 보여준다', async () => {
+  server.use(
+    http.get('*/api/v1/feeds', () =>
+      HttpResponse.json({
+        status: 'success',
+        data: [
+          { ...mockFeeds[0]!, feedId: 901, feedType: 'QUESTION', commentCount: 2 },
+          { ...mockFeeds[0]!, feedId: 902, feedType: 'POST', commentCount: 0 },
+        ],
+        meta: { hasNext: false, nextCursor: null },
+      }),
+    ),
+  );
+  show(<FeedList sort="LATEST" />);
+  const [question, post] = await screen.findAllByRole('article');
+
+  expect(within(question!).getByText('답변 2')).toBeInTheDocument();
+  expect(within(post!).queryByText(/^답변/)).not.toBeInTheDocument();
 });

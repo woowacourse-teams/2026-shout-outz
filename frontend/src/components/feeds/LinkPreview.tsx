@@ -42,13 +42,16 @@ export function LinkPreview({
       rel="noopener noreferrer"
       onClick={onClick}
       aria-label={`${title || siteName || url} 링크 열기`}
-      className="flex overflow-hidden rounded-lg bg-gray-50"
+      className="bg-background flex overflow-hidden rounded-xl border border-gray-200 hover:border-gray-300"
     >
       <div
         className={cn(
-          'shrink-0 bg-gray-100',
-          small ? 'h-14' : 'h-20 md:h-28',
-          imageUrl ? 'aspect-[1.91/1]' : 'aspect-square',
+          'shrink-0 border-r border-gray-100 bg-gray-50',
+          imageUrl
+            ? cn('aspect-[1.91/1]', small ? 'h-14' : 'h-20 md:h-28')
+            : small
+              ? 'aspect-square h-14'
+              : 'w-24',
         )}
       >
         {imageUrl ? (
@@ -66,7 +69,7 @@ export function LinkPreview({
       <div
         className={cn(
           'flex min-w-0 flex-1 flex-col justify-center',
-          small ? 'gap-0.5 px-3 py-1.5' : 'gap-1 px-3 py-2 md:px-4 md:py-3',
+          small ? 'gap-0.5 px-3 py-1.5' : 'gap-1 px-5 py-3',
         )}
       >
         {title && (
