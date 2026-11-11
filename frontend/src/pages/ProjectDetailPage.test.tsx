@@ -237,6 +237,54 @@ describe('프로젝트 상세 탭', () => {
     ).toBeInTheDocument();
   });
 
+  test('경험 카드를 누르면 경험 상세에서 포트폴리오 글, 연관 자료, 다른 경험을 보여준다', async () => {
+    renderPage('/projects/@shout-outz');
+
+    await userEvent.click(
+      await screen.findByRole('link', {
+        name: '저사양 EC2의 JVM 메모리 반복 종료 대응',
+      }),
+    );
+
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: '저사양 EC2의 JVM 메모리 반복 종료 대응',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Shout-outz 프로젝트로 이동' })).toHaveAttribute(
+      'href',
+      '/projects/@shout-outz',
+    );
+    expect(
+      within(screen.getByRole('list', { name: '기술 태그' })).getByText('Metaspace'),
+    ).toBeInTheDocument();
+    // 서버 소제목을 짧은 이름으로 바꿔 보여 준다.
+    expect(screen.getByText('문제')).toBeInTheDocument();
+    expect(screen.getByText('한계')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '연관 자료 2' })).toBeInTheDocument();
+    expect(screen.getByText(/저사양 서버 JVM 설정할 때 참고하기 좋아요/)).toBeInTheDocument();
+
+    const otherLink = screen.getByRole('link', { name: /피드 조회 최적화와 동시성 정합성 검증/ });
+    expect(otherLink).toHaveAttribute('href', '/projects/@shout-outz/experiences/2');
+    expect(screen.getByRole('link', { name: /Shout-outz의 경험 \d+개 모두 보기/ })).toHaveAttribute(
+      'href',
+      '/projects/@shout-outz',
+    );
+  });
+
+  test('없는 경험 번호면 안내와 프로젝트 경험으로 가는 링크를 보여준다', async () => {
+    renderPage('/projects/@shout-outz/experiences/999');
+
+    expect(
+      await screen.findByRole('heading', { name: '경험을 찾을 수 없어요.' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Shout-outz의 경험 보기 →' })).toHaveAttribute(
+      'href',
+      '/projects/@shout-outz',
+    );
+  });
+
   test('경험이 없으면 안내를 보여준다', async () => {
     renderPage('/projects/@dropit');
 
