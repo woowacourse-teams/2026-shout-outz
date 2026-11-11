@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import type { Material } from '@/apis/explore';
 import { Badge, type BadgeTone } from '@/components/Badge';
@@ -72,30 +72,24 @@ export function MaterialMeta({ material, trailing }: { material: Material; trail
   );
 }
 
+/** 팀 로고. 서버가 준 logoUrl이 없으면(null) 아무것도 그리지 않고 팀 이름만 남긴다. */
 function TeamLogo({ logoUrl }: { logoUrl: string | null }) {
-  if (logoUrl)
-    return (
-      <img
-        src={logoUrl}
-        alt=""
-        width={16}
-        height={16}
-        className="size-4 shrink-0 rounded-sm object-cover"
-        loading="lazy"
-      />
-    );
-  // 로고를 등록하지 않은 팀은 회색 사각형으로 자리를 잡는다.
+  if (!logoUrl) return null;
   return (
-    <span
-      aria-hidden="true"
-      className="ring-gray-opacity-100 size-4 shrink-0 rounded-sm bg-gray-200 ring-1 ring-inset"
+    <img
+      src={logoUrl}
+      alt=""
+      width={16}
+      height={16}
+      className="size-4 shrink-0 rounded-sm object-cover"
+      loading="lazy"
     />
   );
 }
 
 /**
- * 제목 앞 출처 아이콘. 블로그는 서버가 준 파비콘(`team.logoUrl`), PR과 팀 문서는 GitHub 마크에 종류 배지를 붙인다.
- * 블로그 파비콘이 없으면(null) 아이콘을 그리지 않는다.
+ * 제목 앞 출처 아이콘. 블로그는 서버가 준 파비콘(`faviconUrl`), PR과 팀 문서는 GitHub 마크에 종류 배지를 붙인다.
+ * 블로그 파비콘이 없거나(null) 이미지가 열리지 않으면 아이콘을 그리지 않는다.
  * `size`는 제목 옆(18px)과 원문 카드(22px)에서 다르게 쓴다.
  */
 export function MaterialIcon({
@@ -129,15 +123,23 @@ export function MaterialIcon({
     );
   }
 
-  const faviconUrl = material.team?.logoUrl;
-  if (!faviconUrl) return null;
+  if (!material.faviconUrl) return null;
+  // 주소가 바뀌면 열리지 않았던 기록을 지우도록 key로 새로 만든다.
   return (
-    <img
-      src={faviconUrl}
-      alt=""
+    <BlogFavicon
+      key={material.faviconUrl}
+      src={material.faviconUrl}
       className={cn('shrink-0 rounded-sm', box, className)}
-      loading="lazy"
     />
+  );
+}
+
+/** 서버는 파비콘이 없는 사이트에도 /favicon.ico를 줄 수 있다. 열리지 않으면 깨진 그림 대신 숨긴다. */
+function BlogFavicon({ src, className }: { src: string; className: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    <img src={src} alt="" className={className} loading="lazy" onError={() => setFailed(true)} />
   );
 }
 

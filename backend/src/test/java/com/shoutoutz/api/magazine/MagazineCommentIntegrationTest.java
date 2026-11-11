@@ -200,7 +200,7 @@ class MagazineCommentIntegrationTest {
         long commentId = magazineCommentService.create(magazineId, authorId,
                 new MagazineCommentCreateRequest("링크 https://example.com/magazine-" + UUID.randomUUID(), null)).id();
         var job = linkPreviewRepository.claimDue(Instant.now().plusSeconds(1), Instant.now().minusSeconds(3600)).orElseThrow();
-        linkPreviewRepository.complete(job, new LinkPreviewMetadata("제목", "설명", null, "Example"), Instant.now());
+        linkPreviewRepository.complete(job, new LinkPreviewMetadata("제목", "설명", null, "Example", null), Instant.now());
         assertThat(linkPreviewRepository.findByMagazineCommentIds(List.of(commentId)).get(commentId).title())
                 .isEqualTo("제목");
         linkPreviewRepository.deleteUnusedBefore(Instant.now().plus(30, ChronoUnit.DAYS));

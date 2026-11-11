@@ -16,6 +16,7 @@ import { Input } from '@/components/Input';
 import { MemberField } from '@/components/projects/MemberField';
 import { Select } from '@/components/Select';
 import { TechTagField } from '@/components/projects/TechTagField';
+import { uploadProjectLogo } from '@/api/media';
 import { ThumbnailField } from '@/components/projects/ThumbnailField';
 import {
   type ProjectDetail,
@@ -42,6 +43,7 @@ const EMPTY_FORM: ProjectFormValues = {
   tagline: '',
   cohort: null,
   thumbnailImageId: null,
+  logoImageId: null,
   githubRepositoryUrl: '',
   deploymentUrl: '',
   // 입력칸 하나를 먼저 보여 준다.
@@ -64,6 +66,7 @@ function toFormValues(project: ProjectDetail, authorHandle: string): ProjectForm
     tagline: project.tagline,
     cohort: project.cohort,
     thumbnailImageId: project.thumbnailImageId ?? null,
+    logoImageId: project.logoImageId ?? null,
     githubRepositoryUrl: project.githubRepositoryUrl,
     deploymentUrl: project.deploymentUrl ?? '',
     teamBlogUrls: toTeamBlogUrlInputs(project.teamBlogUrls),
@@ -319,6 +322,15 @@ export function ProjectForm({
                 value={values.thumbnailImageId}
                 onChange={(mediaId) => setField('thumbnailImageId', mediaId)}
                 error={errors.thumbnailImageId}
+              />
+
+              <ThumbnailField
+                label="팀 로고 (정사각형 권장)"
+                description="기술 자료 카드에서 팀 이름 앞에 작게 보여요."
+                value={values.logoImageId}
+                onChange={(mediaId) => setField('logoImageId', mediaId)}
+                error={errors.logoImageId}
+                upload={uploadProjectLogo}
               />
 
               <Field label="GitHub 레포지토리 URL *" error={errors.githubRepositoryUrl}>

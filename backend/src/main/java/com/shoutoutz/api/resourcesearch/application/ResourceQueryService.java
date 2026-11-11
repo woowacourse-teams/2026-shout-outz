@@ -2,7 +2,7 @@ package com.shoutoutz.api.resourcesearch.application;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
-import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
 import com.shoutoutz.api.resourcesearch.domain.ResourceSearchErrorCode;
@@ -41,25 +41,25 @@ public class ResourceQueryService {
     private final ResourceCardQueryRepository resourceCardQueryRepository;
     private final ResourceDetailQueryRepository resourceDetailQueryRepository;
     private final SearchKeywordService searchKeywordService;
-    private final ResourceCardLogoResolver resourceCardLogoResolver;
+    private final ResourceCardImageResolver resourceCardImageResolver;
 
     public ResourceSearchResponse search(ResourceSearchRequest request, VisitorKey visitorKey) {
         recordKeyword(SearchKeyword.from(request.keyword()), visitorKey);
         SectionedSearchHits hits = sectionedResourceSearchService.search(request.keyword(), request.track());
         Map<Long, ResourceCard> cards = cardsOf(hits);
-        ResourceCardLogoUrls logoUrls = resourceCardLogoResolver.resolve(cards.values());
+        ResourceCardImages images = resourceCardImageResolver.resolve(cards.values());
         return new ResourceSearchResponse(
-                sectionOf(hits, ResourceSection.BLOG, cards, logoUrls),
-                sectionOf(hits, ResourceSection.DOCUMENT, cards, logoUrls),
-                sectionOf(hits, ResourceSection.TALK, cards, logoUrls)
+                sectionOf(hits, ResourceSection.BLOG, cards, images),
+                sectionOf(hits, ResourceSection.DOCUMENT, cards, images),
+                sectionOf(hits, ResourceSection.TALK, cards, images)
         );
     }
 
     public List<ResourceCardResponse> findRecent(ResourceRecentRequest request) {
         List<ResourceCard> cards = resourceCardQueryRepository.findRecent(request.kind(), request.resolvedSize());
-        ResourceCardLogoUrls logoUrls = resourceCardLogoResolver.resolve(cards);
+        ResourceCardImages images = resourceCardImageResolver.resolve(cards);
         return cards.stream()
-                .map(card -> ResourceCardResponse.from(card, logoUrls))
+                .map(card -> ResourceCardResponse.from(card, images))
                 .toList();
     }
 
@@ -67,7 +67,7 @@ public class ResourceQueryService {
         return resourceDetailQueryRepository.findById(resourceId)
                 .map(detail -> ResourceDetailResponse.from(
                         detail,
-                        resourceCardLogoResolver.resolve(List.of(detail.card()))
+                        resourceCardImageResolver.resolve(List.of(detail.card()))
                 ))
                 .orElseThrow(() -> new EntityNotFoundException(ResourceSearchErrorCode.RESOURCE_NOT_FOUND));
     }
@@ -97,12 +97,12 @@ public class ResourceQueryService {
             SectionedSearchHits hits,
             ResourceSection section,
             Map<Long, ResourceCard> cards,
-            ResourceCardLogoUrls logoUrls
+            ResourceCardImages images
     ) {
         return new ResourceSectionResponse(hits.hits(section).stream()
                 .map(hit -> cards.get(hit.documentId()))
                 .filter(Objects::nonNull)
-                .map(card -> ResourceCardResponse.from(card, logoUrls))
+                .map(card -> ResourceCardResponse.from(card, images))
                 .toList());
     }
 }

@@ -39,6 +39,8 @@ export interface ProjectFormValues {
   tagline: string;
   cohort: number | null;
   thumbnailImageId: number | null;
+  /** 자료 카드 팀 이름 앞에 작게 보여 주는 팀 로고 */
+  logoImageId: number | null;
   githubRepositoryUrl: string;
   deploymentUrl: string;
   /** 팀 블로그 주소. 입력칸마다 하나씩 들고, 비어 있는 칸은 요청에서 뺀다. */

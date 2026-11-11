@@ -1,100 +1,47 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
+import type {
+  JobPostingDetailSuccessResponse,
+  JobPostingFindAllSuccessResponse,
+  JobRequirementRecommendationsSuccessResponse,
+} from '@/api/generated/schema';
 import { httpClient, type ApiSuccessBody } from '@/utils/client';
 
-// 서버의 사용자 채용공고 API(JobPostingHttpApi)와 같은 모양이다.
-// src/api/generated/schema.ts에 아직 이 API가 없어 백엔드 DTO를 보고 옮겨 적었다. generate:api를 다시 돌리면 그 타입으로 바꾼다.
+// 서버의 사용자 채용공고 API(/api/v1/job-postings)와 같은 모양이다. 타입은 서버 명세에서 생성한 schema.ts를 쓴다.
+//
+// TODO(채용공고 후속 PR): 프로토타입 카드·상세에 있는 회사 로고(companyLogoUrl)와 해시태그(tags)는 서버 응답에 없어
+// 화면에서 뺐다. 서버가 필드를 주면 schema.ts를 다시 생성하고, 따로 PR을 올려 목록 카드와 상세 머리에 다시 넣는다.
 
-export type JobRole = 'BACKEND' | 'FRONTEND' | 'ANDROID' | 'IOS' | 'DEVOPS' | 'DATA' | 'AI' | 'ETC';
+type GeneratedListItem = JobPostingFindAllSuccessResponse['data'][number];
 
-/** 역량이 공고의 어느 부분에서 나왔는지. 자격 요건, 우대 사항, 주요 업무나 기술 스택 */
-export type RequirementCategory = 'REQUIRED' | 'PREFERRED' | 'DUTY_OR_STACK';
+export type JobRole = GeneratedListItem['jobRole'];
 
-export type RecommendationVerdict = 'MATCH' | 'PARTIAL';
-
-export interface JobPostingListItem {
-  jobPostingId: number;
-  companyName: string;
-  // MOCK-API: companyLogoUrl, tags는 서버 명세에 없는 필드다. 프로토타입 카드에 회사 로고와 해시태그가 있어 추가했다. 서버에 추가를 요청해야 한다.
-  companyLogoUrl: string | null;
-  /** 카드에 보여 줄 해시태그. 예: Server, Kotlin */
-  tags: string[];
-  jobRole: JobRole;
-  employmentType: string | null;
-  careerRequirement: string | null;
-  title: string;
-  /** YYYY-MM-DD. 없으면 상시 채용 */
-  deadline: string | null;
-  requirementCount: number;
+/**
+ * 채용공고 목록 한 건.
+ * 스키마는 requirementNames를 `(object | boolean | string | number)[]`로 뽑는다(생성기가 배열 원소 타입을 못 읽은 결과다).
+ * 서버가 주는 값은 역량 이름이라 string[]로 좁혀 쓴다.
+ */
+export interface JobPostingListItem extends Omit<GeneratedListItem, 'requirementNames'> {
   requirementNames: string[];
 }
 
-export interface JobPostingListMeta {
-  nextCursor: string | null;
-  hasNext: boolean;
-  totalCount: number;
-  jobRoleCounts: { jobRole: JobRole; count: number }[];
-  allCount: number;
-}
+export type JobPostingListMeta = JobPostingFindAllSuccessResponse['meta'];
 
-export interface JobRequirement {
-  requirementId: number;
-  displayOrder: number;
-  name: string;
-  category: RequirementCategory;
-  summary: string | null;
-  recommendationCount: number;
-}
+export type JobPostingDetail = JobPostingDetailSuccessResponse['data'];
 
-export interface JobPostingDetail {
-  jobPostingId: number;
-  companyName: string;
-  // MOCK-API: 서버 명세에 없는 필드다. 목록과 같은 이유로 추가했다.
-  companyLogoUrl: string | null;
-  jobRole: JobRole;
-  employmentType: string | null;
-  careerRequirement: string | null;
-  title: string;
-  /** YYYY-MM-DD. 없으면 상시 채용 */
-  deadline: string | null;
-  sourceUrl: string;
-  /** 공고에 적힌 순서 */
-  requirements: JobRequirement[];
-}
+export type JobRequirement = JobPostingDetail['requirements'][number];
+
+/** 역량이 공고의 어느 부분에서 나왔는지. 자격 요건, 우대 사항, 주요 업무나 기술 스택 */
+export type RequirementCategory = JobRequirement['category'];
+
+/** 서버는 verdict를 string으로 명세하지만 값은 MATCH, PARTIAL 둘이다. */
+export type RecommendationVerdict = 'MATCH' | 'PARTIAL';
+
+type GeneratedRecommendation = JobRequirementRecommendationsSuccessResponse['data'][number];
 
 /** 역량별 추천 자료. source, contentType은 데이터 파이프라인 코드 그대로다. */
-export interface JobRequirementRecommendation {
-  /** 자료 ID. 자료 요약 모달이 이 ID로 요약을 불러온다. */
-  resourceId: number;
+export interface JobRequirementRecommendation extends Omit<GeneratedRecommendation, 'verdict'> {
   verdict: RecommendationVerdict;
-  /** blog-post, github-pr, github-wiki, youtube-tekotalk 등 */
-  source: string;
-  title: string;
-  url: string;
-  description: string | null;
-  /** ISO 시각 */
-  publishedAt: string | null;
-  contentType: string | null;
-  teamName: string | null;
-  authorDisplay: string | null;
-}
-
-// MOCK-API: 상세 오른쪽의 "연관 질문"은 서버 API가 없어 모양을 임의로 정했다.
-export interface JobPostingCommunityFeed {
-  feedId: number;
-  /** 질문, 고민 등 글 종류 */
-  type: string;
-  categoryName: string;
-  title: string;
-  content: string;
-  authorDisplay: string;
-  /** 작성자 소속. 예: "8기 백엔드 크루" */
-  authorAffiliation: string;
-  authorAvatarUrl: string | null;
-  /** ISO 시각 */
-  createdAt: string;
-  commentCount: number;
-  likeCount: number;
 }
 
 const PAGE_SIZE = 20;
@@ -137,15 +84,6 @@ export async function fetchRequirementRecommendations(
   return response.data;
 }
 
-export async function fetchJobPostingCommunityFeeds(jobPostingId: number, signal?: AbortSignal) {
-  const response = await httpClient<ApiSuccessBody<JobPostingCommunityFeed[]>>(
-    `/api/v1/job-postings/${jobPostingId}/community-feeds`,
-    { method: 'get', signal },
-  );
-  if (!response?.data) throw new Error('커뮤니티 고민 응답이 비어 있습니다.');
-  return response.data;
-}
-
 export function jobPostingsQuery(keyword: string) {
   return infiniteQueryOptions({
     queryKey: ['job-postings', { keyword }],
@@ -166,12 +104,5 @@ export function requirementRecommendationsQuery(jobPostingId: number, requiremen
   return queryOptions({
     queryKey: ['job-posting', jobPostingId, 'requirement', requirementId, 'recommendations'],
     queryFn: ({ signal }) => fetchRequirementRecommendations(jobPostingId, requirementId, signal),
-  });
-}
-
-export function jobPostingCommunityFeedsQuery(jobPostingId: number) {
-  return queryOptions({
-    queryKey: ['job-posting', jobPostingId, 'community-feeds'],
-    queryFn: ({ signal }) => fetchJobPostingCommunityFeeds(jobPostingId, signal),
   });
 }

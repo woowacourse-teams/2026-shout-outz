@@ -130,6 +130,77 @@ describe('ExplorePage', () => {
     }
   });
 
+  it('블로그 아이콘은 서버가 준 faviconUrl로 보여 주고, 없거나 열리지 않으면 숨긴다', async () => {
+    const blog = (resourceId: number, title: string, faviconUrl: string | null) => ({
+      ...serverMaterial(resourceId, 'blog-post', title),
+      team: { name: '샤라웃', projectSlug: 'shout-outz', logoMediaId: null, logoUrl: null },
+      faviconUrl,
+    });
+    server.use(
+      http.get('*/api/v1/resources/search', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: {
+            blogs: {
+              items: [
+                blog(11, '파비콘 있는 글', 'https://blog.example.com/favicon.png'),
+                blog(12, '파비콘 없는 글', null),
+                blog(13, '파비콘이 깨진 글', 'https://broken.example.com/favicon.ico'),
+              ],
+            },
+            documents: { items: [] },
+            talks: { items: [] },
+          },
+        }),
+      ),
+    );
+    renderRoute('/explore?q=동시성');
+
+    const blogs = await resultSection(/^블로그/);
+    const itemOf = (title: string) =>
+      within(blogs).getByRole('button', { name: new RegExp(title) });
+
+    expect(
+      itemOf('파비콘 있는 글').querySelector('img[src="https://blog.example.com/favicon.png"]'),
+    ).toBeInTheDocument();
+    expect(itemOf('파비콘 없는 글').querySelector('img')).not.toBeInTheDocument();
+
+    const broken = itemOf('파비콘이 깨진 글').querySelector('img');
+    if (!broken) throw new Error('깨진 파비콘 이미지를 찾을 수 없습니다.');
+    fireEvent.error(broken);
+    await waitFor(() =>
+      expect(itemOf('파비콘이 깨진 글').querySelector('img')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('로고를 등록하지 않은 팀은 로고 자리 없이 팀 이름만 보여준다', async () => {
+    const material = serverMaterial(3, 'github-pr', '로고 없는 팀 PR');
+    server.use(
+      http.get('*/api/v1/resources/search', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: {
+            blogs: { items: [] },
+            documents: {
+              items: [
+                { ...material, team: { ...material.team, logoMediaId: null, logoUrl: null } },
+              ],
+            },
+            talks: { items: [] },
+          },
+        }),
+      ),
+    );
+    renderRoute('/explore?q=동시성');
+
+    const documents = await resultSection(/^PR과 팀 문서/);
+    const item = within(documents).getByRole('button', { name: /로고 없는 팀 PR/ });
+    expect(within(item).getByText('샤라웃')).toBeVisible();
+    // 이미지도, 회색 칸도 그리지 않는다.
+    expect(item.querySelector('img')).not.toBeInTheDocument();
+    expect(item.querySelector('.bg-gray-200')).not.toBeInTheDocument();
+  });
+
   it('자료 요약에서 서버가 원인과 결과를 주지 않은 줄은 뺀다', async () => {
     const user = userEvent.setup();
     server.use(
@@ -279,11 +350,8 @@ describe('ExplorePage 채용공고 탭', () => {
     expect(within(cards).getAllByText('상시')).toHaveLength(2);
     expect(within(cards).getByText('D-3')).toBeVisible();
     expect(within(cards).getByText('D-day')).toBeVisible();
-    expect(within(cards).getByRole('img', { name: '토스뱅크 로고' })).toHaveAttribute(
-      'src',
-      expect.stringContaining('data:image/svg+xml'),
-    );
-    expect(within(cards).getByText('#Product')).toBeVisible();
+    // 회사 로고와 해시태그는 서버 응답에 없어 아직 보여 주지 않는다.
+    expect(within(cards).queryByRole('img', { name: /로고$/ })).not.toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: '채용공고 검색' })).toBeVisible();
   });
 

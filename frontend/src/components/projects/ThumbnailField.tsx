@@ -14,6 +14,8 @@ export interface ThumbnailFieldProps {
   error?: string;
   /** @default '대표 썸네일 이미지 (16:9 권장)' */
   label?: string;
+  /** 라벨 아래 안내 문구 */
+  description?: string;
   /** 파일을 올리고 mediaId를 돌려준다. 용도(purpose)가 다른 화면이 바꿔 끼운다. */
   upload?: (file: File) => Promise<number>;
 }
@@ -23,6 +25,7 @@ export function ThumbnailField({
   onChange,
   error,
   label = '대표 썸네일 이미지 (16:9 권장)',
+  description,
   upload: uploadFile = uploadProjectThumbnail,
 }: ThumbnailFieldProps) {
   const inputId = useId();
@@ -50,6 +53,7 @@ export function ThumbnailField({
       <label htmlFor={inputId} className="text-sm font-medium text-gray-900">
         {label}
       </label>
+      {description && <p className="-mt-1 text-xs text-gray-500">{description}</p>}
 
       <input
         id={inputId}

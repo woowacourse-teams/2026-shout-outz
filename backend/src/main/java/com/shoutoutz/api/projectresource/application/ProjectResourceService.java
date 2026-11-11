@@ -13,9 +13,9 @@ import com.shoutoutz.api.projectresource.domain.ResourceTopic;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectCareerCardResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectResourceTopicsResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectTopicResourcesResponse;
-import com.shoutoutz.api.resourcesearch.application.ResourceCardLogoResolver;
+import com.shoutoutz.api.resourcesearch.application.ResourceCardImageResolver;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
-import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -38,7 +38,7 @@ public class ProjectResourceService {
     private final ProjectSlugResolver projectSlugResolver;
     private final ProjectRepository projectRepository;
     private final ProjectResourceQueryRepository projectResourceQueryRepository;
-    private final ResourceCardLogoResolver resourceCardLogoResolver;
+    private final ResourceCardImageResolver resourceCardImageResolver;
 
     @Transactional(readOnly = true)
     public ProjectResourceTopicsResponse findTopics(String slug, ProjectResourceJobRole jobRole) {
@@ -67,10 +67,10 @@ public class ProjectResourceService {
                 jobRole,
                 OTHER_TEAM_RESOURCE_LIMIT
         );
-        ResourceCardLogoUrls logoUrls = resourceCardLogoResolver.resolve(
+        ResourceCardImages images = resourceCardImageResolver.resolve(
                 Stream.of(teamResources, talks, otherTeamResources).flatMap(List::stream).toList()
         );
-        return ProjectTopicResourcesResponse.of(topic, teamResources, talks, otherTeamResources, logoUrls);
+        return ProjectTopicResourcesResponse.of(topic, teamResources, talks, otherTeamResources, images);
     }
 
     /**
@@ -87,12 +87,12 @@ public class ProjectResourceService {
         Map<Long, List<ResourceCard>> sourcesByCard = projectResourceQueryRepository.findCareerCardSources(
                 cards.stream().map(CareerCard::cardId).toList()
         );
-        ResourceCardLogoUrls logoUrls = resourceCardLogoResolver.resolve(
+        ResourceCardImages images = resourceCardImageResolver.resolve(
                 sourcesByCard.values().stream().flatMap(List::stream).toList()
         );
         return cards.stream()
                 .filter(card -> !sourcesByCard.getOrDefault(card.cardId(), List.of()).isEmpty())
-                .map(card -> ProjectCareerCardResponse.of(card, sourcesByCard.get(card.cardId()), logoUrls))
+                .map(card -> ProjectCareerCardResponse.of(card, sourcesByCard.get(card.cardId()), images))
                 .toList();
     }
 

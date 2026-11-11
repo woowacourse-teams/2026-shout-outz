@@ -1,10 +1,20 @@
 import { AuthActions } from '@/components/auth/AuthActions';
-import { GNB_ITEMS } from '@/components/Gnb';
 import { tabItemBaseStyle, tabItemSizeStyles, tabItemStyles } from '@/components/Tab';
 import { PROTOTYPE_URL } from '@/pages/about/links';
 import { cn } from '@/utils/cn';
 
-// 서비스 GNB(components/Gnb.tsx)와 같은 모양
+/**
+ * 소개 페이지는 프로젝트 탭을 프로토타입으로 연결해야 해서, 서비스 GNB가 새 디자인으로 바뀐 뒤에도
+ * 이전 서비스 GNB의 항목과 모양을 유지한다.
+ */
+const ABOUT_GNB_ITEMS = [
+  { to: '/', label: '홈' },
+  { to: '/community', label: '커뮤니티' },
+  { to: '/projects', label: '프로젝트' },
+  { to: '/magazines', label: '매거진' },
+  { to: '/news', label: '소식' },
+] as const;
+
 const NAV_ITEM = cn(
   tabItemBaseStyle,
   tabItemSizeStyles.sm,
@@ -40,7 +50,7 @@ export function AboutGnb() {
           aria-label="주요 메뉴"
           className="order-last flex h-11 w-full items-center gap-4 border-t border-gray-100 md:order-none md:ml-9 md:h-18 md:w-auto md:gap-2 md:border-t-0"
         >
-          {GNB_ITEMS.map((item) =>
+          {ABOUT_GNB_ITEMS.map((item) =>
             item.to === '/projects' ? (
               <a
                 key={item.to}

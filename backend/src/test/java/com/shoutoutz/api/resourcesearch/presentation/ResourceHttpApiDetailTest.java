@@ -53,7 +53,7 @@ class ResourceHttpApiDetailTest {
     void findsDetail() throws Exception {
         given(resourceQueryService.findDetail(101L)).willReturn(new ResourceDetailResponse(
                 101L, "blog-post", "[Database] MySQL(InnoDB) 락(Lock) (2)", "https://soeun2537.tistory.com/127",
-                "잠금 범위와 대기 동작을 살펴봐요.", Instant.parse("2025-10-06T03:00:00Z"), "tistory", null,
+                "잠금 범위와 대기 동작을 살펴봐요.", Instant.parse("2025-10-06T03:00:00Z"), "tistory", "https://t1.daumcdn.net/tistory_admin/top_v2/bi-tistory-favicon.svg", null,
                 new ResourceCardResponse.Team("페스타북", "festabook", 31L, "https://cdn.example.com/media/project/31/thumbnail"),
                 new ResourceTopicResponse("concurrency", "동시성 제어/락"),
                 List.of("레코드 락, 갭 락, 넥스트 키 락의 잠금 범위를 알아봐요."),
@@ -89,6 +89,7 @@ class ResourceHttpApiDetailTest {
                                         fieldWithPath("data.summary").type(STRING).description("한줄 소개").optional(),
                                         fieldWithPath("data.publishedAt").type(STRING).description("원문 게시 시각(UTC)").optional(),
                                         fieldWithPath("data.platform").type(STRING).description("블로그 플랫폼. 블로그가 아니면 null").optional(),
+                                        fieldWithPath("data.faviconUrl").type(STRING).description("블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null").optional(),
                                         fieldWithPath("data.contentType").type(STRING)
                                                 .description("PR과 팀 문서의 종류(problem_solving, tech_decision, implementation, chore, design, "
                                                         + "operation, experiment, convention, plan, other). 블로그와 테코톡은 null").optional(),
