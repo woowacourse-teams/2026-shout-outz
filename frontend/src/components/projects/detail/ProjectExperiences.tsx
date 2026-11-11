@@ -32,7 +32,6 @@ export function ProjectExperiences({ slug }: { slug: string }) {
   const [selected, setSelected] = useState(jobRoles[0]?.jobRole);
 
   if (experiences.length === 0) {
-    // ASSUMPTION: 프로토타입에 경험이 없는 화면이 없어 안내 문구를 둔다.
     return <p className="py-16 text-center text-gray-500">아직 정리된 경험이 없어요.</p>;
   }
 

@@ -66,7 +66,6 @@ export function ProjectExploreList({ filter, onSortChange }: ProjectExploreListP
       </div>
 
       {projects.length === 0 ? (
-        // ASSUMPTION: 프로토타입에 결과가 없는 화면이 없어 키워드·채용공고 탭과 같은 빈 상태 안내를 둔다.
         <p className="py-16 text-center text-gray-500">
           {filter.keyword
             ? `'${filter.keyword}'에 맞는 프로젝트를 아직 못 찾았어요.`

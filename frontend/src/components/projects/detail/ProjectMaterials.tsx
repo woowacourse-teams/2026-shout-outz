@@ -34,7 +34,6 @@ export function ProjectMaterials({ slug, projectName }: ProjectMaterialsProps) {
   const topic = chosenTopic && topics.includes(chosenTopic) ? chosenTopic : (topics[0] ?? null);
 
   if (data.totalCount === 0) {
-    // ASSUMPTION: 프로토타입에 자료가 없는 화면이 없어 안내 문구를 둔다.
     return <p className="py-16 text-center text-gray-500">아직 모은 자료가 없어요.</p>;
   }
 
