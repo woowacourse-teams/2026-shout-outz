@@ -16,6 +16,8 @@ import type {
   MagazineAdminResponse,
   MagazineFindAllSuccessResponse,
   NoticeCreateSuccessResponse,
+  ResourceReportAdminFindAllSuccessResponse,
+  ResourceReportStatusUpdateSuccessResponse,
 } from '@/api/generated/schema';
 import type {
   AdminBugReportFilter,
@@ -26,6 +28,9 @@ import type {
   AdminProjectRejection,
   AdminProjectStatus,
   AdminProjectUpdateBody,
+  AdminResourceReportFilter,
+  AdminResourceReportKind,
+  AdminResourceReportStatus,
   AdminVerificationStatus,
   EventCreateBody,
   HomeBannerUpsertBody,
@@ -46,6 +51,8 @@ export const adminQueryKeys = {
   banners: ['admin', 'home-banners'] as const,
   bugReports: (filter: AdminBugReportFilter) => ['admin', 'bug-reports', filter] as const,
   bugReport: (bugReportId: number) => ['admin', 'bug-report', bugReportId] as const,
+  resourceReports: (filter: AdminResourceReportFilter, kind: AdminResourceReportKind | null) =>
+    ['admin', 'resource-reports', filter, kind] as const,
   magazines: ['admin', 'magazines'] as const,
   magazine: (magazineId: number) => ['admin', 'magazine', magazineId] as const,
 };
@@ -333,6 +340,55 @@ export async function updateBugReportStatus({
 
 export const updateBugReportStatusMutation = mutationOptions({
   mutationFn: updateBugReportStatus,
+  retry: false,
+});
+
+// ── 자료 제보 ──────────────────────────────────────────────────────────────────────────────
+
+const RESOURCE_REPORT_PATH = '/api/v1/admin/resource-reports';
+
+export async function fetchAdminResourceReports(
+  filter: AdminResourceReportFilter,
+  kind: AdminResourceReportKind | null,
+  cursor?: string,
+) {
+  const body = await httpClient<ResourceReportAdminFindAllSuccessResponse>(RESOURCE_REPORT_PATH, {
+    method: 'get',
+    searchParams: { status: filter, ...(kind ? { kind } : {}), ...(cursor ? { cursor } : {}) },
+  });
+  if (!body) throw new Error(`자료 제보 목록 응답이 비어 있습니다: ${RESOURCE_REPORT_PATH}`);
+  return body;
+}
+
+export const adminResourceReportsQuery = (
+  filter: AdminResourceReportFilter,
+  kind: AdminResourceReportKind | null,
+) =>
+  infiniteQueryOptions({
+    queryKey: adminQueryKeys.resourceReports(filter, kind),
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => fetchAdminResourceReports(filter, kind, pageParam),
+    getNextPageParam: (last) => last.meta.nextCursor ?? undefined,
+  });
+
+/** 반영(ACCEPTED)하면 서버가 필요 없어요 자료를 검색과 추천에서 뺀다. */
+export async function updateResourceReportStatus({
+  reportId,
+  status,
+}: {
+  reportId: number;
+  status: AdminResourceReportStatus;
+}) {
+  const body = await httpClient<ResourceReportStatusUpdateSuccessResponse>(
+    `${RESOURCE_REPORT_PATH}/${reportId}/status`,
+    { method: 'patch', json: { status } },
+  );
+  if (!body) throw new Error('자료 제보 처리 결과를 확인하지 못했습니다.');
+  return body.data;
+}
+
+export const updateResourceReportStatusMutation = mutationOptions({
+  mutationFn: updateResourceReportStatus,
   retry: false,
 });
 

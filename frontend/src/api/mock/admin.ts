@@ -115,7 +115,65 @@ const toBugReportItem = (report: (typeof bugReports)[number]) => {
   return item;
 };
 
+const resourceReports = [
+  {
+    reportId: 31,
+    kind: 'REMOVE' as 'REMOVE' | 'ADD',
+    status: 'OPEN' as 'OPEN' | 'ACCEPTED' | 'REJECTED',
+    project: { slug: 'dropit', title: 'Dropit' },
+    reporterUserId: 1,
+    resource: {
+      resourceId: 512,
+      source: 'github-pr',
+      title: '[FE/chore] 린트 설정 정리 (#88)',
+      url: 'https://github.com/woowacourse-teams/2026-dropit/pull/89',
+    } as Record<string, unknown> | null,
+    url: null as string | null,
+    memo: '설정 파일만 바꾼 PR이라 기술 이야기와 관계없어요.' as string | null,
+    createdAt: '2026-11-10T03:00:00Z',
+  },
+  {
+    reportId: 32,
+    kind: 'ADD' as 'REMOVE' | 'ADD',
+    status: 'OPEN' as 'OPEN' | 'ACCEPTED' | 'REJECTED',
+    project: { slug: 'dropit', title: 'Dropit' },
+    reporterUserId: 1,
+    resource: null as Record<string, unknown> | null,
+    url: 'https://github.com/woowacourse-teams/2026-dropit/wiki/캐시-전략' as string | null,
+    memo: null as string | null,
+    createdAt: '2026-11-10T04:00:00Z',
+  },
+];
+
 export const adminHandlers = [
+  http.get('/api/v1/admin/resource-reports', ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const status = params.get('status') ?? 'OPEN';
+    const kind = params.get('kind');
+    const items = resourceReports.filter(
+      (item) => (status === 'ALL' || item.status === status) && (!kind || item.kind === kind),
+    );
+    return HttpResponse.json({
+      status: 'success',
+      data: items,
+      meta: { nextCursor: null, hasNext: false, totalCount: items.length },
+    });
+  }),
+  http.patch('/api/v1/admin/resource-reports/:reportId/status', async ({ params, request }) => {
+    const { status } = (await request.json()) as { status: 'OPEN' | 'ACCEPTED' | 'REJECTED' };
+    const report = resourceReports.find((item) => item.reportId === Number(params.reportId));
+    if (!report) return new HttpResponse(null, { status: 404 });
+    report.status = status;
+    return HttpResponse.json({
+      status: 'success',
+      data: {
+        reportId: report.reportId,
+        status,
+        handledAt: new Date().toISOString(),
+        handledByUserId: 7,
+      },
+    });
+  }),
   http.get('/api/v1/admin/bug-reports', ({ request }) => {
     const status = new URL(request.url).searchParams.get('status') ?? 'OPEN';
     const items = bugReports.filter((item) => status === 'ALL' || item.status === status);

@@ -1,4 +1,5 @@
 import { ADMIN_TABS } from '@/constants/admin';
+import type { ResourceReportAdminFindAllSuccessResponse } from '@/api/generated/schema';
 import type {
   AdminBugReportDetailData,
   AdminMagazineData,
@@ -40,6 +41,14 @@ export type AdminBugReportDetail = AdminBugReportDetailData;
 export type AdminBugReportStatus = AdminBugReport['status'];
 /** 목록 필터. 서버는 OPEN·COMPLETED에 더해 둘 다 보는 ALL을 받는다. */
 export type AdminBugReportFilter = AdminBugReportStatus | 'ALL';
+
+/** 관리자 자료 제보 목록 한 건. `GET /api/v1/admin/resource-reports` */
+export type AdminResourceReport = ResourceReportAdminFindAllSuccessResponse['data'][number];
+/** OPEN 접수, ACCEPTED 반영, REJECTED 반영 안 함 */
+export type AdminResourceReportStatus = AdminResourceReport['status'];
+export type AdminResourceReportFilter = AdminResourceReportStatus | 'ALL';
+/** REMOVE 필요 없어요, ADD 빠진 자료. null이면 둘 다 */
+export type AdminResourceReportKind = AdminResourceReport['kind'];
 
 /**
  * AdminProjectFindAllResponse.Item.java.
