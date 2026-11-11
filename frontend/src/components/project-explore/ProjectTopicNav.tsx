@@ -22,7 +22,7 @@ interface ProjectTopicNavProps {
 /** 데스크톱 프로젝트 탭 왼쪽의 직군·기술 주제 */
 export function ProjectTopicNav({ topic, onTopicChange }: ProjectTopicNavProps) {
   const { data } = useSuspenseQuery(projectTopicsQuery());
-  // ASSUMPTION: 직군을 고르면 그 직군의 주제를 모두 보여 주고, '전체'면 직군마다 프로젝트가 많은 주제 4개씩 보여 준다.
+  // 직군을 고르면 그 직군의 주제만 모두 보여 주고, '전체'면 직군마다 프로젝트가 많은 주제 4개씩 보여 준다.
   const [groupCode, setGroupCode] = useState<'ALL' | ProjectTopicGroupCode>(
     () => groupOfTopic(data.groups, topic)?.code ?? 'ALL',
   );

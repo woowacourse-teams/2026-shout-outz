@@ -43,12 +43,13 @@ function ExploreRoute() {
       // 탭마다 찾는 대상이 달라 탭을 바꾸면 검색어와 조건을 비운다.
       onTabChange={(tab) => void navigate({ search: tabSearch(tab) })}
       query={search.q ?? ''}
-      onSearch={(q) => void navigate({ search: (prev) => ({ ...prev, q }) })}
+      // 프로젝트 탭의 기술 주제는 검색어처럼 다뤄, 검색하면 주제를 풀고 주제를 고르면 검색어를 비운다.
+      onSearch={(q) => void navigate({ search: (prev) => ({ ...prev, q, topic: undefined }) })}
       topic={search.topic ?? null}
       // 주제와 정렬은 목록만 바꾸므로 스크롤 위치를 그대로 둔다.
       onTopicChange={(topic) =>
         void navigate({
-          search: (prev) => ({ ...prev, topic: topic ?? undefined }),
+          search: (prev) => ({ ...prev, q: undefined, topic: topic ?? undefined }),
           resetScroll: false,
         })
       }

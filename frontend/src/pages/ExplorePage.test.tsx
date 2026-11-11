@@ -225,6 +225,36 @@ describe('ExplorePage 프로젝트 탭', () => {
     expect(await screen.findByRole('heading', { name: '프로젝트 13' })).toBeVisible();
   });
 
+  it('검색어와 기술 주제는 마지막에 고른 것 하나로만 거른다', async () => {
+    const user = userEvent.setup();
+    renderRoute('/explore?tab=project&q=Dropit');
+
+    expect(await screen.findByText('키워드로 찾은 결과', { exact: false })).toHaveTextContent(
+      'Dropit 키워드로 찾은 결과',
+    );
+
+    const suggestions = screen.getByRole('list', { name: '추천 검색어' });
+    await user.click(within(suggestions).getByRole('button', { name: '트랜잭션/데드락' }));
+    await waitFor(() =>
+      expect(screen.getByText('키워드로 찾은 결과', { exact: false })).toHaveTextContent(
+        '트랜잭션/데드락 키워드로 찾은 결과',
+      ),
+    );
+    expect(screen.getByRole('searchbox', { name: '프로젝트 검색' })).toHaveValue('');
+
+    await user.type(screen.getByRole('searchbox', { name: '프로젝트 검색' }), 'Knot');
+    await user.click(screen.getByRole('button', { name: '검색' }));
+    await waitFor(() =>
+      expect(screen.getByText('키워드로 찾은 결과', { exact: false })).toHaveTextContent(
+        'Knot 키워드로 찾은 결과',
+      ),
+    );
+    expect(within(suggestions).getByRole('button', { name: '트랜잭션/데드락' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
   it('추천 주제를 누르면 기술 주제로 거른다', async () => {
     const user = userEvent.setup();
     renderRoute('/explore?tab=project');

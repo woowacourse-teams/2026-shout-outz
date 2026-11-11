@@ -21,8 +21,8 @@ export function ProjectExploreList({ filter, onSortChange }: ProjectExploreListP
   const query = useSuspenseInfiniteQuery(exploreProjectsQuery(filter));
   const projects = query.data.pages.flatMap((page) => page.projects);
   const totalCount = query.data.pages[0]?.meta.totalCount ?? projects.length;
-  // ASSUMPTION: 프로토타입은 기술 주제만 보여 준다. 검색어와 주제가 함께 걸리면 둘 다 " · "로 잇는다.
-  const searchedBy = [filter.keyword.trim(), filter.topic].filter(Boolean).join(' · ');
+  // 검색어와 기술 주제는 함께 걸리지 않는다(routes/explore.tsx).
+  const searchedBy = filter.topic ?? filter.keyword.trim();
 
   return (
     <div>
