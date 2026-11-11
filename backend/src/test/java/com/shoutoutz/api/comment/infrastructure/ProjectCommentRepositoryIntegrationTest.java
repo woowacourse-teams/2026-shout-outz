@@ -204,6 +204,7 @@ class ProjectCommentRepositoryIntegrationTest {
                 new GithubRepositoryUrl("https://github.com/woowacourse-teams/" + repositoryName),
                 null,
                 ServiceStatus.CLOSED,
+                null,
                 null
         );
     }

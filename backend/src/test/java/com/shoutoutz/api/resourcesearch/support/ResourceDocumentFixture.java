@@ -28,14 +28,14 @@ public class ResourceDocumentFixture {
                         INSERT INTO media_metadata (
                             uploaded_by, purpose, s3_key, mime_type,
                             size_bytes, status, expires_at, uploaded_at
-                        ) VALUES (?, 'PROJECT_THUMBNAIL', ?, 'image/webp', 1024, 'READY', now(), now())
+                        ) VALUES (?, 'PROJECT_LOGO', ?, 'image/webp', 1024, 'READY', now(), now())
                         RETURNING id
                         """,
                 Long.class,
                 userId, "media/project/" + UUID.randomUUID()
         );
         long projectId = project(slug, teamName, "APPROVED", null);
-        jdbcTemplate.update("UPDATE projects SET thumbnail_media_id = ? WHERE id = ?", mediaId, projectId);
+        jdbcTemplate.update("UPDATE projects SET logo_media_id = ? WHERE id = ?", mediaId, projectId);
         return projectId;
     }
 
@@ -48,7 +48,7 @@ public class ResourceDocumentFixture {
     }
 
     public long logoMediaIdOf(long projectId) {
-        return jdbcTemplate.queryForObject("SELECT thumbnail_media_id FROM projects WHERE id = ?", Long.class, projectId);
+        return jdbcTemplate.queryForObject("SELECT logo_media_id FROM projects WHERE id = ?", Long.class, projectId);
     }
 
     private long project(String slug, String teamName, String approvalStatus, Timestamp deletedAt) {

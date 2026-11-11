@@ -79,6 +79,21 @@ class ResourceCardQueryRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("프로젝트 썸네일은 팀 로고로 쓰지 않는다. 로고가 없으면 로고 미디어 ID는 null 이다")
+    void doesNotUseThumbnailAsLogo() {
+        long projectId = fixture.approvedProjectWithLogo("festabook", "페스타북");
+        jdbcTemplate.update(
+                "UPDATE projects SET thumbnail_media_id = logo_media_id, logo_media_id = NULL WHERE id = ?",
+                projectId
+        );
+        long id = fixture.document("blog-post").projectId(projectId).save();
+
+        ResourceCard.Team team = resourceCardQueryRepository.findByIds(List.of(id)).getFirst().team();
+
+        assertThat(team).isEqualTo(new ResourceCard.Team("페스타북", "festabook", null));
+    }
+
+    @Test
     @DisplayName("프로젝트 등록 전 팀의 블로그는 수집 때 저장한 팀 이름만 담는다")
     void mapsUnregisteredBlogTeamFromExtra() {
         long id = fixture.document("blog-post").extra("{\"project_name\": \"모모\"}").save();

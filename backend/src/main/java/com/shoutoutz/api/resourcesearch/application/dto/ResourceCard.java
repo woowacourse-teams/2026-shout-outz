@@ -23,7 +23,7 @@ public record ResourceCard(
     /**
      * @param name        등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름(extra.project_name)
      * @param projectSlug 등록된 프로젝트의 slug. 등록 전이면 null
-     * @param logoMediaId 프로젝트 썸네일 미디어 ID. 등록 전이거나 썸네일이 없으면 null
+     * @param logoMediaId 프로젝트 로고 미디어 ID(projects.logo_media_id). 등록 전이거나 로고가 없으면 null
      */
     public record Team(String name, String projectSlug, Long logoMediaId) {
     }

@@ -75,6 +75,12 @@ public enum ProjectErrorCode implements ErrorCode {
     PROJECT_THUMBNAIL_NOT_READY("썸네일 이미지를 아직 처리하고 있습니다. 잠시 후 다시 시도해주세요."),
 
     /**
+     * 프로젝트 로고 에러 코드
+     */
+    PROJECT_INVALID_LOGO("프로젝트 로고로 사용할 수 없는 이미지입니다."),
+    PROJECT_LOGO_NOT_READY("로고 이미지를 아직 처리하고 있습니다. 잠시 후 다시 시도해주세요."),
+
+    /**
      * 프로젝트 본문 이미지 에러 코드
      */
     PROJECT_INVALID_DESCRIPTION_MEDIA("본문에 사용할 수 없는 이미지가 포함되어 있습니다."),

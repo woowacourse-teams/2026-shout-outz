@@ -71,6 +71,7 @@ class ProjectCreateRequestTest {
                 "\t회고와 액션 아이템을 잇는 협업 도구\n",
                 8,
                 null,
+                null,
                 " https://github.com/woowacourse-teams/2026-loop ",
                 " https://loop.team ",
                 "설명",
@@ -93,7 +94,7 @@ class ProjectCreateRequestTest {
     @DisplayName("마크다운 본문은 앞 공백에 의미가 있어 정제하지 않는다.")
     void keepsDescriptionMdAsIs() {
         ProjectCreateRequest request = new ProjectCreateRequest(
-                "루프", "루프팀", "소개", 8, null,
+                "루프", "루프팀", "소개", 8, null, null,
                 "https://github.com/woowacourse-teams/2026-loop", null,
                 "    indented code\n",
                 ServiceStatus.OPERATING,
@@ -108,7 +109,7 @@ class ProjectCreateRequestTest {
     @DisplayName("글자 수는 앞뒤 공백을 자른 뒤 센다.")
     void countsLengthAfterStripping() {
         ProjectCreateRequest request = new ProjectCreateRequest(
-                " " + "가".repeat(100) + " ", "루프팀", "소개", 8, null,
+                " " + "가".repeat(100) + " ", "루프팀", "소개", 8, null, null,
                 "https://github.com/woowacourse-teams/2026-loop", null, "설명",
                 ServiceStatus.CLOSED,
                 List.of(1L), List.of("@teammate"),
@@ -122,7 +123,7 @@ class ProjectCreateRequestTest {
     @DisplayName("공백만 있는 팀원 핸들은 거절한다.")
     void rejectsBlankMemberHandle() {
         ProjectCreateRequest request = new ProjectCreateRequest(
-                "루프", "루프팀", "소개", 8, null,
+                "루프", "루프팀", "소개", 8, null, null,
                 "https://github.com/woowacourse-teams/2026-loop", null, "설명",
                 ServiceStatus.CLOSED,
                 List.of(1L), List.of("@teammate", "   "),
@@ -138,7 +139,7 @@ class ProjectCreateRequestTest {
     @DisplayName("@ 접두사가 없는 팀원 핸들은 거절한다.")
     void rejectsMemberHandleWithoutAtPrefix() {
         ProjectCreateRequest request = new ProjectCreateRequest(
-                "루프", "루프팀", "소개", 8, null,
+                "루프", "루프팀", "소개", 8, null, null,
                 "https://github.com/woowacourse-teams/2026-loop", null, "설명",
                 ServiceStatus.CLOSED,
                 List.of(1L), List.of("teammate"),
@@ -173,7 +174,7 @@ class ProjectCreateRequestTest {
 
     private static ProjectCreateRequest requestWithGithubUrl(String githubRepositoryUrl) {
         return new ProjectCreateRequest(
-                "루프", "루프팀", "소개", 8, null,
+                "루프", "루프팀", "소개", 8, null, null,
                 githubRepositoryUrl, null, "설명",
                 ServiceStatus.CLOSED,
                 List.of(1L), List.of("@teammate"),
@@ -191,6 +192,7 @@ class ProjectCreateRequestTest {
                 "루프팀",
                 "회고와 액션 아이템을 잇는 협업 도구",
                 8,
+                null,
                 null,
                 "https://github.com/woowacourse-teams/2026-loop",
                 deploymentUrl,

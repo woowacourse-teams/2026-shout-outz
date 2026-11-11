@@ -21,15 +21,15 @@ final class ProjectResourceFixtures {
         return project(teamName, "APPROVED", false, null);
     }
 
-    long project(String teamName, String approvalStatus, boolean deleted, Long thumbnailMediaId) {
+    long project(String teamName, String approvalStatus, boolean deleted, Long logoMediaId) {
         String slug = "resource-" + UUID.randomUUID().toString().substring(0, 8);
         return jdbcTemplate.queryForObject("""
                 INSERT INTO projects (cohort, team_name, slug, title, tagline, github_repository_url, service_status,
-                                      approval_status, thumbnail_media_id, deleted_at)
+                                      approval_status, logo_media_id, deleted_at)
                 VALUES (8, ?, ?, ?, '한 줄 소개', ?, 'OPERATING', ?, ?, CASE WHEN ? THEN now() END)
                 RETURNING id
                 """, Long.class, teamName, slug, teamName + " 프로젝트", "https://github.com/woowacourse-teams/" + slug,
-                approvalStatus, thumbnailMediaId, deleted);
+                approvalStatus, logoMediaId, deleted);
     }
 
     String slugOf(long projectId) {

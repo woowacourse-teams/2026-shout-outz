@@ -39,8 +39,8 @@ public record ResourceCardResponse(
     }
 
     /**
-     * @param logoMediaId 프로젝트 썸네일 미디어 ID. 등록 전이거나 썸네일이 없으면 null
-     * @param logoUrl     팀 로고 이미지 주소(썸네일 크기). logoMediaId 가 없거나 이미지가 준비되지 않았으면 null
+     * @param logoMediaId 프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null
+     * @param logoUrl     팀 로고 이미지 주소(작은 크기). logoMediaId 가 없거나 이미지가 준비되지 않았으면 null
      */
     public record Team(String name, String projectSlug, Long logoMediaId, String logoUrl) {
     }
