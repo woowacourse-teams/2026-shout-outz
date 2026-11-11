@@ -1222,6 +1222,216 @@ paths:
                 project-create-unauthorized:
                   value: "{\"status\":\"error\",\"code\":\"UNAUTHORIZED\",\"message\"\
                     :\"인증이 필요합니다.\"}"
+  /api/v1/resources/popular-keywords:
+    get:
+      tags:
+      - Resource
+      summary: 인기 검색어 조회
+      description: |-
+        검색창 아래 칩에 보여줄 검색어 8개를 준다. 로그인 없이 볼 수 있다.
+        지금은 정해 둔 목록(LLM, 동시성, 부하 테스트, 무중단 배포, 쿼리 최적화, 모니터링, 웹 성능, 인증/인가)을 순서대로 준다.
+        검색어 기록은 계속 쌓고 있으며, 나중에 실제 인기순으로 바뀌어도 응답 형식은 같다.
+      operationId: resource-popular-keywords
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PopularKeywordsSuccessResponse"
+              examples:
+                resource-popular-keywords:
+                  value: "{\"status\":\"success\",\"data\":[{\"keyword\":\"LLM\"},{\"\
+                    keyword\":\"동시성\"},{\"keyword\":\"부하 테스트\"},{\"keyword\":\"무중단\
+                    \ 배포\"},{\"keyword\":\"쿼리 최적화\"},{\"keyword\":\"모니터링\"},{\"keyword\"\
+                    :\"웹 성능\"},{\"keyword\":\"인증/인가\"}]}"
+  /api/v1/resources/recent:
+    get:
+      tags:
+      - Resource
+      summary: 최근 기술 자료 조회
+      description: |-
+        검색 첫 화면의 '이런 컨텐츠는 어때요?'에 보여줄 최근 크루 블로그와 테코톡을 원문 게시 시각 최신순으로 준다. 로그인 없이 볼 수 있다.
+        한 팀이나 한 발표자의 글이 몰리지 않게 블로그는 팀마다, 테코톡은 발표자마다 최신 하나만 고른다. 팀이나 발표자를 모르면 자료마다 따로 본다.
+        한줄 소개나 게시 시각이 없는 자료는 뺀다. size는 이렇게 고른 뒤의 개수다.
+        kind가 BLOG, TALK가 아니거나 size가 1~20이 아니면 400(VALIDATION_FAILED)으로 응답한다.
+      operationId: resource-recent
+      parameters:
+      - name: kind
+        in: query
+        description: 자료 종류. BLOG(블로그) 또는 TALK(테코톡)
+        required: true
+        schema:
+          type: string
+      - name: size
+        in: query
+        description: "조회 개수(1~20), 기본값 4"
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 4
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceRecentSuccessResponse"
+              examples:
+                resource-recent:
+                  value: "{\"status\":\"success\",\"data\":[{\"resourceId\":1201,\"\
+                    source\":\"blog-post\",\"title\":\"CSR, SSR, SSG, ISR..? 난 ISR로\
+                    \ 할래 #1\",\"url\":\"https://rilog.kr/@rilog/posts/219\",\"summary\"\
+                    :\"정기 콘텐츠를 재배포 없이 갱신하는 구조를 설계할 때 참고하기 좋아요.\",\"publishedAt\":\"\
+                    2026-10-20T01:00:00Z\",\"platform\":\"github\",\"team\":{\"name\"\
+                    :\"Rilog.\",\"projectSlug\":\"rilog\",\"logoMediaId\":44}}]}"
+  /api/v1/resources/search:
+    get:
+      tags:
+      - Resource
+      summary: 기술 자료 검색
+      description: |-
+        검색어로 블로그, PR과 팀 문서, 테코톡을 찾아 섹션별로 연관도가 높은 순으로 준다. 로그인 없이 볼 수 있다.
+        blogs, documents는 최대 20건, talks는 최대 6건이며, 관련성이 약한 자료로 억지로 채우지 않아 더 적거나 비어 있을 수 있다.
+        검색어는 인기 검색어 집계에 방문자별로 하루 한 번 기록한다(VISITOR_ID 쿠키를 함께 보낸다).
+        keyword가 없거나 50자를 넘거나, track이 BE, FE, AN이 아니면 400(VALIDATION_FAILED)으로 응답한다.
+      operationId: resource-search
+      parameters:
+      - name: keyword
+        in: query
+        description: 검색어(앞뒤 공백 제거 후 1~50자)
+        required: true
+        schema:
+          type: string
+      - name: track
+        in: query
+        description: "직군(BE, FE, AN). 없으면 직군 구분 없이 찾고, 있으면 그 직군과 공통, 미분류 자료를 찾는다"
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceSearchSuccessResponse"
+              examples:
+                resource-search:
+                  value: "{\"status\":\"success\",\"data\":{\"blogs\":{\"items\":[{\"\
+                    resourceId\":101,\"source\":\"blog-post\",\"title\":\"[Database]\
+                    \ MySQL(InnoDB) 락(Lock) (2)\",\"url\":\"https://soeun2537.tistory.com/127\"\
+                    ,\"summary\":\"잠금 범위와 대기 동작을 살펴봐요.\",\"publishedAt\":\"2025-10-06T03:00:00Z\"\
+                    ,\"platform\":\"tistory\",\"team\":{\"name\":\"페스타북\",\"projectSlug\"\
+                    :\"festabook\",\"logoMediaId\":31}}]},\"documents\":{\"items\"\
+                    :[{\"resourceId\":3412,\"source\":\"github-teamdoc\",\"title\"\
+                    :\"포트폴리오 원장 변경 전에 포트폴리오 잠금 획득\",\"url\":\"https://github.com/woowacourse-teams/2026-DAYNOMY/blob/main/docs/adr.md\"\
+                    ,\"summary\":\"비관적 잠금으로 원장 정합성을 지켜요.\",\"publishedAt\":\"2026-10-20T05:12:00Z\"\
+                    ,\"platform\":null,\"team\":null}]},\"talks\":{\"items\":[{\"\
+                    resourceId\":2301,\"source\":\"youtube-tekotalk\",\"title\":\"\
+                    [10분 테코톡] 벨로의 Race Condition 이해하기\",\"url\":\"https://www.youtube.com/watch?v=At4Gyezw8WA\"\
+                    ,\"summary\":\"동시 요청에서 데이터 오류가 생기는 원리를 이해해요.\",\"publishedAt\"\
+                    :\"2025-09-05T09:00:00Z\",\"platform\":null,\"team\":null}]}}}"
+  /api/v1/resources/topics:
+    get:
+      tags:
+      - Resource
+      summary: 기술 주제 분야별 조회
+      description: |-
+        검색 첫 화면의 '분야별 키워드'에 보여줄 기술 주제 전체를 분야별로 묶어 준다. 로그인 없이 볼 수 있다.
+        분야는 COMMON, BACKEND, FRONTEND, MOBILE 순서로 항상 4개를 준다. 주제가 없는 분야는 빈 배열이다.
+        분야 안의 주제는 이름의 가나다순이다. 영문은 대소문자를 가리지 않고 한글보다 앞에 온다.
+        자료가 없는 주제도 포함한다.
+      operationId: resource-topics
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceTopicsSuccessResponse"
+              examples:
+                resource-topics:
+                  value: "{\"status\":\"success\",\"data\":[{\"side\":\"COMMON\",\"\
+                    topics\":[{\"topicId\":\"cicd\",\"name\":\"CI/CD\"}]},{\"side\"\
+                    :\"BACKEND\",\"topics\":[{\"topicId\":\"jpa\",\"name\":\"JPA/Hibernate\"\
+                    },{\"topicId\":\"concurrency\",\"name\":\"동시성 제어/락\"}]},{\"side\"\
+                    :\"FRONTEND\",\"topics\":[{\"topicId\":\"react_rendering\",\"\
+                    name\":\"React 렌더링/훅\"}]},{\"side\":\"MOBILE\",\"topics\":[{\"\
+                    topicId\":\"android\",\"name\":\"Android\"}]}]}"
+  /api/v1/resources/topics/popular:
+    get:
+      tags:
+      - Resource
+      summary: 많이 다룬 기술 주제 조회
+      description: |-
+        검색 첫 화면의 '많이 다룬 키워드'에 보여줄 기술 주제를 준다. 로그인 없이 볼 수 있다.
+        삭제되지 않은 자료(블로그, PR과 팀 문서, 테코톡)가 많은 순, 같으면 이름의 가나다순이다.
+        자료가 없는 주제는 넣지 않는다. size가 1~20이 아니면 400(VALIDATION_FAILED)으로 응답한다.
+      operationId: resource-topics-popular
+      parameters:
+      - name: size
+        in: query
+        description: "조회 개수(1~20), 기본값 10"
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceTopicsPopularSuccessResponse"
+              examples:
+                resource-topics-popular:
+                  value: "{\"status\":\"success\",\"data\":[{\"topicId\":\"cicd\"\
+                    ,\"name\":\"CI/CD\",\"resourceCount\":128},{\"topicId\":\"monitoring\"\
+                    ,\"name\":\"모니터링/관측성\",\"resourceCount\":97}]}"
+  /api/v1/resources/{resourceId}:
+    get:
+      tags:
+      - Resource
+      summary: 기술 자료 상세 조회
+      description: |-
+        검색 결과나 최근 자료 카드를 눌렀을 때 이동하는 자료 상세 화면의 정리 내용을 준다. 로그인 없이 볼 수 있다.
+        없거나 삭제된 자료면 404(RESOURCE_NOT_FOUND), resourceId가 1 이상의 정수가 아니면 400(VALIDATION_FAILED)으로 응답한다.
+      operationId: resource-detail
+      parameters:
+      - name: resourceId
+        in: path
+        description: 자료 ID
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: "200"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResourceDetailSuccessResponse"
+              examples:
+                resource-detail:
+                  value: "{\"status\":\"success\",\"data\":{\"resourceId\":101,\"\
+                    source\":\"blog-post\",\"title\":\"[Database] MySQL(InnoDB) 락\
+                    (Lock) (2)\",\"url\":\"https://soeun2537.tistory.com/127\",\"\
+                    summary\":\"잠금 범위와 대기 동작을 살펴봐요.\",\"publishedAt\":\"2025-10-06T03:00:00Z\"\
+                    ,\"platform\":\"tistory\",\"contentType\":null,\"team\":{\"name\"\
+                    :\"페스타북\",\"projectSlug\":\"festabook\",\"logoMediaId\":31},\"\
+                    topic\":{\"topicId\":\"concurrency\",\"name\":\"동시성 제어/락\"},\"\
+                    keyPoints\":[\"레코드 락, 갭 락, 넥스트 키 락의 잠금 범위를 알아봐요.\"],\"techTags\"\
+                    :[\"MySQL\",\"InnoDB\"],\"experiences\":[{\"problem\":\"대기가 길어\
+                    졌어요.\",\"cause\":\"넥스트 키 락이 넓게 걸렸어요.\",\"solution\":\"기본 키 단건\
+                    \ 조회로 바꿨어요.\",\"result\":null,\"techs\":[\"MySQL\",\"InnoDB\"\
+                    ]}],\"linkPreview\":{\"title\":\"[Database] MySQL(InnoDB) 락(Lock)\
+                    \ (2)\",\"description\":\"MySQL의 락 종류를 정리합니다.\",\"imageUrl\":\"\
+                    https://img1.daumcdn.net/thumb/og.png\",\"siteName\":\"Tistory\"\
+                    }}}"
   /api/v1/tech-tags:
     get:
       tags:
@@ -8758,6 +8968,476 @@ components:
               - SIGNUP_REQUIRED
               - AUTHENTICATED
           description: 인증 세션 정보
+        status:
+          type: string
+          description: 응답 상태
+    PopularKeywordsSuccessResponse:
+      title: PopularKeywordsSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 인기 검색어. 항상 8개
+          items:
+            required:
+            - keyword
+            type: object
+            properties:
+              keyword:
+                type: string
+                description: 칩에 보여줄 검색어
+        status:
+          type: string
+          description: 응답 상태
+    ResourceDetailSuccessResponse:
+      title: ResourceDetailSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          required:
+          - experiences
+          - keyPoints
+          - resourceId
+          - source
+          - techTags
+          - title
+          - url
+          type: object
+          properties:
+            summary:
+              type: string
+              description: 한줄 소개
+              nullable: true
+            techTags:
+              type: array
+              description: 자료에 붙은 기술 태그. 원래 표기 그대로. 없으면 빈 배열
+              items:
+                type: string
+            resourceId:
+              type: number
+              description: 자료 ID
+            publishedAt:
+              type: string
+              description: 원문 게시 시각(UTC)
+              nullable: true
+            team:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 팀 이름
+                  nullable: true
+                logoMediaId:
+                  type: number
+                  description: 프로젝트 썸네일 미디어 ID. 없으면 null
+                  nullable: true
+                projectSlug:
+                  type: string
+                  description: 등록된 프로젝트 slug. 등록 전 팀이면 null
+                  nullable: true
+              description: 자료를 만든 팀. 없으면 null
+            source:
+              type: string
+              description: 자료 원천
+            title:
+              type: string
+              description: 자료 제목
+            experiences:
+              type: array
+              description: 어떤 문제를 어떻게 풀었나. 없으면 빈 배열
+              items:
+                required:
+                - problem
+                - solution
+                - techs
+                type: object
+                properties:
+                  result:
+                    type: string
+                    description: 결과
+                    nullable: true
+                  problem:
+                    type: string
+                    description: 문제
+                  solution:
+                    type: string
+                    description: 해결
+                  cause:
+                    type: string
+                    description: 원인
+                    nullable: true
+                  techs:
+                    type: array
+                    description: 쓴 기술. 없으면 빈 배열
+                    items:
+                      type: string
+            platform:
+              type: string
+              description: 블로그 플랫폼. 블로그가 아니면 null
+              nullable: true
+            url:
+              type: string
+              description: 원문 주소
+            linkPreview:
+              type: object
+              properties:
+                imageUrl:
+                  type: string
+                  description: 썸네일 주소(og:image)
+                  nullable: true
+                siteName:
+                  type: string
+                  description: 사이트 이름(og:site_name)
+                  nullable: true
+                description:
+                  type: string
+                  description: 원문 설명(og:description)
+                  nullable: true
+                title:
+                  type: string
+                  description: 원문 제목(og:title)
+                  nullable: true
+              description: 원문 링크 미리보기. 아직 모으지 못했거나 실패했으면 null
+            keyPoints:
+              type: array
+              description: 이 자료에서 배울 점. 없으면 빈 배열
+              items:
+                type: string
+            topic:
+              type: object
+              properties:
+                topicId:
+                  type: string
+                  description: 기술 주제 ID
+                  nullable: true
+                name:
+                  type: string
+                  description: 기술 주제 이름
+                  nullable: true
+              description: 자료의 기술 주제. 없으면 null
+            contentType:
+              type: string
+              description: "PR과 팀 문서의 종류(problem_solving, tech_decision, implementation,\
+                \ chore, design, operation, experiment, convention, plan, other).\
+                \ 블로그와 테코톡은 null"
+              nullable: true
+          description: 자료 상세
+        status:
+          type: string
+          description: 응답 상태
+    ResourceRecentSuccessResponse:
+      title: ResourceRecentSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 자료 카드 목록
+          items:
+            required:
+            - publishedAt
+            - resourceId
+            - source
+            - summary
+            - title
+            - url
+            type: object
+            properties:
+              summary:
+                type: string
+                description: 한줄 소개
+              resourceId:
+                type: number
+                description: 자료 ID. 자료 상세 조회에 쓴다
+              publishedAt:
+                type: string
+                description: 원문 게시 시각(UTC)
+              team:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: 팀 이름
+                    nullable: true
+                  logoMediaId:
+                    type: number
+                    description: 프로젝트 썸네일 미디어 ID. 없으면 null
+                    nullable: true
+                  projectSlug:
+                    type: string
+                    description: 등록된 프로젝트 slug. 등록 전 팀이면 null
+                    nullable: true
+                description: 자료를 만든 팀. 없으면 null
+              source:
+                type: string
+                description: 자료 원천
+              title:
+                type: string
+                description: 자료 제목
+              platform:
+                type: string
+                description: 블로그 플랫폼. 블로그가 아니면 null
+                nullable: true
+              url:
+                type: string
+                description: 원문 주소
+        status:
+          type: string
+          description: 응답 상태
+    ResourceSearchSuccessResponse:
+      title: ResourceSearchSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            documents:
+              required:
+              - items
+              type: object
+              properties:
+                items:
+                  type: array
+                  description: "PR과 팀 문서(github-pr, github-teamdoc, github-wiki, github-discussion),\
+                    \ 최대 20건"
+                  items:
+                    required:
+                    - resourceId
+                    - source
+                    - title
+                    - url
+                    type: object
+                    properties:
+                      summary:
+                        type: string
+                        description: 한줄 소개
+                        nullable: true
+                      resourceId:
+                        type: number
+                        description: 자료 ID. 자료 상세 조회에 쓴다
+                      publishedAt:
+                        type: string
+                        description: 원문 게시 시각(UTC)
+                        nullable: true
+                      team:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            description: 팀 이름
+                            nullable: true
+                          logoMediaId:
+                            type: number
+                            description: 프로젝트 썸네일 미디어 ID. 없으면 null
+                            nullable: true
+                          projectSlug:
+                            type: string
+                            description: 등록된 프로젝트 slug. 등록 전 팀이면 null
+                            nullable: true
+                        description: 자료를 만든 팀. 팀이 없거나 알 수 없으면 null
+                      source:
+                        type: string
+                        description: 자료 원천
+                      title:
+                        type: string
+                        description: 자료 제목
+                      platform:
+                        type: string
+                        description: 블로그 플랫폼. 블로그가 아니면 null
+                        nullable: true
+                      url:
+                        type: string
+                        description: 원문 주소
+            blogs:
+              required:
+              - items
+              type: object
+              properties:
+                items:
+                  type: array
+                  description: "블로그(blog-post), 최대 20건"
+                  items:
+                    required:
+                    - resourceId
+                    - source
+                    - title
+                    - url
+                    type: object
+                    properties:
+                      summary:
+                        type: string
+                        description: 한줄 소개
+                        nullable: true
+                      resourceId:
+                        type: number
+                        description: 자료 ID. 자료 상세 조회에 쓴다
+                      publishedAt:
+                        type: string
+                        description: 원문 게시 시각(UTC)
+                        nullable: true
+                      team:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            description: 팀 이름
+                            nullable: true
+                          logoMediaId:
+                            type: number
+                            description: 프로젝트 썸네일 미디어 ID. 없으면 null
+                            nullable: true
+                          projectSlug:
+                            type: string
+                            description: 등록된 프로젝트 slug. 등록 전 팀이면 null
+                            nullable: true
+                        description: 자료를 만든 팀. 팀이 없거나 알 수 없으면 null
+                      source:
+                        type: string
+                        description: 자료 원천
+                      title:
+                        type: string
+                        description: 자료 제목
+                      platform:
+                        type: string
+                        description: 블로그 플랫폼. 블로그가 아니면 null
+                        nullable: true
+                      url:
+                        type: string
+                        description: 원문 주소
+            talks:
+              required:
+              - items
+              type: object
+              properties:
+                items:
+                  type: array
+                  description: "테코톡(youtube-tekotalk), 최대 6건"
+                  items:
+                    required:
+                    - resourceId
+                    - source
+                    - title
+                    - url
+                    type: object
+                    properties:
+                      summary:
+                        type: string
+                        description: 한줄 소개
+                        nullable: true
+                      resourceId:
+                        type: number
+                        description: 자료 ID. 자료 상세 조회에 쓴다
+                      publishedAt:
+                        type: string
+                        description: 원문 게시 시각(UTC)
+                        nullable: true
+                      team:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            description: 팀 이름
+                            nullable: true
+                          logoMediaId:
+                            type: number
+                            description: 프로젝트 썸네일 미디어 ID. 없으면 null
+                            nullable: true
+                          projectSlug:
+                            type: string
+                            description: 등록된 프로젝트 slug. 등록 전 팀이면 null
+                            nullable: true
+                        description: 자료를 만든 팀. 팀이 없거나 알 수 없으면 null
+                      source:
+                        type: string
+                        description: 자료 원천
+                      title:
+                        type: string
+                        description: 자료 제목
+                      platform:
+                        type: string
+                        description: 블로그 플랫폼. 블로그가 아니면 null
+                        nullable: true
+                      url:
+                        type: string
+                        description: 원문 주소
+          description: 섹션별 검색 결과
+        status:
+          type: string
+          description: 응답 상태
+    ResourceTopicsPopularSuccessResponse:
+      title: ResourceTopicsPopularSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 많이 다룬 주제 목록
+          items:
+            required:
+            - name
+            - resourceCount
+            - topicId
+            type: object
+            properties:
+              topicId:
+                type: string
+                description: 기술 주제 ID
+              resourceCount:
+                type: number
+                description: 이 주제의 자료 수
+              name:
+                type: string
+                description: 기술 주제 이름
+        status:
+          type: string
+          description: 응답 상태
+    ResourceTopicsSuccessResponse:
+      title: ResourceTopicsSuccessResponse
+      required:
+      - data
+      - status
+      type: object
+      properties:
+        data:
+          type: array
+          description: 분야 목록
+          items:
+            required:
+            - side
+            - topics
+            type: object
+            properties:
+              side:
+                type: string
+                description: "분야. COMMON, BACKEND, FRONTEND, MOBILE 중 하나"
+              topics:
+                type: array
+                description: 분야의 주제 목록
+                items:
+                  required:
+                  - name
+                  - topicId
+                  type: object
+                  properties:
+                    topicId:
+                      type: string
+                      description: 기술 주제 ID
+                    name:
+                      type: string
+                      description: 기술 주제 이름
         status:
           type: string
           description: 응답 상태

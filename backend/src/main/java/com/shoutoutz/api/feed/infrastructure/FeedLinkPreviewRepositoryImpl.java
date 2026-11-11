@@ -163,6 +163,12 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                               AND i.deleted_at IS NULL
                               AND i.status = 'PUBLISHED'
                         )
+                        OR EXISTS (
+                            SELECT 1 FROM resource_link_preview_refs r
+                            JOIN resource_documents d ON d.id = r.document_id
+                            WHERE r.cache_id = candidate.id
+                              AND d.deleted_at IS NULL
+                        )
                     )
                     ORDER BY candidate.next_attempt_at NULLS LAST, candidate.id
                     LIMIT 1
@@ -265,6 +271,9 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                 )
                 AND NOT EXISTS (
                     SELECT 1 FROM magazine_comment_link_preview_refs r WHERE r.cache_id = c.id
+                )
+                AND NOT EXISTS (
+                    SELECT 1 FROM resource_link_preview_refs r WHERE r.cache_id = c.id
                 )
                 AND (
                     (c.status = 'READY' AND c.fetched_at < :cutoff)

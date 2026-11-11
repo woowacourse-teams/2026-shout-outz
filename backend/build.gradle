@@ -90,6 +90,7 @@ tasks.matching { it.name == 'openapi3' }.configureEach {
             def longIdsByPath = [
                     '/magazines/'  : ['magazineId', 'commentId'],
                     '/job-postings/': ['jobPostingId', 'requirementId'],
+                    '/resources/'   : ['resourceId'],
             ]
             longIdsByPath.each { pathPart, idNames ->
                 specification.paths.findAll { path, item -> path.contains(pathPart) }
