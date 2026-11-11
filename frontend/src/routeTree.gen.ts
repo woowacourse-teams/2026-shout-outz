@@ -24,6 +24,7 @@ import { Route as FeedsNewRouteImport } from './routes/feeds/new'
 import { Route as JobPostingsJobPostingIdRouteImport } from './routes/job-postings/$jobPostingId'
 import { Route as MagazinesIndexRouteImport } from './routes/magazines/index'
 import { Route as MagazinesMagazineIdRouteImport } from './routes/magazines/$magazineId'
+import { Route as MaterialsMaterialIdRouteImport } from './routes/materials/$materialId'
 import { Route as MypageVerificationRouteImport } from './routes/mypage/verification'
 import { Route as NewsIndexRouteImport } from './routes/news/index'
 import { Route as NewsNewsIdRouteImport } from './routes/news/$newsId'
@@ -111,6 +112,11 @@ const MagazinesMagazineIdRoute = MagazinesMagazineIdRouteImport.update({
   path: '/magazines/$magazineId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MaterialsMaterialIdRoute = MaterialsMaterialIdRouteImport.update({
+  id: '/materials/$materialId',
+  path: '/materials/$materialId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MypageVerificationRoute = MypageVerificationRouteImport.update({
   id: '/mypage/verification',
   path: '/mypage/verification',
@@ -175,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/feeds/new': typeof FeedsNewRoute
   '/job-postings/$jobPostingId': typeof JobPostingsJobPostingIdRoute
   '/magazines/$magazineId': typeof MagazinesMagazineIdRoute
+  '/materials/$materialId': typeof MaterialsMaterialIdRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$slug': typeof ProjectsSlugRoute
@@ -202,6 +209,7 @@ export interface FileRoutesByTo {
   '/feeds/new': typeof FeedsNewRoute
   '/job-postings/$jobPostingId': typeof JobPostingsJobPostingIdRoute
   '/magazines/$magazineId': typeof MagazinesMagazineIdRoute
+  '/materials/$materialId': typeof MaterialsMaterialIdRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$slug': typeof ProjectsSlugRoute
@@ -230,6 +238,7 @@ export interface FileRoutesById {
   '/feeds/new': typeof FeedsNewRoute
   '/job-postings/$jobPostingId': typeof JobPostingsJobPostingIdRoute
   '/magazines/$magazineId': typeof MagazinesMagazineIdRoute
+  '/materials/$materialId': typeof MaterialsMaterialIdRoute
   '/mypage/verification': typeof MypageVerificationRoute
   '/news/$newsId': typeof NewsNewsIdRoute
   '/projects/$slug': typeof ProjectsSlugRoute
@@ -259,6 +268,7 @@ export interface FileRouteTypes {
     | '/feeds/new'
     | '/job-postings/$jobPostingId'
     | '/magazines/$magazineId'
+    | '/materials/$materialId'
     | '/mypage/verification'
     | '/news/$newsId'
     | '/projects/$slug'
@@ -286,6 +296,7 @@ export interface FileRouteTypes {
     | '/feeds/new'
     | '/job-postings/$jobPostingId'
     | '/magazines/$magazineId'
+    | '/materials/$materialId'
     | '/mypage/verification'
     | '/news/$newsId'
     | '/projects/$slug'
@@ -313,6 +324,7 @@ export interface FileRouteTypes {
     | '/feeds/new'
     | '/job-postings/$jobPostingId'
     | '/magazines/$magazineId'
+    | '/materials/$materialId'
     | '/mypage/verification'
     | '/news/$newsId'
     | '/projects/$slug'
@@ -341,6 +353,7 @@ export interface RootRouteChildren {
   FeedsNewRoute: typeof FeedsNewRoute
   JobPostingsJobPostingIdRoute: typeof JobPostingsJobPostingIdRoute
   MagazinesMagazineIdRoute: typeof MagazinesMagazineIdRoute
+  MaterialsMaterialIdRoute: typeof MaterialsMaterialIdRoute
   MypageVerificationRoute: typeof MypageVerificationRoute
   NewsNewsIdRoute: typeof NewsNewsIdRoute
   ProjectsSlugRoute: typeof ProjectsSlugRoute
@@ -463,6 +476,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MagazinesMagazineIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/materials/$materialId': {
+      id: '/materials/$materialId'
+      path: '/materials/$materialId'
+      fullPath: '/materials/$materialId'
+      preLoaderRoute: typeof MaterialsMaterialIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mypage/verification': {
       id: '/mypage/verification'
       path: '/mypage/verification'
@@ -549,6 +569,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeedsNewRoute: FeedsNewRoute,
   JobPostingsJobPostingIdRoute: JobPostingsJobPostingIdRoute,
   MagazinesMagazineIdRoute: MagazinesMagazineIdRoute,
+  MaterialsMaterialIdRoute: MaterialsMaterialIdRoute,
   MypageVerificationRoute: MypageVerificationRoute,
   NewsNewsIdRoute: NewsNewsIdRoute,
   ProjectsSlugRoute: ProjectsSlugRoute,

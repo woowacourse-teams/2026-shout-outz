@@ -1,3 +1,4 @@
+import { useRouter } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 
 import type { Material } from '@/apis/explore';
@@ -14,6 +15,7 @@ interface MaterialListProps {
 
 /** 블로그·PR·팀 문서 목록. 항목을 누르면 자료 요약을 연다. */
 export function MaterialList({ materials, renderExtra }: MaterialListProps) {
+  const router = useRouter();
   const itemClass =
     'focus-visible:outline-primary-600 group flex w-full cursor-pointer flex-col gap-2.5 py-6 text-left focus-visible:outline-2';
 
@@ -39,7 +41,7 @@ export function MaterialList({ materials, renderExtra }: MaterialListProps) {
             <button
               type="button"
               className={itemClass}
-              onClick={() => openMaterialSummary(material)}
+              onClick={() => openMaterialSummary(material, router)}
             >
               {content}
             </button>

@@ -104,9 +104,11 @@ describe('ExplorePage', () => {
     await user.click(within(documents).getAllByRole('button', { name: /^PR/ })[0]!);
 
     const summary = await screen.findByRole('dialog');
-    expect(within(summary).getByRole('link', { name: /^원문 보기:/ })).toHaveAttribute(
-      'target',
-      '_blank',
+    expect(within(summary).getByText(/에서 이어서 읽어 보세요/)).toBeVisible();
+    expect(within(summary).getByRole('button', { name: '공유' })).toBeVisible();
+    expect(within(summary).getByRole('link', { name: /^원문 보기/ })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/materials\//),
     );
     expect(await within(summary).findByRole('heading', { name: '기술 태그' })).toBeVisible();
     expect(within(summary).getByRole('heading', { name: '이 자료에서 배울 점' })).toBeVisible();
@@ -118,6 +120,26 @@ describe('ExplorePage', () => {
     expect(within(summary).getByRole('button', { name: '닫기' })).toBeVisible();
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('요약 아래 원문 보기를 누르면 모달을 닫고 자료 정리 보기 페이지로 간다', async () => {
+    const user = userEvent.setup();
+    const router = renderRoute('/explore?q=동시성');
+
+    const documents = await resultSection(/^PR과 팀 문서/);
+    await user.click(within(documents).getAllByRole('button', { name: /^PR/ })[0]!);
+    const summary = await screen.findByRole('dialog');
+    // jsdom에는 vaul 바텀시트가 쓰는 포인터 캡처가 없어 클릭 대신 Enter로 누른다.
+    within(summary)
+      .getByRole('link', { name: /^원문 보기/ })
+      .focus();
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => expect(router.state.location.pathname).toMatch(/^\/materials\//));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(await screen.findByRole('heading', { level: 1 })).toBeVisible();
+    expect(screen.getByRole('link', { name: /^원문 보기:/ })).toHaveAttribute('target', '_blank');
+    expect(await screen.findByRole('heading', { name: '기술 태그' })).toBeVisible();
   });
 
   it('블로그 요약에는 기술 태그와 문제 해결 경험이 없다', async () => {
