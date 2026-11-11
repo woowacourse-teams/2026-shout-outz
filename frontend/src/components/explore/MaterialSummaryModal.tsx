@@ -1,20 +1,28 @@
 import { useQuery } from '@tanstack/react-query';
-import { IconChevronRight, IconX } from '@tabler/icons-react';
+import { IconArrowUpRight, IconX } from '@tabler/icons-react';
+import { Link, RouterContextProvider, type AnyRouter } from '@tanstack/react-router';
 import { overlay } from 'overlay-kit';
-import type { ComponentType, ReactNode } from 'react';
+import type { ComponentProps, ComponentType, ReactNode } from 'react';
 
 import { materialDetailQuery, type Material, type MaterialDetail } from '@/apis/explore';
 import { hostnameOf, MaterialIcon, MaterialMeta } from '@/components/explore/MaterialParts';
 import { Badge } from '@/components/Badge';
+import { getButtonStyles } from '@/components/Button';
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { cn } from '@/utils/cn';
 import { getApiErrorMessage } from '@/utils/error';
 
-/** 블로그·PR·팀 문서 자료의 요약을 데스크톱은 모달, 모바일은 바텀시트로 연다. */
-export function openMaterialSummary(material: Material) {
+/**
+ * 블로그·PR·팀 문서 자료의 요약을 데스크톱은 모달, 모바일은 바텀시트로 연다.
+ * overlay-kit은 라우터 바깥에 그려서, 자료 정리 보기 링크가 동작하도록 연 화면의 라우터를 넘겨받는다.
+ */
+export function openMaterialSummary(material: Material, router: AnyRouter) {
   overlay.open(({ isOpen, close, unmount }) => (
-    <MaterialSummaryModal material={material} isOpen={isOpen} onClose={close} onExit={unmount} />
+    <RouterContextProvider router={router}>
+      <MaterialSummaryModal material={material} isOpen={isOpen} onClose={close} onExit={unmount} />
+    </RouterContextProvider>
   ));
 }
 
@@ -47,15 +55,26 @@ export function MaterialSummaryModal({
       >
         <DialogContent
           aria-describedby={undefined}
-          // DESIGN-TOKEN: 화면 위아래로 56px씩 띄운 높이 안에서 스크롤하도록 계산식으로 높이를 제한한다.
+          // DESIGN-TOKEN: 화면 가운데에서 위아래로 56px씩 띄운 높이 안에서 스크롤하도록 계산식으로 높이를 제한한다.
           // 바깥은 모서리를 자르기만 하고 스크롤은 안쪽에서 한다. 둥근 요소 자체가 스크롤되면 스크롤바가 오른쪽 모서리를 덮어 직각으로 보인다.
-          className="top-14 flex max-h-[calc(100dvh-7rem)] translate-y-0 flex-col overflow-hidden rounded-2xl shadow-2xl sm:max-w-150"
+          className="flex max-h-[calc(100dvh-7rem)] flex-col overflow-hidden rounded-2xl shadow-2xl sm:max-w-150"
         >
-          <div className="overflow-y-auto px-7 pt-7 pb-12">
+          <div className="overflow-y-auto px-7 pt-7 pb-10">
             <MaterialSummary
               material={material}
               Title={DialogTitle}
-              closeButton={(children) => <DialogClose asChild>{children}</DialogClose>}
+              trailing={
+                <DialogClose asChild>
+                  <CloseButton />
+                </DialogClose>
+              }
+            />
+            <MaterialDetailLink
+              material={material}
+              onNavigate={() => {
+                onClose();
+                onExit();
+              }}
             />
           </div>
         </DialogContent>
@@ -74,12 +93,17 @@ export function MaterialSummaryModal({
       }}
     >
       <DrawerContent aria-describedby={undefined}>
-        <div className="overflow-y-auto px-5 pt-3.5 pb-10">
+        <div className="overflow-y-auto px-5 pt-3.5 pb-8">
           <MaterialSummary
             material={material}
             Title={DrawerTitle}
-            closeButton={(children) => <DrawerClose asChild>{children}</DrawerClose>}
+            trailing={
+              <DrawerClose asChild>
+                <CloseButton />
+              </DrawerClose>
+            }
           />
+          <MaterialDetailLink material={material} onNavigate={onClose} />
         </div>
       </DrawerContent>
     </Drawer>
@@ -89,36 +113,43 @@ export function MaterialSummaryModal({
 interface MaterialSummaryProps {
   material: Material;
   /**
-   * Dialog·Drawer가 접근성 이름으로 쓰는 제목. asChild로 감싸면 기본 클래스(text-lg)가
+   * 제목 요소. 모달·바텀시트에서는 Dialog·Drawer가 접근성 이름으로 쓰는 제목을 넘긴다. asChild로 감싸면 기본 클래스(text-lg)가
    * 병합되지 않고 이어 붙어 덮어쓰지 못하므로 className을 직접 넘긴다.
    */
   Title: ComponentType<{ className?: string; children: ReactNode }>;
-  closeButton: (children: ReactNode) => ReactNode;
+  /** 메타 줄 오른쪽 끝. 모달에서는 닫기 버튼을 둔다. */
+  trailing?: ReactNode;
+  /** 제목 아래 원문 카드 모양. 모달은 썸네일 카드, 자료 정리 보기 페이지는 원문 보기 버튼이 있는 카드 */
+  variant?: 'modal' | 'page';
 }
 
-function MaterialSummary({ material, Title, closeButton }: MaterialSummaryProps) {
+/** 자료 요약 내용. 자료 요약 모달·바텀시트와 자료 정리 보기 페이지가 같이 쓴다. */
+export function MaterialSummary({
+  material,
+  Title,
+  trailing,
+  variant = 'modal',
+}: MaterialSummaryProps) {
   const detail = useQuery(materialDetailQuery(material.id));
 
   return (
-    <div className="flex flex-col gap-8 text-gray-900">
+    <div className={cn('flex flex-col text-gray-900', variant === 'page' ? 'gap-10' : 'gap-8')}>
       <div className="flex flex-col gap-3.5">
-        <MaterialMeta
-          material={material}
-          trailing={closeButton(
-            <button
-              type="button"
-              aria-label="닫기"
-              className="focus-visible:outline-primary-600 ml-auto shrink-0 rounded-sm text-gray-500 hover:text-gray-900 focus-visible:outline-2"
-            >
-              <IconX className="size-5" aria-hidden="true" />
-            </button>,
+        <MaterialMeta material={material} trailing={trailing} />
+        <Title
+          className={cn(
+            'flex items-start gap-2 leading-snug font-extrabold tracking-tight',
+            variant === 'page' ? 'text-2xl md:text-3xl' : 'text-2xl',
           )}
-        />
-        <Title className="flex items-start gap-2 text-2xl leading-snug font-extrabold tracking-tight">
+        >
           <MaterialIcon material={material} className="mt-[calc((1lh-18px)/2)]" />
           <span className="min-w-0">{material.title}</span>
         </Title>
-        <SourceCard material={material} />
+        {variant === 'page' ? (
+          <SourceCard material={material} />
+        ) : (
+          <SourcePreviewCard material={material} />
+        )}
       </div>
 
       {detail.data && detail.data.techTags.length > 0 && (
@@ -148,24 +179,109 @@ function MaterialSummary({ material, Title, closeButton }: MaterialSummaryProps)
   );
 }
 
-function SourceCard({ material }: { material: Material }) {
+function CloseButton(props: ComponentProps<'button'>) {
+  return (
+    <button
+      type="button"
+      aria-label="닫기"
+      className="focus-visible:outline-primary-600 ml-auto shrink-0 rounded-sm text-gray-500 hover:text-gray-900 focus-visible:outline-2"
+      {...props}
+    >
+      <IconX className="size-5" aria-hidden="true" />
+    </button>
+  );
+}
+
+/** 모달·바텀시트 내용 맨 끝의 자료 정리 보기 버튼. 스크롤을 끝까지 내리면 보인다. */
+function MaterialDetailLink({
+  material,
+  onNavigate,
+}: {
+  material: Material;
+  /** 자료 정리 보기로 이동할 때 모달을 닫는다. */
+  onNavigate: () => void;
+}) {
+  return (
+    <Link
+      to="/materials/$materialId"
+      params={{ materialId: material.id }}
+      onClick={onNavigate}
+      className={getButtonStyles({ variant: 'outline', size: 'lg', className: 'mt-10 w-full' })}
+    >
+      상세 보기
+    </Link>
+  );
+}
+
+/** 모달·바텀시트의 원문 카드. 누르면 원문을 새 탭으로 연다. */
+function SourcePreviewCard({ material }: { material: Material }) {
   return (
     <a
       href={material.url}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`원문 보기: ${material.title}`}
-      className="focus-visible:outline-primary-600 flex items-center gap-3 rounded-xl border border-gray-200 py-2.5 pr-3 pl-2.5 transition-colors hover:bg-gray-50 focus-visible:outline-2"
+      className="focus-visible:outline-primary-600 bg-background flex overflow-hidden rounded-lg border border-gray-200 transition-colors hover:bg-gray-50 focus-visible:outline-2"
     >
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-xl ring-1 ring-gray-200 ring-inset">
+      {material.thumbnailUrl ? (
+        <img
+          src={material.thumbnailUrl}
+          alt=""
+          width={80}
+          height={80}
+          loading="lazy"
+          className="size-20 shrink-0 object-cover"
+        />
+      ) : (
+        <span aria-hidden="true" className="size-20 shrink-0 bg-gray-100" />
+      )}
+      <span className="flex min-w-0 flex-1 flex-col justify-center gap-1 border-l border-gray-200 px-4 py-3">
+        <span className="truncate text-sm font-bold text-gray-900">{material.title}</span>
+        <span className="flex min-w-0 items-center gap-1.5 text-xs text-gray-500">
+          <MaterialIcon material={material} />
+          <span className="truncate">{hostnameOf(material.url)}</span>
+        </span>
+      </span>
+    </a>
+  );
+}
+
+const SOURCE_LABELS: Record<Material['kind'], string> = {
+  BLOG: '블로그 · 원문',
+  PR: 'GitHub PR · 원문',
+  TEAM_DOC: 'GitHub 팀 문서 · 원문',
+  TECH_TALK: '테코톡 · 원문',
+};
+
+/** 자료 정리 보기 페이지의 원문 카드 */
+function SourceCard({ material }: { material: Material }) {
+  const host = hostnameOf(material.url);
+  const path = material.url.slice(material.url.indexOf(host) + host.length);
+
+  return (
+    <div className="flex items-center gap-3.5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5">
+      <span className="bg-background flex size-11 shrink-0 items-center justify-center rounded-lg ring-1 ring-gray-200 ring-inset">
         <MaterialIcon material={material} size="lg" />
       </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-px">
-        <span className="truncate text-sm font-semibold text-gray-900">{material.title}</span>
-        <span className="truncate text-xs text-gray-500">{hostnameOf(material.url)}</span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-xs">
+        <span className="text-gray-500">{SOURCE_LABELS[material.kind]}</span>
+        <span className="truncate text-sm font-bold text-gray-900">{material.title}</span>
+        <span className="truncate text-gray-600">
+          {host}
+          <span className="text-gray-400">{path}</span>
+        </span>
       </span>
-      <IconChevronRight className="size-4.5 shrink-0 text-gray-400" aria-hidden="true" />
-    </a>
+      <a
+        href={material.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`원문 보기: ${material.title}`}
+        className="focus-visible:outline-primary-600 inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-gray-900 px-3.5 text-xs font-bold text-white hover:bg-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        원문 보기
+        <IconArrowUpRight className="size-3.5" aria-hidden="true" />
+      </a>
+    </div>
   );
 }
 

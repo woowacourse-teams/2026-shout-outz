@@ -180,7 +180,7 @@ it('비로그인 사용자도 추천을 읽고, 로그인 버튼을 누르는 �
     (await screen.findAllByRole('button', { name: '이 내용으로 질문 작성하기' }))[0]!,
   );
   expect(readLoginQuestionDraft()).toBeUndefined();
-  await user.click(await screen.findByRole('button', { name: 'GitHub 로그인' }));
+  await user.click(await screen.findByRole('button', { name: 'GitHub로 로그인' }));
   expect(readLoginQuestionDraft()).toEqual(context);
 });
 

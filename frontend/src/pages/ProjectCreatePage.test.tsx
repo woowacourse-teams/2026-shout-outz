@@ -87,6 +87,26 @@ const selectCrews = async (user: User, keyword: string, names: string[]) => {
 };
 
 describe('ProjectCreatePage', () => {
+  it('로그인하지 않았으면 로그인 안내를 보여 주고, 다음에 할게요를 누르면 프로젝트 목록으로 간다', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get('*/api/v1/auth/session', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: { status: 'UNAUTHENTICATED', userId: null, role: null, csrfToken: 'token' },
+        }),
+      ),
+    );
+    const router = renderRoute('/projects/new');
+
+    expect(await screen.findByRole('heading', { name: '로그인이 필요해요' })).toBeVisible();
+    expect(screen.getByText('프로젝트 등록')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'GitHub로 로그인' })).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: '다음에 할게요' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects'));
+  });
+
   it('작성자를 첫 번째 팀원으로 고정하고 선택 화면에서도 제거하지 못하게 한다', async () => {
     const user = userEvent.setup();
     renderRoute('/projects/new');

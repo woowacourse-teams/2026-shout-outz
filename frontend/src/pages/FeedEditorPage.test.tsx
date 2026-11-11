@@ -166,7 +166,9 @@ test('비로그인 사용자는 폼 대신 로그인 안내를 본다', async ()
     ),
   );
   show();
-  expect(await screen.findByRole('button', { name: 'GitHub 로그인' })).toBeEnabled();
+  expect(await screen.findByRole('heading', { name: '로그인이 필요해요' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'GitHub로 로그인' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '다음에 할게요' })).toBeVisible();
   expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 });
 
