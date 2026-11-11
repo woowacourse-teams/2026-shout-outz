@@ -10,6 +10,7 @@ import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
 import static org.springframework.restdocs.payload.JsonFieldType.OBJECT;
 import static org.springframework.restdocs.payload.JsonFieldType.STRING;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.snippet.Attributes.key;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -100,14 +101,17 @@ class ResourceHttpApiDetailTest {
                                         fieldWithPath("data.topic").type(OBJECT).description("자료의 기술 주제. 없으면 null").optional(),
                                         fieldWithPath("data.topic.topicId").type(STRING).description("기술 주제 ID").optional(),
                                         fieldWithPath("data.topic.name").type(STRING).description("기술 주제 이름").optional(),
-                                        fieldWithPath("data.keyPoints").type(ARRAY).description("이 자료에서 배울 점. 없으면 빈 배열"),
-                                        fieldWithPath("data.techTags").type(ARRAY).description("자료에 붙은 기술 태그. 원래 표기 그대로. 없으면 빈 배열"),
+                                        fieldWithPath("data.keyPoints").type(ARRAY).description("이 자료에서 배울 점. 없으면 빈 배열")
+                                                .attributes(key("itemsType").value("string")),
+                                        fieldWithPath("data.techTags").type(ARRAY).description("자료에 붙은 기술 태그. 원래 표기 그대로. 없으면 빈 배열")
+                                                .attributes(key("itemsType").value("string")),
                                         fieldWithPath("data.experiences").type(ARRAY).description("어떤 문제를 어떻게 풀었나. 없으면 빈 배열"),
                                         fieldWithPath("data.experiences[].problem").type(STRING).description("문제"),
                                         fieldWithPath("data.experiences[].cause").type(STRING).description("원인").optional(),
                                         fieldWithPath("data.experiences[].solution").type(STRING).description("해결"),
                                         fieldWithPath("data.experiences[].result").type(STRING).description("결과").optional(),
-                                        fieldWithPath("data.experiences[].techs").type(ARRAY).description("쓴 기술. 없으면 빈 배열"),
+                                        fieldWithPath("data.experiences[].techs").type(ARRAY).description("쓴 기술. 없으면 빈 배열")
+                                                .attributes(key("itemsType").value("string")),
                                         fieldWithPath("data.linkPreview").type(OBJECT)
                                                 .description("원문 링크 미리보기. 아직 모으지 못했거나 실패했으면 null").optional(),
                                         fieldWithPath("data.linkPreview.title").type(STRING).description("원문 제목(og:title)").optional(),

@@ -67,7 +67,10 @@ class ResourceHttpApiSearchTest {
                                 "https://github.com/woowacourse-teams/2026-DAYNOMY/blob/main/docs/adr.md",
                                 "비관적 잠금으로 원장 정합성을 지켜요.", Instant.parse("2026-10-20T05:12:00Z"),
                                 null, null))),
-                        new ResourceSectionResponse(List.of())
+                        new ResourceSectionResponse(List.of(new ResourceCardResponse(
+                                2301L, "youtube-tekotalk", "[10분 테코톡] 벨로의 Race Condition 이해하기",
+                                "https://www.youtube.com/watch?v=At4Gyezw8WA", "동시 요청에서 데이터 오류가 생기는 원리를 이해해요.",
+                                Instant.parse("2025-09-05T09:00:00Z"), null, null)))
                 ));
 
         mockMvc.perform(get("/api/v1/resources/search")
@@ -78,7 +81,7 @@ class ResourceHttpApiSearchTest {
                 .andExpect(jsonPath("$.data.blogs.items[0].resourceId").value(101L))
                 .andExpect(jsonPath("$.data.blogs.items[0].team.projectSlug").value("festabook"))
                 .andExpect(jsonPath("$.data.documents.items[0].team").isEmpty())
-                .andExpect(jsonPath("$.data.talks.items").isEmpty())
+                .andExpect(jsonPath("$.data.talks.items[0].team").isEmpty())
                 .andDo(document(
                         "resource-search",
                         resource(ResourceSnippetParameters.builder()
@@ -178,9 +181,7 @@ class ResourceHttpApiSearchTest {
         ));
         fields.addAll(applyPathPrefix("data.blogs.items[].", cardFields()));
         fields.addAll(applyPathPrefix("data.documents.items[].", cardFields()));
-        fields.addAll(applyPathPrefix("data.talks.items[].", cardFields()).stream()
-                .map(FieldDescriptor::optional)
-                .toList());
+        fields.addAll(applyPathPrefix("data.talks.items[].", cardFields()));
         return List.copyOf(fields);
     }
 

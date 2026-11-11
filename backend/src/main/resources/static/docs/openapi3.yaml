@@ -1320,7 +1320,11 @@ paths:
                     :[{\"resourceId\":3412,\"source\":\"github-teamdoc\",\"title\"\
                     :\"포트폴리오 원장 변경 전에 포트폴리오 잠금 획득\",\"url\":\"https://github.com/woowacourse-teams/2026-DAYNOMY/blob/main/docs/adr.md\"\
                     ,\"summary\":\"비관적 잠금으로 원장 정합성을 지켜요.\",\"publishedAt\":\"2026-10-20T05:12:00Z\"\
-                    ,\"platform\":null,\"team\":null}]},\"talks\":{\"items\":[]}}}"
+                    ,\"platform\":null,\"team\":null}]},\"talks\":{\"items\":[{\"\
+                    resourceId\":2301,\"source\":\"youtube-tekotalk\",\"title\":\"\
+                    [10분 테코톡] 벨로의 Race Condition 이해하기\",\"url\":\"https://www.youtube.com/watch?v=At4Gyezw8WA\"\
+                    ,\"summary\":\"동시 요청에서 데이터 오류가 생기는 원리를 이해해요.\",\"publishedAt\"\
+                    :\"2025-09-05T09:00:00Z\",\"platform\":null,\"team\":null}]}}}"
   /api/v1/resources/topics:
     get:
       tags:
@@ -8110,11 +8114,7 @@ components:
               type: array
               description: 자료에 붙은 기술 태그. 원래 표기 그대로. 없으면 빈 배열
               items:
-                oneOf:
-                - type: object
-                - type: boolean
-                - type: string
-                - type: number
+                type: string
             resourceId:
               type: number
               description: 자료 ID
@@ -8172,11 +8172,7 @@ components:
                     type: array
                     description: 쓴 기술. 없으면 빈 배열
                     items:
-                      oneOf:
-                      - type: object
-                      - type: boolean
-                      - type: string
-                      - type: number
+                      type: string
             platform:
               type: string
               description: 블로그 플랫폼. 블로그가 아니면 null
@@ -8208,11 +8204,7 @@ components:
               type: array
               description: 이 자료에서 배울 점. 없으면 빈 배열
               items:
-                oneOf:
-                - type: object
-                - type: boolean
-                - type: string
-                - type: number
+                type: string
             topic:
               type: object
               properties:
@@ -8428,6 +8420,11 @@ components:
                   type: array
                   description: "테코톡(youtube-tekotalk), 최대 6건"
                   items:
+                    required:
+                    - resourceId
+                    - source
+                    - title
+                    - url
                     type: object
                     properties:
                       summary:
@@ -8437,7 +8434,6 @@ components:
                       resourceId:
                         type: number
                         description: 자료 ID. 자료 상세 조회에 쓴다
-                        nullable: true
                       publishedAt:
                         type: string
                         description: 원문 게시 시각(UTC)
@@ -8461,11 +8457,9 @@ components:
                       source:
                         type: string
                         description: 자료 원천
-                        nullable: true
                       title:
                         type: string
                         description: 자료 제목
-                        nullable: true
                       platform:
                         type: string
                         description: 블로그 플랫폼. 블로그가 아니면 null
@@ -8473,7 +8467,6 @@ components:
                       url:
                         type: string
                         description: 원문 주소
-                        nullable: true
           description: 섹션별 검색 결과
         status:
           type: string
