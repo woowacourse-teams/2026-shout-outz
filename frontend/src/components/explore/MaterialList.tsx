@@ -4,7 +4,12 @@ import type { ReactNode } from 'react';
 import type { Material } from '@/apis/explore';
 import { Badge } from '@/components/Badge';
 import { openMaterialSummary } from '@/components/explore/MaterialSummaryModal';
-import { formatMaterialDate, MaterialIcon, MaterialMeta } from '@/components/explore/MaterialParts';
+import {
+  formatMaterialDate,
+  MaterialIcon,
+  MaterialMeta,
+  techTalkThumbnailOf,
+} from '@/components/explore/MaterialParts';
 import { cn } from '@/utils/cn';
 
 interface MaterialListProps {
@@ -37,7 +42,7 @@ export function MaterialList({ materials, renderExtra }: MaterialListProps) {
         );
 
         return (
-          <li key={material.id} className="border-t border-gray-100">
+          <li key={material.resourceId} className="border-t border-gray-100">
             <button
               type="button"
               className={itemClass}
@@ -61,36 +66,39 @@ export function TechTalkList({ talks, columns }: { talks: Material[]; columns: 1
         columns === 3 && 'sm:grid-cols-2 md:grid-cols-3',
       )}
     >
-      {talks.map((talk) => (
-        <li key={talk.id} className="min-w-0">
-          <a
-            href={talk.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="focus-visible:outline-primary-600 group block rounded-xl focus-visible:outline-2"
-          >
-            <div className="aspect-video overflow-hidden rounded-xl bg-gray-100">
-              {talk.thumbnailUrl && (
-                <img
-                  src={talk.thumbnailUrl}
-                  alt=""
-                  loading="lazy"
-                  className="size-full object-cover transition-transform group-hover:scale-[1.02]"
-                />
-              )}
-            </div>
-            <p className="mt-2 flex items-center gap-1.5">
-              <Badge tone="green">테코톡</Badge>
-              <span className="truncate text-xs text-gray-400">
-                {[talk.speaker, formatMaterialDate(talk.publishedAt)].filter(Boolean).join(' ')}
-              </span>
-            </p>
-            <p className="mt-1 line-clamp-2 text-sm leading-snug font-semibold text-gray-900 group-hover:underline">
-              {talk.title}
-            </p>
-          </a>
-        </li>
-      ))}
+      {talks.map((talk) => {
+        const thumbnailUrl = techTalkThumbnailOf(talk.url);
+        return (
+          <li key={talk.resourceId} className="min-w-0">
+            <a
+              href={talk.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="focus-visible:outline-primary-600 group block rounded-xl focus-visible:outline-2"
+            >
+              <div className="aspect-video overflow-hidden rounded-xl bg-gray-100">
+                {thumbnailUrl && (
+                  <img
+                    src={thumbnailUrl}
+                    alt=""
+                    loading="lazy"
+                    className="size-full object-cover transition-transform group-hover:scale-[1.02]"
+                  />
+                )}
+              </div>
+              <p className="mt-2 flex items-center gap-1.5">
+                <Badge tone="green">테코톡</Badge>
+                <span className="truncate text-xs text-gray-400">
+                  {formatMaterialDate(talk.publishedAt)}
+                </span>
+              </p>
+              <p className="mt-1 line-clamp-2 text-sm leading-snug font-semibold text-gray-900 group-hover:underline">
+                {talk.title}
+              </p>
+            </a>
+          </li>
+        );
+      })}
     </ul>
   );
 }

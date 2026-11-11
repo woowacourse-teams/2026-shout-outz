@@ -5,7 +5,14 @@ import { overlay } from 'overlay-kit';
 import type { ComponentProps, ComponentType, ReactNode } from 'react';
 
 import { materialDetailQuery, type Material, type MaterialDetail } from '@/apis/explore';
-import { hostnameOf, MaterialIcon, MaterialMeta } from '@/components/explore/MaterialParts';
+import {
+  hostnameOf,
+  isGithubMaterial,
+  isPullRequest,
+  isTechTalk,
+  MaterialIcon,
+  MaterialMeta,
+} from '@/components/explore/MaterialParts';
 import { Badge } from '@/components/Badge';
 import { getButtonStyles } from '@/components/Button';
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -130,7 +137,7 @@ export function MaterialSummary({
   trailing,
   variant = 'modal',
 }: MaterialSummaryProps) {
-  const detail = useQuery(materialDetailQuery(material.id));
+  const detail = useQuery(materialDetailQuery(material.resourceId));
 
   return (
     <div className={cn('flex flex-col text-gray-900', variant === 'page' ? 'gap-10' : 'gap-8')}>
@@ -148,7 +155,10 @@ export function MaterialSummary({
         {variant === 'page' ? (
           <SourceCard material={material} />
         ) : (
-          <SourcePreviewCard material={material} />
+          <SourcePreviewCard
+            material={material}
+            thumbnailUrl={detail.data?.linkPreview?.imageUrl ?? null}
+          />
         )}
       </div>
 
@@ -204,7 +214,7 @@ function MaterialDetailLink({
   return (
     <Link
       to="/materials/$materialId"
-      params={{ materialId: material.id }}
+      params={{ materialId: String(material.resourceId) }}
       onClick={onNavigate}
       className={getButtonStyles({ variant: 'outline', size: 'lg', className: 'mt-10 w-full' })}
     >
@@ -214,7 +224,14 @@ function MaterialDetailLink({
 }
 
 /** 모달·바텀시트의 원문 카드. 누르면 원문을 새 탭으로 연다. */
-function SourcePreviewCard({ material }: { material: Material }) {
+function SourcePreviewCard({
+  material,
+  thumbnailUrl,
+}: {
+  material: Material;
+  /** 원문 페이지의 대표 이미지(링크 미리보기). 없으면 회색 칸 */
+  thumbnailUrl: string | null;
+}) {
   return (
     <a
       href={material.url}
@@ -223,9 +240,9 @@ function SourcePreviewCard({ material }: { material: Material }) {
       aria-label={`원문 보기: ${material.title}`}
       className="focus-visible:outline-primary-600 bg-background flex overflow-hidden rounded-lg border border-gray-200 transition-colors hover:bg-gray-50 focus-visible:outline-2"
     >
-      {material.thumbnailUrl ? (
+      {thumbnailUrl ? (
         <img
-          src={material.thumbnailUrl}
+          src={thumbnailUrl}
           alt=""
           width={80}
           height={80}
@@ -246,11 +263,11 @@ function SourcePreviewCard({ material }: { material: Material }) {
   );
 }
 
-const SOURCE_LABELS: Record<Material['kind'], string> = {
-  BLOG: '블로그 · 원문',
-  PR: 'GitHub PR · 원문',
-  TEAM_DOC: 'GitHub 팀 문서 · 원문',
-  TECH_TALK: '테코톡 · 원문',
+const sourceLabelOf = (material: Material) => {
+  if (isPullRequest(material)) return 'GitHub PR · 원문';
+  if (isGithubMaterial(material)) return 'GitHub 팀 문서 · 원문';
+  if (isTechTalk(material)) return '테코톡 · 원문';
+  return '블로그 · 원문';
 };
 
 /** 자료 정리 보기 페이지의 원문 카드 */
@@ -264,7 +281,7 @@ function SourceCard({ material }: { material: Material }) {
         <MaterialIcon material={material} size="lg" />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-xs">
-        <span className="text-gray-500">{SOURCE_LABELS[material.kind]}</span>
+        <span className="text-gray-500">{sourceLabelOf(material)}</span>
         <span className="truncate text-sm font-bold text-gray-900">{material.title}</span>
         <span className="truncate text-gray-600">
           {host}
@@ -308,18 +325,18 @@ function SummarySection({
 function DetailSections({ detail }: { detail: MaterialDetail }) {
   return (
     <>
-      {detail.learnings.length > 0 && (
+      {detail.keyPoints.length > 0 && (
         <SummarySection title="이 자료에서 배울 점">
           <ol>
-            {detail.learnings.map((learning, index) => (
+            {detail.keyPoints.map((keyPoint, index) => (
               <li
-                key={learning}
+                key={keyPoint}
                 className="flex gap-3 border-t border-gray-100 py-3 text-base leading-relaxed text-gray-800"
               >
                 <span className="mt-0.5 flex size-5.5 shrink-0 items-center justify-center rounded-full bg-gray-900 text-xs font-bold text-white">
                   {index + 1}
                 </span>
-                <span>{learning}</span>
+                <span>{keyPoint}</span>
               </li>
             ))}
           </ol>
@@ -334,15 +351,20 @@ function DetailSections({ detail }: { detail: MaterialDetail }) {
               <ExperienceRow label="문제" dot="bg-red-400">
                 {experience.problem}
               </ExperienceRow>
-              <ExperienceRow label="원인" dot="bg-yellow-500">
-                {experience.cause}
-              </ExperienceRow>
+              {/* 서버는 원인과 결과를 모르면 null로 준다. 그 줄은 빼고 보여 준다. */}
+              {experience.cause && (
+                <ExperienceRow label="원인" dot="bg-yellow-500">
+                  {experience.cause}
+                </ExperienceRow>
+              )}
               <ExperienceRow label="해결" dot="bg-primary-500">
                 {experience.solution}
               </ExperienceRow>
-              <ExperienceRow label="결과" dot="bg-green-500" emphasis>
-                {experience.result}
-              </ExperienceRow>
+              {experience.result && (
+                <ExperienceRow label="결과" dot="bg-green-500" emphasis>
+                  {experience.result}
+                </ExperienceRow>
+              )}
             </div>
           ))}
         </SummarySection>

@@ -1,116 +1,108 @@
 import { queryOptions } from '@tanstack/react-query';
 
+import type {
+  PopularKeywordsSuccessResponse,
+  ResourceDetailSuccessResponse,
+  ResourceRecentSuccessResponse,
+  ResourceSearchSuccessResponse,
+  ResourceTopicsPopularSuccessResponse,
+  ResourceTopicsSuccessResponse,
+} from '@/api/generated/schema';
 import { httpClient, type ApiSuccessBody } from '@/utils/client';
 
-// MOCK-API: 탐색 API가 아직 없어 화면에 필요한 모양대로 임의로 정했다. 실제 API가 생기면 바뀔 수 있다.
-// 응답은 src/api/mock/explore.ts의 MSW 핸들러가 내려준다.
+/**
+ * 기술 자료 카드 하나. 블로그, PR과 팀 문서, 테코톡이 같은 모양이다.
+ * `source`(blog-post, github-pr, github-teamdoc, github-wiki, github-discussion, youtube-tekotalk)로 종류를 구분한다.
+ */
+export type Material = NonNullable<ResourceSearchSuccessResponse['data']['blogs']>['items'][number];
 
-export type MaterialKind = 'BLOG' | 'PR' | 'TEAM_DOC' | 'TECH_TALK';
+/** 자료 요약 모달과 자료 정리 보기 페이지가 쓰는 자료 상세 */
+export type MaterialDetail = ResourceDetailSuccessResponse['data'];
 
-/** 자료를 만든 팀(프로젝트). 테코톡처럼 팀이 없는 자료도 있다. */
-export interface MaterialProject {
-  name: string;
-  logoUrl: string | null;
-}
+export type MaterialExperience = MaterialDetail['experiences'][number];
 
-export interface Material {
-  id: string;
-  kind: MaterialKind;
-  title: string;
-  url: string;
-  /** YYYY-MM-DD */
-  publishedAt: string | null;
-  /** 한 줄 소개. 이 자료를 읽으면 무엇을 얻는지 */
-  summary: string | null;
-  project: MaterialProject | null;
-  /** 블로그 글의 파비콘 */
-  faviconUrl: string | null;
-  /** 테코톡 발표자 */
-  speaker: string | null;
-  /** 테코톡 영상 썸네일 */
-  thumbnailUrl: string | null;
-}
+/** 많이 다룬 기술 주제 */
+export type PopularTopic = ResourceTopicsPopularSuccessResponse['data'][number];
 
-export interface MaterialExperience {
-  problem: string;
-  cause: string;
-  solution: string;
-  result: string;
-}
+/** 분야별 기술 주제. side는 COMMON, BACKEND, FRONTEND, MOBILE */
+export type TopicField = ResourceTopicsSuccessResponse['data'][number];
 
-export interface MaterialDetail extends Material {
-  techTags: string[];
-  learnings: string[];
-  experiences: MaterialExperience[];
-}
-
-export interface TopicField {
-  name: string;
-  topics: string[];
-}
-
-export interface ExploreHome {
-  recentBlogs: Material[];
-  recentTechTalks: Material[];
-  popularTopics: string[];
-  topicFields: TopicField[];
-}
-
-export interface ExploreSearchResult {
-  query: string;
-  /** 검색어와 맞는 기술 주제 이름 */
-  topics: string[];
+export interface MaterialSearchResult {
   blogs: Material[];
   /** PR과 팀 문서 */
   documents: Material[];
-  techTalks: Material[];
+  talks: Material[];
 }
 
-export async function fetchExploreHome(signal?: AbortSignal) {
-  const response = await httpClient<ApiSuccessBody<ExploreHome>>('/api/v1/explore', {
+async function get<T>(
+  path: string,
+  signal?: AbortSignal,
+  searchParams?: Record<string, string | number>,
+) {
+  const response = await httpClient<ApiSuccessBody<T>>(path, {
     method: 'get',
     signal,
+    searchParams,
   });
-  if (!response?.data) throw new Error('탐색 응답이 비어 있습니다.');
+  if (!response?.data) throw new Error(`응답이 비어 있습니다: ${path}`);
   return response.data;
 }
 
-export async function fetchExploreSearch(query: string, signal?: AbortSignal) {
-  const response = await httpClient<ApiSuccessBody<ExploreSearchResult>>('/api/v1/explore/search', {
-    method: 'get',
-    signal,
-    searchParams: { q: query },
-  });
-  if (!response?.data) throw new Error('탐색 검색 응답이 비어 있습니다.');
-  return response.data;
-}
-
-export async function fetchMaterialDetail(materialId: string, signal?: AbortSignal) {
-  const response = await httpClient<ApiSuccessBody<MaterialDetail>>(
-    `/api/v1/explore/materials/${encodeURIComponent(materialId)}`,
-    { method: 'get', signal },
-  );
-  if (!response?.data) throw new Error('자료 요약 응답이 비어 있습니다.');
-  return response.data;
-}
-
-export function exploreHomeQuery() {
+export function recentMaterialsQuery(kind: 'BLOG' | 'TALK', size: number) {
   return queryOptions({
-    queryKey: ['explore', 'home'],
-    queryFn: ({ signal }) => fetchExploreHome(signal),
+    queryKey: ['explore', 'recent', kind, size],
+    queryFn: ({ signal }) =>
+      get<ResourceRecentSuccessResponse['data']>('/api/v1/resources/recent', signal, {
+        kind,
+        size,
+      }),
   });
 }
 
-export function exploreSearchQuery(query: string) {
+export function popularTopicsQuery() {
   return queryOptions({
-    queryKey: ['explore', 'search', query],
-    queryFn: ({ signal }) => fetchExploreSearch(query, signal),
+    queryKey: ['explore', 'popular-topics'],
+    queryFn: ({ signal }) =>
+      get<PopularTopic[]>('/api/v1/resources/topics/popular', signal, { size: 10 }),
   });
 }
 
-export function materialDetailQuery(materialId: string) {
+export function topicFieldsQuery() {
   return queryOptions({
-    queryKey: ['explore', 'material', materialId],
-    queryFn: ({ signal }) => fetchMaterialDetail(materialId, signal),
+    queryKey: ['explore', 'topic-fields'],
+    queryFn: ({ signal }) => get<TopicField[]>('/api/v1/resources/topics', signal),
+  });
+}
+
+export function popularKeywordsQuery() {
+  return queryOptions({
+    queryKey: ['explore', 'popular-keywords'],
+    queryFn: ({ signal }) =>
+      get<PopularKeywordsSuccessResponse['data']>('/api/v1/resources/popular-keywords', signal),
+  });
+}
+
+export function materialSearchQuery(keyword: string) {
+  return queryOptions({
+    queryKey: ['explore', 'search', keyword],
+    queryFn: async ({ signal }): Promise<MaterialSearchResult> => {
+      const data = await get<ResourceSearchSuccessResponse['data']>(
+        '/api/v1/resources/search',
+        signal,
+        { keyword },
+      );
+      return {
+        blogs: data.blogs?.items ?? [],
+        documents: data.documents?.items ?? [],
+        talks: data.talks?.items ?? [],
+      };
+    },
+  });
+}
+
+export function materialDetailQuery(resourceId: number) {
+  return queryOptions({
+    queryKey: ['explore', 'material', resourceId],
+    queryFn: ({ signal }) => get<MaterialDetail>(`/api/v1/resources/${resourceId}`, signal),
   });
 }

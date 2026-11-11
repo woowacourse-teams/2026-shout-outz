@@ -18,6 +18,7 @@ const SEARCH_BY_TAB: Record<
     label: '기술 이야기 검색',
     placeholder: '예: LLM, 동시성, 무중단 배포',
     suggestionLabel: '이런 주제를 찾아보세요',
+    // 인기 검색어 API를 불러오기 전에 보여 줄 목록. 서버가 지금 주는 정해 둔 목록과 같다.
     suggestions: [
       'LLM',
       '동시성',
@@ -61,6 +62,8 @@ interface ExploreHeroProps {
   activeSuggestion?: string | null;
   /** 추천 검색어를 눌렀을 때. 없으면 그 말로 검색한다. */
   onSuggestionSelect?: (suggestion: string) => void;
+  /** 추천 검색어. 없으면 탭마다 정해 둔 목록을 쓴다. */
+  suggestions?: string[];
 }
 
 /** 탐색 화면 첫 영역. 문구, 찾는 방법 탭, 검색창, 추천 검색어 */
@@ -71,8 +74,10 @@ export function ExploreHero({
   onSearch,
   activeSuggestion = query,
   onSuggestionSelect = onSearch,
+  suggestions,
 }: ExploreHeroProps) {
   const search = SEARCH_BY_TAB[tab];
+  const suggestionItems = suggestions ?? search.suggestions;
 
   return (
     <section className="text-center">
@@ -130,7 +135,7 @@ export function ExploreHero({
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
         <span className="mr-1 text-xs font-medium text-gray-500">{search.suggestionLabel}</span>
         <ul aria-label="추천 검색어" className="flex flex-wrap gap-2">
-          {search.suggestions.map((suggestion) => (
+          {suggestionItems.map((suggestion) => (
             <li key={suggestion}>
               <button
                 type="button"

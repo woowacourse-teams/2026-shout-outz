@@ -1,18 +1,45 @@
 import type { ReactNode } from 'react';
 
-import type { Material, MaterialKind } from '@/apis/explore';
+import type { Material } from '@/apis/explore';
 import { Badge, type BadgeTone } from '@/components/Badge';
+import { youtubeId } from '@/pages/about/resources';
 import { cn } from '@/utils/cn';
 
-export const MATERIAL_KIND_LABELS: Record<MaterialKind, [label: string, tone: BadgeTone]> = {
-  BLOG: ['블로그', 'primary'],
-  PR: ['PR', 'primary'],
-  TEAM_DOC: ['팀 문서', 'green'],
-  TECH_TALK: ['테코톡', 'green'],
+/** 서버 자료 source별 배지. 위키와 디스커션도 팀 문서로 보여 준다. 모르는 source는 블로그로 본다. */
+const SOURCE_BADGES: Record<string, [label: string, tone: BadgeTone]> = {
+  'blog-post': ['블로그', 'primary'],
+  'github-pr': ['PR', 'primary'],
+  'github-teamdoc': ['팀 문서', 'green'],
+  'github-wiki': ['팀 문서', 'green'],
+  'github-discussion': ['팀 문서', 'green'],
+  'youtube-tekotalk': ['테코톡', 'green'],
 };
 
+export const sourceBadgeOf = (source: string) =>
+  SOURCE_BADGES[source] ?? SOURCE_BADGES['blog-post']!;
+
+export const isPullRequest = (material: Pick<Material, 'source'>) =>
+  material.source === 'github-pr';
+
+/** GitHub에서 모은 PR, 팀 문서, 위키, 디스커션 */
+export const isGithubMaterial = (material: Pick<Material, 'source'>) =>
+  material.source.startsWith('github-');
+
+export const isTechTalk = (material: Pick<Material, 'source'>) =>
+  material.source === 'youtube-tekotalk';
+
+/** GitHub 자료도 테코톡도 아니면 블로그로 본다. 화면이 모르는 source가 와도 목록에서 빠지지 않게 한다. */
+export const isBlogMaterial = (material: Pick<Material, 'source'>) =>
+  !isGithubMaterial(material) && !isTechTalk(material);
+
+/** 테코톡 유튜브 썸네일. 유튜브 주소가 아니면 null */
+export function techTalkThumbnailOf(url: string) {
+  const videoId = youtubeId(url);
+  return videoId ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : null;
+}
+
 /** 2026-10-20 → 2026년 10월 20일. 시간대에 따라 날짜가 바뀌지 않게 Date로 바꾸지 않는다. */
-export function formatMaterialDate(value: string | null) {
+export function formatMaterialDate(value: string | null | undefined) {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value ?? '');
   return match ? `${match[1]}년 ${Number(match[2])}월 ${Number(match[3])}일` : '';
 }
@@ -47,15 +74,16 @@ export function hostnameOf(url: string) {
 
 /** 종류 배지 · 팀 · 날짜 한 줄 */
 export function MaterialMeta({ material, trailing }: { material: Material; trailing?: ReactNode }) {
-  const [label, tone] = MATERIAL_KIND_LABELS[material.kind];
+  const [label, tone] = sourceBadgeOf(material.source);
+  const teamName = isTechTalk(material) ? null : material.team?.name;
 
   return (
     <span className="flex min-w-0 items-center gap-2 text-sm text-gray-400">
       <Badge tone={tone}>{label}</Badge>
-      {material.project && (
+      {teamName && (
         <span className="inline-flex min-w-0 items-center gap-1.5 font-semibold text-gray-600">
-          <ProjectLogo project={material.project} />
-          <span className="truncate">{material.project.name}</span>
+          <TeamLogo />
+          <span className="truncate">{teamName}</span>
         </span>
       )}
       <span className="shrink-0">{formatMaterialDate(material.publishedAt)}</span>
@@ -64,19 +92,8 @@ export function MaterialMeta({ material, trailing }: { material: Material; trail
   );
 }
 
-function ProjectLogo({ project }: { project: NonNullable<Material['project']> }) {
-  if (project.logoUrl)
-    return (
-      <img
-        src={project.logoUrl}
-        alt=""
-        width={16}
-        height={16}
-        className="size-4 shrink-0 rounded-sm object-cover"
-        loading="lazy"
-      />
-    );
-  // 팀 로고가 없으면 회색 사각형으로 자리를 잡는다.
+// 서버가 팀 로고 주소(logoUrl)를 주는 PR이 반영되면 그 이미지를 보여 준다. 지금은 logoMediaId만 와서 회색 사각형으로 자리를 잡는다.
+function TeamLogo() {
   return (
     <span
       aria-hidden="true"
@@ -100,16 +117,16 @@ export function MaterialIcon({
 }) {
   const box = size === 'md' ? 'size-4.5' : 'size-5.5';
 
-  if (material.kind === 'PR' || material.kind === 'TEAM_DOC') {
+  if (isGithubMaterial(material)) {
     return (
       <span
         role="img"
-        aria-label={material.kind === 'PR' ? 'GitHub PR' : 'GitHub 팀 문서'}
+        aria-label={isPullRequest(material) ? 'GitHub PR' : 'GitHub 팀 문서'}
         className={cn('relative inline-flex shrink-0 text-gray-900', box, className)}
       >
         <GithubMark className={box} />
         <span className="bg-background absolute -right-1 -bottom-1 flex size-3 items-center justify-center rounded-full ring-1 ring-gray-200">
-          {material.kind === 'PR' ? (
+          {isPullRequest(material) ? (
             // DESIGN-TOKEN: 12px 배지 안에 넣는 6px 글자는 토큰에 없는 크기다.
             <span className="text-primary-600 text-[6px] font-extrabold">PR</span>
           ) : (
@@ -120,10 +137,11 @@ export function MaterialIcon({
     );
   }
 
-  if (material.faviconUrl)
+  const faviconUrl = blogFaviconOf(material.url);
+  if (faviconUrl)
     return (
       <img
-        src={material.faviconUrl}
+        src={faviconUrl}
         alt=""
         className={cn('shrink-0 rounded-sm', box, className)}
         loading="lazy"
