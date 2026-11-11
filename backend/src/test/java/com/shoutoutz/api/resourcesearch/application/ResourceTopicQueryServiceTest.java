@@ -2,6 +2,8 @@ package com.shoutoutz.api.resourcesearch.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.shoutoutz.api.resourcesearch.application.dto.CatalogTopic;
 import com.shoutoutz.api.resourcesearch.application.dto.PopularTopic;
@@ -11,11 +13,18 @@ import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceTopicPo
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.PopularTopicResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceTopicResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceTopicSideResponse;
+import com.shoutoutz.api.resourcereport.application.ResourceReportStatusChanged;
+import com.shoutoutz.api.resourcereport.domain.ResourceReportKind;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -25,8 +34,14 @@ class ResourceTopicQueryServiceTest {
     @Mock
     private ResourceTopicQueryRepository resourceTopicQueryRepository;
 
-    @InjectMocks
+    private final MovableClock clock = new MovableClock(Instant.parse("2026-11-11T00:00:00Z"));
+
     private ResourceTopicQueryService resourceTopicQueryService;
+
+    @BeforeEach
+    void setUp() {
+        resourceTopicQueryService = new ResourceTopicQueryService(resourceTopicQueryRepository, clock);
+    }
 
     @Test
     @DisplayName("주제를 분야별로 묶고 분야 안에서는 저장소가 준 이름 순서를 지킨다")
@@ -81,5 +96,98 @@ class ResourceTopicQueryServiceTest {
 
     private CatalogTopic topic(ResourceTopicSide side, String topicId, String name) {
         return new CatalogTopic(side, new ResourceTopic(topicId, name));
+    }
+
+    @Test
+    @DisplayName("같은 개수의 많이 다룬 주제를 다시 조회하면 저장소를 다시 읽지 않는다")
+    void cachesPopularTopicsBySize() {
+        given(resourceTopicQueryRepository.findMostCovered(10)).willReturn(List.of(
+                new PopularTopic(new ResourceTopic("ci_cd", "CI/CD"), 42)));
+
+        resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
+        List<PopularTopicResponse> second = resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
+
+        verify(resourceTopicQueryRepository, times(1)).findMostCovered(10);
+        assertThat(second).containsExactly(new PopularTopicResponse("ci_cd", "CI/CD", 42));
+    }
+
+    @Test
+    @DisplayName("요청 개수가 다르면 따로 읽는다")
+    void cachesEachSizeSeparately() {
+        given(resourceTopicQueryRepository.findMostCovered(10)).willReturn(List.of());
+        given(resourceTopicQueryRepository.findMostCovered(5)).willReturn(List.of());
+
+        resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
+        resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(5));
+
+        verify(resourceTopicQueryRepository).findMostCovered(10);
+        verify(resourceTopicQueryRepository).findMostCovered(5);
+    }
+
+    @Test
+    @DisplayName("담은 지 10분이 지나면 다시 집계한다")
+    void reloadsPopularTopicsAfterTenMinutes() {
+        given(resourceTopicQueryRepository.findMostCovered(10)).willReturn(List.of());
+
+        resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
+        clock.advance(Duration.ofMinutes(10).minusSeconds(1));
+        resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
+        verify(resourceTopicQueryRepository, times(1)).findMostCovered(10);
+
+        clock.advance(Duration.ofSeconds(1));
+        resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
+        verify(resourceTopicQueryRepository, times(2)).findMostCovered(10);
+    }
+
+    @Test
+    @DisplayName("필요 없어요 제보의 상태가 바뀌면 바로 비우고 다음 조회에서 다시 집계한다")
+    void evictsPopularTopicsWhenRemovalReportChanges() {
+        given(resourceTopicQueryRepository.findMostCovered(10)).willReturn(List.of());
+        resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
+
+        resourceTopicQueryService.evictPopularTopics(new ResourceReportStatusChanged(ResourceReportKind.REMOVE));
+        resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
+
+        verify(resourceTopicQueryRepository, times(2)).findMostCovered(10);
+    }
+
+    @Test
+    @DisplayName("추가해 주세요 제보의 상태 변경은 집계에 영향이 없어 비우지 않는다")
+    void keepsPopularTopicsWhenAdditionReportChanges() {
+        given(resourceTopicQueryRepository.findMostCovered(10)).willReturn(List.of());
+        resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
+
+        resourceTopicQueryService.evictPopularTopics(new ResourceReportStatusChanged(ResourceReportKind.ADD));
+        resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
+
+        verify(resourceTopicQueryRepository, times(1)).findMostCovered(10);
+    }
+
+    private static final class MovableClock extends Clock {
+
+        private Instant now;
+
+        private MovableClock(Instant now) {
+            this.now = now;
+        }
+
+        private void advance(Duration duration) {
+            now = now.plus(duration);
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return now;
+        }
     }
 }

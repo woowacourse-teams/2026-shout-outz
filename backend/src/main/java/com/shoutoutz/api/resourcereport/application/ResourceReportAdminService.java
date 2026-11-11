@@ -18,6 +18,7 @@ import com.shoutoutz.api.resourcereport.presentation.dto.response.ResourceReport
 import com.shoutoutz.api.user.domain.account.UserRole;
 import java.time.Clock;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ public class ResourceReportAdminService {
     private final ResourceReportRepository resourceReportRepository;
     private final ResourceReportAdminCursorCodec cursorCodec;
     private final Clock clock;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public ResourceReportAdminFindAllResponse findAll(
@@ -66,7 +68,9 @@ public class ResourceReportAdminService {
         if (updated == report) {
             return ResourceReportStatusUpdateResponse.from(report);
         }
-        return ResourceReportStatusUpdateResponse.from(resourceReportRepository.updateStatus(updated));
+        ResourceReport saved = resourceReportRepository.updateStatus(updated);
+        eventPublisher.publishEvent(new ResourceReportStatusChanged(saved.getKind()));
+        return ResourceReportStatusUpdateResponse.from(saved);
     }
 
     private String nextCursor(ResourceReportAdminPage page) {
