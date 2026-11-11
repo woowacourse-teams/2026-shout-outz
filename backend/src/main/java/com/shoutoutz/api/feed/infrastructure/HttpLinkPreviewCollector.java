@@ -202,7 +202,7 @@ public class HttpLinkPreviewCollector implements LinkPreviewCollector {
             throw new IOException("YouTube 썸네일 주소를 가져올 수 없습니다.", exception);
         }
         return new LinkPreviewMetadata(
-                limit(title, 300), null, validatedThumbnailUrl, limit(providerName, 100)
+                limit(title, 300), null, validatedThumbnailUrl, limit(providerName, 100), null
         );
     }
 
@@ -235,7 +235,8 @@ public class HttpLinkPreviewCollector implements LinkPreviewCollector {
                 limit(title, 300),
                 limit(description, 500),
                 imageUrl(meta(document, "property", "og:image"), pageUrl),
-                limit(siteName, 100)
+                limit(siteName, 100),
+                imageUrl(FaviconSelector.select(document), pageUrl)
         );
     }
 

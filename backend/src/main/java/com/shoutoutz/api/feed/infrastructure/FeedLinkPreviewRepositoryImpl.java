@@ -189,7 +189,7 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
         jdbcTemplate.update("""
                 UPDATE link_preview_cache
                 SET status = 'READY', title = :title, description = :description,
-                    image_url = :imageUrl, site_name = :siteName, fetched_at = :now,
+                    image_url = :imageUrl, site_name = :siteName, favicon_url = :faviconUrl, fetched_at = :now,
                     next_attempt_at = NULL, lease_until = NULL, attempts = 0
                 WHERE id = :id AND status = 'PROCESSING' AND attempts = :attempts
                 """, new MapSqlParameterSource()
@@ -199,6 +199,7 @@ public class FeedLinkPreviewRepositoryImpl implements FeedLinkPreviewRepository 
                         .addValue("description", metadata.description())
                         .addValue("imageUrl", metadata.imageUrl())
                         .addValue("siteName", metadata.siteName())
+                        .addValue("faviconUrl", metadata.faviconUrl())
                         .addValue("now", Timestamp.from(now)));
     }
 

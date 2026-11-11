@@ -91,6 +91,7 @@ class ProjectResourceApiDocumentationTest {
                                 "oEmbed로 유튜브 미리보기를 먼저 수집할 때 참고하기 좋아요.",
                                 Instant.parse("2026-10-20T05:12:00Z"),
                                 null,
+                                null,
                                 new ResourceCardResponse.Team("샤라웃", SLUG, 31L, "https://cdn.example.com/media/project/31/thumbnail")
                         ),
                         new ResourceCardResponse(
@@ -101,6 +102,7 @@ class ProjectResourceApiDocumentationTest {
                                 null,
                                 null,
                                 "tistory",
+                                "https://t1.daumcdn.net/tistory_admin/top_v2/bi-tistory-favicon.svg",
                                 new ResourceCardResponse.Team("샤라웃", SLUG, 31L, "https://cdn.example.com/media/project/31/thumbnail")
                         )
                 )
@@ -244,6 +246,7 @@ class ProjectResourceApiDocumentationTest {
                                 "비관적 락으로 중복 예약을 막을 때 참고하기 좋아요.",
                                 Instant.parse("2026-10-20T05:12:00Z"),
                                 null,
+                                null,
                                 new ResourceCardResponse.Team("샤라웃", SLUG, 31L, "https://cdn.example.com/media/project/31/thumbnail")
                         )),
                         List.of(new ResourceCardResponse(
@@ -253,6 +256,7 @@ class ProjectResourceApiDocumentationTest {
                                 "https://www.youtube.com/watch?v=At4Gyezw8WA",
                                 "Race Condition이 생기는 원리를 이해하기 좋아요.",
                                 Instant.parse("2025-09-05T09:00:00Z"),
+                                null,
                                 null,
                                 null
                         )),
@@ -264,6 +268,7 @@ class ProjectResourceApiDocumentationTest {
                                 "레코드 락과 갭 락의 잠금 범위를 살펴볼 때 참고하기 좋아요.",
                                 Instant.parse("2025-10-06T03:00:00Z"),
                                 "tistory",
+                                "https://t1.daumcdn.net/tistory_admin/top_v2/bi-tistory-favicon.svg",
                                 new ResourceCardResponse.Team("등록 전 팀", null, null, null)
                         ))
                 ));
@@ -453,6 +458,8 @@ class ProjectResourceApiDocumentationTest {
                         .description("ISO-8601 원문 게시 시각. 없으면 null").optional(),
                 fieldWithPath(prefix + ".platform").type(STRING)
                         .description("블로그 플랫폼. 블로그가 아니면 null").optional(),
+                fieldWithPath(prefix + ".faviconUrl").type(STRING)
+                        .description("블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null").optional(),
                 fieldWithPath(prefix + ".team").type(OBJECT)
                         .description("자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null").optional(),
                 fieldWithPath(prefix + ".team.name").type(STRING)

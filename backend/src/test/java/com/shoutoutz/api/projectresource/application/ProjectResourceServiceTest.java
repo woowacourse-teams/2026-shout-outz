@@ -22,9 +22,9 @@ import com.shoutoutz.api.projectresource.domain.ResourceTopic;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectCareerCardResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectResourceTopicsResponse;
 import com.shoutoutz.api.projectresource.presentation.dto.response.ProjectTopicResourcesResponse;
-import com.shoutoutz.api.resourcesearch.application.ResourceCardLogoResolver;
+import com.shoutoutz.api.resourcesearch.application.ResourceCardImageResolver;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
-import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
 import java.net.URI;
 import java.time.Instant;
@@ -61,7 +61,7 @@ class ProjectResourceServiceTest {
     private ProjectResourceQueryRepository projectResourceQueryRepository;
 
     @Mock
-    private ResourceCardLogoResolver resourceCardLogoResolver;
+    private ResourceCardImageResolver resourceCardImageResolver;
 
     private ProjectResourceService projectResourceService;
 
@@ -71,7 +71,7 @@ class ProjectResourceServiceTest {
                 projectSlugResolver,
                 projectRepository,
                 projectResourceQueryRepository,
-                resourceCardLogoResolver
+                resourceCardImageResolver
         );
     }
 
@@ -134,8 +134,8 @@ class ProjectResourceServiceTest {
                 ProjectResourceJobRole.BE,
                 ProjectResourceService.OTHER_TEAM_RESOURCE_LIMIT
         )).willReturn(List.of(otherBlog));
-        ResourceCardLogoUrls logoUrls = new ResourceCardLogoUrls(Map.of(31L, URI.create(LOGO_URL)));
-        given(resourceCardLogoResolver.resolve(List.of(teamPr, talk, otherBlog))).willReturn(logoUrls);
+        ResourceCardImages logoUrls = new ResourceCardImages(Map.of(31L, URI.create(LOGO_URL)), Map.of());
+        given(resourceCardImageResolver.resolve(List.of(teamPr, talk, otherBlog))).willReturn(logoUrls);
 
         ProjectTopicResourcesResponse response = projectResourceService.findResources(
                 SLUG,
@@ -191,7 +191,7 @@ class ProjectResourceServiceTest {
         ResourceCard pr = card(31L, "github-pr", new ResourceCard.Team("샤라웃", SLUG, null));
         given(projectResourceQueryRepository.findCareerCards(PROJECT_ID)).willReturn(List.of(withSources, withoutSources));
         given(projectResourceQueryRepository.findCareerCardSources(List.of(11L, 12L))).willReturn(Map.of(11L, List.of(pr)));
-        given(resourceCardLogoResolver.resolve(List.of(pr))).willReturn(ResourceCardLogoUrls.NONE);
+        given(resourceCardImageResolver.resolve(List.of(pr))).willReturn(ResourceCardImages.NONE);
 
         List<ProjectCareerCardResponse> response = projectResourceService.findCareerCards(SLUG);
 
@@ -206,7 +206,7 @@ class ProjectResourceServiceTest {
                         new ProjectCareerCardResponse.Section("해결하려던 문제", "문제"),
                         new ProjectCareerCardResponse.Section("해결 과정", "해결")
                 ),
-                List.of(ResourceCardResponse.from(pr, ResourceCardLogoUrls.NONE))
+                List.of(ResourceCardResponse.from(pr, ResourceCardImages.NONE))
         ));
     }
 
