@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw';
 import { adminHandlers } from '@/api/mock/admin';
 import { exploreHandlers } from '@/api/mock/explore';
 import { jobPostingHandlers } from '@/api/mock/job-posting';
-import { projectExploreHandlers, projectHasTopic } from '@/api/mock/project-explore';
+import { projectExploreHandlers, projectHasTopic, topicNameOf } from '@/api/mock/project-explore';
 import { homeBanners } from '@/api/mock/home';
 import { getFeedList } from '@/api/mock/feed';
 import { getNewsDetail, getNewsList } from '@/api/mock/news';
@@ -295,8 +295,9 @@ export const handlers = [
   http.get('/api/v1/projects', ({ request }) => {
     const searchParams = new URL(request.url).searchParams;
     const keyword = searchParams.get('keyword')?.trim().toLowerCase() ?? '';
-    // MOCK-API: topic은 서버에 없는 조건이다. 탐색 화면의 기술 주제 필터가 쓴다.
-    const topic = searchParams.get('topic');
+    // 탐색 화면 프로젝트 탭의 기술 주제 필터
+    const topicId = searchParams.get('topicId');
+    const topic = topicId ? topicNameOf(topicId) : null;
     const size = Number(searchParams.get('size') ?? projects.length);
     const offset = Number(searchParams.get('cursor') ?? 0);
 

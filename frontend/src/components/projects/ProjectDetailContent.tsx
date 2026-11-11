@@ -31,6 +31,8 @@ export function ProjectDetailContent({ slug, tab, onTabChange }: ProjectDetailCo
     throw new ProjectNotApprovedError();
   }
 
+  const memberUserIds = project.members.map((member) => member.userId);
+
   return (
     <>
       <title>{project.title} | shout-outz</title>
@@ -65,13 +67,17 @@ export function ProjectDetailContent({ slug, tab, onTabChange }: ProjectDetailCo
         {tab === 'intro' ? (
           <ProjectIntro project={project} />
         ) : (
-          // 경험·자료는 서버 API가 없어 MSW 목으로만 응답하므로, 정적 HTML을 만들 때는 비우고 브라우저에서만 불러온다.
+          // 경험·자료는 서버 렌더 때 비우고 브라우저 렌더에서만 불러온다. 제보 링크가 로그인 정보에 따라 달라진다.
           <ClientOnly>
             <AsyncBoundary>
               {tab === 'experience' ? (
-                <ProjectExperiences slug={slug} />
+                <ProjectExperiences slug={slug} memberUserIds={memberUserIds} />
               ) : (
-                <ProjectMaterials slug={slug} projectName={project.title} />
+                <ProjectMaterials
+                  slug={slug}
+                  projectName={project.title}
+                  memberUserIds={memberUserIds}
+                />
               )}
             </AsyncBoundary>
           </ClientOnly>

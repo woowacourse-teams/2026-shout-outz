@@ -1,7 +1,12 @@
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { IconChevronDown } from '@tabler/icons-react';
 
-import { exploreProjectsQuery, type ExploreProjectFilter } from '@/apis/project-explore';
+import {
+  exploreProjectsQuery,
+  projectTopicsQuery,
+  type ExploreProjectFilter,
+  type ProjectTopics,
+} from '@/apis/project-explore';
 import { ExploreProjectCard } from '@/components/project-explore/ExploreProjectCard';
 import type { ProjectSort } from '@/types/project';
 import { cn } from '@/utils/cn';
@@ -17,8 +22,23 @@ interface ProjectExploreListProps {
   onSortChange: (sort: ProjectSort) => void;
 }
 
+/**
+ * 주소에는 읽기 쉬운 주제 이름을 두고, 서버에는 그 주제의 topicId로 묻는다.
+ * 목록에 없는 이름이면 그대로 보내 서버가 빈 목록을 주게 한다.
+ */
+const topicIdOf = (topics: ProjectTopics, name: string) =>
+  topics.groups.flatMap((group) => group.topics).find((topic) => topic.name === name)?.topicId ??
+  name;
+
 export function ProjectExploreList({ filter, onSortChange }: ProjectExploreListProps) {
-  const query = useSuspenseInfiniteQuery(exploreProjectsQuery(filter));
+  const { data: topics } = useSuspenseQuery(projectTopicsQuery());
+  const query = useSuspenseInfiniteQuery(
+    exploreProjectsQuery({
+      keyword: filter.keyword,
+      topicId: filter.topic ? topicIdOf(topics, filter.topic) : null,
+      sort: filter.sort,
+    }),
+  );
   const projects = query.data.pages.flatMap((page) => page.projects);
   const totalCount = query.data.pages[0]?.meta.totalCount ?? projects.length;
   // 검색어와 기술 주제는 함께 걸리지 않는다(routes/explore.tsx).

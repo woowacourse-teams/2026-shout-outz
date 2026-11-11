@@ -12,14 +12,24 @@ import {
 } from '@/components/explore/MaterialParts';
 import { cn } from '@/utils/cn';
 
+/** 목록에서 자료를 고르는 동안의 상태. 프로젝트 상세 자료 탭의 "필요 없는 자료 고르기"가 쓴다. */
+export interface MaterialSelection {
+  /** 고를 수 있는 자료인지 */
+  canSelect: (material: Material) => boolean;
+  selectedIds: ReadonlySet<number>;
+  onToggle: (resourceId: number) => void;
+}
+
 interface MaterialListProps {
   materials: Material[];
   /** 한 줄 소개 아래에 덧붙일 내용 */
   renderExtra?: (material: Material) => ReactNode;
+  /** 있으면 고를 수 있는 자료 앞에 체크박스를 두고, 누르면 요약 대신 고른다. */
+  selection?: MaterialSelection;
 }
 
 /** 블로그·PR·팀 문서 목록. 항목을 누르면 자료 요약을 연다. */
-export function MaterialList({ materials, renderExtra }: MaterialListProps) {
+export function MaterialList({ materials, renderExtra, selection }: MaterialListProps) {
   const router = useRouter();
   const itemClass =
     'focus-visible:outline-primary-600 group flex w-full cursor-pointer flex-col gap-2.5 py-6 text-left focus-visible:outline-2';
@@ -40,6 +50,23 @@ export function MaterialList({ materials, renderExtra }: MaterialListProps) {
             {renderExtra?.(material)}
           </>
         );
+
+        if (selection?.canSelect(material)) {
+          const checked = selection.selectedIds.has(material.resourceId);
+          return (
+            <li key={material.resourceId} className="border-t border-gray-100">
+              <label className={cn(itemClass, 'flex-row items-start gap-3')}>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => selection.onToggle(material.resourceId)}
+                  className="accent-primary-600 mt-1 size-4 shrink-0 cursor-pointer"
+                />
+                <span className="flex min-w-0 flex-1 flex-col gap-2.5">{content}</span>
+              </label>
+            </li>
+          );
+        }
 
         return (
           <li key={material.resourceId} className="border-t border-gray-100">

@@ -276,4 +276,58 @@ describe('프로젝트 상세 탭', () => {
     );
     expect(screen.getByRole('heading', { level: 2, name: '무중단 배포' })).toBeInTheDocument();
   });
+
+  describe('자료 제보', () => {
+    async function openMaterialTab(path: string) {
+      renderPage(path);
+      const tabs = await screen.findByRole('tablist', { name: '프로젝트 정보' });
+      await userEvent.click(within(tabs).getByRole('tab', { name: '자료' }));
+      await screen.findByRole('heading', { level: 2 });
+    }
+
+    test('팀원이 아니면 제보 링크를 보여주지 않는다', async () => {
+      // 목 세션 사용자(userId 1)는 Shout-outz 팀원이 아니다.
+      await openMaterialTab('/projects/@shout-outz');
+      expect(screen.queryByRole('button', { name: '빠진 자료 알려 주기' })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: '필요 없는 자료 고르기' }),
+      ).not.toBeInTheDocument();
+    });
+
+    test('팀원은 빠진 PR·팀 문서의 GitHub 주소를 알려 줄 수 있다', async () => {
+      await openMaterialTab('/projects/@dropit');
+      const [link] = await screen.findAllByRole('button', { name: '빠진 자료 알려 주기' });
+      if (!link) throw new Error('제보 링크를 찾을 수 없습니다.');
+      await userEvent.click(link);
+
+      const dialog = await screen.findByRole('dialog');
+      await userEvent.type(
+        within(dialog).getByLabelText('빠진 PR이나 팀 문서의 GitHub 주소'),
+        'https://github.com/woowacourse-teams/2026-dropit/pull/12',
+      );
+      await userEvent.click(within(dialog).getByRole('button', { name: '보내기' }));
+      expect(await within(dialog).findByText('제보가 접수됐어요')).toBeInTheDocument();
+    });
+
+    test('팀원은 PR·팀 문서를 골라 필요 없는 자료로 알리고, 보낸 자료에는 보냄 표시가 붙는다', async () => {
+      await openMaterialTab('/projects/@dropit');
+      const [toggle] = await screen.findAllByRole('button', { name: '필요 없는 자료 고르기' });
+      if (!toggle) throw new Error('고르기 링크를 찾을 수 없습니다.');
+      await userEvent.click(toggle);
+
+      const story = await screen.findByRole('region', { name: /^Dropit의 이야기/ });
+      const [checkbox] = within(story).getAllByRole('checkbox');
+      if (!checkbox) throw new Error('고를 수 있는 PR·팀 문서가 없습니다.');
+      await userEvent.click(checkbox);
+      expect(screen.getByText('PR·팀 문서 1개를 골랐어요')).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: '제보하기' }));
+      const dialog = await screen.findByRole('dialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: '보내기' }));
+      await userEvent.click(await within(dialog).findByRole('button', { name: '확인' }));
+
+      expect(await within(story).findByText('필요 없어요 보냄')).toBeInTheDocument();
+      expect(within(story).queryAllByRole('checkbox')).toHaveLength(0);
+    });
+  });
 });
