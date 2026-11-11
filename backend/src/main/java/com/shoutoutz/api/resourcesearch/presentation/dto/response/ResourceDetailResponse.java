@@ -1,6 +1,6 @@
 package com.shoutoutz.api.resourcesearch.presentation.dto.response;
 
-import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceDetail;
 import java.time.Instant;
 import java.util.List;
@@ -13,6 +13,7 @@ public record ResourceDetailResponse(
         String summary,
         Instant publishedAt,
         String platform,
+        String faviconUrl,
         String contentType,
         ResourceCardResponse.Team team,
         ResourceTopicResponse topic,
@@ -28,8 +29,8 @@ public record ResourceDetailResponse(
         experiences = List.copyOf(experiences);
     }
 
-    public static ResourceDetailResponse from(ResourceDetail detail, ResourceCardLogoUrls logoUrls) {
-        ResourceCardResponse card = ResourceCardResponse.from(detail.card(), logoUrls);
+    public static ResourceDetailResponse from(ResourceDetail detail, ResourceCardImages images) {
+        ResourceCardResponse card = ResourceCardResponse.from(detail.card(), images);
         return new ResourceDetailResponse(
                 card.resourceId(),
                 card.source(),
@@ -38,6 +39,7 @@ public record ResourceDetailResponse(
                 card.summary(),
                 card.publishedAt(),
                 card.platform(),
+                card.faviconUrl(),
                 detail.contentType(),
                 card.team(),
                 ResourceTopicResponse.from(detail.topic()),

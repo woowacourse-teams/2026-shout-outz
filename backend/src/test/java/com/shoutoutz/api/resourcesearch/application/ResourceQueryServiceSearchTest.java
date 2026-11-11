@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 
 import com.shoutoutz.api.resourcesearch.application.dto.MatchedChunk;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
-import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
 import com.shoutoutz.api.resourcesearch.application.dto.SearchHit;
 import com.shoutoutz.api.resourcesearch.application.dto.SectionedSearchHits;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
@@ -42,14 +42,14 @@ class ResourceQueryServiceSearchTest {
     private SearchKeywordService searchKeywordService;
 
     @Mock
-    private ResourceCardLogoResolver resourceCardLogoResolver;
+    private ResourceCardImageResolver resourceCardImageResolver;
 
     @InjectMocks
     private ResourceQueryService resourceQueryService;
 
     @BeforeEach
     void setUp() {
-        given(resourceCardLogoResolver.resolve(any())).willReturn(ResourceCardLogoUrls.NONE);
+        given(resourceCardImageResolver.resolve(any())).willReturn(ResourceCardImages.NONE);
     }
 
     @Test

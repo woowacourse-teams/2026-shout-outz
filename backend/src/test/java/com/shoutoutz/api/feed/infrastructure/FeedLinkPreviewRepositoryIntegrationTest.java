@@ -108,7 +108,8 @@ class FeedLinkPreviewRepositoryIntegrationTest {
     void 선점한_작업을_완료하면_메타데이터와_가져온_시각을_저장한다() {
         long cacheId = insertCache("PROCESSING", 1, null, BASE.plusSeconds(45), null);
         FetchJob job = new FetchJob(cacheId, "https://example.com", 1);
-        LinkPreviewMetadata metadata = new LinkPreviewMetadata("제목", "설명", "https://example.com/og.png", "예시");
+        LinkPreviewMetadata metadata = new LinkPreviewMetadata(
+                "제목", "설명", "https://example.com/og.png", "예시", "https://example.com/favicon.svg");
 
         linkPreviewRepository.complete(job, metadata, BASE);
 
@@ -116,6 +117,7 @@ class FeedLinkPreviewRepositoryIntegrationTest {
         assertThat(row.get("status")).isEqualTo("READY");
         assertThat(row.get("title")).isEqualTo("제목");
         assertThat(row.get("site_name")).isEqualTo("예시");
+        assertThat(row.get("favicon_url")).isEqualTo("https://example.com/favicon.svg");
         assertThat(row.get("attempts")).isEqualTo(0);
         assertThat(toInstant(row.get("fetched_at"))).isEqualTo(BASE);
         assertThat(row.get("next_attempt_at")).isNull();

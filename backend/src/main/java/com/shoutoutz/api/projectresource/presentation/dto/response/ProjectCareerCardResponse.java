@@ -2,7 +2,7 @@ package com.shoutoutz.api.projectresource.presentation.dto.response;
 
 import com.shoutoutz.api.projectresource.domain.CareerCard;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
-import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
 import java.util.List;
 
@@ -37,7 +37,7 @@ public record ProjectCareerCardResponse(
     public static ProjectCareerCardResponse of(
             CareerCard card,
             List<ResourceCard> sources,
-            ResourceCardLogoUrls logoUrls
+            ResourceCardImages images
     ) {
         return new ProjectCareerCardResponse(
                 card.cardId(),
@@ -50,7 +50,7 @@ public record ProjectCareerCardResponse(
                         .map(section -> new Section(section.heading(), section.body()))
                         .toList(),
                 sources.stream()
-                        .map(source -> ResourceCardResponse.from(source, logoUrls))
+                        .map(source -> ResourceCardResponse.from(source, images))
                         .toList()
         );
     }

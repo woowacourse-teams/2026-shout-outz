@@ -50,6 +50,7 @@ class ResourceHttpApiRecentTest {
                 new ResourceCardResponse(1201L, "blog-post", "CSR, SSR, SSG, ISR..? 난 ISR로 할래 #1",
                         "https://rilog.kr/@rilog/posts/219", "정기 콘텐츠를 재배포 없이 갱신하는 구조를 설계할 때 참고하기 좋아요.",
                         Instant.parse("2026-10-20T01:00:00Z"), "github",
+                        "https://www.rilog.kr/brand/favicon.svg",
                         new ResourceCardResponse.Team("Rilog.", "rilog", 44L, "https://cdn.example.com/media/project/44/thumbnail"))));
 
         mockMvc.perform(get("/api/v1/resources/recent").queryParam("kind", "BLOG").queryParam("size", "4"))
@@ -82,6 +83,7 @@ class ResourceHttpApiRecentTest {
                                         fieldWithPath("data[].summary").type(STRING).description("한줄 소개"),
                                         fieldWithPath("data[].publishedAt").type(STRING).description("원문 게시 시각(UTC)"),
                                         fieldWithPath("data[].platform").type(STRING).description("블로그 플랫폼. 블로그가 아니면 null").optional(),
+                                        fieldWithPath("data[].faviconUrl").type(STRING).description("블로그 출처 아이콘 주소. tistory, velog, rilog 는 플랫폼 공식 아이콘, 그 밖의 블로그(개인 도메인 등)는 원문 페이지의 파비콘. 블로그가 아니거나 아직 수집 전이면 null").optional(),
                                         fieldWithPath("data[].team").type(OBJECT).description("자료를 만든 팀. 없으면 null").optional(),
                                         fieldWithPath("data[].team.name").type(STRING).description("팀 이름").optional(),
                                         fieldWithPath("data[].team.projectSlug").type(STRING)

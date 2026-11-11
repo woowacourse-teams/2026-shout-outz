@@ -6,7 +6,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
-import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardImages;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceDetail;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceExperience;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceLinkPreview;
@@ -33,7 +33,7 @@ class ResourceQueryServiceDetailTest {
     private ResourceDetailQueryRepository resourceDetailQueryRepository;
 
     @Mock
-    private ResourceCardLogoResolver resourceCardLogoResolver;
+    private ResourceCardImageResolver resourceCardImageResolver;
 
     @InjectMocks
     private ResourceQueryService resourceQueryService;
@@ -43,8 +43,8 @@ class ResourceQueryServiceDetailTest {
     void findsDetail() {
         ResourceCard card = new ResourceCard(101L, "github-pr", "제목", "https://example.com", "소개", null, null,
                 new ResourceCard.Team("페스타북", "festabook", 31L));
-        given(resourceCardLogoResolver.resolve(List.of(card))).willReturn(new ResourceCardLogoUrls(
-                Map.of(31L, URI.create("https://cdn.example.com/media/project/31/thumbnail"))));
+        given(resourceCardImageResolver.resolve(List.of(card))).willReturn(new ResourceCardImages(
+                Map.of(31L, URI.create("https://cdn.example.com/media/project/31/thumbnail")), Map.of()));
         given(resourceDetailQueryRepository.findById(101L)).willReturn(Optional.of(new ResourceDetail(
                 card, "problem_solving", new ResourceTopic("concurrency", "동시성 제어/락"),
                 List.of("배울 점"), List.of("Redis", "Redisson"), List.of(new ResourceExperience("문제", null, "해결", null, List.of("Redis"))),
