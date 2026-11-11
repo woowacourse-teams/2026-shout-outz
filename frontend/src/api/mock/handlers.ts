@@ -1,6 +1,9 @@
 import { http, HttpResponse } from 'msw';
 
 import { adminHandlers } from '@/api/mock/admin';
+import { exploreHandlers } from '@/api/mock/explore';
+import { jobPostingHandlers } from '@/api/mock/job-posting';
+import { projectExploreHandlers, projectHasTopic, topicNameOf } from '@/api/mock/project-explore';
 import { homeBanners } from '@/api/mock/home';
 import { getFeedList } from '@/api/mock/feed';
 import { getNewsDetail, getNewsList } from '@/api/mock/news';
@@ -289,11 +292,18 @@ export const handlers = [
       },
     });
   }),
-  http.get('/api/v1/projects', () =>
-    HttpResponse.json({
-      status: 'success',
-      // 상세 페이지용 JSON을 목록 API 응답 형식으로 변환한다.
-      data: projects.map(({ id, name, tagline, cohort, likeCount, techTags, members }) => ({
+  http.get('/api/v1/projects', ({ request }) => {
+    const searchParams = new URL(request.url).searchParams;
+    const keyword = searchParams.get('keyword')?.trim().toLowerCase() ?? '';
+    // 탐색 화면 프로젝트 탭의 기술 주제 필터
+    const topicId = searchParams.get('topicId');
+    const topic = topicId ? topicNameOf(topicId) : null;
+    const size = Number(searchParams.get('size') ?? projects.length);
+    const offset = Number(searchParams.get('cursor') ?? 0);
+
+    // 상세 페이지용 JSON을 목록 API 응답 형식으로 변환한다.
+    const list = projects
+      .map(({ id, name, tagline, cohort, likeCount, techTags, members }) => ({
         slug: id,
         title: name,
         tagline,
@@ -304,10 +314,29 @@ export const handlers = [
         techTags: techTags.map((displayName, tagIndex) => ({ id: tagIndex + 1, displayName })),
         members: members.map(toProjectMember),
         ...updatedProjects.get(id),
-      })),
-      meta: { nextCursor: null, hasNext: false, totalCount: projects.length },
-    }),
-  ),
+      }))
+      .filter(
+        (project) =>
+          !keyword ||
+          [project.title, project.tagline, ...project.techTags.map((tag) => tag.displayName)].some(
+            (text) => text.toLowerCase().includes(keyword),
+          ),
+      )
+      .filter((project) => !topic || projectHasTopic(project.slug, topic));
+    if (searchParams.get('sort') === 'POPULAR') list.sort((a, b) => b.likeCount - a.likeCount);
+
+    const page = list.slice(offset, offset + size);
+    const hasNext = offset + size < list.length;
+    return HttpResponse.json({
+      status: 'success',
+      data: page,
+      meta: {
+        nextCursor: hasNext ? String(offset + size) : null,
+        hasNext,
+        totalCount: list.length,
+      },
+    });
+  }),
 
   http.get('/api/v1/news', ({ request }) => {
     const searchParams = new URL(request.url).searchParams;
@@ -436,4 +465,7 @@ export const handlers = [
 
   ...adminHandlers,
   ...notificationHandlers,
+  ...exploreHandlers,
+  ...jobPostingHandlers,
+  ...projectExploreHandlers,
 ];

@@ -35,6 +35,14 @@ import org.hibernate.validator.constraints.CodePointLength;
  *     <li>null 전달: 썸네일 제거</li>
  * </ul>
  *
+ * <p>logoImageId도 필드의 존재 여부에 따라 다음처럼 처리한다.
+ * 이 필드를 모르는 이전 화면이 수정 요청을 보내도 등록한 로고가 지워지지 않게 하기 위해서다.</p>
+ * <ul>
+ *     <li>필드 생략: 기존 로고 유지</li>
+ *     <li>미디어 ID 전달: 로고 교체</li>
+ *     <li>null 전달: 로고 제거</li>
+ * </ul>
+ *
  * <p>teamBlogUrls도 필드의 존재 여부에 따라 다음처럼 처리한다.
  * 이 필드를 모르는 이전 화면이 수정 요청을 보내도 등록한 블로그가 지워지지 않게 하기 위해서다.</p>
  * <ul>
@@ -62,6 +70,9 @@ public final class ProjectUpdateRequest {
 
     private Long thumbnailImageId;
     private boolean thumbnailImageIdProvided;
+
+    private Long logoImageId;
+    private boolean logoImageIdProvided;
 
     @NotBlank(message = "githubRepositoryUrl은 필수입니다.")
     @CodePointLength(max = 2_048, message = "githubRepositoryUrl은 2,048자를 초과할 수 없습니다.")
@@ -105,7 +116,7 @@ public final class ProjectUpdateRequest {
     }
 
     /**
-     * 테스트와 내부 호출에서 사용하는 생성자. teamBlogUrls는 생략한 것으로 보고 기존 값을 유지한다.
+     * 테스트와 내부 호출에서 사용하는 생성자. logoImageId와 teamBlogUrls는 생략한 것으로 보고 기존 값을 유지한다.
      * 생성자에 thumbnailImageId를 전달한 것은 명시적 입력으로 간주한다.
      */
     public ProjectUpdateRequest(
@@ -194,6 +205,15 @@ public final class ProjectUpdateRequest {
         return thumbnailImageIdProvided;
     }
 
+    public Long logoImageId() {
+        return logoImageId;
+    }
+
+    @JsonIgnore
+    public boolean isLogoImageIdProvided() {
+        return logoImageIdProvided;
+    }
+
     /**
      * 배포 URL 이 없으면 운영 중일 수 없다. 도메인도 같은 규칙을 내부 불변식으로 검사하지만,
      * 사용자 입력은 API 레이어에서 400으로 거른다. 오류 응답의 field 는 serviceStatusValid 다.
@@ -257,6 +277,12 @@ public final class ProjectUpdateRequest {
     public void setThumbnailImageId(Long thumbnailImageId) {
         this.thumbnailImageId = thumbnailImageId;
         this.thumbnailImageIdProvided = true;
+    }
+
+    @JsonSetter(value = "logoImageId", nulls = Nulls.SET)
+    public void setLogoImageId(Long logoImageId) {
+        this.logoImageId = logoImageId;
+        this.logoImageIdProvided = true;
     }
 
     public void setGithubRepositoryUrl(String githubRepositoryUrl) {

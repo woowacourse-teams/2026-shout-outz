@@ -200,18 +200,18 @@ class JobPostingServiceTest {
     void findsRecommendations() {
         given(posting(MatchingStatus.READY, null, null));
         when(queryRepository.findRecommendations(11L)).thenReturn(List.of(
-                new RecommendedResource(RecommendationVerdict.MATCH, "github-pr", "스레드 분리", "https://github.com/pr/1",
+                new RecommendedResource(1L, RecommendationVerdict.MATCH, "github-pr", "스레드 분리", "https://github.com/pr/1",
                         "스레드풀을 나눈 설계를 볼 수 있어요.", CREATED_AT, "implementation", "아맞다", "크루"),
-                new RecommendedResource(RecommendationVerdict.PARTIAL, "youtube-tekotalk", "호돌의 Spring WebFlux",
+                new RecommendedResource(2L, RecommendationVerdict.PARTIAL, "youtube-tekotalk", "호돌의 Spring WebFlux",
                         "https://youtube.com/watch?v=1", "리액티브 웹의 개념을 배울 수 있어요.", null, null, null, "호돌")));
 
         List<JobRequirementRecommendationResponse> response = service.findRecommendations(JOB_POSTING_ID, 11L);
 
         assertThat(response).containsExactly(
-                new JobRequirementRecommendationResponse(RecommendationVerdict.MATCH, "github-pr", "스레드 분리",
+                new JobRequirementRecommendationResponse(1L, RecommendationVerdict.MATCH, "github-pr", "스레드 분리",
                         "https://github.com/pr/1", "스레드풀을 나눈 설계를 볼 수 있어요.", CREATED_AT, "implementation",
                         "아맞다", "크루"),
-                new JobRequirementRecommendationResponse(RecommendationVerdict.PARTIAL, "youtube-tekotalk",
+                new JobRequirementRecommendationResponse(2L, RecommendationVerdict.PARTIAL, "youtube-tekotalk",
                         "호돌의 Spring WebFlux", "https://youtube.com/watch?v=1", "리액티브 웹의 개념을 배울 수 있어요.",
                         null, null, null, "호돌"));
     }

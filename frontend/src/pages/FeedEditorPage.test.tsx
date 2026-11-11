@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 type User = ReturnType<typeof userEvent.setup>;
@@ -79,17 +79,12 @@ test.each(['POST', 'QUESTION'] as const)(
     const user = userEvent.setup();
     show(undefined, feedType);
     await fillTitle(user);
-    await user.type(screen.getByRole('textbox', { name: '피드 내용' }), '익명 작성 내용');
-    await user.click(screen.getByRole('combobox', { name: '카테고리' }));
+    await user.type(screen.getByRole('textbox', { name: '내용' }), '익명 작성 내용');
     await user.click(
-      screen.getByRole('option', { name: feedType === 'QUESTION' ? '진로 고민' : '백엔드' }),
+      screen.getByRole('radio', { name: feedType === 'QUESTION' ? '진로 고민' : '백엔드' }),
     );
     await user.click(screen.getByRole('checkbox', { name: '익명으로 쓰기' }));
-    await user.click(
-      screen.getByRole('button', {
-        name: feedType === 'QUESTION' ? '질문 등록하기' : '피드 등록하기',
-      }),
-    );
+    await user.click(screen.getByRole('button', { name: '등록하기' }));
     await waitFor(() =>
       expect(body).toEqual(expect.objectContaining({ feedType, isAnonymous: true })),
     );
@@ -98,22 +93,16 @@ test.each(['POST', 'QUESTION'] as const)(
   },
 );
 
-test('실제 작성자를 표시하고 등록한 피드를 상세와 목록에서 조회할 수 있다', async () => {
+test('등록한 피드를 상세와 목록에서 조회할 수 있다', async () => {
   const user = userEvent.setup();
   const { onSaved } = show();
-  const input = await screen.findByRole('textbox', { name: '피드 내용' });
-  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
-  await user.click(screen.getByRole('option', { name: '백엔드' }));
-  // 작성자 표기가 한 문자열에서 이름 + 역할 분리로 바뀌었다(FeedAuthor).
-  // 헤더에도 내 이름이 있으므로 폼의 작성자 블록으로 범위를 좁힌다.
-  const author = screen.getByRole('link', { name: '정우진 프로필 보기' });
-  expect(within(author).getByText('정우진')).toBeInTheDocument();
-  expect(within(author).getByText('8기 백엔드 크루')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeDisabled();
+  const input = await screen.findByRole('textbox', { name: '내용' });
+  await user.click(screen.getByRole('radio', { name: '백엔드' }));
+  expect(screen.getByRole('button', { name: '등록하기' })).toBeDisabled();
   await fillTitle(user, '새 피드 제목');
   await user.type(input, '새로운 기술 이야기');
-  await user.click(screen.getByRole('button', { name: '피드 등록하기' }));
-  await screen.findByRole('button', { name: '피드 등록하기' });
+  await user.click(screen.getByRole('button', { name: '등록하기' }));
+  await screen.findByRole('button', { name: '등록하기' });
   expect(onSaved).toHaveBeenCalledWith(100);
   expect((await fetchFeed(100)).content).toBe('새로운 기술 이야기');
   expect((await fetchFeeds({ sort: 'LATEST', size: 20 })).data[0]?.feedId).toBe(100);
@@ -134,12 +123,11 @@ test('실패하면 서버 메시지와 입력 내용을 유지한다', async () 
   );
   const user = userEvent.setup();
   const { onSaved } = show();
-  const input = await screen.findByRole('textbox', { name: '피드 내용' });
-  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
-  await user.click(screen.getByRole('option', { name: '백엔드' }));
+  const input = await screen.findByRole('textbox', { name: '내용' });
+  await user.click(screen.getByRole('radio', { name: '백엔드' }));
   await fillTitle(user);
   await user.type(input, '보존할 내용');
-  await user.click(screen.getByRole('button', { name: '피드 등록하기' }));
+  await user.click(screen.getByRole('button', { name: '등록하기' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(
     '활성 크루 또는 코치만 작성할 수 있습니다.',
   );
@@ -150,16 +138,15 @@ test('실패하면 서버 메시지와 입력 내용을 유지한다', async () 
 test('Unicode 5000자까지 허용하고 초과하면 등록을 막는다', async () => {
   const user = userEvent.setup();
   show();
-  const input = await screen.findByRole('textbox', { name: '피드 내용' });
-  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
-  await user.click(screen.getByRole('option', { name: '백엔드' }));
+  const input = await screen.findByRole('textbox', { name: '내용' });
+  await user.click(screen.getByRole('radio', { name: '백엔드' }));
   await fillTitle(user);
   await user.click(input);
   await user.paste('😀'.repeat(5000));
-  expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '등록하기' })).toBeEnabled();
   await user.paste('가');
   expect(screen.getByRole('alert')).toHaveTextContent('본문은 5000자 이하로 입력해 주세요.');
-  expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '등록하기' })).toBeDisabled();
 });
 
 test('취소하면 취소 콜백을 호출한다', async () => {
@@ -179,7 +166,9 @@ test('비로그인 사용자는 폼 대신 로그인 안내를 본다', async ()
     ),
   );
   show();
-  expect(await screen.findByRole('button', { name: 'GitHub 로그인' })).toBeEnabled();
+  expect(await screen.findByRole('heading', { name: '로그인이 필요해요' })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'GitHub로 로그인' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '다음에 할게요' })).toBeVisible();
   expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 });
 
@@ -187,12 +176,11 @@ test('카테고리가 없으면 등록을 막고 EVENT는 선택지에서 제외
   const user = userEvent.setup();
   show();
   await fillTitle(user);
-  await user.type(await screen.findByRole('textbox', { name: '피드 내용' }), '내용');
-  expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeDisabled();
-  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
-  expect(screen.queryByRole('option', { name: '테코드톡' })).not.toBeInTheDocument();
-  await user.click(screen.getByRole('option', { name: '백엔드' }));
-  expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeEnabled();
+  await user.type(await screen.findByRole('textbox', { name: '내용' }), '내용');
+  expect(screen.getByRole('button', { name: '등록하기' })).toBeDisabled();
+  expect(screen.queryByRole('radio', { name: '테코드톡' })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('radio', { name: '백엔드' }));
+  expect(screen.getByRole('button', { name: '등록하기' })).toBeEnabled();
 });
 
 test('등록 중에는 중복 요청을 보내지 않는다', async () => {
@@ -214,11 +202,10 @@ test('등록 중에는 중복 요청을 보내지 않는다', async () => {
   const user = userEvent.setup();
   show();
   await fillTitle(user);
-  await user.type(await screen.findByRole('textbox', { name: '피드 내용' }), '내용');
-  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
-  await user.click(screen.getByRole('option', { name: '백엔드' }));
+  await user.type(await screen.findByRole('textbox', { name: '내용' }), '내용');
+  await user.click(screen.getByRole('radio', { name: '백엔드' }));
   try {
-    await user.dblClick(screen.getByRole('button', { name: '피드 등록하기' }));
+    await user.dblClick(screen.getByRole('button', { name: '등록하기' }));
     await waitFor(() => expect(requests).toBe(1));
     expect(screen.getByRole('button', { name: '저장 중…' })).toBeDisabled();
   } finally {
@@ -249,13 +236,12 @@ test('목록에서 작성 페이지 진입 후 등록하면 생성한 상세 페
   await user.click(await screen.findByRole('button', { name: '글쓰기' }));
   await fillTitle(user);
   await user.type(
-    await screen.findByRole('textbox', { name: '피드 내용' }),
+    await screen.findByRole('textbox', { name: '내용' }),
     '등록 후 상세에서 확인할 내용',
   );
   expect(router.state.location.pathname).toBe('/community/new');
-  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
-  await user.click(screen.getByRole('option', { name: '백엔드' }));
-  await user.click(screen.getByRole('button', { name: '피드 등록하기' }));
+  await user.click(screen.getByRole('radio', { name: '백엔드' }));
+  await user.click(screen.getByRole('button', { name: '등록하기' }));
   await screen.findByText('등록 후 상세에서 확인할 내용');
   expect(router.state.location.pathname).toBe('/community/100');
 });
@@ -305,14 +291,10 @@ test('질문 탭에서 질문 전용 카테고리로 작성하고 질문 목록�
   await user.click(screen.getByRole('button', { name: '질문하기' }));
   expect(router.state.location.search.type).toBe('QUESTION');
   await fillTitle(user, '진로 질문');
-  await user.type(
-    await screen.findByRole('textbox', { name: '피드 내용' }),
-    '어떤 방향이 좋을까요?',
-  );
-  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
-  expect(screen.queryByRole('option', { name: '백엔드' })).not.toBeInTheDocument();
-  await user.click(screen.getByRole('option', { name: '진로 고민' }));
-  await user.click(screen.getByRole('button', { name: '질문 등록하기' }));
+  await user.type(await screen.findByRole('textbox', { name: '내용' }), '어떤 방향이 좋을까요?');
+  expect(screen.queryByRole('radio', { name: '백엔드' })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('radio', { name: '진로 고민' }));
+  await user.click(screen.getByRole('button', { name: '등록하기' }));
   await waitFor(() => expect(router.state.location.pathname).toBe('/community/100'));
   expect(await fetchFeed(100)).toMatchObject({
     feedType: 'QUESTION',
@@ -351,12 +333,11 @@ test.each([
   });
   const user = userEvent.setup();
   await fillTitle(user, '진로 질문');
-  const content = await screen.findByRole('textbox', { name: '피드 내용' });
+  const content = await screen.findByRole('textbox', { name: '내용' });
   await user.clear(content);
   await user.type(content, '어떤 방향이 좋을까요?');
-  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
-  await user.click(screen.getByRole('option', { name: '진로 고민' }));
-  await user.click(screen.getByRole('button', { name: '질문 등록하기' }));
+  await user.click(screen.getByRole('radio', { name: '진로 고민' }));
+  await user.click(screen.getByRole('button', { name: '등록하기' }));
   await waitFor(() => expect(router.state.location.pathname).toBe('/community/100'));
   await screen.findByRole('link', { name: '목록으로' });
 
@@ -368,10 +349,10 @@ test.each([
 test('수정은 기존 본문과 카테고리를 채우고 저장 결과를 상세에 반영한다', async () => {
   const user = userEvent.setup();
   const { onSaved } = show(1);
-  const input = await screen.findByRole('textbox', { name: '피드 내용' });
+  const input = await screen.findByRole('textbox', { name: '내용' });
   expect(input).toHaveValue(mockFeeds[0]!.content);
   expect(screen.getByRole('checkbox', { name: '익명으로 쓰기' })).toBeChecked();
-  expect(screen.getByRole('combobox', { name: '카테고리' })).toHaveTextContent('백엔드');
+  expect(screen.getByRole('radio', { name: '백엔드' })).toBeChecked();
   await user.clear(input);
   await user.type(input, '수정한 본문');
   await user.click(screen.getByRole('button', { name: '수정 완료' }));
@@ -392,7 +373,7 @@ test('수정 실패 시 본문을 보존하고 API 메시지를 표시한다', a
   );
   const user = userEvent.setup();
   const { onSaved } = show(1);
-  const input = await screen.findByRole('textbox', { name: '피드 내용' });
+  const input = await screen.findByRole('textbox', { name: '내용' });
   await user.clear(input);
   await user.type(input, '보존할 수정 내용');
   await user.click(screen.getByRole('button', { name: '수정 완료' }));
@@ -462,7 +443,7 @@ test('본인 글 메뉴에서 수정하고 저장하면 상세 페이지로 돌�
   const user = userEvent.setup();
   await user.click(await screen.findByRole('button', { name: '피드 메뉴' }));
   await user.click(screen.getByRole('menuitem', { name: '수정' }));
-  const input = await screen.findByRole('textbox', { name: '피드 내용' });
+  const input = await screen.findByRole('textbox', { name: '내용' });
   expect(router.state.location.pathname).toBe('/community/1/edit');
   await user.clear(input);
   await user.type(input, '수정 페이지에서 저장한 내용');
@@ -544,33 +525,31 @@ test('제목이 비면 등록을 막는다', async () => {
   const user = userEvent.setup();
   show();
 
-  await user.type(await screen.findByRole('textbox', { name: '피드 내용' }), '내용');
-  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
-  await user.click(screen.getByRole('option', { name: '백엔드' }));
-  expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeDisabled();
+  await user.type(await screen.findByRole('textbox', { name: '내용' }), '내용');
+  await user.click(screen.getByRole('radio', { name: '백엔드' }));
+  expect(screen.getByRole('button', { name: '등록하기' })).toBeDisabled();
 
   await fillTitle(user);
 
-  expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '등록하기' })).toBeEnabled();
 });
 
 test('제목은 Unicode 100자까지 허용하고 초과하면 등록을 막는다', async () => {
   const user = userEvent.setup();
   show();
 
-  await user.type(await screen.findByRole('textbox', { name: '피드 내용' }), '내용');
-  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
-  await user.click(screen.getByRole('option', { name: '백엔드' }));
+  await user.type(await screen.findByRole('textbox', { name: '내용' }), '내용');
+  await user.click(screen.getByRole('radio', { name: '백엔드' }));
 
   const title = await screen.findByRole('textbox', { name: '제목' });
   await user.click(title);
   await user.paste('😀'.repeat(100));
-  expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '등록하기' })).toBeEnabled();
 
   await user.paste('가');
 
   expect(screen.getByRole('alert')).toHaveTextContent('제목은 100자 이하로 입력해 주세요.');
-  expect(screen.getByRole('button', { name: '피드 등록하기' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '등록하기' })).toBeDisabled();
 });
 
 test('제목 앞뒤 공백은 잘라서 보낸다', async () => {
@@ -585,10 +564,9 @@ test('제목 앞뒤 공백은 잘라서 보낸다', async () => {
   show();
 
   await fillTitle(user, '  제목에 공백  ');
-  await user.type(await screen.findByRole('textbox', { name: '피드 내용' }), '내용');
-  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
-  await user.click(screen.getByRole('option', { name: '백엔드' }));
-  await user.click(screen.getByRole('button', { name: '피드 등록하기' }));
+  await user.type(await screen.findByRole('textbox', { name: '내용' }), '내용');
+  await user.click(screen.getByRole('radio', { name: '백엔드' }));
+  await user.click(screen.getByRole('button', { name: '등록하기' }));
 
   await waitFor(() => expect(body).toHaveProperty('title', '제목에 공백'));
 });
@@ -608,17 +586,15 @@ test('제목·본문·카테고리가 하나라도 비면 등록 버튼이 잠�
   const user = userEvent.setup();
   show();
 
-  const submit = await screen.findByRole('button', { name: '피드 등록하기' });
+  const submit = await screen.findByRole('button', { name: '등록하기' });
   expect(submit).toBeDisabled();
 
   await fillTitle(user);
   expect(submit).toBeDisabled();
 
-  await user.type(screen.getByRole('textbox', { name: '피드 내용' }), '내용');
+  await user.type(screen.getByRole('textbox', { name: '내용' }), '내용');
   expect(submit).toBeDisabled();
-
-  await user.click(screen.getByRole('combobox', { name: '카테고리' }));
-  await user.click(screen.getByRole('option', { name: '백엔드' }));
+  await user.click(screen.getByRole('radio', { name: '백엔드' }));
   expect(submit).toBeEnabled();
 
   // 하나라도 지우면 다시 잠긴다.

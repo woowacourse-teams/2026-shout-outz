@@ -12,21 +12,21 @@ export function FeedDetailBody({ feed, author }: { feed: Feed; author?: ReactNod
 
   return (
     <>
-      <p className="text-xs leading-5 font-medium text-gray-600">
+      <p className="text-xs font-semibold text-gray-500">
         {feed.categories.map((category) => category.displayName).join(' · ') ||
           (feed.feedType === 'QUESTION' ? '질문' : '이야기')}
       </p>
-      <h1 className="mt-3 text-2xl leading-snug font-bold tracking-tight break-words text-gray-900 md:text-3xl">
+      <h1 className="mt-2.5 text-3xl leading-tight font-extrabold tracking-tight break-words text-gray-900">
         {feed.feedType === 'QUESTION' && <span className="text-primary-600 mr-2">Q.</span>}
         {feed.title}
       </h1>
-      {author && <div className="mt-7">{author}</div>}
+      {author && <div className="mt-5 border-b border-gray-100 pb-5">{author}</div>}
       {/* 글자 크기는 노션 기준: 본문 16px, 제목 30/24/20px, 코드 85% */}
-      <div className="mt-7 space-y-6 border-t border-gray-100 pt-8 text-base leading-normal break-words text-gray-600 [&_code]:text-[85%] [&_h1]:text-[1.875rem] [&_h1]:leading-[1.3] [&_h1]:font-bold [&_h1]:text-gray-900 [&_h2]:text-2xl [&_h2]:leading-[1.3] [&_h2]:font-bold [&_h2]:text-gray-900 [&_h3]:text-xl [&_h3]:leading-[1.3] [&_h3]:font-bold [&_h3]:text-gray-900">
+      <div className="mt-7 space-y-6 text-base leading-7 break-words text-gray-600 [&_code]:text-[85%] [&_h1]:text-[1.875rem] [&_h1]:leading-[1.3] [&_h1]:font-bold [&_h1]:text-gray-900 [&_h2]:text-2xl [&_h2]:leading-[1.3] [&_h2]:font-bold [&_h2]:text-gray-900 [&_h3]:text-xl [&_h3]:leading-[1.3] [&_h3]:font-bold [&_h3]:text-gray-900">
         <FeedMarkdown content={feed.content} />
       </div>
       {linkPreview?.url && (
-        <div className="mt-4">
+        <div className="mt-5">
           <LinkPreview
             {...linkPreview}
             url={linkPreview.url}

@@ -8,6 +8,7 @@ import java.time.Instant;
  * 역량별 추천 자료 카드 한 장. source, contentType 은 코드 그대로 주고 화면 문구는 프론트가 정한다.
  */
 public record JobRequirementRecommendationResponse(
+        long resourceId,
         RecommendationVerdict verdict,
         String source,
         String title,
@@ -21,6 +22,7 @@ public record JobRequirementRecommendationResponse(
 
     public static JobRequirementRecommendationResponse from(RecommendedResource resource) {
         return new JobRequirementRecommendationResponse(
+                resource.resourceId(),
                 resource.verdict(),
                 resource.source(),
                 resource.title(),

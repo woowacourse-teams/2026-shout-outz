@@ -370,3 +370,48 @@ describe('버그 제보', () => {
     expect(body).toEqual({ status: 'COMPLETED' });
   });
 });
+
+describe('자료 제보', () => {
+  const findReports = async () =>
+    within(await screen.findByRole('list', { name: '자료 제보 목록' })).getAllByRole('listitem');
+
+  test('접수된 필요 없어요 제보와 빠진 자료 제보를 함께 본다', async () => {
+    signInAs('ADMIN');
+    renderRoute('/admin?tab=resource-reports');
+
+    const reports = await findReports();
+    expect(reports).toHaveLength(2);
+    expect(reports[0]).toHaveTextContent('필요 없어요');
+    expect(within(reports[0]!).getByRole('link', { name: /린트 설정 정리/ })).toHaveAttribute(
+      'href',
+      'https://github.com/woowacourse-teams/2026-dropit/pull/89',
+    );
+    expect(reports[0]).toHaveTextContent('설정 파일만 바꾼 PR이라');
+    expect(reports[1]).toHaveTextContent('빠진 자료');
+    expect(within(reports[1]!).getByRole('link', { name: /wiki/ })).toBeInTheDocument();
+  });
+
+  test('종류를 고르면 그 종류의 제보만 본다', async () => {
+    const user = userEvent.setup();
+    signInAs('ADMIN');
+    renderRoute('/admin?tab=resource-reports');
+    await findReports();
+
+    await user.click(screen.getByRole('tab', { name: '빠진 자료' }));
+
+    await waitFor(async () => expect(await findReports()).toHaveLength(1));
+    expect((await findReports())[0]).toHaveTextContent('#32');
+  });
+
+  test('반영하면 접수 목록에서 빠진다', async () => {
+    const user = userEvent.setup();
+    signInAs('ADMIN');
+    renderRoute('/admin?tab=resource-reports');
+
+    const [first] = await findReports();
+    await user.click(within(first!).getByRole('button', { name: '반영' }));
+
+    await waitFor(async () => expect(await findReports()).toHaveLength(1));
+    expect((await findReports())[0]).toHaveTextContent('#32');
+  });
+});

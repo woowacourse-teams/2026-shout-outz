@@ -9,9 +9,27 @@
     "likeCount": 84,
     "bookmarkCount": 28,
     "members": [
-      { "userId": 1, "displayName": "정우진", "cohort": 8, "track": "BE", "avatarUrl": null },
-      { "userId": 4, "displayName": "두리", "cohort": 8, "track": "FE", "avatarUrl": null },
-      { "userId": 5, "displayName": "재키", "cohort": 8, "track": "BE", "avatarUrl": null }
+      {
+        "userId": 1,
+        "displayName": "정우진",
+        "cohort": 8,
+        "track": "BE",
+        "avatarUrl": null
+      },
+      {
+        "userId": 4,
+        "displayName": "두리",
+        "cohort": 8,
+        "track": "FE",
+        "avatarUrl": null
+      },
+      {
+        "userId": 5,
+        "displayName": "재키",
+        "cohort": 8,
+        "track": "BE",
+        "avatarUrl": null
+      }
     ],
     "descriptionMd": "## 프로젝트 소개\n\n작은 서비스를 모아보고 바로 실행할 수 있는 아카이빙 서비스입니다.\n\n### 주요 기능\n\n- 프로젝트 탐색\n- 제작자와 기술 스택 소개\n\n<details><summary>구현 내용</summary>\n\nReact와 TanStack Router를 사용합니다.\n\n</details>\n\n| 영역 | 기술 |\n| --- | --- |\n| 화면 | React |\n| 데이터 | TanStack Query |",
     "name": "Dropit",
@@ -33,8 +51,20 @@
     "likeCount": 12,
     "bookmarkCount": 3,
     "members": [
-      { "userId": 2, "displayName": "고제성", "cohort": 6, "track": "FE", "avatarUrl": null },
-      { "userId": 6, "displayName": "황호익", "cohort": 6, "track": "BE", "avatarUrl": null }
+      {
+        "userId": 2,
+        "displayName": "고제성",
+        "cohort": 6,
+        "track": "FE",
+        "avatarUrl": null
+      },
+      {
+        "userId": 6,
+        "displayName": "황호익",
+        "cohort": 6,
+        "track": "BE",
+        "avatarUrl": null
+      }
     ],
     "name": "Shout-outz",
     "tagline": "팀원에게 감사와 응원을 남기는 서비스",
@@ -55,7 +85,13 @@
     "likeCount": 7,
     "bookmarkCount": 2,
     "members": [
-      { "userId": 3, "displayName": "김리뷰", "cohort": 6, "track": "BE", "avatarUrl": null }
+      {
+        "userId": 3,
+        "displayName": "김리뷰",
+        "cohort": 6,
+        "track": "BE",
+        "avatarUrl": null
+      }
     ],
     "name": "Code Review Bot",
     "tagline": "PR을 자동으로 리뷰해주는 도우미",
@@ -64,6 +100,286 @@
     "maker": {
       "name": "김리뷰",
       "bio": "자동화와 개발자 경험 개선에 관심이 많습니다."
+    }
+  },
+  {
+    "id": "jachwi-sunbae",
+    "cohort": 8,
+    "teamName": "자취선배 팀",
+    "serviceStatus": "ENDED",
+    "deploymentUrl": "https://example.com/jachwi-sunbae",
+    "githubRepositoryUrl": "https://github.com/woowacourse-teams/jachwi-sunbae",
+    "likeCount": 31,
+    "bookmarkCount": 10,
+    "members": [
+      {
+        "userId": 101,
+        "displayName": "자취선배 크루",
+        "cohort": 8,
+        "track": "BE",
+        "avatarUrl": null
+      }
+    ],
+    "descriptionMd": "## 프로젝트 소개\n\n자취할 동네를 찾고, 직접 본 방들을 편하게 기록하고 비교하는 서비스",
+    "name": "자취선배",
+    "tagline": "자취할 동네를 찾고, 직접 본 방들을 편하게 기록하고 비교하는 서비스",
+    "description": "자취할 동네를 찾고, 직접 본 방들을 편하게 기록하고 비교하는 서비스",
+    "techTags": ["Spring Boot", "Java", "React"],
+    "maker": {
+      "name": "우아한테크코스",
+      "bio": "자취선배을 만든 크루입니다."
+    }
+  },
+  {
+    "id": "devica",
+    "cohort": 8,
+    "teamName": "Devica 팀",
+    "serviceStatus": "OPERATING",
+    "deploymentUrl": "https://example.com/devica",
+    "githubRepositoryUrl": "https://github.com/woowacourse-teams/devica",
+    "likeCount": 22,
+    "bookmarkCount": 7,
+    "members": [
+      {
+        "userId": 102,
+        "displayName": "Devica 크루",
+        "cohort": 8,
+        "track": "BE",
+        "avatarUrl": null
+      }
+    ],
+    "descriptionMd": "## 프로젝트 소개\n\n전자제품을 구매할 때 사용 목적에 맞는 제품을 선택하기 어려운 사용자를 돕습니다.",
+    "name": "Devica",
+    "tagline": "전자제품을 구매할 때 사용 목적에 맞는 제품을 선택하기 어려운 사용자를 돕습니다.",
+    "description": "전자제품을 구매할 때 사용 목적에 맞는 제품을 선택하기 어려운 사용자를 돕습니다.",
+    "techTags": ["Spring Boot", "MySQL", "React"],
+    "maker": {
+      "name": "우아한테크코스",
+      "bio": "Devica을 만든 크루입니다."
+    }
+  },
+  {
+    "id": "knot",
+    "cohort": 8,
+    "teamName": "Knot 팀",
+    "serviceStatus": "ENDED",
+    "deploymentUrl": "https://example.com/knot",
+    "githubRepositoryUrl": "https://github.com/woowacourse-teams/knot",
+    "likeCount": 15,
+    "bookmarkCount": 5,
+    "members": [
+      {
+        "userId": 103,
+        "displayName": "Knot 크루",
+        "cohort": 8,
+        "track": "BE",
+        "avatarUrl": null
+      }
+    ],
+    "descriptionMd": "## 프로젝트 소개\n\n팀의 결정을 모두의 기억으로, Knot",
+    "name": "Knot",
+    "tagline": "팀의 결정을 모두의 기억으로, Knot",
+    "description": "팀의 결정을 모두의 기억으로, Knot",
+    "techTags": ["Kotlin", "Spring Boot"],
+    "maker": {
+      "name": "우아한테크코스",
+      "bio": "Knot을 만든 크루입니다."
+    }
+  },
+  {
+    "id": "jarihana",
+    "cohort": 8,
+    "teamName": "자리하나? 팀",
+    "serviceStatus": "ENDED",
+    "deploymentUrl": "https://example.com/jarihana",
+    "githubRepositoryUrl": "https://github.com/woowacourse-teams/jarihana",
+    "likeCount": 9,
+    "bookmarkCount": 3,
+    "members": [
+      {
+        "userId": 104,
+        "displayName": "자리하나? 크루",
+        "cohort": 8,
+        "track": "BE",
+        "avatarUrl": null
+      }
+    ],
+    "descriptionMd": "## 프로젝트 소개\n\n부트캠프 간 네트워킹 커뮤니티 서비스",
+    "name": "자리하나?",
+    "tagline": "부트캠프 간 네트워킹 커뮤니티 서비스",
+    "description": "부트캠프 간 네트워킹 커뮤니티 서비스",
+    "techTags": ["React", "TypeScript", "Spring Boot"],
+    "maker": {
+      "name": "우아한테크코스",
+      "bio": "자리하나?을 만든 크루입니다."
+    }
+  },
+  {
+    "id": "yeogidam",
+    "cohort": 7,
+    "teamName": "여기담 팀",
+    "serviceStatus": "OPERATING",
+    "deploymentUrl": "https://example.com/yeogidam",
+    "githubRepositoryUrl": "https://github.com/woowacourse-teams/yeogidam",
+    "likeCount": 40,
+    "bookmarkCount": 13,
+    "members": [
+      {
+        "userId": 105,
+        "displayName": "여기담 크루",
+        "cohort": 7,
+        "track": "BE",
+        "avatarUrl": null
+      }
+    ],
+    "descriptionMd": "## 프로젝트 소개\n\n릴스 속 장소를 공유 한 번으로 지도에 저장하세요!",
+    "name": "여기담",
+    "tagline": "릴스 속 장소를 공유 한 번으로 지도에 저장하세요!",
+    "description": "릴스 속 장소를 공유 한 번으로 지도에 저장하세요!",
+    "techTags": ["Android", "Kotlin"],
+    "maker": {
+      "name": "우아한테크코스",
+      "bio": "여기담을 만든 크루입니다."
+    }
+  },
+  {
+    "id": "ssok",
+    "cohort": 7,
+    "teamName": "쏙 팀",
+    "serviceStatus": "OPERATING",
+    "deploymentUrl": "https://example.com/ssok",
+    "githubRepositoryUrl": "https://github.com/woowacourse-teams/ssok",
+    "likeCount": 18,
+    "bookmarkCount": 6,
+    "members": [
+      {
+        "userId": 106,
+        "displayName": "쏙 크루",
+        "cohort": 7,
+        "track": "BE",
+        "avatarUrl": null
+      }
+    ],
+    "descriptionMd": "## 프로젝트 소개\n\n링크 하나로 빠르게 사진/동영상 공유하는 서비스",
+    "name": "쏙",
+    "tagline": "링크 하나로 빠르게 사진/동영상 공유하는 서비스",
+    "description": "링크 하나로 빠르게 사진/동영상 공유하는 서비스",
+    "techTags": ["React", "Spring Boot", "AWS"],
+    "maker": {
+      "name": "우아한테크코스",
+      "bio": "쏙을 만든 크루입니다."
+    }
+  },
+  {
+    "id": "artin",
+    "cohort": 7,
+    "teamName": "예술in 팀",
+    "serviceStatus": "OPERATING",
+    "deploymentUrl": "https://example.com/artin",
+    "githubRepositoryUrl": "https://github.com/woowacourse-teams/artin",
+    "likeCount": 6,
+    "bookmarkCount": 2,
+    "members": [
+      {
+        "userId": 107,
+        "displayName": "예술in 크루",
+        "cohort": 7,
+        "track": "BE",
+        "avatarUrl": null
+      }
+    ],
+    "descriptionMd": "## 프로젝트 소개\n\n전시와 공연을 한곳에서 찾아보고, 다녀온 기록을 남기고, 취향이 비슷한 사람들의 추천까지 받아볼 수 있는 문화생활 기록 서비스입니다.",
+    "name": "예술in",
+    "tagline": "전시와 공연을 한곳에서 찾아보고, 다녀온 기록을 남기고, 취향이 비슷한 사람들의 추천까지 받아볼 수 있는 문화생활 기록 서비스입니다.",
+    "description": "전시와 공연을 한곳에서 찾아보고, 다녀온 기록을 남기고, 취향이 비슷한 사람들의 추천까지 받아볼 수 있는 문화생활 기록 서비스입니다.",
+    "techTags": ["React", "Next.js"],
+    "maker": {
+      "name": "우아한테크코스",
+      "bio": "예술in을 만든 크루입니다."
+    }
+  },
+  {
+    "id": "gachi-gacha",
+    "cohort": 6,
+    "teamName": "가치가챠 팀",
+    "serviceStatus": "OPERATING",
+    "deploymentUrl": "https://example.com/gachi-gacha",
+    "githubRepositoryUrl": "https://github.com/woowacourse-teams/gachi-gacha",
+    "likeCount": 12,
+    "bookmarkCount": 4,
+    "members": [
+      {
+        "userId": 108,
+        "displayName": "가치가챠 크루",
+        "cohort": 6,
+        "track": "BE",
+        "avatarUrl": null
+      }
+    ],
+    "descriptionMd": "## 프로젝트 소개\n\n함께 모은 가치를 뽑기로 나누는 소모임 정산 서비스",
+    "name": "가치가챠",
+    "tagline": "함께 모은 가치를 뽑기로 나누는 소모임 정산 서비스",
+    "description": "함께 모은 가치를 뽑기로 나누는 소모임 정산 서비스",
+    "techTags": ["Spring Boot", "Redis"],
+    "maker": {
+      "name": "우아한테크코스",
+      "bio": "가치가챠을 만든 크루입니다."
+    }
+  },
+  {
+    "id": "mohaeng",
+    "cohort": 6,
+    "teamName": "모행 팀",
+    "serviceStatus": "ENDED",
+    "deploymentUrl": "https://example.com/mohaeng",
+    "githubRepositoryUrl": "https://github.com/woowacourse-teams/mohaeng",
+    "likeCount": 3,
+    "bookmarkCount": 1,
+    "members": [
+      {
+        "userId": 109,
+        "displayName": "모행 크루",
+        "cohort": 6,
+        "track": "BE",
+        "avatarUrl": null
+      }
+    ],
+    "descriptionMd": "## 프로젝트 소개\n\n모바일로 여행 일정을 함께 짜고 바로 공유하는 서비스",
+    "name": "모행",
+    "tagline": "모바일로 여행 일정을 함께 짜고 바로 공유하는 서비스",
+    "description": "모바일로 여행 일정을 함께 짜고 바로 공유하는 서비스",
+    "techTags": ["Android", "Kotlin", "Firebase"],
+    "maker": {
+      "name": "우아한테크코스",
+      "bio": "모행을 만든 크루입니다."
+    }
+  },
+  {
+    "id": "jupjup",
+    "cohort": 6,
+    "teamName": "줍줍 팀",
+    "serviceStatus": "OPERATING",
+    "deploymentUrl": "https://example.com/jupjup",
+    "githubRepositoryUrl": "https://github.com/woowacourse-teams/jupjup",
+    "likeCount": 0,
+    "bookmarkCount": 0,
+    "members": [
+      {
+        "userId": 110,
+        "displayName": "줍줍 크루",
+        "cohort": 6,
+        "track": "BE",
+        "avatarUrl": null
+      }
+    ],
+    "descriptionMd": "## 프로젝트 소개\n\n동네 플로깅 모임을 만들고 주운 쓰레기를 기록하는 서비스",
+    "name": "줍줍",
+    "tagline": "동네 플로깅 모임을 만들고 주운 쓰레기를 기록하는 서비스",
+    "description": "동네 플로깅 모임을 만들고 주운 쓰레기를 기록하는 서비스",
+    "techTags": ["React", "Spring Boot"],
+    "maker": {
+      "name": "우아한테크코스",
+      "bio": "줍줍을 만든 크루입니다."
     }
   }
 ]

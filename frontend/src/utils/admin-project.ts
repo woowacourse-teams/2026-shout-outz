@@ -30,6 +30,8 @@ export function toAdminProjectFormValues(project: AdminProjectDetail): AdminProj
     tagline: project.tagline,
     cohort: project.cohort,
     thumbnailImageId: project.thumbnailImageId ?? null,
+    // 관리자 상세 응답에는 지금 로고가 없다. 새로 올렸을 때만 요청에 싣도록 비워 둔다.
+    logoImageId: null,
     githubRepositoryUrl: project.githubRepositoryUrl,
     deploymentUrl: project.deploymentUrl ?? '',
     // 관리자 수정 요청은 팀 블로그 주소를 다루지 않아 폼에도 싣지 않는다.
@@ -66,6 +68,7 @@ type EditableBody = Required<
     | 'cohort'
     | 'slug'
     | 'thumbnailImageId'
+    | 'logoImageId'
     | 'githubRepositoryUrl'
     | 'deploymentUrl'
     | 'descriptionMd'
@@ -84,6 +87,7 @@ function normalize(values: AdminProjectFormValues): EditableBody {
     cohort: values.cohort,
     slug: values.slug.trim(),
     thumbnailImageId: values.thumbnailImageId,
+    logoImageId: values.logoImageId,
     githubRepositoryUrl: values.githubRepositoryUrl.trim(),
     deploymentUrl: values.deploymentUrl.trim() || null,
     // 서버가 자르지 않는 필드다. 코드블록 들여쓰기 같은 공백을 지키려고 그대로 보낸다.

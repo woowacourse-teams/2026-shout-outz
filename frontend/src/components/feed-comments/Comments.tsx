@@ -253,42 +253,45 @@ function CommentList({
       setRefreshError(error);
     }
   }
+  function submitComment() {
+    if (!content.trim() || mutation.isPending || !sessionReady) return;
+    void change({ method: 'post', content, isAnonymous }, () => {
+      setContent('');
+      setIsAnonymous(false);
+    });
+  }
   return (
     <div className="space-y-6">
       {viewer !== null ? (
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (content.trim() && !mutation.isPending)
-              void change({ method: 'post', content, isAnonymous }, () => {
-                setContent('');
-                setIsAnonymous(false);
-              });
+            submitComment();
           }}
-          className="space-y-3"
+          className="focus-within:border-primary-600 focus-within:bg-background focus-within:ring-primary-50 flex flex-col rounded-xl border border-gray-200 bg-gray-50 pt-4 pr-3 pb-3 pl-4 focus-within:ring-3"
         >
-          <label
-            className="block text-xs leading-5 font-semibold text-gray-800"
-            htmlFor={`new-comment-${feedId}`}
-          >
-            <span className="inline-flex items-center gap-1.5">{itemLabel} 남기기</span>
+          <label className="sr-only" htmlFor={`new-comment-${feedId}`}>
+            {itemLabel} 남기기
           </label>
           <textarea
             id={`new-comment-${feedId}`}
-            rows={5}
+            rows={2}
             maxLength={500}
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter는 줄바꿈, Ctrl/⌘ + Enter는 등록이다.
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                submitComment();
+              }
+            }}
             disabled={mutation.isPending}
-            placeholder={
-              isQuestion
-                ? '질문에 도움이 될 답변을 작성해 주세요.'
-                : '나의 경험과 도움이 될 만한 이야기를 적어주세요.'
-            }
-            className="focus-visible:border-primary-500 focus-visible:ring-primary-500 w-full resize-y rounded-lg border border-gray-200 bg-transparent p-4 text-sm leading-6 text-gray-900 outline-none placeholder:text-gray-400 focus-visible:ring-1"
+            placeholder={`${itemLabel}을 남겨 보세요`}
+            className="field-sizing-content min-h-12 w-full resize-none bg-transparent text-sm leading-relaxed text-gray-900 outline-none placeholder:text-gray-400"
           />
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-1.5 text-xs text-gray-500">
               <input
                 type="checkbox"
                 checked={isAnonymous}
@@ -298,27 +301,30 @@ function CommentList({
               />
               익명으로 남기기
             </label>
-            <span className="text-xs text-gray-400">{Array.from(content).length} / 500</span>
+            <span className="hidden text-xs text-gray-400 sm:inline">
+              Enter 줄바꿈 · Ctrl/⌘ + Enter 등록
+            </span>
             <Button
-              className="ml-auto"
+              className="ml-auto h-9 px-4 font-semibold"
               variant="primary"
               size="sm"
               type="submit"
               aria-label={`${itemLabel} 작성`}
               disabled={!content.trim() || mutation.isPending || !sessionReady}
             >
-              {itemLabel} 등록하기
+              등록
             </Button>
           </div>
         </form>
       ) : (
-        <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
-          {itemLabel}을 작성하려면{' '}
-          <GithubLoginButton className="text-primary-600 underline">
-            GitHub 로그인
-          </GithubLoginButton>
-          이 필요합니다.
-        </p>
+        <GithubLoginButton className="flex min-h-26 w-full cursor-pointer flex-col rounded-xl border border-gray-200 bg-gray-50 pt-3.5 pr-3 pb-3 pl-4 text-left hover:border-gray-300">
+          <span className="text-sm leading-relaxed text-gray-400">
+            로그인하고 {itemLabel}을 남겨 보세요
+          </span>
+          <span className="mt-auto self-end rounded-lg bg-gray-100 px-4 py-2 text-xs font-semibold text-gray-500">
+            등록
+          </span>
+        </GithubLoginButton>
       )}
       {message && (
         <p role="status" className="text-primary-600 text-sm">
@@ -345,7 +351,9 @@ function CommentList({
         </div>
       )}
       {items.length === 0 && (
-        <p className="py-4 text-sm text-gray-500">{`아직 ${itemLabel}이 없습니다.`}</p>
+        <p className="pt-1 text-center text-sm text-gray-500">
+          {isQuestion ? '아직 답변이 없어요. 첫 번째 답변을 남겨 보세요.' : '아직 댓글이 없어요.'}
+        </p>
       )}
       <ul
         aria-label={`${itemLabel} 목록`}

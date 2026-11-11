@@ -313,6 +313,7 @@ class ProjectRepositoryIntegrationTest {
                 other.getGithubRepositoryUrl(),
                 null,
                 ServiceStatus.CLOSED,
+                null,
                 null
         );
 
@@ -336,6 +337,7 @@ class ProjectRepositoryIntegrationTest {
                 project.getGithubRepositoryUrl(),
                 null,
                 ServiceStatus.CLOSED,
+                null,
                 null
         );
     }
@@ -376,6 +378,7 @@ class ProjectRepositoryIntegrationTest {
                 new GithubRepositoryUrl("https://github.com/woowacourse-teams/" + repositoryName),
                 null,
                 ServiceStatus.CLOSED,
+                null,
                 null
         );
     }

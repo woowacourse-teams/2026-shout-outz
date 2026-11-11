@@ -8,6 +8,7 @@ export const ADMIN_TABS = [
   'banners',
   'magazines',
   'bug-reports',
+  'resource-reports',
 ] as const;
 
 export const DEFAULT_ADMIN_TAB: AdminTab = 'crews';
@@ -20,6 +21,7 @@ export const ADMIN_TAB_LABELS: Record<AdminTab, string> = {
   banners: '홈 배너',
   magazines: '매거진',
   'bug-reports': '버그 제보',
+  'resource-reports': '자료 제보',
 };
 
 export const BUG_REPORT_STATUS_LABELS = {
@@ -30,6 +32,22 @@ export const BUG_REPORT_STATUS_LABELS = {
 export const BUG_REPORT_FILTER_LABELS = {
   ...BUG_REPORT_STATUS_LABELS,
   ALL: '전체',
+} as const;
+
+export const RESOURCE_REPORT_STATUS_LABELS = {
+  OPEN: '접수',
+  ACCEPTED: '반영',
+  REJECTED: '반영 안 함',
+} as const;
+
+export const RESOURCE_REPORT_FILTER_LABELS = {
+  ...RESOURCE_REPORT_STATUS_LABELS,
+  ALL: '전체',
+} as const;
+
+export const RESOURCE_REPORT_KIND_LABELS = {
+  REMOVE: '필요 없어요',
+  ADD: '빠진 자료',
 } as const;
 
 export const REVIEW_STATUS_LABELS = {

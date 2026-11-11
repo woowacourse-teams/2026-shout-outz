@@ -72,7 +72,7 @@ export type AnalyticsEvent =
   | { name: 'section_more_clicked'; target: 'feeds' | 'news' }
   | { name: 'card_clicked'; target: 'feed' | 'project' | 'news'; surface: string };
 
-export type NavTab = 'home' | 'feeds' | 'projects' | 'magazines' | 'news';
+export type NavTab = 'home' | 'explore' | 'feeds' | 'projects' | 'magazines' | 'news';
 
 /** 피드를 보여주는 화면. 같은 행동이라도 어디서 일어났는지 구분한다. */
 export type FeedSurface = 'home' | 'feeds' | 'profile';

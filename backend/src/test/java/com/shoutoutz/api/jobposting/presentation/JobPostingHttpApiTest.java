@@ -203,17 +203,18 @@ class JobPostingHttpApiTest {
     @Test
     void findsRequirementRecommendations() throws Exception {
         given(jobPostingService.findRecommendations(JOB_POSTING_ID, REQUIREMENT_ID)).willReturn(List.of(
-                new JobRequirementRecommendationResponse(RecommendationVerdict.MATCH, "github-pr",
+                new JobRequirementRecommendationResponse(1024L, RecommendationVerdict.MATCH, "github-pr",
                         "주문 API 동시성 제어", "https://github.com/woowacourse-teams/example/pull/1",
                         "Spring 트랜잭션과 락으로 동시 주문을 막은 과정을 다룬다.", Instant.parse("2026-07-01T00:00:00Z"),
                         "problem_solving", "샤웃아웃즈", "dahye"),
-                new JobRequirementRecommendationResponse(RecommendationVerdict.PARTIAL, "youtube-tekotalk",
+                new JobRequirementRecommendationResponse(877L, RecommendationVerdict.PARTIAL, "youtube-tekotalk",
                         "Kotlin 코루틴 입문", "https://www.youtube.com/watch?v=example",
                         "Kotlin 문법 일부를 설명한다.", Instant.parse("2025-03-10T00:00:00Z"),
                         null, null, "크루")));
 
         mockMvc.perform(get(RECOMMENDATIONS_URL, JOB_POSTING_ID, REQUIREMENT_ID))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].resourceId").value(1024))
                 .andExpect(jsonPath("$.data[0].verdict").value("MATCH"))
                 .andExpect(jsonPath("$.data[0].publishedAt").value("2026-07-01T00:00:00Z"))
                 .andExpect(jsonPath("$.data[1].verdict").value("PARTIAL"))
@@ -238,6 +239,8 @@ class JobPostingHttpApiTest {
                                 .responseFields(
                                         fieldWithPath("status").type(STRING).description("응답 상태"),
                                         fieldWithPath("data").type(ARRAY).description("추천 자료 목록"),
+                                        fieldWithPath("data[].resourceId").type(NUMBER)
+                                                .description("자료 ID. 자료 상세 조회에 쓴다"),
                                         fieldWithPath("data[].verdict").type(STRING)
                                                 .description("판정. MATCH(딱 맞는 자료), PARTIAL(함께 보면 좋은 자료)"),
                                         fieldWithPath("data[].source").type(STRING).description(

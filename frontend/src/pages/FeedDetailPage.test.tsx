@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ModalProvider } from '@/components/ModalProvider';
@@ -54,7 +55,7 @@ test('상세 URL에서 피드와 댓글을 각각 조회한다', async () => {
   show(1);
   expect(await screen.findByText(/Redis Pub\/Sub으로 WebSocket/)).toBeInTheDocument();
   await screen.findByRole('textbox', { name: '댓글 남기기' });
-  expect(screen.getByRole('button', { name: '댓글 작성' })).toHaveTextContent('댓글 등록하기');
+  expect(screen.getByRole('button', { name: '댓글 작성' })).toHaveTextContent('등록');
   expect(await screen.findByText('경험을 공유해 주셔서 감사합니다!')).toBeInTheDocument();
   expect(screen.getByText('2026.09.14 09:00')).toBeInTheDocument();
   const notice = screen.getByText('익명으로 작성한 글입니다');
@@ -75,18 +76,16 @@ test('기수 숫자가 내려온 피드 작성자는 기수를 표시한다', as
   expect(within(author).getByText('6기 프론트엔드 크루')).toBeInTheDocument();
 });
 
-test('질문 피드의 공유 안내를 본문 위에 두고 좋아요 문구를 표시한다', async () => {
+test('질문 피드의 공유 버튼을 본문 위에 두고 좋아요 문구와 답변 수 제목을 표시한다', async () => {
   show(3);
-  const share = await screen.findByRole('button', { name: '공유' });
+  const share = await screen.findByRole('button', { name: '친구에게 공유' });
   const body = await screen.findByText('프로젝트에서 가장 기억에 남는 트러블슈팅은 무엇인가요?');
-  expect(share).toHaveTextContent('친구에게 공유해보세요!');
-  expect(share.parentElement).toHaveClass('absolute');
-  expect(share.parentElement?.parentElement).toHaveClass('relative');
   expect(share.compareDocumentPosition(body) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(screen.getByRole('button', { name: '저도 궁금해요' })).toHaveTextContent('저도 궁금해요');
   expect(await screen.findByRole('textbox', { name: '답변 남기기' })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '답변 작성' })).toHaveTextContent('답변 등록하기');
+  expect(screen.getByRole('button', { name: '답변 작성' })).toHaveTextContent('등록');
   expect(screen.getByRole('button', { name: '답변' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { level: 2, name: /^답변 \d+$/ })).toBeInTheDocument();
 });
 
 test('상세 조회에 실패하면 오류 경계를 표시한다', async () => {
@@ -120,4 +119,15 @@ test('서버 렌더로 받은 비로그인 기준 좋아요 상태를 로그인 
   expect(screen.getByRole('button', { name: '좋아요' })).toBeInTheDocument();
 
   expect(await screen.findByRole('button', { name: '좋아요 취소' })).toBeInTheDocument();
+});
+
+test('댓글은 Ctrl/⌘ + Enter로 등록하고 Enter는 줄바꿈으로 남긴다', async () => {
+  const user = userEvent.setup();
+  show(1);
+  const input = await screen.findByRole('textbox', { name: '댓글 남기기' });
+  await user.type(input, '첫 줄{Enter}둘째 줄');
+  expect(input).toHaveValue('첫 줄\n둘째 줄');
+  await user.keyboard('{Control>}{Enter}{/Control}');
+  expect(await screen.findByText('댓글을 저장했습니다.')).toBeInTheDocument();
+  expect(input).toHaveValue('');
 });

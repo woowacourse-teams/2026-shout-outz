@@ -1,10 +1,10 @@
 import { Fragment, useEffect, useRef } from 'react';
-import { IconMessageCircle } from '@tabler/icons-react';
+import { IconChevronDown, IconMessageCircle } from '@tabler/icons-react';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { feedsQuery, type FeedSort, type FeedType } from '@/apis/feed';
 import { Button } from '@/components/Button';
 import { RecommendationCard } from '@/components/recommendations/RecommendationCard';
-import { FeedCard } from '@/components/feeds/FeedCard';
+import { FeedListItem } from '@/components/feeds/FeedListItem';
 import { getApiErrorMessage } from '@/utils/error';
 
 export function FeedList({ sort, feedType }: { sort: FeedSort; feedType?: FeedType }) {
@@ -48,7 +48,7 @@ export function FeedList({ sort, feedType }: { sort: FeedSort; feedType?: FeedTy
   );
 
   return (
-    <div className="space-y-3">
+    <div>
       {feeds.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center text-gray-500">
           <IconMessageCircle className="size-8 text-gray-300" aria-hidden="true" />
@@ -61,26 +61,33 @@ export function FeedList({ sort, feedType }: { sort: FeedSort; feedType?: FeedTy
           </p>
         </div>
       ) : (
-        query.data.pages.map((page, pageIndex) => (
-          <Fragment key={pageIndex}>
-            {page.data.map((feed) => (
-              <Fragment key={feed.feedId}>
-                <FeedCard feed={feed} surface="feeds" />
-                {feedType === 'QUESTION' &&
-                  page.meta.recommendationSlots
-                    ?.filter((slot) => slot.afterFeedId === feed.feedId)
-                    .map((slot) => (
-                      <RecommendationCard
-                        key={slot.recommendation.recommendationId}
-                        recommendation={slot.recommendation}
-                        surface="feed_list"
-                        position={slotPositions.get(slot) ?? 0}
-                      />
-                    ))}
-              </Fragment>
-            ))}
-          </Fragment>
-        ))
+        <ul aria-label={itemLabel}>
+          {query.data.pages.map((page, pageIndex) => (
+            <Fragment key={pageIndex}>
+              {page.data.map((feed) => (
+                <Fragment key={feed.feedId}>
+                  <li className="border-t border-gray-100 py-6">
+                    <FeedListItem feed={feed} surface="feeds" />
+                  </li>
+                  {feedType === 'QUESTION' &&
+                    page.meta.recommendationSlots
+                      ?.filter((slot) => slot.afterFeedId === feed.feedId)
+                      .map((slot) => (
+                        // 추천 질문 카드는 글 상세의 관련 질문과 같은 모양을 쓰되, 목록에서는 테두리만 뺀다.
+                        <li key={slot.recommendation.recommendationId} className="py-2">
+                          <RecommendationCard
+                            recommendation={slot.recommendation}
+                            surface="feed_list"
+                            position={slotPositions.get(slot) ?? 0}
+                            className="border-0"
+                          />
+                        </li>
+                      ))}
+                </Fragment>
+              ))}
+            </Fragment>
+          ))}
+        </ul>
       )}
       {isFetchNextPageError && (
         <p role="alert" className="py-3 text-sm text-red-600">
@@ -89,9 +96,11 @@ export function FeedList({ sort, feedType }: { sort: FeedSort; feedType?: FeedTy
       )}
       <div ref={sentinel} />
       {hasNextPage && (
-        <div className="mt-5 grid">
+        <div className="mt-5 flex justify-center">
           <Button
             variant="outline"
+            size="sm"
+            className="rounded-full"
             disabled={isFetchingNextPage}
             onClick={() => void fetchNextPage({ cancelRefetch: false })}
           >
@@ -100,6 +109,9 @@ export function FeedList({ sort, feedType }: { sort: FeedSort; feedType?: FeedTy
               : isFetchNextPageError
                 ? `추가 ${itemLabel} 다시 시도`
                 : `${itemLabel} 더 보기`}
+            {!isFetchingNextPage && !isFetchNextPageError && (
+              <IconChevronDown className="ml-1 size-3.5" aria-hidden="true" />
+            )}
           </Button>
         </div>
       )}

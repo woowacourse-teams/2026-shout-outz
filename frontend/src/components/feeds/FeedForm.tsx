@@ -11,12 +11,15 @@ import {
 } from '@/apis/feed';
 import { myProfileQuery } from '@/apis/user';
 import { categoriesQuery } from '@/apis/category';
-import { Select } from '@/components/Select';
+import { tabItemBaseStyle, tabItemSizeStyles, tabItemStyles } from '@/components/Tab';
 import { Button } from '@/components/Button';
-import { FeedAuthor } from '@/components/feeds/FeedAuthor';
 import { getApiErrorMessage } from '@/utils/error';
 import type { QuestionRecommendation } from '@/types/recommendation';
 import { analytics } from '@/utils/analytics';
+import { cn } from '@/utils/cn';
+
+const FIELD_CLASS_NAME =
+  'focus-visible:border-primary-600 focus-visible:bg-background focus-visible:ring-primary-50 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus-visible:ring-3';
 
 interface FeedFormProps {
   userId: number;
@@ -141,41 +144,54 @@ export function FeedForm({
 
   return (
     <form
-      className="flex flex-col gap-4 md:gap-7"
+      className="flex flex-col gap-6"
       onSubmit={(event) => {
         event.preventDefault();
         void submit();
       }}
     >
-      <div className="flex items-center gap-2 md:gap-3">
-        <FeedAuthor author={profile} avatarSize="sm" isAnonymous={isAnonymous} />
-      </div>
-      <div className="space-y-2">
-        <label htmlFor="feed-category" className="text-sm font-medium text-gray-900">
+      <div className="flex flex-col gap-2">
+        {/* 잘못된 분류로 올라가지 않게 처음에는 카테고리를 고르지 않는다. */}
+        <p id="feed-category-label" className="text-sm font-bold text-gray-900">
           카테고리
-        </label>
-        <Select
-          id="feed-category"
-          aria-label="카테고리"
-          placeholder="카테고리를 선택해 주세요"
-          value={categoryId}
-          onValueChange={setCategoryId}
-          disabled={mutation.isPending || generalCategories.length === 0}
+        </p>
+        <div
+          role="radiogroup"
+          aria-labelledby="feed-category-label"
+          className="flex flex-wrap gap-2"
         >
-          {generalCategories.map((category) => (
-            <Select.Item key={category.categoryId} value={String(category.categoryId)}>
-              {category.displayName}
-            </Select.Item>
-          ))}
-        </Select>
+          {generalCategories.map((category) => {
+            const value = String(category.categoryId);
+            const selected = categoryId === value;
+            return (
+              <button
+                key={category.categoryId}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                data-status={selected ? 'active' : 'inactive'}
+                onClick={() => setCategoryId(value)}
+                disabled={mutation.isPending}
+                className={cn(
+                  tabItemBaseStyle,
+                  tabItemSizeStyles.sm,
+                  tabItemStyles.chip,
+                  'font-semibold',
+                )}
+              >
+                {category.displayName}
+              </button>
+            );
+          })}
+        </div>
         {generalCategories.length === 0 && (
           <p role="status" className="text-sm text-gray-500">
             선택 가능한 카테고리가 없습니다.
           </p>
         )}
       </div>
-      <div className="space-y-2">
-        <label htmlFor="feed-title" className="text-sm font-medium text-gray-900">
+      <div className="flex flex-col gap-2">
+        <label htmlFor="feed-title" className="text-sm font-bold text-gray-900">
           제목
         </label>
         <input
@@ -184,13 +200,13 @@ export function FeedForm({
           onChange={(event) => setTitle(event.target.value)}
           placeholder={
             effectiveType === 'QUESTION'
-              ? '무엇이 궁금한가요?'
+              ? '궁금한 내용을 한 줄로 적어 주세요'
               : '어떤 이야기인지 한 줄로 알려주세요.'
           }
           disabled={mutation.isPending}
           aria-invalid={titleTooLong || undefined}
           aria-describedby={titleTooLong ? 'feed-title-error' : undefined}
-          className="focus-visible:outline-primary-600 h-11 w-full rounded-lg bg-gray-100 px-4 text-sm text-gray-900 outline-none placeholder:text-gray-500 focus-visible:outline-2"
+          className={FIELD_CLASS_NAME}
         />
         {titleTooLong && (
           <p id="feed-title-error" role="alert" className="text-sm text-red-600">
@@ -198,9 +214,9 @@ export function FeedForm({
           </p>
         )}
       </div>
-      <div className="focus-within:ring-primary-600 rounded-xl border border-gray-200 p-4 focus-within:ring-2 md:p-5">
-        <label htmlFor="feed-content" className="sr-only">
-          피드 내용
+      <div className="flex flex-col gap-2">
+        <label htmlFor="feed-content" className="text-sm font-bold text-gray-900">
+          내용
         </label>
         <textarea
           id="feed-content"
@@ -208,52 +224,50 @@ export function FeedForm({
           onChange={(event) => setContent(event.target.value)}
           placeholder={
             effectiveType === 'QUESTION'
-              ? '질문 내용을 자세히 적어주세요.'
+              ? '질문의 배경과 궁금한 점을 구체적으로 적어 주세요'
               : '크루들과 나누고 싶은 기술 이야기나 경험을 적어보세요.'
           }
-          rows={8}
           disabled={mutation.isPending}
           aria-invalid={tooLong || undefined}
           aria-describedby={tooLong ? 'feed-content-error' : undefined}
-          className="block w-full resize-y bg-transparent text-sm leading-6 text-gray-900 outline-none placeholder:text-gray-500"
+          className={cn(FIELD_CLASS_NAME, 'h-55 resize-y leading-6')}
         />
+        {tooLong && (
+          <p id="feed-content-error" role="alert" className="text-sm text-red-600">
+            {`본문은 ${FEED_CONTENT_MAX}자 이하로 입력해 주세요.`}
+          </p>
+        )}
       </div>
-      {tooLong && (
-        <p id="feed-content-error" role="alert" className="text-sm text-red-600">
-          {`본문은 ${FEED_CONTENT_MAX}자 이하로 입력해 주세요.`}
-        </p>
-      )}
       {mutation.isError && (
         <p role="alert" className="text-sm text-red-600">
           {getApiErrorMessage(mutation.error)}
         </p>
       )}
-      <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
-        <input
-          type="checkbox"
-          checked={isAnonymous}
-          onChange={(event) => setIsAnonymous(event.target.checked)}
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="mr-auto flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+          <input
+            type="checkbox"
+            checked={isAnonymous}
+            onChange={(event) => setIsAnonymous(event.target.checked)}
+            disabled={mutation.isPending}
+            className="accent-primary-600 size-4"
+          />
+          익명으로 쓰기
+        </label>
+        <Button
+          variant="ghost"
+          className="h-11 px-5 font-semibold text-gray-500"
+          onClick={onCancel}
           disabled={mutation.isPending}
-          className="accent-primary-600 size-4"
-        />
-        익명으로 쓰기
-      </label>
-      <div className="flex gap-2 md:gap-3 md:pt-2">
-        <Button variant="outline" onClick={onCancel} disabled={mutation.isPending}>
+        >
           취소
         </Button>
         <Button
           type="submit"
-          className="flex-1 md:flex-none"
+          className="h-11 bg-gray-900 px-6 font-semibold text-white hover:bg-gray-700 disabled:hover:bg-gray-900"
           disabled={invalid || mutation.isPending}
         >
-          {mutation.isPending
-            ? '저장 중…'
-            : initialFeed
-              ? '수정 완료'
-              : effectiveType === 'QUESTION'
-                ? '질문 등록하기'
-                : '피드 등록하기'}
+          {mutation.isPending ? '저장 중…' : initialFeed ? '수정 완료' : '등록하기'}
         </Button>
       </div>
     </form>

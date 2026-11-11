@@ -47,8 +47,8 @@ test('목록 API 응답을 카드로 표시한다', async () => {
     'href',
     '/projects/new',
   );
-  // 카드 안에 기술 스택·참여자 목록이 생겨 listitem 전체를 세면 카드 수와 다르다.
-  expect(screen.getAllByRole('article')).toHaveLength(3);
+  // 카드 안에 기술 스택·참여자 목록이 생겨 listitem 전체를 세면 카드 수와 다르다. 한 번에 12개씩 불러온다.
+  expect(screen.getAllByRole('article')).toHaveLength(12);
   expect(screen.getByRole('heading', { name: 'Shout-outz' })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Code Review Bot' })).toBeInTheDocument();
 });
