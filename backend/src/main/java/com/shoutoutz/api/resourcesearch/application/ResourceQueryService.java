@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,8 +31,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ResourceQueryService {
 
-    private static final List<PopularKeywordResponse> POPULAR_KEYWORDS = Stream.of(
-                    "LLM", "동시성", "부하 테스트", "무중단 배포", "쿼리 최적화", "모니터링", "웹 성능", "인증/인가")
+    /**
+     * 검색창 아래 칩. 프론트 ExploreHero 의 suggestions 와 같은 목록이며, 서버가 뜰 때 임베딩을 미리 캐시에 담는다.
+     */
+    public static final List<String> SUGGESTED_KEYWORDS = List.of(
+            "LLM", "동시성", "부하 테스트", "무중단 배포", "쿼리 최적화", "모니터링", "웹 성능", "인증/인가");
+
+    private static final List<PopularKeywordResponse> POPULAR_KEYWORDS = SUGGESTED_KEYWORDS.stream()
             .map(PopularKeywordResponse::new)
             .toList();
 

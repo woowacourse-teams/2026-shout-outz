@@ -27,9 +27,24 @@ public final class CachingEmbeddingClient implements EmbeddingClient {
         return cache.get(text, key -> delegate.embed(key).clone()).clone();
     }
 
+    /**
+     * 캐시에 없는 문장만 모아 한 번의 요청으로 임베딩해 담고, 입력 순서대로 돌려준다.
+     */
     @Override
     public List<float[]> embedAll(List<String> texts) {
-        return delegate.embedAll(texts);
+        List<String> missing = texts.stream()
+                .distinct()
+                .filter(text -> cache.getIfPresent(text) == null)
+                .toList();
+        if (!missing.isEmpty()) {
+            List<float[]> vectors = delegate.embedAll(missing);
+            for (int i = 0; i < missing.size(); i++) {
+                cache.put(missing.get(i), vectors.get(i).clone());
+            }
+        }
+        return texts.stream()
+                .map(this::embed)
+                .toList();
     }
 
     @Override

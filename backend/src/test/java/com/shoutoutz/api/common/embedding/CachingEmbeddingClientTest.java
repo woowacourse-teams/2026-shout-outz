@@ -57,6 +57,27 @@ class CachingEmbeddingClientTest {
     }
 
     @Test
+    @DisplayName("여러 문장을 한 번에 임베딩할 때는 캐시에 없는 것만 한 번의 요청으로 부른다")
+    void embedsOnlyMissingTextsInOneBatch() {
+        client.embed("동시성");
+
+        List<float[]> vectors = client.embedAll(List.of("부하 테스트", "동시성", "LLM"));
+
+        assertThat(delegate.batches).containsExactly(List.of("부하 테스트", "LLM"));
+        assertThat(vectors).extracting(vector -> vector[0]).containsExactly(6f, 3f, 3f);
+    }
+
+    @Test
+    @DisplayName("한 번에 임베딩한 문장은 이후 한 문장씩 요청해도 캐시에서 준다")
+    void cachesTextsEmbeddedInBatch() {
+        client.embedAll(List.of("동시성", "LLM"));
+
+        client.embed("LLM");
+
+        assertThat(delegate.embeddedTexts).isEmpty();
+    }
+
+    @Test
     @DisplayName("모델 ID는 감싼 클라이언트의 값을 그대로 준다")
     void delegatesModelId() {
         assertThat(client.modelId()).isEqualTo("test-model@4");
@@ -77,6 +98,7 @@ class CachingEmbeddingClientTest {
     private static final class RecordingEmbeddingClient implements EmbeddingClient {
 
         private final List<String> embeddedTexts = new ArrayList<>();
+        private final List<List<String>> batches = new ArrayList<>();
         private boolean failNext;
 
         @Override
@@ -91,7 +113,10 @@ class CachingEmbeddingClientTest {
 
         @Override
         public List<float[]> embedAll(List<String> texts) {
-            return texts.stream().map(this::embed).toList();
+            batches.add(List.copyOf(texts));
+            return texts.stream()
+                    .map(text -> new float[]{text.length(), 1f, 0f, 0f})
+                    .toList();
         }
 
         @Override
