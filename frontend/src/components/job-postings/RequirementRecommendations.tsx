@@ -6,6 +6,7 @@ import { requirementRecommendationsQuery, type JobRequirement } from '@/apis/job
 import { DotTab } from '@/components/explore/DotTab';
 import { MaterialList, TechTalkList } from '@/components/explore/MaterialList';
 import { recommendationToMaterial } from '@/components/job-postings/recommendationMaterial';
+import { isBlogMaterial, isGithubMaterial, isTechTalk } from '@/components/explore/MaterialParts';
 import { getApiErrorMessage } from '@/utils/error';
 
 type KindFilter = 'ALL' | 'BLOG' | 'DOCUMENT' | 'TECH_TALK';
@@ -50,35 +51,34 @@ export function RequirementRecommendations({
   }
 
   // 같은 자료는 한 번만 담고, 어떤 역량에서 나왔는지 모은다.
-  const byId = new Map<string, { material: Material; requirementNames: string[] }>();
+  const byId = new Map<number, { material: Material; requirementNames: string[] }>();
   results.forEach((result, index) => {
     for (const recommendation of result.data ?? []) {
       const material = recommendationToMaterial(recommendation);
-      const entry = byId.get(material.id) ?? { material, requirementNames: [] };
+      const entry = byId.get(material.resourceId) ?? { material, requirementNames: [] };
       entry.requirementNames.push(requirements[index]!.name);
-      byId.set(material.id, entry);
+      byId.set(material.resourceId, entry);
     }
   });
   const entries = [...byId.values()];
-  const requirementNamesOf = (material: Material) => byId.get(material.id)?.requirementNames ?? [];
+  const requirementNamesOf = (material: Material) =>
+    byId.get(material.resourceId)?.requirementNames ?? [];
 
   const groups: { kind: Exclude<KindFilter, 'ALL'>; title: string; materials: Material[] }[] = [
     {
       kind: 'BLOG',
       title: '블로그',
-      materials: entries.filter((e) => e.material.kind === 'BLOG').map((e) => e.material),
+      materials: entries.filter((e) => isBlogMaterial(e.material)).map((e) => e.material),
     },
     {
       kind: 'DOCUMENT',
       title: 'PR과 팀 문서',
-      materials: entries
-        .filter((e) => e.material.kind === 'PR' || e.material.kind === 'TEAM_DOC')
-        .map((e) => e.material),
+      materials: entries.filter((e) => isGithubMaterial(e.material)).map((e) => e.material),
     },
     {
       kind: 'TECH_TALK',
       title: '테코톡',
-      materials: entries.filter((e) => e.material.kind === 'TECH_TALK').map((e) => e.material),
+      materials: entries.filter((e) => isTechTalk(e.material)).map((e) => e.material),
     },
   ];
   const visible = groups.filter(
