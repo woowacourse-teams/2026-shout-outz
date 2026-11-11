@@ -3,9 +3,9 @@ package com.shoutoutz.api.resourcesearch.domain;
 import java.util.Arrays;
 
 public enum ResourceTopicSide {
+    COMMON("common"),
     BACKEND("backend"),
     FRONTEND("frontend"),
-    COMMON("common"),
     MOBILE("mobile");
 
     private final String code;

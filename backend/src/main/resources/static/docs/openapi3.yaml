@@ -1328,7 +1328,7 @@ paths:
       summary: 기술 주제 분야별 조회
       description: |-
         검색 첫 화면의 '분야별 키워드'에 보여줄 기술 주제 전체를 분야별로 묶어 준다. 로그인 없이 볼 수 있다.
-        분야는 BACKEND, FRONTEND, COMMON, MOBILE 순서로 항상 4개를 준다. 주제가 없는 분야는 빈 배열이다.
+        분야는 COMMON, BACKEND, FRONTEND, MOBILE 순서로 항상 4개를 준다. 주제가 없는 분야는 빈 배열이다.
         분야 안의 주제는 이름의 가나다순이다. 영문은 대소문자를 가리지 않고 한글보다 앞에 온다.
         자료가 없는 주제도 포함한다.
       operationId: resource-topics
@@ -1341,13 +1341,13 @@ paths:
                 $ref: "#/components/schemas/ResourceTopicsSuccessResponse"
               examples:
                 resource-topics:
-                  value: "{\"status\":\"success\",\"data\":[{\"side\":\"BACKEND\"\
-                    ,\"topics\":[{\"topicId\":\"jpa\",\"name\":\"JPA/Hibernate\"},{\"\
-                    topicId\":\"concurrency\",\"name\":\"동시성 제어/락\"}]},{\"side\":\"\
-                    FRONTEND\",\"topics\":[{\"topicId\":\"react_rendering\",\"name\"\
-                    :\"React 렌더링/훅\"}]},{\"side\":\"COMMON\",\"topics\":[{\"topicId\"\
-                    :\"cicd\",\"name\":\"CI/CD\"}]},{\"side\":\"MOBILE\",\"topics\"\
-                    :[{\"topicId\":\"android\",\"name\":\"Android\"}]}]}"
+                  value: "{\"status\":\"success\",\"data\":[{\"side\":\"COMMON\",\"\
+                    topics\":[{\"topicId\":\"cicd\",\"name\":\"CI/CD\"}]},{\"side\"\
+                    :\"BACKEND\",\"topics\":[{\"topicId\":\"jpa\",\"name\":\"JPA/Hibernate\"\
+                    },{\"topicId\":\"concurrency\",\"name\":\"동시성 제어/락\"}]},{\"side\"\
+                    :\"FRONTEND\",\"topics\":[{\"topicId\":\"react_rendering\",\"\
+                    name\":\"React 렌더링/훅\"}]},{\"side\":\"MOBILE\",\"topics\":[{\"\
+                    topicId\":\"android\",\"name\":\"Android\"}]}]}"
   /api/v1/resources/topics/popular:
     get:
       tags:
@@ -8525,7 +8525,7 @@ components:
             properties:
               side:
                 type: string
-                description: "분야. BACKEND, FRONTEND, COMMON, MOBILE 중 하나"
+                description: "분야. COMMON, BACKEND, FRONTEND, MOBILE 중 하나"
               topics:
                 type: array
                 description: 분야의 주제 목록

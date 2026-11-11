@@ -41,8 +41,8 @@ class ResourceTopicQueryServiceTest {
         List<ResourceTopicSideResponse> sides = resourceTopicQueryService.findAllBySide();
 
         assertThat(sides).extracting(ResourceTopicSideResponse::side).containsExactly(
-                ResourceTopicSide.BACKEND, ResourceTopicSide.FRONTEND, ResourceTopicSide.COMMON, ResourceTopicSide.MOBILE);
-        assertThat(sides.getFirst().topics()).extracting(ResourceTopicResponse::name)
+                ResourceTopicSide.COMMON, ResourceTopicSide.BACKEND, ResourceTopicSide.FRONTEND, ResourceTopicSide.MOBILE);
+        assertThat(sides.get(1).topics()).extracting(ResourceTopicResponse::name)
                 .containsExactly("JPA/Hibernate", "동시성 제어/락");
     }
 

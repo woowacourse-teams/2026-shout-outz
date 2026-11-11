@@ -20,10 +20,10 @@ class ResourceTopicSideTest {
     }
 
     @Test
-    @DisplayName("분야는 백엔드, 프론트엔드, 공통, 모바일 순서다")
+    @DisplayName("분야는 공통, 백엔드, 프론트엔드, 모바일 순서다")
     void ordersSidesForDisplay() {
         assertThat(ResourceTopicSide.values()).containsExactly(
-                ResourceTopicSide.BACKEND, ResourceTopicSide.FRONTEND, ResourceTopicSide.COMMON, ResourceTopicSide.MOBILE);
+                ResourceTopicSide.COMMON, ResourceTopicSide.BACKEND, ResourceTopicSide.FRONTEND, ResourceTopicSide.MOBILE);
     }
 
     @ParameterizedTest
