@@ -592,6 +592,21 @@ class ProjectHttpApiTest {
                                         fieldWithPath("data[].members[].githubProfileUrl").type(STRING)
                                                 .description("GitHub 프로필 URL. 가입하지 않은 이관 팀원만 값이 있다.")
                                                 .optional(),
+                                        fieldWithPath("data[].matchedResource").type(OBJECT)
+                                                .description("직접 검색에서 이 프로젝트가 걸린 근거 자료 중 자료 검색 순위가 가장 높은 자료. "
+                                                        + "카드에 왜 이 프로젝트가 나왔는지 보여 주는 데 쓴다. "
+                                                        + "직접 검색이 아니거나, 이름, 소개 같은 글자 일치로만 걸린 프로젝트면 null")
+                                                .optional(),
+                                        fieldWithPath("data[].matchedResource.resourceId").type(NUMBER)
+                                                .description("자료 id. 자료 상세 조회에 쓴다")
+                                                .optional(),
+                                        fieldWithPath("data[].matchedResource.source").type(STRING)
+                                                .description("자료 원천. 기술 자료 검색의 source와 같은 값 "
+                                                        + "(blog-post, github-pr, github-teamdoc, github-wiki, github-discussion)")
+                                                .optional(),
+                                        fieldWithPath("data[].matchedResource.title").type(STRING)
+                                                .description("자료 제목")
+                                                .optional(),
                                         fieldWithPath("meta").type(OBJECT).description("페이지네이션 정보"),
                                         fieldWithPath("meta.nextCursor").type(STRING)
                                                 .description("다음 페이지 조회에 쓸 커서. 다음 페이지가 없으면 null")
@@ -637,6 +652,24 @@ class ProjectHttpApiTest {
                 .andExpect(jsonPath("$.meta.totalCount").value(0));
 
         verify(projectService).findAll(new ProjectFindAllRequest(null, null, null, null, null, null, null));
+    }
+
+    @Test
+    @DisplayName("직접 검색으로 걸린 프로젝트에는 근거 자료의 id, 원천, 제목을 담는다.")
+    void returnsMatchedResource() throws Exception {
+        given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(new ProjectFindAllResponse(
+                List.of(new ProjectFindAllResponse.Item(
+                        "rilog", "Rilog.", "개발자를 위한 블로그 플랫폼", 8, null, null, null, 4L, 0L, 0L, false, false,
+                        List.of(), List.of(),
+                        new ProjectFindAllResponse.MatchedResource(3412L, "github-pr", "도메인 이벤트로 알림 발송 분리"))),
+                new ProjectFindAllResponse.Meta(null, false, 1L, null, "9f1c2a7e-5b3d-4c8a-9e21-7d4b6a0c1f35")
+        ));
+
+        mockMvc.perform(get("/api/v1/projects").queryParam("keyword", "eda").queryParam("sort", "RELEVANCE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].matchedResource.resourceId").value(3412L))
+                .andExpect(jsonPath("$.data[0].matchedResource.source").value("github-pr"))
+                .andExpect(jsonPath("$.data[0].matchedResource.title").value("도메인 이벤트로 알림 발송 분리"));
     }
 
     @Test

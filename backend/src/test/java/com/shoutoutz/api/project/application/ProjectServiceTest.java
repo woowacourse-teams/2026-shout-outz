@@ -836,6 +836,8 @@ class ProjectServiceTest {
                 new ProjectFindAllRequest(" EDA ", null, null, null, "RELEVANCE", null, null));
 
         assertThat(response.meta().searchId()).isNotBlank();
+        assertThat(response.items().getFirst().matchedResource())
+                .isEqualTo(new ProjectFindAllResponse.MatchedResource(1L, "github-pr", "제목"));
         assertThat(output).contains(
                 "project_search searchId=" + response.meta().searchId(),
                 "keyword=\"eda\"",

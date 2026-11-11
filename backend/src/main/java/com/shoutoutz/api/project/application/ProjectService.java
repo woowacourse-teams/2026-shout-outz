@@ -91,8 +91,10 @@ import com.shoutoutz.api.user.domain.profile.UserType;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -277,7 +279,8 @@ public class ProjectService {
                 mediaUrls,
                 userAvatarUrls,
                 resolved.matchedTopic(),
-                searchId
+                searchId,
+                resolved.matchedResources()
         );
     }
 
@@ -348,41 +351,44 @@ public class ProjectService {
                     condition.inTopic(matchedTopic.get().topicId()),
                     KeywordMatch.TOPIC,
                     matchedTopic.get(),
+                    Map.of(),
                     null,
                     false
             );
         }
         long resourceSearchStartedAt = System.nanoTime();
         ResourceSearchResult resourceSearch = searchResourceProjectIds(condition.keyword());
+        List<Long> resourceProjectIds = List.copyOf(resourceSearch.firstHitByProject().keySet());
         KeywordCandidates candidates = new KeywordCandidates(
-                projectRepository.findKeywordCandidates(condition.filter(), resourceSearch.projectIds()),
-                resourceSearch.projectIds()
+                projectRepository.findKeywordCandidates(condition.filter(), resourceProjectIds),
+                resourceProjectIds
         );
         return new ResolvedKeyword(
                 condition.onlyProjects(candidates.rankedIds(DIRECT_SEARCH_PROJECTS)),
                 KeywordMatch.SEARCH,
                 null,
+                resourceSearch.firstHitByProject(),
                 (System.nanoTime() - resourceSearchStartedAt) / 1_000_000,
                 resourceSearch.failed()
         );
     }
 
     /**
-     * 자료 검색에 처음 나온 순서대로의 프로젝트 id. 팀이 없는 자료(테코톡 등)는 건너뛴다.
+     * 프로젝트마다 자료 검색에 처음 나온 자료를, 프로젝트가 처음 나온 순서대로 모은다. 팀이 없는 자료(테코톡 등)는 건너뛴다.
+     * 처음 나온 자료가 그 프로젝트의 근거 자료가 된다.
      * 외부 임베딩 호출이 실패하면 자료 검색 없이 글자 일치 결과만 보여 주고, 실패는 로그로 남긴다.
      */
     private ResourceSearchResult searchResourceProjectIds(String keyword) {
         try {
-            List<Long> projectIds = resourceSearchService.search(keyword, null, DIRECT_SEARCH_RESOURCES).stream()
-                    .map(SearchHit::projectId)
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .toList();
-            return new ResourceSearchResult(projectIds, false);
+            Map<Long, SearchHit> firstHitByProject = new LinkedHashMap<>();
+            resourceSearchService.search(keyword, null, DIRECT_SEARCH_RESOURCES).stream()
+                    .filter(hit -> hit.projectId() != null)
+                    .forEach(hit -> firstHitByProject.putIfAbsent(hit.projectId(), hit));
+            return new ResourceSearchResult(Collections.unmodifiableMap(firstHitByProject), false);
         } catch (EmbeddingException exception) {
             log.warn("Project direct search without resource search: errorCode={}, httpStatus={}",
                     exception.errorCode(), exception.httpStatus());
-            return new ResourceSearchResult(List.of(), true);
+            return new ResourceSearchResult(Map.of(), true);
         }
     }
 
@@ -400,22 +406,27 @@ public class ProjectService {
 
     /**
      * @param matchedTopic         검색어를 기술 주제로 해석했을 때의 주제. 아니면 null
+     * @param matchedResources     직접 검색에서 프로젝트 id별 근거 자료. 직접 검색이 아니면 비어 있다
      * @param resourceSearchMillis 직접 검색의 자료 검색과 후보 조회 시간. 직접 검색이 아니면 null
      */
     private record ResolvedKeyword(
             ProjectSearchCondition condition,
             KeywordMatch match,
             ResourceTopic matchedTopic,
+            Map<Long, SearchHit> matchedResources,
             Long resourceSearchMillis,
             boolean resourceSearchFailed
     ) {
 
         static ResolvedKeyword of(ProjectSearchCondition condition, KeywordMatch match) {
-            return new ResolvedKeyword(condition, match, null, null, false);
+            return new ResolvedKeyword(condition, match, null, Map.of(), null, false);
         }
     }
 
-    private record ResourceSearchResult(List<Long> projectIds, boolean failed) {
+    /**
+     * @param firstHitByProject 프로젝트가 자료 검색에 처음 나온 순서를 지키는 불변 맵
+     */
+    private record ResourceSearchResult(Map<Long, SearchHit> firstHitByProject, boolean failed) {
     }
 
     /**
