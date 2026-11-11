@@ -21,6 +21,27 @@ const POPULAR_TOPICS = [
 ];
 
 /** 분야별 주제 이름. 프로젝트 탐색 목도 이 분류를 쓴다. */
+
+// 서버는 블로그 자료의 team.logoUrl에 블로그 파비콘을 준다. 목은 아는 블로그 서비스만 채운다.
+const BLOG_FAVICONS = [
+  ['tistory.com', '/about-assets/assets/tistory.svg'],
+  ['velog.io', '/about-assets/assets/velog.ico'],
+  ['rilog.kr', '/about-assets/assets/rilog.svg'],
+] as const;
+
+const blogFaviconOf = (url: string) => {
+  try {
+    const { hostname } = new URL(url);
+    return (
+      BLOG_FAVICONS.find(
+        ([domain]) => hostname === domain || hostname.endsWith(`.${domain}`),
+      )?.[1] ?? null
+    );
+  } catch {
+    return null;
+  }
+};
+
 export const TOPIC_FIELDS: { name: string; side: string; topics: string[] }[] = [
   {
     name: '백엔드',
@@ -158,7 +179,12 @@ const toMaterial = (resource: Resource): Material => {
       source === 'blog-post' ? (resource.url.includes('tistory.com') ? 'tistory' : null) : null,
     team:
       team && source !== 'youtube-tekotalk'
-        ? { name: team, projectSlug: resource.slug ?? null, logoMediaId: null, logoUrl: null }
+        ? {
+            name: team,
+            projectSlug: resource.slug ?? null,
+            logoMediaId: null,
+            logoUrl: source === 'blog-post' ? blogFaviconOf(resource.url) : null,
+          }
         : undefined,
   };
 };
