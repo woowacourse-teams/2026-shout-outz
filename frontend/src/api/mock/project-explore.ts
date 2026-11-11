@@ -405,7 +405,8 @@ export const projectExploreHandlers = [
     if (!projectNameOf(slug)) return notFound();
     if (!isMember(slug)) return forbidden();
     const { url } = (await request.json()) as { url: string };
-    if (!/^https:\/\/github\.com\/woowacourse-teams\//.test(url)) {
+    const repository = projects.find((project) => project.id === slug)?.githubRepositoryUrl;
+    if (!repository || (url !== repository && !url.startsWith(`${repository}/`))) {
       return HttpResponse.json(
         {
           status: 'error',

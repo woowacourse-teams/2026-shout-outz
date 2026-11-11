@@ -303,7 +303,8 @@ describe('프로젝트 상세 탭', () => {
       const dialog = await screen.findByRole('dialog');
       await userEvent.type(
         within(dialog).getByLabelText('빠진 PR이나 팀 문서의 GitHub 주소'),
-        'https://github.com/woowacourse-teams/2026-dropit/pull/12',
+        // 목 dropit의 리포지토리 주소 아래여야 한다.
+        'https://github.com/woowacourse-teams/2026-shout-outz/pull/12',
       );
       await userEvent.click(within(dialog).getByRole('button', { name: '보내기' }));
       expect(await within(dialog).findByText('제보가 접수됐어요')).toBeInTheDocument();

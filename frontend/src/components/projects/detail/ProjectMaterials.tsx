@@ -110,7 +110,21 @@ export function ProjectMaterials({ slug, projectName, memberUserIds }: ProjectMa
   const topic = topics.find((item) => item.topicId === chosenTopicId) ?? topics[0] ?? null;
 
   if (data.totalCount === 0) {
-    return <p className="py-16 text-center text-gray-500">아직 모은 자료가 없어요.</p>;
+    return (
+      <div className="py-16 text-center">
+        <p className="text-gray-500">아직 모은 자료가 없어요.</p>
+        {/* 고를 자료가 없으니 빠진 자료 알려 주기만 둔다. */}
+        {isMember && (
+          <button
+            type="button"
+            className={cn(reportLinkClass, 'mt-3 text-sm font-semibold text-gray-700')}
+            onClick={openAddition}
+          >
+            빠진 자료 알려 주기 →
+          </button>
+        )}
+      </div>
+    );
   }
 
   return (

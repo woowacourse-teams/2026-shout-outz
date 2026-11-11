@@ -30,14 +30,27 @@ const topicIdOf = (topics: ProjectTopics, name: string) =>
   topics.groups.flatMap((group) => group.topics).find((topic) => topic.name === name)?.topicId ??
   name;
 
-export function ProjectExploreList({ filter, onSortChange }: ProjectExploreListProps) {
+export function ProjectExploreList(props: ProjectExploreListProps) {
+  // 주제를 고르지 않았으면 주제 목록을 기다리지 않고 바로 프로젝트를 조회한다.
+  return props.filter.topic ? (
+    <TopicProjectList {...props} topic={props.filter.topic} />
+  ) : (
+    <ProjectList {...props} topicId={null} />
+  );
+}
+
+function TopicProjectList({ topic, ...props }: ProjectExploreListProps & { topic: string }) {
   const { data: topics } = useSuspenseQuery(projectTopicsQuery());
+  return <ProjectList {...props} topicId={topicIdOf(topics, topic)} />;
+}
+
+function ProjectList({
+  filter,
+  onSortChange,
+  topicId,
+}: ProjectExploreListProps & { topicId: string | null }) {
   const query = useSuspenseInfiniteQuery(
-    exploreProjectsQuery({
-      keyword: filter.keyword,
-      topicId: filter.topic ? topicIdOf(topics, filter.topic) : null,
-      sort: filter.sort,
-    }),
+    exploreProjectsQuery({ keyword: filter.keyword, topicId, sort: filter.sort }),
   );
   const projects = query.data.pages.flatMap((page) => page.projects);
   const totalCount = query.data.pages[0]?.meta.totalCount ?? projects.length;
