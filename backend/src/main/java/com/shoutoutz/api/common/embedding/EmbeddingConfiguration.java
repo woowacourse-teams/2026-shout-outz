@@ -1,6 +1,9 @@
 package com.shoutoutz.api.common.embedding;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.net.http.HttpClient;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,11 +21,13 @@ public class EmbeddingConfiguration {
     private static final long CACHE_MAXIMUM_SIZE = 1_000;
 
     @Bean
-    EmbeddingClient embeddingClient(RestClient.Builder builder, EmbeddingProperties properties, ObjectMapper mapper) {
+    EmbeddingClient embeddingClient(RestClient.Builder builder, EmbeddingProperties properties, ObjectMapper mapper,
+            ObjectProvider<MeterRegistry> meterRegistry) {
         HttpClient httpClient = HttpClient.newBuilder().connectTimeout(properties.connectTimeout()).build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
         factory.setReadTimeout(properties.readTimeout());
         RestClient restClient = builder.clone().baseUrl("https://api.openai.com").requestFactory(factory).build();
-        return new CachingEmbeddingClient(new OpenAiEmbeddingClient(restClient, properties, mapper), CACHE_MAXIMUM_SIZE);
+        return new CachingEmbeddingClient(new OpenAiEmbeddingClient(restClient, properties, mapper), CACHE_MAXIMUM_SIZE,
+                meterRegistry.getIfAvailable(SimpleMeterRegistry::new));
     }
 }

@@ -10,6 +10,8 @@ import com.shoutoutz.api.resourcesearch.presentation.dto.request.ResourceTopicPo
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.PopularTopicResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceTopicResponse;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceTopicSideResponse;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Arrays;
@@ -34,7 +36,11 @@ public class ResourceTopicQueryService {
     private final ResourceTopicQueryRepository resourceTopicQueryRepository;
     private final Cache<Integer, List<PopularTopicResponse>> popularTopicsCache;
 
-    public ResourceTopicQueryService(ResourceTopicQueryRepository resourceTopicQueryRepository, Clock clock) {
+    public ResourceTopicQueryService(
+            ResourceTopicQueryRepository resourceTopicQueryRepository,
+            Clock clock,
+            MeterRegistry meterRegistry
+    ) {
         this.resourceTopicQueryRepository = resourceTopicQueryRepository;
         this.popularTopicsCache = Caffeine.newBuilder()
                 .expireAfterWrite(POPULAR_TOPICS_TTL)
@@ -42,6 +48,7 @@ public class ResourceTopicQueryService {
                 .ticker(() -> TimeUnit.MILLISECONDS.toNanos(clock.millis()))
                 .recordStats()
                 .build();
+        CaffeineCacheMetrics.monitor(meterRegistry, popularTopicsCache, "search.popular-topics");
     }
 
     public List<ResourceTopicSideResponse> findAllBySide() {

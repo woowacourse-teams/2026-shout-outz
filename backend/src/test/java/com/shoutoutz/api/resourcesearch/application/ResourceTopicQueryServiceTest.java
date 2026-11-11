@@ -15,6 +15,7 @@ import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceTopicR
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceTopicSideResponse;
 import com.shoutoutz.api.resourcereport.application.ResourceReportStatusChanged;
 import com.shoutoutz.api.resourcereport.domain.ResourceReportKind;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -35,12 +36,13 @@ class ResourceTopicQueryServiceTest {
     private ResourceTopicQueryRepository resourceTopicQueryRepository;
 
     private final MovableClock clock = new MovableClock(Instant.parse("2026-11-11T00:00:00Z"));
+    private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
 
     private ResourceTopicQueryService resourceTopicQueryService;
 
     @BeforeEach
     void setUp() {
-        resourceTopicQueryService = new ResourceTopicQueryService(resourceTopicQueryRepository, clock);
+        resourceTopicQueryService = new ResourceTopicQueryService(resourceTopicQueryRepository, clock, registry);
     }
 
     @Test
@@ -161,6 +163,20 @@ class ResourceTopicQueryServiceTest {
         resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
 
         verify(resourceTopicQueryRepository, times(1)).findMostCovered(10);
+    }
+
+    @Test
+    @DisplayName("많이 다룬 주제 캐시의 적중과 미적중 횟수를 지표로 남긴다")
+    void recordsPopularTopicsCacheMetrics() {
+        given(resourceTopicQueryRepository.findMostCovered(10)).willReturn(List.of());
+
+        resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
+        resourceTopicQueryService.findPopular(new ResourceTopicPopularRequest(10));
+
+        assertThat(registry.get("cache.gets").tag("cache", "search.popular-topics").tag("result", "hit")
+                .functionCounter().count()).isEqualTo(1);
+        assertThat(registry.get("cache.gets").tag("cache", "search.popular-topics").tag("result", "miss")
+                .functionCounter().count()).isEqualTo(1);
     }
 
     private static final class MovableClock extends Clock {

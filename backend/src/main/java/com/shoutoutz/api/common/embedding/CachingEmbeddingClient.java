@@ -2,6 +2,8 @@ package com.shoutoutz.api.common.embedding;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 import java.util.List;
 
 /**
@@ -11,15 +13,18 @@ import java.util.List;
  */
 public final class CachingEmbeddingClient implements EmbeddingClient {
 
+    private static final String CACHE_NAME = "search.embedding";
+
     private final EmbeddingClient delegate;
     private final Cache<String, float[]> cache;
 
-    public CachingEmbeddingClient(EmbeddingClient delegate, long maximumSize) {
+    public CachingEmbeddingClient(EmbeddingClient delegate, long maximumSize, MeterRegistry meterRegistry) {
         this.delegate = delegate;
         this.cache = Caffeine.newBuilder()
                 .maximumSize(maximumSize)
                 .recordStats()
                 .build();
+        CaffeineCacheMetrics.monitor(meterRegistry, cache, CACHE_NAME);
     }
 
     @Override

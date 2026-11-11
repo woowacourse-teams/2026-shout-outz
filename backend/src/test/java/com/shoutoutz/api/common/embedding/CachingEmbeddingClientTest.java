@@ -3,18 +3,22 @@ package com.shoutoutz.api.common.embedding;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.json.JsonMapper;
 
 class CachingEmbeddingClientTest {
 
     private final RecordingEmbeddingClient delegate = new RecordingEmbeddingClient();
-    private final CachingEmbeddingClient client = new CachingEmbeddingClient(delegate, 100);
+    private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    private final CachingEmbeddingClient client = new CachingEmbeddingClient(delegate, 100, registry);
 
     @Test
     @DisplayName("같은 검색어는 한 번만 임베딩하고 이후에는 캐시에서 준다")
@@ -78,6 +82,17 @@ class CachingEmbeddingClientTest {
     }
 
     @Test
+    @DisplayName("적중과 미적중 횟수를 search.embedding 캐시 지표로 남긴다")
+    void recordsHitAndMissMetrics() {
+        client.embed("동시성");
+        client.embed("동시성");
+        client.embed("LLM");
+
+        assertThat(cacheGets("hit")).isEqualTo(1);
+        assertThat(cacheGets("miss")).isEqualTo(2);
+    }
+
+    @Test
     @DisplayName("모델 ID는 감싼 클라이언트의 값을 그대로 준다")
     void delegatesModelId() {
         assertThat(client.modelId()).isEqualTo("test-model@4");
@@ -89,10 +104,18 @@ class CachingEmbeddingClientTest {
         EmbeddingProperties properties = new EmbeddingProperties(
                 "openai", "text-embedding-3-small", 1024, true, "key", Duration.ofSeconds(1), Duration.ofSeconds(1));
 
-        EmbeddingClient registered = new EmbeddingConfiguration()
-                .embeddingClient(RestClient.builder(), properties, JsonMapper.builder().build());
+        EmbeddingClient registered = new EmbeddingConfiguration().embeddingClient(
+                RestClient.builder(), properties, JsonMapper.builder().build(), new StaticListableBeanFactory().getBeanProvider(MeterRegistry.class));
 
         assertThat(registered).isInstanceOf(CachingEmbeddingClient.class);
+    }
+
+    private double cacheGets(String result) {
+        return registry.get("cache.gets")
+                .tag("cache", "search.embedding")
+                .tag("result", result)
+                .functionCounter()
+                .count();
     }
 
     private static final class RecordingEmbeddingClient implements EmbeddingClient {
