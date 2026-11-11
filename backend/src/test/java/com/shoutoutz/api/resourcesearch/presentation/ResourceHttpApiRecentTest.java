@@ -50,7 +50,7 @@ class ResourceHttpApiRecentTest {
                 new ResourceCardResponse(1201L, "blog-post", "CSR, SSR, SSG, ISR..? 난 ISR로 할래 #1",
                         "https://rilog.kr/@rilog/posts/219", "정기 콘텐츠를 재배포 없이 갱신하는 구조를 설계할 때 참고하기 좋아요.",
                         Instant.parse("2026-10-20T01:00:00Z"), "github",
-                        new ResourceCardResponse.Team("Rilog.", "rilog", 44L))));
+                        new ResourceCardResponse.Team("Rilog.", "rilog", 44L, "https://cdn.example.com/media/project/44/thumbnail"))));
 
         mockMvc.perform(get("/api/v1/resources/recent").queryParam("kind", "BLOG").queryParam("size", "4"))
                 .andExpect(status().isOk())
@@ -87,7 +87,9 @@ class ResourceHttpApiRecentTest {
                                         fieldWithPath("data[].team.projectSlug").type(STRING)
                                                 .description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),
                                         fieldWithPath("data[].team.logoMediaId").type(NUMBER)
-                                                .description("프로젝트 썸네일 미디어 ID. 없으면 null").optional()
+                                                .description("프로젝트 썸네일 미디어 ID. 없으면 null").optional(),
+                                        fieldWithPath("data[].team.logoUrl").type(STRING)
+                                                .description("팀 로고 이미지 주소(썸네일 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null").optional()
                                 )
                                 .build())
                 ));

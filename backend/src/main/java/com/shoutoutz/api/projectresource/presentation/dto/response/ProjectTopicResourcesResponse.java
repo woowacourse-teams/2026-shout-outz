@@ -2,6 +2,7 @@ package com.shoutoutz.api.projectresource.presentation.dto.response;
 
 import com.shoutoutz.api.projectresource.domain.ResourceTopic;
 import com.shoutoutz.api.resourcesearch.application.dto.ResourceCard;
+import com.shoutoutz.api.resourcesearch.application.dto.ResourceCardLogoUrls;
 import com.shoutoutz.api.resourcesearch.presentation.dto.response.ResourceCardResponse;
 import java.util.List;
 
@@ -29,19 +30,20 @@ public record ProjectTopicResourcesResponse(
             ResourceTopic topic,
             List<ResourceCard> resources,
             List<ResourceCard> talks,
-            List<ResourceCard> otherTeamResources
+            List<ResourceCard> otherTeamResources,
+            ResourceCardLogoUrls logoUrls
     ) {
         return new ProjectTopicResourcesResponse(
                 new Topic(topic.topicId(), topic.name()),
-                cards(resources),
-                cards(talks),
-                cards(otherTeamResources)
+                cards(resources, logoUrls),
+                cards(talks, logoUrls),
+                cards(otherTeamResources, logoUrls)
         );
     }
 
-    private static List<ResourceCardResponse> cards(List<ResourceCard> cards) {
+    private static List<ResourceCardResponse> cards(List<ResourceCard> cards, ResourceCardLogoUrls logoUrls) {
         return cards.stream()
-                .map(ResourceCardResponse::from)
+                .map(card -> ResourceCardResponse.from(card, logoUrls))
                 .toList();
     }
 
