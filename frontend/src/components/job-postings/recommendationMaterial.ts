@@ -15,7 +15,7 @@ export function recommendationToMaterial(recommendation: JobRequirementRecommend
     publishedAt: recommendation.publishedAt,
     platform: null,
     team: recommendation.teamName
-      ? { name: recommendation.teamName, projectSlug: null, logoMediaId: null }
+      ? { name: recommendation.teamName, projectSlug: null, logoMediaId: null, logoUrl: null }
       : undefined,
   };
 }

@@ -82,7 +82,7 @@ export function MaterialMeta({ material, trailing }: { material: Material; trail
       <Badge tone={tone}>{label}</Badge>
       {teamName && (
         <span className="inline-flex min-w-0 items-center gap-1.5 font-semibold text-gray-600">
-          <TeamLogo />
+          <TeamLogo logoUrl={material.team?.logoUrl ?? null} />
           <span className="truncate">{teamName}</span>
         </span>
       )}
@@ -92,8 +92,19 @@ export function MaterialMeta({ material, trailing }: { material: Material; trail
   );
 }
 
-// 서버가 팀 로고 주소(logoUrl)를 주는 PR이 반영되면 그 이미지를 보여 준다. 지금은 logoMediaId만 와서 회색 사각형으로 자리를 잡는다.
-function TeamLogo() {
+function TeamLogo({ logoUrl }: { logoUrl: string | null }) {
+  if (logoUrl)
+    return (
+      <img
+        src={logoUrl}
+        alt=""
+        width={16}
+        height={16}
+        className="size-4 shrink-0 rounded-sm object-cover"
+        loading="lazy"
+      />
+    );
+  // 로고를 등록하지 않은 팀은 회색 사각형으로 자리를 잡는다.
   return (
     <span
       aria-hidden="true"

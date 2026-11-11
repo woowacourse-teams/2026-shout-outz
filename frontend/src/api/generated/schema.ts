@@ -491,6 +491,8 @@ export interface AdminProjectMigrationUpdateRequest {
   descriptionMd?: string | null;
   /** GitHub 저장소 URL */
   githubRepositoryUrl?: string | null;
+  /** 로고 미디어 ID. null 허용 */
+  logoImageId?: number | null;
   /** 서비스 상태 */
   serviceStatus?: "OPERATING" | "CLOSED" | null;
   /** 프로젝트 slug */
@@ -2897,8 +2899,10 @@ export interface ProjectCareerCardsSuccessResponse {
       summary?: string | null;
       /** 자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
       team?: {
-        /** 프로젝트 썸네일 미디어 ID. 등록 전이거나 썸네일이 없으면 null */
+        /** 프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null */
         logoMediaId?: number | null;
+        /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+        logoUrl?: string | null;
         /** 등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름 */
         name?: string | null;
         /** 등록된 프로젝트의 slug. 등록 전이면 null */
@@ -3148,6 +3152,8 @@ export interface ProjectCreateRequest {
   descriptionMd?: string | null;
   /** https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하). 다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, 경로(/tree/main), 쿼리(?tab=readme), 앵커(#readme)는 허용하고 버린 뒤 저장한다. 리포지토리 이름으로 slug를 만든다. */
   githubRepositoryUrl: string;
+  /** 본인이 업로드한 PROJECT_LOGO 용도의 처리 완료 이미지 ID. 자료 카드 팀 이름 앞에 작게 보여 주는 팀 로고(파비콘)다 */
+  logoImageId?: number | null;
   /** @[A-Za-z0-9_-]{2,30} 형식의 팀원 handle 목록 (1명 이상). 등록자를 포함할 수 있으며, 활동 중인 우아한테크코스 크루 또는 코치여야 하며, 대소문자만 다른 handle도 같은 사용자로 본다. 배열 순서가 표시 순서가 된다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다. */
   memberHandles: string[];
   /** 서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반환한다. 이때 오류 응답의 details.field는 serviceStatusValid다. */
@@ -3328,6 +3334,10 @@ export interface ProjectFindDetailSuccessResponse {
     likeCount: number;
     /** 요청자의 좋아요 여부. 비로그인이면 false다. */
     likedByMe: boolean;
+    /** 프로젝트 로고 미디어 ID. 없으면 null */
+    logoImageId?: number | null;
+    /** 프로젝트 로고 공개 이미지 URL. 로고가 없거나 이미지가 준비되지 않았으면 null */
+    logoUrl?: string | null;
     /** 팀원 목록. 저장된 순서대로 반환한다. */
     members: {
       /** 프로필 이미지 URL. 가입한 팀원은 CloudFront 공개 이미지 URL을 우선하고, 없으면 연결된 GitHub 프로필 이미지 URL을 사용하며, 가입하지 않은 이관 팀원은 저장된 GitHub 프로필 이미지 URL을 사용한다. */
@@ -3476,8 +3486,10 @@ export interface ProjectTopicResourcesSuccessResponse {
       summary?: string | null;
       /** 자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
       team?: {
-        /** 프로젝트 썸네일 미디어 ID. 등록 전이거나 썸네일이 없으면 null */
+        /** 프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null */
         logoMediaId?: number | null;
+        /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+        logoUrl?: string | null;
         /** 등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름 */
         name?: string | null;
         /** 등록된 프로젝트의 slug. 등록 전이면 null */
@@ -3502,8 +3514,10 @@ export interface ProjectTopicResourcesSuccessResponse {
       summary?: string | null;
       /** 자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
       team?: {
-        /** 프로젝트 썸네일 미디어 ID. 등록 전이거나 썸네일이 없으면 null */
+        /** 프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null */
         logoMediaId?: number | null;
+        /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+        logoUrl?: string | null;
         /** 등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름 */
         name?: string | null;
         /** 등록된 프로젝트의 slug. 등록 전이면 null */
@@ -3528,8 +3542,10 @@ export interface ProjectTopicResourcesSuccessResponse {
       summary?: string | null;
       /** 자료를 만든 팀. 테코톡처럼 팀이 없거나 팀을 알 수 없으면 null */
       team?: {
-        /** 프로젝트 썸네일 미디어 ID. 등록 전이거나 썸네일이 없으면 null */
+        /** 프로젝트 로고 미디어 ID. 등록 전이거나 로고가 없으면 null */
         logoMediaId?: number | null;
+        /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+        logoUrl?: string | null;
         /** 등록된 프로젝트면 팀 이름, 등록 전 팀이면 수집 때 저장한 팀 이름 */
         name?: string | null;
         /** 등록된 프로젝트의 slug. 등록 전이면 null */
@@ -3593,6 +3609,8 @@ export interface ProjectUpdateRequest {
   descriptionMd?: string | null;
   /** https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하). 다른 owner의 리포지토리는 400이다. 리포지토리 이름 뒤의 .git, /, 경로(/tree/main), 쿼리(?tab=readme), 앵커(#readme)는 허용하고 버린 뒤 저장한다. 바꿀 수 있지만 다른 프로젝트가 등록한 리포지토리로는 바꿀 수 없다. slug는 등록 시점 값으로 고정이라 따라 바뀌지 않는다. */
   githubRepositoryUrl: string;
+  /** PROJECT_LOGO 용도의 처리 완료 이미지 ID. 필드를 생략하면 기존 로고를 유지하고, null을 보내면 제거한다. 지금 로고 ID와 다를 때만 본인이 올린 이미지인지 검사한다 */
+  logoImageId?: number | null;
   /** 팀원 handle 전체 목록 (1명 이상). 등록자를 포함할 수 있으며, 통째로 교체하며 배열 순서가 표시 순서가 된다. 이미 팀원인 사용자는 탈퇴했어도 그대로 둘 수 있다. 각 handle의 앞뒤 공백은 자르며, 공백만 있는 handle은 400이다. */
   memberHandles: string[];
   /** 서비스 운영 상태. deploymentUrl이 없으면 CLOSED만 보낼 수 있으며, 어기면 400을 반환한다. 이때 오류 응답의 details.field는 serviceStatusValid다. */
@@ -3700,8 +3718,10 @@ export interface ResourceDetailSuccessResponse {
     summary?: string | null;
     /** 자료를 만든 팀. 없으면 null */
     team?: {
-      /** 프로젝트 썸네일 미디어 ID. 없으면 null */
+      /** 프로젝트 로고 미디어 ID. 없으면 null */
       logoMediaId?: number | null;
+      /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+      logoUrl?: string | null;
       /** 팀 이름 */
       name?: string | null;
       /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
@@ -3741,8 +3761,10 @@ export interface ResourceRecentSuccessResponse {
     summary: string;
     /** 자료를 만든 팀. 없으면 null */
     team?: {
-      /** 프로젝트 썸네일 미디어 ID. 없으면 null */
+      /** 프로젝트 로고 미디어 ID. 없으면 null */
       logoMediaId?: number | null;
+      /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+      logoUrl?: string | null;
       /** 팀 이름 */
       name?: string | null;
       /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
@@ -3870,8 +3892,10 @@ export interface ResourceSearchSuccessResponse {
         summary?: string | null;
         /** 자료를 만든 팀. 팀이 없거나 알 수 없으면 null */
         team?: {
-          /** 프로젝트 썸네일 미디어 ID. 없으면 null */
+          /** 프로젝트 로고 미디어 ID. 없으면 null */
           logoMediaId?: number | null;
+          /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+          logoUrl?: string | null;
           /** 팀 이름 */
           name?: string | null;
           /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
@@ -3898,8 +3922,10 @@ export interface ResourceSearchSuccessResponse {
         summary?: string | null;
         /** 자료를 만든 팀. 팀이 없거나 알 수 없으면 null */
         team?: {
-          /** 프로젝트 썸네일 미디어 ID. 없으면 null */
+          /** 프로젝트 로고 미디어 ID. 없으면 null */
           logoMediaId?: number | null;
+          /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+          logoUrl?: string | null;
           /** 팀 이름 */
           name?: string | null;
           /** 등록된 프로젝트 slug. 등록 전 팀이면 null */
@@ -3926,8 +3952,10 @@ export interface ResourceSearchSuccessResponse {
         summary?: string | null;
         /** 자료를 만든 팀. 팀이 없거나 알 수 없으면 null */
         team?: {
-          /** 프로젝트 썸네일 미디어 ID. 없으면 null */
+          /** 프로젝트 로고 미디어 ID. 없으면 null */
           logoMediaId?: number | null;
+          /** 팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null */
+          logoUrl?: string | null;
           /** 팀 이름 */
           name?: string | null;
           /** 등록된 프로젝트 slug. 등록 전 팀이면 null */

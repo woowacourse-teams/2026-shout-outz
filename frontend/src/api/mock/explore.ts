@@ -158,7 +158,7 @@ const toMaterial = (resource: Resource): Material => {
       source === 'blog-post' ? (resource.url.includes('tistory.com') ? 'tistory' : null) : null,
     team:
       team && source !== 'youtube-tekotalk'
-        ? { name: team, projectSlug: resource.slug ?? null, logoMediaId: null }
+        ? { name: team, projectSlug: resource.slug ?? null, logoMediaId: null, logoUrl: null }
         : undefined,
   };
 };

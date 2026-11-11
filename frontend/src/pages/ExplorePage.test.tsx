@@ -19,7 +19,12 @@ const serverMaterial = (resourceId: number, source: string, title: string) => ({
   summary: `${title} 한줄 소개`,
   publishedAt: '2026-10-20T05:12:00Z',
   platform: null,
-  team: { name: '샤라웃', projectSlug: 'shout-outz', logoMediaId: 31 },
+  team: {
+    name: '샤라웃',
+    projectSlug: 'shout-outz',
+    logoMediaId: 31,
+    logoUrl: 'https://cdn.example.com/media/31/thumbnail.webp',
+  },
 });
 
 describe('ExplorePage', () => {
@@ -93,7 +98,7 @@ describe('ExplorePage', () => {
     expect(screen.queryByRole('region', { name: /^PR과 팀 문서/ })).not.toBeInTheDocument();
   });
 
-  it('위키와 디스커션 자료는 팀 문서 배지로 보여준다', async () => {
+  it('위키와 디스커션 자료는 팀 문서 배지와 팀 로고로 보여준다', async () => {
     server.use(
       http.get('*/api/v1/resources/search', () =>
         HttpResponse.json({
@@ -117,6 +122,10 @@ describe('ExplorePage', () => {
     for (const title of ['위키 자료', '디스커션 자료']) {
       const item = within(documents).getByRole('button', { name: new RegExp(title) });
       expect(within(item).getByText('팀 문서')).toBeVisible();
+      // 팀 로고는 서버가 준 logoUrl 이미지로 보여 준다.
+      expect(
+        item.querySelector('img[src="https://cdn.example.com/media/31/thumbnail.webp"]'),
+      ).toBeInTheDocument();
       expect(within(item).getByRole('img', { name: 'GitHub 팀 문서' })).toBeVisible();
     }
   });

@@ -279,7 +279,7 @@ const splitMaterials = (slug: string, topic: string) => {
       .filter((_, index) => index % 3 === 0)
       .map((material) => ({
         ...material,
-        team: { name, projectSlug: slug, logoMediaId: null },
+        team: { name, projectSlug: slug, logoMediaId: null, logoUrl: null },
       })),
     others: documents.filter((_, index) => index % 3 !== 0).slice(0, 6),
     techTalks: materials.filter(isTalk).slice(0, 5),
