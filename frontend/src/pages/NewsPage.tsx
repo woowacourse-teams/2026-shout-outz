@@ -34,17 +34,17 @@ export function NewsPage() {
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <title>소식 | shout-outz</title>
       <AppGnb aria-label="주요 헤더" />
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-5 px-5 pt-6 pb-12 md:px-12 md:pt-10 md:pb-20">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-bold tracking-tight text-gray-900 md:text-2xl">소식</h1>
-          <p className="text-sm text-gray-600">공지사항 및 이벤트</p>
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 pt-14 pb-30">
+        <div className="flex flex-col gap-2 pb-6">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">소식</h1>
+          <p className="text-base text-gray-600">공지사항 및 이벤트</p>
         </div>
 
-        <div className="border-b border-gray-200 pb-3">
+        <div>
           <Tab
-            variant="chip"
-            size="sm"
-            className="flex-wrap"
+            variant="underline"
+            size="md"
+            className="w-full border-b border-gray-200"
             value={filter}
             onChange={(value) => {
               analytics.track({ name: 'news_filter_changed', type: value });
@@ -95,10 +95,10 @@ function NewsList({ filter, sort }: { filter: NewsFilter; sort: NewsSort }) {
 
   return (
     <>
-      <ul className="flex flex-col gap-3">
+      <ul aria-label="소식 목록" className="flex flex-col">
         {news.map(
           ({ id, type, title, summary, publishedAt, eventStatus, eventStartAt, eventEndAt }) => (
-            <li key={id} className="group min-w-0">
+            <li key={id} className="group min-w-0 border-b border-gray-100">
               <Link
                 to="/news/$newsId"
                 params={{ newsId: String(id) }}
@@ -106,7 +106,7 @@ function NewsList({ filter, sort }: { filter: NewsFilter; sort: NewsSort }) {
                   analytics.track({ name: 'card_clicked', target: 'news', surface: 'news' });
                   analytics.track({ name: 'news_detail_opened', newsId: id, type, from: 'news' });
                 }}
-                className="bg-background focus-visible:outline-primary-600 block rounded-lg border border-gray-200 p-5 transition-colors hover:border-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 md:p-6"
+                className="focus-visible:outline-primary-600 block py-6 focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 <NewsItem
                   type={type}
@@ -125,7 +125,7 @@ function NewsList({ filter, sort }: { filter: NewsFilter; sort: NewsSort }) {
       {query.hasNextPage && (
         <Button
           variant="outline"
-          className="mt-2 self-center"
+          className="mt-8 self-center"
           disabled={query.isFetchingNextPage}
           onClick={() => void query.fetchNextPage({ cancelRefetch: false })}
         >

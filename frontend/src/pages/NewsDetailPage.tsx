@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
-import { IconArrowLeft, IconClock } from '@tabler/icons-react';
+import { IconArrowLeft } from '@tabler/icons-react';
 
 import { NewsEventPeriod } from '@/components/NewsEventPeriod';
 import { NewsEventStatusBadge } from '@/components/NewsEventStatusBadge';
@@ -22,7 +22,7 @@ export function NewsDetailPage() {
   return (
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <AppGnb aria-label="주요 헤더" />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-5 pt-7 pb-16 md:px-12 md:pt-8 md:pb-20">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-6 pt-10 pb-28">
         <AsyncBoundary
           key={newsId}
           fallback={
@@ -63,46 +63,46 @@ function NewsDetail({ newsId }: { newsId: number }) {
   return (
     <article className="min-w-0">
       <title>{`${news.title} | shout-outz`}</title>
-      <Link
-        to="/news"
-        className="mb-7 inline-flex items-center gap-2 text-xs text-gray-500 hover:text-gray-900"
-      >
-        <IconArrowLeft className="size-4" aria-hidden="true" />
-        목록으로
-      </Link>
-      <div className="flex items-center gap-2">
-        <NewsCategoryBadge type={news.type} />
+      <div className="flex items-center gap-3">
+        <Link
+          to="/news"
+          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900"
+        >
+          <IconArrowLeft className="size-4" aria-hidden="true" />
+          목록으로
+        </Link>
+        <NewsCategoryBadge type={news.type} className="px-2" />
       </div>
-      <h1 className="mt-3 text-2xl leading-snug font-bold tracking-tight break-words text-gray-900 md:text-3xl">
+      <h1 className="mt-3 text-2xl leading-tight font-extrabold tracking-tight break-keep text-gray-900 md:text-3xl">
         {news.title}
       </h1>
-      <div className="mt-7 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
-        <span className="font-medium text-gray-900">{news.author.name}</span>
-        <span aria-hidden="true">·</span>
+      <p className="mt-3.5 text-xs text-gray-500">
+        <b className="font-semibold text-gray-600">{news.author.name}</b>
+        {' · '}
         <time dateTime={news.publishedAt}>{formatDotDate(news.publishedAt)}</time>
-      </div>
+      </p>
 
       {news.type === 'EVENT' && (news.eventStatus || news.eventStartAt || news.eventEndAt) && (
-        <section aria-label="이벤트 일정" className="mt-6 rounded-lg bg-gray-50 p-4 md:p-5">
+        <section
+          aria-label="이벤트 일정"
+          className="mt-6 rounded-xl border border-gray-100 bg-gray-50 px-5 py-4.5"
+        >
           <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-            <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-gray-900">
-              <IconClock aria-hidden="true" className="size-4 text-gray-500" />
-              이벤트 일정
-            </h2>
-            <NewsEventStatusBadge status={news.eventStatus} />
+            <h2 className="text-sm font-bold text-gray-900">이벤트 일정</h2>
+            <NewsEventStatusBadge status={news.eventStatus} variant="soft" />
           </div>
           <NewsEventPeriod startAt={news.eventStartAt} endAt={news.eventEndAt} />
         </section>
       )}
 
-      <div className="mt-7 border-t border-gray-100 pt-8 text-sm leading-7 break-words whitespace-pre-line text-gray-600 md:text-base">
+      <div className="mt-7 text-base leading-[1.85] break-words whitespace-pre-line text-gray-600">
         {news.body}
       </div>
 
       {news.cta && (
         <a
           href={news.cta.url}
-          className="bg-primary-500 hover:bg-primary-600 focus-visible:ring-primary-600 mt-7 inline-flex min-h-10 items-center justify-center rounded-lg px-5 text-sm font-medium text-white focus-visible:ring-2 focus-visible:outline-none"
+          className="focus-visible:outline-primary-600 mt-7 inline-flex h-11 items-center justify-center rounded-lg bg-gray-900 px-5.5 text-sm font-semibold text-white hover:bg-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {news.cta.label}
         </a>

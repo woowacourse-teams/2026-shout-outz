@@ -8,9 +8,9 @@ export function MagazinesPage() {
     <div className="bg-background flex min-h-dvh flex-col text-gray-900">
       <title>매거진 | shout-outz</title>
       <AppGnb />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-12 md:pt-10 md:pb-20">
-        <h1 className="text-xl font-bold tracking-tight text-gray-900 md:text-2xl">매거진</h1>
-        <p className="mt-2 text-sm text-gray-500">크루들의 이야기를 인터뷰로 만나보세요.</p>
+      <main className="mx-auto w-full max-w-252 flex-1 px-6 pt-14 pb-30">
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">매거진</h1>
+        <p className="mt-2 text-base text-gray-600">크루들의 이야기를 인터뷰로 만나보세요.</p>
         <div className="mt-6">
           <AsyncBoundary>
             <MagazineList />
