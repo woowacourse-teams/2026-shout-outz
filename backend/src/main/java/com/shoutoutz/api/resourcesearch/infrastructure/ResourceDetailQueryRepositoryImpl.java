@@ -41,7 +41,7 @@ public class ResourceDetailQueryRepositoryImpl implements ResourceDetailQueryRep
                                                     AND preview.url = d.url
                 WHERE d.id = :resourceId
                   AND d.deleted_at IS NULL
-                """.formatted(CARD_COLUMNS, VISIBLE_PROJECT_JOIN);
+                """.formatted(CARD_COLUMNS, VISIBLE_PROJECT_JOIN) + JdbcResourceSearchRepository.NOT_REMOVED_BY_REPORT;
         MapSqlParameterSource parameters = new MapSqlParameterSource("resourceId", resourceId);
         return jdbcTemplate.query(sql, parameters, (resultSet, rowNumber) -> new DetailRow(
                         ResourceCardQueryRepositoryImpl.mapCard(resultSet),

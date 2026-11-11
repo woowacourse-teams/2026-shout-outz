@@ -72,12 +72,14 @@ public class ResourceCardQueryRepositoryImpl implements ResourceCardQueryReposit
                       AND d.deleted_at IS NULL
                       AND d.published_at IS NOT NULL
                       AND NULLIF(btrim(d.summary), '') IS NOT NULL
+                      %s
                 ) d
                 %s
                 WHERE d.author_rank = 1
                 ORDER BY d.published_at DESC, d.id DESC
                 LIMIT :size
-                """.formatted(CARD_COLUMNS, onePerAuthorKey(kind), VISIBLE_PROJECT_JOIN);
+                """.formatted(CARD_COLUMNS, onePerAuthorKey(kind), JdbcResourceSearchRepository.NOT_REMOVED_BY_REPORT,
+                VISIBLE_PROJECT_JOIN);
         return jdbcTemplate.query(
                 sql,
                 new MapSqlParameterSource()

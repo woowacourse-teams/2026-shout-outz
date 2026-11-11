@@ -6,6 +6,7 @@ import com.shoutoutz.api.jobposting.application.dto.RequirementRecommendation;
 import com.shoutoutz.api.jobposting.domain.JobRole;
 import com.shoutoutz.api.jobposting.domain.MatchingFailure;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
+import com.shoutoutz.api.resourcesearch.infrastructure.JdbcResourceSearchRepository;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
@@ -183,6 +184,7 @@ public class JobRequirementMatchingRepositoryImpl implements JobRequirementMatch
                     WHERE c.deleted_at IS NULL
                       AND d.deleted_at IS NULL
                       AND c.embedding_model = :embeddingModel
+                """ + JdbcResourceSearchRepository.NOT_REMOVED_BY_REPORT + """
                 )
                 """, new MapSqlParameterSource("embeddingModel", embeddingModel), Boolean.class));
     }

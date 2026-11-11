@@ -132,6 +132,18 @@ class ResourceDetailQueryRepositoryIntegrationTest {
         assertThat(resourceDetailQueryRepository.findById(999_999_999L)).isEmpty();
     }
 
+    @Test
+    @DisplayName("제보로 삭제가 승인된 자료는 찾지 못하고 대기 중인 제보의 자료는 찾는다")
+    void returnsEmptyForRemovedByReport() {
+        long removed = fixture.document("github-pr").save();
+        fixture.removalReport(removed, "ACCEPTED");
+        long pending = fixture.document("github-pr").save();
+        fixture.removalReport(pending, "OPEN");
+
+        assertThat(resourceDetailQueryRepository.findById(removed)).isEmpty();
+        assertThat(resourceDetailQueryRepository.findById(pending)).isPresent();
+    }
+
     private void insertExperience(long documentId, int index, String problem, String cause, String solution,
             String result, boolean deleted, String... tech) {
         jdbcTemplate.update("""

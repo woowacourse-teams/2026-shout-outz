@@ -76,7 +76,7 @@ class ResourceHttpApiDetailTest {
                                 .summary("기술 자료 상세 조회")
                                 .description("""
                                         검색 결과나 최근 자료 카드를 눌렀을 때 이동하는 자료 상세 화면의 정리 내용을 준다. 로그인 없이 볼 수 있다.
-                                        없거나 삭제된 자료면 404(RESOURCE_NOT_FOUND), resourceId가 1 이상의 정수가 아니면 400(VALIDATION_FAILED)으로 응답한다.""")
+                                        없거나 삭제된 자료, 제보로 삭제가 승인된 자료면 404(RESOURCE_NOT_FOUND), resourceId가 1 이상의 정수가 아니면 400(VALIDATION_FAILED)으로 응답한다.""")
                                 .pathParameters(parameterWithName("resourceId").type(SimpleType.INTEGER).description("자료 ID"))
                                 .responseSchema(Schema.schema("ResourceDetailSuccessResponse"))
                                 .responseFields(

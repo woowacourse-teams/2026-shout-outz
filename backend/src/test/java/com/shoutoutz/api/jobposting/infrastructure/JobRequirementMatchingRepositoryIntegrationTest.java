@@ -15,6 +15,7 @@ import com.shoutoutz.api.jobposting.domain.ReanalysisScope;
 import com.shoutoutz.api.jobposting.domain.RecommendationVerdict;
 import com.shoutoutz.api.jobposting.domain.RequirementCategory;
 import com.shoutoutz.api.resourcesearch.domain.ResourceTrack;
+import com.shoutoutz.api.resourcesearch.support.ResourceDocumentFixture;
 import com.shoutoutz.api.resourcesearch.support.ResourceSearchFixture;
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -415,6 +416,17 @@ class JobRequirementMatchingRepositoryIntegrationTest {
         fixture.chunk(deletedDocument, 0, "intro", "소개", vector(1, 0), model);
         jdbcTemplate.update("UPDATE resource_chunks SET deleted_at = now() WHERE id = ?", deletedChunk);
         jdbcTemplate.update("UPDATE resource_documents SET deleted_at = now() WHERE id = ?", deletedDocument);
+
+        assertThat(repository.hasSearchableChunks(model)).isFalse();
+    }
+
+    @Test
+    void 제보로_삭제가_승인된_자료만_있으면_검색할_자료가_없다고_본다() {
+        String model = uniqueModel();
+        ResourceSearchFixture fixture = new ResourceSearchFixture(jdbcTemplate);
+        long removed = fixture.document(ResourceTrack.BE);
+        fixture.chunk(removed, 0, "intro", "소개", vector(1, 0), model);
+        new ResourceDocumentFixture(jdbcTemplate).removalReport(removed, "ACCEPTED");
 
         assertThat(repository.hasSearchableChunks(model)).isFalse();
     }

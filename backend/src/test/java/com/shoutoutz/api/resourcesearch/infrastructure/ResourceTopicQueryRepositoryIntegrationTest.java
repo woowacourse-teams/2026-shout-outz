@@ -85,6 +85,20 @@ class ResourceTopicQueryRepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("제보로 삭제가 승인된 자료는 세지 않고, 그런 자료만 있는 주제는 넣지 않는다")
+    void excludesResourcesRemovedByReport() {
+        saveDocuments("concurrency", 2);
+        long removed = fixture.document("blog-post").topic("concurrency").save();
+        fixture.removalReport(removed, "ACCEPTED");
+        long onlyRemoved = fixture.document("blog-post").topic("cicd").save();
+        fixture.removalReport(onlyRemoved, "ACCEPTED");
+
+        List<PopularTopic> topics = resourceTopicQueryRepository.findMostCovered(10);
+
+        assertThat(topics).containsExactly(new PopularTopic(new ResourceTopic("concurrency", "동시성 제어/락"), 2));
+    }
+
+    @Test
     @DisplayName("많이 다룬 주제는 요청한 개수까지만 준다")
     void limitsPopularTopics() {
         saveDocuments("concurrency", 2);
