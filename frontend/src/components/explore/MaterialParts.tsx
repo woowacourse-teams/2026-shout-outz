@@ -72,23 +72,17 @@ export function MaterialMeta({ material, trailing }: { material: Material; trail
   );
 }
 
+/** 팀 로고. 서버가 준 logoUrl이 없으면(null) 아무것도 그리지 않고 팀 이름만 남긴다. */
 function TeamLogo({ logoUrl }: { logoUrl: string | null }) {
-  if (logoUrl)
-    return (
-      <img
-        src={logoUrl}
-        alt=""
-        width={16}
-        height={16}
-        className="size-4 shrink-0 rounded-sm object-cover"
-        loading="lazy"
-      />
-    );
-  // 로고를 등록하지 않은 팀은 회색 사각형으로 자리를 잡는다.
+  if (!logoUrl) return null;
   return (
-    <span
-      aria-hidden="true"
-      className="ring-gray-opacity-100 size-4 shrink-0 rounded-sm bg-gray-200 ring-1 ring-inset"
+    <img
+      src={logoUrl}
+      alt=""
+      width={16}
+      height={16}
+      className="size-4 shrink-0 rounded-sm object-cover"
+      loading="lazy"
     />
   );
 }

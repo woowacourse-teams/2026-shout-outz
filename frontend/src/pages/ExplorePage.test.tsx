@@ -130,6 +130,34 @@ describe('ExplorePage', () => {
     }
   });
 
+  it('로고를 등록하지 않은 팀은 로고 자리 없이 팀 이름만 보여준다', async () => {
+    const material = serverMaterial(3, 'github-pr', '로고 없는 팀 PR');
+    server.use(
+      http.get('*/api/v1/resources/search', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: {
+            blogs: { items: [] },
+            documents: {
+              items: [
+                { ...material, team: { ...material.team, logoMediaId: null, logoUrl: null } },
+              ],
+            },
+            talks: { items: [] },
+          },
+        }),
+      ),
+    );
+    renderRoute('/explore?q=동시성');
+
+    const documents = await resultSection(/^PR과 팀 문서/);
+    const item = within(documents).getByRole('button', { name: /로고 없는 팀 PR/ });
+    expect(within(item).getByText('샤라웃')).toBeVisible();
+    // 이미지도, 회색 칸도 그리지 않는다.
+    expect(item.querySelector('img')).not.toBeInTheDocument();
+    expect(item.querySelector('.bg-gray-200')).not.toBeInTheDocument();
+  });
+
   it('자료 요약에서 서버가 원인과 결과를 주지 않은 줄은 뺀다', async () => {
     const user = userEvent.setup();
     server.use(
