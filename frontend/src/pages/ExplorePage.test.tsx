@@ -130,6 +130,49 @@ describe('ExplorePage', () => {
     }
   });
 
+  it('블로그 아이콘은 서버가 준 faviconUrl로 보여 주고, 없거나 열리지 않으면 숨긴다', async () => {
+    const blog = (resourceId: number, title: string, faviconUrl: string | null) => ({
+      ...serverMaterial(resourceId, 'blog-post', title),
+      team: { name: '샤라웃', projectSlug: 'shout-outz', logoMediaId: null, logoUrl: null },
+      faviconUrl,
+    });
+    server.use(
+      http.get('*/api/v1/resources/search', () =>
+        HttpResponse.json({
+          status: 'success',
+          data: {
+            blogs: {
+              items: [
+                blog(11, '파비콘 있는 글', 'https://blog.example.com/favicon.png'),
+                blog(12, '파비콘 없는 글', null),
+                blog(13, '파비콘이 깨진 글', 'https://broken.example.com/favicon.ico'),
+              ],
+            },
+            documents: { items: [] },
+            talks: { items: [] },
+          },
+        }),
+      ),
+    );
+    renderRoute('/explore?q=동시성');
+
+    const blogs = await resultSection(/^블로그/);
+    const itemOf = (title: string) =>
+      within(blogs).getByRole('button', { name: new RegExp(title) });
+
+    expect(
+      itemOf('파비콘 있는 글').querySelector('img[src="https://blog.example.com/favicon.png"]'),
+    ).toBeInTheDocument();
+    expect(itemOf('파비콘 없는 글').querySelector('img')).not.toBeInTheDocument();
+
+    const broken = itemOf('파비콘이 깨진 글').querySelector('img');
+    if (!broken) throw new Error('깨진 파비콘 이미지를 찾을 수 없습니다.');
+    fireEvent.error(broken);
+    await waitFor(() =>
+      expect(itemOf('파비콘이 깨진 글').querySelector('img')).not.toBeInTheDocument(),
+    );
+  });
+
   it('로고를 등록하지 않은 팀은 로고 자리 없이 팀 이름만 보여준다', async () => {
     const material = serverMaterial(3, 'github-pr', '로고 없는 팀 PR');
     server.use(
