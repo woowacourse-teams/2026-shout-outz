@@ -180,7 +180,7 @@ function GithubMark({ className }: { className?: string }) {
   );
 }
 
-function DocumentMark({ className }: { className?: string }) {
+export function DocumentMark({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"

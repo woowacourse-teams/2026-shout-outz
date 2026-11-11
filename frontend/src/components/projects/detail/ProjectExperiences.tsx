@@ -7,7 +7,12 @@ import {
   type ProjectCareerCard,
 } from '@/apis/project-explore';
 import { DotTab } from '@/components/explore/DotTab';
-import { isGithubMaterial, isPullRequest, sourceBadgeOf } from '@/components/explore/MaterialParts';
+import {
+  DocumentMark,
+  isGithubMaterial,
+  isPullRequest,
+  sourceBadgeOf,
+} from '@/components/explore/MaterialParts';
 import { ResourceReportModal } from '@/components/projects/detail/ResourceReportModal';
 import { useIsProjectMember } from '@/components/projects/detail/useIsProjectMember';
 import { useModal } from '@/hooks/useModal';
@@ -20,10 +25,10 @@ const JOB_ROLES: { jobRole: string; label: string }[] = [
   { jobRole: 'AN', label: '안드로이드' },
 ];
 
-/** 출처 동그라미 안 글자. PR은 PR, GitHub 문서는 D, 블로그는 B */
+/** 출처 동그라미 안 표시. PR은 PR, GitHub 팀 문서는 자료 목록과 같은 문서 아이콘, 블로그는 B */
 const shortLabelOf = (source: CareerCardSource) => {
   if (isPullRequest(source)) return 'PR';
-  if (isGithubMaterial(source)) return 'D';
+  if (isGithubMaterial(source)) return <DocumentMark className="size-2.5 text-green-600" />;
   return 'B';
 };
 
