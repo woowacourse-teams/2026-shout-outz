@@ -36,7 +36,6 @@ import com.shoutoutz.api.common.exception.custom.ConflictException;
 import com.shoutoutz.api.common.exception.custom.DuplicateEntityException;
 import com.shoutoutz.api.common.exception.custom.EntityNotFoundException;
 import com.shoutoutz.api.common.restdocs.RestDocsFields;
-import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.project.application.ProjectService;
 import com.shoutoutz.api.project.domain.ApprovalStatus;
 import com.shoutoutz.api.project.domain.DeletedProject;
@@ -475,7 +474,7 @@ class ProjectHttpApiTest {
                                 new ProjectMemberProfileResponse(null, null, "Archived Crew", null, null, null,
                                         "https://avatars.githubusercontent.com/u/1", "https://github.com/archived-crew")
                         ))),
-                new SliceMetaResponse("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L)
+                new ProjectFindAllResponse.Meta("UE9QVUxBUnwxODR8MjAyNi0wOC0wOVQwMjozMDowMFp8MTAw", true, 48L, null)
         ));
 
         mockMvc.perform(get("/api/v1/projects")
@@ -507,7 +506,9 @@ class ProjectHttpApiTest {
                                         parameterWithName("keyword")
                                                 .description("검색어. 100자 이하. topicId 없이 보내면 먼저 공개 프로젝트 이름과 비교해, "
                                                         + "대소문자, 공백, 구두점을 빼고 같은 이름이 있으면 그 프로젝트만 조회한다. "
-                                                        + "같은 이름이 없거나 topicId와 함께 보내면 프로젝트 이름, 한 줄 소개, "
+                                                        + "같은 이름이 없으면 기술 주제 별칭과 비교해, 가장 잘 맞는 주제가 하나면 "
+                                                        + "그 주제(topicId)로 조회하고 meta.matchedTopic에 담는다. "
+                                                        + "둘 다 아니거나 topicId와 함께 보내면 프로젝트 이름, 한 줄 소개, "
                                                         + "참여 크루 이름에서 대소문자를 무시한 부분 일치로 찾는다")
                                                 .optional(),
                                         parameterWithName("cohorts")
@@ -591,7 +592,20 @@ class ProjectHttpApiTest {
                                                 .optional(),
                                         fieldWithPath("meta.hasNext").type(BOOLEAN).description("다음 페이지 존재 여부"),
                                         fieldWithPath("meta.totalCount").type(NUMBER)
-                                                .description("커서와 size를 제외한 검색어와 필터 조건을 만족하는 전체 프로젝트 수")
+                                                .description("커서와 size를 제외한 검색어와 필터 조건을 만족하는 전체 프로젝트 수"),
+                                        fieldWithPath("meta.matchedTopic").type(OBJECT)
+                                                .description("topicId 없이 보낸 검색어가 기술 주제 별칭과 맞아 그 주제로 조회했을 때의 주제. "
+                                                        + "이름이 같은 프로젝트가 있거나, 맞는 주제가 없거나 여럿이거나, topicId와 함께 보내면 null")
+                                                .optional(),
+                                        fieldWithPath("meta.matchedTopic.topicId").type(STRING)
+                                                .description("기술 주제 id. 기술 주제 목록 조회의 topicId와 같다")
+                                                .optional(),
+                                        fieldWithPath("meta.matchedTopic.name").type(STRING)
+                                                .description("기술 주제 이름")
+                                                .optional(),
+                                        fieldWithPath("meta.matchedTopic.side").type(STRING)
+                                                .description("기술 주제 직군 (backend, frontend, mobile, common)")
+                                                .optional()
                                 )
                                 .build())
                 ));
@@ -604,7 +618,7 @@ class ProjectHttpApiTest {
     @DisplayName("파라미터를 보내지 않으면 모두 입력하지 않은 값으로 조회한다.")
     void findsProjectsWithoutParameters() throws Exception {
         given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(
-                new ProjectFindAllResponse(List.of(), new SliceMetaResponse(null, false, 0L)));
+                new ProjectFindAllResponse(List.of(), new ProjectFindAllResponse.Meta(null, false, 0L, null)));
 
         mockMvc.perform(get("/api/v1/projects"))
                 .andExpect(status().isOk())
@@ -612,6 +626,22 @@ class ProjectHttpApiTest {
                 .andExpect(jsonPath("$.meta.totalCount").value(0));
 
         verify(projectService).findAll(new ProjectFindAllRequest(null, null, null, null, null, null, null));
+    }
+
+    @Test
+    @DisplayName("검색어를 기술 주제로 해석했으면 meta.matchedTopic에 주제 id, 이름, 직군을 담는다.")
+    void returnsMatchedTopic() throws Exception {
+        given(projectService.findAll(any(ProjectFindAllRequest.class))).willReturn(new ProjectFindAllResponse(
+                List.of(),
+                new ProjectFindAllResponse.Meta(null, false, 0L,
+                        new ProjectFindAllResponse.MatchedTopic("concurrency", "동시성 제어/락", "backend"))
+        ));
+
+        mockMvc.perform(get("/api/v1/projects").queryParam("keyword", "동시성"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meta.matchedTopic.topicId").value("concurrency"))
+                .andExpect(jsonPath("$.meta.matchedTopic.name").value("동시성 제어/락"))
+                .andExpect(jsonPath("$.meta.matchedTopic.side").value("backend"));
     }
 
     @Test

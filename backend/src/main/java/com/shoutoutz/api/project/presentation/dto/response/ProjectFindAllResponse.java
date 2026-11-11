@@ -1,13 +1,13 @@
 package com.shoutoutz.api.project.presentation.dto.response;
 
-import com.shoutoutz.api.common.response.SliceMetaResponse;
 import com.shoutoutz.api.project.domain.ProjectPage;
 import com.shoutoutz.api.project.domain.ProjectSummary;
+import com.shoutoutz.api.projectresource.domain.ResourceTopic;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-public record ProjectFindAllResponse(List<Item> items, SliceMetaResponse meta) {
+public record ProjectFindAllResponse(List<Item> items, Meta meta) {
 
     public ProjectFindAllResponse {
         items = List.copyOf(items);
@@ -18,21 +18,49 @@ public record ProjectFindAllResponse(List<Item> items, SliceMetaResponse meta) {
             String nextCursor,
             Map<Long, URI> mediaUrls
     ) {
-        return of(page, nextCursor, mediaUrls, Map.of());
+        return of(page, nextCursor, mediaUrls, Map.of(), null);
     }
 
     public static ProjectFindAllResponse of(
             ProjectPage page,
             String nextCursor,
             Map<Long, URI> mediaUrls,
-            Map<Long, String> userAvatarUrls
+            Map<Long, String> userAvatarUrls,
+            ResourceTopic matchedTopic
     ) {
         return new ProjectFindAllResponse(
                 page.items().stream()
                         .map(item -> Item.from(item, mediaUrls, userAvatarUrls))
                         .toList(),
-                new SliceMetaResponse(nextCursor, page.hasNext(), page.totalCount())
+                new Meta(nextCursor, page.hasNext(), page.totalCount(), MatchedTopic.from(matchedTopic))
         );
+    }
+
+    /**
+     * 목록 공통 페이지 정보에 검색어 해석 결과를 더한 메타 정보
+     *
+     * @param matchedTopic 검색어를 기술 주제로 해석해 그 주제로 조회했을 때의 주제. 아니면 null
+     */
+    public record Meta(
+            String nextCursor,
+            boolean hasNext,
+            long totalCount,
+            MatchedTopic matchedTopic
+    ) {
+    }
+
+    public record MatchedTopic(
+            String topicId,
+            String name,
+            String side
+    ) {
+
+        public static MatchedTopic from(ResourceTopic topic) {
+            if (topic == null) {
+                return null;
+            }
+            return new MatchedTopic(topic.topicId(), topic.name(), topic.side());
+        }
     }
 
     /**

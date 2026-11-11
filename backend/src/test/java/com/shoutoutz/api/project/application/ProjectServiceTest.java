@@ -59,6 +59,7 @@ import com.shoutoutz.api.project.domain.RestorableProject;
 import com.shoutoutz.api.project.domain.RestoredProject;
 import com.shoutoutz.api.project.domain.ProjectTechTag;
 import com.shoutoutz.api.project.domain.PublicProjectTitle;
+import com.shoutoutz.api.project.domain.TopicAliases;
 import com.shoutoutz.api.project.domain.ServiceStatus;
 import com.shoutoutz.api.user.domain.profile.Track;
 import com.shoutoutz.api.project.domain.Slug;
@@ -73,6 +74,8 @@ import com.shoutoutz.api.project.domain.exception.InvalidLogoException;
 import com.shoutoutz.api.project.domain.exception.InvalidThumbnailException;
 import com.shoutoutz.api.project.domain.exception.ProjectRegistrationForbiddenException;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectCreateRequest;
+import com.shoutoutz.api.projectresource.application.ProjectResourceQueryRepository;
+import com.shoutoutz.api.projectresource.domain.ResourceTopic;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFilterOptionsRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectFindAllRequest;
 import com.shoutoutz.api.project.presentation.dto.request.ProjectUpdateRequest;
@@ -169,6 +172,17 @@ class ProjectServiceTest {
     @Mock
     private BlogSourceRepository blogSourceRepository;
 
+    @Mock
+    private ProjectResourceQueryRepository projectResourceQueryRepository;
+
+    private final TopicAliases topicAliases = TopicAliases.of(
+            Map.of(
+                    "concurrency", List.of("동시성 제어/락", "동시성"),
+                    "cache", List.of("redis")
+            ),
+            Set.of("concurrency", "cache")
+    );
+
     private ProjectService projectService;
 
     @BeforeEach
@@ -186,6 +200,8 @@ class ProjectServiceTest {
                 mediaUrlResolver,
                 new UserAvatarUrlResolver(mediaUrlResolver, oauthAccountRepository),
                 blogSourceRepository,
+                topicAliases,
+                projectResourceQueryRepository,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
         lenient().when(projectSlugResolver.resolveId(SLUG)).thenReturn(PROJECT_ID);
@@ -763,6 +779,43 @@ class ProjectServiceTest {
         verify(projectRepository).findAll(conditionCaptor.capture());
         assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
                 "ril", List.of(), List.of(), null, ProjectSort.LATEST, 8, null));
+    }
+
+    @Test
+    @DisplayName("검색어가 기술 주제 별칭과 맞으면 검색어 대신 그 주제로 조회하고, 응답에 해석한 주제를 담는다.")
+    void findsTopicProjectsWhenKeywordMatchesTopicAlias() {
+        when(projectRepository.findPublicProjectTitles()).thenReturn(List.of(new PublicProjectTitle(1L, "Rilog.")));
+        when(projectResourceQueryRepository.findTopic("concurrency")).thenReturn(Optional.of(
+                new ResourceTopic("concurrency", "동시성 제어/락", "backend", "동시성, 트랜잭션")));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        ProjectFindAllResponse response = projectService.findAll(
+                new ProjectFindAllRequest("동시성 문제", List.of(7), null, null, null, null, null));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue()).isEqualTo(new ProjectSearchCondition(
+                null, List.of(7), List.of(), "concurrency", ProjectSort.LATEST, 8, null));
+        assertThat(response.meta().matchedTopic()).isEqualTo(
+                new ProjectFindAllResponse.MatchedTopic("concurrency", "동시성 제어/락", "backend"));
+    }
+
+    @Test
+    @DisplayName("검색어가 프로젝트 이름과 같으면 기술 주제 별칭과 맞아도 이름을 먼저 따르고 주제를 담지 않는다.")
+    void prefersProjectTitleOverTopicAlias() {
+        when(projectRepository.findPublicProjectTitles()).thenReturn(List.of(new PublicProjectTitle(5L, "동시성")));
+        when(projectRepository.findAll(any(ProjectSearchCondition.class)))
+                .thenReturn(new ProjectPage(List.of(), false, 0));
+
+        ProjectFindAllResponse response = projectService.findAll(
+                new ProjectFindAllRequest("동시성", null, null, null, null, null, null));
+
+        ArgumentCaptor<ProjectSearchCondition> conditionCaptor = ArgumentCaptor.forClass(ProjectSearchCondition.class);
+        verify(projectRepository).findAll(conditionCaptor.capture());
+        assertThat(conditionCaptor.getValue().projectIds()).containsExactly(5L);
+        assertThat(response.meta().matchedTopic()).isNull();
+        verifyNoInteractions(projectResourceQueryRepository);
     }
 
     @Test

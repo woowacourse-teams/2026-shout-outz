@@ -60,6 +60,13 @@ public record ProjectSearchCondition(
     }
 
     /**
+     * 검색어를 지우고 그 기술 주제로 조회하는 조건
+     */
+    public ProjectSearchCondition inTopic(String topicId) {
+        return new ProjectSearchCondition(null, cohorts, techTagIds, topicId, sort, size, cursor, projectIds);
+    }
+
+    /**
      * 정렬, 페이지 정보를 뺀 검색어와 필터 조건
      */
     public ProjectFilterCondition filter() {

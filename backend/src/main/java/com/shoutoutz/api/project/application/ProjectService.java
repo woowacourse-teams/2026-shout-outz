@@ -57,6 +57,7 @@ import com.shoutoutz.api.project.domain.Slug;
 import com.shoutoutz.api.project.domain.TeamBlogUrls;
 import com.shoutoutz.api.project.domain.TeamName;
 import com.shoutoutz.api.project.domain.Title;
+import com.shoutoutz.api.project.domain.TopicAliases;
 import com.shoutoutz.api.project.domain.exception.InvalidDescriptionMediaException;
 import com.shoutoutz.api.project.domain.exception.InvalidLogoException;
 import com.shoutoutz.api.project.domain.exception.InvalidProjectMemberException;
@@ -73,6 +74,8 @@ import com.shoutoutz.api.project.presentation.dto.response.ProjectDetailResponse
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFilterOptionsResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectFindAllResponse;
 import com.shoutoutz.api.project.presentation.dto.response.ProjectUpdateResponse;
+import com.shoutoutz.api.projectresource.application.ProjectResourceQueryRepository;
+import com.shoutoutz.api.projectresource.domain.ResourceTopic;
 import com.shoutoutz.api.techtag.domain.TechTagRepository;
 import com.shoutoutz.api.user.domain.account.User;
 import com.shoutoutz.api.user.domain.account.UserRepository;
@@ -111,6 +114,8 @@ public class ProjectService {
     private final MediaUrlResolver mediaUrlResolver;
     private final UserAvatarUrlResolver userAvatarUrlResolver;
     private final BlogSourceRepository blogSourceRepository;
+    private final TopicAliases topicAliases;
+    private final ProjectResourceQueryRepository projectResourceQueryRepository;
     private final Clock clock;
 
     @Transactional
@@ -225,7 +230,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public ProjectFindAllResponse findAll(ProjectFindAllRequest request, Long viewerId) {
         ProjectSort sort = request.resolvedSort();
-        ProjectSearchCondition condition = resolveKeyword(new ProjectSearchCondition(
+        ResolvedKeyword resolved = resolveKeyword(new ProjectSearchCondition(
                 request.keyword(),
                 request.resolvedCohorts(),
                 request.resolvedTechTagIds(),
@@ -234,6 +239,7 @@ public class ProjectService {
                 request.resolvedSize(),
                 request.resolvedCursor()
         ));
+        ProjectSearchCondition condition = resolved.condition();
         ProjectPage page = viewerId == null
                 ? projectRepository.findAll(condition)
                 : projectRepository.findAll(condition, viewerId);
@@ -244,30 +250,43 @@ public class ProjectService {
                 page,
                 nextCursor == null ? null : ProjectCursorCodec.encode(nextCursor),
                 mediaUrls,
-                userAvatarUrls
+                userAvatarUrls,
+                resolved.matchedTopic()
         );
     }
 
     /**
      * 프로젝트 탭 검색어를 해석한다. 기술 주제를 함께 고르면 주제 안에서 부분 일치로 찾으므로 해석하지 않는다.
      * 검색어가 공개 프로젝트 이름과 같으면 그 프로젝트로 가려는 입력으로 보고, 검색어 대신 그 프로젝트들만 조회한다.
+     * 이름이 아니고 기술 주제 별칭과 맞는 주제가 하나면, 사이드바에서 그 주제를 고른 것과 같게 조회하고 해석한 주제를 알린다.
      */
-    private ProjectSearchCondition resolveKeyword(ProjectSearchCondition condition) {
+    private ResolvedKeyword resolveKeyword(ProjectSearchCondition condition) {
         if (condition.keyword() == null || condition.topicId() != null) {
-            return condition;
+            return new ResolvedKeyword(condition, null);
         }
         NormalizedKeyword keyword = NormalizedKeyword.of(condition.keyword());
         if (keyword.isEmpty()) {
-            return condition;
+            return new ResolvedKeyword(condition, null);
         }
         List<Long> titleMatchedIds = projectRepository.findPublicProjectTitles().stream()
                 .filter(project -> NormalizedKeyword.of(project.title()).equals(keyword))
                 .map(PublicProjectTitle::id)
                 .toList();
-        if (titleMatchedIds.isEmpty()) {
-            return condition;
+        if (!titleMatchedIds.isEmpty()) {
+            return new ResolvedKeyword(condition.onlyProjects(titleMatchedIds), null);
         }
-        return condition.onlyProjects(titleMatchedIds);
+        Optional<ResourceTopic> matchedTopic = topicAliases.match(keyword)
+                .flatMap(projectResourceQueryRepository::findTopic);
+        if (matchedTopic.isEmpty()) {
+            return new ResolvedKeyword(condition, null);
+        }
+        return new ResolvedKeyword(condition.inTopic(matchedTopic.get().topicId()), matchedTopic.get());
+    }
+
+    /**
+     * @param matchedTopic 검색어를 기술 주제로 해석했을 때의 주제. 아니면 null
+     */
+    private record ResolvedKeyword(ProjectSearchCondition condition, ResourceTopic matchedTopic) {
     }
 
     /**
