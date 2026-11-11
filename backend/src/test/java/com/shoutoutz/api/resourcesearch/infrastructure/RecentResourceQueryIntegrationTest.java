@@ -62,6 +62,17 @@ class RecentResourceQueryIntegrationTest {
     }
 
     @Test
+    @DisplayName("제보로 삭제가 승인된 글은 빼고 같은 팀의 다음 최신 글을 준다")
+    void skipsRemovedBlogAndKeepsNextLatestOfTeam() {
+        long projectId = fixture.approvedProject("festabook", "페스타북");
+        long older = fixture.document("blog-post").projectId(projectId).publishedAt(DAY1).save();
+        long removed = fixture.document("blog-post").projectId(projectId).publishedAt(DAY3).save();
+        fixture.removalReport(removed, "ACCEPTED");
+
+        assertThat(ids(ResourceSection.BLOG, 10)).containsExactly(older);
+    }
+
+    @Test
     @DisplayName("등록 전 팀의 블로그는 수집 때 저장한 팀 이름으로 묶는다")
     void groupsUnregisteredBlogsByCollectedTeamName() {
         blog(DAY1, "{\"project_name\": \"모모\"}");
