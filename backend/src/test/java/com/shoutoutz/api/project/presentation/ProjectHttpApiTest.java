@@ -101,14 +101,15 @@ class ProjectHttpApiTest {
             + "본문 이미지는 descriptionMd에 ![설명](media://{mediaId}) 형식으로 넣는다. "
             + "githubRepositoryUrl은 woowacourse-teams 조직의 리포지토리만 받으며, "
             + "리포지토리 이름 뒤의 경로, 쿼리, 앵커는 버리고 https://github.com/woowacourse-teams/{repo} 형태로 저장한다. "
-            + "요청값, 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나 리포지토리 이름으로 slug를 만들 수 없으면 400, "
+            + "logoImageId는 선택 입력이며, 자료 카드 팀 이름 앞에 보여 줄 팀 로고다. "
+            + "요청값, 기술 스택, 썸네일, 로고, 본문 이미지, 팀원이 유효하지 않거나 리포지토리 이름으로 slug를 만들 수 없으면 400, "
             + "로그인하지 않았으면 401, 크루나 코치가 아니면 403, "
             + "이미 등록된 리포지토리이거나 앞 연도나 특수문자만 달라 slug가 겹치면 409를 반환한다.";
     private static final String UPDATE_SUMMARY = "프로젝트 수정";
     private static final String UPDATE_DESCRIPTION = "작성자가 프로젝트 정보를 수정한다. 대부분의 필드는 전체 교체 방식이며, "
             + "비우는 값은 null로 보낸다. 문자열 값은 앞뒤 공백을 자르고, 공백만 있으면 보내지 않은 것으로 본다 (descriptionMd 제외). "
             + "thumbnailImageId는 생략하면 기존 이미지를 유지하고, "
-            + "새 ID를 보내면 교체하며, null을 명시하면 제거한다. "
+            + "새 ID를 보내면 교체하며, null을 명시하면 제거한다. logoImageId도 같은 규칙이다. "
             + "descriptionMd는 저장 시 media://{mediaId} 형식으로 정규화하며, 상세 조회 응답의 CDN URL은 기존 프로젝트 미디어와 "
             + "매칭되는 경우에만 본문 이미지 참조로 복원한다. 매칭되지 않는 외부 이미지 URL은 허용하지 않는다. "
             + "techTagIds와 memberHandles도 전체 목록을 순서대로 보낸다. "
@@ -117,7 +118,7 @@ class ProjectHttpApiTest {
             + "그 밖의 상태는 그대로 유지된다. slug는 등록 시점 값으로 고정이라 바뀌지 않는다. "
             + "githubRepositoryUrl은 woowacourse-teams 조직의 리포지토리만 받으며, "
             + "리포지토리 이름 뒤의 경로, 쿼리, 앵커는 버리고 https://github.com/woowacourse-teams/{repo} 형태로 저장한다. "
-            + "요청값과 기술 스택, 썸네일, 본문 이미지, 팀원이 유효하지 않거나, "
+            + "요청값과 기술 스택, 썸네일, 로고, 본문 이미지, 팀원이 유효하지 않거나, "
             + "deploymentUrl 없이 serviceStatus를 OPERATING으로 보내면 400, 로그인하지 않았으면 401, "
             + "없거나 형식이 틀린 slug이거나, 삭제됐거나 다른 사람의 프로젝트면 404, 이미 등록된 리포지토리로 바꾸면 409를 반환한다.";
     private static final String FIND_ALL_SUMMARY = "프로젝트 목록 조회";
@@ -194,6 +195,10 @@ class ProjectHttpApiTest {
                                         fieldWithPath("cohort").type(NUMBER).description("우아한테크코스 기수 (1~8)"),
                                         fieldWithPath("thumbnailImageId").type(NUMBER)
                                                 .description("본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID")
+                                                .optional(),
+                                        fieldWithPath("logoImageId").type(NUMBER)
+                                                .description("본인이 업로드한 PROJECT_LOGO 용도의 처리 완료 이미지 ID. "
+                                                        + "자료 카드 팀 이름 앞에 작게 보여 주는 팀 로고(파비콘)다")
                                                 .optional(),
                                         fieldWithPath("githubRepositoryUrl").type(STRING)
                                                 .description("https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하). "
@@ -726,6 +731,8 @@ class ProjectHttpApiTest {
                 .andExpect(jsonPath("$.data.slug").value("loop"))
                 .andExpect(jsonPath("$.data.id").doesNotExist())
                 .andExpect(jsonPath("$.data.thumbnailImageId").value(12L))
+                .andExpect(jsonPath("$.data.logoImageId").value(14L))
+                .andExpect(jsonPath("$.data.logoUrl").value("https://cdn.example.com/logo"))
                 .andExpect(jsonPath("$.data.descriptionMedia[0].mediaId").value(21L))
                 .andExpect(jsonPath("$.data.editable").value(false))
                 .andExpect(jsonPath("$.data.rejectReason").value(nullValue()))
@@ -757,6 +764,12 @@ class ProjectHttpApiTest {
                                                 .optional(),
                                         fieldWithPath("data.imageUrl").type(STRING)
                                                 .description("CloudFront에서 제공하는 공개 이미지 URL")
+                                                .optional(),
+                                        fieldWithPath("data.logoImageId").type(NUMBER)
+                                                .description("프로젝트 로고 미디어 ID. 없으면 null")
+                                                .optional(),
+                                        fieldWithPath("data.logoUrl").type(STRING)
+                                                .description("프로젝트 로고 공개 이미지 URL. 로고가 없거나 이미지가 준비되지 않았으면 null")
                                                 .optional(),
                                         fieldWithPath("data.descriptionMd").type(STRING)
                                                 .description("프로젝트 설명 마크다운. 본문 이미지 참조는 공개 URL로 변환되어 있다.")
@@ -1110,6 +1123,8 @@ class ProjectHttpApiTest {
                 6,
                 12L,
                 "https://cdn.example.com/thumbnail",
+                14L,
+                "https://cdn.example.com/logo",
                 "## 문제\n![회고 화면](https://cdn.example.com/description-21)",
                 List.of(new ProjectDetailResponse.DescriptionMedia(
                         21L,
@@ -1207,6 +1222,10 @@ class ProjectHttpApiTest {
                                         fieldWithPath("thumbnailImageId").type(NUMBER)
                                                 .description("본인이 업로드한 PROJECT_THUMBNAIL 용도의 처리 완료 이미지 ID. "
                                                         + "필드를 생략하면 기존 썸네일을 유지하고, null을 보내면 제거한다.")
+                                                .optional(),
+                                        fieldWithPath("logoImageId").type(NUMBER)
+                                                .description("PROJECT_LOGO 용도의 처리 완료 이미지 ID. 필드를 생략하면 기존 로고를 유지하고, "
+                                                        + "null을 보내면 제거한다. 지금 로고 ID와 다를 때만 본인이 올린 이미지인지 검사한다")
                                                 .optional(),
                                         fieldWithPath("githubRepositoryUrl").type(STRING)
                                                 .description("https://github.com/woowacourse-teams/{repo} 형식 (2,048자 이하). "
@@ -1339,6 +1358,7 @@ class ProjectHttpApiTest {
                   "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                   "cohort": 6,
                   "thumbnailImageId": 12,
+                  "logoImageId": 14,
                   "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                   "deploymentUrl": "https://loop.team",
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.",
@@ -1358,6 +1378,7 @@ class ProjectHttpApiTest {
                   "tagline": "스프린트 회고와 액션 아이템을 하나로 엮은 실시간 협업 도구",
                   "cohort": 6,
                   "thumbnailImageId": 12,
+                  "logoImageId": 14,
                   "githubRepositoryUrl": "https://github.com/woowacourse-teams/2026-loop",
                   "deploymentUrl": "https://loop.team",
                   "descriptionMd": "## 문제\\n회고 도구와 액션 아이템 관리가 흩어져 있습니다.\\n\\n![회고 화면](media://21)",

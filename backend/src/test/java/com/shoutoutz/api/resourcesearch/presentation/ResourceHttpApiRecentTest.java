@@ -87,9 +87,9 @@ class ResourceHttpApiRecentTest {
                                         fieldWithPath("data[].team.projectSlug").type(STRING)
                                                 .description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),
                                         fieldWithPath("data[].team.logoMediaId").type(NUMBER)
-                                                .description("프로젝트 썸네일 미디어 ID. 없으면 null").optional(),
+                                                .description("프로젝트 로고 미디어 ID. 없으면 null").optional(),
                                         fieldWithPath("data[].team.logoUrl").type(STRING)
-                                                .description("팀 로고 이미지 주소(썸네일 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null").optional()
+                                                .description("팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null").optional()
                                 )
                                 .build())
                 ));
