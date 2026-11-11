@@ -137,6 +137,22 @@ class ResourceHttpApiSearchTest {
         verifyNoInteractions(resourceQueryService);
     }
 
+    @Test
+    @DisplayName("검색어 길이는 앞뒤 공백을 지운 뒤 센다")
+    void countsKeywordLengthAfterTrimming() throws Exception {
+        given(resourceQueryService.search(any(ResourceSearchRequest.class), any(VisitorKey.class)))
+                .willReturn(new ResourceSearchResponse(
+                        new ResourceSectionResponse(List.of()),
+                        new ResourceSectionResponse(List.of()),
+                        new ResourceSectionResponse(List.of())
+                ));
+
+        mockMvc.perform(get("/api/v1/resources/search")
+                        .queryParam("keyword", "  " + "가".repeat(50) + "  ")
+                        .requestAttr(VISITOR_KEY_ATTRIBUTE, VISITOR_KEY))
+                .andExpect(status().isOk());
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"ALL", "BACKEND", "be"})
     @DisplayName("직군이 BE, FE, AN이 아니면 400을 준다")
