@@ -8,6 +8,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
+import { OverlayProvider } from 'overlay-kit';
 import { handlers } from '@/api/mock/handlers';
 import { ModalProvider } from '@/components/ModalProvider';
 import { MarkdownContent } from '@/components/MarkdownContent';
@@ -33,7 +34,9 @@ function renderPage(path = '/projects/@dropit') {
   return render(
     <QueryClientProvider client={queryClient}>
       <ModalProvider>
-        <RouterProvider router={router} />
+        <OverlayProvider>
+          <RouterProvider router={router} />
+        </OverlayProvider>
       </ModalProvider>
     </QueryClientProvider>,
   );
@@ -226,6 +229,22 @@ describe('프로젝트 상세 탭', () => {
     ).toHaveAttribute('target', '_blank');
     await userEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+    await userEvent.click(
+      within(experiences).getByRole('button', {
+        name: '저사양 EC2의 JVM 메모리 반복 종료 대응 자세히 보기',
+      }),
+    );
+    const modal = await screen.findByRole('dialog', {
+      name: '저사양 EC2의 JVM 메모리 반복 종료 대응',
+    });
+    expect(within(modal).getByRole('heading', { name: '한 일' })).toBeVisible();
+    expect(
+      within(modal).getByRole('link', { name: /힙 메모리 한도 조정으로 백엔드 강제 종료 방지/ }),
+    ).toHaveAttribute('target', '_blank');
+    // jsdom에서는 모바일 바텀시트(vaul)가 열려 포인터 캡처를 못 하므로 Esc로 닫는다.
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
     const roles = screen.getByRole('tablist', { name: '직군' });
     await userEvent.click(within(roles).getByRole('tab', { name: '프론트엔드' }));

@@ -97,7 +97,7 @@ export function ProjectMaterials({ slug, projectName }: ProjectMaterialsProps) {
                 })}
               </div>
             ))}
-            {/* ASSUMPTION: 자료 제보 기능이 아직 없어 링크 없이 문구만 둔다. */}
+            {/* MOCK-API: 제보 API가 생기면 그 API를 보고 모달이나 링크로 연결한다. 지금은 문구만 둔다. */}
             <ul className="flex flex-col gap-2 border-t border-gray-200 pt-4.5 text-xs text-gray-500">
               <li>제보 전에 읽어 주세요</li>
               <li>필요 없는 자료 고르기</li>
