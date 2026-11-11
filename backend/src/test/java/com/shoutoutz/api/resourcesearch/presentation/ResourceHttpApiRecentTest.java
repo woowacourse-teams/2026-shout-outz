@@ -83,7 +83,7 @@ class ResourceHttpApiRecentTest {
                                         fieldWithPath("data[].publishedAt").type(STRING).description("원문 게시 시각(UTC)"),
                                         fieldWithPath("data[].platform").type(STRING).description("블로그 플랫폼. 블로그가 아니면 null").optional(),
                                         fieldWithPath("data[].team").type(OBJECT).description("자료를 만든 팀. 없으면 null").optional(),
-                                        fieldWithPath("data[].team.name").type(STRING).description("팀 이름").optional(),
+                                        fieldWithPath("data[].team.name").type(STRING).description("등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름").optional(),
                                         fieldWithPath("data[].team.projectSlug").type(STRING)
                                                 .description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),
                                         fieldWithPath("data[].team.logoMediaId").type(NUMBER)

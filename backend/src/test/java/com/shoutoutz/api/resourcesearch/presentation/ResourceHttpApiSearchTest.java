@@ -195,7 +195,7 @@ class ResourceHttpApiSearchTest {
                 fieldWithPath("publishedAt").type(STRING).description("원문 게시 시각(UTC)").optional(),
                 fieldWithPath("platform").type(STRING).description("블로그 플랫폼. 블로그가 아니면 null").optional(),
                 fieldWithPath("team").type(OBJECT).description("자료를 만든 팀. 팀이 없거나 알 수 없으면 null").optional(),
-                fieldWithPath("team.name").type(STRING).description("팀 이름").optional(),
+                fieldWithPath("team.name").type(STRING).description("등록된 프로젝트면 프로젝트 이름, 등록 전 팀이면 수집 때 저장한 프로젝트 이름").optional(),
                 fieldWithPath("team.projectSlug").type(STRING).description("등록된 프로젝트 slug. 등록 전 팀이면 null").optional(),
                 fieldWithPath("team.logoMediaId").type(NUMBER).description("프로젝트 로고 미디어 ID. 없으면 null").optional(),
                 fieldWithPath("team.logoUrl").type(STRING).description("팀 로고 이미지 주소(작은 크기). logoMediaId가 없거나 이미지가 준비되지 않았으면 null").optional()

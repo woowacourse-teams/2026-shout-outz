@@ -28,7 +28,7 @@ final class ProjectResourceFixtures {
                                       approval_status, logo_media_id, deleted_at)
                 VALUES (8, ?, ?, ?, '한 줄 소개', ?, 'OPERATING', ?, ?, CASE WHEN ? THEN now() END)
                 RETURNING id
-                """, Long.class, teamName, slug, teamName + " 프로젝트", "https://github.com/woowacourse-teams/" + slug,
+                """, Long.class, teamName + " 팀", slug, teamName, "https://github.com/woowacourse-teams/" + slug,
                 approvalStatus, logoMediaId, deleted);
     }
 

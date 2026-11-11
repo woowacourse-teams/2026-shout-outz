@@ -66,6 +66,7 @@ public class ProjectResourceQueryRepositoryImpl implements ProjectResourceQueryR
 
     /**
      * 자료 카드 칸. 팀은 공개된 프로젝트면 그 프로젝트로, 프로젝트에 이어지지 않은 자료면 수집 때 저장한 팀 이름으로 채운다.
+     * 팀 이름은 등록 화면의 '팀 이름'(team_name)이 아니라 '프로젝트 이름'(title)을 쓴다. 목록과 상세가 보여 주는 이름과 맞추기 위해서다(#645).
      */
     private static final String CARD_COLUMNS = """
                 document.id,
@@ -75,7 +76,7 @@ public class ProjectResourceQueryRepositoryImpl implements ProjectResourceQueryR
                 document.summary,
                 document.published_at,
                 CASE WHEN document.source = 'blog-post' THEN document.extra ->> 'platform' END AS platform,
-                project.team_name,
+                project.title AS project_title,
                 project.slug AS project_slug,
                 project.logo_media_id,
                 CASE WHEN document.project_id IS NULL THEN document.extra ->> 'project_name' END AS unregistered_team_name
@@ -329,7 +330,7 @@ public class ProjectResourceQueryRepositoryImpl implements ProjectResourceQueryR
         String projectSlug = resultSet.getString("project_slug");
         if (projectSlug != null) {
             return new ResourceCard.Team(
-                    resultSet.getString("team_name"),
+                    resultSet.getString("project_title"),
                     projectSlug,
                     resultSet.getObject("logo_media_id", Long.class)
             );
